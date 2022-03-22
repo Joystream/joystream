@@ -274,6 +274,12 @@ decl_error! {
         /// Unexpected runtime state: missing channel bag during delete_channel attempt
         ChannelBagMissing,
 
+        /// List of assets to remove provided for update_channel / update_video contains assets that don't belong to the specified entity
+        AssetsToRemoveBeyondEntityAssetsSet,
+
+        /// Invalid number of objects to delete provided for delete_video
+        InvalidVideoDataObjectsCountProvided,
+
         /// Invalid channel transfer status for operations.
         InvalidChannelTransferStatus,
 

@@ -140,6 +140,8 @@ export class ContentModerationAction extends JoyEnum({
   ChangeChannelFeatureStatus: PausableChannelFeature,
   DeleteVideo: Null,
   DeleteChannel: Null,
+  DeleteVideoAssets: bool,
+  DeleteNonVideoChannelAssets: Null,
 }) {}
 
 export class ContentModerationActionsSet extends BTreeSet.with(ContentModerationAction) {}
@@ -186,6 +188,7 @@ export class Channel extends JoyStructDecorated({
   privilege_level: ChannelPrivilegeLevel,
   paused_features: BTreeSet.with(PausableChannelFeature),
   transfer_status: ChannelTransferStatus,
+  data_objects: BTreeSet.with(DataObjectId),
 }) {}
 
 export class ChannelCreationParameters extends JoyStructDecorated({
@@ -193,6 +196,8 @@ export class ChannelCreationParameters extends JoyStructDecorated({
   meta: Option.with(Bytes),
   collaborators: BTreeSet.with(MemberId),
   moderators: BTreeSet.with(MemberId),
+  expected_dynamic_bag_deletion_prize: Balance,
+  expected_data_object_deletion_prize: Balance,
 }) {}
 
 export class ChannelUpdateParameters extends JoyStructDecorated({
@@ -200,6 +205,7 @@ export class ChannelUpdateParameters extends JoyStructDecorated({
   new_meta: Option.with(Bytes),
   assets_to_remove: BTreeSet.with(DataObjectId),
   collaborators: Option.with(BTreeSet.with(MemberId)),
+  expected_data_object_deletion_prize: Balance,
 }) {}
 
 // Channel category creation/update
@@ -237,6 +243,7 @@ export class Video extends JoyStructDecorated({
   enable_comments: bool,
   video_post_id: Option.with(VideoPostId),
   nft_status: Option.with(OwnedNft),
+  data_objects: BTreeSet.with(DataObjectId),
 }) {}
 
 export class VideoCreationParameters extends JoyStructDecorated({
@@ -244,6 +251,7 @@ export class VideoCreationParameters extends JoyStructDecorated({
   meta: Option.with(Bytes),
   enable_comments: bool,
   auto_issue_nft: Option.with(NftIssuanceParameters),
+  expected_data_object_deletion_prize: Balance,
 }) {}
 
 export class VideoUpdateParameters extends JoyStructDecorated({
@@ -252,6 +260,7 @@ export class VideoUpdateParameters extends JoyStructDecorated({
   assets_to_remove: BTreeSet.with(DataObjectId),
   enable_comments: Option.with(bool),
   auto_issue_nft: Option.with(NftIssuanceParameters),
+  expected_data_object_deletion_prize: Balance,
 }) {}
 
 // Video posts

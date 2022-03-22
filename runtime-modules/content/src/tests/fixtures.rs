@@ -190,6 +190,7 @@ impl CreateChannelFixture {
                         cumulative_payout_earned: Zero::zero(),
                         privilege_level: Zero::zero(),
                         paused_features: BTreeSet::new(),
+                        data_objects: BTreeSet::from_iter(beg_obj_id..end_obj_id),
                         transfer_status: Default::default(),
                     },
                     self.params.clone(),
@@ -324,6 +325,7 @@ impl CreateVideoFixture {
                     self.channel_id,
                     video_id,
                     self.params.clone(),
+                    BTreeSet::from_iter(beg_obj_id..end_obj_id),
                 ))
             );
 
@@ -485,28 +487,34 @@ impl UpdateChannelFixture {
 
         match actual_result {
             Ok(()) => {
-                let owner = channel_post.owner.clone();
                 assert_eq!(
                     System::events().last().unwrap().event,
                     MetaEvent::content(RawEvent::ChannelUpdated(
                         self.actor.clone(),
                         self.channel_id,
-                        ChannelRecord {
-                            owner,
-                            collaborators: self
-                                .params
-                                .collaborators
-                                .clone()
-                                .unwrap_or(channel_pre.collaborators),
-                            num_videos: channel_pre.num_videos,
-                            moderators: channel_pre.moderators,
-                            cumulative_payout_earned: BalanceOf::<Test>::zero(),
-                            privilege_level: Zero::zero(),
-                            paused_features: BTreeSet::new(),
-                            transfer_status: Default::default(),
-                        },
                         self.params.clone(),
+                        BTreeSet::from_iter(beg_obj_id..end_obj_id)
                     ))
+                );
+
+                assert_eq!(
+                    channel_post.collaborators,
+                    self.params
+                        .collaborators
+                        .clone()
+                        .unwrap_or(channel_pre.collaborators)
+                );
+
+                assert_eq!(
+                    channel_post.data_objects,
+                    channel_pre
+                        .data_objects
+                        .union(&BTreeSet::from_iter(beg_obj_id..end_obj_id))
+                        .cloned()
+                        .collect::<BTreeSet<_>>()
+                        .difference(&self.params.assets_to_remove)
+                        .cloned()
+                        .collect::<BTreeSet<_>>()
                 );
 
                 assert_eq!(
@@ -719,7 +727,8 @@ impl UpdateVideoFixture {
                     MetaEvent::content(RawEvent::VideoUpdated(
                         self.actor.clone(),
                         self.video_id,
-                        self.params.clone()
+                        self.params.clone(),
+                        BTreeSet::from_iter(beg_obj_id..end_obj_id),
                     ))
                 );
 
@@ -746,6 +755,118 @@ impl UpdateVideoFixture {
                 if err != storage::Error::<Test>::DataObjectDoesntExist.into() {
                     assert!(self.params.assets_to_remove.iter().all(|id| {
                         storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
+                    }));
+                }
+            }
+        }
+    }
+}
+
+pub struct DeleteChannelAssetsAsModeratorFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    assets_to_remove: BTreeSet<DataObjectId<Test>>,
+    rationale: Vec<u8>,
+}
+
+impl DeleteChannelAssetsAsModeratorFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: LEAD_ACCOUNT_ID,
+            actor: ContentActor::Lead,
+            channel_id: ChannelId::one(),
+            assets_to_remove: BTreeSet::from_iter(0..DATA_OBJECTS_NUMBER),
+            rationale: b"rationale".to_vec(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
+
+    pub fn with_assets_to_remove(self, assets_to_remove: BTreeSet<DataObjectId<Test>>) -> Self {
+        Self {
+            assets_to_remove,
+            ..self
+        }
+    }
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let balance_pre = Balances::<Test>::usable_balance(self.sender);
+        let channel_pre = Content::channel_by_id(&self.channel_id);
+        let bag_id_for_channel = Content::bag_id_for_channel(&self.channel_id);
+
+        let deletion_prize_withdrawn = if !self.assets_to_remove.is_empty() {
+            self.assets_to_remove
+                .iter()
+                .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
+                    acc + storage::DataObjectsById::<Test>::get(&bag_id_for_channel, obj_id)
+                        .deletion_prize
+                })
+        } else {
+            BalanceOf::<Test>::zero()
+        };
+
+        let actual_result = Content::delete_channel_assets_as_moderator(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.assets_to_remove.clone(),
+            self.rationale.clone(),
+        );
+
+        let balance_post = Balances::<Test>::usable_balance(self.sender);
+        let channel_post = Content::channel_by_id(&self.channel_id);
+
+        assert_eq!(actual_result, expected_result);
+
+        match actual_result {
+            Ok(()) => {
+                assert_eq!(
+                    System::events().last().unwrap().event,
+                    MetaEvent::content(RawEvent::ChannelAssetsDeletedByModerator(
+                        self.actor.clone(),
+                        self.channel_id,
+                        self.assets_to_remove.clone(),
+                        self.rationale.clone(),
+                    ))
+                );
+
+                assert_eq!(
+                    balance_post.saturating_sub(balance_pre),
+                    deletion_prize_withdrawn,
+                );
+
+                assert_eq!(
+                    channel_post.data_objects,
+                    BTreeSet::from_iter(
+                        channel_pre
+                            .data_objects
+                            .difference(&self.assets_to_remove)
+                            .cloned(),
+                    ),
+                );
+
+                assert!(!self.assets_to_remove.iter().any(|obj_id| {
+                    storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
+                }));
+            }
+            Err(err) => {
+                assert_eq!(channel_pre, channel_post);
+                assert_eq!(balance_pre, balance_post);
+
+                if err != Error::<Test>::ChannelDoesNotExist.into() {
+                    assert!(channel_pre.data_objects.iter().all(|obj_id| {
+                        storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
                     }));
                 }
             }
@@ -1422,11 +1543,123 @@ impl DeletePostFixture {
     }
 }
 
+pub struct DeleteVideoAssetsAsModeratorFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: VideoId,
+    assets_to_remove: BTreeSet<DataObjectId<Test>>,
+    rationale: Vec<u8>,
+}
+
+impl DeleteVideoAssetsAsModeratorFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: LEAD_ACCOUNT_ID,
+            actor: ContentActor::Lead,
+            video_id: VideoId::one(),
+            assets_to_remove: BTreeSet::from_iter(DATA_OBJECTS_NUMBER..(2 * DATA_OBJECTS_NUMBER)),
+            rationale: b"rationale".to_vec(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
+
+    pub fn with_assets_to_remove(self, assets_to_remove: BTreeSet<DataObjectId<Test>>) -> Self {
+        Self {
+            assets_to_remove,
+            ..self
+        }
+    }
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let balance_pre = Balances::<Test>::usable_balance(self.sender);
+        let video_pre = Content::video_by_id(&self.video_id);
+        let bag_id_for_channel = Content::bag_id_for_channel(&video_pre.in_channel);
+
+        let deletion_prize_withdrawn = if !self.assets_to_remove.is_empty() {
+            self.assets_to_remove
+                .iter()
+                .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
+                    acc + storage::DataObjectsById::<Test>::get(&bag_id_for_channel, obj_id)
+                        .deletion_prize
+                })
+        } else {
+            BalanceOf::<Test>::zero()
+        };
+
+        let actual_result = Content::delete_video_assets_as_moderator(
+            origin,
+            self.actor.clone(),
+            self.video_id,
+            self.assets_to_remove.clone(),
+            self.rationale.clone(),
+        );
+
+        let balance_post = Balances::<Test>::usable_balance(self.sender);
+        let video_post = Content::video_by_id(&self.video_id);
+
+        assert_eq!(actual_result, expected_result);
+
+        match actual_result {
+            Ok(()) => {
+                assert_eq!(
+                    System::events().last().unwrap().event,
+                    MetaEvent::content(RawEvent::VideoAssetsDeletedByModerator(
+                        self.actor.clone(),
+                        self.video_id,
+                        self.assets_to_remove.clone(),
+                        video_pre.nft_status.is_some(),
+                        self.rationale.clone(),
+                    ))
+                );
+
+                assert_eq!(
+                    balance_post.saturating_sub(balance_pre),
+                    deletion_prize_withdrawn,
+                );
+
+                assert_eq!(
+                    video_post.data_objects,
+                    BTreeSet::from_iter(
+                        video_pre
+                            .data_objects
+                            .difference(&self.assets_to_remove)
+                            .cloned(),
+                    ),
+                );
+
+                assert!(!self.assets_to_remove.iter().any(|obj_id| {
+                    storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
+                }));
+            }
+            Err(err) => {
+                assert_eq!(video_pre, video_post);
+                assert_eq!(balance_pre, balance_post);
+
+                if err != Error::<Test>::VideoDoesNotExist.into() {
+                    assert!(video_pre.data_objects.iter().all(|obj_id| {
+                        storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
+                    }));
+                }
+            }
+        }
+    }
+}
+
 pub trait VideoDeletion {
     fn get_sender(&self) -> &AccountId;
     fn get_video_id(&self) -> &VideoId;
     fn get_actor(&self) -> &ContentActor<CuratorGroupId, CuratorId, MemberId>;
-    fn get_assets_to_remove(&self) -> &BTreeSet<DataObjectId<Test>>;
     fn execute_call(&self) -> DispatchResult;
     fn expected_event_on_success(&self) -> MetaEvent;
 
@@ -1435,7 +1668,8 @@ pub trait VideoDeletion {
         let video_pre = <VideoById<Test>>::get(&self.get_video_id());
         let channel_bag_id = Content::bag_id_for_channel(&video_pre.in_channel);
         let deletion_prize =
-            self.get_assets_to_remove()
+            video_pre
+                .data_objects
                 .iter()
                 .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
                     acc + storage::DataObjectsById::<Test>::get(&channel_bag_id, obj_id)
@@ -1457,7 +1691,7 @@ pub trait VideoDeletion {
 
                 assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize);
 
-                assert!(!self.get_assets_to_remove().iter().any(|obj_id| {
+                assert!(!video_pre.data_objects.iter().any(|obj_id| {
                     storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, obj_id)
                 }));
 
@@ -1471,14 +1705,14 @@ pub trait VideoDeletion {
                     assert_eq!(video_pre, video_post);
                     assert!(VideoById::<Test>::contains_key(&self.get_video_id()));
                 } else if err == Error::<Test>::VideoDoesNotExist.into() {
-                    assert!(self.get_assets_to_remove().iter().all(|id| {
+                    assert!(video_pre.data_objects.iter().all(|id| {
                         storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
                     }));
                 } else {
                     let video_post = <VideoById<Test>>::get(self.get_video_id());
                     assert_eq!(video_pre, video_post);
                     assert!(VideoById::<Test>::contains_key(self.get_video_id()));
-                    assert!(self.get_assets_to_remove().iter().all(|id| {
+                    assert!(video_pre.data_objects.iter().all(|id| {
                         storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, id)
                     }));
                 }
@@ -1491,7 +1725,7 @@ pub struct DeleteVideoFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     video_id: VideoId,
-    assets_to_remove: BTreeSet<DataObjectId<Test>>,
+    num_objects_to_delete: u64,
 }
 
 impl DeleteVideoFixture {
@@ -1500,7 +1734,7 @@ impl DeleteVideoFixture {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id: VideoId::one(),
-            assets_to_remove: BTreeSet::new(),
+            num_objects_to_delete: DATA_OBJECTS_NUMBER,
         }
     }
 
@@ -1512,9 +1746,9 @@ impl DeleteVideoFixture {
         Self { actor, ..self }
     }
 
-    pub fn with_assets_to_remove(self, assets_to_remove: BTreeSet<DataObjectId<Test>>) -> Self {
+    pub fn with_num_objects_to_delete(self, num_objects_to_delete: u64) -> Self {
         Self {
-            assets_to_remove,
+            num_objects_to_delete,
             ..self
         }
     }
@@ -1534,16 +1768,13 @@ impl VideoDeletion for DeleteVideoFixture {
     fn get_actor(&self) -> &ContentActor<CuratorGroupId, CuratorId, MemberId> {
         &self.actor
     }
-    fn get_assets_to_remove(&self) -> &BTreeSet<DataObjectId<Test>> {
-        &self.assets_to_remove
-    }
 
     fn execute_call(&self) -> DispatchResult {
         Content::delete_video(
             Origin::signed(self.sender.clone()),
             self.actor.clone(),
             self.video_id,
-            self.assets_to_remove.clone(),
+            self.num_objects_to_delete,
         )
     }
 
@@ -1556,7 +1787,7 @@ pub struct DeleteVideoAsModeratorFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     video_id: VideoId,
-    assets_to_remove: BTreeSet<DataObjectId<Test>>,
+    num_objects_to_delete: u64,
     rationale: Vec<u8>,
 }
 
@@ -1566,7 +1797,7 @@ impl DeleteVideoAsModeratorFixture {
             sender: LEAD_ACCOUNT_ID,
             actor: ContentActor::Lead,
             video_id: VideoId::one(),
-            assets_to_remove: BTreeSet::new(),
+            num_objects_to_delete: DATA_OBJECTS_NUMBER,
             rationale: b"rationale".to_vec(),
         }
     }
@@ -1579,9 +1810,9 @@ impl DeleteVideoAsModeratorFixture {
         Self { actor, ..self }
     }
 
-    pub fn with_assets_to_remove(self, assets_to_remove: BTreeSet<DataObjectId<Test>>) -> Self {
+    pub fn with_num_objects_to_delete(self, num_objects_to_delete: u64) -> Self {
         Self {
-            assets_to_remove,
+            num_objects_to_delete,
             ..self
         }
     }
@@ -1597,16 +1828,13 @@ impl VideoDeletion for DeleteVideoAsModeratorFixture {
     fn get_actor(&self) -> &ContentActor<CuratorGroupId, CuratorId, MemberId> {
         &self.actor
     }
-    fn get_assets_to_remove(&self) -> &BTreeSet<DataObjectId<Test>> {
-        &self.assets_to_remove
-    }
 
     fn execute_call(&self) -> DispatchResult {
         Content::delete_video_as_moderator(
             Origin::signed(self.sender.clone()),
             self.actor.clone(),
             self.video_id,
-            self.assets_to_remove.clone(),
+            self.num_objects_to_delete,
             self.rationale.clone(),
         )
     }
@@ -2212,19 +2440,25 @@ pub fn create_default_curator_owned_channel(deletion_prize: u64) {
         .call_and_assert(Ok(()));
 }
 
-pub fn create_default_member_owned_channel_with_video(deletion_prize: u64) {
+pub fn create_default_member_owned_channel_with_videos(deletion_prize: u64, number_of_videos: u8) {
     create_default_member_owned_channel(deletion_prize);
 
-    CreateVideoFixture::default()
-        .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-        .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-        .with_data_object_deletion_prize(deletion_prize)
-        .with_assets(StorageAssets::<Test> {
-            expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
-            object_creation_list: create_data_objects_helper(),
-        })
-        .with_channel_id(NextChannelId::<Test>::get() - 1)
-        .call_and_assert(Ok(()));
+    for _ in 0..number_of_videos {
+        CreateVideoFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_data_object_deletion_prize(deletion_prize)
+            .with_assets(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .with_channel_id(NextChannelId::<Test>::get() - 1)
+            .call_and_assert(Ok(()));
+    }
+}
+
+pub fn create_default_member_owned_channel_with_video(deletion_prize: u64) {
+    create_default_member_owned_channel_with_videos(deletion_prize, 1)
 }
 
 pub fn create_default_curator_owned_channel_with_video(deletion_prize: u64) {

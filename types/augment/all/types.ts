@@ -218,6 +218,7 @@ export interface Channel extends Struct {
   readonly privilege_level: ChannelPrivilegeLevel;
   readonly paused_features: BTreeSet<PausableChannelFeature>;
   readonly transfer_status: ChannelTransferStatus;
+  readonly data_objects: BTreeSet<DataObjectId>;
 }
 
 /** @name ChannelCategory */
@@ -242,6 +243,8 @@ export interface ChannelCreationParameters extends Struct {
   readonly meta: Option<Bytes>;
   readonly collaborators: BTreeSet<MemberId>;
   readonly moderators: BTreeSet<MemberId>;
+  readonly expected_dynamic_bag_deletion_prize: u128;
+  readonly expected_data_object_deletion_prize: u128;
 }
 
 /** @name ChannelId */
@@ -277,6 +280,7 @@ export interface ChannelUpdateParameters extends Struct {
   readonly new_meta: Option<Bytes>;
   readonly assets_to_remove: BTreeSet<DataObjectId>;
   readonly collaborators: Option<BTreeSet<MemberId>>;
+  readonly expected_data_object_deletion_prize: u128;
 }
 
 /** @name Cid */
@@ -307,6 +311,9 @@ export interface ContentModerationAction extends Enum {
   readonly asChangeChannelFeatureStatus: PausableChannelFeature;
   readonly isDeleteVideo: boolean;
   readonly isDeleteChannel: boolean;
+  readonly isDeleteVideoAssets: boolean;
+  readonly asDeleteVideoAssets: bool;
+  readonly isDeleteNonVideoChannelAssets: boolean;
 }
 
 /** @name ContentModerationActionsSet */
@@ -1166,6 +1173,8 @@ export interface UploadParameters extends Struct {
   readonly objectCreationList: Vec<DataObjectCreationParameters>;
   readonly deletionPrizeSourceAccountId: GenericAccountId;
   readonly expectedDataSizeFee: u128;
+  readonly expectedDynamicBagDeletionPrize: u128;
+  readonly expectedDataObjectDeletionPrize: u128;
 }
 
 /** @name Url */
@@ -1177,6 +1186,7 @@ export interface Video extends Struct {
   readonly enable_comments: bool;
   readonly video_post_id: Option<VideoPostId>;
   readonly nft_status: Option<OwnedNft>;
+  readonly data_objects: BTreeSet<DataObjectId>;
 }
 
 /** @name VideoCategory */
@@ -1201,6 +1211,7 @@ export interface VideoCreationParameters extends Struct {
   readonly meta: Option<Bytes>;
   readonly enable_comments: bool;
   readonly auto_issue_nft: Option<NftIssuanceParameters>;
+  readonly expected_data_object_deletion_prize: u128;
 }
 
 /** @name VideoId */
@@ -1244,6 +1255,7 @@ export interface VideoUpdateParameters extends Struct {
   readonly assets_to_remove: BTreeSet<DataObjectId>;
   readonly enable_comments: Option<bool>;
   readonly auto_issue_nft: Option<NftIssuanceParameters>;
+  readonly expected_data_object_deletion_prize: u128;
 }
 
 /** @name VoteKind */

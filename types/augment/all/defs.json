@@ -318,7 +318,9 @@
         "bagId": "BagId",
         "objectCreationList": "Vec<DataObjectCreationParameters>",
         "deletionPrizeSourceAccountId": "GenericAccountId",
-        "expectedDataSizeFee": "u128"
+        "expectedDataSizeFee": "u128",
+        "expectedDynamicBagDeletionPrize": "u128",
+        "expectedDataObjectDeletionPrize": "u128"
     },
     "StorageBucketIdSet": "BTreeSet<StorageBucketId>",
     "DataObjectIdSet": "BTreeSet<DataObjectId>",
@@ -680,7 +682,8 @@
         "cumulative_payout_earned": "u128",
         "privilege_level": "ChannelPrivilegeLevel",
         "paused_features": "BTreeSet<PausableChannelFeature>",
-        "transfer_status": "ChannelTransferStatus"
+        "transfer_status": "ChannelTransferStatus",
+        "data_objects": "BTreeSet<DataObjectId>"
     },
     "ChannelOwner": {
         "_enum": {
@@ -700,19 +703,23 @@
         "assets": "Option<StorageAssets>",
         "meta": "Option<Bytes>",
         "collaborators": "BTreeSet<MemberId>",
-        "moderators": "BTreeSet<MemberId>"
+        "moderators": "BTreeSet<MemberId>",
+        "expected_dynamic_bag_deletion_prize": "u128",
+        "expected_data_object_deletion_prize": "u128"
     },
     "ChannelUpdateParameters": {
         "assets_to_upload": "Option<StorageAssets>",
         "new_meta": "Option<Bytes>",
         "assets_to_remove": "BTreeSet<DataObjectId>",
-        "collaborators": "Option<BTreeSet<MemberId>>"
+        "collaborators": "Option<BTreeSet<MemberId>>",
+        "expected_data_object_deletion_prize": "u128"
     },
     "Video": {
         "in_channel": "ChannelId",
         "enable_comments": "bool",
         "video_post_id": "Option<VideoPostId>",
-        "nft_status": "Option<OwnedNft>"
+        "nft_status": "Option<OwnedNft>",
+        "data_objects": "BTreeSet<DataObjectId>"
     },
     "VideoId": "u64",
     "VideoCategoryId": "u64",
@@ -727,14 +734,16 @@
         "assets": "Option<StorageAssets>",
         "meta": "Option<Bytes>",
         "enable_comments": "bool",
-        "auto_issue_nft": "Option<NftIssuanceParameters>"
+        "auto_issue_nft": "Option<NftIssuanceParameters>",
+        "expected_data_object_deletion_prize": "u128"
     },
     "VideoUpdateParameters": {
         "assets_to_upload": "Option<StorageAssets>",
         "new_meta": "Option<Bytes>",
         "assets_to_remove": "BTreeSet<DataObjectId>",
         "enable_comments": "Option<bool>",
-        "auto_issue_nft": "Option<NftIssuanceParameters>"
+        "auto_issue_nft": "Option<NftIssuanceParameters>",
+        "expected_data_object_deletion_prize": "u128"
     },
     "MaxNumber": "u32",
     "IsCensored": "bool",
@@ -874,7 +883,9 @@
             "HideChannel": "Null",
             "ChangeChannelFeatureStatus": "PausableChannelFeature",
             "DeleteVideo": "Null",
-            "DeleteChannel": "Null"
+            "DeleteChannel": "Null",
+            "DeleteVideoAssets": "bool",
+            "DeleteNonVideoChannelAssets": "Null"
         }
     },
     "ContentModerationActionsSet": "BTreeSet<ContentModerationAction>",

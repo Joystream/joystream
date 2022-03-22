@@ -17,15 +17,7 @@ fn delete_video_nft_is_issued() {
         let video_id = Content::next_video_id();
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
-
-        // Issue nft
-        assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            video_id,
-            NftIssuanceParameters::<Test>::default(),
-        ));
+        create_default_member_owned_channel_with_video_with_nft();
 
         // Make an attempt to delete a video, which has an nft issued already.
         assert_err!(
@@ -33,7 +25,7 @@ fn delete_video_nft_is_issued() {
                 Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 video_id,
-                BTreeSet::new(),
+                DATA_OBJECTS_NUMBER,
             ),
             Error::<Test>::NftAlreadyExists
         );
@@ -909,14 +901,15 @@ fn unsuccessful_video_update_with_invalid_object_ids() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
-        let invalid_objects_ids = (1..DATA_OBJECTS_NUMBER)
-            .map(|i| Storage::<Test>::next_data_object_id() + i)
-            .collect::<BTreeSet<_>>();
+        create_default_member_owned_channel_with_videos(DATA_OBJECT_DELETION_PRIZE, 2);
+        let invalid_objects_ids =
+            (DATA_OBJECTS_NUMBER * 2..DATA_OBJECTS_NUMBER * 3).collect::<BTreeSet<_>>();
 
         UpdateVideoFixture::default()
             .with_assets_to_remove(invalid_objects_ids)
-            .call_and_assert(Err(storage::Error::<Test>::DataObjectDoesntExist.into()));
+            .call_and_assert(Err(
+                Error::<Test>::AssetsToRemoveBeyondEntityAssetsSet.into()
+            ));
     })
 }
 
@@ -936,6 +929,19 @@ fn unsuccessful_video_update_with_invalid_video_id() {
 }
 
 #[test]
+fn unsuccessful_video_update_with_nft() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_with_nft();
+
+        UpdateVideoFixture::default().call_and_assert(Err(Error::<Test>::NftAlreadyExists.into()));
+    })
+}
+
+#[test]
 fn successful_video_deletion_by_member_with_assets_removal() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -943,12 +949,8 @@ fn successful_video_deletion_by_member_with_assets_removal() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
-        let video_assets = ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64 - 1))
-            .collect::<BTreeSet<_>>();
 
-        DeleteVideoFixture::default()
-            .with_assets_to_remove(video_assets)
-            .call_and_assert(Ok(()));
+        DeleteVideoFixture::default().call_and_assert(Ok(()));
     })
 }
 
@@ -960,15 +962,12 @@ fn unsuccessful_video_deletion_with_pending_transfer() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
-        let video_assets = ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64 - 1))
-            .collect::<BTreeSet<_>>();
 
         UpdateChannelTransferStatusFixture::default()
             .with_transfer_status_by_member_id(DEFAULT_MEMBER_ID)
             .call_and_assert(Ok(()));
 
         DeleteVideoFixture::default()
-            .with_assets_to_remove(video_assets)
             .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
     })
 }
@@ -1013,13 +1012,10 @@ fn successful_video_deletion_by_lead_with_curator_owned_channel() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
-        let video_assets = ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64 - 1))
-            .collect::<BTreeSet<_>>();
 
         DeleteVideoFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
-            .with_assets_to_remove(video_assets)
             .call_and_assert(Ok(()));
     })
 }
@@ -1032,8 +1028,6 @@ fn successful_video_deletion_by_curator_with_assets_removal() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
-        let video_assets = ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64 - 1))
-            .collect::<BTreeSet<_>>();
 
         let default_curator_group_id = NextCuratorGroupId::<Test>::get() - 1;
         DeleteVideoFixture::default()
@@ -1042,7 +1036,6 @@ fn successful_video_deletion_by_curator_with_assets_removal() {
                 default_curator_group_id,
                 DEFAULT_CURATOR_ID,
             ))
-            .with_assets_to_remove(video_assets)
             .call_and_assert(Ok(()));
     })
 }
@@ -1152,20 +1145,19 @@ fn unsuccessful_video_deletion_with_invalid_video_id() {
 }
 
 #[test]
-fn unsuccessful_video_deletion_with_invalid_object_ids() {
+fn unsuccessful_video_deletion_with_invalid_num_objects_to_delete() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
-        let invalid_objects_ids = (1..DATA_OBJECTS_NUMBER)
-            .map(|i| Storage::<Test>::next_data_object_id() + i)
-            .collect::<BTreeSet<_>>();
 
         DeleteVideoFixture::default()
-            .with_assets_to_remove(invalid_objects_ids)
-            .call_and_assert(Err(storage::Error::<Test>::DataObjectDoesntExist.into()));
+            .with_num_objects_to_delete(DATA_OBJECTS_NUMBER - 1)
+            .call_and_assert(Err(
+                Error::<Test>::InvalidVideoDataObjectsCountProvided.into()
+            ));
     })
 }
 
@@ -1357,53 +1349,6 @@ fn successful_moderation_action_video_deletion_by_lead() {
 }
 
 #[test]
-fn successful_moderation_action_video_deletion_with_assets_by_curator() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
-
-        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
-            DEFAULT_CURATOR_ID,
-            BTreeMap::from_iter(vec![(
-                0,
-                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideo]),
-            )]),
-        );
-
-        let assets_to_remove = BTreeSet::from_iter(vec![0]);
-
-        DeleteVideoAsModeratorFixture::default()
-            .with_assets_to_remove(assets_to_remove)
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn successful_moderation_action_video_deletion_with_assets_by_lead() {
-    with_default_mock_builder(|| {
-        // Run to block one to see emitted events
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
-
-        let assets_to_remove = BTreeSet::from_iter(vec![0]);
-
-        DeleteVideoAsModeratorFixture::default()
-            .with_assets_to_remove(assets_to_remove)
-            .with_sender(LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
 fn unsuccessful_moderation_action_video_visibility_change_by_actors_with_auth_failure() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -1545,5 +1490,235 @@ fn successful_moderation_action_channel_visibility_change_by_lead() {
         SetVideoVisibilityAsModeratorFixture::default()
             .with_is_hidden(false)
             .call_and_assert(Ok(()));
+    })
+}
+
+// Video assets removal
+
+#[test]
+fn unsuccessful_moderation_action_video_assets_deletion_by_actors_with_auth_failure() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+
+        let curator_group_id = curators::create_curator_group(BTreeMap::new());
+
+        // Member - invalid sender
+        DeleteVideoAssetsAsModeratorFixture::default()
+            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
+
+        // Curator - invalid sender
+        DeleteVideoAssetsAsModeratorFixture::default()
+            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()));
+
+        // Curator - invalid group
+        DeleteVideoAssetsAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(
+                Error::<Test>::CuratorIsNotAMemberOfGivenCuratorGroup.into()
+            ));
+
+        // Lead - invalid sender
+        DeleteVideoAssetsAsModeratorFixture::default()
+            .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_video_assets_deletion_by_member() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+
+        DeleteVideoAssetsAsModeratorFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_video_assets_deletion_by_curator_with_no_permissions() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+
+        let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+
+        DeleteVideoAssetsAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::CuratorModerationActionNotAllowed.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_nft_video_assets_deletion_by_curator_with_no_permissions() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_with_nft();
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideoAssets(false)]),
+            )]),
+        );
+
+        DeleteVideoAssetsAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::CuratorModerationActionNotAllowed.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_invalid_video_assets_deletion() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_videos(DATA_OBJECT_DELETION_PRIZE, 2);
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideoAssets(false)]),
+            )]),
+        );
+
+        let assets_to_remove =
+            BTreeSet::from_iter((2 * DATA_OBJECTS_NUMBER)..(3 * DATA_OBJECTS_NUMBER));
+
+        DeleteVideoAssetsAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_assets_to_remove(assets_to_remove)
+            .call_and_assert(Err(
+                Error::<Test>::AssetsToRemoveBeyondEntityAssetsSet.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_non_existing_video_assets_deletion() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideoAssets(false)]),
+            )]),
+        );
+
+        DeleteVideoAssetsAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_video_id(2)
+            .call_and_assert(Err(Error::<Test>::VideoDoesNotExist.into()));
+    })
+}
+
+#[test]
+fn successful_moderation_action_video_assets_deletion_by_curator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideoAssets(false)]),
+            )]),
+        );
+
+        DeleteVideoAssetsAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_moderation_action_video_assets_deletion_by_lead() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+
+        DeleteVideoAssetsAsModeratorFixture::default().call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_moderation_action_nft_video_assets_deletion_by_curator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_with_nft();
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteVideoAssets(true)]),
+            )]),
+        );
+
+        DeleteVideoAssetsAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_moderation_action_nft_video_assets_deletion_by_lead() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video_with_nft();
+
+        DeleteVideoAssetsAsModeratorFixture::default().call_and_assert(Ok(()));
     })
 }
