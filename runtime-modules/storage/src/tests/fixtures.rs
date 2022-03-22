@@ -2,7 +2,6 @@ use frame_support::dispatch::DispatchResult;
 use frame_support::storage::StorageMap;
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
-
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 
@@ -325,6 +324,19 @@ impl UploadFixture {
         Self { params, ..self }
     }
 
+    pub fn with_expected_data_object_deletion_prize(
+        self,
+        expected_data_object_deletion_prize: u64,
+    ) -> Self {
+        Self {
+            params: UploadParameters::<Test> {
+                expected_data_object_deletion_prize,
+                ..self.params.clone()
+            },
+            ..self
+        }
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let balance_pre = Balances::usable_balance(self.params.deletion_prize_source_account_id);
         let bag_pre = <crate::Bags<Test>>::get(&self.params.bag_id);
@@ -340,7 +352,7 @@ impl UploadFixture {
             .object_creation_list
             .iter()
             .fold(0u64, |acc, _| {
-                acc.saturating_add(<Test as crate::Trait>::DataObjectDeletionPrize::get())
+                acc.saturating_add(Storage::data_object_deletion_prize_value())
             });
         let total_size_added = self
             .params
@@ -1356,7 +1368,6 @@ impl UpdateStorageBucketsVoucherMaxLimitsFixture {
 
 pub struct CreateDynamicBagFixture {
     params: DynBagCreationParameters<Test>,
-    deletion_prize: u64,
 }
 
 impl CreateDynamicBagFixture {
@@ -1367,7 +1378,15 @@ impl CreateDynamicBagFixture {
                 deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
                 ..Default::default()
             },
-            deletion_prize: Default::default(),
+        }
+    }
+
+    pub fn with_deletion_prize_account_id(self, deletion_prize_account_id: u64) -> Self {
+        Self {
+            params: DynBagCreationParameters::<Test> {
+                deletion_prize_source_account_id: deletion_prize_account_id,
+                ..self.params
+            },
         }
     }
 
@@ -1391,10 +1410,6 @@ impl CreateDynamicBagFixture {
         }
     }
 
-    // pub fn with_parameters(self, params: DynBagCreationParameters<Test>) -> Self {
-    //     Self { params, ..self }
-    // }
-
     pub fn with_expected_data_size_fee(self, expected_data_size_fee: u64) -> Self {
         Self {
             params: DynBagCreationParameters::<Test> {
@@ -1404,17 +1419,33 @@ impl CreateDynamicBagFixture {
             ..self
         }
     }
-
-    pub fn with_deletion_prize(self, deletion_prize: u64) -> Self {
+    pub fn with_expected_dynamic_bag_deletion_prize(
+        self,
+        expected_dynamic_bag_deletion_prize: u64,
+    ) -> Self {
         Self {
-            deletion_prize,
+            params: DynBagCreationParameters::<Test> {
+                expected_dynamic_bag_deletion_prize,
+                ..self.params
+            },
+            ..self
+        }
+    }
+    pub fn with_expected_data_object_deletion_prize(
+        self,
+        expected_data_object_deletion_prize: u64,
+    ) -> Self {
+        Self {
+            params: DynBagCreationParameters::<Test> {
+                expected_data_object_deletion_prize,
+                ..self.params
+            },
             ..self
         }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result =
-            Storage::create_dynamic_bag(self.params.clone(), self.deletion_prize.clone());
+        let actual_result = Storage::create_dynamic_bag(self.params.clone());
 
         assert_eq!(actual_result, expected_result);
 
@@ -2284,6 +2315,102 @@ impl CreateStorageBucketFixture {
 
 pub fn pick_storage_buckets_for_dynamic_bag(dynamic_bag_type: DynamicBagType) -> BTreeSet<u64> {
     StorageBucketPicker::<Test>::pick_storage_buckets(dynamic_bag_type)
+}
+
+pub struct UpdateDynamicBagDeletionPrizeValueFixture {
+    origin: RawOrigin<u64>,
+    deletion_prize: u64,
+}
+
+impl UpdateDynamicBagDeletionPrizeValueFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+            deletion_prize: 0,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_deletion_prize(self, deletion_prize: u64) -> Self {
+        Self {
+            deletion_prize,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_deletion_prize = Storage::dynamic_bag_deletion_prize_value();
+
+        let actual_result = Storage::update_dynamic_bag_deletion_prize(
+            self.origin.clone().into(),
+            self.deletion_prize,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                self.deletion_prize,
+                Storage::dynamic_bag_deletion_prize_value()
+            );
+        } else {
+            assert_eq!(
+                old_deletion_prize,
+                Storage::dynamic_bag_deletion_prize_value()
+            );
+        }
+    }
+}
+
+pub struct UpdateDataObjectDeletionPrizeValueFixture {
+    origin: RawOrigin<u64>,
+    deletion_prize: u64,
+}
+
+impl UpdateDataObjectDeletionPrizeValueFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+            deletion_prize: 0,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_deletion_prize(self, deletion_prize: u64) -> Self {
+        Self {
+            deletion_prize,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_deletion_prize = Storage::data_object_deletion_prize_value();
+
+        let actual_result = Storage::update_data_object_deletion_prize(
+            self.origin.clone().into(),
+            self.deletion_prize,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                self.deletion_prize,
+                Storage::data_object_deletion_prize_value()
+            );
+        } else {
+            assert_eq!(
+                old_deletion_prize,
+                Storage::data_object_deletion_prize_value()
+            );
+        }
+    }
 }
 
 pub fn pick_distribution_buckets_for_dynamic_bag(

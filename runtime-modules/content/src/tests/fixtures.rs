@@ -30,10 +30,6 @@ impl CreateCuratorGroupFixture {
         }
     }
 
-    pub fn with_sender(self, sender: AccountId) -> Self {
-        Self { sender, ..self }
-    }
-
     pub fn with_is_active(self, is_active: bool) -> Self {
         Self { is_active, ..self }
     }
@@ -99,10 +95,21 @@ impl CreateChannelFixture {
                 meta: None,
                 collaborators: BTreeSet::new(),
                 moderators: BTreeSet::new(),
+                expected_dynamic_bag_deletion_prize: Default::default(),
+                expected_data_object_deletion_prize: DATA_OBJECT_DELETION_PRIZE,
             },
         }
     }
 
+    pub fn with_data_object_deletion_prize(self, expected_data_object_deletion_prize: u64) -> Self {
+        Self {
+            params: ChannelCreationParameters::<Test> {
+                expected_data_object_deletion_prize,
+                ..self.params.clone()
+            },
+            ..self
+        }
+    }
     pub fn with_sender(self, sender: AccountId) -> Self {
         Self { sender, ..self }
     }
@@ -193,15 +200,12 @@ impl CreateChannelFixture {
             if let Some(assets) = self.params.assets.as_ref() {
                 // balance accounting is correct
                 let bag_deletion_prize = BalanceOf::<Test>::zero();
-                let objects_deletion_prize =
-                    assets
-                        .object_creation_list
-                        .iter()
-                        .fold(BalanceOf::<Test>::zero(), |acc, _| {
-                            acc.saturating_add(
-                                <Test as storage::Trait>::DataObjectDeletionPrize::get(),
-                            )
-                        });
+                let objects_deletion_prize = assets
+                    .object_creation_list
+                    .iter()
+                    .fold(BalanceOf::<Test>::zero(), |acc, _| {
+                        acc.saturating_add(self.params.expected_data_object_deletion_prize)
+                    });
 
                 assert_eq!(
                     balance_pre.saturating_sub(balance_post),
@@ -239,8 +243,19 @@ impl CreateVideoFixture {
                 meta: None,
                 enable_comments: true,
                 auto_issue_nft: None,
+                expected_data_object_deletion_prize: DATA_OBJECT_DELETION_PRIZE,
             },
             channel_id: ChannelId::one(), // channel index starts at 1
+        }
+    }
+
+    pub fn with_data_object_deletion_prize(self, expected_data_object_deletion_prize: u64) -> Self {
+        Self {
+            params: VideoCreationParameters::<Test> {
+                expected_data_object_deletion_prize,
+                ..self.params.clone()
+            },
+            ..self
         }
     }
 
@@ -317,15 +332,12 @@ impl CreateVideoFixture {
             if let Some(assets) = self.params.assets.as_ref() {
                 // balance accounting is correct
                 let bag_deletion_prize = BalanceOf::<Test>::zero();
-                let objects_deletion_prize =
-                    assets
-                        .object_creation_list
-                        .iter()
-                        .fold(BalanceOf::<Test>::zero(), |acc, _| {
-                            acc.saturating_add(
-                                <Test as storage::Trait>::DataObjectDeletionPrize::get(),
-                            )
-                        });
+                let objects_deletion_prize = assets
+                    .object_creation_list
+                    .iter()
+                    .fold(BalanceOf::<Test>::zero(), |acc, _| {
+                        acc.saturating_add(self.params.expected_data_object_deletion_prize)
+                    });
 
                 assert_eq!(
                     balance_pre.saturating_sub(balance_post),
@@ -370,7 +382,18 @@ impl UpdateChannelFixture {
                 new_meta: None,
                 assets_to_remove: BTreeSet::new(),
                 collaborators: None,
+                expected_data_object_deletion_prize: DATA_OBJECT_DELETION_PRIZE,
             },
+        }
+    }
+
+    pub fn with_data_object_deletion_prize(self, expected_data_object_deletion_prize: u64) -> Self {
+        Self {
+            params: ChannelUpdateParameters::<Test> {
+                expected_data_object_deletion_prize,
+                ..self.params.clone()
+            },
+            ..self
         }
     }
 
@@ -431,9 +454,7 @@ impl UpdateChannelFixture {
                         .object_creation_list
                         .iter()
                         .fold(BalanceOf::<Test>::zero(), |acc, _| {
-                            acc.saturating_add(
-                                <Test as storage::Trait>::DataObjectDeletionPrize::get(),
-                            )
+                            acc.saturating_add(self.params.expected_data_object_deletion_prize)
                         })
                 });
 
@@ -549,16 +570,6 @@ impl UpdateChannelPrivilegeLevelFixture {
         Self { channel_id, ..self }
     }
 
-    pub fn with_privilege_level(
-        self,
-        privilege_level: <Test as Trait>::ChannelPrivilegeLevel,
-    ) -> Self {
-        Self {
-            privilege_level,
-            ..self
-        }
-    }
-
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
         let channel_pre = Content::channel_by_id(&self.channel_id);
@@ -606,7 +617,18 @@ impl UpdateVideoFixture {
                 enable_comments: None,
                 new_meta: None,
                 auto_issue_nft: Default::default(),
+                expected_data_object_deletion_prize: Default::default(),
             },
+        }
+    }
+
+    pub fn with_data_object_deletion_prize(self, expected_data_object_deletion_prize: u64) -> Self {
+        Self {
+            params: VideoUpdateParameters::<Test> {
+                expected_data_object_deletion_prize,
+                ..self.params.clone()
+            },
+            ..self
         }
     }
 
@@ -658,6 +680,8 @@ impl UpdateVideoFixture {
         let bag_id_for_channel = Content::bag_id_for_channel(&video_pre.in_channel);
         let beg_obj_id = storage::NextDataObjectId::<Test>::get();
 
+        let deletion_prize = DATA_OBJECT_DELETION_PRIZE;
+
         let deletion_prize_deposited =
             self.params
                 .assets_to_upload
@@ -667,9 +691,7 @@ impl UpdateVideoFixture {
                         .object_creation_list
                         .iter()
                         .fold(BalanceOf::<Test>::zero(), |acc, _| {
-                            acc.saturating_add(
-                                <Test as storage::Trait>::DataObjectDeletionPrize::get(),
-                            )
+                            acc.saturating_add(deletion_prize)
                         })
                 });
 
@@ -1014,14 +1036,6 @@ impl DeleteChannelAsModeratorFixture {
             ..self
         }
     }
-
-    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
-        Self { channel_id, ..self }
-    }
-
-    pub fn with_rationale(self, rationale: Vec<u8>) -> Self {
-        Self { rationale, ..self }
-    }
 }
 
 impl ChannelDeletion for DeleteChannelAsModeratorFixture {
@@ -1161,10 +1175,6 @@ impl SetChannelVisibilityAsModeratorFixture {
         Self { is_hidden, ..self }
     }
 
-    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
-        Self { channel_id, ..self }
-    }
-
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Content::set_channel_visibility_as_moderator(
             Origin::signed(self.sender.clone()),
@@ -1219,10 +1229,6 @@ impl SetVideoVisibilityAsModeratorFixture {
 
     pub fn with_is_hidden(self, is_hidden: bool) -> Self {
         Self { is_hidden, ..self }
-    }
-
-    pub fn with_video_id(self, video_id: ChannelId) -> Self {
-        Self { video_id, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -1810,14 +1816,6 @@ impl DeleteVideoAsModeratorFixture {
             ..self
         }
     }
-
-    pub fn with_video_id(self, video_id: VideoId) -> Self {
-        Self { video_id, ..self }
-    }
-
-    pub fn with_rationale(self, rationale: Vec<u8>) -> Self {
-        Self { rationale, ..self }
-    }
 }
 
 impl VideoDeletion for DeleteVideoAsModeratorFixture {
@@ -2364,10 +2362,20 @@ pub fn create_initial_storage_buckets_helper() {
     );
 }
 
+pub fn set_data_object_deletion_prize(deletion_prize: u64) {
+    assert_eq!(
+        Storage::<Test>::update_data_object_deletion_prize(
+            Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+            deletion_prize
+        ),
+        Ok(())
+    );
+}
+
 pub fn create_default_member_owned_channel_with_video_with_nft() -> (ChannelId, VideoId) {
     let channel_id = Content::next_channel_id();
     let video_id = Content::next_video_id();
-    create_default_member_owned_channel_with_video();
+    create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
     // Issue nft
     assert_ok!(Content::issue_nft(
         Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
@@ -2383,10 +2391,11 @@ pub fn create_default_member_owned_channel_with_video_with_nft() -> (ChannelId, 
     (channel_id, video_id)
 }
 
-pub fn create_default_member_owned_channel() {
+pub fn create_default_member_owned_channel(deletion_prize: u64) {
     CreateChannelFixture::default()
         .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
         .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+        .with_data_object_deletion_prize(deletion_prize)
         .with_assets(StorageAssets::<Test> {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
             object_creation_list: create_data_objects_helper(),
@@ -2396,11 +2405,12 @@ pub fn create_default_member_owned_channel() {
         .call_and_assert(Ok(()));
 }
 
-pub fn create_default_curator_owned_channel() {
+pub fn create_default_curator_owned_channel(deletion_prize: u64) {
     let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
     CreateChannelFixture::default()
         .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
         .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+        .with_data_object_deletion_prize(deletion_prize)
         .with_assets(StorageAssets::<Test> {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
             object_creation_list: create_data_objects_helper(),
@@ -2410,13 +2420,14 @@ pub fn create_default_curator_owned_channel() {
         .call_and_assert(Ok(()));
 }
 
-pub fn create_default_member_owned_channel_with_videos(number_of_videos: u8) {
-    create_default_member_owned_channel();
+pub fn create_default_member_owned_channel_with_videos(deletion_prize: u64, number_of_videos: u8) {
+    create_default_member_owned_channel(deletion_prize);
 
     for _ in 0..number_of_videos {
         CreateVideoFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_data_object_deletion_prize(deletion_prize)
             .with_assets(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_objects_helper(),
@@ -2426,12 +2437,12 @@ pub fn create_default_member_owned_channel_with_videos(number_of_videos: u8) {
     }
 }
 
-pub fn create_default_member_owned_channel_with_video() {
-    create_default_member_owned_channel_with_videos(1)
+pub fn create_default_member_owned_channel_with_video(deletion_prize: u64) {
+    create_default_member_owned_channel_with_videos(deletion_prize, 1)
 }
 
-pub fn create_default_curator_owned_channel_with_video() {
-    create_default_curator_owned_channel();
+pub fn create_default_curator_owned_channel_with_video(deletion_prize: u64) {
+    create_default_curator_owned_channel(deletion_prize);
     let curator_group_id = NextCuratorGroupId::<Test>::get() - 1;
 
     CreateVideoFixture::default()
@@ -2445,13 +2456,13 @@ pub fn create_default_curator_owned_channel_with_video() {
         .call_and_assert(Ok(()));
 }
 
-pub fn create_default_member_owned_channel_with_video_and_post() {
-    create_default_member_owned_channel_with_video();
+pub fn create_default_member_owned_channel_with_video_and_post(deletion_prize: u64) {
+    create_default_member_owned_channel_with_video(deletion_prize);
     CreatePostFixture::default().call_and_assert(Ok(()));
 }
 
-pub fn create_default_curator_owned_channel_with_video_and_post() {
-    create_default_curator_owned_channel_with_video();
+pub fn create_default_curator_owned_channel_with_video_and_post(deletion_prize: u64) {
+    create_default_curator_owned_channel_with_video(deletion_prize);
     let default_curator_group_id = Content::next_curator_group_id() - 1;
     CreatePostFixture::default()
         .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
@@ -2462,8 +2473,8 @@ pub fn create_default_curator_owned_channel_with_video_and_post() {
         .call_and_assert(Ok(()));
 }
 
-pub fn create_default_member_owned_channel_with_video_and_comment() {
-    create_default_member_owned_channel_with_video_and_post();
+pub fn create_default_member_owned_channel_with_video_and_comment(deletion_prize: u64) {
+    create_default_member_owned_channel_with_video_and_post(deletion_prize);
     CreatePostFixture::default()
         .with_params(VideoPostCreationParameters::<Test> {
             post_type: VideoPostType::<Test>::Comment(VideoPostId::one()),
@@ -2472,8 +2483,8 @@ pub fn create_default_member_owned_channel_with_video_and_comment() {
         .call_and_assert(Ok(()));
 }
 
-pub fn create_default_curator_owned_channel_with_video_and_comment() {
-    create_default_curator_owned_channel_with_video_and_post();
+pub fn create_default_curator_owned_channel_with_video_and_comment(deletion_prize: u64) {
+    create_default_curator_owned_channel_with_video_and_post(deletion_prize);
     let default_curator_group_id = Content::next_curator_group_id() - 1;
     CreatePostFixture::default()
         .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)

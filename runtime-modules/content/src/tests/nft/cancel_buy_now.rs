@@ -17,7 +17,7 @@ fn cancel_buy_now() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -101,7 +101,7 @@ fn cancel_buy_now_not_issued() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Make an attempt to cancel buy now for nft which is not issued yet
         let cancel_buy_now_result = Content::cancel_buy_now(
@@ -125,7 +125,7 @@ fn cancel_buy_now_auth_failed() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -165,7 +165,7 @@ fn cancel_buy_now_not_authorized() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -205,7 +205,7 @@ fn cancel_buy_now_not_in_auction_state() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Issue nft
         assert_ok!(Content::issue_nft(

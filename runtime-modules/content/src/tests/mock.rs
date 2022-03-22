@@ -57,7 +57,7 @@ pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ID: u64 = 214;
 pub const UNAUTHORIZED_MODERATOR_ID: u64 = 215;
 pub const SECOND_MEMBER_ID: u64 = 216;
 
-pub const DATA_OBJECT_DELETION_PRIZE: u64 = 5;
+pub const DATA_OBJECT_DELETION_PRIZE: u64 = 0;
 pub const DEFAULT_OBJECT_SIZE: u64 = 5;
 pub const DATA_OBJECTS_NUMBER: u64 = 10;
 
@@ -65,7 +65,6 @@ pub const OUTSTANDING_VIDEOS: u64 = 5;
 pub const OUTSTANDING_CHANNELS: u64 = 3;
 pub const TOTAL_OBJECTS_NUMBER: u64 =
     DATA_OBJECTS_NUMBER * (OUTSTANDING_VIDEOS + OUTSTANDING_CHANNELS);
-pub const TOTAL_BALANCE_REQUIRED: u64 = TOTAL_OBJECTS_NUMBER * DATA_OBJECT_DELETION_PRIZE;
 
 pub const STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT: u64 = TOTAL_OBJECTS_NUMBER;
 pub const STORAGE_BUCKET_OBJECTS_SIZE_LIMIT: u64 =
@@ -73,7 +72,7 @@ pub const STORAGE_BUCKET_OBJECTS_SIZE_LIMIT: u64 =
 pub const STORAGE_BUCKET_ACCEPTING_BAGS: bool = true;
 pub const VOUCHER_OBJECTS_NUMBER_LIMIT: u64 = 2 * STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT;
 pub const VOUCHER_OBJECTS_SIZE_LIMIT: u64 = VOUCHER_OBJECTS_NUMBER_LIMIT * DEFAULT_OBJECT_SIZE;
-pub const INITIAL_BALANCE: u64 = TOTAL_BALANCE_REQUIRED;
+pub const INITIAL_BALANCE: u64 = 1000;
 
 pub const MEMBERS_COUNT: u64 = 10;
 pub const PAYMENTS_NUMBER: u64 = 10;
@@ -267,7 +266,6 @@ impl ContentActorAuthenticator for Test {
 parameter_types! {
     pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
     pub const MaxDistributionBucketFamilyNumber: u64 = 4;
-    pub const DataObjectDeletionPrize: u64 = DATA_OBJECT_DELETION_PRIZE;
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
     pub const BlacklistSizeLimit: u64 = 1;
     pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 1;
@@ -299,7 +297,6 @@ impl storage::Trait for Test {
     type DistributionBucketFamilyId = u64;
     type DistributionBucketOperatorId = u64;
     type ChannelId = u64;
-    type DataObjectDeletionPrize = DataObjectDeletionPrize;
     type BlacklistSizeLimit = BlacklistSizeLimit;
     type ModuleId = StorageModuleId;
     type StorageBucketsPerBagValueConstraint = StorageBucketsPerBagValueConstraint;

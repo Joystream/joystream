@@ -41,6 +41,8 @@
 //! updates whether new bags are being accepted for storage.
 //! - [set_storage_bucket_voucher_limits](./struct.Module.html#method.set_storage_bucket_voucher_limits) -
 //! sets storage bucket voucher limits.
+//! - [update_dynamic_bag_deletion_prize](./struct.Module.html#method.update_dynamic_bag_deletion_prize) -
+//! updates dynamic bag deletion prize value
 //!
 //!
 //! #### Storage provider extrinsics
@@ -254,10 +256,7 @@ pub trait DataObjectStorage<T: Trait> {
     /// - bag registered for storage buckets with enough resource to hold bag size/num
     /// - bag registered for distribution buckets
     /// - relevant amount transferred from caller account to treasury account
-    fn create_dynamic_bag(
-        params: DynBagCreationParameters<T>,
-        deletion_prize: BalanceOf<T>,
-    ) -> DispatchResult;
+    fn create_dynamic_bag(params: DynBagCreationParameters<T>) -> DispatchResult;
 
     /// Checks if a bag does exists and returns it. Static Always exists
     fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError>;
@@ -367,9 +366,6 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::MembershipTypes
         + Copy
         + MaybeSerialize
         + PartialEq;
-
-    /// Defines a prize for a data object deletion.
-    type DataObjectDeletionPrize: Get<BalanceOf<Self>>;
 
     /// Defines maximum size of the "hash blacklist" collection.
     type BlacklistSizeLimit: Get<u64>;
@@ -811,6 +807,12 @@ pub struct UploadParametersRecord<BagId, AccountId, Balance> {
 
     /// Expected data size fee value for this extrinsic call.
     pub expected_data_size_fee: Balance,
+
+    /// Commitment for the dynamic bag deletion prize for the storage pallet.
+    pub expected_dynamic_bag_deletion_prize: Balance,
+
+    /// Commitment for the data object deletion prize for the storage pallet.
+    pub expected_data_object_deletion_prize: Balance,
 }
 
 /// Alias for the DynamicBagDeletionPrizeRecord
@@ -1183,6 +1185,12 @@ decl_storage! {
         /// "Max objects number for a storage  bucket voucher" number limit.
         pub VoucherMaxObjectsNumberLimit get (fn voucher_max_objects_number_limit): u64;
 
+        /// The deletion prize for the dynamic bags (helps preventing the state bloat).
+        pub DynamicBagDeletionPrizeValue get (fn dynamic_bag_deletion_prize_value): BalanceOf<T>;
+
+        /// The deletion prize for the data objects (helps preventing the state bloat).
+        pub DataObjectDeletionPrizeValue get (fn data_object_deletion_prize_value): BalanceOf<T>;
+
         /// DynamicBagCreationPolicy by bag type storage map.
         pub DynamicBagCreationPolicies get (fn dynamic_bag_creation_policy): map
             hasher(blake2_128_concat) DynamicBagType =>
@@ -1503,6 +1511,16 @@ decl_event! {
             Vec<u8>
         ),
 
+        /// Emits on updating the dynamic bag deletion prize.
+        /// Params
+        /// - deletion prize value
+        DynamicBagDeletionPrizeValueUpdated(Balance),
+
+        /// Emits on updating the data object deletion prize.
+        /// Params
+        /// - deletion prize value
+        DataObjectDeletionPrizeValueUpdated(Balance),
+
         /// Emits on storage assets being uploaded and deleted at the same time
         /// Params
         /// - UploadParameters
@@ -1649,6 +1667,12 @@ decl_error! {
         /// Invalid extrinsic call: data size fee changed.
         DataSizeFeeChanged,
 
+        /// Invalid extrinsic call: data object deletion prize changed.
+        DataObjectDeletionPrizeChanged,
+
+        /// Invalid extrinsic call: dynamic bag deletion prize changed.
+        DynamicBagDeletionPrizeChanged,
+
         /// Cannot delete non empty dynamic bag.
         CannotDeleteNonEmptyDynamicBag,
 
@@ -1719,9 +1743,6 @@ decl_module! {
 
         /// Predefined errors.
         type Error = Error<T>;
-
-        /// Exports const - a prize for a data object deletion.
-        const DataObjectDeletionPrize: BalanceOf<T> = T::DataObjectDeletionPrize::get();
 
         /// Exports const - maximum size of the "hash blacklist" collection.
         const BlacklistSizeLimit: u64 = T::BlacklistSizeLimit::get();
@@ -1851,6 +1872,44 @@ decl_module! {
 
             Self::deposit_event(
                 RawEvent::StorageBucketsVoucherMaxLimitsUpdated(new_objects_size, new_objects_number)
+            );
+        }
+
+        /// Updates dynamic bag deletion prize value.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_dynamic_bag_deletion_prize(
+            origin,
+            deletion_prize: BalanceOf<T>,
+        ) {
+            T::StorageWorkingGroup::ensure_leader_origin(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            DynamicBagDeletionPrizeValue::<T>::put(deletion_prize);
+
+            Self::deposit_event(
+                RawEvent::DynamicBagDeletionPrizeValueUpdated(deletion_prize)
+            );
+        }
+
+        /// Updates data object deletion prize value.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_data_object_deletion_prize(
+            origin,
+            deletion_prize: BalanceOf<T>,
+        ) {
+            T::StorageWorkingGroup::ensure_leader_origin(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            DataObjectDeletionPrizeValue::<T>::put(deletion_prize);
+
+            Self::deposit_event(
+                RawEvent::DataObjectDeletionPrizeValueUpdated(deletion_prize)
             );
         }
 
@@ -2749,6 +2808,10 @@ decl_module! {
         pub fn sudo_upload_data_objects(origin, params: UploadParameters<T>) {
             ensure_root(origin)?;
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             Self::upload_data_objects(params)?;
         }
 
@@ -2757,11 +2820,10 @@ decl_module! {
         pub fn sudo_create_dynamic_bag(
             origin,
             params: DynBagCreationParameters<T>,
-            deletion_prize: BalanceOf<T>,
         ) {
             ensure_root(origin)?;
 
-            Self::create_dynamic_bag(params, deletion_prize)?;
+            Self::create_dynamic_bag(params)?;
         }
 
         /// Create a dynamic bag. Development mode.
@@ -2823,6 +2885,12 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             Error::<T>::DataSizeFeeChanged,
         );
 
+        // ensure data object deletion prize
+        ensure!(
+            params.expected_data_object_deletion_prize == Self::data_object_deletion_prize_value(),
+            Error::<T>::DataObjectDeletionPrizeChanged,
+        );
+
         let start = NextDataObjectId::<T>::get();
         Self::try_mutating_storage_state(
             params.deletion_prize_source_account_id.clone(),
@@ -2836,10 +2904,11 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         )?;
         let end = NextDataObjectId::<T>::get();
 
+        let deletion_prize = Self::data_object_deletion_prize_value();
         Self::deposit_event(RawEvent::DataObjectsUploaded(
             (start..end).collect(),
             params,
-            T::DataObjectDeletionPrize::get(),
+            deletion_prize,
         ));
 
         Ok(())
@@ -2939,6 +3008,13 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
                 upload_parameters.expected_data_size_fee == DataObjectPerMegabyteFee::<T>::get(),
                 Error::<T>::DataSizeFeeChanged,
             );
+
+            // ensure data object deletion prize
+            ensure!(
+                upload_parameters.expected_data_object_deletion_prize
+                    == Self::data_object_deletion_prize_value(),
+                Error::<T>::DataObjectDeletionPrizeChanged,
+            );
         }
         Self::try_mutating_storage_state(
             upload_parameters.deletion_prize_source_account_id.clone(),
@@ -2979,11 +3055,21 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         Ok(())
     }
 
-    fn create_dynamic_bag(
-        params: DynBagCreationParameters<T>,
-        deletion_prize: BalanceOf<T>,
-    ) -> DispatchResult {
+    fn create_dynamic_bag(params: DynBagCreationParameters<T>) -> DispatchResult {
+        let deletion_prize = Self::dynamic_bag_deletion_prize_value();
         let bag_id: BagId<T> = params.bag_id.clone().into();
+
+        // ensure dynamic bag deletion prize
+        ensure!(
+            params.expected_dynamic_bag_deletion_prize == Self::dynamic_bag_deletion_prize_value(),
+            Error::<T>::DynamicBagDeletionPrizeChanged,
+        );
+
+        // ensure data object deletion prize
+        ensure!(
+            params.expected_data_object_deletion_prize == Self::data_object_deletion_prize_value(),
+            Error::<T>::DataObjectDeletionPrizeChanged,
+        );
 
         // ensure specified data fee == storage data fee
         ensure!(
@@ -3858,7 +3944,7 @@ impl<T: Trait> Module<T> {
         num_obj_to_create: usize,
         num_obj_to_delete: usize,
     ) -> NetDeletionPrize<T> {
-        let amnt = T::DataObjectDeletionPrize::get();
+        let amnt = Self::data_object_deletion_prize_value();
         let num_obj_to_create_bal: BalanceOf<T> = num_obj_to_create.saturated_into();
         let num_obj_to_delete_bal: BalanceOf<T> = num_obj_to_delete.saturated_into();
         init_value
@@ -4031,7 +4117,7 @@ impl<T: Trait> Module<T> {
                 Self::upload_data_objects_checks(param).and({
                     Ok(DataObject {
                         accepted: false,
-                        deletion_prize: T::DataObjectDeletionPrize::get(),
+                        deletion_prize: Self::data_object_deletion_prize_value(),
                         size: param.size,
                         ipfs_content_id: param.ipfs_content_id.clone(),
                     })

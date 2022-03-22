@@ -17,7 +17,7 @@ fn issue_nft() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Video does not have an nft
         assert_eq!(None, Content::video_by_id(video_id).nft_status);
@@ -89,7 +89,7 @@ fn issue_nft_already_issued() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -122,7 +122,7 @@ fn issue_nft_auth_failed() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Make an attempt to issue nft with wrong credentials
         let issue_nft_result = Content::issue_nft(
@@ -147,7 +147,7 @@ fn issue_nft_actor_not_authorized() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Make an attempt to issue nft if actor is not authorized
         let issue_nft_result = Content::issue_nft(
@@ -172,7 +172,7 @@ fn issue_nft_royalty_bounds_violated() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Make an attempt to issue nft with wrong credentials
         let issue_nft_result = Content::issue_nft(
@@ -214,7 +214,7 @@ fn issue_nft_fails_with_invalid_open_auction_parameters() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::min_starting_price() - 1,
