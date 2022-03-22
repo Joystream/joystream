@@ -28,7 +28,7 @@ on:
         required: true
         default: 'false'
       runtimeProfile:
-        description: 'STAGING | TESTING - leave balnk for production'
+        description: 'STAGING | PLAYGROUND | TESTING - leave balnk for production'
         required: false
       # TODO: customDomain instead of ip_address.nip.io
       # customDomain:

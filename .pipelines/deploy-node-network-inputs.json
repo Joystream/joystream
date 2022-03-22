@@ -60,7 +60,7 @@
     "value": "password"
   },
   "runtimeProfile": {
-    "description": "STAGING | TESTING - leave empty for production",
+    "description": "STAGING | PLAYGROUND| TESTING - leave empty for production",
     "value": ""
   },
   "skipChainSetup": {
