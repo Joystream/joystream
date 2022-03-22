@@ -198,10 +198,6 @@ typegen:
     - content.BuyNowCanceled
     # Utility
     - joystreamUtility.UpdatedWorkingGroupBudget
-
-  calls:
-    # Proposals discussion
-    - proposalsDiscussion.addPost
   outDir: ./mappings/generated/types
   customTypes:
     lib: '@joystream/types/augment/all/types'
@@ -662,8 +658,6 @@ mappings:
     - event: proposalsEngine.ProposalCancelled
       handler: proposalsEngine_ProposalCancelled
     # Proposals discussion
-    - event: proposalsDiscussion.ThreadCreated
-      handler: proposalsDiscussion_ThreadCreated
     - event: proposalsDiscussion.PostCreated
       handler: proposalsDiscussion_PostCreated
     - event: proposalsDiscussion.PostUpdated
