@@ -76,6 +76,7 @@
       args:
         chdir: '{{ remote_code_path }}'
       environment:
+        RUNTIME_PROFILE: '{{ runtime_profile }}'
         PERSIST: 'true'
         COLOSSUS_1_URL: 'https://{{ inventory_hostname }}.nip.io/colossus-1/'
         DISTRIBUTOR_1_URL: 'https://{{ inventory_hostname }}.nip.io/distributor-1/'
