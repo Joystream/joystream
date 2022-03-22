@@ -57,7 +57,7 @@ jobs:
           context: .
           file: joystream-node.Dockerfile
           platforms: linux/amd64
-          build_args: CARGO_FEATURES=${{ matrix.cargo_features }}
+          build-args: CARGO_FEATURES=${{ matrix.cargo_features }}
           push: true
           tags: ${{ env.REPOSITORY }}:${{ steps.compute_shasum.outputs.shasum }}
         if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
