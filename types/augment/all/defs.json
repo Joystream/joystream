@@ -844,5 +844,6 @@
         "init_transactional_status": "InitTransactionalStatus"
     },
     "NftMetadata": "Vec<u8>",
-    "AccountInfo": "AccountInfoWithRefCount"
+    "AccountInfo": "AccountInfoWithRefCount",
+    "ValidatorPrefs": "ValidatorPrefsWithCommission"
 }
