@@ -208,6 +208,8 @@ export class UploadParameters
     objectCreationList: Vec.with(DataObjectCreationParameters),
     deletionPrizeSourceAccountId: AccountId,
     expectedDataSizeFee: BalanceOf,
+    expectedDynamicBagDeletionPrize: BalanceOf,
+    expectedDataObjectDeletionPrize: BalanceOf,
   })
   implements IUploadParameters {}
 
