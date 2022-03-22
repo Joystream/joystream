@@ -21,7 +21,7 @@ export class CreateChannelsAsMemberFixture extends BaseFixture {
   public async execute(): Promise<void> {
     const account = await this.api.getMemberControllerAccount(this.memberId)
 
-    const channels = []
+    const channels: any = []
     for (let i = 0; i < this.numChannels; i++) {
       channels.push(this.api.createMockChannel(this.memberId, account))
     }

@@ -39,6 +39,8 @@ import { VideoId, VideoCategoryId, AuctionParams } from '@joystream/types/conten
 
 import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 
+import { PERBILL_ONE_PERCENT } from '../../../query-node/mappings/src/content/utils'
+
 export class ApiFactory {
   private readonly api: ApiPromise
   private readonly keyring: Keyring
@@ -820,11 +822,9 @@ export class Api {
     royaltyPercentage?: number,
     toMemberId?: number | null
   ): Promise<ISubmittableResult> {
-    const perbillOnePercent = 10 * 1000000
-
     const royalty = this.api.createType(
       'Option<Royalty>',
-      royaltyPercentage ? royaltyPercentage * perbillOnePercent : null
+      royaltyPercentage ? royaltyPercentage * PERBILL_ONE_PERCENT : null
     )
     // TODO: find proper way to encode metadata (should they be raw string, hex string or some object?)
     // const encodedMetadata = this.api.createType('Metadata', metadata)

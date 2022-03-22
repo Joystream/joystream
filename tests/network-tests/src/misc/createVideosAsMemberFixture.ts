@@ -17,7 +17,7 @@ export class CreateVideosAsMemberFixture extends BaseFixture {
   public async execute(): Promise<void> {
     const account = await this.api.getMemberControllerAccount(this.memberId)
 
-    const videos = []
+    const videos: any = []
     for (let i = 0; i < this.numVideos; i++) {
       videos.push(this.api.createMockVideo(this.memberId, this.channelId, account))
     }

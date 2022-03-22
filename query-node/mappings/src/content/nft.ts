@@ -44,6 +44,7 @@ import * as joystreamTypes from '@joystream/types/augment/all/types'
 import { Content } from '../../generated/types'
 import { FindConditions } from 'typeorm'
 import BN from 'bn.js'
+import { PERBILL_ONE_PERCENT } from './utils'
 
 // definition of generic type for Hydra DatabaseManager's methods
 type EntityType<T> = {
@@ -345,7 +346,7 @@ export async function createNft(
 
   // calculate some values
   const creatorRoyalty = nftIssuanceParameters.royalty.isSome
-    ? nftIssuanceParameters.royalty.unwrap().div(new BN(10000000)).toNumber()
+    ? nftIssuanceParameters.royalty.unwrap().div(new BN(PERBILL_ONE_PERCENT)).toNumber()
     : undefined
   const decodedMetadata = nftIssuanceParameters.nft_metadata.toString()
 
