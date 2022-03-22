@@ -19,7 +19,7 @@ fn claim_won_english_auction() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -107,7 +107,7 @@ fn claim_won_english_auction_cannot_be_completed() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -173,7 +173,7 @@ fn claim_won_english_auction_auth_failed() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -265,7 +265,7 @@ fn claim_won_english_auction_nft_is_not_issued() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Make an attempt to claim won english auction for nft which is not issued yet
         let claim_won_english_auction_result = Content::claim_won_english_auction(
@@ -292,7 +292,7 @@ fn claim_won_english_auction_not_in_auction_state() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -327,7 +327,7 @@ fn claim_won_english_auction_is_not_english_auction_type() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -392,7 +392,7 @@ fn claim_won_english_auction_last_bid_does_not_exist() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         // Issue nft
         assert_ok!(Content::issue_nft(

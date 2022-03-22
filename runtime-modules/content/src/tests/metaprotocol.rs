@@ -12,7 +12,7 @@ fn successful_collaborator_remark() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let channel_id = Content::next_channel_id() - 1;
         let msg = b"test".to_vec();
@@ -33,7 +33,7 @@ fn unsuccessful_collaborator_remark_with_invalid_channel_id() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let invalid_channel_id = Content::next_channel_id();
         let msg = b"test".to_vec();
@@ -57,7 +57,7 @@ fn unsuccessful_collaborator_remark_with_invalid_account_id() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let channel_id = Content::next_channel_id() - 1;
         let msg = b"test".to_vec();
@@ -81,7 +81,7 @@ fn unsuccessful_collaborator_remark_with_member_id() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let channel_id = Content::next_channel_id() - 1;
         let msg = b"test".to_vec();
@@ -105,7 +105,7 @@ fn unsuccessful_collaborator_remark_by_non_collaborator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let channel_id = Content::next_channel_id() - 1;
         let msg = b"test".to_vec();
@@ -129,7 +129,7 @@ fn successful_moderator_remark() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let channel_id = Content::next_channel_id() - 1;
         let msg = b"test".to_vec();
@@ -150,7 +150,7 @@ fn unsuccessful_moderator_remark_with_invalid_channel_id() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let invalid_channel_id = Content::next_channel_id();
         let msg = b"test".to_vec();
@@ -174,7 +174,7 @@ fn unsuccessful_moderator_remark_with_invalid_member_id() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let channel_id = Content::next_channel_id() - 1;
         let msg = b"test".to_vec();
@@ -198,7 +198,7 @@ fn unsuccessful_moderator_remark_with_invalid_account_id() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let channel_id = Content::next_channel_id() - 1;
         let msg = b"test".to_vec();
@@ -222,7 +222,7 @@ fn unsuccessful_moderator_remark_by_non_moderator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let channel_id = Content::next_channel_id() - 1;
         let msg = b"test".to_vec();
@@ -246,7 +246,7 @@ fn unsuccessful_owner_remark_with_invalid_channel_id() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let invalid_channel_id = Content::next_channel_id();
         let msg = b"test".to_vec();
@@ -270,7 +270,7 @@ fn unsuccessful_owner_remark_with_invalid_account_id() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let channel_id = Content::next_channel_id() - 1;
         let msg = b"test".to_vec();
@@ -294,7 +294,7 @@ fn unsuccessful_owner_remark_by_non_owner() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let channel_id = Content::next_channel_id() - 1;
         let msg = b"test".to_vec();
@@ -318,7 +318,7 @@ fn unsuccessful_owner_remark_with_invalid_member_id() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let channel_id = Content::next_channel_id() - 1;
         let msg = b"test".to_vec();
@@ -342,7 +342,7 @@ fn unsuccessful_owner_remark_with_invalid_curator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
 
         let channel_id = Content::next_channel_id() - 1;
         let msg = b"test".to_vec();
@@ -367,7 +367,7 @@ fn unsuccessful_nft_owner_remark_with_nft_not_issued() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
         let video_id = Content::next_video_id() - 1;
         let msg = b"test".to_vec();
@@ -389,7 +389,7 @@ fn issue_and_sell_nft() {
 
     create_initial_storage_buckets_helper();
     increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-    create_default_member_owned_channel_with_video();
+    create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
 
     // Issue nft
     assert_ok!(Content::issue_nft(

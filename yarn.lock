@@ -2035,7 +2035,7 @@
     yaml "^1.10.0"
     yaml-validator "^3.0.0"
 
-"@joystream/warthog@^2.41.4":
+"@joystream/warthog@^2.41.4", "@joystream/warthog@~2.41.2":
   version "2.41.4"
   resolved "https://registry.yarnpkg.com/@joystream/warthog/-/warthog-2.41.4.tgz#4b0a396d9d6eee9e469a36b1ca1c86c3890d56d6"
   integrity sha512-yfGgrjbg3alGR+7g1NcSTdlpYtgH0kDFNDSKFWiYFEPNsjwwCBgWnsVQ+ED1PWAa2RhUhwp9J4dsI5U21P543A==
