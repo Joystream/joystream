@@ -389,6 +389,7 @@ async function createAuction(
     'Non-existing members whitelisted'
   )
 
+  const startsAtBlock = auctionParams.starts_at.isSome ? auctionParams.starts_at.unwrap().toNumber() : blockNumber
   // prepare auction record
   const auction = new Auction({
     nft: nft,
@@ -397,9 +398,9 @@ async function createAuction(
     buyNowPrice: new BN(auctionParams.buy_now_price.toString()),
     auctionType: createAuctionType(auctionParams.auction_type),
     minimalBidStep: auctionParams.minimal_bid_step,
-    startsAtBlock: auctionParams.starts_at.isSome ? auctionParams.starts_at.unwrap().toNumber() : blockNumber,
+    startsAtBlock,
     plannedEndAtBlock: auctionParams.auction_type.isEnglish
-      ? blockNumber + auctionParams.auction_type.asEnglish.auction_duration.toNumber()
+      ? startsAtBlock + auctionParams.auction_type.asEnglish.auction_duration.toNumber()
       : undefined,
     isCanceled: false,
     isCompleted: false,
@@ -553,6 +554,20 @@ export async function contentNft_AuctionBidMade({ event, store }: EventContext &
   // create record for winning bid
   const { member, video } = await createBid(event, store, memberId.toNumber(), videoId.toNumber(), bidAmount.toString())
 
+  // Ensure if planned auction period would be extended
+  if (extendsAuction.valueOf() === true) {
+    const { auction } = await getCurrentAuctionFromVideo(
+      store,
+      videoId.toString(),
+      'Non-existing video got new bid',
+      'Non-existing auction got new bid'
+    )
+
+    const englishAuctionExtensionPeriod = (auction.auctionType as AuctionTypeEnglish).extensionPeriod
+    auction.plannedEndAtBlock = (auction.plannedEndAtBlock || 0) + (englishAuctionExtensionPeriod || 0)
+    store.save<Auction>(auction)
+  }
+
   // common event processing - second
 
   const announcingPeriodStartedEvent = new AuctionBidMadeEvent({
@@ -561,7 +576,7 @@ export async function contentNft_AuctionBidMade({ event, store }: EventContext &
     member,
     video,
     bidAmount,
-    extendsAuction: extendsAuction.isTrue,
+    extendsAuction: extendsAuction.valueOf(),
   })
 
   await store.save<AuctionBidMadeEvent>(announcingPeriodStartedEvent)
