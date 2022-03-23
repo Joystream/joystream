@@ -5,6 +5,10 @@ use frame_support::{
 };
 use sp_arithmetic::traits::{Saturating, Zero};
 
+// TODO: find a suitable symbol representation
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
+pub struct Symbol {}
+
 #[derive(Encode, Decode, Clone, PartialEq, Eq)]
 pub struct AccountData<Balance> {
     /// Non-reserved part of the balance. There may still be restrictions
@@ -31,6 +35,9 @@ pub struct TokenData<Balance, AccountId> {
 
     /// Account for the token owner
     owner_account: AccountId,
+
+    /// Token Symbol
+    symbol: Symbol,
 }
 
 /// The possible issuance variants: This is a stub
@@ -61,6 +68,9 @@ pub struct TokenIssuanceParameters<Balance, AccountId> {
 
     /// Initial existential deposit
     existential_deposit: Balance,
+
+    /// Token Symbol
+    symbol: Symbol,
 }
 
 /// Default trait for Issuance state
@@ -180,6 +190,7 @@ impl<Balance: Zero + Copy + PartialOrd, AccountId> TokenIssuanceParameters<Balan
     pub fn try_build<T: crate::Trait>(
         self,
     ) -> Result<TokenData<Balance, AccountId>, DispatchError> {
+        // validation
         ensure!(
             self.initial_issuance >= self.existential_deposit,
             crate::Error::<T>::ExistentialDepositExceedsInitialIssuance,
@@ -189,6 +200,7 @@ impl<Balance: Zero + Copy + PartialOrd, AccountId> TokenIssuanceParameters<Balan
             owner_account: self.owner_account,
             issuance_state: self.initial_state,
             existential_deposit: self.existential_deposit,
+            symbol: self.symbol,
         })
     }
 }
