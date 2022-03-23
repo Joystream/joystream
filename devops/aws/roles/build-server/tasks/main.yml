@@ -1,16 +1,6 @@
 ---
 # Configure build server to be able to create chain-spec file and subkey commands
 
-- name: Copy bash_profile content
-  shell: cat ~/.bash_profile
-  register: bash_data
-
-- name: Copy bash_profile content to bashrc for non-interactive sessions
-  blockinfile:
-    block: '{{ bash_data.stdout }}'
-    path: ~/.bashrc
-    insertbefore: BOF
-
 - name: Get dependencies for subkey
   shell: curl https://getsubstrate.io -sSf | bash -s -- --fast
 
