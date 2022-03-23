@@ -77,6 +77,7 @@ pub struct ChannelRecord<
     CuratorGroupId: PartialEq,
     Balance: PartialEq,
     ChannelPrivilegeLevel,
+    DataObjectId: Ord,
 > {
     /// The owner of a channel
     pub owner: ChannelOwner<MemberId, CuratorGroupId>,
@@ -88,12 +89,14 @@ pub struct ChannelRecord<
     pub moderators: BTreeSet<MemberId>,
     /// Cumulative cashout
     pub cumulative_payout_earned: Balance,
-    // Privilege level (curators will have different moderation permissions w.r.t. this channel depending on this value)
+    /// Privilege level (curators will have different moderation permissions w.r.t. this channel depending on this value)
     pub privilege_level: ChannelPrivilegeLevel,
     // List of channel features that have been paused by a curator
     pub paused_features: BTreeSet<PausableChannelFeature>,
     /// Transfer status of the channel. Requires to be explicitly accepted.
     pub transfer_status: ChannelTransferStatus<MemberId, CuratorGroupId, Balance>,
+    /// Set of associated data objects
+    pub data_objects: BTreeSet<DataObjectId>,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -144,7 +147,8 @@ impl<
         CuratorGroupId: PartialEq,
         Balance: PartialEq,
         ChannelPrivilegeLevel,
-    > ChannelRecord<MemberId, CuratorGroupId, Balance, ChannelPrivilegeLevel>
+        DataObjectId: Ord,
+    > ChannelRecord<MemberId, CuratorGroupId, Balance, ChannelPrivilegeLevel, DataObjectId>
 {
     pub fn ensure_feature_not_paused<T: Trait>(
         &self,
@@ -179,6 +183,7 @@ pub type Channel<T> = ChannelRecord<
     <T as ContentActorAuthenticator>::CuratorGroupId,
     BalanceOf<T>,
     <T as Trait>::ChannelPrivilegeLevel,
+    DataObjectId<T>,
 >;
 
 /// A request to buy a channel by a new ChannelOwner.
@@ -346,8 +351,7 @@ pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<
 /// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VideoRecord<ChannelId, VideoPostId, OwnedNft> {
-    /// channel the video is in
+pub struct VideoRecord<ChannelId, VideoPostId, OwnedNft, DataObjectId: Ord> {
     pub in_channel: ChannelId,
     /// enable or not comments
     pub enable_comments: bool,
@@ -355,10 +359,16 @@ pub struct VideoRecord<ChannelId, VideoPostId, OwnedNft> {
     pub video_post_id: Option<VideoPostId>,
     /// Whether nft for this video have been issued.
     pub nft_status: Option<OwnedNft>,
+    /// Set of associated data objects
+    pub data_objects: BTreeSet<DataObjectId>,
 }
 
-pub type Video<T> =
-    VideoRecord<<T as storage::Trait>::ChannelId, <T as Trait>::VideoPostId, Nft<T>>;
+pub type Video<T> = VideoRecord<
+    <T as storage::Trait>::ChannelId,
+    <T as Trait>::VideoPostId,
+    Nft<T>,
+    DataObjectId<T>,
+>;
 
 pub type DataObjectId<T> = <T as storage::Trait>::DataObjectId;
 
@@ -496,8 +506,8 @@ pub type PullPayment<T> = PullPaymentElement<
     <T as frame_system::Trait>::Hash,
 >;
 
-impl<ChannelId: Clone, VideoPostId: Clone, OwnedNft: Clone>
-    VideoRecord<ChannelId, VideoPostId, OwnedNft>
+impl<ChannelId: Clone, VideoPostId: Clone, OwnedNft: Clone, DataObjectId: Ord>
+    VideoRecord<ChannelId, VideoPostId, OwnedNft, DataObjectId>
 {
     /// Ensure nft is not issued
     pub fn ensure_nft_is_not_issued<T: Trait>(&self) -> DispatchResult {

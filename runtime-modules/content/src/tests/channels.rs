@@ -927,15 +927,17 @@ fn unsuccessful_channel_update_with_invalid_objects_id_to_remove() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel_with_video();
 
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
             .with_assets_to_remove(
-                ((DATA_OBJECTS_NUMBER as u64 + 1)..(2 * DATA_OBJECTS_NUMBER as u64)).collect(),
+                ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64)).collect(),
             )
-            .call_and_assert(Err(storage::Error::<Test>::DataObjectDoesntExist.into()));
+            .call_and_assert(Err(
+                Error::<Test>::AssetsToRemoveBeyondEntityAssetsSet.into()
+            ));
     })
 }
 
@@ -1990,5 +1992,173 @@ fn video_nft_cannot_be_issued_when_channel_video_nft_issuance_paused() {
             .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
             .with_nft_issuance(nft_params.clone())
             .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
+    })
+}
+
+// Channel assets removal
+
+#[test]
+fn unsuccessful_moderation_action_channel_assets_deletion_by_actors_with_auth_failure() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        let curator_group_id = curators::create_curator_group(BTreeMap::new());
+
+        // Member - invalid sender
+        DeleteChannelAssetsAsModeratorFixture::default()
+            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
+
+        // Curator - invalid sender
+        DeleteChannelAssetsAsModeratorFixture::default()
+            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()));
+
+        // Curator - invalid group
+        DeleteChannelAssetsAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(
+                Error::<Test>::CuratorIsNotAMemberOfGivenCuratorGroup.into()
+            ));
+
+        // Lead - invalid sender
+        DeleteChannelAssetsAsModeratorFixture::default()
+            .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_channel_assets_deletion_by_member() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        DeleteChannelAssetsAsModeratorFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_channel_assets_deletion_by_curator_with_no_permissions() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+
+        DeleteChannelAssetsAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::CuratorModerationActionNotAllowed.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_invalid_channel_assets_deletion() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteNonVideoChannelAssets]),
+            )]),
+        );
+
+        let assets_to_remove = BTreeSet::from_iter(DATA_OBJECTS_NUMBER..(2 * DATA_OBJECTS_NUMBER));
+
+        DeleteChannelAssetsAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_assets_to_remove(assets_to_remove)
+            .call_and_assert(Err(
+                Error::<Test>::AssetsToRemoveBeyondEntityAssetsSet.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_moderation_action_non_existing_channel_assets_deletion() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteNonVideoChannelAssets]),
+            )]),
+        );
+
+        DeleteChannelAssetsAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_channel_id(2)
+            .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()));
+    })
+}
+
+#[test]
+fn successful_moderation_action_channel_assets_deletion_by_curator() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        let curator_group_id = curators::add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::DeleteNonVideoChannelAssets]),
+            )]),
+        );
+
+        DeleteChannelAssetsAsModeratorFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_moderation_action_channel_assets_deletion_by_lead() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        DeleteChannelAssetsAsModeratorFixture::default().call_and_assert(Ok(()));
     })
 }

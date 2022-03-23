@@ -280,6 +280,9 @@ pub trait DataObjectStorage<T: Trait> {
         upload_parameters: UploadParameters<T>,
         objects_to_remove: BTreeSet<T::DataObjectId>,
     ) -> DispatchResult;
+
+    /// Get a set of next `length` data object ids
+    fn get_next_data_object_ids(length: usize) -> BTreeSet<T::DataObjectId>;
 }
 
 /// Storage trait.
@@ -2934,6 +2937,16 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         ));
 
         Ok(())
+    }
+
+    fn get_next_data_object_ids(length: usize) -> BTreeSet<T::DataObjectId> {
+        let mut next_data_object_id = Self::next_data_object_id();
+        let mut next_objects_ids = BTreeSet::<T::DataObjectId>::new();
+        for _ in 0..length {
+            next_objects_ids.insert(next_data_object_id);
+            next_data_object_id += One::one();
+        }
+        next_objects_ids
     }
 
     fn can_move_data_objects(

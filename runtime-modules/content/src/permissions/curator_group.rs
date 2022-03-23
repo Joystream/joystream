@@ -39,11 +39,31 @@ impl Default for PausableChannelFeature {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
 pub enum ContentModerationAction {
+    // Related extrinsics:
+    // - `set_video_visibility_as_moderator`
     HideVideo,
+    // Related extrinsics:
+    // - `set_channel_visibility_as_moderator`
     HideChannel,
+    // Related extrinsics:
+    // - `set_channel_paused_features_as_moderator` - each change of `PausableChannelFeature` `x` requires permissions
+    //   for executing `ChangeChannelFeatureStatus(x)` action
     ChangeChannelFeatureStatus(PausableChannelFeature),
+    // Related extrinsics:
+    // - `delete_video_as_moderator`
     DeleteVideo,
+    // Related extrinsics:
+    // - `delete_channel_as_moderator`
     DeleteChannel,
+    // DeleteVideoAssets(is_video_nft_status_set)
+    // Related extrinsics:
+    // - `delete_video_assets_as_moderator` - deletion of assets belonging to a video which has an NFT issued
+    //   requires permissions for `DeleteVideoAssets(true)` action, deleting other video assets requires permissions for
+    //   `DeleteVideoAssets(false)`.
+    DeleteVideoAssets(bool),
+    // Related extrinsics:
+    // - `delete_channel_assets_as_moderator`
+    DeleteNonVideoChannelAssets,
 }
 
 pub type ModerationPermissionsByLevel<T> =
