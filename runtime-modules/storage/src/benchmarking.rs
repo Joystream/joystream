@@ -1303,6 +1303,75 @@ benchmarks! {
             RawEvent::DistributionBucketMetadataSet(worker_id, bucket_id, metadata).into()
         );
     }
+
+    storage_operator_remark {
+        let i in 1 .. MAX_BYTE_SIZE;
+
+        let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let (worker_account_id, worker_id) =
+            insert_storage_worker::<T>(lead_account_id.clone(), SECOND_WORKER_ACCOUNT_ID);
+        let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
+
+        let msg = iter::repeat(1).take(i as usize).collect::<Vec<_>>();
+
+        set_storage_operator::<T>(
+            lead_account_id,
+            bucket_id,
+            worker_id,
+            worker_account_id.clone()
+        );
+
+    }: _ (
+            RawOrigin::Signed(worker_account_id.clone()),
+            worker_id,
+            bucket_id,
+            msg.clone()
+    )
+    verify {
+        assert_last_event::<T>(
+            RawEvent::StorageOperatorRemarked(
+                worker_id,
+                bucket_id,
+                msg
+            ).into()
+        );
+    }
+
+    distribution_operator_remark {
+        let i in 1 .. MAX_BYTE_SIZE;
+        let msg = iter::repeat(1).take(i as usize).collect::<Vec<_>>();
+
+        let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
+        let (worker_account_id, worker_id) =
+            insert_distribution_worker::<T>(
+            lead_account_id.clone(),
+            DEFAULT_DISTRIBUTION_WORKER_ACCOUNT_ID
+        );
+        let bucket_id = create_distribution_bucket_helper::<T>(lead_account_id.clone());
+
+        // Invite operator.
+        Module::<T>::invite_distribution_bucket_operator(
+            RawOrigin::Signed(lead_account_id).into(),
+            bucket_id.clone(),
+            worker_id,
+        )
+        .unwrap();
+
+        // Accept invitation.
+        Module::<T>::accept_distribution_bucket_invitation(
+            RawOrigin::Signed(worker_account_id.clone()).into(),
+            worker_id,
+            bucket_id.clone(),
+        )
+        .unwrap();
+
+    }: _ (RawOrigin::Signed(worker_account_id), worker_id, bucket_id.clone(), msg.clone())
+    verify {
+
+        assert_last_event::<T>(
+            RawEvent::DistributionOperatorRemarked(worker_id, bucket_id, msg).into()
+        );
+    }
 }
 
 #[cfg(test)]
@@ -1542,6 +1611,20 @@ mod tests {
     fn set_distribution_operator_metadata() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_set_distribution_operator_metadata::<Test>());
+        });
+    }
+
+    #[test]
+    fn storage_operator_remark() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_storage_operator_remark::<Test>());
+        });
+    }
+
+    #[test]
+    fn distribution_operator_remark() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_distribution_operator_remark::<Test>());
         });
     }
 }

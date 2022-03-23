@@ -182,6 +182,8 @@ pub trait WeightInfo {
     fn set_distribution_bucket_family_metadata(i: u32) -> Weight;
     fn accept_distribution_bucket_invitation() -> Weight;
     fn set_distribution_operator_metadata(i: u32) -> Weight;
+    fn storage_operator_remark(i: u32) -> Weight;
+    fn distribution_operator_remark(i: u32) -> Weight;
 }
 
 type WeightInfoStorage<T> = <T as Trait>::WeightInfo;
@@ -3153,7 +3155,7 @@ decl_module! {
         }
 
         /// Create a dynamic bag. Development mode.
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = WeightInfoStorage::<T>::storage_operator_remark(msg.len().saturated_into())]
         pub fn storage_operator_remark(
             origin,
             worker_id: WorkerId<T>,
@@ -3172,7 +3174,7 @@ decl_module! {
         }
 
         /// Create a dynamic bag. Development mode.
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = WeightInfoStorage::<T>::distribution_operator_remark(msg.len().saturated_into())]
         pub fn distribution_operator_remark(
             origin,
             worker_id: WorkerId<T>,
@@ -4643,7 +4645,6 @@ impl WeightInfo for () {
     fn cancel_distribution_bucket_operator_invite() -> Weight {
         0
     }
-
     fn remove_distribution_bucket_operator() -> Weight {
         0
     }
@@ -4654,6 +4655,12 @@ impl WeightInfo for () {
         0
     }
     fn set_distribution_operator_metadata(_i: u32) -> Weight {
+        0
+    }
+    fn storage_operator_remark(_i: u32) -> Weight {
+        0
+    }
+    fn distribution_operator_remark(_i: u32) -> Weight {
         0
     }
 }
