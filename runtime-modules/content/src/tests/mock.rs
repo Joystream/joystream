@@ -20,7 +20,6 @@ use common::currency::GovernanceCurrency;
 /// Module Aliases
 pub type System = frame_system::Module<Test>;
 pub type Content = Module<Test>;
-pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
 
 /// Type aliases
 pub type HashOutput = <Test as frame_system::Trait>::Hash;
@@ -32,6 +31,7 @@ pub type CuratorId = <Test as ContentActorAuthenticator>::CuratorId;
 pub type CuratorGroupId = <Test as ContentActorAuthenticator>::CuratorGroupId;
 pub type MemberId = <Test as MembershipTypes>::MemberId;
 pub type ChannelId = <Test as storage::Trait>::ChannelId;
+pub type StorageBucketId = <Test as storage::Trait>::StorageBucketId;
 
 /// Account Ids
 pub const DEFAULT_MEMBER_ACCOUNT_ID: u64 = 101;
@@ -57,7 +57,7 @@ pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ID: u64 = 214;
 pub const UNAUTHORIZED_MODERATOR_ID: u64 = 215;
 pub const SECOND_MEMBER_ID: u64 = 216;
 
-pub const DATA_OBJECT_DELETION_PRIZE: u64 = 5;
+pub const DATA_OBJECT_DELETION_PRIZE: u64 = 0;
 pub const DEFAULT_OBJECT_SIZE: u64 = 5;
 pub const DATA_OBJECTS_NUMBER: u64 = 10;
 
@@ -65,7 +65,6 @@ pub const OUTSTANDING_VIDEOS: u64 = 5;
 pub const OUTSTANDING_CHANNELS: u64 = 3;
 pub const TOTAL_OBJECTS_NUMBER: u64 =
     DATA_OBJECTS_NUMBER * (OUTSTANDING_VIDEOS + OUTSTANDING_CHANNELS);
-pub const TOTAL_BALANCE_REQUIRED: u64 = TOTAL_OBJECTS_NUMBER * DATA_OBJECT_DELETION_PRIZE;
 
 pub const STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT: u64 = TOTAL_OBJECTS_NUMBER;
 pub const STORAGE_BUCKET_OBJECTS_SIZE_LIMIT: u64 =
@@ -73,13 +72,14 @@ pub const STORAGE_BUCKET_OBJECTS_SIZE_LIMIT: u64 =
 pub const STORAGE_BUCKET_ACCEPTING_BAGS: bool = true;
 pub const VOUCHER_OBJECTS_NUMBER_LIMIT: u64 = 2 * STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT;
 pub const VOUCHER_OBJECTS_SIZE_LIMIT: u64 = VOUCHER_OBJECTS_NUMBER_LIMIT * DEFAULT_OBJECT_SIZE;
-pub const INITIAL_BALANCE: u64 = TOTAL_BALANCE_REQUIRED;
+pub const INITIAL_BALANCE: u64 = 1000;
 
 pub const MEMBERS_COUNT: u64 = 10;
 pub const PAYMENTS_NUMBER: u64 = 10;
 pub const DEFAULT_PAYOUT_CLAIMED: u64 = 10;
 pub const DEFAULT_PAYOUT_EARNED: u64 = 10;
 pub const DEFAULT_NFT_PRICE: u64 = 1000;
+pub const BAG_DELETION_PRIZE: u64 = 0;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -266,14 +266,12 @@ impl ContentActorAuthenticator for Test {
 parameter_types! {
     pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
     pub const MaxDistributionBucketFamilyNumber: u64 = 4;
-    pub const DataObjectDeletionPrize: u64 = DATA_OBJECT_DELETION_PRIZE;
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
     pub const BlacklistSizeLimit: u64 = 1;
     pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 1;
     pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
-        storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
+        storage::StorageBucketsPerBagValueConstraint {min: 0, max_min_diff: 7};
     pub const InitialStorageBucketsNumberForDynamicBag: u64 = 3;
-    pub const MaxRandomIterationNumber: u64 = 3;
     pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 3;
     pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 4;
     pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
@@ -298,7 +296,6 @@ impl storage::Trait for Test {
     type DistributionBucketFamilyId = u64;
     type DistributionBucketOperatorId = u64;
     type ChannelId = u64;
-    type DataObjectDeletionPrize = DataObjectDeletionPrize;
     type BlacklistSizeLimit = BlacklistSizeLimit;
     type ModuleId = StorageModuleId;
     type StorageBucketsPerBagValueConstraint = StorageBucketsPerBagValueConstraint;
@@ -306,80 +303,15 @@ impl storage::Trait for Test {
         DefaultMemberDynamicBagNumberOfStorageBuckets;
     type DefaultChannelDynamicBagNumberOfStorageBuckets =
         DefaultChannelDynamicBagNumberOfStorageBuckets;
-    type Randomness = CollectiveFlip;
-    type MaxRandomIterationNumber = MaxRandomIterationNumber;
     type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
     type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
     type MaxNumberOfPendingInvitationsPerDistributionBucket =
         MaxNumberOfPendingInvitationsPerDistributionBucket;
     type ContentId = u64;
     type MaxDataObjectSize = MaxDataObjectSize;
-
-    fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
-
-        if account_id != STORAGE_WG_LEADER_ACCOUNT_ID {
-            Err(DispatchError::BadOrigin)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_storage_worker_origin(origin: Self::Origin, _: u64) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
-
-        if account_id != DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID {
-            Err(DispatchError::BadOrigin)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_storage_worker_exists(worker_id: &u64) -> DispatchResult {
-        let allowed_storage_providers =
-            vec![DEFAULT_STORAGE_PROVIDER_ID, ANOTHER_STORAGE_PROVIDER_ID];
-
-        if !allowed_storage_providers.contains(worker_id) {
-            Err(DispatchError::Other("Invalid worker"))
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_distribution_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
-
-        if account_id != DISTRIBUTION_WG_LEADER_ACCOUNT_ID {
-            Err(DispatchError::BadOrigin)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_distribution_worker_origin(origin: Self::Origin, _: u64) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
-
-        if account_id != DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID {
-            Err(DispatchError::BadOrigin)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_distribution_worker_exists(worker_id: &u64) -> DispatchResult {
-        let allowed_providers = vec![
-            DEFAULT_DISTRIBUTION_PROVIDER_ID,
-            ANOTHER_DISTRIBUTION_PROVIDER_ID,
-        ];
-
-        if !allowed_providers.contains(worker_id) {
-            Err(DispatchError::Other("Invalid worker"))
-        } else {
-            Ok(())
-        }
-    }
-
     type WeightInfo = ();
+    type StorageWorkingGroup = StorageWG;
+    type DistributionWorkingGroup = DistributionWG;
 }
 
 // Anyone can upload and delete without restriction
@@ -394,6 +326,8 @@ parameter_types! {
     pub const PricePerByte: u32 = 2;
     pub const VideoCommentsModuleId: ModuleId = ModuleId(*b"m0:forum"); // module : forum
     pub const BloatBondCap: u32 = 1000;
+    pub const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = 25;
+    pub const BagDeletionPrize: u64 = BAG_DELETION_PRIZE;
 }
 
 impl Trait for Test {
@@ -402,6 +336,9 @@ impl Trait for Test {
 
     /// Type of identifier for Videos
     type VideoId = u64;
+
+    /// Type of identifier for open auctions
+    type OpenAuctionId = u64;
 
     /// Type of identifier for Video Categories
     type VideoCategoryId = u64;
@@ -438,6 +375,17 @@ impl Trait for Test {
 
     /// module id
     type ModuleId = ContentModuleId;
+
+    type BagDeletionPrize = BagDeletionPrize;
+
+    /// membership info provider
+    type MemberAuthenticator = MemberInfoProvider;
+
+    /// max number of keys per curator_group.permissions_by_level map instance
+    type MaxKeysPerCuratorGroupPermissionsByLevelMap = MaxKeysPerCuratorGroupPermissionsByLevelMap;
+
+    /// channel privilege level
+    type ChannelPrivilegeLevel = u8;
 }
 
 // #[derive (Default)]
@@ -561,17 +509,12 @@ pub fn assert_event(tested_event: MetaEvent, number_of_events_after_call: usize)
 }
 
 /// Get good params for open auction
-pub fn get_open_auction_params(
-) -> AuctionParams<<Test as frame_system::Trait>::BlockNumber, BalanceOf<Test>, MemberId> {
-    AuctionParams {
+pub fn get_open_auction_params() -> OpenAuctionParams<Test> {
+    OpenAuctionParams::<Test> {
         starting_price: Content::min_starting_price(),
         buy_now_price: None,
-        auction_type: AuctionType::Open(OpenAuctionDetails {
-            bid_lock_duration: Content::min_bid_lock_duration(),
-        }),
-        minimal_bid_step: Content::min_bid_step(),
-        starts_at: None,
         whitelist: BTreeSet::new(),
+        bid_lock_duration: Content::min_bid_lock_duration(),
     }
 }
 
@@ -672,5 +615,158 @@ impl LockComparator<u64> for Test {
         } else {
             false
         }
+    }
+}
+
+pub struct MemberInfoProvider {}
+impl MembershipInfoProvider<Test> for MemberInfoProvider {
+    fn controller_account_id(
+        member_id: common::MemberId<Test>,
+    ) -> Result<AccountId, DispatchError> {
+        match member_id {
+            DEFAULT_MEMBER_ID => Ok(DEFAULT_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID => Ok(SECOND_MEMBER_ACCOUNT_ID),
+            UNAUTHORIZED_MEMBER_ID => Ok(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            UNAUTHORIZED_COLLABORATOR_MEMBER_ID => Ok(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID),
+            COLLABORATOR_MEMBER_ID => Ok(COLLABORATOR_MEMBER_ACCOUNT_ID),
+            UNAUTHORIZED_MODERATOR_ID => Ok(UNAUTHORIZED_MODERATOR_ACCOUNT_ID),
+            DEFAULT_MODERATOR_ID => Ok(DEFAULT_MODERATOR_ACCOUNT_ID),
+            _ => Err(DispatchError::Other("no account found")),
+        }
+    }
+}
+
+// storage & distribution wg auth
+// working group integration
+pub struct StorageWG;
+pub struct DistributionWG;
+
+impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
+    fn ensure_worker_origin(
+        origin: <Test as frame_system::Trait>::Origin,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
+        ensure!(
+            account_id == DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID,
+            DispatchError::BadOrigin,
+        );
+        Ok(())
+    }
+
+    fn ensure_leader_origin(origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
+        ensure!(
+            account_id == STORAGE_WG_LEADER_ACCOUNT_ID,
+            DispatchError::BadOrigin,
+        );
+        Ok(())
+    }
+
+    fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+        unimplemented!()
+    }
+
+    fn is_worker_account_id(
+        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> bool {
+        unimplemented!()
+    }
+
+    fn worker_exists(worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
+        Self::ensure_worker_exists(worker_id).is_ok()
+    }
+
+    fn ensure_worker_exists(
+        worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        let allowed_storage_providers =
+            vec![DEFAULT_STORAGE_PROVIDER_ID, ANOTHER_STORAGE_PROVIDER_ID];
+        ensure!(
+            allowed_storage_providers.contains(worker_id),
+            DispatchError::Other("Invailid worker"),
+        );
+        Ok(())
+    }
+}
+
+impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
+    fn ensure_worker_origin(
+        origin: <Test as frame_system::Trait>::Origin,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
+        ensure!(
+            account_id == DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID,
+            DispatchError::BadOrigin,
+        );
+        Ok(())
+    }
+
+    fn ensure_leader_origin(origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
+        ensure!(
+            account_id == DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
+            DispatchError::BadOrigin,
+        );
+        Ok(())
+    }
+
+    fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+        unimplemented!()
+    }
+
+    fn is_worker_account_id(
+        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> bool {
+        unimplemented!()
+    }
+
+    fn worker_exists(worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
+        Self::ensure_worker_exists(worker_id).is_ok()
+    }
+
+    fn ensure_worker_exists(
+        worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        let allowed_storage_providers = vec![
+            DEFAULT_DISTRIBUTION_PROVIDER_ID,
+            ANOTHER_DISTRIBUTION_PROVIDER_ID,
+        ];
+        ensure!(
+            allowed_storage_providers.contains(worker_id),
+            DispatchError::Other("Invailid worker"),
+        );
+        Ok(())
+    }
+}
+
+impl common::working_group::WorkingGroupBudgetHandler<Test> for StorageWG {
+    fn get_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget(_new_value: u64) {
+        unimplemented!()
+    }
+}
+
+impl common::working_group::WorkingGroupBudgetHandler<Test> for DistributionWG {
+    fn get_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget(_new_value: u64) {
+        unimplemented!()
     }
 }

@@ -52,6 +52,9 @@ pub type ChannelCategoryId = u64;
 /// Content Directory Video identifier.
 pub type VideoId = u64;
 
+/// Content Directory Open Auction identifier.
+pub type OpenAuctionId = u64;
+
 /// Content Directory Video Category identifier.
 pub type VideoCategoryId = u64;
 
@@ -101,6 +104,9 @@ pub type DistributionBucketFamilyId = u64;
 
 /// Represent relationships between distribution buckets and distribution working group workers.
 pub type DistributionBucketOperatorId = u64;
+
+/// Privilege level of a channel in the content directory.
+pub type ChannelPrivilegeLevel = u8;
 
 /// App-specific crypto used for reporting equivocation/misbehavior in BABE and
 /// GRANDPA. Any rewards for misbehavior reporting will be paid out to this

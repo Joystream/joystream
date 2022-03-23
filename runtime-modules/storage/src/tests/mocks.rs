@@ -1,6 +1,5 @@
 #![cfg(test)]
 
-use frame_support::dispatch::{DispatchError, DispatchResult};
 pub use frame_support::traits::LockIdentifier;
 use frame_support::weights::Weight;
 use frame_support::{ensure, impl_outer_event, impl_outer_origin, parameter_types};
@@ -9,7 +8,7 @@ use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    ModuleId, Perbill,
+    DispatchError, DispatchResult, ModuleId, Perbill,
 };
 use sp_std::cell::RefCell;
 use staking_handler::LockComparator;
@@ -64,11 +63,10 @@ parameter_types! {
     pub const StorageBucketsPerBagValueConstraint: crate::StorageBucketsPerBagValueConstraint =
         crate::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
     pub const InitialStorageBucketsNumberForDynamicBag: u64 = 3;
-    pub const MaxRandomIterationNumber: u64 = 3;
     pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 3;
     pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 4;
     pub const DistributionBucketsPerBagValueConstraint: crate::DistributionBucketsPerBagValueConstraint =
-        crate::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
+        crate::DistributionBucketsPerBagValueConstraint {min: 2, max_min_diff: 7};
     pub const MaxDataObjectSize: u64 = 400;
 }
 
@@ -93,7 +91,7 @@ pub const VOUCHER_SIZE_LIMIT: u64 = 100;
 pub const VOUCHER_OBJECTS_LIMIT: u64 = 20;
 pub const DEFAULT_STORAGE_BUCKET_SIZE_LIMIT: u64 = 100;
 pub const DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT: u64 = 10;
-pub const DEFAULT_STORAGE_BUCKETS_NUMBER: u64 = 10;
+pub const DEFAULT_STORAGE_BUCKETS_NUMBER: u64 = 3;
 
 impl crate::Trait for Test {
     type Event = TestEvent;
@@ -103,7 +101,6 @@ impl crate::Trait for Test {
     type DistributionBucketFamilyId = u64;
     type DistributionBucketOperatorId = u64;
     type ChannelId = u64;
-    type DataObjectDeletionPrize = DataObjectDeletionPrize;
     type BlacklistSizeLimit = BlacklistSizeLimit;
     type ModuleId = StorageModuleId;
     type StorageBucketsPerBagValueConstraint = StorageBucketsPerBagValueConstraint;
@@ -111,103 +108,15 @@ impl crate::Trait for Test {
         DefaultMemberDynamicBagNumberOfStorageBuckets;
     type DefaultChannelDynamicBagNumberOfStorageBuckets =
         DefaultChannelDynamicBagNumberOfStorageBuckets;
-    type Randomness = CollectiveFlip;
-    type MaxRandomIterationNumber = MaxRandomIterationNumber;
     type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
     type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
     type MaxNumberOfPendingInvitationsPerDistributionBucket =
         MaxNumberOfPendingInvitationsPerDistributionBucket;
     type MaxDataObjectSize = MaxDataObjectSize;
     type ContentId = u64;
-
-    fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
-
-        if account_id != STORAGE_WG_LEADER_ACCOUNT_ID {
-            Err(DispatchError::BadOrigin)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_storage_worker_origin(origin: Self::Origin, _: u64) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
-
-        let allowed_accounts = vec![
-            DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID,
-            DEFAULT_BENCHMARKING_STORAGE_PROVIDER_ACCOUNT_ID,
-        ];
-
-        if !allowed_accounts.contains(&account_id) {
-            Err(DispatchError::BadOrigin)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_storage_worker_exists(worker_id: &u64) -> DispatchResult {
-        let allowed_storage_providers = vec![
-            DEFAULT_STORAGE_PROVIDER_ID,
-            ANOTHER_STORAGE_PROVIDER_ID,
-            BENCHMARKING_STORAGE_PROVIDER_ID1,
-            BENCHMARKING_STORAGE_PROVIDER_ID2,
-        ];
-
-        if !allowed_storage_providers.contains(worker_id) {
-            Err(DispatchError::Other("Invalid worker"))
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_distribution_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
-
-        let allowed_providers = vec![
-            DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
-            DEFAULT_BENCHMARKING_DISTRIBUTION_PROVIDER_ACCOUNT_ID1,
-            DEFAULT_BENCHMARKING_DISTRIBUTION_PROVIDER_ACCOUNT_ID2,
-        ];
-
-        if !allowed_providers.contains(&account_id) {
-            Err(DispatchError::BadOrigin)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_distribution_worker_origin(origin: Self::Origin, _: u64) -> DispatchResult {
-        let account_id = ensure_signed(origin)?;
-
-        let allowed_accounts = vec![
-            DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID,
-            DEFAULT_BENCHMARKING_DISTRIBUTION_PROVIDER_ACCOUNT_ID1,
-            DEFAULT_BENCHMARKING_DISTRIBUTION_PROVIDER_ACCOUNT_ID2,
-        ];
-
-        if !allowed_accounts.contains(&account_id) {
-            Err(DispatchError::BadOrigin)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn ensure_distribution_worker_exists(worker_id: &u64) -> DispatchResult {
-        let allowed_providers = vec![
-            DEFAULT_DISTRIBUTION_PROVIDER_ID,
-            ANOTHER_DISTRIBUTION_PROVIDER_ID,
-            BENCHMARKING_DISTRIBUTION_PROVIDER_ID1,
-            BENCHMARKING_DISTRIBUTION_PROVIDER_ID2,
-        ];
-
-        if !allowed_providers.contains(worker_id) {
-            Err(DispatchError::Other("Invalid worker"))
-        } else {
-            Ok(())
-        }
-    }
-
     type WeightInfo = ();
+    type StorageWorkingGroup = StorageWG;
+    type DistributionWorkingGroup = DistributionWG;
 }
 
 pub const DEFAULT_MEMBER_ID: u64 = 100;
@@ -481,6 +390,14 @@ impl working_group::WeightInfo for Weights {
     fn leave_role(_: u32) -> u64 {
         unimplemented!()
     }
+
+    fn lead_remark() -> u64 {
+        unimplemented!()
+    }
+
+    fn worker_remark() -> u64 {
+        unimplemented!()
+    }
 }
 
 impl membership::Trait for Test {
@@ -561,6 +478,9 @@ impl membership::WeightInfo for Weights {
     fn remove_staking_account() -> Weight {
         unimplemented!()
     }
+    fn member_remark() -> Weight {
+        unimplemented!()
+    }
 }
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
@@ -575,3 +495,159 @@ pub type Storage = crate::Module<Test>;
 pub type System = frame_system::Module<Test>;
 pub type Balances = balances::Module<Test>;
 pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
+
+// working group integration
+pub struct StorageWG;
+pub struct DistributionWG;
+
+impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
+    fn ensure_worker_origin(
+        origin: <Test as frame_system::Trait>::Origin,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
+
+        let allowed_accounts = vec![
+            DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID,
+            DEFAULT_BENCHMARKING_STORAGE_PROVIDER_ACCOUNT_ID,
+        ];
+
+        if !allowed_accounts.contains(&account_id) {
+            Err(DispatchError::BadOrigin)
+        } else {
+            Ok(())
+        }
+    }
+
+    fn ensure_leader_origin(origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
+        ensure!(
+            account_id == STORAGE_WG_LEADER_ACCOUNT_ID,
+            DispatchError::BadOrigin,
+        );
+        Ok(())
+    }
+
+    fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+        unimplemented!()
+    }
+
+    fn is_worker_account_id(
+        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> bool {
+        unimplemented!()
+    }
+
+    fn worker_exists(worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
+        Self::ensure_worker_exists(worker_id).is_ok()
+    }
+
+    fn ensure_worker_exists(
+        worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        let allowed_storage_providers = vec![
+            DEFAULT_STORAGE_PROVIDER_ID,
+            ANOTHER_STORAGE_PROVIDER_ID,
+            BENCHMARKING_STORAGE_PROVIDER_ID1,
+            BENCHMARKING_STORAGE_PROVIDER_ID2,
+        ];
+
+        if !allowed_storage_providers.contains(worker_id) {
+            Err(DispatchError::Other("Invalid worker"))
+        } else {
+            Ok(())
+        }
+    }
+}
+
+impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
+    fn ensure_worker_origin(
+        origin: <Test as frame_system::Trait>::Origin,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
+
+        let allowed_accounts = vec![
+            DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID,
+            DEFAULT_BENCHMARKING_DISTRIBUTION_PROVIDER_ACCOUNT_ID1,
+            DEFAULT_BENCHMARKING_DISTRIBUTION_PROVIDER_ACCOUNT_ID2,
+        ];
+
+        if !allowed_accounts.contains(&account_id) {
+            Err(DispatchError::BadOrigin)
+        } else {
+            Ok(())
+        }
+    }
+
+    fn ensure_leader_origin(origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
+
+        ensure!(
+            account_id == DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
+            DispatchError::BadOrigin,
+        );
+        Ok(())
+    }
+
+    fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+        unimplemented!()
+    }
+
+    fn is_worker_account_id(
+        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> bool {
+        unimplemented!()
+    }
+
+    fn worker_exists(worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
+        Self::ensure_worker_exists(worker_id).is_ok()
+    }
+
+    fn ensure_worker_exists(
+        worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        let allowed_providers = vec![
+            DEFAULT_DISTRIBUTION_PROVIDER_ID,
+            ANOTHER_DISTRIBUTION_PROVIDER_ID,
+            BENCHMARKING_DISTRIBUTION_PROVIDER_ID1,
+            BENCHMARKING_DISTRIBUTION_PROVIDER_ID2,
+        ];
+
+        if !allowed_providers.contains(worker_id) {
+            Err(DispatchError::Other("Invalid worker"))
+        } else {
+            Ok(())
+        }
+    }
+}
+
+impl common::working_group::WorkingGroupBudgetHandler<Test> for StorageWG {
+    fn get_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget(_new_value: u64) {
+        unimplemented!()
+    }
+}
+
+impl common::working_group::WorkingGroupBudgetHandler<Test> for DistributionWG {
+    fn get_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget(_new_value: u64) {
+        unimplemented!()
+    }
+}

@@ -132,6 +132,12 @@ fn add_opening_fails_with_insufficient_balance() {
 #[test]
 fn add_opening_fails_with_incorrect_unstaking_period() {
     build_test_externalities().execute_with(|| {
+        let min_allowed_unstaking_period = <Test as Trait>::MinUnstakingPeriodLimit::get();
+        // Test does not make sense if minimum allowed is zero
+        if min_allowed_unstaking_period == 0 {
+            return;
+        }
+
         HireLeadFixture::default().hire_lead();
 
         let account_id = 1;
@@ -140,7 +146,8 @@ fn add_opening_fails_with_incorrect_unstaking_period() {
 
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
 
-        let invalid_unstaking_period = 3;
+        let invalid_unstaking_period = min_allowed_unstaking_period - 1;
+
         let add_opening_fixture = AddOpeningFixture::default().with_stake_policy(StakePolicy {
             stake_amount: stake,
             leaving_unstaking_period: invalid_unstaking_period,

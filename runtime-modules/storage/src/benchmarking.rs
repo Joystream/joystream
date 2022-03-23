@@ -38,10 +38,10 @@ pub type DistributionWorkingGroupInstance = working_group::Instance9;
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
-pub const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u64 = 100003;
-pub const DEFAULT_STORAGE_WORKER_ID: u64 = 100002;
-pub const DEFAULT_DISTRIBUTION_WORKER_ID: u64 = 100004;
-pub const SECOND_WORKER_ID: u64 = 1;
+pub const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u64 = 100004;
+pub const DEFAULT_STORAGE_WORKER_ACCOUNT_ID: u64 = 100002;
+pub const DEFAULT_DISTRIBUTION_WORKER_ACCOUNT_ID: u64 = 100003;
+pub const SECOND_WORKER_ACCOUNT_ID: u64 = 1;
 
 fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     let events = System::<T>::events();
@@ -453,7 +453,7 @@ fn create_distribution_buckets<T: Trait>(
 const BLACKLIST_SIZE_LIMIT: u32 = 200;
 const STORAGE_BUCKETS_FOR_BAG_NUMBER: u32 = 7;
 const DISTRIBUTION_BUCKETS_FOR_BAG_NUMBER: u32 = 7;
-const DISTRIBUTION_BUCKET_FAMILIES_NUMBER: u32 = 80;
+const DISTRIBUTION_BUCKET_FAMILIES_NUMBER: u32 = 7;
 const MAX_BYTE_SIZE: u32 = 1000;
 const OBJECT_COUNT: u32 = 400;
 
@@ -633,7 +633,8 @@ benchmarks! {
 
     cancel_storage_bucket_operator_invite {
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
-        let (_, worker_id) = insert_storage_worker::<T>(lead_account_id.clone(), DEFAULT_STORAGE_WORKER_ID);
+        let (_, worker_id) =
+            insert_storage_worker::<T>(lead_account_id.clone(), DEFAULT_STORAGE_WORKER_ACCOUNT_ID);
         let bucket_id =  create_storage_bucket_helper::<T>(lead_account_id.clone());
 
         Module::<T>::invite_storage_bucket_operator(
@@ -667,7 +668,8 @@ benchmarks! {
 
     invite_storage_bucket_operator {
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
-        let (_, worker_id) = insert_storage_worker::<T>(lead_account_id.clone(), DEFAULT_STORAGE_WORKER_ID);
+        let (_, worker_id) =
+            insert_storage_worker::<T>(lead_account_id.clone(), DEFAULT_STORAGE_WORKER_ACCOUNT_ID);
         let bucket_id =  create_storage_bucket_helper::<T>(lead_account_id.clone());
 
         let bucket = Module::<T>::storage_bucket_by_id(bucket_id);
@@ -695,7 +697,7 @@ benchmarks! {
     remove_storage_bucket_operator {
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let (worker_account_id, worker_id) =
-            insert_storage_worker::<T>(lead_account_id.clone(), DEFAULT_STORAGE_WORKER_ID);
+            insert_storage_worker::<T>(lead_account_id.clone(), DEFAULT_STORAGE_WORKER_ACCOUNT_ID);
         let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
 
         set_storage_operator::<T>(
@@ -784,7 +786,7 @@ benchmarks! {
     accept_storage_bucket_invitation {
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let (worker_account_id, worker_id) =
-            insert_storage_worker::<T>(lead_account_id.clone(), SECOND_WORKER_ID);
+            insert_storage_worker::<T>(lead_account_id.clone(), SECOND_WORKER_ACCOUNT_ID);
         let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
 
         Module::<T>::invite_storage_bucket_operator(
@@ -831,7 +833,7 @@ benchmarks! {
 
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let (worker_account_id, worker_id) =
-            insert_storage_worker::<T>(lead_account_id.clone(), SECOND_WORKER_ID);
+            insert_storage_worker::<T>(lead_account_id.clone(), SECOND_WORKER_ACCOUNT_ID);
         let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
 
         let metadata = iter::repeat(1).take(i as usize).collect::<Vec<_>>();
@@ -864,7 +866,7 @@ benchmarks! {
 
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let (worker_account_id, worker_id) =
-            insert_storage_worker::<T>(lead_account_id.clone(), SECOND_WORKER_ID);
+            insert_storage_worker::<T>(lead_account_id.clone(), SECOND_WORKER_ACCOUNT_ID);
         let bucket_id = create_storage_bucket_helper::<T>(lead_account_id.clone());
         let bag_id = BagId::<T>::Static(StaticBagId::Council);
 
@@ -918,6 +920,10 @@ benchmarks! {
             bag_id: bag_id.clone(),
             deletion_prize_source_account_id: worker_account_id.clone(),
             expected_data_size_fee: Default::default(),
+            expected_data_object_deletion_prize: Default::default(),
+            expected_dynamic_bag_deletion_prize: Default::default(),
+            storage_buckets: Default::default(),
+            distribution_buckets: Default::default(),
             object_creation_list: object_parameters
         };
 
@@ -1103,18 +1109,17 @@ benchmarks! {
     }
 
     update_families_in_dynamic_bag_creation_policy {
-        let i in 1 .. DISTRIBUTION_BUCKET_FAMILIES_NUMBER;
+        let i in 2 .. DISTRIBUTION_BUCKET_FAMILIES_NUMBER;
 
         let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
         let dynamic_bag_type = DynamicBagType::Member;
         let family_ids = create_distribution_bucket_families::<T>(lead_account_id.clone(), i);
 
-        let fam_number = 10u32;
+        let fam_number = 1u32;
         let fam_policies = family_ids.iter()
             .cloned()
             .map(|id| (id, fam_number))
             .collect::<BTreeMap<_,_>>();
-
 
     }: _ (RawOrigin::Signed(lead_account_id.clone()), dynamic_bag_type, fam_policies.clone())
     verify {
@@ -1129,7 +1134,10 @@ benchmarks! {
 
     invite_distribution_bucket_operator {
         let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
-        let (_, worker_id) = insert_distribution_worker::<T>(lead_account_id.clone(), DEFAULT_STORAGE_WORKER_ID);
+        let (_, worker_id) = insert_distribution_worker::<T>(
+            lead_account_id.clone(),
+            DEFAULT_DISTRIBUTION_WORKER_ACCOUNT_ID
+        );
         let bucket_id = create_distribution_bucket_helper::<T>(lead_account_id.clone());
 
     }: _ (RawOrigin::Signed(lead_account_id.clone()), bucket_id.clone(), worker_id)
@@ -1147,7 +1155,10 @@ benchmarks! {
 
     cancel_distribution_bucket_operator_invite {
         let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
-        let (_, worker_id) = insert_distribution_worker::<T>(lead_account_id.clone(), DEFAULT_STORAGE_WORKER_ID);
+        let (_, worker_id) = insert_distribution_worker::<T>(
+            lead_account_id.clone(),
+            DEFAULT_DISTRIBUTION_WORKER_ACCOUNT_ID
+        );
         let bucket_id = create_distribution_bucket_helper::<T>(lead_account_id.clone());
 
         // Invite operator first.
@@ -1176,8 +1187,10 @@ benchmarks! {
 
     remove_distribution_bucket_operator {
         let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
-        let (worker_account_id, worker_id) =
-            insert_distribution_worker::<T>(lead_account_id.clone(), DEFAULT_DISTRIBUTION_WORKER_ID);
+        let (worker_account_id, worker_id) = insert_distribution_worker::<T>(
+            lead_account_id.clone(),
+            DEFAULT_DISTRIBUTION_WORKER_ACCOUNT_ID
+        );
         let bucket_id = create_distribution_bucket_helper::<T>(lead_account_id.clone());
 
         // Invite operator.
@@ -1229,8 +1242,10 @@ benchmarks! {
 
     accept_distribution_bucket_invitation {
         let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
-        let (worker_account_id, worker_id) =
-            insert_distribution_worker::<T>(lead_account_id.clone(), DEFAULT_DISTRIBUTION_WORKER_ID);
+        let (worker_account_id, worker_id) = insert_distribution_worker::<T>(
+            lead_account_id.clone(),
+            DEFAULT_DISTRIBUTION_WORKER_ACCOUNT_ID
+        );
         let bucket_id = create_distribution_bucket_helper::<T>(lead_account_id.clone());
 
         // Invite operator.
@@ -1259,7 +1274,10 @@ benchmarks! {
 
         let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
         let (worker_account_id, worker_id) =
-            insert_distribution_worker::<T>(lead_account_id.clone(), DEFAULT_DISTRIBUTION_WORKER_ID);
+            insert_distribution_worker::<T>(
+            lead_account_id.clone(),
+            DEFAULT_DISTRIBUTION_WORKER_ACCOUNT_ID
+        );
         let bucket_id = create_distribution_bucket_helper::<T>(lead_account_id.clone());
 
         // Invite operator.

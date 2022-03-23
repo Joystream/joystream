@@ -94,6 +94,7 @@ pub trait WeightInfo {
     fn add_staking_account_candidate() -> Weight;
     fn confirm_staking_account() -> Weight;
     fn remove_staking_account() -> Weight;
+    fn member_remark() -> Weight;
 }
 
 pub trait Trait:
@@ -144,6 +145,7 @@ pub trait Trait:
 pub(crate) const DEFAULT_MEMBER_INVITES_COUNT: u32 = 5;
 
 /// Public membership profile alias.
+
 pub type Membership<T> = MembershipObject<<T as frame_system::Trait>::AccountId>;
 
 #[derive(Encode, PartialEq, Decode, Debug, Default)]
@@ -371,6 +373,7 @@ decl_event! {
         StakingAccountAdded(AccountId, MemberId),
         StakingAccountRemoved(AccountId, MemberId),
         StakingAccountConfirmed(AccountId, MemberId),
+        MemberRemarked(MemberId, Vec<u8>),
     }
 }
 
@@ -711,10 +714,10 @@ decl_module! {
             )?;
 
             let current_wg_budget = T::WorkingGroup::get_budget();
-            let default_invitation_balance = T::DefaultInitialInvitationBalance::get();
+            let invitation_balance = Self::initial_invitation_balance();
 
             ensure!(
-                default_invitation_balance <= current_wg_budget,
+                invitation_balance <= current_wg_budget,
                 Error::<T>::WorkingGroupBudgetIsNotSufficientForInviting
             );
 
@@ -743,19 +746,19 @@ decl_module! {
             });
 
             // Decrease the working group balance.
-            let new_wg_budget = current_wg_budget.saturating_sub(default_invitation_balance);
+            let new_wg_budget = current_wg_budget.saturating_sub(invitation_balance);
             T::WorkingGroup::set_budget(new_wg_budget);
 
             // Create default balance for the invited member.
             let _ = balances::Module::<T>::deposit_creating(
                 &params.controller_account,
-                default_invitation_balance
+                invitation_balance
             );
 
             // Lock invitation balance. Allow only transaction payments.
             T::InvitedMemberStakingHandler::lock_with_reasons(
                 &params.controller_account,
-                default_invitation_balance,
+                invitation_balance,
                 WithdrawReasons::except(WithdrawReason::TransactionPayment)
             );
 
@@ -986,6 +989,27 @@ decl_module! {
             );
 
             Self::deposit_event(RawEvent::StakingAccountConfirmed(staking_account_id, member_id));
+        }
+
+        /// Member makes a remark
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoMembership::<T>::member_remark()]
+        pub fn member_remark(origin, member_id: T::MemberId, msg: Vec<u8>) {
+            let sender = ensure_signed(origin)?;
+            Self::ensure_is_controller_account_for_member(&member_id, &sender)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::MemberRemarked(member_id, msg));
         }
     }
 }
@@ -1263,6 +1287,9 @@ impl WeightInfo for () {
         0
     }
     fn remove_staking_account() -> Weight {
+        0
+    }
+    fn member_remark() -> Weight {
         0
     }
 }

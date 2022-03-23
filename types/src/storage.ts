@@ -208,8 +208,17 @@ export class UploadParameters
     objectCreationList: Vec.with(DataObjectCreationParameters),
     deletionPrizeSourceAccountId: AccountId,
     expectedDataSizeFee: BalanceOf,
+    expectedDynamicBagDeletionPrize: BalanceOf,
+    expectedDataObjectDeletionPrize: BalanceOf,
   })
   implements IUploadParameters {}
+
+export class DynBagCreationParameters extends JoyStructDecorated({
+  bagId: DynamicBagId,
+  objectCreationList: Vec.with(DataObjectCreationParameters),
+  deletionPrizeSourceAccountId: AccountId,
+  expectedDataSizeFee: BalanceOf,
+}) {}
 
 export class Cid extends Bytes {}
 export class ContentIdSet extends BTreeSet.with(Cid) {}
@@ -277,6 +286,7 @@ export const storageTypes: RegistryTypes = {
   // Utility types:
   DataObjectIdMap,
   DistributionBucketIndexSet,
+  DynBagCreationParameters,
   DynamicBagCreationPolicyDistributorFamiliesMap,
 }
 export default storageTypes

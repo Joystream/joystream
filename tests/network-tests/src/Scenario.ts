@@ -10,7 +10,7 @@ import { JobManager } from './JobManager'
 import { ResourceManager } from './Resources'
 import fetch from 'cross-fetch'
 import fs, { existsSync, readFileSync } from 'fs'
-import { KeyGenInfo } from './types'
+import { KeyGenInfo, FaucetInfo } from './types'
 
 export type ScenarioProps = {
   env: NodeJS.ProcessEnv
@@ -24,6 +24,7 @@ type TestsOutput = {
   accounts: { [k: string]: number }
   keyIds: KeyGenInfo
   miniSecret: string
+  faucet: FaucetInfo
 }
 
 function writeOutput(api: Api, miniSecret: string) {
@@ -34,10 +35,13 @@ function writeOutput(api: Api, miniSecret: string) {
   // first and last key id used to generate keys in this scenario
   const keyIds = api.keyGenInfo()
 
+  const faucet = api.getFaucetInfo()
+
   const output: TestsOutput = {
     accounts,
     keyIds,
     miniSecret,
+    faucet,
   }
 
   fs.writeFileSync(OUTPUT_FILE_PATH, JSON.stringify(output, undefined, 2))

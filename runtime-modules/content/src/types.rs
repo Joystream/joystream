@@ -72,33 +72,108 @@ pub struct ChannelCategoryUpdateParameters {
 /// Type representing an owned channel which videos, playlists, and series can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance> {
+pub struct ChannelRecord<
+    MemberId: Ord + PartialEq,
+    CuratorGroupId: PartialEq,
+    Balance: PartialEq,
+    ChannelPrivilegeLevel,
+    DataObjectId: Ord,
+> {
     /// The owner of a channel
     pub owner: ChannelOwner<MemberId, CuratorGroupId>,
     /// The videos under this channel
     pub num_videos: u64,
-    /// If curators have censored this channel or not
-    pub is_censored: bool,
-    /// Reward account where revenue is sent if set.
-    pub reward_account: Option<AccountId>,
     /// collaborator set
     pub collaborators: BTreeSet<MemberId>,
     /// moderator set
     pub moderators: BTreeSet<MemberId>,
     /// Cumulative cashout
     pub cumulative_payout_earned: Balance,
+    /// Privilege level (curators will have different moderation permissions w.r.t. this channel depending on this value)
+    pub privilege_level: ChannelPrivilegeLevel,
+    // List of channel features that have been paused by a curator
+    pub paused_features: BTreeSet<PausableChannelFeature>,
+    /// Transfer status of the channel. Requires to be explicitly accepted.
+    pub transfer_status: ChannelTransferStatus<MemberId, CuratorGroupId, Balance>,
+    /// Set of associated data objects
+    pub data_objects: BTreeSet<DataObjectId>,
 }
 
-impl<MemberId: Ord, CuratorGroupId, AccountId, Balance>
-    ChannelRecord<MemberId, CuratorGroupId, AccountId, Balance>
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+/// Defines whether a channel is being transferred. No transfer by the default.
+pub enum ChannelTransferStatus<
+    MemberId: Ord + PartialEq,
+    CuratorGroupId: PartialEq,
+    Balance: PartialEq,
+> {
+    /// Default transfer status: no pending tranfers.
+    NoActiveTransfer,
+
+    /// There is ongoing transfer with parameters.
+    PendingTransfer(PendingTransfer<MemberId, CuratorGroupId, Balance>),
+}
+
+impl<MemberId: Ord + PartialEq, CuratorGroupId: PartialEq, Balance: PartialEq> Default
+    for ChannelTransferStatus<MemberId, CuratorGroupId, Balance>
 {
-    /// Ensure censorship status have been changed
-    pub fn ensure_censorship_status_changed<T: Trait>(&self, is_censored: bool) -> DispatchResult {
+    fn default() -> Self {
+        ChannelTransferStatus::NoActiveTransfer
+    }
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+/// Contains parameters for the pending transfer.
+pub struct PendingTransfer<MemberId: Ord, CuratorGroupId, Balance> {
+    /// New channel owner.
+    pub new_owner: ChannelOwner<MemberId, CuratorGroupId>,
+    /// Transfer parameters.
+    pub transfer_params: TransferParameters<MemberId, Balance>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+/// Contains parameters for the pending transfer.
+pub struct TransferParameters<MemberId: Ord, Balance> {
+    /// New set of the channel's collaborators.
+    pub new_collaborators: BTreeSet<MemberId>,
+    /// Transfer price: can be 0, which means free.
+    pub price: Balance,
+}
+
+impl<
+        MemberId: Ord + PartialEq,
+        CuratorGroupId: PartialEq,
+        Balance: PartialEq,
+        ChannelPrivilegeLevel,
+        DataObjectId: Ord,
+    > ChannelRecord<MemberId, CuratorGroupId, Balance, ChannelPrivilegeLevel, DataObjectId>
+{
+    pub fn ensure_feature_not_paused<T: Trait>(
+        &self,
+        channel_feautre: PausableChannelFeature,
+    ) -> DispatchResult {
         ensure!(
-            self.is_censored != is_censored,
-            Error::<T>::ChannelCensorshipStatusDidNotChange
+            !self.paused_features.contains(&channel_feautre),
+            Error::<T>::ChannelFeaturePaused
         );
         Ok(())
+    }
+
+    /// Ensures that the channel has no active transfers.
+    pub fn ensure_has_no_active_transfer<T: Trait>(&self) -> DispatchResult {
+        ensure!(
+            !self.has_active_transfer(),
+            Error::<T>::InvalidChannelTransferStatus
+        );
+
+        Ok(())
+    }
+
+    // Defines whether the channel has ongoing transfer.
+    fn has_active_transfer(&self) -> bool {
+        self.transfer_status != ChannelTransferStatus::NoActiveTransfer
     }
 }
 
@@ -106,24 +181,18 @@ impl<MemberId: Ord, CuratorGroupId, AccountId, Balance>
 pub type Channel<T> = ChannelRecord<
     <T as common::MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
-    <T as frame_system::Trait>::AccountId,
     BalanceOf<T>,
+    <T as Trait>::ChannelPrivilegeLevel,
+    DataObjectId<T>,
 >;
 
 /// A request to buy a channel by a new ChannelOwner.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelOwnershipTransferRequestRecord<
-    ChannelId,
-    MemberId,
-    CuratorGroupId,
-    Balance,
-    AccountId,
-> {
+pub struct ChannelOwnershipTransferRequestRecord<ChannelId, MemberId, CuratorGroupId, Balance> {
     pub channel_id: ChannelId,
     pub new_owner: ChannelOwner<MemberId, CuratorGroupId>,
     pub payment: Balance,
-    pub new_reward_account: Option<AccountId>,
 }
 
 // ChannelOwnershipTransferRequest type alias for simplification.
@@ -132,53 +201,65 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
     <T as common::MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
     BalanceOf<T>,
-    <T as frame_system::Trait>::AccountId,
 >;
 
 /// Information about channel being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelCreationParametersRecord<StorageAssets, AccountId, MemberId: Ord> {
+pub struct ChannelCreationParametersRecord<
+    StorageAssets,
+    MemberId: Ord,
+    StorageBucketId: Ord,
+    DistributionBucketId: Ord,
+    Balance,
+> {
     /// Assets referenced by metadata
     pub assets: Option<StorageAssets>,
     /// Metadata about the channel.
     pub meta: Option<Vec<u8>>,
-    /// optional reward account
-    pub reward_account: Option<AccountId>,
     /// initial collaborator set
     pub collaborators: BTreeSet<MemberId>,
     /// initial moderator set
     pub moderators: BTreeSet<MemberId>,
+    /// Storage buckets to assign to a bag.
+    pub storage_buckets: BTreeSet<StorageBucketId>,
+    /// Distribution buckets to assign to a bag.
+    pub distribution_buckets: BTreeSet<DistributionBucketId>,
+    /// Commitment for the dynamic bag deletion prize for the storage pallet.
+    pub expected_dynamic_bag_deletion_prize: Balance,
+    /// Commitment for the data object deletion prize for the storage pallet.
+    pub expected_data_object_deletion_prize: Balance,
 }
 
 pub type ChannelCreationParameters<T> = ChannelCreationParametersRecord<
     StorageAssets<T>,
-    <T as frame_system::Trait>::AccountId,
     <T as common::MembershipTypes>::MemberId,
+    <T as storage::Trait>::StorageBucketId,
+    storage::DistributionBucketId<T>,
+    BalanceOf<T>,
 >;
 
 /// Information about channel being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelUpdateParametersRecord<StorageAssets, AccountId, DataObjectId: Ord, MemberId: Ord>
-{
+pub struct ChannelUpdateParametersRecord<StorageAssets, DataObjectId: Ord, MemberId: Ord, Balance> {
     /// Asset collection for the channel, referenced by metadata
     pub assets_to_upload: Option<StorageAssets>,
     /// If set, metadata update for the channel.
     pub new_meta: Option<Vec<u8>>,
-    /// If set, updates the reward account of the channel
-    pub reward_account: Option<Option<AccountId>>,
     /// assets to be removed from channel
     pub assets_to_remove: BTreeSet<DataObjectId>,
     /// collaborator set
     pub collaborators: Option<BTreeSet<MemberId>>,
+    /// Commitment for the data object deletion prize for the storage pallet.
+    pub expected_data_object_deletion_prize: Balance,
 }
 
 pub type ChannelUpdateParameters<T> = ChannelUpdateParametersRecord<
     StorageAssets<T>,
-    <T as frame_system::Trait>::AccountId,
     DataObjectId<T>,
     <T as common::MembershipTypes>::MemberId,
+    BalanceOf<T>,
 >;
 
 /// A category that videos can belong to.
@@ -207,7 +288,7 @@ pub struct VideoCategoryUpdateParameters {
 
 /// Information regarding the content being uploaded
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, Default, PartialEq, Eq, Debug)]
 pub struct StorageAssetsRecord<Balance> {
     /// Data object parameters.
     pub object_creation_list: Vec<DataObjectCreationParameters>,
@@ -221,7 +302,7 @@ pub type StorageAssets<T> = StorageAssetsRecord<BalanceOf<T>>;
 /// Information about the video being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct VideoCreationParametersRecord<StorageAssets, NftIssuanceParameters> {
+pub struct VideoCreationParametersRecord<StorageAssets, NftIssuanceParameters, Balance> {
     /// Asset collection for the video
     pub assets: Option<StorageAssets>,
     /// Metadata for the video.
@@ -230,15 +311,22 @@ pub struct VideoCreationParametersRecord<StorageAssets, NftIssuanceParameters> {
     pub enable_comments: bool,
     /// Parameters for issuing video Nft
     pub auto_issue_nft: Option<NftIssuanceParameters>,
+    /// Commitment for the data object deletion prize for the storage pallet.
+    pub expected_data_object_deletion_prize: Balance,
 }
 
 pub type VideoCreationParameters<T> =
-    VideoCreationParametersRecord<StorageAssets<T>, NftIssuanceParameters<T>>;
+    VideoCreationParametersRecord<StorageAssets<T>, NftIssuanceParameters<T>, BalanceOf<T>>;
 
 /// Information about the video being updated
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VideoUpdateParametersRecord<StorageAssets, DataObjectId: Ord> {
+pub struct VideoUpdateParametersRecord<
+    StorageAssets,
+    DataObjectId: Ord,
+    NftIssuanceParameters,
+    Balance,
+> {
     /// Assets referenced by metadata
     pub assets_to_upload: Option<StorageAssets>,
     /// If set, metadata update for the video.
@@ -247,28 +335,40 @@ pub struct VideoUpdateParametersRecord<StorageAssets, DataObjectId: Ord> {
     pub assets_to_remove: BTreeSet<DataObjectId>,
     /// If set enable/disable comments to video
     pub enable_comments: Option<bool>,
+    /// Parameters for updating Nft along with video
+    pub auto_issue_nft: Option<NftIssuanceParameters>,
+    /// Commitment for the data object deletion prize for the storage pallet.
+    pub expected_data_object_deletion_prize: Balance,
 }
 
-pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<StorageAssets<T>, DataObjectId<T>>;
+pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<
+    StorageAssets<T>,
+    DataObjectId<T>,
+    NftIssuanceParameters<T>,
+    BalanceOf<T>,
+>;
 
 /// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VideoRecord<ChannelId, VideoPostId, OwnedNft> {
-    /// channel the video is in
+pub struct VideoRecord<ChannelId, VideoPostId, OwnedNft, DataObjectId: Ord> {
     pub in_channel: ChannelId,
-    /// Whether the curators have censored the video or not.
-    pub is_censored: bool,
     /// enable or not comments
     pub enable_comments: bool,
     /// First post to a video works as a description
     pub video_post_id: Option<VideoPostId>,
     /// Whether nft for this video have been issued.
     pub nft_status: Option<OwnedNft>,
+    /// Set of associated data objects
+    pub data_objects: BTreeSet<DataObjectId>,
 }
 
-pub type Video<T> =
-    VideoRecord<<T as storage::Trait>::ChannelId, <T as Trait>::VideoPostId, Nft<T>>;
+pub type Video<T> = VideoRecord<
+    <T as storage::Trait>::ChannelId,
+    <T as Trait>::VideoPostId,
+    Nft<T>,
+    DataObjectId<T>,
+>;
 
 pub type DataObjectId<T> = <T as storage::Trait>::DataObjectId;
 
@@ -406,8 +506,8 @@ pub type PullPayment<T> = PullPaymentElement<
     <T as frame_system::Trait>::Hash,
 >;
 
-impl<ChannelId: Clone, VideoPostId: Clone, OwnedNft: Clone>
-    VideoRecord<ChannelId, VideoPostId, OwnedNft>
+impl<ChannelId: Clone, VideoPostId: Clone, OwnedNft: Clone, DataObjectId: Ord>
+    VideoRecord<ChannelId, VideoPostId, OwnedNft, DataObjectId>
 {
     /// Ensure nft is not issued
     pub fn ensure_nft_is_not_issued<T: Trait>(&self) -> DispatchResult {
@@ -425,29 +525,24 @@ impl<ChannelId: Clone, VideoPostId: Clone, OwnedNft: Clone>
     }
 
     /// Set video nft status
-    pub fn set_nft_status(mut self, nft: OwnedNft) -> Self {
+    pub fn set_nft_status(&mut self, nft: OwnedNft) {
         self.nft_status = Some(nft);
-        self
-    }
-
-    /// Ensure censorship status have been changed
-    pub fn ensure_censorship_status_changed<T: Trait>(&self, is_censored: bool) -> DispatchResult {
-        ensure!(
-            self.is_censored != is_censored,
-            Error::<T>::VideoCensorshipStatusDidNotChange
-        );
-        Ok(())
     }
 }
 
 /// Operations with local pallet account.
-pub trait ModuleAccount<T: balances::Trait> {
+pub trait ModuleAccount<T: Trait> {
     /// The module id, used for deriving its sovereign account ID.
     type ModuleId: Get<ModuleId>;
 
     /// The account ID of the module account.
+    fn account_for_channel(channel_id: T::ChannelId) -> T::AccountId {
+        Self::ModuleId::get().into_sub_account(("CHANNEL", channel_id))
+    }
+
+    /// The account ID of the module account.
     fn module_account_id() -> T::AccountId {
-        Self::ModuleId::get().into_sub_account(Vec::<u8>::new())
+        Self::ModuleId::get().into_sub_account("TREASURY")
     }
 
     /// Transfer tokens from the module account to the destination account (spends from
@@ -471,6 +566,14 @@ pub trait ModuleAccount<T: balances::Trait> {
         )
     }
 
+    /// Deposit amount to internal creator account: infallible
+    fn deposit_to_channel_account(channel_id: T::ChannelId, amount: BalanceOf<T>) {
+        let _ = <Balances<T> as Currency<T::AccountId>>::deposit_creating(
+            &Self::account_for_channel(channel_id),
+            amount,
+        );
+    }
+
     /// Displays usable balance for the module account.
     fn usable_balance() -> BalanceOf<T> {
         <Balances<T>>::usable_balance(&Self::module_account_id())
@@ -491,7 +594,7 @@ pub struct ModuleAccountHandler<T: balances::Trait, ModId: Get<ModuleId>> {
     module_id_marker: PhantomData<ModId>,
 }
 
-impl<T: balances::Trait, ModId: Get<ModuleId>> ModuleAccount<T> for ModuleAccountHandler<T, ModId> {
+impl<T: Trait, ModId: Get<ModuleId>> ModuleAccount<T> for ModuleAccountHandler<T, ModId> {
     type ModuleId = ModId;
 }
 
@@ -499,7 +602,8 @@ impl<T: balances::Trait, ModId: Get<ModuleId>> ModuleAccount<T> for ModuleAccoun
 pub type ContentTreasury<T> = ModuleAccountHandler<T, <T as Trait>::ModuleId>;
 pub type Balances<T> = balances::Module<T>;
 pub type BalanceOf<T> = <Balances<T> as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
-pub type CurrencyOf<T> = common::currency::BalanceOf<T>;
+pub type DynBagId<T> =
+    DynamicBagIdType<<T as common::MembershipTypes>::MemberId, <T as storage::Trait>::ChannelId>;
 pub type Storage<T> = storage::Module<T>;
 
 /// Type, used in diffrent numeric constraints representations

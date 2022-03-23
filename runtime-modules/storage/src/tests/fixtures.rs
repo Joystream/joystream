@@ -2,10 +2,11 @@ use frame_support::dispatch::DispatchResult;
 use frame_support::storage::StorageMap;
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
-use sp_runtime::{traits::Zero, DispatchError};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
-use std::convert::TryInto;
+
+use crate::sp_api_hidden_includes_decl_storage::hidden_include::IterableStorageDoubleMap;
+use crate::sp_api_hidden_includes_decl_storage::hidden_include::StorageDoubleMap;
 
 use super::mocks::{
     Balances, CollectiveFlip, Storage, System, Test, TestEvent, DEFAULT_MEMBER_ACCOUNT_ID,
@@ -19,7 +20,7 @@ use crate::tests::mocks::{
 };
 use crate::{
     BagId, Cid, DataObjectCreationParameters, DataObjectStorage, DistributionBucket,
-    DistributionBucketId, DynamicBagDeletionPrize, DynamicBagId, DynamicBagType, RawEvent,
+    DistributionBucketId, DynBagCreationParameters, DynamicBagId, DynamicBagType, RawEvent,
     StaticBagId, StorageBucketOperatorStatus, UploadParameters,
 };
 
@@ -322,20 +323,129 @@ impl UploadFixture {
         Self { params, ..self }
     }
 
+    pub fn with_expected_data_object_deletion_prize(
+        self,
+        expected_data_object_deletion_prize: u64,
+    ) -> Self {
+        Self {
+            params: UploadParameters::<Test> {
+                expected_data_object_deletion_prize,
+                ..self.params.clone()
+            },
+            ..self
+        }
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let old_next_data_object_id = Storage::next_data_object_id();
+        let balance_pre = Balances::usable_balance(self.params.deletion_prize_source_account_id);
+        let bag_pre = <crate::Bags<Test>>::get(&self.params.bag_id);
+        let buckets_pre = bag_pre
+            .stored_by
+            .iter()
+            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .clone()
+            .collect::<Vec<_>>();
+
+        let deletion_prize = self
+            .params
+            .object_creation_list
+            .iter()
+            .fold(0u64, |acc, _| {
+                acc.saturating_add(Storage::data_object_deletion_prize_value())
+            });
+        let total_size_added = self
+            .params
+            .object_creation_list
+            .iter()
+            .fold(0u64, |acc, param| acc.saturating_add(param.size));
+        let total_number_added = self.params.object_creation_list.len() as u64;
+        let upload_fee = Storage::calculate_data_storage_fee(total_size_added);
+
+        let start_id = Storage::next_data_object_id();
+
         let actual_result = Storage::upload_data_objects(self.params.clone());
+
+        let balance_post = Balances::usable_balance(self.params.deletion_prize_source_account_id);
+        let bag_post = <crate::Bags<Test>>::get(&self.params.bag_id);
+        let buckets_post = bag_post
+            .stored_by
+            .iter()
+            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .clone()
+            .collect::<Vec<_>>();
+        let end_id = Storage::next_data_object_id();
 
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            // check next data object ID
+            // balance check
             assert_eq!(
-                Storage::next_data_object_id(),
-                old_next_data_object_id + self.params.object_creation_list.len() as u64
+                balance_pre.saturating_sub(balance_post),
+                upload_fee.saturating_add(deletion_prize)
             );
+
+            // bag size increased
+            assert_eq!(
+                bag_post
+                    .objects_total_size
+                    .saturating_sub(bag_pre.objects_total_size),
+                total_size_added
+            );
+
+            // bag object number increased
+            assert_eq!(
+                bag_post
+                    .objects_number
+                    .saturating_sub(bag_pre.objects_number),
+                total_number_added
+            );
+
+            // storage bucket vouchers have size increased
+            assert!(buckets_pre
+                .iter()
+                .zip(buckets_post.iter())
+                .all(
+                    |(pre, post)| post.voucher.size_used.saturating_sub(pre.voucher.size_used)
+                        == total_size_added
+                ));
+
+            // storage bucket voucher have obj number increased
+            assert!(buckets_pre
+                .iter()
+                .zip(buckets_post.iter())
+                .all(|(pre, post)| post
+                    .voucher
+                    .objects_used
+                    .saturating_sub(pre.voucher.objects_used)
+                    == total_number_added));
+
+            // check next data object ID
+            assert_eq!(end_id.saturating_sub(start_id), total_number_added);
+
+            // objects existing on storage
+            assert!((start_id..end_id)
+                .all(|id| <crate::DataObjectsById<Test>>::contains_key(&self.params.bag_id, id)));
         } else {
-            assert_eq!(Storage::next_data_object_id(), old_next_data_object_id);
+            assert_eq!(start_id, end_id);
+            assert_eq!(balance_pre, balance_post);
+
+            // bag size NOT increased
+            assert_eq!(bag_post.objects_total_size, bag_pre.objects_total_size);
+
+            // bag object number NOT increased
+            assert_eq!(bag_post.objects_number, bag_pre.objects_number);
+
+            // storage bucket vouchers do NOT have size increased
+            assert!(buckets_pre
+                .iter()
+                .zip(buckets_post.iter())
+                .all(|(pre, post)| post.voucher.size_used == pre.voucher.size_used));
+
+            // storage bucket vouchers do NOT have obj number increased
+            assert!(buckets_pre
+                .iter()
+                .zip(buckets_post.iter())
+                .all(|(pre, post)| post.voucher.objects_used == pre.voucher.objects_used));
         }
     }
 }
@@ -682,6 +792,25 @@ impl DeleteDataObjectsFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let balance_pre = Balances::usable_balance(self.deletion_prize_account_id);
+        let bag_pre = <crate::Bags<Test>>::get(&self.bag_id);
+        let buckets_pre = bag_pre
+            .stored_by
+            .iter()
+            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .clone()
+            .collect::<Vec<_>>();
+
+        let deletion_prize = self.data_object_ids.iter().fold(0u64, |acc, id| {
+            acc.saturating_add(Storage::data_object_by_id(&self.bag_id, id).deletion_prize)
+        });
+
+        let total_size_removed = self.data_object_ids.iter().fold(0u64, |acc, id| {
+            acc.saturating_add(Storage::data_object_by_id(&self.bag_id, id).size)
+        });
+
+        let total_number_removed = self.data_object_ids.len() as u64;
+
         let actual_result = Storage::delete_data_objects(
             self.deletion_prize_account_id,
             self.bag_id.clone(),
@@ -689,6 +818,60 @@ impl DeleteDataObjectsFixture {
         );
 
         assert_eq!(actual_result, expected_result);
+
+        let balance_post = Balances::usable_balance(self.deletion_prize_account_id.clone());
+        let bag_post = <crate::Bags<Test>>::get(&self.bag_id);
+        let buckets_post = bag_post
+            .stored_by
+            .iter()
+            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .clone()
+            .collect::<Vec<_>>();
+
+        if actual_result.is_ok() {
+            // deletion prize is given back
+
+            assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize);
+
+            // objects are removed
+            assert!(self
+                .data_object_ids
+                .iter()
+                .all(|id| !<crate::DataObjectsById<Test>>::contains_key(&self.bag_id, id)));
+
+            // bag used capacity updated
+            assert_eq!(
+                bag_pre
+                    .objects_total_size
+                    .saturating_sub(bag_post.objects_total_size),
+                total_size_removed
+            );
+
+            assert_eq!(
+                bag_pre
+                    .objects_number
+                    .saturating_sub(bag_post.objects_number),
+                total_number_removed
+            );
+
+            // storage used capacity updated
+            assert!(buckets_pre
+                .iter()
+                .zip(buckets_post.iter())
+                .all(
+                    |(lhs, rhs)| lhs.voucher.size_used.saturating_sub(rhs.voucher.size_used)
+                        == total_size_removed
+                ));
+
+            assert!(buckets_pre
+                .iter()
+                .zip(buckets_post.iter())
+                .all(|(lhs, rhs)| lhs
+                    .voucher
+                    .objects_used
+                    .saturating_sub(rhs.voucher.objects_used)
+                    == total_number_removed));
+        }
     }
 }
 
@@ -805,32 +988,94 @@ impl DeleteDynamicBagFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let bag_id: BagId<Test> = self.bag_id.clone().into();
+        let balance_pre = Balances::usable_balance(self.deletion_account_id);
+        let bag = <crate::Bags<Test>>::get(&bag_id);
+        let s_buckets_pre = bag
+            .stored_by
+            .iter()
+            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .clone()
+            .collect::<Vec<_>>();
+
+        let d_buckets_pre = bag
+            .distributed_by
+            .iter()
+            .map(|id| {
+                <crate::DistributionBucketByFamilyIdById<Test>>::get(
+                    &id.distribution_bucket_family_id,
+                    &id.distribution_bucket_index,
+                )
+            })
+            .clone()
+            .collect::<Vec<_>>();
+
+        let deletion_prize = <crate::DataObjectsById<Test>>::iter_prefix(&bag_id)
+            .fold(bag.deletion_prize.unwrap_or_default(), |acc, (_, obj)| {
+                acc.saturating_add(obj.deletion_prize)
+            });
+
+        let total_size_removed = bag.objects_total_size;
+        let total_number_removed = bag.objects_number;
+
         let actual_result =
             Storage::delete_dynamic_bag(self.deletion_account_id, self.bag_id.clone());
 
         assert_eq!(actual_result, expected_result);
-    }
-}
 
-pub struct CanDeleteDynamicBagWithObjectsFixture {
-    bag_id: DynamicBagId<Test>,
-}
+        let balance_post = Balances::usable_balance(self.deletion_account_id.clone());
+        let s_buckets_post = bag
+            .stored_by
+            .iter()
+            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .clone()
+            .collect::<Vec<_>>();
 
-impl CanDeleteDynamicBagWithObjectsFixture {
-    pub fn default() -> Self {
-        Self {
-            bag_id: Default::default(),
+        let d_buckets_post = bag
+            .distributed_by
+            .iter()
+            .map(|id| {
+                <crate::DistributionBucketByFamilyIdById<Test>>::get(
+                    &id.distribution_bucket_family_id,
+                    &id.distribution_bucket_index,
+                )
+            })
+            .clone()
+            .collect::<Vec<_>>();
+
+        if actual_result.is_ok() {
+            assert!(!<crate::Bags<Test>>::contains_key(&bag_id));
+
+            assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize);
+
+            assert!(s_buckets_post
+                .iter()
+                .zip(s_buckets_pre.iter())
+                .all(|(pre, post)| post.assigned_bags.saturating_sub(pre.assigned_bags) == 1));
+            assert!(d_buckets_post
+                .iter()
+                .zip(d_buckets_pre.iter())
+                .all(|(pre, post)| post.assigned_bags.saturating_sub(pre.assigned_bags) == 1));
+
+            // every bucket has voucher.size_used decreased by total_size_removed
+            assert!(s_buckets_post
+                .iter()
+                .zip(s_buckets_pre.iter())
+                .all(
+                    |(pre, post)| post.voucher.size_used.saturating_sub(pre.voucher.size_used)
+                        == total_size_removed
+                ));
+
+            // every bucket has voucher.objects_used decreased by total_number_removed
+            assert!(s_buckets_post
+                .iter()
+                .zip(s_buckets_pre.iter())
+                .all(|(pre, post)| post
+                    .voucher
+                    .objects_used
+                    .saturating_sub(pre.voucher.objects_used)
+                    == total_number_removed));
         }
-    }
-
-    pub fn with_bag_id(self, bag_id: DynamicBagId<Test>) -> Self {
-        Self { bag_id, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = Storage::can_delete_dynamic_bag_with_objects(&self.bag_id.clone());
-
-        assert_eq!(actual_result, expected_result);
     }
 }
 
@@ -1121,84 +1366,55 @@ impl UpdateStorageBucketsVoucherMaxLimitsFixture {
 }
 
 pub struct CreateDynamicBagFixture {
-    bag_id: DynamicBagId<Test>,
-    deletion_prize: Option<DynamicBagDeletionPrize<Test>>,
+    params: DynBagCreationParameters<Test>,
 }
 
 impl CreateDynamicBagFixture {
     pub fn default() -> Self {
         Self {
-            bag_id: Default::default(),
-            deletion_prize: Default::default(),
+            params: DynBagCreationParameters::<Test> {
+                bag_id: DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID),
+                deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+                ..Default::default()
+            },
+        }
+    }
+
+    pub fn with_deletion_prize_account_id(self, deletion_prize_account_id: u64) -> Self {
+        Self {
+            params: DynBagCreationParameters::<Test> {
+                deletion_prize_source_account_id: deletion_prize_account_id,
+                ..self.params
+            },
+        }
+    }
+
+    pub fn with_storage_buckets(self, storage_buckets: BTreeSet<u64>) -> Self {
+        Self {
+            params: DynBagCreationParameters::<Test> {
+                storage_buckets,
+                ..self.params
+            },
+        }
+    }
+
+    pub fn with_distribution_buckets(
+        self,
+        distribution_buckets: BTreeSet<crate::DistributionBucketId<Test>>,
+    ) -> Self {
+        Self {
+            params: DynBagCreationParameters::<Test> {
+                distribution_buckets,
+                ..self.params
+            },
         }
     }
 
     pub fn with_bag_id(self, bag_id: DynamicBagId<Test>) -> Self {
-        Self { bag_id, ..self }
-    }
-
-    pub fn with_deletion_prize(self, deletion_prize: DynamicBagDeletionPrize<Test>) -> Self {
         Self {
-            deletion_prize: Some(deletion_prize),
-            ..self
-        }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result =
-            Storage::create_dynamic_bag(self.bag_id.clone(), self.deletion_prize.clone());
-
-        assert_eq!(actual_result, expected_result);
-
-        if actual_result.is_ok() {
-            let bag_id: BagId<Test> = self.bag_id.clone().into();
-            assert!(<crate::Bags<Test>>::contains_key(&bag_id));
-        }
-    }
-}
-
-pub struct CreateDynamicBagWithObjectsFixture {
-    sender: u64,
-    bag_id: DynamicBagId<Test>,
-    deletion_prize: Option<DynamicBagDeletionPrize<Test>>,
-    upload_parameters: UploadParameters<Test>,
-}
-
-impl CreateDynamicBagWithObjectsFixture {
-    pub fn default() -> Self {
-        let bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
-        let sender_acc = DEFAULT_MEMBER_ACCOUNT_ID;
-        Self {
-            sender: sender_acc.clone(),
-            bag_id: bag_id.clone(),
-            deletion_prize: None,
-            upload_parameters: UploadParameters::<Test> {
-                bag_id: bag_id.into(),
-                expected_data_size_fee: crate::Module::<Test>::data_object_per_mega_byte_fee(),
-                object_creation_list: create_data_object_candidates(
-                    1,
-                    DEFAULT_DATA_OBJECTS_NUMBER.try_into().unwrap(),
-                ),
-                deletion_prize_source_account_id: sender_acc,
-            },
-        }
-    }
-
-    pub fn with_expected_data_size_fee(self, expected_data_size_fee: u64) -> Self {
-        Self {
-            upload_parameters: UploadParameters::<Test> {
-                expected_data_size_fee,
-                ..self.upload_parameters
-            },
-            ..self
-        }
-    }
-
-    pub fn with_params_bag_id(self, bag_id: BagId<Test>) -> Self {
-        Self {
-            upload_parameters: UploadParameters::<Test> {
+            params: DynBagCreationParameters::<Test> {
                 bag_id,
-                ..self.upload_parameters
+                ..self.params
             },
             ..self
         }
@@ -1206,94 +1422,58 @@ impl CreateDynamicBagWithObjectsFixture {
 
     pub fn with_objects(self, object_creation_list: Vec<DataObjectCreationParameters>) -> Self {
         Self {
-            upload_parameters: UploadParameters::<Test> {
+            params: DynBagCreationParameters::<Test> {
                 object_creation_list,
-                ..self.upload_parameters
+                ..self.params
             },
             ..self
         }
     }
 
-    pub fn with_upload_parameters(self, upload_parameters: UploadParameters<Test>) -> Self {
+    pub fn with_expected_data_size_fee(self, expected_data_size_fee: u64) -> Self {
         Self {
-            upload_parameters,
-            ..self
-        }
-    }
-
-    pub fn with_objects_prize_source_account(self, deletion_prize_source_account_id: u64) -> Self {
-        Self {
-            upload_parameters: UploadParameters::<Test> {
-                deletion_prize_source_account_id,
-                ..self.upload_parameters
+            params: DynBagCreationParameters::<Test> {
+                expected_data_size_fee,
+                ..self.params
             },
             ..self
         }
     }
-
-    pub fn with_bag_id(self, bag_id: DynamicBagId<Test>) -> Self {
-        Self { bag_id, ..self }
-    }
-
-    pub fn with_deletion_prize(
+    pub fn with_expected_dynamic_bag_deletion_prize(
         self,
-        deletion_prize: Option<DynamicBagDeletionPrize<Test>>,
+        expected_dynamic_bag_deletion_prize: u64,
     ) -> Self {
         Self {
-            deletion_prize: deletion_prize,
+            params: DynBagCreationParameters::<Test> {
+                expected_dynamic_bag_deletion_prize,
+                ..self.params
+            },
+            ..self
+        }
+    }
+    pub fn with_expected_data_object_deletion_prize(
+        self,
+        expected_data_object_deletion_prize: u64,
+    ) -> Self {
+        Self {
+            params: DynBagCreationParameters::<Test> {
+                expected_data_object_deletion_prize,
+                ..self.params
+            },
             ..self
         }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let balance_pre = Balances::usable_balance(self.sender);
-        let bag_id: BagId<Test> = self.bag_id.clone().into();
-        let total_size_required = self
-            .upload_parameters
-            .object_creation_list
-            .iter()
-            .fold(0, |acc, it| acc + it.size);
-
-        let actual_result = Storage::create_dynamic_bag_with_objects_constraints(
-            self.bag_id.clone(),
-            self.deletion_prize.clone(),
-            self.upload_parameters.clone(),
-        );
-
-        let balance_post = Balances::usable_balance(self.sender);
+        let actual_result = Storage::create_dynamic_bag(self.params.clone());
 
         assert_eq!(actual_result, expected_result);
 
-        match actual_result {
-            Ok(()) => {
-                assert!(<crate::Bags<Test>>::contains_key(&bag_id));
-
-                let bag = crate::Bags::<Test>::get(&bag_id);
-                assert_eq!(
-                    balance_pre.saturating_sub(balance_post),
-                    self.deletion_prize
-                        .as_ref()
-                        .map_or_else(|| Zero::zero(), |dprize| dprize.prize)
-                );
-
-                let total_objects_required =
-                    self.upload_parameters.object_creation_list.len() as u64;
-
-                assert!(bag.stored_by.iter().all(|id| {
-                    let bucket = crate::StorageBucketById::<Test>::get(id);
-                    let enough_size =
-                        bucket.voucher.size_limit >= total_size_required + bucket.voucher.size_used;
-                    let enough_objects = bucket.voucher.objects_limit
-                        >= total_objects_required + bucket.voucher.objects_used;
-                    enough_size && enough_objects && bucket.accepting_new_bags
-                }));
-            }
-            Err(err) => {
-                assert_eq!(balance_pre, balance_post);
-                if into_str(err) != "DynamicBagExists" {
-                    assert!(!crate::Bags::<Test>::contains_key(&bag_id))
-                }
-            }
+        if actual_result.is_ok() {
+            let bag_id: BagId<Test> = self.params.bag_id.clone().into();
+            assert!(<crate::Bags<Test>>::contains_key(&bag_id));
+            let bag = <crate::Bags<Test>>::get(&bag_id);
+            assert!(bag.stored_by.len() > 0);
         }
     }
 }
@@ -2153,7 +2333,98 @@ impl CreateStorageBucketFixture {
     }
 }
 
-// wrapper to silence compiler error
-fn into_str(err: DispatchError) -> &'static str {
-    err.into()
+pub struct UpdateDynamicBagDeletionPrizeValueFixture {
+    origin: RawOrigin<u64>,
+    deletion_prize: u64,
+}
+
+impl UpdateDynamicBagDeletionPrizeValueFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+            deletion_prize: 0,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_deletion_prize(self, deletion_prize: u64) -> Self {
+        Self {
+            deletion_prize,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_deletion_prize = Storage::dynamic_bag_deletion_prize_value();
+
+        let actual_result = Storage::update_dynamic_bag_deletion_prize(
+            self.origin.clone().into(),
+            self.deletion_prize,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                self.deletion_prize,
+                Storage::dynamic_bag_deletion_prize_value()
+            );
+        } else {
+            assert_eq!(
+                old_deletion_prize,
+                Storage::dynamic_bag_deletion_prize_value()
+            );
+        }
+    }
+}
+
+pub struct UpdateDataObjectDeletionPrizeValueFixture {
+    origin: RawOrigin<u64>,
+    deletion_prize: u64,
+}
+
+impl UpdateDataObjectDeletionPrizeValueFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+            deletion_prize: 0,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_deletion_prize(self, deletion_prize: u64) -> Self {
+        Self {
+            deletion_prize,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_deletion_prize = Storage::data_object_deletion_prize_value();
+
+        let actual_result = Storage::update_data_object_deletion_prize(
+            self.origin.clone().into(),
+            self.deletion_prize,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                self.deletion_prize,
+                Storage::data_object_deletion_prize_value()
+            );
+        } else {
+            assert_eq!(
+                old_deletion_prize,
+                Storage::data_object_deletion_prize_value()
+            );
+        }
+    }
 }
