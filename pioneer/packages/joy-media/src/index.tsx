@@ -76,7 +76,7 @@ const App: React.FC<Props> = () => {
         <h1>Hello there!</h1>
         <p>
         We have just upgraded to our new Olympia Chain. That means our clunky user interface has been replaced,
-        and all the action will happen on <a target='_blank' rel='noopener noreferrer' href='https://www.dao.joystream.org'>dao.joystream.org</a>.
+        and all the action will happen on <a target='_blank' rel='noopener noreferrer' href='https://dao.joystream.org'>dao.joystream.org</a>.
         Be warned that as a new product, there will be bugs! If you are stuck - reach out on our{' '}
           <a target='_blank' rel='noopener noreferrer' href='https://discord.gg/DE9UN3YpRP'>Discord</a> and we&apos;ll guide you through the process :)
         </p>
@@ -90,9 +90,6 @@ const App: React.FC<Props> = () => {
             <li>If you want to be a Validator on Olympia, you will have to do it here for now!</li>
           </ol>
         </ListParagraph>
-        <p>
-          More information can be found <a target='_blank' rel='noopener noreferrer' href='https://blog.joystream.org/olympia-released/'>here</a>!
-        </p>
       </Header>
       <Grid stackable>
         <Grid.Row columns={2}>
@@ -103,7 +100,7 @@ const App: React.FC<Props> = () => {
                 This website has been replaced by the new state-of-the-art Pioneer v2. Check it out!
                 <Screenshot
                   src={PioneerScreenShot as string}
-                  href='https://www.dao.joystream.org'
+                  href='https://dao.joystream.org'
                   target='_blank'
                   rel='noopener noreferrer'/>
               </Message.Content>
@@ -112,7 +109,7 @@ const App: React.FC<Props> = () => {
                 primary
                 icon
                 labelPosition='right'
-                href='https://www.dao.joystream.org'
+                href='https://dao.joystream.org'
                 target='_blank'
                 rel='noopener noreferrer'>
                 Launch Pioneer
