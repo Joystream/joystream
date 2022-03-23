@@ -3089,36 +3089,14 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             Error::<T>::DataSizeFeeChanged,
         );
 
-        let creation_policy = Self::get_dynamic_bag_creation_policy(params.bag_id.clone().into());
-
-        // Validate storage bucket IDs
-        ensure!(
-            creation_policy.number_of_storage_buckets == params.storage_buckets.len() as u64,
-            Error::<T>::StorageBucketsNumberViolatesDynamicBagCreationPolicy
-        );
-
-        for storage_bucket_id in params.storage_buckets.clone() {
-            Self::ensure_storage_bucket_exists(&storage_bucket_id)?;
-        }
-
-        // Validate distribution bucket IDs
-        // We use this temp variable to validate provided distribution buckets.
-        let mut families_match = BTreeMap::new();
-
-        for distribution_bucket_id in params.distribution_buckets.clone() {
-            *families_match
-                .entry(distribution_bucket_id.distribution_bucket_family_id)
-                .or_insert(0u32) += 1u32;
-        }
-
-        ensure!(
-            families_match == creation_policy.families,
-            Error::<T>::DistributionBucketsViolatesDynamicBagCreationPolicy
-        );
-
-        for distribution_bucket_id in params.distribution_buckets.clone() {
-            Self::ensure_distribution_bucket_exists(&distribution_bucket_id)?;
-        }
+        Self::validate_storage_buckets_for_dynamic_bag_type(
+            params.bag_id.clone().into(),
+            &params.storage_buckets,
+        )?;
+        Self::validate_distribution_buckets_for_dynamic_bag_type(
+            params.bag_id.clone().into(),
+            &params.distribution_buckets,
+        )?;
 
         Self::try_mutating_storage_state(
             params.deletion_prize_source_account_id.clone(),
@@ -4213,5 +4191,54 @@ impl<T: Trait> Module<T> {
             }
         }
         Ok((net_prize, storage_fee))
+    }
+
+    // Validate storage bucket IDs for dynamic bag type. Checks buckets' existence and dynamic bag
+    // creation policy compatibility.
+    fn validate_storage_buckets_for_dynamic_bag_type(
+        dynamic_bag_type: DynamicBagType,
+        storage_buckets: &BTreeSet<T::StorageBucketId>,
+    ) -> DispatchResult {
+        let creation_policy = Self::get_dynamic_bag_creation_policy(dynamic_bag_type);
+
+        ensure!(
+            creation_policy.number_of_storage_buckets == storage_buckets.len() as u64,
+            Error::<T>::StorageBucketsNumberViolatesDynamicBagCreationPolicy
+        );
+
+        for storage_bucket_id in storage_buckets {
+            Self::ensure_storage_bucket_exists(storage_bucket_id)?;
+        }
+
+        Ok(())
+    }
+
+    // Validate distribution bucket IDs for dynamic bag type. Checks buckets' existence and dynamic
+    // bag creation policy compatibility.
+    fn validate_distribution_buckets_for_dynamic_bag_type(
+        dynamic_bag_type: DynamicBagType,
+        distribution_buckets: &BTreeSet<DistributionBucketId<T>>,
+    ) -> DispatchResult {
+        let creation_policy = Self::get_dynamic_bag_creation_policy(dynamic_bag_type);
+
+        // We use this temp variable to validate provided distribution buckets.
+        let mut families_match = BTreeMap::new();
+
+        for distribution_bucket_id in distribution_buckets {
+            *families_match
+                .entry(distribution_bucket_id.distribution_bucket_family_id)
+                .or_insert(0u32) += 1u32;
+        }
+
+        ensure!(
+            families_match == creation_policy.families,
+            Error::<T>::DistributionBucketsViolatesDynamicBagCreationPolicy
+        );
+
+        for distribution_bucket_id in distribution_buckets {
+            Self::ensure_distribution_bucket_exists(distribution_bucket_id)?;
+        }
+
+        Ok(())
     }
 }
