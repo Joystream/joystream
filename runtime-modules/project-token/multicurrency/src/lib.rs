@@ -10,11 +10,13 @@ use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 // crate modules
 mod errors;
 mod events;
+mod traits;
 mod types;
 
 // crate imports
 use errors::Error;
 use events::{Event, RawEvent};
+use traits::MultiCurrencyBase;
 use types::{AccountDataOf, TokenDataOf, TokenIssuanceParametersOf};
 
 /// Pallet Configuration Trait
@@ -28,151 +30,6 @@ pub trait Trait: frame_system::Trait {
 
     /// The token identifier used
     type TokenId: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug;
-}
-
-/// The Base Token Trait
-pub trait MultiCurrency<T: Trait> {
-    /// Mint `amount` into account `who` (possibly creating it)
-    /// for specified token `token_id`
-    ///
-    /// Preconditions:
-    /// - `token_id` must exists
-    ///
-    /// Postconditions:
-    /// - free balance of `who` is increased by `amount`
-    /// if `amount` is zero it is equivalent to a no-op
-    fn deposit_creating(
-        token_id: T::TokenId,
-        who: T::AccountId,
-        amount: T::Balance,
-    ) -> DispatchResult;
-
-    /// Mint `amount` into valid account `who`
-    /// for specified token `token_id`
-    ///
-    /// Preconditions:
-    /// - `token_id` must exists
-    /// - `who` must exists
-    ///
-    /// Postconditions:
-    /// - free balance of `who` is increased by `amount`
-    /// if `amount` is zero it is equivalent to a no-op
-    fn deposit_into_existing(
-        token_id: T::TokenId,
-        who: T::AccountId,
-        amount: T::Balance,
-    ) -> DispatchResult;
-
-    /// Burn `amount` of token `token_id` by slashing it from `who`
-    ///
-    /// Preconditions:
-    /// - `token_id` must exists
-    /// - `who` must exists
-    ///
-    /// Postconditions:
-    /// - free balance of `who` is decreased by `amount` or set to zero if below existential
-    ///   deposit
-    /// if `amount` is zero it is equivalent to a no-op
-    fn slash(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult;
-
-    /// Transfer `amount` from `src` account to `dst`
-    /// Preconditions:
-    /// - `token_id` must exists
-    /// - `src` must exists
-    /// - `src` free balance must be greater than or equal to `amount`
-    /// - `dst` must exists
-    ///
-    /// Postconditions:
-    /// - free balance of `src` is decreased by `amount or set to zero if below existential
-    ///   deposit`
-    /// - free balance of `dst` is increased by `amount`
-    /// if `amount` is zero it is equivalent to a no-op
-    fn transfer(
-        token_id: T::TokenId,
-        src: T::AccountId,
-        dst: T::AccountId,
-        amount: T::Balance,
-    ) -> DispatchResult;
-
-    /// Freeze `amount` of token for `who`
-    /// Preconditions:
-    /// - `token_id` must id
-    /// - `who` must identify valid account for `token_id`
-    /// - `who` free balance must be greater than `amount`
-    ///
-    /// Postconditions:
-    /// - `who` free balance decreased by `amount`
-    /// - `who` reserved balance increased by `amount`
-    /// if `amount` is zero it is equivalent to a no-op
-    fn freeze(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult;
-
-    /// Unfreeze `amount` of token for `who`
-    /// Preconditions:
-    /// - `token_id` must id
-    /// - `who` must identify valid account for `token_id`
-    /// - `who` reserved balance must be greater than `amount`
-    ///
-    /// Postconditions:
-    /// - `who` free balance increased by `amount`
-    /// - `who` reserved balance decreased by `amount`
-    /// if `amount` is zero it is equivalent to a no-op
-    fn unfreeze(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult;
-    /// Retrieve free balance for token and account
-    /// Preconditions:
-    /// - `token_id` must be a valid token identifier
-    /// - `who` account id must exist for token
-    fn free_balance(token_id: T::TokenId, who: T::AccountId) -> Result<T::Balance, DispatchError>;
-
-    /// Retrieve reserved balance for token and account
-    /// Preconditions:
-    /// - `token_id` must be a valid token identifier
-    /// - `who` account id must exist for token
-    fn reserved_balance(
-        token_id: T::TokenId,
-        who: T::AccountId,
-    ) -> Result<T::Balance, DispatchError>;
-
-    /// Retrieve total balance for token and account
-    /// Preconditions:
-    /// - `token_id` must be a valid token identifier
-    /// - `who` account id must exist for token
-    fn total_balance(token_id: T::TokenId, who: T::AccountId) -> Result<T::Balance, DispatchError>;
-
-    /// Mint `amount` for token `token_id`
-    /// Preconditions:
-    /// - `token_id` must id
-    /// -  it is possible to increase `token_id` issuance
-    ///
-    /// Postconditions:
-    /// - `token_id` issuance increased by amount
-    /// if `amount` is zero it is equivalent to a no-op
-    fn mint(token_id: T::TokenId, amount: T::Balance) -> DispatchResult;
-
-    /// Burn `amount` for token `token_id`
-    /// Preconditions:
-    /// - `token_id` must id
-    /// -  it is possible to decrease `token_id` issuance
-    ///
-    /// Postconditions:
-    /// - `token_id` issuance decreased by amount
-    /// if `amount` is zero it is equivalent to a no-op
-    fn burn(token_id: T::TokenId, amount: T::Balance) -> DispatchResult;
-
-    /// Create token
-    /// Preconditions:
-    /// Postconditions:
-    /// - token with specified characteristics is added to storage state
-    /// - `NextTokenId` increased by 1
-    fn issue_token(issuance_parameters: TokenIssuanceParametersOf<T>) -> DispatchResult;
-
-    /// Create token
-    /// Preconditions:
-    /// - `token_id` must exists
-    ///
-    /// Postconditions:
-    /// token data @ `token_Id` removed from storage
-    /// all account data for `token_Id` removed
-    fn deissue_token(token_id: T::TokenId) -> DispatchResult;
 }
 
 decl_storage! {
@@ -204,7 +61,19 @@ decl_module! {
 }
 
 /// Multi Currency Trait Implementation for Module
-impl<T: Trait> MultiCurrency<T> for Module<T> {
+impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
+    type Balance = T::Balance;
+    type TokenId = T::TokenId;
+
+    /// Mint `amount` into account `who` (possibly creating it)
+    /// for specified token `token_id`
+    ///
+    /// Preconditions:
+    /// - `token_id` must exists
+    ///
+    /// Postconditions:
+    /// - free balance of `who` is increased by `amount`
+    /// if `amount` is zero it is equivalent to a no-op
     fn deposit_creating(
         token_id: T::TokenId,
         who: T::AccountId,
@@ -225,6 +94,16 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         Ok(())
     }
 
+    /// Mint `amount` into valid account `who`
+    /// for specified token `token_id`
+    ///
+    /// Preconditions:
+    /// - `token_id` must exists
+    /// - `who` must exists
+    ///
+    /// Postconditions:
+    /// - free balance of `who` is increased by `amount`
+    /// if `amount` is zero it is equivalent to a no-op    
     fn deposit_into_existing(
         token_id: T::TokenId,
         who: T::AccountId,
@@ -244,6 +123,16 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         Ok(())
     }
 
+    /// Burn `amount` of token `token_id` by slashing it from `who`
+    ///
+    /// Preconditions:
+    /// - `token_id` must exists
+    /// - `who` must exists
+    ///
+    /// Postconditions:
+    /// - free balance of `who` is decreased by `amount` or set to zero if below existential
+    ///   deposit
+    /// if `amount` is zero it is equivalent to a no-op
     fn slash(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult {
         if amount.is_zero() {
             return Ok(());
@@ -259,6 +148,14 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         Ok(())
     }
 
+    /// Mint `amount` for token `token_id`
+    /// Preconditions:
+    /// - `token_id` must id
+    /// -  it is possible to increase `token_id` issuance
+    ///
+    /// Postconditions:
+    /// - `token_id` issuance increased by amount
+    /// if `amount` is zero it is equivalent to a no-op    
     fn mint(token_id: T::TokenId, amount: T::Balance) -> DispatchResult {
         if amount.is_zero() {
             return Ok(());
@@ -274,6 +171,14 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         Ok(())
     }
 
+    /// Burn `amount` for token `token_id`
+    /// Preconditions:
+    /// - `token_id` must id
+    /// -  it is possible to decrease `token_id` issuance
+    ///
+    /// Postconditions:
+    /// - `token_id` issuance decreased by amount
+    /// if `amount` is zero it is equivalent to a no-op    
     fn burn(token_id: T::TokenId, amount: T::Balance) -> DispatchResult {
         if amount.is_zero() {
             return Ok(());
@@ -289,6 +194,18 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         Ok(())
     }
 
+    /// Transfer `amount` from `src` account to `dst`
+    /// Preconditions:
+    /// - `token_id` must exists
+    /// - `src` must exists
+    /// - `src` free balance must be greater than or equal to `amount`
+    /// - `dst` must exists
+    ///
+    /// Postconditions:
+    /// - free balance of `src` is decreased by `amount or set to zero if below existential
+    ///   deposit`
+    /// - free balance of `dst` is increased by `amount`
+    /// if `amount` is zero it is equivalent to a no-op    
     fn transfer(
         token_id: T::TokenId,
         src: T::AccountId,
@@ -310,7 +227,17 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         Ok(())
     }
 
-    fn freeze(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult {
+    /// Freeze `amount` of token for `who`
+    /// Preconditions:
+    /// - `token_id` must id
+    /// - `who` must identify valid account for `token_id`
+    /// - `who` free balance must be greater than `amount`
+    ///
+    /// Postconditions:
+    /// - `who` free balance decreased by `amount`
+    /// - `who` reserved balance increased by `amount`
+    /// if `amount` is zero it is equivalent to a no-op    
+    fn reserve(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult {
         if amount.is_zero() {
             return Ok(());
         }
@@ -326,7 +253,17 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         Ok(())
     }
 
-    fn unfreeze(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult {
+    /// Unfreeze `amount` of token for `who`
+    /// Preconditions:
+    /// - `token_id` must id
+    /// - `who` must identify valid account for `token_id`
+    /// - `who` reserved balance must be greater than `amount`
+    ///
+    /// Postconditions:
+    /// - `who` free balance increased by `amount`
+    /// - `who` reserved balance decreased by `amount`
+    /// if `amount` is zero it is equivalent to a no-op    
+    fn unreserve(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult {
         if amount.is_zero() {
             return Ok(());
         }
@@ -342,12 +279,20 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         Ok(())
     }
 
+    /// Retrieve free balance for token and account
+    /// Preconditions:
+    /// - `token_id` must be a valid token identifier
+    /// - `who` account id must exist for token    
     fn free_balance(token_id: T::TokenId, who: T::AccountId) -> Result<T::Balance, DispatchError> {
         let account_info = Self::ensure_account_data_exists(token_id, &who)?;
 
         Ok(account_info.free_balance())
     }
 
+    /// Retrieve reserved balance for token and account
+    /// Preconditions:
+    /// - `token_id` must be a valid token identifier
+    /// - `who` account id must exist for token    
     fn reserved_balance(
         token_id: T::TokenId,
         who: T::AccountId,
@@ -357,6 +302,10 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         Ok(account_info.reserved_balance())
     }
 
+    /// Retrieve total balance for token and account
+    /// Preconditions:
+    /// - `token_id` must be a valid token identifier
+    /// - `who` account id must exist for token    
     fn total_balance(token_id: T::TokenId, who: T::AccountId) -> Result<T::Balance, DispatchError> {
         let account_info = Self::ensure_account_data_exists(token_id, &who)?;
 
@@ -365,6 +314,11 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
             .saturating_add(account_info.free_balance()))
     }
 
+    /// Create token
+    /// Preconditions:
+    /// Postconditions:
+    /// - token with specified characteristics is added to storage state
+    /// - `NextTokenId` increased by 1    
     fn issue_token(issuance_parameters: TokenIssuanceParametersOf<T>) -> DispatchResult {
         let token_data = issuance_parameters.try_build::<T>()?;
 
@@ -377,6 +331,13 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
         Ok(())
     }
 
+    /// Create token
+    /// Preconditions:
+    /// - `token_id` must exists
+    ///
+    /// Postconditions:
+    /// token data @ `token_Id` removed from storage
+    /// all account data for `token_Id` removed    
     fn deissue_token(token_id: T::TokenId) -> DispatchResult {
         Self::ensure_token_exists(token_id).map(|_| ())?;
 
