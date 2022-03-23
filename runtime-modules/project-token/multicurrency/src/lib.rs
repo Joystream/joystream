@@ -161,7 +161,18 @@ pub trait MultiCurrency<T: Trait> {
     /// Create token
     /// Preconditions:
     /// Postconditions:
+    /// - token with specified characteristics is added to storage state
+    /// - `NextTokenId` increased by 1
     fn issue_token(issuance_parameters: TokenIssuanceParametersOf<T>) -> DispatchResult;
+
+    /// Create token
+    /// Preconditions:
+    /// - `token_id` must exists
+    ///
+    /// Postconditions:
+    /// token data @ `token_Id` removed from storage
+    /// all account data for `token_Id` removed
+    fn deissue_token(token_id: T::TokenId) -> DispatchResult;
 }
 
 decl_storage! {
@@ -365,6 +376,15 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
 
         Ok(())
     }
+
+    fn deissue_token(token_id: T::TokenId) -> DispatchResult {
+        Self::ensure_token_exists(token_id).map(|_| ())?;
+
+        // == MUTATION SAFE ==
+
+        Self::do_deissue_token(token_id);
+        Ok(())
+    }
 }
 
 /// Module implementation
@@ -546,5 +566,12 @@ impl<T: Trait> Module<T> {
     pub(crate) fn do_issue_token(token_id: T::TokenId, token_data: TokenDataOf<T>) {
         TokenInfoById::<T>::insert(token_id, token_data);
         NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
+    }
+
+    #[inline]
+    pub(crate) fn do_deissue_token(token_id: T::TokenId) {
+        TokenInfoById::<T>::remove(token_id);
+        AccountInfoByTokenAndAccount::<T>::remove_prefix(token_id);
+        // TODO: add extra state removal as implementation progresses
     }
 }
