@@ -58,26 +58,14 @@ decl_error! {
         /// Vfdeo in season can`t be removed (because order is important)
         VideoInSeason,
 
-        /// Curators can only censor non-curator group owned channels
-        CannotCensoreCuratorGroupOwnedChannels,
-
         /// Actor cannot authorize as lead for given extrinsic
         ActorCannotBeLead,
-
-        /// Channel censorship status did not change
-        ChannelCensorshipStatusDidNotChange,
-
-        /// Video censorship status did not change
-        VideoCensorshipStatusDidNotChange,
 
         /// Actor cannot Own channel
         ActorCannotOwnChannel,
 
         // Auction Errors
         // ---------------------
-
-        /// Auction for given video did not start
-        AuctionDidNotStart,
 
         /// Nft for given video id already exists
         NftAlreadyExists,
@@ -133,6 +121,9 @@ decl_error! {
         /// Minimal auction bid step constraint violated.
         BidStepConstraintViolated,
 
+        /// Commit verification for bid amount
+        InvalidBidAmountSpecified,
+
         /// Auction starting price constraint violated.
         StartingPriceConstraintViolated,
 
@@ -149,13 +140,16 @@ decl_error! {
         RewardAccountIsNotSet,
 
         /// Actor is not a last bidder
-        ActorIsNotALastBidder,
+        ActorIsNotBidder,
 
         /// Auction cannot be completed
         AuctionCannotBeCompleted,
 
         /// Auction does not have bids
-        LastBidDoesNotExist,
+        BidDoesNotExist,
+
+        /// Selected Bid is for past open auction
+        BidIsForPastAuction,
 
         /// Auction starts at lower bound exceeded
         StartsAtLowerBoundExceeded,
@@ -174,6 +168,9 @@ decl_error! {
 
         /// Given video nft is not in buy now state
         NftNotInBuyNowState,
+
+        /// Invalid Buy Now price commit provided
+        InvalidBuyNowPriceProvided,
 
         /// Auction type is not `Open`
         IsNotOpenAuctionType,
@@ -265,5 +262,26 @@ decl_error! {
         /// Reward account is none
         RewardAccountNotFoundInChannel,
 
+        /// Curator does not have permissions to perform given moderation action
+        CuratorModerationActionNotAllowed,
+
+        /// Curator group's permissions by level map exceeded the maximum allowed size
+        CuratorGroupMaxPermissionsByLevelMapSizeExceeded,
+
+        /// Operation cannot be executed, because this channel feature has been paused by a curator
+        ChannelFeaturePaused,
+
+        /// Unexpected runtime state: missing channel bag during delete_channel attempt
+        ChannelBagMissing,
+
+        /// Invalid channel transfer status for operations.
+        InvalidChannelTransferStatus,
+
+        /// Incorrect actor tries to accept the channel transfer.
+        InvalidChannelTransferAcceptor,
+
+        /// Cannot accept the channel transfer: provided commitment parameters doesn't match with
+        /// channel pending transfer parameters.
+        InvalidChannelTransferCommitmentParams,
     }
 }

@@ -25,7 +25,7 @@ pub fn wasm_binary_unwrap() -> &'static [u8] {
     )
 }
 
-mod constants;
+pub mod constants;
 mod integration;
 pub mod primitives;
 mod proposals_configuration;
@@ -38,7 +38,6 @@ mod weights; // Runtime integration tests
 #[macro_use]
 extern crate lazy_static; // for proposals_configuration module
 
-use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, KeyOwnerProofSystem, LockIdentifier, OnUnbalanced};
 use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
@@ -54,7 +53,9 @@ use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::crypto::KeyTypeId;
 use sp_core::Hasher;
 use sp_runtime::curve::PiecewiseLinear;
-use sp_runtime::traits::{BlakeTwo256, Block as BlockT, IdentityLookup, OpaqueKeys, Saturating};
+use sp_runtime::traits::{
+    BlakeTwo256, Block as BlockT, ConvertInto, IdentityLookup, OpaqueKeys, Saturating,
+};
 use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, ModuleId, Perbill};
 use sp_std::boxed::Box;
 use sp_std::vec::Vec;
@@ -69,7 +70,7 @@ pub use runtime_api::*;
 
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder};
 
-use common::working_group::{WorkingGroup, WorkingGroupAuthenticator, WorkingGroupBudgetHandler};
+use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
 use council::ReferendumConnection;
 use referendum::{CastVote, OptionResult};
 use staking_handler::{LockComparator, StakingManager};
@@ -95,7 +96,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 10,
-    spec_version: 0,
+    spec_version: 3,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -480,12 +481,15 @@ parameter_types! {
     pub const PricePerByte: u32 = 2; // TODO: update
     pub const ContentModuleId: ModuleId = ModuleId(*b"mContent"); // module content
     pub const BloatBondCap: u32 = 1000;  // TODO: update
+    pub const BagDeletionPrize: Balance = 0; // TODO: update
+    pub const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = 25;
 }
 
 impl content::Trait for Runtime {
     type Event = Event;
     type ChannelCategoryId = ChannelCategoryId;
     type VideoId = VideoId;
+    type OpenAuctionId = OpenAuctionId;
     type VideoCategoryId = VideoCategoryId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type DataObjectStorage = Storage;
@@ -497,6 +501,10 @@ impl content::Trait for Runtime {
     type CleanupMargin = CleanupMargin;
     type CleanupCost = CleanupCost;
     type ModuleId = ContentModuleId;
+    type BagDeletionPrize = BagDeletionPrize;
+    type MemberAuthenticator = Members;
+    type MaxKeysPerCuratorGroupPermissionsByLevelMap = MaxKeysPerCuratorGroupPermissionsByLevelMap;
+    type ChannelPrivilegeLevel = ChannelPrivilegeLevel;
 }
 
 // The referendum instance alias.
@@ -507,19 +515,19 @@ pub type CouncilModule = council::Module<Runtime>;
 parameter_types! {
     // referendum parameters
     pub const MaxSaltLength: u64 = 32;
-    pub const VoteStageDuration: BlockNumber = 5;
-    pub const RevealStageDuration: BlockNumber = 7;
+    pub const VoteStageDuration: BlockNumber = 100;
+    pub const RevealStageDuration: BlockNumber = 50;
     pub const MinimumVotingStake: u64 = 10000;
 
     // council parameteres
     pub const MinNumberOfExtraCandidates: u64 = 1;
-    pub const AnnouncingPeriodDuration: BlockNumber = 15;
-    pub const IdlePeriodDuration: BlockNumber = 27;
-    pub const CouncilSize: u64 = 3;
+    pub const AnnouncingPeriodDuration: BlockNumber = 200;
+    pub const IdlePeriodDuration: BlockNumber = 400;
+    pub const CouncilSize: u64 = 5;
     pub const MinCandidateStake: u64 = 11000;
-    pub const ElectedMemberRewardPeriod: BlockNumber = 10;
-    pub const DefaultBudgetIncrement: u64 = 1000;
-    pub const BudgetRefillPeriod: BlockNumber = 1000;
+    pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
+    pub const DefaultBudgetIncrement: u64 = 10000000;
+    pub const BudgetRefillPeriod: BlockNumber = 14400;
     pub const MaxWinnerTargetCount: u64 = 10;
 }
 
@@ -603,7 +611,6 @@ impl common::StorageOwnership for Runtime {
 
 parameter_types! {
     pub const MaxDistributionBucketFamilyNumber: u64 = 200;
-    pub const DataObjectDeletionPrize: Balance = 0; //TODO: Change during Olympia release
     pub const BlacklistSizeLimit: u64 = 10000; //TODO: adjust value
     pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 20; //TODO: adjust value
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
@@ -623,7 +630,6 @@ impl storage::Trait for Runtime {
     type DistributionBucketIndex = DistributionBucketIndex;
     type DistributionBucketFamilyId = DistributionBucketFamilyId;
     type ChannelId = ChannelId;
-    type DataObjectDeletionPrize = DataObjectDeletionPrize;
     type BlacklistSizeLimit = BlacklistSizeLimit;
     type ModuleId = StorageModuleId;
     type StorageBucketsPerBagValueConstraint = StorageBucketsPerBagValueConstraint;
@@ -638,33 +644,8 @@ impl storage::Trait for Runtime {
         MaxNumberOfPendingInvitationsPerDistributionBucket;
     type MaxDataObjectSize = MaxDataObjectSize;
     type ContentId = ContentId;
-
-    fn ensure_storage_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
-        StorageWorkingGroup::ensure_leader_origin(origin)
-    }
-
-    fn ensure_storage_worker_origin(origin: Self::Origin, worker_id: ActorId) -> DispatchResult {
-        StorageWorkingGroup::ensure_worker_origin(origin, &worker_id)
-    }
-
-    fn ensure_storage_worker_exists(worker_id: &ActorId) -> DispatchResult {
-        StorageWorkingGroup::ensure_worker_exists(&worker_id)
-    }
-
-    fn ensure_distribution_working_group_leader_origin(origin: Self::Origin) -> DispatchResult {
-        DistributionWorkingGroup::ensure_leader_origin(origin)
-    }
-
-    fn ensure_distribution_worker_origin(
-        origin: Self::Origin,
-        worker_id: ActorId,
-    ) -> DispatchResult {
-        DistributionWorkingGroup::ensure_worker_origin(origin, &worker_id)
-    }
-
-    fn ensure_distribution_worker_exists(worker_id: &ActorId) -> DispatchResult {
-        DistributionWorkingGroup::ensure_worker_exists(&worker_id)
-    }
+    type StorageWorkingGroup = StorageWorkingGroup;
+    type DistributionWorkingGroup = DistributionWorkingGroup;
 }
 
 impl common::membership::MembershipTypes for Runtime {
@@ -755,10 +736,10 @@ parameter_types! {
     pub const ContentWorkingGroupRewardPeriod: u32 = 14400 + 30;
     pub const MembershipRewardPeriod: u32 = 14400 + 40;
     pub const GatewayRewardPeriod: u32 = 14400 + 50;
-    pub const DistributionRewardPeriod: u32 = 14400 + 50;
     pub const OperationsAlphaRewardPeriod: u32 = 14400 + 60;
     pub const OperationsBetaRewardPeriod: u32 = 14400 + 70;
     pub const OperationsGammaRewardPeriod: u32 = 14400 + 80;
+    pub const DistributionRewardPeriod: u32 = 14400 + 90;
     // This should be more costly than `apply_on_opening` fee with the current configuration
     // the base cost of `apply_on_opening` in tokens is 193. And has a very slight slope
     // with the lenght with the length of rationale, with 2000 stake we are probably safe.
@@ -1021,7 +1002,8 @@ impl joystream_utility::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_000_000;
+    // Make sure to stay below MAX_BLOCK_SIZE of substrate consensus of ~4MB
+    pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_500_000;
 }
 
 impl proposals_codex::Trait for Runtime {
@@ -1113,6 +1095,18 @@ impl blog::Trait<BlogInstance> for Runtime {
 /// Forum identifier for category
 pub type CategoryId = u64;
 
+parameter_types! {
+    pub const MinVestedTransfer: Balance = 100; // TODO: adjust value
+}
+
+impl pallet_vesting::Trait for Runtime {
+    type Event = Event;
+    type Currency = Balances;
+    type BlockNumberToBalance = ConvertInto;
+    type MinVestedTransfer = MinVestedTransfer;
+    type WeightInfo = weights::pallet_vesting::WeightInfo;
+}
+
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -1154,6 +1148,7 @@ construct_runtime!(
         Offences: pallet_offences::{Module, Call, Storage, Event},
         RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
         Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
+        Vesting: pallet_vesting::{Module, Call, Storage, Event<T>, Config<T>},
         // Joystream
         Council: council::{Module, Call, Storage, Event<T>, Config<T>},
         Referendum: referendum::<Instance1>::{Module, Call, Storage, Event<T>, Config<T>},

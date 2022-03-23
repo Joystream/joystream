@@ -1,6 +1,6 @@
 [package]
 name = 'pallet-content'
-version = '3.2.0'
+version = '4.1.0'
 authors = ['Joystream contributors']
 edition = '2018'
 
@@ -12,6 +12,8 @@ frame-system = { package = 'frame-system', default-features = false, git = 'http
 sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 codec = { package = 'parity-scale-codec', version = '1.3.4', default-features = false, features = ['derive'] }
 serde = {version = '1.0.101', features = ['derive'], optional = true}
+strum = {version = "0.19", optional = true}
+strum_macros = {version = "0.19", optional = true}
 common = { package = 'pallet-common', default-features = false, path = '../common'}
 storage = { package = 'pallet-storage', default-features = false, path = '../storage'}
 membership = { package = 'pallet-membership', default-features = false, path = '../membership'}
@@ -37,6 +39,8 @@ std = [
 	'sp-arithmetic/std',
 	'codec/std',
 	'serde',
+	'strum',
+	'strum_macros',
 	'common/std',
 	'storage/std',
 	'balances/std',

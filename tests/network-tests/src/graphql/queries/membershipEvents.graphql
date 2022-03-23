@@ -1,0 +1,259 @@
+# TODO: Always query events by eventId instead of memberid?
+
+fragment MembershipBoughtEventFields on MembershipBoughtEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  newMember {
+    id
+  }
+  rootAccount
+  controllerAccount
+  handle
+  metadata {
+    ...MemberMetadataFields
+  }
+  referrer {
+    id
+  }
+}
+query getMembershipBoughtEventsByEventIds($eventIds: [ID!]) {
+  membershipBoughtEvents(where: { id_in: $eventIds }) {
+    ...MembershipBoughtEventFields
+  }
+}
+
+fragment MemberProfileUpdatedEventFields on MemberProfileUpdatedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  member {
+    id
+  }
+  newHandle
+  newMetadata {
+    name
+    about
+  }
+}
+
+query getMemberProfileUpdatedEventsByMemberId($memberId: ID!) {
+  memberProfileUpdatedEvents(where: { member: { id_eq: $memberId } }) {
+    ...MemberProfileUpdatedEventFields
+  }
+}
+
+fragment MemberAccountsUpdatedEventFields on MemberAccountsUpdatedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  member {
+    id
+  }
+  newRootAccount
+  newControllerAccount
+}
+
+query getMemberAccountsUpdatedEventsByMemberId($memberId: ID!) {
+  memberAccountsUpdatedEvents(where: { member: { id_eq: $memberId } }) {
+    ...MemberAccountsUpdatedEventFields
+  }
+}
+
+fragment MemberInvitedEventFields on MemberInvitedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  invitingMember {
+    id
+  }
+  newMember {
+    id
+  }
+  rootAccount
+  controllerAccount
+  handle
+  metadata {
+    ...MemberMetadataFields
+  }
+}
+
+query getMemberInvitedEventsByEventIds($eventIds: [ID!]) {
+  memberInvitedEvents(where: { id_in: $eventIds }) {
+    ...MemberInvitedEventFields
+  }
+}
+
+fragment InvitesTransferredEventFields on InvitesTransferredEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  sourceMember {
+    id
+  }
+  targetMember {
+    id
+  }
+  numberOfInvites
+}
+
+query getInvitesTransferredEventsBySourceMemberId($sourceMemberId: ID!) {
+  invitesTransferredEvents(where: { sourceMember: { id_eq: $sourceMemberId } }) {
+    ...InvitesTransferredEventFields
+  }
+}
+
+fragment StakingAccountAddedEventFields on StakingAccountAddedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  member {
+    id
+  }
+  account
+}
+
+query getStakingAccountAddedEventsByEventIds($ids: [ID!]) {
+  stakingAccountAddedEvents(where: { id_in: $ids }) {
+    ...StakingAccountAddedEventFields
+  }
+}
+
+fragment StakingAccountConfirmedEventFields on StakingAccountConfirmedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  member {
+    id
+  }
+  account
+}
+
+query getStakingAccountConfirmedEventsByEventIds($ids: [ID!]) {
+  stakingAccountConfirmedEvents(where: { id_in: $ids }) {
+    ...StakingAccountConfirmedEventFields
+  }
+}
+
+fragment StakingAccountRemovedEventFields on StakingAccountRemovedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  member {
+    id
+  }
+  account
+}
+
+query getStakingAccountRemovedEventsByMemberId($memberId: ID!) {
+  stakingAccountRemovedEvents(where: { member: { id_eq: $memberId } }) {
+    ...StakingAccountRemovedEventFields
+  }
+}
+
+fragment ReferralCutUpdatedEventFields on ReferralCutUpdatedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  newValue
+}
+
+query getReferralCutUpdatedEventsByEventId($eventId: ID!) {
+  referralCutUpdatedEvents(where: { id_eq: $eventId }) {
+    ...ReferralCutUpdatedEventFields
+  }
+}
+
+fragment MembershipPriceUpdatedEventFields on MembershipPriceUpdatedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  newPrice
+}
+
+query getMembershipPriceUpdatedEventsByEventId($eventId: ID!) {
+  membershipPriceUpdatedEvents(where: { id_eq: $eventId }) {
+    ...MembershipPriceUpdatedEventFields
+  }
+}
+
+fragment InitialInvitationBalanceUpdatedEventFields on InitialInvitationBalanceUpdatedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  newInitialBalance
+}
+
+query getInitialInvitationBalanceUpdatedEventsByEventId($eventId: ID!) {
+  initialInvitationBalanceUpdatedEvents(where: { id_eq: $eventId }) {
+    ...InitialInvitationBalanceUpdatedEventFields
+  }
+}
+
+fragment InitialInvitationCountUpdatedEventFields on InitialInvitationCountUpdatedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  newInitialInvitationCount
+}
+
+query getInitialInvitationCountUpdatedEventsByEventId($eventId: ID!) {
+  initialInvitationCountUpdatedEvents(where: { id_eq: $eventId }) {
+    ...InitialInvitationCountUpdatedEventFields
+  }
+}
+
+fragment MemberVerificationStatusUpdatedEventFields on MemberVerificationStatusUpdatedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  worker {
+    id
+  }
+  isVerified
+}
+
+query getMemberVerificationStatusUpdatedEventsByEventIds($eventIds: [ID!]!) {
+  memberVerificationStatusUpdatedEvents(where: { id_in: $eventIds }) {
+    ...MemberVerificationStatusUpdatedEventFields
+  }
+}
