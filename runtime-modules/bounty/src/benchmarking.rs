@@ -22,7 +22,9 @@ use crate::{
     AssuranceContractType, BalanceOf, Bounties, BountyActor, BountyCreationParameters,
     BountyMilestone, Call, Entries, Event, FundingType, Module, OracleWorkEntryJudgment, Trait,
 };
-
+pub fn get_state_bloat_bond<T: Trait>() -> T::Balance {
+    crate::STATE_BLOAT_BOND.into()
+}
 pub fn run_to_block<T: Trait>(target_block: T::BlockNumber) {
     let mut current_block = System::<T>::block_number();
     while current_block < target_block {
@@ -170,7 +172,9 @@ fn create_funded_bounty<T: Trait>(
     params: BountyCreationParameters<T>,
     funding_amount: BalanceOf<T>,
 ) -> T::BountyId {
-    T::CouncilBudgetManager::set_budget(params.cherry + params.oracle_reward + funding_amount);
+    T::CouncilBudgetManager::set_budget(
+        params.cherry + params.oracle_reward + funding_amount + get_state_bloat_bond::<T>(),
+    );
 
     Bounty::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
 
@@ -397,7 +401,7 @@ benchmarks! {
         assert_eq!(
             Balances::<T>::usable_balance(&account_id),
             // included staking account deposit
-            initial_balance::<T>() - amount - T::CandidateStake::get()
+            initial_balance::<T>() - amount - T::CandidateStake::get() - get_state_bloat_bond::<T>()
         );
         assert_last_event::<T>(Event::<T>::BountyMaxFundingReached(bounty_id).into());
     }
@@ -408,7 +412,7 @@ benchmarks! {
         let oracle_reward: BalanceOf<T> = 100u32.into();
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
-        T::CouncilBudgetManager::set_budget(cherry + oracle_reward + max_amount);
+        T::CouncilBudgetManager::set_budget(cherry + oracle_reward + max_amount + get_state_bloat_bond::<T>());
 
         let params = BountyCreationParameters::<T>{
             funding_type: FundingType::Perpetual{ target: max_amount },
@@ -492,7 +496,7 @@ benchmarks! {
         let funding_amount: BalanceOf<T> = 100u32.into();
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
-        T::CouncilBudgetManager::set_budget(cherry + oracle_reward + funding_amount);
+        T::CouncilBudgetManager::set_budget(cherry + oracle_reward + funding_amount + get_state_bloat_bond::<T>());
 
         let params = BountyCreationParameters::<T>{
             funding_type: FundingType::Limited{
@@ -525,7 +529,7 @@ benchmarks! {
 
     }: withdraw_funding(RawOrigin::Root, funder, bounty_id)
     verify {
-        assert_eq!(T::CouncilBudgetManager::get_budget(), cherry + oracle_reward + funding_amount);
+        assert_eq!(T::CouncilBudgetManager::get_budget(), cherry + oracle_reward + funding_amount + get_state_bloat_bond::<T>());
         assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
     }
 
@@ -915,7 +919,6 @@ benchmarks! {
         assert_was_fired::<T>(
             Event::<T>::WorkEntrantFundsWithdrawn(bounty_id, entry_id, work_member_id).into()
         );
-        assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
     }
     switch_oracle_to_council_by_council_approval_successful {
 
@@ -1223,6 +1226,136 @@ benchmarks! {
     verify {
         assert_last_event::<T>(Event::<T>::WorkEntrantStakeUnlocked(bounty_id, entry_id, account_id).into())
     }
+    withdraw_state_bloat_bond_by_council{
+        let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_reward: BalanceOf<T> = 100u32.into();
+        let funding_amount: BalanceOf<T> = 100u32.into();
+        let (oracle_account_id, oracle_member_id) = member_funded_account::<T>("oracle", 1);
+        let oracle = BountyActor::Member(oracle_member_id);
+        let stake: BalanceOf<T> = 100u32.into();
+        let creator = BountyActor::Council;
+        let funder = BountyActor::Council;
+        let params = BountyCreationParameters::<T> {
+            creator: creator.clone(),
+            cherry,
+            oracle_reward,
+            funding_type: FundingType::Perpetual{ target: funding_amount },
+            oracle: oracle.clone(),
+            entrant_stake: stake,
+            ..Default::default()
+        };
+
+        let bounty_id = create_max_funded_bounty::<T>(params);
+
+        let (work_account_id, work_member_id) = member_funded_account::<T>("work entrants", 0);
+
+        Bounty::<T>::announce_work_entry(
+            RawOrigin::Signed(work_account_id.clone()).into(),
+            work_member_id,
+            bounty_id,
+            work_account_id.clone(),
+        )
+        .unwrap();
+
+        let entry_id: T::EntryId = Bounty::<T>::entry_count().into();
+
+        let work_data = b"work_data".to_vec();
+        Bounty::<T>::submit_work(
+            RawOrigin::Signed(work_account_id.clone()).into(),
+            work_member_id,
+            bounty_id,
+            entry_id,
+            work_data,
+        )
+        .unwrap();
+
+        Bounty::<T>::end_working_period(RawOrigin::Signed(oracle_account_id.clone()).into(), bounty_id).unwrap();
+        let winner_reward: BalanceOf<T> = funding_amount;
+        let judgment = vec![entry_id].iter()
+            .map(|entry_id| (*entry_id, OracleWorkEntryJudgment::Winner {reward : winner_reward}))
+            .collect::<BTreeMap<_, _>>();
+
+        Bounty::<T>::submit_oracle_judgment(
+            RawOrigin::Signed(oracle_account_id).into(),
+            bounty_id,
+            judgment.clone()
+        ).unwrap();
+
+    }: withdraw_state_bloat_bond(RawOrigin::Root, funder.clone(), bounty_id)
+    verify {
+        assert_last_event::<T>(Event::<T>::StateBloatBondWithdrawn(bounty_id, funder).into())
+    }
+
+    withdraw_state_bloat_bond_by_member{
+        let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_reward: BalanceOf<T> = 100u32.into();
+        let funding_amount: BalanceOf<T> = 100u32.into();
+        let (oracle_account_id, oracle_member_id) = member_funded_account::<T>("oracle", 0);
+        let oracle = BountyActor::Member(oracle_member_id);
+        let stake: BalanceOf<T> = 100u32.into();
+        let creator = BountyActor::Council;
+
+        let params = BountyCreationParameters::<T> {
+            creator: creator.clone(),
+            cherry,
+            oracle_reward,
+            funding_type: FundingType::Perpetual{ target: funding_amount },
+            oracle: oracle.clone(),
+            entrant_stake: stake,
+            ..Default::default()
+        };
+
+        T::CouncilBudgetManager::set_budget(cherry + oracle_reward);
+
+        // should reach default max bounty funding amount
+        let amount: BalanceOf<T> = 100u32.into();
+
+        let (account_id, member_id) = member_funded_account::<T>("funder", 1);
+        let funder = BountyActor::Member(member_id);
+        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
+
+        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
+
+        Bounty::<T>::fund_bounty(RawOrigin::Signed(account_id.clone()).into(), funder.clone(), bounty_id, amount).unwrap();
+        let (work_account_id, work_member_id) = member_funded_account::<T>("work entrants", 2);
+
+        Bounty::<T>::announce_work_entry(
+            RawOrigin::Signed(work_account_id.clone()).into(),
+            work_member_id,
+            bounty_id,
+            work_account_id.clone(),
+        )
+        .unwrap();
+
+        let entry_id: T::EntryId = Bounty::<T>::entry_count().into();
+
+        let work_data = b"work_data".to_vec();
+        Bounty::<T>::submit_work(
+            RawOrigin::Signed(work_account_id.clone()).into(),
+            work_member_id,
+            bounty_id,
+            entry_id,
+            work_data,
+        )
+        .unwrap();
+
+        Bounty::<T>::end_working_period(RawOrigin::Signed(oracle_account_id.clone()).into(), bounty_id).unwrap();
+
+        let winner_reward: BalanceOf<T> = funding_amount;
+        let judgment = vec![entry_id].iter()
+            .map(|entry_id| (*entry_id, OracleWorkEntryJudgment::Winner {reward : winner_reward}))
+            .collect::<BTreeMap<_, _>>();
+
+        Bounty::<T>::submit_oracle_judgment(
+            RawOrigin::Signed(oracle_account_id).into(),
+            bounty_id,
+            judgment.clone()
+        ).unwrap();
+
+    }: withdraw_state_bloat_bond(RawOrigin::Signed(account_id), funder.clone(), bounty_id)
+    verify {
+        assert_last_event::<T>(Event::<T>::StateBloatBondWithdrawn(bounty_id, funder).into())
+    }
 }
 
 #[cfg(test)]
@@ -1404,6 +1537,18 @@ mod tests {
     fn unlock_work_entrant_stake() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_unlock_work_entrant_stake::<Test>());
+        });
+    }
+    #[test]
+    fn withdraw_state_bloat_bond_by_council() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_withdraw_state_bloat_bond_by_council::<Test>());
+        });
+    }
+    #[test]
+    fn withdraw_state_bloat_bond_by_member() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_withdraw_state_bloat_bond_by_member::<Test>());
         });
     }
 }

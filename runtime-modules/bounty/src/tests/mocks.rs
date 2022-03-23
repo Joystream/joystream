@@ -46,7 +46,6 @@ impl_outer_event! {
         referendum_mod Instance1 <T>,
     }
 }
-
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
@@ -220,6 +219,12 @@ impl crate::WeightInfo for () {
         0
     }
     fn unlock_work_entrant_stake() -> u64 {
+        0
+    }
+    fn withdraw_state_bloat_bond_by_council() -> u64 {
+        0
+    }
+    fn withdraw_state_bloat_bond_by_member() -> u64 {
         0
     }
 }

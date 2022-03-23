@@ -1,3 +1,10 @@
+use super::mocks::{Balances, Bounty, System, Test, TestEvent};
+use crate::sp_api_hidden_includes_decl_storage::hidden_include::StorageDoubleMap;
+use crate::{
+    AssuranceContractType, BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord,
+    Entry, FundingType, OracleJudgmentOf, RawEvent,
+};
+use common::council::CouncilBudgetManager;
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::StorageMap;
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
@@ -5,13 +12,6 @@ use frame_system::{EventRecord, Phase, RawOrigin};
 use sp_runtime::offchain::storage_lock::BlockNumberProvider;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::iter::FromIterator;
-
-use super::mocks::{Balances, Bounty, System, Test, TestEvent};
-use crate::{
-    AssuranceContractType, BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord,
-    Entry, FundingType, OracleJudgmentOf, RawEvent,
-};
-use common::council::CouncilBudgetManager;
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests
@@ -49,7 +49,9 @@ pub fn decrease_bounty_account_balance(bounty_id: u64, amount: u64) {
     let account_id = Bounty::bounty_account_id(bounty_id);
     let _ = Balances::slash(&account_id, amount);
 }
-
+pub fn get_state_bloat_bond() -> u64 {
+    crate::STATE_BLOAT_BOND.into()
+}
 pub struct EventFixture;
 impl EventFixture {
     pub fn assert_last_crate_event(
@@ -421,11 +423,15 @@ impl FundBountyFixture {
             let new_bounty = Bounty::bounties(self.bounty_id);
             if new_bounty.total_funding == new_bounty.maximum_funding() {
                 assert_eq!(
-                    new_bounty_funding,
-                    old_bounty_funding + old_bounty.maximum_funding() - old_bounty.total_funding
+                    new_bounty_funding.amount,
+                    old_bounty_funding.amount + old_bounty.maximum_funding()
+                        - old_bounty.total_funding
                 );
             } else {
-                assert_eq!(new_bounty_funding, old_bounty_funding + self.amount);
+                assert_eq!(
+                    new_bounty_funding.amount,
+                    old_bounty_funding.amount + self.amount
+                );
             }
         } else {
             assert_eq!(new_bounty_funding, old_bounty_funding);
@@ -881,6 +887,57 @@ impl UnlockWorkEntrantStakeFixture {
                     old_bounty.active_work_entry_count - 1
                 );
             }
+        }
+    }
+}
+
+pub struct WithdrawStateBloatBondFixture {
+    origin: RawOrigin<u128>,
+    funder: BountyActor<u64>,
+    bounty_id: u64,
+}
+
+impl WithdrawStateBloatBondFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(1),
+            funder: BountyActor::Member(1),
+            bounty_id: 1,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_member_id(self, member_id: u64) -> Self {
+        Self {
+            funder: BountyActor::Member(member_id),
+            ..self
+        }
+    }
+
+    pub fn with_council(self) -> Self {
+        Self {
+            funder: BountyActor::Council,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Bounty::withdraw_state_bloat_bond(
+            self.origin.clone().into(),
+            self.funder.clone(),
+            self.bounty_id.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert!(!<crate::BountyContributions<Test>>::contains_key(
+                &self.bounty_id,
+                &self.funder
+            ));
         }
     }
 }
