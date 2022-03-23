@@ -152,8 +152,6 @@ export default class Api {
     return entries
   }
 
-
-
   protected async blockHash(height: number): Promise<string> {
     const blockHash = await this._api.rpc.chain.getBlockHash(height)
 

@@ -1,14 +1,14 @@
 import StakingCommandBase from '../../base/StakingCommandBase'
 import { flags } from '@oclif/command'
 
-
 export default class StakingValidateCommand extends StakingCommandBase {
   static description = 'Start validating. Takes the controller key.'
   static args = [
     {
       name: 'commission',
       required: false,
-      description: 'Set a commission (0-100), which is deducted from all rewards before the remainder is split with nominator',
+      description:
+        'Set a commission (0-100), which is deducted from all rewards before the remainder is split with nominator',
     },
   ]
   static flags = {
@@ -17,7 +17,7 @@ export default class StakingValidateCommand extends StakingCommandBase {
       description: `The controller key you want to validate with.`,
     }),
   }
-  
+
   async run(): Promise<void> {
     let { commission } = this.parse(StakingValidateCommand).args
     let { controller } = this.parse(StakingValidateCommand).flags
@@ -33,5 +33,3 @@ export default class StakingValidateCommand extends StakingCommandBase {
     await this.sendAndFollowNamedTx(await this.getDecodedPair(controller), 'staking', 'validate', [validatorPrefs])
   }
 }
-    
-    
