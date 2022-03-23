@@ -174,8 +174,8 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         value: 'http://localhost:8081/graphql',
       },
       {
-        name: 'Jsgenesis-hosted query node (https://hydra.joystream.org/graphql)',
-        value: 'https://hydra.joystream.org/graphql',
+        name: 'Jsgenesis-hosted query node (https://query.joystream.org/graphql)',
+        value: 'https://query.joystream.org/graphql',
       },
       {
         name: 'Custom endpoint',
