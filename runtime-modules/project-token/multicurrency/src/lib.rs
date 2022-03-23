@@ -1,13 +1,20 @@
 use codec::FullCodec;
 use core::default::Default;
 use frame_support::{
-    decl_error, decl_event, decl_module, decl_storage,
+    decl_module, decl_storage,
     dispatch::{fmt::Debug, marker::Copy, DispatchError, DispatchResult},
     ensure,
 };
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 
+// crate modules
+mod errors;
+mod events;
 mod types;
+
+// crate imports
+use errors::Error;
+use events::{Event, RawEvent};
 use types::{AccountDataOf, TokenDataOf};
 
 /// Pallet Configuration Trait
@@ -174,32 +181,6 @@ decl_storage! {
     }
 }
 
-decl_error! {
-    pub enum Error for Module<T: Trait> {
-        /// Free balance is insufficient for freezing specified amount
-        InsufficientFreeBalanceForFreezing,
-
-        /// Reserved balance is insufficient for unfreezing specified amount
-        InsufficientReservedBalance,
-
-        /// Free balance is insufficient for slashing specified amount
-        InsufficientFreeBalanceForSlashing,
-
-        /// Current total issuance cannot be decrease by specified amount
-        InsufficientIssuanceToDecreaseByAmount,
-
-        /// Requested token does not exist
-        TokenDoesNotExist,
-
-        /// Requested account data does not exist
-        AccountInformationDoesNotExist,
-
-        /// Existential deposit >= initial issuance
-        ExistentialDepositExceedsInitialIssuance,
-
-    }
-}
-
 decl_module! {
     /// _MultiCurrency_ substrate module.
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
@@ -208,64 +189,6 @@ decl_module! {
 
         /// Predefined errors.
         type Error = Error<T>;
-
-    }
-}
-
-decl_event! {
-    pub enum Event<T>
-    where
-        Balance = <T as Trait>::Balance,
-        TokenId = <T as Trait>::TokenId,
-        AccountId = <T as frame_system::Trait>::AccountId,
-    {
-        /// Amount is minted
-        /// Params:
-        /// - token identifier
-        /// - amount of tokens minted
-        TokenAmountMinted(TokenId, Balance),
-
-        /// Amount is burned
-        /// Params:
-        /// - token identifier
-        /// - amount of tokens burned
-        TokenAmountBurned(TokenId, Balance),
-
-        /// Token amount is deposited
-        /// Params:
-        /// - token identifier
-        /// - recipient account
-        /// - amount deposited
-        TokenAmountDepositedInto(TokenId, AccountId, Balance),
-
-        /// Token amount is slashed
-        /// Params:
-        /// - token identifier
-        /// - slashed account
-        /// - amount slashed
-        TokenAmountSlashedFrom(TokenId, AccountId, Balance),
-
-        /// Token amount is transferred from src to dst
-        /// Params:
-        /// - token identifier
-        /// - source account
-        /// - destination account
-        /// - amount transferred
-        TokenAmountTransferred(TokenId, AccountId, AccountId, Balance),
-
-        /// Token amount is reserved
-        /// Params:
-        /// - token identifier
-        /// - account tokens are reserved from
-        /// - amount reserved
-        TokenAmountReservedFrom(TokenId, AccountId, Balance),
-
-        /// Token amount is unreserved
-        /// Params:
-        /// - token identifier
-        /// - account tokens are unreserved from
-        /// - amount reserved
-        TokenAmountUnreservedFrom(TokenId, AccountId, Balance),
 
     }
 }
