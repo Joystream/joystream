@@ -16,7 +16,7 @@ mod types;
 // crate imports
 use errors::Error;
 use events::{Event, RawEvent};
-use traits::MultiCurrencyBase;
+use traits::{MultiCurrencyBase, ReservableMultiCurrency};
 use types::{AccountDataOf, TokenDataOf, TokenIssuanceParametersOf};
 
 /// Pallet Configuration Trait
@@ -32,6 +32,7 @@ pub trait Trait: frame_system::Trait {
     type TokenId: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug;
 }
 
+/// State configuration
 decl_storage! {
     trait Store for Module<T: Trait> as MultiCurrency {
         /// Double map TokenId x AccountId => AccountData for managing account data
@@ -60,7 +61,7 @@ decl_module! {
     }
 }
 
-/// Multi Currency Trait Implementation for Module
+/// MultiCurrencyBase Trait Implementation for Module
 impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
     type Balance = T::Balance;
     type TokenId = T::TokenId;
@@ -103,7 +104,7 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
     ///
     /// Postconditions:
     /// - free balance of `who` is increased by `amount`
-    /// if `amount` is zero it is equivalent to a no-op    
+    /// if `amount` is zero it is equivalent to a no-op
     fn deposit_into_existing(
         token_id: T::TokenId,
         who: T::AccountId,
@@ -155,7 +156,7 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
     ///
     /// Postconditions:
     /// - `token_id` issuance increased by amount
-    /// if `amount` is zero it is equivalent to a no-op    
+    /// if `amount` is zero it is equivalent to a no-op
     fn mint(token_id: T::TokenId, amount: T::Balance) -> DispatchResult {
         if amount.is_zero() {
             return Ok(());
@@ -178,7 +179,7 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
     ///
     /// Postconditions:
     /// - `token_id` issuance decreased by amount
-    /// if `amount` is zero it is equivalent to a no-op    
+    /// if `amount` is zero it is equivalent to a no-op
     fn burn(token_id: T::TokenId, amount: T::Balance) -> DispatchResult {
         if amount.is_zero() {
             return Ok(());
@@ -205,7 +206,7 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
     /// - free balance of `src` is decreased by `amount or set to zero if below existential
     ///   deposit`
     /// - free balance of `dst` is increased by `amount`
-    /// if `amount` is zero it is equivalent to a no-op    
+    /// if `amount` is zero it is equivalent to a no-op
     fn transfer(
         token_id: T::TokenId,
         src: T::AccountId,
@@ -226,8 +227,56 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
         Self::deposit_event(RawEvent::TokenAmountTransferred(token_id, src, dst, amount));
         Ok(())
     }
+    /// Issue token with specified characteristics
+    /// Preconditions:
+    /// Postconditions:
+    /// - token with specified characteristics is added to storage state
+    /// - `NextTokenId` increased by 1
+    fn issue_token(issuance_parameters: TokenIssuanceParametersOf<T>) -> DispatchResult {
+        let token_data = issuance_parameters.try_build::<T>()?;
 
-    /// Freeze `amount` of token for `who`
+        // == MUTATION SAFE ==
+
+        let token_id = Self::next_token_id();
+
+        Self::do_issue_token(token_id, token_data);
+
+        Ok(())
+    }
+
+    /// Remove token data from storage
+    /// Preconditions:
+    /// - `token_id` must exists
+    ///
+    /// Postconditions:
+    /// - token data @ `token_Id` removed from storage
+    /// - all account data for `token_Id` removed
+    fn deissue_token(token_id: T::TokenId) -> DispatchResult {
+        Self::ensure_token_exists(token_id).map(|_| ())?;
+
+        // == MUTATION SAFE ==
+
+        Self::do_deissue_token(token_id);
+        Ok(())
+    }
+
+    /// Retrieve usable (free) balance for token and account
+    /// Preconditions:
+    /// - `token_id` must be a valid token identifier
+    /// - `who` account id must exist for token
+    fn balance(token_id: T::TokenId, who: T::AccountId) -> Result<T::Balance, DispatchError> {
+        let account_info = Self::ensure_account_data_exists(token_id, &who)?;
+
+        Ok(account_info.free_balance())
+    }
+}
+
+/// ReservableMultiCurrency trait implementation for Module
+impl<T: Trait> ReservableMultiCurrency<T::AccountId> for Module<T> {
+    type TokenId = T::TokenId;
+    type Balance = T::Balance;
+
+    /// Reserve `amount` of token for `who`
     /// Preconditions:
     /// - `token_id` must id
     /// - `who` must identify valid account for `token_id`
@@ -236,7 +285,7 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
     /// Postconditions:
     /// - `who` free balance decreased by `amount`
     /// - `who` reserved balance increased by `amount`
-    /// if `amount` is zero it is equivalent to a no-op    
+    /// if `amount` is zero it is equivalent to a no-op
     fn reserve(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult {
         if amount.is_zero() {
             return Ok(());
@@ -253,7 +302,7 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
         Ok(())
     }
 
-    /// Unfreeze `amount` of token for `who`
+    /// Unreserve `amount` of token for `who`
     /// Preconditions:
     /// - `token_id` must id
     /// - `who` must identify valid account for `token_id`
@@ -262,7 +311,7 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
     /// Postconditions:
     /// - `who` free balance increased by `amount`
     /// - `who` reserved balance decreased by `amount`
-    /// if `amount` is zero it is equivalent to a no-op    
+    /// if `amount` is zero it is equivalent to a no-op
     fn unreserve(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult {
         if amount.is_zero() {
             return Ok(());
@@ -279,20 +328,10 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
         Ok(())
     }
 
-    /// Retrieve free balance for token and account
-    /// Preconditions:
-    /// - `token_id` must be a valid token identifier
-    /// - `who` account id must exist for token    
-    fn free_balance(token_id: T::TokenId, who: T::AccountId) -> Result<T::Balance, DispatchError> {
-        let account_info = Self::ensure_account_data_exists(token_id, &who)?;
-
-        Ok(account_info.free_balance())
-    }
-
     /// Retrieve reserved balance for token and account
     /// Preconditions:
     /// - `token_id` must be a valid token identifier
-    /// - `who` account id must exist for token    
+    /// - `who` account id must exist for token
     fn reserved_balance(
         token_id: T::TokenId,
         who: T::AccountId,
@@ -305,46 +344,13 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
     /// Retrieve total balance for token and account
     /// Preconditions:
     /// - `token_id` must be a valid token identifier
-    /// - `who` account id must exist for token    
+    /// - `who` account id must exist for token
     fn total_balance(token_id: T::TokenId, who: T::AccountId) -> Result<T::Balance, DispatchError> {
         let account_info = Self::ensure_account_data_exists(token_id, &who)?;
 
         Ok(account_info
             .reserved_balance()
             .saturating_add(account_info.free_balance()))
-    }
-
-    /// Create token
-    /// Preconditions:
-    /// Postconditions:
-    /// - token with specified characteristics is added to storage state
-    /// - `NextTokenId` increased by 1    
-    fn issue_token(issuance_parameters: TokenIssuanceParametersOf<T>) -> DispatchResult {
-        let token_data = issuance_parameters.try_build::<T>()?;
-
-        // == MUTATION SAFE ==
-
-        let token_id = Self::next_token_id();
-
-        Self::do_issue_token(token_id, token_data);
-
-        Ok(())
-    }
-
-    /// Create token
-    /// Preconditions:
-    /// - `token_id` must exists
-    ///
-    /// Postconditions:
-    /// token data @ `token_Id` removed from storage
-    /// all account data for `token_Id` removed    
-    fn deissue_token(token_id: T::TokenId) -> DispatchResult {
-        Self::ensure_token_exists(token_id).map(|_| ())?;
-
-        // == MUTATION SAFE ==
-
-        Self::do_deissue_token(token_id);
-        Ok(())
     }
 }
 
