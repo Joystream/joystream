@@ -46,8 +46,8 @@ export default abstract class StakingCommandBase extends AccountsCommandBase {
 
   async isController(controllerInput: string) {
     if (this.isKeyAvailable(controllerInput)) {
-      const info = (await this.getApi().isControllerValid(controllerInput)).unwrapOr(undefined)
-      if (!!info) {
+      const info = (await this.getApi().getStakingLedger(controllerInput)).unwrapOr(undefined)
+      if (info) {
         this.log(
           `Your controller ${controllerInput} with stash ${info.stash.toString()} is actively staking ${formatBalance(
             info.active
@@ -64,7 +64,7 @@ export default abstract class StakingCommandBase extends AccountsCommandBase {
   }
 
   async promptForCommission(
-    message = 'Choose how much you reqiure as commission (between 0% and 100%'
+    message = 'Choose how much you reqiure as commission (between 0% and 100%)'
   ): Promise<number> {
     return await this.simplePrompt<number>({ message, type: 'number' })
   }
