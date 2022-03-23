@@ -206,24 +206,30 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
     ///   deposit`
     /// - free balance of `dst` is increased by `amount`
     /// if `amount` is zero it is equivalent to a no-op
-    fn transfer(
+    fn transfer<DestinationLocation: Into<T::AccountId> + Clone>(
         token_id: T::TokenId,
         src: T::AccountId,
-        dst: T::AccountId,
+        dst: DestinationLocation,
         amount: T::Balance,
     ) -> DispatchResult {
         if amount.is_zero() {
             return Ok(());
         }
 
-        let existential_deposit = Self::ensure_can_transfer(token_id, &src, &dst, amount)?;
+        let existential_deposit =
+            Self::ensure_can_transfer(token_id, &src, &dst.to_owned().into(), amount)?;
 
         // == MUTATION SAFE ==
 
         Self::do_slash(token_id, &src, amount, existential_deposit);
-        Self::do_deposit(token_id, &dst, amount);
+        Self::do_deposit(token_id, &dst.to_owned().into(), amount);
 
-        Self::deposit_event(RawEvent::TokenAmountTransferred(token_id, src, dst, amount));
+        Self::deposit_event(RawEvent::TokenAmountTransferred(
+            token_id,
+            src,
+            dst.into(),
+            amount,
+        ));
         Ok(())
     }
     /// Issue token with specified characteristics
@@ -446,7 +452,7 @@ impl<T: Trait> Module<T> {
         let src_account_info = Self::ensure_account_data_exists(token_id, src)?;
 
         // ensure dst account id validity
-        Self::ensure_account_data_exists(token_id, dst).map(|_| ())?;
+        Self::ensure_account_data_exists(token_id, &dst).map(|_| ())?;
 
         // ensure can slash amount from who
         src_account_info.can_slash::<T>(amount)?;

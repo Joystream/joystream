@@ -1,9 +1,10 @@
 use frame_support::dispatch::{DispatchError, DispatchResult};
+use sp_std::convert::Into;
 
 use crate::types::TokenIssuanceParameters;
 
 /// The Base Token Trait
-pub trait MultiCurrencyBase<SourceLocation, DestinationLocation = SourceLocation> {
+pub trait MultiCurrencyBase<AccountId> {
     // provided types
 
     /// Balance Type
@@ -17,26 +18,25 @@ pub trait MultiCurrencyBase<SourceLocation, DestinationLocation = SourceLocation
     /// Mint `amount` into account `who` (possibly creating it)
     fn deposit_creating(
         token_id: Self::TokenId,
-        who: SourceLocation,
+        who: AccountId,
         amount: Self::Balance,
     ) -> DispatchResult;
 
     /// Mint `amount` into valid account `who`
     fn deposit_into_existing(
         token_id: Self::TokenId,
-        who: SourceLocation,
+        who: AccountId,
         amount: Self::Balance,
     ) -> DispatchResult;
 
     /// Burn `amount` of token `token_id` by slashing it from `who`
-    fn slash(token_id: Self::TokenId, who: SourceLocation, amount: Self::Balance)
-        -> DispatchResult;
+    fn slash(token_id: Self::TokenId, who: AccountId, amount: Self::Balance) -> DispatchResult;
 
     /// Transfer `amount` from `src` account to `dst`
-    fn transfer(
+    fn transfer<DestinationLocation: Into<AccountId> + Clone>(
         token_id: Self::TokenId,
-        src: SourceLocation,
-        dst: SourceLocation,
+        src: AccountId,
+        dst: DestinationLocation,
         amount: Self::Balance,
     ) -> DispatchResult;
 
@@ -48,17 +48,14 @@ pub trait MultiCurrencyBase<SourceLocation, DestinationLocation = SourceLocation
 
     /// Issue token with specified characteristics
     fn issue_token(
-        issuance_parameters: TokenIssuanceParameters<Self::Balance, SourceLocation>,
+        issuance_parameters: TokenIssuanceParameters<Self::Balance, AccountId>,
     ) -> DispatchResult;
 
     /// Remove token data from storage
     fn deissue_token(token_id: Self::TokenId) -> DispatchResult;
 
     /// Retrieve usable balance for token and account
-    fn balance(
-        token_id: Self::TokenId,
-        who: SourceLocation,
-    ) -> Result<Self::Balance, DispatchError>;
+    fn balance(token_id: Self::TokenId, who: AccountId) -> Result<Self::Balance, DispatchError>;
 
     /// Retrieve total current issuance for token
     fn current_issuance(token_id: Self::TokenId) -> Result<Self::Balance, DispatchError>;
@@ -98,10 +95,10 @@ pub trait TransferPermissionPolicy<TransferLocation, Hash> {
     fn can_transfer_to(&self, location: &TransferLocation) -> bool;
 
     /// Predicate method for distinguishing permissionless state
-    fn is_permissionless(&self) -> bool;
+    fn ensure_permissionless(&self) -> DispatchResult;
 
     /// Predicate method for distinguishing permissioned state
-    fn is_permissioned(&self) -> bool;
+    fn ensure_permissioned(&self) -> Result<Hash, DispatchError>;
 
     // Transition function to permissionless state
     fn change_to_permissionless(&mut self);
@@ -113,9 +110,13 @@ pub trait TransferPermissionPolicy<TransferLocation, Hash> {
 /// Account wrapper that encapsulates the validation for the transfer location
 /// by means of the visitor pattern
 pub trait TransferLocationTrait<AccountId, Hash> {
+    // TODO: enable after TransferTransmissionPolicy implementation
+    // type Policy: TransferPermissionPolicy<Self, Hash>;
+
     /// encapsulates eventual merkle tree validation given policy
     fn is_valid_location_for_policy(
         &self,
+        // TODO: replace with Policy?
         policy: &dyn TransferPermissionPolicy<Self, Hash>, // visitee
     ) -> bool;
 

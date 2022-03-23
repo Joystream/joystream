@@ -5,6 +5,9 @@ use frame_support::{
 };
 use sp_arithmetic::traits::{Saturating, Zero};
 
+// crate imports
+use crate::traits::{TransferLocationTrait, TransferPermissionPolicy};
+
 // TODO: find a suitable symbol representation
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
 pub struct Symbol {}
@@ -72,6 +75,21 @@ pub struct TokenIssuanceParameters<Balance, AccountId> {
     /// Token Symbol
     symbol: Symbol,
 }
+
+/// Transfer location without merkle proof
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
+pub struct SimpleLocation<AccountId> {
+    account: AccountId,
+}
+
+/// Transfer location with merkle proof
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
+pub struct VerifiableLocation<AccountId, Hash> {
+    merkle_proof: Vec<Hash>,
+    account: AccountId,
+}
+
+// implementation
 
 /// Default trait for Issuance state
 impl Default for IssuanceState {
@@ -207,6 +225,47 @@ impl<Balance: Zero + Copy + PartialOrd, AccountId> TokenIssuanceParameters<Balan
             existential_deposit: self.existential_deposit,
             symbol: self.symbol,
         })
+    }
+}
+
+impl<AccountId: Clone, Hash> TransferLocationTrait<AccountId, Hash> for SimpleLocation<AccountId> {
+    fn is_valid_location_for_policy(
+        &self,
+        policy: &dyn TransferPermissionPolicy<Self, Hash>, // visitee
+    ) -> bool {
+        // visitee dispatch
+        policy.ensure_permissionless().is_ok()
+    }
+
+    fn location_account(&self) -> AccountId {
+        self.account.to_owned()
+    }
+}
+
+impl<AccountId: Clone, Hash> TransferLocationTrait<AccountId, Hash>
+    for VerifiableLocation<AccountId, Hash>
+{
+    fn is_valid_location_for_policy(
+        &self,
+        policy: &dyn TransferPermissionPolicy<Self, Hash>, // visitee
+    ) -> bool {
+        // visitee dispatch
+        if let Ok(whitelist_commit) = policy.ensure_permissioned() {
+            self.is_merkle_proof_valid(whitelist_commit)
+        } else {
+            policy.ensure_permissionless().is_ok()
+        }
+    }
+
+    fn location_account(&self) -> AccountId {
+        self.account.to_owned()
+    }
+}
+
+impl<AccountId, Hash> VerifiableLocation<AccountId, Hash> {
+    pub(crate) fn is_merkle_proof_valid(&self, _commit: Hash) -> bool {
+        // TODO: copy from content merkle proof verification
+        true
     }
 }
 
