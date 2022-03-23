@@ -2,9 +2,9 @@ import UploadCommandBase from '../../base/UploadCommandBase'
 import { getInputJson } from '../../helpers/InputOutput'
 import { asValidatedMetadata, metadataToBytes } from '../../helpers/serialization'
 import { VideoInputParameters, VideoFileMetadata } from '../../Types'
-import { createTypeFromConstructor } from '@joystream/types'
+import { createType } from '@joystream/types'
 import { flags } from '@oclif/command'
-import { VideoCreationParameters } from '@joystream/types/content'
+import { VideoCreationParameters, VideoId } from '@joystream/types/content'
 import { IVideoMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
 import { VideoInputSchema } from '../../schemas/ContentDirectory'
 import chalk from 'chalk'
@@ -24,6 +24,7 @@ export default class CreateVideoCommand extends UploadCommandBase {
       description: 'ID of the Channel',
     }),
     context: ContentDirectoryCommandBase.channelManagementContextFlag,
+    ...UploadCommandBase.flags,
   }
 
   setVideoMetadataDefaults(metadata: IVideoMetadata, videoFileMetadata: VideoFileMetadata): IVideoMetadata {
@@ -46,12 +47,13 @@ export default class CreateVideoCommand extends UploadCommandBase {
     // Get context
     const channel = await this.getApi().channelById(channelId)
     const [actor, address] = await this.getChannelManagementActor(channel, context)
-    const [memberId] = await this.getRequiredMemberContext()
+    const { id: memberId } = await this.getRequiredMemberContext(true)
     const keypair = await this.getDecodedPair(address)
 
     // Get input from file
     const videoCreationParametersInput = await getInputJson<VideoInputParameters>(input, VideoInputSchema)
     let meta = asValidatedMetadata(VideoMetadata, videoCreationParametersInput)
+    const { enableComments } = videoCreationParametersInput
 
     // Assets
     const { videoPath, thumbnailPhotoPath } = videoCreationParametersInput
@@ -69,12 +71,16 @@ export default class CreateVideoCommand extends UploadCommandBase {
 
     // Preare and send the extrinsic
     const assets = await this.prepareAssetsForExtrinsic(resolvedAssets)
-    const videoCreationParameters = createTypeFromConstructor(VideoCreationParameters, {
-      assets,
-      meta: metadataToBytes(VideoMetadata, meta),
-    })
+    const videoCreationParameters = createType<VideoCreationParameters, 'VideoCreationParameters'>(
+      'VideoCreationParameters',
+      {
+        assets,
+        meta: metadataToBytes(VideoMetadata, meta),
+        enable_comments: enableComments,
+      }
+    )
 
-    this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), metadata: meta }))
+    this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), metadata: meta, enableComments }))
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
@@ -84,10 +90,8 @@ export default class CreateVideoCommand extends UploadCommandBase {
       videoCreationParameters,
     ])
 
-    const videoCreatedEvent = this.findEvent(result, 'content', 'VideoCreated')
-    this.log(
-      chalk.green(`Video with id ${chalk.cyanBright(videoCreatedEvent?.data[2].toString())} successfully created!`)
-    )
+    const videoId: VideoId = this.getEvent(result, 'content', 'VideoCreated').data[2]
+    this.log(chalk.green(`Video with id ${chalk.cyanBright(videoId.toString())} successfully created!`))
 
     const dataObjectsUploadedEvent = this.findEvent(result, 'storage', 'DataObjectsUploaded')
     if (dataObjectsUploadedEvent) {

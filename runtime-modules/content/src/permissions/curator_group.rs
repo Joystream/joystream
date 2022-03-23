@@ -3,7 +3,11 @@ use super::*;
 /// A group, that consists of `curators` set
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
-pub struct CuratorGroup<T: Trait> {
+pub struct CuratorGroup<T: Trait>
+where
+    T: common::membership::MembershipTypes,
+    T::ActorId: Ord,
+{
     /// Curators set, associated with a iven curator group
     curators: BTreeSet<T::CuratorId>,
 

@@ -1,24 +1,34 @@
 import BN from 'bn.js'
-import { ElectionStage, Seat } from '@joystream/types/council'
-import { Option, bool } from '@polkadot/types'
-import { Codec } from '@polkadot/types/types'
-import { BlockNumber, Balance, AccountId } from '@polkadot/types/interfaces'
+import { Codec, IEvent } from '@polkadot/types/types'
+import { Balance, AccountId } from '@polkadot/types/interfaces'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { WorkerId, OpeningType } from '@joystream/types/working-group'
-import { Membership, MemberId } from '@joystream/types/members'
-import { Opening, StakingPolicy, ApplicationStage } from '@joystream/types/hiring'
+import { Membership } from '@joystream/types/members'
+import { MemberId } from '@joystream/types/common'
 import { Validator } from 'inquirer'
 import { ApiPromise } from '@polkadot/api'
-import { SubmittableModuleExtrinsics, QueryableModuleStorage, QueryableModuleConsts } from '@polkadot/api/types'
+import {
+  SubmittableModuleExtrinsics,
+  QueryableModuleStorage,
+  QueryableModuleConsts,
+  AugmentedEvent,
+} from '@polkadot/api/types'
 import { JSONSchema4 } from 'json-schema'
 import {
-  IChannelCategoryMetadata,
   IChannelMetadata,
-  IVideoCategoryMetadata,
   IVideoMetadata,
+  IVideoCategoryMetadata,
+  IChannelCategoryMetadata,
+  IOpeningMetadata,
+  IWorkingGroupMetadata,
 } from '@joystream/metadata-protobuf'
 import { DataObjectCreationParameters } from '@joystream/types/storage'
+import {
+  MembershipFieldsFragment,
+  WorkingGroupApplicationDetailsFragment,
+  WorkingGroupOpeningDetailsFragment,
+} from './graphql/generated/queries'
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -34,22 +44,6 @@ export type AccountSummary = {
   balances: DeriveBalancesAll
 }
 
-export type CouncilInfo = {
-  activeCouncil: Seat[]
-  termEndsAt: BlockNumber
-  autoStart: bool
-  newTermDuration: BN
-  candidacyLimit: BN
-  councilSize: BN
-  minCouncilStake: Balance
-  minVotingStake: Balance
-  announcingPeriod: BlockNumber
-  votingPeriod: BlockNumber
-  revealingPeriod: BlockNumber
-  round: BN
-  stage: Option<ElectionStage>
-}
-
 // Object with "name" and "value" properties, used for rendering simple CLI tables like:
 // Total balance:   100 JOY
 // Free calance:     50 JOY
@@ -59,29 +53,30 @@ export type NameValueObj = { name: string; value: string }
 export enum WorkingGroups {
   StorageProviders = 'storageProviders',
   Curators = 'curators',
-  OperationsAlpha = 'operationsAlpha',
-  OperationsBeta = 'operationsBeta',
-  OperationsGamma = 'operationsGamma',
+  Forum = 'forum',
+  Membership = 'membership',
+  Builders = 'builders',
+  HumanResources = 'humanResources',
+  Marketing = 'marketing',
   Gateway = 'gateway',
   Distribution = 'distributors',
 }
 
-// In contrast to Pioneer, currently only StorageProviders group is available in CLI
 export const AvailableGroups: readonly WorkingGroups[] = [
   WorkingGroups.StorageProviders,
   WorkingGroups.Curators,
-  WorkingGroups.OperationsAlpha,
-  WorkingGroups.OperationsBeta,
-  WorkingGroups.OperationsGamma,
+  WorkingGroups.Forum,
+  WorkingGroups.Membership,
   WorkingGroups.Gateway,
+  WorkingGroups.Builders,
+  WorkingGroups.HumanResources,
+  WorkingGroups.Marketing,
   WorkingGroups.Distribution,
 ] as const
 
 export type Reward = {
-  totalRecieved: Balance
-  value: Balance
-  interval?: number
-  nextPaymentBlock: number // 0 = no incoming payment
+  totalMissed?: Balance
+  valuePerBlock?: Balance
 }
 
 // Compound working group types
@@ -89,83 +84,42 @@ export type GroupMember = {
   workerId: WorkerId
   memberId: MemberId
   roleAccount: AccountId
-  profile: Membership
-  stake?: Balance
-  reward?: Reward
+  stakingAccount: AccountId
+  profile: MemberDetails
+  stake: Balance
+  reward: Reward
 }
 
-export type GroupApplication = {
-  wgApplicationId: number
+export type ApplicationDetails = {
   applicationId: number
-  wgOpeningId: number
-  member: Membership | null
+  member: MemberDetails
   roleAccout: AccountId
-  stakes: {
-    application: number
-    role: number
-  }
-  humanReadableText: string
-  stage: keyof ApplicationStage['typeDefinitions']
-}
-
-export enum OpeningStatus {
-  WaitingToBegin = 'WaitingToBegin',
-  AcceptingApplications = 'AcceptingApplications',
-  InReview = 'InReview',
-  Complete = 'Complete',
-  Cancelled = 'Cancelled',
-  Unknown = 'Unknown',
-}
-
-export type GroupOpeningStage = {
-  status: OpeningStatus
-  block?: number
-  date?: Date
-}
-
-export type GroupOpeningStakes = {
-  application?: StakingPolicy
-  role?: StakingPolicy
-}
-
-export const stakingPolicyUnstakingPeriodKeys = [
-  'crowded_out_unstaking_period_length',
-  'review_period_expired_unstaking_period_length',
-] as const
-
-export type StakingPolicyUnstakingPeriodKey = typeof stakingPolicyUnstakingPeriodKeys[number]
-
-export const openingPolicyUnstakingPeriodsKeys = [
-  'fill_opening_failed_applicant_application_stake_unstaking_period',
-  'fill_opening_failed_applicant_role_stake_unstaking_period',
-  'fill_opening_successful_applicant_application_stake_unstaking_period',
-  'terminate_application_stake_unstaking_period',
-  'terminate_role_stake_unstaking_period',
-  'exit_role_application_stake_unstaking_period',
-  'exit_role_stake_unstaking_period',
-] as const
-
-export type OpeningPolicyUnstakingPeriodsKey = typeof openingPolicyUnstakingPeriodsKeys[number]
-export type UnstakingPeriodsKey =
-  | OpeningPolicyUnstakingPeriodsKey
-  | 'crowded_out_application_stake_unstaking_period_length'
-  | 'crowded_out_role_stake_unstaking_period_length'
-  | 'review_period_expired_application_stake_unstaking_period_length'
-  | 'review_period_expired_role_stake_unstaking_period_length'
-
-export type UnstakingPeriods = {
-  [k in UnstakingPeriodsKey]: number
-}
-
-export type GroupOpening = {
-  wgOpeningId: number
+  stakingAccount: AccountId
+  rewardAccount: AccountId
+  descriptionHash: string
   openingId: number
-  stage: GroupOpeningStage
-  opening: Opening
-  stakes: GroupOpeningStakes
-  applications: GroupApplication[]
+  answers?: WorkingGroupApplicationDetailsFragment['answers']
+}
+
+export type OpeningDetails = {
+  openingId: number
+  stake: {
+    value: Balance
+    unstakingPeriod: number
+  }
+  applications: ApplicationDetails[]
   type: OpeningType
-  unstakingPeriods: UnstakingPeriods
+  createdAtBlock: number
+  rewardPerBlock?: Balance
+  metadata?: WorkingGroupOpeningDetailsFragment['metadata']
+}
+
+// Extended membership information (including optional query node data)
+export type MemberDetails = {
+  id: MemberId
+  meta?: MembershipFieldsFragment['metadata']
+  handle?: string
+  membership: Membership
 }
 
 // Api-related
@@ -199,6 +153,23 @@ export type UnaugmentedApiPromise = Omit<ApiPromise, 'query' | 'tx' | 'consts'> 
   consts: { [key: string]: QueryableModuleConsts }
 }
 
+// Event-related types
+export type EventSection = keyof ApiPromise['events'] & string
+export type EventMethod<Section extends EventSection> = keyof ApiPromise['events'][Section] & string
+export type EventType<
+  Section extends EventSection,
+  Method extends EventMethod<Section>
+> = ApiPromise['events'][Section][Method] extends AugmentedEvent<'promise', infer T> ? IEvent<T> & Codec : never
+
+export type EventDetails<E> = {
+  event: E
+  blockNumber: number
+  blockHash: string
+  blockTimestamp: number
+  indexInBlock: number
+}
+
+// Storage
 export type AssetToUpload = {
   dataObjectId: BN
   path: string
@@ -226,20 +197,38 @@ export type VideoFileMetadata = VideoFFProbeMetadata & {
 export type VideoInputParameters = Omit<IVideoMetadata, 'video' | 'thumbnailPhoto'> & {
   videoPath?: string
   thumbnailPhotoPath?: string
+  enableComments?: boolean
 }
 
-export type ChannelInputParameters = Omit<IChannelMetadata, 'coverPhoto' | 'avatarPhoto'> & {
+export type ChannelCreationInputParameters = Omit<IChannelMetadata, 'coverPhoto' | 'avatarPhoto'> & {
   coverPhotoPath?: string
   avatarPhotoPath?: string
   rewardAccount?: string
   collaborators?: number[]
+  moderators?: number[]
 }
+
+export type ChannelUpdateInputParameters = Omit<ChannelCreationInputParameters, 'moderators'>
 
 export type ChannelCategoryInputParameters = IChannelCategoryMetadata
 
 export type VideoCategoryInputParameters = IVideoCategoryMetadata
 
-type AnyNonObject = string | number | boolean | any[] | Long
+export type WorkingGroupOpeningInputParameters = Omit<IOpeningMetadata, 'applicationFormQuestions'> & {
+  stakingPolicy: {
+    amount: number
+    unstakingPeriod: number
+  }
+  rewardPerBlock?: number
+  applicationFormQuestions?: {
+    question: string
+    type: 'TEXTAREA' | 'TEXT'
+  }[]
+}
+
+export type WorkingGroupUpdateStatusInputParameters = IWorkingGroupMetadata
+
+type AnyPrimitive = string | number | boolean | Long
 
 // JSONSchema utility types
 
@@ -253,18 +242,22 @@ type AnyJSONSchema = RemoveIndex<JSONSchema4>
 export type JSONTypeName<T> = T extends string
   ? 'string' | ['string', 'null']
   : T extends number
-  ? 'number' | ['number', 'null']
+  ? 'number' | ['number', 'null'] | 'integer' | ['integer', 'null']
   : T extends boolean
   ? 'boolean' | ['boolean', 'null']
   : T extends any[]
   ? 'array' | ['array', 'null']
   : T extends Long
-  ? 'number' | ['number', 'null']
+  ? 'number' | ['number', 'null'] | 'integer' | ['integer', 'null']
   : 'object' | ['object', 'null']
 
 export type PropertySchema<P> = Omit<AnyJSONSchema, 'type' | 'properties'> & {
   type: JSONTypeName<P>
-} & (P extends AnyNonObject ? { properties?: never } : { properties: JsonSchemaProperties<P> })
+} & (P extends AnyPrimitive
+    ? { properties?: never }
+    : P extends (infer T)[]
+    ? { properties?: never; items: PropertySchema<T> }
+    : { properties: JsonSchemaProperties<P> })
 
 export type JsonSchemaProperties<T> = {
   [K in keyof Required<T>]: PropertySchema<Required<T>[K]>

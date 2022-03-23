@@ -1,63 +1,78 @@
-import { Option, Null, bool, u32, u64, u128, Text } from '@polkadot/types'
-import { BlockNumber, Moment } from '@polkadot/types/interfaces'
-import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
+import { Option, bool, u32, Text, Bytes } from '@polkadot/types'
 import { RegistryTypes } from '@polkadot/types/types'
-import { JoyEnum, JoyStructDecorated } from './common'
-
-export class MemberId extends u64 {}
-export class PaidTermId extends u64 {}
-export class SubscriptionId extends u64 {}
-export class ActorId extends u64 {}
-
-export class Paid extends PaidTermId {}
-export class Screening extends AccountId {}
-export class Genesis extends Null {}
-export class EntryMethod extends JoyEnum({
-  Paid,
-  Screening,
-  Genesis,
-}) {}
+import { MemberId, JoyStructDecorated, AccountId } from './common'
 
 export type IMembership = {
-  handle: Text
-  avatar_uri: Text
-  about: Text
-  registered_at_block: BlockNumber
-  registered_at_time: Moment
-  entry: EntryMethod
-  suspended: bool
-  subscription: Option<SubscriptionId>
+  handle_hash: Bytes
   root_account: AccountId
   controller_account: AccountId
+  verified: bool
+  invites: u32
 }
+
 export class Membership
   extends JoyStructDecorated({
-    handle: Text,
-    avatar_uri: Text,
-    about: Text,
-    registered_at_block: u32,
-    registered_at_time: u64,
-    entry: EntryMethod,
-    suspended: bool,
-    subscription: Option.with(SubscriptionId),
+    handle_hash: Bytes,
     root_account: AccountId,
     controller_account: AccountId,
+    verified: bool,
+    invites: u32,
   })
   implements IMembership {}
 
-export class PaidMembershipTerms extends JoyStructDecorated({
-  fee: u128, // BalanceOf
-  text: Text,
-}) {}
+export type IStakingAccountMemberBinding = {
+  member_id: MemberId
+  confirmed: bool
+}
+
+export class StakingAccountMemberBinding
+  extends JoyStructDecorated({
+    member_id: MemberId,
+    confirmed: bool,
+  })
+  implements IStakingAccountMemberBinding {}
+
+export type IBuyMembershipParameters = {
+  root_account: AccountId
+  controller_account: AccountId
+  handle: Option<Text>
+  metadata: Bytes
+  referrer_id: Option<MemberId>
+}
+
+export class BuyMembershipParameters
+  extends JoyStructDecorated({
+    root_account: AccountId,
+    controller_account: AccountId,
+    handle: Option.with(Text),
+    metadata: Bytes,
+    referrer_id: Option.with(MemberId),
+  })
+  implements IBuyMembershipParameters {}
+
+export type IInviteMembershipParameters = {
+  inviting_member_id: MemberId
+  root_account: AccountId
+  controller_account: AccountId
+  handle: Option<Text>
+  metadata: Bytes
+}
+
+export class InviteMembershipParameters
+  extends JoyStructDecorated({
+    inviting_member_id: MemberId,
+    root_account: AccountId,
+    controller_account: AccountId,
+    handle: Option.with(Text),
+    metadata: Bytes,
+  })
+  implements IInviteMembershipParameters {}
 
 export const membersTypes: RegistryTypes = {
-  EntryMethod,
-  MemberId,
-  PaidTermId,
-  SubscriptionId,
   Membership,
-  PaidMembershipTerms,
-  ActorId,
+  StakingAccountMemberBinding,
+  BuyMembershipParameters,
+  InviteMembershipParameters,
 }
 
 export default membersTypes

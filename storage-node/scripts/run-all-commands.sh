@@ -11,7 +11,7 @@ cd $SCRIPT_PATH
 CLI=../bin/run
 
 # Set Alice as leader
-${CLI}  dev:init # leader workerId = 0
+GROUP=storageWorkingGroup yarn workspace api-scripts initialize-lead # leader workerId = 0
 
 # Update limits and constants
 ${CLI} leader:update-bag-limit -l 7 --dev

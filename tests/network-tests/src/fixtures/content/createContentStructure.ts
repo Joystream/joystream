@@ -1,16 +1,12 @@
-import { BaseQueryNodeFixture, FixtureRunner } from '../../Fixture'
+import { BaseQueryNodeFixture } from '../../Fixture'
 import { JoystreamCLI } from '../../cli/joystream'
 import { QueryNodeApi } from '../../QueryNodeApi'
-import { PaidTermId, MemberId } from '@joystream/types/members'
-import { Debugger, extendDebug } from '../../Debugger'
 import { Api } from '../../Api'
-import { WorkingGroups } from '../../WorkingGroups'
-import { Worker, WorkerId } from '@joystream/types/working-group'
+import { Worker } from '@joystream/types/working-group'
 import { getVideoCategoryDefaults, getChannelCategoryDefaults } from './contentTemplates'
-import BN from 'bn.js'
+import { WorkingGroupModuleName } from '../../types'
 
 export class CreateContentStructureFixture extends BaseQueryNodeFixture {
-  private debug: Debugger.Debugger
   private cli: JoystreamCLI
   private channelCategoryCount: number
   private videoCategoryCount: number
@@ -30,7 +26,6 @@ export class CreateContentStructureFixture extends BaseQueryNodeFixture {
     this.cli = cli
     this.channelCategoryCount = channelCategoryCount
     this.videoCategoryCount = videoCategoryCount
-    this.debug = extendDebug('fixture:CreateContentStructureFixture')
 
     this.createdItems = {
       channelCategoryIds: [],
@@ -56,7 +51,6 @@ export class CreateContentStructureFixture extends BaseQueryNodeFixture {
     this.debug(`Choosing content working group lead's account`)
     const contentLeaderKeyPair = this.api.getKeypair(contentLeader.role_account_id.toString())
     await this.cli.importAccount(contentLeaderKeyPair)
-    await this.cli.chooseMemberAccount(contentLeader.member_id)
 
     this.debug('Creating channel categories')
     this.createdItems.channelCategoryIds = await this.createChannelCategories(this.channelCategoryCount)
@@ -69,17 +63,17 @@ export class CreateContentStructureFixture extends BaseQueryNodeFixture {
     Retrieves information about accounts of group leads for content and storage working groups.
   */
   private async retrieveWorkingGroupLeaders(): Promise<{ contentLeader: Worker; storageLeader: Worker }> {
-    const retrieveGroupLeader = async (group: WorkingGroups) => {
-      const leader = await this.api.getGroupLead(group)
+    const retrieveGroupLeader = async (group: WorkingGroupModuleName) => {
+      const leader = await this.api.getLeader(group)
       if (!leader) {
         throw new Error(`Working group leader for "${group}" is missing!`)
       }
-      return leader
+      return leader[1]
     }
 
     return {
-      contentLeader: await retrieveGroupLeader(WorkingGroups.Content),
-      storageLeader: await retrieveGroupLeader(WorkingGroups.Storage),
+      contentLeader: await retrieveGroupLeader('contentWorkingGroup'),
+      storageLeader: await retrieveGroupLeader('storageWorkingGroup'),
     }
   }
 

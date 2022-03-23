@@ -1,5 +1,6 @@
-use frame_support::storage::StorageMap;
+use frame_support::traits::LockIdentifier;
 use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::weights::Weight;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use frame_system;
 use sp_core::H256;
@@ -8,30 +9,25 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use std::marker::PhantomData;
+use staking_handler::LockComparator;
 
-use crate::{BalanceOf, Module, NegativeImbalance, Trait};
-use common::constraints::InputValidationLengthConstraint;
+use crate::{DefaultInstance, Module, Trait};
+use frame_support::dispatch::DispatchError;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
 }
 
 mod working_group {
-    pub use super::TestWorkingGroupInstance;
     pub use crate::Event;
-}
-
-mod membership_mod {
-    pub use membership::Event;
 }
 
 impl_outer_event! {
     pub enum TestEvent for Test {
         balances<T>,
-        working_group TestWorkingGroupInstance <T>,
-        membership_mod<T>,
+        crate DefaultInstance <T>,
         frame_system<T>,
+        membership<T>,
     }
 }
 
@@ -41,8 +37,13 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const StakePoolId: [u8; 8] = *b"joystake";
-    pub const ExistentialDeposit: u32 = 0;
+    pub const ExistentialDeposit: u32 = 10;
+    pub const DefaultMembershipPrice: u64 = 0;
+    pub const DefaultInitialInvitationBalance: u64 = 100;
+    pub const InvitedMemberLockId: [u8; 8] = [2; 8];
+    pub const ReferralCutMaximumPercent: u8 = 50;
+    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
+    pub const CandidateStake: u64 = 100;
 }
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 - remove when sorted.
@@ -70,51 +71,11 @@ impl frame_system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
+    type PalletInfo = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
-    type PalletInfo = ();
     type SystemWeightInfo = ();
-}
-
-impl hiring::Trait for Test {
-    type OpeningId = u64;
-    type ApplicationId = u64;
-    type ApplicationDeactivatedHandler = ();
-    type StakeHandlerProvider = hiring::Module<Self>;
-}
-
-impl minting::Trait for Test {
-    type Currency = Balances;
-    type MintId = u64;
-}
-
-impl stake::Trait for Test {
-    type Currency = Balances;
-    type StakePoolId = StakePoolId;
-    type StakingEventsHandler = StakingEventsHandler<Test>;
-    type StakeId = u64;
-    type SlashId = u64;
-}
-
-parameter_types! {
-    pub const ScreenedMemberMaxInitialBalance: u64 = 500;
-}
-
-impl common::MembershipTypes for Test {
-    type MemberId = u64;
-    type ActorId = u64;
-}
-
-impl membership::Trait for Test {
-    type Event = TestEvent;
-    type PaidTermId = u64;
-    type SubscriptionId = u64;
-    type ScreenedMemberMaxInitialBalance = ScreenedMemberMaxInitialBalance;
-}
-
-impl common::currency::GovernanceCurrency for Test {
-    type Currency = Balances;
 }
 
 impl pallet_timestamp::Trait for Test {
@@ -134,103 +95,231 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
-impl recurringrewards::Trait for Test {
-    type PayoutStatusHandler = ();
-    type RecipientId = u64;
-    type RewardRelationshipId = u64;
+impl common::membership::MembershipTypes for Test {
+    type MemberId = u64;
+    type ActorId = u64;
+}
+
+// Weights info stub
+pub struct Weights;
+impl membership::WeightInfo for Weights {
+    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
+        unimplemented!()
+    }
+    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
+        unimplemented!()
+    }
+    fn update_profile(_: u32) -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_none() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_root() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_controller() -> Weight {
+        unimplemented!()
+    }
+    fn update_accounts_both() -> Weight {
+        unimplemented!()
+    }
+    fn set_referral_cut() -> Weight {
+        unimplemented!()
+    }
+    fn transfer_invites() -> Weight {
+        unimplemented!()
+    }
+    fn invite_member(_: u32, _: u32) -> Weight {
+        unimplemented!()
+    }
+    fn set_membership_price() -> Weight {
+        unimplemented!()
+    }
+    fn update_profile_verification() -> Weight {
+        unimplemented!()
+    }
+    fn set_leader_invitation_quota() -> Weight {
+        unimplemented!()
+    }
+    fn set_initial_invitation_balance() -> Weight {
+        unimplemented!()
+    }
+    fn set_initial_invitation_count() -> Weight {
+        unimplemented!()
+    }
+    fn add_staking_account_candidate() -> Weight {
+        unimplemented!()
+    }
+    fn confirm_staking_account() -> Weight {
+        unimplemented!()
+    }
+    fn remove_staking_account() -> Weight {
+        unimplemented!()
+    }
+    fn member_remark() -> Weight {
+        unimplemented!()
+    }
+}
+
+impl membership::Trait for Test {
+    type Event = TestEvent;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
+    type WorkingGroup = Module<Test>;
+    type WeightInfo = Weights;
+    type DefaultInitialInvitationBalance = ();
+    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
+    type StakingCandidateStakingHandler =
+        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+    type CandidateStake = CandidateStake;
+}
+
+impl LockComparator<<Test as balances::Trait>::Balance> for Test {
+    fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
+        existing_locks.to_vec().contains(new_lock)
+    }
 }
 
 pub type Balances = balances::Module<Test>;
 pub type System = frame_system::Module<Test>;
 
 parameter_types! {
+    pub const RewardPeriod: u32 = 2;
     pub const MaxWorkerNumberLimit: u32 = 3;
+    pub const MinUnstakingPeriodLimit: u64 = 3;
+    pub const MinimumApplicationStake: u64 = 50;
+    pub const LockId: [u8; 8] = [1; 8];
+    pub const LeaderOpeningStake: u64 = 20;
 }
 
-impl Trait<TestWorkingGroupInstance> for Test {
+impl Trait for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = staking_handler::StakingManager<Self, LockId>;
+    type StakingAccountValidator = ();
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
+    type RewardPeriod = RewardPeriod;
+    type WeightInfo = ();
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-pub type Membership = membership::Module<Test>;
+impl common::StakingAccountValidator<Test> for () {
+    fn is_member_staking_account(_: &u64, account_id: &u64) -> bool {
+        *account_id != STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER
+    }
+}
 
-pub type TestWorkingGroupInstance = crate::Instance1;
-pub type TestWorkingGroup = Module<Test, TestWorkingGroupInstance>;
+impl crate::WeightInfo for () {
+    fn on_initialize_leaving(_: u32) -> Weight {
+        0
+    }
+    fn on_initialize_rewarding_with_missing_reward(_: u32) -> Weight {
+        0
+    }
+    fn on_initialize_rewarding_with_missing_reward_cant_pay(_: u32) -> Weight {
+        0
+    }
+    fn on_initialize_rewarding_without_missing_reward(_: u32) -> Weight {
+        0
+    }
+    fn apply_on_opening(_: u32) -> Weight {
+        0
+    }
+    fn fill_opening_lead() -> Weight {
+        0
+    }
+    fn fill_opening_worker(_: u32) -> Weight {
+        0
+    }
+    fn update_role_account() -> Weight {
+        0
+    }
+    fn cancel_opening() -> Weight {
+        0
+    }
+    fn withdraw_application() -> Weight {
+        0
+    }
+    fn slash_stake(_: u32) -> Weight {
+        0
+    }
+    fn terminate_role_worker(_: u32) -> Weight {
+        0
+    }
+    fn terminate_role_lead(_: u32) -> Weight {
+        0
+    }
+    fn increase_stake() -> Weight {
+        0
+    }
+    fn decrease_stake() -> Weight {
+        0
+    }
+    fn spend_from_budget() -> Weight {
+        0
+    }
+    fn update_reward_amount() -> Weight {
+        0
+    }
+    fn set_status_text(_: u32) -> Weight {
+        0
+    }
+    fn update_reward_account() -> Weight {
+        0
+    }
+    fn set_budget() -> Weight {
+        0
+    }
+    fn add_opening(_: u32) -> Weight {
+        0
+    }
+    fn leave_role(_: u32) -> Weight {
+        0
+    }
+    fn lead_remark() -> Weight {
+        0
+    }
+    fn worker_remark() -> Weight {
+        0
+    }
+}
 
-pub(crate) const WORKING_GROUP_MINT_CAPACITY: u64 = 40000;
-pub(crate) const WORKING_GROUP_CONSTRAINT_MIN: u16 = 1;
-pub(crate) const WORKING_GROUP_CONSTRAINT_DIFF: u16 = 40;
+pub const ACTOR_ORIGIN_ERROR: &'static str = "Invalid membership";
+
+impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
+    fn ensure_member_controller_account_origin(
+        origin: Origin,
+        member_id: u64,
+    ) -> Result<u64, DispatchError> {
+        let signed_account_id = frame_system::ensure_signed(origin)?;
+
+        if member_id > 10 {
+            return Err(DispatchError::Other(ACTOR_ORIGIN_ERROR));
+        }
+
+        Ok(signed_account_id)
+    }
+
+    fn is_member_controller_account(_member_id: &u64, _account_id: &u64) -> bool {
+        unimplemented!()
+    }
+}
+
+pub type TestWorkingGroup = Module<Test, DefaultInstance>;
+
+pub const DEFAULT_WORKER_ACCOUNT_ID: u64 = 2;
+pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u64 = 222;
+pub const STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES: u64 = 333;
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
-    let mut t = frame_system::GenesisConfig::default()
+    let t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
 
-    crate::GenesisConfig::<Test, TestWorkingGroupInstance> {
-        phantom: Default::default(),
-        working_group_mint_capacity: WORKING_GROUP_MINT_CAPACITY,
-        opening_human_readable_text_constraint: InputValidationLengthConstraint::new(
-            WORKING_GROUP_CONSTRAINT_MIN,
-            WORKING_GROUP_CONSTRAINT_DIFF,
-        ),
-        worker_application_human_readable_text_constraint: InputValidationLengthConstraint::new(
-            WORKING_GROUP_CONSTRAINT_MIN,
-            WORKING_GROUP_CONSTRAINT_DIFF,
-        ),
-        worker_exit_rationale_text_constraint: InputValidationLengthConstraint::new(
-            WORKING_GROUP_CONSTRAINT_MIN,
-            WORKING_GROUP_CONSTRAINT_DIFF,
-        ),
-        worker_storage_size_constraint: crate::default_storage_size_constraint(),
-    }
-    .assimilate_storage(&mut t)
-    .unwrap();
-
     t.into()
-}
-
-pub struct StakingEventsHandler<T> {
-    pub marker: PhantomData<T>,
-}
-
-impl<T: stake::Trait + crate::Trait<TestWorkingGroupInstance>> stake::StakingEventsHandler<T>
-    for StakingEventsHandler<T>
-{
-    /// Unstake remaining sum back to the source_account_id
-    fn unstaked(
-        stake_id: &<T as stake::Trait>::StakeId,
-        _unstaked_amount: BalanceOf<T>,
-        remaining_imbalance: NegativeImbalance<T>,
-    ) -> NegativeImbalance<T> {
-        // Stake not related to a staked role managed by the hiring module.
-        if !hiring::ApplicationIdByStakingId::<T>::contains_key(*stake_id) {
-            return remaining_imbalance;
-        }
-
-        let hiring_application_id = hiring::ApplicationIdByStakingId::<T>::get(*stake_id);
-
-        if crate::MemberIdByHiringApplicationId::<T, TestWorkingGroupInstance>::contains_key(
-            hiring_application_id,
-        ) {
-            return <crate::Module<T, TestWorkingGroupInstance>>::refund_working_group_stake(
-                *stake_id,
-                remaining_imbalance,
-            );
-        }
-
-        remaining_imbalance
-    }
-
-    /// Empty handler for slashing
-    fn slashed(
-        _: &<T as stake::Trait>::StakeId,
-        _: Option<<T as stake::Trait>::SlashId>,
-        _: BalanceOf<T>,
-        _: BalanceOf<T>,
-        remaining_imbalance: NegativeImbalance<T>,
-    ) -> NegativeImbalance<T> {
-        remaining_imbalance
-    }
 }
 
 // Recommendation from Parity on testing on_finalize

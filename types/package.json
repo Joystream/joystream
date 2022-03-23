@@ -1,15 +1,15 @@
 {
   "name": "@joystream/types",
-  "version": "0.17.3",
-  "description": "Types for Joystream Substrate Runtime - Giza release",
+  "version": "0.18.3",
+  "description": "Types for Joystream Substrate Runtime - Olympia release",
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
-    "prepublishOnly": "npm run build",
-    "prepack": "npm run build",
+    "prepublishOnly": "yarn clean && yarn build",
+    "prepack": "yarn clean && yarn build",
     "compile": "tsc --build tsconfig.json",
     "clean": "git clean -xdf -e node_modules",
-    "build": "yarn clean; yarn compile && yarn generate:all",
+    "build": "yarn compile && yarn generate:all",
     "lint": "eslint ./ --ext .ts",
     "format": "prettier ./ --write",
     "check:augment": "tsc --build tsconfig-augment.json && tsc --build tsconfig-augment-codec.json",
@@ -39,7 +39,7 @@
     "ts-node": "^10.2.1",
     "typescript": "^4.4.3",
     "madge": "^3.9.2",
-    "json-schema-to-typescript": "^9.1.1"
+    "json-schema-to-typescript": "^10.1.4"
   },
   "engines": {
     "node": ">=14.0.0",

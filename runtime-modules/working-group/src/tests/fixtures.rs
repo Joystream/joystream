@@ -1,239 +1,560 @@
+#![cfg(test)]
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::storage::{StorageMap, StorageValue};
+use frame_support::traits::Currency;
+use frame_support::StorageMap;
 use frame_system::{EventRecord, Phase, RawOrigin};
-use std::collections::BTreeSet;
+use sp_runtime::traits::Hash;
+use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 
+use super::hiring_workflow::HiringWorkflow;
 use super::mock::{
-    Balances, Membership, System, Test, TestEvent, TestWorkingGroup, TestWorkingGroupInstance,
+    Balances, LockId, System, Test, TestEvent, TestWorkingGroup, DEFAULT_WORKER_ACCOUNT_ID,
 };
-use crate::tests::fill_worker_position;
-use crate::types::{
-    Application, Opening, OpeningPolicyCommitment, OpeningType, RewardPolicy, RoleStakeProfile,
-    Worker,
+use crate::types::StakeParameters;
+use crate::{
+    Application, ApplyOnOpeningParameters, DefaultInstance, Opening, OpeningType, RawEvent,
+    StakePolicy, Trait, Worker,
 };
-use crate::RawEvent;
-use common::constraints::InputValidationLengthConstraint;
 
-pub struct IncreaseWorkerStakeFixture {
-    origin: RawOrigin<u64>,
-    worker_id: u64,
-    balance: u64,
-    account_id: u64,
+pub struct EventFixture;
+impl EventFixture {
+    pub fn assert_last_crate_event(
+        expected_raw_event: RawEvent<
+            u64,
+            u64,
+            BTreeMap<u64, u64>,
+            u64,
+            u64,
+            u64,
+            OpeningType,
+            StakePolicy<u64, u64>,
+            ApplyOnOpeningParameters<Test>,
+            DefaultInstance,
+        >,
+    ) {
+        let converted_event = TestEvent::crate_DefaultInstance(expected_raw_event);
+
+        Self::assert_last_global_event(converted_event)
+    }
+
+    pub fn assert_last_global_event(expected_event: TestEvent) {
+        let expected_event = EventRecord {
+            phase: Phase::Initialization,
+            event: expected_event,
+            topics: vec![],
+        };
+
+        assert_eq!(System::events().pop().unwrap(), expected_event);
+    }
+
+    pub fn contains_crate_event(
+        expected_raw_event: RawEvent<
+            u64,
+            u64,
+            BTreeMap<u64, u64>,
+            u64,
+            u64,
+            u64,
+            OpeningType,
+            StakePolicy<u64, u64>,
+            ApplyOnOpeningParameters<Test>,
+            DefaultInstance,
+        >,
+    ) {
+        let converted_event = TestEvent::crate_DefaultInstance(expected_raw_event);
+
+        Self::contains_global_event(converted_event)
+    }
+
+    fn contains_global_event(expected_event: TestEvent) {
+        let expected_event = EventRecord {
+            phase: Phase::Initialization,
+            event: expected_event,
+            topics: vec![],
+        };
+
+        assert!(System::events().iter().any(|ev| *ev == expected_event));
+    }
 }
 
-impl IncreaseWorkerStakeFixture {
-    pub fn default_for_worker_id(worker_id: u64) -> Self {
-        let account_id = 1;
+pub struct AddOpeningFixture {
+    pub origin: RawOrigin<u64>,
+    pub description: Vec<u8>,
+    pub opening_type: OpeningType,
+    pub starting_block: u64,
+    pub stake_policy: StakePolicy<u64, u64>,
+    pub reward_per_block: Option<u64>,
+}
+
+impl Default for AddOpeningFixture {
+    fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(1),
-            worker_id,
-            balance: 10,
-            account_id,
+            description: b"human_text".to_vec(),
+            opening_type: OpeningType::Regular,
+            starting_block: 0,
+            stake_policy: StakePolicy {
+                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
+                leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
+            },
+            reward_per_block: None,
         }
     }
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
+}
 
-    pub fn with_balance(self, balance: u64) -> Self {
-        Self { balance, ..self }
-    }
+impl AddOpeningFixture {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) -> u64 {
+        let saved_opening_next_id = TestWorkingGroup::next_opening_id();
+        let actual_result = self.call().map(|_| ());
 
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let stake_id = 0;
-        let old_stake = <stake::Module<Test>>::stakes(stake_id);
-        let old_balance = Balances::free_balance(&self.account_id);
-        let actual_result = TestWorkingGroup::increase_stake(
-            self.origin.clone().into(),
-            self.worker_id,
-            self.balance,
-        );
-
-        assert_eq!(actual_result, expected_result);
+        assert_eq!(actual_result.clone(), expected_result);
 
         if actual_result.is_ok() {
-            let new_stake = <stake::Module<Test>>::stakes(stake_id);
-
-            // stake increased
             assert_eq!(
-                get_stake_balance(new_stake),
-                get_stake_balance(old_stake) + self.balance
+                TestWorkingGroup::next_opening_id(),
+                saved_opening_next_id + 1
             );
+            let opening_id = saved_opening_next_id;
 
-            let new_balance = Balances::free_balance(&self.account_id);
+            let actual_opening = TestWorkingGroup::opening_by_id(opening_id);
 
-            // worker balance decreased
-            assert_eq!(new_balance, old_balance - self.balance,);
+            let expected_hash = <Test as frame_system::Trait>::Hashing::hash(&self.description);
+            let expected_opening = Opening {
+                created: self.starting_block,
+                description_hash: expected_hash.as_ref().to_vec(),
+                opening_type: self.opening_type,
+                stake_policy: self.stake_policy.clone(),
+                reward_per_block: self.reward_per_block.clone(),
+                creation_stake: if self.opening_type == OpeningType::Regular {
+                    <Test as Trait>::LeaderOpeningStake::get()
+                } else {
+                    0
+                },
+            };
+
+            assert_eq!(actual_opening, expected_opening);
         }
+
+        saved_opening_next_id
     }
-}
 
-pub struct TerminateWorkerRoleFixture {
-    worker_id: u64,
-    origin: RawOrigin<u64>,
-    text: Vec<u8>,
-    constraint: InputValidationLengthConstraint,
-    slash_stake: bool,
-}
+    pub fn call(&self) -> Result<u64, DispatchError> {
+        let saved_opening_next_id = TestWorkingGroup::next_opening_id();
+        TestWorkingGroup::add_opening(
+            self.origin.clone().into(),
+            self.description.clone(),
+            self.opening_type,
+            self.stake_policy.clone(),
+            self.reward_per_block.clone(),
+        )?;
 
-impl TerminateWorkerRoleFixture {
-    pub fn default_for_worker_id(worker_id: u64) -> Self {
+        Ok(saved_opening_next_id)
+    }
+
+    pub fn with_opening_type(self, opening_type: OpeningType) -> Self {
         Self {
-            worker_id,
-            origin: RawOrigin::Signed(1),
-            text: b"rationale_text".to_vec(),
-            constraint: InputValidationLengthConstraint {
-                min: 1,
-                max_min_diff: 20,
-            },
-            slash_stake: false,
-        }
-    }
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_text(self, text: Vec<u8>) -> Self {
-        Self { text, ..self }
-    }
-
-    pub fn with_slashing(self) -> Self {
-        Self {
-            slash_stake: true,
+            opening_type,
             ..self
         }
     }
 
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        <crate::WorkerExitRationaleText<TestWorkingGroupInstance>>::put(self.constraint.clone());
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
 
-        let actual_result = TestWorkingGroup::terminate_role(
-            self.origin.clone().into(),
-            self.worker_id,
-            self.text.clone(),
-            self.slash_stake,
+    pub fn with_starting_block(self, starting_block: u64) -> Self {
+        Self {
+            starting_block,
+            ..self
+        }
+    }
+
+    pub fn with_stake_policy(self, stake_policy: StakePolicy<u64, u64>) -> Self {
+        Self {
+            stake_policy,
+            ..self
+        }
+    }
+
+    pub fn with_reward_per_block(self, reward_per_block: Option<u64>) -> Self {
+        Self {
+            reward_per_block,
+            ..self
+        }
+    }
+}
+
+pub struct ApplyOnOpeningFixture {
+    origin: RawOrigin<u64>,
+    member_id: u64,
+    opening_id: u64,
+    role_account_id: u64,
+    reward_account_id: u64,
+    description: Vec<u8>,
+    stake_parameters: StakeParameters<u64, u64>,
+    initial_balance: u64,
+}
+
+impl ApplyOnOpeningFixture {
+    pub fn with_text(self, text: Vec<u8>) -> Self {
+        Self {
+            description: text,
+            ..self
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>, id: u64) -> Self {
+        Self {
+            origin,
+            stake_parameters: StakeParameters {
+                staking_account_id: id,
+                ..self.stake_parameters
+            },
+            member_id: id,
+            role_account_id: id,
+            reward_account_id: id,
+            ..self
+        }
+    }
+
+    pub fn with_stake_parameters(self, stake_parameters: StakeParameters<u64, u64>) -> Self {
+        Self {
+            stake_parameters,
+            ..self
+        }
+    }
+
+    pub fn with_initial_balance(self, initial_balance: u64) -> Self {
+        Self {
+            initial_balance,
+            ..self
+        }
+    }
+
+    pub fn default_for_opening_id(opening_id: u64) -> Self {
+        Self {
+            origin: RawOrigin::Signed(2),
+            member_id: 2,
+            opening_id,
+            role_account_id: 2,
+            reward_account_id: 2,
+            description: b"human_text".to_vec(),
+            stake_parameters: StakeParameters {
+                stake: <Test as Trait>::MinimumApplicationStake::get(),
+                staking_account_id: 2,
+            },
+            initial_balance: <Test as Trait>::MinimumApplicationStake::get(),
+        }
+    }
+
+    pub fn get_apply_on_opening_parameters(&self) -> ApplyOnOpeningParameters<Test> {
+        ApplyOnOpeningParameters::<Test> {
+            member_id: self.member_id,
+            opening_id: self.opening_id,
+            role_account_id: self.role_account_id,
+            reward_account_id: self.reward_account_id,
+            description: self.description.clone(),
+            stake_parameters: self.stake_parameters.clone(),
+        }
+    }
+
+    pub fn call(&self) -> Result<u64, DispatchError> {
+        balances::Module::<Test>::make_free_balance_be(
+            &self.stake_parameters.staking_account_id,
+            self.initial_balance,
         );
-        assert_eq!(actual_result, expected_result);
+
+        let saved_application_next_id = TestWorkingGroup::next_application_id();
+        TestWorkingGroup::apply_on_opening(
+            self.origin.clone().into(),
+            self.get_apply_on_opening_parameters(),
+        )?;
+
+        Ok(saved_application_next_id)
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) -> u64 {
+        let saved_application_next_id = TestWorkingGroup::next_application_id();
+
+        let actual_result = self.call().map(|_| ());
+        assert_eq!(actual_result.clone(), expected_result);
 
         if actual_result.is_ok() {
-            if actual_result.is_ok() {
+            assert_eq!(
+                TestWorkingGroup::next_application_id(),
+                saved_application_next_id + 1
+            );
+            let application_id = saved_application_next_id;
+
+            let actual_application = TestWorkingGroup::application_by_id(application_id);
+
+            let expected_hash = <Test as frame_system::Trait>::Hashing::hash(&self.description);
+            let expected_application = Application::<Test> {
+                role_account_id: self.role_account_id,
+                reward_account_id: self.reward_account_id,
+                staking_account_id: self.stake_parameters.staking_account_id,
+                member_id: self.member_id,
+                description_hash: expected_hash.as_ref().to_vec(),
+                opening_id: self.opening_id,
+            };
+
+            assert_eq!(actual_application, expected_application);
+        }
+
+        saved_application_next_id
+    }
+}
+
+pub struct FillOpeningFixture {
+    origin: RawOrigin<u64>,
+    opening_id: u64,
+    pub successful_application_ids: BTreeSet<u64>,
+    role_account_id: u64,
+    reward_account_id: u64,
+    staking_account_id: u64,
+    stake_policy: StakePolicy<u64, u64>,
+    reward_per_block: Option<u64>,
+    created_at: u64,
+}
+
+impl FillOpeningFixture {
+    pub fn default_for_ids(opening_id: u64, application_ids: Vec<u64>) -> Self {
+        let application_ids: BTreeSet<u64> = application_ids.iter().map(|x| *x).collect();
+
+        Self {
+            origin: RawOrigin::Signed(1),
+            opening_id,
+            successful_application_ids: application_ids,
+            role_account_id: 2,
+            reward_account_id: 2,
+            staking_account_id: 2,
+            stake_policy: StakePolicy {
+                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
+                leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
+            },
+            reward_per_block: None,
+            created_at: 0,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_created_at(self, created_at: u64) -> Self {
+        Self { created_at, ..self }
+    }
+
+    pub fn with_stake_policy(self, stake_policy: StakePolicy<u64, u64>) -> Self {
+        Self {
+            stake_policy,
+            ..self
+        }
+    }
+
+    pub fn with_staking_account_id(self, staking_account_id: u64) -> Self {
+        Self {
+            staking_account_id,
+            ..self
+        }
+    }
+
+    pub fn with_reward_per_block(self, reward_per_block: Option<u64>) -> Self {
+        Self {
+            reward_per_block,
+            ..self
+        }
+    }
+
+    pub fn call(&self) -> Result<u64, DispatchError> {
+        let saved_worker_next_id = TestWorkingGroup::next_worker_id();
+        TestWorkingGroup::fill_opening(
+            self.origin.clone().into(),
+            self.opening_id,
+            self.successful_application_ids.clone(),
+        )?;
+
+        Ok(saved_worker_next_id)
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) -> u64 {
+        let saved_worker_count = TestWorkingGroup::active_worker_count();
+        let saved_worker_next_id = TestWorkingGroup::next_worker_id();
+        let actual_result = self.call().map(|_| ());
+        assert_eq!(actual_result.clone(), expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(TestWorkingGroup::next_worker_id(), saved_worker_next_id + 1);
+            let worker_id = saved_worker_next_id;
+
+            assert!(!<crate::OpeningById<Test, DefaultInstance>>::contains_key(
+                self.opening_id
+            ));
+
+            for application_id in self.successful_application_ids.iter() {
                 assert!(
-                    !<crate::WorkerById<Test, TestWorkingGroupInstance>>::contains_key(
-                        self.worker_id
-                    )
+                    !<crate::ApplicationById<Test, DefaultInstance>>::contains_key(application_id)
                 );
             }
-        }
-    }
-}
 
-pub(crate) struct LeaveWorkerRoleFixture {
-    worker_id: u64,
-    origin: RawOrigin<u64>,
-}
+            let expected_worker = Worker::<Test> {
+                member_id: 2,
+                role_account_id: self.role_account_id,
+                reward_account_id: self.reward_account_id,
+                staking_account_id: self.staking_account_id,
+                started_leaving_at: None,
+                job_unstaking_period: self.stake_policy.leaving_unstaking_period,
+                reward_per_block: self.reward_per_block,
+                missed_reward: None,
+                created_at: self.created_at,
+            };
 
-impl LeaveWorkerRoleFixture {
-    pub fn default_for_worker_id(worker_id: u64) -> Self {
-        Self {
-            worker_id,
-            origin: RawOrigin::Signed(1),
-        }
-    }
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
+            let actual_worker = TestWorkingGroup::worker_by_id(worker_id);
 
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let rationale_text = b"rationale_text".to_vec();
-        let actual_result = TestWorkingGroup::leave_role(
-            self.origin.clone().into(),
-            self.worker_id,
-            rationale_text.clone(),
-        );
-        assert_eq!(actual_result, expected_result);
+            assert_eq!(actual_worker, expected_worker);
 
-        if actual_result.is_ok() {
-            assert!(
-                !<crate::WorkerById<Test, TestWorkingGroupInstance>>::contains_key(self.worker_id)
+            let expected_worker_count =
+                saved_worker_count + (self.successful_application_ids.len() as u32);
+
+            assert_eq!(
+                TestWorkingGroup::active_worker_count(),
+                expected_worker_count
             );
         }
+
+        saved_worker_next_id
     }
 }
 
-pub struct UpdateWorkerRewardAmountFixture {
-    worker_id: u64,
-    amount: u64,
-    origin: RawOrigin<u64>,
+pub struct HireLeadFixture {
+    setup_environment: bool,
+    stake_policy: StakePolicy<u64, u64>,
+    reward_per_block: Option<u64>,
+    lead_id: u64,
+    initial_balance: u64,
 }
 
-impl UpdateWorkerRewardAmountFixture {
-    pub fn default_for_worker_id(worker_id: u64) -> Self {
-        let lead_account_id = get_current_lead_account_id();
-
+impl Default for HireLeadFixture {
+    fn default() -> Self {
         Self {
-            worker_id,
-            amount: 120,
-            origin: RawOrigin::Signed(lead_account_id),
-        }
-    }
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = TestWorkingGroup::update_reward_amount(
-            self.origin.clone().into(),
-            self.worker_id,
-            self.amount,
-        );
-
-        assert_eq!(actual_result.clone(), expected_result);
-
-        if actual_result.is_ok() {
-            let worker = TestWorkingGroup::worker_by_id(self.worker_id);
-            let relationship_id = worker.reward_relationship.unwrap();
-
-            let relationship = recurringrewards::RewardRelationships::<Test>::get(relationship_id);
-
-            assert_eq!(relationship.amount_per_payout, self.amount);
+            setup_environment: true,
+            stake_policy: StakePolicy {
+                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
+                leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
+            },
+            reward_per_block: None,
+            lead_id: 1,
+            initial_balance: <Test as Trait>::MinimumApplicationStake::get()
+                + <Test as Trait>::LeaderOpeningStake::get()
+                + 1,
         }
     }
 }
-pub struct UpdateWorkerRewardAccountFixture {
-    worker_id: u64,
-    new_reward_account_id: u64,
-    origin: RawOrigin<u64>,
-}
-
-impl UpdateWorkerRewardAccountFixture {
-    pub fn default_with_ids(worker_id: u64, new_reward_account_id: u64) -> Self {
+impl HireLeadFixture {
+    pub fn with_initial_balance(self, initial_balance: u64) -> Self {
         Self {
-            worker_id,
-            new_reward_account_id,
-            origin: RawOrigin::Signed(1),
+            initial_balance,
+            ..self
         }
     }
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
+
+    pub fn with_setup_environment(self, setup_environment: bool) -> Self {
+        Self {
+            setup_environment,
+            ..self
+        }
     }
 
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = TestWorkingGroup::update_reward_account(
-            self.origin.clone().into(),
-            self.worker_id,
-            self.new_reward_account_id,
-        );
-
-        assert_eq!(actual_result.clone(), expected_result);
-
-        if actual_result.is_ok() {
-            let worker = TestWorkingGroup::worker_by_id(self.worker_id);
-            let relationship_id = worker.reward_relationship.unwrap();
-
-            let relationship = recurringrewards::RewardRelationships::<Test>::get(relationship_id);
-
-            assert_eq!(relationship.account, self.new_reward_account_id);
+    pub fn with_stake_policy(self, stake_policy: StakePolicy<u64, u64>) -> Self {
+        Self {
+            stake_policy,
+            ..self
         }
+    }
+
+    pub fn with_reward_per_block(self, reward_per_block: Option<u64>) -> Self {
+        Self {
+            reward_per_block,
+            ..self
+        }
+    }
+
+    fn get_hiring_workflow(self) -> HiringWorkflow {
+        HiringWorkflow::default()
+            .with_setup_environment(self.setup_environment)
+            .with_opening_type(OpeningType::Leader)
+            .with_stake_policy(self.stake_policy)
+            .with_reward_per_block(self.reward_per_block)
+            .with_initial_balance(self.initial_balance)
+            .add_application_full(
+                b"leader".to_vec(),
+                RawOrigin::Signed(self.lead_id),
+                self.lead_id,
+                self.lead_id,
+            )
+    }
+
+    pub fn hire_lead(self) -> u64 {
+        self.get_hiring_workflow().execute().unwrap()
+    }
+
+    pub fn expect(self, error: DispatchError) {
+        self.get_hiring_workflow().expect(Err(error)).execute();
+    }
+}
+
+pub struct HireRegularWorkerFixture {
+    setup_environment: bool,
+    stake_policy: StakePolicy<u64, u64>,
+    reward_per_block: Option<u64>,
+    initial_balance: u64,
+}
+
+impl Default for HireRegularWorkerFixture {
+    fn default() -> Self {
+        Self {
+            setup_environment: true,
+            stake_policy: StakePolicy {
+                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
+                leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
+            },
+            reward_per_block: None,
+            initial_balance: <Test as Trait>::MinimumApplicationStake::get(),
+        }
+    }
+}
+impl HireRegularWorkerFixture {
+    pub fn with_initial_balance(self, initial_balance: u64) -> Self {
+        Self {
+            initial_balance,
+            ..self
+        }
+    }
+
+    pub fn with_stake_policy(self, stake_policy: StakePolicy<u64, u64>) -> Self {
+        Self {
+            stake_policy,
+            ..self
+        }
+    }
+
+    pub fn with_reward_per_block(self, reward_per_block: Option<u64>) -> Self {
+        Self {
+            reward_per_block,
+            ..self
+        }
+    }
+
+    pub fn hire(self) -> u64 {
+        HiringWorkflow::default()
+            .with_setup_environment(self.setup_environment)
+            .with_opening_type(OpeningType::Regular)
+            .with_stake_policy(self.stake_policy)
+            .with_reward_per_block(self.reward_per_block)
+            .with_initial_balance(self.initial_balance)
+            .add_application(b"worker".to_vec())
+            .execute()
+            .unwrap()
     }
 }
 
@@ -271,6 +592,624 @@ impl UpdateWorkerRoleAccountFixture {
     }
 }
 
+pub(crate) struct LeaveWorkerRoleFixture {
+    worker_id: u64,
+    origin: RawOrigin<u64>,
+}
+
+impl LeaveWorkerRoleFixture {
+    pub fn default_for_worker_id(worker_id: u64) -> Self {
+        Self {
+            worker_id,
+            origin: RawOrigin::Signed(2),
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result =
+            TestWorkingGroup::leave_role(self.origin.clone().into(), self.worker_id, None);
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            let worker = TestWorkingGroup::worker_by_id(self.worker_id);
+
+            if worker.job_unstaking_period > 0 {
+                assert_eq!(
+                    worker.started_leaving_at,
+                    Some(<frame_system::Module<Test>>::block_number())
+                );
+                return;
+            }
+
+            assert!(!<crate::WorkerById<Test, DefaultInstance>>::contains_key(
+                self.worker_id
+            ));
+        }
+    }
+}
+
+pub struct TerminateWorkerRoleFixture {
+    worker_id: u64,
+    origin: RawOrigin<u64>,
+    pub penalty: Option<u64>,
+    pub rationale: Option<Vec<u8>>,
+}
+
+impl TerminateWorkerRoleFixture {
+    pub fn default_for_worker_id(worker_id: u64) -> Self {
+        Self {
+            worker_id,
+            origin: RawOrigin::Signed(1),
+            penalty: None,
+            rationale: None,
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_penalty(self, penalty: Option<u64>) -> Self {
+        Self { penalty, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = TestWorkingGroup::terminate_role(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.penalty.clone(),
+            self.rationale.clone(),
+        );
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            if actual_result.is_ok() {
+                assert!(!<crate::WorkerById<Test, DefaultInstance>>::contains_key(
+                    self.worker_id
+                ));
+            }
+        }
+    }
+}
+
+pub fn increase_total_balance_issuance_using_account_id(account_id: u64, balance: u64) {
+    let _ =
+        <Balances as frame_support::traits::Currency<u64>>::deposit_creating(&account_id, balance);
+}
+
+pub struct SlashWorkerStakeFixture {
+    origin: RawOrigin<u64>,
+    worker_id: u64,
+    account_id: u64,
+    penalty: u64,
+    rationale: Option<Vec<u8>>,
+}
+
+impl SlashWorkerStakeFixture {
+    pub fn default_for_worker_id(worker_id: u64) -> Self {
+        let account_id = 2;
+
+        let lead_account_id = get_current_lead_account_id();
+
+        Self {
+            origin: RawOrigin::Signed(lead_account_id),
+            worker_id,
+            rationale: None,
+            penalty: 10,
+            account_id,
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_penalty(self, penalty: u64) -> Self {
+        Self { penalty, ..self }
+    }
+
+    pub fn with_account_id(self, account_id: u64) -> Self {
+        Self { account_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_balance = Balances::usable_balance(&self.account_id);
+        let old_stake = get_stake_balance(&self.account_id);
+        let actual_result = TestWorkingGroup::slash_stake(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.penalty,
+            self.rationale.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            // stake decreased
+            assert_eq!(
+                old_stake,
+                get_stake_balance(&self.account_id) + self.penalty
+            );
+
+            let new_balance = Balances::usable_balance(&self.account_id);
+
+            // worker balance unchanged
+            assert_eq!(new_balance, old_balance,);
+        }
+    }
+}
+
+pub(crate) fn get_stake_balance(account_id: &u64) -> u64 {
+    let locks = Balances::locks(account_id);
+
+    let existing_lock = locks.iter().find(|lock| lock.id == LockId::get());
+
+    existing_lock.map_or(0, |lock| lock.amount)
+}
+
+fn get_current_lead_account_id() -> u64 {
+    let leader_worker_id = TestWorkingGroup::current_lead();
+
+    if let Some(leader_worker_id) = leader_worker_id {
+        let leader = TestWorkingGroup::worker_by_id(leader_worker_id);
+        leader.role_account_id
+    } else {
+        0 // return invalid lead_account_id for testing
+    }
+}
+
+pub struct DecreaseWorkerStakeFixture {
+    origin: RawOrigin<u64>,
+    worker_id: u64,
+    balance: u64,
+    account_id: u64,
+}
+
+impl DecreaseWorkerStakeFixture {
+    pub fn default_for_worker_id(worker_id: u64) -> Self {
+        let account_id = 2;
+
+        let lead_account_id = get_current_lead_account_id();
+
+        Self {
+            origin: RawOrigin::Signed(lead_account_id),
+            worker_id,
+            balance: 10,
+            account_id,
+        }
+    }
+
+    pub fn with_account_id(self, account_id: u64) -> Self {
+        Self { account_id, ..self }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_balance(self, balance: u64) -> Self {
+        Self { balance, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_balance = Balances::usable_balance(&self.account_id);
+        let old_stake = get_stake_balance(&self.account_id);
+        let actual_result = TestWorkingGroup::decrease_stake(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.balance,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            // new stake was set
+            assert_eq!(
+                old_stake - self.balance,
+                get_stake_balance(&self.account_id)
+            );
+
+            let new_balance = Balances::usable_balance(&self.account_id);
+
+            // worker balance equilibrium
+            assert_eq!(old_balance + old_stake, new_balance + self.balance);
+        }
+    }
+}
+
+pub struct IncreaseWorkerStakeFixture {
+    origin: RawOrigin<u64>,
+    worker_id: u64,
+    balance: u64,
+    account_id: u64,
+}
+
+impl IncreaseWorkerStakeFixture {
+    pub fn default_for_worker_id(worker_id: u64) -> Self {
+        let account_id = 2;
+        Self {
+            origin: RawOrigin::Signed(account_id),
+            worker_id,
+            balance: 10,
+            account_id,
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_account_id(self, account_id: u64) -> Self {
+        Self { account_id, ..self }
+    }
+
+    pub fn with_balance(self, balance: u64) -> Self {
+        Self { balance, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_balance = Balances::usable_balance(&self.account_id);
+        let old_stake = get_stake_balance(&self.account_id);
+        let actual_result = TestWorkingGroup::increase_stake(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.balance,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            // new stake was set
+            assert_eq!(
+                self.balance + old_stake,
+                get_stake_balance(&self.account_id)
+            );
+
+            let new_balance = Balances::usable_balance(&self.account_id);
+
+            // worker balance equilibrium
+            assert_eq!(
+                old_balance + old_stake,
+                new_balance + self.balance + old_stake
+            );
+        }
+    }
+}
+
+pub struct WithdrawApplicationFixture {
+    origin: RawOrigin<u64>,
+    application_id: u64,
+    stake: bool,
+    account_id: u64,
+}
+
+impl WithdrawApplicationFixture {
+    pub fn with_signer(self, account_id: u64) -> Self {
+        Self {
+            origin: RawOrigin::Signed(account_id),
+            ..self
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_stake(self) -> Self {
+        Self {
+            stake: true,
+            ..self
+        }
+    }
+
+    pub fn default_for_application_id(application_id: u64) -> Self {
+        Self {
+            origin: RawOrigin::Signed(2),
+            application_id,
+            stake: false,
+            account_id: 2,
+        }
+    }
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_balance = Balances::usable_balance(&self.account_id);
+        let old_stake = get_stake_balance(&self.account_id);
+
+        let actual_result =
+            TestWorkingGroup::withdraw_application(self.origin.clone().into(), self.application_id);
+        assert_eq!(actual_result.clone(), expected_result);
+
+        if actual_result.is_ok() {
+            if self.stake {
+                // the stake was removed
+                assert_eq!(0, get_stake_balance(&self.account_id));
+
+                let new_balance = Balances::usable_balance(&self.account_id);
+
+                // worker balance equilibrium
+                assert_eq!(old_balance + old_stake, new_balance);
+            }
+        }
+    }
+}
+
+pub struct CancelOpeningFixture {
+    origin: RawOrigin<u64>,
+    opening_id: u64,
+}
+
+impl CancelOpeningFixture {
+    pub fn default_for_opening_id(opening_id: u64) -> Self {
+        Self {
+            origin: RawOrigin::Signed(1),
+            opening_id,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn call(&self) -> DispatchResult {
+        TestWorkingGroup::cancel_opening(self.origin.clone().into(), self.opening_id)
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        if expected_result.is_ok() {
+            assert!(<crate::OpeningById<Test, DefaultInstance>>::contains_key(
+                self.opening_id
+            ));
+        }
+
+        let actual_result = self.call().map(|_| ());
+
+        assert_eq!(actual_result.clone(), expected_result);
+
+        if actual_result.is_ok() {
+            assert!(!<crate::OpeningById<Test, DefaultInstance>>::contains_key(
+                self.opening_id
+            ));
+        }
+    }
+}
+
+pub struct SetBudgetFixture {
+    origin: RawOrigin<u64>,
+    new_budget: u64,
+}
+
+impl Default for SetBudgetFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Root,
+            new_budget: 1000000,
+        }
+    }
+}
+
+impl SetBudgetFixture {
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_budget(self, new_budget: u64) -> Self {
+        Self { new_budget, ..self }
+    }
+
+    pub fn execute(self) {
+        self.call().unwrap();
+    }
+
+    pub fn call(&self) -> DispatchResult {
+        TestWorkingGroup::set_budget(self.origin.clone().into(), self.new_budget)
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_budget = TestWorkingGroup::budget();
+
+        let actual_result = self.call().map(|_| ());
+
+        assert_eq!(actual_result.clone(), expected_result);
+
+        let new_budget = TestWorkingGroup::budget();
+
+        if actual_result.is_ok() {
+            assert_eq!(new_budget, self.new_budget);
+        } else {
+            assert_eq!(new_budget, old_budget);
+        }
+    }
+}
+
+pub struct UpdateRewardAccountFixture {
+    worker_id: u64,
+    new_reward_account_id: u64,
+    origin: RawOrigin<u64>,
+}
+
+impl UpdateRewardAccountFixture {
+    pub fn default_with_ids(worker_id: u64, new_reward_account_id: u64) -> Self {
+        Self {
+            worker_id,
+            new_reward_account_id,
+            origin: RawOrigin::Signed(2),
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = TestWorkingGroup::update_reward_account(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.new_reward_account_id,
+        );
+
+        assert_eq!(actual_result.clone(), expected_result);
+
+        if actual_result.is_ok() {
+            let worker = TestWorkingGroup::worker_by_id(self.worker_id);
+
+            assert_eq!(worker.reward_account_id, self.new_reward_account_id);
+        }
+    }
+}
+
+pub struct UpdateRewardAmountFixture {
+    worker_id: u64,
+    reward_per_block: Option<u64>,
+    origin: RawOrigin<u64>,
+}
+
+impl UpdateRewardAmountFixture {
+    pub fn default_for_worker_id(worker_id: u64) -> Self {
+        let lead_account_id = get_current_lead_account_id();
+
+        Self {
+            worker_id,
+            reward_per_block: None,
+            origin: RawOrigin::Signed(lead_account_id),
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_reward_per_block(self, reward_per_block: Option<u64>) -> Self {
+        Self {
+            reward_per_block,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = TestWorkingGroup::update_reward_amount(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.reward_per_block,
+        );
+
+        assert_eq!(actual_result.clone(), expected_result);
+
+        if actual_result.is_ok() {
+            let worker = TestWorkingGroup::worker_by_id(self.worker_id);
+
+            assert_eq!(worker.reward_per_block, self.reward_per_block);
+        }
+    }
+}
+
+pub struct SetStatusTextFixture {
+    origin: RawOrigin<u64>,
+    new_status_text: Option<Vec<u8>>,
+}
+
+impl Default for SetStatusTextFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(1),
+            new_status_text: None,
+        }
+    }
+}
+
+impl SetStatusTextFixture {
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_status_text(self, new_status_text: Option<Vec<u8>>) -> Self {
+        Self {
+            new_status_text,
+            ..self
+        }
+    }
+
+    pub fn call(&self) -> DispatchResult {
+        TestWorkingGroup::set_status_text(self.origin.clone().into(), self.new_status_text.clone())
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_text_hash = TestWorkingGroup::status_text_hash();
+
+        let actual_result = self.call().map(|_| ());
+
+        assert_eq!(actual_result.clone(), expected_result);
+
+        let new_text_hash = TestWorkingGroup::status_text_hash();
+
+        if actual_result.is_ok() {
+            let expected_hash = <Test as frame_system::Trait>::Hashing::hash(
+                &self.new_status_text.clone().unwrap(),
+            );
+
+            assert_eq!(new_text_hash, expected_hash.as_ref().to_vec());
+        } else {
+            assert_eq!(new_text_hash, old_text_hash);
+        }
+    }
+}
+
+pub struct SpendFromBudgetFixture {
+    origin: RawOrigin<u64>,
+    account_id: u64,
+    amount: u64,
+    rationale: Option<Vec<u8>>,
+}
+
+impl Default for SpendFromBudgetFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(1),
+            account_id: 1,
+            amount: 100,
+            rationale: None,
+        }
+    }
+}
+
+impl SpendFromBudgetFixture {
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_account_id(self, account_id: u64) -> Self {
+        Self { account_id, ..self }
+    }
+
+    pub fn with_amount(self, amount: u64) -> Self {
+        Self { amount, ..self }
+    }
+
+    pub fn call(&self) -> DispatchResult {
+        TestWorkingGroup::spend_from_budget(
+            self.origin.clone().into(),
+            self.account_id,
+            self.amount,
+            self.rationale.clone(),
+        )
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_budget = TestWorkingGroup::budget();
+        let old_balance = Balances::usable_balance(&self.account_id);
+
+        let actual_result = self.call().map(|_| ());
+
+        assert_eq!(actual_result.clone(), expected_result);
+
+        let new_budget = TestWorkingGroup::budget();
+        let new_balance = Balances::usable_balance(&self.account_id);
+
+        if actual_result.is_ok() {
+            assert_eq!(new_budget, old_budget - self.amount);
+            assert_eq!(new_balance, old_balance + self.amount);
+        } else {
+            assert_eq!(old_budget, new_budget);
+            assert_eq!(old_balance, new_balance);
+        }
+    }
+}
+
 pub struct UpdateWorkerStorageFixture {
     worker_id: u64,
     storage_field: Vec<u8>,
@@ -282,7 +1221,7 @@ impl UpdateWorkerStorageFixture {
         Self {
             worker_id,
             storage_field,
-            origin: RawOrigin::Signed(1),
+            origin: RawOrigin::Signed(DEFAULT_WORKER_ACCOUNT_ID),
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
@@ -301,667 +1240,6 @@ impl UpdateWorkerStorageFixture {
             let storage = TestWorkingGroup::worker_storage(self.worker_id);
 
             assert_eq!(storage, self.storage_field);
-        }
-    }
-}
-
-pub fn set_mint_id(mint_id: u64) {
-    <crate::Mint<Test, TestWorkingGroupInstance>>::put(mint_id);
-}
-
-pub fn create_mint() -> u64 {
-    <minting::Module<Test>>::add_mint(100, None).unwrap()
-}
-
-pub struct FillWorkerOpeningFixture {
-    origin: RawOrigin<u64>,
-    opening_id: u64,
-    successful_application_ids: BTreeSet<u64>,
-    role_account_id: u64,
-    reward_policy: Option<RewardPolicy<u64, u64>>,
-}
-
-impl FillWorkerOpeningFixture {
-    pub fn default_for_ids(opening_id: u64, application_ids: Vec<u64>) -> Self {
-        let application_ids: BTreeSet<u64> = application_ids.iter().map(|x| *x).collect();
-
-        Self {
-            origin: RawOrigin::Signed(1),
-            opening_id,
-            successful_application_ids: application_ids,
-            role_account_id: 1,
-            reward_policy: None,
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_reward_policy(self, reward_policy: RewardPolicy<u64, u64>) -> Self {
-        Self {
-            reward_policy: Some(reward_policy),
-            ..self
-        }
-    }
-
-    pub fn call(&self) -> Result<u64, DispatchError> {
-        let saved_worker_next_id = TestWorkingGroup::next_worker_id();
-        TestWorkingGroup::fill_opening(
-            self.origin.clone().into(),
-            self.opening_id,
-            self.successful_application_ids.clone(),
-            self.reward_policy.clone(),
-        )?;
-
-        Ok(saved_worker_next_id)
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) -> u64 {
-        let saved_worker_next_id = TestWorkingGroup::next_worker_id();
-        let actual_result = self.call().map(|_| ());
-        assert_eq!(actual_result.clone(), expected_result);
-
-        if actual_result.is_ok() {
-            assert_eq!(TestWorkingGroup::next_worker_id(), saved_worker_next_id + 1);
-            let worker_id = saved_worker_next_id;
-
-            let opening = TestWorkingGroup::opening_by_id(self.opening_id);
-
-            let role_stake_profile = if opening
-                .policy_commitment
-                .application_staking_policy
-                .is_some()
-                || opening.policy_commitment.role_staking_policy.is_some()
-            {
-                let stake_id = 0;
-                Some(RoleStakeProfile::new(
-                    &stake_id,
-                    &opening
-                        .policy_commitment
-                        .terminate_role_stake_unstaking_period,
-                    &opening.policy_commitment.exit_role_stake_unstaking_period,
-                ))
-            } else {
-                None
-            };
-            let reward_relationship = self.reward_policy.clone().map(|_| 0);
-
-            let expected_worker = Worker {
-                member_id: 1,
-                role_account_id: self.role_account_id,
-                reward_relationship,
-                role_stake_profile,
-            };
-
-            let actual_worker = TestWorkingGroup::worker_by_id(worker_id);
-
-            assert_eq!(actual_worker, expected_worker);
-        }
-
-        saved_worker_next_id
-    }
-}
-
-pub struct BeginReviewWorkerApplicationsFixture {
-    origin: RawOrigin<u64>,
-    opening_id: u64,
-}
-
-impl BeginReviewWorkerApplicationsFixture {
-    pub fn default_for_opening_id(opening_id: u64) -> Self {
-        Self {
-            origin: RawOrigin::Signed(1),
-            opening_id,
-        }
-    }
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result =
-            TestWorkingGroup::begin_applicant_review(self.origin.clone().into(), self.opening_id);
-        assert_eq!(actual_result, expected_result);
-    }
-}
-
-pub struct TerminateApplicationFixture {
-    origin: RawOrigin<u64>,
-    worker_application_id: u64,
-}
-
-impl TerminateApplicationFixture {
-    pub fn with_signer(self, account_id: u64) -> Self {
-        Self {
-            origin: RawOrigin::Signed(account_id),
-            ..self
-        }
-    }
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-    pub fn default_for_application_id(application_id: u64) -> Self {
-        Self {
-            origin: RawOrigin::Signed(1),
-            worker_application_id: application_id,
-        }
-    }
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = TestWorkingGroup::terminate_application(
-            self.origin.clone().into(),
-            self.worker_application_id,
-        );
-        assert_eq!(actual_result.clone(), expected_result);
-    }
-}
-pub struct WithdrawApplicationFixture {
-    origin: RawOrigin<u64>,
-    worker_application_id: u64,
-}
-
-impl WithdrawApplicationFixture {
-    pub fn with_signer(self, account_id: u64) -> Self {
-        Self {
-            origin: RawOrigin::Signed(account_id),
-            ..self
-        }
-    }
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-    pub fn default_for_application_id(application_id: u64) -> Self {
-        Self {
-            origin: RawOrigin::Signed(1),
-            worker_application_id: application_id,
-        }
-    }
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = TestWorkingGroup::withdraw_application(
-            self.origin.clone().into(),
-            self.worker_application_id,
-        );
-        assert_eq!(actual_result.clone(), expected_result);
-    }
-}
-
-pub fn increase_total_balance_issuance_using_account_id(account_id: u64, balance: u64) {
-    let _ =
-        <Balances as frame_support::traits::Currency<u64>>::deposit_creating(&account_id, balance);
-}
-
-pub fn get_balance(account_id: u64) -> u64 {
-    <super::mock::Balances as frame_support::traits::Currency<u64>>::total_balance(&account_id)
-}
-
-pub fn setup_members(count: u8) {
-    let authority_account_id = 1;
-    Membership::set_screening_authority(RawOrigin::Root.into(), authority_account_id).unwrap();
-
-    for i in 0..count {
-        let account_id: u64 = i as u64;
-        let handle: [u8; 20] = [i; 20];
-        Membership::add_screened_member(
-            RawOrigin::Signed(authority_account_id).into(),
-            account_id,
-            Some(handle.to_vec()),
-            None,
-            None,
-            None,
-        )
-        .unwrap();
-    }
-}
-
-pub struct ApplyOnWorkerOpeningFixture {
-    origin: RawOrigin<u64>,
-    member_id: u64,
-    worker_opening_id: u64,
-    role_account_id: u64,
-    opt_role_stake_balance: Option<u64>,
-    opt_application_stake_balance: Option<u64>,
-    human_readable_text: Vec<u8>,
-}
-
-impl ApplyOnWorkerOpeningFixture {
-    pub fn with_text(self, text: Vec<u8>) -> Self {
-        Self {
-            human_readable_text: text,
-            ..self
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>, member_id: u64) -> Self {
-        Self {
-            origin,
-            member_id,
-            ..self
-        }
-    }
-
-    pub fn with_role_stake(self, stake: Option<u64>) -> Self {
-        Self {
-            opt_role_stake_balance: stake,
-            ..self
-        }
-    }
-
-    pub fn with_application_stake(self, stake: u64) -> Self {
-        Self {
-            opt_application_stake_balance: Some(stake),
-            ..self
-        }
-    }
-
-    pub fn default_for_opening_id(opening_id: u64) -> Self {
-        Self {
-            origin: RawOrigin::Signed(1),
-            member_id: 1,
-            worker_opening_id: opening_id,
-            role_account_id: 1,
-            opt_role_stake_balance: None,
-            opt_application_stake_balance: None,
-            human_readable_text: b"human_text".to_vec(),
-        }
-    }
-
-    pub fn call(&self) -> Result<u64, DispatchError> {
-        let saved_application_next_id = TestWorkingGroup::next_application_id();
-        TestWorkingGroup::apply_on_opening(
-            self.origin.clone().into(),
-            self.member_id,
-            self.worker_opening_id,
-            self.role_account_id,
-            self.opt_role_stake_balance,
-            self.opt_application_stake_balance,
-            self.human_readable_text.clone(),
-        )?;
-
-        Ok(saved_application_next_id)
-    }
-    pub fn call_and_assert(&self, expected_result: DispatchResult) -> u64 {
-        let saved_application_next_id = TestWorkingGroup::next_application_id();
-
-        let actual_result = self.call().map(|_| ());
-        assert_eq!(actual_result.clone(), expected_result);
-
-        if actual_result.is_ok() {
-            assert_eq!(
-                TestWorkingGroup::next_application_id(),
-                saved_application_next_id + 1
-            );
-            let application_id = saved_application_next_id;
-
-            let actual_application = TestWorkingGroup::application_by_id(application_id);
-
-            let expected_application = Application {
-                role_account_id: self.role_account_id,
-                opening_id: self.worker_opening_id,
-                member_id: self.member_id,
-                hiring_application_id: application_id,
-            };
-
-            assert_eq!(actual_application, expected_application);
-
-            let current_opening = TestWorkingGroup::opening_by_id(self.worker_opening_id);
-            assert!(current_opening.applications.contains(&application_id));
-        }
-
-        saved_application_next_id
-    }
-}
-
-pub struct AcceptWorkerApplicationsFixture {
-    origin: RawOrigin<u64>,
-    opening_id: u64,
-}
-
-impl AcceptWorkerApplicationsFixture {
-    pub fn default_for_opening_id(opening_id: u64) -> Self {
-        Self {
-            origin: RawOrigin::Signed(1),
-            opening_id,
-        }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result =
-            TestWorkingGroup::accept_applications(self.origin.clone().into(), self.opening_id);
-        assert_eq!(actual_result, expected_result);
-    }
-}
-
-pub struct SetLeadFixture {
-    pub member_id: u64,
-    pub role_account_id: u64,
-    pub worker_id: u64,
-}
-impl Default for SetLeadFixture {
-    fn default() -> Self {
-        SetLeadFixture {
-            member_id: 1,
-            role_account_id: 1,
-            worker_id: 1,
-        }
-    }
-}
-
-impl SetLeadFixture {
-    pub fn unset_lead() {
-        TestWorkingGroup::unset_lead();
-    }
-
-    pub fn set_lead(self) {
-        TestWorkingGroup::set_lead(self.worker_id);
-    }
-    pub fn set_lead_with_ids(member_id: u64, role_account_id: u64, worker_id: u64) {
-        Self {
-            member_id,
-            role_account_id,
-            worker_id,
-        }
-        .set_lead();
-    }
-}
-
-pub struct HireLeadFixture {
-    setup_environment: bool,
-    stake: Option<u64>,
-    reward_policy: Option<RewardPolicy<u64, u64>>,
-}
-
-impl Default for HireLeadFixture {
-    fn default() -> Self {
-        Self {
-            setup_environment: true,
-            stake: None,
-            reward_policy: None,
-        }
-    }
-}
-impl HireLeadFixture {
-    pub fn with_stake(self, stake: u64) -> Self {
-        Self {
-            stake: Some(stake),
-            ..self
-        }
-    }
-    pub fn with_reward_policy(self, reward_policy: RewardPolicy<u64, u64>) -> Self {
-        Self {
-            reward_policy: Some(reward_policy),
-            ..self
-        }
-    }
-
-    pub fn hire_lead(self) -> u64 {
-        fill_worker_position(
-            self.reward_policy,
-            self.stake,
-            self.setup_environment,
-            OpeningType::Leader,
-            Some(b"leader".to_vec()),
-        )
-    }
-}
-
-pub fn get_worker_by_id(worker_id: u64) -> Worker<u64, u64, u64, u64, u64> {
-    TestWorkingGroup::worker_by_id(worker_id)
-}
-
-pub struct AddWorkerOpeningFixture {
-    origin: RawOrigin<u64>,
-    activate_at: hiring::ActivateOpeningAt<u64>,
-    commitment: OpeningPolicyCommitment<u64, u64>,
-    human_readable_text: Vec<u8>,
-    opening_type: OpeningType,
-}
-
-impl Default for AddWorkerOpeningFixture {
-    fn default() -> Self {
-        Self {
-            origin: RawOrigin::Signed(1),
-            activate_at: hiring::ActivateOpeningAt::CurrentBlock,
-            commitment: <OpeningPolicyCommitment<u64, u64>>::default(),
-            human_readable_text: b"human_text".to_vec(),
-            opening_type: OpeningType::Worker,
-        }
-    }
-}
-
-impl AddWorkerOpeningFixture {
-    pub fn with_policy_commitment(
-        self,
-        policy_commitment: OpeningPolicyCommitment<u64, u64>,
-    ) -> Self {
-        Self {
-            commitment: policy_commitment,
-            ..self
-        }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) -> u64 {
-        let saved_opening_next_id = TestWorkingGroup::next_opening_id();
-        let actual_result = self.call().map(|_| ());
-
-        assert_eq!(actual_result.clone(), expected_result);
-
-        if actual_result.is_ok() {
-            assert_eq!(
-                TestWorkingGroup::next_opening_id(),
-                saved_opening_next_id + 1
-            );
-            let opening_id = saved_opening_next_id;
-
-            let actual_opening = TestWorkingGroup::opening_by_id(opening_id);
-
-            let expected_opening = Opening::<u64, u64, u64, u64> {
-                hiring_opening_id: opening_id,
-                applications: BTreeSet::new(),
-                policy_commitment: self.commitment.clone(),
-                opening_type: self.opening_type,
-            };
-
-            assert_eq!(actual_opening, expected_opening);
-        }
-
-        saved_opening_next_id
-    }
-
-    pub fn call(&self) -> Result<u64, DispatchError> {
-        let saved_opening_next_id = TestWorkingGroup::next_opening_id();
-        TestWorkingGroup::add_opening(
-            self.origin.clone().into(),
-            self.activate_at.clone(),
-            self.commitment.clone(),
-            self.human_readable_text.clone(),
-            self.opening_type,
-        )?;
-
-        Ok(saved_opening_next_id)
-    }
-
-    pub fn with_text(self, text: Vec<u8>) -> Self {
-        Self {
-            human_readable_text: text,
-            ..self
-        }
-    }
-
-    pub fn with_opening_type(self, opening_type: OpeningType) -> Self {
-        Self {
-            opening_type,
-            ..self
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_activate_at(self, activate_at: hiring::ActivateOpeningAt<u64>) -> Self {
-        Self {
-            activate_at,
-            ..self
-        }
-    }
-}
-
-pub struct EventFixture;
-impl EventFixture {
-    pub fn assert_last_crate_event(
-        expected_raw_event: RawEvent<
-            u64,
-            u64,
-            u64,
-            u64,
-            std::collections::BTreeMap<u64, u64>,
-            Vec<u8>,
-            u64,
-            u64,
-            TestWorkingGroupInstance,
-        >,
-    ) {
-        let converted_event = TestEvent::working_group_TestWorkingGroupInstance(expected_raw_event);
-
-        Self::assert_last_global_event(converted_event)
-    }
-
-    pub fn assert_last_global_event(expected_event: TestEvent) {
-        let expected_event = EventRecord {
-            phase: Phase::Initialization,
-            event: expected_event,
-            topics: vec![],
-        };
-
-        assert_eq!(System::events().pop().unwrap(), expected_event);
-    }
-}
-
-pub struct DecreaseWorkerStakeFixture {
-    origin: RawOrigin<u64>,
-    worker_id: u64,
-    balance: u64,
-    account_id: u64,
-}
-
-impl DecreaseWorkerStakeFixture {
-    pub fn default_for_worker_id(worker_id: u64) -> Self {
-        let account_id = 1;
-
-        let lead_account_id = get_current_lead_account_id();
-
-        Self {
-            origin: RawOrigin::Signed(lead_account_id),
-            worker_id,
-            balance: 10,
-            account_id,
-        }
-    }
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_balance(self, balance: u64) -> Self {
-        Self { balance, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let stake_id = 0;
-        let old_balance = Balances::free_balance(&self.account_id);
-        let old_stake = <stake::Module<Test>>::stakes(stake_id);
-        let actual_result = TestWorkingGroup::decrease_stake(
-            self.origin.clone().into(),
-            self.worker_id,
-            self.balance,
-        );
-
-        assert_eq!(actual_result, expected_result);
-
-        if actual_result.is_ok() {
-            let new_stake = <stake::Module<Test>>::stakes(stake_id);
-
-            // stake decreased
-            assert_eq!(
-                get_stake_balance(new_stake),
-                get_stake_balance(old_stake) - self.balance
-            );
-
-            let new_balance = Balances::free_balance(&self.account_id);
-
-            // worker balance increased
-            assert_eq!(new_balance, old_balance + self.balance,);
-        }
-    }
-}
-
-pub(crate) fn get_stake_balance(stake: stake::Stake<u64, u64, u64>) -> u64 {
-    if let stake::StakingStatus::Staked(stake) = stake.staking_status {
-        return stake.staked_amount;
-    }
-
-    panic!("Not staked.");
-}
-
-fn get_current_lead_account_id() -> u64 {
-    let leader_worker_id = TestWorkingGroup::current_lead();
-
-    if let Some(leader_worker_id) = leader_worker_id {
-        let leader = TestWorkingGroup::worker_by_id(leader_worker_id);
-        leader.role_account_id
-    } else {
-        0 // return invalid lead_account_id for testing
-    }
-}
-
-pub struct SlashWorkerStakeFixture {
-    origin: RawOrigin<u64>,
-    worker_id: u64,
-    balance: u64,
-    account_id: u64,
-}
-
-impl SlashWorkerStakeFixture {
-    pub fn default_for_worker_id(worker_id: u64) -> Self {
-        let account_id = 1;
-
-        let lead_account_id = get_current_lead_account_id();
-
-        Self {
-            origin: RawOrigin::Signed(lead_account_id),
-            worker_id,
-            balance: 10,
-            account_id,
-        }
-    }
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_balance(self, balance: u64) -> Self {
-        Self { balance, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let stake_id = 0;
-        let old_balance = Balances::free_balance(&self.account_id);
-        let old_stake = <stake::Module<Test>>::stakes(stake_id);
-        let actual_result =
-            TestWorkingGroup::slash_stake(self.origin.clone().into(), self.worker_id, self.balance);
-
-        assert_eq!(actual_result, expected_result);
-
-        if actual_result.is_ok() {
-            let new_stake = <stake::Module<Test>>::stakes(stake_id);
-
-            // stake decreased
-            assert_eq!(
-                get_stake_balance(new_stake),
-                get_stake_balance(old_stake) - self.balance
-            );
-
-            let new_balance = Balances::free_balance(&self.account_id);
-
-            // worker balance unchanged
-            assert_eq!(new_balance, old_balance,);
         }
     }
 }

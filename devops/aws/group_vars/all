@@ -15,8 +15,5 @@ raw_chain_spec_path: "{{ remote_data_path }}/chainspec-raw.json"
 local_raw_chain_spec_path: "{{ data_path }}/chainspec-raw.json"
 remote_code_path: "/home/ubuntu/joystream"
 remote_chain_spec_path: "{{ remote_code_path }}/chainspec.json"
-run_on_admin_server: true
 build_local_code: false
 number_of_validators: 2
-
-bucket_name: s3-bucket-joystream

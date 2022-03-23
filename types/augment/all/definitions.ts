@@ -15,7 +15,7 @@ Object.entries(defs).forEach(([typeName, typeDef]) => {
       if ((emptyStruct as any)[key] !== undefined) {
         return
       }
-      normalizedDef[key] = value
+      normalizedDef[key] = value as string
     })
     normalizedDefs[typeName] = normalizedDef;
   }

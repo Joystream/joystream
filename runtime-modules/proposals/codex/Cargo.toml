@@ -1,6 +1,6 @@
 [package]
 name = 'pallet-proposals-codex'
-version = '3.2.0'
+version = '5.0.0'
 authors = ['Joystream contributors']
 edition = '2018'
 
@@ -14,27 +14,33 @@ sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://
 frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 staking = { package = 'pallet-staking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
-membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
-stake = { package = 'pallet-stake', default-features = false, path = '../../stake'}
-governance = { package = 'pallet-governance', default-features = false, path = '../../governance'}
-hiring = { package = 'pallet-hiring', default-features = false, path = '../../hiring'}
-minting = { package = 'pallet-token-mint', default-features = false, path = '../../token-minting'}
 working-group = { package = 'pallet-working-group', default-features = false, path = '../../working-group'}
 common = { package = 'pallet-common', default-features = false, path = '../../common'}
 proposals-engine = { package = 'pallet-proposals-engine', default-features = false, path = '../engine'}
 proposals-discussion = { package = 'pallet-proposals-discussion', default-features = false, path = '../discussion'}
+constitution = { package = 'pallet-constitution', default-features = false, path = '../../constitution'}
+membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
+blog = { package = 'pallet-blog', default-features = false, path = '../../blog'}
+
+# Benchmarking dependencies
+frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62', optional = true}
+council = { package = 'pallet-council', default-features = false, path = '../../council', optional = true}
+balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62', optional = true}
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 sp-staking = { package = 'sp-staking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 pallet-staking-reward-curve = { package = 'pallet-staking-reward-curve', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
-recurring-rewards = { package = 'pallet-recurring-reward', default-features = false, path = '../../recurring-reward'}
 strum = {version = "0.19", default-features = false}
+staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../../staking-handler'}
+referendum = { package = 'pallet-referendum', default-features = false, path = '../../referendum'}
+council = { package = 'pallet-council', default-features = false, path = '../../council'}
+balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 
 [features]
 default = ['std']
+runtime-benchmarks = ['frame-benchmarking', 'balances', 'council']
 std = [
     'serde',
     'codec/std',
@@ -45,14 +51,11 @@ std = [
     'frame-system/std',
     'staking/std',
     'pallet-timestamp/std',
-    'balances/std',
-    'membership/std',
-    'stake/std',
-    'governance/std',
-    'hiring/std',
-    'minting/std',
     'working-group/std',
     'common/std',
     'proposals-engine/std',
     'proposals-discussion/std',
+    'constitution/std',
+    'membership/std',
+    'blog/std',
 ]

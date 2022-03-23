@@ -1,13 +1,7 @@
 #![warn(missing_docs)]
 
-mod council_elected_handler;
-mod council_origin_validator;
-mod membership_origin_validator;
+mod council_manager;
 mod proposal_encoder;
-mod staking_events_handler;
 
-pub use council_elected_handler::CouncilElectedHandler;
-pub use council_origin_validator::CouncilManager;
-pub use membership_origin_validator::{MemberId, MembershipOriginValidator};
+pub use council_manager::CouncilManager;
 pub use proposal_encoder::ExtrinsicProposalEncoder;
-pub use staking_events_handler::StakingEventsHandler;

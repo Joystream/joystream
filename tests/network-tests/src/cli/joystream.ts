@@ -4,12 +4,12 @@ import { CLI, CommandResult } from './base'
 import { TmpFileManager } from './utils'
 import {
   VideoInputParameters,
-  ChannelInputParameters,
+  ChannelCreationInputParameters,
+  ChannelUpdateInputParameters,
   ChannelCategoryInputParameters,
   VideoCategoryInputParameters,
 } from '@joystream/cli/src/Types'
 import ExitCodes from '@joystream/cli/src/ExitCodes'
-import { MemberId } from '@joystream/types/members'
 
 const CLI_ROOT_PATH = path.resolve(__dirname, '../../../../cli')
 
@@ -80,8 +80,8 @@ export class JoystreamCLI extends CLI {
   /**
     Parses `id` of newly created content entity from CLI's stdout.
   */
-  private parseCreatedIdFromStdout(stdout: string): number {
-    return parseInt((stdout.match(/with id (\d+) successfully created/) as RegExpMatchArray)[1])
+  private parseCreatedIdFromOutput(text: string): number {
+    return parseInt((text.match(/with id (\d+) successfully created/) as RegExpMatchArray)[1])
   }
 
   /*
@@ -93,54 +93,41 @@ export class JoystreamCLI extends CLI {
   }
 
   /**
-    Selects active member for CLI commands.
-  */
-  async chooseMemberAccount(memberId: MemberId) {
-    const { stderr, exitCode } = await this.run('account:chooseMember', ['--memberId', memberId.toString()])
-
-    if (exitCode) {
-      throw new Error(`Unexpected CLI failure on choosing account: "${stderr}"`)
-    }
-  }
-
-  /**
     Creates a new channel.
   */
-  async createChannel(channel: Modify<ChannelInputParameters, { category?: number }>): Promise<number> {
+  async createChannel(
+    channel: Modify<ChannelCreationInputParameters, { category?: number }>,
+    args: string[]
+  ): Promise<number> {
     const jsonFile = this.tmpFileManager.jsonFile(channel)
 
-    const { stdout, stderr, exitCode } = await this.run('content:createChannel', [
-      '--input',
-      jsonFile,
-      '--context',
-      'Member',
-    ])
+    const { out, stderr, exitCode } = await this.run('content:createChannel', ['--input', jsonFile, ...args])
 
     if (exitCode && !this.isErrorDueToNoStorage(exitCode)) {
       throw new Error(`Unexpected CLI failure on creating channel: "${stderr}"`)
     }
 
-    return this.parseCreatedIdFromStdout(stdout)
+    return parseInt(out)
   }
 
   /**
     Creates a new channel category.
   */
-  async createChannelCategory(channelCategory: ChannelInputParameters): Promise<number> {
+  async createChannelCategory(channelCategory: ChannelCategoryInputParameters): Promise<number> {
     const jsonFile = this.tmpFileManager.jsonFile(channelCategory)
 
-    const { stdout, stderr } = await this.run('content:createChannelCategory', [
+    const { stdout, stderr, exitCode } = await this.run('content:createChannelCategory', [
       '--input',
       jsonFile,
       '--context',
       'Lead',
     ])
 
-    if (stderr) {
+    if (exitCode) {
       throw new Error(`Unexpected CLI failure on creating channel category: "${stderr}"`)
     }
 
-    return this.parseCreatedIdFromStdout(stdout)
+    return this.parseCreatedIdFromOutput(stderr)
   }
 
   /**
@@ -166,7 +153,7 @@ export class JoystreamCLI extends CLI {
       throw new Error(`Unexpected CLI failure on creating video: "${stderr}"`)
     }
 
-    const videoId = this.parseCreatedIdFromStdout(stdout)
+    const videoId = this.parseCreatedIdFromOutput(stderr)
     const assetContentIds = Array.from(stdout.matchAll(/ objectId: '([a-z0-9]+)'/g)).map((item) => item[1])
 
     return {
@@ -192,7 +179,7 @@ export class JoystreamCLI extends CLI {
       throw new Error(`Unexpected CLI failure on creating video category: "${stderr}"`)
     }
 
-    return this.parseCreatedIdFromStdout(stdout)
+    return this.parseCreatedIdFromOutput(stderr)
   }
 
   /**
@@ -216,7 +203,10 @@ export class JoystreamCLI extends CLI {
   /**
     Updates a channel.
   */
-  async updateChannel(channelId: number, channel: Modify<ChannelInputParameters, { category: number }>): Promise<void> {
+  async updateChannel(
+    channelId: number,
+    channel: Modify<ChannelUpdateInputParameters, { category: number }>
+  ): Promise<void> {
     const jsonFile = this.tmpFileManager.jsonFile(channel)
 
     const { stdout, stderr, exitCode } = await this.run('content:updateChannel', [

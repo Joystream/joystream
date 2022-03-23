@@ -10,8 +10,8 @@
   "dependencies": {
     "@apollo/client": "^3.2.5",
     "@elastic/ecs-winston-format": "^1.1.0",
-    "@joystream/metadata-protobuf": "^1.0.0",
-    "@joystream/types": "^0.17.2",
+    "@joystream/metadata-protobuf": "^2.1.0",
+    "@joystream/types": "^0.18.3",
     "@oclif/command": "^1",
     "@oclif/config": "^1",
     "@oclif/plugin-help": "^3",

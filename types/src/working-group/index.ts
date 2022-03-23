@@ -1,70 +1,72 @@
-import { Bytes, BTreeMap, BTreeSet, Option } from '@polkadot/types'
-import { Null, u32, u128 } from '@polkadot/types/primitive'
-import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
+import { Bytes, BTreeMap, Option, Text, BTreeSet } from '@polkadot/types'
+import { Null, u32, u64, u128 } from '@polkadot/types/primitive'
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
-import { MemberId, ActorId } from '../members'
-import { RewardRelationshipId } from '../recurring-rewards'
-import { StakeId } from '../stake'
-import { ApplicationId, OpeningId, ApplicationRationingPolicy, StakingPolicy } from '../hiring'
-import { JoyEnum, JoyStructDecorated, SlashingTerms } from '../common'
+import { ActorId, MemberId, JoyEnum, JoyStructDecorated, AccountId } from '../common'
 import { RegistryTypes } from '@polkadot/types/types'
 
-export class RationaleText extends Bytes {}
-
-export type IApplication = {
-  role_account_id: AccountId
-  opening_id: OpeningId
-  member_id: MemberId
-  application_id: ApplicationId
-}
-
-// This type is also defined in /hiring (and those are incosistent), but here
-// it is beeing registered as "ApplicationOf" (which is an alias used by the runtime working-group module),
-// so it shouldn't cause any conflicts
-export class Application
-  extends JoyStructDecorated({
-    role_account_id: AccountId,
-    opening_id: OpeningId,
-    member_id: MemberId,
-    application_id: ApplicationId,
-  })
-  implements IApplication {}
-
+export class ApplicationId extends u64 {}
+export class OpeningId extends u64 {}
 export class WorkerId extends ActorId {}
-
 export class StorageProviderId extends WorkerId {}
 
 export class ApplicationIdSet extends BTreeSet.with(ApplicationId) {}
-
 export class ApplicationIdToWorkerIdMap extends BTreeMap.with(ApplicationId, WorkerId) {}
 
-export type IRoleStakeProfile = {
-  stake_id: StakeId
-  termination_unstaking_period: Option<BlockNumber>
-  exit_unstaking_period: Option<BlockNumber>
+export type IApplication = {
+  role_account_id: AccountId
+  reward_account_id: AccountId
+  staking_account_id: AccountId
+  member_id: MemberId
+  description_hash: Bytes
+  opening_id: OpeningId
 }
 
-export class RoleStakeProfile
+export class Application
   extends JoyStructDecorated({
-    stake_id: StakeId,
-    termination_unstaking_period: Option.with(u32), // Option<BlockNumber>
-    exit_unstaking_period: Option.with(u32), // Option<BlockNumber>
+    role_account_id: AccountId,
+    reward_account_id: AccountId,
+    staking_account_id: AccountId,
+    member_id: MemberId,
+    description_hash: Bytes,
+    opening_id: OpeningId,
   })
-  implements IRoleStakeProfile {}
+  implements IApplication {}
+
+export type IApplicationInfo = {
+  application_id: ApplicationId
+  application: Application
+}
+
+export class ApplicationInfo
+  extends JoyStructDecorated({
+    application_id: ApplicationId,
+    application: Application,
+  })
+  implements IApplicationInfo {}
 
 export type IWorker = {
   member_id: MemberId
   role_account_id: AccountId
-  reward_relationship: Option<RewardRelationshipId>
-  role_stake_profile: Option<RoleStakeProfile>
+  staking_account_id: AccountId
+  reward_account_id: AccountId
+  started_leaving_at: Option<BlockNumber>
+  job_unstaking_period: BlockNumber
+  reward_per_block: Option<Balance>
+  missed_reward: Option<Balance>
+  created_at: BlockNumber
 }
 
 export class Worker
   extends JoyStructDecorated({
     member_id: MemberId,
     role_account_id: AccountId,
-    reward_relationship: Option.with(RewardRelationshipId),
-    role_stake_profile: Option.with(RoleStakeProfile),
+    staking_account_id: AccountId,
+    reward_account_id: AccountId,
+    started_leaving_at: Option.with(u32),
+    job_unstaking_period: u32,
+    reward_per_block: Option.with(u128),
+    missed_reward: Option.with(u128),
+    created_at: u32,
   })
   implements IWorker {
   // FIXME: Won't be needed soon?
@@ -73,100 +75,126 @@ export class Worker
   }
 }
 
-export type IOpeningPolicyCommitment = {
-  application_rationing_policy: Option<ApplicationRationingPolicy>
-  max_review_period_length: BlockNumber
-  application_staking_policy: Option<StakingPolicy>
-  role_staking_policy: Option<StakingPolicy>
-  role_slashing_terms: SlashingTerms
-  fill_opening_successful_applicant_application_stake_unstaking_period: Option<BlockNumber>
-  fill_opening_failed_applicant_application_stake_unstaking_period: Option<BlockNumber>
-  fill_opening_failed_applicant_role_stake_unstaking_period: Option<BlockNumber>
-  terminate_application_stake_unstaking_period: Option<BlockNumber>
-  terminate_role_stake_unstaking_period: Option<BlockNumber>
-  exit_role_application_stake_unstaking_period: Option<BlockNumber>
-  exit_role_stake_unstaking_period: Option<BlockNumber>
+export type IWorkerInfo = {
+  worker_id: WorkerId
+  worker: Worker
 }
 
-export class OpeningPolicyCommitment
+export class WorkerInfo
   extends JoyStructDecorated({
-    application_rationing_policy: Option.with(ApplicationRationingPolicy),
-    max_review_period_length: u32, // BlockNumber
-    application_staking_policy: Option.with(StakingPolicy),
-    role_staking_policy: Option.with(StakingPolicy),
-    role_slashing_terms: SlashingTerms,
-    fill_opening_successful_applicant_application_stake_unstaking_period: Option.with(u32),
-    fill_opening_failed_applicant_application_stake_unstaking_period: Option.with(u32),
-    fill_opening_failed_applicant_role_stake_unstaking_period: Option.with(u32),
-    terminate_application_stake_unstaking_period: Option.with(u32),
-    terminate_role_stake_unstaking_period: Option.with(u32),
-    exit_role_application_stake_unstaking_period: Option.with(u32),
-    exit_role_stake_unstaking_period: Option.with(u32),
+    worker_id: WorkerId,
+    worker: Worker,
   })
-  implements IOpeningPolicyCommitment {}
+  implements IWorkerInfo {}
+
+export type IStakePolicy = {
+  stake_amount: Balance
+  leaving_unstaking_period: BlockNumber
+}
+export class StakePolicy
+  extends JoyStructDecorated({
+    stake_amount: u128,
+    leaving_unstaking_period: u32,
+  })
+  implements IStakePolicy {}
+
+export type IStakeParameters = {
+  stake: Balance
+  staking_account_id: AccountId
+}
+
+export class StakeParameters
+  extends JoyStructDecorated({
+    stake: u128,
+    staking_account_id: AccountId,
+  })
+  implements IStakeParameters {}
+
+export type IApplyOnOpeningParameters = {
+  member_id: MemberId
+  opening_id: OpeningId
+  role_account_id: AccountId
+  reward_account_id: AccountId
+  description: Bytes
+  stake_parameters: StakeParameters
+}
+
+export class ApplyOnOpeningParameters
+  extends JoyStructDecorated({
+    member_id: MemberId,
+    opening_id: OpeningId,
+    role_account_id: AccountId,
+    reward_account_id: AccountId,
+    description: Bytes,
+    stake_parameters: StakeParameters,
+  })
+  implements IApplyOnOpeningParameters {}
+
+export type IPenalty = {
+  slashing_text: Text
+  slashing_amount: Balance
+}
+
+export class Penalty
+  extends JoyStructDecorated({
+    slashing_text: Text,
+    slashing_amount: u128,
+  })
+  implements IPenalty {}
 
 export class OpeningType_Leader extends Null {}
-export class OpeningType_Worker extends Null {}
+export class OpeningType_Regular extends Null {}
 export const OpeningTypeDef = {
   Leader: OpeningType_Leader,
-  Worker: OpeningType_Worker,
+  Regular: OpeningType_Regular,
 } as const
 export type OpeningTypeKey = keyof typeof OpeningTypeDef
 export class OpeningType extends JoyEnum(OpeningTypeDef) {}
 
 export type IOpening = {
-  hiring_opening_id: OpeningId
-  applications: BTreeSet<ApplicationId>
-  policy_commitment: OpeningPolicyCommitment
   opening_type: OpeningType
+  created: BlockNumber
+  description_hash: Bytes
+  stake_policy: StakePolicy
+  reward_per_block: Option<Balance>
+  creation_stake: Balance
 }
 
-// This type is also defined in /hiring (and those are incosistent), but here
-// it is beeing registered as "OpeningOf" (which is an alias used by the runtime working-group module),
-// so it shouldn't cause any conflicts
 export class Opening
   extends JoyStructDecorated({
-    hiring_opening_id: OpeningId,
-    applications: BTreeSet.with(ApplicationId),
-    policy_commitment: OpeningPolicyCommitment,
     opening_type: OpeningType,
+    created: u32,
+    description_hash: Bytes,
+    stake_policy: StakePolicy,
+    reward_per_block: Option.with(u128),
+    creation_stake: u128,
   })
   implements IOpening {}
 
-// Also defined in "content-working-group" runtime module, but those definitions are the consistent
-export type IRewardPolicy = {
-  amount_per_payout: Balance
-  next_payment_at_block: BlockNumber
-  payout_interval: Option<BlockNumber>
-}
-
-export class RewardPolicy
-  extends JoyStructDecorated({
-    amount_per_payout: u128, // Balance
-    next_payment_at_block: u32, // BlockNumber
-    payout_interval: Option.with(u32), // Option<BlockNumber>
-  })
-  implements IRewardPolicy {}
-
-// Needed for types augment tool
-export { OpeningId, ApplicationId }
+// Reward payment type enum.
+export class RewardPaymentType extends JoyEnum({
+  MissedReward: Null,
+  RegularReward: Null,
+}) {}
 
 export const workingGroupTypes: RegistryTypes = {
-  RationaleText,
-  ApplicationOf: Application,
+  ApplicationId,
+  Application,
+  ApplicationInfo,
   ApplicationIdSet,
   ApplicationIdToWorkerIdMap,
   WorkerId,
-  WorkerOf: Worker,
-  OpeningOf: Opening,
+  Worker,
+  WorkerInfo,
+  Opening,
+  OpeningId,
+  StakePolicy,
+  StakeParameters,
   StorageProviderId,
   OpeningType,
-  /// Alias used by the runtime working-group module
-  HiringApplicationId: ApplicationId,
-  RewardPolicy,
-  // Expose in registry for api.createType purposes:
-  OpeningPolicyCommitment,
-  RoleStakeProfile,
+  ApplyOnOpeningParameters,
+  Penalty,
+  RewardPaymentType,
 }
 
 export default workingGroupTypes

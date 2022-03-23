@@ -26,7 +26,7 @@ TREASURY_ACCOUNT=$(docker run --rm --pull=always docker.io/parity/subkey:2.0.1 i
 >&2 echo "treasury account from suri: ${TREASURY_ACCOUNT}"
 
 # The docker image tag to use for joystream/node
-RUNTIME=${RUNTIME:=$(../../scripts/runtime-code-shasum.sh)}
+RUNTIME=${RUNTIME:=$(RUNTIME_PROFILE=TESTING ../../scripts/runtime-code-shasum.sh)}
 
 echo "{
   \"balances\":[

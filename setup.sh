@@ -21,7 +21,7 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
     fi
     # install additional packages
     brew update
-    brew install coreutils gnu-tar jq curl llvm || :
+    brew install coreutils gnu-tar jq curl llvm gnu-sed || :
     echo "It is recommended to setup Docker desktop from: https://www.docker.com/products/docker-desktop"
     echo "It is also recommended to install qemu emulators with following command:"
     echo "docker run --privileged --rm tonistiigi/binfmt --install all"
@@ -36,7 +36,8 @@ source ~/.cargo/env
 rustup install nightly-2021-02-20
 rustup target add wasm32-unknown-unknown --toolchain nightly-2021-02-20
 
-rustup component add rustfmt clippy
+rustup component add --toolchain nightly-2021-02-20 clippy
+rustup component add rustfmt
 
 # Install substrate keychain tool - install doesn't seem to work lately.
 # cargo install --force subkey --git https://github.com/paritytech/substrate --version 2.0.1 --locked

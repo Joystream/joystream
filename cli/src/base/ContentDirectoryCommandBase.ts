@@ -3,10 +3,11 @@ import { WorkingGroups } from '../Types'
 import { CuratorGroup, CuratorGroupId, ContentActor, Channel } from '@joystream/types/content'
 import { Worker } from '@joystream/types/working-group'
 import { CLIError } from '@oclif/errors'
-import { RolesCommandBase } from './WorkingGroupsCommandBase'
-import { createType } from '@joystream/types'
 import { flags } from '@oclif/command'
-import { MemberId } from '@joystream/types/members'
+import { memberHandle } from '../helpers/display'
+import { MemberId } from '@joystream/types/common'
+import { createType } from '@joystream/types'
+import WorkingGroupCommandBase from './WorkingGroupCommandBase'
 
 const CHANNEL_CREATION_CONTEXTS = ['Member', 'Curator'] as const
 const CATEGORIES_CONTEXTS = ['Lead', 'Curator'] as const
@@ -19,7 +20,11 @@ type CategoriesContext = typeof CATEGORIES_CONTEXTS[number]
 /**
  * Abstract base class for commands related to content directory
  */
-export default abstract class ContentDirectoryCommandBase extends RolesCommandBase {
+export default abstract class ContentDirectoryCommandBase extends WorkingGroupCommandBase {
+  static flags = {
+    ...WorkingGroupCommandBase.flags,
+  }
+
   static channelCreationContextFlag = flags.enum({
     required: false,
     description: `Actor context to execute the command in (${CHANNEL_CREATION_CONTEXTS.join('/')})`,
@@ -40,7 +45,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
 
   async init(): Promise<void> {
     await super.init()
-    this.group = WorkingGroups.Curators // override group for RolesCommandBase
+    this._group = WorkingGroups.Curators // override group for RolesCommandBase
   }
 
   async promptForChannelCreationContext(
@@ -80,7 +85,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
         return this.getCuratorContext(channel.owner.asType('Curators'))
       }
     } else {
-      const [id, membership] = await this.getRequiredMemberContext([channel.owner.asType('Member')])
+      const { id, membership } = await this.getRequiredMemberContext(false, [channel.owner.asType('Member')])
       return [
         createType<ContentActor, 'ContentActor'>('ContentActor', { Member: id }),
         membership.controller_account.toString(),
@@ -89,11 +94,18 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
   }
 
   async getChannelCollaboratorActor(channel: Channel): Promise<[ContentActor, string]> {
-    const [id, membership] = await this.getRequiredMemberContext(Array.from(channel.collaborators))
+    const { id, membership } = await this.getRequiredMemberContext(false, Array.from(channel.collaborators))
     return [
-      createType<ContentActor, 'ContentActor'>('ContentActor', { Collaborator: id }),
+      createType<ContentActor, 'ContentActor'>('ContentActor', { Member: id }),
       membership.controller_account.toString(),
     ]
+  }
+
+  isChannelOwner(channel: Channel, actor: ContentActor): boolean {
+    return channel.owner.isOfType('Curators')
+      ? (actor.isOfType('Curator') && actor.asType('Curator')[0].eq(channel.owner.asType('Curators'))) ||
+          actor.isOfType('Lead')
+      : actor.isOfType('Member') && actor.asType('Member').eq(channel.owner.asType('Member'))
   }
 
   async getChannelManagementActor(
@@ -205,7 +217,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
       this.warn('No Curator Groups to choose from!')
       this.exit(ExitCodes.InvalidInput)
     }
-    const selectedId = await this.simplePrompt({ message, type: 'list', choices })
+    const selectedId = await this.simplePrompt<number>({ message, type: 'list', choices })
 
     return selectedId
   }
@@ -215,7 +227,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     if (!choices.length) {
       return []
     }
-    const selectedIds = await this.simplePrompt({ message, type: 'checkbox', choices })
+    const selectedIds = await this.simplePrompt<number[]>({ message, type: 'checkbox', choices })
 
     return selectedIds
   }
@@ -225,7 +237,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     const choices = curators
       .filter((c) => (ids ? ids.includes(c.workerId.toNumber()) : true))
       .map((c) => ({
-        name: `${c.profile.handle.toString()} (Worker ID: ${c.workerId})`,
+        name: `${memberHandle(c.profile)} (Worker ID: ${c.workerId})`,
         value: c.workerId.toNumber(),
       }))
 
@@ -234,7 +246,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
       this.exit(ExitCodes.InvalidInput)
     }
 
-    const selectedCuratorId = await this.simplePrompt({
+    const selectedCuratorId = await this.simplePrompt<number>({
       message,
       type: 'list',
       choices,
@@ -279,7 +291,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     context: Exclude<keyof typeof ContentActor.typeDefinitions, 'Collaborator'>
   ): Promise<[ContentActor, string]> {
     if (context === 'Member') {
-      const [id, membership] = await this.getRequiredMemberContext()
+      const { id, membership } = await this.getRequiredMemberContext()
       return [
         createType<ContentActor, 'ContentActor'>('ContentActor', { Member: id }),
         membership.controller_account.toString(),
@@ -298,10 +310,10 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     throw new Error(`Unrecognized context: ${context}`)
   }
 
-  async validateCollaborators(collaborators: number[] | MemberId[]): Promise<void> {
-    const collaboratorMembers = await this.getApi().getMembers(collaborators)
-    if (collaboratorMembers.length < collaborators.length || collaboratorMembers.some((m) => m.isEmpty)) {
-      this.error(`Invalid collaborator set! All collaborators must be existing members.`, {
+  async validateMemberIdsSet(ids: number[] | MemberId[], setName: 'collaborator' | 'moderator'): Promise<void> {
+    const members = await this.getApi().getMembers(ids)
+    if (members.length < ids.length || members.some((m) => m.isEmpty)) {
+      this.error(`Invalid ${setName} set! All ${setName} set members must be existing members!`, {
         exit: ExitCodes.InvalidInput,
       })
     }

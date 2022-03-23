@@ -3,10 +3,8 @@ import { apiModuleByGroup } from '../../Api'
 import { formatBalance } from '@polkadot/util'
 import chalk from 'chalk'
 import { Reward } from '../../Types'
-import { positiveInt } from '../../validators/common'
-import { createParamOptions } from '../../helpers/promptOptions'
 import ExitCodes from '../../ExitCodes'
-import { BalanceOfMint } from '@joystream/types/mint'
+import { isValidBalance } from '../../helpers/validation'
 
 export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsCommandBase {
   static description = "Change given worker's reward (amount only). Requires lead access."
@@ -16,6 +14,11 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
       required: true,
       description: 'Worker ID',
     },
+    {
+      name: 'newReward',
+      required: true,
+      description: 'New reward',
+    },
   ]
 
   static flags = {
@@ -23,44 +26,36 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
   }
 
   formatReward(reward?: Reward): string {
-    return reward
-      ? formatBalance(reward.value) +
-          (reward.interval ? ` / ${reward.interval} block(s)` : '') +
-          (reward.nextPaymentBlock ? ` (next payment: #${reward.nextPaymentBlock})` : '')
-      : 'NONE'
+    return reward ? formatBalance(reward.valuePerBlock) + ' / block' : 'NONE'
   }
 
   async run(): Promise<void> {
-    const { args } = this.parse(WorkingGroupsUpdateWorkerReward)
+    const {
+      args: { workerId, newReward },
+    } = this.parse(WorkingGroupsUpdateWorkerReward)
+
+    if (!isValidBalance(newReward)) {
+      this.error('Invalid reward', { exit: ExitCodes.InvalidInput })
+    }
 
     const lead = await this.getRequiredLeadContext()
 
-    const workerId = parseInt(args.workerId)
     // This will also make sure the worker is valid
     const groupMember = await this.getWorkerForLeadAction(workerId)
 
     const { reward } = groupMember
 
-    if (!reward) {
-      this.error('There is no reward relationship associated with this worker!', { exit: ExitCodes.InvalidInput })
-    }
-
-    console.log(chalk.magentaBright(`Current worker reward: ${this.formatReward(reward)}`))
-
-    const newRewardValue = (await this.promptForParam(
-      'BalanceOfMint',
-      createParamOptions('new_amount', undefined, positiveInt())
-    )) as BalanceOfMint
+    this.log(chalk.magentaBright(`Current worker reward: ${this.formatReward(reward)}`))
 
     await this.sendAndFollowNamedTx(
       await this.getDecodedPair(lead.roleAccount),
       apiModuleByGroup[this.group],
       'updateRewardAmount',
-      [workerId, newRewardValue]
+      [workerId, newReward]
     )
 
     const updatedGroupMember = await this.getApi().groupMember(this.group, workerId)
-    this.log(chalk.green(`Worker ${chalk.magentaBright(workerId)} reward has been updated!`))
+    this.log(chalk.green(`Worker ${chalk.magentaBright(workerId.toString())} reward has been updated!`))
     this.log(chalk.green(`New worker reward: ${chalk.magentaBright(this.formatReward(updatedGroupMember.reward))}`))
   }
 }

@@ -1,6 +1,6 @@
 [package]
 name = 'pallet-proposals-engine'
-version = '3.2.0'
+version = '5.0.0'
 authors = ['Joystream contributors']
 edition = '2018'
 
@@ -13,19 +13,31 @@ frame-system = { package = 'frame-system', default-features = false, git = 'http
 pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
-membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
-stake = { package = 'pallet-stake', default-features = false, path = '../../stake'}
-common = { package = 'pallet-common', default-features = false, path = '../../common'}
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
+common = { package = 'pallet-common', default-features = false, path = '../../common'}
+staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../../staking-handler'}
+
+# Benchmark dependencies.
+frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62', optional = true}
+membership = { package = 'pallet-membership', default-features = false, path = '../../membership', optional = true}
+council = { package = 'pallet-council', default-features = false, path = '../../council', optional = true}
+referendum = { package = 'pallet-referendum', default-features = false, path = '../../referendum', optional = true}
 
 [dev-dependencies]
-mockall = "0.7.1"
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
+council = { package = 'pallet-council', default-features = false, path = '../../council'}
+membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
+referendum = { package = 'pallet-referendum', default-features = false, path = '../../referendum'}
 
 [features]
 default = ['std']
+runtime-benchmarks = [
+    'frame-benchmarking',
+    'membership',
+    'council',
+    'referendum',
+]
 std = [
 	'serde',
 	'codec/std',
@@ -35,8 +47,7 @@ std = [
 	'pallet-timestamp/std',
 	'sp-arithmetic/std',
 	'sp-runtime/std',
-    'membership/std',
-    'stake/std',
+	'balances/std',
     'common/std',
-    'balances/std',
+    'staking-handler/std',
 ]

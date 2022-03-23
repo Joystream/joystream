@@ -1,110 +1,102 @@
 import { Option } from '@polkadot/types/codec'
-import { Vec } from '@polkadot/types'
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
-import { u32, u128 } from '@polkadot/types/primitive'
+import { u32, u64, u128, Null } from '@polkadot/types'
 import { RegistryTypes } from '@polkadot/types/types'
 import { JoyStructDecorated } from '../JoyStruct'
 import { JoyEnum } from '../JoyEnum'
-import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
-import { Hash } from '../common'
+import { MemberId, Hash, AccountId } from '../common'
+import { VotePower, CastVote } from '../referendum'
 
-export type ITransferableStake = {
-  seat: Balance
-  backing: Balance
+export type ICouncilStageAnnouncing = {
+  candidatesCount: u64
 }
-export class TransferableStake
-  extends JoyStructDecorated({
-    seat: u128,
-    backing: u128,
-  })
-  implements ITransferableStake {}
 
-export type IElectionStake = {
-  new: Balance
-  transferred: Balance
+export class CouncilStageAnnouncing
+  extends JoyStructDecorated({
+    candidatesCount: u64,
+  })
+  implements ICouncilStageAnnouncing {}
+
+export type ICouncilStageElection = {
+  candidatesCount: u64
 }
-export class ElectionStake
+
+export class CouncilStageElection
   extends JoyStructDecorated({
-    new: u128,
-    transferred: u128,
+    candidatesCount: u64,
   })
-  implements IElectionStake {}
+  implements ICouncilStageElection {}
 
-export class Backer extends JoyStructDecorated({
-  member: AccountId,
-  stake: u128, // Balance
-}) {}
-
-export class Backers extends Vec.with(Backer) {}
-export class Seat extends JoyStructDecorated({
-  member: AccountId,
-  stake: u128, // Balance
-  backers: Backers,
-}) {}
-
-export class Seats extends Vec.with(Seat) {}
-
-export type ISealedVote = {
-  voter: AccountId
-  commitment: Hash
-  stake: ElectionStake
-  vote: Option<AccountId>
-}
-export class SealedVote
-  extends JoyStructDecorated({
-    voter: AccountId,
-    commitment: Hash,
-    stake: ElectionStake,
-    vote: Option.with(AccountId),
-  })
-  implements ISealedVote {}
-
-export class Announcing extends u32 {}
-export class Voting extends u32 {}
-export class Revealing extends u32 {}
-
-export class ElectionStage extends JoyEnum({
-  Announcing,
-  Voting,
-  Revealing,
+export class CouncilStage extends JoyEnum({
+  Announcing: CouncilStageAnnouncing,
+  Election: CouncilStageElection,
+  Idle: Null,
 } as const) {}
 
-export type AnyElectionStage = Announcing | Voting | Revealing
-
-export type IElectionParameters = {
-  announcing_period: BlockNumber
-  voting_period: BlockNumber
-  revealing_period: BlockNumber
-  council_size: u32
-  candidacy_limit: u32
-  new_term_duration: BlockNumber
-  min_council_stake: Balance
-  min_voting_stake: Balance
+export type ICouncilStageUpdate = {
+  stage: CouncilStage
+  changed_at: BlockNumber
 }
 
-export class ElectionParameters
+export class CouncilStageUpdate
   extends JoyStructDecorated({
-    announcing_period: u32, // BlockNumber
-    voting_period: u32, // BlockNumber
-    revealing_period: u32, // BlockNumber
-    council_size: u32,
-    candidacy_limit: u32,
-    new_term_duration: u32, // BlockNumber
-    min_council_stake: u128, // Balance
-    min_voting_stake: u128, // Balance
+    stage: CouncilStage,
+    changed_at: u32,
   })
-  implements IElectionParameters {}
+  implements ICouncilStageUpdate {}
+
+export type ICandidate = {
+  staking_account_id: AccountId
+  reward_account_id: AccountId
+  cycle_id: u64
+  stake: Balance
+  vote_power: VotePower // from referendum
+  note_hash: Option<Hash>
+}
+
+export class Candidate
+  extends JoyStructDecorated({
+    staking_account_id: AccountId,
+    reward_account_id: AccountId,
+    cycle_id: u64,
+    stake: u32,
+    vote_power: VotePower, // from referendum
+    note_hash: Option.with(Hash),
+  })
+  implements ICandidate {}
+
+export type ICouncilMember = {
+  staking_account_id: AccountId
+  reward_account_id: AccountId
+  membership_id: MemberId
+  stake: Balance
+  last_payment_block: BlockNumber
+  unpaid_reward: Balance
+}
+
+export class CouncilMember
+  extends JoyStructDecorated({
+    staking_account_id: AccountId,
+    reward_account_id: AccountId,
+    membership_id: MemberId,
+    stake: u128,
+    last_payment_block: u32,
+    unpaid_reward: u128,
+  })
+  implements ICouncilMember {}
+
+export class CouncilMemberOf extends CouncilMember {}
+
+export class CastVoteOf extends CastVote {}
 
 export const councilTypes: RegistryTypes = {
-  ElectionStage,
-  ElectionStake,
-  SealedVote,
-  TransferableStake,
-  ElectionParameters,
-  Seat,
-  Seats,
-  Backer,
-  Backers,
+  CouncilStageAnnouncing,
+  CouncilStageElection,
+  CouncilStageUpdate,
+  CouncilStage,
+  Candidate,
+  CouncilMemberOf,
+  CastVoteOf,
 }
 
 export default councilTypes

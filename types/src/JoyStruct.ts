@@ -12,6 +12,7 @@ export interface ExtendedStruct<FieldTypes extends Record<string, Constructor>> 
 export type ExtendedStructGetters<FieldTypes extends Record<string, Constructor>> = {
   [k in keyof FieldTypes]: InstanceType<FieldTypes[k]>
 }
+
 // More rich TypeScript definition of the Struct (includes automatically created getters)
 export type ExtendedStructDecorated<
   FieldTypes extends Record<string, Constructor>

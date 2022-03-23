@@ -1,13 +1,14 @@
 {
   "name": "@joystream/metadata-protobuf",
-  "version": "1.0.1",
-  "description": "Joystream Metadata Protobuf Library ",
+  "version": "2.1.0",
+  "description": "Joystream Metadata Protobuf Library (Olympia Release)",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "exports": {
     ".": "./lib/index.js",
     "./utils": "./lib/utils.js",
-    "./licenses": "./lib/licenses.js"
+    "./licenses": "./lib/licenses.js",
+    "./consts": "./lib/consts.js"
   },
   "typesVersions": {
     "*": {

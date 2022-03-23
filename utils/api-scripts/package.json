@@ -5,13 +5,14 @@
   "license": "GPL-3.0-only",
   "scripts": {
     "status": "ts-node src/status",
-    "initialize-content-lead": "ts-node src/initialize-content-lead",
-    "set-sudo-as-screening-auth": "yarn script set-sudo-as-screening-auth",
     "script": "ts-node src/script",
-    "tsnode-strict": "node -r ts-node/register --unhandled-rejections=strict"
+    "tsnode-strict": "node -r ts-node/register --unhandled-rejections=strict",
+    "initialize-lead": "ts-node src/initialize-lead",
+    "initialize-worker": "ts-node src/initialize-worker",
+    "storage-dev-init": "./dev-init-storage.sh"
   },
   "dependencies": {
-    "@joystream/types": "^0.17.2",
+    "@joystream/types": "^0.18.3",
     "@polkadot/api": "5.9.1",
     "@polkadot/types": "5.9.1",
     "@polkadot/keyring": "7.3.1",

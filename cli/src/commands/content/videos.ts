@@ -13,6 +13,10 @@ export default class VideosCommand extends ContentDirectoryCommandBase {
     },
   ]
 
+  static flags = {
+    ...ContentDirectoryCommandBase.flags,
+  }
+
   async run(): Promise<void> {
     const { channelId } = this.parse(VideosCommand).args
 
@@ -26,8 +30,9 @@ export default class VideosCommand extends ContentDirectoryCommandBase {
         videos.map(([id, v]) => ({
           'ID': id.toString(),
           'InChannel': v.in_channel.toString(),
-          'InSeries': v.in_series.unwrapOr('NONE').toString(),
           'IsCensored': v.is_censored.toString(),
+          'CommentsEnabled': v.enable_comments.toString(),
+          'PostId': v.video_post_id.toString(),
         })),
         3
       )

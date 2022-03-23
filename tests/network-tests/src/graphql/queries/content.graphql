@@ -1,3 +1,40 @@
+fragment DataObjectTypeFields on DataObjectType {
+  __typename
+  ... on DataObjectTypeChannelAvatar {
+    channel {
+      id
+    }
+  }
+  ... on DataObjectTypeChannelCoverPhoto {
+    channel {
+      id
+    }
+  }
+  ... on DataObjectTypeVideoThumbnail {
+    video {
+      id
+    }
+  }
+  ... on DataObjectTypeVideoMedia {
+    video {
+      id
+    }
+  }
+}
+
+fragment StorageDataObjectFields on StorageDataObject {
+  id
+  ipfsHash
+  isAccepted
+  size
+  type {
+    ...DataObjectTypeFields
+  }
+  deletionPrize
+  unsetAt
+  storageBagId
+}
+
 fragment ChannelFields on Channel {
   id
   activeVideosCounter
@@ -36,6 +73,21 @@ fragment VideoCategoryFields on VideoCategory {
   activeVideosCounter
 }
 
+fragment OwnedNftFields on OwnedNft {
+  id
+  video {
+    id
+  }
+  ownerMember {
+    id
+  }
+  metadata
+  transactionalStatus {
+    __typename
+  }
+  creatorRoyalty
+}
+
 query getChannelById($id: ID!) {
   channelByUniqueInput(where: { id: $id }) {
     ...ChannelFields
@@ -51,5 +103,11 @@ query getChannelCategoryById($id: ID!) {
 query getVideoCategoryById($id: ID!) {
   videoCategoryByUniqueInput(where: { id: $id }) {
     ...VideoCategoryFields
+  }
+}
+
+query getOwnedNftByVideoId($videoId: ID!) {
+  ownedNfts(where: { video: { id_eq: $videoId } }) {
+    ...OwnedNftFields
   }
 }

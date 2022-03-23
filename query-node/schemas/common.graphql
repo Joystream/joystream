@@ -1,6 +1,25 @@
 enum Network {
-  GIZA
   BABYLON
   ALEXANDRIA
   ROME
+  GIZA
+  OLYMPIA
+}
+
+# FIXME: https://github.com/Joystream/hydra/issues/359
+interface Event @entity {
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
 }

@@ -14,10 +14,12 @@ COPY . /joystream
 
 # Build all cargo crates
 # Ensure our tests and linter pass before actual build
-ENV WASM_BUILD_TOOLCHAIN=nightly-2021-02-20
-RUN BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --all -- -D warnings && \
-    cargo test --release --all && \
-    cargo build --release
+ARG CARGO_FEATURES
+RUN echo "CARGO_FEATURES=$CARGO_FEATURES"
+RUN export WASM_BUILD_TOOLCHAIN=nightly-2021-02-20 && \
+    BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --all -- -D warnings && \
+    cargo test --release --all --features "${CARGO_FEATURES}" && \
+    cargo build --release --features "${CARGO_FEATURES}"
 
 FROM ubuntu:21.04
 LABEL description="Joystream node"

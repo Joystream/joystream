@@ -1,9 +1,11 @@
 {
   "name": "query-node-root",
   "version": "0.1.0",
-  "description": "GraphQL server and mappings. Generated with \u2665 by Hydra-CLI",
+  "description": "GraphQL server and mappings. Generated with ♥ by Hydra-CLI",
   "scripts": {
     "build": "./build.sh",
+    "start": "./start.sh",
+    "kill": "./kill.sh",
     "rebuild": "yarn db:drop && yarn clean:query-node && yarn codegen:query-node && yarn db:prepare && yarn db:migrate",
     "lint": "yarn workspace query-node-mappings lint",
     "clean": "rm -rf ./generated",
@@ -17,31 +19,30 @@
     "db:create": "yarn workspace query-node db:create",
     "db:drop": "yarn workspace query-node db:drop",
     "db:prepare": "yarn workspace query-node db:create && yarn workspace query-node db:sync",
+    "db:reset": "yarn db:drop && yarn db:prepare && yarn db:migrate",
     "db:schema:migrate": "yarn workspace query-node db:migrate",
     "db:processor:migrate": "hydra-processor migrate --env ../.env",
     "db:migrate": "yarn db:schema:migrate && yarn db:processor:migrate",
     "db:bootstrap": "yarn db:create && yarn db:prepare && yarn db:migrate",
-    "db:reset": "yarn db:drop && yarn db:prepare && yarn db:migrate",
     "bootstrap": "yarn codegen && yarn db:drop && yarn db:bootstrap",
-    "hydra-cli": "./codegen/node_modules/@joystream/hydra-cli/bin/run",
-    "hydra-typegen": "./codegen/node_modules/@joystream/hydra-typegen/bin/run",
+    "hydra-cli": "./codegen/node_modules/.bin/hydra-cli",
+    "hydra-typegen": "./codegen/node_modules/.bin/hydra-typegen",
     "codegen": "yarn hydra-cli codegen --schema ../../schemas/",
     "codegen:noinstall": "yarn codegen --no-install",
-    "typegen:configure": "NODE_URL=${NODE_URL:-ws://localhost:9000} envsub typegen.template.yml typegen.yml",
     "typegen": "rm -rf ./mappings/generated && yarn hydra-typegen typegen manifest.yml --debug",
     "mappings:build": "yarn workspace query-node-mappings build",
-    "start:dev": "./start.sh",
-    "kill:dev": "./kill.sh"
+    "format": "prettier ./ --write"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "tslib": "^2.0.0",
+    "@joystream/hydra-processor": "^3.1.0-alpha.20",
+    "@polkadot/metadata": "^4.17.1",
     "@types/bn.js": "^4.11.6",
     "bn.js": "^5.1.2",
-    "@joystream/hydra-processor": "3.1.0-alpha.20"
+    "tslib": "^2.0.0"
   },
   "volta": {
-		"extends": "../package.json"
-	}
+    "extends": "../package.json"
+  }
 }

@@ -5,29 +5,50 @@ use super::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
 
+// TODO RHODES : enable after open auction fix
+// #[test]
+// fn delete_video_nft_is_issued() {
+//     with_default_mock_builder(|| {
+//         // Run to block one to see emitted events
+//         run_to_block(1);
+
+//         let video_id = Content::next_video_id();
+//         create_initial_storage_buckets_helper();
+//         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+//         create_default_member_owned_channel_with_video();
+
+//         // Issue nft
+//         assert_ok!(Content::issue_nft(
+//             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+//             ContentActor::Member(DEFAULT_MEMBER_ID),
+//             video_id,
+//             NftIssuanceParameters::<Test>::default(),
+//         ));
+
+//         // Make an attempt to delete a video, which has an nft issued already.
+//         assert_err!(
+//             Content::delete_video(
+//                 Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+//                 ContentActor::Member(DEFAULT_MEMBER_ID),
+//                 video_id,
+//                 BTreeSet::new(),
+//             ),
+//             Error::<Test>::NftAlreadyExists
+//         );
+//     })
+// }
+
 #[test]
 fn curators_can_censor_videos() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        let channel_id = NextChannelId::<Test>::get() - 1;
-
         let video_id = Content::next_video_id();
-        assert_ok!(Content::create_video(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            channel_id,
-            VideoCreationParametersRecord {
-                assets: None,
-                meta: None,
-            }
-        ));
+        let channel_id = Content::next_channel_id();
 
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_initial_storage_buckets_helper();
+        create_default_member_owned_channel_with_video();
         let group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
 
         // Curator can censor videos
@@ -82,7 +103,7 @@ fn curators_can_censor_videos() {
         assert_err!(
             Content::update_video_censorship_status(
                 Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-                ContentActor::Member(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
                 channel_id,
                 true,
                 vec![]
@@ -156,7 +177,7 @@ fn successful_video_creation_by_collaborator() {
 
         CreateVideoFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Collaborator(COLLABORATOR_MEMBER_ID))
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
             .with_assets(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_objects_helper(),
@@ -241,7 +262,7 @@ fn successful_video_creation_with_collaborator_auth_failure() {
 
         CreateVideoFixture::default()
             .with_sender(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Collaborator(COLLABORATOR_MEMBER_ID))
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
             .with_assets(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_objects_helper(),
@@ -315,9 +336,7 @@ fn successful_video_creation_with_unauth_collaborator() {
 
         CreateVideoFixture::default()
             .with_sender(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Collaborator(
-                UNAUTHORIZED_COLLABORATOR_MEMBER_ID,
-            ))
+            .with_actor(ContentActor::Member(UNAUTHORIZED_COLLABORATOR_MEMBER_ID))
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
     })
 }
@@ -531,7 +550,7 @@ fn successful_video_creation_by_collaborator_with_assets_upload() {
 
         UpdateVideoFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Collaborator(COLLABORATOR_MEMBER_ID))
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
             .with_assets_to_upload(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_objects_helper(),
@@ -616,7 +635,7 @@ fn successful_video_update_by_collaborator_with_assets_removal() {
 
         UpdateVideoFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Collaborator(COLLABORATOR_MEMBER_ID))
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
             .with_assets_to_remove(video_assets)
             .call_and_assert(Ok(()));
     })
@@ -692,7 +711,7 @@ fn successful_video_update_with_collaborator_auth_failure() {
 
         CreateVideoFixture::default()
             .with_sender(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Collaborator(COLLABORATOR_MEMBER_ID))
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
             .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
     })
 }
@@ -763,9 +782,7 @@ fn unsuccessful_video_update_with_unauth_collaborator() {
 
         CreateVideoFixture::default()
             .with_sender(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Collaborator(
-                UNAUTHORIZED_COLLABORATOR_MEMBER_ID,
-            ))
+            .with_actor(ContentActor::Member(UNAUTHORIZED_COLLABORATOR_MEMBER_ID))
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
     })
 }
@@ -966,7 +983,7 @@ fn unsuccessful_video_deletion_by_collaborator() {
 
         DeleteVideoFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Collaborator(COLLABORATOR_MEMBER_ID))
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
             .call_and_assert(Ok(()));
     })
 }

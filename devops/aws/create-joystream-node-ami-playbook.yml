@@ -10,14 +10,19 @@
         name: common
         tasks_from: get-code-git
 
-    - name: Run setup and build
+    - name: Run setup
       include_role:
         name: common
-        tasks_from: run-setup-build
+        tasks_from: run-setup
+
+    - name: Run build
+      include_role:
+        name: common
+        tasks_from: run-build
 
     - name: Install subkey
       include_role:
-        name: admin
+        name: build-server
         tasks_from: main
 
     - name: Basic AMI Creation

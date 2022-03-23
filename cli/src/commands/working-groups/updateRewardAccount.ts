@@ -24,7 +24,7 @@ export default class WorkingGroupsUpdateRewardAccount extends WorkingGroupsComma
     // Worker-only gate
     const worker = await this.getRequiredWorkerContext()
 
-    if (!worker.reward) {
+    if (!worker.reward.valuePerBlock) {
       this.error('There is no reward relationship associated with this role!', { exit: ExitCodes.InvalidInput })
     }
 

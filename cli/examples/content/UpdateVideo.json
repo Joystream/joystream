@@ -3,5 +3,6 @@
   "thumbnailPhotoPath": "./avatar-photo-2.png",
   "publishedBeforeJoystream": {
     "isPublished": false
-  }
+  },
+  "license": {}
 }

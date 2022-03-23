@@ -3,9 +3,10 @@ authors = ['Joystream contributors']
 build = 'build.rs'
 edition = '2018'
 name = 'chain-spec-builder'
-version = '3.3.1'
+version = '6.5.0'
 
 [dependencies]
+enum-utils = "0.1.2"
 ansi_term = "0.12.1"
 rand = "0.7.2"
 structopt = "0.3.8"
@@ -14,5 +15,3 @@ sc-telemetry = { git = 'https://github.com/paritytech/substrate.git', rev = '2cd
 sc-chain-spec = { git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62' }
 sp-core = { git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62' }
 joystream-node = { path = "../../node" }
-
-enum-utils = "0.1.2"

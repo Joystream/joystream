@@ -1,6 +1,6 @@
 [package]
 name = 'pallet-forum'
-version = '3.2.0'
+version = '5.0.0'
 authors = ['Joystream contributors']
 edition = '2018'
 
@@ -14,13 +14,31 @@ sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://
 sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 common = { package = 'pallet-common', default-features = false, path = '../common'}
+sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
+balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
+
+# Benchmarking dependencies
+frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62', optional = true}
+membership = { package = 'pallet-membership', default-features = false, path = '../membership', optional = true}
+working-group = { package = 'pallet-working-group', default-features = false, path = '../working-group', optional = true}
+staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../staking-handler', optional = true}
+sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62', optional = true}
 
 [dev-dependencies]
-sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
+membership = { package = 'pallet-membership', default-features = false, path = '../membership'}
+working-group = { package = 'pallet-working-group', default-features = false, path = '../working-group'}
+staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../staking-handler'}
 
 [features]
 default = ['std']
+runtime-benchmarks = [
+    'frame-benchmarking',
+	'membership',
+	'working-group',
+	'staking-handler',
+    'sp-core',
+]
 std = [
 	'serde',
 	'codec/std',
@@ -29,6 +47,8 @@ std = [
 	'sp-std/std',
 	'sp-arithmetic/std',
 	'sp-runtime/std',
+	'sp-io/std',
 	'pallet-timestamp/std',
 	'common/std',
+    'balances/std',
 ]

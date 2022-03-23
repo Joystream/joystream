@@ -3,15 +3,11 @@ FROM --platform=linux/x86-64 node:14 as builder
 WORKDIR /joystream
 COPY . /joystream
 
-RUN rm -fr /joystream/pioneer
-
 # Do not set NODE_ENV=production until after running yarn install
 # to ensure dev dependencies are installed.
-RUN yarn --forzen-lockfile
+RUN yarn --frozen-lockfile
 
-RUN yarn workspace @joystream/types build
-RUN yarn workspace @joystream/metadata-protobuf build
-RUN yarn workspace query-node-root build
+RUN yarn build:packages
 
 # Second stage to reduce image size, enable it when
 # all packages have correctly identified what is a devDependency and what is not.

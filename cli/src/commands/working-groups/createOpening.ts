@@ -1,27 +1,31 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
-import { GroupMember } from '../../Types'
+import { GroupMember, WorkingGroupOpeningInputParameters } from '../../Types'
+import { WorkingGroupOpeningInputSchema } from '../../schemas/WorkingGroups'
 import chalk from 'chalk'
 import { apiModuleByGroup } from '../../Api'
-import HRTSchema from '@joystream/types/hiring/schemas/role.schema.json'
-import { GenericJoyStreamRoleSchema as HRTJson } from '@joystream/types/hiring/schemas/role.schema.typings'
 import { JsonSchemaPrompter } from '../../helpers/JsonSchemaPrompt'
-import { JSONSchema } from '@apidevtools/json-schema-ref-parser'
-import WGOpeningSchema from '../../schemas/json/WorkingGroupOpening.schema.json'
-import { WorkingGroupOpening as WGOpeningJson } from '../../schemas/typings/WorkingGroupOpening.schema'
-import _ from 'lodash'
 import { IOFlags, getInputJson, ensureOutputFileIsWriteable, saveOutputJsonToFile } from '../../helpers/InputOutput'
-import Ajv from 'ajv'
 import ExitCodes from '../../ExitCodes'
 import { flags } from '@oclif/command'
+import { AugmentedSubmittables } from '@polkadot/api/types'
+import { formatBalance } from '@polkadot/util'
 import { CLIError } from '@oclif/errors'
-import { createTypeFromConstructor } from '@joystream/types'
-import { OpeningPolicyCommitment, OpeningType } from '@joystream/types/working-group'
-import { ActivateOpeningAt } from '@joystream/types/hiring'
+import {
+  IOpeningMetadata,
+  IWorkingGroupMetadataAction,
+  OpeningMetadata,
+  WorkingGroupMetadataAction,
+} from '@joystream/metadata-protobuf'
+import { metadataToBytes } from '../../helpers/serialization'
+import { OpeningId } from '@joystream/types/working-group'
+import Long from 'long'
+import moment from 'moment'
+import { UpcomingWorkingGroupOpeningDetailsFragment } from '../../graphql/generated/queries'
+import { DEFAULT_DATE_FORMAT } from '../../Consts'
 
 export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase {
-  static description = 'Create working group opening (requires lead access)'
+  static description = 'Create working group opening / upcoming opening (requires lead access)'
   static flags = {
-    ...WorkingGroupsCommandBase.flags,
     input: IOFlags.input,
     output: flags.string({
       char: 'o',
@@ -42,123 +46,184 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
         '(can be used to generate a "draft" which can be provided as input later)',
       dependsOn: ['output'],
     }),
+    stakeTopUpSource: flags.string({
+      required: false,
+      description:
+        "If provided - this account (key) will be used as default funds source for lead stake top up (in case it's needed)",
+    }),
+    upcoming: flags.boolean({
+      description: 'Whether the opening should be an upcoming opening',
+    }),
+    startsAt: flags.string({
+      required: false,
+      description: `If upcoming opening - the expected opening start date (${DEFAULT_DATE_FORMAT})`,
+      dependsOn: ['upcoming'],
+    }),
+    ...WorkingGroupsCommandBase.flags,
   }
 
-  getHRTDefaults(memberHandle: string): HRTJson {
-    const groupName = _.startCase(this.group)
+  prepareMetadata(openingParamsJson: WorkingGroupOpeningInputParameters): IOpeningMetadata {
     return {
-      version: 1,
-      headline: `Looking for ${groupName}!`,
-      job: {
-        title: groupName,
-        description: `Become part of the ${groupName} Group! This is a great opportunity to support Joystream!`,
-      },
-      application: {
-        sections: [
-          {
-            title: 'About you',
-            questions: [
-              {
-                title: 'Your name',
-                type: 'text',
-              },
-              {
-                title: 'What makes you a good fit for the job?',
-                type: 'text area',
-              },
-            ],
-          },
-        ],
-      },
-      reward: '10k JOY per 3600 blocks',
-      creator: {
-        membership: {
-          handle: memberHandle,
-        },
-      },
+      ...openingParamsJson,
+      applicationFormQuestions: openingParamsJson.applicationFormQuestions?.map((q) => ({
+        question: q.question,
+        type: OpeningMetadata.ApplicationFormQuestion.InputType[q.type],
+      })),
     }
   }
 
   createTxParams(
-    wgOpeningJson: WGOpeningJson,
-    hrtJson: HRTJson
-  ): [ActivateOpeningAt, OpeningPolicyCommitment, string, OpeningType] {
+    openingParamsJson: WorkingGroupOpeningInputParameters
+  ): Parameters<AugmentedSubmittables<'promise'>['membershipWorkingGroup']['addOpening']> {
     return [
-      createTypeFromConstructor(ActivateOpeningAt, wgOpeningJson.activateAt),
-      createTypeFromConstructor(OpeningPolicyCommitment, {
-        max_review_period_length: wgOpeningJson.maxReviewPeriodLength,
-        application_rationing_policy: wgOpeningJson.maxActiveApplicants
-          ? { max_active_applicants: wgOpeningJson.maxActiveApplicants }
-          : null,
-        application_staking_policy: wgOpeningJson.applicationStake
-          ? {
-              amount: wgOpeningJson.applicationStake.value,
-              amount_mode: wgOpeningJson.applicationStake.mode,
-            }
-          : null,
-        role_staking_policy: wgOpeningJson.roleStake
-          ? {
-              amount: wgOpeningJson.roleStake.value,
-              amount_mode: wgOpeningJson.roleStake.mode,
-            }
-          : null,
-        terminate_role_stake_unstaking_period: wgOpeningJson.terminateRoleUnstakingPeriod,
-        exit_role_stake_unstaking_period: wgOpeningJson.leaveRoleUnstakingPeriod,
-      }),
-      JSON.stringify(hrtJson),
-      createTypeFromConstructor(OpeningType, 'Worker'),
+      metadataToBytes(OpeningMetadata, this.prepareMetadata(openingParamsJson)),
+      'Regular',
+      {
+        stake_amount: openingParamsJson.stakingPolicy.amount,
+        leaving_unstaking_period: openingParamsJson.stakingPolicy.unstakingPeriod,
+      },
+      // TODO: Proper bigint handling?
+      openingParamsJson.rewardPerBlock?.toString() || null,
     ]
   }
 
   async promptForData(
-    lead: GroupMember,
-    rememberedInput?: [WGOpeningJson, HRTJson]
-  ): Promise<[WGOpeningJson, HRTJson]> {
-    const openingDefaults = rememberedInput?.[0]
-    const openingPrompt = new JsonSchemaPrompter<WGOpeningJson>(
-      (WGOpeningSchema as unknown) as JSONSchema,
+    rememberedInput?: WorkingGroupOpeningInputParameters
+  ): Promise<WorkingGroupOpeningInputParameters> {
+    const openingDefaults = rememberedInput
+    const openingPrompt = new JsonSchemaPrompter<WorkingGroupOpeningInputParameters>(
+      WorkingGroupOpeningInputSchema,
       openingDefaults
     )
-    const wgOpeningJson = await openingPrompt.promptAll()
+    const openingParamsJson = await openingPrompt.promptAll()
 
-    const hrtDefaults = rememberedInput?.[1] || this.getHRTDefaults(lead.profile.handle.toString())
-    this.log(`Values for ${chalk.greenBright('human_readable_text')} json:`)
-    const hrtPropmpt = new JsonSchemaPrompter<HRTJson>((HRTSchema as unknown) as JSONSchema, hrtDefaults)
-    // Prompt only for 'headline', 'job', 'application', 'reward' and 'process', leave the rest default
-    const headline = await hrtPropmpt.promptSingleProp('headline')
-    this.log('General information about the job:')
-    const job = await hrtPropmpt.promptSingleProp('job')
-    this.log('Application form sections and questions:')
-    const application = await hrtPropmpt.promptSingleProp('application')
-    this.log('Reward displayed in the opening box:')
-    const reward = await hrtPropmpt.promptSingleProp('reward')
-    this.log('Hiring process details (additional information)')
-    const process = await hrtPropmpt.promptSingleProp('process')
-
-    const hrtJson = { ...hrtDefaults, job, headline, application, reward, process }
-
-    return [wgOpeningJson, hrtJson]
+    return openingParamsJson
   }
 
-  async getInputFromFile(filePath: string): Promise<[WGOpeningJson, HRTJson]> {
-    const ajv = new Ajv({ allErrors: true })
-    const inputParams = await getInputJson<[WGOpeningJson, HRTJson]>(filePath)
-    if (!Array.isArray(inputParams) || inputParams.length !== 2) {
-      this.error('Invalid input file', { exit: ExitCodes.InvalidInput })
-    }
-    const [openingJson, hrtJson] = inputParams
-    if (!ajv.validate(WGOpeningSchema, openingJson)) {
-      this.error(`Invalid input file:\n${ajv.errorsText(undefined, { dataVar: 'openingJson', separator: '\n' })}`, {
-        exit: ExitCodes.InvalidInput,
-      })
-    }
-    if (!ajv.validate(HRTSchema, hrtJson)) {
-      this.error(`Invalid input file:\n${ajv.errorsText(undefined, { dataVar: 'hrtJson', separator: '\n' })}`, {
-        exit: ExitCodes.InvalidInput,
-      })
-    }
+  async getInputFromFile(filePath: string): Promise<WorkingGroupOpeningInputParameters> {
+    return getInputJson<WorkingGroupOpeningInputParameters>(filePath, WorkingGroupOpeningInputSchema)
+  }
 
-    return [openingJson, hrtJson]
+  async promptForStakeTopUp({ stake, stakingAccount }: GroupMember, fundsSource?: string): Promise<void> {
+    const newStake = this.getOriginalApi().consts[apiModuleByGroup[this.group]].leaderOpeningStake.add(stake)
+    this.log(
+      `You need to increase your lead stake to ${chalk.bold(formatBalance(newStake))} in order to create a new opening.`
+    )
+
+    const [balances] = await this.getApi().getAccountsBalancesInfo([stakingAccount.toString()])
+    const missingBalance = newStake.sub(balances.freeBalance)
+    if (missingBalance.gtn(0)) {
+      await this.requireConfirmation(
+        `Do you wish to transfer remaining ${chalk.bold(
+          formatBalance(missingBalance)
+        )} to your staking account? (${stakingAccount})`
+      )
+      if (!fundsSource) {
+        fundsSource = await this.promptForAccount('Choose account to transfer the funds from')
+      }
+      await this.sendAndFollowNamedTx(await this.getDecodedPair(fundsSource), 'balances', 'transferKeepAlive', [
+        stakingAccount,
+        missingBalance,
+      ])
+    }
+  }
+
+  async createOpening(lead: GroupMember, inputParameters: WorkingGroupOpeningInputParameters): Promise<OpeningId> {
+    const result = await this.sendAndFollowTx(
+      await this.getDecodedPair(lead.roleAccount),
+      this.getOriginalApi().tx[apiModuleByGroup[this.group]].addOpening(...this.createTxParams(inputParameters))
+    )
+    const openingId: OpeningId = this.getEvent(result, apiModuleByGroup[this.group], 'OpeningAdded').data[0]
+    this.log(chalk.green(`Opening with id ${chalk.magentaBright(openingId)} successfully created!`))
+    this.output(openingId.toString())
+    return openingId
+  }
+
+  async createUpcomingOpening(
+    lead: GroupMember,
+    actionMetadata: IWorkingGroupMetadataAction
+  ): Promise<UpcomingWorkingGroupOpeningDetailsFragment | undefined> {
+    const result = await this.sendAndFollowTx(
+      await this.getDecodedPair(lead.roleAccount),
+      this.getOriginalApi().tx[apiModuleByGroup[this.group]].setStatusText(
+        metadataToBytes(WorkingGroupMetadataAction, actionMetadata)
+      )
+    )
+    const { indexInBlock, blockNumber } = await this.getEventDetails(
+      result,
+      apiModuleByGroup[this.group],
+      'StatusTextChanged'
+    )
+    if (this.isQueryNodeUriSet()) {
+      let createdUpcomingOpening: UpcomingWorkingGroupOpeningDetailsFragment | null = null
+      let currentAttempt = 0
+      const maxRetryAttempts = 5
+      while (!createdUpcomingOpening && currentAttempt <= maxRetryAttempts) {
+        ++currentAttempt
+        createdUpcomingOpening = await this.getQNApi().upcomingWorkingGroupOpeningByEvent(blockNumber, indexInBlock)
+        if (!createdUpcomingOpening && currentAttempt <= maxRetryAttempts) {
+          this.log(
+            `Waiting for the upcoming opening to be processed by the query node (${currentAttempt}/${maxRetryAttempts})...`
+          )
+          await new Promise((resolve) => setTimeout(resolve, 6000))
+        }
+      }
+      if (!createdUpcomingOpening) {
+        this.error('Could not fetch the upcoming opening from the query node', { exit: ExitCodes.QueryNodeError })
+      }
+      this.log(
+        chalk.green(`Upcoming opening with id ${chalk.magentaBright(createdUpcomingOpening.id)} successfully created!`)
+      )
+      this.output(createdUpcomingOpening.id)
+      return createdUpcomingOpening
+    } else {
+      this.log(`StatusTextChanged event emitted in block ${blockNumber}, index: ${indexInBlock}`)
+      this.warn('Query node uri not set, cannot confirm whether the upcoming opening was succesfully created')
+    }
+  }
+
+  validateUpcomingOpeningStartDate(dateStr: string): string | true {
+    const momentObj = moment(dateStr, DEFAULT_DATE_FORMAT)
+    if (!momentObj.isValid()) {
+      return `Unrecognized date format: ${dateStr}`
+    }
+    const ts = momentObj.unix()
+    if (ts <= moment().unix()) {
+      return 'Upcoming opening start date should be in the future!'
+    }
+    return true
+  }
+
+  async getUpcomingOpeningExpectedStartTimestamp(dateStr: string | undefined): Promise<number> {
+    if (dateStr) {
+      const validationResult = this.validateUpcomingOpeningStartDate(dateStr)
+      if (validationResult === true) {
+        return moment(dateStr).unix()
+      } else {
+        this.warn(`Invalid opening start date provided: ${validationResult}`)
+      }
+    }
+    dateStr = await this.simplePrompt<string>({
+      message: `Expected upcoming opening start date (${DEFAULT_DATE_FORMAT}):`,
+      validate: (dateStr) => this.validateUpcomingOpeningStartDate(dateStr),
+    })
+    return moment(dateStr).unix()
+  }
+
+  prepareCreateUpcomingOpeningMetadata(
+    inputParameters: WorkingGroupOpeningInputParameters,
+    expectedStartTs: number
+  ): IWorkingGroupMetadataAction {
+    return {
+      addUpcomingOpening: {
+        metadata: {
+          rewardPerBlock: inputParameters.rewardPerBlock ? Long.fromNumber(inputParameters.rewardPerBlock) : undefined,
+          expectedStart: expectedStartTs,
+          minApplicationStake: Long.fromNumber(inputParameters.stakingPolicy.amount),
+          metadata: this.prepareMetadata(inputParameters),
+        },
+      },
+    }
   }
 
   async run(): Promise<void> {
@@ -166,35 +231,41 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
     const lead = await this.getRequiredLeadContext()
 
     const {
-      flags: { input, output, edit, dryRun },
+      flags: { input, output, edit, dryRun, stakeTopUpSource, upcoming, startsAt },
     } = this.parse(WorkingGroupsCreateOpening)
+
+    const expectedStartTs = upcoming ? await this.getUpcomingOpeningExpectedStartTimestamp(startsAt) : 0
 
     ensureOutputFileIsWriteable(output)
 
     let tryAgain = false
-    let rememberedInput: [WGOpeningJson, HRTJson] | undefined
+    let rememberedInput: WorkingGroupOpeningInputParameters | undefined
     do {
       if (edit) {
         rememberedInput = await this.getInputFromFile(input as string)
       }
       // Either prompt for the data or get it from input file
-      const [openingJson, hrtJson] =
-        !input || edit || tryAgain
-          ? await this.promptForData(lead, rememberedInput)
-          : await this.getInputFromFile(input)
+      const openingJson =
+        !input || edit || tryAgain ? await this.promptForData(rememberedInput) : await this.getInputFromFile(input)
 
       // Remember the provided/fetched data in a variable
-      rememberedInput = [openingJson, hrtJson]
+      rememberedInput = openingJson
 
-      // Generate and ask to confirm tx params
-      const txParams = this.createTxParams(openingJson, hrtJson)
-      this.jsonPrettyPrint(JSON.stringify(txParams))
-      const confirmed = await this.simplePrompt({
-        type: 'confirm',
-        message: 'Do you confirm these extrinsic parameters?',
-      })
+      if (!upcoming) {
+        await this.promptForStakeTopUp(lead, stakeTopUpSource)
+      }
+
+      const createUpcomingOpeningActionMeta = this.prepareCreateUpcomingOpeningMetadata(
+        rememberedInput,
+        expectedStartTs
+      )
+
+      this.jsonPrettyPrint(
+        JSON.stringify(upcoming ? { WorkingGroupMetadataAction: createUpcomingOpeningActionMeta } : rememberedInput)
+      )
+      const confirmed = await this.requestConfirmation('Do you confirm the provided input?')
       if (!confirmed) {
-        tryAgain = await this.simplePrompt({ type: 'confirm', message: 'Try again with remembered input?' })
+        tryAgain = await this.requestConfirmation('Try again with remembered input?')
         continue
       }
 
@@ -213,19 +284,16 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
       }
 
       // Send the tx
-      this.log(chalk.magentaBright('Sending the extrinsic...'))
       try {
-        await this.sendAndFollowTx(
-          await this.getDecodedPair(lead.roleAccount),
-          this.getOriginalApi().tx[apiModuleByGroup[this.group]].addOpening(...txParams)
-        )
-        this.log(chalk.green('Opening successfully created!'))
+        upcoming
+          ? await this.createUpcomingOpening(lead, createUpcomingOpeningActionMeta)
+          : await this.createOpening(lead, rememberedInput)
         tryAgain = false
       } catch (e) {
         if (e instanceof CLIError) {
           this.warn(e.message)
         }
-        tryAgain = await this.simplePrompt({ type: 'confirm', message: 'Try again with remembered input?' })
+        tryAgain = await this.requestConfirmation('Try again with remembered input?')
       }
     } while (tryAgain)
   }

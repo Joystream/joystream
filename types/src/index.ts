@@ -1,57 +1,41 @@
-import { Codec, DetectCodec, RegistryTypes, Constructor } from '@polkadot/types/types'
+import { Codec, DetectCodec, RegistryTypes, ITuple } from '@polkadot/types/types'
 import common from './common'
 import members from './members'
 import council from './council'
-import roles from './roles'
 import forum from './forum'
-import stake from './stake'
-import mint from './mint'
-import recurringRewards from './recurring-rewards'
-import hiring from './hiring'
 import workingGroup from './working-group'
 import storage from './storage'
+import blog from './blog'
 import proposals from './proposals'
+import referendum from './referendum'
+import constitution from './constitution'
+import bounty from './bounty'
 import content from './content'
-import legacy from './legacy'
-import { TypeRegistry, Text, UInt, Null, bool, Option, Vec, BTreeSet, BTreeMap } from '@polkadot/types'
+import { TypeRegistry, Text, UInt, Null, bool, Option, Vec, BTreeSet, BTreeMap, Tuple } from '@polkadot/types'
 import { ExtendedEnum } from './JoyEnum'
 import { ExtendedStruct } from './JoyStruct'
+
 import BN from 'bn.js'
 
-export {
-  common,
-  members,
-  council,
-  roles,
-  forum,
-  stake,
-  mint,
-  recurringRewards,
-  hiring,
-  workingGroup,
-  storage,
-  proposals,
-  content,
-}
+export { common, members, council, forum, workingGroup, proposals, content }
 
 export const types: RegistryTypes = {
-  // legacy types comes first so they are overriden by proper definitions in new modules
-  ...legacy,
   ...common,
   ...members,
   ...council,
-  ...roles,
   ...forum,
-  ...stake,
-  ...mint,
-  ...recurringRewards,
-  ...hiring,
   ...workingGroup,
   ...storage,
+  ...blog,
   ...proposals,
+  ...referendum,
+  ...constitution,
+  ...bounty,
   ...content,
   // https://github.com/polkadot-js/api/blob/master/CHANGELOG.md#351-jan-18-2020
   AccountInfo: 'AccountInfoWithRefCount',
+  // Required for compatibility with @polkadot/api version >= 6.0
+  ValidatorPrefs: 'ValidatorPrefsWithCommission',
 }
 
 // Allows creating types without api instance (it's not a recommended way though, so should be used just for mocks)
@@ -85,6 +69,10 @@ type CreateInterface_NoOption<T extends Codec> =
       ? boolean
       : T extends Vec<infer S> | BTreeSet<infer S>
       ? CreateInterface<S>[]
+      : T extends ITuple<infer S>
+      ? S extends Tuple
+        ? any[]
+        : { [K in keyof S]: CreateInterface<T[K]> }
       : T extends BTreeMap<infer K, infer V>
       ? Map<K, V>
       : T extends Null
@@ -93,19 +81,13 @@ type CreateInterface_NoOption<T extends Codec> =
 
 // Wrapper for CreateInterface_NoOption that includes resolving an Option
 // (nested Options like Option<Option<Codec>> will resolve to Option<any>, but there are very edge case)
-export type CreateInterface<T extends Codec> =
-  | T
-  | (T extends Option<infer S> ? undefined | null | S | CreateInterface_NoOption<S> : CreateInterface_NoOption<T>)
+export type CreateInterface<T> = T extends Codec
+  ? T | (T extends Option<infer S> ? undefined | null | S | CreateInterface_NoOption<S> : CreateInterface_NoOption<T>)
+  : any
 
 export function createType<T extends Codec, TN extends string>(
   typeName: TN,
   value: CreateInterface<T>
 ): DetectCodec<T, TN> {
   return registry.createType<T, TN>(typeName, value)
-}
-
-// FIXME: Backward-compatibility. Use only one createType in the future!
-export function createTypeFromConstructor<T extends Codec>(type: Constructor<T>, value: CreateInterface<T>): T {
-  const TypeConstructor = type
-  return new TypeConstructor(registry, value)
 }

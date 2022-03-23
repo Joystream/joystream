@@ -1,45 +1,32 @@
+//! Membership genesis module.
+
 #![cfg(feature = "std")]
 
 use crate::{GenesisConfig, Trait};
-use common::currency::BalanceOf;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct Member<MemberId, AccountId, Moment> {
+pub struct Member<MemberId, AccountId> {
     pub member_id: MemberId,
     pub root_account: AccountId,
     pub controller_account: AccountId,
     pub handle: String,
     pub avatar_uri: String,
     pub about: String,
-    pub registered_at_time: Moment,
 }
 
 /// Builder fo membership module genesis configuration.
 pub struct GenesisConfigBuilder<T: Trait> {
-    default_paid_membership_fee: BalanceOf<T>,
     members: Vec<(T::MemberId, T::AccountId)>,
 }
 
 impl<T: Trait> Default for GenesisConfigBuilder<T> {
     fn default() -> Self {
-        Self {
-            default_paid_membership_fee: BalanceOf::<T>::default(), // Was 100, will this break any tests??
-            members: vec![],
-        }
+        Self { members: vec![] }
     }
 }
 
 impl<T: Trait> GenesisConfigBuilder<T> {
-    /// Assign default paid membeship fee
-    pub fn default_paid_membership_fee(
-        mut self,
-        default_paid_membership_fee: BalanceOf<T>,
-    ) -> Self {
-        self.default_paid_membership_fee = default_paid_membership_fee;
-        self
-    }
-
     /// Assign a collection of MemberId and AccountId pairs, used to derive mock member at genesis
     pub fn members(mut self, members: Vec<(T::MemberId, T::AccountId)>) -> Self {
         self.members = members;
@@ -47,7 +34,7 @@ impl<T: Trait> GenesisConfigBuilder<T> {
     }
 
     /// Generates a Vec of `Member`s from pairs of MemberId and AccountId
-    fn generate_mock_members(&self) -> Vec<Member<T::MemberId, T::AccountId, T::Moment>> {
+    fn generate_mock_members(&self) -> Vec<Member<T::MemberId, T::AccountId>> {
         self.members
             .iter()
             .enumerate()
@@ -59,7 +46,6 @@ impl<T: Trait> GenesisConfigBuilder<T> {
                 handle: (10000 + ix).to_string(),
                 avatar_uri: "".into(),
                 about: "".into(),
-                registered_at_time: T::Moment::from(0u32),
             })
             .collect()
     }
@@ -67,7 +53,6 @@ impl<T: Trait> GenesisConfigBuilder<T> {
     /// Construct GenesisConfig for mocked testing purposes only
     pub fn build(&self) -> GenesisConfig<T> {
         GenesisConfig::<T> {
-            default_paid_membership_fee: self.default_paid_membership_fee,
             members: self.generate_mock_members(),
         }
     }

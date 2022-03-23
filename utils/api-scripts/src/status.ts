@@ -2,7 +2,7 @@
 
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { types } from '@joystream/types'
-import { Seat } from '@joystream/types/council'
+// import { Seat } from '@joystream/types/council'
 
 import BN from 'bn.js'
 
@@ -19,6 +19,7 @@ async function main() {
       await api.isReadyOrError
       break
     } catch (err) {
+      // Exceptions are not being caught!?
       // failed to connect to node
       console.error('Caught Error', err)
     }
@@ -41,14 +42,14 @@ async function main() {
 
   console.log(`Chain ${chain} using ${nodeName} v${nodeVersion}`)
 
-  const council = ((await api.query.council.activeCouncil()) as unknown) as Seat[]
+  // const council = ((await api.query.council.activeCouncil()) as unknown) as Seat[]
   const validators = await api.query.session.validators()
   const version = await api.rpc.state.getRuntimeVersion()
 
   console.log(`Runtime Version: ${version.authoringVersion}.${version.specVersion}.${version.implVersion}`)
 
   // number of council members
-  console.log('Council size:', council.length)
+  // console.log('Council size:', council.length)
 
   console.log('Validator count:', validators.length)
 

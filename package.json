@@ -8,10 +8,10 @@
     "build:packages": "./build-packages.sh",
     "setup": "./setup.sh",
     "start": "./start.sh",
-    "cargo-checks": "devops/git-hooks/pre-commit && devops/git-hooks/pre-push",
-    "cargo-build": "scripts/cargo-build.sh",
-    "update-chain-metadata": "scripts/fetch-chain-metadata.sh > chain-metadata.json",
-    "verify-chain-metadata": "scripts/verify-chain-metadata.sh"
+    "cargo-checks": "./devops/git-hooks/pre-commit && ./devops/git-hooks/pre-push",
+    "cargo-build": "./scripts/cargo-build.sh",
+    "update-chain-metadata": "./scripts/fetch-chain-metadata.sh > chain-metadata.json",
+    "verify-chain-metadata": "./scripts/verify-chain-metadata.sh"
   },
   "workspaces": [
     "tests/network-tests",
@@ -21,8 +21,6 @@
     "distributor-node",
     "devops/eslint-config",
     "devops/prettier-config",
-    "pioneer",
-    "pioneer/packages/*",
     "utils/api-scripts",
     "utils/migration-scripts",
     "query-node",
@@ -43,7 +41,6 @@
     "@polkadot/rpc-provider": "5.9.1",
     "@polkadot/x-global": "7.3.1",
     "@polkadot/networks": "7.3.1",
-    "babel-core": "^7.0.0-bridge.0",
     "typescript": "^4.4.3",
     "bn.js": "4.12.0",
     "rxjs": "^7.4.0",

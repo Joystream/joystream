@@ -30,7 +30,7 @@ export default class WorkingGroupsUpdateRoleAccount extends WorkingGroupsCommand
     }
 
     await this.sendAndFollowNamedTx(
-      await this.getDecodedPair(worker.profile.controller_account),
+      await this.getDecodedPair(worker.profile.membership.controller_account),
       apiModuleByGroup[this.group],
       'updateRoleAccount',
       [worker.workerId, address]

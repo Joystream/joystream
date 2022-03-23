@@ -32,21 +32,18 @@ use sp_runtime::Perbill;
 
 use node_runtime::{
     membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
-    ContentConfig, ContentWorkingGroupConfig, CouncilConfig, CouncilElectionConfig,
-    DistributionWorkingGroupConfig, ElectionParameters, ForumConfig, GatewayWorkingGroupConfig,
-    GrandpaConfig, ImOnlineConfig, MembersConfig, Moment, OperationsWorkingGroupAlphaConfig,
-    OperationsWorkingGroupBetaConfig, OperationsWorkingGroupGammaConfig, ProposalsCodexConfig,
-    SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig,
-    SudoConfig, SystemConfig, DAYS,
+    ContentConfig, ForumConfig, GrandpaConfig, ImOnlineConfig, MembersConfig, SessionConfig,
+    SessionKeys, Signature, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
 };
 
 // Exported to be used by chain-spec-builder
 pub use node_runtime::{AccountId, GenesisConfig};
 
+pub mod content_config;
+pub mod council_config;
 pub mod forum_config;
 pub mod initial_balances;
 pub mod initial_members;
-pub mod proposals_config;
 
 type AccountPublic = <Signature as Verify>::Signer;
 
@@ -134,10 +131,10 @@ impl Alternative {
                             get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
                             get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
                         ],
-                        proposals_config::development(),
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                         vec![],
+                        content_config::testing_config(),
                     )
                 },
                 Vec::new(),
@@ -171,10 +168,10 @@ impl Alternative {
                             get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
                             get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
                         ],
-                        proposals_config::development(),
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                         vec![],
+                        content_config::testing_config(),
                     )
                 },
                 Vec::new(),
@@ -213,18 +210,13 @@ pub fn testnet_genesis(
     )>,
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
-    cpcp: node_runtime::ProposalsConfigParameters,
-    members: Vec<membership::genesis::Member<u64, AccountId, Moment>>,
+    members: Vec<membership::genesis::Member<u64, AccountId>>,
     forum_config: ForumConfig,
     initial_balances: Vec<(AccountId, Balance)>,
+    content_config: ContentConfig,
 ) -> GenesisConfig {
     const STASH: Balance = 5_000;
     const ENDOWMENT: Balance = 100_000_000;
-
-    let default_text_constraint = node_runtime::working_group::default_text_constraint();
-
-    let default_storage_size_constraint =
-        node_runtime::working_group::default_storage_size_constraint();
 
     GenesisConfig {
         frame_system: Some(SystemConfig {
@@ -277,153 +269,11 @@ pub fn testnet_genesis(
                 })
                 .collect::<Vec<_>>(),
         }),
-        council: Some(CouncilConfig {
-            active_council: vec![],
-            term_ends_at: 1,
-        }),
-        election: Some(CouncilElectionConfig {
-            auto_start: true,
-            election_parameters: ElectionParameters {
-                announcing_period: 4 * DAYS,
-                voting_period: 1 * DAYS,
-                revealing_period: 1 * DAYS,
-                council_size: 16,
-                candidacy_limit: 50,
-                min_council_stake: 1_000,
-                new_term_duration: 1 * DAYS,
-                min_voting_stake: 100,
-            },
-        }),
-        membership: Some(MembersConfig {
-            default_paid_membership_fee: 100u128,
-            members,
-        }),
+        referendum_Instance1: Some(council_config::create_referendum_config()),
+        council: Some(council_config::create_council_config()),
+        membership: Some(MembersConfig { members }),
         forum: Some(forum_config),
-        working_group_Instance2: Some(StorageWorkingGroupConfig {
-            phantom: Default::default(),
-            working_group_mint_capacity: 0,
-            opening_human_readable_text_constraint: default_text_constraint,
-            worker_application_human_readable_text_constraint: default_text_constraint,
-            worker_exit_rationale_text_constraint: default_text_constraint,
-            worker_storage_size_constraint: default_storage_size_constraint,
-        }),
-        working_group_Instance3: Some(ContentWorkingGroupConfig {
-            phantom: Default::default(),
-            working_group_mint_capacity: 0,
-            opening_human_readable_text_constraint: default_text_constraint,
-            worker_application_human_readable_text_constraint: default_text_constraint,
-            worker_exit_rationale_text_constraint: default_text_constraint,
-            worker_storage_size_constraint: default_storage_size_constraint,
-        }),
-        working_group_Instance4: Some(OperationsWorkingGroupAlphaConfig {
-            phantom: Default::default(),
-            working_group_mint_capacity: 0,
-            opening_human_readable_text_constraint: default_text_constraint,
-            worker_application_human_readable_text_constraint: default_text_constraint,
-            worker_exit_rationale_text_constraint: default_text_constraint,
-            worker_storage_size_constraint: default_storage_size_constraint,
-        }),
-        working_group_Instance5: Some(GatewayWorkingGroupConfig {
-            phantom: Default::default(),
-            working_group_mint_capacity: 0,
-            opening_human_readable_text_constraint: default_text_constraint,
-            worker_application_human_readable_text_constraint: default_text_constraint,
-            worker_exit_rationale_text_constraint: default_text_constraint,
-            worker_storage_size_constraint: default_storage_size_constraint,
-        }),
-        working_group_Instance6: Some(DistributionWorkingGroupConfig {
-            phantom: Default::default(),
-            working_group_mint_capacity: 0,
-            opening_human_readable_text_constraint: default_text_constraint,
-            worker_application_human_readable_text_constraint: default_text_constraint,
-            worker_exit_rationale_text_constraint: default_text_constraint,
-            worker_storage_size_constraint: default_storage_size_constraint,
-        }),
-        working_group_Instance7: Some(OperationsWorkingGroupBetaConfig {
-            phantom: Default::default(),
-            working_group_mint_capacity: 0,
-            opening_human_readable_text_constraint: default_text_constraint,
-            worker_application_human_readable_text_constraint: default_text_constraint,
-            worker_exit_rationale_text_constraint: default_text_constraint,
-            worker_storage_size_constraint: default_storage_size_constraint,
-        }),
-        working_group_Instance8: Some(OperationsWorkingGroupGammaConfig {
-            phantom: Default::default(),
-            working_group_mint_capacity: 0,
-            opening_human_readable_text_constraint: default_text_constraint,
-            worker_application_human_readable_text_constraint: default_text_constraint,
-            worker_exit_rationale_text_constraint: default_text_constraint,
-            worker_storage_size_constraint: default_storage_size_constraint,
-        }),
-        content: Some({
-            ContentConfig {
-                next_curator_group_id: 1,
-                next_channel_category_id: 1,
-                next_channel_id: 1,
-                next_video_category_id: 1,
-                next_video_id: 1,
-                next_playlist_id: 1,
-                next_series_id: 1,
-                next_person_id: 1,
-                next_channel_transfer_request_id: 1,
-                video_migration: node_runtime::content::MigrationConfigRecord {
-                    current_id: 1,
-                    final_id: 1,
-                },
-                channel_migration: node_runtime::content::MigrationConfigRecord {
-                    current_id: 1,
-                    final_id: 1,
-                },
-            }
-        }),
-        proposals_codex: Some(ProposalsCodexConfig {
-            set_validator_count_proposal_voting_period: cpcp
-                .set_validator_count_proposal_voting_period,
-            set_validator_count_proposal_grace_period: cpcp
-                .set_validator_count_proposal_grace_period,
-            runtime_upgrade_proposal_voting_period: cpcp.runtime_upgrade_proposal_voting_period,
-            runtime_upgrade_proposal_grace_period: cpcp.runtime_upgrade_proposal_grace_period,
-            text_proposal_voting_period: cpcp.text_proposal_voting_period,
-            text_proposal_grace_period: cpcp.text_proposal_grace_period,
-            set_election_parameters_proposal_voting_period: cpcp
-                .set_election_parameters_proposal_voting_period,
-            set_election_parameters_proposal_grace_period: cpcp
-                .set_election_parameters_proposal_grace_period,
-            spending_proposal_voting_period: cpcp.spending_proposal_voting_period,
-            spending_proposal_grace_period: cpcp.spending_proposal_grace_period,
-            add_working_group_opening_proposal_voting_period: cpcp
-                .add_working_group_opening_proposal_voting_period,
-            add_working_group_opening_proposal_grace_period: cpcp
-                .add_working_group_opening_proposal_grace_period,
-            begin_review_working_group_leader_applications_proposal_voting_period: cpcp
-                .begin_review_working_group_leader_applications_proposal_voting_period,
-            begin_review_working_group_leader_applications_proposal_grace_period: cpcp
-                .begin_review_working_group_leader_applications_proposal_grace_period,
-            fill_working_group_leader_opening_proposal_voting_period: cpcp
-                .fill_working_group_leader_opening_proposal_voting_period,
-            fill_working_group_leader_opening_proposal_grace_period: cpcp
-                .fill_working_group_leader_opening_proposal_grace_period,
-            set_working_group_mint_capacity_proposal_voting_period: cpcp
-                .set_working_group_mint_capacity_proposal_voting_period,
-            set_working_group_mint_capacity_proposal_grace_period: cpcp
-                .set_working_group_mint_capacity_proposal_grace_period,
-            decrease_working_group_leader_stake_proposal_voting_period: cpcp
-                .decrease_working_group_leader_stake_proposal_voting_period,
-            decrease_working_group_leader_stake_proposal_grace_period: cpcp
-                .decrease_working_group_leader_stake_proposal_grace_period,
-            slash_working_group_leader_stake_proposal_voting_period: cpcp
-                .slash_working_group_leader_stake_proposal_voting_period,
-            slash_working_group_leader_stake_proposal_grace_period: cpcp
-                .slash_working_group_leader_stake_proposal_grace_period,
-            set_working_group_leader_reward_proposal_voting_period: cpcp
-                .set_working_group_leader_reward_proposal_voting_period,
-            set_working_group_leader_reward_proposal_grace_period: cpcp
-                .set_working_group_leader_reward_proposal_grace_period,
-            terminate_working_group_leader_role_proposal_voting_period: cpcp
-                .terminate_working_group_leader_role_proposal_voting_period,
-            terminate_working_group_leader_role_proposal_grace_period: cpcp
-                .terminate_working_group_leader_role_proposal_grace_period,
-        }),
+        content: Some(content_config),
     }
 }
 
@@ -437,11 +287,18 @@ pub(crate) mod tests {
         testnet_genesis(
             vec![get_authority_keys_from_seed("Alice")],
             get_account_id_from_seed::<sr25519::Public>("Alice"),
-            vec![get_authority_keys_from_seed("Alice").0],
-            proposals_config::development(),
+            vec![
+                get_authority_keys_from_seed("Alice").0,
+                get_authority_keys_from_seed("Bob").0,
+                get_authority_keys_from_seed("Charlie").0,
+                get_authority_keys_from_seed("Alice").1,
+                get_authority_keys_from_seed("Bob").1,
+                get_authority_keys_from_seed("Charlie").1,
+            ],
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
             vec![],
+            content_config::testing_config(),
         )
     }
 
@@ -471,10 +328,10 @@ pub(crate) mod tests {
                 get_authority_keys_from_seed("Alice").0,
                 get_authority_keys_from_seed("Bob").0,
             ],
-            proposals_config::development(),
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
             vec![],
+            content_config::testing_config(),
         )
     }
 

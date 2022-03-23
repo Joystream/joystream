@@ -6,7 +6,7 @@ use pallet_transaction_payment_rpc_runtime_api::RuntimeDispatchInfo;
 use sp_api::impl_runtime_apis;
 use sp_core::crypto::KeyTypeId;
 use sp_core::OpaqueMetadata;
-use sp_runtime::traits::{BlakeTwo256, Block as BlockT, NumberFor};
+use sp_runtime::traits::{BlakeTwo256, Block as BlockT, Convert, NumberFor};
 use sp_runtime::{generic, ApplyExtrinsicResult};
 use sp_std::vec::Vec;
 
@@ -17,15 +17,33 @@ use crate::{
     GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
 };
 use crate::{
-    AllModules, AuthorityDiscovery, Babe, Call, Grandpa, Historical, InherentDataExt,
-    RandomnessCollectiveFlip, Runtime, SessionKeys, System, TransactionPayment,
+    AllModules, AuthorityDiscovery, Babe, Balances, Call, Grandpa, Historical, InherentDataExt,
+    ProposalsEngine, RandomnessCollectiveFlip, Runtime, SessionKeys, System, TransactionPayment,
 };
 
-use crate::{
-    DistributionWorkingGroupInstance, OperationsWorkingGroupInstanceBeta,
-    OperationsWorkingGroupInstanceGamma,
-};
 use frame_support::weights::Weight;
+
+/// Struct that handles the conversion of Balance -> `u64`. This is used for staking's election
+/// calculation.
+pub struct CurrencyToVoteHandler;
+
+impl CurrencyToVoteHandler {
+    fn factor() -> Balance {
+        (Balances::total_issuance() / u64::max_value() as Balance).max(1)
+    }
+}
+
+impl Convert<Balance, u64> for CurrencyToVoteHandler {
+    fn convert(x: Balance) -> u64 {
+        (x / Self::factor()) as u64
+    }
+}
+
+impl Convert<u128, Balance> for CurrencyToVoteHandler {
+    fn convert(x: u128) -> Balance {
+        x * Self::factor()
+    }
+}
 
 /// The SignedExtension to the basic transaction logic.
 pub type SignedExtra = (
@@ -59,65 +77,16 @@ pub type BlockId = generic::BlockId<Block>;
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<AccountId, Call, Signature, SignedExtra>;
 
-// Alias for the beta operations working group
-pub(crate) type OperationsWorkingGroupBeta<T> =
-    working_group::Module<T, OperationsWorkingGroupInstanceBeta>;
-
-// Alias for the gamma operations working group
-pub(crate) type OperationsWorkingGroupGamma<T> =
-    working_group::Module<T, OperationsWorkingGroupInstanceGamma>;
-
-pub(crate) type DistributionWorkingGroup<T> =
-    working_group::Module<T, DistributionWorkingGroupInstance>;
-
 /// Custom runtime upgrade handler.
 pub struct CustomOnRuntimeUpgrade;
 impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
     fn on_runtime_upgrade() -> Weight {
-        // initialize content module
-        content::Module::<Runtime>::on_runtime_upgrade();
-
-        // Initialize new groups
-        let default_text_constraint = crate::working_group::default_text_constraint();
-
-        let default_storage_size_constraint =
-            crate::working_group::default_storage_size_constraint();
-
-        let default_content_working_group_mint_capacity = 0;
-
-        // Do not init persisted working group module instances
-        // OperationsWorkingGroupAlpha (previously OperationsWorkingGroup)
-        // ContentWorkingGroup (previously ContentDirectoryWorkingGroup)
-
-        OperationsWorkingGroupBeta::<Runtime>::initialize_working_group(
-            default_text_constraint,
-            default_text_constraint,
-            default_text_constraint,
-            default_storage_size_constraint,
-            default_content_working_group_mint_capacity,
-        );
-
-        OperationsWorkingGroupGamma::<Runtime>::initialize_working_group(
-            default_text_constraint,
-            default_text_constraint,
-            default_text_constraint,
-            default_storage_size_constraint,
-            default_content_working_group_mint_capacity,
-        );
-
-        DistributionWorkingGroup::<Runtime>::initialize_working_group(
-            default_text_constraint,
-            default_text_constraint,
-            default_text_constraint,
-            default_storage_size_constraint,
-            default_content_working_group_mint_capacity,
-        );
-
+        ProposalsEngine::cancel_active_and_pending_proposals();
         10_000_000 // TODO: adjust weight
     }
 }
 
-/// Executive: handles dispatch to the various modules.
+/// Executive: handles dispatch to the various modules with CustomOnRuntimeUpgrade.
 pub type Executive = frame_executive::Executive<
     Runtime,
     Block,
@@ -297,7 +266,6 @@ impl_runtime_apis! {
         }
     }
 
-
     #[cfg(feature = "runtime-benchmarks")]
     impl frame_benchmarking::Benchmark<Block> for Runtime {
         fn dispatch_benchmark(
@@ -306,7 +274,26 @@ impl_runtime_apis! {
             use sp_std::vec;
             use frame_benchmarking::{Benchmarking, BenchmarkBatch, add_benchmark, TrackedStorageKey};
 
-            use crate::StorageV2;
+            use pallet_session_benchmarking::Module as SessionBench;
+            use frame_system_benchmarking::Module as SystemBench;
+            use frame_system::RawOrigin;
+            use crate::ProposalsDiscussion;
+            use crate::ProposalsEngine;
+            use crate::ProposalsCodex;
+            use crate::Constitution;
+            use crate::Forum;
+            use crate::Members;
+            use crate::ContentWorkingGroup;
+            use crate::Utility;
+            use crate::Timestamp;
+            use crate::ImOnline;
+            use crate::Council;
+            use crate::Referendum;
+            use crate::Bounty;
+            use crate::Blog;
+            use crate::JoystreamUtility;
+            use crate::Staking;
+            use crate::Storage;
 
 
             // Trying to add benchmarks directly to the Session Pallet caused cyclic dependency issues.
@@ -314,6 +301,42 @@ impl_runtime_apis! {
             // we need these two lines below.
             impl pallet_session_benchmarking::Trait for Runtime {}
             impl frame_system_benchmarking::Trait for Runtime {}
+            impl referendum::OptionCreator<<Runtime as frame_system::Trait>::AccountId, <Runtime as common::membership::MembershipTypes>::MemberId> for Runtime {
+                fn create_option(account_id: <Runtime as frame_system::Trait>::AccountId, member_id: <Runtime as common::membership::MembershipTypes>::MemberId) {
+                    crate::council::Module::<Runtime>::announce_candidacy(
+                        RawOrigin::Signed(account_id.clone()).into(),
+                        member_id,
+                        account_id.clone(),
+                        account_id.clone(),
+                        <Runtime as council::Trait>::MinCandidateStake::get().into(),
+                    ).expect(
+                        "Should pass a valid member associated to the account and the account
+                        should've enough
+                        free balance to stake the minimum for a council candidate."
+                    );
+                }
+            }
+
+            impl membership::MembershipWorkingGroupHelper<
+                <Runtime as frame_system::Trait>::AccountId,
+                <Runtime as common::membership::MembershipTypes>::MemberId,
+                <Runtime as common::membership::MembershipTypes>::ActorId,
+                    > for Runtime
+            {
+                fn insert_a_lead(
+                    opening_id: u32,
+                    caller_id: &<Runtime as frame_system::Trait>::AccountId,
+                    member_id: <Runtime as common::membership::MembershipTypes>::MemberId,
+                ) -> <Runtime as common::membership::MembershipTypes>::ActorId {
+                    working_group::benchmarking::complete_opening::<Runtime, crate::MembershipWorkingGroupInstance>(
+                        working_group::OpeningType::Leader,
+                        opening_id,
+                        None,
+                        &caller_id,
+                        member_id,
+                    )
+                }
+            }
 
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number
@@ -335,8 +358,36 @@ impl_runtime_apis! {
             let mut batches = Vec::<BenchmarkBatch>::new();
             let params = (&config, &whitelist);
 
+            // Note: For benchmarking Stake and Balances we need to change ExistentialDeposit to
+            // a non-zero value.
+            // For now, due to the complexity grandpa and babe aren't benchmarked automatically
+            // we should use the default manually created weights.
+            // Finally, pallet_offences have no `WeightInfo` so there's no need to benchmark it
+            // the benchmark is only for illustrative pourpuses.
+
+            // Frame benchmarks
+            add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
+            add_benchmark!(params, batches, substrate_utility, Utility);
+            add_benchmark!(params, batches, pallet_timestamp, Timestamp);
+            add_benchmark!(params, batches, pallet_session, SessionBench::<Runtime>);
+            add_benchmark!(params, batches, pallet_im_online, ImOnline);
+            add_benchmark!(params, batches, pallet_balances, Balances);
+            add_benchmark!(params, batches, pallet_staking, Staking);
+
             // Joystream Benchmarks
-            add_benchmark!(params, batches, storage_v2, StorageV2);
+            add_benchmark!(params, batches, proposals_discussion, ProposalsDiscussion);
+            add_benchmark!(params, batches, proposals_codex, ProposalsCodex);
+            add_benchmark!(params, batches, proposals_engine, ProposalsEngine);
+            add_benchmark!(params, batches, membership, Members);
+            add_benchmark!(params, batches, forum, Forum);
+            add_benchmark!(params, batches, pallet_constitution, Constitution);
+            add_benchmark!(params, batches, working_group, ContentWorkingGroup);
+            add_benchmark!(params, batches, referendum, Referendum);
+            add_benchmark!(params, batches, council, Council);
+            add_benchmark!(params, batches, bounty, Bounty);
+            add_benchmark!(params, batches, blog, Blog);
+            add_benchmark!(params, batches, joystream_utility, JoystreamUtility);
+            add_benchmark!(params, batches, storage, Storage);
 
             if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
             Ok(batches)

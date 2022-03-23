@@ -11,6 +11,10 @@ export default class VideoCommand extends ContentDirectoryCommandBase {
     },
   ]
 
+  static flags = {
+    ...ContentDirectoryCommandBase.flags,
+  }
+
   async run(): Promise<void> {
     const { videoId } = this.parse(VideoCommand).args
     const aVideo = await this.getApi().videoById(videoId)
@@ -18,8 +22,9 @@ export default class VideoCommand extends ContentDirectoryCommandBase {
       displayCollapsedRow({
         'ID': videoId.toString(),
         'InChannel': aVideo.in_channel.toString(),
-        'InSeries': aVideo.in_series.unwrapOr('NONE').toString(),
         'IsCensored': aVideo.is_censored.toString(),
+        'CommentsEnabled': aVideo.enable_comments.toString(),
+        'PostId': aVideo.video_post_id.toString(),
       })
     } else {
       this.error(`Video not found by channel id: "${videoId}"!`)

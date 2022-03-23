@@ -27,7 +27,7 @@ Joystream storage subsystem.
 # Description
 
 The main responsibility of Colossus is handling media data for users. The data could be images, audio, or video files.
-Colossus receives uploads and saves files in the local folder, registers uploads in the blockchain, and later serves files 
+Colossus receives uploads and saves files in the local folder, registers uploads in the blockchain, and later serves files
 to Argus nodes (distribution nodes). Colossus instances spread the data using peer-to-peer synchronization.
 Data management is blockchain-based, it relies on the concepts of buckets, bags, data objects.
 The full description of the blockchain smart contracts could be found [here](https://github.com/Joystream/joystream/issues/2224).
@@ -65,7 +65,7 @@ Metadata could be registered using [operator:set-metadata](#storage-node-operato
 A simple endpoint could be set using the `--endpoint` flag of the command. Complex metadata requires JSON file ([example](./scripts/operatorMetadata.json)).
 JSON file format based on the *protobuf* format described [here](../metadata-protobuf/proto/Storage.proto).
 
-### Data 
+### Data
 #### Uploading
 
 Colossus accepts files using its API. The data must be uploaded using POST http method with `multipart/form-data`.
@@ -74,7 +74,7 @@ Simplified process (file uploading):
    - data hash & size verification
    - moving the data to the data folder
    - registering the data object as `accepted` in the blockchain
-    
+
 #### Synchronization
 
 Several instances of Colossus should contain the data replica in order to provide some degree of reliability.
@@ -138,7 +138,6 @@ There is also an option to run Colossus as [Docker container](../colossus.Docker
 
 # CLI Commands
 <!-- commands -->
-* [`storage-node dev:init`](#storage-node-devinit)
 * [`storage-node dev:multihash`](#storage-node-devmultihash)
 * [`storage-node dev:sync`](#storage-node-devsync)
 * [`storage-node dev:upload`](#storage-node-devupload)
@@ -161,27 +160,6 @@ There is also an option to run Colossus as [Docker container](../colossus.Docker
 * [`storage-node operator:accept-invitation`](#storage-node-operatoraccept-invitation)
 * [`storage-node operator:set-metadata`](#storage-node-operatorset-metadata)
 * [`storage-node server`](#storage-node-server)
-
-## `storage-node dev:init`
-
-Initialize development environment. Sets Alice as storage working group leader.
-
-```
-USAGE
-  $ storage-node dev:init
-
-OPTIONS
-  -h, --help                   show CLI help
-  -k, --keyFile=keyFile        Key file for the account. Mandatory in non-dev environment.
-  -m, --dev                    Use development mode
-  -p, --password=password      Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
-  -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
-
-  -y, --accountUri=accountUri  Account URI (optional). Has a priority over the keyFile and password flags. Could be
-                               overriden by ACCOUNT_URI environment variable.
-```
-
-_See code: [src/commands/dev/init.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/dev/init.ts)_
 
 ## `storage-node dev:multihash`
 
@@ -499,7 +477,7 @@ OPTIONS
       [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
 
   -y, --accountUri=accountUri
-      Account URI (optional). Has a priority over the keyFile and password flags. Could be overriden by ACCOUNT_URI 
+      Account URI (optional). Has a priority over the keyFile and password flags. Could be overriden by ACCOUNT_URI
       environment variable.
 ```
 
@@ -758,5 +736,4 @@ OPTIONS
 ```
 
 _See code: [src/commands/server.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/server.ts)_
-
 <!-- commandsstop -->

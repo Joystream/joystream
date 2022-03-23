@@ -23,6 +23,8 @@ sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com
 sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 randomness-collective-flip = { package = 'pallet-randomness-collective-flip', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
+staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../staking-handler'}
+working-group = { package = 'pallet-working-group', default-features = false, path = '../working-group'}
 
 
 [features]

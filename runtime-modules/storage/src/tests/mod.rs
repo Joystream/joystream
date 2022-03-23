@@ -5,7 +5,7 @@ pub(crate) mod mocks;
 
 use frame_support::dispatch::DispatchError;
 use frame_support::traits::Currency;
-use frame_support::{StorageDoubleMap, StorageMap, StorageValue};
+use frame_support::{assert_err, assert_ok, StorageDoubleMap, StorageMap, StorageValue};
 use frame_system::RawOrigin;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
@@ -5638,5 +5638,338 @@ fn unsuccessful_dyn_bag_creation_with_no_bucket_accepting() {
 
         CreateDynamicBagWithObjectsFixture::default()
             .call_and_assert(Err(Error::<Test>::StorageBucketIdCollectionsAreEmpty.into()));
+    })
+}
+
+#[test]
+fn storage_operator_remark_successful() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+
+        let msg = b"test".to_vec();
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
+        let invite_worker = Some(storage_provider_id);
+        let transactor_id = DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID;
+
+        let bucket_id = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_invite_worker(invite_worker)
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        AcceptStorageBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id)
+            .with_worker_id(storage_provider_id)
+            .with_transactor_account_id(transactor_id)
+            .call_and_assert(Ok(()));
+
+        assert_ok!(Storage::storage_operator_remark(
+            RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID).into(),
+            DEFAULT_STORAGE_PROVIDER_ID,
+            bucket_id,
+            msg
+        ));
+    })
+}
+
+#[test]
+fn storage_operator_remark_unsuccessful_with_invalid_bucket_id() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+
+        let msg = b"test".to_vec();
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
+        let invite_worker = Some(storage_provider_id);
+        let transactor_id = DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID;
+
+        let bucket_id = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_invite_worker(invite_worker)
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let invalid_bucket_id = bucket_id.saturating_add(1);
+
+        AcceptStorageBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id)
+            .with_worker_id(storage_provider_id)
+            .with_transactor_account_id(transactor_id)
+            .call_and_assert(Ok(()));
+
+        assert_err!(
+            Storage::storage_operator_remark(
+                RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID).into(),
+                DEFAULT_STORAGE_PROVIDER_ID,
+                invalid_bucket_id,
+                msg
+            ),
+            Error::<Test>::StorageBucketDoesntExist
+        );
+    })
+}
+
+#[test]
+fn storage_operator_remark_unsuccessful_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+
+        let msg = b"test".to_vec();
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
+        let invite_worker = Some(storage_provider_id);
+        let transactor_id = DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID;
+
+        let bucket_id = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_invite_worker(invite_worker)
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        AcceptStorageBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id)
+            .with_worker_id(storage_provider_id)
+            .with_transactor_account_id(transactor_id)
+            .call_and_assert(Ok(()));
+
+        let invalid_origin = RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID + 100).into();
+        assert_err!(
+            Storage::storage_operator_remark(
+                invalid_origin,
+                DEFAULT_STORAGE_PROVIDER_ID,
+                bucket_id,
+                msg
+            ),
+            DispatchError::BadOrigin,
+        );
+    })
+}
+
+#[test]
+fn storage_operator_remark_unsuccessful_with_invalid_worker_id() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+
+        let msg = b"test".to_vec();
+        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
+        let invite_worker = Some(storage_provider_id);
+        let transactor_id = DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID;
+
+        let bucket_id = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_invite_worker(invite_worker)
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let invalid_worker_id = DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID.saturating_add(1);
+
+        AcceptStorageBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_storage_bucket_id(bucket_id)
+            .with_worker_id(storage_provider_id)
+            .with_transactor_account_id(transactor_id)
+            .call_and_assert(Ok(()));
+
+        assert_err!(
+            Storage::storage_operator_remark(
+                RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID).into(),
+                invalid_worker_id,
+                bucket_id,
+                msg
+            ),
+            Error::<Test>::InvalidStorageProvider
+        );
+    })
+}
+
+#[test]
+fn distribution_operator_remark_successful() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+
+        let msg = b"test".to_vec();
+
+        let distribution_bucket_family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let distribution_bucket_index = CreateDistributionBucketFixture::default()
+            .with_family_id(distribution_bucket_family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        InviteDistributionBucketOperatorFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_bucket_index(distribution_bucket_index)
+            .with_family_id(distribution_bucket_family_id)
+            .with_operator_worker_id(DEFAULT_DISTRIBUTION_PROVIDER_ID)
+            .call_and_assert(Ok(()));
+
+        AcceptDistributionBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID))
+            .with_family_id(distribution_bucket_family_id)
+            .with_bucket_index(distribution_bucket_index)
+            .with_worker_id(DEFAULT_DISTRIBUTION_PROVIDER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_ok!(Storage::distribution_operator_remark(
+            RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID).into(),
+            DEFAULT_DISTRIBUTION_PROVIDER_ID,
+            DistributionBucketId::<Test> {
+                distribution_bucket_family_id,
+                distribution_bucket_index,
+            },
+            msg
+        ));
+    })
+}
+
+#[test]
+fn distribution_operator_remark_unsuccessful_with_invalid_bucket_id() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+
+        let msg = b"test".to_vec();
+
+        let distribution_bucket_family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+        let invalid_distribution_bucket_family_id = distribution_bucket_family_id.saturating_add(1);
+
+        let distribution_bucket_index = CreateDistributionBucketFixture::default()
+            .with_family_id(distribution_bucket_family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        InviteDistributionBucketOperatorFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_bucket_index(distribution_bucket_index)
+            .with_family_id(distribution_bucket_family_id)
+            .with_operator_worker_id(DEFAULT_DISTRIBUTION_PROVIDER_ID)
+            .call_and_assert(Ok(()));
+
+        AcceptDistributionBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID))
+            .with_family_id(distribution_bucket_family_id)
+            .with_bucket_index(distribution_bucket_index)
+            .with_worker_id(DEFAULT_DISTRIBUTION_PROVIDER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_err!(
+            Storage::distribution_operator_remark(
+                RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID).into(),
+                DEFAULT_DISTRIBUTION_PROVIDER_ID,
+                DistributionBucketId::<Test> {
+                    distribution_bucket_family_id: invalid_distribution_bucket_family_id,
+                    distribution_bucket_index,
+                },
+                msg
+            ),
+            Error::<Test>::DistributionBucketDoesntExist
+        );
+    })
+}
+
+#[test]
+fn distribution_operator_remark_unsuccessful_with_invalid_worker_id() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+
+        let invalid_distribution_worker_id = DEFAULT_DISTRIBUTION_PROVIDER_ID.saturating_add(1);
+        let msg = b"test".to_vec();
+
+        let distribution_bucket_family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let distribution_bucket_index = CreateDistributionBucketFixture::default()
+            .with_family_id(distribution_bucket_family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        InviteDistributionBucketOperatorFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_bucket_index(distribution_bucket_index)
+            .with_family_id(distribution_bucket_family_id)
+            .with_operator_worker_id(DEFAULT_DISTRIBUTION_PROVIDER_ID)
+            .call_and_assert(Ok(()));
+
+        AcceptDistributionBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID))
+            .with_family_id(distribution_bucket_family_id)
+            .with_bucket_index(distribution_bucket_index)
+            .with_worker_id(DEFAULT_DISTRIBUTION_PROVIDER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_err!(
+            Storage::distribution_operator_remark(
+                RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID).into(),
+                invalid_distribution_worker_id,
+                DistributionBucketId::<Test> {
+                    distribution_bucket_family_id,
+                    distribution_bucket_index,
+                },
+                msg
+            ),
+            Error::<Test>::MustBeDistributionProviderOperatorForBucket,
+        );
+    })
+}
+
+#[test]
+fn distribution_operator_remark_unsuccessful_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+
+        let invalid_distribution_worker_id = DEFAULT_DISTRIBUTION_PROVIDER_ID.saturating_add(1);
+        let msg = b"test".to_vec();
+
+        let distribution_bucket_family_id = CreateDistributionBucketFamilyFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        let distribution_bucket_index = CreateDistributionBucketFixture::default()
+            .with_family_id(distribution_bucket_family_id)
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        InviteDistributionBucketOperatorFixture::default()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_bucket_index(distribution_bucket_index)
+            .with_family_id(distribution_bucket_family_id)
+            .with_operator_worker_id(DEFAULT_DISTRIBUTION_PROVIDER_ID)
+            .call_and_assert(Ok(()));
+
+        AcceptDistributionBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID))
+            .with_family_id(distribution_bucket_family_id)
+            .with_bucket_index(distribution_bucket_index)
+            .with_worker_id(DEFAULT_DISTRIBUTION_PROVIDER_ID)
+            .call_and_assert(Ok(()));
+
+        let invalid_origin =
+            RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID + 100).into();
+
+        assert_err!(
+            Storage::distribution_operator_remark(
+                invalid_origin,
+                invalid_distribution_worker_id,
+                DistributionBucketId::<Test> {
+                    distribution_bucket_family_id,
+                    distribution_bucket_index,
+                },
+                msg
+            ),
+            DispatchError::BadOrigin,
+        );
     })
 }

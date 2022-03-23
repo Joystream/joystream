@@ -1,17 +1,19 @@
 {
   "name": "@joystream/cli",
   "description": "Command Line Interface for Joystream community and governance activities",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "author": "Leszek Wiesner",
   "bin": {
     "joystream-cli": "./bin/run"
   },
   "bugs": "https://github.com/Joystream/joystream/issues",
   "dependencies": {
+    "@apollo/client": "^3.3.13",
+    "cross-fetch": "^3.0.6",
     "@apidevtools/json-schema-ref-parser": "^9.0.6",
     "@ffprobe-installer/ffprobe": "^1.1.0",
-    "@joystream/metadata-protobuf": "^1.0.0",
-    "@joystream/types": "^0.17.2",
+    "@joystream/metadata-protobuf": "^2.1.0",
+    "@joystream/types": "^0.18.3",
     "@oclif/command": "^1.5.19",
     "@oclif/config": "^1.14.0",
     "@oclif/plugin-autocomplete": "^0.2.0",
@@ -49,8 +51,6 @@
     "tslib": "^1.11.1",
     "blake3-wasm": "^2.1.5",
     "multihashes": "^4.0.3",
-    "@apollo/client": "^3.2.5",
-    "cross-fetch": "^3.0.6",
     "form-data": "^4.0.0",
     "graphql": "^14.7.0"
   },
@@ -66,11 +66,11 @@
     "eslint-config-oclif": "^3.1.0",
     "eslint-config-oclif-typescript": "^0.1.0",
     "globby": "^10.0.2",
-    "json-schema-to-typescript": "^9.1.1",
     "mocha": "^5.2.0",
     "nyc": "^14.1.1",
     "ts-node": "^10.2.1",
     "typescript": "^4.4.3",
+    "json-schema-to-typescript": "^10.1.4",
     "@graphql-codegen/cli": "^1.21.4",
     "@graphql-codegen/typescript": "^1.22.0",
     "@graphql-codegen/import-types-preset": "^1.18.1",
@@ -108,9 +108,6 @@
       "@oclif/plugin-warn-if-update-available"
     ],
     "topics": {
-      "council": {
-        "description": "Council-related information and activities like voting, becoming part of the council etc."
-      },
       "account": {
         "description": "Accounts management - create, import or switch currently used account"
       },
@@ -122,6 +119,15 @@
       },
       "content": {
         "description": "Interactions with content directory module - managing vidoes, channels, assets, categories and curator groups"
+      },
+      "membership": {
+        "description": "Membership management - buy a new membership, update membership, manage membership keys"
+      },
+      "forum": {
+        "description": "Forum working group activities (moderation, category management)"
+      },
+      "staking": {
+        "description": "Staking and validation commands"
       }
     }
   },
@@ -135,12 +141,12 @@
     "posttest": "yarn lint",
     "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
     "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
-    "build": "tsc --build tsconfig.json",
+    "build": "rm -rf lib && tsc --build tsconfig.json",
     "version": "oclif-dev readme && git add README.md",
     "lint": "eslint ./src --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
     "format": "prettier ./ --write",
-    "generate:schema-typings": "rm -rf ./src/schemas/typings && json2ts -i ./src/schemas/json/ -o ./src/schemas/typings/ && prettier ./src/schemas/typings/ --write",
+    "generate:schema-typings": "rm -rf ./src/schemas/typings && json2ts -i ./src/schemas/json/ -o ./src/schemas/typings/ && yarn format",
     "generate:graphql-typings": "graphql-codegen",
     "generate:all": "yarn generate:schema-typings && yarn generate:graphql-typings"
   },

@@ -1,19 +1,25 @@
 import { Struct, Option, Text, bool, u16, u32, u64, Null, U8aFixed, u128 } from '@polkadot/types'
-import { BlockNumber, Hash as PolkadotHash, Moment } from '@polkadot/types/interfaces'
+import { Hash as PolkadotHash, Moment } from '@polkadot/types/interfaces'
 import { Codec, RegistryTypes } from '@polkadot/types/types'
 // we get 'moment' because it is a dependency of @polkadot/util, via @polkadot/keyring
 import moment from 'moment'
 import { JoyStructCustom, JoyStructDecorated } from './JoyStruct'
 import { JoyEnum } from './JoyEnum'
-import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
+import { GenericAccountId } from '@polkadot/types/generic/AccountId'
 
 export { JoyEnum, JoyStructCustom, JoyStructDecorated }
 
+export class Balance extends u128 {}
+export class BlockNumber extends u32 {}
+
+export class ActorId extends u64 {}
+export class MemberId extends u64 {}
 export class Url extends Text {}
 
 export class ChannelId extends u64 {}
 
-// common types between Forum and Proposal Discussions modules
+// Indentical type names for Forum and Proposal Discussions modules
+// Ensure they are both configured in runtime to have same type
 export class ThreadId extends u64 {}
 export class PostId extends u64 {}
 
@@ -63,7 +69,10 @@ export type InputValidationLengthConstraintType = {
 }
 
 export class InputValidationLengthConstraint
-  extends JoyStructDecorated({ min: u16, max_min_diff: u16 })
+  extends JoyStructDecorated({
+    min: u16,
+    max_min_diff: u16,
+  })
   implements InputValidationLengthConstraintType {
   get max(): u16 {
     return this.registry.createType('u16', this.min.add(this.max_min_diff))
@@ -71,6 +80,7 @@ export class InputValidationLengthConstraint
 }
 
 export const WorkingGroupDef = {
+  Forum: Null,
   Storage: Null,
   Content: Null,
   OperationsAlpha: Null,
@@ -78,48 +88,33 @@ export const WorkingGroupDef = {
   Distribution: Null,
   OperationsBeta: Null,
   OperationsGamma: Null,
+  Membership: Null,
 } as const
 export type WorkingGroupKey = keyof typeof WorkingGroupDef
 export class WorkingGroup extends JoyEnum(WorkingGroupDef) {}
 
-// Temporarly in "common", because used both by /working-group and /content-working-group:
-export type ISlashableTerms = {
-  max_count: u16
-  max_percent_pts_per_time: u16
-}
-
-export class SlashableTerms
-  extends JoyStructDecorated({
-    max_count: u16,
-    max_percent_pts_per_time: u16,
-  })
-  implements ISlashableTerms {}
-
-export class UnslashableTerms extends Null {}
-
-export class SlashingTerms extends JoyEnum({
-  Unslashable: UnslashableTerms,
-  Slashable: SlashableTerms,
-} as const) {}
-
-export class MemoText extends Text {}
+export class BalanceKind extends JoyEnum({
+  Positive: Null,
+  Negative: Null,
+}) {}
 
 // @polkadot/types overrides required since migration to Substrate 2.0,
-// see: https://polkadot.js.org/api/start/FAQ.html#the-node-returns-a-could-not-convert-error-on-send
+// see: https://polkadot.js.org/docs/api/FAQ#i-cannot-send-transactions-sending-yields-address-decoding-failures
+export class AccountId extends GenericAccountId {}
 export class Address extends AccountId {}
 export class LookupSource extends AccountId {}
-export class BalanceOf extends u128 {}
+export class BalanceOf extends Balance {}
 
 export const commonTypes: RegistryTypes = {
+  ActorId,
+  MemberId,
   BlockAndTime,
   ThreadId,
   PostId,
   InputValidationLengthConstraint,
   WorkingGroup,
-  // Expose in registry for api.createType purposes:
-  SlashingTerms,
-  SlashableTerms,
-  MemoText,
+  BalanceKind,
+  // Customize Address type for joystream chain
   Address,
   LookupSource,
   ChannelId,

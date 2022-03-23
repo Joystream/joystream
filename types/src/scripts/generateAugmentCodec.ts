@@ -11,17 +11,15 @@ import fs from 'fs'
 import common from '../common'
 import members from '../members'
 import council from '../council'
-import roles from '../roles'
 import forum from '../forum'
-import stake from '../stake'
-import mint from '../mint'
-import recurringRewards from '../recurring-rewards'
-import hiring from '../hiring'
 import workingGroup from '../working-group'
 import storage from '../storage'
 import proposals from '../proposals'
+import referendum from '../referendum'
+import constitution from '../constitution'
+import blog from '../blog'
+import bounty from '../bounty'
 import content from '../content'
-import legacy from '../legacy'
 
 const AUGMENT_INTERFACES_PATH = path.join(__dirname, '../../augment')
 const AUGMENT_CODEC_PATH = path.join(__dirname, '../../augment-codec')
@@ -29,19 +27,17 @@ const EXPORT_ALL_TYPES_FILE_PATH = path.join(AUGMENT_CODEC_PATH, 'all.ts')
 const RELATIVE_TYPES_ROOT_PATH = '..' // @joystream/types/index path relative to AUGMENT_CODEC_PATH
 
 const typesByModule = {
-  'legacy': legacy,
   'common': common,
   'members': members,
   'council': council,
-  'roles': roles,
   'forum': forum,
-  'stake': stake,
-  'mint': mint,
-  'recurring-rewards': recurringRewards,
-  'hiring': hiring,
   'working-group': workingGroup,
   'storage': storage,
   'proposals': proposals,
+  'referendum': referendum,
+  'constitution': constitution,
+  'blog': blog,
+  'bounty': bounty,
   'content': content,
 }
 

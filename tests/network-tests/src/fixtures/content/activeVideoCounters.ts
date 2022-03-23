@@ -1,27 +1,9 @@
 import { assert } from 'chai'
-import { ApolloQueryResult } from '@apollo/client'
 import { Api } from '../../Api'
-import { WorkingGroups } from '../../WorkingGroups'
-import { BaseQueryNodeFixture, FixtureRunner } from '../../Fixture'
-import { BuyMembershipHappyCaseFixture } from '../membershipModule'
-import { KeyringPair } from '@polkadot/keyring/types'
-import { Bytes } from '@polkadot/types'
+import { BaseQueryNodeFixture } from '../../Fixture'
 import { QueryNodeApi } from '../../QueryNodeApi'
-import { PaidTermId, MemberId } from '@joystream/types/members'
-import { Debugger, extendDebug } from '../../Debugger'
-import BN from 'bn.js'
-import { Worker, WorkerId } from '@joystream/types/working-group'
 import { Utils } from '../../utils'
-
-import {
-  getMemberDefaults,
-  getChannelCategoryDefaults,
-  getChannelDefaults,
-  getVideoDefaults,
-  getVideoCategoryDefaults,
-} from './contentTemplates'
 import { JoystreamCLI, ICreatedVideoData } from '../../cli/joystream'
-import * as path from 'path'
 
 /**
   Fixture that test Joystream content can be created, is reflected in query node,
@@ -31,7 +13,6 @@ import * as path from 'path'
   `channelIds[0]`, `channelCategoryIds[0]`, and `videoCategoryIds[0]`.
 */
 export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
-  private debug: Debugger.Debugger
   private cli: JoystreamCLI
   private channelIds: number[]
   private videosData: ICreatedVideoData[]
@@ -53,7 +34,6 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
     this.videosData = videosData
     this.channelCategoryIds = channelCategoryIds
     this.videoCategoryIds = videoCategoryIds
-    this.debug = extendDebug('fixture:ActiveVideoCountersFixture')
   }
 
   /*
@@ -61,9 +41,9 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
   */
   public async execute(): Promise<void> {
     const videoCount = this.videosData.length
-    const videoCategoryCount = this.videoCategoryIds.length
-    const channelCount = this.channelIds.length
-    const channelCategoryCount = this.channelCategoryIds.length
+    // const videoCategoryCount = this.videoCategoryIds.length
+    // const channelCount = this.channelIds.length
+    // const channelCategoryCount = this.channelCategoryIds.length
 
     // check channel and categories con are counted as active
 
@@ -132,9 +112,7 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
       () => this.query[getterName](entityId.toString()),
       (entity) => {
         Utils.assert(entity)
-
-        // all videos created in this fixture should be active and belong to first entity
-        assert(entity.activeVideosCounter === expectedCount)
+        assert.equal(entity.activeVideosCounter, expectedCount)
       }
     )
   }

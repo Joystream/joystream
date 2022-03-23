@@ -1,14 +1,20 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { apiModuleByGroup } from '../../Api'
-import { Balance } from '@polkadot/types/interfaces'
 import { formatBalance } from '@polkadot/util'
-import { positiveInt } from '../../validators/common'
 import chalk from 'chalk'
 import ExitCodes from '../../ExitCodes'
-import { createParamOptions } from '../../helpers/promptOptions'
+import { isValidBalance } from '../../helpers/validation'
 
 export default class WorkingGroupsIncreaseStake extends WorkingGroupsCommandBase {
   static description = 'Increases current role (lead/worker) stake. Requires active role account to be selected.'
+  static args = [
+    {
+      name: 'amount',
+      required: true,
+      description: 'Amount of JOY to increase the current stake by',
+    },
+  ]
+
   static flags = {
     ...WorkingGroupsCommandBase.flags,
   }
@@ -17,27 +23,25 @@ export default class WorkingGroupsIncreaseStake extends WorkingGroupsCommandBase
     // Worker-only gate
     const worker = await this.getRequiredWorkerContext()
 
-    if (!worker.stake) {
-      this.error('Cannot increase stake. No associated role stake profile found!', { exit: ExitCodes.InvalidInput })
+    const {
+      args: { amount },
+    } = this.parse(WorkingGroupsIncreaseStake)
+
+    if (!isValidBalance(amount)) {
+      this.error('Invalid stake amount!', { exit: ExitCodes.InvalidInput })
     }
 
-    this.log(chalk.magentaBright('Current stake: ', formatBalance(worker.stake)))
-    const balance = (await this.promptForParam(
-      'Balance',
-      createParamOptions('amount', undefined, positiveInt())
-    )) as Balance
-
     await this.sendAndFollowNamedTx(
-      await this.getDecodedPair(worker.roleAccount),
+      await this.getDecodedPair(worker.roleAccount.toString()),
       apiModuleByGroup[this.group],
       'increaseStake',
-      [worker.workerId, balance]
+      [worker.workerId, amount]
     )
 
     this.log(
       chalk.green(
-        `Worker ${chalk.magentaBright(worker.workerId.toNumber())} stake has been increased by ${chalk.magentaBright(
-          formatBalance(balance)
+        `Worker ${chalk.magentaBright(worker.workerId.toString())} stake has been increased by ${chalk.magentaBright(
+          formatBalance(amount)
         )}`
       )
     )

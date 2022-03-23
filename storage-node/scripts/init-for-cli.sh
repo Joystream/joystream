@@ -7,7 +7,7 @@ cd $SCRIPT_PATH
 
 CLI=../bin/run
 
-${CLI} dev:init
+GROUP=storageWorkingGroup yarn workspace api-scripts initialize-lead
 ${CLI} leader:update-bag-limit -l 7 --dev
 ${CLI} leader:update-voucher-limits -o 1000 -s 10000000000 --dev
 BUCKET_ID=`${CLI} leader:create-bucket -i=0 -a -n=1000 -s=10000000000  --dev`

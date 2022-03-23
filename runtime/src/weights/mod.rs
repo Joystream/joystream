@@ -25,3 +25,17 @@ pub mod pallet_session;
 pub mod pallet_staking;
 pub mod pallet_timestamp;
 pub mod substrate_utility;
+
+// Joystream pallets
+pub mod blog;
+pub mod bounty;
+pub mod council;
+pub mod forum;
+pub mod joystream_utility;
+pub mod membership;
+pub mod pallet_constitution;
+pub mod proposals_codex;
+pub mod proposals_discussion;
+pub mod proposals_engine;
+pub mod referendum;
+pub mod working_group;

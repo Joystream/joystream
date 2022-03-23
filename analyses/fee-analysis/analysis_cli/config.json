@@ -1,0 +1,15 @@
+{
+    "weight_coefficient": 0.00000016,
+    "issuance": 250000000,
+    "length_coefficient": 1,
+    "min_market_cap": 1250000,
+    "max_market_cap": 100000000000,
+    "lengths": {
+        "runtime_upgrade": 0
+    },
+    "params": {
+        "proposals_discussion::add_post": {
+            "i": 0
+        }
+    }
+}

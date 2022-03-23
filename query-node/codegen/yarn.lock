@@ -306,7 +306,7 @@
   resolved "https://registry.yarnpkg.com/@josephg/resolvable/-/resolvable-1.0.1.tgz#69bc4db754d79e1a2f17a650d3466e038d94a5eb"
   integrity sha512-CtzORUwWTTOTqfVtHaKRJ0I1kNQd1bpn3sUh8I3nJDVY+5/M/Oe1DnEWzPQvqq/xPIIkzzzIP7mfCoAjFRvDhg==
 
-"@joystream/hydra-cli@3.1.0-alpha.20":
+"@joystream/hydra-cli@^3.1.0-alpha.20":
   version "3.1.0-alpha.20"
   resolved "https://registry.yarnpkg.com/@joystream/hydra-cli/-/hydra-cli-3.1.0-alpha.20.tgz#cb114994b6b74761164796540b6d64ad1096f219"
   integrity sha512-NFDnNjt7E+HLpIBbKwJSh+1MZ+hZgGzPmLY6Ux+7lSW+g8DiMc7ZnuYRHkEEIUrDyiPTapKDF3bWmo5LD6lHQA==
@@ -342,7 +342,7 @@
     pluralize "^8.0.0"
     tslib "1.11.2"
 
-"@joystream/hydra-typegen@3.1.0-alpha.20":
+"@joystream/hydra-typegen@^3.1.0-alpha.20":
   version "3.1.0-alpha.20"
   resolved "https://registry.yarnpkg.com/@joystream/hydra-typegen/-/hydra-typegen-3.1.0-alpha.20.tgz#dbfc608908fa3809a9904a8165281111b4a104f9"
   integrity sha512-+hDsr2Ys+UoVuOLj0kCoUq3+DcNopgNkzxQ6c1o1EyAVh5/a5dmp/jjxpLkN/CvIKej19pZqM3q914G8rYi/7g==

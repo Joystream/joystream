@@ -1,89 +1,110 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
-import { displayTable, displayCollapsedRow, displayHeader } from '../../helpers/display'
-import _ from 'lodash'
-import { OpeningStatus, GroupOpeningStage, GroupOpeningStakes, UnstakingPeriodsKey } from '../../Types'
-import { StakingAmountLimitModeKeys, StakingPolicy } from '@joystream/types/hiring'
+import { displayTable, displayCollapsedRow, displayHeader, shortAddress, memberHandle } from '../../helpers/display'
 import { formatBalance } from '@polkadot/util'
+import { flags } from '@oclif/command'
+import moment from 'moment'
+import { OpeningDetails } from '../../Types'
 import chalk from 'chalk'
+import ExitCodes from '../../ExitCodes'
+import { UpcomingWorkingGroupOpeningDetailsFragment } from '../../graphql/generated/queries'
+import { DEFAULT_DATE_FORMAT } from '../../Consts'
 
 export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
-  static description = 'Shows an overview of given working group opening by Working Group Opening ID'
-  static args = [
-    {
-      name: 'wgOpeningId',
-      required: true,
-      description: 'Working Group Opening ID',
-    },
-  ]
+  static description = 'Shows detailed information about working group opening / upcoming opening by id'
 
   static flags = {
+    id: flags.string({
+      required: true,
+      description: 'Opening / upcoming opening id (depending on --upcoming flag)',
+    }),
+    upcoming: flags.boolean({
+      description: 'Whether the opening is an upcoming opening',
+    }),
     ...WorkingGroupsCommandBase.flags,
   }
 
-  stageColumns(stage: GroupOpeningStage) {
-    const { status, date, block } = stage
-    const statusTimeHeader = status === OpeningStatus.WaitingToBegin ? 'Starts at' : 'Last status change'
-    return {
-      Stage: _.startCase(status),
-      [statusTimeHeader]:
-        date && block
-          ? `~ ${date.toLocaleTimeString()} ${date.toLocaleDateString()} (#${block})`
-          : (block && `#${block}`) || '?',
-    }
-  }
-
-  formatStake(stake: StakingPolicy | undefined) {
-    if (!stake) return 'NONE'
-    const { amount, amount_mode: amountMode } = stake
-    return amountMode.type === StakingAmountLimitModeKeys.AtLeast
-      ? `>= ${formatBalance(amount)}`
-      : `== ${formatBalance(amount)}`
-  }
-
-  stakeColumns(stakes: GroupOpeningStakes) {
-    const { role, application } = stakes
-    return {
-      'Application stake': this.formatStake(application),
-      'Role stake': this.formatStake(role),
-    }
-  }
-
-  async run() {
-    const { args } = this.parse(WorkingGroupsOpening)
-
-    const opening = await this.getApi().groupOpening(this.group, parseInt(args.wgOpeningId))
-
-    displayHeader('Human readable text')
-    this.jsonPrettyPrint(opening.opening.human_readable_text.toString())
-
+  openingDetails(opening: OpeningDetails): void {
     displayHeader('Opening details')
-    const openingRow = {
-      'WG Opening ID': opening.wgOpeningId,
+    displayCollapsedRow({
       'Opening ID': opening.openingId,
-      Type: opening.type.type,
-      ...this.stageColumns(opening.stage),
-      ...this.stakeColumns(opening.stakes),
-    }
-    displayCollapsedRow(openingRow)
+      'Opening type': opening.type.type,
+      'Created': `#${opening.createdAtBlock}`,
+      'Reward per block': opening.rewardPerBlock ? formatBalance(opening.rewardPerBlock) : '-',
+    })
+  }
 
-    displayHeader('Unstaking periods')
-    const periodsRow: { [k: string]: string } = {}
-    for (const key of Object.keys(opening.unstakingPeriods).sort()) {
-      const displayKey = _.startCase(key) + ':  '
-      periodsRow[displayKey] = opening.unstakingPeriods[key as UnstakingPeriodsKey].toLocaleString() + ' blocks'
-    }
-    displayCollapsedRow(periodsRow)
+  openingStakingPolicy(opening: OpeningDetails): void {
+    displayHeader('Staking policy')
+    displayCollapsedRow({
+      'Stake amount': formatBalance(opening.stake.value),
+      'Unstaking period': opening.stake.unstakingPeriod.toLocaleString() + ' blocks',
+    })
+  }
 
+  upcomingOpeningDetails(upcomingOpening: UpcomingWorkingGroupOpeningDetailsFragment): void {
+    displayHeader('Upcoming opening details')
+    displayCollapsedRow({
+      'Upcoming Opening ID': upcomingOpening.id,
+      'Expected start': upcomingOpening.expectedStart
+        ? moment(upcomingOpening.expectedStart).format(DEFAULT_DATE_FORMAT)
+        : '?',
+      'Reward per block': upcomingOpening.rewardPerBlock ? formatBalance(upcomingOpening.rewardPerBlock) : '?',
+    })
+  }
+
+  upcomingOpeningStakingPolicy(upcomingOpening: UpcomingWorkingGroupOpeningDetailsFragment): void {
+    if (upcomingOpening.stakeAmount) {
+      displayHeader('Staking policy')
+      displayCollapsedRow({
+        'Stake amount': formatBalance(upcomingOpening.stakeAmount),
+      })
+    }
+  }
+
+  openingMetadata(opening: OpeningDetails | UpcomingWorkingGroupOpeningDetailsFragment): void {
+    const { metadata } = opening
+    if (metadata) {
+      displayHeader('Metadata')
+      this.jsonPrettyPrint(
+        JSON.stringify({
+          ...metadata,
+          expectedEnding: metadata.expectedEnding
+            ? moment(metadata.expectedEnding).format(DEFAULT_DATE_FORMAT)
+            : undefined,
+        })
+      )
+    }
+  }
+
+  openingApplications(opening: OpeningDetails): void {
     displayHeader(`Applications (${opening.applications.length})`)
     const applicationsRows = opening.applications.map((a) => ({
-      'WG appl. ID': a.wgApplicationId,
-      'Appl. ID': a.applicationId,
-      Member: a.member?.handle.toString() || chalk.red('NONE'),
-      Stage: a.stage,
-      'Appl. stake': a.stakes.application,
-      'Role stake': a.stakes.role,
-      'Total stake': Object.values(a.stakes).reduce((a, b) => a + b),
+      'ID': a.applicationId,
+      Member: memberHandle(a.member),
+      'Role Acc': shortAddress(a.roleAccout),
+      'Reward Acc': shortAddress(a.rewardAccount),
+      'Staking Acc': a.stakingAccount ? shortAddress(a.stakingAccount) : 'NONE',
     }))
     displayTable(applicationsRows, 5)
+  }
+
+  async run(): Promise<void> {
+    const { id, upcoming } = this.parse(WorkingGroupsOpening).flags
+
+    if (upcoming) {
+      const upcomingOpening = await this.getQNApi().upcomingWorkingGroupOpeningById(id)
+      if (!upcomingOpening) {
+        this.error(`Upcoming opening by id ${chalk.magentaBright(id)} was not found!`, { exit: ExitCodes.InvalidInput })
+      }
+      this.upcomingOpeningDetails(upcomingOpening)
+      this.upcomingOpeningStakingPolicy(upcomingOpening)
+      this.openingMetadata(upcomingOpening)
+    } else {
+      const opening = await this.getApi().groupOpening(this.group, parseInt(id))
+      this.openingDetails(opening)
+      this.openingStakingPolicy(opening)
+      this.openingMetadata(opening)
+      this.openingApplications(opening)
+    }
   }
 }

@@ -4,12 +4,15 @@ edition = '2018'
 name = 'joystream-node-runtime'
 # Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
 # {Authoring}.{Spec}.{Impl} of the RuntimeVersion
-version = '9.14.0'
+version = '10.5.0'
 
 [dependencies]
 # Third-party dependencies
-serde = { version = "1.0.101", optional = true }
+serde = { version = "1.0.101", optional = true, features = ["derive"] }
+lazy_static = {version = "1.4.0", features = ["spin_no_std"] }
+lite-json = { version = '0.1.3', default-features = false}
 codec = { package = 'parity-scale-codec', version = '1.3.4', default-features = false, features = ['derive'] }
+smallvec = "1.6.0"
 
 # Substrate primitives
 sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
@@ -50,7 +53,6 @@ pallet-staking = { package = 'pallet-staking', default-features = false, git = '
 pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 pallet-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 pallet-im-online = { package = 'pallet-im-online', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
-pallet-collective = { package = 'pallet-collective', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 substrate-utility = { package = 'pallet-utility', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 
 # Benchmarking
@@ -62,24 +64,26 @@ hex-literal = { optional = true, version = '0.3.1' }
 
 # Joystream
 common = { package = 'pallet-common', default-features = false, path = '../runtime-modules/common'}
-memo = { package = 'pallet-memo', default-features = false, path = '../runtime-modules/memo'}
 forum = { package = 'pallet-forum', default-features = false, path = '../runtime-modules/forum'}
 membership = { package = 'pallet-membership', default-features = false, path = '../runtime-modules/membership'}
-stake = { package = 'pallet-stake', default-features = false, path = '../runtime-modules/stake'}
-governance = { package = 'pallet-governance', default-features = false, path = '../runtime-modules/governance'}
-hiring = { package = 'pallet-hiring', default-features = false, path = '../runtime-modules/hiring'}
-minting = { package = 'pallet-token-mint', default-features = false, path = '../runtime-modules/token-minting'}
-recurring-rewards = { package = 'pallet-recurring-reward', default-features = false, path = '../runtime-modules/recurring-reward'}
+referendum = { package = 'pallet-referendum', default-features = false, path = '../runtime-modules/referendum'}
+council = { package = 'pallet-council', default-features = false, path = '../runtime-modules/council'}
 working-group = { package = 'pallet-working-group', default-features = false, path = '../runtime-modules/working-group'}
 storage = { package = 'pallet-storage', default-features = false, path = '../runtime-modules/storage'}
 proposals-engine = { package = 'pallet-proposals-engine', default-features = false, path = '../runtime-modules/proposals/engine'}
 proposals-discussion = { package = 'pallet-proposals-discussion', default-features = false, path = '../runtime-modules/proposals/discussion'}
 proposals-codex = { package = 'pallet-proposals-codex', default-features = false, path = '../runtime-modules/proposals/codex'}
-content = { package = 'pallet-content', default-features = false, path = '../runtime-modules/content' }
+pallet-constitution = { package = 'pallet-constitution', default-features = false, path = '../runtime-modules/constitution' }
+staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../runtime-modules/staking-handler'}
+bounty = { package = 'pallet-bounty', default-features = false, path = '../runtime-modules/bounty'}
+blog = { package = 'pallet-blog', default-features = false, path = '../runtime-modules/blog'}
+content = { package = 'pallet-content', default-features = false, path = '../runtime-modules/content'}
+joystream-utility = { package = 'pallet-utility', default-features = false, path = '../runtime-modules/utility'}
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
 strum = {version = "0.19", default-features = false}
+
 [build-dependencies]
 wasm-builder-runner = { version = "1.0.5", package = "substrate-wasm-builder-runner", git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62' }
 
@@ -129,43 +133,61 @@ std = [
 #    'pallet-staking-reward-curve/std', // don't have 'std' features
     'pallet-sudo/std',
     'pallet-im-online/std',
-    'pallet-collective/std',
     'pallet-offences/std',
     'substrate-utility/std',
 
     # Joystream
     'common/std',
-    'memo/std',
     'forum/std',
     'membership/std',
-    'stake/std',
-    'governance/std',
-    'hiring/std',
-    'minting/std',
-    'recurring-rewards/std',
+    'council/std',
+    'referendum/std',
     'working-group/std',
     'storage/std',
     'proposals-engine/std',
     'proposals-discussion/std',
     'proposals-codex/std',
+    'pallet-constitution/std',
+    'staking-handler/std',
+    'bounty/std',
+    'blog/std',
+    'joystream-utility/std',
     'content/std',
 ]
 runtime-benchmarks = [
-    'frame-system/runtime-benchmarks',
-	'frame-support/runtime-benchmarks',
-	'sp-runtime/runtime-benchmarks',
-	'pallet-balances/runtime-benchmarks',
-	'pallet-collective/runtime-benchmarks',
-	'pallet-im-online/runtime-benchmarks',
-	'pallet-staking/runtime-benchmarks',
-	'pallet-timestamp/runtime-benchmarks',
-    'frame-benchmarking',
-    'frame-system-benchmarking',
-    'pallet-offences-benchmarking',
-	'pallet-session-benchmarking',
-    'substrate-utility/runtime-benchmarks',
-    'storage/runtime-benchmarks',
     "hex-literal",
+    "frame-support/runtime-benchmarks",
+    "sp-runtime/runtime-benchmarks",
+    "frame-benchmarking",
+    "frame-system-benchmarking",
+    "frame-system/runtime-benchmarks",
+    "pallet-offences-benchmarking",
+    "pallet-session-benchmarking",
+    "pallet-balances/runtime-benchmarks",
+    "pallet-im-online/runtime-benchmarks",
+    "pallet-staking/runtime-benchmarks",
+    "pallet-timestamp/runtime-benchmarks",
+    "substrate-utility/runtime-benchmarks",
+
+    # Joystream
+    "proposals-discussion/runtime-benchmarks",
+    "proposals-engine/runtime-benchmarks",
+    "proposals-codex/runtime-benchmarks",
+    "joystream-utility/runtime-benchmarks",
+    "pallet-constitution/runtime-benchmarks",
+    "working-group/runtime-benchmarks",
+    "forum/runtime-benchmarks",
+    "membership/runtime-benchmarks",
+    "council/runtime-benchmarks",
+    "referendum/runtime-benchmarks",
+    "bounty/runtime-benchmarks",
+    'storage/runtime-benchmarks',       
+    "blog/runtime-benchmarks",
 ]
 
-
+# Staging and testing configurations
+# configuration suitable for staging networks and playground
+staging_runtime = []
+playground_runtime = ['staging_runtime']
+# configuration suitable for integration testing
+testing_runtime = []

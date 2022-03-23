@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "declaration": true,
     "importHelpers": true,
     "module": "commonjs",
@@ -13,11 +14,10 @@
     "emitDecoratorMetadata": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "baseUrl": ".",
     "paths": {
       "@polkadot/types/augment": ["../../types/augment/augment-types.ts"],
       "@polkadot/api/augment": ["../../types/augment/augment-api.ts"]
     }
   },
-  "include": ["./**/*"]
+  "include": ["./src/**/*"]
 }

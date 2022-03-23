@@ -6,7 +6,7 @@ export default class SetDefaultGroupCommand extends WorkingGroupsCommandBase {
   static description = 'Change the default group context for working-groups commands.'
   static flags = { ...WorkingGroupsCommandBase.flags }
 
-  async run() {
+  async run(): Promise<void> {
     const {
       flags: { group },
     } = this.parse(SetDefaultGroupCommand)

@@ -1,10 +1,11 @@
+# Production runtime build of joystream-node
 name: joystream-node-docker
 
 on: push
 
 env:
   REPOSITORY: joystream/node
-  KEY_NAME: joystream-github-action-key
+  KEY_NAME: joystream-github-action-key-new
 
 jobs:
   push-amd64:

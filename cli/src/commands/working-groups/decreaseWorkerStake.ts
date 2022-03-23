@@ -1,10 +1,10 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { apiModuleByGroup } from '../../Api'
-import { Balance } from '@polkadot/types/interfaces'
 import { formatBalance } from '@polkadot/util'
-import { minMaxInt } from '../../validators/common'
 import chalk from 'chalk'
-import { createParamOptions } from '../../helpers/promptOptions'
+import { isValidBalance } from '../../helpers/validation'
+import ExitCodes from '../../ExitCodes'
+import BN from 'bn.js'
 
 export default class WorkingGroupsDecreaseWorkerStake extends WorkingGroupsCommandBase {
   static description =
@@ -17,6 +17,11 @@ export default class WorkingGroupsDecreaseWorkerStake extends WorkingGroupsComma
       required: true,
       description: 'Worker ID',
     },
+    {
+      name: 'amount',
+      required: true,
+      description: 'Amount of JOY to decrease the current worker stake by',
+    },
   ]
 
   static flags = {
@@ -24,31 +29,31 @@ export default class WorkingGroupsDecreaseWorkerStake extends WorkingGroupsComma
   }
 
   async run(): Promise<void> {
-    const { args } = this.parse(WorkingGroupsDecreaseWorkerStake)
+    const {
+      args: { workerId, amount },
+    } = this.parse(WorkingGroupsDecreaseWorkerStake)
 
     // Lead-only gate
     const lead = await this.getRequiredLeadContext()
 
-    const workerId = parseInt(args.workerId)
-    const groupMember = await this.getWorkerWithStakeForLeadAction(workerId)
+    const groupMember = await this.getWorkerWithStakeForLeadAction(parseInt(workerId))
 
     this.log(chalk.magentaBright('Current worker stake: ', formatBalance(groupMember.stake)))
-    const balanceValidator = minMaxInt(1, groupMember.stake.toNumber())
-    const balance = (await this.promptForParam(
-      'Balance',
-      createParamOptions('amount', undefined, balanceValidator)
-    )) as Balance
+
+    if (!isValidBalance(amount) || groupMember.stake.lt(new BN(amount))) {
+      this.error('Invalid amount', { exit: ExitCodes.InvalidInput })
+    }
 
     await this.sendAndFollowNamedTx(
-      await this.getDecodedPair(lead.roleAccount),
+      await this.getDecodedPair(lead.roleAccount.toString()),
       apiModuleByGroup[this.group],
       'decreaseStake',
-      [workerId, balance]
+      [workerId, amount]
     )
 
     this.log(
       chalk.green(
-        `${chalk.magentaBright(formatBalance(balance))} from worker ${chalk.magentaBright(workerId)} stake ` +
+        `${chalk.magentaBright(formatBalance(amount))} from worker ${chalk.magentaBright(workerId)} stake ` +
           `has been returned to worker's role account (${chalk.magentaBright(groupMember.roleAccount.toString())})!`
       )
     )

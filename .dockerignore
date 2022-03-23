@@ -6,5 +6,5 @@ query-node/**/dist
 query-node/lib
 cli/
 tests/
+!tests/network-tests/proposal-parameters.json
 devops/
-metadata-protobuf/lib

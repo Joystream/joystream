@@ -1,6 +1,5 @@
 import fs, { readdirSync } from 'fs'
 import path from 'path'
-import slug from 'slug'
 import inquirer from 'inquirer'
 import ExitCodes from '../ExitCodes'
 import { CLIError } from '@oclif/errors'
@@ -10,22 +9,24 @@ import { formatBalance } from '@polkadot/util'
 import { NamedKeyringPair } from '../Types'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { toFixedLength } from '../helpers/display'
-import { MemberId, Membership } from '@joystream/types/members'
-import { AccountId } from '@polkadot/types/interfaces'
+import { MemberId, AccountId } from '@joystream/types/common'
 import { KeyringPair, KeyringInstance, KeyringOptions } from '@polkadot/keyring/types'
 import { KeypairType } from '@polkadot/util-crypto/types'
 import { createTestKeyring } from '@polkadot/keyring/testing'
 import chalk from 'chalk'
 import { mnemonicGenerate } from '@polkadot/util-crypto'
 import { validateAddress } from '../helpers/validation'
+import slug from 'slug'
+import { Membership } from '@joystream/types/members'
+import { LockIdentifier } from '@polkadot/types/interfaces'
+import BN from 'bn.js'
 
 const ACCOUNTS_DIRNAME = 'accounts'
 export const DEFAULT_ACCOUNT_TYPE = 'sr25519'
 export const KEYRING_OPTIONS: KeyringOptions = {
   type: DEFAULT_ACCOUNT_TYPE,
 }
-
-export type ISelectedMember = [MemberId, Membership]
+export const STAKING_ACCOUNT_CANDIDATE_STAKE = new BN(200)
 
 /**
  * Abstract base class for account-related commands.
@@ -35,7 +36,6 @@ export type ISelectedMember = [MemberId, Membership]
  * Where: APP_DATA_PATH is provided by StateAwareCommandBase and ACCOUNTS_DIRNAME is a const (see above).
  */
 export default abstract class AccountsCommandBase extends ApiCommandBase {
-  private selectedMember: ISelectedMember | undefined
   private _keyring: KeyringInstance | undefined
 
   private get keyring(): KeyringInstance {
@@ -122,7 +122,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
 
     this.keyring.addPair(masterKey)
 
-    this.log(chalk.greenBright(`\nNew account succesfully created!`))
+    this.log(chalk.greenBright(`\nNew account successfully created!`))
 
     return masterKey as NamedKeyringPair
   }
@@ -197,6 +197,14 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
 
   getPair(key: string): NamedKeyringPair {
     return this.keyring.getPair(key) as NamedKeyringPair
+  }
+
+  getPairByName(name: string): NamedKeyringPair {
+    const pair = this.getPairs().find((p) => this.getAccountFileName(p.meta.name) === this.getAccountFileName(name))
+    if (!pair) {
+      throw new CLIError(`Account not found by name: ${name}`)
+    }
+    return pair
   }
 
   async getDecodedPair(key: string | AccountId): Promise<NamedKeyringPair> {
@@ -278,7 +286,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
 
     const longestNameLen: number = pairs.reduce((prev, curr) => Math.max(curr.meta.name.length, prev), 0)
     const nameColLength: number = Math.min(longestNameLen + 1, 20)
-    const chosenKey = await this.simplePrompt({
+    const chosenKey = await this.simplePrompt<string>({
       message,
       type: 'list',
       choices: pairs.map((p, i) => ({
@@ -321,77 +329,124 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     }
   }
 
-  async setSelectedMember(selectedMember: ISelectedMember): Promise<void> {
-    this.selectedMember = selectedMember
-
-    await this.setPreservedState({ selectedMemberId: selectedMember[0].toString() })
-  }
-
-  async getRequiredMemberContext(allowedIds?: MemberId[], useSelected = true): Promise<ISelectedMember> {
-    if (
-      useSelected &&
-      this.selectedMember &&
-      (!allowedIds || allowedIds.some((id) => id.eq(this.selectedMember?.[0])))
-    ) {
-      return this.selectedMember
+  async setupStakingAccount(
+    memberId: MemberId,
+    member: Membership,
+    address?: string,
+    requiredStake: BN = new BN(0),
+    fundsSource?: string,
+    lockId?: LockIdentifier
+  ): Promise<string> {
+    if (fundsSource && !this.isKeyAvailable(fundsSource)) {
+      throw new CLIError(`Key ${chalk.magentaBright(fundsSource)} is not available!`)
     }
 
-    const availableMemberships = await this.getKnownMembers(allowedIds)
+    if (!address) {
+      address = await this.promptForAnyAddress('Choose staking account')
+    }
+    const { balances } = await this.getApi().getAccountSummary(address)
+    const stakingStatus = await this.getApi().stakingAccountStatus(address)
 
-    if (!availableMemberships.length) {
-      this.error(
-        `No ${allowedIds ? 'allowed ' : ''}member controller key available!` +
-          (allowedIds ? ` Allowed members: ${allowedIds.join(', ')}.` : ''),
-        {
-          exit: ExitCodes.AccessDenied,
-        }
+    if (lockId && !this.getApi().areAccountLocksCompatibleWith(address, lockId)) {
+      throw new CLIError(
+        'This account is already used for other, incompatible staking purposes. Choose a different account...'
       )
-    } else if (availableMemberships.length === 1) {
-      this.selectedMember = availableMemberships[0]
-    } else {
-      this.selectedMember = await this.promptForMember(availableMemberships, 'Choose member context')
     }
 
-    return this.selectedMember
-  }
-
-  private async getKnownMembers(allowedIds?: MemberId[]): Promise<ISelectedMember[]> {
-    const membersEntries = allowedIds
-      ? await this.getApi().memberEntriesByIds(allowedIds)
-      : await this.getApi().allMemberEntries()
-    const availableMemberships = membersEntries.filter(([, m]) => this.isKeyAvailable(m.controller_account.toString()))
-
-    return availableMemberships
-  }
-
-  async promptForMember(
-    availableMemberships: ISelectedMember[],
-    message = 'Choose a member'
-  ): Promise<ISelectedMember> {
-    const memberIndex = await this.simplePrompt({
-      type: 'list',
-      message,
-      choices: availableMemberships.map(([, membership], i) => ({
-        name: membership.handle.toString(),
-        value: i,
-      })),
-    })
-
-    return availableMemberships[memberIndex]
-  }
-
-  private async initSelectedMember(): Promise<void> {
-    const memberIdString = this.getPreservedState().selectedMemberId
-
-    const memberId = this.createType('MemberId', memberIdString)
-    const member = await this.getApi().membershipById(memberId)
-
-    // ensure selected member exists
-    if (!member) {
-      return
+    if (stakingStatus && !stakingStatus.member_id.eq(memberId)) {
+      throw new CLIError(
+        'This account is already used as staking accout by other member, choose a different account...'
+      )
     }
 
-    this.selectedMember = [memberId, member]
+    let candidateTxFee = new BN(0)
+    if (!stakingStatus || (stakingStatus && stakingStatus.confirmed.isFalse)) {
+      if (!this.isKeyAvailable(address)) {
+        throw new CLIError(
+          'Account is not a confirmed staking account and cannot be directly accessed via CLI, choose different account...'
+        )
+      }
+      this.warn(
+        `This account is not a confirmed staking account. ` +
+          `Additional funds (fees) may be required to set it as a staking account.`
+      )
+      if (!stakingStatus) {
+        candidateTxFee = await this.getApi().estimateFee(
+          await this.getDecodedPair(address),
+          this.getOriginalApi().tx.members.addStakingAccountCandidate(memberId)
+        )
+      }
+    }
+
+    const requiredStakingAccountBalance = !stakingStatus
+      ? requiredStake.add(candidateTxFee).add(STAKING_ACCOUNT_CANDIDATE_STAKE)
+      : requiredStake
+    const missingStakingAccountBalance = requiredStakingAccountBalance.sub(balances.freeBalance)
+    if (missingStakingAccountBalance.gtn(0)) {
+      this.warn(
+        `Not enough available staking account balance! Missing: ${chalk.cyanBright(
+          formatBalance(missingStakingAccountBalance)
+        )}.` +
+          (!stakingStatus
+            ? ` (required balance includes ${chalk.cyanBright(
+                formatBalance(candidateTxFee)
+              )} transaction fee and ${chalk.cyanBright(
+                formatBalance(STAKING_ACCOUNT_CANDIDATE_STAKE)
+              )} staking account candidate stake)`
+            : '')
+      )
+      const transferTokens = await this.requestConfirmation(
+        `Do you want to transfer ${chalk.cyan(formatBalance(missingStakingAccountBalance))} from another account?`
+      )
+      if (transferTokens) {
+        const key = fundsSource || (await this.promptForAccount('Choose source account'))
+        await this.sendAndFollowNamedTx(await this.getDecodedPair(key), 'balances', 'transferKeepAlive', [
+          address,
+          missingStakingAccountBalance,
+        ])
+      } else {
+        throw new CLIError('Missing amount not transferred to the staking account, aborting...')
+      }
+    }
+
+    if (!stakingStatus) {
+      await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'members', 'addStakingAccountCandidate', [
+        memberId,
+      ])
+    }
+
+    if (!stakingStatus || stakingStatus.confirmed.isFalse) {
+      await this.sendAndFollowNamedTx(
+        await this.getDecodedPair(member.controller_account.toString()),
+        'members',
+        'confirmStakingAccount',
+        [memberId, address]
+      )
+    }
+
+    return address
+  }
+
+  async promptForStakingAccount(
+    requiredStake: BN,
+    memberId: MemberId,
+    member: Membership,
+    lockId?: LockIdentifier
+  ): Promise<string> {
+    this.log(`Required stake: ${formatBalance(requiredStake)}`)
+    while (true) {
+      const stakingAccount = await this.promptForAnyAddress('Choose staking account')
+      try {
+        await this.setupStakingAccount(memberId, member, stakingAccount.toString(), requiredStake, undefined, lockId)
+        return stakingAccount
+      } catch (e) {
+        if (e instanceof CLIError) {
+          this.warn(e.message)
+        } else {
+          throw e
+        }
+      }
+    }
   }
 
   async init(): Promise<void> {
@@ -402,7 +457,5 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
       throw this.createDataDirInitError()
     }
     await this.initKeyring()
-
-    await this.initSelectedMember()
   }
 }

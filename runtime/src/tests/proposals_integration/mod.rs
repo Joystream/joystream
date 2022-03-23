@@ -4,105 +4,45 @@
 
 mod working_group_proposals;
 
-use crate::{BlockNumber, ProposalCancellationFee, Runtime};
-use codec::Encode;
-use governance::election_params::ElectionParameters;
-use membership;
-use proposals_engine::{
-    ActiveStake, ApprovedProposalStatus, BalanceOf, FinalizationData, Proposal,
-    ProposalDecisionStatus, ProposalParameters, ProposalStatus, VoteKind, VotersParameters,
-    VotingResults,
+use crate::tests::{
+    account_from_member_id, create_new_members, max_proposal_stake, run_to_block, setup_new_council,
 };
+use crate::{BlogInstance, MembershipWorkingGroupInstance, ProposalCancellationFee, Runtime};
+use codec::Encode;
+use proposals_codex::{GeneralProposalParameters, ProposalDetails};
+use proposals_engine::{
+    ApprovedProposalDecision, Proposal, ProposalCreationParameters, ProposalParameters,
+    ProposalStatus, VoteKind, VotersParameters, VotingResults,
+};
+use working_group::{StakeParameters, StakePolicy};
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::{Currency, OnFinalize, OnInitialize};
+use frame_support::traits::Currency;
 use frame_support::{StorageMap, StorageValue};
 use frame_system::RawOrigin;
 use sp_runtime::AccountId32;
+use sp_std::collections::btree_set::BTreeSet;
 
-use super::initial_test_ext;
+use super::{
+    increase_total_balance_issuance_using_account_id, initial_test_ext, set_staking_account,
+};
 
 use crate::CouncilManager;
 
 pub type Balances = pallet_balances::Module<Runtime>;
 pub type System = frame_system::Module<Runtime>;
-pub type Membership = membership::Module<Runtime>;
 pub type ProposalsEngine = proposals_engine::Module<Runtime>;
-pub type Council = governance::council::Module<Runtime>;
-pub type Election = governance::election::Module<Runtime>;
 pub type ProposalCodex = proposals_codex::Module<Runtime>;
-
-fn setup_members(count: u8) {
-    let authority_account_id = <Runtime as frame_system::Trait>::AccountId::default();
-    Membership::set_screening_authority(RawOrigin::Root.into(), authority_account_id.clone())
-        .unwrap();
-
-    for i in 0..count {
-        let account_id: [u8; 32] = [i; 32];
-        Membership::add_screened_member(
-            RawOrigin::Signed(authority_account_id.clone().into()).into(),
-            account_id.clone().into(),
-            Some(account_id.to_vec()),
-            None,
-            None,
-            None,
-        )
-        .unwrap();
-    }
-}
-
-fn setup_council() {
-    let councilor0 = AccountId32::default();
-    let councilor1: [u8; 32] = [1; 32];
-    let councilor2: [u8; 32] = [2; 32];
-    let councilor3: [u8; 32] = [3; 32];
-    let councilor4: [u8; 32] = [4; 32];
-    let councilor5: [u8; 32] = [5; 32];
-    assert!(Council::set_council(
-        frame_system::RawOrigin::Root.into(),
-        vec![
-            councilor0,
-            councilor1.into(),
-            councilor2.into(),
-            councilor3.into(),
-            councilor4.into(),
-            councilor5.into()
-        ]
-    )
-    .is_ok());
-}
-
-pub(crate) fn increase_total_balance_issuance_using_account_id(
-    account_id: AccountId32,
-    balance: u128,
-) {
-    type Balances = pallet_balances::Module<Runtime>;
-    let initial_balance = Balances::total_issuance();
-    {
-        let _ = <Runtime as stake::Trait>::Currency::deposit_creating(&account_id, balance);
-    }
-    assert_eq!(Balances::total_issuance(), initial_balance + balance);
-}
-
-// Recommendation from Parity on testing on_finalize
-// https://substrate.dev/docs/en/next/development/module/tests
-fn run_to_block(n: BlockNumber) {
-    while System::block_number() < n {
-        <System as OnFinalize<BlockNumber>>::on_finalize(System::block_number());
-        <Election as OnFinalize<BlockNumber>>::on_finalize(System::block_number());
-        <ProposalsEngine as OnFinalize<BlockNumber>>::on_finalize(System::block_number());
-        System::set_block_number(System::block_number() + 1);
-        <System as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
-        <Election as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
-        <ProposalsEngine as OnInitialize<BlockNumber>>::on_initialize(System::block_number());
-    }
-}
+pub type Council = council::Module<Runtime>;
+pub type Membership = membership::Module<Runtime>;
+pub type MembershipWorkingGroup = working_group::Module<Runtime, MembershipWorkingGroupInstance>;
+pub type Blog = blog::Module<Runtime, BlogInstance>;
 
 struct VoteGenerator {
     proposal_id: u32,
-    current_account_id: AccountId32,
-    current_account_id_seed: u8,
-    current_voter_id: u64,
+    // index into council seats
+    current_voter_index: usize,
+    last_voter_id: u64,
     pub auto_increment_voter_id: bool,
 }
 
@@ -110,14 +50,22 @@ impl VoteGenerator {
     fn new(proposal_id: u32) -> Self {
         VoteGenerator {
             proposal_id,
-            current_voter_id: 0,
-            current_account_id_seed: 0,
-            current_account_id: AccountId32::default(),
+            current_voter_index: 0,
+            last_voter_id: 0,
             auto_increment_voter_id: true,
         }
     }
+
+    fn last_voter(&self) -> u64 {
+        self.last_voter_id
+    }
+
     fn vote_and_assert_ok(&mut self, vote_kind: VoteKind) {
-        self.vote_and_assert(vote_kind, Ok(()));
+        self.vote_and_assert(vote_kind.clone(), Ok(()));
+        assert_eq!(
+            ProposalsEngine::vote_by_proposal_by_voter(self.proposal_id, self.last_voter_id),
+            vote_kind
+        );
     }
 
     fn vote_and_assert(&mut self, vote_kind: VoteKind, expected_result: DispatchResult) {
@@ -125,19 +73,24 @@ impl VoteGenerator {
     }
 
     fn vote(&mut self, vote_kind: VoteKind) -> DispatchResult {
-        if self.auto_increment_voter_id {
-            self.current_account_id_seed += 1;
-            self.current_voter_id += 1;
-            let account_id: [u8; 32] = [self.current_account_id_seed; 32];
-            self.current_account_id = account_id.into();
-        }
-
-        ProposalsEngine::vote(
-            frame_system::RawOrigin::Signed(self.current_account_id.clone()).into(),
-            self.current_voter_id,
+        let council_members = council::Module::<Runtime>::council_members();
+        let voter = council_members[self.current_voter_index].clone();
+        let voter_member_id = voter.member_id();
+        let account_id = account_from_member_id(*voter_member_id);
+        let vote_result = ProposalsEngine::vote(
+            frame_system::RawOrigin::Signed(account_id).into(),
+            *voter_member_id,
             self.proposal_id,
             vote_kind,
-        )
+            Vec::new(),
+        );
+
+        self.last_voter_id = *voter_member_id;
+        if self.auto_increment_voter_id {
+            self.current_voter_index += 1;
+        }
+
+        vote_result
     }
 }
 
@@ -149,7 +102,8 @@ struct DummyProposalFixture {
     proposal_code: Vec<u8>,
     title: Vec<u8>,
     description: Vec<u8>,
-    stake_balance: Option<BalanceOf<Runtime>>,
+    staking_account_id: Option<AccountId32>,
+    exact_execution_block: Option<u32>,
 }
 
 impl Default for DummyProposalFixture {
@@ -157,7 +111,7 @@ impl Default for DummyProposalFixture {
         let title = b"title".to_vec();
         let description = b"description".to_vec();
         let dummy_proposal =
-            proposals_codex::Call::<Runtime>::execute_text_proposal(b"text".to_vec());
+            joystream_utility::Call::<Runtime>::execute_signal_proposal(b"signal".to_vec());
 
         DummyProposalFixture {
             parameters: ProposalParameters {
@@ -168,13 +122,15 @@ impl Default for DummyProposalFixture {
                 slashing_threshold_percentage: 60,
                 grace_period: 0,
                 required_stake: None,
+                constitutionality: 1,
             },
             account_id: <Runtime as frame_system::Trait>::AccountId::default(),
             proposer_id: 0,
             proposal_code: dummy_proposal.encode(),
             title,
             description,
-            stake_balance: None,
+            staking_account_id: None,
+            exact_execution_block: None,
         }
     }
 }
@@ -182,6 +138,16 @@ impl Default for DummyProposalFixture {
 impl DummyProposalFixture {
     fn with_parameters(self, parameters: ProposalParameters<u32, u128>) -> Self {
         DummyProposalFixture { parameters, ..self }
+    }
+
+    fn with_constitutionality(&self, constitutionality: u32) -> Self {
+        DummyProposalFixture {
+            parameters: ProposalParameters {
+                constitutionality,
+                ..self.parameters
+            },
+            ..self.clone()
+        }
     }
 
     fn with_account_id(self, account_id: AccountId32) -> Self {
@@ -198,9 +164,9 @@ impl DummyProposalFixture {
         }
     }
 
-    fn with_stake(self, stake_balance: BalanceOf<Runtime>) -> Self {
+    fn with_stake(self, account_id: AccountId32) -> Self {
         DummyProposalFixture {
-            stake_balance: Some(stake_balance),
+            staking_account_id: Some(account_id),
             ..self
         }
     }
@@ -213,15 +179,17 @@ impl DummyProposalFixture {
     }
 
     fn create_proposal_and_assert(self, result: Result<u32, DispatchError>) -> Option<u32> {
-        let proposal_id_result = ProposalsEngine::create_proposal(
-            self.account_id,
-            self.proposer_id,
-            self.parameters,
-            self.title,
-            self.description,
-            self.stake_balance,
-            self.proposal_code,
-        );
+        let proposal_id_result = ProposalsEngine::create_proposal(ProposalCreationParameters {
+            account_id: self.account_id,
+            proposer_id: self.proposer_id,
+            proposal_parameters: self.parameters,
+            title: self.title,
+            description: self.description,
+            staking_account_id: self.staking_account_id,
+            encoded_dispatchable_call_code: self.proposal_code,
+            exact_execution_block: self.exact_execution_block,
+        });
+
         assert_eq!(proposal_id_result, result);
 
         proposal_id_result.ok()
@@ -264,14 +232,12 @@ impl CancelProposalFixture {
 }
 
 /// Main purpose of this integration test: check balance of the member on proposal finalization (cancellation)
-/// It tests StakingEventsHandler integration. Also, membership module is tested during the proposal creation (ActorOriginValidator).
+/// It tests StakingEventsHandler integration. Also, membership module is tested during the proposal creation (MemberOriginValidator).
 #[test]
 fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
     initial_test_ext().execute_with(|| {
-        let account_id = <Runtime as frame_system::Trait>::AccountId::default();
-
-        setup_members(2);
-        let member_id = 0; // newly created member_id
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
 
         let stake_amount = 20000u128;
         let parameters = ProposalParameters {
@@ -282,44 +248,46 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             slashing_threshold_percentage: 60,
             grace_period: 5,
             required_stake: Some(stake_amount),
+            constitutionality: 1,
         };
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters)
             .with_account_id(account_id.clone())
-            .with_stake(stake_amount)
+            .with_stake(account_id.clone())
             .with_proposer(member_id);
 
-        let account_top_up = 500000;
-        let account_starting_balance =
-            <Runtime as stake::Trait>::Currency::total_balance(&account_id);
+        let account_balance = 500000;
+        Balances::make_free_balance_be(&account_id, account_balance);
 
-        let _imbalance =
-            <Runtime as stake::Trait>::Currency::deposit_creating(&account_id, account_top_up);
-
+        // Since the account_id is the staking account it neccesarily has locked funds
+        // for being a candidate for a staking account.
         assert_eq!(
-            <Runtime as stake::Trait>::Currency::total_balance(&account_id),
-            account_starting_balance + account_top_up
+            Balances::usable_balance(&account_id),
+            account_balance - <Runtime as membership::Trait>::CandidateStake::get()
         );
 
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+        let expected_proposal_id = 1;
+        let proposal_id = dummy_proposal
+            .create_proposal_and_assert(Ok(expected_proposal_id))
+            .unwrap();
+
+        // Only the biggest locked stake count, we don't need to substract the stake candidate here
         assert_eq!(
-            <Runtime as stake::Trait>::Currency::total_balance(&account_id),
-            account_starting_balance + account_top_up - stake_amount
+            Balances::usable_balance(&account_id),
+            account_balance - stake_amount
         );
 
-        let mut proposal = ProposalsEngine::proposals(proposal_id);
+        let proposal = ProposalsEngine::proposals(proposal_id);
 
-        let mut expected_proposal = Proposal {
+        let expected_proposal = Proposal {
             parameters,
             proposer_id: member_id,
-            created_at: 0,
-            status: ProposalStatus::Active(Some(ActiveStake {
-                stake_id: 0,
-                source_account_id: account_id.clone(),
-            })),
-            title: b"title".to_vec(),
-            description: b"description".to_vec(),
+            activated_at: 0,
+            status: ProposalStatus::Active,
             voting_results: VotingResults::default(),
+            exact_execution_block: None,
+            nr_of_council_confirmations: 0,
+            staking_account_id: Some(account_id.clone()),
         };
 
         assert_eq!(proposal, expected_proposal);
@@ -329,21 +297,15 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
 
         cancel_proposal_fixture.cancel_and_assert(Ok(()));
 
-        proposal = ProposalsEngine::proposals(proposal_id);
-
-        expected_proposal.status = ProposalStatus::Finalized(FinalizationData {
-            proposal_status: ProposalDecisionStatus::Canceled,
-            finalized_at: 0,
-            encoded_unstaking_error_due_to_broken_runtime: None,
-            stake_data_after_unstaking_error: None,
-        });
-
-        assert_eq!(proposal, expected_proposal);
-
         let cancellation_fee = ProposalCancellationFee::get() as u128;
+
+        // Since the account_id is the staking account it neccesarily has locked funds
+        // for being a candidate for a staking account.
         assert_eq!(
-            <Runtime as stake::Trait>::Currency::total_balance(&account_id),
-            account_starting_balance + account_top_up - cancellation_fee
+            Balances::usable_balance(&account_id),
+            account_balance
+                - cancellation_fee
+                - <Runtime as membership::Trait>::CandidateStake::get()
         );
     });
 }
@@ -351,19 +313,28 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
 #[test]
 fn proposal_reset_succeeds() {
     initial_test_ext().execute_with(|| {
-        setup_members(4);
-        setup_council();
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
+        setup_new_council(0);
+        assert_eq!(ProposalsEngine::active_proposal_count(), 0);
+
+        // Voting period long enough to ensure it doesn't expire, but rather is forcefully rejected
+        let voting_period = <Runtime as council::Trait>::IdlePeriodDuration::get() * 2;
+
         // create proposal
-        let dummy_proposal = DummyProposalFixture::default().with_voting_period(100);
+        let dummy_proposal = DummyProposalFixture::default()
+            .with_voting_period(voting_period)
+            .with_account_id(account_id)
+            .with_proposer(member_id);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
-        // create some votes
-        let mut vote_generator = VoteGenerator::new(proposal_id);
-        vote_generator.vote_and_assert_ok(VoteKind::Reject);
-        vote_generator.vote_and_assert_ok(VoteKind::Abstain);
-        vote_generator.vote_and_assert_ok(VoteKind::Slash);
+        // create minimal number of votes so it remains active. We cannot do this unless council size is at least 2
+        if <Runtime as council::Trait>::CouncilSize::get() < 2 {
+            return;
+        }
 
-        assert!(<proposals_engine::ActiveProposalIds<Runtime>>::contains_key(proposal_id));
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Abstain);
 
         // check
         let proposal = ProposalsEngine::proposals(proposal_id);
@@ -372,25 +343,18 @@ fn proposal_reset_succeeds() {
             VotingResults {
                 abstentions: 1,
                 approvals: 0,
-                rejections: 1,
-                slashes: 1,
+                rejections: 0,
+                slashes: 0,
             }
         );
 
-        // Ensure council was elected
-        assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 6);
+        assert_eq!(ProposalsEngine::active_proposal_count(), 1);
 
-        let voted_member_id = 2;
-        // Check for votes.
-        assert_eq!(
-            ProposalsEngine::vote_by_proposal_by_voter(proposal_id, voted_member_id),
-            VoteKind::Abstain
-        );
+        end_idle_period();
+        setup_new_council(1);
 
-        // Check proposals CouncilElected hook just trigger the election hook (empty council).
-        //<Runtime as governance::election::Trait>::CouncilElected::council_elected(Vec::new(), 10);
-
-        elect_single_councilor();
+        // Proposal should have been rejected on new council being elected
+        assert_eq!(ProposalsEngine::active_proposal_count(), 0);
 
         let updated_proposal = ProposalsEngine::proposals(proposal_id);
 
@@ -406,41 +370,18 @@ fn proposal_reset_succeeds() {
 
         // No votes could survive cleaning: should be default value.
         assert_eq!(
-            ProposalsEngine::vote_by_proposal_by_voter(proposal_id, voted_member_id),
+            ProposalsEngine::vote_by_proposal_by_voter(proposal_id, vote_generator.last_voter()),
             VoteKind::default()
         );
-
-        // Check council CouncilElected hook. It should set current council. And we elected single councilor.
-        assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 1);
     });
 }
 
-fn elect_single_councilor() {
-    let res = Election::set_election_parameters(
-        RawOrigin::Root.into(),
-        ElectionParameters {
-            announcing_period: 1,
-            voting_period: 1,
-            revealing_period: 1,
-            council_size: 1,
-            candidacy_limit: 10,
-            new_term_duration: 2000000,
-            min_council_stake: 0,
-            min_voting_stake: 0,
-        },
-    );
-    assert_eq!(res, Ok(()));
-
-    let res = Election::force_start_election(RawOrigin::Root.into());
-    assert_eq!(res, Ok(()));
-
-    let councilor1: [u8; 32] = [1; 32];
-    increase_total_balance_issuance_using_account_id(councilor1.clone().into(), 1200000000);
-
-    let res = Election::apply(RawOrigin::Signed(councilor1.into()).into(), 0);
-    assert_eq!(res, Ok(()));
-
-    run_to_block(5);
+// Ends council idle period
+// Preconditions: currently in idle period, idle period started in currnet block
+fn end_idle_period() {
+    let current_block = System::block_number();
+    let idle_period_duration = <Runtime as council::Trait>::IdlePeriodDuration::get();
+    run_to_block(current_block + idle_period_duration);
 }
 
 struct CodexProposalTestFixture<SuccessfulCall>
@@ -451,7 +392,8 @@ where
     member_id: u64,
     setup_environment: bool,
     proposal_id: u32,
-    run_to_block: u32,
+    lead_id: u64,
+    set_member_lead: bool,
 }
 
 impl<SuccessfulCall> CodexProposalTestFixture<SuccessfulCall>
@@ -464,7 +406,8 @@ where
             member_id: 1,
             setup_environment: true,
             proposal_id: 1,
-            run_to_block: 2,
+            lead_id: 11,
+            set_member_lead: false,
         }
     }
 
@@ -492,178 +435,772 @@ where
         }
     }
 
-    fn with_run_to_block(self, run_to_block: u32) -> Self {
+    fn with_lead_id(self, lead_id: u64) -> Self {
+        Self { lead_id, ..self }
+    }
+
+    fn with_set_member_lead(self, set_member_lead: bool) -> Self {
         Self {
-            run_to_block,
+            set_member_lead,
             ..self
         }
     }
 }
 
-const NUMBER_OF_MEMBERS_TO_SETUP_IN_CODEX_PROPOSAL_FIXTURE: u8 = 15;
+fn set_membership_leader(lead_account_id: AccountId32, lead_id: u64) {
+    MembershipWorkingGroup::add_opening(
+        RawOrigin::Root.into(),
+        vec![0u8],
+        working_group::OpeningType::Leader,
+        StakePolicy {
+            stake_amount:
+                <Runtime as working_group::Trait<MembershipWorkingGroupInstance>>::MinimumApplicationStake::get(
+                ) as u128,
+            leaving_unstaking_period: 1000000,
+        },
+        None,
+    )
+    .unwrap();
+
+    let application = working_group::ApplyOnOpeningParameters::<Runtime> {
+        member_id: lead_id.clone().into(),
+        opening_id: 0,
+        role_account_id: lead_account_id.clone(),
+        reward_account_id: lead_account_id.clone(),
+        description: vec![0u8],
+        stake_parameters: StakeParameters {
+            stake: <Runtime as working_group::Trait<MembershipWorkingGroupInstance>>::MinimumApplicationStake::get() as
+                u128,
+            staking_account_id: lead_account_id.clone(),
+        },
+    };
+
+    MembershipWorkingGroup::apply_on_opening(
+        RawOrigin::Signed(lead_account_id).into(),
+        application,
+    )
+    .unwrap();
+    let mut successful_application_ids = BTreeSet::new();
+    successful_application_ids.insert(0);
+    MembershipWorkingGroup::fill_opening(RawOrigin::Root.into(), 0, successful_application_ids)
+        .unwrap();
+}
 
 impl<SuccessfulCall> CodexProposalTestFixture<SuccessfulCall>
 where
     SuccessfulCall: Fn() -> DispatchResult,
 {
     fn call_extrinsic_and_assert(&self) {
-        let account_id: [u8; 32] = [self.member_id as u8; 32];
+        let account_id = account_from_member_id(self.member_id);
 
         if self.setup_environment {
-            setup_members(NUMBER_OF_MEMBERS_TO_SETUP_IN_CODEX_PROPOSAL_FIXTURE);
-            setup_council();
+            setup_new_council(0);
+            if self.set_member_lead {
+                let lead_account_id = account_from_member_id(self.lead_id);
 
-            increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1000000);
+                let min_stake = <Runtime as working_group::Trait<MembershipWorkingGroupInstance>>::MinimumApplicationStake::get();
+
+                increase_total_balance_issuance_using_account_id(
+                    lead_account_id.clone(),
+                    min_stake * 2,
+                );
+
+                set_membership_leader(lead_account_id, self.lead_id);
+            }
         }
+
+        increase_total_balance_issuance_using_account_id(account_id.clone(), max_proposal_stake());
 
         assert_eq!((self.successful_call)(), Ok(()));
 
+        // Approve Proposal
+        let council_size = <Runtime as council::Trait>::CouncilSize::get() as u32;
         let mut vote_generator = VoteGenerator::new(self.proposal_id);
-        vote_generator.vote_and_assert_ok(VoteKind::Approve);
-        vote_generator.vote_and_assert_ok(VoteKind::Approve);
-        vote_generator.vote_and_assert_ok(VoteKind::Approve);
-        vote_generator.vote_and_assert_ok(VoteKind::Approve);
-        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        for _i in 0..council_size {
+            vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        }
 
-        run_to_block(self.run_to_block);
-
-        let proposal = ProposalsEngine::proposals(self.proposal_id);
-
-        assert_eq!(
-            proposal,
-            Proposal {
-                status: ProposalStatus::approved(
-                    ApprovedProposalStatus::Executed,
-                    self.run_to_block - 2
-                ),
-                title: b"title".to_vec(),
-                description: b"body".to_vec(),
-                voting_results: VotingResults {
-                    abstentions: 0,
-                    approvals: 5,
-                    rejections: 0,
-                    slashes: 0,
-                },
-                ..proposal
-            }
-        );
+        run_to_block(System::block_number() + 1);
     }
 }
 
 #[test]
 fn text_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
-        let member_id = 10;
-        let account_id: [u8; 32] = [member_id; 32];
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            ProposalCodex::create_text_proposal(
-                RawOrigin::Signed(account_id.into()).into(),
-                member_id as u64,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(<BalanceOf<Runtime>>::from(25000u32)),
-                b"text".to_vec(),
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id,
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.clone()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone()).into(),
+                general_proposal_parameters,
+                ProposalDetails::Signal(b"signal".to_vec()),
             )
         })
         .with_member_id(member_id as u64);
+
+        let params = <Runtime as proposals_codex::Trait>::SignalProposalParameters::get();
+        run_to_block(System::block_number() + params.grace_period + 1);
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
     });
 }
 
 #[test]
-fn spending_proposal_execution_succeeds() {
+fn funding_request_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
-        let member_id = 10;
-        let account_id: [u8; 32] = [member_id; 32];
-        let new_balance = <BalanceOf<Runtime>>::from(5555u32);
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
+        let council_budget = 5_000_000;
+        let funding = 5000;
 
-        // account id outside range of generated member accounts when environement is setup
-        // to ensure it doesn't get any endowed balance
-        let target_account_id: [u8; 32] =
-            [NUMBER_OF_MEMBERS_TO_SETUP_IN_CODEX_PROPOSAL_FIXTURE + 1; 32];
+        let target_account_id = account_from_member_id(create_new_members(1)[0]);
 
-        assert!(Council::set_council_mint_capacity(RawOrigin::Root.into(), new_balance).is_ok());
+        assert!(Council::set_budget(RawOrigin::Root.into(), council_budget).is_ok());
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            ProposalCodex::create_spending_proposal(
-                RawOrigin::Signed(account_id.clone().into()).into(),
-                member_id as u64,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(<BalanceOf<Runtime>>::from(25_000_u32)),
-                new_balance,
-                target_account_id.clone().into(),
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id,
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.clone()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone()).into(),
+                general_proposal_parameters,
+                ProposalDetails::FundingRequest(vec![common::FundingRequestParameters {
+                    amount: funding,
+                    account: target_account_id.clone(),
+                }]),
             )
         })
         .with_member_id(member_id as u64);
 
-        let converted_account_id: AccountId32 = target_account_id.clone().into();
-
-        assert_eq!(Balances::free_balance(converted_account_id.clone()), 0);
+        let starting_balance = Balances::usable_balance(target_account_id.clone());
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+        let params = <Runtime as proposals_codex::Trait>::FundingRequestProposalParameters::get();
+        run_to_block(System::block_number() + params.grace_period + 1);
 
-        assert_eq!(Balances::free_balance(converted_account_id), new_balance);
+        assert_eq!(
+            Balances::usable_balance(target_account_id),
+            starting_balance + funding
+        );
     });
 }
 
 #[test]
-fn set_election_parameters_proposal_execution_succeeds() {
+fn create_blog_post_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
-        let member_id = 1;
-        let account_id: [u8; 32] = [member_id; 32];
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
+        let council_budget = 5_000_000;
 
-        let election_parameters = ElectionParameters {
-            announcing_period: 14400,
-            voting_period: 14400,
-            revealing_period: 14400,
-            council_size: 6,
-            candidacy_limit: 50,
-            new_term_duration: 14400,
-            min_council_stake: 1,
-            min_voting_stake: 1,
-        };
-        assert_eq!(Election::announcing_period(), 0);
+        assert!(Council::set_budget(RawOrigin::Root.into(), council_budget).is_ok());
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            ProposalCodex::create_set_election_parameters_proposal(
-                RawOrigin::Signed(account_id.clone().into()).into(),
-                member_id as u64,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(<BalanceOf<Runtime>>::from(1_000_000_u32)),
-                election_parameters,
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id,
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.clone()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone()).into(),
+                general_proposal_parameters,
+                ProposalDetails::CreateBlogPost(vec![0u8], vec![0u8]),
             )
-        });
+        })
+        .with_member_id(member_id as u64);
+
+        assert_eq!(Blog::post_count(), 0);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+        let params = <Runtime as proposals_codex::Trait>::CreateBlogPostProposalParameters::get();
+        run_to_block(System::block_number() + params.grace_period + 1);
+
+        assert_eq!(Blog::post_count(), 1);
+    });
+}
+
+#[test]
+fn edit_blog_post_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
+        let council_budget = 5_000_000;
+
+        assert!(Council::set_budget(RawOrigin::Root.into(), council_budget).is_ok());
+
+        let post_id = Blog::post_count();
+        Blog::create_post(RawOrigin::Root.into(), vec![0u8], vec![0u8]).unwrap();
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id,
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.clone()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone()).into(),
+                general_proposal_parameters,
+                ProposalDetails::EditBlogPost(post_id, Some(vec![1u8]), None),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+        let params = <Runtime as proposals_codex::Trait>::EditBlogPostProoposalParamters::get();
+        run_to_block(System::block_number() + params.grace_period + 1);
+
+        assert!(Blog::post_by_id(post_id) == blog::Post::new(&vec![1u8], &vec![0u8]));
+    });
+}
+
+#[test]
+fn lock_blog_post_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
+        let council_budget = 5_000_000;
+
+        assert!(Council::set_budget(RawOrigin::Root.into(), council_budget).is_ok());
+
+        let post_id = Blog::post_count();
+        Blog::create_post(RawOrigin::Root.into(), vec![0u8], vec![0u8]).unwrap();
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id,
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.clone()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone()).into(),
+                general_proposal_parameters,
+                ProposalDetails::LockBlogPost(post_id),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        assert_eq!(Blog::post_by_id(post_id).is_locked(), false);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+        let params = <Runtime as proposals_codex::Trait>::LockBlogPostProposalParameters::get();
+        run_to_block(System::block_number() + params.grace_period + 1);
+
+        assert_eq!(Blog::post_by_id(post_id).is_locked(), true);
+    });
+}
+
+#[test]
+fn unlock_blog_post_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
+        let council_budget = 5_000_000;
+
+        assert!(Council::set_budget(RawOrigin::Root.into(), council_budget).is_ok());
+
+        let post_id = Blog::post_count();
+        Blog::create_post(RawOrigin::Root.into(), vec![0u8], vec![0u8]).unwrap();
+        Blog::lock_post(RawOrigin::Root.into(), post_id).unwrap();
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id,
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.clone()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone()).into(),
+                general_proposal_parameters,
+                ProposalDetails::UnlockBlogPost(post_id),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        assert_eq!(Blog::post_by_id(0).is_locked(), true);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+        let params = <Runtime as proposals_codex::Trait>::UnlockBlogPostProposalParameters::get();
+        run_to_block(System::block_number() + params.grace_period + 1);
+
+        assert_eq!(Blog::post_by_id(0).is_locked(), false);
+    });
+}
+
+#[test]
+fn veto_proposal_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
+        let council_budget = 5_000_000;
+        assert!(Council::set_budget(RawOrigin::Root.into(), council_budget).is_ok());
+
+        let proposal_id = ProposalsEngine::proposal_count() + 1;
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id,
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.clone()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone()).into(),
+                general_proposal_parameters,
+                ProposalDetails::AmendConstitution(vec![0u8]),
+            )
+        })
+        .with_member_id(member_id as u64);
+
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
-        assert_eq!(Election::announcing_period(), 14400);
+        assert!(proposals_engine::Proposals::<Runtime>::contains_key(1));
+
+        // new member that will propose veto
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id.into(),
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.clone()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone()).into(),
+                general_proposal_parameters,
+                ProposalDetails::VetoProposal(proposal_id),
+            )
+        })
+        .with_member_id(member_id as u64)
+        .with_expected_proposal_id(2)
+        .with_setup_enviroment(false);
+
+        assert!(proposals_engine::Proposals::<Runtime>::contains_key(1));
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        let params = <Runtime as proposals_codex::Trait>::VetoProposalProposalParameters::get();
+        run_to_block(System::block_number() + params.grace_period + 1);
+
+        assert!(!proposals_engine::Proposals::<Runtime>::contains_key(1));
     });
 }
 
 #[test]
 fn set_validator_count_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
-        let member_id = 1;
-        let account_id: [u8; 32] = [member_id; 32];
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
 
-        let new_validator_count = 8;
-        assert_eq!(<pallet_staking::ValidatorCount>::get(), 0);
+        let new_validator_count = <pallet_staking::ValidatorCount>::get() + 8;
+
+        setup_new_council(0);
+        increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
+
+        let staking_account_id: [u8; 32] = [225u8; 32];
+        increase_total_balance_issuance_using_account_id(staking_account_id.into(), 1_500_000);
+        set_staking_account(
+            account_id.clone(),
+            staking_account_id.into(),
+            member_id as u64,
+        );
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            ProposalCodex::create_set_validator_count_proposal(
-                RawOrigin::Signed(account_id.clone().into()).into(),
-                member_id as u64,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(<BalanceOf<Runtime>>::from(500_000_u32)),
-                new_validator_count,
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id,
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(staking_account_id.into()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone()).into(),
+                general_proposal_parameters,
+                ProposalDetails::SetMaxValidatorCount(new_validator_count),
             )
-        });
+        })
+        .disable_setup_enviroment();
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
+        let params =
+            <Runtime as proposals_codex::Trait>::SetMaxValidatorCountProposalParameters::get();
+        run_to_block(System::block_number() + params.grace_period + 1);
+
         assert_eq!(<pallet_staking::ValidatorCount>::get(), new_validator_count);
+    });
+}
+
+#[test]
+fn amend_constitution_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id,
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.clone()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone()).into(),
+                general_proposal_parameters,
+                ProposalDetails::AmendConstitution(b"Constitution text".to_vec()),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        let params =
+            <Runtime as proposals_codex::Trait>::AmendConstitutionProposalParameters::get();
+        run_to_block(System::block_number() + params.grace_period + 1);
+
+        // assert constitution text was changed
+    });
+}
+
+#[test]
+fn set_membership_price_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
+        let membership_price = Membership::membership_price() + 100;
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id,
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.clone()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone()).into(),
+                general_proposal_parameters,
+                ProposalDetails::SetMembershipPrice(membership_price),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        let params =
+            <Runtime as proposals_codex::Trait>::SetMembershipPriceProposalParameters::get();
+        run_to_block(System::block_number() + params.grace_period + 1);
+
+        assert_eq!(Membership::membership_price(), membership_price);
+    });
+}
+
+#[test]
+fn set_initial_invitation_balance_proposal_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
+        let initial_invitation_balance = Membership::initial_invitation_balance() + 100;
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id,
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.clone()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone()).into(),
+                general_proposal_parameters,
+                ProposalDetails::SetInitialInvitationBalance(initial_invitation_balance),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        let params =
+            <Runtime as proposals_codex::Trait>::SetInitialInvitationBalanceProposalParameters::get(
+            );
+        run_to_block(System::block_number() + params.grace_period + 1);
+
+        assert_eq!(
+            Membership::initial_invitation_balance(),
+            initial_invitation_balance
+        );
+    });
+}
+
+#[test]
+fn set_initial_invitation_count_proposal_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
+        let new_default_invite_count = Membership::initial_invitation_count() + 50;
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id,
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.clone()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone()).into(),
+                general_proposal_parameters,
+                ProposalDetails::SetInitialInvitationCount(new_default_invite_count),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        let params =
+            <Runtime as proposals_codex::Trait>::SetInvitationCountProposalParameters::get();
+        run_to_block(System::block_number() + params.grace_period + 1);
+
+        assert_eq!(
+            Membership::initial_invitation_count(),
+            new_default_invite_count
+        );
+    });
+}
+
+#[test]
+fn set_membership_leader_invitation_quota_proposal_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
+        let lead_id = create_new_members(1)[0];
+        let new_invite_count = Membership::membership(lead_id).invites + 30;
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id,
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.clone()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone()).into(),
+                general_proposal_parameters,
+                ProposalDetails::SetMembershipLeadInvitationQuota(new_invite_count),
+            )
+        })
+        .with_member_id(member_id as u64)
+        .with_set_member_lead(true)
+        .with_lead_id(lead_id);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        let params =
+            <Runtime as proposals_codex::Trait>::SetMembershipLeadInvitationQuotaProposalParameters::get();
+        run_to_block(System::block_number() + params.grace_period + 1);
+
+        assert_eq!(Membership::membership(lead_id).invites, new_invite_count);
+    });
+}
+
+#[test]
+fn set_referral_cut_proposal_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
+        let referral_cut = Membership::referral_cut() + 1;
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id,
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.clone()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone()).into(),
+                general_proposal_parameters,
+                ProposalDetails::SetReferralCut(referral_cut),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        let params = <Runtime as proposals_codex::Trait>::SetReferralCutProposalParameters::get();
+        run_to_block(System::block_number() + params.grace_period + 1);
+
+        assert_eq!(Membership::referral_cut(), referral_cut);
+    });
+}
+
+#[test]
+fn set_budget_increment_proposal_succeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
+        let budget_increment = Council::budget_increment() + 500;
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id,
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.clone()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone()).into(),
+                general_proposal_parameters,
+                ProposalDetails::SetCouncilBudgetIncrement(budget_increment),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        let params =
+            <Runtime as proposals_codex::Trait>::SetCouncilBudgetIncrementProposalParameters::get();
+        run_to_block(System::block_number() + params.grace_period + 1);
+
+        assert_eq!(Council::budget_increment(), budget_increment);
+    });
+}
+
+// We ignore this test because running until the relevant block
+// take too long
+#[ignore]
+#[test]
+fn set_councilor_reward_proposal_succeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
+        let councilor_reward = Council::councilor_reward() + 100;
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id,
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.clone()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone()).into(),
+                general_proposal_parameters,
+                ProposalDetails::SetCouncilorReward(councilor_reward),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        let params =
+            <Runtime as proposals_codex::Trait>::SetCouncilorRewardProposalParameters::get();
+        run_to_block(System::block_number() + params.grace_period + 1);
+
+        assert_eq!(Council::councilor_reward(), councilor_reward);
+    });
+}
+
+#[test]
+fn proposal_reactivation_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
+
+        setup_new_council(0);
+        let council_size = <Runtime as council::Trait>::CouncilSize::get() as u32;
+
+        let starting_block = System::block_number();
+        // create proposal
+        let dummy_proposal = DummyProposalFixture::default()
+            .with_voting_period(100)
+            .with_constitutionality(2)
+            .with_account_id(account_id)
+            .with_proposer(member_id);
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        // Approve Proposal
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        for _i in 0..council_size {
+            vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        }
+
+        run_to_block(starting_block + 2);
+
+        // check
+        let proposal = ProposalsEngine::proposals(proposal_id);
+        assert_eq!(
+            proposal.status,
+            ProposalStatus::approved(
+                ApprovedProposalDecision::PendingConstitutionality,
+                starting_block
+            )
+        );
+
+        // Ensure council was elected
+        assert_eq!(
+            CouncilManager::<Runtime>::total_voters_count(),
+            council_size
+        );
+
+        end_idle_period();
+        setup_new_council(1);
+
+        run_to_block(System::block_number() + 1);
+
+        // Should get re-activated
+        assert_eq!(ProposalsEngine::active_proposal_count(), 1);
+
+        let updated_proposal = ProposalsEngine::proposals(proposal_id);
+
+        assert_eq!(updated_proposal.status, ProposalStatus::Active);
+
+        // Ensure council was elected
+        assert_eq!(
+            CouncilManager::<Runtime>::total_voters_count(),
+            council_size
+        );
     });
 }

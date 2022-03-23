@@ -4,6 +4,7 @@ import { ApiPromise } from '@polkadot/api'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { DispatchError } from '@polkadot/types/interfaces/system'
 import { TypeRegistry } from '@polkadot/types'
+import { ISubmittableResult } from '@polkadot/types/types'
 
 // TODO: Move to @joystream/js soon
 
@@ -38,12 +39,16 @@ export class ExtrinsicsHelper {
     return nonce
   }
 
-  async sendAndCheck(sender: KeyringPair, extrinsics: SubmittableExtrinsic<'promise'>[], errorMessage: string) {
-    const promises: Promise<void>[] = []
+  async sendAndCheck(
+    sender: KeyringPair,
+    extrinsics: SubmittableExtrinsic<'promise'>[],
+    errorMessage: string
+  ): Promise<ISubmittableResult[]> {
+    const promises: Promise<ISubmittableResult>[] = []
     for (const tx of extrinsics) {
       const nonce = await this.nextNonce(sender.address)
       promises.push(
-        new Promise((resolve, reject) => {
+        new Promise<ISubmittableResult>((resolve, reject) => {
           tx.signAndSend(sender, { nonce }, (result) => {
             let txError: string | null = null
             if (result.isError) {
@@ -71,7 +76,7 @@ export class ExtrinsicsHelper {
                     }
                     reject(new Error(`${errorMessage} - Extrinsic execution error: ${errorMsg}`))
                   } else if (event.method === 'ExtrinsicSuccess') {
-                    resolve()
+                    resolve(result)
                   }
                 })
             }
@@ -79,6 +84,6 @@ export class ExtrinsicsHelper {
         })
       )
     }
-    await Promise.all(promises)
+    return await Promise.all(promises)
   }
 }

@@ -14,8 +14,7 @@ import {
 } from '@polkadot/types'
 import { Balance } from '@polkadot/types/interfaces'
 import { RegistryTypes } from '@polkadot/types/types'
-import { JoyEnum, JoyStructDecorated, WorkingGroup, BalanceOf } from './common'
-import { MemberId } from './members'
+import { JoyEnum, JoyStructDecorated, WorkingGroup, BalanceOf, MemberId } from './common'
 import { WorkerId } from './working-group'
 
 export class DataObjectId extends u64 {}

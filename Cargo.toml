@@ -5,19 +5,23 @@ members = [
 	"runtime-modules/proposals/codex",
 	"runtime-modules/proposals/discussion",
 	"runtime-modules/common",
+	"runtime-modules/council",
 	"runtime-modules/forum",
-	"runtime-modules/governance",
-	"runtime-modules/hiring",
 	"runtime-modules/membership",
-	"runtime-modules/memo",
-	"runtime-modules/recurring-reward",
-	"runtime-modules/stake",
+	"runtime-modules/referendum",
 	"runtime-modules/storage",
-	"runtime-modules/token-minting",
 	"runtime-modules/working-group",
 	"runtime-modules/content",
+	"runtime-modules/constitution",
+	"runtime-modules/staking-handler",
+	"runtime-modules/bounty",
+	"runtime-modules/blog",
+	"runtime-modules/utility",
 	"node",
 	"utils/chain-spec-builder/",
+]
+exclude = [
+    "analyses/bench"
 ]
 
 [profile.release]

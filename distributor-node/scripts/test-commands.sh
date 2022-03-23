@@ -7,7 +7,7 @@ export AUTO_CONFIRM=true
 export CONFIG_PATH="../config.yml"
 CLI=../bin/run
 
-${CLI} dev:init
+GROUP=distributionWorkingGroup yarn workspace api-scripts initialize-lead
 ${CLI} leader:set-buckets-per-bag-limit -l 10
 # Create family and buckets
 FAMILY_ID=`${CLI} leader:create-bucket-family`

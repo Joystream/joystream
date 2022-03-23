@@ -1,37 +1,42 @@
 //! # Proposals discussion module
-//! Proposals `discussion` module for the Joystream platform. Version 2.
+//! Proposals `discussion` module for the Joystream platform.
 //! It contains discussion system of the proposals.
 //!
 //! ## Overview
 //!
-//! The proposals discussion module is used by the codex module to provide a platform for discussions
-//! about different proposals. It allows to create discussion threads and then add and update related
-//! posts.
+//! The proposals discussion module is used by the codex module to provide a platform for
+//! discussions about different proposals. It allows to create discussion threads and then add and
+//! update related posts.
 //!
 //! ## Supported extrinsics
 //! - [add_post](./struct.Module.html#method.add_post) - adds a post to an existing discussion thread
 //! - [update_post](./struct.Module.html#method.update_post) - updates existing post
+//! - [change_thread_mode](./struct.Module.html#method.change_thread_mode) - changes thread
+//! - [delete_post](./struct.Module.html#method.delete_post) - Removes thread from storage
+//! permission mode
 //!
 //! ## Public API methods
 //! - [create_thread](./struct.Module.html#method.create_thread) - creates a discussion thread
-//! - [ensure_can_create_thread](./struct.Module.html#method.ensure_can_create_thread) - ensures safe thread creation
+//! - [ensure_can_create_thread](./struct.Module.html#method.ensure_can_create_thread) - ensures
+//! safe thread creation
 //!
 //! ## Usage
 //!
 //! ```
 //! use frame_support::decl_module;
 //! use frame_system::ensure_root;
-//! use pallet_proposals_discussion::{self as discussions};
+//! use pallet_proposals_discussion::{self as discussions, ThreadMode};
 //!
-//! pub trait Trait: discussions::Trait + membership::Trait {}
+//! pub trait Trait: discussions::Trait + common::membership::MembershipTypes {}
 //!
 //! decl_module! {
 //!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 //!         #[weight = 10_000_000]
 //!         pub fn create_discussion(origin, title: Vec<u8>, author_id : T::MemberId) {
 //!             ensure_root(origin)?;
-//!             <discussions::Module<T>>::ensure_can_create_thread(author_id, &title)?;
-//!             <discussions::Module<T>>::create_thread(author_id, title)?;
+//!             let thread_mode = ThreadMode::Open;
+//!             <discussions::Module<T>>::ensure_can_create_thread(&thread_mode)?;
+//!             <discussions::Module<T>>::create_thread(author_id, thread_mode)?;
 //!         }
 //!     }
 //! }
@@ -40,26 +45,49 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
-// Internal Substrate warning (decl_event).
-#![allow(clippy::unused_unit)]
 
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
+mod benchmarking;
 #[cfg(test)]
 mod tests;
 mod types;
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
+use frame_support::sp_runtime::ModuleId;
+use frame_support::sp_runtime::SaturatedConversion;
 use frame_support::traits::Get;
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
+use frame_support::traits::{Currency, ExistenceRequirement};
+use frame_support::{
+    decl_error, decl_event, decl_module, decl_storage, ensure, weights::Weight, Parameter,
+};
+use sp_runtime::traits::{AccountIdConversion, Saturating};
 use sp_std::clone::Clone;
 use sp_std::vec::Vec;
 
-use common::origin::ActorOriginValidator;
-use types::{DiscussionPost, DiscussionThread, ThreadCounter};
+use common::council::CouncilOriginValidator;
+use common::membership::MemberOriginValidator;
+use common::MemberId;
+use types::{DiscussionPost, DiscussionThread};
 
-type MemberId<T> = <T as common::MembershipTypes>::MemberId;
+pub use types::ThreadMode;
+
+/// Balance alias for `balances` module.
+pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+
+type Balances<T> = balances::Module<T>;
+
+/// Proposals discussion WeightInfo.
+/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
+pub trait WeightInfo {
+    fn add_post(j: u32) -> Weight;
+    fn update_post(j: u32) -> Weight;
+    fn delete_post() -> Weight;
+    fn change_thread_mode(i: u32) -> Weight;
+}
+
+type WeightInfoDiscussion<T> = <T as Trait>::WeightInfo;
 
 decl_event!(
     /// Proposals engine events
@@ -73,20 +101,37 @@ decl_event!(
         ThreadCreated(ThreadId, MemberId),
 
         /// Emits on post creation.
-        PostCreated(PostId, MemberId),
+        PostCreated(PostId, MemberId, ThreadId, Vec<u8>, bool),
 
         /// Emits on post update.
-        PostUpdated(PostId, MemberId),
+        PostUpdated(PostId, MemberId, ThreadId, Vec<u8>),
+
+        /// Emits on thread mode change.
+        ThreadModeChanged(ThreadId, ThreadMode<MemberId>, MemberId),
+
+        /// Emits on post deleted
+        PostDeleted(MemberId, ThreadId, PostId, bool),
     }
 );
 
+/// Defines whether the member is an active councilor.
+pub trait CouncilMembership<AccountId, MemberId> {
+    /// Defines whether the member is an active councilor.
+    fn is_council_member(account_id: &AccountId, member_id: &MemberId) -> bool;
+}
+
 /// 'Proposal discussion' substrate module Trait
-pub trait Trait: frame_system::Trait + membership::Trait {
+pub trait Trait:
+    frame_system::Trait + balances::Trait + common::membership::MembershipTypes
+{
     /// Discussion event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Validates post author id and origin combination
-    type PostAuthorOriginValidator: ActorOriginValidator<
+    type AuthorOriginValidator: MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+
+    /// Defines whether the member is an active councilor.
+    type CouncilOriginValidator: CouncilOriginValidator<
         Self::Origin,
         MemberId<Self>,
         Self::AccountId,
@@ -98,51 +143,48 @@ pub trait Trait: frame_system::Trait + membership::Trait {
     /// Post Id type
     type PostId: From<u64> + Parameter + Default + Copy;
 
-    /// Defines post edition number limit.
-    type MaxPostEditionNumber: Get<u32>;
+    /// Defines author list size limit for the Closed discussion.
+    type MaxWhiteListSize: Get<u32>;
 
-    /// Defines thread title length limit.
-    type ThreadTitleLengthLimit: Get<u32>;
+    /// Weight information for extrinsics in this pallet.
+    type WeightInfo: WeightInfo;
 
-    /// Defines post length limit.
-    type PostLengthLimit: Get<u32>;
+    /// Fee for creating a post
+    type PostDeposit: Get<Self::Balance>;
 
-    /// Defines max thread by same author in a row number limit.
-    type MaxThreadInARowNumber: Get<u32>;
+    /// The proposal_discussion module Id, used to derive the account Id to hold the thread bounty
+    type ModuleId: Get<ModuleId>;
+
+    /// Maximum number of blocks before a post can be erased by anyone
+    type PostLifeTime: Get<Self::BlockNumber>;
 }
 
 decl_error! {
     /// Discussion module predefined errors
     pub enum Error for Module<T: Trait> {
-        /// Author should match the post creator
-        NotAuthor,
-
-        ///  Post edition limit reached
-        PostEditionNumberExceeded,
-
-        /// Discussion cannot have an empty title
-        EmptyTitleProvided,
-
-        /// Title is too long
-        TitleIsTooLong,
-
         /// Thread doesn't exist
         ThreadDoesntExist,
 
         /// Post doesn't exist
         PostDoesntExist,
 
-        /// Post cannot be empty
-        EmptyPostProvided,
-
-        /// Post is too long
-        PostIsTooLong,
-
-        /// Max number of threads by same author in a row limit exceeded
-        MaxThreadInARowLimitExceeded,
-
         /// Require root origin in extrinsics
         RequireRootOrigin,
+
+        /// The thread has Closed mode. And post author doesn't belong to council or allowed members.
+        CannotPostOnClosedThread,
+
+        /// Should be thread author or councilor.
+        NotAuthorOrCouncilor,
+
+        /// Max allowed authors list limit exceeded.
+        MaxWhiteListSizeExceeded,
+
+        /// Account has insufficient balance to create a post
+        InsufficientBalanceForPost,
+
+        /// Account can't delete post at the moment
+        CannotDeletePost,
     }
 }
 
@@ -151,7 +193,7 @@ decl_storage! {
     pub trait Store for Module<T: Trait> as ProposalDiscussion {
         /// Map thread identifier to corresponding thread.
         pub ThreadById get(fn thread_by_id): map hasher(blake2_128_concat)
-            T::ThreadId => DiscussionThread<MemberId<T>, T::BlockNumber>;
+            T::ThreadId => DiscussionThread<MemberId<T>, T::BlockNumber, MemberId<T>>;
 
         /// Count of all threads that have been created.
         pub ThreadCount get(fn thread_count): u64;
@@ -159,14 +201,10 @@ decl_storage! {
         /// Map thread id and post id to corresponding post.
         pub PostThreadIdByPostId:
             double_map hasher(blake2_128_concat) T::ThreadId, hasher(blake2_128_concat) T::PostId =>
-                DiscussionPost<MemberId<T>, T::BlockNumber, T::ThreadId>;
+                DiscussionPost<MemberId<T>, BalanceOf<T>, T::BlockNumber>;
 
         /// Count of all posts that have been created.
         pub PostCount get(fn post_count): u64;
-
-        /// Last author thread counter (part of the antispam mechanism)
-        pub LastThreadAuthorCounter get(fn last_thread_author_counter):
-            Option<ThreadCounter<MemberId<T>>>;
     }
 }
 
@@ -179,129 +217,248 @@ decl_module! {
         /// Emits an event. Default substrate implementation.
         fn deposit_event() = default;
 
-        /// Exports post edition number limit const.
-        const MaxPostEditionNumber: u32 = T::MaxPostEditionNumber::get();
+        /// Exports const - author list size limit for the Closed discussion.
+        const MaxWhiteListSize: u32 = T::MaxWhiteListSize::get();
 
-        /// Exports thread title length limit const.
-        const ThreadTitleLengthLimit: u32 = T::ThreadTitleLengthLimit::get();
+        /// Exports const - fee for creating a post
+        const PostDeposit: BalanceOf<T> = T::PostDeposit::get();
 
-        /// Exports post length limit const.
-        const PostLengthLimit: u32 = T::PostLengthLimit::get();
-
-        /// Exports max thread by same author in a row number limit const.
-        const MaxThreadInARowNumber: u32 = T::MaxThreadInARowNumber::get();
+        /// Exports const - maximum number of blocks before a post can be erased by anyone
+        const PostLifeTime: T::BlockNumber = T::PostLifeTime::get();
 
         /// Adds a post with author origin check.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (L)` where:
+        /// - `L` is the length of `text`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoDiscussion::<T>::add_post(text.len().saturated_into())]
         pub fn add_post(
             origin,
             post_author_id: MemberId<T>,
-            thread_id : T::ThreadId,
-            text : Vec<u8>
+            thread_id: T::ThreadId,
+            text: Vec<u8>,
+            editable: bool
         ) {
-            T::PostAuthorOriginValidator::ensure_actor_origin(
-                origin,
+            let account_id = T::AuthorOriginValidator::ensure_member_controller_account_origin(
+                origin.clone(),
                 post_author_id,
             )?;
+
             ensure!(<ThreadById<T>>::contains_key(thread_id), Error::<T>::ThreadDoesntExist);
 
-            ensure!(!text.is_empty(),Error::<T>::EmptyPostProvided);
-            ensure!(
-                text.len() as u32 <= T::PostLengthLimit::get(),
-                Error::<T>::PostIsTooLong
-            );
+            Self::ensure_thread_mode(origin, post_author_id, thread_id)?;
+
+            // Ensure account has enough funds
+            if editable {
+                ensure!(
+                    Balances::<T>::usable_balance(&account_id) >= T::PostDeposit::get(),
+                    Error::<T>::InsufficientBalanceForPost,
+                );
+            }
 
             // mutation
 
+            if editable {
+                Self::transfer_to_state_cleanup_treasury_account(
+                    T::PostDeposit::get(),
+                    thread_id,
+                    &account_id,
+                )?;
+            }
+
             let next_post_count_value = Self::post_count() + 1;
             let new_post_id = next_post_count_value;
-
-            let new_post = DiscussionPost {
-                text,
-                created_at: Self::current_block(),
-                updated_at: Self::current_block(),
-                author_id: post_author_id,
-                edition_number : 0,
-                thread_id,
-            };
-
             let post_id = T::PostId::from(new_post_id);
-            <PostThreadIdByPostId<T>>::insert(thread_id, post_id, new_post);
+
+            if editable {
+                let new_post = DiscussionPost {
+                    author_id: post_author_id,
+                    cleanup_pay_off: T::PostDeposit::get(),
+                    last_edited: frame_system::Module::<T>::block_number(),
+                };
+
+                <PostThreadIdByPostId<T>>::insert(thread_id, post_id, new_post);
+            }
+
             PostCount::put(next_post_count_value);
-            Self::deposit_event(RawEvent::PostCreated(post_id, post_author_id));
+            Self::deposit_event(RawEvent::PostCreated(post_id, post_author_id, thread_id, text, editable));
        }
 
+        /// Remove post from storage, with the last parameter indicating whether to also hide it
+        /// in the UI.
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoDiscussion::<T>::delete_post()]
+        pub fn delete_post(
+            origin,
+            deleter_id: MemberId<T>,
+            post_id : T::PostId,
+            thread_id: T::ThreadId,
+            hide: bool,
+        ) {
+            let account_id = T::AuthorOriginValidator::ensure_member_controller_account_origin(
+                origin.clone(),
+                deleter_id,
+            )?;
+
+            ensure!(
+                <PostThreadIdByPostId<T>>::contains_key(thread_id, post_id),
+                Error::<T>::PostDoesntExist
+            );
+
+            T::AuthorOriginValidator::ensure_member_controller_account_origin(
+                origin,
+                deleter_id,
+            )?;
+
+            let post = <PostThreadIdByPostId<T>>::get(thread_id, post_id);
+            if !Self::anyone_can_delete_post(thread_id, post_id) {
+                ensure!(
+                    post.author_id == deleter_id,
+                    Error::<T>::CannotDeletePost
+                );
+            }
+
+            // mutation
+
+            Self::pay_off(
+                thread_id,
+                T::PostDeposit::get(),
+                &account_id,
+            )?;
+
+            <PostThreadIdByPostId<T>>::remove(thread_id, post_id);
+            Self::deposit_event(RawEvent::PostDeleted(deleter_id, thread_id, post_id, hide));
+        }
+
         /// Updates a post with author origin check. Update attempts number is limited.
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (L)` where:
+        /// - `L` is the length of `text`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoDiscussion::<T>::update_post(text.len().saturated_into())]
         pub fn update_post(
             origin,
-            post_author_id: MemberId<T>,
             thread_id: T::ThreadId,
             post_id : T::PostId,
             text : Vec<u8>
         ){
-            T::PostAuthorOriginValidator::ensure_actor_origin(
+            ensure!(<ThreadById<T>>::contains_key(thread_id), Error::<T>::ThreadDoesntExist);
+            ensure!(
+                <PostThreadIdByPostId<T>>::contains_key(thread_id, post_id),
+                Error::<T>::PostDoesntExist
+            );
+
+            let post_author_id = <PostThreadIdByPostId<T>>::get(&thread_id, &post_id).author_id;
+
+            T::AuthorOriginValidator::ensure_member_controller_account_origin(
                 origin,
                 post_author_id,
             )?;
 
-            ensure!(<ThreadById<T>>::contains_key(thread_id), Error::<T>::ThreadDoesntExist);
-            ensure!(<PostThreadIdByPostId<T>>::contains_key(thread_id, post_id), Error::<T>::PostDoesntExist);
+            // mutation
 
-            ensure!(!text.is_empty(), Error::<T>::EmptyPostProvided);
-            ensure!(
-                text.len() as u32 <= T::PostLengthLimit::get(),
-                Error::<T>::PostIsTooLong
+            <PostThreadIdByPostId<T>>::mutate(
+                thread_id,
+                post_id,
+                |new_post| new_post.last_edited = frame_system::Module::<T>::block_number()
             );
+            Self::deposit_event(RawEvent::PostUpdated(post_id, post_author_id, thread_id, text));
+       }
 
-            let post = <PostThreadIdByPostId<T>>::get(&thread_id, &post_id);
+        /// Changes thread permission mode.
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` if ThreadMode is close or O(1) otherwise where:
+        /// - `W` is the number of whitelisted members in `mode`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoDiscussion::<T>::change_thread_mode(
+            if let ThreadMode::Closed(ref list) = mode {
+                list.len().saturated_into()
+            } else {
+                0
+            }
+        )]
+        pub fn change_thread_mode(
+            origin,
+            member_id: MemberId<T>,
+            thread_id : T::ThreadId,
+            mode : ThreadMode<MemberId<T>>
+        ) {
+            T::AuthorOriginValidator::ensure_member_controller_account_origin(origin.clone(), member_id)?;
 
-            ensure!(post.author_id == post_author_id, Error::<T>::NotAuthor);
-            ensure!(post.edition_number < T::MaxPostEditionNumber::get(),
-                Error::<T>::PostEditionNumberExceeded);
+            ensure!(<ThreadById<T>>::contains_key(thread_id), Error::<T>::ThreadDoesntExist);
 
-            let new_post = DiscussionPost {
-                text,
-                updated_at: Self::current_block(),
-                edition_number: post.edition_number + 1,
-                ..post
-            };
+            if let ThreadMode::Closed(ref list) = mode{
+                ensure!(
+                    list.len() <= (T::MaxWhiteListSize::get()).saturated_into(),
+                    Error::<T>::MaxWhiteListSizeExceeded
+                );
+            }
+
+            let thread = Self::thread_by_id(&thread_id);
+
+            let is_councilor =
+                    T::CouncilOriginValidator::ensure_member_consulate(origin, member_id)
+                        .is_ok();
+            let is_thread_author = thread.author_id == member_id;
+
+            ensure!(is_thread_author || is_councilor, Error::<T>::NotAuthorOrCouncilor);
 
             // mutation
 
-            <PostThreadIdByPostId<T>>::insert(thread_id, post_id, new_post);
-            Self::deposit_event(RawEvent::PostUpdated(post_id, post_author_id));
+            <ThreadById<T>>::mutate(thread_id, |thread| {
+                thread.mode = mode.clone();
+            });
+
+            Self::deposit_event(RawEvent::ThreadModeChanged(thread_id, mode, member_id));
        }
     }
 }
 
 impl<T: Trait> Module<T> {
-    /// Create the discussion thread. Cannot add more threads than 'predefined limit = MaxThreadInARowNumber'
+    /// Create the discussion thread.
     /// times in a row by the same author.
     pub fn create_thread(
         thread_author_id: MemberId<T>,
-        title: Vec<u8>,
+        mode: ThreadMode<MemberId<T>>,
     ) -> Result<T::ThreadId, DispatchError> {
-        Self::ensure_can_create_thread(thread_author_id, &title)?;
+        Self::ensure_can_create_thread(&mode)?;
 
         let next_thread_count_value = Self::thread_count() + 1;
         let new_thread_id = next_thread_count_value;
 
         let new_thread = DiscussionThread {
-            title,
-            created_at: Self::current_block(),
+            activated_at: Self::current_block(),
             author_id: thread_author_id,
+            mode,
         };
-
-        // get new 'threads in a row' counter for the author
-        let current_thread_counter = Self::get_updated_thread_counter(thread_author_id);
 
         // mutation
 
         let thread_id = T::ThreadId::from(new_thread_id);
         <ThreadById<T>>::insert(thread_id, new_thread);
         ThreadCount::put(next_thread_count_value);
-        <LastThreadAuthorCounter<T>>::put(current_thread_counter);
         Self::deposit_event(RawEvent::ThreadCreated(thread_id, thread_author_id));
 
         Ok(thread_id)
@@ -309,44 +466,85 @@ impl<T: Trait> Module<T> {
 
     /// Ensures thread can be created.
     /// Checks:
-    /// - title is valid
-    /// - max thread in a row by the same author
-    pub fn ensure_can_create_thread(thread_author_id: MemberId<T>, title: &[u8]) -> DispatchResult {
-        ensure!(!title.is_empty(), Error::<T>::EmptyTitleProvided);
-        ensure!(
-            title.len() as u32 <= T::ThreadTitleLengthLimit::get(),
-            Error::<T>::TitleIsTooLong
-        );
-
-        // get new 'threads in a row' counter for the author
-        let current_thread_counter = Self::get_updated_thread_counter(thread_author_id);
-
-        ensure!(
-            current_thread_counter.counter as u32 <= T::MaxThreadInARowNumber::get(),
-            Error::<T>::MaxThreadInARowLimitExceeded
-        );
+    /// - max allowed authors for the Closed thread mode
+    pub fn ensure_can_create_thread(mode: &ThreadMode<MemberId<T>>) -> DispatchResult {
+        if let ThreadMode::Closed(list) = mode {
+            ensure!(
+                list.len() <= (T::MaxWhiteListSize::get()).saturated_into(),
+                Error::<T>::MaxWhiteListSizeExceeded
+            );
+        }
 
         Ok(())
     }
 }
 
 impl<T: Trait> Module<T> {
-    // Wrapper-function over frame_system::block_number()
+    // Wrapper-function over System::block_number()
     fn current_block() -> T::BlockNumber {
         <frame_system::Module<T>>::block_number()
     }
 
-    // returns incremented thread counter if last thread author equals with provided parameter
-    fn get_updated_thread_counter(author_id: MemberId<T>) -> ThreadCounter<MemberId<T>> {
-        // if thread counter exists
-        if let Some(last_thread_author_counter) = Self::last_thread_author_counter() {
-            // if last(previous) author is the same as current author
-            if last_thread_author_counter.author_id == author_id {
-                return last_thread_author_counter.increment();
+    fn anyone_can_delete_post(thread_id: T::ThreadId, post_id: T::PostId) -> bool {
+        let thread_exists = <ThreadById<T>>::contains_key(thread_id);
+        let post = <PostThreadIdByPostId<T>>::get(thread_id, post_id);
+        !thread_exists
+            && frame_system::Module::<T>::block_number().saturating_sub(post.last_edited)
+                >= T::PostLifeTime::get()
+    }
+
+    fn pay_off(
+        thread_id: T::ThreadId,
+        amount: BalanceOf<T>,
+        account_id: &T::AccountId,
+    ) -> DispatchResult {
+        let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(thread_id);
+        <Balances<T> as Currency<T::AccountId>>::transfer(
+            &state_cleanup_treasury_account,
+            account_id,
+            amount,
+            ExistenceRequirement::AllowDeath,
+        )
+    }
+
+    fn transfer_to_state_cleanup_treasury_account(
+        amount: BalanceOf<T>,
+        thread_id: T::ThreadId,
+        account_id: &T::AccountId,
+    ) -> DispatchResult {
+        let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(thread_id);
+        <Balances<T> as Currency<T::AccountId>>::transfer(
+            account_id,
+            &state_cleanup_treasury_account,
+            amount,
+            ExistenceRequirement::AllowDeath,
+        )
+    }
+
+    fn ensure_thread_mode(
+        origin: T::Origin,
+        thread_author_id: MemberId<T>,
+        thread_id: T::ThreadId,
+    ) -> DispatchResult {
+        let thread = Self::thread_by_id(thread_id);
+
+        match thread.mode {
+            ThreadMode::Open => Ok(()),
+            ThreadMode::Closed(members) => {
+                let is_thread_author = thread_author_id == thread.author_id;
+                let is_councilor =
+                    T::CouncilOriginValidator::ensure_member_consulate(origin, thread_author_id)
+                        .is_ok();
+                let is_allowed_member = members
+                    .iter()
+                    .any(|member_id| *member_id == thread_author_id);
+
+                if is_thread_author || is_councilor || is_allowed_member {
+                    Ok(())
+                } else {
+                    Err(Error::<T>::CannotPostOnClosedThread.into())
+                }
             }
         }
-
-        // else return new counter (set with 1 thread number)
-        ThreadCounter::new(author_id)
     }
 }
