@@ -77,6 +77,7 @@ export type OwnedNftFieldsFragment = {
     | { __typename: 'TransactionalStatusInitiatedOfferToMember' }
     | { __typename: 'TransactionalStatusAuction' }
     | { __typename: 'TransactionalStatusBuyNow' }
+  creatorChannel: { id: string }
 }
 
 export type GetChannelByIdQueryVariables = Types.Exact<{
@@ -2117,6 +2118,9 @@ export const OwnedNftFields = gql`
       __typename
     }
     creatorRoyalty
+    creatorChannel {
+      id
+    }
   }
 `
 export const CouncilMemberFields = gql`
