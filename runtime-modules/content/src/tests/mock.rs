@@ -20,7 +20,6 @@ use common::currency::GovernanceCurrency;
 /// Module Aliases
 pub type System = frame_system::Module<Test>;
 pub type Content = Module<Test>;
-pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
 
 /// Type aliases
 pub type HashOutput = <Test as frame_system::Trait>::Hash;
@@ -32,6 +31,7 @@ pub type CuratorId = <Test as ContentActorAuthenticator>::CuratorId;
 pub type CuratorGroupId = <Test as ContentActorAuthenticator>::CuratorGroupId;
 pub type MemberId = <Test as MembershipTypes>::MemberId;
 pub type ChannelId = <Test as storage::Trait>::ChannelId;
+pub type StorageBucketId = <Test as storage::Trait>::StorageBucketId;
 
 /// Account Ids
 pub const DEFAULT_MEMBER_ACCOUNT_ID: u64 = 101;
@@ -270,9 +270,8 @@ parameter_types! {
     pub const BlacklistSizeLimit: u64 = 1;
     pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 1;
     pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
-        storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
+        storage::StorageBucketsPerBagValueConstraint {min: 0, max_min_diff: 7};
     pub const InitialStorageBucketsNumberForDynamicBag: u64 = 3;
-    pub const MaxRandomIterationNumber: u64 = 3;
     pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 3;
     pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 4;
     pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
@@ -304,8 +303,6 @@ impl storage::Trait for Test {
         DefaultMemberDynamicBagNumberOfStorageBuckets;
     type DefaultChannelDynamicBagNumberOfStorageBuckets =
         DefaultChannelDynamicBagNumberOfStorageBuckets;
-    type Randomness = CollectiveFlip;
-    type MaxRandomIterationNumber = MaxRandomIterationNumber;
     type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
     type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
     type MaxNumberOfPendingInvitationsPerDistributionBucket =

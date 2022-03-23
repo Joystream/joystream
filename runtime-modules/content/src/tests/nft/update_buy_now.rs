@@ -18,7 +18,7 @@ fn update_buy_now_price() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -106,7 +106,7 @@ fn update_buy_now_price_not_issued() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel_with_video();
 
         // Make an attempt to update buy now price for nft which is not issued yet
         let update_buy_now_price_result = Content::update_buy_now_price(
@@ -131,7 +131,7 @@ fn update_buy_now_price_auth_failed() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -172,7 +172,7 @@ fn update_buy_now_price_not_authorized() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -216,7 +216,7 @@ fn update_buy_now_price_not_in_auction_state() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(

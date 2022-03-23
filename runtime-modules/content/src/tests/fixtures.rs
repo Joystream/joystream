@@ -6,8 +6,9 @@ use frame_support::traits::Currency;
 use frame_system::RawOrigin;
 use sp_std::cmp::min;
 use sp_std::collections::btree_map::BTreeMap;
+use sp_std::iter::FromIterator;
 use sp_std::iter::{IntoIterator, Iterator};
-use std::iter::FromIterator;
+use storage::DynamicBagType;
 use strum::IntoEnumIterator;
 
 // Index which indentifies the item in the commitment set we want the proof for
@@ -95,6 +96,8 @@ impl CreateChannelFixture {
                 meta: None,
                 collaborators: BTreeSet::new(),
                 moderators: BTreeSet::new(),
+                storage_buckets: BTreeSet::new(),
+                distribution_buckets: BTreeSet::new(),
                 expected_dynamic_bag_deletion_prize: Default::default(),
                 expected_data_object_deletion_prize: DATA_OBJECT_DELETION_PRIZE,
             },
@@ -146,6 +149,27 @@ impl CreateChannelFixture {
             },
             ..self
         }
+    }
+
+    pub fn with_storage_buckets(self, storage_buckets: BTreeSet<u64>) -> Self {
+        Self {
+            params: ChannelCreationParameters::<Test> {
+                storage_buckets,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_default_storage_buckets(self) -> Self {
+        // No storage buckets
+        if storage::NextStorageBucketId::<Test>::get() == 0 {
+            return self.with_storage_buckets(BTreeSet::new());
+        }
+
+        let default_storage_bucket_id =
+            storage::NextStorageBucketId::<Test>::get().saturating_sub(1);
+        return self.with_storage_buckets(BTreeSet::from_iter(vec![default_storage_bucket_id]));
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -1809,13 +1833,6 @@ impl DeleteVideoAsModeratorFixture {
     pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
         Self { actor, ..self }
     }
-
-    pub fn with_num_objects_to_delete(self, num_objects_to_delete: u64) -> Self {
-        Self {
-            num_objects_to_delete,
-            ..self
-        }
-    }
 }
 
 impl VideoDeletion for DeleteVideoAsModeratorFixture {
@@ -2358,7 +2375,26 @@ pub fn create_data_objects_helper() -> Vec<DataObjectCreationParameters> {
     create_data_object_candidates_helper(1, DATA_OBJECTS_NUMBER)
 }
 
-pub fn create_initial_storage_buckets_helper() {
+pub fn set_dynamic_bag_creation_policy_for_storage_numbers(storage_bucket_number: u64) {
+    // Set storage bucket in the dynamic bag creation policy to zero.
+    assert_eq!(
+        Storage::<Test>::update_number_of_storage_buckets_in_dynamic_bag_creation_policy(
+            Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+            DynamicBagType::Channel,
+            storage_bucket_number,
+        ),
+        Ok(())
+    );
+    assert_eq!(
+        Storage::<Test>::update_number_of_storage_buckets_in_dynamic_bag_creation_policy(
+            Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+            DynamicBagType::Member,
+            storage_bucket_number,
+        ),
+        Ok(())
+    );
+}
+pub fn create_initial_storage_buckets_helper() -> StorageBucketId {
     // first set limits
     assert_eq!(
         Storage::<Test>::update_storage_buckets_voucher_max_limits(
@@ -2368,6 +2404,10 @@ pub fn create_initial_storage_buckets_helper() {
         ),
         Ok(())
     );
+
+    set_dynamic_bag_creation_policy_for_storage_numbers(1);
+
+    let storage_bucket_id = Storage::<Test>::next_storage_bucket_id();
 
     // create bucket(s)
     assert_eq!(
@@ -2380,6 +2420,8 @@ pub fn create_initial_storage_buckets_helper() {
         ),
         Ok(())
     );
+
+    storage_bucket_id
 }
 
 pub fn set_data_object_deletion_prize(deletion_prize: u64) {
@@ -2395,7 +2437,7 @@ pub fn set_data_object_deletion_prize(deletion_prize: u64) {
 pub fn create_default_member_owned_channel_with_video_with_nft() -> (ChannelId, VideoId) {
     let channel_id = Content::next_channel_id();
     let video_id = Content::next_video_id();
-    create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+    create_default_member_owned_channel_with_video();
     // Issue nft
     assert_ok!(Content::issue_nft(
         Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
@@ -2411,8 +2453,15 @@ pub fn create_default_member_owned_channel_with_video_with_nft() -> (ChannelId, 
     (channel_id, video_id)
 }
 
-pub fn create_default_member_owned_channel(deletion_prize: u64) {
-    CreateChannelFixture::default()
+pub fn create_default_member_owned_channel() {
+    create_default_member_owned_channel_with_storage_buckets(true, DATA_OBJECT_DELETION_PRIZE)
+}
+
+pub fn create_default_member_owned_channel_with_storage_buckets(
+    include_storage_buckets: bool,
+    deletion_prize: u64,
+) {
+    let mut channel_fixture = CreateChannelFixture::default()
         .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
         .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
         .with_data_object_deletion_prize(deletion_prize)
@@ -2421,13 +2470,20 @@ pub fn create_default_member_owned_channel(deletion_prize: u64) {
             object_creation_list: create_data_objects_helper(),
         })
         .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
-        .with_moderators(vec![DEFAULT_MODERATOR_ID].into_iter().collect())
-        .call_and_assert(Ok(()));
+        .with_moderators(vec![DEFAULT_MODERATOR_ID].into_iter().collect());
+
+    if include_storage_buckets {
+        set_dynamic_bag_creation_policy_for_storage_numbers(1);
+        channel_fixture = channel_fixture.with_default_storage_buckets();
+    }
+
+    channel_fixture.call_and_assert(Ok(()));
 }
 
 pub fn create_default_curator_owned_channel(deletion_prize: u64) {
     let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
     CreateChannelFixture::default()
+        .with_default_storage_buckets()
         .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
         .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
         .with_data_object_deletion_prize(deletion_prize)
@@ -2440,14 +2496,14 @@ pub fn create_default_curator_owned_channel(deletion_prize: u64) {
         .call_and_assert(Ok(()));
 }
 
-pub fn create_default_member_owned_channel_with_videos(deletion_prize: u64, number_of_videos: u8) {
-    create_default_member_owned_channel(deletion_prize);
+pub fn create_default_member_owned_channel_with_videos(number_of_videos: u8) {
+    create_default_member_owned_channel();
 
     for _ in 0..number_of_videos {
         CreateVideoFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_data_object_deletion_prize(deletion_prize)
+            .with_data_object_deletion_prize(DATA_OBJECT_DELETION_PRIZE)
             .with_assets(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_objects_helper(),
@@ -2457,8 +2513,29 @@ pub fn create_default_member_owned_channel_with_videos(deletion_prize: u64, numb
     }
 }
 
-pub fn create_default_member_owned_channel_with_video(deletion_prize: u64) {
-    create_default_member_owned_channel_with_videos(deletion_prize, 1)
+pub fn create_default_member_owned_channel_with_video() {
+    create_default_member_owned_channel_with_videos(1)
+}
+
+pub fn create_default_member_owned_channel_with_video_with_storage_buckets(
+    include_storage_buckets: bool,
+    deletion_prize: u64,
+) {
+    create_default_member_owned_channel_with_storage_buckets(
+        include_storage_buckets,
+        deletion_prize,
+    );
+
+    CreateVideoFixture::default()
+        .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+        .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+        .with_data_object_deletion_prize(deletion_prize)
+        .with_assets(StorageAssets::<Test> {
+            expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+            object_creation_list: create_data_objects_helper(),
+        })
+        .with_channel_id(NextChannelId::<Test>::get() - 1)
+        .call_and_assert(Ok(()));
 }
 
 pub fn create_default_curator_owned_channel_with_video(deletion_prize: u64) {
@@ -2476,8 +2553,8 @@ pub fn create_default_curator_owned_channel_with_video(deletion_prize: u64) {
         .call_and_assert(Ok(()));
 }
 
-pub fn create_default_member_owned_channel_with_video_and_post(deletion_prize: u64) {
-    create_default_member_owned_channel_with_video(deletion_prize);
+pub fn create_default_member_owned_channel_with_video_and_post() {
+    create_default_member_owned_channel_with_video();
     CreatePostFixture::default().call_and_assert(Ok(()));
 }
 
@@ -2493,8 +2570,8 @@ pub fn create_default_curator_owned_channel_with_video_and_post(deletion_prize: 
         .call_and_assert(Ok(()));
 }
 
-pub fn create_default_member_owned_channel_with_video_and_comment(deletion_prize: u64) {
-    create_default_member_owned_channel_with_video_and_post(deletion_prize);
+pub fn create_default_member_owned_channel_with_video_and_comment() {
+    create_default_member_owned_channel_with_video_and_post();
     CreatePostFixture::default()
         .with_params(VideoPostCreationParameters::<Test> {
             post_type: VideoPostType::<Test>::Comment(VideoPostId::one()),

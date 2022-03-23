@@ -13,7 +13,7 @@ fn update_channel_transfer_status_succeeds() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel();
 
         UpdateChannelTransferStatusFixture::default().call_and_assert(Ok(()))
     })
@@ -26,7 +26,7 @@ fn update_channel_transfer_status_fails_with_invalid_channel_id() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel();
 
         let invalid_channel_id = Content::next_channel_id();
 
@@ -43,7 +43,7 @@ fn update_channel_transfer_status_fails_with_invalid_origin() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel();
 
         UpdateChannelTransferStatusFixture::default()
             .with_origin(RawOrigin::Root)
@@ -58,7 +58,7 @@ fn update_channel_transfer_status_fails_with_member_actor() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel();
 
         let invalid_member_id = 111;
         UpdateChannelTransferStatusFixture::default()
@@ -74,7 +74,7 @@ fn update_channel_transfer_status_fails_with_invalid_collaborators() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel();
 
         let invalid_member_id = 111;
         UpdateChannelTransferStatusFixture::default()
@@ -90,7 +90,7 @@ fn update_channel_transfer_status_fails_with_non_channel_owner() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel();
         let curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
 
         UpdateChannelTransferStatusFixture::default()
@@ -107,7 +107,7 @@ fn accept_transfer_status_fails_with_invalid_origin() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel();
 
         AcceptChannelTransferFixture::default()
             .with_origin(RawOrigin::Root)
@@ -122,7 +122,7 @@ fn accept_transfer_status_succeeds() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel();
 
         UpdateChannelTransferStatusFixture::default()
             .with_transfer_status_by_member_id(DEFAULT_MEMBER_ID)
@@ -138,7 +138,7 @@ fn accept_transfer_status_fails_with_invalid_commitment_params() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel();
 
         UpdateChannelTransferStatusFixture::default()
             .with_transfer_status_by_member_id(DEFAULT_MEMBER_ID)
@@ -163,7 +163,7 @@ fn accept_transfer_status_fails_with_invalid_channel_id() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel();
 
         let invalid_channel_id = Content::next_channel_id();
 
@@ -180,7 +180,7 @@ fn accept_transfer_status_fails_with_invalid_status() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel();
 
         AcceptChannelTransferFixture::default()
             .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()))
@@ -194,7 +194,7 @@ fn accept_transfer_status_fails_with_non_channel_owner() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel();
         let curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
 
         UpdateChannelTransferStatusFixture::default()

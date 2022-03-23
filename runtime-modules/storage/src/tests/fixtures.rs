@@ -20,9 +20,8 @@ use crate::tests::mocks::{
 };
 use crate::{
     BagId, Cid, DataObjectCreationParameters, DataObjectStorage, DistributionBucket,
-    DistributionBucketId, DistributionBucketPicker, DynBagCreationParameters, DynamicBagId,
-    DynamicBagType, RawEvent, StaticBagId, StorageBucketOperatorStatus, StorageBucketPicker,
-    UploadParameters,
+    DistributionBucketId, DynBagCreationParameters, DynamicBagId, DynamicBagType, RawEvent,
+    StaticBagId, StorageBucketOperatorStatus, UploadParameters,
 };
 
 // Recommendation from Parity on testing on_finalize
@@ -1390,6 +1389,27 @@ impl CreateDynamicBagFixture {
         }
     }
 
+    pub fn with_storage_buckets(self, storage_buckets: BTreeSet<u64>) -> Self {
+        Self {
+            params: DynBagCreationParameters::<Test> {
+                storage_buckets,
+                ..self.params
+            },
+        }
+    }
+
+    pub fn with_distribution_buckets(
+        self,
+        distribution_buckets: BTreeSet<crate::DistributionBucketId<Test>>,
+    ) -> Self {
+        Self {
+            params: DynBagCreationParameters::<Test> {
+                distribution_buckets,
+                ..self.params
+            },
+        }
+    }
+
     pub fn with_bag_id(self, bag_id: DynamicBagId<Test>) -> Self {
         Self {
             params: DynBagCreationParameters::<Test> {
@@ -2313,10 +2333,6 @@ impl CreateStorageBucketFixture {
     }
 }
 
-pub fn pick_storage_buckets_for_dynamic_bag(dynamic_bag_type: DynamicBagType) -> BTreeSet<u64> {
-    StorageBucketPicker::<Test>::pick_storage_buckets(dynamic_bag_type)
-}
-
 pub struct UpdateDynamicBagDeletionPrizeValueFixture {
     origin: RawOrigin<u64>,
     deletion_prize: u64,
@@ -2411,10 +2427,4 @@ impl UpdateDataObjectDeletionPrizeValueFixture {
             );
         }
     }
-}
-
-pub fn pick_distribution_buckets_for_dynamic_bag(
-    dynamic_bag_type: DynamicBagType,
-) -> BTreeSet<DistributionBucketId<Test>> {
-    DistributionBucketPicker::<Test>::pick_distribution_buckets(dynamic_bag_type)
 }

@@ -612,7 +612,6 @@ impl common::StorageOwnership for Runtime {
 parameter_types! {
     pub const MaxDistributionBucketFamilyNumber: u64 = 200;
     pub const BlacklistSizeLimit: u64 = 10000; //TODO: adjust value
-    pub const MaxRandomIterationNumber: u64 = 10; //TODO: adjust value
     pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 20; //TODO: adjust value
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
     pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
@@ -638,8 +637,6 @@ impl storage::Trait for Runtime {
         DefaultMemberDynamicBagNumberOfStorageBuckets;
     type DefaultChannelDynamicBagNumberOfStorageBuckets =
         DefaultChannelDynamicBagNumberOfStorageBuckets;
-    type Randomness = RandomnessCollectiveFlip;
-    type MaxRandomIterationNumber = MaxRandomIterationNumber;
     type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
     type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
     type DistributionBucketOperatorId = DistributionBucketOperatorId;

@@ -57,11 +57,10 @@ parameter_types! {
     pub const StorageBucketsPerBagValueConstraint: crate::StorageBucketsPerBagValueConstraint =
         crate::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
     pub const InitialStorageBucketsNumberForDynamicBag: u64 = 3;
-    pub const MaxRandomIterationNumber: u64 = 3;
     pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 3;
     pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 4;
     pub const DistributionBucketsPerBagValueConstraint: crate::DistributionBucketsPerBagValueConstraint =
-        crate::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
+        crate::DistributionBucketsPerBagValueConstraint {min: 2, max_min_diff: 7};
     pub const MaxDataObjectSize: u64 = 400;
 }
 
@@ -79,7 +78,7 @@ pub const VOUCHER_SIZE_LIMIT: u64 = 100;
 pub const VOUCHER_OBJECTS_LIMIT: u64 = 20;
 pub const DEFAULT_STORAGE_BUCKET_SIZE_LIMIT: u64 = 100;
 pub const DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT: u64 = 10;
-pub const DEFAULT_STORAGE_BUCKETS_NUMBER: u64 = 10;
+pub const DEFAULT_STORAGE_BUCKETS_NUMBER: u64 = 3;
 
 impl crate::Trait for Test {
     type Event = TestEvent;
@@ -96,8 +95,6 @@ impl crate::Trait for Test {
         DefaultMemberDynamicBagNumberOfStorageBuckets;
     type DefaultChannelDynamicBagNumberOfStorageBuckets =
         DefaultChannelDynamicBagNumberOfStorageBuckets;
-    type Randomness = CollectiveFlip;
-    type MaxRandomIterationNumber = MaxRandomIterationNumber;
     type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
     type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
     type MaxNumberOfPendingInvitationsPerDistributionBucket =

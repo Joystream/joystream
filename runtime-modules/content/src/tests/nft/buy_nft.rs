@@ -19,7 +19,7 @@ fn buy_nft() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -123,7 +123,7 @@ fn buy_nft_not_issued() {
         //        create_simple_channel_and_video(DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID);
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel_with_video();
 
         // deposit balance to second member
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
@@ -151,7 +151,7 @@ fn buy_nft_auth_failed() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel_with_video();
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
 
         // Issue nft
@@ -192,7 +192,7 @@ fn buy_nft_not_in_buy_now_state() {
         let video_id = NextVideoId::<Test>::get();
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel_with_video();
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
 
         // Issue nft
@@ -225,7 +225,7 @@ fn buy_nft_insufficient_balance() {
         let video_id = NextVideoId::<Test>::get();
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -267,7 +267,7 @@ fn buy_nft_fails_with_invalid_price_commit() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel_with_video();
 
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)

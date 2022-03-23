@@ -12,7 +12,7 @@ fn setup_open_auction_scenario() {
 
     create_initial_storage_buckets_helper();
     increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-    create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+    create_default_member_owned_channel_with_video();
 
     // Issue nft
     assert_ok!(Content::issue_nft(
@@ -182,7 +182,7 @@ fn cancel_open_auction_bid_nft_is_not_issued() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel_with_video();
 
         // Make an attempt to cancel open auction bid for nft which is not issued yet
         let cancel_open_auction_bid_result = Content::cancel_open_auction_bid(

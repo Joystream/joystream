@@ -17,7 +17,7 @@ fn cancel_offer() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -100,7 +100,7 @@ fn cancel_offer_not_issued() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel_with_video();
 
         // Make an attempt to cancel offer for nft which is not issued yet
         let cancel_offer_result = Content::cancel_offer(
@@ -124,7 +124,7 @@ fn cancel_offer_auth_failed() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -165,7 +165,7 @@ fn cancel_offer_not_authorized() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -206,7 +206,7 @@ fn cancel_offer_not_in_auction_state() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(

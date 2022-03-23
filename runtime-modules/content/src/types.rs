@@ -206,7 +206,13 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
 /// Information about channel being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelCreationParametersRecord<StorageAssets, MemberId: Ord, Balance> {
+pub struct ChannelCreationParametersRecord<
+    StorageAssets,
+    MemberId: Ord,
+    StorageBucketId: Ord,
+    DistributionBucketId: Ord,
+    Balance,
+> {
     /// Assets referenced by metadata
     pub assets: Option<StorageAssets>,
     /// Metadata about the channel.
@@ -215,6 +221,10 @@ pub struct ChannelCreationParametersRecord<StorageAssets, MemberId: Ord, Balance
     pub collaborators: BTreeSet<MemberId>,
     /// initial moderator set
     pub moderators: BTreeSet<MemberId>,
+    /// Storage buckets to assign to a bag.
+    pub storage_buckets: BTreeSet<StorageBucketId>,
+    /// Distribution buckets to assign to a bag.
+    pub distribution_buckets: BTreeSet<DistributionBucketId>,
     /// Commitment for the dynamic bag deletion prize for the storage pallet.
     pub expected_dynamic_bag_deletion_prize: Balance,
     /// Commitment for the data object deletion prize for the storage pallet.
@@ -224,6 +234,8 @@ pub struct ChannelCreationParametersRecord<StorageAssets, MemberId: Ord, Balance
 pub type ChannelCreationParameters<T> = ChannelCreationParametersRecord<
     StorageAssets<T>,
     <T as common::MembershipTypes>::MemberId,
+    <T as storage::Trait>::StorageBucketId,
+    storage::DistributionBucketId<T>,
     BalanceOf<T>,
 >;
 

@@ -16,7 +16,7 @@ fn accept_incoming_offer() {
         let video_id = NextVideoId::<Test>::get();
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -95,7 +95,7 @@ fn accept_incoming_offer_nft_not_issued() {
         let video_id = NextVideoId::<Test>::get();
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel_with_video();
 
         // Make an attempt to accept incoming nft offer if corresponding nft is not issued yet
         let accept_incoming_offer_result =
@@ -115,7 +115,7 @@ fn accept_incoming_offer_auth_failed() {
         let video_id = NextVideoId::<Test>::get();
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -157,7 +157,7 @@ fn accept_incoming_offer_no_incoming_offers() {
         let video_id = NextVideoId::<Test>::get();
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
@@ -188,7 +188,7 @@ fn accept_incoming_offer_insufficient_balance() {
         let video_id = NextVideoId::<Test>::get();
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
