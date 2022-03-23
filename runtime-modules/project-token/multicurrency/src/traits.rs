@@ -91,3 +91,34 @@ pub trait ReservableMultiCurrency<AccountId> {
         who: AccountId,
     ) -> Result<Self::Balance, DispatchError>;
 }
+
+/// Interface for the transfer policy type
+pub trait TransferPermissionPolicy<TransferLocation, Hash> {
+    /// Establish whether transfer location is allowed for the policy
+    fn can_transfer_to(&self, location: &TransferLocation) -> bool;
+
+    /// Predicate method for distinguishing permissionless state
+    fn is_permissionless(&self) -> bool;
+
+    /// Predicate method for distinguishing permissioned state
+    fn is_permissioned(&self) -> bool;
+
+    // Transition function to permissionless state
+    fn change_to_permissionless(&mut self);
+
+    // Transition function to permissioned state with the given whitelist commitment
+    fn change_to_permissioned(&mut self, whitelist_commitment: Hash);
+}
+
+/// Account wrapper that encapsulates the validation for the transfer location
+/// by means of the visitor pattern
+pub trait TransferLocationTrait<AccountId, Hash> {
+    /// encapsulates eventual merkle tree validation given policy
+    fn is_valid_location_for_policy(
+        &self,
+        policy: &dyn TransferPermissionPolicy<Self, Hash>, // visitee
+    ) -> bool;
+
+    /// the wrapped account
+    fn location_account(&self) -> AccountId;
+}
