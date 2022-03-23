@@ -18,16 +18,10 @@ import {
   StorageDataObject,
   StorageSystemParameters,
   GeoCoordinates,
-  Video,
 } from 'query-node/dist/model'
 import BN from 'bn.js'
 import { getById, inconsistentState, INT32MAX, toNumber } from '../common'
-import {
-  getVideoActiveStatus,
-  updateVideoActiveCounters,
-  videoRelationsForCounters,
-  unsetAssetRelations,
-} from '../content/utils'
+import { videoRelationsForCounters, unsetAssetRelations } from '../content/utils'
 import {
   processDistributionBucketFamilyMetadata,
   processDistributionOperatorMetadata,
@@ -48,7 +42,7 @@ import {
   distributionOperatorId,
   distributionBucketIdByFamilyAndIndex,
 } from './utils'
-import { In } from 'typeorm'
+import { getAllManagers } from '../derivedPropertiesManager/applications'
 
 // STORAGE BUCKETS
 
@@ -235,54 +229,66 @@ export async function storage_DataObjectsUploaded({ event, store }: EventContext
 
 export async function storage_PendingDataObjectsAccepted({ event, store }: EventContext & StoreContext): Promise<void> {
   const [, , bagId, dataObjectIds] = new Storage.PendingDataObjectsAcceptedEvent(event).params
-  const dataObjects = await getDataObjectsInBag(store, bagId, dataObjectIds, ['videoThumbnail', 'videoMedia'])
+  const dataObjects = await getDataObjectsInBag(store, bagId, dataObjectIds, [
+    'videoThumbnail',
+    ...videoRelationsForCounters.map((item) => `videoThumbnail.${item}`),
+    'videoMedia',
+    ...videoRelationsForCounters.map((item) => `videoMedia.${item}`),
+  ])
 
-  // get ids of videos that are in relation with accepted data objects
-  const notUniqueVideoIds = dataObjects
-    .map((item) => [item.videoMedia?.id.toString(), item.videoThumbnail?.id.toString()])
-    .flat()
-    .filter((item) => item)
-  const videoIds = [...new Set(notUniqueVideoIds)]
+  /*
+    This function helps to workaround `store.get*` functions not return objects
+    shared by mutliple entities (at least now). Because of that when updating for example
+    `dataObject.videoThumnail.channel.activeVideoCounter` on dataObject A, this change is not
+    reflected on `dataObject.videoMedia.channel.activeVideoCounter` on dataObject B.
+  */
+  function applyUpdate<Entity extends { id: { toString(): string } }>(
+    entities: Entity[],
+    updateEntity: (entity: Entity) => void,
+    relations: string[][]
+  ): void {
+    const ids = entities.map((entity) => entity.id.toString())
 
-  // load videos
-  const videosPre = await store.getMany(Video, {
-    where: { id: In(videoIds) },
-    relations: videoRelationsForCounters,
-  })
+    for (const entity of entities) {
+      updateEntity(entity)
 
-  // remember if videos are fully active before data objects update
-  const initialActiveStates = videosPre.map((video) => getVideoActiveStatus(video)).filter((item) => item)
+      for (const relation of relations) {
+        const target = relation.reduce((acc, relationPart) => {
+          if (!acc) {
+            return acc
+          }
+
+          return acc[relationPart]
+        }, entity)
+
+        if (!target || target === entity || !ids.includes(target.id.toString())) {
+          continue
+        }
+
+        updateEntity(target)
+      }
+    }
+  }
+
+  // ensure update is reflected in all objects
+  applyUpdate(dataObjects, (dataObject) => (dataObject.isAccepted = true), [
+    ['videoThumbnail', 'thumbnailPhoto'],
+    ['videoThumbnail', 'media'],
+    ['videoMedia', 'thumbnailPhoto'],
+    ['videoMedia', 'media'],
+  ])
 
   // accept storage data objects
   await Promise.all(
     dataObjects.map(async (dataObject) => {
       dataObject.isAccepted = true
+
+      // update video active counters
+      await getAllManagers(store).storageDataObjects.onMainEntityUpdate(dataObject)
+
       await store.save<StorageDataObject>(dataObject)
     })
   )
-
-  /*
-    This approach of reloading videos one by one is not optimal, but it is straightforward algorithm.
-
-    This reduces otherwise complex situation caused by `store.get*` functions not return objects
-    shared by mutliple entities (at least now). Because of that when updating for example
-    `dataObject.videoThumnail.channel.activeVideoCounter` on dataObject A, this change is not
-    reflected on `dataObject.videoMedia.channel.activeVideoCounter` on dataObject B.
-
-    We can upgrade this algorithm in the future if this event mapping proves to have serious
-    performance issues. In that case, a unit test for this mapping will be required.
-  */
-  // load relevant videos one by one and update related active-video-counters
-  for (const initialActiveState of initialActiveStates) {
-    // load refreshed version of videos and related entities (channel, channel category, category)
-
-    const video = (await store.get(Video, {
-      where: { id: initialActiveState.video.id.toString() },
-      relations: videoRelationsForCounters,
-    })) as Video
-
-    await updateVideoActiveCounters(store, initialActiveState, getVideoActiveStatus(video))
-  }
 }
 
 export async function storage_DataObjectsMoved({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -308,18 +314,10 @@ export async function storage_DataObjectsDeleted({ event, store }: EventContext 
 
   await Promise.all(
     dataObjects.map(async (dataObject) => {
-      // remember if video is fully active before update
-      const initialVideoActiveStatus =
-        (dataObject.videoThumbnail && getVideoActiveStatus(dataObject.videoThumbnail)) ||
-        (dataObject.videoMedia && getVideoActiveStatus(dataObject.videoMedia)) ||
-        null
+      // update video active counters
+      await getAllManagers(store).storageDataObjects.onMainEntityDeletion(dataObject)
 
       await unsetAssetRelations(store, dataObject)
-
-      // update video active counters
-      if (initialVideoActiveStatus) {
-        await updateVideoActiveCounters(store, initialVideoActiveStatus, undefined)
-      }
     })
   )
 }

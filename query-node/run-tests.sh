@@ -28,9 +28,12 @@ docker-compose down -v
 docker-compose -f ../docker-compose.yml up -d joystream-node
 ./start.sh
 
+../tests/network-tests/start-storage.sh
+export REUSE_KEYS=true
+
 # pass the scenario name without .ts extension
 SCENARIO=$1
 # fallback if scenario if not specified
-SCENARIO=${SCENARIO:=full}
+SCENARIO=${SCENARIO:="content-directory"}
 
 time yarn workspace network-tests run-test-scenario ${SCENARIO}

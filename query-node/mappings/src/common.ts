@@ -17,6 +17,11 @@ export const INT32MAX = 2147483647
 // See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date
 export const TIMESTAMPMAX = 8640000000000000
 
+// definition of generic type for Hydra DatabaseManager's methods
+export type EntityType<T> = {
+  new (...args: any[]): T
+}
+
 /*
   Simple logger enabling error and informational reporting.
 
