@@ -1,5 +1,8 @@
 use codec::{Decode, Encode};
-use frame_support::{dispatch::DispatchResult, ensure};
+use frame_support::{
+    dispatch::{DispatchError, DispatchResult},
+    ensure,
+};
 use sp_arithmetic::traits::{Saturating, Zero};
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq)]
@@ -16,7 +19,7 @@ pub struct AccountData<Balance> {
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
-pub struct TokenData<Balance> {
+pub struct TokenData<Balance, AccountId> {
     /// Current token issuance
     current_total_issuance: Balance,
 
@@ -25,6 +28,9 @@ pub struct TokenData<Balance> {
 
     /// Initial issuance state
     issuance_state: IssuanceState,
+
+    /// Account for the token owner
+    owner_account: AccountId,
 }
 
 /// The possible issuance variants: This is a stub
@@ -39,6 +45,22 @@ enum IssuanceState {
     /// state for IBCO, it might get decorated with the JOY reserve
     /// amount for the token
     BondingCurve,
+}
+
+/// Builder for the token data struct
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
+pub struct TokenIssuanceParameters<Balance, AccountId> {
+    /// Initial issuance
+    initial_issuance: Balance,
+
+    /// Token account for the token itself
+    owner_account: AccountId,
+
+    /// Initial State builder: stub
+    initial_state: IssuanceState,
+
+    /// Initial existential deposit
+    existential_deposit: Balance,
 }
 
 /// Default trait for Issuance state
@@ -127,16 +149,7 @@ impl<Balance: Copy + PartialOrd + Saturating + Zero> AccountData<Balance> {
 }
 
 /// Interface for interacting with TokenData
-impl<Balance: Copy + PartialOrd + Saturating> TokenData<Balance> {
-    /// Construct new Token data
-    pub(crate) fn new(initial_issuance: Balance, existential_deposit: Balance) -> Self {
-        Self {
-            current_total_issuance: initial_issuance,
-            existential_deposit,
-            issuance_state: IssuanceState::Idle,
-        }
-    }
-
+impl<Balance: Copy + PartialOrd + Saturating, AccountId> TokenData<Balance, AccountId> {
     /// Incrase current token issuance: infallible
     pub(crate) fn increase_issuance(&mut self, amount: Balance) {
         self.current_total_issuance = self.current_total_issuance.saturating_add(amount);
@@ -161,9 +174,33 @@ impl<Balance: Copy + PartialOrd + Saturating> TokenData<Balance> {
     }
 }
 
+/// Encapsules parameters validation + TokenData construction
+impl<Balance: Zero + Copy + PartialOrd, AccountId> TokenIssuanceParameters<Balance, AccountId> {
+    /// Forward `self` state
+    pub fn try_build<T: crate::Trait>(
+        self,
+    ) -> Result<TokenData<Balance, AccountId>, DispatchError> {
+        ensure!(
+            self.initial_issuance >= self.existential_deposit,
+            crate::Error::<T>::ExistentialDepositExceedsInitialIssuance,
+        );
+        Ok(TokenData::<Balance, AccountId> {
+            current_total_issuance: self.initial_issuance,
+            owner_account: self.owner_account,
+            issuance_state: self.initial_state,
+            existential_deposit: self.existential_deposit,
+        })
+    }
+}
+
 // Aliases
 /// Alias for Account Data
 pub(crate) type AccountDataOf<T> = AccountData<<T as crate::Trait>::Balance>;
 
 /// Alias for Token Data
-pub(crate) type TokenDataOf<T> = TokenData<<T as crate::Trait>::Balance>;
+pub(crate) type TokenDataOf<T> =
+    TokenData<<T as crate::Trait>::Balance, <T as frame_system::Trait>::AccountId>;
+
+/// Alias for Token Issuance Parameters
+pub(crate) type TokenIssuanceParametersOf<T> =
+    TokenIssuanceParameters<<T as crate::Trait>::Balance, <T as frame_system::Trait>::AccountId>;

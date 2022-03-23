@@ -15,7 +15,7 @@ mod types;
 // crate imports
 use errors::Error;
 use events::{Event, RawEvent};
-use types::{AccountDataOf, TokenDataOf};
+use types::{AccountDataOf, TokenDataOf, TokenIssuanceParametersOf};
 
 /// Pallet Configuration Trait
 pub trait Trait: frame_system::Trait {
@@ -161,8 +161,7 @@ pub trait MultiCurrency<T: Trait> {
     /// Create token
     /// Preconditions:
     /// Postconditions:
-    fn issue_token(initial_issuance: T::Balance, existential_deposit: T::Balance)
-        -> DispatchResult;
+    fn issue_token(issuance_parameters: TokenIssuanceParametersOf<T>) -> DispatchResult;
 }
 
 decl_storage! {
@@ -355,17 +354,14 @@ impl<T: Trait> MultiCurrency<T> for Module<T> {
             .saturating_add(account_info.free_balance()))
     }
 
-    fn issue_token(
-        initial_issuance: T::Balance,
-        existential_deposit: T::Balance,
-    ) -> DispatchResult {
-        Self::ensure_can_issue_token(initial_issuance, existential_deposit)?;
+    fn issue_token(issuance_parameters: TokenIssuanceParametersOf<T>) -> DispatchResult {
+        let token_data = issuance_parameters.try_build::<T>()?;
 
         // == MUTATION SAFE ==
 
         let token_id = Self::next_token_id();
 
-        Self::do_issue_token(token_id, initial_issuance, existential_deposit);
+        Self::do_issue_token(token_id, token_data);
 
         Ok(())
     }
@@ -501,20 +497,6 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    #[inline]
-    fn ensure_can_issue_token(
-        initial_issuance: T::Balance,
-        existential_deposit: T::Balance,
-    ) -> DispatchResult {
-        // ensure existential deposit <= initial issuance
-        ensure!(
-            initial_issuance >= existential_deposit,
-            Error::<T>::ExistentialDepositExceedsInitialIssuance,
-        );
-
-        Ok(())
-    }
-
     // Infallible operations
 
     #[inline]
@@ -561,14 +543,8 @@ impl<T: Trait> Module<T> {
     }
 
     #[inline]
-    pub(crate) fn do_issue_token(
-        token_id: T::TokenId,
-        initial_issuance: T::Balance,
-        existential_deposit: T::Balance,
-    ) {
-        let new_token = TokenDataOf::<T>::new(initial_issuance, existential_deposit);
-
-        TokenInfoById::<T>::insert(token_id, new_token);
+    pub(crate) fn do_issue_token(token_id: T::TokenId, token_data: TokenDataOf<T>) {
+        TokenInfoById::<T>::insert(token_id, token_data);
         NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
     }
 }
