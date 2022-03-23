@@ -77,21 +77,21 @@ const App: React.FC<Props> = () => {
         <p>
         We have just upgraded to our new Olympia Chain. That means our clunky user interface has been replaced,
         and all the action will happen on <a target='_blank' rel='noopener noreferrer' href='https://www.dao.joystream.org'>dao.joystream.org</a>.
-        Be warned that as a new product, there will be bugs! If you are stuck - reach out on our
+        Be warned that as a new product, there will be bugs! If you are stuck - reach out on our{' '}
           <a target='_blank' rel='noopener noreferrer' href='https://discord.gg/DE9UN3YpRP'>Discord</a> and we&apos;ll guide you through the process :)
         </p>
         <ListParagraph>
           <span>We have kept this stripped down version intact for two reasons:</span>
           <ol>
             <li>
-              As the new pioneer doesn&apos;t store keys, you need to copy all your keys over to the
+              As the new pioneer doesn&apos;t store keys, you need to copy all your keys over to the{' '}
               <a target='_blank' rel='noopener noreferrer' href='https://polkadot.js.org/extension/'>polkadot-js extension</a>.
             </li>
             <li>If you want to be a Validator on Olympia, you will have to do it here for now!</li>
           </ol>
         </ListParagraph>
         <p>
-          More information can be found <a target='_blank' rel='noopener noreferrer' href='#0'>here</a>!
+          More information can be found <a target='_blank' rel='noopener noreferrer' href='https://blog.joystream.org/olympia-released/'>here</a>!
         </p>
       </Header>
       <Grid stackable>
