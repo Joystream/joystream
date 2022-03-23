@@ -1915,6 +1915,7 @@ export type BountyContribution = BaseGraphQlObject & {
   bounty: Bounty
   bountyId: Scalars['String']
   contributor?: Maybe<Membership>
+  /** The id of the contributor */
   contributorId?: Maybe<Scalars['String']>
   /** Amount of the contribution */
   amount: Scalars['BigInt']
@@ -1931,6 +1932,7 @@ export type BountyContributionConnection = {
 export type BountyContributionCreateInput = {
   bounty: Scalars['ID']
   contributor?: Maybe<Scalars['ID']>
+  contributorId?: Maybe<Scalars['String']>
   amount: Scalars['String']
 }
 
@@ -1950,6 +1952,8 @@ export enum BountyContributionOrderByInput {
   BountyDesc = 'bounty_DESC',
   ContributorAsc = 'contributor_ASC',
   ContributorDesc = 'contributor_DESC',
+  ContributorIdAsc = 'contributorId_ASC',
+  ContributorIdDesc = 'contributorId_DESC',
   AmountAsc = 'amount_ASC',
   AmountDesc = 'amount_DESC',
 }
@@ -1957,6 +1961,7 @@ export enum BountyContributionOrderByInput {
 export type BountyContributionUpdateInput = {
   bounty?: Maybe<Scalars['ID']>
   contributor?: Maybe<Scalars['ID']>
+  contributorId?: Maybe<Scalars['String']>
   amount?: Maybe<Scalars['String']>
 }
 
@@ -1985,6 +1990,11 @@ export type BountyContributionWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
+  contributorId_eq?: Maybe<Scalars['String']>
+  contributorId_contains?: Maybe<Scalars['String']>
+  contributorId_startsWith?: Maybe<Scalars['String']>
+  contributorId_endsWith?: Maybe<Scalars['String']>
+  contributorId_in?: Maybe<Array<Scalars['String']>>
   amount_eq?: Maybe<Scalars['BigInt']>
   amount_gt?: Maybe<Scalars['BigInt']>
   amount_gte?: Maybe<Scalars['BigInt']>
