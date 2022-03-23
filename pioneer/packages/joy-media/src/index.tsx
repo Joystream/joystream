@@ -10,6 +10,7 @@ import { Button, Grid, Message, Icon, Image } from 'semantic-ui-react';
 
 import AtlasScreenShot from './assets/atlas-screenshot.jpg';
 import JoystreamStudio from './assets/joystream-studio-screenshot.png';
+import PioneerScreenShot from './assets/pioneer-screenshot.png';
 
 const MediaMain = styled.main`
   display: flex;
@@ -27,6 +28,18 @@ const Header = styled.header`
   margin-bottom: 1em;
   h1 {
     color: #222 !important;
+  }
+  max-width: 86rem;
+`;
+
+const ListParagraph = styled.p`
+  margin-top: 1rem !important;
+  span {
+    margin-bottom: 0.2rem;
+  }
+  ol {
+    margin-top: 0.3rem;
+    list-style-position: inside;
   }
 `;
 
@@ -62,14 +75,51 @@ const App: React.FC<Props> = () => {
       <Header>
         <h1>Hello there!</h1>
         <p>
-          We have now upgraded to the Sumer chain.
+        We have just upgraded to our new Olympia Chain. That means our clunky user interface has been replaced,
+        and all the action will happen on <a target='_blank' rel='noopener noreferrer' href='https://www.dao.joystream.org'>dao.joystream.org</a>.
+        Be warned that as a new product, there will be bugs! If you are stuck - reach out on our
+          <a target='_blank' rel='noopener noreferrer' href='https://discord.gg/DE9UN3YpRP'>Discord</a> and we&apos;ll guide you through the process :)
         </p>
+        <ListParagraph>
+          <span>We have kept this stripped down version intact for two reasons:</span>
+          <ol>
+            <li>
+              As the new pioneer doesn&apos;t store keys, you need to copy all your keys over to the
+              <a target='_blank' rel='noopener noreferrer' href='https://polkadot.js.org/extension/'>polkadot-js extension</a>.
+            </li>
+            <li>If you want to be a Validator on Olympia, you will have to do it here for now!</li>
+          </ol>
+        </ListParagraph>
         <p>
-          Pioneer <b>no longer supports</b> media uploads and consumption.
+          More information can be found <a target='_blank' rel='noopener noreferrer' href='#0'>here</a>!
         </p>
       </Header>
       <Grid stackable>
         <Grid.Row columns={2}>
+          <Grid.Column>
+            <StyledMessage>
+              <Message.Header>Pioneer</Message.Header>
+              <Message.Content>
+                This website has been replaced by the new state-of-the-art Pioneer v2. Check it out!
+                <Screenshot
+                  src={PioneerScreenShot as string}
+                  href='https://www.dao.joystream.org'
+                  target='_blank'
+                  rel='noopener noreferrer'/>
+              </Message.Content>
+              <Button
+                size='big'
+                primary
+                icon
+                labelPosition='right'
+                href='https://www.dao.joystream.org'
+                target='_blank'
+                rel='noopener noreferrer'>
+                Launch Pioneer
+                <Icon name='arrow right' />
+              </Button>
+            </StyledMessage>
+          </Grid.Column>
           <Grid.Column>
             <StyledMessage>
               <Message.Header>Media consumption</Message.Header>

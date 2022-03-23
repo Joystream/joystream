@@ -20,28 +20,19 @@ import toolbox from './toolbox';
 import transfer from './transfer';
 // import memo from './memo';
 // Joy packages
-import members from './joy-members';
 import { terms, privacyPolicy } from './joy-pages';
 import election from './joy-election';
-import proposals from './joy-proposals';
 import roles from './joy-roles';
-import forum from './joy-forum';
-import tokenomics from './joy-tokenomics';
 import media from './joy-media';
 
 export default function create (t: <T = string> (key: string, text: string, options: { ns: string }) => T): Routes {
   return appSettings.uiMode === 'light'
     ? [
       media(t),
-      tokenomics(t),
-      members(t),
       roles(t),
       election(t),
-      proposals(t),
-      forum(t),
       staking(t),
       null,
-      transfer(t),
       accounts(t),
       settings(t),
       // Those are hidden
@@ -50,12 +41,8 @@ export default function create (t: <T = string> (key: string, text: string, opti
     ]
     : [
       media(t),
-      tokenomics(t),
-      members(t),
       roles(t),
       election(t),
-      proposals(t),
-      forum(t),
       staking(t),
       null,
       transfer(t),
