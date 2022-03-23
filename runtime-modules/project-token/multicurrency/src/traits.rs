@@ -59,6 +59,9 @@ pub trait MultiCurrencyBase<SourceLocation, DestinationLocation = SourceLocation
         token_id: Self::TokenId,
         who: SourceLocation,
     ) -> Result<Self::Balance, DispatchError>;
+
+    /// Retrieve total current issuance for token
+    fn current_issuance(token_id: Self::TokenId) -> Result<Self::Balance, DispatchError>;
 }
 
 pub trait ReservableMultiCurrency<AccountId> {

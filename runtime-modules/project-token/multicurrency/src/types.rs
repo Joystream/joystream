@@ -182,6 +182,11 @@ impl<Balance: Copy + PartialOrd + Saturating, AccountId> TokenData<Balance, Acco
     pub fn existential_deposit(&self) -> Balance {
         self.existential_deposit
     }
+
+    /// Retrieve current total issuance
+    pub fn current_issuance(&self) -> Balance {
+        self.current_total_issuance
+    }
 }
 
 /// Encapsules parameters validation + TokenData construction

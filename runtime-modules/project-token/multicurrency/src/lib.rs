@@ -32,7 +32,6 @@ pub trait Trait: frame_system::Trait {
     type TokenId: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug;
 }
 
-/// State configuration
 decl_storage! {
     trait Store for Module<T: Trait> as MultiCurrency {
         /// Double map TokenId x AccountId => AccountData for managing account data
@@ -268,6 +267,13 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
         let account_info = Self::ensure_account_data_exists(token_id, &who)?;
 
         Ok(account_info.free_balance())
+    }
+
+    /// Retrieve total current issuance for token
+    /// Preconditions
+    /// - `token_id` must be valid
+    fn current_issuance(token_id: Self::TokenId) -> Result<Self::Balance, DispatchError> {
+        Self::ensure_token_exists(token_id).map(|token_data| token_data.current_issuance())
     }
 }
 
