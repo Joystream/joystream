@@ -42,16 +42,9 @@ jobs:
           echo ::set-output name=volumeSize::$(echo $jsonInput | jq -r '.volumeSize.value')
           echo ::set-output name=rpcVolumeSize::$(echo $jsonInput | jq -r '.rpcVolumeSize.value')
           echo ::set-output name=skipChainSetup::$(echo $jsonInput | jq -r '.skipChainSetup.value')
+          echo ::set-output name=runtimeProfile::$(echo $jsonInput | jq -r '.runtimeProfile.value')
           initialBalancesFile=$(echo $jsonInput | jq -r '.initialBalancesFile.value')
           initialMembersFile=$(echo $jsonInput | jq -r '.initialMembersFile.value')
-          proposalParametersInput=$(echo $jsonInput | jq -r '.proposalParameters.value')
-
-          if [ $proposalParametersInput = "{}" ]
-          then
-            echo ::set-output name=proposalParameters::''
-          else
-            echo ::set-output name=proposalParameters::$proposalParametersInput
-          fi
 
           if [ -z "$initialBalancesFile" ]
           then
@@ -128,8 +121,8 @@ jobs:
 
       - name: Run playbook to setup all hosts and compile joystream-node
         uses: dawidd6/action-ansible-playbook@v2
-        # Build binaries if AMI not specified or a custom proposals parameter is passed
-        if: steps.myoutputs.outputs.ec2AMI == '' || steps.myoutputs.outputs.proposalParameters != ''
+        # Build binaries if AMI not specified
+        if: steps.myoutputs.outputs.ec2AMI == ''
         with:
           playbook: build-code.yml
           directory: devops/aws
@@ -139,7 +132,7 @@ jobs:
             --inventory inventory
             --extra-vars "branch_name=${{ steps.myoutputs.outputs.branchName }} \
                           git_repo=${{ steps.myoutputs.outputs.gitRepo }} data_path=mydata \
-                          proposal_parameters=${{ steps.myoutputs.outputs.proposalParameters }}"
+                          runtime_profile=${{ steps.myoutputs.outputs.runtimeProfile }}"
 
       - name: Run playbook to install additional utils on build server
         uses: dawidd6/action-ansible-playbook@v2

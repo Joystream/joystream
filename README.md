@@ -81,10 +81,10 @@ A step by step guide to setup a full node and validator on the Joystream testnet
 yarn build:packages
 
 # Build the test joystream-node
-TEST_NODE=true yarn build:node:docker
+RUNTIME_PROFILE=TESTING yarn build:node:docker
 
 # Run tests
-./query-node/run-tests.sh
+./tests/network-tests/run-full-tests.sh
 ```
 
 ### Contributing

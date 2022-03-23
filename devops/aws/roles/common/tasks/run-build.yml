@@ -6,7 +6,7 @@
   args:
     chdir: '{{ remote_code_path }}'
   environment:
-    ALL_PROPOSALS_PARAMETERS_JSON: '{{ proposal_parameters }}'
+    RUNTIME_PROFILE: '{{ runtime_profile }}'
   # Run in async fashion for max duration of 1 hr
   async: 3600
   poll: 0
