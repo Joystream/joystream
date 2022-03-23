@@ -7,14 +7,9 @@ import { formatBalance } from '@polkadot/util'
 export default abstract class StakingCommandBase extends AccountsCommandBase {
   private async availableControllers(): Promise<[AccountId, StakingLedger][]> {
     const controllers = await this.getStakingLedgers()
-    const stakerMap: [AccountId, StakingLedger][] = []
-    controllers.forEach(([key, value]) => {
-      const ledger = value.unwrapOr(undefined)
-      if (!!ledger && this.isKeyAvailable(key)) {
-        stakerMap.push([key, ledger])
-      }
-    })
-    return stakerMap
+    return controllers
+      .filter(([key, value]) => value.isSome && this.isKeyAvailable(key))
+      .map(([key, value]) => [key, value.unwrap()])
   }
 
   private async getStakingLedgers() {
@@ -74,7 +69,7 @@ export default abstract class StakingCommandBase extends AccountsCommandBase {
     return await this.simplePrompt<number>({ message, type: 'number' })
   }
 
-  async electionStatus() {
+  async checkElectionStatus() {
     const electionStatus = await this.getApi().getEraElectionStatus()
     if (electionStatus.isOpen === true) {
       this.warn(

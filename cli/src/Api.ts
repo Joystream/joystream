@@ -415,7 +415,7 @@ export default class Api {
     return await this.entriesByAccountIds(this._api.query.staking.ledger)
   }
 
-  async isControllerValid(account: string) {
+  async isControllerValid(account: string): Promise<Option<StakingLedger>> {
     return await this._api.query.staking.ledger(account)
   }
 
