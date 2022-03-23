@@ -17,11 +17,35 @@ pub struct AccountData<Balance> {
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
 pub struct TokenData<Balance> {
-    /// Current token issuanc
+    /// Current token issuance
     current_total_issuance: Balance,
 
     /// Existential deposit allowed for the token
     existential_deposit: Balance,
+
+    /// Initial issuance state
+    issuance_state: IssuanceState,
+}
+
+/// The possible issuance variants: This is a stub
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+enum IssuanceState {
+    /// Initial idle state
+    Idle,
+
+    /// Initial state sale (this has to be defined)
+    Sale,
+
+    /// state for IBCO, it might get decorated with the JOY reserve
+    /// amount for the token
+    BondingCurve,
+}
+
+/// Default trait for Issuance state
+impl Default for IssuanceState {
+    fn default() -> Self {
+        IssuanceState::Idle
+    }
 }
 
 /// Default trait for AccountData
@@ -109,6 +133,7 @@ impl<Balance: Copy + PartialOrd + Saturating> TokenData<Balance> {
         Self {
             current_total_issuance: initial_issuance,
             existential_deposit,
+            issuance_state: IssuanceState::Idle,
         }
     }
 
