@@ -10,12 +10,13 @@ use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 // crate modules
 mod errors;
 mod events;
+mod tests;
 mod traits;
 mod types;
 
 // crate imports
 use errors::Error;
-use events::{Event, RawEvent};
+pub use events::{Event, RawEvent};
 use traits::{MultiCurrencyBase, ReservableMultiCurrency};
 use types::{AccountDataOf, TokenDataOf, TokenIssuanceParametersOf};
 
@@ -35,12 +36,14 @@ pub trait Trait: frame_system::Trait {
 decl_storage! {
     trait Store for Module<T: Trait> as MultiCurrency {
         /// Double map TokenId x AccountId => AccountData for managing account data
-        pub AccountInfoByTokenAndAccount get(fn account_info_by_account_and_token): double_map
+        pub AccountInfoByTokenAndAccount get(fn account_info_by_account_and_token) config():
+            double_map
             hasher(blake2_128_concat) T::TokenId,
             hasher(blake2_128_concat) T::AccountId => AccountDataOf<T>;
 
         /// map TokenId => TokenData to retrieve token information
-        pub TokenInfoById get(fn token_info_by_id): map
+        pub TokenInfoById get(fn token_info_by_id) config():
+            map
             hasher(blake2_128_concat) T::TokenId => TokenDataOf<T>;
 
         /// Token Id nonce

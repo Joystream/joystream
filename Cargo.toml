@@ -17,7 +17,7 @@ members = [
 	"runtime-modules/bounty",
 	"runtime-modules/blog",
 	"runtime-modules/utility",
-	"runtime-modules/project-token/multicurrency",    
+	"runtime-modules/project-token",    
 	"node",
 	"utils/chain-spec-builder/",
 ]
