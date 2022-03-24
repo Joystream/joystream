@@ -457,7 +457,6 @@ export interface EnglishAuction extends Struct {
   readonly top_bid: Option<EnglishAuctionBid>;
   readonly whitelist: BTreeSet<MemberId>;
   readonly extension_period: u32;
-  readonly auction_duration: u32;
   readonly min_bid_step: u128;
   readonly end: u32;
 }
@@ -474,7 +473,6 @@ export interface EnglishAuctionParams extends Struct {
   readonly buy_now_price: Option<u128>;
   readonly whitelist: BTreeSet<MemberId>;
   readonly end: u32;
-  readonly auction_duration: u32;
   readonly extension_period: u32;
   readonly min_bid_step: u128;
 }

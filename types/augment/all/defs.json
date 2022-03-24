@@ -778,7 +778,6 @@
         "buy_now_price": "Option<u128>",
         "whitelist": "BTreeSet<MemberId>",
         "end": "u32",
-        "auction_duration": "u32",
         "extension_period": "u32",
         "min_bid_step": "u128"
     },
@@ -794,7 +793,6 @@
         "top_bid": "Option<EnglishAuctionBid>",
         "whitelist": "BTreeSet<MemberId>",
         "extension_period": "u32",
-        "auction_duration": "u32",
         "min_bid_step": "u128",
         "end": "u32"
     },
