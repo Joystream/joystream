@@ -7,7 +7,7 @@ import { Redirect } from 'react-router';
 
 function NotFound (): React.ReactElement {
   return (
-    <Redirect to='/tokenomics' />
+    <Redirect to='/new-pioneer' />
   );
 }
 

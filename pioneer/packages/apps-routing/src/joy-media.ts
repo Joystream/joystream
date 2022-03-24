@@ -6,8 +6,8 @@ export default function create (t: <T = string> (key: string, text: string, opti
   return {
     Component: Media,
     display: {},
-    text: t<string>('nav.media', 'Media', { ns: 'apps-routing' }),
+    text: t<string>('nav.media', 'New Pioneer', { ns: 'apps-routing' }),
     icon: 'play-circle',
-    name: 'media'
+    name: 'new-pioneer'
   };
 }
