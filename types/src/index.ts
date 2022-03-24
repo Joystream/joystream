@@ -34,6 +34,8 @@ export const types: RegistryTypes = {
   ...content,
   // https://github.com/polkadot-js/api/blob/master/CHANGELOG.md#351-jan-18-2020
   AccountInfo: 'AccountInfoWithRefCount',
+  // Required for compatibility with @polkadot/api version >= 6.0
+  ValidatorPrefs: 'ValidatorPrefsWithCommission',
 }
 
 // Allows creating types without api instance (it's not a recommended way though, so should be used just for mocks)
