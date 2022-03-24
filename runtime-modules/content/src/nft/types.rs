@@ -414,7 +414,8 @@ pub struct EnglishAuctionBid<Balance, MemberId> {
     pub bidder_id: MemberId,
 }
 
-/// English Auction Init Params
+/// English Auction Init Params:
+/// auction is started IMMEDIATELY after it is created with extr: `start_open_auction`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId: Ord> {

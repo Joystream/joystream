@@ -352,7 +352,6 @@ fn pick_open_auction_winner_is_not_open_auction_type() {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
             extension_period: Content::min_auction_extension_period(),
-            auction_duration: Content::max_auction_duration(),
             min_bid_step: Content::max_bid_step(),
             end: AUCTION_ENDING_BLOCK,
             whitelist: BTreeSet::new(),

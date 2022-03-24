@@ -333,7 +333,6 @@ fn make_bid_nft_auction_expired() {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
             extension_period: Content::min_auction_extension_period(),
-            auction_duration: Content::min_auction_duration(),
             min_bid_step: Content::max_bid_step(),
             end: DEFAULT_AUCTION_END,
             whitelist: BTreeSet::new(),
