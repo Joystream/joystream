@@ -9,10 +9,9 @@ use sp_arithmetic::traits::{Saturating, Zero};
 use crate::traits::{TransferLocationTrait, TransferPermissionPolicy};
 
 // TODO: find a suitable symbol representation
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
-pub struct Symbol {}
+pub type Symbol = ();
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct AccountData<Balance> {
     /// Non-reserved part of the balance. There may still be restrictions
     /// on this, but it is the total pool what may in principle be
@@ -25,7 +24,7 @@ pub struct AccountData<Balance> {
     reserved_balance: Balance,
 }
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
 pub struct TokenData<Balance, AccountId> {
     /// Current token issuance
     current_total_issuance: Balance,
@@ -44,7 +43,7 @@ pub struct TokenData<Balance, AccountId> {
 }
 
 /// The possible issuance variants: This is a stub
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 enum IssuanceState {
     /// Initial idle state
     Idle,
@@ -77,13 +76,13 @@ pub struct TokenIssuanceParameters<Balance, AccountId> {
 }
 
 /// Transfer location without merkle proof
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
 pub struct SimpleLocation<AccountId> {
     account: AccountId,
 }
 
 /// Transfer location with merkle proof
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
 pub struct VerifiableLocation<AccountId, Hash> {
     merkle_proof: Vec<Hash>,
     account: AccountId,

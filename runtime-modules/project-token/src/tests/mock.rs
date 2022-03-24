@@ -87,7 +87,7 @@ pub struct GenesisConfigBuilder {
 }
 
 impl GenesisConfigBuilder {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             account_info_by_account_and_token: vec![],
             token_info_by_id: vec![],
@@ -95,7 +95,7 @@ impl GenesisConfigBuilder {
         }
     }
 
-    fn build(self) -> GenesisConfig<Test> {
+    pub fn build(self) -> GenesisConfig<Test> {
         GenesisConfig::<Test> {
             account_info_by_account_and_token: self.account_info_by_account_and_token,
             token_info_by_id: self.token_info_by_id,

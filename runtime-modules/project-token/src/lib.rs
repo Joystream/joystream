@@ -34,7 +34,7 @@ pub trait Trait: frame_system::Trait {
 }
 
 decl_storage! {
-    trait Store for Module<T: Trait> as MultiCurrency {
+    trait Store for Module<T: Trait> as Token {
         /// Double map TokenId x AccountId => AccountData for managing account data
         pub AccountInfoByTokenAndAccount get(fn account_info_by_account_and_token) config():
             double_map
