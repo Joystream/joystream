@@ -196,6 +196,7 @@ typegen:
     - content.NftSellOrderMade
     - content.NftBought
     - content.BuyNowCanceled
+    - content.NftSlingedBackToTheOriginalArtist
     # Utility
     - joystreamUtility.UpdatedWorkingGroupBudget
   outDir: ./mappings/generated/types
@@ -770,6 +771,8 @@ mappings:
       handler: contentNft_NftBought
     - event: content.BuyNowCanceled
       handler: contentNft_BuyNowCanceled
+    - event: content.NftSlingedBackToTheOriginalArtist
+      handler: contentNft_NftSlingedBackToTheOriginalArtist
 
     # storage v2
     - event: storage.StorageBucketCreated
