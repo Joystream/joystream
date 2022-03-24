@@ -3,60 +3,7 @@ use super::curators::add_curator_to_new_group;
 use super::fixtures::*;
 use super::mock::*;
 use crate::*;
-
-#[test]
-fn unsuccessful_reward_update_by_non_lead_account() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-        UpdateMaximumRewardFixture::default()
-            .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
-            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()))
-    })
-}
-
-#[test]
-fn successful_reward_update_by_lead_account() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-        UpdateMaximumRewardFixture::default().call_and_assert(Ok(()))
-    })
-}
-
-#[test]
-fn unsuccessful_cashout_update_by_non_lead_account() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-        UpdateMinCashoutFixture::default()
-            .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
-            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()))
-    })
-}
-
-#[test]
-fn successful_cashout_update_by_lead_account() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-        UpdateMinCashoutFixture::default().call_and_assert(Ok(()))
-    })
-}
-
-#[test]
-fn unsuccessful_commitment_update_by_non_lead_account() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-        UpdateCommitmentValueFixture::default()
-            .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
-            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()))
-    })
-}
-
-#[test]
-fn successful_commitment_update_by_lead_account() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-        UpdateCommitmentValueFixture::default().call_and_assert(Ok(()))
-    })
-}
+use sp_runtime::DispatchError;
 
 #[test]
 fn unsuccessful_reward_claim_with_member_auth_failed() {
@@ -162,12 +109,12 @@ fn unsuccessful_reward_claim_with_unsufficient_cashout() {
         ClaimChannelRewardFixture::default()
             .with_payments(vec![item.clone()])
             .with_item(item)
-            .call_and_assert(Err(Error::<Test>::UnsufficientCashoutAmount.into()))
+            .call_and_assert(Err(Error::<Test>::CashoutAmountBelowMinimumAmount.into()))
     })
 }
 
 #[test]
-fn unsuccessful_reward_claim_with_reward_limit_exceeded() {
+fn unsuccessful_reward_claim_with_cashout_limit_exceeded() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -177,13 +124,13 @@ fn unsuccessful_reward_claim_with_reward_limit_exceeded() {
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::one(),
-            cumulative_reward_earned: Content::max_reward_allowed() + 1,
+            cumulative_reward_earned: Content::max_cashout_allowed() + 1,
             reason: Hashing::hash_of(&b"reason".to_vec()),
         };
         ClaimChannelRewardFixture::default()
             .with_payments(vec![item.clone()])
             .with_item(item)
-            .call_and_assert(Err(Error::<Test>::TotalRewardLimitExceeded.into()))
+            .call_and_assert(Err(Error::<Test>::CashoutAmountExceedsMaximumAmount.into()))
     })
 }
 
@@ -361,6 +308,27 @@ fn unsuccessful_reward_claim_with_no_commitment_value_outstanding() {
 }
 
 #[test]
+fn unsuccessful_reward_claim_cashouts_disabled() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+        let payments = create_some_pull_payments_helper();
+        update_commit_value_with_payments_helper(&payments);
+
+        UpdateChannelPayoutsFixture::default()
+            .with_channel_cashouts_enabled(Some(false))
+            .call_and_assert(Ok(()));
+
+        ClaimChannelRewardFixture::default()
+            .with_payments(payments.clone())
+            .call_and_assert(Err(Error::<Test>::ChannelCashoutsDisabled.into()));
+    })
+}
+
+#[test]
 fn unsuccessful_reward_claim_with_successive_request() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -378,7 +346,7 @@ fn unsuccessful_reward_claim_with_successive_request() {
         // cashout is 0 now
         ClaimChannelRewardFixture::default()
             .with_payments(payments)
-            .call_and_assert(Err(Error::<Test>::UnsufficientCashoutAmount.into()))
+            .call_and_assert(Err(Error::<Test>::CashoutAmountBelowMinimumAmount.into()))
     })
 }
 
@@ -727,7 +695,7 @@ fn unsuccessful_claim_and_withdraw_with_unsufficient_cashout() {
         ClaimAndWithdrawChannelRewardFixture::default()
             .with_payments(vec![item.clone()])
             .with_item(item)
-            .call_and_assert(Err(Error::<Test>::UnsufficientCashoutAmount.into()))
+            .call_and_assert(Err(Error::<Test>::CashoutAmountBelowMinimumAmount.into()))
     })
 }
 
@@ -742,13 +710,13 @@ fn unsuccessful_claim_and_withdraw_with_reward_limit_exceeded() {
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::one(),
-            cumulative_reward_earned: Content::max_reward_allowed() + 1,
+            cumulative_reward_earned: Content::max_cashout_allowed() + 1,
             reason: Hashing::hash_of(&b"reason".to_vec()),
         };
         ClaimAndWithdrawChannelRewardFixture::default()
             .with_payments(vec![item.clone()])
             .with_item(item)
-            .call_and_assert(Err(Error::<Test>::TotalRewardLimitExceeded.into()))
+            .call_and_assert(Err(Error::<Test>::CashoutAmountExceedsMaximumAmount.into()))
     })
 }
 
@@ -832,6 +800,27 @@ fn unsuccessful_claim_and_withdraw_with_no_commitment() {
 }
 
 #[test]
+fn unsuccessful_claim_and_withdraw_cashouts_disabled() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+        let payments = create_some_pull_payments_helper();
+        update_commit_value_with_payments_helper(&payments);
+
+        UpdateChannelPayoutsFixture::default()
+            .with_channel_cashouts_enabled(Some(false))
+            .call_and_assert(Ok(()));
+
+        ClaimAndWithdrawChannelRewardFixture::default()
+            .with_payments(payments.clone())
+            .call_and_assert(Err(Error::<Test>::ChannelCashoutsDisabled.into()));
+    })
+}
+
+#[test]
 fn unsuccessful_claim_and_withdraw_double_spend() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -849,12 +838,12 @@ fn unsuccessful_claim_and_withdraw_double_spend() {
         // claim and withdraw
         ClaimAndWithdrawChannelRewardFixture::default()
             .with_payments(payments.clone())
-            .call_and_assert(Err(Error::<Test>::UnsufficientCashoutAmount.into()));
+            .call_and_assert(Err(Error::<Test>::CashoutAmountBelowMinimumAmount.into()));
 
         // claim only
         ClaimChannelRewardFixture::default()
             .with_payments(payments.clone())
-            .call_and_assert(Err(Error::<Test>::UnsufficientCashoutAmount.into()));
+            .call_and_assert(Err(Error::<Test>::CashoutAmountBelowMinimumAmount.into()));
 
         // withdraw only
         WithdrawFromChannelBalanceFixture::default().call_and_assert(Err(
@@ -902,6 +891,93 @@ fn successful_multiple_claims_and_withdrawals_when_reward_updated() {
         ClaimAndWithdrawChannelRewardFixture::default()
             .with_payments(payments2.clone())
             .with_item(payments2[DEFAULT_PROOF_INDEX])
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn unsuccessfull_channel_payouts_update_with_invalid_origin() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
+
+        UpdateChannelPayoutsFixture::default()
+            .with_origin(Origin::signed(LEAD_ACCOUNT_ID))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+
+        UpdateChannelPayoutsFixture::default()
+            .with_origin(Origin::none())
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    })
+}
+
+#[test]
+fn unsuccessfull_channel_payouts_update_with_insufficient_uploader_account_balance() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        let payload_params = ChannelPayoutsPayloadParameters::<Test> {
+            expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+            object_creation_params: DataObjectCreationParameters {
+                size: 1,
+                ipfs_content_id: vec![1],
+            },
+            uploader_account: DEFAULT_MEMBER_ACCOUNT_ID,
+        };
+
+        UpdateChannelPayoutsFixture::default()
+            .with_payload(Some(payload_params))
+            .call_and_assert(Err(storage::Error::<Test>::InsufficientBalance.into()));
+    })
+}
+
+#[test]
+fn unsuccessfull_channel_payouts_update_with_unexpected_data_size_fee() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        let payload_params = ChannelPayoutsPayloadParameters::<Test> {
+            expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee()
+                .saturating_add(One::one()),
+            object_creation_params: DataObjectCreationParameters {
+                size: 1,
+                ipfs_content_id: vec![1],
+            },
+            uploader_account: DEFAULT_MEMBER_ACCOUNT_ID,
+        };
+
+        UpdateChannelPayoutsFixture::default()
+            .with_payload(Some(payload_params))
+            .call_and_assert(Err(storage::Error::<Test>::DataSizeFeeChanged.into()));
+    })
+}
+
+#[test]
+fn successful_channel_payouts_update() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+
+        let payments = create_some_pull_payments_helper();
+        let merkle_root = generate_merkle_root_helper(&payments).pop().unwrap();
+        let payload_params = ChannelPayoutsPayloadParameters::<Test> {
+            expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+            object_creation_params: DataObjectCreationParameters {
+                size: 1,
+                ipfs_content_id: vec![1],
+            },
+            uploader_account: DEFAULT_MEMBER_ACCOUNT_ID,
+        };
+
+        UpdateChannelPayoutsFixture::default()
+            .with_commitment(Some(merkle_root))
+            .with_min_cashout_allowed(Some(1))
+            .with_max_cashout_allowed(Some(100))
+            .with_channel_cashouts_enabled(Some(false))
+            .with_payload(Some(payload_params))
             .call_and_assert(Ok(()));
     })
 }

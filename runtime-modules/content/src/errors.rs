@@ -262,13 +262,16 @@ decl_error! {
         /// Payment Proof verification failed
         PaymentProofVerificationFailed,
 
-        /// Total reward too high
-        TotalRewardLimitExceeded,
+        /// Channel cashout amount is too high to be claimed
+        CashoutAmountExceedsMaximumAmount,
 
-        /// Cashout amount too small
-        UnsufficientCashoutAmount,
+        /// Channel cashout amount is too low to be claimed
+        CashoutAmountBelowMinimumAmount,
 
         /// An attempt to withdraw funds from channel account failed, because the specified amount exceeds the account's balance
         WithdrawFromChannelAmountExceedsBalance,
+
+        /// Channel cashouts are currently disabled
+        ChannelCashoutsDisabled,
     }
 }

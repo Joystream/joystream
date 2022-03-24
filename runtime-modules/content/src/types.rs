@@ -442,6 +442,47 @@ impl<ChannelId: Clone, VideoPostId: Clone, OwnedNft: Clone>
     }
 }
 
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
+pub struct ChannelPayoutsPayloadParametersRecord<AccountId, Balance> {
+    pub uploader_account: AccountId,
+    pub object_creation_params: DataObjectCreationParameters,
+    pub expected_data_size_fee: Balance,
+}
+
+pub type ChannelPayoutsPayloadParameters<T> =
+    ChannelPayoutsPayloadParametersRecord<<T as frame_system::Trait>::AccountId, BalanceOf<T>>;
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
+pub struct UpdateChannelPayoutsParametersRecord<ChannelPayoutsPayloadParameters, Balance, Hash> {
+    pub commitment: Option<Hash>,
+    pub payload: Option<ChannelPayoutsPayloadParameters>,
+    pub min_cashout_allowed: Option<Balance>,
+    pub max_cashout_allowed: Option<Balance>,
+    pub channel_cashouts_enabled: Option<bool>,
+}
+
+impl<ChannelPayoutsPayloadParameters, Balance, Hash> Default
+    for UpdateChannelPayoutsParametersRecord<ChannelPayoutsPayloadParameters, Balance, Hash>
+{
+    fn default() -> Self {
+        Self {
+            commitment: None,
+            payload: None,
+            min_cashout_allowed: None,
+            max_cashout_allowed: None,
+            channel_cashouts_enabled: None,
+        }
+    }
+}
+
+pub type UpdateChannelPayoutsParameters<T> = UpdateChannelPayoutsParametersRecord<
+    ChannelPayoutsPayloadParameters<T>,
+    BalanceOf<T>,
+    <T as frame_system::Trait>::Hash,
+>;
+
 /// Operations with local pallet account.
 pub trait ModuleAccount<T: balances::Trait> {
     /// The module id, used for deriving its sovereign account ID.

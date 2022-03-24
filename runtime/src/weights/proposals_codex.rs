@@ -1,4 +1,4 @@
-//! THIS FILE WAS AUTO-GENERATED USING THE SUBSTRATE BENCHMARK CLI VERSION 2.0.0
+//! THIS FILE WAS AUTO-GENERATED USING THE SUBSTRATE BENCHMARK CLI VERSION 2.0.1
 
 #![allow(unused_parens)]
 #![allow(unused_imports)]
@@ -189,6 +189,15 @@ impl proposals_codex::WeightInfo for WeightInfo {
             .saturating_add((523_000 as Weight).saturating_mul(t as Weight))
             .saturating_add((239_000 as Weight).saturating_mul(d as Weight))
             .saturating_add(DbWeight::get().reads(6 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
+    }
+    fn create_proposal_update_channel_payouts(t: u32, d: u32, i: u32) -> Weight {
+        // TODO: Adjust using reference hardware
+        (121_547_000 as Weight)
+            .saturating_add((3_626_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((302_000 as Weight).saturating_mul(d as Weight))
+            .saturating_add((314_000 as Weight).saturating_mul(i as Weight))
+            .saturating_add(DbWeight::get().reads(7 as Weight))
             .saturating_add(DbWeight::get().writes(9 as Weight))
     }
 }

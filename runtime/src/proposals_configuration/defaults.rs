@@ -358,3 +358,17 @@ pub(crate) fn veto_proposal_proposal() -> ProposalParameters<BlockNumber, Balanc
         constitutionality: 1,
     }
 }
+
+// Proposal parameters for the 'Update Channel Payouts' proposal
+pub(crate) fn update_channel_payouts_proposal() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: 200,
+        grace_period: 100,
+        approval_quorum_percentage: 60,
+        approval_threshold_percentage: 80,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(100_000),
+        constitutionality: 1,
+    }
+}

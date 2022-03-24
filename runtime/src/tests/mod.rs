@@ -296,6 +296,7 @@ pub(crate) fn max_proposal_stake() -> u128 {
     stakes.push(<Runtime as proposals_codex::Trait>::LockBlogPostProposalParameters::get());
     stakes.push(<Runtime as proposals_codex::Trait>::UnlockBlogPostProposalParameters::get());
     stakes.push(<Runtime as proposals_codex::Trait>::VetoProposalProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Trait>::UpdateChannelPayoutsProposalParameters::get());
 
     stakes
         .iter()

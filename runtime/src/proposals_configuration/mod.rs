@@ -63,6 +63,8 @@ parameter_types! {
         ALL_PROPOSALS_PARAMETERS.unlock_blog_post_proposal;
     pub VetoProposalProposalParameters: ProposalParameters<BlockNumber, Balance> =
         ALL_PROPOSALS_PARAMETERS.veto_proposal_proposal;
+    pub UpdateChannelPayoutsProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.update_channel_payouts_proposal;
 }
 
 ///////////
@@ -93,6 +95,7 @@ struct AllProposalsParameters {
     pub lock_blog_post_proposal: ProposalParameters<BlockNumber, Balance>,
     pub unlock_blog_post_proposal: ProposalParameters<BlockNumber, Balance>,
     pub veto_proposal_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub update_channel_payouts_proposal: ProposalParameters<BlockNumber, Balance>,
 }
 
 // to initialize parameters only once.
@@ -196,7 +199,8 @@ fn convert_json_object_to_proposal_parameters(
         init_proposal_parameter_object!(params, jo.clone(), edit_blog_post_proposal);
         init_proposal_parameter_object!(params, jo.clone(), lock_blog_post_proposal);
         init_proposal_parameter_object!(params, jo.clone(), unlock_blog_post_proposal);
-        init_proposal_parameter_object!(params, jo, veto_proposal_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), veto_proposal_proposal);
+        init_proposal_parameter_object!(params, jo, update_channel_payouts_proposal);
     }
 
     params
@@ -334,5 +338,6 @@ fn default_parameters() -> AllProposalsParameters {
         lock_blog_post_proposal: defaults::lock_blog_post_proposal(),
         unlock_blog_post_proposal: defaults::unlock_blog_post_proposal(),
         veto_proposal_proposal: defaults::veto_proposal_proposal(),
+        update_channel_payouts_proposal: defaults::update_channel_payouts_proposal(),
     }
 }

@@ -634,6 +634,7 @@ impl crate::Trait for Test {
     type LockBlogPostProposalParameters = DefaultProposalParameters;
     type UnlockBlogPostProposalParameters = DefaultProposalParameters;
     type VetoProposalProposalParameters = DefaultProposalParameters;
+    type UpdateChannelPayoutsProposalParameters = DefaultProposalParameters;
 }
 
 parameter_types! {
@@ -901,6 +902,9 @@ impl crate::WeightInfo for () {
         0
     }
     fn create_proposal_veto_proposal(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn create_proposal_update_channel_payouts(_: u32, _: u32, _: u32) -> Weight {
         0
     }
 }

@@ -1171,123 +1171,177 @@ impl UpdateModeratorSetFixture {
     }
 }
 
-pub struct UpdateMaximumRewardFixture {
-    sender: AccountId,
-    new_amount: BalanceOf<Test>,
+pub struct UpdateChannelPayoutsFixture {
+    origin: Origin,
+    params: UpdateChannelPayoutsParameters<Test>,
 }
 
-impl UpdateMaximumRewardFixture {
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UpdateChannelPayoutsFixtureStateSnapshot {
+    pub commitment: HashOutput,
+    pub min_cashout_allowed: BalanceOf<Test>,
+    pub max_cashout_allowed: BalanceOf<Test>,
+    pub cashouts_enabled: bool,
+    pub uploader_account_balance: BalanceOf<Test>,
+    pub next_object_id: DataObjectId<Test>,
+}
+
+impl UpdateChannelPayoutsFixture {
     pub fn default() -> Self {
         Self {
-            sender: LEAD_ACCOUNT_ID,
-            new_amount: BalanceOf::<Test>::zero(),
+            origin: Origin::root(),
+            params: UpdateChannelPayoutsParameters::<Test>::default(),
         }
     }
 
-    pub fn with_sender(self, sender: AccountId) -> Self {
-        Self { sender, ..self }
+    pub fn with_origin(self, origin: Origin) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_commitment(self, commitment: Option<HashOutput>) -> Self {
+        let params = UpdateChannelPayoutsParameters::<Test> {
+            commitment,
+            ..self.params
+        };
+        Self { params, ..self }
+    }
+
+    pub fn with_payload(self, payload: Option<ChannelPayoutsPayloadParameters<Test>>) -> Self {
+        let params = UpdateChannelPayoutsParameters::<Test> {
+            payload,
+            ..self.params
+        };
+        Self { params, ..self }
+    }
+
+    pub fn with_min_cashout_allowed(self, min_cashout_allowed: Option<BalanceOf<Test>>) -> Self {
+        let params = UpdateChannelPayoutsParameters::<Test> {
+            min_cashout_allowed,
+            ..self.params
+        };
+        Self { params, ..self }
+    }
+
+    pub fn with_max_cashout_allowed(self, max_cashout_allowed: Option<BalanceOf<Test>>) -> Self {
+        let params = UpdateChannelPayoutsParameters::<Test> {
+            max_cashout_allowed,
+            ..self.params
+        };
+        Self { params, ..self }
+    }
+
+    pub fn with_channel_cashouts_enabled(self, channel_cashouts_enabled: Option<bool>) -> Self {
+        let params = UpdateChannelPayoutsParameters::<Test> {
+            channel_cashouts_enabled,
+            ..self.params
+        };
+        Self { params, ..self }
+    }
+
+    fn get_state_snapshot(&self) -> UpdateChannelPayoutsFixtureStateSnapshot {
+        UpdateChannelPayoutsFixtureStateSnapshot {
+            commitment: Content::commitment(),
+            min_cashout_allowed: Content::min_cashout_allowed(),
+            max_cashout_allowed: Content::max_cashout_allowed(),
+            cashouts_enabled: Content::channel_cashouts_enabled(),
+            uploader_account_balance: self
+                .params
+                .payload
+                .as_ref()
+                .map_or(0, |p| Balances::<Test>::usable_balance(p.uploader_account)),
+            next_object_id: storage::NextDataObjectId::<Test>::get(),
+        }
+    }
+
+    fn verify_success_state(
+        &self,
+        snapshot_pre: &UpdateChannelPayoutsFixtureStateSnapshot,
+        snapshot_post: &UpdateChannelPayoutsFixtureStateSnapshot,
+    ) {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ChannelPayoutsUpdated(
+                self.params.clone(),
+                self.params
+                    .payload
+                    .as_ref()
+                    .map(|_| snapshot_pre.next_object_id)
+            ))
+        );
+        if let Some(commitment) = self.params.commitment {
+            assert_eq!(snapshot_post.commitment, commitment);
+        } else {
+            assert_eq!(snapshot_post.commitment, snapshot_pre.commitment);
+        }
+
+        if let Some(min_cashout_allowed) = self.params.min_cashout_allowed {
+            assert_eq!(snapshot_post.min_cashout_allowed, min_cashout_allowed);
+        } else {
+            assert_eq!(
+                snapshot_post.min_cashout_allowed,
+                snapshot_pre.min_cashout_allowed
+            );
+        }
+
+        if let Some(max_cashout_allowed) = self.params.max_cashout_allowed {
+            assert_eq!(snapshot_post.max_cashout_allowed, max_cashout_allowed);
+        } else {
+            assert_eq!(
+                snapshot_post.max_cashout_allowed,
+                snapshot_pre.max_cashout_allowed
+            );
+        }
+
+        if let Some(cashouts_enabled) = self.params.channel_cashouts_enabled {
+            assert_eq!(snapshot_post.cashouts_enabled, cashouts_enabled);
+        } else {
+            assert_eq!(
+                snapshot_post.cashouts_enabled,
+                snapshot_pre.cashouts_enabled
+            );
+        }
+
+        if self.params.payload.is_some() {
+            assert_eq!(
+                snapshot_post.next_object_id,
+                snapshot_pre.next_object_id.saturating_add(One::one())
+            );
+            assert_eq!(
+                snapshot_post.uploader_account_balance,
+                snapshot_pre
+                    .uploader_account_balance
+                    .saturating_sub(<Test as storage::Trait>::DataObjectDeletionPrize::get())
+            );
+        } else {
+            assert_eq!(snapshot_post.next_object_id, snapshot_pre.next_object_id);
+            assert_eq!(
+                snapshot_post.uploader_account_balance,
+                snapshot_pre.uploader_account_balance
+            );
+        }
+    }
+
+    fn verify_error_state(
+        &self,
+        snapshot_pre: &UpdateChannelPayoutsFixtureStateSnapshot,
+        snapshot_post: &UpdateChannelPayoutsFixtureStateSnapshot,
+    ) {
+        assert_eq!(snapshot_post, snapshot_pre);
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender.clone());
-        let max_reward_pre = Content::max_reward_allowed();
+        let snapshot_pre = self.get_state_snapshot();
 
-        let actual_result = Content::update_max_reward_allowed(origin, self.new_amount.clone());
+        let actual_result =
+            Content::update_channel_payouts(self.origin.clone(), self.params.clone());
 
-        let max_reward_post = Content::max_reward_allowed();
-
-        assert_eq!(actual_result, expected_result);
-        if actual_result.is_ok() {
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::MaxRewardUpdated(self.new_amount.clone()))
-            );
-            assert_eq!(max_reward_post, self.new_amount);
-        } else {
-            assert_eq!(max_reward_post, max_reward_pre);
-        }
-    }
-}
-
-pub struct UpdateMinCashoutFixture {
-    sender: AccountId,
-    new_amount: BalanceOf<Test>,
-}
-
-impl UpdateMinCashoutFixture {
-    pub fn default() -> Self {
-        Self {
-            sender: LEAD_ACCOUNT_ID,
-            new_amount: BalanceOf::<Test>::zero(),
-        }
-    }
-
-    pub fn with_sender(self, sender: AccountId) -> Self {
-        Self { sender, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender.clone());
-        let min_cashout_pre = Content::min_cashout_allowed();
-
-        let actual_result = Content::update_min_cashout_allowed(origin, self.new_amount.clone());
-
-        let min_cashout_post = Content::min_cashout_allowed();
+        let snapshot_post = self.get_state_snapshot();
 
         assert_eq!(actual_result, expected_result);
         if actual_result.is_ok() {
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::MinCashoutUpdated(self.new_amount.clone()))
-            );
-            assert_eq!(min_cashout_post, self.new_amount);
+            self.verify_success_state(&snapshot_pre, &snapshot_post);
         } else {
-            assert_eq!(min_cashout_post, min_cashout_pre);
-        }
-    }
-}
-
-pub struct UpdateCommitmentValueFixture {
-    sender: AccountId,
-    new_commitment: HashOutput,
-}
-
-impl UpdateCommitmentValueFixture {
-    pub fn default() -> Self {
-        Self {
-            sender: LEAD_ACCOUNT_ID,
-            new_commitment: Hashing::hash_of(&PullPayment::<Test>::default()),
-        }
-    }
-
-    pub fn with_sender(self, sender: AccountId) -> Self {
-        Self { sender, ..self }
-    }
-
-    pub fn with_commit(self, new_commitment: HashOutput) -> Self {
-        Self {
-            new_commitment,
-            ..self
-        }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender.clone());
-        let commitment_pre = Content::commitment();
-
-        let actual_result = Content::update_commitment(origin, self.new_commitment.clone());
-
-        let commitment_post = Content::commitment();
-
-        assert_eq!(actual_result, expected_result);
-        if actual_result.is_ok() {
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::CommitmentUpdated(self.new_commitment))
-            );
-            assert_eq!(commitment_post, self.new_commitment);
-        } else {
-            assert_eq!(commitment_post, commitment_pre);
+            self.verify_error_state(&snapshot_pre, &snapshot_post);
         }
     }
 }
@@ -1761,7 +1815,7 @@ fn index_path_helper(len: usize, index: usize) -> Vec<IndexItem> {
     return path;
 }
 
-fn generate_merkle_root_helper<E: Encode>(collection: &[E]) -> Vec<HashOutput> {
+pub fn generate_merkle_root_helper<E: Encode>(collection: &[E]) -> Vec<HashOutput> {
     // generates merkle root from the ordered sequence collection.
     // The resulting vector is structured as follows: elements in range
     // [0..collection.len()) will be the tree leaves (layer 0), elements in range
@@ -1837,8 +1891,8 @@ pub fn create_some_pull_payments_helper() -> Vec<PullPayment<Test>> {
 
 pub fn update_commit_value_with_payments_helper(payments: &[PullPayment<Test>]) {
     let commit = generate_merkle_root_helper(payments).pop().unwrap();
-    UpdateCommitmentValueFixture::default()
-        .with_commit(commit)
+    UpdateChannelPayoutsFixture::default()
+        .with_commitment(Some(commit))
         .call_and_assert(Ok(()));
 }
 

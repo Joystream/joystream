@@ -12,6 +12,7 @@ mod types;
 
 use sp_std::cmp::max;
 use sp_std::mem::size_of;
+use sp_std::vec;
 
 pub use errors::*;
 pub use nft::*;
@@ -22,8 +23,8 @@ use codec::Codec;
 use codec::{Decode, Encode};
 
 pub use storage::{
-    BagIdType, DataObjectCreationParameters, DataObjectStorage, DynamicBagIdType, UploadParameters,
-    UploadParametersRecord,
+    BagIdType, DataObjectCreationParameters, DataObjectStorage, DynamicBagIdType, StaticBagId,
+    UploadParameters, UploadParametersRecord,
 };
 
 pub use common::{
@@ -38,7 +39,7 @@ use frame_support::{
     Parameter,
 };
 
-use frame_system::ensure_signed;
+use frame_system::{ensure_root, ensure_signed};
 
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
@@ -142,9 +143,11 @@ decl_storage! {
 
         pub Commitment get(fn commitment): <T as frame_system::Trait>::Hash;
 
-        pub MaxRewardAllowed get(fn max_reward_allowed) config(): BalanceOf<T>;
+        pub MaxCashoutAllowed get(fn max_cashout_allowed) config(): BalanceOf<T>;
 
         pub MinCashoutAllowed get(fn min_cashout_allowed) config(): BalanceOf<T>;
+
+        pub ChannelCashoutsEnabled get(fn channel_cashouts_enabled) config(): bool;
 
         /// Min auction duration
         pub MinAuctionDuration get(fn min_auction_duration) config(): T::BlockNumber;
@@ -1255,15 +1258,47 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: adjust Weight
-        pub fn update_commitment(
+        pub fn update_channel_payouts(
             origin,
-            new_commitment: <T as frame_system::Trait>::Hash,
+            params: UpdateChannelPayoutsParameters<T>
         ) {
-            let sender = ensure_signed(origin)?;
-            ensure_authorized_to_update_commitment::<T>(&sender)?;
+            ensure_root(origin)?;
 
-            <Commitment<T>>::put(new_commitment);
-            Self::deposit_event(RawEvent::CommitmentUpdated(new_commitment));
+            let payload_data_object_id = params.payload.as_ref().map(|_| { Storage::<T>::next_data_object_id() });
+            if let Some(payload) = params.payload.as_ref() {
+                let upload_params = UploadParameters::<T> {
+                    bag_id: storage::BagId::<T>::from(StaticBagId::Council),
+                    object_creation_list: vec![payload.object_creation_params.clone()],
+                    deletion_prize_source_account_id: payload.uploader_account.clone(),
+                    expected_data_size_fee: payload.expected_data_size_fee,
+                };
+                Storage::<T>::upload_data_objects(upload_params)?;
+            }
+
+            //
+            // == MUTATION_SAFE ==
+            //
+
+            if let Some(min_cashout_allowed) = params.min_cashout_allowed.as_ref() {
+                <MinCashoutAllowed<T>>::put(min_cashout_allowed);
+            }
+
+            if let Some(max_cashout_allowed) = params.max_cashout_allowed.as_ref() {
+                <MaxCashoutAllowed<T>>::put(max_cashout_allowed);
+            }
+
+            if let Some(channel_cashouts_enabled) = params.channel_cashouts_enabled.as_ref() {
+                ChannelCashoutsEnabled::put(channel_cashouts_enabled);
+            }
+
+            if let Some(commitment) = params.commitment.as_ref() {
+                <Commitment<T>>::put(*commitment);
+            }
+
+            Self::deposit_event(RawEvent::ChannelPayoutsUpdated(
+                params,
+                payload_data_object_id
+            ));
         }
 
         #[weight = 10_000_000] // TODO: adjust Weight
@@ -1343,22 +1378,6 @@ decl_module! {
             ));
 
             Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust Weight
-        pub fn update_max_reward_allowed(origin, amount: BalanceOf<T>) {
-            let sender = ensure_signed(origin)?;
-            ensure_authorized_to_update_max_reward::<T>(&sender)?;
-            <MaxRewardAllowed<T>>::put(amount);
-            Self::deposit_event(RawEvent::MaxRewardUpdated(amount));
-        }
-
-        #[weight = 10_000_000] // TODO: adjust Weight
-        pub fn update_min_cashout_allowed(origin, amount: BalanceOf<T>) {
-            let sender = ensure_signed(origin)?;
-            ensure_authorized_to_update_min_cashout::<T>(&sender)?;
-            <MinCashoutAllowed<T>>::put(amount);
-            Self::deposit_event(RawEvent::MinCashoutUpdated(amount));
         }
 
         /// Issue NFT
@@ -2470,6 +2489,11 @@ impl<T: Trait> Module<T> {
 
         ensure_actor_authorized_to_claim_payment::<T>(origin.clone(), &actor, &channel.owner)?;
 
+        ensure!(
+            Self::channel_cashouts_enabled(),
+            Error::<T>::ChannelCashoutsDisabled
+        );
+
         let reward_account = Self::ensure_reward_account(&channel)?;
 
         let cashout = item
@@ -2477,12 +2501,12 @@ impl<T: Trait> Module<T> {
             .saturating_sub(channel.cumulative_reward_claimed);
 
         ensure!(
-            <MaxRewardAllowed<T>>::get() > item.cumulative_reward_earned,
-            Error::<T>::TotalRewardLimitExceeded
+            <MaxCashoutAllowed<T>>::get() >= cashout,
+            Error::<T>::CashoutAmountExceedsMaximumAmount
         );
         ensure!(
-            <MinCashoutAllowed<T>>::get() < cashout,
-            Error::<T>::UnsufficientCashoutAmount
+            <MinCashoutAllowed<T>>::get() <= cashout,
+            Error::<T>::CashoutAmountBelowMinimumAmount
         );
         Self::verify_proof(proof, item)?;
         Ok((channel, reward_account, cashout))
@@ -2547,8 +2571,8 @@ decl_event!(
         VideoPostId = <T as Trait>::VideoPostId,
         ReactionId = <T as Trait>::ReactionId,
         ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
-        Hash = <T as frame_system::Trait>::Hash,
         AccountId = <T as frame_system::Trait>::AccountId,
+        UpdateChannelPayoutsParameters = UpdateChannelPayoutsParameters<T>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2617,10 +2641,8 @@ decl_event!(
         ModeratorSetUpdated(ChannelId, ModeratorSet),
 
         // Rewards
-        CommitmentUpdated(Hash),
+        ChannelPayoutsUpdated(UpdateChannelPayoutsParameters, Option<DataObjectId>),
         ChannelRewardUpdated(Balance, ChannelId),
-        MaxRewardUpdated(Balance),
-        MinCashoutUpdated(Balance),
         // Nft auction
         EnglishAuctionStarted(ContentActor, VideoId, EnglishAuctionParams),
         OpenAuctionStarted(ContentActor, VideoId, OpenAuctionParams, OpenAuctionId),

@@ -101,6 +101,7 @@ pub trait WeightInfo {
     fn create_proposal_lock_blog_post(t: u32, d: u32) -> Weight;
     fn create_proposal_unlock_blog_post(t: u32, d: u32) -> Weight;
     fn create_proposal_veto_proposal(t: u32, d: u32) -> Weight;
+    fn create_proposal_update_channel_payouts(t: u32, d: u32, i: u32) -> Weight;
 }
 
 type WeightInfoCodex<T> = <T as Trait>::WeightInfo;
@@ -246,6 +247,11 @@ pub trait Trait:
 
     /// `Veto Proposal` proposal parameters
     type VetoProposalProposalParameters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
+
+    /// `Update Channel Payouts` proposal parameters
+    type UpdateChannelPayoutsProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
 }
 
 /// Specialized alias of GeneralProposalParams
@@ -443,6 +449,9 @@ decl_module! {
 
         const VetoProposalProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::VetoProposalProposalParameters::get();
+
+        const UpdateChannelPayoutsProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateChannelPayoutsProposalParameters::get();
 
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
@@ -646,6 +655,9 @@ impl<T: Trait> Module<T> {
             ProposalDetails::VetoProposal(..) => {
                 // Note: No checks for this proposal for now
             }
+            ProposalDetails::UpdateChannelPayouts(..) => {
+                // Note: No checks for this proposal for now
+            }
         }
 
         Ok(())
@@ -711,6 +723,9 @@ impl<T: Trait> Module<T> {
             ProposalDetails::LockBlogPost(..) => T::LockBlogPostProposalParameters::get(),
             ProposalDetails::UnlockBlogPost(..) => T::UnlockBlogPostProposalParameters::get(),
             ProposalDetails::VetoProposal(..) => T::VetoProposalProposalParameters::get(),
+            ProposalDetails::UpdateChannelPayouts(..) => {
+                T::UpdateChannelPayoutsProposalParameters::get()
+            }
         }
     }
 
@@ -875,6 +890,17 @@ impl<T: Trait> Module<T> {
                 WeightInfoCodex::<T>::create_proposal_veto_proposal(
                     title_length.saturated_into(),
                     description_length.saturated_into(),
+                )
+                .saturated_into()
+            }
+            ProposalDetails::UpdateChannelPayouts(params) => {
+                WeightInfoCodex::<T>::create_proposal_update_channel_payouts(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                    params
+                        .payload
+                        .as_ref()
+                        .map_or(0, |p| p.object_creation_params.ipfs_content_id.len() as u32),
                 )
                 .saturated_into()
             }

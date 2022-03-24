@@ -100,5 +100,9 @@
   "veto_proposal_proposal": {
       "voting_period": 30,
       "grace_period": 0
+  },
+  "update_channel_payouts_proposal": {
+    "voting_period": 30,
+    "grace_period": 20
   }
 }
