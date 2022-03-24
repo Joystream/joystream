@@ -69,7 +69,6 @@ import { MAX_TAGS_PER_FORUM_THREAD } from '@joystream/metadata-protobuf/consts'
 import { Not, In } from 'typeorm'
 import { Bytes } from '@polkadot/types'
 import _ from 'lodash'
-import BN from 'bn.js'
 
 async function getCategory(store: DatabaseManager, categoryId: string, relations?: string[]): Promise<ForumCategory> {
   const category = await store.get(ForumCategory, { where: { id: categoryId }, relations })

@@ -428,9 +428,8 @@ impl<ChannelId: Clone, VideoPostId: Clone, OwnedNft: Clone>
     }
 
     /// Set video nft status
-    pub fn set_nft_status(mut self, nft: OwnedNft) -> Self {
+    pub fn set_nft_status(&mut self, nft: OwnedNft) {
         self.nft_status = Some(nft);
-        self
     }
 
     /// Ensure censorship status have been changed

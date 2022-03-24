@@ -4,6 +4,7 @@
 import type { BTreeMap, BTreeSet, Bytes, Enum, GenericAccountId, Option, Struct, Text, Vec, bool, u128, u16, u32, u64, u8 } from '@polkadot/types';
 import type { ITuple } from '@polkadot/types/types';
 import type { AccountId, Balance, Hash, Perbill } from '@polkadot/types/interfaces/runtime';
+import type { ValidatorPrefsWithCommission } from '@polkadot/types/interfaces/staking';
 import type { AccountInfoWithRefCount } from '@polkadot/types/interfaces/system';
 
 /** @name AccountInfo */
@@ -66,35 +67,6 @@ export interface AssuranceContractType extends Enum {
 /** @name AssuranceContractType_Closed */
 export interface AssuranceContractType_Closed extends BTreeSet<MemberId> {}
 
-/** @name Auction */
-export interface Auction extends Struct {
-  readonly starting_price: u128;
-  readonly buy_now_price: Option<u128>;
-  readonly auction_type: AuctionType;
-  readonly minimal_bid_step: u128;
-  readonly last_bid: Option<Bid>;
-  readonly starts_at: u32;
-  readonly whitelist: BTreeSet<MemberId>;
-}
-
-/** @name AuctionParams */
-export interface AuctionParams extends Struct {
-  readonly auction_type: AuctionType;
-  readonly starting_price: u128;
-  readonly minimal_bid_step: u128;
-  readonly buy_now_price: Option<u128>;
-  readonly starts_at: Option<u32>;
-  readonly whitelist: BTreeSet<MemberId>;
-}
-
-/** @name AuctionType */
-export interface AuctionType extends Enum {
-  readonly isEnglish: boolean;
-  readonly asEnglish: EnglishAuctionDetails;
-  readonly isOpen: boolean;
-  readonly asOpen: OpenAuctionDetails;
-}
-
 /** @name Bag */
 export interface Bag extends Struct {
   readonly stored_by: BTreeSet<StorageBucketId>;
@@ -124,14 +96,6 @@ export interface BagIdType extends Enum {
 export interface BalanceKind extends Enum {
   readonly isPositive: boolean;
   readonly isNegative: boolean;
-}
-
-/** @name Bid */
-export interface Bid extends Struct {
-  readonly bidder: MemberId;
-  readonly bidder_account_id: GenericAccountId;
-  readonly amount: u128;
-  readonly made_at_block: u32;
 }
 
 /** @name BlockAndTime */
@@ -487,10 +451,33 @@ export interface DynamicBagType extends Enum {
   readonly isChannel: boolean;
 }
 
-/** @name EnglishAuctionDetails */
-export interface EnglishAuctionDetails extends Struct {
+/** @name EnglishAuction */
+export interface EnglishAuction extends Struct {
+  readonly starting_price: u128;
+  readonly buy_now_price: Option<u128>;
+  readonly top_bid: Option<EnglishAuctionBid>;
+  readonly whitelist: BTreeSet<MemberId>;
   readonly extension_period: u32;
   readonly auction_duration: u32;
+  readonly min_bid_step: u128;
+  readonly end: u32;
+}
+
+/** @name EnglishAuctionBid */
+export interface EnglishAuctionBid extends Struct {
+  readonly amount: u128;
+  readonly bidder_id: MemberId;
+}
+
+/** @name EnglishAuctionParams */
+export interface EnglishAuctionParams extends Struct {
+  readonly starting_price: u128;
+  readonly buy_now_price: Option<u128>;
+  readonly whitelist: BTreeSet<MemberId>;
+  readonly end: u32;
+  readonly auction_duration: u32;
+  readonly extension_period: u32;
+  readonly min_bid_step: u128;
 }
 
 /** @name Entry */
@@ -572,12 +559,14 @@ export interface GeneralProposalParameters extends Struct {
 /** @name InitTransactionalStatus */
 export interface InitTransactionalStatus extends Enum {
   readonly isIdle: boolean;
-  readonly isInitiatedOfferToMember: boolean;
-  readonly asInitiatedOfferToMember: ITuple<[MemberId, Option<u128>]>;
   readonly isBuyNow: boolean;
   readonly asBuyNow: u128;
-  readonly isAuction: boolean;
-  readonly asAuction: AuctionParams;
+  readonly isInitiatedOfferToMember: boolean;
+  readonly asInitiatedOfferToMember: ITuple<[MemberId, Option<u128>]>;
+  readonly isEnglishAuction: boolean;
+  readonly asEnglishAuction: EnglishAuctionParams;
+  readonly isOpenAuction: boolean;
+  readonly asOpenAuction: OpenAuctionParams;
 }
 
 /** @name InputValidationLengthConstraint */
@@ -597,9 +586,6 @@ export interface InviteMembershipParameters extends Struct {
 
 /** @name IsCensored */
 export interface IsCensored extends bool {}
-
-/** @name IsExtended */
-export interface IsExtended extends bool {}
 
 /** @name LookupSource */
 export interface LookupSource extends AccountId {}
@@ -643,8 +629,29 @@ export interface NftOwner extends Enum {
   readonly asMember: MemberId;
 }
 
-/** @name OpenAuctionDetails */
-export interface OpenAuctionDetails extends Struct {
+/** @name OpenAuction */
+export interface OpenAuction extends Struct {
+  readonly starting_price: u128;
+  readonly buy_now_price: Option<u128>;
+  readonly whitelist: BTreeSet<MemberId>;
+  readonly bid_lock_duration: u32;
+}
+
+/** @name OpenAuctionBid */
+export interface OpenAuctionBid extends Struct {
+  readonly amount: u128;
+  readonly made_at_block: u32;
+  readonly auction_id: OpenAuctionId;
+}
+
+/** @name OpenAuctionId */
+export interface OpenAuctionId extends u64 {}
+
+/** @name OpenAuctionParams */
+export interface OpenAuctionParams extends Struct {
+  readonly starting_price: u128;
+  readonly buy_now_price: Option<u128>;
+  readonly whitelist: BTreeSet<MemberId>;
   readonly bid_lock_duration: u32;
 }
 
@@ -693,6 +700,7 @@ export interface OwnedNft extends Struct {
   readonly owner: NftOwner;
   readonly transactional_status: TransactionalStatus;
   readonly creator_royalty: Option<Royalty>;
+  readonly open_auctions_nonce: OpenAuctionId;
 }
 
 /** @name ParticipantId */
@@ -1088,8 +1096,10 @@ export interface TransactionalStatus extends Enum {
   readonly isIdle: boolean;
   readonly isInitiatedOfferToMember: boolean;
   readonly asInitiatedOfferToMember: ITuple<[MemberId, Option<u128>]>;
-  readonly isAuction: boolean;
-  readonly asAuction: Auction;
+  readonly isEnglishAuction: boolean;
+  readonly asEnglishAuction: EnglishAuction;
+  readonly isOpenAuction: boolean;
+  readonly asOpenAuction: OpenAuction;
   readonly isBuyNow: boolean;
   readonly asBuyNow: u128;
 }
@@ -1110,6 +1120,9 @@ export interface UploadParameters extends Struct {
 
 /** @name Url */
 export interface Url extends Text {}
+
+/** @name ValidatorPrefs */
+export interface ValidatorPrefs extends ValidatorPrefsWithCommission {}
 
 /** @name Video */
 export interface Video extends Struct {
