@@ -16,6 +16,7 @@ export async function assertNftOwner(
       Utils.assert(ownedNft, 'NFT not found')
       Utils.assert(ownedNft.ownerMember, 'Invalid NFT owner')
       assert.equal(ownedNft.ownerMember.id.toString(), owner.memberId.toString())
+      Utils.assert(ownedNft.creatorChannel.id, 'NFT creator channel id not found')
 
       if (customAsserts) {
         customAsserts(ownedNft)

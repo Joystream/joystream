@@ -1,7 +1,7 @@
 // TODO: solve events' relations to videos and other entites that can be changed or deleted
 
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
-import { genericEventFields, inconsistentState, logger } from '../common'
+import { genericEventFields, inconsistentState, logger, EntityType } from '../common'
 import {
   // entities
   Auction,
@@ -45,11 +45,6 @@ import * as joystreamTypes from '@joystream/types/augment/all/types'
 import { Content } from '../../generated/types'
 import { FindConditions } from 'typeorm'
 import BN from 'bn.js'
-
-// definition of generic type for Hydra DatabaseManager's methods
-type EntityType<T> = {
-  new (...args: any[]): T
-}
 
 async function getExistingEntity<Type extends Video | Membership>(
   store: DatabaseManager,
@@ -372,6 +367,7 @@ export async function createNft(
     ownerCuratorGroup,
     isOwnedByChannel,
     metadata: decodedMetadata,
+    creatorChannel: video.channel,
     // always start with Idle status to prevent egg-chicken problem between auction+nft; update it later if needed
     transactionalStatus: new TransactionalStatusIdle(),
   })
@@ -404,6 +400,7 @@ async function createAuction(
     'Non-existing members whitelisted'
   )
 
+  const startsAtBlock = auctionParams.starts_at.isSome ? auctionParams.starts_at.unwrap().toNumber() : blockNumber
   // prepare auction record
   const auction = new Auction({
     nft: nft,
@@ -412,9 +409,9 @@ async function createAuction(
     buyNowPrice: new BN(auctionParams.buy_now_price.toString()),
     auctionType: createAuctionType(auctionParams.auction_type),
     minimalBidStep: auctionParams.minimal_bid_step,
-    startsAtBlock: auctionParams.starts_at.isSome ? auctionParams.starts_at.unwrap().toNumber() : blockNumber,
+    startsAtBlock,
     plannedEndAtBlock: auctionParams.auction_type.isEnglish
-      ? blockNumber + auctionParams.auction_type.asEnglish.auction_duration.toNumber()
+      ? startsAtBlock + auctionParams.auction_type.asEnglish.auction_duration.toNumber()
       : undefined,
     isCanceled: false,
     isCompleted: false,
@@ -570,6 +567,20 @@ export async function contentNft_AuctionBidMade({ event, store }: EventContext &
   // create record for winning bid
   const { member, video } = await createBid(event, store, memberId.toNumber(), videoId.toNumber(), bidAmount.toString())
 
+  // Ensure if planned auction period would be extended
+  if (extendsAuction.valueOf() === true) {
+    const { auction } = await getCurrentAuctionFromVideo(
+      store,
+      videoId.toString(),
+      'Non-existing video got new bid',
+      'Non-existing auction got new bid'
+    )
+
+    const englishAuctionExtensionPeriod = (auction.auctionType as AuctionTypeEnglish).extensionPeriod
+    auction.plannedEndAtBlock = (auction.plannedEndAtBlock || 0) + (englishAuctionExtensionPeriod || 0)
+    store.save<Auction>(auction)
+  }
+
   // common event processing - second
 
   const announcingPeriodStartedEvent = new AuctionBidMadeEvent({
@@ -578,7 +589,7 @@ export async function contentNft_AuctionBidMade({ event, store }: EventContext &
     member,
     video,
     bidAmount,
-    extendsAuction: extendsAuction.isTrue,
+    extendsAuction: extendsAuction.valueOf(),
   })
 
   await store.save<AuctionBidMadeEvent>(announcingPeriodStartedEvent)

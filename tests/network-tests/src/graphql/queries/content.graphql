@@ -86,6 +86,9 @@ fragment OwnedNftFields on OwnedNft {
     __typename
   }
   creatorRoyalty
+  creatorChannel {
+    id
+  }
 }
 
 query getChannelById($id: ID!) {

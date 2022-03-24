@@ -1912,6 +1912,56 @@ fn withdraw_work_entry_succeeded() {
 }
 
 #[test]
+fn withdraw_work_entry_fails_with_invalid_owner() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 500;
+        let max_amount = 100;
+        let entrant_stake = 37;
+
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_funding_amount(max_amount)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+        let member_id = 1;
+        let account_id = 1;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(max_amount)
+            .with_council()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        increase_account_balance(&account_id, initial_balance);
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_staking_account_id(account_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&account_id),
+            initial_balance - entrant_stake
+        );
+
+        let entry_id = 1;
+        let invalid_member_id = 10;
+
+        WithdrawWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(invalid_member_id)
+            .with_entry_id(entry_id)
+            .call_and_assert(Err(Error::<Test>::InvalidEntrantWorkerSpecified.into()));
+    });
+}
+
+#[test]
 fn withdraw_work_slashes_successfully1() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
@@ -2305,6 +2355,53 @@ fn submit_work_succeeded() {
         EventFixture::assert_last_crate_event(RawEvent::WorkSubmitted(
             bounty_id, entry_id, member_id, work_data,
         ));
+    });
+}
+
+#[test]
+fn submit_work_failed_with_invalid_ownership() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 500;
+        let max_amount = 100;
+        let entrant_stake = 37;
+
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_funding_amount(max_amount)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+        let member_id = 1;
+        let account_id = 1;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(max_amount)
+            .with_council()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        increase_account_balance(&account_id, initial_balance);
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(member_id)
+            .with_staking_account_id(account_id)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        let entry_id = 1;
+        let invalid_member_id = 11;
+
+        let work_data = b"Work submitted".to_vec();
+        SubmitWorkFixture::default()
+            .with_origin(RawOrigin::Signed(account_id))
+            .with_member_id(invalid_member_id)
+            .with_entry_id(entry_id)
+            .with_work_data(work_data.clone())
+            .call_and_assert(Err(Error::<Test>::InvalidEntrantWorkerSpecified.into()));
     });
 }
 
@@ -3285,6 +3382,84 @@ fn withdraw_work_entrant_funds_succeeded() {
         assert!(!<Bounties<Test>>::contains_key(bounty_id));
 
         EventFixture::assert_last_crate_event(RawEvent::BountyRemoved(bounty_id));
+    });
+}
+
+#[test]
+fn withdraw_work_entrant_funds_fails_with_invalid_entry_ownership() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let initial_balance = 500;
+        let max_amount = 100;
+        let winner_reward = max_amount;
+        let entrant_stake = 37;
+        let work_period = 1;
+
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_max_funding_amount(max_amount)
+            .with_work_period(work_period)
+            .with_entrant_stake(entrant_stake)
+            .call_and_assert(Ok(()));
+
+        let bounty_id = 1;
+
+        FundBountyFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_amount(max_amount)
+            .with_council()
+            .with_origin(RawOrigin::Root)
+            .call_and_assert(Ok(()));
+
+        let member_id1 = 1;
+        let account_id1 = 1;
+        increase_account_balance(&account_id1, initial_balance);
+
+        AnnounceWorkEntryFixture::default()
+            .with_origin(RawOrigin::Signed(account_id1))
+            .with_member_id(member_id1)
+            .with_staking_account_id(account_id1)
+            .with_bounty_id(bounty_id)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&account_id1),
+            initial_balance - entrant_stake
+        );
+
+        let entry_id1 = 1;
+        SubmitWorkFixture::default()
+            .with_origin(RawOrigin::Signed(account_id1))
+            .with_member_id(member_id1)
+            .with_entry_id(entry_id1)
+            .call_and_assert(Ok(()));
+
+        // Judgment
+        let mut judgment = BTreeMap::new();
+        judgment.insert(
+            entry_id1,
+            OracleWorkEntryJudgment::Winner {
+                reward: winner_reward,
+            },
+        );
+
+        run_to_block(starting_block + work_period + 1);
+
+        SubmitJudgmentFixture::default()
+            .with_bounty_id(bounty_id)
+            .with_judgment(judgment)
+            .call_and_assert(Ok(()));
+
+        // Withdraw work entrant.
+        let invalid_member_id = 111;
+        WithdrawWorkEntrantFundsFixture::default()
+            .with_origin(RawOrigin::Signed(account_id1))
+            .with_member_id(invalid_member_id)
+            .with_entry_id(entry_id1)
+            .call_and_assert(Err(Error::<Test>::InvalidEntrantWorkerSpecified.into()));
     });
 }
 
