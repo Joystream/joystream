@@ -118,7 +118,6 @@ fragment OwnedNftFields on OwnedNft {
           bidder {
             id
           }
-
         }
       }
     }
