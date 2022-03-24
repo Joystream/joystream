@@ -39,7 +39,17 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
   */
   public async execute(): Promise<void> {
     this.debug('Issue video NFT')
-    await this.api.issueNft(this.author.keyringPair.address, this.author.memberId.toNumber(), this.videoId)
+
+    // creator royalty
+    const creatorRoyalty = 5
+
+    await this.api.issueNft(
+      this.author.keyringPair.address,
+      this.author.memberId.toNumber(),
+      this.videoId,
+      undefined,
+      creatorRoyalty
+    )
 
     this.debug('Start NFT auction')
     const {
@@ -80,6 +90,9 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
     await this.api.claimWonEnglishAuction(winner.account, winner.memberId.toNumber(), this.videoId)
 
     this.debug('Check NFT ownership change')
-    await assertNftOwner(this.query, this.videoId, winner)
+    await assertNftOwner(this.query, this.videoId, winner, (ownedNft) => {
+      Utils.assert(ownedNft.creatorRoyalty, 'Royalty not found')
+      assert.equal(ownedNft.creatorRoyalty, creatorRoyalty)
+    })
   }
 }
