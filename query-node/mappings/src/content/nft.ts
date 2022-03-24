@@ -91,7 +91,9 @@ async function getCurrentAuctionFromVideo(
 
   // get auction
   const allAuctions = video.nft?.auctions || []
-  const auction = allAuctions.length ? allAuctions[allAuctions.length - 1] : null
+  const auction = allAuctions.length
+    ? allAuctions.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())[allAuctions.length - 1]
+    : null
 
   // ensure auction exists
   if (!auction) {
