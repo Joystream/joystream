@@ -463,7 +463,7 @@ export async function bounty_WorkEntrySlashed({ event, store }: EventContext & S
 // Store WorkSubmitted events
 export async function bounty_WorkSubmitted({ event, store }: EventContext & StoreContext): Promise<void> {
   const workSubmittedEvent = new BountyEvents.WorkSubmittedEvent(event)
-  const [, entryId, , metadataBytes] = workSubmittedEvent.params
+  const [bountyId, entryId, , metadataBytes] = workSubmittedEvent.params
 
   // Update the entry
   const entry = await updateEntry(store, event, entryId, () => ({
@@ -474,6 +474,7 @@ export async function bounty_WorkSubmitted({ event, store }: EventContext & Stor
   const metadata = deserializeMetadata(BountyWorkData, metadataBytes)
   const submittedInEvent = new WorkSubmittedEvent({
     ...genericEventFields(event),
+    bounty: new Bounty({ id: String(bountyId) }),
     entry,
     title: whenDef(metadata?.title, perpareString),
     description: whenDef(metadata?.description, perpareString),

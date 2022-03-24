@@ -282,6 +282,9 @@ type WorkSubmittedEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
+  "The bounty which the work entry belongs to"
+  bounty: Bounty!
+
   "The entry this work was submitted into"
   entry: BountyEntry!
 
