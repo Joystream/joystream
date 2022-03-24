@@ -8,6 +8,7 @@ use crate::{
 use balances::Module as Balances;
 use common::council::CouncilBudgetManager;
 use core::convert::TryFrom;
+use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks};
 use frame_support::storage::StorageMap;
 use frame_support::traits::{Currency, Get, OnFinalize, OnInitialize};
@@ -54,7 +55,9 @@ fn assert_was_fired<T: Trait>(generic_event: <T as Trait>::Event) {
 }
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
-    ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
+    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number) as u8)
+        .try_into()
+        .unwrap()
 }
 
 // Method to generate a distintic valid handle
@@ -134,7 +137,7 @@ fn announce_entry_and_submit_work<T: Trait + membership::Trait>(
     let work_data = b"work_data".to_vec();
 
     Bounty::<T>::submit_work(
-        RawOrigin::Signed(account_id.clone()).into(),
+        RawOrigin::Signed(account_id).into(),
         member_id,
         *bounty_id,
         entry_id,
@@ -153,7 +156,7 @@ fn create_max_funded_bounty<T: Trait>(params: BountyCreationParameters<T>) -> T:
         } => max_funding_amount,
     };
 
-    create_funded_bounty::<T>(params.clone(), funding_amount)
+    create_funded_bounty::<T>(params, funding_amount)
 }
 
 fn create_min_funded_bounty<T: Trait>(params: BountyCreationParameters<T>) -> T::BountyId {
@@ -164,7 +167,7 @@ fn create_min_funded_bounty<T: Trait>(params: BountyCreationParameters<T>) -> T:
         } => min_funding_amount,
     };
 
-    create_funded_bounty::<T>(params.clone(), funding_amount)
+    create_funded_bounty::<T>(params, funding_amount)
 }
 
 fn create_funded_bounty<T: Trait>(
@@ -605,7 +608,7 @@ benchmarks! {
 
         let bounty_id = create_min_funded_bounty::<T>(params);
 
-        run_to_block::<T>((funding_period + One::one()).into());
+        run_to_block::<T>(funding_period + One::one());
 
         let bounty = Bounty::<T>::bounties(bounty_id);
         assert!(matches!(bounty.milestone, BountyMilestone::Created { has_contributions: true, ..}));
@@ -657,7 +660,7 @@ benchmarks! {
             .map(|i| { announce_entry_and_submit_work::<T>(&bounty_id, i)})
             .collect::<Vec<_>>();
         Bounty::<T>::end_working_period(RawOrigin::Root.into(), bounty_id).unwrap();
-        let winner_reward: BalanceOf<T> = (funding_amount / i.into()).into();
+        let winner_reward: BalanceOf<T> = funding_amount / i.into();
         let correction = funding_amount - winner_reward * i.into(); // for total sum = 100%
         let judgment = entry_ids
             .iter()
@@ -764,7 +767,7 @@ benchmarks! {
             .map(|i| { announce_entry_and_submit_work::<T>(&bounty_id, i)})
             .collect::<Vec<_>>();
         Bounty::<T>::end_working_period(RawOrigin::Signed(oracle_account_id.clone()).into(), bounty_id).unwrap();
-        let winner_reward: BalanceOf<T> = (funding_amount / i.into()).into();
+        let winner_reward: BalanceOf<T> = funding_amount / i.into();
         let correction = funding_amount - winner_reward * i.into(); // for total sum = 100%
         let judgment = entry_ids
             .iter()
@@ -874,7 +877,7 @@ benchmarks! {
             ..Default::default()
         };
 
-        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params.clone(), Vec::new()).unwrap();
+        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
 
         let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
 
@@ -910,7 +913,7 @@ benchmarks! {
             ..Default::default()
         };
 
-        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params.clone(), Vec::new()).unwrap();
+        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
 
         let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
 
@@ -947,7 +950,7 @@ benchmarks! {
             ..Default::default()
         };
 
-        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params.clone(), Vec::new()).unwrap();
+        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
 
         let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
 
@@ -984,7 +987,7 @@ benchmarks! {
             ..Default::default()
         };
 
-        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params.clone(), Vec::new()).unwrap();
+        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
 
         let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
 
@@ -1020,7 +1023,7 @@ benchmarks! {
             ..Default::default()
         };
 
-        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params.clone(), Vec::new()).unwrap();
+        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
 
         let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
 
@@ -1041,7 +1044,7 @@ benchmarks! {
         let creator = BountyActor::Council;
 
         let params = BountyCreationParameters::<T> {
-            creator: creator.clone(),
+            creator,
             cherry,
             oracle_reward,
             funding_type: FundingType::Perpetual{ target: funding_amount },
@@ -1066,7 +1069,7 @@ benchmarks! {
 
         let work_data = b"work_data".to_vec();
         Bounty::<T>::submit_work(
-            RawOrigin::Signed(work_account_id.clone()).into(),
+            RawOrigin::Signed(work_account_id).into(),
             work_member_id,
             bounty_id,
             entry_id,
@@ -1117,11 +1120,11 @@ benchmarks! {
         let creator = BountyActor::Council;
         let (account_id, member_id) = member_funded_account::<T>("work entrant", 0);
         let params = BountyCreationParameters::<T> {
-            creator: creator.clone(),
+            creator,
             cherry,
             oracle_reward,
             funding_type: FundingType::Perpetual{ target: funding_amount },
-            oracle: oracle.clone(),
+            oracle,
             entrant_stake: stake,
             ..Default::default()
         };
@@ -1165,11 +1168,11 @@ benchmarks! {
         let creator = BountyActor::Council;
         let funder = BountyActor::Council;
         let params = BountyCreationParameters::<T> {
-            creator: creator.clone(),
+            creator,
             cherry,
             oracle_reward,
             funding_type: FundingType::Perpetual{ target: funding_amount },
-            oracle: oracle.clone(),
+            oracle,
             entrant_stake: stake,
             ..Default::default()
         };
@@ -1190,7 +1193,7 @@ benchmarks! {
 
         let work_data = b"work_data".to_vec();
         Bounty::<T>::submit_work(
-            RawOrigin::Signed(work_account_id.clone()).into(),
+            RawOrigin::Signed(work_account_id).into(),
             work_member_id,
             bounty_id,
             entry_id,
@@ -1207,7 +1210,7 @@ benchmarks! {
         Bounty::<T>::submit_oracle_judgment(
             RawOrigin::Signed(oracle_account_id).into(),
             bounty_id,
-            judgment.clone()
+            judgment
         ).unwrap();
 
     }: withdraw_state_bloat_bond(RawOrigin::Root, funder.clone(), bounty_id)
@@ -1226,11 +1229,11 @@ benchmarks! {
         let creator = BountyActor::Council;
 
         let params = BountyCreationParameters::<T> {
-            creator: creator.clone(),
+            creator,
             cherry,
             oracle_reward,
             funding_type: FundingType::Perpetual{ target: funding_amount },
-            oracle: oracle.clone(),
+            oracle,
             entrant_stake: stake,
             ..Default::default()
         };
@@ -1261,7 +1264,7 @@ benchmarks! {
 
         let work_data = b"work_data".to_vec();
         Bounty::<T>::submit_work(
-            RawOrigin::Signed(work_account_id.clone()).into(),
+            RawOrigin::Signed(work_account_id).into(),
             work_member_id,
             bounty_id,
             entry_id,
@@ -1279,7 +1282,7 @@ benchmarks! {
         Bounty::<T>::submit_oracle_judgment(
             RawOrigin::Signed(oracle_account_id).into(),
             bounty_id,
-            judgment.clone()
+            judgment
         ).unwrap();
 
     }: withdraw_state_bloat_bond(RawOrigin::Signed(account_id), funder.clone(), bounty_id)

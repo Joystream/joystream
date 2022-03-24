@@ -93,10 +93,10 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
     // Returns None if conditions are not met.
     fn is_judgment_stage(&self) -> Option<BountyStage> {
         // Can be judged only if there are work submissions.
-        if self.bounty.active_work_entry_count > 0 {
-            if BountyMilestone::WorkSubmitted == self.bounty.milestone {
-                return Some(BountyStage::Judgment);
-            }
+        if self.bounty.active_work_entry_count > 0
+            && BountyMilestone::WorkSubmitted == self.bounty.milestone
+        {
+            return Some(BountyStage::Judgment);
         }
 
         None

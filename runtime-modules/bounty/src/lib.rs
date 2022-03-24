@@ -1061,7 +1061,7 @@ decl_module! {
             ensure_root(origin)?;
 
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
-            let oracle_reward = bounty.creation_params.oracle_reward.clone();
+            let oracle_reward = bounty.creation_params.oracle_reward;
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
 
             ensure!(matches!(current_bounty_stage,
@@ -1363,7 +1363,7 @@ decl_module! {
             <Bounties<T>>::mutate(bounty_id, |bounty| {
                 bounty.milestone = BountyMilestone::WorkSubmitted;
             });
-            Self::deposit_event(RawEvent::WorkSubmissionPeriodEnded(bounty_id, current_oracle.clone()));
+            Self::deposit_event(RawEvent::WorkSubmissionPeriodEnded(bounty_id, current_oracle));
         }
 
         /// Submits an oracle judgment for a bounty, slashing the entries rejected
@@ -1425,7 +1425,7 @@ decl_module! {
             // Update bounty record.
             <Bounties<T>>::mutate(bounty_id, |bounty| {
                 bounty.milestone = BountyMilestone::JudgmentSubmitted{
-                    successful_bounty: successful_bounty
+                    successful_bounty
                 };
             });
 
