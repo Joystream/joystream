@@ -318,9 +318,7 @@ fn unsuccessful_reward_claim_cashouts_disabled() {
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
 
-        UpdateChannelPayoutsFixture::default()
-            .with_channel_cashouts_enabled(Some(false))
-            .call_and_assert(Ok(()));
+        SetChannelCashoutsStatusFixture::default().call_and_assert(Ok(()));
 
         ClaimChannelRewardFixture::default()
             .with_payments(payments.clone())
@@ -810,9 +808,7 @@ fn unsuccessful_claim_and_withdraw_cashouts_disabled() {
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
 
-        UpdateChannelPayoutsFixture::default()
-            .with_channel_cashouts_enabled(Some(false))
-            .call_and_assert(Ok(()));
+        SetChannelCashoutsStatusFixture::default().call_and_assert(Ok(()));
 
         ClaimAndWithdrawChannelRewardFixture::default()
             .with_payments(payments.clone())
@@ -927,7 +923,7 @@ fn unsuccessfull_channel_payouts_update_with_insufficient_uploader_account_balan
         };
 
         UpdateChannelPayoutsFixture::default()
-            .with_payload(Some(payload_params))
+            .with_payload(payload_params)
             .call_and_assert(Err(storage::Error::<Test>::InsufficientBalance.into()));
     })
 }
@@ -949,7 +945,7 @@ fn unsuccessfull_channel_payouts_update_with_unexpected_data_size_fee() {
         };
 
         UpdateChannelPayoutsFixture::default()
-            .with_payload(Some(payload_params))
+            .with_payload(payload_params)
             .call_and_assert(Err(storage::Error::<Test>::DataSizeFeeChanged.into()));
     })
 }
@@ -959,25 +955,84 @@ fn successful_channel_payouts_update() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-
-        let payments = create_some_pull_payments_helper();
-        let merkle_root = generate_merkle_root_helper(&payments).pop().unwrap();
-        let payload_params = ChannelPayoutsPayloadParameters::<Test> {
-            expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
-            object_creation_params: DataObjectCreationParameters {
-                size: 1,
-                ipfs_content_id: vec![1],
-            },
-            uploader_account: DEFAULT_MEMBER_ACCOUNT_ID,
-        };
+        increase_account_balance_helper(
+            DEFAULT_CHANNEL_PAYOUTS_PAYLOAD_UPLOADER_ACCOUNT_ID,
+            INITIAL_BALANCE,
+        );
 
         UpdateChannelPayoutsFixture::default()
-            .with_commitment(Some(merkle_root))
             .with_min_cashout_allowed(Some(1))
             .with_max_cashout_allowed(Some(100))
             .with_channel_cashouts_enabled(Some(false))
-            .with_payload(Some(payload_params))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn unsuccessfull_channel_min_max_cashout_update_with_invalid_origin() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
+
+        SetChannelMinMaxCashoutFixture::default()
+            .with_origin(Origin::signed(LEAD_ACCOUNT_ID))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+
+        SetChannelMinMaxCashoutFixture::default()
+            .with_origin(Origin::none())
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    })
+}
+
+#[test]
+fn successfull_channel_min_max_cashout_updates() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        SetChannelMinMaxCashoutFixture::default()
+            .with_min_cashout(Some(1))
+            .with_max_cashout(Some(100))
+            .call_and_assert(Ok(()));
+
+        SetChannelMinMaxCashoutFixture::default()
+            .with_min_cashout(Some(10))
+            .call_and_assert(Ok(()));
+
+        SetChannelMinMaxCashoutFixture::default()
+            .with_max_cashout(Some(1000))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn unsuccessfull_channel_cashouts_status_update_with_invalid_origin() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
+
+        SetChannelCashoutsStatusFixture::default()
+            .with_origin(Origin::signed(LEAD_ACCOUNT_ID))
+            .call_and_assert(Err(DispatchError::BadOrigin));
+
+        SetChannelCashoutsStatusFixture::default()
+            .with_origin(Origin::none())
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    })
+}
+
+#[test]
+fn successfull_channel_cashout_updates() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        SetChannelCashoutsStatusFixture::default()
+            .with_enabled(false)
+            .call_and_assert(Ok(()));
+
+        SetChannelCashoutsStatusFixture::default()
+            .with_enabled(true)
             .call_and_assert(Ok(()));
     })
 }

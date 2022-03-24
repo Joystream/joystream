@@ -1264,16 +1264,14 @@ decl_module! {
         ) {
             ensure_root(origin)?;
 
-            let payload_data_object_id = params.payload.as_ref().map(|_| { Storage::<T>::next_data_object_id() });
-            if let Some(payload) = params.payload.as_ref() {
-                let upload_params = UploadParameters::<T> {
-                    bag_id: storage::BagId::<T>::from(StaticBagId::Council),
-                    object_creation_list: vec![payload.object_creation_params.clone()],
-                    deletion_prize_source_account_id: payload.uploader_account.clone(),
-                    expected_data_size_fee: payload.expected_data_size_fee,
-                };
-                Storage::<T>::upload_data_objects(upload_params)?;
-            }
+            let payload_data_object_id = Storage::<T>::next_data_object_id();
+            let upload_params = UploadParameters::<T> {
+                bag_id: storage::BagId::<T>::from(StaticBagId::Council),
+                object_creation_list: vec![params.payload.object_creation_params.clone()],
+                deletion_prize_source_account_id: params.payload.uploader_account.clone(),
+                expected_data_size_fee: params.payload.expected_data_size_fee,
+            };
+            Storage::<T>::upload_data_objects(upload_params)?;
 
             //
             // == MUTATION_SAFE ==
@@ -1291,14 +1289,54 @@ decl_module! {
                 ChannelCashoutsEnabled::put(channel_cashouts_enabled);
             }
 
-            if let Some(commitment) = params.commitment.as_ref() {
-                <Commitment<T>>::put(*commitment);
-            }
+            <Commitment<T>>::put(params.commitment);
 
             Self::deposit_event(RawEvent::ChannelPayoutsUpdated(
                 params,
                 payload_data_object_id
             ));
+        }
+
+        #[weight = 10_000_000] // TODO: adjust Weight
+        pub fn set_channel_min_max_cashout(
+            origin,
+            new_min_cashout: Option<BalanceOf<T>>,
+            new_max_cashout: Option<BalanceOf<T>>
+        ) {
+            ensure_root(origin)?;
+
+            //
+            // == MUTATION_SAFE ==
+            //
+
+            if let Some(min_cashout_allowed) = new_min_cashout {
+                <MinCashoutAllowed<T>>::put(min_cashout_allowed);
+            }
+
+            if let Some(max_cashout_allowed) = new_max_cashout {
+                <MaxCashoutAllowed<T>>::put(max_cashout_allowed);
+            }
+
+            Self::deposit_event(RawEvent::ChannelMinMaxCashoutUpdated(
+                new_min_cashout,
+                new_max_cashout
+            ));
+        }
+
+        #[weight = 10_000_000] // TODO: adjust Weight
+        pub fn set_channel_cashouts_status(
+            origin,
+            new_status: bool
+        ) {
+            ensure_root(origin)?;
+
+            //
+            // == MUTATION_SAFE ==
+            //
+
+            ChannelCashoutsEnabled::put(new_status);
+
+            Self::deposit_event(RawEvent::ChannelCashoutsStatusUpdated(new_status));
         }
 
         #[weight = 10_000_000] // TODO: adjust Weight
@@ -1310,6 +1348,7 @@ decl_module! {
         ) -> DispatchResult {
             let (.., reward_account, amount) = Self::ensure_can_claim_channel_reward(&origin, &actor, &item, &proof)?;
 
+            //
             // == MUTATION_SAFE ==
             //
 
@@ -2641,7 +2680,9 @@ decl_event!(
         ModeratorSetUpdated(ChannelId, ModeratorSet),
 
         // Rewards
-        ChannelPayoutsUpdated(UpdateChannelPayoutsParameters, Option<DataObjectId>),
+        ChannelPayoutsUpdated(UpdateChannelPayoutsParameters, DataObjectId),
+        ChannelMinMaxCashoutUpdated(Option<Balance>, Option<Balance>),
+        ChannelCashoutsStatusUpdated(bool),
         ChannelRewardUpdated(Balance, ChannelId),
         // Nft auction
         EnglishAuctionStarted(ContentActor, VideoId, EnglishAuctionParams),

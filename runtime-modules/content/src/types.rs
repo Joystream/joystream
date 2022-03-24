@@ -456,25 +456,11 @@ pub type ChannelPayoutsPayloadParameters<T> =
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
 pub struct UpdateChannelPayoutsParametersRecord<ChannelPayoutsPayloadParameters, Balance, Hash> {
-    pub commitment: Option<Hash>,
-    pub payload: Option<ChannelPayoutsPayloadParameters>,
+    pub commitment: Hash,
+    pub payload: ChannelPayoutsPayloadParameters,
     pub min_cashout_allowed: Option<Balance>,
     pub max_cashout_allowed: Option<Balance>,
     pub channel_cashouts_enabled: Option<bool>,
-}
-
-impl<ChannelPayoutsPayloadParameters, Balance, Hash> Default
-    for UpdateChannelPayoutsParametersRecord<ChannelPayoutsPayloadParameters, Balance, Hash>
-{
-    fn default() -> Self {
-        Self {
-            commitment: None,
-            payload: None,
-            min_cashout_allowed: None,
-            max_cashout_allowed: None,
-            channel_cashouts_enabled: None,
-        }
-    }
 }
 
 pub type UpdateChannelPayoutsParameters<T> = UpdateChannelPayoutsParametersRecord<

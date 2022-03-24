@@ -1040,6 +1040,8 @@ impl proposals_codex::Trait for Runtime {
     type UnlockBlogPostProposalParameters = UnlockBlogPostProposalParameters;
     type VetoProposalProposalParameters = VetoProposalProposalParameters;
     type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;
+    type SetChannelMinMaxCashoutProposalParameters = SetChannelMinMaxCashoutProposalParameters;
+    type SetChannelCashoutsStatusProposalParameters = SetChannelCashoutsStatusProposalParameters;
     type WeightInfo = weights::proposals_codex::WeightInfo;
 }
 

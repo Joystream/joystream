@@ -152,6 +152,12 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::UpdateChannelPayouts(params) => {
                 Call::Content(content::Call::update_channel_payouts(params))
             }
+            ProposalDetails::SetChannelMinMaxCashout(min_cashout, max_cashout) => Call::Content(
+                content::Call::set_channel_min_max_cashout(min_cashout, max_cashout),
+            ),
+            ProposalDetails::SetChannelCashoutsStatus(new_status) => {
+                Call::Content(content::Call::set_channel_cashouts_status(new_status))
+            }
         };
 
         call.encode()
