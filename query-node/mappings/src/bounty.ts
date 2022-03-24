@@ -339,7 +339,6 @@ export async function bounty_BountyFundingWithdrawal({ event, store }: EventCont
     throw new Error(`Bounty contribution not found by contributor: ${actorType}`)
   }
   contribution.updatedAt = eventTime
-  contribution.deletedAt = eventTime
   await store.save<BountyContribution>(contribution)
 
   // Record the event
@@ -366,10 +365,7 @@ export async function bounty_BountyRemoved({ event, store }: EventContext & Stor
   const bountyRemovedEvent = new BountyEvents.BountyRemovedEvent(event)
 
   // Terminate the bounty
-  const bounty = await updateBounty(store, event, bountyRemovedEvent.params[0], [], (bounty) => ({
-    deletedAt: bounty.updatedAt,
-    isTerminated: true,
-  }))
+  const bounty = await updateBounty(store, event, bountyRemovedEvent.params[0], [], () => ({ isTerminated: true }))
 
   // Record the event
   const removedInEvent = new BountyRemovedEvent({ ...genericEventFields(event), bounty })
