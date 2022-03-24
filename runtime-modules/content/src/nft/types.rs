@@ -136,7 +136,6 @@ pub struct EnglishAuctionRecord<BlockNumber, Balance, MemberId: Ord> {
     pub buy_now_price: Option<Balance>,
     pub whitelist: BTreeSet<MemberId>,
     pub end: BlockNumber,
-    pub auction_duration: BlockNumber,
     pub extension_period: BlockNumber,
     pub min_bid_step: Balance,
     pub top_bid: Option<EnglishAuctionBid<Balance, MemberId>>,
@@ -154,7 +153,6 @@ impl<
             buy_now_price: params.buy_now_price,
             whitelist: params.whitelist.clone(),
             end: params.end,
-            auction_duration: params.auction_duration,
             extension_period: params.extension_period,
             min_bid_step: params.min_bid_step,
             top_bid: None,
@@ -233,18 +231,15 @@ impl<
     }
 
     pub(crate) fn with_bid(self, amount: Balance, bidder_id: MemberId, block: BlockNumber) -> Self {
-        let (auction_duration, end) = if self.end.saturating_sub(self.extension_period) < block {
-            (
-                self.auction_duration.saturating_add(self.extension_period),
-                self.end.saturating_add(self.extension_period),
-            )
+        // sniping extension logic
+        let end = if self.end.saturating_sub(self.extension_period) < block {
+            self.end.saturating_add(self.extension_period)
         } else {
-            (self.auction_duration, self.end)
+            self.end
         };
 
         Self {
             end,
-            auction_duration,
             top_bid: Some(EnglishAuctionBid { amount, bidder_id }),
             ..self
         }
@@ -427,7 +422,6 @@ pub struct EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId: Ord> {
     pub buy_now_price: Option<Balance>,
     pub whitelist: BTreeSet<MemberId>,
     pub end: BlockNumber,
-    pub auction_duration: BlockNumber,
     pub extension_period: BlockNumber,
     pub min_bid_step: Balance,
 }

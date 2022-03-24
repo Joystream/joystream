@@ -21,14 +21,18 @@ impl<T: Trait> Module<T> {
     pub(crate) fn validate_english_auction_params(
         auction_params: &EnglishAuctionParams<T>,
     ) -> DispatchResult {
-        Self::ensure_auction_duration_bounds_satisfied(auction_params.auction_duration)?;
+        // infere auction duration from params & current block
+        let auction_duration = auction_params
+            .end
+            .saturating_sub(<frame_system::Module<T>>::block_number());
+        Self::ensure_auction_duration_bounds_satisfied(auction_duration)?;
         Self::ensure_extension_period_bounds_satisfied(auction_params.extension_period)?;
 
         Self::ensure_bid_step_bounds_satisfied(auction_params.min_bid_step)?;
 
         // Ensure auction_duration of English auction is >= extension_period
         ensure!(
-            auction_params.auction_duration >= auction_params.extension_period,
+            auction_duration >= auction_params.extension_period,
             Error::<T>::ExtensionPeriodIsGreaterThenAuctionDuration
         );
 
