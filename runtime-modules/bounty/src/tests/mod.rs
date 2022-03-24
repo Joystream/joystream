@@ -4,8 +4,8 @@ pub(crate) mod fixtures;
 pub(crate) mod mocks;
 
 use crate::{
-    Bounties, BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord, BountyStage,
-    Entries, Error, FundingType, OracleJudgment, OracleWorkEntryJudgment, RawEvent,
+    BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord, BountyStage, Entries,
+    Error, FundingType, OracleJudgment, OracleWorkEntryJudgment, RawEvent,
 };
 use fixtures::{
     decrease_bounty_account_balance, get_council_budget, get_state_bloat_bond,
@@ -14,7 +14,7 @@ use fixtures::{
     EndWorkPeriodFixture, EventFixture, FundBountyFixture, SubmitJudgmentFixture,
     SubmitWorkFixture, SwitchOracleFixture, TerminateBountyFixture, UnlockWorkEntrantStakeFixture,
     VetoBountyFixture, WithdrawFundingFixture, WithdrawStateBloatBondFixture,
-    WithdrawWorkEntrantFundsFixture, DEFAULT_BOUNTY_CHERRY, DEFAULT_BOUNTY_ORACLE_REWARD,
+    DEFAULT_BOUNTY_CHERRY, DEFAULT_BOUNTY_ORACLE_REWARD,
 };
 use frame_support::storage::StorageMap;
 use frame_system::RawOrigin;
@@ -3589,7 +3589,20 @@ fn submit_judgment_by_member_succeeded() {
             Balances::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
             initial_balance - oracle_reward - max_amount - get_state_bloat_bond()
         );
+
         assert_eq!(Balances::usable_balance(&oracle_account_id), oracle_reward);
+
+        assert_eq!(
+            Balances::usable_balance(&work_account_id_1),
+            initial_balance + max_amount
+        );
+
+        EventFixture::contains_crate_event(RawEvent::WorkEntrantFundsWithdrawn(
+            bounty_id,
+            entry_id_1,
+            work_member_id_1,
+        ));
+
         EventFixture::contains_crate_event(RawEvent::BountyCreatorCherryWithdrawal(
             bounty_id,
             BountyActor::Council,
@@ -3598,7 +3611,8 @@ fn submit_judgment_by_member_succeeded() {
             bounty_id,
             BountyActor::Member(oracle_member_id),
         ));
-        EventFixture::assert_last_crate_event(RawEvent::OracleJudgmentSubmitted(
+
+        EventFixture::contains_crate_event(RawEvent::OracleJudgmentSubmitted(
             bounty_id,
             BountyActor::Member(oracle_member_id),
             judgment,
@@ -3741,12 +3755,18 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
 
         assert_eq!(
             Balances::free_balance(&worker_account_id_1),
-            initial_balance
+            initial_balance + max_amount
         );
         assert_eq!(
             Balances::usable_balance(&worker_account_id_1),
-            initial_balance
+            initial_balance + max_amount
         );
+
+        EventFixture::contains_crate_event(RawEvent::WorkEntrantFundsWithdrawn(
+            bounty_id,
+            entry_id_1,
+            worker_member_id_1,
+        ));
 
         let amount_slashed_entry_2 = slashing_share_entry_2 * entrant_stake;
         assert_eq!(
@@ -3768,7 +3788,7 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
             initial_balance - amount_slashed_entry_3
         );
 
-        EventFixture::assert_last_crate_event(RawEvent::OracleJudgmentSubmitted(
+        EventFixture::contains_crate_event(RawEvent::OracleJudgmentSubmitted(
             bounty_id,
             BountyActor::Council,
             judgment,
@@ -3915,12 +3935,18 @@ fn submit_judgment_by_member_succeeded_with_complex_judgment() {
 
         assert_eq!(
             Balances::free_balance(&worker_account_id_1),
-            initial_balance
+            initial_balance + max_amount
         );
         assert_eq!(
             Balances::usable_balance(&worker_account_id_1),
-            initial_balance
+            initial_balance + max_amount
         );
+
+        EventFixture::contains_crate_event(RawEvent::WorkEntrantFundsWithdrawn(
+            bounty_id,
+            entry_id_1,
+            worker_member_id_1,
+        ));
 
         let amount_slashed_entry_2 = slashing_share_entry_2 * entrant_stake;
         assert_eq!(
@@ -4508,651 +4534,16 @@ fn submit_judgment_fails_insufficient_balance() {
             })
             .collect::<BTreeMap<_, _>>();
 
-        //bounty account 250 - 151 -> 49 >= 50 -> false
-        decrease_bounty_account_balance(bounty_id, 151);
+        //bounty account 260 - 151 -> 49 >= 50 -> false
+        decrease_bounty_account_balance(bounty_id, 161);
 
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Signed(oracle_account_id))
             .with_judgment(judgment.clone())
             .call_and_assert(Err(
-                Error::<Test>::NoBountyBalanceToOracleRewardAndCherryWithdrawal.into(),
+                Error::<Test>::NoBountyBalanceToFundsOracleRewardAndCherryWithdrawal.into(),
             ));
-    });
-}
-
-#[test]
-fn withdraw_work_entrant_funds_succeeded() {
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        let initial_balance = 500;
-        let max_amount = 100;
-        let winner_reward = max_amount;
-        let entrant_stake = 37;
-
-        set_council_budget(initial_balance);
-
-        CreateBountyFixture::default()
-            .with_max_funding_amount(max_amount)
-            .with_entrant_stake(entrant_stake)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 1;
-
-        FundBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_amount(max_amount)
-            .with_council()
-            .with_origin(RawOrigin::Root)
-            .call_and_assert(Ok(()));
-
-        let member_id1 = 1;
-        let account_id1 = 1;
-        increase_account_balance(&account_id1, initial_balance);
-
-        // Winner
-        AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id1))
-            .with_member_id(member_id1)
-            .with_staking_account_id(account_id1)
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        assert_eq!(
-            Balances::usable_balance(&account_id1),
-            initial_balance - entrant_stake
-        );
-
-        let entry_id1 = 1;
-
-        SubmitWorkFixture::default()
-            .with_origin(RawOrigin::Signed(account_id1))
-            .with_member_id(member_id1)
-            .with_entry_id(entry_id1)
-            .call_and_assert(Ok(()));
-
-        // Legitimate participant
-        let member_id2 = 2;
-        let account_id2 = 2;
-        increase_account_balance(&account_id2, initial_balance);
-
-        AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id2))
-            .with_member_id(member_id2)
-            .with_staking_account_id(account_id2)
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        assert_eq!(
-            Balances::usable_balance(&account_id2),
-            initial_balance - entrant_stake
-        );
-
-        let entry_id2 = 2;
-
-        SubmitWorkFixture::default()
-            .with_origin(RawOrigin::Signed(account_id2))
-            .with_member_id(member_id2)
-            .with_entry_id(entry_id2)
-            .call_and_assert(Ok(()));
-
-        EndWorkPeriodFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_origin(RawOrigin::Root)
-            .call_and_assert(Ok(()));
-
-        // Judgment
-        let mut judgment = BTreeMap::new();
-        judgment.insert(
-            entry_id1,
-            OracleWorkEntryJudgment::Winner {
-                reward: winner_reward,
-            },
-        );
-
-        SubmitJudgmentFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_judgment(judgment)
-            .call_and_assert(Ok(()));
-
-        // Withdraw work entrant.
-        WithdrawWorkEntrantFundsFixture::default()
-            .with_origin(RawOrigin::Signed(account_id1))
-            .with_member_id(member_id1)
-            .with_entry_id(entry_id1)
-            .call_and_assert(Ok(()));
-
-        assert_eq!(
-            Balances::usable_balance(&account_id1),
-            initial_balance + winner_reward
-        );
-
-        EventFixture::assert_last_crate_event(RawEvent::WorkEntrantFundsWithdrawn(
-            bounty_id, entry_id1, member_id1,
-        ));
-
-        // Bounty exists before the last withdrawal call.
-        assert!(<Bounties<Test>>::contains_key(bounty_id));
-
-        WithdrawWorkEntrantFundsFixture::default()
-            .with_origin(RawOrigin::Signed(account_id2))
-            .with_member_id(member_id2)
-            .with_entry_id(entry_id2)
-            .call_and_assert(Ok(()));
-
-        assert_eq!(
-            Balances::usable_balance(&account_id2),
-            initial_balance - entrant_stake
-        );
-
-        EventFixture::contains_crate_event(RawEvent::WorkEntrantFundsWithdrawn(
-            bounty_id, entry_id2, member_id2,
-        ));
-
-        assert!(<Bounties<Test>>::contains_key(bounty_id));
-    });
-}
-
-#[test]
-fn withdraw_work_entrant_funds_on_judgment_fails_insufficient_balance() {
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        let initial_balance = 500;
-        let reward = 100;
-        let entrant_stake = 37;
-        let bounty_id = 1;
-
-        let funding_member_id = 2;
-        let funding_account_id = 2;
-
-        let worker_member_id = 3;
-        let worker_account_id = 3;
-
-        let oracle_reward = 100;
-        let cherry = 50;
-
-        set_council_budget(initial_balance);
-        increase_account_balance(&funding_account_id, initial_balance);
-        increase_account_balance(&worker_account_id, entrant_stake);
-
-        CreateBountyFixture::default()
-            .with_max_funding_amount(reward)
-            .with_entrant_stake(entrant_stake)
-            .with_oracle_reward(oracle_reward)
-            .with_cherry(cherry)
-            .call_and_assert(Ok(()));
-
-        FundBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_amount(reward)
-            .with_member_id(funding_member_id)
-            .with_origin(RawOrigin::Signed(funding_account_id))
-            .call_and_assert(Ok(()));
-
-        AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(worker_account_id))
-            .with_member_id(worker_member_id)
-            .with_staking_account_id(worker_account_id)
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        let entry_id = 1;
-
-        let work_data = b"Work submitted".to_vec();
-        SubmitWorkFixture::default()
-            .with_origin(RawOrigin::Signed(worker_account_id))
-            .with_member_id(worker_member_id)
-            .with_entry_id(entry_id)
-            .with_work_data(work_data.clone())
-            .call_and_assert(Ok(()));
-
-        EndWorkPeriodFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_origin(RawOrigin::Root)
-            .call_and_assert(Ok(()));
-
-        // Judgment
-        let mut judgment = BTreeMap::new();
-        judgment.insert(entry_id, OracleWorkEntryJudgment::Winner { reward: reward });
-
-        SubmitJudgmentFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_judgment(judgment)
-            .call_and_assert(Ok(()));
-
-        //bounty account 100 - 1 -> 99 >= 100 -> false
-        decrease_bounty_account_balance(bounty_id, oracle_reward + cherry + 1);
-
-        WithdrawWorkEntrantFundsFixture::default()
-            .with_origin(RawOrigin::Signed(worker_account_id))
-            .with_member_id(worker_member_id)
-            .with_entry_id(entry_id)
-            .call_and_assert(Err(balances::Error::<Test, _>::InsufficientBalance.into()));
-    });
-}
-
-#[test]
-fn withdraw_work_entrant_funds_fails_with_invalid_bounty_id() {
-    build_test_externalities().execute_with(|| {
-        let invalid_bounty_id = 11u64;
-
-        WithdrawWorkEntrantFundsFixture::default()
-            .with_bounty_id(invalid_bounty_id)
-            .call_and_assert(Err(Error::<Test>::BountyDoesntExist.into()));
-    });
-}
-
-#[test]
-fn withdraw_work_entrant_funds_fails_with_invalid_entry_id() {
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        let initial_balance = 500;
-        let max_amount = 100;
-        let winner_reward = max_amount;
-        let entrant_stake = 37;
-        let work_period = 1;
-
-        set_council_budget(initial_balance);
-
-        CreateBountyFixture::default()
-            .with_max_funding_amount(max_amount)
-            .with_entrant_stake(entrant_stake)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 1;
-
-        FundBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_amount(max_amount)
-            .with_council()
-            .with_origin(RawOrigin::Root)
-            .call_and_assert(Ok(()));
-
-        let member_id = 1;
-        let account_id = 1;
-        increase_account_balance(&account_id, initial_balance);
-
-        // Winner
-        AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_staking_account_id(account_id)
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        let entry_id = 1;
-
-        SubmitWorkFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_entry_id(entry_id)
-            .call_and_assert(Ok(()));
-
-        EndWorkPeriodFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_origin(RawOrigin::Root)
-            .call_and_assert(Ok(()));
-
-        // Judgment
-        let mut judgment = BTreeMap::new();
-        judgment.insert(
-            entry_id,
-            OracleWorkEntryJudgment::Winner {
-                reward: winner_reward,
-            },
-        );
-
-        run_to_block(starting_block + work_period + 1);
-
-        SubmitJudgmentFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_judgment(judgment)
-            .call_and_assert(Ok(()));
-
-        let invalid_entry_id = 11u64;
-
-        WithdrawWorkEntrantFundsFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_entry_id(invalid_entry_id)
-            .call_and_assert(Err(Error::<Test>::WorkEntryDoesntExist.into()));
-    });
-}
-
-#[test]
-fn withdraw_work_entrant_funds_fails_with_invalid_entry_ownership() {
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        let initial_balance = 500;
-        let max_amount = 200;
-        let winner_reward = max_amount;
-        let entrant_stake = 37;
-
-        set_council_budget(initial_balance);
-
-        CreateBountyFixture::default()
-            .with_max_funding_amount(max_amount)
-            .with_entrant_stake(entrant_stake)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 1;
-
-        FundBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_amount(max_amount)
-            .with_council()
-            .with_origin(RawOrigin::Root)
-            .call_and_assert(Ok(()));
-
-        let worker_member_id_1 = 1;
-        let worker_account_id_1 = 1;
-        increase_account_balance(&worker_account_id_1, initial_balance);
-
-        // Winner
-        AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(worker_account_id_1))
-            .with_member_id(worker_member_id_1)
-            .with_staking_account_id(worker_account_id_1)
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        assert_eq!(
-            Balances::usable_balance(&worker_account_id_1),
-            initial_balance - entrant_stake
-        );
-
-        let entry_id_1 = 1;
-
-        SubmitWorkFixture::default()
-            .with_origin(RawOrigin::Signed(worker_account_id_1))
-            .with_member_id(worker_member_id_1)
-            .with_entry_id(entry_id_1)
-            .call_and_assert(Ok(()));
-
-        let worker_member_id_2 = 2;
-        let worker_account_id_2 = 2;
-        increase_account_balance(&worker_account_id_2, initial_balance);
-
-        AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(worker_account_id_2))
-            .with_member_id(worker_member_id_2)
-            .with_staking_account_id(worker_account_id_2)
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        assert_eq!(
-            Balances::usable_balance(&worker_account_id_2),
-            initial_balance - entrant_stake
-        );
-
-        let entry_id_2 = 2;
-
-        SubmitWorkFixture::default()
-            .with_origin(RawOrigin::Signed(worker_account_id_2))
-            .with_member_id(worker_member_id_2)
-            .with_entry_id(entry_id_2)
-            .call_and_assert(Ok(()));
-
-        EndWorkPeriodFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_origin(RawOrigin::Root)
-            .call_and_assert(Ok(()));
-
-        // Judgment
-        let mut judgment = BTreeMap::new();
-        judgment.insert(
-            entry_id_1,
-            OracleWorkEntryJudgment::Winner {
-                reward: winner_reward / 2,
-            },
-        );
-        judgment.insert(
-            entry_id_2,
-            OracleWorkEntryJudgment::Winner {
-                reward: winner_reward / 2,
-            },
-        );
-
-        SubmitJudgmentFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_judgment(judgment)
-            .call_and_assert(Ok(()));
-
-        // Withdraw work entrant.
-        WithdrawWorkEntrantFundsFixture::default()
-            .with_origin(RawOrigin::Signed(worker_account_id_1))
-            .with_member_id(worker_member_id_1)
-            .with_entry_id(entry_id_1)
-            .call_and_assert(Ok(()));
-
-        assert_eq!(
-            Balances::usable_balance(&worker_account_id_1),
-            initial_balance + winner_reward / 2
-        );
-
-        // Bounty exists before the last withdrawal call.
-        assert!(<Bounties<Test>>::contains_key(bounty_id));
-
-        //Tries to steal worker_member_id_2
-        WithdrawWorkEntrantFundsFixture::default()
-            .with_origin(RawOrigin::Signed(worker_account_id_1))
-            .with_member_id(worker_member_id_1)
-            .with_entry_id(entry_id_2)
-            .call_and_assert(Err(Error::<Test>::WorkEntryDoesntBelongToWorker.into()));
-
-        assert_eq!(
-            Balances::usable_balance(&worker_account_id_1),
-            initial_balance + winner_reward / 2
-        );
-
-        // Withdraw work entrant.
-        WithdrawWorkEntrantFundsFixture::default()
-            .with_origin(RawOrigin::Signed(worker_account_id_2))
-            .with_member_id(worker_member_id_2)
-            .with_entry_id(entry_id_2)
-            .call_and_assert(Ok(()));
-
-        assert_eq!(
-            Balances::usable_balance(&worker_account_id_2),
-            initial_balance + winner_reward / 2
-        );
-
-        EventFixture::contains_crate_event(RawEvent::WorkEntrantFundsWithdrawn(
-            bounty_id,
-            entry_id_1,
-            worker_member_id_1,
-        ));
-
-        EventFixture::contains_crate_event(RawEvent::WorkEntrantFundsWithdrawn(
-            bounty_id,
-            entry_id_2,
-            worker_member_id_2,
-        ));
-
-        assert!(<Bounties<Test>>::contains_key(bounty_id));
-    });
-}
-
-#[test]
-fn withdraw_work_entrant_funds_fails_with_invalid_origin() {
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        let initial_balance = 500;
-        let max_amount = 100;
-
-        set_council_budget(initial_balance);
-
-        CreateBountyFixture::default()
-            .with_max_funding_amount(max_amount)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 1;
-        let member_id = 1;
-        let account_id = 1;
-
-        FundBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_amount(max_amount)
-            .with_council()
-            .with_origin(RawOrigin::Root)
-            .call_and_assert(Ok(()));
-
-        increase_account_balance(&account_id, initial_balance);
-
-        AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        let entry_id = 1;
-
-        WithdrawWorkEntrantFundsFixture::default()
-            .with_entry_id(entry_id)
-            .with_bounty_id(bounty_id)
-            .with_origin(RawOrigin::Root)
-            .call_and_assert(Err(DispatchError::BadOrigin));
-
-        WithdrawWorkEntrantFundsFixture::default()
-            .with_entry_id(entry_id)
-            .with_bounty_id(bounty_id)
-            .with_origin(RawOrigin::None)
-            .call_and_assert(Err(DispatchError::BadOrigin));
-    });
-}
-
-#[test]
-fn withdraw_work_entrant_funds_fails_with_invalid_stage() {
-    //Funding
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        let initial_balance = 500;
-        set_council_budget(initial_balance);
-
-        CreateBountyFixture::default().call_and_assert(Ok(()));
-
-        WithdrawWorkEntrantFundsFixture::default()
-            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
-    });
-    //FundingExpired
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-        let initial_balance = 500;
-        let funding_period = 10;
-        set_council_budget(initial_balance);
-
-        CreateBountyFixture::default()
-            .with_funding_period(funding_period)
-            .call_and_assert(Ok(()));
-
-        run_to_block(funding_period + 10);
-
-        WithdrawWorkEntrantFundsFixture::default().call_and_assert(Err(
-            Error::<Test>::InvalidStageUnexpectedFundingExpired.into(),
-        ));
-    });
-    //FailedBountyWithdrawal
-    build_test_externalities().execute_with(|| {
-        let initial_balance = 1000;
-        let min_amount = 500;
-        let max_amount = 1000;
-        let funding_period = 10;
-        set_council_budget(initial_balance);
-
-        CreateBountyFixture::default()
-            .with_limited_funding(min_amount, max_amount, funding_period)
-            .call_and_assert(Ok(()));
-        FundBountyFixture::default()
-            .with_origin(RawOrigin::Root)
-            .with_council()
-            .with_amount(250)
-            .call_and_assert(Ok(()));
-
-        run_to_block(funding_period + 1);
-
-        WithdrawWorkEntrantFundsFixture::default().call_and_assert(Err(
-            Error::<Test>::InvalidStageUnexpectedFailedBountyWithdrawal.into(),
-        ));
-    });
-    //WorkSubmission
-    build_test_externalities().execute_with(|| {
-        let initial_balance = 1000;
-        let min_amount = 500;
-        let max_amount = 1000;
-        let funding_period = 10;
-        let entrant_stake = 10;
-        set_council_budget(initial_balance);
-
-        CreateBountyFixture::default()
-            .with_limited_funding(min_amount, max_amount, funding_period)
-            .with_entrant_stake(entrant_stake)
-            .call_and_assert(Ok(()));
-
-        FundBountyFixture::default()
-            .with_origin(RawOrigin::Root)
-            .with_council()
-            .with_amount(min_amount)
-            .call_and_assert(Ok(()));
-
-        run_to_block(funding_period + 1);
-
-        WithdrawWorkEntrantFundsFixture::default().call_and_assert(Err(
-            Error::<Test>::InvalidStageUnexpectedWorkSubmission.into(),
-        ));
-    });
-    //Judgment
-    build_test_externalities().execute_with(|| {
-        let initial_balance = 1000;
-        let min_amount = 500;
-        let max_amount = 1000;
-        let funding_period = 10;
-        let entrant_stake = 10;
-        set_council_budget(initial_balance);
-
-        CreateBountyFixture::default()
-            .with_limited_funding(min_amount, max_amount, funding_period)
-            .with_entrant_stake(entrant_stake)
-            .call_and_assert(Ok(()));
-
-        FundBountyFixture::default()
-            .with_origin(RawOrigin::Root)
-            .with_council()
-            .with_amount(min_amount)
-            .call_and_assert(Ok(()));
-
-        run_to_block(funding_period + 1);
-
-        let bounty_id = 1;
-        let account_id = 1;
-        increase_account_balance(&account_id, entrant_stake);
-        AnnounceWorkEntryFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_staking_account_id(account_id)
-            .call_and_assert(Ok(()));
-
-        let entry_id = 1;
-        SubmitWorkFixture::default()
-            .with_entry_id(entry_id)
-            .call_and_assert(Ok(()));
-
-        EndWorkPeriodFixture::default()
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        WithdrawWorkEntrantFundsFixture::default()
-            .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedJudgment.into()));
     });
 }
 
@@ -6286,82 +5677,6 @@ fn unlock_work_entrant_stake_succeeds_after_judging() {
 }
 
 #[test]
-fn unlock_work_entrant_stake_fails_after_successeful_judging() {
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        let max_amount = 500;
-
-        let funding_amount = 500;
-
-        let initial_balance = 2000;
-        let cherry = 200;
-        let oracle_reward = 200;
-        let worker_entrant_stake = 200;
-
-        increase_account_balance(&COUNCIL_BUDGET_ACCOUNT_ID, initial_balance);
-
-        CreateBountyFixture::default()
-            .with_max_funding_amount(max_amount)
-            .with_cherry(cherry)
-            .with_oracle_reward(oracle_reward)
-            .with_entrant_stake(worker_entrant_stake)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 1u64;
-
-        FundBountyFixture::default()
-            .with_origin(RawOrigin::Root)
-            .with_council()
-            .with_amount(funding_amount)
-            .call_and_assert(Ok(()));
-
-        let worker_member_id_1 = 1;
-        let worker_account_id_1 = 1;
-        increase_account_balance(&worker_account_id_1, initial_balance);
-
-        AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(worker_account_id_1))
-            .with_member_id(worker_member_id_1)
-            .with_staking_account_id(worker_account_id_1)
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        let entry_id_1 = 1;
-
-        SubmitWorkFixture::default()
-            .with_origin(RawOrigin::Signed(worker_account_id_1))
-            .with_member_id(worker_member_id_1)
-            .with_entry_id(entry_id_1)
-            .call_and_assert(Ok(()));
-
-        EndWorkPeriodFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_origin(RawOrigin::Root)
-            .call_and_assert(Ok(()));
-
-        let mut judgment: OracleJudgment<u64, u64> = BTreeMap::new();
-        judgment.insert(
-            entry_id_1,
-            OracleWorkEntryJudgment::Winner { reward: max_amount },
-        );
-
-        SubmitJudgmentFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_origin(RawOrigin::Root)
-            .with_judgment(judgment.clone())
-            .call_and_assert(Ok(()));
-
-        UnlockWorkEntrantStakeFixture::default()
-            .with_origin(RawOrigin::Signed(worker_account_id_1))
-            .with_member_id(worker_member_id_1)
-            .with_entry_id(entry_id_1)
-            .call_and_assert(Err(Error::<Test>::CannotUnlockWorkEntryAlreadyJudged.into()));
-    });
-}
-
-#[test]
 fn unlock_work_entrant_stake_fails_invalid_entry_ownership() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
@@ -6658,13 +5973,6 @@ fn withdraw_state_bloat_bond_succeeds() {
             .with_judgment(judgment.clone())
             .call_and_assert(Ok(()));
 
-        // Withdraw work entrant.
-        WithdrawWorkEntrantFundsFixture::default()
-            .with_origin(RawOrigin::Signed(worker_account_id_1))
-            .with_member_id(worker_member_id_1)
-            .with_entry_id(entry_id_1)
-            .call_and_assert(Ok(()));
-
         assert_eq!(
             Balances::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
             initial_balance - 2 * funding_amount - get_state_bloat_bond()
@@ -6944,13 +6252,6 @@ fn withdraw_state_bloat_bond_after_fails_invalid_funds_ownership() {
             .with_judgment(judgment.clone())
             .call_and_assert(Ok(()));
 
-        // Withdraw work entrant.
-        WithdrawWorkEntrantFundsFixture::default()
-            .with_origin(RawOrigin::Signed(worker_account_id_1))
-            .with_member_id(worker_member_id_1)
-            .with_entry_id(entry_id_1)
-            .call_and_assert(Ok(()));
-
         WithdrawStateBloatBondFixture::default()
             .with_origin(RawOrigin::Signed(funder_account))
             .with_member_id(funder_member_id)
@@ -7022,13 +6323,6 @@ fn withdraw_state_bloat_bond_fails_with_insufficient_balance() {
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Root)
             .with_judgment(judgment.clone())
-            .call_and_assert(Ok(()));
-
-        // Withdraw work entrant.
-        WithdrawWorkEntrantFundsFixture::default()
-            .with_origin(RawOrigin::Signed(worker_account_id_1))
-            .with_member_id(worker_member_id_1)
-            .with_entry_id(entry_id_1)
             .call_and_assert(Ok(()));
 
         decrease_bounty_account_balance(bounty_id, 1);

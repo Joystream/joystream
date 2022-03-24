@@ -113,10 +113,10 @@ impl common::StakingAccountValidator<Test> for () {
         *account_id != STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER
     }
 }
-
+pub const MAX_MEMBERS: u32 = 150;
 impl common::membership::MembershipInfoProvider<Test> for () {
     fn controller_account_id(member_id: u64) -> Result<u128, DispatchError> {
-        if member_id < 10 {
+        if member_id < MAX_MEMBERS.into() {
             return Ok(member_id as u128); // similar account_id
         }
 
@@ -213,9 +213,6 @@ impl crate::WeightInfo for () {
         0
     }
     fn submit_oracle_judgment_by_member_all_rejected(_i: u32, _j: u32) -> u64 {
-        0
-    }
-    fn withdraw_work_entrant_funds() -> u64 {
         0
     }
     fn unlock_work_entrant_stake() -> u64 {

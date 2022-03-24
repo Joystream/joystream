@@ -78,7 +78,6 @@ pub trait WeightInfo {
     fn submit_oracle_judgment_by_council_all_rejected(i: u32, j: u32) -> Weight;
     fn submit_oracle_judgment_by_member_all_winners(i: u32) -> Weight;
     fn submit_oracle_judgment_by_member_all_rejected(i: u32, j: u32) -> Weight;
-    fn withdraw_work_entrant_funds() -> Weight;
     fn unlock_work_entrant_stake() -> Weight;
     fn withdraw_state_bloat_bond_by_council() -> Weight;
     fn withdraw_state_bloat_bond_by_member() -> Weight;
@@ -400,13 +399,12 @@ pub type Entry<T> = EntryRecord<
     <T as frame_system::Trait>::AccountId,
     <T as common::membership::MembershipTypes>::MemberId,
     <T as frame_system::Trait>::BlockNumber,
-    BalanceOf<T>,
 >;
 
 /// Work entry.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct EntryRecord<AccountId, MemberId, BlockNumber, Balance> {
+pub struct EntryRecord<AccountId, MemberId, BlockNumber> {
     /// Work entrant member ID.
     pub member_id: MemberId,
 
@@ -418,11 +416,6 @@ pub struct EntryRecord<AccountId, MemberId, BlockNumber, Balance> {
 
     /// Signifies that an entry has at least one submitted work.
     pub work_submitted: bool,
-
-    /// Optional oracle judgment for the work entry.
-    /// Absent value means neither winner nor rejected entry - "legitimate user" that gets their
-    /// stake back without slashing but doesn't get a reward.
-    pub oracle_judgment_result: Option<OracleWorkEntryJudgment<Balance>>,
 }
 
 /// Defines the oracle judgment for the work entry.
@@ -798,6 +791,9 @@ decl_error! {
 
         ///Cannot withdraw cherry and oracle reward from bounty account, because of insufficient balance,
         NoBountyBalanceToOracleRewardAndCherryWithdrawal,
+
+        ///Cannot withdraw funds cherry and oracle reward from bounty account, because of insufficient balance,
+        NoBountyBalanceToFundsOracleRewardAndCherryWithdrawal,
 
         ///Cannot withdraw cherry from bounty account, because of insufficient balance,
         NoBountyBalanceToCherryWithdrawal,
@@ -1267,7 +1263,6 @@ decl_module! {
                 staking_account_id: staking_account_id.clone(),
                 submitted_at: Self::current_block(),
                 work_submitted: false,
-                oracle_judgment_result: None,
             };
 
             <Entries<T>>::insert(entry_id, entry);
@@ -1414,10 +1409,10 @@ decl_module! {
             // Return a cherry to a creator.
             if successful_bounty {
 
-                let amount = oracle_reward.saturating_add(cherry);
+                let amount = oracle_reward.saturating_add(cherry).saturating_add(bounty.total_funding);
                 //Checks if there are sufficient funds to safely perform oracle reward and cherry withdrawal
                 ensure!(Self::check_balance_for_account(amount, &account_id),
-                    Error::<T>::NoBountyBalanceToOracleRewardAndCherryWithdrawal);
+                    Error::<T>::NoBountyBalanceToFundsOracleRewardAndCherryWithdrawal);
                 Self::return_bounty_cherry_to_creator(bounty_id, &bounty)?;
             }
             else{
@@ -1438,15 +1433,26 @@ decl_module! {
             for (entry_id, work_entry_judgment) in judgment.iter() {
                 // Update work entries for winners.
                 match *work_entry_judgment{
-                    OracleWorkEntryJudgment::Winner{ .. } => {
-
-                        <Entries<T>>::mutate(entry_id, |entry| {
-                            entry.oracle_judgment_result = Some(work_entry_judgment.clone());
-                        });
+                    OracleWorkEntryJudgment::Winner{ reward } => {
 
                         let entry = Self::entries(entry_id);
                         // Unstake the full work entry state.
+                        let worker_account_id = T::Membership::controller_account_id(entry.member_id)?;
+
                         T::StakingHandler::unlock(&entry.staking_account_id);
+                        // Claim the winner reward.
+
+                        Self::transfer_funds_from_bounty_account(
+                            &worker_account_id,
+                            bounty_id,
+                            reward
+                        )?;
+                        // Delete the work entry record from the storage.
+                        Self::remove_work_entry(&bounty_id, &entry_id);
+                        // println!("WorkEntrantFundsWithdrawn: {:?}-{:?}", entry_id, entry.member_id);
+                        // Fire an event.
+                        Self::deposit_event(RawEvent::WorkEntrantFundsWithdrawn(bounty_id, *entry_id, entry.member_id));
+
                     },
                     OracleWorkEntryJudgment::Rejected{
                         slashing_share,
@@ -1465,66 +1471,8 @@ decl_module! {
                     }
                 }
             }
-
             // Fire a judgment event.
             Self::deposit_event(RawEvent::OracleJudgmentSubmitted(bounty_id, bounty.creation_params.oracle, judgment));
-        }
-
-        /// Withdraw work entrant funds.
-        /// Both legitimate participants and winners get their stake unlocked. Winners also get a
-        /// bounty reward.
-        /// # <weight>
-        ///
-        /// ## weight
-        /// `O (1)`
-        /// - db:
-        ///    - `O(1)` doesn't depend on the state or parameters
-        /// # </weight>
-        #[weight = WeightInfoBounty::<T>::withdraw_work_entrant_funds()]
-        pub fn withdraw_work_entrant_funds(
-            origin,
-            member_id: MemberId<T>,
-            bounty_id: T::BountyId,
-            entry_id: T::EntryId,
-        ) {
-            let controller_account_id =
-                T::Membership::ensure_member_controller_account_origin(origin, member_id)?;
-
-            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
-
-            let current_bounty_stage = Self::get_bounty_stage(&bounty);
-
-            // Ensure withdrawal for successful or failed bounty.
-            ensure!(
-                current_bounty_stage == BountyStage::SuccessfulBountyWithdrawal,
-                Self::unexpected_bounty_stage_error(current_bounty_stage)
-            );
-
-            let entry = Self::ensure_work_entry_exists(&entry_id)?;
-
-            Self::ensure_work_entry_ownership(&entry, &member_id)?;
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Claim the winner reward.
-            if let Some(OracleWorkEntryJudgment::Winner { reward }) = entry.oracle_judgment_result {
-                Self::transfer_funds_from_bounty_account(
-                    &controller_account_id,
-                    bounty_id,
-                    reward
-                )?;
-            }
-
-            // Delete the work entry record from the storage.
-            Self::remove_work_entry(&bounty_id, &entry_id);
-
-            // Fire an event.
-            Self::deposit_event(RawEvent::WorkEntrantFundsWithdrawn(bounty_id, entry_id, member_id));
-            // Remove the bounty in case of the last withdrawal operation.
-            if Self::withdrawal_completed(&current_bounty_stage, &bounty_id) {
-                Self::remove_bounty(&bounty_id);
-            }
         }
 
         ///Unlocks the stake related to a work entry
@@ -1560,9 +1508,6 @@ decl_module! {
             let entry = Self::ensure_work_entry_exists(&entry_id)?;
 
             Self::ensure_work_entry_ownership(&entry, &member_id)?;
-
-            ensure!(entry.oracle_judgment_result.is_none(),
-                Error::<T>::CannotUnlockWorkEntryAlreadyJudged);
 
             //
             // == MUTATION SAFE ==
