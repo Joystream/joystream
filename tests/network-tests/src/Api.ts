@@ -1030,6 +1030,31 @@ export class Api {
     )
   }
 
+  async updateVideoForNftCreation(
+    accountFrom: string,
+    ownerId: number,
+    videoId: number,
+    auctionParams: AuctionParams
+  ): Promise<ISubmittableResult> {
+    const updateParameters = this.createType('VideoUpdateParameters', {
+      assets_to_upload: null,
+      new_meta: null,
+      assets_to_remove: this.api.createType('BTreeSet<DataObjectId>', []),
+      enable_comments: false,
+      auto_issue_nft: this.api.createType('NftIssuanceParameters', {
+        royalty: null,
+        nft_metadata: this.api.createType('NftMetadata', '').toU8a(),
+        non_channel_owner: ownerId,
+        init_transactional_status: this.api.createType('InitTransactionalStatus', { Auction: auctionParams }),
+      }),
+    })
+
+    return await this.sender.signAndSend(
+      this.api.tx.content.updateVideo({ Member: ownerId }, videoId, updateParameters),
+      accountFrom
+    )
+  }
+
   public setFaucetInfo(info: FaucetInfo): void {
     this.factory.setFaucetInfo(info)
   }
