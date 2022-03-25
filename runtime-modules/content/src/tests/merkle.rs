@@ -955,6 +955,35 @@ fn unsuccessfull_channel_payouts_update_with_unexpected_data_size_fee() {
 }
 
 #[test]
+fn unsuccessfull_channel_payouts_update_min_cashout_exceeds_max_cashout() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        let current_min_cashout = Content::min_cashout_allowed();
+        let current_max_cashout = Content::max_cashout_allowed();
+
+        UpdateChannelPayoutsFixture::default()
+            .with_min_cashout_allowed(Some(current_min_cashout.saturating_add(1)))
+            .with_max_cashout_allowed(Some(current_min_cashout))
+            .call_and_assert(Err(
+                Error::<Test>::MinCashoutAllowedExceedsMaxCashoutAllowed.into(),
+            ));
+
+        UpdateChannelPayoutsFixture::default()
+            .with_min_cashout_allowed(Some(current_max_cashout.saturating_add(1)))
+            .call_and_assert(Err(
+                Error::<Test>::MinCashoutAllowedExceedsMaxCashoutAllowed.into(),
+            ));
+
+        UpdateChannelPayoutsFixture::default()
+            .with_max_cashout_allowed(Some(current_min_cashout.saturating_sub(1)))
+            .call_and_assert(Err(
+                Error::<Test>::MinCashoutAllowedExceedsMaxCashoutAllowed.into(),
+            ));
+    })
+}
+
+#[test]
 fn successful_channel_payouts_update() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -974,8 +1003,8 @@ fn successful_channel_payouts_update() {
 
         UpdateChannelPayoutsFixture::default()
             .with_commitment(Some(merkle_root))
-            .with_min_cashout_allowed(Some(1))
-            .with_max_cashout_allowed(Some(100))
+            .with_min_cashout_allowed(Some(0))
+            .with_max_cashout_allowed(Some(1))
             .with_channel_cashouts_enabled(Some(false))
             .with_payload(Some(payload_params))
             .call_and_assert(Ok(()));

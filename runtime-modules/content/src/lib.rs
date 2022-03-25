@@ -1264,6 +1264,11 @@ decl_module! {
         ) {
             ensure_root(origin)?;
 
+            let new_min_cashout_allowed = params.min_cashout_allowed.unwrap_or_else(Self::min_cashout_allowed);
+            let new_max_cashout_allowed = params.max_cashout_allowed.unwrap_or_else(Self::max_cashout_allowed);
+
+            ensure!(new_min_cashout_allowed <= new_max_cashout_allowed, Error::<T>::MinCashoutAllowedExceedsMaxCashoutAllowed);
+
             let payload_data_object_id = params.payload.as_ref().map(|_| { Storage::<T>::next_data_object_id() });
             if let Some(payload) = params.payload.as_ref() {
                 let upload_params = UploadParameters::<T> {

@@ -338,6 +338,9 @@ decl_error! {
 
         /// Repeated account in 'Funding Request' proposal.
         InvalidFundingRequestProposalRepeatedAccount,
+
+        // The specified min channel cashout is greater than the specified max channel cashout in `Update Channel Payouts` proposal.
+        InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout,
     }
 }
 
@@ -655,8 +658,13 @@ impl<T: Trait> Module<T> {
             ProposalDetails::VetoProposal(..) => {
                 // Note: No checks for this proposal for now
             }
-            ProposalDetails::UpdateChannelPayouts(..) => {
-                // Note: No checks for this proposal for now
+            ProposalDetails::UpdateChannelPayouts(params) => {
+                if params.min_cashout_allowed.is_some() && params.max_cashout_allowed.is_some() {
+                    ensure!(
+                        params.max_cashout_allowed.unwrap() >= params.min_cashout_allowed.unwrap(),
+                        Error::<T>::InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout
+                    );
+                }
             }
         }
 

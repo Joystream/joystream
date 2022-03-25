@@ -273,5 +273,8 @@ decl_error! {
 
         /// Channel cashouts are currently disabled
         ChannelCashoutsDisabled,
+
+        /// New values for min_cashout_allowed/max_cashout_allowed are invalid: min_cashout_allowed cannot exceed max_cashout_allowed
+        MinCashoutAllowedExceedsMaxCashoutAllowed,
     }
 }

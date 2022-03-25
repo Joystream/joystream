@@ -2012,3 +2012,35 @@ fn create_update_channel_payouts_common_checks_succeed() {
         proposal_fixture.check_all();
     });
 }
+
+#[test]
+fn create_update_channel_payouts_proposal_fails_when_min_cashout_exceeds_max_cashout() {
+    initial_test_ext().execute_with(|| {
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        let details = ProposalDetailsOf::<Test>::UpdateChannelPayouts(
+            content::UpdateChannelPayoutsParameters::<Test> {
+                min_cashout_allowed: Some(2u64),
+                max_cashout_allowed: Some(1u64),
+                commitment: None,
+                payload: None,
+                channel_cashouts_enabled: None,
+            },
+        );
+
+        assert_eq!(
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(1).into(),
+                general_proposal_parameters.clone(),
+                details,
+            ),
+            Err(Error::<Test>::InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout.into())
+        );
+    });
+}
