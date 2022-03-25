@@ -29,6 +29,7 @@
 //! - [set_budget_increment](./struct.Module.html#method.set_budget_increment)
 //! - [set_councilor_reward](./struct.Module.html#method.set_councilor_reward)
 //! - [funding_request](./struct.Module.html#method.funding_request)
+//! - [fund_council_budget](./struct.Module.html#method.fund_council_budget)
 //!
 //! ## Important functions
 //! These functions have to be called by the runtime for the council to work properly.
@@ -56,7 +57,7 @@ use sp_runtime::traits::{Hash, SaturatedConversion, Saturating, Zero};
 use sp_std::vec::Vec;
 
 use common::council::CouncilOriginValidator;
-use common::membership::MemberOriginValidator;
+use common::membership::{MemberId, MemberOriginValidator};
 use common::{FundingRequestParameters, StakingAccountValidator};
 use referendum::{CastVote, OptionResult, ReferendumManager};
 use staking_handler::StakingHandler;
@@ -198,6 +199,7 @@ pub type CandidateOf<T> = Candidate<
     VotePowerOf<T>,
 >;
 pub type CouncilStageUpdateOf<T> = CouncilStageUpdate<<T as frame_system::Trait>::BlockNumber>;
+pub(crate) type Balances<T> = balances::Module<T>;
 
 /////////////////// Traits, Storage, Errors, and Events /////////////////////////
 
@@ -217,6 +219,7 @@ pub trait WeightInfo {
     fn withdraw_candidacy() -> Weight;
     fn set_budget() -> Weight;
     fn plan_budget_refill() -> Weight;
+    fn fund_council_budget() -> Weight;
     fn councilor_remark() -> Weight;
     fn candidate_remark() -> Weight;
 }
@@ -404,6 +407,13 @@ decl_event! {
         /// Request has been funded
         RequestFunded(AccountId, Balance),
 
+        /// Fund the council budget.
+        /// Params:
+        /// - Member ID
+        /// - Amount of balance
+        /// - Rationale
+        CouncilBudgetFunded(MemberId, Balance, Vec<u8>),
+
         /// Councilor remark message
         CouncilorRemarked(MemberId, Vec<u8>),
 
@@ -473,6 +483,12 @@ decl_error! {
 
         /// Funding requests without recieving accounts
         EmptyFundingRequests,
+
+        /// Insufficient tokens for funding (on member controller account)
+        InsufficientTokensForFunding,
+
+        /// Trying to fund with zero tokens
+        ZeroTokensFunding,
 
         /// Candidate id not found
         CandidateDoesNotExist,
@@ -865,6 +881,49 @@ decl_module! {
                 let  _ = balances::Module::<T>::deposit_creating(&account, amount);
                 Self::deposit_event(RawEvent::RequestFunded(account, amount));
             }
+        }
+
+        /// Fund the council budget by a member.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)` Doesn't depend on the state or parameters
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = CouncilWeightInfo::<T>::fund_council_budget()]
+        pub fn fund_council_budget(
+            origin,
+            member_id: MemberId<T>,
+            amount: Balance<T>,
+            rationale: Vec<u8>,
+        ) {
+            let account_id =
+                T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
+
+            let budget = Self::budget();
+
+            ensure!(amount > Zero::zero(), Error::<T>::ZeroTokensFunding);
+            ensure!(
+                Balances::<T>::can_slash(&account_id, amount),
+                Error::<T>::InsufficientTokensForFunding
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Mutations::<T>::set_budget(budget.saturating_add(amount));
+
+            let _ = Balances::<T>::slash(&account_id, amount);
+
+            Self::deposit_event(
+                RawEvent::CouncilBudgetFunded(
+                    member_id,
+                    amount,
+                    rationale
+                )
+            );
         }
 
         /// Councilor makes a remark message

@@ -229,6 +229,9 @@ impl working_group::WeightInfo for Weights {
         unimplemented!()
     }
 
+    fn fund_working_group_budget() -> Weight {
+        0
+    }
     fn lead_remark() -> Weight {
         unimplemented!()
     }
