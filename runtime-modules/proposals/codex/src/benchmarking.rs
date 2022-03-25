@@ -828,60 +828,13 @@ benchmarks! {
         };
         let proposal_details = ProposalDetails::UpdateChannelPayouts(
             content::UpdateChannelPayoutsParameters::<T> {
-                commitment,
-                payload,
+                commitment: Some(commitment),
+                payload: Some(payload),
                 min_cashout_allowed: Some(u128::MAX.saturated_into::<T::Balance>()),
                 max_cashout_allowed: Some(u128::MAX.saturated_into::<T::Balance>()),
                 channel_cashouts_enabled: Some(true),
             }
         );
-    }: create_proposal(
-        RawOrigin::Signed(account_id.clone()),
-        general_proposal_paramters.clone(),
-        proposal_details.clone()
-    )
-    verify {
-        create_proposal_verify::<T>(
-            account_id,
-            member_id,
-            general_proposal_paramters,
-            proposal_details
-        );
-    }
-
-    create_proposal_set_channel_min_max_cashout {
-        let t in ...;
-        let d in ...;
-
-        let (account_id, member_id, general_proposal_paramters) =
-            create_proposal_parameters::<T>(t, d);
-
-        let proposal_details = ProposalDetails::SetChannelMinMaxCashout(
-            Some(u128::MAX.saturated_into::<T::Balance>()),
-            Some(u128::MAX.saturated_into::<T::Balance>()),
-        );
-    }: create_proposal(
-        RawOrigin::Signed(account_id.clone()),
-        general_proposal_paramters.clone(),
-        proposal_details.clone()
-    )
-    verify {
-        create_proposal_verify::<T>(
-            account_id,
-            member_id,
-            general_proposal_paramters,
-            proposal_details
-        );
-    }
-
-    create_proposal_set_channel_cashouts_status {
-        let t in ...;
-        let d in ...;
-
-        let (account_id, member_id, general_proposal_paramters) =
-            create_proposal_parameters::<T>(t, d);
-
-        let proposal_details = ProposalDetails::SetChannelCashoutsStatus(true);
     }: create_proposal(
         RawOrigin::Signed(account_id.clone()),
         general_proposal_paramters.clone(),
@@ -1079,20 +1032,6 @@ mod tests {
     fn test_update_channel_payouts() {
         initial_test_ext().execute_with(|| {
             assert_ok!(test_benchmark_create_proposal_update_channel_payouts::<Test>());
-        });
-    }
-
-    #[test]
-    fn test_set_channel_min_max_cashout() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_set_channel_min_max_cashout::<Test>());
-        });
-    }
-
-    #[test]
-    fn test_set_channel_cashouts_status() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_set_channel_cashouts_status::<Test>());
         });
     }
 }

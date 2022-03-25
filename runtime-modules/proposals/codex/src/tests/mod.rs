@@ -1958,15 +1958,17 @@ fn create_update_channel_payouts_common_checks_succeed() {
 
         let proposal_details = ProposalDetails::UpdateChannelPayouts(
             content::UpdateChannelPayoutsParameters::<Test> {
-                commitment: <Test as frame_system::Trait>::Hashing::hash(&b"commitment".to_vec()),
-                payload: content::ChannelPayoutsPayloadParametersRecord {
+                commitment: Some(<Test as frame_system::Trait>::Hashing::hash(
+                    &b"commitment".to_vec(),
+                )),
+                payload: Some(content::ChannelPayoutsPayloadParametersRecord {
                     uploader_account: <Test as frame_system::Trait>::AccountId::default(),
                     object_creation_params: content::DataObjectCreationParameters {
                         size: u64::MAX,
                         ipfs_content_id: Vec::from_iter((0..46).map(|_| u8::MAX)),
                     },
                     expected_data_size_fee: u128::MAX.saturated_into::<BalanceOf<Test>>(),
-                },
+                }),
                 min_cashout_allowed: Some(u128::MAX.saturated_into::<BalanceOf<Test>>()),
                 max_cashout_allowed: Some(u128::MAX.saturated_into::<BalanceOf<Test>>()),
                 channel_cashouts_enabled: Some(true),
@@ -2006,143 +2008,6 @@ fn create_update_channel_payouts_common_checks_succeed() {
             },
             proposal_parameters:
                 <Test as crate::Trait>::UpdateChannelPayoutsProposalParameters::get(),
-        };
-        proposal_fixture.check_all();
-    });
-}
-
-#[test]
-fn create_set_channel_min_max_cashout_common_checks_succeed() {
-    initial_test_ext().execute_with(|| {
-        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
-            member_id: 1,
-            title: b"title".to_vec(),
-            description: b"body".to_vec(),
-            staking_account_id: None,
-            exact_execution_block: None,
-        };
-
-        let general_proposal_parameters = GeneralProposalParameters::<Test> {
-            member_id: 1,
-            title: b"title".to_vec(),
-            description: b"body".to_vec(),
-            staking_account_id: Some(1),
-            exact_execution_block: None,
-        };
-
-        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
-            member_id: 1,
-            title: b"title".to_vec(),
-            description: b"body".to_vec(),
-            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
-            exact_execution_block: None,
-        };
-
-        let proposal_details = ProposalDetails::SetChannelMinMaxCashout(
-            Some(u128::MAX.saturated_into::<BalanceOf<Test>>()),
-            Some(u128::MAX.saturated_into::<BalanceOf<Test>>()),
-        );
-
-        let proposal_fixture = ProposalTestFixture {
-            proposal_details: proposal_details.clone(),
-            general_proposal_parameters: general_proposal_parameters.clone(),
-            insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
-                    RawOrigin::None.into(),
-                    general_proposal_parameters_no_staking.clone(),
-                    proposal_details.clone(),
-                )
-            },
-            invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
-                    RawOrigin::Signed(1).into(),
-                    general_proposal_parameters_incorrect_staking.clone(),
-                    proposal_details.clone(),
-                )
-            },
-            empty_stake_call: || {
-                ProposalCodex::create_proposal(
-                    RawOrigin::Signed(1).into(),
-                    general_proposal_parameters_no_staking.clone(),
-                    proposal_details.clone(),
-                )
-            },
-            successful_call: || {
-                ProposalCodex::create_proposal(
-                    RawOrigin::Signed(1).into(),
-                    general_proposal_parameters.clone(),
-                    proposal_details.clone(),
-                )
-            },
-            proposal_parameters:
-                <Test as crate::Trait>::SetChannelMinMaxCashoutProposalParameters::get(),
-        };
-        proposal_fixture.check_all();
-    });
-}
-
-#[test]
-fn create_set_channel_cashouts_stats_common_checks_succeed() {
-    initial_test_ext().execute_with(|| {
-        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
-            member_id: 1,
-            title: b"title".to_vec(),
-            description: b"body".to_vec(),
-            staking_account_id: None,
-            exact_execution_block: None,
-        };
-
-        let general_proposal_parameters = GeneralProposalParameters::<Test> {
-            member_id: 1,
-            title: b"title".to_vec(),
-            description: b"body".to_vec(),
-            staking_account_id: Some(1),
-            exact_execution_block: None,
-        };
-
-        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
-            member_id: 1,
-            title: b"title".to_vec(),
-            description: b"body".to_vec(),
-            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
-            exact_execution_block: None,
-        };
-
-        let proposal_details = ProposalDetails::SetChannelCashoutsStatus(false);
-
-        let proposal_fixture = ProposalTestFixture {
-            proposal_details: proposal_details.clone(),
-            general_proposal_parameters: general_proposal_parameters.clone(),
-            insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
-                    RawOrigin::None.into(),
-                    general_proposal_parameters_no_staking.clone(),
-                    proposal_details.clone(),
-                )
-            },
-            invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
-                    RawOrigin::Signed(1).into(),
-                    general_proposal_parameters_incorrect_staking.clone(),
-                    proposal_details.clone(),
-                )
-            },
-            empty_stake_call: || {
-                ProposalCodex::create_proposal(
-                    RawOrigin::Signed(1).into(),
-                    general_proposal_parameters_no_staking.clone(),
-                    proposal_details.clone(),
-                )
-            },
-            successful_call: || {
-                ProposalCodex::create_proposal(
-                    RawOrigin::Signed(1).into(),
-                    general_proposal_parameters.clone(),
-                    proposal_details.clone(),
-                )
-            },
-            proposal_parameters:
-                <Test as crate::Trait>::SetChannelCashoutsStatusProposalParameters::get(),
         };
         proposal_fixture.check_all();
     });

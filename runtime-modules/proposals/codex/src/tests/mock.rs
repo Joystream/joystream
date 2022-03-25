@@ -635,8 +635,6 @@ impl crate::Trait for Test {
     type UnlockBlogPostProposalParameters = DefaultProposalParameters;
     type VetoProposalProposalParameters = DefaultProposalParameters;
     type UpdateChannelPayoutsProposalParameters = DefaultProposalParameters;
-    type SetChannelMinMaxCashoutProposalParameters = DefaultProposalParameters;
-    type SetChannelCashoutsStatusProposalParameters = DefaultProposalParameters;
 }
 
 parameter_types! {
@@ -907,12 +905,6 @@ impl crate::WeightInfo for () {
         0
     }
     fn create_proposal_update_channel_payouts(_: u32, _: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_set_channel_min_max_cashout(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_set_channel_cashouts_status(_: u32, _: u32) -> Weight {
         0
     }
 }

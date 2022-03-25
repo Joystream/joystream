@@ -124,12 +124,6 @@ pub enum ProposalDetails<
 
     /// `Update Channel Payouts` proposal
     UpdateChannelPayouts(UpdateChannelPayoutsParameters),
-
-    /// `Set Channel Min Max Cashout` proposal
-    SetChannelMinMaxCashout(Option<Balance>, Option<Balance>),
-
-    /// `Set Channel Cashouts Status` proposal
-    SetChannelCashoutsStatus(bool),
 }
 
 impl<

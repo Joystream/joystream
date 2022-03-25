@@ -193,26 +193,10 @@ impl proposals_codex::WeightInfo for WeightInfo {
     }
     fn create_proposal_update_channel_payouts(t: u32, d: u32, i: u32) -> Weight {
         // TODO: Adjust using reference hardware
-        (272_053_000 as Weight)
-            .saturating_add((219_000 as Weight).saturating_mul(t as Weight))
-            .saturating_add((295_000 as Weight).saturating_mul(d as Weight))
-            .saturating_add((312_000 as Weight).saturating_mul(i as Weight))
-            .saturating_add(DbWeight::get().reads(7 as Weight))
-            .saturating_add(DbWeight::get().writes(9 as Weight))
-    }
-    fn create_proposal_set_channel_min_max_cashout(t: u32, d: u32) -> Weight {
-        // TODO: Adjust using reference hardware
-        (720_391_000 as Weight)
-            .saturating_add((204_000 as Weight).saturating_mul(t as Weight))
-            .saturating_add((159_000 as Weight).saturating_mul(d as Weight))
-            .saturating_add(DbWeight::get().reads(7 as Weight))
-            .saturating_add(DbWeight::get().writes(9 as Weight))
-    }
-    fn create_proposal_set_channel_cashouts_status(t: u32, d: u32) -> Weight {
-        // TODO: Adjust using reference hardware
-        (687_897_000 as Weight)
-            .saturating_add((655_000 as Weight).saturating_mul(t as Weight))
-            .saturating_add((167_000 as Weight).saturating_mul(d as Weight))
+        (121_547_000 as Weight)
+            .saturating_add((3_626_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((302_000 as Weight).saturating_mul(d as Weight))
+            .saturating_add((314_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(7 as Weight))
             .saturating_add(DbWeight::get().writes(9 as Weight))
     }

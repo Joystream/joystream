@@ -104,13 +104,5 @@
   "update_channel_payouts_proposal": {
     "voting_period": 30,
     "grace_period": 20
-  },
-  "set_channel_min_max_cashout_proposal": {
-    "voting_period": 30,
-    "grace_period": 0
-  },
-  "set_channel_cashouts_status_proposal": {
-    "voting_period": 30,
-    "grace_period": 0
   }
 }

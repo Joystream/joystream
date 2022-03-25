@@ -65,10 +65,6 @@ parameter_types! {
         ALL_PROPOSALS_PARAMETERS.veto_proposal_proposal;
     pub UpdateChannelPayoutsProposalParameters: ProposalParameters<BlockNumber, Balance> =
         ALL_PROPOSALS_PARAMETERS.update_channel_payouts_proposal;
-    pub SetChannelMinMaxCashoutProposalParameters: ProposalParameters<BlockNumber, Balance> =
-        ALL_PROPOSALS_PARAMETERS.set_channel_min_max_cashout_proposal;
-    pub SetChannelCashoutsStatusProposalParameters: ProposalParameters<BlockNumber, Balance> =
-        ALL_PROPOSALS_PARAMETERS.set_channel_cashouts_status_proposal;
 }
 
 ///////////
@@ -100,8 +96,6 @@ struct AllProposalsParameters {
     pub unlock_blog_post_proposal: ProposalParameters<BlockNumber, Balance>,
     pub veto_proposal_proposal: ProposalParameters<BlockNumber, Balance>,
     pub update_channel_payouts_proposal: ProposalParameters<BlockNumber, Balance>,
-    pub set_channel_min_max_cashout_proposal: ProposalParameters<BlockNumber, Balance>,
-    pub set_channel_cashouts_status_proposal: ProposalParameters<BlockNumber, Balance>,
 }
 
 // to initialize parameters only once.
@@ -206,9 +200,7 @@ fn convert_json_object_to_proposal_parameters(
         init_proposal_parameter_object!(params, jo.clone(), lock_blog_post_proposal);
         init_proposal_parameter_object!(params, jo.clone(), unlock_blog_post_proposal);
         init_proposal_parameter_object!(params, jo.clone(), veto_proposal_proposal);
-        init_proposal_parameter_object!(params, jo.clone(), update_channel_payouts_proposal);
-        init_proposal_parameter_object!(params, jo.clone(), set_channel_min_max_cashout_proposal);
-        init_proposal_parameter_object!(params, jo, set_channel_cashouts_status_proposal);
+        init_proposal_parameter_object!(params, jo, update_channel_payouts_proposal);
     }
 
     params
@@ -347,7 +339,5 @@ fn default_parameters() -> AllProposalsParameters {
         unlock_blog_post_proposal: defaults::unlock_blog_post_proposal(),
         veto_proposal_proposal: defaults::veto_proposal_proposal(),
         update_channel_payouts_proposal: defaults::update_channel_payouts_proposal(),
-        set_channel_min_max_cashout_proposal: defaults::set_channel_min_max_cashout_proposal(),
-        set_channel_cashouts_status_proposal: defaults::set_channel_cashouts_status_proposal(),
     }
 }

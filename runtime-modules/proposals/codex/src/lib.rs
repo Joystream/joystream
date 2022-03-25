@@ -102,8 +102,6 @@ pub trait WeightInfo {
     fn create_proposal_unlock_blog_post(t: u32, d: u32) -> Weight;
     fn create_proposal_veto_proposal(t: u32, d: u32) -> Weight;
     fn create_proposal_update_channel_payouts(t: u32, d: u32, i: u32) -> Weight;
-    fn create_proposal_set_channel_min_max_cashout(t: u32, d: u32) -> Weight;
-    fn create_proposal_set_channel_cashouts_status(t: u32, d: u32) -> Weight;
 }
 
 type WeightInfoCodex<T> = <T as Trait>::WeightInfo;
@@ -252,16 +250,6 @@ pub trait Trait:
 
     /// `Update Channel Payouts` proposal parameters
     type UpdateChannelPayoutsProposalParameters: Get<
-        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
-    >;
-
-    /// `Set Channel Min Max Cashout` proposal parameters
-    type SetChannelMinMaxCashoutProposalParameters: Get<
-        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
-    >;
-
-    /// `Set Channel Cashouts Status` proposal parameters
-    type SetChannelCashoutsStatusProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 }
@@ -670,12 +658,6 @@ impl<T: Trait> Module<T> {
             ProposalDetails::UpdateChannelPayouts(..) => {
                 // Note: No checks for this proposal for now
             }
-            ProposalDetails::SetChannelMinMaxCashout(..) => {
-                // Note: No checks for this proposal for now
-            }
-            ProposalDetails::SetChannelCashoutsStatus(..) => {
-                // Note: No checks for this proposal for now
-            }
         }
 
         Ok(())
@@ -743,12 +725,6 @@ impl<T: Trait> Module<T> {
             ProposalDetails::VetoProposal(..) => T::VetoProposalProposalParameters::get(),
             ProposalDetails::UpdateChannelPayouts(..) => {
                 T::UpdateChannelPayoutsProposalParameters::get()
-            }
-            ProposalDetails::SetChannelMinMaxCashout(..) => {
-                T::SetChannelMinMaxCashoutProposalParameters::get()
-            }
-            ProposalDetails::SetChannelCashoutsStatus(..) => {
-                T::SetChannelCashoutsStatusProposalParameters::get()
             }
         }
     }
@@ -921,21 +897,10 @@ impl<T: Trait> Module<T> {
                 WeightInfoCodex::<T>::create_proposal_update_channel_payouts(
                     title_length.saturated_into(),
                     description_length.saturated_into(),
-                    params.payload.object_creation_params.ipfs_content_id.len() as u32,
-                )
-                .saturated_into()
-            }
-            ProposalDetails::SetChannelMinMaxCashout(..) => {
-                WeightInfoCodex::<T>::create_proposal_set_channel_min_max_cashout(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
-                )
-                .saturated_into()
-            }
-            ProposalDetails::SetChannelCashoutsStatus(..) => {
-                WeightInfoCodex::<T>::create_proposal_set_channel_cashouts_status(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
+                    params
+                        .payload
+                        .as_ref()
+                        .map_or(0, |p| p.object_creation_params.ipfs_content_id.len() as u32),
                 )
                 .saturated_into()
             }

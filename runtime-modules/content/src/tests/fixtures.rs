@@ -1190,17 +1190,7 @@ impl UpdateChannelPayoutsFixture {
     pub fn default() -> Self {
         Self {
             origin: Origin::root(),
-            params: UpdateChannelPayoutsParameters::<Test> {
-                commitment: get_commitment(&create_some_pull_payments_helper()),
-                payload: ChannelPayoutsPayloadParameters::<Test> {
-                    expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
-                    object_creation_params: create_data_objects_helper().pop().unwrap(),
-                    uploader_account: DEFAULT_CHANNEL_PAYOUTS_PAYLOAD_UPLOADER_ACCOUNT_ID,
-                },
-                min_cashout_allowed: None,
-                max_cashout_allowed: None,
-                channel_cashouts_enabled: None,
-            },
+            params: UpdateChannelPayoutsParameters::<Test>::default(),
         }
     }
 
@@ -1208,7 +1198,7 @@ impl UpdateChannelPayoutsFixture {
         Self { origin, ..self }
     }
 
-    pub fn with_commitment(self, commitment: HashOutput) -> Self {
+    pub fn with_commitment(self, commitment: Option<HashOutput>) -> Self {
         let params = UpdateChannelPayoutsParameters::<Test> {
             commitment,
             ..self.params
@@ -1216,7 +1206,7 @@ impl UpdateChannelPayoutsFixture {
         Self { params, ..self }
     }
 
-    pub fn with_payload(self, payload: ChannelPayoutsPayloadParameters<Test>) -> Self {
+    pub fn with_payload(self, payload: Option<ChannelPayoutsPayloadParameters<Test>>) -> Self {
         let params = UpdateChannelPayoutsParameters::<Test> {
             payload,
             ..self.params
@@ -1254,9 +1244,11 @@ impl UpdateChannelPayoutsFixture {
             min_cashout_allowed: Content::min_cashout_allowed(),
             max_cashout_allowed: Content::max_cashout_allowed(),
             cashouts_enabled: Content::channel_cashouts_enabled(),
-            uploader_account_balance: Balances::<Test>::usable_balance(
-                self.params.payload.uploader_account,
-            ),
+            uploader_account_balance: self
+                .params
+                .payload
+                .as_ref()
+                .map_or(0, |p| Balances::<Test>::usable_balance(p.uploader_account)),
             next_object_id: storage::NextDataObjectId::<Test>::get(),
         }
     }
@@ -1270,21 +1262,17 @@ impl UpdateChannelPayoutsFixture {
             System::events().last().unwrap().event,
             MetaEvent::content(RawEvent::ChannelPayoutsUpdated(
                 self.params.clone(),
-                snapshot_pre.next_object_id
+                self.params
+                    .payload
+                    .as_ref()
+                    .map(|_| snapshot_pre.next_object_id)
             ))
         );
-
-        assert_eq!(snapshot_post.commitment, self.params.commitment);
-        assert_eq!(
-            snapshot_post.next_object_id,
-            snapshot_pre.next_object_id.saturating_add(One::one())
-        );
-        assert_eq!(
-            snapshot_post.uploader_account_balance,
-            snapshot_pre
-                .uploader_account_balance
-                .saturating_sub(<Test as storage::Trait>::DataObjectDeletionPrize::get())
-        );
+        if let Some(commitment) = self.params.commitment {
+            assert_eq!(snapshot_post.commitment, commitment);
+        } else {
+            assert_eq!(snapshot_post.commitment, snapshot_pre.commitment);
+        }
 
         if let Some(min_cashout_allowed) = self.params.min_cashout_allowed {
             assert_eq!(snapshot_post.min_cashout_allowed, min_cashout_allowed);
@@ -1312,6 +1300,25 @@ impl UpdateChannelPayoutsFixture {
                 snapshot_pre.cashouts_enabled
             );
         }
+
+        if self.params.payload.is_some() {
+            assert_eq!(
+                snapshot_post.next_object_id,
+                snapshot_pre.next_object_id.saturating_add(One::one())
+            );
+            assert_eq!(
+                snapshot_post.uploader_account_balance,
+                snapshot_pre
+                    .uploader_account_balance
+                    .saturating_sub(<Test as storage::Trait>::DataObjectDeletionPrize::get())
+            );
+        } else {
+            assert_eq!(snapshot_post.next_object_id, snapshot_pre.next_object_id);
+            assert_eq!(
+                snapshot_post.uploader_account_balance,
+                snapshot_pre.uploader_account_balance
+            );
+        }
     }
 
     fn verify_error_state(
@@ -1335,153 +1342,6 @@ impl UpdateChannelPayoutsFixture {
             self.verify_success_state(&snapshot_pre, &snapshot_post);
         } else {
             self.verify_error_state(&snapshot_pre, &snapshot_post);
-        }
-    }
-}
-
-pub struct SetChannelMinMaxCashoutFixture {
-    origin: Origin,
-    min_cashout: Option<BalanceOf<Test>>,
-    max_cashout: Option<BalanceOf<Test>>,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct SetChannelMinMaxCashoutFixtureStateSnapshot {
-    pub min_cashout_allowed: BalanceOf<Test>,
-    pub max_cashout_allowed: BalanceOf<Test>,
-}
-
-impl SetChannelMinMaxCashoutFixture {
-    pub fn default() -> Self {
-        Self {
-            origin: Origin::root(),
-            min_cashout: None,
-            max_cashout: None,
-        }
-    }
-
-    pub fn with_origin(self, origin: Origin) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_min_cashout(self, min_cashout: Option<BalanceOf<Test>>) -> Self {
-        Self {
-            min_cashout,
-            ..self
-        }
-    }
-
-    pub fn with_max_cashout(self, max_cashout: Option<BalanceOf<Test>>) -> Self {
-        Self {
-            max_cashout,
-            ..self
-        }
-    }
-
-    fn get_state_snapshot(&self) -> SetChannelMinMaxCashoutFixtureStateSnapshot {
-        SetChannelMinMaxCashoutFixtureStateSnapshot {
-            min_cashout_allowed: Content::min_cashout_allowed(),
-            max_cashout_allowed: Content::max_cashout_allowed(),
-        }
-    }
-
-    fn verify_success_state(
-        &self,
-        snapshot_pre: &SetChannelMinMaxCashoutFixtureStateSnapshot,
-        snapshot_post: &SetChannelMinMaxCashoutFixtureStateSnapshot,
-    ) {
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ChannelMinMaxCashoutUpdated(
-                self.min_cashout.clone(),
-                self.max_cashout.clone(),
-            ))
-        );
-
-        if let Some(min_cashout) = self.min_cashout {
-            assert_eq!(snapshot_post.min_cashout_allowed, min_cashout);
-        } else {
-            assert_eq!(
-                snapshot_post.min_cashout_allowed,
-                snapshot_pre.min_cashout_allowed
-            );
-        }
-
-        if let Some(max_cashout) = self.max_cashout {
-            assert_eq!(snapshot_post.max_cashout_allowed, max_cashout);
-        } else {
-            assert_eq!(
-                snapshot_post.max_cashout_allowed,
-                snapshot_pre.max_cashout_allowed
-            );
-        }
-    }
-
-    fn verify_error_state(
-        &self,
-        snapshot_pre: &SetChannelMinMaxCashoutFixtureStateSnapshot,
-        snapshot_post: &SetChannelMinMaxCashoutFixtureStateSnapshot,
-    ) {
-        assert_eq!(snapshot_post, snapshot_pre);
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let snapshot_pre = self.get_state_snapshot();
-
-        let actual_result = Content::set_channel_min_max_cashout(
-            self.origin.clone(),
-            self.min_cashout.clone(),
-            self.max_cashout.clone(),
-        );
-
-        let snapshot_post = self.get_state_snapshot();
-
-        assert_eq!(actual_result, expected_result);
-        if actual_result.is_ok() {
-            self.verify_success_state(&snapshot_pre, &snapshot_post);
-        } else {
-            self.verify_error_state(&snapshot_pre, &snapshot_post);
-        }
-    }
-}
-
-pub struct SetChannelCashoutsStatusFixture {
-    origin: Origin,
-    enabled: bool,
-}
-
-impl SetChannelCashoutsStatusFixture {
-    pub fn default() -> Self {
-        Self {
-            origin: Origin::root(),
-            enabled: false,
-        }
-    }
-
-    pub fn with_origin(self, origin: Origin) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_enabled(self, enabled: bool) -> Self {
-        Self { enabled, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let enabled_pre = Content::channel_cashouts_enabled();
-
-        let actual_result = Content::set_channel_cashouts_status(self.origin.clone(), self.enabled);
-
-        let enabled_post = Content::channel_cashouts_enabled();
-
-        assert_eq!(actual_result, expected_result);
-        if actual_result.is_ok() {
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::ChannelCashoutsStatusUpdated(self.enabled))
-            );
-            assert_eq!(enabled_post, self.enabled);
-        } else {
-            assert_eq!(enabled_post, enabled_pre);
         }
     }
 }
@@ -2030,17 +1890,10 @@ pub fn create_some_pull_payments_helper() -> Vec<PullPayment<Test>> {
 }
 
 pub fn update_commit_value_with_payments_helper(payments: &[PullPayment<Test>]) {
-    increase_account_balance_helper(
-        DEFAULT_CHANNEL_PAYOUTS_PAYLOAD_UPLOADER_ACCOUNT_ID,
-        INITIAL_BALANCE,
-    );
+    let commit = generate_merkle_root_helper(payments).pop().unwrap();
     UpdateChannelPayoutsFixture::default()
-        .with_commitment(get_commitment(payments))
+        .with_commitment(Some(commit))
         .call_and_assert(Ok(()));
-}
-
-pub fn get_commitment(payments: &[PullPayment<Test>]) -> HashOutput {
-    generate_merkle_root_helper(payments).pop().unwrap()
 }
 
 fn channel_reward_account(channel: &Channel<Test>) -> Option<AccountId> {
