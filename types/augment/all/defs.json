@@ -415,7 +415,8 @@
             "EditBlogPost": "(PostId,Option<Text>,Option<Text>)",
             "LockBlogPost": "PostId",
             "UnlockBlogPost": "PostId",
-            "VetoProposal": "ProposalId"
+            "VetoProposal": "ProposalId",
+            "UpdateChannelPayouts": "UpdateChannelPayoutsParameters"
         }
     },
     "ProposalDetailsOf": {
@@ -444,7 +445,8 @@
             "EditBlogPost": "(PostId,Option<Text>,Option<Text>)",
             "LockBlogPost": "PostId",
             "UnlockBlogPost": "PostId",
-            "VetoProposal": "ProposalId"
+            "VetoProposal": "ProposalId",
+            "UpdateChannelPayouts": "UpdateChannelPayoutsParameters"
         }
     },
     "VotingResults": {
@@ -672,7 +674,7 @@
         "reward_account": "Option<GenericAccountId>",
         "collaborators": "BTreeSet<MemberId>",
         "moderators": "BTreeSet<MemberId>",
-        "cumulative_payout_earned": "u128"
+        "cumulative_reward_claimed": "u128"
     },
     "ChannelOwner": {
         "_enum": {
@@ -768,7 +770,7 @@
     },
     "PullPayment": {
         "channel_id": "ChannelId",
-        "cumulative_payout_claimed": "u128",
+        "cumulative_reward_earned": "u128",
         "reason": "Hash"
     },
     "ModeratorSet": "BTreeSet<MemberId>",
@@ -853,6 +855,18 @@
     },
     "NftMetadata": "Vec<u8>",
     "OpenAuctionId": "u64",
+    "ChannelPayoutsPayloadParameters": {
+        "uploader_account": "GenericAccountId",
+        "object_creation_params": "DataObjectCreationParameters",
+        "expected_data_size_fee": "u128"
+    },
+    "UpdateChannelPayoutsParameters": {
+        "commitment": "Option<Hash>",
+        "payload": "Option<ChannelPayoutsPayloadParameters>",
+        "min_cashout_allowed": "Option<u128>",
+        "max_cashout_allowed": "Option<u128>",
+        "channel_cashouts_enabled": "Option<bool>"
+    },
     "AccountInfo": "AccountInfoWithRefCount",
     "ValidatorPrefs": "ValidatorPrefsWithCommission"
 }

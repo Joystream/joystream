@@ -133,7 +133,7 @@ export class Channel extends JoyStructDecorated({
   reward_account: Option.with(AccountId),
   collaborators: BTreeSet.with(MemberId),
   moderators: BTreeSet.with(MemberId),
-  cumulative_payout_earned: Balance,
+  cumulative_reward_claimed: Balance,
 }) {}
 
 export class ChannelCreationParameters extends JoyStructDecorated({
@@ -241,7 +241,7 @@ export class VideoPostDeletionParameters extends JoyStructDecorated({
 
 export class PullPayment extends JoyStructDecorated({
   channel_id: ChannelId,
-  cumulative_payout_claimed: Balance,
+  cumulative_reward_earned: Balance,
   reason: Hash,
 }) {}
 
@@ -258,6 +258,20 @@ export class OwnedNFT extends JoyStructDecorated({
   owner: NFTOwner,
   transactional_status: TransactionalStatus,
   creator_royalty: Option.with(Royalty),
+}) {}
+
+export class ChannelPayoutsPayloadParameters extends JoyStructDecorated({
+  uploader_account: AccountId,
+  object_creation_params: DataObjectCreationParameters,
+  expected_data_size_fee: Balance,
+}) {}
+
+export class UpdateChannelPayoutsParameters extends JoyStructDecorated({
+  commitment: Option.with(Hash),
+  payload: Option.with(ChannelPayoutsPayloadParameters),
+  min_cashout_allowed: Option.with(Balance),
+  max_cashout_allowed: Option.with(Balance),
+  channel_cashouts_enabled: Option.with(bool),
 }) {}
 
 export const contentTypes = {
@@ -312,6 +326,9 @@ export const contentTypes = {
   NftIssuanceParameters,
   NftMetadata,
   OpenAuctionId,
+  // Channel payouts
+  ChannelPayoutsPayloadParameters,
+  UpdateChannelPayoutsParameters,
 }
 
 export default contentTypes

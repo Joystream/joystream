@@ -217,7 +217,7 @@ export interface Channel extends Struct {
   readonly reward_account: Option<GenericAccountId>;
   readonly collaborators: BTreeSet<MemberId>;
   readonly moderators: BTreeSet<MemberId>;
-  readonly cumulative_payout_earned: u128;
+  readonly cumulative_reward_claimed: u128;
 }
 
 /** @name ChannelCategory */
@@ -254,6 +254,13 @@ export interface ChannelOwner extends Enum {
   readonly asMember: MemberId;
   readonly isCurators: boolean;
   readonly asCurators: CuratorGroupId;
+}
+
+/** @name ChannelPayoutsPayloadParameters */
+export interface ChannelPayoutsPayloadParameters extends Struct {
+  readonly uploader_account: GenericAccountId;
+  readonly object_creation_params: DataObjectCreationParameters;
+  readonly expected_data_size_fee: u128;
 }
 
 /** @name ChannelUpdateParameters */
@@ -823,6 +830,8 @@ export interface ProposalDetails extends Enum {
   readonly asUnlockBlogPost: PostId;
   readonly isVetoProposal: boolean;
   readonly asVetoProposal: ProposalId;
+  readonly isUpdateChannelPayouts: boolean;
+  readonly asUpdateChannelPayouts: UpdateChannelPayoutsParameters;
 }
 
 /** @name ProposalDetailsOf */
@@ -877,6 +886,8 @@ export interface ProposalDetailsOf extends Enum {
   readonly asUnlockBlogPost: PostId;
   readonly isVetoProposal: boolean;
   readonly asVetoProposal: ProposalId;
+  readonly isUpdateChannelPayouts: boolean;
+  readonly asUpdateChannelPayouts: UpdateChannelPayoutsParameters;
 }
 
 /** @name ProposalId */
@@ -917,7 +928,7 @@ export interface ProposalStatus extends Enum {
 /** @name PullPayment */
 export interface PullPayment extends Struct {
   readonly channel_id: ChannelId;
-  readonly cumulative_payout_claimed: u128;
+  readonly cumulative_reward_earned: u128;
   readonly reason: Hash;
 }
 
@@ -1102,6 +1113,15 @@ export interface TransactionalStatus extends Enum {
   readonly asOpenAuction: OpenAuction;
   readonly isBuyNow: boolean;
   readonly asBuyNow: u128;
+}
+
+/** @name UpdateChannelPayoutsParameters */
+export interface UpdateChannelPayoutsParameters extends Struct {
+  readonly commitment: Option<Hash>;
+  readonly payload: Option<ChannelPayoutsPayloadParameters>;
+  readonly min_cashout_allowed: Option<u128>;
+  readonly max_cashout_allowed: Option<u128>;
+  readonly channel_cashouts_enabled: Option<bool>;
 }
 
 /** @name UpdatedBody */
