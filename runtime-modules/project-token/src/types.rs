@@ -8,6 +8,14 @@ use crate::traits::{TransferLocationTrait, TransferPermissionPolicy};
 // TODO: find a suitable symbol representation
 pub type Symbol = ();
 
+pub(crate) enum DecreaseOp<Balance> {
+    /// reduce amount by
+    Reduce(Balance),
+
+    /// Remove Account
+    Remove,
+}
+
 /// Info for the account
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct AccountData<Balance> {
@@ -111,7 +119,7 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
         &self,
         amount: Balance,
         existential_deposit: Balance,
-    ) -> Result<Balance, DispatchError> {
+    ) -> Result<DecreaseOp<Balance>, DispatchError> {
         ensure!(
             self.free_balance >= amount,
             crate::Error::<T>::InsufficientFreeBalanceForDecreasing,
@@ -119,9 +127,9 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
 
         let candidate_balance = self.free_balance.saturating_sub(amount);
         if candidate_balance < existential_deposit {
-            Ok(candidate_balance)
+            Ok(DecreaseOp::<Balance>::Remove)
         } else {
-            Ok(amount)
+            Ok(DecreaseOp::<Balance>::Reduce(amount))
         }
     }
 }

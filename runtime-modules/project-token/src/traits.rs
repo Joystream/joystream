@@ -43,9 +43,6 @@ pub trait MultiCurrencyBase<AccountId> {
     /// Mint `amount` for token `token_id`
     fn mint(token_id: Self::TokenId, amount: Self::Balance) -> DispatchResult;
 
-    /// Burn `amount` for token `token_id`
-    fn burn(token_id: Self::TokenId, amount: Self::Balance) -> DispatchResult;
-
     /// Issue token with specified characteristics
     fn issue_token(
         issuance_parameters: TokenIssuanceParameters<Self::Balance, AccountId>,

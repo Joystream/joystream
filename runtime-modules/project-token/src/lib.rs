@@ -18,7 +18,7 @@ mod types;
 use errors::Error;
 pub use events::{Event, RawEvent};
 use traits::{MultiCurrencyBase, ReservableMultiCurrency};
-use types::{AccountDataOf, TokenDataOf, TokenIssuanceParametersOf};
+use types::{AccountDataOf, DecreaseOp, TokenDataOf, TokenIssuanceParametersOf};
 
 /// Pallet Configuration Trait
 pub trait Trait: frame_system::Trait {
@@ -145,11 +145,7 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
 
         // == MUTATION SAFE ==
 
-        if amount_to_slash == amount {
-            Self::do_slash(token_id, &who, amount_to_slash);
-        } else {
-            Self::do_remove_account(token_id, &who);
-        }
+        Self::do_slash(token_id, &who, amount_to_slash);
 
         Self::deposit_event(RawEvent::TokenAmountSlashedFrom(token_id, who, amount));
         Ok(())
@@ -175,33 +171,6 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
         Self::do_mint(token_id, amount);
 
         Self::deposit_event(RawEvent::TokenAmountMinted(token_id, amount));
-        Ok(())
-    }
-
-    /// Burn `amount` for token `token_id`
-    /// Preconditions:
-    /// - `token_id` must id
-    /// -  it is possible to decrease `token_id` issuance
-    ///
-    /// Postconditions:
-    /// - `token_id` issuance decreased by amount
-    /// if `amount` is zero it is equivalent to a no-op
-    fn burn(token_id: T::TokenId, amount: T::Balance) -> DispatchResult {
-        if amount.is_zero() {
-            return Ok(());
-        }
-
-        let remaining_issuance = Self::ensure_can_burn(token_id, amount)?;
-
-        // == MUTATION SAFE ==
-
-        if remaining_issuance.is_zero() {
-            Self::do_deissue_token(token_id);
-        } else {
-            Self::do_burn(token_id, amount);
-        }
-
-        Self::deposit_event(RawEvent::TokenAmountBurned(token_id, amount));
         Ok(())
     }
 
@@ -232,12 +201,7 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
 
         // == MUTATION SAFE ==
 
-        if amount_to_slash == amount {
-            Self::do_slash(token_id, &src, amount_to_slash);
-        } else {
-            Self::do_remove_account(token_id, &src);
-        }
-
+        Self::do_slash(token_id, &src, amount_to_slash);
         Self::do_deposit(token_id, &dst.to_owned().into(), amount);
 
         Self::deposit_event(RawEvent::TokenAmountTransferred(
@@ -410,23 +374,6 @@ impl<T: Trait> Module<T> {
     }
 
     // Extrinsics ensure checks
-
-    #[inline]
-    pub(crate) fn ensure_can_burn(
-        token_id: T::TokenId,
-        amount: T::Balance,
-    ) -> Result<T::Balance, DispatchError> {
-        // ensure token validity
-        let token_info = Self::ensure_token_exists(token_id)?;
-
-        // ensure issuance can be decreased
-        ensure!(
-            token_info.current_total_issuance >= amount,
-            Error::<T>::InsufficientIssuanceToDecreaseByAmount,
-        );
-        Ok(token_info.current_total_issuance.saturating_sub(amount))
-    }
-
     #[inline]
     pub(crate) fn ensure_can_deposit_into_existing(
         token_id: T::TokenId,
@@ -446,7 +393,7 @@ impl<T: Trait> Module<T> {
         token_id: T::TokenId,
         who: &T::AccountId,
         amount: T::Balance,
-    ) -> Result<T::Balance, DispatchError> {
+    ) -> Result<DecreaseOp<T::Balance>, DispatchError> {
         // ensure token validity
         let token_info = Self::ensure_token_exists(token_id)?;
 
@@ -466,7 +413,7 @@ impl<T: Trait> Module<T> {
         src: &T::AccountId,
         dst: &T::AccountId,
         amount: T::Balance,
-    ) -> Result<T::Balance, DispatchError> {
+    ) -> Result<DecreaseOp<T::Balance>, DispatchError> {
         // ensure token validity
         let token_info = Self::ensure_token_exists(token_id)?;
 
@@ -549,23 +496,28 @@ impl<T: Trait> Module<T> {
     }
 
     #[inline]
-    pub(crate) fn do_slash(token_id: T::TokenId, account_id: &T::AccountId, amount: T::Balance) {
-        AccountInfoByTokenAndAccount::<T>::mutate(token_id, account_id, |account_data| {
-            account_data.free_balance = account_data.free_balance.saturating_sub(amount)
-        });
-    }
-
-    #[inline]
-    pub(crate) fn do_remove_account(token_id: T::TokenId, account_id: &T::AccountId) {
-        AccountInfoByTokenAndAccount::<T>::remove(token_id, account_id);
-    }
-
-    #[inline]
-    pub(crate) fn do_burn(token_id: T::TokenId, amount: T::Balance) {
-        TokenInfoById::<T>::mutate(token_id, |token_data| {
-            token_data.current_total_issuance =
-                token_data.current_total_issuance.saturating_sub(amount)
-        });
+    pub(crate) fn do_slash(
+        token_id: T::TokenId,
+        account_id: &T::AccountId,
+        operation: DecreaseOp<T::Balance>,
+    ) {
+        match operation {
+            DecreaseOp::<T::Balance>::Reduce(amount) => {
+                AccountInfoByTokenAndAccount::<T>::mutate(token_id, account_id, |account_data| {
+                    account_data.free_balance = account_data.free_balance.saturating_sub(amount)
+                })
+            }
+            DecreaseOp::<T::Balance>::Remove => {
+                AccountInfoByTokenAndAccount::<T>::remove(token_id, account_id);
+                // if no more account for token -> deissue
+                if AccountInfoByTokenAndAccount::<T>::iter_prefix(token_id)
+                    .next()
+                    .is_none()
+                {
+                    Self::do_deissue_token(token_id)
+                }
+            }
+        }
     }
 
     #[inline]
