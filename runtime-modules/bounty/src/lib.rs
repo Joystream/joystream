@@ -5,9 +5,12 @@
 //! - Funding - a bounty is being funded.
 //! - FundingExpired - a bounty is expired. It can be only canceled.
 //! - WorkSubmission - interested participants can submit their work.
-//! - Judgment - working periods ended and the oracle should provide their judgment.
-//! - SuccessfulBountyWithdrawal - work entrants' stakes and rewards can be withdrawn.
-//! - FailedBountyWithdrawal - contributors' funds can be withdrawn along with a split cherry.
+//! - Judgment - working periods ended and the oracle should provide their judgment,
+//!     winner work entrants receive their rewards, losers are slashed. Oracle receives a reward for his work.
+//! - SuccessfulBountyWithdrawal - contributors' state bloat bonds can be withdrawn,
+//!     none judged work entrants can unlock their stakes.
+//! - FailedBountyWithdrawal - contributors' funds can be withdrawn along with a split cherry,
+//!     none judged work entrants can unlock their stakes.
 //!
 //! A detailed description could be found [here](https://github.com/Joystream/joystream/issues/1998).
 //!
@@ -18,28 +21,40 @@
 //! - [cancel_bounty](./struct.Module.html#method.cancel_bounty) - cancels a bounty
 //! - [veto_bounty](./struct.Module.html#method.veto_bounty) - vetoes a bounty
 //! - [fund_bounty](./struct.Module.html#method.fund_bounty) - provide funding for a bounty
+//! - [switch_oracle](./struct.Module.html#method.switch_oracle) - switch the current oracle by another one.
 //!
 //! #### FundingExpired stage
 //! - [cancel_bounty](./struct.Module.html#method.cancel_bounty) - cancels a bounty
+//! - [switch_oracle](./struct.Module.html#method.switch_oracle) - switch the current oracle by another one.
 //!
 //! #### Work submission stage
 //! - [announce_work_entry](./struct.Module.html#method.announce_work_entry) - announce
 //! work entry for a successful bounty.
-//! - [withdraw_work_entry](./struct.Module.html#method.withdraw_work_entry) - withdraw
-//! work entry for a bounty.
+//! - [switch_oracle](./struct.Module.html#method.switch_oracle) - switch the current oracle
+//! by another one.
 //! - [submit_work](./struct.Module.html#method.submit_work) - submit work for a bounty.
+//! - [end_working_period](./struct.Module.html#method.end_working_period) - end working period by oracle.
+//! - [terminate_bounty](./struct.Module.html#method.terminate_bounty) - terminate bounty
+//! (into failed stage) by council.
 //!
 //! #### Judgment stage
 //! - [submit_oracle_judgment](./struct.Module.html#method.submit_oracle_judgment) - submits an
 //! oracle judgment for a bounty.
+//!  - [switch_oracle](./struct.Module.html#method.switch_oracle) - switch the current oracle
+//! by another one.
+//!  - [terminate_bounty](./struct.Module.html#method.terminate_bounty) - terminate bounty (into failed stage).
 //!
 //! #### SuccessfulBountyWithdrawal stage
-//! - [withdraw_work_entrant_funds](./struct.Module.html#method.withdraw_work_entrant_funds) -
-//! withdraw work entrant funds.
+//! - [unlock_work_entrant_stake](./struct.Module.html#method.unlock_work_entrant_stake) -
+//! unlock stake accounts refering to none judged work entries.
+//!  - [withdraw_state_bloat_bond](./struct.Module.html#method.withdraw_state_bloat_bond) -
+//! withdraw contributor's state bloat bond.
 //!
 //! #### FailedBountyWithdrawal stage
-//! - [withdraw_funding](./struct.Module.html#method.withdraw_funding) - withdraw
-//! funding for a failed bounty.
+//!  - [unlock_work_entrant_stake](./struct.Module.html#method.unlock_work_entrant_stake) -
+//! unlock stake accounts refering to none judged work entries.
+//! - [withdraw_funding](./struct.Module.html#method.withdraw_funding) - Contributors can withdraw
+//! funding for a failed bounty + a cherry fraction + state bloat bond.
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
