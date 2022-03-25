@@ -11,6 +11,7 @@ import { ResourceManager } from './Resources'
 import fetch from 'cross-fetch'
 import fs, { existsSync, readFileSync } from 'fs'
 import { KeyGenInfo, FaucetInfo } from './types'
+import path from 'path'
 
 export type ScenarioProps = {
   env: NodeJS.ProcessEnv
@@ -48,8 +49,11 @@ function writeOutput(api: Api, miniSecret: string) {
 }
 
 export async function scenario(label: string, scene: (props: ScenarioProps) => Promise<void>): Promise<void> {
-  // Load env variables
-  config()
+  // Load env variables - test framework specific
+  config({ path: path.join(__dirname, '../.env') })
+  // root workspace .env used by docker-compose services
+  config({ path: path.join(__dirname, '../../../.env') })
+
   const env = process.env
 
   // Connect api to the chain

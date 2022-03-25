@@ -853,5 +853,6 @@
     },
     "NftMetadata": "Vec<u8>",
     "OpenAuctionId": "u64",
-    "AccountInfo": "AccountInfoWithRefCount"
+    "AccountInfo": "AccountInfoWithRefCount",
+    "ValidatorPrefs": "ValidatorPrefsWithCommission"
 }

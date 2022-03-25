@@ -39,6 +39,8 @@ import { VideoId, VideoCategoryId, AuctionParams } from '@joystream/types/conten
 
 import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 
+import { PERBILL_ONE_PERCENT } from '../../../query-node/mappings/src/temporaryConstants'
+
 export class ApiFactory {
   private readonly api: ApiPromise
   private readonly keyring: Keyring
@@ -820,11 +822,9 @@ export class Api {
     royaltyPercentage?: number,
     toMemberId?: number | null
   ): Promise<ISubmittableResult> {
-    const perbillOnePercent = 10 * 1000000
-
     const royalty = this.api.createType(
       'Option<Royalty>',
-      royaltyPercentage ? royaltyPercentage * perbillOnePercent : null
+      royaltyPercentage ? royaltyPercentage * PERBILL_ONE_PERCENT : null
     )
     // TODO: find proper way to encode metadata (should they be raw string, hex string or some object?)
     // const encodedMetadata = this.api.createType('Metadata', metadata)
@@ -884,7 +884,9 @@ export class Api {
 
   async createAuctionParameters(
     auctionType: 'English' | 'Open',
-    whitelist: string[] = []
+    whitelist: string[] = [],
+    auctionDuration?: BN,
+    extensionPeriod?: BN
   ): Promise<{
     auctionParams: AuctionParams
     startingPrice: BN
@@ -896,13 +898,18 @@ export class Api {
     const boundaries = await this.getAuctionParametersBoundaries()
 
     // auction duration must be larger than extension period (enforced in runtime)
-    const auctionDuration = BN.max(boundaries.auctionDuration.min, boundaries.extensionPeriod.min)
+    auctionDuration = auctionDuration || BN.max(boundaries.auctionDuration.min, boundaries.extensionPeriod.min)
+    extensionPeriod = extensionPeriod || boundaries.extensionPeriod.min
+
+    if (extensionPeriod && auctionDuration && extensionPeriod >= auctionDuration) {
+      throw new Error('Auction duration must be larger than extension period')
+    }
 
     const encodedAuctionType =
       auctionType === 'English'
         ? {
             English: {
-              extension_period: boundaries.extensionPeriod.min,
+              extension_period: extensionPeriod,
               auction_duration: auctionDuration,
             },
           }
@@ -1019,6 +1026,31 @@ export class Api {
 
     return await this.sender.signAndSend(
       this.api.tx.content.createVideo({ Member: ownerId }, channeld, createParameters),
+      accountFrom
+    )
+  }
+
+  async updateVideoForNftCreation(
+    accountFrom: string,
+    ownerId: number,
+    videoId: number,
+    auctionParams: AuctionParams
+  ): Promise<ISubmittableResult> {
+    const updateParameters = this.createType('VideoUpdateParameters', {
+      assets_to_upload: null,
+      new_meta: null,
+      assets_to_remove: this.api.createType('BTreeSet<DataObjectId>', []),
+      enable_comments: false,
+      auto_issue_nft: this.api.createType('NftIssuanceParameters', {
+        royalty: null,
+        nft_metadata: this.api.createType('NftMetadata', '').toU8a(),
+        non_channel_owner: ownerId,
+        init_transactional_status: this.api.createType('InitTransactionalStatus', { Auction: auctionParams }),
+      }),
+    })
+
+    return await this.sender.signAndSend(
+      this.api.tx.content.updateVideo({ Member: ownerId }, videoId, updateParameters),
       accountFrom
     )
   }

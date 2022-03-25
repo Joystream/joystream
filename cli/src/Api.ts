@@ -3,10 +3,10 @@ import { createType, types } from '@joystream/types'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { SubmittableExtrinsic, AugmentedQuery } from '@polkadot/api/types'
 import { formatBalance } from '@polkadot/util'
-import { Balance, LockIdentifier } from '@polkadot/types/interfaces'
+import { Balance, LockIdentifier, StakingLedger, ElectionStatus } from '@polkadot/types/interfaces'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { Codec, Observable } from '@polkadot/types/types'
-import { UInt } from '@polkadot/types'
+import { UInt, Option } from '@polkadot/types'
 import {
   AccountSummary,
   WorkingGroups,
@@ -48,9 +48,9 @@ export const apiModuleByGroup = {
   [WorkingGroups.Forum]: 'forumWorkingGroup',
   [WorkingGroups.Membership]: 'membershipWorkingGroup',
   [WorkingGroups.Gateway]: 'gatewayWorkingGroup',
-  [WorkingGroups.OperationsAlpha]: 'operationsWorkingGroupAlpha',
-  [WorkingGroups.OperationsBeta]: 'operationsWorkingGroupBeta',
-  [WorkingGroups.OperationsGamma]: 'operationsWorkingGroupGamma',
+  [WorkingGroups.Builders]: 'operationsWorkingGroupAlpha',
+  [WorkingGroups.HumanResources]: 'operationsWorkingGroupBeta',
+  [WorkingGroups.Marketing]: 'operationsWorkingGroupGamma',
   [WorkingGroups.Distribution]: 'distributionWorkingGroup',
 } as const
 
@@ -139,6 +139,17 @@ export default class Api {
     ])
 
     return entries.sort((a, b) => a[0].toNumber() - b[0].toNumber())
+  }
+
+  async entriesByAccountIds<AccountType extends AccountId, ValueType extends Codec>(
+    apiMethod: AugmentedQuery<'promise', (key: AccountType) => Observable<ValueType>, [AccountType]>
+  ): Promise<[AccountType, ValueType][]> {
+    const entries: [AccountType, ValueType][] = (await apiMethod.entries()).map(([storageKey, value]) => [
+      storageKey.args[0] as AccountType,
+      value,
+    ])
+
+    return entries
   }
 
   protected async blockHash(height: number): Promise<string> {
@@ -398,6 +409,18 @@ export default class Api {
 
   availableCuratorGroups(): Promise<[CuratorGroupId, CuratorGroup][]> {
     return this.entriesByIds(this._api.query.content.curatorGroupById)
+  }
+
+  async allStakingLedgers(): Promise<[AccountId, Option<StakingLedger>][]> {
+    return await this.entriesByAccountIds(this._api.query.staking.ledger)
+  }
+
+  async getStakingLedger(account: string): Promise<Option<StakingLedger>> {
+    return await this._api.query.staking.ledger(account)
+  }
+
+  async getEraElectionStatus(): Promise<ElectionStatus> {
+    return await this._api.query.staking.eraElectionStatus()
   }
 
   async curatorGroupById(id: number): Promise<CuratorGroup | null> {
