@@ -1,6 +1,13 @@
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
 import { BountyMetadata, BountyWorkData } from '@joystream/metadata-protobuf'
-import { AssuranceContractType, BountyActor, BountyId, EntryId, FundingType } from '@joystream/types/augment'
+import {
+  AssuranceContractType,
+  BountyActor,
+  BountyId,
+  EntryId,
+  FundingType,
+  OracleWorkEntryJudgment,
+} from '@joystream/types/augment'
 import { MemberId } from '@joystream/types/common'
 import { BN } from '@polkadot/util'
 import {
@@ -153,11 +160,11 @@ export const bountyScheduleWorkSubmissionEnd = scheduleBountyStageEnd(BountyStag
   'entries',
 ])
 
-export const bountyScheduleJudgmentEnd = scheduleBountyStageEnd(BountyStage.Judgment, async (store, bounty) => {
-  bounty.updatedAt = new Date()
-  bounty.stage = BountyStage.Failed
-  await store.save<Bounty>(bounty)
-})
+export const bountyScheduleJudgmentEnd = scheduleBountyStageEnd(
+  BountyStage.Judgment,
+  (store, bounty) => endJudgmentPeriod(store, bounty, []),
+  ['entries']
+)
 
 function endFundingPeriod(
   store: DatabaseManager,
@@ -185,6 +192,40 @@ function endWorkingPeriod(store: DatabaseManager, bounty: Bounty, blockNumber: n
     bounty.stage = BountyStage.Failed
   }
   return store.save<Bounty>(bounty)
+}
+
+type JudgmentEntries = [EntryId, OracleWorkEntryJudgment][]
+async function endJudgmentPeriod(
+  store: DatabaseManager,
+  bounty: Bounty,
+  entryJudgments: JudgmentEntries
+): Promise<void> {
+  // Update the bounty status
+  const hasWinners = entryJudgments.some(([, judgment]) => judgment.isWinner)
+  bounty.updatedAt = new Date()
+  bounty.stage = BountyStage[hasWinners ? 'Successful' : 'Failed']
+  await store.save<Bounty>(bounty)
+
+  // Update entries statuses
+  await Promise.all(
+    bounty.entries?.flatMap((entry) => {
+      if (entry.status.isTypeOf !== 'BountyEntryStatusWorking') return []
+
+      const judgment = entryJudgments.find(([entryId]) => String(entryId) === entry.id)?.[1]
+
+      if (judgment?.isWinner) {
+        const status = new BountyEntryStatusWinner()
+        status.reward = asBN(judgment.asWinner.reward)
+        entry.status = status
+      } else if (judgment?.isRejected) {
+        entry.status = new BountyEntryStatusRejected()
+      } else {
+        entry.status = new BountyEntryStatusPassed()
+      }
+
+      return store.save<BountyEntry>(entry)
+    }) ?? []
+  )
 }
 
 /**
@@ -325,7 +366,7 @@ export async function bounty_BountyMaxFundingReached({ event, store }: EventCont
   await store.save<BountyMaxFundingReachedEvent>(maxFundingReachedInEvent)
 }
 
-// Store BountyFundingWithdrawal events (also update the contribution deleteAt time)
+// Store BountyFundingWithdrawal events
 export async function bounty_BountyFundingWithdrawal({ event, store }: EventContext & StoreContext): Promise<void> {
   const fundingWithdrawalEvent = new BountyEvents.BountyFundingWithdrawalEvent(event)
   const [bountyId, contributorActor] = fundingWithdrawalEvent.params
@@ -339,7 +380,6 @@ export async function bounty_BountyFundingWithdrawal({ event, store }: EventCont
     throw new Error(`Bounty contribution not found by contributor: ${actorType}`)
   }
   contribution.updatedAt = eventTime
-  contribution.deletedAt = eventTime
   await store.save<BountyContribution>(contribution)
 
   // Record the event
@@ -366,10 +406,7 @@ export async function bounty_BountyRemoved({ event, store }: EventContext & Stor
   const bountyRemovedEvent = new BountyEvents.BountyRemovedEvent(event)
 
   // Terminate the bounty
-  const bounty = await updateBounty(store, event, bountyRemovedEvent.params[0], [], (bounty) => ({
-    deletedAt: bounty.updatedAt,
-    isTerminated: true,
-  }))
+  const bounty = await updateBounty(store, event, bountyRemovedEvent.params[0], [], () => ({ isTerminated: true }))
 
   // Record the event
   const removedInEvent = new BountyRemovedEvent({ ...genericEventFields(event), bounty })
@@ -428,7 +465,7 @@ export async function bounty_WorkEntrySlashed({ event, store }: EventContext & S
 // Store WorkSubmitted events
 export async function bounty_WorkSubmitted({ event, store }: EventContext & StoreContext): Promise<void> {
   const workSubmittedEvent = new BountyEvents.WorkSubmittedEvent(event)
-  const [, entryId, , metadataBytes] = workSubmittedEvent.params
+  const [bountyId, entryId, , metadataBytes] = workSubmittedEvent.params
 
   // Update the entry
   const entry = await updateEntry(store, event, entryId, () => ({
@@ -439,6 +476,7 @@ export async function bounty_WorkSubmitted({ event, store }: EventContext & Stor
   const metadata = deserializeMetadata(BountyWorkData, metadataBytes)
   const submittedInEvent = new WorkSubmittedEvent({
     ...genericEventFields(event),
+    bounty: new Bounty({ id: String(bountyId) }),
     entry,
     title: whenDef(metadata?.title, perpareString),
     description: whenDef(metadata?.description, perpareString),
@@ -452,32 +490,11 @@ export async function bounty_OracleJudgmentSubmitted({ event, store }: EventCont
   const judgmentSubmittedEvent = new BountyEvents.OracleJudgmentSubmittedEvent(event)
   const [bountyId, , bountyJudgment, rationale] = judgmentSubmittedEvent.params
 
+  const bounty = await getBounty(store, bountyId, ['entries'])
   const entryJudgments = Array.from(bountyJudgment.entries())
 
-  // Update the bounty status
-  const hasWinners = entryJudgments.some(([, judgment]) => judgment.isWinner)
-  const bounty = await updateBounty(store, event, bountyId, ['entries'], () => ({
-    stage: BountyStage[hasWinners ? 'Successful' : 'Failed'],
-  }))
-
-  // Update winner entries status
-  await Promise.all(
-    bounty.entries?.map((entry) => {
-      const judgment = entryJudgments.find(([entryId]) => String(entryId) === entry.id)?.[1]
-
-      if (!judgment) {
-        entry.status = new BountyEntryStatusPassed()
-      } else if (judgment?.isWinner) {
-        const status = new BountyEntryStatusWinner()
-        status.reward = asBN(judgment.asWinner.reward)
-        entry.status = status
-      } else {
-        entry.status = new BountyEntryStatusRejected()
-      }
-
-      return store.save<BountyEntry>(entry)
-    }) ?? []
-  )
+  // Update the bounty status and winner entries status
+  endJudgmentPeriod(store, bounty, entryJudgments)
 
   // Record the event
   const judgmentEvent = new OracleJudgmentSubmittedEvent({
