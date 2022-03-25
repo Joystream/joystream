@@ -8,6 +8,7 @@ use crate::traits::{TransferLocationTrait, TransferPermissionPolicy};
 // TODO: find a suitable symbol representation
 pub type Symbol = ();
 
+/// Info for the account
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct AccountData<Balance> {
     /// Non-reserved part of the balance. There may still be restrictions
@@ -21,6 +22,7 @@ pub struct AccountData<Balance> {
     pub(crate) reserved_balance: Balance,
 }
 
+/// Info for the token
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
 pub struct TokenData<Balance> {
     /// Current token issuance

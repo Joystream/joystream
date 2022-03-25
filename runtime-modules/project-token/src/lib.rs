@@ -145,7 +145,11 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
 
         // == MUTATION SAFE ==
 
-        Self::do_slash(token_id, &who, amount_to_slash);
+        if amount_to_slash == amount {
+            Self::do_slash(token_id, &who, amount_to_slash);
+        } else {
+            Self::do_remove_account(token_id, &who);
+        }
 
         Self::deposit_event(RawEvent::TokenAmountSlashedFrom(token_id, who, amount));
         Ok(())
@@ -228,7 +232,12 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
 
         // == MUTATION SAFE ==
 
-        Self::do_slash(token_id, &src, amount_to_slash);
+        if amount_to_slash == amount {
+            Self::do_slash(token_id, &src, amount_to_slash);
+        } else {
+            Self::do_remove_account(token_id, &src);
+        }
+
         Self::do_deposit(token_id, &dst.to_owned().into(), amount);
 
         Self::deposit_event(RawEvent::TokenAmountTransferred(
@@ -544,6 +553,11 @@ impl<T: Trait> Module<T> {
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, account_id, |account_data| {
             account_data.free_balance = account_data.free_balance.saturating_sub(amount)
         });
+    }
+
+    #[inline]
+    pub(crate) fn do_remove_account(token_id: T::TokenId, account_id: &T::AccountId) {
+        AccountInfoByTokenAndAccount::<T>::remove(token_id, account_id);
     }
 
     #[inline]

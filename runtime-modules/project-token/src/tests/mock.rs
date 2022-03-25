@@ -194,7 +194,10 @@ pub(crate) fn config_for_token_and_account(id: TokenId) -> AccountData {
     let reserved_balance = balance_for_user.checked_div(Balance::from(4u32)).unwrap();
     let free_balance = balance_for_user.saturating_mul(Balance::from(3u32));
 
-    AccountData::new(reserved_balance, free_balance)
+    AccountData {
+        reserved_balance,
+        free_balance,
+    }
 }
 
 impl Default for GenesisConfigBuilder {

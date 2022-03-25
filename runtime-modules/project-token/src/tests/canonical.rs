@@ -125,7 +125,7 @@ fn base_burn_ok_with_non_zero_amount() {
             token_id, amount
         ));
         let new_issuance = Token::ensure_token_exists(token_id)
-            .map(|info| info.current_issuance())
+            .map(|info| info.current_total_issuance)
             .unwrap_or_default();
         assert_eq!(new_issuance, remaining);
     })
@@ -189,7 +189,7 @@ fn slash_fails_with_insufficient_free_balance() {
     build_test_externalities(config).execute_with(|| {
         assert_noop!(
             <Token as MultiCurrencyBase<AccountId>>::slash(token_id, account_id, amount),
-            Error::<Test>::InsufficientFreeBalanceForSlashing,
+            Error::<Test>::InsufficientFreeBalanceForDecreasing,
         );
     })
 }
@@ -202,12 +202,12 @@ fn slash_ok_without_account_removal() {
     let amount = Balance::one();
     build_test_externalities(config).execute_with(|| {
         let free_balance_pre =
-            Token::account_info_by_token_and_account(token_id, account_id).free_balance();
+            Token::account_info_by_token_and_account(token_id, account_id).free_balance;
         assert_ok!(<Token as MultiCurrencyBase<AccountId>>::slash(
             token_id, account_id, amount
         ));
         let free_balance_post =
-            Token::account_info_by_token_and_account(token_id, account_id).free_balance();
+            Token::account_info_by_token_and_account(token_id, account_id).free_balance;
 
         assert_eq!(free_balance_pre, free_balance_post.saturating_add(amount));
     })
@@ -221,7 +221,7 @@ fn slash_ok_with_account_removal() {
     let remaining_free_balance =
         existential_deposit_for_token(token_id).saturating_sub(TokenId::one());
     let amount = config_for_token_and_account(token_id)
-        .free_balance()
+        .free_balance
         .saturating_sub(remaining_free_balance);
     build_test_externalities(config).execute_with(|| {
         assert_ok!(<Token as MultiCurrencyBase<AccountId>>::slash(
