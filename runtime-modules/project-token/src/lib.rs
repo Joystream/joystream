@@ -36,14 +36,14 @@ pub trait Trait: frame_system::Trait {
 decl_storage! {
     trait Store for Module<T: Trait> as Token {
         /// Double map TokenId x AccountId => AccountData for managing account data
-        pub AccountInfoByTokenAndAccount get(fn account_info_by_account_and_token) config():
-            double_map
+        pub AccountInfoByTokenAndAccount get(fn account_info_by_token_and_account) config():
+        double_map
             hasher(blake2_128_concat) T::TokenId,
-            hasher(blake2_128_concat) T::AccountId => AccountDataOf<T>;
+        hasher(blake2_128_concat) T::AccountId => AccountDataOf<T>;
 
         /// map TokenId => TokenData to retrieve token information
         pub TokenInfoById get(fn token_info_by_id) config():
-            map
+        map
             hasher(blake2_128_concat) T::TokenId => TokenDataOf<T>;
 
         /// Token Id nonce
@@ -141,11 +141,11 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
             return Ok(());
         }
 
-        let existential_deposit = Self::ensure_can_slash(token_id, &who, amount)?;
+        let amount_to_slash = Self::ensure_can_slash(token_id, &who, amount)?;
 
         // == MUTATION SAFE ==
 
-        Self::do_slash(token_id, &who, amount, existential_deposit);
+        Self::do_slash(token_id, &who, amount_to_slash);
 
         Self::deposit_event(RawEvent::TokenAmountSlashedFrom(token_id, who, amount));
         Ok(())
@@ -187,11 +187,15 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
             return Ok(());
         }
 
-        Self::ensure_can_burn(token_id, amount)?;
+        let remaining_issuance = Self::ensure_can_burn(token_id, amount)?;
 
         // == MUTATION SAFE ==
 
-        Self::do_burn(token_id, amount);
+        if remaining_issuance.is_zero() {
+            Self::do_deissue_token(token_id);
+        } else {
+            Self::do_burn(token_id, amount);
+        }
 
         Self::deposit_event(RawEvent::TokenAmountBurned(token_id, amount));
         Ok(())
@@ -219,12 +223,12 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
             return Ok(());
         }
 
-        let existential_deposit =
+        let amount_to_slash =
             Self::ensure_can_transfer(token_id, &src, &dst.to_owned().into(), amount)?;
 
         // == MUTATION SAFE ==
 
-        Self::do_slash(token_id, &src, amount, existential_deposit);
+        Self::do_slash(token_id, &src, amount_to_slash);
         Self::do_deposit(token_id, &dst.to_owned().into(), amount);
 
         Self::deposit_event(RawEvent::TokenAmountTransferred(
@@ -275,14 +279,14 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
     fn balance(token_id: T::TokenId, who: T::AccountId) -> Result<T::Balance, DispatchError> {
         let account_info = Self::ensure_account_data_exists(token_id, &who)?;
 
-        Ok(account_info.free_balance())
+        Ok(account_info.free_balance)
     }
 
     /// Retrieve total current issuance for token
     /// Preconditions
     /// - `token_id` must be valid
     fn current_issuance(token_id: Self::TokenId) -> Result<Self::Balance, DispatchError> {
-        Self::ensure_token_exists(token_id).map(|token_data| token_data.current_issuance())
+        Self::ensure_token_exists(token_id).map(|token_data| token_data.current_total_issuance)
     }
 }
 
@@ -353,7 +357,7 @@ impl<T: Trait> ReservableMultiCurrency<T::AccountId> for Module<T> {
     ) -> Result<T::Balance, DispatchError> {
         let account_info = Self::ensure_account_data_exists(token_id, &who)?;
 
-        Ok(account_info.reserved_balance())
+        Ok(account_info.reserved_balance)
     }
 
     /// Retrieve total balance for token and account
@@ -364,8 +368,8 @@ impl<T: Trait> ReservableMultiCurrency<T::AccountId> for Module<T> {
         let account_info = Self::ensure_account_data_exists(token_id, &who)?;
 
         Ok(account_info
-            .reserved_balance()
-            .saturating_add(account_info.free_balance()))
+            .reserved_balance
+            .saturating_add(account_info.free_balance))
     }
 }
 
@@ -381,7 +385,7 @@ impl<T: Trait> Module<T> {
             AccountInfoByTokenAndAccount::<T>::contains_key(token_id, account_id),
             Error::<T>::AccountInformationDoesNotExist,
         );
-        Ok(Self::account_info_by_account_and_token(
+        Ok(Self::account_info_by_token_and_account(
             token_id, account_id,
         ))
     }
@@ -399,14 +403,19 @@ impl<T: Trait> Module<T> {
     // Extrinsics ensure checks
 
     #[inline]
-    pub(crate) fn ensure_can_burn(token_id: T::TokenId, amount: T::Balance) -> DispatchResult {
+    pub(crate) fn ensure_can_burn(
+        token_id: T::TokenId,
+        amount: T::Balance,
+    ) -> Result<T::Balance, DispatchError> {
         // ensure token validity
         let token_info = Self::ensure_token_exists(token_id)?;
 
         // ensure issuance can be decreased
-        token_info.can_decrease_issuance::<T>(amount)?;
-
-        Ok(())
+        ensure!(
+            token_info.current_total_issuance >= amount,
+            Error::<T>::InsufficientIssuanceToDecreaseByAmount,
+        );
+        Ok(token_info.current_total_issuance.saturating_sub(amount))
     }
 
     #[inline]
@@ -435,10 +444,11 @@ impl<T: Trait> Module<T> {
         // ensure account id validity
         let account_info = Self::ensure_account_data_exists(token_id, who)?;
 
-        // ensure can slash amount from who
-        account_info.can_slash::<T>(amount)?;
+        // Amount to decrease by accounting for existential deposit
+        let amount_to_slash =
+            account_info.decrease_with_ex_deposit::<T>(amount, token_info.existential_deposit)?;
 
-        Ok(token_info.existential_deposit())
+        Ok(amount_to_slash)
     }
 
     #[inline]
@@ -458,9 +468,16 @@ impl<T: Trait> Module<T> {
         Self::ensure_account_data_exists(token_id, &dst).map(|_| ())?;
 
         // ensure can slash amount from who
-        src_account_info.can_slash::<T>(amount)?;
+        ensure!(
+            src_account_info.free_balance >= amount,
+            Error::<T>::InsufficientFreeBalanceForTransfer,
+        );
 
-        Ok(token_info.existential_deposit())
+        // Amount to decrease by accounting for existential deposit
+        let amount_to_slash = src_account_info
+            .decrease_with_ex_deposit::<T>(amount, token_info.existential_deposit)?;
+
+        Ok(amount_to_slash)
     }
 
     #[inline]
@@ -476,7 +493,10 @@ impl<T: Trait> Module<T> {
         let account_info = Self::ensure_account_data_exists(token_id, who)?;
 
         // ensure can freeze amount
-        account_info.can_freeze::<T>(amount)?;
+        ensure!(
+            account_info.free_balance >= amount,
+            Error::<T>::InsufficientFreeBalanceForReserving,
+        );
 
         Ok(())
     }
@@ -494,7 +514,10 @@ impl<T: Trait> Module<T> {
         let account_info = Self::ensure_account_data_exists(token_id, who)?;
 
         // ensure can freeze amount
-        account_info.can_unfreeze::<T>(amount)?;
+        ensure!(
+            account_info.reserved_balance >= amount,
+            Error::<T>::InsufficientReservedBalance
+        );
 
         Ok(())
     }
@@ -504,43 +527,46 @@ impl<T: Trait> Module<T> {
     #[inline]
     pub(crate) fn do_deposit(token_id: T::TokenId, account_id: &T::AccountId, amount: T::Balance) {
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, account_id, |account_data| {
-            account_data.deposit(amount)
+            account_data.free_balance = account_data.free_balance.saturating_sub(amount)
         });
     }
 
     #[inline]
     pub(crate) fn do_mint(token_id: T::TokenId, amount: T::Balance) {
-        TokenInfoById::<T>::mutate(token_id, |token_data| token_data.increase_issuance(amount));
+        TokenInfoById::<T>::mutate(token_id, |token_data| {
+            token_data.current_total_issuance =
+                token_data.current_total_issuance.saturating_add(amount)
+        });
     }
 
     #[inline]
-    pub(crate) fn do_slash(
-        token_id: T::TokenId,
-        account_id: &T::AccountId,
-        amount: T::Balance,
-        existential_deposit: T::Balance,
-    ) {
+    pub(crate) fn do_slash(token_id: T::TokenId, account_id: &T::AccountId, amount: T::Balance) {
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, account_id, |account_data| {
-            account_data.slash(amount, existential_deposit)
+            account_data.free_balance = account_data.free_balance.saturating_sub(amount)
         });
     }
 
     #[inline]
     pub(crate) fn do_burn(token_id: T::TokenId, amount: T::Balance) {
-        TokenInfoById::<T>::mutate(token_id, |token_data| token_data.decrease_issuance(amount));
+        TokenInfoById::<T>::mutate(token_id, |token_data| {
+            token_data.current_total_issuance =
+                token_data.current_total_issuance.saturating_sub(amount)
+        });
     }
 
     #[inline]
     pub(crate) fn do_freeze(token_id: T::TokenId, account_id: &T::AccountId, amount: T::Balance) {
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, account_id, |account_data| {
-            account_data.freeze(amount)
+            account_data.free_balance = account_data.free_balance.saturating_add(amount);
+            account_data.reserved_balance = account_data.reserved_balance.saturating_sub(amount);
         });
     }
 
     #[inline]
     pub(crate) fn do_unfreeze(token_id: T::TokenId, account_id: &T::AccountId, amount: T::Balance) {
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, account_id, |account_data| {
-            account_data.unfreeze(amount)
+            account_data.free_balance = account_data.free_balance.saturating_add(amount);
+            account_data.reserved_balance = account_data.reserved_balance.saturating_sub(amount);
         });
     }
 

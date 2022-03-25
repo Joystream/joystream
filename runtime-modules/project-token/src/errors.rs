@@ -4,13 +4,16 @@ use frame_support::decl_error;
 decl_error! {
     pub enum Error for Module<T: crate::Trait> {
         /// Free balance is insufficient for freezing specified amount
-        InsufficientFreeBalanceForFreezing,
+        InsufficientFreeBalanceForReserving,
 
         /// Reserved balance is insufficient for unfreezing specified amount
         InsufficientReservedBalance,
 
         /// Free balance is insufficient for slashing specified amount
-        InsufficientFreeBalanceForSlashing,
+        InsufficientFreeBalanceForDecreasing,
+
+        /// Free balance is insufficient for transferring specfied amount
+        InsufficientFreeBalanceForTransfer,
 
         /// Current total issuance cannot be decrease by specified amount
         InsufficientIssuanceToDecreaseByAmount,
