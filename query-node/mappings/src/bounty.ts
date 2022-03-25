@@ -206,19 +206,21 @@ async function endJudgmentPeriod(
   bounty.stage = BountyStage[hasWinners ? 'Successful' : 'Failed']
   await store.save<Bounty>(bounty)
 
-  // Update winner entries status
+  // Update entries statuses
   await Promise.all(
-    bounty.entries?.map((entry) => {
+    bounty.entries?.flatMap((entry) => {
+      if (entry.status.isTypeOf !== 'BountyEntryStatusWorking') return []
+
       const judgment = entryJudgments.find(([entryId]) => String(entryId) === entry.id)?.[1]
 
-      if (!judgment) {
-        entry.status = new BountyEntryStatusPassed()
-      } else if (judgment?.isWinner) {
+      if (judgment?.isWinner) {
         const status = new BountyEntryStatusWinner()
         status.reward = asBN(judgment.asWinner.reward)
         entry.status = status
-      } else {
+      } else if (judgment?.isRejected) {
         entry.status = new BountyEntryStatusRejected()
+      } else {
+        entry.status = new BountyEntryStatusPassed()
       }
 
       return store.save<BountyEntry>(entry)
@@ -364,7 +366,7 @@ export async function bounty_BountyMaxFundingReached({ event, store }: EventCont
   await store.save<BountyMaxFundingReachedEvent>(maxFundingReachedInEvent)
 }
 
-// Store BountyFundingWithdrawal events (also update the contribution deleteAt time)
+// Store BountyFundingWithdrawal events
 export async function bounty_BountyFundingWithdrawal({ event, store }: EventContext & StoreContext): Promise<void> {
   const fundingWithdrawalEvent = new BountyEvents.BountyFundingWithdrawalEvent(event)
   const [bountyId, contributorActor] = fundingWithdrawalEvent.params
