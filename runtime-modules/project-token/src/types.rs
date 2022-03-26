@@ -13,7 +13,15 @@ pub(crate) enum DecreaseOp<Balance> {
     Reduce(Balance),
 
     /// Remove Account
-    Remove,
+    Remove(Balance),
+}
+impl<Balance: Clone> DecreaseOp<Balance> {
+    pub(crate) fn amount(&self) -> Balance {
+        match self {
+            Self::Reduce(b) => b.to_owned(),
+            Self::Remove(b) => b.to_owned(),
+        }
+    }
 }
 
 /// Info for the account
@@ -127,7 +135,9 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
 
         let candidate_balance = self.free_balance.saturating_sub(amount);
         if candidate_balance < existential_deposit {
-            Ok(DecreaseOp::<Balance>::Remove)
+            Ok(DecreaseOp::<Balance>::Remove(
+                self.free_balance.saturating_add(self.reserved_balance),
+            ))
         } else {
             Ok(DecreaseOp::<Balance>::Reduce(amount))
         }
