@@ -503,51 +503,59 @@ fn slash_ok_without_account_removal() {
     })
 }
 
-// #[test]
-// fn slash_ok_with_zero_balance_account_removal() {
-//     let config = GenesisConfigBuilder::default().build();
-//     let account_id = AccountId::one();
-//     let token_id = TokenId::from(2u32);
-//     let amount = Balance::one();
+#[test]
+fn slash_ok_with_account_removal_and_zero_total_balance() {
+    let config = GenesisConfigBuilder::new()
+        .add_token_and_account_info()
+        .build();
+    let token_id = TokenId::one();
+    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID);
+    let amount = Balance::from(DEFAULT_FREE_BALANCE);
 
-//     build_test_externalities(config).execute_with(|| {
-//         assert_ok!(<Token as MultiCurrencyBase<AccountId>>::deposit_creating(
-//             token_id, account_id, amount
-//         ));
-//         assert_ok!(<Token as MultiCurrencyBase<AccountId>>::slash(
-//             token_id, account_id, amount
-//         ));
-//         assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
-//             token_id, account_id
-//         ));
-//     })
-// }
+    build_test_externalities(config).execute_with(|| {
+        let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
+        let account_data = Token::account_info_by_token_and_account(token_id, account_id);
 
-// #[test]
-// fn slash_ok_with_account_removal_by_ex_deposit_underflow() {
-//     let config = GenesisConfigBuilder::new().build();
+        assert_ok!(<Token as MultiCurrencyBase<AccountId>>::slash(
+            token_id, account_id, amount
+        ));
+        let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
+        assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
+            token_id, account_id
+        ));
+        let total_reduction = account_data
+            .free_balance
+            .saturating_add(account_data.reserved_balance);
+        assert_eq!(issuance_pre, issuance_post.saturating_add(total_reduction));
+    })
+}
 
-//     build_test_externalities(config).execute_with(|| {
-//         let token_id = Token::next_token_id();
-//         assert_ok!(<Token as MultiCurrencyBase<AccountId>>::issue_token(
-//             issuance_params
-//         ));
-//         assert_ok!(<Token as MultiCurrencyBase<AccountId>>::deposit_creating(
-//             token_id, account_id, amount
-//         ));
-//         let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
-//         let total_reduction =
-//             Token::account_info_by_token_and_account(token_id, account_id).total_balance();
-//         assert_ok!(<Token as MultiCurrencyBase<AccountId>>::slash(
-//             token_id, account_id, amount
-//         ));
-//         let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
-//         assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
-//             token_id, account_id
-//         ));
-//         assert_eq!(issuance_pre, issuance_post.saturating_add(total_reduction));
-//     })
-// }
+#[test]
+fn slash_ok_with_account_removal_by_ex_deposit_underflow() {
+    let config = GenesisConfigBuilder::new()
+        .add_token_and_account_info()
+        .build();
+    let token_id = TokenId::one();
+    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID);
+    let amount = Balance::from(DEFAULT_FREE_BALANCE - DEFAULT_EXISTENTIAL_DEPOSIT + 1);
+
+    build_test_externalities(config).execute_with(|| {
+        let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
+        let account_data = Token::account_info_by_token_and_account(token_id, account_id);
+
+        assert_ok!(<Token as MultiCurrencyBase<AccountId>>::slash(
+            token_id, account_id, amount
+        ));
+        let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
+        assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
+            token_id, account_id
+        ));
+        let total_reduction = account_data
+            .free_balance
+            .saturating_add(account_data.reserved_balance);
+        assert_eq!(issuance_pre, issuance_post.saturating_add(total_reduction));
+    })
+}
 
 #[test]
 fn slash_ok_with_account_and_token_removal() {
