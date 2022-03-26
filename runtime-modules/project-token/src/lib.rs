@@ -90,9 +90,26 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
 
         // == MUTATION SAFE ==
 
-        AccountInfoByTokenAndAccount::<T>::mutate(token_id, &who, |account_data| {
-            account_data.free_balance = account_data.free_balance.saturating_sub(amount)
+        // increase token issuance
+        TokenInfoById::<T>::mutate(token_id, |token_data| {
+            token_data.current_total_issuance =
+                token_data.current_total_issuance.saturating_add(amount)
         });
+
+        if AccountInfoByTokenAndAccount::<T>::contains_key(token_id, &who) {
+            AccountInfoByTokenAndAccount::<T>::mutate(token_id, &who, |account_data| {
+                account_data.free_balance = account_data.free_balance.saturating_add(amount)
+            });
+        } else {
+            AccountInfoByTokenAndAccount::<T>::insert(
+                token_id,
+                &who,
+                AccountDataOf::<T> {
+                    free_balance: amount,
+                    reserved_balance: T::Balance::zero(),
+                },
+            );
+        }
 
         Self::deposit_event(RawEvent::TokenAmountDepositedInto(token_id, who, amount));
 

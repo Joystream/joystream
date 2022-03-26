@@ -70,12 +70,9 @@ pub(crate) enum IssuanceState {
 
 /// Builder for the token data struct
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
-pub struct TokenIssuanceParameters<Balance, AccountId> {
+pub struct TokenIssuanceParameters<Balance> {
     /// Initial issuance
     pub(crate) initial_issuance: Balance,
-
-    /// Token account for the token itself
-    pub(crate) owner_account: AccountId,
 
     /// Initial State builder: stub
     pub(crate) initial_state: IssuanceState,
@@ -133,19 +130,23 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
             crate::Error::<T>::InsufficientFreeBalanceForDecreasing,
         );
 
-        let candidate_balance = self.free_balance.saturating_sub(amount);
-        if candidate_balance < existential_deposit {
-            Ok(DecreaseOp::<Balance>::Remove(
-                self.free_balance.saturating_add(self.reserved_balance),
-            ))
+        let new_total = self
+            .free_balance
+            .saturating_sub(amount)
+            .saturating_add(self.reserved_balance);
+
+        if new_total.is_zero() || new_total < existential_deposit {
+            println!("Removing");
+            Ok(DecreaseOp::<Balance>::Remove(new_total))
         } else {
+            println!("Reducing");
             Ok(DecreaseOp::<Balance>::Reduce(amount))
         }
     }
 }
 
 /// Encapsules parameters validation + TokenData construction
-impl<Balance: Zero + Copy + PartialOrd, AccountId> TokenIssuanceParameters<Balance, AccountId> {
+impl<Balance: Zero + Copy + PartialOrd> TokenIssuanceParameters<Balance> {
     /// Forward `self` state
     pub fn try_build<T: crate::Trait>(self) -> Result<TokenData<Balance>, DispatchError> {
         // validation
@@ -212,4 +213,4 @@ pub(crate) type TokenDataOf<T> = TokenData<<T as crate::Trait>::Balance>;
 
 /// Alias for Token Issuance Parameters
 pub(crate) type TokenIssuanceParametersOf<T> =
-    TokenIssuanceParameters<<T as crate::Trait>::Balance, <T as frame_system::Trait>::AccountId>;
+    TokenIssuanceParameters<<T as crate::Trait>::Balance>;

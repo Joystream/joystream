@@ -5,11 +5,13 @@ use frame_support::{
     traits::{OnFinalize, OnInitialize},
 };
 
-use sp_arithmetic::{traits::One, Perbill};
+use sp_arithmetic::{
+    traits::{One, Zero},
+    Perbill,
+};
 use sp_io::TestExternalities;
 use sp_runtime::testing::{Header, H256};
 use sp_runtime::traits::{BlakeTwo256, IdentityLookup};
-use sp_std::ops::Rem;
 
 // crate import
 use crate::{AccountDataOf, GenesisConfig, TokenDataOf, Trait};
@@ -89,7 +91,7 @@ pub struct GenesisConfigBuilder {
 }
 
 impl GenesisConfigBuilder {
-    pub fn new_empty() -> Self {
+    pub fn new() -> Self {
         Self {
             token_info_by_id: vec![],
             account_info_by_token_and_account: vec![],
@@ -97,29 +99,33 @@ impl GenesisConfigBuilder {
         }
     }
 
-    pub fn add_default_token_info(self) -> Self {
-        let next_token_id = DEFAULT_TOKENS_NUMBER.saturating_add(TokenId::one());
-        let token_info_by_id = (1..next_token_id)
-            .map(|id| {
-                (
-                    id,
-                    crate::types::TokenIssuanceParametersOf::<Test> {
-                        initial_issuance: total_issuance_for_token(id),
-                        existential_deposit: existential_deposit_for_token(id),
-                        initial_state: crate::types::IssuanceState::Idle,
-                        owner_account: owner_for_token(id),
-                        symbol: (),
-                    }
-                    .try_build::<Test>()
-                    .unwrap(),
-                )
-            })
-            .collect::<Vec<(TokenId, TokenData)>>();
-        Self {
-            next_token_id,
-            token_info_by_id,
-            ..self
-        }
+    pub fn add_token_and_account_info(mut self) -> Self {
+        let new_id = self.next_token_id;
+        let new_token_info = (
+            new_id,
+            crate::types::TokenIssuanceParametersOf::<Test> {
+                initial_issuance: Balance::from(DEFAULT_FREE_BALANCE),
+                existential_deposit: Balance::from(DEFAULT_EXISTENTIAL_DEPOSIT),
+                initial_state: crate::types::IssuanceState::Idle,
+                symbol: (),
+            }
+            .try_build::<Test>()
+            .unwrap(),
+        );
+        let new_account_info = AccountData {
+            free_balance: Balance::from(DEFAULT_FREE_BALANCE),
+            reserved_balance: Balance::zero(),
+        };
+
+        self.next_token_id = new_id.saturating_add(One::one());
+        self.token_info_by_id.push(new_token_info);
+        self.account_info_by_token_and_account.push((
+            new_id,
+            AccountId::from(DEFAULT_ACCOUNT_ID),
+            new_account_info,
+        ));
+
+        self
     }
 
     pub fn build(self) -> GenesisConfig<Test> {
@@ -162,76 +168,6 @@ pub fn increase_block_number_by(n: u64) {
 pub type Token = crate::Module<Test>;
 pub type System = frame_system::Module<Test>;
 
-pub const DEFAULT_TOKENS_NUMBER: u64 = 10;
-pub const DEFAULT_USERS_NUMBER: u64 = 7;
-
-// Reference chain state for tests
-pub(crate) fn existential_deposit_for_token(id: TokenId) -> Balance {
-    // existential deposit 1/4
-    total_issuance_for_token(id)
-        .checked_div(TokenId::from(4u32))
-        .unwrap()
-        .checked_div(DEFAULT_USERS_NUMBER)
-        .unwrap()
-}
-
-pub(crate) fn total_issuance_for_token(id: TokenId) -> Balance {
-    id.saturating_sub(TokenId::one())
-        .saturating_mul(TokenId::from(40u32))
-        .saturating_mul(TokenId::from(DEFAULT_USERS_NUMBER))
-}
-
-pub(crate) fn owner_for_token(id: TokenId) -> Balance {
-    id.rem(DEFAULT_USERS_NUMBER)
-}
-
-pub(crate) fn config_for_token_and_account(id: TokenId) -> AccountData {
-    let balance_for_user = total_issuance_for_token(id)
-        .checked_div(DEFAULT_USERS_NUMBER)
-        .unwrap();
-
-    // reserved, free = (1/4, 3/4)
-    let reserved_balance = balance_for_user.checked_div(Balance::from(4u32)).unwrap();
-    let free_balance = balance_for_user.saturating_mul(Balance::from(3u32));
-
-    AccountData {
-        reserved_balance,
-        free_balance,
-    }
-}
-
-impl Default for GenesisConfigBuilder {
-    fn default() -> Self {
-        let next_token_id = DEFAULT_TOKENS_NUMBER.saturating_add(1u64);
-        let token_info_by_id = (1..next_token_id)
-            .map(|id| {
-                (
-                    id,
-                    crate::types::TokenIssuanceParametersOf::<Test> {
-                        initial_issuance: total_issuance_for_token(id),
-                        existential_deposit: existential_deposit_for_token(id),
-                        initial_state: crate::types::IssuanceState::Idle,
-                        owner_account: owner_for_token(id),
-                        symbol: (),
-                    }
-                    .try_build::<Test>()
-                    .unwrap(),
-                )
-            })
-            .collect::<Vec<(TokenId, TokenData)>>();
-
-        let account_info_by_token_and_account = (1..next_token_id)
-            .map(|id| {
-                (1..=DEFAULT_USERS_NUMBER)
-                    .map(move |account| (id, account, config_for_token_and_account(id)))
-            })
-            .flatten()
-            .collect::<Vec<(TokenId, AccountId, AccountData)>>();
-
-        Self {
-            account_info_by_token_and_account,
-            token_info_by_id,
-            next_token_id,
-        }
-    }
-}
+pub const DEFAULT_EXISTENTIAL_DEPOSIT: u64 = 5;
+pub const DEFAULT_FREE_BALANCE: u64 = 10;
+pub const DEFAULT_ACCOUNT_ID: u64 = 1;

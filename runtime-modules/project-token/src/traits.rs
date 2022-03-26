@@ -41,9 +41,7 @@ pub trait MultiCurrencyBase<AccountId> {
     ) -> DispatchResult;
 
     /// Issue token with specified characteristics
-    fn issue_token(
-        issuance_parameters: TokenIssuanceParameters<Self::Balance, AccountId>,
-    ) -> DispatchResult;
+    fn issue_token(issuance_parameters: TokenIssuanceParameters<Self::Balance>) -> DispatchResult;
 
     /// Remove token data from storage
     fn deissue_token(token_id: Self::TokenId) -> DispatchResult;
