@@ -4,7 +4,7 @@ use frame_support::{assert_noop, assert_ok, StorageDoubleMap, StorageMap};
 use sp_arithmetic::traits::One;
 
 use crate::tests::mock::*;
-use crate::traits::MultiCurrencyBase;
+use crate::traits::{MultiCurrencyBase, ReservableMultiCurrency};
 use crate::types::TokenIssuanceParametersOf;
 use crate::Error;
 
@@ -148,6 +148,288 @@ fn deposit_creating_ok_with_existing_account() {
         assert_eq!(free_balance_pre.saturating_add(amount), free_balance_post);
 
         assert_eq!(issuance_pre.saturating_add(amount), issuance_post);
+    })
+}
+
+#[test]
+fn deposit_into_existing_ok() {
+    let config = GenesisConfigBuilder::new()
+        .add_token_and_account_info()
+        .build();
+    let token_id = TokenId::one();
+    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID);
+    let amount = Balance::one();
+
+    build_test_externalities(config).execute_with(|| {
+        let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
+        let free_balance_pre =
+            Token::account_info_by_token_and_account(token_id, account_id).free_balance;
+        assert_ok!(
+            <Token as MultiCurrencyBase<AccountId>>::deposit_into_existing(
+                token_id, account_id, amount
+            )
+        );
+
+        let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
+        let free_balance_post =
+            Token::account_info_by_token_and_account(token_id, account_id).free_balance;
+
+        assert_eq!(free_balance_pre.saturating_add(amount), free_balance_post);
+
+        assert_eq!(issuance_pre.saturating_add(amount), issuance_post);
+    })
+}
+
+#[test]
+fn deposit_fails_with_nonexisting_account() {
+    let config = GenesisConfigBuilder::new()
+        .add_token_and_account_info()
+        .build();
+    let token_id = TokenId::one();
+    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID + 1);
+    let amount = Balance::one();
+
+    build_test_externalities(config).execute_with(|| {
+        assert_noop!(
+            <Token as MultiCurrencyBase<AccountId>>::deposit_into_existing(
+                token_id, account_id, amount
+            ),
+            Error::<Test>::AccountInformationDoesNotExist,
+        );
+    })
+}
+
+// reserve tests
+#[test]
+fn reserve_fails_with_non_existing_token() {
+    let config = GenesisConfigBuilder::new()
+        .add_token_and_account_info()
+        .build();
+    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID + 1);
+    let amount = Balance::one();
+
+    build_test_externalities(config).execute_with(|| {
+        let token_id = Token::next_token_id();
+        assert_noop!(
+            <Token as ReservableMultiCurrency<AccountId>>::reserve(token_id, account_id, amount),
+            Error::<Test>::TokenDoesNotExist,
+        );
+    })
+}
+
+#[test]
+fn reserve_fails_with_non_existing_account() {
+    let config = GenesisConfigBuilder::new()
+        .add_token_and_account_info()
+        .build();
+    let token_id = TokenId::one();
+    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID + 1);
+    let amount = Balance::one();
+
+    build_test_externalities(config).execute_with(|| {
+        assert_noop!(
+            <Token as ReservableMultiCurrency<AccountId>>::reserve(token_id, account_id, amount),
+            Error::<Test>::AccountInformationDoesNotExist,
+        );
+    })
+}
+
+#[test]
+fn reserve_fails_with_insufficient_free_balance() {
+    let config = GenesisConfigBuilder::new()
+        .add_token_and_account_info()
+        .build();
+    let token_id = TokenId::one();
+    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID);
+    let amount = Balance::from(DEFAULT_FREE_BALANCE + 1);
+
+    build_test_externalities(config).execute_with(|| {
+        assert_noop!(
+            <Token as ReservableMultiCurrency<AccountId>>::reserve(token_id, account_id, amount),
+            Error::<Test>::InsufficientFreeBalanceForReserving,
+        );
+    })
+}
+
+#[test]
+fn reserve_ok_with_remaining_free_balance_above_ex_deposit() {
+    let config = GenesisConfigBuilder::new()
+        .add_token_and_account_info()
+        .build();
+    let token_id = TokenId::one();
+    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID);
+    let amount = Balance::one();
+
+    build_test_externalities(config).execute_with(|| {
+        let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
+        let account_data_pre = Token::account_info_by_token_and_account(token_id, account_id);
+        assert_ok!(<Token as ReservableMultiCurrency<AccountId>>::reserve(
+            token_id, account_id, amount
+        ));
+        let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
+        let account_data_post = Token::account_info_by_token_and_account(token_id, account_id);
+        assert_eq!(issuance_pre, issuance_post);
+
+        assert_eq!(
+            account_data_pre.free_balance.saturating_sub(amount),
+            account_data_post.free_balance,
+        );
+        assert_eq!(
+            account_data_pre.reserved_balance.saturating_add(amount),
+            account_data_post.reserved_balance,
+        );
+    })
+}
+
+#[test]
+fn reserve_ok_with_remaining_free_balance_below_ex_deposit() {
+    let config = GenesisConfigBuilder::new()
+        .add_token_and_account_info()
+        .build();
+    let token_id = TokenId::one();
+    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID);
+    let amount = Balance::from(DEFAULT_FREE_BALANCE).saturating_sub(One::one());
+
+    build_test_externalities(config).execute_with(|| {
+        let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
+        let account_data_pre = Token::account_info_by_token_and_account(token_id, account_id);
+        assert_ok!(<Token as ReservableMultiCurrency<AccountId>>::reserve(
+            token_id, account_id, amount
+        ));
+        let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
+        let account_data_post = Token::account_info_by_token_and_account(token_id, account_id);
+        assert_eq!(issuance_pre, issuance_post);
+
+        assert_eq!(
+            account_data_post.free_balance.saturating_add(amount),
+            account_data_pre.free_balance,
+        );
+        assert_eq!(
+            account_data_post.reserved_balance.saturating_sub(amount),
+            account_data_pre.reserved_balance,
+        );
+    })
+}
+
+#[test]
+fn reserve_ok_with_remaining_zero_free_balance() {
+    let config = GenesisConfigBuilder::new()
+        .add_token_and_account_info()
+        .build();
+    let token_id = TokenId::one();
+    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID);
+    let amount = Balance::from(DEFAULT_FREE_BALANCE);
+
+    build_test_externalities(config).execute_with(|| {
+        let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
+        let account_data_pre = Token::account_info_by_token_and_account(token_id, account_id);
+        assert_ok!(<Token as ReservableMultiCurrency<AccountId>>::reserve(
+            token_id, account_id, amount
+        ));
+        let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
+        let account_data_post = Token::account_info_by_token_and_account(token_id, account_id);
+        assert_eq!(issuance_pre, issuance_post);
+
+        assert_eq!(
+            account_data_post.free_balance.saturating_add(amount),
+            account_data_pre.free_balance,
+        );
+        assert_eq!(
+            account_data_post.reserved_balance.saturating_sub(amount),
+            account_data_pre.reserved_balance,
+        );
+    })
+}
+
+// unreserve tests
+#[test]
+fn unreserve_fails_with_non_existing_token() {
+    let config = GenesisConfigBuilder::new()
+        .add_token_and_account_info()
+        .build();
+    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID + 1);
+    let amount = Balance::one();
+
+    build_test_externalities(config).execute_with(|| {
+        let token_id = Token::next_token_id();
+        assert_noop!(
+            <Token as ReservableMultiCurrency<AccountId>>::unreserve(token_id, account_id, amount),
+            Error::<Test>::TokenDoesNotExist,
+        );
+    })
+}
+
+#[test]
+fn unreserve_fails_with_non_existing_account() {
+    let config = GenesisConfigBuilder::new()
+        .add_token_and_account_info()
+        .build();
+    let token_id = TokenId::one();
+    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID + 1);
+    let amount = Balance::one();
+
+    build_test_externalities(config).execute_with(|| {
+        assert_noop!(
+            <Token as ReservableMultiCurrency<AccountId>>::unreserve(token_id, account_id, amount),
+            Error::<Test>::AccountInformationDoesNotExist,
+        );
+    })
+}
+
+#[test]
+fn unreserve_fails_with_insufficient_reserved_balance() {
+    let config = GenesisConfigBuilder::new()
+        .add_token_and_account_info()
+        .build();
+    let token_id = TokenId::one();
+    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID);
+    let amount = Balance::one();
+
+    build_test_externalities(config).execute_with(|| {
+        assert_ok!(<Token as ReservableMultiCurrency<AccountId>>::reserve(
+            token_id, account_id, amount
+        ));
+        assert_noop!(
+            <Token as ReservableMultiCurrency<AccountId>>::unreserve(
+                token_id,
+                account_id,
+                amount.saturating_add(One::one())
+            ),
+            Error::<Test>::InsufficientReservedBalance,
+        );
+    })
+}
+
+#[test]
+fn unreserve_ok() {
+    let config = GenesisConfigBuilder::new()
+        .add_token_and_account_info()
+        .build();
+    let token_id = TokenId::one();
+    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID);
+    let amount = Balance::one();
+
+    build_test_externalities(config).execute_with(|| {
+        assert_ok!(<Token as ReservableMultiCurrency<AccountId>>::reserve(
+            token_id, account_id, amount
+        ));
+        let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
+        let account_data_pre = Token::account_info_by_token_and_account(token_id, account_id);
+        assert_ok!(<Token as ReservableMultiCurrency<AccountId>>::unreserve(
+            token_id, account_id, amount
+        ));
+        let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
+        let account_data_post = Token::account_info_by_token_and_account(token_id, account_id);
+        assert_eq!(issuance_pre, issuance_post);
+
+        assert_eq!(
+            account_data_post.free_balance.saturating_sub(amount),
+            account_data_pre.free_balance,
+        );
+        assert_eq!(
+            account_data_post.reserved_balance.saturating_add(amount),
+            account_data_pre.reserved_balance,
+        );
     })
 }
 

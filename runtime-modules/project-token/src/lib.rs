@@ -143,8 +143,14 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
 
         // == MUTATION SAFE ==
 
+        // increase token issuance
+        TokenInfoById::<T>::mutate(token_id, |token_data| {
+            token_data.current_total_issuance =
+                token_data.current_total_issuance.saturating_add(amount)
+        });
+
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, &who, |account_data| {
-            account_data.free_balance = account_data.free_balance.saturating_sub(amount)
+            account_data.free_balance = account_data.free_balance.saturating_add(amount)
         });
 
         Self::deposit_event(RawEvent::TokenAmountDepositedInto(token_id, who, amount));
@@ -369,8 +375,8 @@ impl<T: Trait> ReservableMultiCurrency<T::AccountId> for Module<T> {
         // == MUTATION SAFE ==
 
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, &who, |account_data| {
-            account_data.free_balance = account_data.free_balance.saturating_add(amount);
-            account_data.reserved_balance = account_data.reserved_balance.saturating_sub(amount);
+            account_data.free_balance = account_data.free_balance.saturating_sub(amount);
+            account_data.reserved_balance = account_data.reserved_balance.saturating_add(amount);
         });
 
         Self::deposit_event(RawEvent::TokenAmountReservedFrom(token_id, who, amount));
