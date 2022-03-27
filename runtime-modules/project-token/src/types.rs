@@ -40,7 +40,7 @@ pub struct AccountData<Balance> {
 
 /// Info for the token
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
-pub struct TokenData<Balance> {
+pub struct TokenData<Balance, Hash> {
     /// Current token issuance
     pub(crate) current_total_issuance: Balance,
 
@@ -52,6 +52,19 @@ pub struct TokenData<Balance> {
 
     /// Token Symbol
     pub(crate) symbol: Symbol,
+
+    /// Transfer policy
+    pub(crate) transfer_policy: TransferPolicy<Hash>,
+}
+
+/// The two possible transfer policies
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub(crate) enum TransferPolicy<Hash> {
+    /// Permissionless
+    Permissionless,
+
+    /// Permissioned transfer with whitelist commitment
+    Permissioned(Hash),
 }
 
 /// The possible issuance variants: This is a stub

@@ -81,7 +81,7 @@ pub trait ReservableMultiCurrency<AccountId> {
     ) -> Result<Self::Balance, DispatchError>;
 }
 
-/// Interface for the transfer policy type
+/// Interface for the transfer policy type, Permissionless : terminal state
 pub trait TransferPermissionPolicy<TransferLocation, Hash> {
     /// Establish whether transfer location is allowed for the policy
     fn can_transfer_to(&self, location: &TransferLocation) -> bool;
@@ -94,9 +94,6 @@ pub trait TransferPermissionPolicy<TransferLocation, Hash> {
 
     // Transition function to permissionless state
     fn change_to_permissionless(&mut self);
-
-    // Transition function to permissioned state with the given whitelist commitment
-    fn change_to_permissioned(&mut self, whitelist_commitment: Hash);
 }
 
 /// Account wrapper that encapsulates the validation for the transfer location

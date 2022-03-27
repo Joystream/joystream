@@ -110,7 +110,6 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
                 },
             );
         }
-
         Self::deposit_event(RawEvent::TokenAmountDepositedInto(token_id, who, amount));
 
         Ok(())
@@ -248,7 +247,6 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
         let src_account_info = Self::ensure_account_data_exists(token_id, &src)?;
 
         // ensure dst account id validity
-        // TODO: verify dst according to policy
         let dst_account: T::AccountId = dst.into();
         Self::ensure_account_data_exists(token_id, &dst_account).map(|_| ())?;
 
@@ -264,19 +262,7 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
 
         // == MUTATION SAFE ==
 
-        match slash_operation {
-            DecreaseOp::<T::Balance>::Reduce(amount) => {
-                AccountInfoByTokenAndAccount::<T>::mutate(token_id, &src, |account_data| {
-                    account_data.free_balance = account_data.free_balance.saturating_sub(amount)
-                })
-            }
-            DecreaseOp::<T::Balance>::Remove(_) => {
-                AccountInfoByTokenAndAccount::<T>::remove(token_id, &src);
-            }
-        }
-        AccountInfoByTokenAndAccount::<T>::mutate(token_id, &dst_account, |account_data| {
-            account_data.free_balance = account_data.free_balance.saturating_sub(amount)
-        });
+        Self::do_transfer(token_id, &src, &dst_account, slash_operation);
 
         Self::deposit_event(RawEvent::TokenAmountTransferred(
             token_id,
@@ -480,5 +466,30 @@ impl<T: Trait> Module<T> {
         TokenInfoById::<T>::remove(token_id);
         AccountInfoByTokenAndAccount::<T>::remove_prefix(token_id);
         // TODO: add extra state removal as implementation progresses
+    }
+
+    /// Perform balance accounting for balances
+    #[inline]
+    pub(crate) fn do_transfer(
+        token_id: T::TokenId,
+        src: &T::AccountId,
+        dst: &T::AccountId,
+        decrease_op: DecreaseOp<T::Balance>,
+    ) {
+        AccountInfoByTokenAndAccount::<T>::mutate(token_id, &dst, |account_data| {
+            account_data.free_balance = account_data
+                .free_balance
+                .saturating_add(decrease_op.amount())
+        });
+        match decrease_op {
+            DecreaseOp::<T::Balance>::Reduce(amount) => {
+                AccountInfoByTokenAndAccount::<T>::mutate(token_id, &src, |account_data| {
+                    account_data.free_balance = account_data.free_balance.saturating_sub(amount)
+                })
+            }
+            DecreaseOp::<T::Balance>::Remove(_) => {
+                AccountInfoByTokenAndAccount::<T>::remove(token_id, &src);
+            }
+        }
     }
 }
