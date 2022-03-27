@@ -232,10 +232,10 @@ pub trait DataObjectStorage<T: Trait> {
         params: &UploadParameters<T>,
     ) -> DispatchResult;
 
-    /// Checks if a bag does exists and returns it. Static Always exists
+    /// Checks if selected bag exists and return it. Static always exists.
     fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError>;
 
-    /// Get all objects id in a bag, without checking its existence
+    /// Return all objects id in selected bag, without checking its existence.
     fn get_data_objects_id(bag_id: &BagId<T>) -> BTreeSet<T::DataObjectId>;
 }
 
@@ -1322,28 +1322,28 @@ decl_error! {
         /// Empty "data object creation" collection.
         NoObjectsOnUpload,
 
-        /// The requested storage bucket doesn't exist.
+        /// Storage bucket doesn't exist.
         StorageBucketDoesntExist,
 
-        /// The requested storage bucket is not bound to a bag.
+        /// Storage bucket is not bound to bag.
         StorageBucketIsNotBoundToBag,
 
-        /// The requested storage bucket is already bound to a bag.
+        /// Storage bucket already bound to bag.
         StorageBucketIsBoundToBag,
 
-        /// Invalid operation with invites: there is no storage bucket invitation.
+        /// No such storage bucket invitation.
         NoStorageBucketInvitation,
 
-        /// Invalid operation with invites: storage provider was already set.
+        /// Storage provider already assigned.
         StorageProviderAlreadySet,
 
         /// Storage provider must be set.
         StorageProviderMustBeSet,
 
-        /// Invalid operation with invites: another storage provider was invited.
+        /// Another storage provider already invited to bucket.
         DifferentStorageProviderInvited,
 
-        /// Invalid operation with invites: storage provider was already invited.
+        /// Storage provider is already invited.
         InvitedStorageProvider,
 
         /// Storage bucket id collections are empty.
@@ -1409,7 +1409,7 @@ decl_error! {
         /// The new `StorageBucketsPerBagLimit` number is too high.
         StorageBucketsPerBagLimitTooHigh,
 
-        /// `StorageBucketsPerBagLimit` was exceeded for a bag.
+        /// `StorageBucketsPerBagLimit` exceeded for this bag.
         StorageBucketPerBagLimitExceeded,
 
         /// The storage bucket doesn't accept new bags.
@@ -1448,10 +1448,10 @@ decl_error! {
         /// Max distribution bucket number per bag limit exceeded.
         MaxDistributionBucketNumberPerBagLimitExceeded,
 
-        /// Distribution bucket is not bound to a bag.
+        /// Distribution bucket is not bound to this bag.
         DistributionBucketIsNotBoundToBag,
 
-        /// Distribution bucket is bound to a bag.
+        /// Distribution bucket is bound to this bag.
         DistributionBucketIsBoundToBag,
 
         /// The new `DistributionBucketsPerBagLimit` number is too low.
@@ -1757,7 +1757,7 @@ decl_module! {
             );
         }
 
-        /// Updates storage buckets for a bag..
+        /// Modify storage buckets bound to selected bag.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_storage_buckets_for_bag(
             origin,
@@ -2040,7 +2040,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Accept data objects for a bag.
+            // Accept data objects for selected bag.
             for data_object_id in data_objects.iter() {
                 DataObjectsById::<T>::mutate(&bag_id, data_object_id, |data_object| {
                     data_object.accepted = true;
@@ -2212,7 +2212,7 @@ decl_module! {
             );
         }
 
-        /// Updates distribution buckets for a bag.
+        /// Modify distribution buckets bound to selected bag.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_distribution_buckets_for_bag(
             origin,
@@ -3347,7 +3347,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Update total objects size and number for all storage buckets assigned to a bag
+    // Update total objects size and number for all storage buckets assigned to bag
     // and bag counters.
     fn change_storage_bucket_vouchers_for_bag(
         bag_id: &BagId<T>,
@@ -3697,7 +3697,7 @@ impl<T: Trait> Module<T> {
         Self::bag(&bag_id)
     }
 
-    // Check the dynamic bag existence.
+    // Verify that dynamic bag exists.
     fn ensure_dynamic_bag_exists(
         dynamic_bag_id: &DynamicBagId<T>,
     ) -> Result<Bag<T>, DispatchError> {
@@ -3706,7 +3706,7 @@ impl<T: Trait> Module<T> {
         Self::ensure_bag_exists(&bag_id)
     }
 
-    // Check the dynamic bag existence. Static bags always exist.
+    // Verify that dynamic bag exists. Static bags always exist.
     fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError> {
         if let BagId::<T>::Dynamic(_) = &bag_id {
             ensure!(
@@ -3718,7 +3718,7 @@ impl<T: Trait> Module<T> {
         Ok(Self::bag(&bag_id))
     }
 
-    // Check the storage bucket binding for a bag.
+    // Verify that storage bucket is bound to bag.
     fn ensure_storage_bucket_bound(
         bag: &Bag<T>,
         storage_bucket_id: &T::StorageBucketId,
@@ -3731,7 +3731,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Check the data object existence inside a bag.
+    // Verify that data object exists in selected bag.
     pub(crate) fn ensure_data_object_exists(
         bag_id: &BagId<T>,
         data_object_id: &T::DataObjectId,
