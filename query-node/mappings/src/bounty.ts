@@ -18,7 +18,6 @@ import {
   BountyCreatorCherryWithdrawalEvent,
   BountyEntrantWhitelist,
   BountyEntry,
-  BountyEntryStatusCashedOut,
   BountyEntryStatusPassed,
   BountyEntryStatusRejected,
   BountyEntryStatusWinner,
@@ -95,7 +94,7 @@ async function updateEntry(
   store: DatabaseManager,
   event: SubstrateEvent,
   entryId: EntryId,
-  changes: (entry: BountyEntry) => Partial<BountyEntry>
+  changes: (entry: BountyEntry) => Partial<BountyEntry> = () => ({})
 ) {
   const entry = await getEntry(store, entryId)
   entry.updatedAt = new Date(event.blockTimestamp)
@@ -506,20 +505,13 @@ export async function bounty_OracleJudgmentSubmitted({ event, store }: EventCont
   await store.save<OracleJudgmentSubmittedEvent>(judgmentEvent)
 }
 
-// Change cashed out entries status to CashedOut
+// Store entrant funds Withdrawn events
 export async function bounty_WorkEntrantFundsWithdrawn({ event, store }: EventContext & StoreContext): Promise<void> {
   const entrantFundsWithdrawnEvent = new BountyEvents.WorkEntrantFundsWithdrawnEvent(event)
+  const [, entryId] = entrantFundsWithdrawnEvent.params
 
-  // Update the entry status
-  const entry = await updateEntry(store, event, entrantFundsWithdrawnEvent.params[1], (entry) => {
-    const status = new BountyEntryStatusCashedOut()
-    if ('reward' in entry.status) {
-      status.reward = entry.status.reward
-    }
-    return { status }
-  })
-
-  await store.save<BountyEntry>(entry)
+  // Update the entry updated at field
+  const entry = await updateEntry(store, event, entryId)
 
   // Record the event
   const cashOutEvent = new WorkEntrantFundsWithdrawnEvent({ ...genericEventFields(event), entry })
