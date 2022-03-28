@@ -101,7 +101,7 @@ impl GenesisConfigBuilder {
     }
 
     // add token with given params & zero issuance
-    pub fn add_token_with_params(&mut self, params: IssuanceParams) -> Self {
+    pub fn add_token_with_params(mut self, params: IssuanceParams) -> Self {
         let new_id = self.next_token_id;
         let mut token_info = params.try_build::<Test>().unwrap();
         token_info.current_total_issuance = Zero::zero();

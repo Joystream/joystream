@@ -244,7 +244,7 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId, TokenIssuanceParametersOf<T>> for
 
         // == MUTATION SAFE ==
 
-        Self::do_transfer(token_id, src, dst, slash_operation);
+        Self::do_transfer(token_id, src, &[(dst, slash_operation)]);
         Ok(())
     }
 
@@ -442,7 +442,7 @@ impl<T: Trait> ControlledTransfer<T::AccountId, TransferPolicyOf<T>, TokenIssuan
 
         // == MUTATION SAFE ==
 
-        Self::do_transfer(token_id, src, dst_account, slash_operation);
+        Self::do_transfer(token_id, src, &[(dst_account, slash_operation)]);
 
         Ok(())
     }
@@ -562,27 +562,29 @@ impl<T: Trait> Module<T> {
     pub(crate) fn do_transfer(
         token_id: T::TokenId,
         src: T::AccountId,
-        dst: T::AccountId,
-        decrease_op: DecOp<T>,
+        outputs: &[(T::AccountId, DecOp<T>)],
     ) {
-        AccountInfoByTokenAndAccount::<T>::mutate(token_id, &dst, |account_data| {
-            account_data.free_balance = account_data
-                .free_balance
-                .saturating_add(decrease_op.amount())
+        outputs.iter().for_each(|(dst, decrease_op)| {
+            AccountInfoByTokenAndAccount::<T>::mutate(token_id, dst, |account_data| {
+                account_data.free_balance = account_data
+                    .free_balance
+                    .saturating_add(decrease_op.amount())
+            });
+            match decrease_op {
+                DecOp::<T>::Reduce(amount) => {
+                    AccountInfoByTokenAndAccount::<T>::mutate(token_id, &src, |account_data| {
+                        account_data.free_balance =
+                            account_data.free_balance.saturating_sub(*amount)
+                    })
+                }
+                DecOp::<T>::Remove(_, dust) => {
+                    AccountInfoByTokenAndAccount::<T>::remove(token_id, &src);
+                    TokenInfoById::<T>::mutate(token_id, |token_data| {
+                        token_data.current_total_issuance =
+                            token_data.current_total_issuance.saturating_sub(*dust)
+                    });
+                }
+            }
         });
-        match decrease_op {
-            DecOp::<T>::Reduce(amount) => {
-                AccountInfoByTokenAndAccount::<T>::mutate(token_id, &src, |account_data| {
-                    account_data.free_balance = account_data.free_balance.saturating_sub(amount)
-                })
-            }
-            DecOp::<T>::Remove(_, dust) => {
-                AccountInfoByTokenAndAccount::<T>::remove(token_id, &src);
-                TokenInfoById::<T>::mutate(token_id, |token_data| {
-                    token_data.current_total_issuance =
-                        token_data.current_total_issuance.saturating_sub(dust)
-                });
-            }
-        }
     }
 }
