@@ -105,17 +105,17 @@ pub trait ControlledTransfer<AccountId, Policy, IssuanceParams> {
         amount: <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::Balance,
     ) -> DispatchResult
     where
-        Destination: TransferLocationTrait<AccountId, Policy>;
+        Destination: TransferLocationTrait<AccountId, Policy> + Clone;
 
-    // Transfer `amount` from `src` account to `dst` according to provided policy
-    // fn controlled_multi_output_transfer<Destination>(
-    //     token_id: <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::TokenId,
-    //     src: AccountId,
-    //     outputs: Vec<(
-    //         Destination,
-    //         <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::Balance,
-    //     )>,
-    // ) -> DispatchResult
-    // where
-    //     Destination: TransferLocationTrait<AccountId, Policy>;
+    /// Transfer `amount` from `src` account to `dst` according to provided policy
+    fn controlled_multi_output_transfer<Destination>(
+        token_id: <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::TokenId,
+        src: AccountId,
+        outputs: &[(
+            Destination,
+            <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::Balance,
+        )],
+    ) -> DispatchResult
+    where
+        Destination: TransferLocationTrait<AccountId, Policy>;
 }

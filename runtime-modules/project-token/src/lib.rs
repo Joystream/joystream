@@ -20,7 +20,9 @@ pub use events::{Event, RawEvent};
 use traits::{
     ControlledTransfer, MultiCurrencyBase, ReservableMultiCurrency, TransferLocationTrait,
 };
-use types::{AccountDataOf, DecOp, TokenDataOf, TokenIssuanceParametersOf, TransferPolicyOf};
+use types::{
+    AccountDataOf, DecOp, SimpleLocation, TokenDataOf, TokenIssuanceParametersOf, TransferPolicyOf,
+};
 
 /// Pallet Configuration Trait
 pub trait Trait: frame_system::Trait {
@@ -239,12 +241,12 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId, TokenIssuanceParametersOf<T>> for
         }
 
         // tranfer preconditions
-        let (slash_operation, _) =
-            Self::ensure_can_transfer(token_id, &src, &[(dst.clone(), amount)])?;
+        let outputs = [(SimpleLocation::<T::AccountId>::new(dst), amount)];
+        let (slash_operation, _) = Self::ensure_can_transfer(token_id, &src, &outputs)?;
 
         // == MUTATION SAFE ==
 
-        Self::do_transfer(token_id, src, &[(dst, slash_operation)]);
+        Self::do_transfer(token_id, src, &outputs, slash_operation);
         Ok(())
     }
 
@@ -426,60 +428,46 @@ impl<T: Trait> ControlledTransfer<T::AccountId, TransferPolicyOf<T>, TokenIssuan
         amount: T::Balance,
     ) -> DispatchResult
     where
-        Destination: TransferLocationTrait<T::AccountId, TransferPolicyOf<T>>,
+        Destination: TransferLocationTrait<T::AccountId, TransferPolicyOf<T>> + Clone,
     {
         if amount.is_zero() {
             return Ok(());
         }
 
         // Currency transfer preconditions
-        let dst_account = dst.location_account();
-        let (slash_operation, token_info) =
-            Self::ensure_can_transfer(token_id, &src, &[(dst_account.clone(), amount)])?;
+        let outputs = [(dst.clone(), amount)];
+        let (slash_operation, token_info) = Self::ensure_can_transfer(token_id, &src, &outputs)?;
 
         // validate according to policy
-        token_info.ensure_valid_location_for_policy::<T, T::AccountId, _>(dst)?;
+        token_info.ensure_valid_location_for_policy::<T, T::AccountId, _>(&dst)?;
 
         // == MUTATION SAFE ==
 
-        Self::do_transfer(token_id, src, &[(dst_account, slash_operation)]);
+        Self::do_transfer(token_id, src, &outputs, slash_operation);
 
         Ok(())
     }
 
-    // fn controlled_transfer_multi_output<Destination>(
-    //     token_id: T::TokenId,
-    //     src: T::AccountId,
-    //     outputs: Vec<(Destination, T::Balance)>,
-    // ) -> DispatchResult
-    // where
-    //     Destination: TransferLocationTrait<T::AccountId, TransferPolicyOf<T>>,
-    // {
-    //     // Currency transfer preconditions
-    //     let token_info = Self::ensure_token_exists(token_id)?;
+    fn controlled_multi_output_transfer<Destination>(
+        token_id: T::TokenId,
+        src: T::AccountId,
+        outputs: &[(Destination, T::Balance)],
+    ) -> DispatchResult
+    where
+        Destination: TransferLocationTrait<T::AccountId, TransferPolicyOf<T>>,
+    {
+        let (slash_operation, token_info) = Self::ensure_can_transfer(token_id, &src, outputs)?;
+        // validate according to policy
+        outputs.iter().try_for_each(|(dst, _)| {
+            token_info.ensure_valid_location_for_policy::<T, T::AccountId, _>(dst)
+        })?;
 
-    //     // ensure src account id validity
-    //     let src_account_info = Self::ensure_account_data_exists(token_id, &src)?;
+        // == MUTATION SAFE ==
 
-    //     // ensure dst account id validity
-    //     outputs.iter().map(|dst, amount| {
-    //         let dst_account = dst.location_account();
-    //         Self::ensure_account_data_exists(token_id, &dst_account).map(|_| ())?;
+        Self::do_transfer(token_id, src, outputs, slash_operation);
 
-    //         // validate according to policy
-    //         token_info.ensure_valid_location_for_policy::<T, T::AccountId, _>(dst)?;
-    //     };
-
-    //                        // Amount to decrease by accounting for existential deposit
-    //                        let decrease_op = src_account_info
-    //                        .decrease_with_ex_deposit::<T>(amount, token_info.existential_deposit)?;
-
-    //     // == MUTATION SAFE ==
-
-    //     Self::do_transfer(token_id, &src, &dst_account, slash_operation);
-
-    //     Ok(())
-    // }
+        Ok(())
+    }
 
     /// Change to permissionless
     /// Preconditions:
@@ -530,11 +518,14 @@ impl<T: Trait> Module<T> {
     }
 
     /// Transfer preconditions
-    pub(crate) fn ensure_can_transfer(
+    pub(crate) fn ensure_can_transfer<Destination>(
         token_id: T::TokenId,
         src: &T::AccountId,
-        outputs: &[(T::AccountId, T::Balance)],
-    ) -> Result<(DecOp<T>, TokenDataOf<T>), DispatchError> {
+        outputs: &[(Destination, T::Balance)],
+    ) -> Result<(DecOp<T>, TokenDataOf<T>), DispatchError>
+    where
+        Destination: TransferLocationTrait<T::AccountId, TransferPolicyOf<T>>,
+    {
         // ensure token validity
         let token_info = Self::ensure_token_exists(token_id)?;
 
@@ -542,9 +533,10 @@ impl<T: Trait> Module<T> {
         let src_account_info = Self::ensure_account_data_exists(token_id, &src)?;
 
         // ensure dst account id validity
-        outputs
-            .iter()
-            .try_for_each(|(dst, _)| Self::ensure_account_data_exists(token_id, dst).map(|_| ()))?;
+        outputs.iter().try_for_each(|(dst, _)| {
+            let dst_account = dst.location_account();
+            Self::ensure_account_data_exists(token_id, &dst_account).map(|_| ())
+        })?;
 
         let total_amount = outputs.iter().fold(T::Balance::zero(), |acc, (_, amount)| {
             acc.saturating_add(*amount)
@@ -559,32 +551,36 @@ impl<T: Trait> Module<T> {
 
     /// Perform balance accounting for balances
     #[inline]
-    pub(crate) fn do_transfer(
+    pub(crate) fn do_transfer<Destination>(
         token_id: T::TokenId,
         src: T::AccountId,
-        outputs: &[(T::AccountId, DecOp<T>)],
-    ) {
-        outputs.iter().for_each(|(dst, decrease_op)| {
-            AccountInfoByTokenAndAccount::<T>::mutate(token_id, dst, |account_data| {
-                account_data.free_balance = account_data
-                    .free_balance
-                    .saturating_add(decrease_op.amount())
-            });
-            match decrease_op {
-                DecOp::<T>::Reduce(amount) => {
-                    AccountInfoByTokenAndAccount::<T>::mutate(token_id, &src, |account_data| {
-                        account_data.free_balance =
-                            account_data.free_balance.saturating_sub(*amount)
-                    })
-                }
-                DecOp::<T>::Remove(_, dust) => {
-                    AccountInfoByTokenAndAccount::<T>::remove(token_id, &src);
-                    TokenInfoById::<T>::mutate(token_id, |token_data| {
-                        token_data.current_total_issuance =
-                            token_data.current_total_issuance.saturating_sub(*dust)
-                    });
-                }
-            }
+        outputs: &[(Destination, T::Balance)],
+        decrease_op: DecOp<T>,
+    ) where
+        Destination: TransferLocationTrait<T::AccountId, TransferPolicyOf<T>>,
+    {
+        outputs.iter().for_each(|(dst, amount)| {
+            AccountInfoByTokenAndAccount::<T>::mutate(
+                token_id,
+                dst.location_account(),
+                |account_data| {
+                    account_data.free_balance = account_data.free_balance.saturating_add(*amount)
+                },
+            );
         });
+        match decrease_op {
+            DecOp::<T>::Reduce(amount) => {
+                AccountInfoByTokenAndAccount::<T>::mutate(token_id, &src, |account_data| {
+                    account_data.free_balance = account_data.free_balance.saturating_sub(amount)
+                })
+            }
+            DecOp::<T>::Remove(_, dust) => {
+                AccountInfoByTokenAndAccount::<T>::remove(token_id, &src);
+                TokenInfoById::<T>::mutate(token_id, |token_data| {
+                    token_data.current_total_issuance =
+                        token_data.current_total_issuance.saturating_sub(dust)
+                });
+            }
+        };
     }
 }

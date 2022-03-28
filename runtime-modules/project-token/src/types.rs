@@ -200,7 +200,7 @@ impl<Balance, Hash> TokenData<Balance, Hash> {
     // validate transfer destination location according to self.policy
     pub(crate) fn ensure_valid_location_for_policy<T, AccountId, Location>(
         &self,
-        location: Location,
+        location: &Location,
     ) -> DispatchResult
     where
         T: crate::Trait,
@@ -242,6 +242,12 @@ impl<AccountId: Clone, Hash> TransferLocationTrait<AccountId, TransferPolicy<Has
 
     fn location_account(&self) -> AccountId {
         self.account.to_owned()
+    }
+}
+
+impl<AccountId> SimpleLocation<AccountId> {
+    pub(crate) fn new(account: AccountId) -> Self {
+        Self { account }
     }
 }
 
