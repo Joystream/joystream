@@ -540,7 +540,8 @@ impl<T: Trait> Module<T> {
 
         // Amount to decrease by accounting for existential deposit
         let decrease_op = src_account_info
-            .decrease_with_ex_deposit::<T>(amount, token_info.existential_deposit)?;
+            .decrease_with_ex_deposit::<T>(amount, token_info.existential_deposit)
+            .map_err(|_| Error::<T>::InsufficientFreeBalanceForTransfer)?;
 
         Ok((decrease_op, token_info))
     }

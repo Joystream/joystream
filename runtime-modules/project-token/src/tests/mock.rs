@@ -100,6 +100,17 @@ impl GenesisConfigBuilder {
         }
     }
 
+    // add token with given params & zero issuance
+    pub fn add_token_with_params(&mut self, params: IssuanceParams) -> Self {
+        let new_id = self.next_token_id;
+        let mut token_info = params.try_build::<Test>().unwrap();
+        token_info.current_total_issuance = Zero::zero();
+
+        self.token_info_by_id.push((new_id, token_info));
+        self
+    }
+
+    // add basic token with proper issuance
     pub fn add_token_and_account_info(mut self) -> Self {
         let new_id = self.next_token_id;
         let new_token_info = (
@@ -126,6 +137,40 @@ impl GenesisConfigBuilder {
             new_account_info,
         ));
 
+        self
+    }
+
+    // add account & updates token issuance
+    pub fn add_account_info(mut self) -> Self {
+        let id = self.next_token_id.saturating_sub(One::one());
+        let new_account_info = AccountData {
+            free_balance: Balance::from(DEFAULT_FREE_BALANCE),
+            reserved_balance: Balance::zero(),
+        };
+
+        let new_issuance = self
+            .token_info_by_id
+            .last()
+            .unwrap()
+            .1
+            .current_total_issuance
+            .saturating_add(Balance::from(DEFAULT_FREE_BALANCE));
+
+        let account_id = self
+            .account_info_by_token_and_account
+            .last()
+            .unwrap()
+            .1
+            .saturating_add(One::one());
+
+        self.account_info_by_token_and_account
+            .push((id, account_id, new_account_info));
+
+        self.token_info_by_id
+            .last_mut()
+            .unwrap()
+            .1
+            .current_total_issuance = new_issuance;
         self
     }
 

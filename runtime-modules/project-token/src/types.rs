@@ -172,6 +172,10 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
             Ok(DecreaseOp::<Balance>::Reduce(amount))
         }
     }
+
+    pub(crate) fn total_balance(&self) -> Balance {
+        self.free_balance.saturating_add(self.reserved_balance)
+    }
 }
 /// Token Data implementation
 impl<Balance, Hash> TokenData<Balance, Hash> {
