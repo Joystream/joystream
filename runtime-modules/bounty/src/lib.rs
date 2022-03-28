@@ -129,7 +129,7 @@ pub trait Trait:
     type WeightInfo: WeightInfo;
 
     /// Provides an access for the council budget.
-    type CouncilBudgetManager: CouncilBudgetManager<BalanceOf<Self>>;
+    type CouncilBudgetManager: CouncilBudgetManager<Self::AccountId, BalanceOf<Self>>;
 
     /// Provides stake logic implementation.
     type StakingHandler: StakingHandler<

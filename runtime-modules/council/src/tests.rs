@@ -1796,14 +1796,14 @@ fn test_council_budget_manager_works_correctlyl() {
         Mocks::set_budget(origin.clone(), initial_budget, Ok(()));
 
         assert_eq!(
-            <Module<Runtime> as CouncilBudgetManager<u64>>::get_budget(),
+            <Module<Runtime> as CouncilBudgetManager<u64, u64>>::get_budget(),
             initial_budget
         );
 
         let new_budget = 200;
-        <Module<Runtime> as CouncilBudgetManager<u64>>::set_budget(new_budget);
+        <Module<Runtime> as CouncilBudgetManager<u64, u64>>::set_budget(new_budget);
         assert_eq!(
-            <Module<Runtime> as CouncilBudgetManager<u64>>::get_budget(),
+            <Module<Runtime> as CouncilBudgetManager<u64, u64>>::get_budget(),
             new_budget
         );
     });
@@ -1824,7 +1824,7 @@ fn fund_council_budget_succeeded() {
 
         let _ = Balances::<Runtime>::deposit_creating(&account_id, initial_budget);
 
-        <Council as CouncilBudgetManager<u64>>::set_budget(initial_budget);
+        <Council as CouncilBudgetManager<u64, u64>>::set_budget(initial_budget);
 
         FundCouncilBudgetFixture::default()
             .with_origin(RawOrigin::Signed(account_id).into())

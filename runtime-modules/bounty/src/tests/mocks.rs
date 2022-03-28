@@ -125,7 +125,7 @@ impl common::membership::MembershipInfoProvider<Test> for () {
 
 pub const COUNCIL_BUDGET_ACCOUNT_ID: u128 = 90000000;
 pub struct CouncilBudgetManager;
-impl common::council::CouncilBudgetManager<u64> for CouncilBudgetManager {
+impl common::council::CouncilBudgetManager<u128, u64> for CouncilBudgetManager {
     fn get_budget() -> u64 {
         balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID)
     }
@@ -144,6 +144,18 @@ impl common::council::CouncilBudgetManager<u64> for CouncilBudgetManager {
             let _ =
                 balances::Module::<Test>::slash(&COUNCIL_BUDGET_ACCOUNT_ID, old_budget - budget);
         }
+    }
+
+    fn try_transfer(_account_id: &u128, _amount: u64) -> DispatchResult {
+        todo!()
+    }
+
+    fn transfer(_account_id: &u128, _amount: u64) {
+        todo!()
+    }
+
+    fn increase_budget(_amount: u64) {
+        todo!()
     }
 }
 
