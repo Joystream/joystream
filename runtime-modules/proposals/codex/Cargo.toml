@@ -60,4 +60,5 @@ std = [
     'constitution/std',
     'membership/std',
     'blog/std',
+    'content/std',
 ]

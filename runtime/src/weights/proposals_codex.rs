@@ -192,7 +192,6 @@ impl proposals_codex::WeightInfo for WeightInfo {
             .saturating_add(DbWeight::get().writes(9 as Weight))
     }
     fn create_proposal_update_channel_payouts(t: u32, d: u32, i: u32) -> Weight {
-        // TODO: Adjust using reference hardware
         (121_547_000 as Weight)
             .saturating_add((3_626_000 as Weight).saturating_mul(t as Weight))
             .saturating_add((302_000 as Weight).saturating_mul(d as Weight))

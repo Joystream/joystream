@@ -1897,18 +1897,17 @@ pub fn update_commit_value_with_payments_helper(payments: &[PullPayment<Test>]) 
 }
 
 fn channel_reward_account(channel: &Channel<Test>) -> Option<AccountId> {
-    if let Some(reward_account) = channel.reward_account {
-        Some(reward_account.clone())
-    } else if let ChannelOwner::Member(member_id) = channel.owner {
-        let acc = MemberInfoProvider::controller_account_id(member_id);
-        if acc.is_ok() {
-            Some(acc.unwrap())
-        } else {
-            None
-        }
-    } else {
-        None
-    }
+    channel.reward_account.map_or_else(
+        || {
+            if let ChannelOwner::Member(member_id) = channel.owner {
+                let acc = MemberInfoProvider::controller_account_id(member_id);
+                acc.map_or(None, |a| Some(a))
+            } else {
+                None
+            }
+        },
+        |a| Some(a),
+    )
 }
 
 fn channel_reward_account_balance(channel: &Channel<Test>) -> u64 {
