@@ -246,17 +246,18 @@ impl<AccountId: Clone, Hash> TransferLocationTrait<AccountId, TransferPolicy<Has
 }
 
 // Verifiable Location implementation
-impl<AccountId: Clone, Hash> TransferLocationTrait<AccountId, TransferPolicy<Hash>>
-    for VerifiableLocation<AccountId, Hasher::Output>
+impl<AccountId: Clone + Encode, Hasher: Hash>
+    TransferLocationTrait<AccountId, TransferPolicy<Hasher::Output>>
+    for VerifiableLocation<AccountId, Hasher>
 {
-    fn is_valid_location_for_policy(&self, policy: &TransferPolicy<Hash>) -> bool {
+    fn is_valid_location_for_policy(&self, policy: &TransferPolicy<Hasher::Output>) -> bool {
         // visitee dispatch
         match policy {
-            TransferPolicy::<Hash>::Permissioned(whitelist_commit) => {
+            TransferPolicy::<Hasher::Output>::Permissioned(whitelist_commit) => {
                 self.is_merkle_proof_valid(whitelist_commit.to_owned())
             }
             // ignore verification in the permissionless case
-            TransferPolicy::<Hash>::Permissionless => true,
+            TransferPolicy::<Hasher::Output>::Permissionless => true,
         }
     }
 
@@ -267,12 +268,13 @@ impl<AccountId: Clone, Hash> TransferLocationTrait<AccountId, TransferPolicy<Has
 
 impl<AccountId: Encode, Hasher: Hash> VerifiableLocation<AccountId, Hasher> {
     pub(crate) fn is_merkle_proof_valid(&self, commit: Hasher::Output) -> bool {
-        let init = self.account.encode();
+        let init = Hasher::hash_of(&self.account);
         let proof_result = self
             .merkle_proof
+            .iter()
             .fold(init, |acc, (hash, side)| match side {
-                MerkleSide::Left => Hasher::hash_of((hash, acc)),
-                MerkleSide::Right => Hasher::hash_of((acc, hash)),
+                MerkleSide::Left => Hasher::hash_of(&(hash, acc)),
+                MerkleSide::Right => Hasher::hash_of(&(acc, hash)),
             });
 
         proof_result == commit
