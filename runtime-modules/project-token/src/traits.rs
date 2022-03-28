@@ -31,10 +31,10 @@ pub trait MultiCurrencyBase<AccountId, TokenIssuanceParameters> {
     fn slash(token_id: Self::TokenId, who: AccountId, amount: Self::Balance) -> DispatchResult;
 
     /// Transfer `amount` from `src` account to `dst`
-    fn transfer<DestinationLocation: Into<AccountId> + Clone>(
+    fn transfer(
         token_id: Self::TokenId,
         src: AccountId,
-        dst: DestinationLocation,
+        dst: AccountId,
         amount: Self::Balance,
     ) -> DispatchResult;
 
@@ -87,4 +87,19 @@ pub trait TransferLocationTrait<AccountId, Policy> {
 
     /// the wrapped account
     fn location_account(&self) -> AccountId;
+}
+
+pub trait ControlledTransfer<AccountId, Policy, IssuanceParams> {
+    /// The MultiCurrency type used
+    type MultiCurrency: MultiCurrencyBase<AccountId, IssuanceParams>;
+
+    /// Transfer `amount` from `src` account to `dst` according to provided policy
+    fn controlled_transfer<Destination>(
+        token_id: <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::TokenId,
+        src: AccountId,
+        dst: Destination,
+        amount: <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::Balance,
+    ) -> DispatchResult
+    where
+        Destination: TransferLocationTrait<AccountId, Policy>;
 }

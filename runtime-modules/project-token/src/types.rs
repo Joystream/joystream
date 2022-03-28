@@ -1,5 +1,8 @@
 use codec::{Decode, Encode};
-use frame_support::{dispatch::DispatchError, ensure};
+use frame_support::{
+    dispatch::{DispatchError, DispatchResult},
+    ensure,
+};
 use sp_arithmetic::traits::{Saturating, Zero};
 
 // crate imports
@@ -158,15 +161,30 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
             .saturating_add(self.reserved_balance);
 
         if new_total.is_zero() || new_total < existential_deposit {
-            println!("Removing");
             Ok(DecreaseOp::<Balance>::Remove(new_total))
         } else {
-            println!("Reducing");
             Ok(DecreaseOp::<Balance>::Reduce(amount))
         }
     }
 }
-
+/// Token Data implementation
+impl<Balance, Hash> TokenData<Balance, Hash> {
+    // validate transfer destination location according to self.policy
+    pub(crate) fn ensure_valid_location_for_policy<T, AccountId, Location>(
+        &self,
+        location: Location,
+    ) -> DispatchResult
+    where
+        T: crate::Trait,
+        Location: TransferLocationTrait<AccountId, TransferPolicy<Hash>>,
+    {
+        ensure!(
+            location.is_valid_location_for_policy(&self.transfer_policy),
+            crate::Error::<T>::LocationIncompatibleWithCurrentPolicy
+        );
+        Ok(())
+    }
+}
 /// Encapsules parameters validation + TokenData construction
 impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, Hash> {
     /// Forward `self` state
@@ -235,3 +253,6 @@ pub(crate) type TokenDataOf<T> =
 /// Alias for Token Issuance Parameters
 pub(crate) type TokenIssuanceParametersOf<T> =
     TokenIssuanceParameters<<T as crate::Trait>::Balance, <T as frame_system::Trait>::Hash>;
+
+/// Alias for TransferPolicy
+pub(crate) type TransferPolicyOf<T> = TransferPolicy<<T as frame_system::Trait>::Hash>;

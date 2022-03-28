@@ -17,8 +17,10 @@ mod types;
 // crate imports
 use errors::Error;
 pub use events::{Event, RawEvent};
-use traits::{MultiCurrencyBase, ReservableMultiCurrency};
-use types::{AccountDataOf, DecreaseOp, TokenDataOf, TokenIssuanceParametersOf};
+use traits::{
+    ControlledTransfer, MultiCurrencyBase, ReservableMultiCurrency, TransferLocationTrait,
+};
+use types::{AccountDataOf, DecreaseOp, TokenDataOf, TokenIssuanceParametersOf, TransferPolicyOf};
 
 /// Pallet Configuration Trait
 pub trait Trait: frame_system::Trait {
@@ -230,10 +232,10 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId, TokenIssuanceParametersOf<T>> for
     ///   deposit`
     /// - free balance of `dst` is increased by `amount`
     /// if `amount` is zero it is equivalent to a no-op
-    fn transfer<DestinationLocation: Into<T::AccountId> + Clone>(
+    fn transfer(
         token_id: T::TokenId,
         src: T::AccountId,
-        dst: DestinationLocation,
+        dst: T::AccountId,
         amount: T::Balance,
     ) -> DispatchResult {
         if amount.is_zero() {
@@ -247,8 +249,10 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId, TokenIssuanceParametersOf<T>> for
         let src_account_info = Self::ensure_account_data_exists(token_id, &src)?;
 
         // ensure dst account id validity
-        let dst_account: T::AccountId = dst.into();
-        Self::ensure_account_data_exists(token_id, &dst_account).map(|_| ())?;
+        Self::ensure_account_data_exists(token_id, &dst).map(|_| ())?;
+
+        // validate destination according to policy
+        //token_info.ensure_valid_location_for_policy::<T, T::AccountId, _>(dst)?;
 
         // Amount to decrease by accounting for existential deposit
         let slash_operation = src_account_info
@@ -256,14 +260,9 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId, TokenIssuanceParametersOf<T>> for
 
         // == MUTATION SAFE ==
 
-        Self::do_transfer(token_id, &src, &dst_account, slash_operation);
+        Self::do_transfer(token_id, &src, &dst, slash_operation);
 
-        Self::deposit_event(RawEvent::TokenAmountTransferred(
-            token_id,
-            src,
-            dst_account,
-            amount,
-        ));
+        Self::deposit_event(RawEvent::TokenAmountTransferred(token_id, src, dst, amount));
         Ok(())
     }
 
@@ -424,6 +423,45 @@ impl<T: Trait> ReservableMultiCurrency<T::AccountId> for Module<T> {
         Ok(account_info
             .reserved_balance
             .saturating_add(account_info.free_balance))
+    }
+}
+
+impl<T: Trait> ControlledTransfer<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParametersOf<T>>
+    for Module<T>
+{
+    type MultiCurrency = Self;
+
+    /// Transfer `amount` from `src` account to `dst` according to provided policy
+    /// Preconditions:
+    /// - `PRECONDITIONS[MultiCurrency::transfer(token_id, src, dst.into(), amount)]`
+    /// - `dst` is compatible con `token_id` transfer policy
+    ///
+    /// Postconditions:
+    /// - `POSTCONDITIONS[MultiCurrency::transfer(token_id, src, dst.into(), amount)]`
+    /// if `amount` is zero it is equivalent to a no-op
+    fn controlled_transfer<Destination>(
+        token_id: T::TokenId,
+        src: T::AccountId,
+        dst: Destination,
+        amount: T::Balance,
+    ) -> DispatchResult
+    where
+        Destination: TransferLocationTrait<T::AccountId, TransferPolicyOf<T>>,
+    {
+        if amount.is_zero() {
+            return Ok(());
+        }
+
+        let token_info = Self::ensure_token_exists(token_id)?;
+
+        // Self::ensure transfer
+
+        // validate according to policy
+        token_info.ensure_valid_location_for_policy::<T, T::AccountId, _>(dst)?;
+
+        // Self::do_transfer
+
+        Ok(())
     }
 }
 

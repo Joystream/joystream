@@ -27,5 +27,7 @@ decl_error! {
         /// Existential deposit >= initial issuance
         ExistentialDepositExceedsInitialIssuance,
 
+        /// Location and current policy are not compatible
+        LocationIncompatibleWithCurrentPolicy,
     }
 }
