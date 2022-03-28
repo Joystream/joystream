@@ -12,13 +12,15 @@ use crate::Error;
 #[test]
 fn issue_base_token_ok_with_default_issuance_parameters() {
     let config = GenesisConfigBuilder::new().build();
-    let issuance_params = TokenIssuanceParametersOf::<Test>::default();
+    let issuance_params = IssuanceParams::default();
 
     build_test_externalities(config).execute_with(|| {
         let token_id = Token::next_token_id();
-        assert_ok!(<Token as MultiCurrencyBase<AccountId>>::issue_token(
-            issuance_params.clone(),
-        ));
+        assert_ok!(
+            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::issue_token(
+                issuance_params.clone(),
+            )
+        );
         assert_eq!(
             issuance_params.try_build::<Test>(),
             Token::ensure_token_exists(token_id)
@@ -39,7 +41,9 @@ fn issue_base_token_fails_with_existential_deposit_exceeding_issuance() {
 
     build_test_externalities(config).execute_with(|| {
         assert_noop!(
-            <Token as MultiCurrencyBase<AccountId>>::issue_token(issuance_params.clone()),
+            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::issue_token(
+                issuance_params.clone()
+            ),
             Error::<Test>::ExistentialDepositExceedsInitialIssuance,
         );
     })
@@ -52,7 +56,7 @@ fn base_deissue_token_fails_with_non_existing_token_id() {
     build_test_externalities(config).execute_with(|| {
         let token_id = Token::next_token_id();
         assert_noop!(
-            <Token as MultiCurrencyBase<AccountId>>::deissue_token(token_id),
+            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deissue_token(token_id),
             Error::<Test>::TokenDoesNotExist,
         );
     })
@@ -64,9 +68,9 @@ fn base_deissue_token_ok() {
         .add_token_and_account_info()
         .build();
     build_test_externalities(config).execute_with(|| {
-        assert_ok!(<Token as MultiCurrencyBase<AccountId>>::deissue_token(
-            One::one(),
-        ));
+        assert_ok!(
+            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deissue_token(One::one(),)
+        );
         assert_noop!(
             Token::ensure_token_exists(One::one()),
             Error::<Test>::TokenDoesNotExist
@@ -80,7 +84,10 @@ fn balanceof_fails_with_non_existing_token_id() {
     let config = GenesisConfigBuilder::new().build();
     build_test_externalities(config).execute_with(|| {
         assert_noop!(
-            <Token as MultiCurrencyBase<AccountId>>::balance(One::one(), One::one()),
+            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::balance(
+                One::one(),
+                One::one()
+            ),
             Error::<Test>::AccountInformationDoesNotExist,
         );
     })
@@ -95,7 +102,9 @@ fn deposit_creating_fails_with_non_existing_token() {
     let amount = Balance::one();
     build_test_externalities(config).execute_with(|| {
         assert_noop!(
-            <Token as MultiCurrencyBase<AccountId>>::deposit_creating(token_id, account_id, amount),
+            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_creating(
+                token_id, account_id, amount
+            ),
             Error::<Test>::TokenDoesNotExist,
         );
     })
@@ -111,9 +120,11 @@ fn deposit_creating_ok_with_non_existing_account() {
     let amount = Balance::one();
     build_test_externalities(config).execute_with(|| {
         let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
-        assert_ok!(<Token as MultiCurrencyBase<AccountId>>::deposit_creating(
-            token_id, account_id, amount
-        ));
+        assert_ok!(
+            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_creating(
+                token_id, account_id, amount
+            )
+        );
         assert_eq!(
             amount,
             Token::account_info_by_token_and_account(token_id, account_id).free_balance,
@@ -137,9 +148,11 @@ fn deposit_creating_ok_with_existing_account() {
         let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
         let free_balance_pre =
             Token::account_info_by_token_and_account(token_id, account_id).free_balance;
-        assert_ok!(<Token as MultiCurrencyBase<AccountId>>::deposit_creating(
-            token_id, account_id, amount
-        ));
+        assert_ok!(
+            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_creating(
+                token_id, account_id, amount
+            )
+        );
 
         let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
         let free_balance_post =
@@ -165,7 +178,7 @@ fn deposit_into_existing_ok() {
         let free_balance_pre =
             Token::account_info_by_token_and_account(token_id, account_id).free_balance;
         assert_ok!(
-            <Token as MultiCurrencyBase<AccountId>>::deposit_into_existing(
+            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_into_existing(
                 token_id, account_id, amount
             )
         );
@@ -191,7 +204,7 @@ fn deposit_fails_with_nonexisting_account() {
 
     build_test_externalities(config).execute_with(|| {
         assert_noop!(
-            <Token as MultiCurrencyBase<AccountId>>::deposit_into_existing(
+            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_into_existing(
                 token_id, account_id, amount
             ),
             Error::<Test>::AccountInformationDoesNotExist,
@@ -442,7 +455,9 @@ fn slash_fails_with_non_existing_token_id() {
     let amount = Balance::one();
     build_test_externalities(config).execute_with(|| {
         assert_noop!(
-            <Token as MultiCurrencyBase<AccountId>>::slash(token_id, account_id, amount),
+            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::slash(
+                token_id, account_id, amount
+            ),
             Error::<Test>::TokenDoesNotExist,
         );
     })
@@ -458,7 +473,9 @@ fn slash_fails_with_non_existing_account() {
     let amount = Balance::one();
     build_test_externalities(config).execute_with(|| {
         assert_noop!(
-            <Token as MultiCurrencyBase<AccountId>>::slash(token_id, account_id, amount),
+            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::slash(
+                token_id, account_id, amount
+            ),
             Error::<Test>::AccountInformationDoesNotExist,
         );
     })
@@ -474,7 +491,9 @@ fn slash_fails_with_insufficient_free_balance() {
     let amount = Balance::from(DEFAULT_FREE_BALANCE).saturating_add(Balance::one());
     build_test_externalities(config).execute_with(|| {
         assert_noop!(
-            <Token as MultiCurrencyBase<AccountId>>::slash(token_id, account_id, amount),
+            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::slash(
+                token_id, account_id, amount
+            ),
             Error::<Test>::InsufficientFreeBalanceForDecreasing,
         );
     })
@@ -492,9 +511,11 @@ fn slash_ok_without_account_removal() {
         let free_balance_pre =
             Token::account_info_by_token_and_account(token_id, account_id).free_balance;
         let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
-        assert_ok!(<Token as MultiCurrencyBase<AccountId>>::slash(
-            token_id, account_id, amount
-        ));
+        assert_ok!(
+            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::slash(
+                token_id, account_id, amount
+            )
+        );
         let free_balance_post =
             Token::account_info_by_token_and_account(token_id, account_id).free_balance;
         let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
@@ -516,9 +537,11 @@ fn slash_ok_with_account_removal_and_zero_total_balance() {
         let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
         let account_data = Token::account_info_by_token_and_account(token_id, account_id);
 
-        assert_ok!(<Token as MultiCurrencyBase<AccountId>>::slash(
-            token_id, account_id, amount
-        ));
+        assert_ok!(
+            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::slash(
+                token_id, account_id, amount
+            )
+        );
         let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
         assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
             token_id, account_id
@@ -543,9 +566,11 @@ fn slash_ok_with_account_removal_by_ex_deposit_underflow() {
         let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
         let account_data = Token::account_info_by_token_and_account(token_id, account_id);
 
-        assert_ok!(<Token as MultiCurrencyBase<AccountId>>::slash(
-            token_id, account_id, amount
-        ));
+        assert_ok!(
+            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::slash(
+                token_id, account_id, amount
+            )
+        );
         let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
         assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
             token_id, account_id
@@ -565,15 +590,19 @@ fn slash_ok_with_account_and_token_removal() {
 
     build_test_externalities(config).execute_with(|| {
         let token_id = Token::next_token_id();
-        assert_ok!(<Token as MultiCurrencyBase<AccountId>>::issue_token(
-            Default::default()
-        ));
-        assert_ok!(<Token as MultiCurrencyBase<AccountId>>::deposit_creating(
-            token_id, account_id, amount
-        ));
-        assert_ok!(<Token as MultiCurrencyBase<AccountId>>::slash(
-            token_id, account_id, amount
-        ));
+        assert_ok!(
+            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::issue_token(Default::default())
+        );
+        assert_ok!(
+            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_creating(
+                token_id, account_id, amount
+            )
+        );
+        assert_ok!(
+            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::slash(
+                token_id, account_id, amount
+            )
+        );
         assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
             token_id, account_id
         ));

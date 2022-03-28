@@ -14,11 +14,12 @@ use sp_runtime::testing::{Header, H256};
 use sp_runtime::traits::{BlakeTwo256, IdentityLookup};
 
 // crate import
-use crate::{AccountDataOf, GenesisConfig, TokenDataOf, Trait};
+use crate::{AccountDataOf, GenesisConfig, TokenDataOf, TokenIssuanceParametersOf, Trait};
 
 // Crate aliases
 pub type TokenId = <Test as Trait>::TokenId;
 pub type TokenData = TokenDataOf<Test>;
+pub type IssuanceParams = TokenIssuanceParametersOf<Test>;
 pub type AccountData = AccountDataOf<Test>;
 pub type AccountId = <Test as frame_system::Trait>::AccountId;
 pub type Balance = <Test as Trait>::Balance;
@@ -103,11 +104,11 @@ impl GenesisConfigBuilder {
         let new_id = self.next_token_id;
         let new_token_info = (
             new_id,
-            crate::types::TokenIssuanceParametersOf::<Test> {
+            TokenIssuanceParametersOf::<Test> {
                 initial_issuance: Balance::from(DEFAULT_FREE_BALANCE),
                 existential_deposit: Balance::from(DEFAULT_EXISTENTIAL_DEPOSIT),
                 initial_state: crate::types::IssuanceState::Idle,
-                symbol: (),
+                ..Default::default()
             }
             .try_build::<Test>()
             .unwrap(),
