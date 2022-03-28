@@ -1,5 +1,4 @@
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use sp_std::convert::Into;
 
 /// The Base Token Trait
 pub trait MultiCurrencyBase<AccountId, TokenIssuanceParameters> {
@@ -102,4 +101,16 @@ pub trait ControlledTransfer<AccountId, Policy, IssuanceParams> {
     ) -> DispatchResult
     where
         Destination: TransferLocationTrait<AccountId, Policy>;
+
+    // Transfer `amount` from `src` account to `dst` according to provided policy
+    // fn controlled_multi_output_transfer<Destination>(
+    //     token_id: <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::TokenId,
+    //     src: AccountId,
+    //     outputs: Vec<(
+    //         Destination,
+    //         <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::Balance,
+    //     )>,
+    // ) -> DispatchResult
+    // where
+    //     Destination: TransferLocationTrait<AccountId, Policy>;
 }

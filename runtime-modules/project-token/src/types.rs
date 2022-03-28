@@ -15,14 +15,20 @@ pub(crate) enum DecreaseOp<Balance> {
     /// reduce amount by
     Reduce(Balance),
 
-    /// Remove Account
-    Remove(Balance),
+    /// Remove Account (original amonut, dust below ex deposit)
+    Remove(Balance, Balance),
 }
-impl<Balance: Clone> DecreaseOp<Balance> {
+impl<Balance: Clone + Saturating> DecreaseOp<Balance> {
     pub(crate) fn amount(&self) -> Balance {
         match self {
-            Self::Reduce(b) => b.to_owned(),
-            Self::Remove(b) => b.to_owned(),
+            Self::Reduce(amount) => amount.to_owned(),
+            Self::Remove(amount, _) => amount.to_owned(),
+        }
+    }
+    pub(crate) fn total_amount(&self) -> Balance {
+        match self {
+            Self::Reduce(amount) => amount.to_owned(),
+            Self::Remove(amount, dust) => amount.to_owned().saturating_add(dust.to_owned()),
         }
     }
 }
@@ -161,7 +167,7 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
             .saturating_add(self.reserved_balance);
 
         if new_total.is_zero() || new_total < existential_deposit {
-            Ok(DecreaseOp::<Balance>::Remove(new_total))
+            Ok(DecreaseOp::<Balance>::Remove(amount, new_total))
         } else {
             Ok(DecreaseOp::<Balance>::Reduce(amount))
         }
@@ -256,3 +262,6 @@ pub(crate) type TokenIssuanceParametersOf<T> =
 
 /// Alias for TransferPolicy
 pub(crate) type TransferPolicyOf<T> = TransferPolicy<<T as frame_system::Trait>::Hash>;
+
+/// Alias for decrease operation
+pub(crate) type DecOp<T> = DecreaseOp<<T as crate::Trait>::Balance>;
