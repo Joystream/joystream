@@ -4,6 +4,7 @@ use frame_support::{
     ensure,
 };
 use sp_arithmetic::traits::{Saturating, Zero};
+use sp_runtime::traits::Hash;
 
 // crate imports
 use crate::traits::TransferLocationTrait;
@@ -123,9 +124,26 @@ pub struct SimpleLocation<AccountId> {
 
 /// Transfer location with merkle proof
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
-pub struct VerifiableLocation<AccountId, Hash> {
-    merkle_proof: Vec<Hash>,
+pub struct VerifiableLocation<AccountId, Hasher: Hash> {
+    merkle_proof: Vec<(Hasher::Output, MerkleSide)>,
     account: AccountId,
+}
+
+/// Utility enum used in merkle proof verification
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum MerkleSide {
+    /// This element appended to the right of the subtree hash
+    Right,
+
+    /// This element appended to the left of the subtree hash
+    Left,
+}
+
+/// Default trait for Merkle Side
+impl Default for MerkleSide {
+    fn default() -> Self {
+        MerkleSide::Right
+    }
 }
 
 // implementation
@@ -228,14 +246,16 @@ impl<AccountId: Clone, Hash> TransferLocationTrait<AccountId, TransferPolicy<Has
 }
 
 // Verifiable Location implementation
-impl<AccountId: Clone, Hash: Clone> TransferLocationTrait<AccountId, TransferPolicy<Hash>>
-    for VerifiableLocation<AccountId, Hash>
+impl<AccountId: Clone, Hash> TransferLocationTrait<AccountId, TransferPolicy<Hash>>
+    for VerifiableLocation<AccountId, Hasher::Output>
 {
     fn is_valid_location_for_policy(&self, policy: &TransferPolicy<Hash>) -> bool {
+        // visitee dispatch
         match policy {
             TransferPolicy::<Hash>::Permissioned(whitelist_commit) => {
                 self.is_merkle_proof_valid(whitelist_commit.to_owned())
             }
+            // ignore verification in the permissionless case
             TransferPolicy::<Hash>::Permissionless => true,
         }
     }
@@ -245,10 +265,17 @@ impl<AccountId: Clone, Hash: Clone> TransferLocationTrait<AccountId, TransferPol
     }
 }
 
-impl<AccountId, Hash> VerifiableLocation<AccountId, Hash> {
-    pub(crate) fn is_merkle_proof_valid(&self, _commit: Hash) -> bool {
-        // TODO: copy from content merkle proof verification
-        true
+impl<AccountId: Encode, Hasher: Hash> VerifiableLocation<AccountId, Hasher> {
+    pub(crate) fn is_merkle_proof_valid(&self, commit: Hasher::Output) -> bool {
+        let init = self.account.encode();
+        let proof_result = self
+            .merkle_proof
+            .fold(init, |acc, (hash, side)| match side {
+                MerkleSide::Left => Hasher::hash_of((hash, acc)),
+                MerkleSide::Right => Hasher::hash_of((acc, hash)),
+            });
+
+        proof_result == commit
     }
 }
 

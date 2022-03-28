@@ -92,6 +92,11 @@ pub trait ControlledTransfer<AccountId, Policy, IssuanceParams> {
     /// The MultiCurrency type used
     type MultiCurrency: MultiCurrencyBase<AccountId, IssuanceParams>;
 
+    /// Change to permissionless
+    fn change_to_permissionless(
+        token_id: <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::TokenId,
+    ) -> DispatchResult;
+
     /// Transfer `amount` from `src` account to `dst` according to provided policy
     fn controlled_transfer<Destination>(
         token_id: <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::TokenId,

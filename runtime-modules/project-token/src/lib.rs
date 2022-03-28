@@ -485,6 +485,18 @@ impl<T: Trait> ControlledTransfer<T::AccountId, TransferPolicyOf<T>, TokenIssuan
 
     //     Ok(())
     // }
+
+    /// Change to permissionless
+    /// Preconditions:
+    /// - Token `token_id` must exist
+    /// Postconditions
+    /// - transfer policy of `token_id` changed to permissionless
+    fn change_to_permissionless(token_id: T::TokenId) -> DispatchResult {
+        TokenInfoById::<T>::try_mutate(token_id, |token_info| {
+            token_info.transfer_policy = TransferPolicyOf::<T>::Permissionless;
+            Ok(())
+        })
+    }
 }
 
 /// Module implementation
