@@ -64,7 +64,7 @@ decl_module! {
 }
 
 /// MultiCurrencyBase Trait Implementation for Module
-impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
+impl<T: Trait> MultiCurrencyBase<T::AccountId, TokenIssuanceParametersOf<T>> for Module<T> {
     type Balance = T::Balance;
     type TokenId = T::TokenId;
 
@@ -249,12 +249,6 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId> for Module<T> {
         // ensure dst account id validity
         let dst_account: T::AccountId = dst.into();
         Self::ensure_account_data_exists(token_id, &dst_account).map(|_| ())?;
-
-        // ensure can slash amount from who
-        ensure!(
-            src_account_info.free_balance >= amount,
-            Error::<T>::InsufficientFreeBalanceForTransfer,
-        );
 
         // Amount to decrease by accounting for existential deposit
         let slash_operation = src_account_info

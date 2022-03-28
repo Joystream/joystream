@@ -3,7 +3,7 @@ use frame_support::{dispatch::DispatchError, ensure};
 use sp_arithmetic::traits::{Saturating, Zero};
 
 // crate imports
-use crate::traits::{TransferLocationTrait, TransferPermissionPolicy};
+use crate::traits::TransferLocationTrait;
 
 // TODO: find a suitable symbol representation
 pub type Symbol = ();
@@ -59,12 +59,18 @@ pub struct TokenData<Balance, Hash> {
 
 /// The two possible transfer policies
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub(crate) enum TransferPolicy<Hash> {
+pub enum TransferPolicy<Hash> {
     /// Permissionless
     Permissionless,
 
     /// Permissioned transfer with whitelist commitment
     Permissioned(Hash),
+}
+
+impl<Hash> Default for TransferPolicy<Hash> {
+    fn default() -> Self {
+        TransferPolicy::<Hash>::Permissionless
+    }
 }
 
 /// The possible issuance variants: This is a stub
@@ -83,7 +89,7 @@ pub(crate) enum IssuanceState {
 
 /// Builder for the token data struct
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
-pub struct TokenIssuanceParameters<Balance> {
+pub struct TokenIssuanceParameters<Balance, Hash> {
     /// Initial issuance
     pub(crate) initial_issuance: Balance,
 
@@ -95,6 +101,9 @@ pub struct TokenIssuanceParameters<Balance> {
 
     /// Token Symbol
     pub(crate) symbol: Symbol,
+
+    /// Initial transfer policy:
+    pub(crate) transfer_policy: TransferPolicy<Hash>,
 }
 
 /// Transfer location without merkle proof
@@ -159,30 +168,30 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
 }
 
 /// Encapsules parameters validation + TokenData construction
-impl<Balance: Zero + Copy + PartialOrd> TokenIssuanceParameters<Balance> {
+impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, Hash> {
     /// Forward `self` state
-    pub fn try_build<T: crate::Trait>(self) -> Result<TokenData<Balance>, DispatchError> {
+    pub fn try_build<T: crate::Trait>(self) -> Result<TokenData<Balance, Hash>, DispatchError> {
         // validation
         ensure!(
             self.initial_issuance >= self.existential_deposit,
             crate::Error::<T>::ExistentialDepositExceedsInitialIssuance,
         );
-        Ok(TokenData::<Balance> {
+        Ok(TokenData::<Balance, Hash> {
             current_total_issuance: self.initial_issuance,
             issuance_state: self.initial_state,
             existential_deposit: self.existential_deposit,
             symbol: self.symbol,
+            transfer_policy: self.transfer_policy,
         })
     }
 }
 
-impl<AccountId: Clone, Hash> TransferLocationTrait<AccountId, Hash> for SimpleLocation<AccountId> {
-    fn is_valid_location_for_policy(
-        &self,
-        policy: &dyn TransferPermissionPolicy<Self, Hash>, // visitee
-    ) -> bool {
-        // visitee dispatch
-        policy.ensure_permissionless().is_ok()
+// Simple location
+impl<AccountId: Clone, Hash> TransferLocationTrait<AccountId, TransferPolicy<Hash>>
+    for SimpleLocation<AccountId>
+{
+    fn is_valid_location_for_policy(&self, policy: &TransferPolicy<Hash>) -> bool {
+        matches!(policy, TransferPolicy::<Hash>::Permissionless)
     }
 
     fn location_account(&self) -> AccountId {
@@ -190,18 +199,16 @@ impl<AccountId: Clone, Hash> TransferLocationTrait<AccountId, Hash> for SimpleLo
     }
 }
 
-impl<AccountId: Clone, Hash> TransferLocationTrait<AccountId, Hash>
+// Verifiable Location implementation
+impl<AccountId: Clone, Hash: Clone> TransferLocationTrait<AccountId, TransferPolicy<Hash>>
     for VerifiableLocation<AccountId, Hash>
 {
-    fn is_valid_location_for_policy(
-        &self,
-        policy: &dyn TransferPermissionPolicy<Self, Hash>, // visitee
-    ) -> bool {
-        // visitee dispatch
-        if let Ok(whitelist_commit) = policy.ensure_permissioned() {
-            self.is_merkle_proof_valid(whitelist_commit)
-        } else {
-            policy.ensure_permissionless().is_ok()
+    fn is_valid_location_for_policy(&self, policy: &TransferPolicy<Hash>) -> bool {
+        match policy {
+            TransferPolicy::<Hash>::Permissioned(whitelist_commit) => {
+                self.is_merkle_proof_valid(whitelist_commit.to_owned())
+            }
+            TransferPolicy::<Hash>::Permissionless => true,
         }
     }
 
@@ -222,8 +229,9 @@ impl<AccountId, Hash> VerifiableLocation<AccountId, Hash> {
 pub(crate) type AccountDataOf<T> = AccountData<<T as crate::Trait>::Balance>;
 
 /// Alias for Token Data
-pub(crate) type TokenDataOf<T> = TokenData<<T as crate::Trait>::Balance>;
+pub(crate) type TokenDataOf<T> =
+    TokenData<<T as crate::Trait>::Balance, <T as frame_system::Trait>::Hash>;
 
 /// Alias for Token Issuance Parameters
 pub(crate) type TokenIssuanceParametersOf<T> =
-    TokenIssuanceParameters<<T as crate::Trait>::Balance>;
+    TokenIssuanceParameters<<T as crate::Trait>::Balance, <T as frame_system::Trait>::Hash>;

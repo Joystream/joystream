@@ -1,10 +1,8 @@
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use sp_std::convert::Into;
 
-use crate::types::TokenIssuanceParameters;
-
 /// The Base Token Trait
-pub trait MultiCurrencyBase<AccountId> {
+pub trait MultiCurrencyBase<AccountId, TokenIssuanceParameters> {
     // provided types
 
     /// Balance Type
@@ -41,7 +39,7 @@ pub trait MultiCurrencyBase<AccountId> {
     ) -> DispatchResult;
 
     /// Issue token with specified characteristics
-    fn issue_token(issuance_parameters: TokenIssuanceParameters<Self::Balance>) -> DispatchResult;
+    fn issue_token(issuance_parameters: TokenIssuanceParameters) -> DispatchResult;
 
     /// Remove token data from storage
     fn deissue_token(token_id: Self::TokenId) -> DispatchResult;
@@ -81,33 +79,11 @@ pub trait ReservableMultiCurrency<AccountId> {
     ) -> Result<Self::Balance, DispatchError>;
 }
 
-/// Interface for the transfer policy type, Permissionless : terminal state
-pub trait TransferPermissionPolicy<TransferLocation, Hash> {
-    /// Establish whether transfer location is allowed for the policy
-    fn can_transfer_to(&self, location: &TransferLocation) -> bool;
-
-    /// Predicate method for distinguishing permissionless state
-    fn ensure_permissionless(&self) -> DispatchResult;
-
-    /// Predicate method for distinguishing permissioned state
-    fn ensure_permissioned(&self) -> Result<Hash, DispatchError>;
-
-    // Transition function to permissionless state
-    fn change_to_permissionless(&mut self);
-}
-
 /// Account wrapper that encapsulates the validation for the transfer location
 /// by means of the visitor pattern
-pub trait TransferLocationTrait<AccountId, Hash> {
-    // TODO: enable after TransferTransmissionPolicy implementation
-    // type Policy: TransferPermissionPolicy<Self, Hash>;
-
+pub trait TransferLocationTrait<AccountId, Policy> {
     /// encapsulates eventual merkle tree validation given policy
-    fn is_valid_location_for_policy(
-        &self,
-        // TODO: replace with Policy?
-        policy: &dyn TransferPermissionPolicy<Self, Hash>, // visitee
-    ) -> bool;
+    fn is_valid_location_for_policy(&self, policy: &Policy) -> bool;
 
     /// the wrapped account
     fn location_account(&self) -> AccountId;
