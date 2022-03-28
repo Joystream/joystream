@@ -58,8 +58,8 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
       minimalBidStep,
       auctionDuration,
       extensionPeriod,
-    } = await this.api.createAuctionParameters('English')
-    await this.api.startNftAuction(
+    } = await this.api.createEnglishAuctionParameters()
+    await this.api.startEnglishAuction(
       this.author.keyringPair.address,
       this.author.memberId.toNumber(),
       this.videoId,
@@ -75,7 +75,8 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
       this.participants,
       startingPrice,
       minimalBidStep,
-      this.videoId
+      this.videoId,
+      'English'
     )
     await new FixtureRunner(placeBidsFixture).run()
 

@@ -90,17 +90,17 @@ fragment OwnedNftFields on OwnedNft {
         isCompleted
 
         endedAtBlock
-        plannedEndAtBlock
-        minimalBidStep
         startingPrice
         auctionType {
           __typename
           ... on AuctionTypeOpen {
-            bidLockingTime
+            bidLockDuration
           }
           ... on AuctionTypeEnglish {
             extensionPeriod
             duration
+            plannedEndAtBlock
+            minimalBidStep
           }
         }
         bids {

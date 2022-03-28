@@ -35,7 +35,7 @@ import {
   workingGroupNameByModuleName,
 } from './consts'
 
-import { VideoId, VideoCategoryId, AuctionParams } from '@joystream/types/content'
+import { VideoId, VideoCategoryId, EnglishAuctionParams, OpenAuctionParams } from '@joystream/types/content'
 
 import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 
@@ -882,90 +882,145 @@ export class Api {
     return boundaries
   }
 
-  async createAuctionParameters(
-    auctionType: 'English' | 'Open',
-    whitelist: string[] = [],
-    auctionDuration?: BN,
-    extensionPeriod?: BN
+  async createOpenAuctionParameters(
+    whitelist: string[] = []
   ): Promise<{
-    auctionParams: AuctionParams
+    auctionParams: OpenAuctionParams
     startingPrice: BN
     minimalBidStep: BN
     bidLockDuration: BN
-    extensionPeriod: BN
-    auctionDuration: BN
   }> {
     const boundaries = await this.getAuctionParametersBoundaries()
 
     // auction duration must be larger than extension period (enforced in runtime)
-    auctionDuration = auctionDuration || BN.max(boundaries.auctionDuration.min, boundaries.extensionPeriod.min)
-    extensionPeriod = extensionPeriod || boundaries.extensionPeriod.min
+    const auctionDuration = BN.max(boundaries.auctionDuration.min, boundaries.extensionPeriod.min)
 
-    if (extensionPeriod && auctionDuration && extensionPeriod >= auctionDuration) {
-      throw new Error('Auction duration must be larger than extension period')
-    }
+    const bidLockDuration = boundaries.bidLockDuration.min
 
-    const encodedAuctionType =
-      auctionType === 'English'
-        ? {
-            English: {
-              extension_period: extensionPeriod,
-              auction_duration: auctionDuration,
-            },
-          }
-        : {
-            Open: {
-              bid_lock_duration: boundaries.bidLockDuration.min,
-            },
-          }
-
-    const auctionParams = this.api.createType('AuctionParams', {
-      auction_type: this.api.createType('AuctionType', encodedAuctionType),
+    const auctionParams = this.api.createType('OpenAuctionParams', {
       starting_price: this.api.createType('u128', boundaries.startingPrice.min),
-      minimal_bid_step: this.api.createType('u128', boundaries.bidStep.min),
       buy_now_price: this.api.createType('Option<BlockNumber>', null),
-      starts_at: this.api.createType('Option<BlockNumber>', null),
       whitelist: this.api.createType('BTreeSet<StorageBucketId>', whitelist),
+      bid_lock_duration: this.api.createType('BlockNumber', bidLockDuration),
     })
 
     return {
       auctionParams,
       startingPrice: boundaries.startingPrice.min,
       minimalBidStep: boundaries.bidStep.min,
-      bidLockDuration: boundaries.bidLockDuration.min,
-      extensionPeriod: boundaries.extensionPeriod.min,
-      auctionDuration: auctionDuration,
+      bidLockDuration: bidLockDuration,
     }
   }
 
-  async startNftAuction(
+  async createEnglishAuctionParameters(
+    whitelist: string[] = []
+  ): Promise<{
+    auctionParams: EnglishAuctionParams
+    startingPrice: BN
+    minimalBidStep: BN
+    extensionPeriod: BN
+    auctionDuration: BN
+  }> {
+    const boundaries = await this.getAuctionParametersBoundaries()
+
+    // auction duration must be larger than extension period (enforced in runtime)
+    const auctionDuration = BN.max(boundaries.auctionDuration.min, boundaries.extensionPeriod.min)
+    // set end block relatively to auction duration
+    const endBlock = (await this.getBestBlock()).add(auctionDuration)
+
+    const startingPrice = boundaries.startingPrice.min
+    const minimalBidStep = boundaries.bidStep.min
+    const extensionPeriod = boundaries.extensionPeriod.min
+
+    /*
+    auctionDuration = auctionDuration || BN.max(boundaries.auctionDuration.min, boundaries.extensionPeriod.min)
+    extensionPeriod = extensionPeriod || boundaries.extensionPeriod.min
+
+    if (extensionPeriod && auctionDuration && extensionPeriod >= auctionDuration) {
+      throw new Error('Auction duration must be larger than extension period')
+    }
+    */
+
+    const auctionParams = this.api.createType('EnglishAuctionParams', {
+      starting_price: this.api.createType('u128', startingPrice),
+      buy_now_price: this.api.createType('Option<BlockNumber>', null),
+      whitelist: this.api.createType('BTreeSet<StorageBucketId>', whitelist),
+      end: this.api.createType('BlockNumber', endBlock),
+      auction_duration: auctionDuration,
+      extension_period: extensionPeriod,
+      min_bid_step: this.api.createType('u128', minimalBidStep),
+    })
+
+    return {
+      auctionParams,
+      startingPrice,
+      minimalBidStep,
+      extensionPeriod,
+      auctionDuration,
+    }
+  }
+
+  async startOpenAuction(
     accountFrom: string,
     memberId: number,
     videoId: number,
-    auctionParams: AuctionParams
+    auctionParams: OpenAuctionParams
   ): Promise<ISubmittableResult> {
     return await this.sender.signAndSend(
-      this.api.tx.content.startNftAuction({ Member: memberId }, videoId, auctionParams),
+      this.api.tx.content.startOpenAuction({ Member: memberId }, videoId, auctionParams),
       accountFrom
     )
   }
 
-  async bidInNftAuction(
+  async startEnglishAuction(
+    accountFrom: string,
+    memberId: number,
+    videoId: number,
+    auctionParams: EnglishAuctionParams
+  ): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(
+      this.api.tx.content.startEnglishAuction({ Member: memberId }, videoId, auctionParams),
+      accountFrom
+    )
+  }
+
+  async bidInOpenAuction(
     accountFrom: string,
     memberId: number,
     videoId: number,
     bidAmount: BN
   ): Promise<ISubmittableResult> {
-    return await this.sender.signAndSend(this.api.tx.content.makeBid(memberId, videoId, bidAmount), accountFrom)
+    return await this.sender.signAndSend(
+      this.api.tx.content.makeOpenAuctionBid(memberId, videoId, bidAmount),
+      accountFrom
+    )
+  }
+
+  async bidInEnglishAuction(
+    accountFrom: string,
+    memberId: number,
+    videoId: number,
+    bidAmount: BN
+  ): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(
+      this.api.tx.content.makeEnglishAuctionBid(memberId, videoId, bidAmount),
+      accountFrom
+    )
   }
 
   async claimWonEnglishAuction(accountFrom: string, memberId: number, videoId: number): Promise<ISubmittableResult> {
     return await this.sender.signAndSend(this.api.tx.content.claimWonEnglishAuction(memberId, videoId), accountFrom)
   }
 
-  async pickOpenAuctionWinner(accountFrom: string, memberId: number, videoId: number): Promise<ISubmittableResult> {
+  async pickOpenAuctionWinner(
+    accountFrom: string,
+    ownerMemberId: number,
+    videoId: number,
+    winnerMemberId: number,
+    commitBalance: BN
+  ): Promise<ISubmittableResult> {
     return await this.sender.signAndSend(
-      this.api.tx.content.pickOpenAuctionWinner({ Member: memberId }, videoId),
+      this.api.tx.content.pickOpenAuctionWinner({ Member: ownerMemberId }, videoId, winnerMemberId, commitBalance),
       accountFrom
     )
   }
@@ -974,9 +1029,9 @@ export class Api {
     return await this.sender.signAndSend(this.api.tx.content.cancelOpenAuctionBid(participantId, videoId), accountFrom)
   }
 
-  async cancelNftAuction(accountFrom: string, ownerId: number, videoId: number): Promise<ISubmittableResult> {
+  async cancelOpenAuction(accountFrom: string, ownerId: number, videoId: number): Promise<ISubmittableResult> {
     return await this.sender.signAndSend(
-      this.api.tx.content.cancelNftAuction({ Member: ownerId }, videoId),
+      this.api.tx.content.cancelOpenAuction({ Member: ownerId }, videoId),
       accountFrom
     )
   }
@@ -1010,8 +1065,13 @@ export class Api {
     accountFrom: string,
     ownerId: number,
     channeld: number,
-    auctionParams: AuctionParams
+    auctionParams: OpenAuctionParams | EnglishAuctionParams
   ): Promise<ISubmittableResult> {
+    const initTransactionalStatus = this.api.createType(
+      'InitTransactionalStatus',
+      auctionParams instanceof OpenAuctionParams ? { OpenAuction: auctionParams } : { EnglishAuction: auctionParams }
+    )
+
     const createParameters = this.createType('VideoCreationParameters', {
       assets: null,
       meta: null,
@@ -1020,37 +1080,12 @@ export class Api {
         royalty: null,
         nft_metadata: this.api.createType('NftMetadata', '').toU8a(),
         non_channel_owner: ownerId,
-        init_transactional_status: this.api.createType('InitTransactionalStatus', { Auction: auctionParams }),
+        init_transactional_status: initTransactionalStatus,
       }),
     })
 
     return await this.sender.signAndSend(
       this.api.tx.content.createVideo({ Member: ownerId }, channeld, createParameters),
-      accountFrom
-    )
-  }
-
-  async updateVideoForNftCreation(
-    accountFrom: string,
-    ownerId: number,
-    videoId: number,
-    auctionParams: AuctionParams
-  ): Promise<ISubmittableResult> {
-    const updateParameters = this.createType('VideoUpdateParameters', {
-      assets_to_upload: null,
-      new_meta: null,
-      assets_to_remove: this.api.createType('BTreeSet<DataObjectId>', []),
-      enable_comments: false,
-      auto_issue_nft: this.api.createType('NftIssuanceParameters', {
-        royalty: null,
-        nft_metadata: this.api.createType('NftMetadata', '').toU8a(),
-        non_channel_owner: ownerId,
-        init_transactional_status: this.api.createType('InitTransactionalStatus', { Auction: auctionParams }),
-      }),
-    })
-
-    return await this.sender.signAndSend(
-      this.api.tx.content.updateVideo({ Member: ownerId }, videoId, updateParameters),
       accountFrom
     )
   }

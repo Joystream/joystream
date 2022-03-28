@@ -144,13 +144,19 @@ type AuctionTypeEnglish @variant {
   duration: Int!
 
   "Auction extension time"
-  extensionPeriod: Int
+  extensionPeriod: Int!
+
+  "Block when auction is supposed to end"
+  plannedEndAtBlock: Int!
+
+  "Minimal step between auction bids"
+  minimalBidStep: BigInt!
 }
 
 "Represents Open auction details"
 type AuctionTypeOpen @variant {
   "Auction bid lock duration"
-  bidLockingTime: Int!
+  bidLockDuration: Int!
 }
 
 "Represents NFT auction"
@@ -175,9 +181,6 @@ type Auction @entity {
   "The type of auction"
   auctionType: AuctionType!
 
-  "Minimal step between auction bids"
-  minimalBidStep: BigInt!
-
   "Auction last bid (if exists)"
   lastBid: Bid
 
@@ -188,9 +191,6 @@ type Auction @entity {
 
   "Block when auction ended"
   endedAtBlock: Int
-
-  "Block when auction is supposed to end"
-  plannedEndAtBlock: Int
 
   "Is auction canceled"
   isCanceled: Boolean!

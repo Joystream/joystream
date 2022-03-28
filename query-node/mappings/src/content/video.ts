@@ -163,12 +163,7 @@ export async function content_VideoUpdated(ctx: EventContext & StoreContext): Pr
     await processVideoMetadata(ctx, video, newMetadata, videoUpdateParameters.assets_to_upload.unwrapOr(undefined))
   }
 
-  // create nft
-  const issuanceParameters = videoUpdateParameters.auto_issue_nft.unwrapOr(null)
-  const nft = issuanceParameters ? await createNft(store, video, issuanceParameters, event.blockNumber) : undefined
-
-  // update the video
-  video.nft = nft
+  // set last update time
   video.updatedAt = new Date(event.blockTimestamp)
 
   // update video active counters

@@ -40,8 +40,8 @@ export class NftOpenAuctionFixture extends BaseQueryNodeFixture {
     await this.api.issueNft(this.author.keyringPair.address, this.author.memberId.toNumber(), this.videoId)
 
     this.debug('Start first NFT auction')
-    const { auctionParams, startingPrice, minimalBidStep } = await this.api.createAuctionParameters('Open')
-    await this.api.startNftAuction(
+    const { auctionParams, startingPrice, minimalBidStep } = await this.api.createOpenAuctionParameters()
+    await this.api.startOpenAuction(
       this.author.keyringPair.address,
       this.author.memberId.toNumber(),
       this.videoId,
@@ -50,28 +50,39 @@ export class NftOpenAuctionFixture extends BaseQueryNodeFixture {
 
     const firstAuctionWinner = this.participants[this.participants.length - 1]
 
-    this.debug('Place bids on first auction')
-    const firstAuctionMemberSetFixture = new PlaceBidsInAuctionFixture(
+    this.debug('Place bids')
+    const placeBidsFixture = new PlaceBidsInAuctionFixture(
       this.api,
       this.query,
       this.participants,
       startingPrice,
       minimalBidStep,
-      this.videoId
+      this.videoId,
+      'Open'
     )
-    await new FixtureRunner(firstAuctionMemberSetFixture).run()
+
+    await new FixtureRunner(placeBidsFixture).run()
 
     this.debug('Check first NFT Auction and bids')
     await assertAuctionAndBids(this.query, this.videoId, firstAuctionWinner)
 
+    // equals to amount last bidder offered
+    const targetPrice = placeBidsFixture.calcBidAmount(this.participants.length - 1)
+
     this.debug('Complete first auction')
-    await this.api.pickOpenAuctionWinner(this.author.keyringPair.address, this.author.memberId.toNumber(), this.videoId)
+    await this.api.pickOpenAuctionWinner(
+      this.author.keyringPair.address,
+      this.author.memberId.toNumber(),
+      this.videoId,
+      firstAuctionWinner.memberId.toNumber(),
+      targetPrice
+    )
 
     this.debug('Check NFT ownership change after first auction')
     await assertNftOwner(this.query, this.videoId, firstAuctionWinner)
 
     this.debug('Start second NFT auction')
-    await this.api.startNftAuction(
+    await this.api.startOpenAuction(
       firstAuctionWinner.keyringPair.address,
       firstAuctionWinner.memberId.toNumber(),
       this.videoId,
@@ -90,18 +101,24 @@ export class NftOpenAuctionFixture extends BaseQueryNodeFixture {
       this.participants,
       startingPrice,
       minimalBidStep,
-      this.videoId
+      this.videoId,
+      'Open'
     )
     await new FixtureRunner(secondAuctionMemberSetFixture).run()
 
     this.debug('Check second NFT Auction and bids')
     await assertAuctionAndBids(this.query, this.videoId, secondAuctionWinner)
 
+    // equals to amount last bidder offered
+    const targetPriceSecond = placeBidsFixture.calcBidAmount(this.participants.length - 1)
+
     this.debug('Complete second auction')
     await this.api.pickOpenAuctionWinner(
       firstAuctionWinner.keyringPair.address,
       firstAuctionWinner.memberId.toNumber(),
-      this.videoId
+      this.videoId,
+      secondAuctionWinner.memberId.toNumber(),
+      targetPriceSecond
     )
 
     this.debug('Check NFT ownership change after second auction')

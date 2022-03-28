@@ -25,7 +25,8 @@ import {
   Curator,
 
   // events
-  AuctionStartedEvent,
+  OpenAuctionStartedEvent,
+  EnglishAuctionStartedEvent,
   NftIssuedEvent,
   AuctionBidMadeEvent,
   AuctionBidCanceledEvent,
@@ -43,7 +44,7 @@ import {
 } from 'query-node/dist/model'
 import * as joystreamTypes from '@joystream/types/augment/all/types'
 import { Content } from '../../generated/types'
-import { FindConditions, In } from 'typeorm'
+import { FindConditions } from 'typeorm'
 import BN from 'bn.js'
 import { PERBILL_ONE_PERCENT } from '../temporaryConstants'
 
@@ -168,7 +169,7 @@ async function getRequiredExistingEntites<Type extends Video | Membership>(
   errorMessage: string
 ): Promise<Type[]> {
   // load entities
-  const entities = await store.getMany(entityType, { where: { id: In(ids) } })
+  const entities = await store.getMany(entityType, { where: { id: ids } })
 
   // assess loaded entity ids
   const loadedEntityIds = entities.map((item) => item.id.toString())
@@ -393,7 +394,7 @@ export async function createNft(
 async function createAuction(
   store: DatabaseManager,
   nft: OwnedNft, // expects `nft.ownerMember` to be available
-  auctionParams: joystreamTypes.AuctionParams,
+  auctionParams: joystreamTypes.OpenAuctionParams | joystreamTypes.EnglishAuctionParams,
   blockNumber: number
 ): Promise<Auction> {
   const whitelistedMembers = await getRequiredExistingEntites(
@@ -403,19 +404,14 @@ async function createAuction(
     'Non-existing members whitelisted'
   )
 
-  const startsAtBlock = auctionParams.starts_at.isSome ? auctionParams.starts_at.unwrap().toNumber() : blockNumber
   // prepare auction record
   const auction = new Auction({
     nft: nft,
     initialOwner: nft.ownerMember,
-    startingPrice: auctionParams.starting_price,
+    startingPrice: new BN(auctionParams.starting_price.toString()),
     buyNowPrice: new BN(auctionParams.buy_now_price.toString()),
-    auctionType: createAuctionType(auctionParams.auction_type),
-    minimalBidStep: auctionParams.minimal_bid_step,
-    startsAtBlock,
-    plannedEndAtBlock: auctionParams.auction_type.isEnglish
-      ? startsAtBlock + auctionParams.auction_type.asEnglish.auction_duration.toNumber()
-      : undefined,
+    auctionType: createAuctionType(auctionParams),
+    startsAtBlock: blockNumber,
     isCanceled: false,
     isCompleted: false,
     whitelistedMembers,
@@ -447,8 +443,10 @@ export async function convertTransactionalStatus(
     return status
   }
 
-  if (transactionalStatus.isAuction) {
-    const auctionParams = transactionalStatus.asAuction
+  if (transactionalStatus.isOpenAuction || transactionalStatus.isEnglishAuction) {
+    const auctionParams = transactionalStatus.isOpenAuction
+      ? transactionalStatus.asOpenAuction
+      : transactionalStatus.asEnglishAuction
 
     // create new auction
     const auction = await createAuction(store, nft, auctionParams, blockNumber)
@@ -463,10 +461,10 @@ export async function convertTransactionalStatus(
   throw new Error('Not-implemented TransactionalStatus type used')
 }
 
-export async function contentNft_AuctionStarted({ event, store }: EventContext & StoreContext): Promise<void> {
+export async function contentNft_OpenAuctionStarted({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [contentActor, videoId, auctionParams] = new Content.AuctionStartedEvent(event).params
+  const [contentActor, videoId, auctionParams] = new Content.OpenAuctionStartedEvent(event).params
 
   // specific event processing
 
@@ -495,7 +493,7 @@ export async function contentNft_AuctionStarted({ event, store }: EventContext &
 
   // common event processing - second
 
-  const announcingPeriodStartedEvent = new AuctionStartedEvent({
+  const announcingPeriodStartedEvent = new OpenAuctionStartedEvent({
     ...genericEventFields(event),
 
     actor: await convertContentActor(store, contentActor),
@@ -503,28 +501,79 @@ export async function contentNft_AuctionStarted({ event, store }: EventContext &
     auction,
   })
 
-  await store.save<AuctionStartedEvent>(announcingPeriodStartedEvent)
+  await store.save<OpenAuctionStartedEvent>(announcingPeriodStartedEvent)
+}
+
+export async function contentNft_EnglishAuctionStarted({ event, store }: EventContext & StoreContext): Promise<void> {
+  // common event processing
+
+  const [contentActor, videoId, auctionParams] = new Content.EnglishAuctionStartedEvent(event).params
+
+  // specific event processing
+
+  // load video
+  const video = await getRequiredExistingEntity(
+    store,
+    Video,
+    videoId.toString(),
+    `Non-existing video's auction started`,
+    ['nft', 'nft.ownerMember']
+  )
+
+  // ensure NFT has been issued
+  if (!video.nft) {
+    return inconsistentState('Non-existing NFT auctioned', video.id.toString())
+  }
+
+  const nft = video.nft
+
+  const auction = await createAuction(store, nft, auctionParams, event.blockNumber)
+
+  // update NFT transactional status
+  const transactionalStatus = new TransactionalStatusAuction()
+  transactionalStatus.auctionId = auction.id
+  await setNewNftTransactionalStatus(store, nft, transactionalStatus, event.blockNumber)
+
+  // common event processing - second
+
+  const announcingPeriodStartedEvent = new EnglishAuctionStartedEvent({
+    ...genericEventFields(event),
+
+    actor: await convertContentActor(store, contentActor),
+    video,
+    auction,
+  })
+
+  await store.save<EnglishAuctionStartedEvent>(announcingPeriodStartedEvent)
 }
 
 // create auction type variant from raw runtime auction type
-function createAuctionType(rawAuctionType: joystreamTypes.AuctionType): typeof AuctionType {
-  // auction type `english`
-  if (rawAuctionType.isEnglish) {
-    const rawType = rawAuctionType.asEnglish
+function createAuctionType(
+  auctionParams: joystreamTypes.OpenAuctionParams | joystreamTypes.EnglishAuctionParams
+): typeof AuctionType {
+  function isEnglishAuction(
+    auction: joystreamTypes.OpenAuctionParams | joystreamTypes.EnglishAuctionParams
+  ): auction is joystreamTypes.EnglishAuctionParams {
+    return !!(auction as any).auction_duration
+  }
 
+  // auction type `english`
+  if (isEnglishAuction(auctionParams)) {
     // prepare auction variant
     const auctionType = new AuctionTypeEnglish()
-    auctionType.duration = rawType.auction_duration.toNumber()
-    auctionType.extensionPeriod = rawType.extension_period.toNumber()
+    auctionType.duration = auctionParams.auction_duration.toNumber()
+    auctionType.extensionPeriod = auctionParams.extension_period.toNumber()
+    auctionType.minimalBidStep = new BN(auctionParams.min_bid_step.toString())
+    auctionType.plannedEndAtBlock = auctionParams.end.toNumber()
+
     return auctionType
   }
 
   // auction type `open`
-  const rawType = rawAuctionType.asOpen
 
   // prepare auction variant
   const auctionType = new AuctionTypeOpen()
-  auctionType.bidLockingTime = rawType.bid_lock_duration.toNumber()
+  auctionType.bidLockDuration = auctionParams.bid_lock_duration.toNumber()
   return auctionType
 }
 
@@ -563,13 +612,14 @@ export async function contentNft_NftIssued({ event, store }: EventContext & Stor
 export async function contentNft_AuctionBidMade({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [memberId, videoId, bidAmount, extendsAuction] = new Content.AuctionBidMadeEvent(event).params
+  const [memberId, videoId, bidAmount] = new Content.AuctionBidMadeEvent(event).params
 
   // specific event processing
 
   // create record for winning bid
   const { member, video } = await createBid(event, store, memberId.toNumber(), videoId.toNumber(), bidAmount.toString())
 
+  /* TODO: revisit after auction duration runtime update merge
   // Ensure if planned auction period would be extended
   if (extendsAuction.valueOf() === true) {
     const { auction } = await getCurrentAuctionFromVideo(
@@ -583,6 +633,7 @@ export async function contentNft_AuctionBidMade({ event, store }: EventContext &
     auction.plannedEndAtBlock = (auction.plannedEndAtBlock || 0) + (englishAuctionExtensionPeriod || 0)
     store.save<Auction>(auction)
   }
+  */
 
   // common event processing - second
 
@@ -592,7 +643,6 @@ export async function contentNft_AuctionBidMade({ event, store }: EventContext &
     member,
     video,
     bidAmount,
-    extendsAuction: extendsAuction.valueOf(),
   })
 
   await store.save<AuctionBidMadeEvent>(announcingPeriodStartedEvent)
@@ -737,7 +787,7 @@ export async function contentNft_BidMadeCompletingAuction({
 export async function contentNft_OpenAuctionBidAccepted({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [contentActor, videoId] = new Content.OpenAuctionBidAcceptedEvent(event).params
+  const [contentActor, videoId, bidAmount] = new Content.OpenAuctionBidAcceptedEvent(event).params
 
   // specific event processing
 

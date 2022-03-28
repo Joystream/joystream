@@ -44,40 +44,6 @@ fn setup_open_auction_scenario() {
     ));
 }
 
-fn setup_english_auction_scenario() {
-    let video_id = NextVideoId::<Test>::get();
-
-    create_initial_storage_buckets_helper();
-    increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-    create_default_member_owned_channel_with_video();
-
-    // Issue nft
-    assert_ok!(Content::issue_nft(
-        Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-        ContentActor::Member(DEFAULT_MEMBER_ID),
-        video_id,
-        NftIssuanceParameters::<Test>::default(),
-    ));
-
-    let auction_params = EnglishAuctionParams::<Test> {
-        starting_price: Content::min_starting_price(),
-        buy_now_price: Some(DEFAULT_BUY_NOW_PRICE),
-        extension_period: Content::min_auction_extension_period(),
-        auction_duration: Content::min_auction_duration(),
-        min_bid_step: Content::min_bid_step(),
-        end: DEFAULT_AUCTION_END,
-        whitelist: BTreeSet::new(),
-    };
-
-    // Start nft auction
-    assert_ok!(Content::start_english_auction(
-        Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-        ContentActor::Member(DEFAULT_MEMBER_ID),
-        video_id,
-        auction_params.clone(),
-    ));
-}
-
 fn setup_open_auction_scenario_with_bid(amount: u64) {
     let video_id = Content::next_video_id();
     setup_open_auction_scenario();
@@ -92,12 +58,7 @@ fn setup_open_auction_scenario_with_bid(amount: u64) {
 
     assert_eq!(
         System::events().last().unwrap().event,
-        MetaEvent::content(RawEvent::AuctionBidMade(
-            SECOND_MEMBER_ID,
-            video_id,
-            amount,
-            None
-        ))
+        MetaEvent::content(RawEvent::AuctionBidMade(SECOND_MEMBER_ID, video_id, amount,))
     );
 }
 
@@ -156,12 +117,7 @@ fn make_bid() {
         // Last event checked
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::AuctionBidMade(
-                SECOND_MEMBER_ID,
-                video_id,
-                bid,
-                None
-            )),
+            MetaEvent::content(RawEvent::AuctionBidMade(SECOND_MEMBER_ID, video_id, bid)),
         );
     })
 }
@@ -632,7 +588,6 @@ fn make_bid_succeeds_with_auction_completion_and_outstanding_bids() {
             MetaEvent::content(RawEvent::BidMadeCompletingAuction(
                 SECOND_MEMBER_ID,
                 video_id,
-                None
             ))
         );
     })
@@ -660,149 +615,6 @@ fn make_bid_succeeds_with_auction_completion_and_no_outstanding_bids() {
             MetaEvent::content(RawEvent::BidMadeCompletingAuction(
                 SECOND_MEMBER_ID,
                 video_id,
-                None
-            ))
-        );
-    })
-}
-
-#[test]
-fn english_auction_bid_made_event_includes_prev_top_bidder() {
-    with_default_mock_builder(|| {
-        // Run to block one to see emitted events
-        run_to_block(1);
-
-        let video_id = Content::next_video_id();
-        setup_english_auction_scenario();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, BIDDER_BALANCE);
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE);
-
-        let first_bid_amount = Content::min_bid_step();
-        let second_bid_amount = Content::min_bid_step() * 2;
-        let third_bid_amount = Content::min_bid_step() * 3;
-
-        assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            DEFAULT_MEMBER_ID,
-            video_id,
-            first_bid_amount,
-        ));
-
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::AuctionBidMade(
-                DEFAULT_MEMBER_ID,
-                video_id,
-                first_bid_amount,
-                None
-            ))
-        );
-
-        assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            SECOND_MEMBER_ID,
-            video_id,
-            second_bid_amount,
-        ));
-
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::AuctionBidMade(
-                SECOND_MEMBER_ID,
-                video_id,
-                second_bid_amount,
-                Some(DEFAULT_MEMBER_ID)
-            ))
-        );
-
-        assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            DEFAULT_MEMBER_ID,
-            video_id,
-            third_bid_amount,
-        ));
-
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::AuctionBidMade(
-                DEFAULT_MEMBER_ID,
-                video_id,
-                third_bid_amount,
-                Some(SECOND_MEMBER_ID)
-            ))
-        );
-    })
-}
-
-#[test]
-fn english_auction_bid_made_completing_auction_event_with_no_previous_bidder() {
-    with_default_mock_builder(|| {
-        // Run to block one to see emitted events
-        run_to_block(1);
-
-        let video_id = Content::next_video_id();
-        setup_english_auction_scenario();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, BIDDER_BALANCE);
-
-        assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            DEFAULT_MEMBER_ID,
-            video_id,
-            DEFAULT_BUY_NOW_PRICE,
-        ));
-
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::BidMadeCompletingAuction(
-                DEFAULT_MEMBER_ID,
-                video_id,
-                None
-            ))
-        );
-    })
-}
-
-#[test]
-fn english_auction_bid_made_completing_auction_event_with_previous_bidder() {
-    with_default_mock_builder(|| {
-        // Run to block one to see emitted events
-        run_to_block(1);
-
-        let video_id = Content::next_video_id();
-        setup_english_auction_scenario();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, BIDDER_BALANCE);
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE);
-
-        assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            SECOND_MEMBER_ID,
-            video_id,
-            Content::min_bid_step(),
-        ));
-
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::AuctionBidMade(
-                SECOND_MEMBER_ID,
-                video_id,
-                Content::min_bid_step(),
-                None
-            ))
-        );
-
-        assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            DEFAULT_MEMBER_ID,
-            video_id,
-            DEFAULT_BUY_NOW_PRICE
-        ));
-
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::BidMadeCompletingAuction(
-                DEFAULT_MEMBER_ID,
-                video_id,
-                Some(SECOND_MEMBER_ID)
             ))
         );
     })

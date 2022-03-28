@@ -182,7 +182,8 @@ typegen:
     - bounty.OracleJudgmentSubmitted
     - bounty.WorkEntrantFundsWithdrawn
     # content NFTs
-    - content.AuctionStarted
+    - content.OpenAuctionStarted
+    - content.EnglishAuctionStarted
     - content.NftIssued
     - content.AuctionBidMade
     - content.AuctionBidCanceled
@@ -743,8 +744,10 @@ mappings:
       handler: content_ChannelDeleted
 
     # content NFTs
-    - event: content.AuctionStarted
-      handler: contentNft_AuctionStarted
+    - event: content.OpenAuctionStarted
+      handler: contentNft_OpenAuctionStarted
+    - event: content.EnglishAuctionStarted
+      handler: contentNft_EnglishAuctionStarted
     - event: content.NftIssued
       handler: contentNft_NftIssued
     - event: content.AuctionBidMade
