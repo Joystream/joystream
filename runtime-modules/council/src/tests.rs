@@ -1786,7 +1786,7 @@ fn test_funding_request_succeeds() {
 }
 
 #[test]
-fn test_council_budget_manager_works_correctlyl() {
+fn test_council_budget_manager_works_correctly() {
     let config = default_genesis_config();
 
     build_test_externalities(config).execute_with(|| {
@@ -1805,6 +1805,45 @@ fn test_council_budget_manager_works_correctlyl() {
         assert_eq!(
             <Module<Runtime> as CouncilBudgetManager<u64, u64>>::get_budget(),
             new_budget
+        );
+
+        let increase_amount = 100;
+        <Module<Runtime> as CouncilBudgetManager<u64, u64>>::increase_budget(increase_amount);
+        assert_eq!(
+            <Module<Runtime> as CouncilBudgetManager<u64, u64>>::get_budget(),
+            new_budget + increase_amount
+        );
+
+        let account_id = 11;
+        let transfer_amount = 100;
+        <Module<Runtime> as CouncilBudgetManager<u64, u64>>::transfer(&account_id, transfer_amount);
+        assert_eq!(
+            <Module<Runtime> as CouncilBudgetManager<u64, u64>>::get_budget(),
+            new_budget + increase_amount - transfer_amount
+        );
+
+        let res = <Module<Runtime> as CouncilBudgetManager<u64, u64>>::try_transfer(
+            &account_id,
+            transfer_amount,
+        );
+        assert!(res.is_ok());
+        assert_eq!(
+            <Module<Runtime> as CouncilBudgetManager<u64, u64>>::get_budget(),
+            new_budget + increase_amount - transfer_amount - transfer_amount
+        );
+
+        let incorrect_amount = 1000;
+        let res = <Module<Runtime> as CouncilBudgetManager<u64, u64>>::try_transfer(
+            &account_id,
+            incorrect_amount,
+        );
+        assert_eq!(
+            res,
+            Err(Error::<Runtime>::InsufficientBalanceForTransfer.into())
+        );
+        assert_eq!(
+            <Module<Runtime> as CouncilBudgetManager<u64, u64>>::get_budget(),
+            new_budget + increase_amount - transfer_amount - transfer_amount
         );
     });
 }

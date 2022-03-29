@@ -146,16 +146,14 @@ impl common::council::CouncilBudgetManager<u128, u64> for CouncilBudgetManager {
         }
     }
 
-    fn try_transfer(_account_id: &u128, _amount: u64) -> DispatchResult {
-        todo!()
-    }
+    fn try_transfer(account_id: &u128, amount: u64) -> DispatchResult {
+        let _ = Balances::deposit_creating(account_id, amount);
 
-    fn transfer(_account_id: &u128, _amount: u64) {
-        todo!()
-    }
+        let current_budget = Self::get_budget();
+        let new_budget = current_budget.saturating_sub(amount);
+        Self::set_budget(new_budget);
 
-    fn increase_budget(_amount: u64) {
-        todo!()
+        Ok(())
     }
 }
 
