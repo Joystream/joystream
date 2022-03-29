@@ -29,5 +29,8 @@ decl_error! {
 
         /// Location and current policy are not compatible
         LocationIncompatibleWithCurrentPolicy,
+
+        /// Source and Destination Location coincide
+        SameSourceAndDestinationLocations,
     }
 }

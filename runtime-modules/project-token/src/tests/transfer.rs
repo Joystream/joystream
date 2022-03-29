@@ -1,10 +1,10 @@
 #![cfg(test)]
 
 use frame_support::{assert_noop, assert_ok, StorageDoubleMap};
-use sp_arithmetic::traits::One;
+use sp_arithmetic::traits::{One, Zero};
 
 use crate::tests::mock::*;
-use crate::traits::{ControlledTransfer, MultiCurrencyBase};
+use crate::traits::{ControlledTransfer, MultiCurrencyBase, TransferLocationTrait};
 use crate::Error;
 
 // base transfer tests
@@ -276,7 +276,7 @@ fn multiout_transfer_fails_with_insufficient_balance() {
         .add_account_info()
         .build();
     let token_id = TokenId::one();
-    let src = AccountId::from(DEFAULT_ACCOUNT_ID + 1);
+    let src = AccountId::from(DEFAULT_ACCOUNT_ID);
     let outputs = vec![
         (
             Simple::new(AccountId::from(DEFAULT_ACCOUNT_ID + 1)),
@@ -299,6 +299,36 @@ fn multiout_transfer_fails_with_insufficient_balance() {
 }
 
 #[test]
+fn multiout_transfer_fails_with_same_source_and_destination() {
+    let config = GenesisConfigBuilder::new()
+        .add_token_and_account_info()
+        .add_account_info()
+        .add_account_info()
+        .build();
+    let token_id = TokenId::one();
+    let src = AccountId::from(DEFAULT_ACCOUNT_ID);
+    let outputs = vec![
+        (
+            Simple::new(AccountId::from(DEFAULT_ACCOUNT_ID)),
+            Balance::from(DEFAULT_FREE_BALANCE),
+        ),
+        (
+            Simple::new(AccountId::from(DEFAULT_ACCOUNT_ID + 2)),
+            Balance::one(),
+        ),
+    ];
+
+    build_test_externalities(config).execute_with(|| {
+        assert_noop!(
+            <Token as ControlledTransfer<AccountId, Policy, IssuanceParams>>::controlled_multi_output_transfer(
+                token_id, src, &outputs
+            ),
+            Error::<Test>::SameSourceAndDestinationLocations,
+        );
+    })
+}
+
+#[test]
 fn multiout_transfer_ok_without_src_removal() {
     let config = GenesisConfigBuilder::new()
         .add_token_and_account_info()
@@ -306,7 +336,7 @@ fn multiout_transfer_ok_without_src_removal() {
         .add_account_info()
         .build();
     let token_id = TokenId::one();
-    let src = AccountId::from(DEFAULT_ACCOUNT_ID + 1);
+    let src = AccountId::from(DEFAULT_ACCOUNT_ID);
     let outputs = vec![
         (
             Simple::new(AccountId::from(DEFAULT_ACCOUNT_ID + 1)),
@@ -318,13 +348,26 @@ fn multiout_transfer_ok_without_src_removal() {
         ),
     ];
 
+    let total_amount = outputs.iter().fold(Balance::zero(), |acc, (_, amount)| {
+        acc.saturating_add(*amount)
+    });
+
     build_test_externalities(config).execute_with(|| {
+        let src_pre = Token::account_info_by_token_and_account(token_id, src).free_balance;
+        let dst_pre = outputs.iter().map(|(dst, _)| {
+            Token::account_info_by_token_and_account(token_id, dst.location_account()).free_balance
+        });
+
         assert_ok!(<Token as ControlledTransfer<
             AccountId,
             Policy,
             IssuanceParams,
         >>::controlled_multi_output_transfer(
             token_id, src, &outputs
-        ),);
+        ));
+
+        let src_post = Token::account_info_by_token_and_account(token_id, src).free_balance;
+
+        assert_eq!(src_pre, src_post.saturating_add(total_amount));
     })
 }

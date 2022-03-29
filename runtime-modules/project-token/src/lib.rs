@@ -530,11 +530,16 @@ impl<T: Trait> Module<T> {
         let token_info = Self::ensure_token_exists(token_id)?;
 
         // ensure src account id validity
-        let src_account_info = Self::ensure_account_data_exists(token_id, &src)?;
+        let src_account_info = Self::ensure_account_data_exists(token_id, src)?;
 
         // ensure dst account id validity
         outputs.iter().try_for_each(|(dst, _)| {
             let dst_account = dst.location_account();
+            ensure!(
+                dst_account != src.to_owned(),
+                Error::<T>::SameSourceAndDestinationLocations,
+            );
+
             Self::ensure_account_data_exists(token_id, &dst_account).map(|_| ())
         })?;
 
