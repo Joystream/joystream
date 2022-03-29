@@ -459,6 +459,7 @@ export interface EnglishAuction extends Struct {
   readonly extension_period: u32;
   readonly min_bid_step: u128;
   readonly end: u32;
+  readonly start: u32;
 }
 
 /** @name EnglishAuctionBid */
@@ -472,7 +473,8 @@ export interface EnglishAuctionParams extends Struct {
   readonly starting_price: u128;
   readonly buy_now_price: Option<u128>;
   readonly whitelist: BTreeSet<MemberId>;
-  readonly end: u32;
+  readonly duration: u32;
+  readonly starts_at: Option<u32>;
   readonly extension_period: u32;
   readonly min_bid_step: u128;
 }
@@ -631,6 +633,7 @@ export interface OpenAuction extends Struct {
   readonly starting_price: u128;
   readonly buy_now_price: Option<u128>;
   readonly whitelist: BTreeSet<MemberId>;
+  readonly start: u32;
   readonly bid_lock_duration: u32;
 }
 
@@ -649,6 +652,7 @@ export interface OpenAuctionParams extends Struct {
   readonly starting_price: u128;
   readonly buy_now_price: Option<u128>;
   readonly whitelist: BTreeSet<MemberId>;
+  readonly starts_at: Option<u32>;
   readonly bid_lock_duration: u32;
 }
 

@@ -41,12 +41,14 @@ export class EnglishAuction extends JoyStructDecorated({
   extension_period: BlockNumber,
   min_bid_step: Balance,
   end: BlockNumber,
+  start: BlockNumber,
 }) {}
 
 export class OpenAuction extends JoyStructDecorated({
   starting_price: Balance,
   buy_now_price: Option.with(Balance),
   whitelist: BTreeSet.with(MemberId),
+  start: BlockNumber,
   bid_lock_duration: BlockNumber,
 }) {}
 
@@ -74,7 +76,8 @@ export class EnglishAuctionParams extends JoyStructDecorated({
   starting_price: Balance,
   buy_now_price: Option.with(Balance),
   whitelist: BTreeSet.with(MemberId),
-  end: BlockNumber,
+  duration: BlockNumber,
+  starts_at: Option.with(BlockNumber),
   extension_period: BlockNumber,
   min_bid_step: Balance,
 }) {}
@@ -83,6 +86,7 @@ export class OpenAuctionParams extends JoyStructDecorated({
   starting_price: Balance,
   buy_now_price: Option.with(Balance),
   whitelist: BTreeSet.with(MemberId),
+  starts_at: Option.with(BlockNumber),
   bid_lock_duration: BlockNumber,
 }) {}
 

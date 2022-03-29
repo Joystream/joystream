@@ -777,7 +777,8 @@
         "starting_price": "u128",
         "buy_now_price": "Option<u128>",
         "whitelist": "BTreeSet<MemberId>",
-        "end": "u32",
+        "duration": "u32",
+        "starts_at": "Option<u32>",
         "extension_period": "u32",
         "min_bid_step": "u128"
     },
@@ -785,6 +786,7 @@
         "starting_price": "u128",
         "buy_now_price": "Option<u128>",
         "whitelist": "BTreeSet<MemberId>",
+        "starts_at": "Option<u32>",
         "bid_lock_duration": "u32"
     },
     "EnglishAuction": {
@@ -794,12 +796,14 @@
         "whitelist": "BTreeSet<MemberId>",
         "extension_period": "u32",
         "min_bid_step": "u128",
-        "end": "u32"
+        "end": "u32",
+        "start": "u32"
     },
     "OpenAuction": {
         "starting_price": "u128",
         "buy_now_price": "Option<u128>",
         "whitelist": "BTreeSet<MemberId>",
+        "start": "u32",
         "bid_lock_duration": "u32"
     },
     "OpenAuctionBid": {
