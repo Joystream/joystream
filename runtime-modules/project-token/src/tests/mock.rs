@@ -14,7 +14,10 @@ use sp_runtime::testing::{Header, H256};
 use sp_runtime::traits::{BlakeTwo256, IdentityLookup};
 
 // crate import
-use crate::{AccountDataOf, GenesisConfig, TokenDataOf, TokenIssuanceParametersOf, Trait};
+use crate::{
+    AccountDataOf, GenesisConfig, SimpleLocation, TokenDataOf, TokenIssuanceParametersOf, Trait,
+    TransferPolicyOf,
+};
 
 // Crate aliases
 pub type TokenId = <Test as Trait>::TokenId;
@@ -23,6 +26,8 @@ pub type IssuanceParams = TokenIssuanceParametersOf<Test>;
 pub type AccountData = AccountDataOf<Test>;
 pub type AccountId = <Test as frame_system::Trait>::AccountId;
 pub type Balance = <Test as Trait>::Balance;
+pub type Simple = SimpleLocation<AccountId>;
+pub type Policy = TransferPolicyOf<Test>;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
