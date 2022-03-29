@@ -146,7 +146,7 @@ impl common::council::CouncilBudgetManager<u128, u64> for CouncilBudgetManager {
         }
     }
 
-    fn try_transfer(account_id: &u128, amount: u64) -> DispatchResult {
+    fn try_withdraw(account_id: &u128, amount: u64) -> DispatchResult {
         let _ = Balances::deposit_creating(account_id, amount);
 
         let current_budget = Self::get_budget();

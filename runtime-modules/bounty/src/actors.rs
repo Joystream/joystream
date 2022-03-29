@@ -149,7 +149,7 @@ impl<T: Trait> BountyActorManager<T> {
     // Remove some balance from the council budget and transfer it to the bounty account.
     fn transfer_balance_from_council_budget(bounty_id: T::BountyId, amount: BalanceOf<T>) {
         let bounty_account_id = Module::<T>::bounty_account_id(bounty_id);
-        T::CouncilBudgetManager::transfer(&bounty_account_id, amount);
+        T::CouncilBudgetManager::withdraw(&bounty_account_id, amount);
     }
 
     // Add some balance from the council budget and slash from the bounty account.

@@ -10,11 +10,12 @@ pub trait CouncilBudgetManager<AccountId, Balance: Saturating> {
     fn set_budget(budget: Balance);
 
     /// Remove some balance from the council budget and transfer it to the account. Fallible.
-    fn try_transfer(account_id: &AccountId, amount: Balance) -> DispatchResult;
+    fn try_withdraw(account_id: &AccountId, amount: Balance) -> DispatchResult;
 
     /// Remove some balance from the council budget and transfer it to the account. Infallible.
-    fn transfer(account_id: &AccountId, amount: Balance) {
-        let _ = Self::try_transfer(account_id, amount);
+    /// No side-effects on insufficient council balance.
+    fn withdraw(account_id: &AccountId, amount: Balance) {
+        let _ = Self::try_withdraw(account_id, amount);
     }
 
     /// Increase the current budget value up to specified amount.

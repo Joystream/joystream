@@ -1785,7 +1785,7 @@ impl<T: Trait + balances::Trait> common::council::CouncilBudgetManager<T::Accoun
         Mutations::<T>::set_budget(budget);
     }
 
-    fn try_transfer(account_id: &T::AccountId, amount: Balance<T>) -> DispatchResult {
+    fn try_withdraw(account_id: &T::AccountId, amount: Balance<T>) -> DispatchResult {
         ensure!(
             Self::get_budget() >= amount,
             Error::<T>::InsufficientBalanceForTransfer
