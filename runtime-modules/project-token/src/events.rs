@@ -7,18 +7,6 @@ decl_event! {
         TokenId = <T as crate::Trait>::TokenId,
         AccountId = <T as frame_system::Trait>::AccountId,
     {
-        /// Amount is minted
-        /// Params:
-        /// - token identifier
-        /// - amount of tokens minted
-        TokenAmountMinted(TokenId, Balance),
-
-        /// Amount is burned
-        /// Params:
-        /// - token identifier
-        /// - amount of tokens burned
-        TokenAmountBurned(TokenId, Balance),
-
         /// Token amount is deposited
         /// Params:
         /// - token identifier

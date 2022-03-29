@@ -114,6 +114,8 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId, TokenIssuanceParametersOf<T>> for
                 },
             );
         }
+
+        Self::deposit_event(RawEvent::TokenAmountDepositedInto(token_id, who, amount));
         Ok(())
     }
 
@@ -154,6 +156,8 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId, TokenIssuanceParametersOf<T>> for
             account_data.free_balance = account_data.free_balance.saturating_add(amount)
         });
 
+        Self::deposit_event(RawEvent::TokenAmountDepositedInto(token_id, who, amount));
+
         Ok(())
     }
 
@@ -179,11 +183,11 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId, TokenIssuanceParametersOf<T>> for
         let account_info = Self::ensure_account_data_exists(token_id, &who)?;
 
         // Amount to decrease by accounting for existential deposit
-        let slash_operation =
+        let decrease_operation =
             account_info.decrease_with_ex_deposit::<T>(amount, token_info.existential_deposit)?;
         // ensure issuance can be decreased by amount
         ensure!(
-            token_info.current_total_issuance >= slash_operation.amount(),
+            token_info.current_total_issuance >= decrease_operation.amount(),
             Error::<T>::InsufficientIssuanceToDecreaseByAmount,
         );
 
@@ -193,11 +197,11 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId, TokenIssuanceParametersOf<T>> for
         TokenInfoById::<T>::mutate(token_id, |token_data| {
             token_data.current_total_issuance = token_data
                 .current_total_issuance
-                .saturating_sub(slash_operation.total_amount())
+                .saturating_sub(decrease_operation.total_amount())
         });
 
         // then perform proper operation for the slash
-        match slash_operation {
+        match decrease_operation {
             DecOp::<T>::Reduce(amount) => {
                 AccountInfoByTokenAndAccount::<T>::mutate(token_id, &who, |account_data| {
                     account_data.free_balance = account_data.free_balance.saturating_sub(amount);
@@ -241,12 +245,14 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId, TokenIssuanceParametersOf<T>> for
         }
 
         // tranfer preconditions
-        let outputs = [(SimpleLocation::<T::AccountId>::new(dst), amount)];
-        let (slash_operation, _) = Self::ensure_can_transfer(token_id, &src, &outputs)?;
+        let outputs = [(SimpleLocation::<T::AccountId>::new(dst.clone()), amount)];
+        let (decrease_operation, _) = Self::ensure_can_transfer(token_id, &src, &outputs)?;
 
         // == MUTATION SAFE ==
 
-        Self::do_transfer(token_id, src, &outputs, slash_operation);
+        Self::do_transfer(token_id, &src, &outputs, decrease_operation);
+
+        Self::deposit_event(RawEvent::TokenAmountTransferred(token_id, src, dst, amount));
         Ok(())
     }
 
@@ -342,6 +348,7 @@ impl<T: Trait> ReservableMultiCurrency<T::AccountId> for Module<T> {
             account_data.reserved_balance = account_data.reserved_balance.saturating_add(amount);
         });
 
+        Self::deposit_event(RawEvent::TokenAmountReservedFrom(token_id, who, amount));
         Ok(())
     }
 
@@ -378,6 +385,8 @@ impl<T: Trait> ReservableMultiCurrency<T::AccountId> for Module<T> {
             account_data.free_balance = account_data.free_balance.saturating_add(amount);
             account_data.reserved_balance = account_data.reserved_balance.saturating_sub(amount);
         });
+
+        Self::deposit_event(RawEvent::TokenAmountUnreservedFrom(token_id, who, amount));
 
         Ok(())
     }
@@ -436,15 +445,21 @@ impl<T: Trait> ControlledTransfer<T::AccountId, TransferPolicyOf<T>, TokenIssuan
 
         // Currency transfer preconditions
         let outputs = [(dst.clone(), amount)];
-        let (slash_operation, token_info) = Self::ensure_can_transfer(token_id, &src, &outputs)?;
+        let (decrease_operation, token_info) = Self::ensure_can_transfer(token_id, &src, &outputs)?;
 
         // validate according to policy
         token_info.ensure_valid_location_for_policy::<T, T::AccountId, _>(&dst)?;
 
         // == MUTATION SAFE ==
 
-        Self::do_transfer(token_id, src, &outputs, slash_operation);
+        Self::do_transfer(token_id, &src, &outputs, decrease_operation);
 
+        Self::deposit_event(RawEvent::TokenAmountTransferred(
+            token_id,
+            src,
+            dst.location_account(),
+            amount,
+        ));
         Ok(())
     }
 
@@ -456,7 +471,7 @@ impl<T: Trait> ControlledTransfer<T::AccountId, TransferPolicyOf<T>, TokenIssuan
     where
         Destination: TransferLocationTrait<T::AccountId, TransferPolicyOf<T>>,
     {
-        let (slash_operation, token_info) = Self::ensure_can_transfer(token_id, &src, outputs)?;
+        let (decrease_operation, token_info) = Self::ensure_can_transfer(token_id, &src, outputs)?;
         // validate according to policy
         outputs.iter().try_for_each(|(dst, _)| {
             token_info.ensure_valid_location_for_policy::<T, T::AccountId, _>(dst)
@@ -464,7 +479,9 @@ impl<T: Trait> ControlledTransfer<T::AccountId, TransferPolicyOf<T>, TokenIssuan
 
         // == MUTATION SAFE ==
 
-        Self::do_transfer(token_id, src, outputs, slash_operation);
+        Self::do_transfer(token_id, &src, outputs, decrease_operation);
+
+        // TODO: establish proper event
 
         Ok(())
     }
@@ -561,7 +578,7 @@ impl<T: Trait> Module<T> {
     #[inline]
     pub(crate) fn do_transfer<Destination>(
         token_id: T::TokenId,
-        src: T::AccountId,
+        src: &T::AccountId,
         outputs: &[(Destination, T::Balance)],
         decrease_op: DecOp<T>,
     ) where
