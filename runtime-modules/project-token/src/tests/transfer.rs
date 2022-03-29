@@ -208,3 +208,92 @@ fn multiout_transfer_fails_with_non_existing_token() {
         );
     })
 }
+
+#[test]
+fn multiout_transfer_fails_with_non_existing_src() {
+    let config = GenesisConfigBuilder::new()
+        .add_token_and_account_info()
+        .add_account_info()
+        .add_account_info()
+        .build();
+    let token_id = TokenId::one();
+    let src = AccountId::from(DEFAULT_ACCOUNT_ID + 3);
+    let outputs = vec![
+        (
+            Simple::new(AccountId::from(DEFAULT_ACCOUNT_ID + 1)),
+            Balance::one(),
+        ),
+        (
+            Simple::new(AccountId::from(DEFAULT_ACCOUNT_ID + 2)),
+            Balance::one(),
+        ),
+    ];
+
+    build_test_externalities(config).execute_with(|| {
+        assert_noop!(
+            <Token as ControlledTransfer<AccountId, Policy, IssuanceParams>>::controlled_multi_output_transfer(
+                token_id, src, &outputs
+            ),
+            Error::<Test>::AccountInformationDoesNotExist,
+        );
+    })
+}
+
+#[test]
+fn multiout_transfer_fails_with_non_existing_dst() {
+    let config = GenesisConfigBuilder::new()
+        .add_token_and_account_info()
+        .add_account_info()
+        .build();
+    let token_id = TokenId::one();
+    let src = AccountId::from(DEFAULT_ACCOUNT_ID + 1);
+    let outputs = vec![
+        (
+            Simple::new(AccountId::from(DEFAULT_ACCOUNT_ID + 1)),
+            Balance::one(),
+        ),
+        (
+            Simple::new(AccountId::from(DEFAULT_ACCOUNT_ID + 2)),
+            Balance::one(),
+        ),
+    ];
+
+    build_test_externalities(config).execute_with(|| {
+        assert_noop!(
+            <Token as ControlledTransfer<AccountId, Policy, IssuanceParams>>::controlled_multi_output_transfer(
+                token_id, src, &outputs
+            ),
+            Error::<Test>::AccountInformationDoesNotExist,
+        );
+    })
+}
+
+#[test]
+fn multiout_transfer_fails_with_insufficient_balance() {
+    let config = GenesisConfigBuilder::new()
+        .add_token_and_account_info()
+        .add_account_info()
+        .add_account_info()
+        .build();
+    let token_id = TokenId::one();
+    let src = AccountId::from(DEFAULT_ACCOUNT_ID + 1);
+    let outputs = vec![
+        (
+            Simple::new(AccountId::from(DEFAULT_ACCOUNT_ID + 1)),
+            Balance::from(DEFAULT_FREE_BALANCE),
+        ),
+        (
+            Simple::new(AccountId::from(DEFAULT_ACCOUNT_ID + 2)),
+            Balance::one(),
+        ),
+    ];
+
+    build_test_externalities(config).execute_with(|| {
+        assert_noop!(
+            <Token as ControlledTransfer<AccountId, Policy, IssuanceParams>>::controlled_multi_output_transfer(
+                token_id, src, &outputs
+            ),
+            Error::<Test>::InsufficientFreeBalanceForTransfer,
+        );
+    })
+}
