@@ -23,9 +23,10 @@ use working_group::{
 };
 
 use crate::{
-    BagId, Balances, Call, Cid, DataObjectCreationParameters, DistributionBucketByFamilyIdById,
-    DistributionBucketFamilyById, DistributionBucketId, DynamicBagType, Module, RawEvent,
-    StaticBagId, StorageBucketById, StorageBucketOperatorStatus, Trait, UploadParameters, WorkerId,
+    BagId, Balances, Blacklist, Call, Cid, DataObjectCreationParameters,
+    DistributionBucketByFamilyIdById, DistributionBucketFamilyById, DistributionBucketId,
+    DynamicBagType, Module, RawEvent, StaticBagId, StorageBucketById, StorageBucketOperatorStatus,
+    Trait, UploadParameters, WorkerId,
 };
 use frame_support::sp_runtime::SaturatedConversion;
 
@@ -350,8 +351,8 @@ fn create_storage_buckets<T: Trait>(
         .collect::<_>()
 }
 
-fn create_cids(i: u32) -> BTreeSet<Cid> {
-    fn create_cid(i: u32) -> Cid {
+fn create_cids(i: u32, prefix: u8) -> BTreeSet<Cid> {
+    fn create_cid(i: u32, prefix: u8) -> Cid {
         let bytes = i.to_be_bytes();
         let mut buffer = Vec::new();
 
@@ -360,10 +361,15 @@ fn create_cids(i: u32) -> BTreeSet<Cid> {
             buffer.append(&mut bytes.to_vec());
         }
 
+        buffer[0] = prefix;
+
         buffer
     }
 
-    (0..i).into_iter().map(create_cid).collect::<_>()
+    (0..i)
+        .into_iter()
+        .map(|idx| create_cid(idx, prefix))
+        .collect::<_>()
 }
 
 fn set_storage_operator<T: Trait>(
@@ -450,9 +456,6 @@ fn create_distribution_buckets<T: Trait>(
         .collect::<_>()
 }
 
-const BLACKLIST_SIZE_LIMIT: u32 = 200;
-const STORAGE_BUCKETS_FOR_BAG_NUMBER: u32 = 7;
-const DISTRIBUTION_BUCKETS_FOR_BAG_NUMBER: u32 = 7;
 const DISTRIBUTION_BUCKET_FAMILIES_NUMBER: u32 = 7;
 const MAX_BYTE_SIZE: u32 = 1000;
 const OBJECT_COUNT: u32 = 400;
@@ -554,13 +557,13 @@ benchmarks! {
     }
 
     update_blacklist {
-        let i in 0 .. BLACKLIST_SIZE_LIMIT;
-        let j in 0 .. BLACKLIST_SIZE_LIMIT;
+        let i in 0 .. T::BlacklistSizeLimit::get().saturated_into();
+        let j in 0 .. T::BlacklistSizeLimit::get().saturated_into();
 
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
 
-        let add_cids = create_cids(i);
-        let remove_cids = create_cids(j);
+        let add_cids = create_cids(i, 0u8);
+        let remove_cids = create_cids(j, 1u8);
 
         // Add 'cids to remove' first.
         Module::<T>::update_blacklist(
@@ -572,6 +575,14 @@ benchmarks! {
 
     }: _ (RawOrigin::Signed(lead_account_id), remove_cids.clone(), add_cids.clone())
     verify {
+        if let Some(cid) = add_cids.iter().next(){
+            assert!(Blacklist::contains_key(&cid));
+        }
+
+        if let Some(cid) = remove_cids.iter().next(){
+            assert!(!Blacklist::contains_key(&cid));
+        }
+
         assert_last_event::<T>(
             RawEvent::UpdateBlacklist(
                 remove_cids,
@@ -593,15 +604,15 @@ benchmarks! {
     }
 
     update_storage_buckets_for_bag {
-        let i in 1 .. STORAGE_BUCKETS_FOR_BAG_NUMBER;
-        let j in 1 .. STORAGE_BUCKETS_FOR_BAG_NUMBER;
+        let i in 1 .. T::StorageBucketsPerBagValueConstraint::get().max().saturated_into();
+        let j in 1 .. T::StorageBucketsPerBagValueConstraint::get().max().saturated_into();
 
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let bag_id = BagId::<T>::Static(StaticBagId::Council);
 
         Module::<T>::update_storage_buckets_per_bag_limit(
             RawOrigin::Signed(lead_account_id.clone()).into(),
-            STORAGE_BUCKETS_FOR_BAG_NUMBER.saturated_into(),
+            T::StorageBucketsPerBagValueConstraint::get().max().saturated_into(),
         ).unwrap();
 
         let add_buckets = create_storage_buckets::<T>(lead_account_id.clone(), i);
@@ -879,7 +890,7 @@ benchmarks! {
 
         Module::<T>::update_storage_buckets_per_bag_limit(
             RawOrigin::Signed(lead_account_id.clone()).into(),
-            STORAGE_BUCKETS_FOR_BAG_NUMBER.saturated_into(),
+            T::StorageBucketsPerBagValueConstraint::get().max().saturated_into(),
         ).unwrap();
 
         Module::<T>::update_storage_buckets_for_bag(
@@ -908,7 +919,7 @@ benchmarks! {
         )
         .unwrap();
 
-        let object_parameters = create_cids(i)
+        let object_parameters = create_cids(i, 0u8)
             .iter()
             .map(|cid| DataObjectCreationParameters{
                 size: i.saturated_into(),
@@ -1022,14 +1033,14 @@ benchmarks! {
     }
 
     update_distribution_buckets_for_bag {
-        let i in 1 .. DISTRIBUTION_BUCKETS_FOR_BAG_NUMBER;
-        let j in 1 .. DISTRIBUTION_BUCKETS_FOR_BAG_NUMBER;
+        let i in 1 .. T::DistributionBucketsPerBagValueConstraint::get().max().saturated_into();
+        let j in 1 .. T::DistributionBucketsPerBagValueConstraint::get().max().saturated_into();
 
         let lead_account_id = insert_distribution_leader::<T>(DISTRIBUTION_WG_LEADER_ACCOUNT_ID);
         let bag_id = BagId::<T>::Static(StaticBagId::Council);
         let family_id = create_distribution_family::<T>(lead_account_id.clone());
 
-        let new_limit = 7;
+        let new_limit: u64 = T::DistributionBucketsPerBagValueConstraint::get().max().into();
         Module::<T>::update_distribution_buckets_per_bag_limit(
             RawOrigin::Signed(lead_account_id.clone()).into(),
             new_limit

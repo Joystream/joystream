@@ -3155,6 +3155,14 @@ decl_module! {
         }
 
         /// Create a dynamic bag. Development mode.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` where:
+        /// - `W` is length of the `message`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::storage_operator_remark(msg.len().saturated_into())]
         pub fn storage_operator_remark(
             origin,
@@ -3174,6 +3182,14 @@ decl_module! {
         }
 
         /// Create a dynamic bag. Development mode.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (W)` where:
+        /// - `W` is length of the `message`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
         #[weight = WeightInfoStorage::<T>::distribution_operator_remark(msg.len().saturated_into())]
         pub fn distribution_operator_remark(
             origin,
