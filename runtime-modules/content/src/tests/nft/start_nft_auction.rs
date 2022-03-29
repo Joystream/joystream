@@ -339,31 +339,6 @@ fn start_nft_auction_invalid_params() {
         );
 
         // Make an attempt to start english nft auction if extension period
-        // of auction provided is less then min allowed extension period
-        let auction_params = EnglishAuctionParams::<Test> {
-            starting_price: Content::max_starting_price(),
-            buy_now_price: None,
-            extension_period: Content::min_auction_extension_period() - 1,
-            min_bid_step: Content::max_bid_step(),
-            duration: AUCTION_DURATION,
-            starts_at: None,
-            whitelist: BTreeSet::new(),
-        };
-
-        let start_nft_auction_result = Content::start_english_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            video_id,
-            auction_params.clone(),
-        );
-
-        // Failure checked
-        assert_err!(
-            start_nft_auction_result,
-            Error::<Test>::ExtensionPeriodLowerBoundExceeded
-        );
-
-        // Make an attempt to start english nft auction if extension period
         // of auction provided is greater then max allowed extension period
         let auction_params = EnglishAuctionParams::<Test> {
             starting_price: Content::max_starting_price(),
@@ -534,6 +509,75 @@ fn start_nft_auction_invalid_params() {
         assert_err!(
             start_nft_auction_result,
             Error::<Test>::MaxAuctionWhiteListLengthUpperBoundExceeded
+        );
+    })
+}
+
+#[test]
+fn start_eng_auction_fails_with_invalid_forward_starting() {
+    // Make an attempt to start english nft auction if extension period
+    // of auction provided is less then min allowed extension period
+    with_default_mock_builder(|| {
+        let starting_block = 2;
+        run_to_block(starting_block);
+
+        let video_id = Content::next_video_id();
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+
+        // Issue nft
+        assert_ok!(Content::issue_nft(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            NftIssuanceParameters::<Test>::default(),
+        ));
+
+        let auction_params = EnglishAuctionParams::<Test> {
+            starting_price: Content::max_starting_price(),
+            buy_now_price: None,
+            extension_period: Content::min_auction_extension_period(),
+            min_bid_step: Content::min_bid_step(),
+            duration: AUCTION_DURATION,
+            starts_at: Some(starting_block + 1 + Content::auction_starts_at_max_delta()),
+            whitelist: BTreeSet::new(),
+        };
+
+        let start_nft_auction_result = Content::start_english_auction(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            auction_params.clone(),
+        );
+
+        // Failure checked
+        assert_err!(
+            start_nft_auction_result,
+            Error::<Test>::StartsAtUpperBoundExceeded,
+        );
+
+        let auction_params = EnglishAuctionParams::<Test> {
+            starting_price: Content::max_starting_price(),
+            buy_now_price: None,
+            extension_period: Content::min_auction_extension_period(),
+            min_bid_step: Content::min_bid_step(),
+            duration: AUCTION_DURATION,
+            starts_at: Some(starting_block - 1),
+            whitelist: BTreeSet::new(),
+        };
+
+        let start_nft_auction_result = Content::start_english_auction(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            auction_params.clone(),
+        );
+
+        // Failure checked
+        assert_err!(
+            start_nft_auction_result,
+            Error::<Test>::StartsAtLowerBoundExceeded,
         );
     })
 }
