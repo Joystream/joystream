@@ -231,6 +231,9 @@ type BidMadeCompletingAuctionEvent implements Event @entity {
 
   "Auctioned video."
   video: Video!
+
+  "price for which the NFT was bought"
+  price: Int!
 }
 
 type OpenAuctionBidAcceptedEvent implements Event @entity {
@@ -399,6 +402,9 @@ type NftBoughtEvent implements Event @entity {
 
   "Member that bought the NFT."
   member: Membership!
+
+  "Price for which NFT was bought"
+  price: Int!
 }
 
 type BuyNowCanceledEvent implements Event @entity {
