@@ -4,7 +4,7 @@ use frame_support::{assert_noop, assert_ok, StorageDoubleMap};
 use sp_arithmetic::traits::{One, Zero};
 
 use crate::tests::mock::*;
-use crate::traits::{ControlledTransfer, MultiCurrencyBase, TransferLocationTrait};
+use crate::traits::{ControlledTransfer, MultiCurrencyBase};
 use crate::Error;
 
 // base transfer tests
@@ -354,9 +354,13 @@ fn multiout_transfer_ok_without_src_removal() {
 
     build_test_externalities(config).execute_with(|| {
         let src_pre = Token::account_info_by_token_and_account(token_id, src).free_balance;
-        let dst_pre = outputs.iter().map(|(dst, _)| {
-            Token::account_info_by_token_and_account(token_id, dst.location_account()).free_balance
-        });
+        let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
+        let dst_pre = outputs
+            .iter()
+            .map(|(dst, _)| {
+                Token::account_info_by_token_and_account(token_id, dst.account).free_balance
+            })
+            .collect::<Vec<_>>();
 
         assert_ok!(<Token as ControlledTransfer<
             AccountId,
@@ -366,8 +370,78 @@ fn multiout_transfer_ok_without_src_removal() {
             token_id, src, &outputs
         ));
 
+        let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
         let src_post = Token::account_info_by_token_and_account(token_id, src).free_balance;
+        let dst_post = outputs.iter().map(|(dst, _)| {
+            Token::account_info_by_token_and_account(token_id, dst.account).free_balance
+        });
 
+        assert_eq!(issuance_pre, issuance_post);
         assert_eq!(src_pre, src_post.saturating_add(total_amount));
+        assert!(dst_pre
+            .iter()
+            .zip(dst_post)
+            .zip(outputs.iter().map(|(_, amount)| *amount))
+            .all(|((pre, post), amount)| { pre.saturating_add(amount) == post }));
+    })
+}
+
+#[test]
+fn multiout_transfer_ok_with_src_removal() {
+    let config = GenesisConfigBuilder::new()
+        .add_token_and_account_info()
+        .add_account_info()
+        .add_account_info()
+        .build();
+    let token_id = TokenId::one();
+    let src = AccountId::from(DEFAULT_ACCOUNT_ID);
+    let outputs = vec![
+        (
+            Simple::new(AccountId::from(DEFAULT_ACCOUNT_ID + 1)),
+            Balance::one(),
+        ),
+        (
+            Simple::new(AccountId::from(DEFAULT_ACCOUNT_ID + 2)),
+            Balance::from(DEFAULT_FREE_BALANCE - DEFAULT_EXISTENTIAL_DEPOSIT),
+        ),
+    ];
+
+    let total_amount = outputs.iter().fold(Balance::zero(), |acc, (_, amount)| {
+        acc.saturating_add(*amount)
+    });
+
+    build_test_externalities(config).execute_with(|| {
+        let src_pre = Token::account_info_by_token_and_account(token_id, src).free_balance;
+        let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
+        let dust = src_pre.saturating_sub(total_amount);
+        let dst_pre = outputs
+            .iter()
+            .map(|(dst, _)| {
+                Token::account_info_by_token_and_account(token_id, dst.account).free_balance
+            })
+            .collect::<Vec<_>>();
+
+        assert_ok!(<Token as ControlledTransfer<
+            AccountId,
+            Policy,
+            IssuanceParams,
+        >>::controlled_multi_output_transfer(
+            token_id, src, &outputs
+        ));
+
+        let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
+        let dst_post = outputs.iter().map(|(dst, _)| {
+            Token::account_info_by_token_and_account(token_id, dst.account).free_balance
+        });
+
+        assert_eq!(issuance_pre, issuance_post.saturating_add(dust));
+        assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
+            token_id, src
+        ));
+        assert!(dst_pre
+            .iter()
+            .zip(dst_post)
+            .zip(outputs.iter().map(|(_, amount)| *amount))
+            .all(|((pre, post), amount)| { pre.saturating_add(amount) == post }));
     })
 }

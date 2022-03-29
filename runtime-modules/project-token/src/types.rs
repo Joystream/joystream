@@ -119,14 +119,14 @@ pub struct TokenIssuanceParameters<Balance, Hash> {
 /// Transfer location without merkle proof
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
 pub struct SimpleLocation<AccountId> {
-    account: AccountId,
+    pub account: AccountId,
 }
 
 /// Transfer location with merkle proof
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
 pub struct VerifiableLocation<AccountId, Hasher: Hash> {
     merkle_proof: Vec<(Hasher::Output, MerkleSide)>,
-    account: AccountId,
+    pub account: AccountId,
 }
 
 /// Utility enum used in merkle proof verification
