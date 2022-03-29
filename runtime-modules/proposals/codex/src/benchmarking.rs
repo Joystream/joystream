@@ -160,7 +160,13 @@ fn create_proposal_verify<T: Trait>(
     );
 
     assert_last_event::<T>(
-        RawEvent::ProposalCreated(proposal_id, proposal_parameters, proposal_details).into(),
+        RawEvent::ProposalCreated(
+            proposal_id,
+            proposal_parameters,
+            proposal_details,
+            thread_id,
+        )
+        .into(),
     );
 
     assert!(

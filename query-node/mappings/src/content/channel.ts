@@ -3,17 +3,13 @@ eslint-disable @typescript-eslint/naming-convention
 */
 import { EventContext, StoreContext } from '@joystream/hydra-common'
 import { Content } from '../../generated/types'
-import {
-  convertContentActorToChannelOwner,
-  processChannelMetadata,
-  updateChannelCategoryVideoActiveCounter,
-  unsetAssetRelations,
-} from './utils'
+import { convertContentActorToChannelOwner, processChannelMetadata, unsetAssetRelations } from './utils'
 import { Channel, ChannelCategory, StorageDataObject, Membership } from 'query-node/dist/model'
 import { deserializeMetadata, inconsistentState, logger } from '../common'
 import { ChannelCategoryMetadata, ChannelMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import { In } from 'typeorm'
+import { getAllManagers } from '../derivedPropertiesManager/applications'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
@@ -71,8 +67,6 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
     return inconsistentState('Non-existing channel update requested', channelId)
   }
 
-  const originalCategory = channel.category
-
   // prepare changed metadata
   const newMetadataBytes = channelUpdateParameters.new_meta.unwrapOr(null)
 
@@ -103,11 +97,11 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
   // set last update time
   channel.updatedAt = new Date(event.blockTimestamp)
 
+  // transfer video active counter value to new category
+  await getAllManagers(store).channels.onMainEntityUpdate(channel)
+
   // save channel
   await store.save<Channel>(channel)
-
-  // transfer video active counter value to new category
-  await updateChannelCategoryVideoActiveCounter(store, originalCategory, channel.category, channel.activeVideosCounter)
 
   // emit log event
   logger.info('Channel has been updated', { id: channel.id })
@@ -145,16 +139,10 @@ export async function content_ChannelCensorshipStatusUpdated({
   // set last update time
   channel.updatedAt = new Date(event.blockTimestamp)
 
+  await getAllManagers(store).channels.onMainEntityUpdate(channel)
+
   // save channel
   await store.save<Channel>(channel)
-
-  // update active video counter for category (if any)
-  await updateChannelCategoryVideoActiveCounter(
-    store,
-    isCensored.isTrue ? channel.category : undefined,
-    isCensored.isTrue ? undefined : channel.category,
-    channel.activeVideosCounter
-  )
 
   // emit log event
   logger.info('Channel censorship status has been updated', { id: channelId, isCensored: isCensored.isTrue })

@@ -126,6 +126,7 @@ where
                 proposal_id,
                 self.general_proposal_parameters.clone(),
                 self.proposal_details.clone(),
+                thread_id,
             )
             .into(),
         );

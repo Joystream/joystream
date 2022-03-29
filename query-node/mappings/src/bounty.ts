@@ -203,7 +203,7 @@ export async function bounty_BountyCreated({ event, store }: EventContext & Stor
   // Create the EntrantWhitelist
   const entrantWhitelist = asEntrantWhitelist(bountyParams.contract_type)
   if (entrantWhitelist) {
-    store.save<BountyEntrantWhitelist>(entrantWhitelist)
+    await store.save<BountyEntrantWhitelist>(entrantWhitelist)
   }
 
   // Create the bounty
