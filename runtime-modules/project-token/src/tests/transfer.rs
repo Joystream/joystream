@@ -246,7 +246,7 @@ fn multiout_transfer_fails_with_non_existing_dst() {
         .add_account_info()
         .build();
     let token_id = TokenId::one();
-    let src = AccountId::from(DEFAULT_ACCOUNT_ID + 1);
+    let src = AccountId::from(DEFAULT_ACCOUNT_ID);
     let outputs = vec![
         (
             Simple::new(AccountId::from(DEFAULT_ACCOUNT_ID + 1)),

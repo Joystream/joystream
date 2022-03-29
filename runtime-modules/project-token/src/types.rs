@@ -119,7 +119,7 @@ pub struct TokenIssuanceParameters<Balance, Hash> {
 /// Transfer location without merkle proof
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
 pub struct SimpleLocation<AccountId> {
-    pub account: AccountId,
+    pub(crate) account: AccountId,
 }
 
 /// Transfer location with merkle proof
@@ -130,7 +130,7 @@ pub struct VerifiableLocation<AccountId, Hasher: Hash> {
 }
 
 /// Utility enum used in merkle proof verification
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy)]
 pub enum MerkleSide {
     /// This element appended to the right of the subtree hash
     Right,

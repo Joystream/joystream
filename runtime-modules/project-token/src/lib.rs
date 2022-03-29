@@ -535,12 +535,15 @@ impl<T: Trait> Module<T> {
         // ensure dst account id validity
         outputs.iter().try_for_each(|(dst, _)| {
             let dst_account = dst.location_account();
-            ensure!(
-                dst_account != src.to_owned(),
-                Error::<T>::SameSourceAndDestinationLocations,
-            );
 
-            Self::ensure_account_data_exists(token_id, &dst_account).map(|_| ())
+            // enusure destination exists and that it differs from source
+            Self::ensure_account_data_exists(token_id, &dst_account).and_then(|_| {
+                ensure!(
+                    dst_account != *src,
+                    Error::<T>::SameSourceAndDestinationLocations,
+                );
+                Ok(())
+            })
         })?;
 
         let total_amount = outputs.iter().fold(T::Balance::zero(), |acc, (_, amount)| {
