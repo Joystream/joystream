@@ -161,7 +161,8 @@ export const bountyScheduleWorkSubmissionEnd = scheduleBountyStageEnd(BountyStag
 
 export const bountyScheduleJudgmentEnd = scheduleBountyStageEnd(
   BountyStage.Judgment,
-  (store, bounty) => endJudgmentPeriod(store, bounty, []),
+  // Go to Withdrawal Period
+  (store, bounty) => goToWithdrawalPeriod(store, bounty, []),
   ['entries']
 )
 
@@ -172,35 +173,44 @@ function endFundingPeriod(
   isFunded: boolean,
   updatedAt = new Date()
 ): Promise<void> {
-  bounty.updatedAt = updatedAt
   if (isFunded) {
+    // Go to Working period
+    bounty.updatedAt = updatedAt
     bounty.stage = BountyStage.WorkSubmission
     bountyScheduleWorkSubmissionEnd(bounty, blockNumber + bounty.workPeriod)
+    return store.save<Bounty>(bounty)
+  } else if (bounty.totalFunding.eqn(0)) {
+    // Go to Expired Funding Period
+    bounty.updatedAt = updatedAt
+    bounty.stage = BountyStage.Expired
+    return store.save<Bounty>(bounty)
   } else {
-    bounty.stage = BountyStage[bounty.totalFunding.gtn(0) ? 'Failed' : 'Expired']
+    // Go to Withdrawal Period
+    return goToWithdrawalPeriod(store, bounty)
   }
-  return store.save<Bounty>(bounty)
 }
 
 function endWorkingPeriod(store: DatabaseManager, bounty: Bounty, blockNumber: number): Promise<void> {
-  bounty.updatedAt = new Date()
   if (bounty.entries?.some((entry) => entry.workSubmitted)) {
+    // Go to Judgement Period
+    bounty.updatedAt = new Date()
     bounty.stage = BountyStage.Judgment
     bountyScheduleJudgmentEnd(bounty, blockNumber + bounty.judgingPeriod)
+    return store.save<Bounty>(bounty)
   } else {
-    bounty.stage = BountyStage.Failed
+    // Go to Withdrawal Period
+    return goToWithdrawalPeriod(store, bounty)
   }
-  return store.save<Bounty>(bounty)
 }
 
 type JudgmentEntries = [EntryId, OracleWorkEntryJudgment][]
-async function endJudgmentPeriod(
+async function goToWithdrawalPeriod(
   store: DatabaseManager,
   bounty: Bounty,
-  entryJudgments: JudgmentEntries
+  judgementEntries: JudgmentEntries = []
 ): Promise<void> {
   // Update the bounty status
-  const hasWinners = entryJudgments.some(([, judgment]) => judgment.isWinner)
+  const hasWinners = judgementEntries.some(([, judgment]) => judgment.isWinner)
   bounty.updatedAt = new Date()
   bounty.stage = BountyStage[hasWinners ? 'Successful' : 'Failed']
   await store.save<Bounty>(bounty)
@@ -210,7 +220,7 @@ async function endJudgmentPeriod(
     bounty.entries?.flatMap((entry) => {
       if (entry.status.isTypeOf !== 'BountyEntryStatusWorking') return []
 
-      const judgment = entryJudgments.find(([entryId]) => String(entryId) === entry.id)?.[1]
+      const judgment = judgementEntries.find(([entryId]) => String(entryId) === entry.id)?.[1]
 
       if (judgment?.isWinner) {
         const status = new BountyEntryStatusWinner()
@@ -492,8 +502,8 @@ export async function bounty_OracleJudgmentSubmitted({ event, store }: EventCont
   const bounty = await getBounty(store, bountyId, ['entries'])
   const entryJudgments = Array.from(bountyJudgment.entries())
 
-  // Update the bounty status and winner entries status
-  endJudgmentPeriod(store, bounty, entryJudgments)
+  // Go to Withdrawal Period (and update entries statuses)
+  goToWithdrawalPeriod(store, bounty, entryJudgments)
 
   // Record the event
   const judgmentEvent = new OracleJudgmentSubmittedEvent({
