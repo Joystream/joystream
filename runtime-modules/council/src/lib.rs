@@ -66,6 +66,8 @@ mod benchmarking;
 mod mock;
 mod tests;
 
+type Balances<T> = balances::Module<T>;
+
 /////////////////// Data Structures ////////////////////////////////////////////
 
 /// Information about council's current state and when it changed the last time.
