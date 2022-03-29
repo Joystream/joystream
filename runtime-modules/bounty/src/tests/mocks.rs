@@ -58,7 +58,6 @@ parameter_types! {
     pub const BountyLockId: [u8; 8] = [12; 8];
     pub const ClosedContractSizeLimit: u32 = 3;
     pub const MinCherryLimit: u64 = 10;
-    pub const MinOracleRewardLimit: u64 = 10;
     pub const MinFundingLimit: u64 = 50;
     pub const MinWorkEntrantStake: u64 = 10;
 }
@@ -102,7 +101,6 @@ impl Trait for Test {
     type EntryId = u64;
     type ClosedContractSizeLimit = ClosedContractSizeLimit;
     type MinCherryLimit = MinCherryLimit;
-    type MinOracleRewardLimit = MinOracleRewardLimit;
     type MinFundingLimit = MinFundingLimit;
     type MinWorkEntrantStake = MinWorkEntrantStake;
 }
@@ -179,10 +177,7 @@ impl crate::WeightInfo for () {
     fn switch_oracle_to_member_by_oracle_council() -> u64 {
         0
     }
-    fn switch_oracle_to_member_by_not_oracle_council() -> u64 {
-        0
-    }
-    fn veto_bounty() -> u64 {
+    fn switch_oracle_to_member_by_council_not_oracle() -> u64 {
         0
     }
     fn fund_bounty_by_member() -> u64 {
@@ -218,10 +213,10 @@ impl crate::WeightInfo for () {
     fn unlock_work_entrant_stake() -> u64 {
         0
     }
-    fn withdraw_state_bloat_bond_by_council() -> u64 {
+    fn withdraw_state_bloat_bond_amount_by_council() -> u64 {
         0
     }
-    fn withdraw_state_bloat_bond_by_member() -> u64 {
+    fn withdraw_state_bloat_bond_amount_by_member() -> u64 {
         0
     }
 }

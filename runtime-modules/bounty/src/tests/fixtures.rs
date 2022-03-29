@@ -49,8 +49,8 @@ pub fn decrease_bounty_account_balance(bounty_id: u64, amount: u64) {
     let account_id = Bounty::bounty_account_id(bounty_id);
     let _ = Balances::slash(&account_id, amount);
 }
-pub fn get_state_bloat_bond() -> u64 {
-    crate::STATE_BLOAT_BOND.into()
+pub fn get_state_bloat_bond_amount() -> u64 {
+    crate::STATE_BLOAT_BOND_AMOUNT.into()
 }
 pub struct EventFixture;
 impl EventFixture {
@@ -318,38 +318,6 @@ impl CancelBountyFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result =
             Bounty::cancel_bounty(self.origin.clone().into(), self.bounty_id.clone());
-
-        assert_eq!(actual_result, expected_result);
-
-        if actual_result.is_ok() {
-            assert!(!<crate::Bounties<Test>>::contains_key(&self.bounty_id));
-        }
-    }
-}
-
-pub struct VetoBountyFixture {
-    origin: RawOrigin<u128>,
-    bounty_id: u64,
-}
-
-impl VetoBountyFixture {
-    pub fn default() -> Self {
-        Self {
-            origin: RawOrigin::Root,
-            bounty_id: 1,
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_bounty_id(self, bounty_id: u64) -> Self {
-        Self { bounty_id, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = Bounty::veto_bounty(self.origin.clone().into(), self.bounty_id.clone());
 
         assert_eq!(actual_result, expected_result);
 
@@ -680,6 +648,44 @@ impl SubmitJudgmentFixture {
     }
 }
 
+pub struct SwitchOracleAsRootFixture {
+    origin: RawOrigin<u128>,
+    new_oracle: BountyActor<u64>,
+    bounty_id: u64,
+}
+
+impl SwitchOracleAsRootFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Root,
+            new_oracle: BountyActor::Member(2),
+            bounty_id: 1,
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
+        Self { origin, ..self }
+    }
+    pub fn with_bounty_id(self, bounty_id: u64) -> Self {
+        Self { bounty_id, ..self }
+    }
+    pub fn with_new_oracle_member_id(self, bounty_actor: BountyActor<u64>) -> Self {
+        Self {
+            new_oracle: bounty_actor,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Bounty::switch_oracle_as_root(
+            self.origin.clone().into(),
+            self.new_oracle.clone(),
+            self.bounty_id,
+        );
+
+        assert_eq!(actual_result, expected_result);
+    }
+}
+
 pub struct SwitchOracleFixture {
     origin: RawOrigin<u128>,
     new_oracle: BountyActor<u64>,
@@ -866,7 +872,7 @@ impl WithdrawStateBloatBondFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = Bounty::withdraw_state_bloat_bond(
+        let actual_result = Bounty::withdraw_state_bloat_bond_amount(
             self.origin.clone().into(),
             self.funder.clone(),
             self.bounty_id.clone(),
