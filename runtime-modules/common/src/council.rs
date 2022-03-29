@@ -1,7 +1,8 @@
 use frame_support::dispatch::DispatchResult;
+use sp_arithmetic::traits::Saturating;
 
 /// Provides an interface for the council budget.
-pub trait CouncilBudgetManager<AccountId, Balance> {
+pub trait CouncilBudgetManager<AccountId, Balance: Saturating> {
     /// Returns the current council balance.
     fn get_budget() -> Balance;
 
@@ -12,10 +13,17 @@ pub trait CouncilBudgetManager<AccountId, Balance> {
     fn try_transfer(account_id: &AccountId, amount: Balance) -> DispatchResult;
 
     /// Remove some balance from the council budget and transfer it to the account. Infallible.
-    fn transfer(account_id: &AccountId, amount: Balance);
+    fn transfer(account_id: &AccountId, amount: Balance) {
+        let _ = Self::try_transfer(account_id, amount);
+    }
 
     /// Increase the current budget value up to specified amount.
-    fn increase_budget(amount: Balance);
+    fn increase_budget(amount: Balance) {
+        let current_budget = Self::get_budget();
+        let new_budget = current_budget.saturating_add(amount);
+
+        Self::set_budget(new_budget);
+    }
 }
 
 /// Council validator for the origin(account_id) and member_id.
