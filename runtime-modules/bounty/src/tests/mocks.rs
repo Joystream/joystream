@@ -125,7 +125,7 @@ impl common::membership::MembershipInfoProvider<Test> for () {
 
 pub const COUNCIL_BUDGET_ACCOUNT_ID: u128 = 90000000;
 pub struct CouncilBudgetManager;
-impl common::council::CouncilBudgetManager<u64> for CouncilBudgetManager {
+impl common::council::CouncilBudgetManager<u128, u64> for CouncilBudgetManager {
     fn get_budget() -> u64 {
         balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID)
     }
@@ -144,6 +144,16 @@ impl common::council::CouncilBudgetManager<u64> for CouncilBudgetManager {
             let _ =
                 balances::Module::<Test>::slash(&COUNCIL_BUDGET_ACCOUNT_ID, old_budget - budget);
         }
+    }
+
+    fn try_withdraw(account_id: &u128, amount: u64) -> DispatchResult {
+        let _ = Balances::deposit_creating(account_id, amount);
+
+        let current_budget = Self::get_budget();
+        let new_budget = current_budget.saturating_sub(amount);
+        Self::set_budget(new_budget);
+
+        Ok(())
     }
 }
 
