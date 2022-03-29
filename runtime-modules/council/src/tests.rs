@@ -1813,13 +1813,13 @@ fn test_council_budget_manager_works_correctly() {
 
         let account_id = 11;
         let transfer_amount = 100;
-        <Module<Runtime> as CouncilBudgetManager<u64, u64>>::transfer(&account_id, transfer_amount);
+        <Module<Runtime> as CouncilBudgetManager<u64, u64>>::withdraw(&account_id, transfer_amount);
         assert_eq!(
             <Module<Runtime> as CouncilBudgetManager<u64, u64>>::get_budget(),
             new_budget + increase_amount - transfer_amount
         );
 
-        let res = <Module<Runtime> as CouncilBudgetManager<u64, u64>>::try_transfer(
+        let res = <Module<Runtime> as CouncilBudgetManager<u64, u64>>::try_withdraw(
             &account_id,
             transfer_amount,
         );
@@ -1830,7 +1830,7 @@ fn test_council_budget_manager_works_correctly() {
         );
 
         let incorrect_amount = 1000;
-        let res = <Module<Runtime> as CouncilBudgetManager<u64, u64>>::try_transfer(
+        let res = <Module<Runtime> as CouncilBudgetManager<u64, u64>>::try_withdraw(
             &account_id,
             incorrect_amount,
         );
