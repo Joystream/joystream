@@ -8,7 +8,7 @@ use crate::*;
 use frame_support::{assert_err, assert_ok};
 use std::iter::FromIterator;
 
-const DEFAULT_AUCTION_END: u64 = 10;
+const AUCTION_DURATION: u64 = 10;
 
 #[test]
 fn start_open_auction() {
@@ -252,6 +252,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::min_starting_price() - 1,
             buy_now_price: None,
+            starts_at: None,
             bid_lock_duration: Content::min_bid_lock_duration(),
             whitelist: BTreeSet::new(),
         };
@@ -273,6 +274,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::max_starting_price() + 1,
             buy_now_price: None,
+            starts_at: None,
             bid_lock_duration: Content::min_bid_lock_duration(),
             whitelist: BTreeSet::new(),
         };
@@ -295,6 +297,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
+            starts_at: None,
             bid_lock_duration: Content::min_bid_lock_duration() - 1,
             whitelist: BTreeSet::new(),
         };
@@ -317,6 +320,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
+            starts_at: None,
             bid_lock_duration: Content::max_bid_lock_duration() + 1,
             whitelist: BTreeSet::new(),
         };
@@ -341,7 +345,8 @@ fn start_nft_auction_invalid_params() {
             buy_now_price: None,
             extension_period: Content::min_auction_extension_period() - 1,
             min_bid_step: Content::max_bid_step(),
-            end: DEFAULT_AUCTION_END,
+            duration: AUCTION_DURATION,
+            starts_at: None,
             whitelist: BTreeSet::new(),
         };
 
@@ -365,7 +370,8 @@ fn start_nft_auction_invalid_params() {
             buy_now_price: None,
             extension_period: Content::max_auction_extension_period() + 1,
             min_bid_step: Content::max_bid_step(),
-            end: DEFAULT_AUCTION_END,
+            duration: AUCTION_DURATION,
+            starts_at: None,
             whitelist: BTreeSet::new(),
         };
 
@@ -384,13 +390,13 @@ fn start_nft_auction_invalid_params() {
 
         // Make an attempt to start english nft auction if auction duration
         // of auction provided is less then min allowed auction duration
-        let end = System::block_number() + Content::min_auction_duration() - 1;
         let auction_params = EnglishAuctionParams::<Test> {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
             extension_period: Content::min_auction_extension_period(),
             min_bid_step: Content::max_bid_step(),
-            end,
+            duration: Content::min_auction_duration() - 1,
+            starts_at: None,
             whitelist: BTreeSet::new(),
         };
 
@@ -409,13 +415,13 @@ fn start_nft_auction_invalid_params() {
 
         // Make an attempt to start english nft auction if auction duration
         // of auction provided is greater then max allowed auction duration
-        let end = System::block_number() + Content::max_auction_duration() + 1;
         let auction_params = EnglishAuctionParams::<Test> {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
+            starts_at: None,
             extension_period: Content::max_auction_extension_period(),
             min_bid_step: Content::max_bid_step(),
-            end,
+            duration: Content::max_auction_duration() + 1,
             whitelist: BTreeSet::new(),
         };
 
@@ -439,7 +445,8 @@ fn start_nft_auction_invalid_params() {
             buy_now_price: None,
             extension_period: Content::max_auction_extension_period(),
             min_bid_step: Content::max_bid_step(),
-            end: DEFAULT_AUCTION_END,
+            duration: AUCTION_DURATION,
+            starts_at: None,
             whitelist: BTreeSet::new(),
         };
 
@@ -462,6 +469,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = OpenAuctionParams::<Test> {
             starting_price: buy_now_price + 1,
             buy_now_price: Some(buy_now_price),
+            starts_at: None,
             bid_lock_duration: Content::min_bid_lock_duration(),
             whitelist: BTreeSet::new(),
         };
@@ -483,6 +491,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
+            starts_at: None,
             bid_lock_duration: Content::min_bid_lock_duration(),
             whitelist: BTreeSet::from_iter(vec![SECOND_MEMBER_ID].into_iter()),
         };
@@ -509,6 +518,7 @@ fn start_nft_auction_invalid_params() {
         let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
+            starts_at: None,
             bid_lock_duration: Content::min_bid_lock_duration(),
             whitelist,
         };

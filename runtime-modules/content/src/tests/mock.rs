@@ -510,6 +510,7 @@ pub fn get_open_auction_params() -> OpenAuctionParams<Test> {
         buy_now_price: None,
         whitelist: BTreeSet::new(),
         bid_lock_duration: Content::min_bid_lock_duration(),
+        starts_at: None,
     }
 }
 

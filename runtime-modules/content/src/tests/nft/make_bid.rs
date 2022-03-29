@@ -10,7 +10,7 @@ use std::iter::FromIterator;
 
 const NEXT_BID_OFFSET: u64 = 10;
 const DEFAULT_BUY_NOW_PRICE: u64 = 1_000;
-const DEFAULT_AUCTION_END: u64 = 10;
+const AUCTION_DURATION: u64 = 10;
 const BIDDER_BALANCE: u64 = NEXT_BID_OFFSET.saturating_add(DEFAULT_BUY_NOW_PRICE);
 
 fn setup_open_auction_scenario() {
@@ -33,6 +33,7 @@ fn setup_open_auction_scenario() {
         buy_now_price: Some(DEFAULT_BUY_NOW_PRICE),
         bid_lock_duration: Content::min_bid_lock_duration(),
         whitelist: BTreeSet::new(),
+        starts_at: None,
     };
 
     // Start nft auction
@@ -334,7 +335,8 @@ fn make_bid_nft_auction_expired() {
             buy_now_price: None,
             extension_period: Content::min_auction_extension_period(),
             min_bid_step: Content::max_bid_step(),
-            end: DEFAULT_AUCTION_END,
+            starts_at: None,
+            duration: AUCTION_DURATION,
             whitelist: BTreeSet::new(),
         };
 
@@ -347,7 +349,7 @@ fn make_bid_nft_auction_expired() {
         ));
 
         // Run to the block when auction expires
-        run_to_block(DEFAULT_AUCTION_END + 1);
+        run_to_block(AUCTION_DURATION + 2);
 
         // deposit initial balance
         let bid = Content::min_starting_price();
@@ -390,6 +392,7 @@ fn make_bid_member_is_not_allowed_to_participate() {
         let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
+            starts_at: None,
             bid_lock_duration: Content::min_bid_lock_duration(),
             whitelist: BTreeSet::from_iter(
                 vec![COLLABORATOR_MEMBER_ID, DEFAULT_MODERATOR_ID].into_iter(),
@@ -451,6 +454,7 @@ fn make_bid_starting_price_constraint_violated() {
         let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::max_starting_price(),
             buy_now_price: None,
+            starts_at: None,
             bid_lock_duration: Content::min_bid_lock_duration(),
             whitelist: BTreeSet::new(),
         };

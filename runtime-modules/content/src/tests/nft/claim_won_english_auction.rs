@@ -7,7 +7,7 @@ use crate::tests::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
 
-const AUCTION_END_BLOCK: u64 = 10;
+const AUCTION_DURATION: u64 = 10;
 const AUCTION_START_BLOCK: u64 = 1;
 #[test]
 fn claim_won_english_auction() {
@@ -34,7 +34,8 @@ fn claim_won_english_auction() {
             buy_now_price: None,
             extension_period: Content::min_auction_extension_period(),
             min_bid_step: Content::min_bid_step(),
-            end: AUCTION_END_BLOCK,
+            starts_at: None,
+            duration: AUCTION_DURATION,
             whitelist: BTreeSet::new(),
         };
 
@@ -121,7 +122,8 @@ fn claim_won_english_auction_cannot_be_completed() {
             buy_now_price: None,
             extension_period: Content::min_auction_extension_period(),
             min_bid_step: Content::min_bid_step(),
-            end: AUCTION_END_BLOCK,
+            starts_at: None,
+            duration: AUCTION_DURATION,
             whitelist: BTreeSet::new(),
         };
 
@@ -186,7 +188,8 @@ fn claim_won_english_auction_auth_failed() {
             buy_now_price: None,
             extension_period: Content::min_auction_extension_period(),
             min_bid_step: Content::min_bid_step(),
-            end: AUCTION_END_BLOCK,
+            starts_at: None,
+            duration: AUCTION_DURATION,
             whitelist: BTreeSet::new(),
         };
 
@@ -339,6 +342,7 @@ fn claim_won_english_auction_is_not_english_auction_type() {
         let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
+            starts_at: None,
             bid_lock_duration,
             whitelist: BTreeSet::new(),
         };
@@ -404,7 +408,8 @@ fn claim_won_english_auction_last_bid_does_not_exist() {
             buy_now_price: None,
             extension_period: Content::min_auction_extension_period(),
             min_bid_step: Content::min_bid_step(),
-            end: AUCTION_END_BLOCK,
+            starts_at: None,
+            duration: AUCTION_DURATION,
             whitelist: BTreeSet::new(),
         };
 
