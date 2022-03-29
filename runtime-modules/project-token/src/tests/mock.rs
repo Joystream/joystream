@@ -313,7 +313,7 @@ pub(crate) fn build_merkle_path_helper<E: Encode + Clone>(
 ) -> Vec<(<Test as frame_system::Trait>::Hash, MerkleSide)> {
     let merkle_tree = generate_merkle_root_helper(collection);
     // builds the actual merkle path with the hashes needed for the proof
-    let index_path = index_path_helper(collection.len(), index_for_proof1 + 1);
+    let index_path = index_path_helper(collection.len(), index_for_proof + 1);
     index_path
         .iter()
         .map(|idx_item| (merkle_tree[idx_item.index - 1], idx_item.side))

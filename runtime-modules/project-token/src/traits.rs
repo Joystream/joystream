@@ -29,13 +29,13 @@ pub trait MultiCurrencyBase<AccountId, TokenIssuanceParameters> {
     /// Burn `amount` of token `token_id` by slashing it from `who`
     fn slash(token_id: Self::TokenId, who: AccountId, amount: Self::Balance) -> DispatchResult;
 
-    /// Transfer `amount` from `src` account to `dst`
-    fn transfer(
-        token_id: Self::TokenId,
-        src: AccountId,
-        dst: AccountId,
-        amount: Self::Balance,
-    ) -> DispatchResult;
+    // Transfer `amount` from `src` account to `dst`
+    // fn transfer(
+    //     token_id: Self::TokenId,
+    //     src: AccountId,
+    //     dst: AccountId,
+    //     amount: Self::Balance,
+    // ) -> DispatchResult;
 
     /// Issue token with specified characteristics
     fn issue_token(issuance_parameters: TokenIssuanceParameters) -> DispatchResult;
@@ -98,7 +98,7 @@ pub trait ControlledTransfer<AccountId, Policy, IssuanceParams> {
     ) -> DispatchResult;
 
     /// Transfer `amount` from `src` account to `dst` according to provided policy
-    fn controlled_transfer<Destination>(
+    fn transfer<Destination>(
         token_id: <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::TokenId,
         src: AccountId,
         dst: Destination,
@@ -108,7 +108,7 @@ pub trait ControlledTransfer<AccountId, Policy, IssuanceParams> {
         Destination: TransferLocationTrait<AccountId, Policy> + Clone;
 
     /// Transfer `amount` from `src` account to `dst` according to provided policy
-    fn controlled_multi_output_transfer<Destination>(
+    fn multi_output_transfer<Destination>(
         token_id: <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::TokenId,
         src: AccountId,
         outputs: &[(

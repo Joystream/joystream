@@ -222,39 +222,39 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId, TokenIssuanceParametersOf<T>> for
         Ok(())
     }
 
-    /// Transfer `amount` from `src` account to `dst`
-    /// Preconditions:
-    /// - `token_id` must exists
-    /// - `src` must exists
-    /// - `src` free balance must be greater than or equal to `amount`
-    /// - `dst` must exists
-    ///
-    /// Postconditions:
-    /// - free balance of `src` is decreased by `amount or set to zero if below existential
-    ///   deposit`
-    /// - free balance of `dst` is increased by `amount`
-    /// if `amount` is zero it is equivalent to a no-op
-    fn transfer(
-        token_id: T::TokenId,
-        src: T::AccountId,
-        dst: T::AccountId,
-        amount: T::Balance,
-    ) -> DispatchResult {
-        if amount.is_zero() {
-            return Ok(());
-        }
+    // /// Transfer `amount` from `src` account to `dst`
+    // /// Preconditions:
+    // /// - `token_id` must exists
+    // /// - `src` must exists
+    // /// - `src` free balance must be greater than or equal to `amount`
+    // /// - `dst` must exists
+    // ///
+    // /// Postconditions:
+    // /// - free balance of `src` is decreased by `amount or set to zero if below existential
+    // ///   deposit`
+    // /// - free balance of `dst` is increased by `amount`
+    // /// if `amount` is zero it is equivalent to a no-op
+    // fn transfer(
+    //     token_id: T::TokenId,
+    //     src: T::AccountId,
+    //     dst: T::AccountId,
+    //     amount: T::Balance,
+    // ) -> DispatchResult {
+    //     if amount.is_zero() {
+    //         return Ok(());
+    //     }
 
-        // tranfer preconditions
-        let outputs = [(SimpleLocation::<T::AccountId>::new(dst.clone()), amount)];
-        let (decrease_operation, _) = Self::ensure_can_transfer(token_id, &src, &outputs)?;
+    //     // tranfer preconditions
+    //     let outputs = [(SimpleLocation::<T::AccountId>::new(dst.clone()), amount)];
+    //     let (decrease_operation, _) = Self::ensure_can_transfer(token_id, &src, &outputs)?;
 
-        // == MUTATION SAFE ==
+    //     // == MUTATION SAFE ==
 
-        Self::do_transfer(token_id, &src, &outputs, decrease_operation);
+    //     Self::do_transfer(token_id, &src, &outputs, decrease_operation);
 
-        Self::deposit_event(RawEvent::TokenAmountTransferred(token_id, src, dst, amount));
-        Ok(())
-    }
+    //     Self::deposit_event(RawEvent::TokenAmountTransferred(token_id, src, dst, amount));
+    //     Ok(())
+    // }
 
     /// Issue token with specified characteristics
     /// Preconditions:
@@ -430,7 +430,7 @@ impl<T: Trait> ControlledTransfer<T::AccountId, TransferPolicyOf<T>, TokenIssuan
     /// Postconditions:
     /// - `POSTCONDITIONS[MultiCurrency::transfer(token_id, src, dst.into(), amount)]`
     /// if `amount` is zero it is equivalent to a no-op
-    fn controlled_transfer<Destination>(
+    fn transfer<Destination>(
         token_id: T::TokenId,
         src: T::AccountId,
         dst: Destination,
@@ -463,7 +463,7 @@ impl<T: Trait> ControlledTransfer<T::AccountId, TransferPolicyOf<T>, TokenIssuan
         Ok(())
     }
 
-    fn controlled_multi_output_transfer<Destination>(
+    fn multi_output_transfer<Destination>(
         token_id: T::TokenId,
         src: T::AccountId,
         outputs: &[(Destination, T::Balance)],
