@@ -1660,7 +1660,7 @@ decl_module! {
 
                     (
                         updated_nft,
-                        RawEvent::BidMadeCompletingAuction(participant_id, video_id),
+                        RawEvent::BidMadeCompletingAuction(participant_id, video_id, None),
                     )
                 },
                 _ =>  {
@@ -1680,7 +1680,7 @@ decl_module! {
                         open_auction.make_bid(bid_amount, current_block),
                     );
 
-                    (nft,RawEvent::AuctionBidMade(participant_id, video_id, bid_amount))
+                    (nft,RawEvent::AuctionBidMade(participant_id, video_id, bid_amount, None))
                 }
             };
 
@@ -1724,6 +1724,8 @@ decl_module! {
             // ensure constraints on bid amount are satisfied
             eng_auction.ensure_constraints_on_bid_amount::<T>(bid_amount)?;
 
+            let prev_top_bidder = eng_auction.top_bid.as_ref().map(|b| b.bidder_id);
+
             //
             // == MUTATION_SAFE ==
             //
@@ -1741,7 +1743,7 @@ decl_module! {
 
                     (
                         updated_nft,
-                        RawEvent::BidMadeCompletingAuction(participant_id, video_id),
+                        RawEvent::BidMadeCompletingAuction(participant_id, video_id, prev_top_bidder),
                     )
                 },
                 _ => {
@@ -1764,7 +1766,7 @@ decl_module! {
                     (
                         nft.with_transactional_status(
                             TransactionalStatus::<T>::EnglishAuction(updated_auction)),
-                        RawEvent::AuctionBidMade(participant_id, video_id, bid_amount)
+                        RawEvent::AuctionBidMade(participant_id, video_id, bid_amount, prev_top_bidder)
                     )
                 }
             };
@@ -2524,11 +2526,11 @@ decl_event!(
         EnglishAuctionStarted(ContentActor, VideoId, EnglishAuctionParams),
         OpenAuctionStarted(ContentActor, VideoId, OpenAuctionParams, OpenAuctionId),
         NftIssued(ContentActor, VideoId, NftIssuanceParameters),
-        AuctionBidMade(MemberId, VideoId, CurrencyAmount),
+        AuctionBidMade(MemberId, VideoId, CurrencyAmount, Option<MemberId>),
         AuctionBidCanceled(MemberId, VideoId),
         AuctionCanceled(ContentActor, VideoId),
         EnglishAuctionCompleted(MemberId, VideoId),
-        BidMadeCompletingAuction(MemberId, VideoId),
+        BidMadeCompletingAuction(MemberId, VideoId, Option<MemberId>),
         OpenAuctionBidAccepted(ContentActor, VideoId, CurrencyAmount),
         OfferStarted(VideoId, ContentActor, MemberId, Option<CurrencyAmount>),
         OfferAccepted(VideoId),
