@@ -622,3 +622,105 @@ fn make_bid_succeeds_with_auction_completion_and_no_outstanding_bids() {
         );
     })
 }
+
+#[test]
+fn make_bid_with_open_auction_is_not_started() {
+    with_default_mock_builder(|| {
+        let starting_block = 1;
+        run_to_block(1);
+        let video_id = NextVideoId::<Test>::get();
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+
+        // Issue nft
+        assert_ok!(Content::issue_nft(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            NftIssuanceParameters::<Test>::default(),
+        ));
+
+        let auction_params = OpenAuctionParams::<Test> {
+            starting_price: Content::max_starting_price(),
+            buy_now_price: None,
+            starts_at: Some(starting_block + 5),
+            bid_lock_duration: Content::min_bid_lock_duration(),
+            whitelist: BTreeSet::new(),
+        };
+
+        // Start nft auction
+        assert_ok!(Content::start_open_auction(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            auction_params.clone(),
+        ));
+
+        // Make an attempt to make auction bid if auction is not started
+        let bid = Content::min_starting_price();
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, bid);
+        let make_bid_result = Content::make_open_auction_bid(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            video_id,
+            bid,
+        );
+
+        // Failure checked
+        assert_err!(make_bid_result, Error::<Test>::AuctionDidNotStart);
+    })
+}
+
+#[test]
+fn make_bid_with_english_auction_is_not_started() {
+    with_default_mock_builder(|| {
+        let starting_block = 1;
+        run_to_block(1);
+        let video_id = NextVideoId::<Test>::get();
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+
+        // Issue nft
+        assert_ok!(Content::issue_nft(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            NftIssuanceParameters::<Test>::default(),
+        ));
+
+        let auction_params = EnglishAuctionParams::<Test> {
+            starting_price: Content::min_starting_price(),
+            buy_now_price: None,
+            extension_period: Content::min_auction_extension_period(),
+            min_bid_step: Content::max_bid_step(),
+            starts_at: Some(starting_block + 5),
+            duration: AUCTION_DURATION,
+            whitelist: BTreeSet::new(),
+        };
+
+        // Start nft auction
+        assert_ok!(Content::start_english_auction(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            auction_params.clone(),
+        ));
+
+        // Make an attempt to make auction bid if auction is not started
+        let bid = Content::min_starting_price();
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, bid);
+        let make_bid_result = Content::make_english_auction_bid(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            video_id,
+            bid,
+        );
+
+        // Failure checked
+        assert_err!(make_bid_result, Error::<Test>::AuctionDidNotStart);
+    })
+}

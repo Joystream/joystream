@@ -219,7 +219,7 @@ impl<
     }
 
     pub(crate) fn ensure_auction_started<T: Trait>(&self, now: BlockNumber) -> DispatchResult {
-        ensure!(now >= self.start, Error::<T>::AuctionHasntStartedYet);
+        ensure!(now >= self.start, Error::<T>::AuctionDidNotStart);
         Ok(())
     }
 
@@ -335,7 +335,7 @@ impl<
     }
 
     pub(crate) fn ensure_auction_started<T: Trait>(&self, now: BlockNumber) -> DispatchResult {
-        ensure!(now >= self.start, Error::<T>::AuctionHasntStartedYet);
+        ensure!(now >= self.start, Error::<T>::AuctionDidNotStart);
         Ok(())
     }
 

@@ -167,7 +167,7 @@ decl_error! {
         StartsAtUpperBoundExceeded,
 
         /// Auction did not started
-        AuctionHasntStartedYet,
+        AuctionDidNotStart,
 
         /// Nft is not in auction state
         NotInAuctionState,
