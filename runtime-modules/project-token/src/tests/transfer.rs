@@ -1,5 +1,4 @@
 #![cfg(test)]
-
 use frame_support::{assert_noop, assert_ok, StorageDoubleMap};
 use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::Hash;
@@ -7,7 +6,7 @@ use sp_runtime::traits::Hash;
 use crate::tests::mock::*;
 use crate::traits::ControlledTransfer;
 use crate::types::TokenIssuanceParametersOf;
-use crate::Error;
+use crate::{last_event_eq, Error, RawEvent};
 
 // base transfer tests
 #[test]
@@ -149,6 +148,8 @@ fn base_transfer_ok_without_src_removal() {
             src_free_balance_pre.saturating_sub(amount),
             src_free_balance_post
         );
+
+        last_event_eq!(RawEvent::TokenAmountTransferred(token_id, src, dst, amount));
     })
 }
 
@@ -189,6 +190,8 @@ fn base_transfer_ok_with_src_removal() {
         assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
             token_id, src
         ));
+
+        last_event_eq!(RawEvent::TokenAmountTransferred(token_id, src, dst, amount));
     })
 }
 // multi output
@@ -508,6 +511,12 @@ fn permissioned_transfer_ok_without_src_removal() {
         assert_eq!(issuance_pre, issuance_post);
         assert_eq!(src_pre, src_post.saturating_add(amounts[index]));
         assert_eq!(dst_pre.saturating_add(amounts[index]), dst_post);
+        last_event_eq!(RawEvent::TokenAmountTransferred(
+            token_id,
+            src,
+            dest_accounts[index],
+            amounts[index],
+        ));
     })
 }
 
@@ -571,6 +580,12 @@ fn permissioned_transfer_ok_with_src_removal() {
         );
         assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
             token_id, src
+        ));
+        last_event_eq!(RawEvent::TokenAmountTransferred(
+            token_id,
+            src,
+            dest_accounts[index],
+            amounts[index]
         ));
     })
 }

@@ -39,13 +39,20 @@ impl_outer_origin! {
     pub enum Origin for Test {}
 }
 
-mod event_mod {
+mod token {
     pub use crate::Event;
+}
+
+#[macro_export]
+macro_rules! last_event_eq {
+    ($e:expr) => {
+        assert_eq!(System::events().last().unwrap().event, TestEvent::token($e));
+    };
 }
 
 impl_outer_event! {
     pub enum TestEvent for Test {
-        event_mod<T>,
+        token<T>,
         frame_system<T>,
     }
 }
@@ -211,7 +218,7 @@ pub fn build_test_externalities(config: GenesisConfig<Test>) -> TestExternalitie
 /// Moving past n blocks
 pub fn increase_block_number_by(n: u64) {
     let init_block = System::block_number();
-    (0..n).for_each(|offset| {
+    (0..=n).for_each(|offset| {
         <Token as OnFinalize<u64>>::on_finalize(System::block_number());
         System::set_block_number(init_block.saturating_add(offset));
         <Token as OnInitialize<u64>>::on_initialize(System::block_number());
