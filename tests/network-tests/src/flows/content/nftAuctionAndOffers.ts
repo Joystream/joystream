@@ -12,6 +12,7 @@ import {
   NftOpenAuctionFixture,
   AuctionCancelationsFixture,
   NftCreateVideoWithAuctionFixture,
+  UpdateVideoForNftCreationFixture,
   IMember,
   NftEnglishAuctionWithExtensionFixture,
 } from '../../fixtures/content'
@@ -149,6 +150,15 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
   )
 
   await new FixtureRunner(createVideoWithAuctionFixture).run()
+
+  const updateVideoForNftCreationFixture = new UpdateVideoForNftCreationFixture(
+    api,
+    query,
+    author as IMember,
+    nextVideo().videoId
+  )
+
+  await new FixtureRunner(updateVideoForNftCreationFixture).run()
 
   debug('Done')
 }
