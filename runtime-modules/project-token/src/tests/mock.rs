@@ -16,8 +16,9 @@ use sp_runtime::traits::{BlakeTwo256, Hash, IdentityLookup};
 
 // crate import
 use crate::{
-    types::MerkleSide, AccountDataOf, GenesisConfig, SimpleLocation, TokenDataOf,
-    TokenIssuanceParametersOf, Trait, TransferPolicyOf,
+    types::{MerkleSide, VerifiableLocation},
+    AccountDataOf, GenesisConfig, SimpleLocation, TokenDataOf, TokenIssuanceParametersOf, Trait,
+    TransferPolicyOf,
 };
 
 // Crate aliases
@@ -30,6 +31,7 @@ pub type Balance = <Test as Trait>::Balance;
 pub type Simple = SimpleLocation<AccountId>;
 pub type Policy = TransferPolicyOf<Test>;
 pub type Hashing = <Test as frame_system::Trait>::Hashing;
+pub type Verifiable = VerifiableLocation<AccountId, Hashing>;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
@@ -114,6 +116,7 @@ impl GenesisConfigBuilder {
         token_info.current_total_issuance = Zero::zero();
 
         self.token_info_by_id.push((new_id, token_info));
+        self.next_token_id = self.next_token_id.saturating_add(TokenId::one());
         self
     }
 
@@ -163,15 +166,15 @@ impl GenesisConfigBuilder {
             .current_total_issuance
             .saturating_add(Balance::from(DEFAULT_FREE_BALANCE));
 
-        let account_id = self
+        let new_account_id = self
             .account_info_by_token_and_account
             .last()
-            .unwrap()
-            .1
-            .saturating_add(One::one());
+            .map_or(AccountId::from(DEFAULT_ACCOUNT_ID), |(_, account_id, _)| {
+                account_id.saturating_add(One::one())
+            });
 
         self.account_info_by_token_and_account
-            .push((id, account_id, new_account_info));
+            .push((id, new_account_id, new_account_info));
 
         self.token_info_by_id
             .last_mut()
@@ -307,6 +310,7 @@ pub(crate) fn generate_merkle_root_helper<E: Encode>(
     out
 }
 
+/// Generates merkle proof (Hash, Side) for element collection[index_for_proof]
 pub(crate) fn build_merkle_path_helper<E: Encode + Clone>(
     collection: &[E],
     index_for_proof: usize,

@@ -218,10 +218,10 @@ impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, H
     /// Forward `self` state
     pub fn try_build<T: crate::Trait>(self) -> Result<TokenData<Balance, Hash>, DispatchError> {
         // validation
-        ensure!(
-            self.initial_issuance >= self.existential_deposit,
-            crate::Error::<T>::ExistentialDepositExceedsInitialIssuance,
-        );
+        // ensure!(
+        //     self.initial_issuance >= self.existential_deposit,
+        //     crate::Error::<T>::ExistentialDepositExceedsInitialIssuance,
+        // );
         Ok(TokenData::<Balance, Hash> {
             current_total_issuance: self.initial_issuance,
             issuance_state: self.initial_state,
@@ -284,6 +284,13 @@ impl<AccountId: Encode, Hasher: Hash> VerifiableLocation<AccountId, Hasher> {
             });
 
         proof_result == commit
+    }
+
+    pub fn new(merkle_proof: Vec<(Hasher::Output, MerkleSide)>, account: AccountId) -> Self {
+        Self {
+            merkle_proof,
+            account,
+        }
     }
 }
 
