@@ -21,16 +21,23 @@ impl<T: Trait> Module<T> {
     pub(crate) fn validate_english_auction_params(
         auction_params: &EnglishAuctionParams<T>,
     ) -> DispatchResult {
-        Self::ensure_auction_duration_bounds_satisfied(auction_params.auction_duration)?;
+        // infere auction duration from params & current block
+        let auction_duration = auction_params.duration;
+        Self::ensure_auction_duration_bounds_satisfied(auction_duration)?;
         Self::ensure_extension_period_bounds_satisfied(auction_params.extension_period)?;
 
         Self::ensure_bid_step_bounds_satisfied(auction_params.min_bid_step)?;
 
         // Ensure auction_duration of English auction is >= extension_period
         ensure!(
-            auction_params.auction_duration >= auction_params.extension_period,
+            auction_duration >= auction_params.extension_period,
             Error::<T>::ExtensionPeriodIsGreaterThenAuctionDuration
         );
+
+        // validate forward start limits
+        if let Some(starts_at) = auction_params.starts_at {
+            Self::ensure_starts_at_delta_bounds_satisfied(starts_at)?;
+        }
 
         Self::ensure_starting_price_bounds_satisfied(auction_params.starting_price)?;
 
@@ -56,12 +63,35 @@ impl<T: Trait> Module<T> {
 
         Self::ensure_whitelist_bounds_satisfied(&auction_params.whitelist)?;
 
+        // validate forward start limits
+        if let Some(starts_at) = auction_params.starts_at {
+            Self::ensure_starts_at_delta_bounds_satisfied(starts_at)?;
+        }
+
         if let Some(buy_now_price) = auction_params.buy_now_price {
             ensure!(
                 buy_now_price > auction_params.starting_price,
                 Error::<T>::BuyNowIsLessThenStartingPrice
             );
         }
+
+        Ok(())
+    }
+
+    /// Ensure starts at bounds satisfied
+    pub(crate) fn ensure_starts_at_delta_bounds_satisfied(
+        starts_at: T::BlockNumber,
+    ) -> DispatchResult {
+        ensure!(
+            starts_at >= <frame_system::Module<T>>::block_number(),
+            Error::<T>::StartsAtLowerBoundExceeded
+        );
+
+        ensure!(
+            starts_at
+                <= <frame_system::Module<T>>::block_number() + Self::auction_starts_at_max_delta(),
+            Error::<T>::StartsAtUpperBoundExceeded
+        );
 
         Ok(())
     }
