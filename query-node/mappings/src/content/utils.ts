@@ -254,7 +254,7 @@ async function processVideoMediaMetadata(
   return videoMedia
 }
 
-export async function convertContentActorToChannelOwner(
+export async function convertContentActorToChannelOrNftOwner(
   store: DatabaseManager,
   contentActor: ContentActor
 ): Promise<{
