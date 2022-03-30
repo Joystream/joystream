@@ -1,7 +1,7 @@
 // TODO: solve events' relations to videos and other entites that can be changed or deleted
 
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
-import { genericEventFields, getById, inconsistentState, logger } from '../common'
+import { genericEventFields, inconsistentState, logger, EntityType } from '../common'
 import {
   // entities
   Auction,
@@ -39,16 +39,13 @@ import {
   NftSellOrderMadeEvent,
   NftBoughtEvent,
   BuyNowCanceledEvent,
+  NftSlingedBackToTheOriginalArtistEvent,
 } from 'query-node/dist/model'
 import * as joystreamTypes from '@joystream/types/augment/all/types'
 import { Content } from '../../generated/types'
-import { FindConditions } from 'typeorm'
+import { FindConditions, In } from 'typeorm'
 import BN from 'bn.js'
-
-// definition of generic type for Hydra DatabaseManager's methods
-type EntityType<T> = {
-  new (...args: any[]): T
-}
+import { PERBILL_ONE_PERCENT } from '../temporaryConstants'
 
 async function getExistingEntity<Type extends Video | Membership>(
   store: DatabaseManager,
@@ -95,7 +92,9 @@ async function getCurrentAuctionFromVideo(
 
   // get auction
   const allAuctions = video.nft?.auctions || []
-  const auction = allAuctions.length ? allAuctions[allAuctions.length - 1] : null
+  const auction = allAuctions.length
+    ? allAuctions.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())[allAuctions.length - 1]
+    : null
 
   // ensure auction exists
   if (!auction) {
@@ -112,10 +111,17 @@ async function getNftFromVideo(
   store: DatabaseManager,
   videoId: string,
   errorMessageForVideo: string,
-  errorMessageForNft: string
+  errorMessageForNft: string,
+  relations?: string[]
 ): Promise<{ video: Video; nft: OwnedNft }> {
   // load video
-  const video = await getRequiredExistingEntity(store, Video, videoId.toString(), errorMessageForVideo, ['nft'])
+  const video = await getRequiredExistingEntity(
+    store,
+    Video,
+    videoId.toString(),
+    errorMessageForVideo,
+    relations ? relations.concat(['nft']) : ['nft']
+  )
 
   // get auction
   const nft = video.nft
@@ -162,7 +168,7 @@ async function getRequiredExistingEntites<Type extends Video | Membership>(
   errorMessage: string
 ): Promise<Type[]> {
   // load entities
-  const entities = await store.getMany(entityType, { where: { id: ids } })
+  const entities = await store.getMany(entityType, { where: { id: In(ids) } })
 
   // assess loaded entity ids
   const loadedEntityIds = entities.map((item) => item.id.toString())
@@ -341,13 +347,19 @@ export async function createNft(
   // load owner
   const ownerMember = nftIssuanceParameters.non_channel_owner.isSome
     ? await getExistingEntity(store, Membership, nftIssuanceParameters.non_channel_owner.unwrap().toString())
-    : undefined
+    : video.channel.ownerMember
 
   // calculate some values
   const creatorRoyalty = nftIssuanceParameters.royalty.isSome
-    ? nftIssuanceParameters.royalty.unwrap().toNumber()
+    ? nftIssuanceParameters.royalty.unwrap().div(new BN(PERBILL_ONE_PERCENT)).toNumber()
     : undefined
   const decodedMetadata = nftIssuanceParameters.nft_metadata.toString()
+
+  // Is NFT owned by channel or some member
+  const isOwnedByChannel = !ownerMember
+
+  // channel ownerCuratorGroup (if any)
+  const ownerCuratorGroup = isOwnedByChannel ? video.channel.ownerCuratorGroup : undefined
 
   // prepare nft record
   const nft = new OwnedNft({
@@ -355,6 +367,8 @@ export async function createNft(
     video: video,
     ownerMember,
     creatorRoyalty,
+    ownerCuratorGroup,
+    isOwnedByChannel,
     metadata: decodedMetadata,
     creatorChannel: video.channel,
     // always start with Idle status to prevent egg-chicken problem between auction+nft; update it later if needed
@@ -524,6 +538,8 @@ export async function contentNft_NftIssued({ event, store }: EventContext & Stor
   // load video
   const video = await getRequiredExistingEntity(store, Video, videoId.toString(), 'NFT for non-existing video issed', [
     'channel',
+    'channel.ownerCuratorGroup',
+    'channel.ownerMember',
   ])
 
   // prepare and save nft record
@@ -947,4 +963,39 @@ export async function contentNft_BuyNowCanceled({ event, store }: EventContext &
   })
 
   await store.save<BuyNowCanceledEvent>(announcingPeriodStartedEvent)
+}
+
+export async function contentNft_NftSlingedBackToTheOriginalArtist({
+  event,
+  store,
+}: EventContext & StoreContext): Promise<void> {
+  // common event processing
+
+  const [videoId, contentActor] = new Content.NftSlingedBackToTheOriginalArtistEvent(event).params
+
+  // load NFT
+  const { video, nft } = await getNftFromVideo(
+    store,
+    videoId.toString(),
+    'Non-existing video was slinged',
+    'Non-existing nft was slinged',
+    ['channel', 'channel.ownerCuratorGroup', 'channel.ownerMember']
+  )
+
+  nft.ownerMember = video.channel?.ownerMember
+  nft.ownerCuratorGroup = video.channel?.ownerCuratorGroup
+  nft.isOwnedByChannel = true
+  nft.updatedAt = new Date(event.blockTimestamp)
+
+  store.save<OwnedNft>(nft)
+
+  // common event processing - second
+
+  const nftSlingedBackToTheOriginalArtistEvent = new NftSlingedBackToTheOriginalArtistEvent({
+    ...genericEventFields(event),
+    video,
+    contentActor: await convertContentActor(store, contentActor),
+  })
+
+  await store.save<NftSlingedBackToTheOriginalArtistEvent>(nftSlingedBackToTheOriginalArtistEvent)
 }

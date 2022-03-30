@@ -63,7 +63,7 @@ type OwnedNft
   "Auctions done for this NFT"
   auctions: [Auction!]! @derivedFrom(field: "nft")
 
-  "Member owning the NFT. Channel owner owns the NFT if not set."
+  "Member owning the NFT."
   ownerMember: Membership
 
   "NFT's metadata"
@@ -78,6 +78,12 @@ type OwnedNft
   "Creator royalty"
   creatorRoyalty: Float
 
+  "Owner curator group"
+  ownerCuratorGroup: CuratorGroup
+
+  "Is NFT owned by channel"
+  isOwnedByChannel: Boolean!
+  
   "NFT creator's channel"
   creatorChannel: Channel!
 }
