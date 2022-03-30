@@ -461,12 +461,16 @@ impl membership::Trait for Runtime {
     type CandidateStake = CandidateStake;
 }
 
-impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
+impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for () {
     fn get_budget() -> u64 {
         unimplemented!()
     }
 
     fn set_budget(_new_value: u64) {
+        unimplemented!()
+    }
+
+    fn try_withdraw(_account_id: &u64, _amount: u64) -> DispatchResult {
         unimplemented!()
     }
 }

@@ -124,16 +124,6 @@ impl staking_handler::LockComparator<u64> for Runtime {
     }
 }
 
-impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
-    fn get_budget() -> u64 {
-        unimplemented!();
-    }
-
-    fn set_budget(_: u64) {
-        unimplemented!()
-    }
-}
-
 impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
         _origin: <Runtime as frame_system::Trait>::Origin,

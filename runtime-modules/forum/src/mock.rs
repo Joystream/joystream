@@ -298,7 +298,11 @@ thread_local! {
     pub static WG_BUDGET: RefCell<u64> = RefCell::new(WORKING_GROUP_BUDGET);
 }
 
-impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
+impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for () {
+    fn try_withdraw(_account_id: &u64, _amount: u64) -> DispatchResult {
+        unimplemented!()
+    }
+
     fn get_budget() -> u64 {
         WG_BUDGET.with(|val| *val.borrow())
     }
