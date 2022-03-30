@@ -356,10 +356,13 @@ fn create_cids(i: u32, prefix: u8) -> BTreeSet<Cid> {
         let bytes = i.to_be_bytes();
         let mut buffer = Vec::new();
 
-        // Total CID = 32 bytes
-        for _ in 0..8 {
+        // Total CID = 46 bytes
+        // 44 bytes
+        for _ in 0..11 {
             buffer.append(&mut bytes.to_vec());
         }
+        // + 2 bytes
+        buffer.append(&mut vec![0, 0]);
 
         buffer[0] = prefix;
 

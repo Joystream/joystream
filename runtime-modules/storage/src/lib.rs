@@ -188,8 +188,8 @@ pub trait WeightInfo {
 
 type WeightInfoStorage<T> = <T as Trait>::WeightInfo;
 
-/// Content ID length in bytes (32 bytes hash).
-pub const CID_LENGTH: usize = 32;
+/// Content ID length in bytes (46 bytes multihash).
+pub const CID_LENGTH: usize = 46;
 
 /// Public interface for the storage module.
 pub trait DataObjectStorage<T: Trait> {
