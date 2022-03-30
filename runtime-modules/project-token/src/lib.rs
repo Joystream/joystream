@@ -6,7 +6,7 @@ use frame_support::{
     ensure,
 };
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
-use sp_runtime::Permill;
+use sp_runtime::Percent;
 
 // crate modules
 mod errors;
@@ -501,7 +501,7 @@ impl<T: Trait> ControlledTransfer<T::AccountId, TransferPolicyOf<T>, TokenIssuan
 impl<T: Trait> PatronageTrait<T::AccountId, TokenIssuanceParametersOf<T>> for Module<T> {
     type MultiCurrency = Self;
 
-    fn reduce_patronage_rate_by(token_id: T::TokenId, decrement: Permill) -> DispatchResult {
+    fn reduce_patronage_rate_by(token_id: T::TokenId, decrement: Percent) -> DispatchResult {
         TokenInfoById::<T>::try_mutate(token_id, |token_info| {
             // ensure new rate is >= 0
             ensure!(

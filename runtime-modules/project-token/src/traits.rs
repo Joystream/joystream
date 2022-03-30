@@ -1,5 +1,5 @@
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use sp_runtime::Permill;
+use sp_runtime::Percent;
 
 /// The Base Token Trait
 pub trait MultiCurrencyBase<AccountId, TokenIssuanceParameters> {
@@ -127,7 +127,7 @@ pub trait PatronageTrait<AccountId, IssuanceParams> {
 
     fn reduce_patronage_rate_by(
         token_id: <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::TokenId,
-        decrement: Permill,
+        decrement: Percent,
     ) -> DispatchResult;
 
     fn get_patronage_credit(

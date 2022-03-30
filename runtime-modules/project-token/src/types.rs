@@ -4,7 +4,7 @@ use frame_support::{
     ensure,
 };
 use sp_arithmetic::traits::{Saturating, Zero};
-use sp_runtime::{traits::Hash, Permill};
+use sp_runtime::{traits::Hash, Percent};
 
 // crate imports
 use crate::traits::TransferLocationTrait;
@@ -77,7 +77,7 @@ pub struct PatronageData<Balance> {
     pub(crate) outstanding_credit: Balance,
 
     /// Patronage rate
-    pub(crate) rate: Permill,
+    pub(crate) rate: Percent,
 }
 
 /// The two possible transfer policies
@@ -129,7 +129,7 @@ pub struct TokenIssuanceParameters<Balance, Hash> {
     pub(crate) transfer_policy: TransferPolicy<Hash>,
 
     /// Initial Patronage rate
-    pub(crate) patronage_rate: Permill,
+    pub(crate) patronage_rate: Percent,
 }
 
 /// Transfer location without merkle proof
