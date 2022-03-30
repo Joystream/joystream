@@ -4,7 +4,7 @@ use frame_support::{
     ensure,
 };
 use sp_arithmetic::traits::{Saturating, Zero};
-use sp_runtime::traits::Hash;
+use sp_runtime::{traits::Hash, Permill};
 
 // crate imports
 use crate::traits::TransferLocationTrait;
@@ -65,6 +65,19 @@ pub struct TokenData<Balance, Hash> {
 
     /// Transfer policy
     pub(crate) transfer_policy: TransferPolicy<Hash>,
+
+    /// Patronage Information
+    pub(crate) patronage_info: PatronageData<Balance>,
+}
+
+/// Patronage information
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
+pub struct PatronageData<Balance> {
+    /// Outstanding patronage credit
+    pub(crate) outstanding_credit: Balance,
+
+    /// Patronage rate
+    pub(crate) rate: Permill,
 }
 
 /// The two possible transfer policies
@@ -114,6 +127,9 @@ pub struct TokenIssuanceParameters<Balance, Hash> {
 
     /// Initial transfer policy:
     pub(crate) transfer_policy: TransferPolicy<Hash>,
+
+    /// Initial Patronage rate
+    pub(crate) patronage_rate: Permill,
 }
 
 /// Transfer location without merkle proof
@@ -222,12 +238,17 @@ impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, H
         //     self.initial_issuance >= self.existential_deposit,
         //     crate::Error::<T>::ExistentialDepositExceedsInitialIssuance,
         // );
+        let patronage_info = PatronageData::<Balance> {
+            outstanding_credit: Balance::zero(),
+            rate: self.patronage_rate,
+        };
         Ok(TokenData::<Balance, Hash> {
             current_total_issuance: self.initial_issuance,
             issuance_state: self.initial_state,
             existential_deposit: self.existential_deposit,
             symbol: self.symbol,
             transfer_policy: self.transfer_policy,
+            patronage_info,
         })
     }
 }

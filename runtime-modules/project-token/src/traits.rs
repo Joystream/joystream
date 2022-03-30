@@ -1,4 +1,5 @@
 use frame_support::dispatch::{DispatchError, DispatchResult};
+use sp_runtime::Permill;
 
 /// The Base Token Trait
 pub trait MultiCurrencyBase<AccountId, TokenIssuanceParameters> {
@@ -118,4 +119,22 @@ pub trait ControlledTransfer<AccountId, Policy, IssuanceParams> {
     ) -> DispatchResult
     where
         Destination: TransferLocationTrait<AccountId, Policy>;
+}
+
+pub trait PatronageTrait<AccountId, IssuanceParams> {
+    /// The MultiCurrency type used
+    type MultiCurrency: MultiCurrencyBase<AccountId, IssuanceParams>;
+
+    fn reduce_patronage_rate_by(
+        token_id: <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::TokenId,
+        decrement: Permill,
+    );
+
+    fn get_patronage_credit(
+        token_id: <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::TokenId,
+    );
+
+    fn claim_patronage_credit(
+        token_id: <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::TokenId,
+    );
 }
