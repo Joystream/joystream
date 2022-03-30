@@ -473,8 +473,8 @@ export interface EnglishAuctionParams extends Struct {
   readonly starting_price: u128;
   readonly buy_now_price: Option<u128>;
   readonly whitelist: BTreeSet<MemberId>;
-  readonly duration: u32;
   readonly starts_at: Option<u32>;
+  readonly duration: u32;
   readonly extension_period: u32;
   readonly min_bid_step: u128;
 }
