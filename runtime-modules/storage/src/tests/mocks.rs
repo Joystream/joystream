@@ -651,3 +651,15 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for DistributionWG {
         unimplemented!()
     }
 }
+
+pub(crate) fn create_cid(i: u32) -> crate::Cid {
+    let bytes = i.to_be_bytes();
+    let mut buffer = Vec::new();
+
+    // Total CID = 32 bytes
+    for _ in 0..8 {
+        buffer.append(&mut bytes.to_vec());
+    }
+
+    buffer
+}

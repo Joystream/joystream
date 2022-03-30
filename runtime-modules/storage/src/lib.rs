@@ -188,6 +188,9 @@ pub trait WeightInfo {
 
 type WeightInfoStorage<T> = <T as Trait>::WeightInfo;
 
+/// Content ID length in bytes (32 bytes hash).
+pub const CID_LENGTH: usize = 32;
+
 /// Public interface for the storage module.
 pub trait DataObjectStorage<T: Trait> {
     /// Upload new data objects.
@@ -1609,6 +1612,9 @@ decl_event! {
 decl_error! {
     /// Storage module predefined errors
     pub enum Error for Module<T: Trait>{
+        /// Invalid CID length (must be 32 bytes)
+        InvalidCidLength,
+
         /// Empty "data object creation" collection.
         NoObjectsOnUpload,
 
@@ -2075,10 +2081,10 @@ decl_module! {
             <T as Trait>::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
             // Get only hashes that exist in the blacklist.
-            let verified_remove_hashes = Self::get_existing_hashes(&remove_hashes);
+            let verified_remove_hashes = Self::get_existing_hashes(&remove_hashes)?;
 
             // Get only hashes that doesn't exist in the blacklist.
-            let verified_add_hashes = Self::get_nonexisting_hashes(&add_hashes);
+            let verified_add_hashes = Self::get_nonexisting_hashes(&add_hashes)?;
 
             let updated_blacklist_size: u64 = Self::current_blacklist_size()
                 .saturating_add(verified_add_hashes.len().saturated_into::<u64>())
@@ -3729,12 +3735,12 @@ impl<T: Trait> Module<T> {
 
     // Returns only existing hashes in the blacklist from the original collection.
     #[allow(clippy::redundant_closure)] // doesn't work with Substrate storage functions.
-    fn get_existing_hashes(hashes: &BTreeSet<Cid>) -> BTreeSet<Cid> {
+    fn get_existing_hashes(hashes: &BTreeSet<Cid>) -> Result<BTreeSet<Cid>, DispatchError> {
         Self::get_hashes_by_predicate(hashes, |cid| Blacklist::contains_key(cid))
     }
 
     // Returns only nonexisting hashes in the blacklist from the original collection.
-    fn get_nonexisting_hashes(hashes: &BTreeSet<Cid>) -> BTreeSet<Cid> {
+    fn get_nonexisting_hashes(hashes: &BTreeSet<Cid>) -> Result<BTreeSet<Cid>, DispatchError> {
         Self::get_hashes_by_predicate(hashes, |cid| !Blacklist::contains_key(cid))
     }
 
@@ -3742,12 +3748,19 @@ impl<T: Trait> Module<T> {
     fn get_hashes_by_predicate<P: FnMut(&&Cid) -> bool>(
         hashes: &BTreeSet<Cid>,
         predicate: P,
-    ) -> BTreeSet<Cid> {
-        hashes
+    ) -> Result<BTreeSet<Cid>, DispatchError> {
+        ensure!(
+            hashes.iter().all(|cid| cid.len() == CID_LENGTH),
+            Error::<T>::InvalidCidLength
+        );
+
+        let filtered_cids = hashes
             .iter()
             .filter(predicate)
             .cloned()
-            .collect::<BTreeSet<_>>()
+            .collect::<BTreeSet<_>>();
+
+        Ok(filtered_cids)
     }
 
     // Ensure the new bucket could be created. It also validates some parameters.

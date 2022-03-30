@@ -21,7 +21,7 @@ use crate::{
 };
 
 use mocks::{
-    build_test_externalities, Balances, BlacklistSizeLimit,
+    build_test_externalities, create_cid, Balances, BlacklistSizeLimit,
     DefaultChannelDynamicBagNumberOfStorageBuckets, DefaultMemberDynamicBagNumberOfStorageBuckets,
     MaxDataObjectSize, MaxDistributionBucketFamilyNumber, Storage, Test,
     ANOTHER_DISTRIBUTION_PROVIDER_ID, ANOTHER_STORAGE_PROVIDER_ID, BAG_DELETION_PRIZE_VALUE,
@@ -2582,8 +2582,8 @@ fn update_blacklist_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let cid1 = vec![1];
-        let cid2 = vec![2];
+        let cid1 = create_cid(1);
+        let cid2 = create_cid(2);
 
         let add_hashes = BTreeSet::from_iter(vec![cid1.clone()]);
         UpdateBlacklistFixture::default()
@@ -2617,11 +2617,11 @@ fn update_blacklist_failed_with_exceeding_size_limit() {
         let b: usize = BlacklistSizeLimit::get().saturated_into();
         let hashes = (0..b)
             .into_iter()
-            .map(|i| vec![i.saturated_into::<u8>()])
+            .map(|i| create_cid(i.saturated_into()))
             .collect::<Vec<_>>();
-        let cid1 = vec![1];
-        let cid2 = vec![220];
-        let cid3 = vec![221];
+        let cid1 = create_cid(1);
+        let cid2 = create_cid(220);
+        let cid3 = create_cid(221);
 
         let add_hashes = BTreeSet::from_iter(hashes);
 
@@ -2651,11 +2651,11 @@ fn update_blacklist_failed_with_exceeding_size_limit_with_non_existent_remove_ha
         let b: usize = BlacklistSizeLimit::get().saturated_into();
         let hashes = (0..b)
             .into_iter()
-            .map(|i| vec![i.saturated_into::<u8>()])
+            .map(|i| create_cid(i.saturated_into()))
             .collect::<Vec<_>>();
-        let cid1 = vec![1];
-        let cid2 = vec![220];
-        let cid3 = vec![221];
+        let cid1 = create_cid(1);
+        let cid2 = create_cid(220);
+        let cid3 = create_cid(221);
 
         let add_hashes = BTreeSet::from_iter(hashes);
 
@@ -2682,7 +2682,7 @@ fn update_blacklist_failed_with_exceeding_size_limit_with_non_existent_remove_ha
 #[test]
 fn update_blacklist_succeeds_with_existent_remove_hashes() {
     build_test_externalities().execute_with(|| {
-        let cid1 = vec![1];
+        let cid1 = create_cid(1);
 
         let add_hashes = BTreeSet::from_iter(vec![cid1.clone()]);
 
@@ -2698,6 +2698,19 @@ fn update_blacklist_succeeds_with_existent_remove_hashes() {
 
         assert!(crate::Blacklist::contains_key(&cid1));
         assert_eq!(Storage::current_blacklist_size(), 1);
+    });
+}
+
+#[test]
+fn update_blacklist_fails_with_invalid_length() {
+    build_test_externalities().execute_with(|| {
+        let cid1 = vec![1];
+
+        let add_hashes = BTreeSet::from_iter(vec![cid1.clone()]);
+        UpdateBlacklistFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_add_hashes(add_hashes.clone())
+            .call_and_assert(Err(Error::<Test>::InvalidCidLength.into()));
     });
 }
 
@@ -5576,7 +5589,7 @@ fn unsuccessful_dyn_bag_creation_with_blacklisted_ipfs_id() {
         let objects: Vec<DataObjectCreationParameters> = (0..BlacklistSizeLimit::get())
             .map(|idx| DataObjectCreationParameters {
                 size: DEFAULT_DATA_OBJECTS_SIZE,
-                ipfs_content_id: vec![idx.try_into().unwrap()],
+                ipfs_content_id: create_cid(idx.saturated_into()),
             })
             .collect();
 
