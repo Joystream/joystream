@@ -1,6 +1,7 @@
 use super::curators;
 use super::mock::*;
 use crate::*;
+use common::council::CouncilBudgetManager;
 use frame_support::assert_ok;
 use frame_support::traits::Currency;
 use sp_std::cmp::min;
@@ -1387,6 +1388,7 @@ impl ClaimChannelRewardFixture {
         let origin = Origin::signed(self.sender.clone());
         let channel_pre = Content::channel_by_id(self.item.channel_id);
         let channel_balance_pre = channel_reward_account_balance(&channel_pre);
+        let council_budget_pre = <Test as Trait>::CouncilBudgetManager::get_budget();
 
         let proof = if self.payments.is_empty() {
             vec![]
@@ -1399,6 +1401,7 @@ impl ClaimChannelRewardFixture {
 
         let channel_post = Content::channel_by_id(self.item.channel_id);
         let channel_balance_post = channel_reward_account_balance(&channel_post);
+        let council_budget_post = <Test as Trait>::CouncilBudgetManager::get_budget();
 
         assert_eq!(actual_result, expected_result);
 
@@ -1416,6 +1419,10 @@ impl ClaimChannelRewardFixture {
                 self.item.cumulative_reward_earned
             );
             assert_eq!(
+                council_budget_post,
+                council_budget_pre.saturating_sub(cashout)
+            );
+            assert_eq!(
                 System::events().last().unwrap().event,
                 MetaEvent::content(RawEvent::ChannelRewardUpdated(
                     self.item.cumulative_reward_earned,
@@ -1423,6 +1430,7 @@ impl ClaimChannelRewardFixture {
                 ))
             );
         } else {
+            assert_eq!(council_budget_post, council_budget_pre);
             assert_eq!(channel_balance_post, channel_balance_pre);
             assert_eq!(channel_post, channel_pre);
         }
@@ -1569,6 +1577,7 @@ impl ClaimAndWithdrawChannelRewardFixture {
         let dest_balance_pre = Balances::<Test>::usable_balance(&self.destination);
         let channel_pre = Content::channel_by_id(&self.item.channel_id);
         let channel_balance_pre = channel_reward_account_balance(&channel_pre);
+        let council_budget_pre = <Test as Trait>::CouncilBudgetManager::get_budget();
 
         let proof = if self.payments.is_empty() {
             vec![]
@@ -1587,6 +1596,7 @@ impl ClaimAndWithdrawChannelRewardFixture {
         let dest_balance_post = Balances::<Test>::usable_balance(&self.destination);
         let channel_post = Content::channel_by_id(&self.item.channel_id);
         let channel_balance_post = channel_reward_account_balance(&channel_post);
+        let council_budget_post = <Test as Trait>::CouncilBudgetManager::get_budget();
 
         assert_eq!(actual_result, expected_result);
 
@@ -1606,6 +1616,10 @@ impl ClaimAndWithdrawChannelRewardFixture {
             );
             assert_eq!(channel_balance_post, channel_balance_pre);
             assert_eq!(
+                council_budget_post,
+                council_budget_pre.saturating_sub(amount_claimed)
+            );
+            assert_eq!(
                 System::events().last().unwrap().event,
                 MetaEvent::content(RawEvent::ChannelRewardClaimedAndWithdrawn(
                     self.actor.clone(),
@@ -1615,6 +1629,7 @@ impl ClaimAndWithdrawChannelRewardFixture {
                 ))
             );
         } else {
+            assert_eq!(council_budget_post, council_budget_pre);
             assert_eq!(channel_balance_post, channel_balance_pre);
             assert_eq!(dest_balance_post, dest_balance_pre);
             assert_eq!(channel_post, channel_pre);

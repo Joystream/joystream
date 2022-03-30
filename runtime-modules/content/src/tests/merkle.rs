@@ -3,6 +3,7 @@ use super::curators::add_curator_to_new_group;
 use super::fixtures::*;
 use super::mock::*;
 use crate::*;
+use common::council::CouncilBudgetManager;
 use sp_runtime::DispatchError;
 
 #[test]
@@ -163,6 +164,7 @@ fn unsuccessful_reward_claim_with_invalid_claim() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video();
+        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED + 1);
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::one(),
@@ -183,10 +185,11 @@ fn unsuccessful_reward_claim_with_empty_proof() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video();
+        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::one(),
-            cumulative_reward_earned: BalanceOf::<Test>::from(DEFAULT_PAYOUT_CLAIMED + 1),
+            cumulative_reward_earned: BalanceOf::<Test>::from(DEFAULT_PAYOUT_CLAIMED),
             reason: Hashing::hash_of(&b"reason".to_vec()),
         };
         ClaimChannelRewardFixture::default()
@@ -206,6 +209,7 @@ fn successful_reward_claim_by_member() {
         create_default_member_owned_channel_with_video();
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
+        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
 
         ClaimChannelRewardFixture::default()
             .with_payments(payments)
@@ -223,6 +227,7 @@ fn successful_reward_claim_by_curator() {
         create_default_curator_owned_channel_with_video();
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
+        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
 
         let default_curator_group_id = Content::next_curator_group_id() - 1;
         ClaimChannelRewardFixture::default()
@@ -246,6 +251,7 @@ fn successful_reward_claim_with_member_owned_channel_no_reward_account_found() {
         create_default_member_owned_channel_with_video();
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
+        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
 
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
@@ -300,6 +306,7 @@ fn unsuccessful_reward_claim_with_no_commitment_value_outstanding() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video();
         let payments = create_some_pull_payments_helper();
+        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
 
         ClaimChannelRewardFixture::default()
             .with_payments(payments)
@@ -338,6 +345,7 @@ fn unsuccessful_reward_claim_with_successive_request() {
         create_default_member_owned_channel_with_video();
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
+        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
 
         ClaimChannelRewardFixture::default()
             .with_payments(payments.clone())
@@ -360,6 +368,7 @@ fn successful_reward_claim_with_successive_request_when_reward_increased() {
         create_default_member_owned_channel_with_video();
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
+        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED * 2);
 
         ClaimChannelRewardFixture::default()
             .with_payments(payments.clone())
@@ -376,6 +385,24 @@ fn successful_reward_claim_with_successive_request_when_reward_increased() {
     })
 }
 
+#[test]
+fn unsuccessful_reward_claim_with_insufficient_council_budget() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+        let payments = create_some_pull_payments_helper();
+        update_commit_value_with_payments_helper(&payments);
+        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED - 1);
+
+        ClaimChannelRewardFixture::default()
+            .with_payments(payments.clone())
+            .call_and_assert(Err(Error::<Test>::InsufficientCouncilBudget.into()));
+    })
+}
+
 /// Withdrawals
 
 #[test]
@@ -389,6 +416,7 @@ fn unsuccessful_channel_balance_withdrawal_with_auth_failed() {
 
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
+        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
 
         ClaimChannelRewardFixture::default()
             .with_payments(payments)
@@ -432,6 +460,7 @@ fn unsuccessful_channel_balance_withdrawal_as_non_owner() {
 
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
+        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
 
         ClaimChannelRewardFixture::default()
             .with_payments(payments)
@@ -485,6 +514,7 @@ fn unsuccessful_channel_balance_double_spend_withdrawal() {
 
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
+        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
 
         ClaimChannelRewardFixture::default()
             .with_payments(payments)
@@ -543,6 +573,7 @@ fn successful_channel_balance_withdrawal_to_custom_destination() {
 
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
+        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
 
         ClaimChannelRewardFixture::default()
             .with_payments(payments)
@@ -565,6 +596,7 @@ fn successful_channel_balance_multiple_withdrawals() {
 
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
+        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
 
         ClaimChannelRewardFixture::default()
             .with_payments(payments)
@@ -752,6 +784,7 @@ fn unsuccessful_claim_and_withdraw_with_invalid_claim() {
 
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
+        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED + 1);
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::one(),
@@ -772,10 +805,11 @@ fn unsuccessful_claim_and_withdraw_with_empty_proof() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video();
+        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::one(),
-            cumulative_reward_earned: BalanceOf::<Test>::from(DEFAULT_PAYOUT_CLAIMED + 1),
+            cumulative_reward_earned: BalanceOf::<Test>::from(DEFAULT_PAYOUT_CLAIMED),
             reason: Hashing::hash_of(&b"reason".to_vec()),
         };
         ClaimAndWithdrawChannelRewardFixture::default()
@@ -793,6 +827,7 @@ fn unsuccessful_claim_and_withdraw_with_no_commitment() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video();
+        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
 
         ClaimAndWithdrawChannelRewardFixture::default()
             .call_and_assert(Err(Error::<Test>::PaymentProofVerificationFailed.into()))
@@ -830,6 +865,7 @@ fn unsuccessful_claim_and_withdraw_double_spend() {
         create_default_member_owned_channel_with_video();
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
+        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
 
         ClaimAndWithdrawChannelRewardFixture::default()
             .with_payments(payments.clone())
@@ -853,6 +889,24 @@ fn unsuccessful_claim_and_withdraw_double_spend() {
 }
 
 #[test]
+fn unsuccessful_claim_and_withdraw_insufficient_council_budget() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+        let payments = create_some_pull_payments_helper();
+        update_commit_value_with_payments_helper(&payments);
+        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED - 1);
+
+        ClaimAndWithdrawChannelRewardFixture::default()
+            .with_payments(payments.clone())
+            .call_and_assert(Err(Error::<Test>::InsufficientCouncilBudget.into()));
+    })
+}
+
+#[test]
 fn successful_claim_and_withdraw_to_custom_destination() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -862,6 +916,7 @@ fn successful_claim_and_withdraw_to_custom_destination() {
         create_default_member_owned_channel_with_video();
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
+        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
 
         ClaimAndWithdrawChannelRewardFixture::default()
             .with_payments(payments.clone())
@@ -880,6 +935,7 @@ fn successful_multiple_claims_and_withdrawals_when_reward_updated() {
         create_default_member_owned_channel_with_video();
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
+        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED * 2);
 
         ClaimAndWithdrawChannelRewardFixture::default()
             .with_payments(payments.clone())
@@ -894,6 +950,8 @@ fn successful_multiple_claims_and_withdrawals_when_reward_updated() {
             .call_and_assert(Ok(()));
     })
 }
+
+// Channel payouts update
 
 #[test]
 fn unsuccessfull_channel_payouts_update_with_invalid_origin() {

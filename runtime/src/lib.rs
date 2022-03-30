@@ -502,6 +502,7 @@ impl content::Trait for Runtime {
     type CleanupCost = CleanupCost;
     type ModuleId = ContentModuleId;
     type MemberAuthenticator = Members;
+    type CouncilBudgetManager = Council;
 }
 
 // The referendum instance alias.

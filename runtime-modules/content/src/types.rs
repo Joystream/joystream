@@ -518,11 +518,6 @@ pub trait ModuleAccount<T: balances::Trait> {
     fn usable_balance() -> BalanceOf<T> {
         <Balances<T>>::usable_balance(&Self::module_account_id())
     }
-
-    /// Mints the reward into the destination account provided
-    fn transfer_reward(dest_account_id: &T::AccountId, amount: BalanceOf<T>) {
-        let _ = <Balances<T> as Currency<T::AccountId>>::deposit_creating(dest_account_id, amount);
-    }
 }
 
 /// Implementation of the ModuleAccountHandler.

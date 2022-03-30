@@ -384,6 +384,9 @@ impl Trait for Test {
 
     /// membership info provider
     type MemberAuthenticator = MemberInfoProvider;
+
+    /// council budget manager
+    type CouncilBudgetManager = CouncilBudgetManager;
 }
 
 // #[derive (Default)]
@@ -770,5 +773,44 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for DistributionWG {
 
     fn set_budget(_new_value: u64) {
         unimplemented!()
+    }
+}
+
+pub const COUNCIL_BUDGET_ACCOUNT_ID: u64 = 90000000;
+pub struct CouncilBudgetManager;
+impl common::council::CouncilBudgetManager<u64, u64> for CouncilBudgetManager {
+    fn get_budget() -> u64 {
+        balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID)
+    }
+
+    fn set_budget(budget: u64) {
+        let old_budget = Self::get_budget();
+
+        if budget > old_budget {
+            let _ = balances::Module::<Test>::deposit_creating(
+                &COUNCIL_BUDGET_ACCOUNT_ID,
+                budget - old_budget,
+            );
+        }
+
+        if budget < old_budget {
+            let _ =
+                balances::Module::<Test>::slash(&COUNCIL_BUDGET_ACCOUNT_ID, old_budget - budget);
+        }
+    }
+
+    fn try_withdraw(account_id: &u64, amount: u64) -> DispatchResult {
+        ensure!(
+            Self::get_budget() >= amount,
+            DispatchError::Other("CouncilBudgetManager: try_withdraw - not enough balance.")
+        );
+
+        let _ = Balances::<Test>::deposit_creating(account_id, amount);
+
+        let current_budget = Self::get_budget();
+        let new_budget = current_budget.saturating_sub(amount);
+        Self::set_budget(new_budget);
+
+        Ok(())
     }
 }

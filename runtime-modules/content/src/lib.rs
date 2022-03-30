@@ -28,8 +28,9 @@ pub use storage::{
 };
 
 pub use common::{
-    currency::GovernanceCurrency, membership::MembershipInfoProvider, working_group::WorkingGroup,
-    MembershipTypes, StorageOwnership, Url,
+    council::CouncilBudgetManager, currency::GovernanceCurrency,
+    membership::MembershipInfoProvider, working_group::WorkingGroup, MembershipTypes,
+    StorageOwnership, Url,
 };
 use frame_support::{
     decl_event, decl_module, decl_storage,
@@ -109,6 +110,9 @@ pub trait Trait:
 
     /// Type in order to retrieve controller account from channel member owner
     type MemberAuthenticator: MembershipInfoProvider<Self>;
+
+    /// Provides an access for the council budget.
+    type CouncilBudgetManager: CouncilBudgetManager<Self::AccountId, BalanceOf<Self>>;
 }
 
 decl_storage! {
@@ -2661,7 +2665,14 @@ impl<T: Trait> Module<T> {
             <MinCashoutAllowed<T>>::get() <= cashout,
             Error::<T>::CashoutAmountBelowMinimumAmount
         );
+
+        ensure!(
+            cashout <= T::CouncilBudgetManager::get_budget(),
+            Error::<T>::InsufficientCouncilBudget
+        );
+
         Self::verify_proof(proof, item)?;
+
         Ok((channel, reward_account, cashout))
     }
 
@@ -2670,7 +2681,7 @@ impl<T: Trait> Module<T> {
         reward_account: &T::AccountId,
         amount: BalanceOf<T>,
     ) {
-        ContentTreasury::<T>::transfer_reward(reward_account, amount);
+        T::CouncilBudgetManager::withdraw(reward_account, amount);
         ChannelById::<T>::mutate(&channel_id, |channel| {
             channel.cumulative_reward_claimed =
                 channel.cumulative_reward_claimed.saturating_add(amount)
