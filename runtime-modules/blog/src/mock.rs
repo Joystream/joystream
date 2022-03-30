@@ -99,7 +99,7 @@ impl membership::Trait for Runtime {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
-    type WorkingGroup = ();
+    type WorkingGroup = Wg;
     type WeightInfo = Weights;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InviteMemberLockId>;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
@@ -124,7 +124,21 @@ impl staking_handler::LockComparator<u64> for Runtime {
     }
 }
 
-impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
+pub struct Wg;
+impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for Wg {
+    fn get_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget(_new_value: u64) {
+        unimplemented!()
+    }
+
+    fn try_withdraw(_account_id: &u128, _amount: u64) -> DispatchResult {
+        unimplemented!()
+    }
+}
+impl common::working_group::WorkingGroupAuthenticator<Runtime> for Wg {
     fn ensure_worker_origin(
         _origin: <Runtime as frame_system::Trait>::Origin,
         _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,

@@ -314,7 +314,7 @@ impl Trait for Test {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
-    type WorkingGroup = ();
+    type WorkingGroup = Wg;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type StakingCandidateStakingHandler =
@@ -330,7 +330,8 @@ thread_local! {
     pub static LEAD_SET: RefCell<bool> = RefCell::new(bool::default());
 }
 
-impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
+pub struct Wg;
+impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
     fn get_budget() -> u64 {
         WG_BUDGET.with(|val| *val.borrow())
     }
@@ -340,9 +341,13 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
             *val.borrow_mut() = new_value;
         });
     }
+
+    fn try_withdraw(_account_id: &u64, _amount: u64) -> frame_support::dispatch::DispatchResult {
+        todo!()
+    }
 }
 
-impl common::working_group::WorkingGroupAuthenticator<Test> for () {
+impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     fn ensure_worker_origin(
         origin: <Test as frame_system::Trait>::Origin,
         worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
