@@ -5,7 +5,6 @@ use sp_arithmetic::traits::One;
 
 use crate::tests::mock::*;
 use crate::traits::{MultiCurrencyBase, ReservableMultiCurrency};
-use crate::types::TokenIssuanceParametersOf;
 use crate::Error;
 
 // base_issue test
@@ -29,25 +28,25 @@ fn issue_base_token_ok_with_default_issuance_parameters() {
     })
 }
 
-#[test]
-fn issue_base_token_fails_with_existential_deposit_exceeding_issuance() {
-    let config = GenesisConfigBuilder::new().build();
-    let initial_issuance = Balance::from(10u32);
-    let issuance_params = TokenIssuanceParametersOf::<Test> {
-        initial_issuance,
-        existential_deposit: initial_issuance.saturating_add(One::one()),
-        ..Default::default()
-    };
+// #[test]
+// fn issue_base_token_fails_with_existential_deposit_exceeding_issuance() {
+//     let config = GenesisConfigBuilder::new().build();
+//     let initial_issuance = Balance::from(10u32);
+//     let issuance_params = TokenIssuanceParametersOf::<Test> {
+//         initial_issuance,
+//         existential_deposit: initial_issuance.saturating_add(One::one()),
+//         ..Default::default()
+//     };
 
-    build_test_externalities(config).execute_with(|| {
-        assert_noop!(
-            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::issue_token(
-                issuance_params.clone()
-            ),
-            Error::<Test>::ExistentialDepositExceedsInitialIssuance,
-        );
-    })
-}
+//     build_test_externalities(config).execute_with(|| {
+//         assert_noop!(
+//             <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::issue_token(
+//                 issuance_params.clone()
+//             ),
+//             Error::<Test>::ExistentialDepositExceedsInitialIssuance,
+//         );
+//     })
+// }
 
 // base_deissue tests
 #[test]
