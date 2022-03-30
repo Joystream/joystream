@@ -2,8 +2,9 @@
 
 pub use crate::{GenesisConfig, Trait, Weight, WeightInfo};
 
+use frame_support::dispatch::{DispatchError, DispatchResult};
 pub use frame_support::traits::{Currency, LockIdentifier};
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use frame_support::{ensure, impl_outer_event, impl_outer_origin, parameter_types};
 use sp_std::cell::RefCell;
 use staking_handler::LockComparator;
 
@@ -14,7 +15,7 @@ use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    DispatchError, DispatchResult, Perbill,
+    Perbill,
 };
 
 pub(crate) type MembershipWorkingGroupInstance = working_group::Instance4;
@@ -342,8 +343,21 @@ impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
         });
     }
 
-    fn try_withdraw(_account_id: &u64, _amount: u64) -> frame_support::dispatch::DispatchResult {
-        todo!()
+    fn try_withdraw(account_id: &u64, amount: u64) -> DispatchResult {
+        ensure!(
+            Self::get_budget() >= amount,
+            DispatchError::Other("Invalid balance")
+        );
+
+        let _ = Balances::deposit_creating(account_id, amount);
+
+        let current_budget = Self::get_budget();
+        let new_budget = current_budget.saturating_sub(amount);
+        <Self as common::working_group::WorkingGroupBudgetHandler<u64, u64>>::set_budget(
+            new_budget,
+        );
+
+        Ok(())
     }
 }
 
