@@ -242,8 +242,9 @@ impl<
     }
 
     pub(crate) fn with_bid(self, amount: Balance, bidder_id: MemberId, block: BlockNumber) -> Self {
-        // sniping extension logic
-        let end = if self.end.saturating_sub(self.extension_period) < block {
+        // sniping extension logic:
+        // If bid block is in [end - extension_period, end) then new end += extension_period
+        let end = if self.end.saturating_sub(self.extension_period) <= block {
             self.end.saturating_add(self.extension_period)
         } else {
             self.end
