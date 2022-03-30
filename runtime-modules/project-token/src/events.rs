@@ -1,4 +1,5 @@
 use frame_support::decl_event;
+use sp_runtime::Percent;
 
 decl_event! {
     pub enum Event<T>
@@ -42,6 +43,19 @@ decl_event! {
         /// - account tokens are unreserved from
         /// - amount reserved
         TokenAmountUnreservedFrom(TokenId, AccountId, Balance),
+
+        /// Patronage rate decreased
+        /// Params:
+        /// - token identifier
+        /// - new patronage rate
+        PatronageRateDecreasedTo(TokenId, Percent),
+
+        /// Patronage credit claimed by creator
+        /// Params:
+        /// - token identifier
+        /// - credit amount
+        /// - account
+        PatronageCreditClaimed(TokenId, Balance, AccountId),
 
     }
 }

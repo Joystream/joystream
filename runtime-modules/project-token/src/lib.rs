@@ -502,18 +502,25 @@ impl<T: Trait> PatronageTrait<T::AccountId, TokenIssuanceParametersOf<T>> for Mo
     type MultiCurrency = Self;
 
     fn reduce_patronage_rate_by(token_id: T::TokenId, decrement: Percent) -> DispatchResult {
-        TokenInfoById::<T>::try_mutate(token_id, |token_info| {
-            // ensure new rate is >= 0
-            ensure!(
-                token_info.patronage_info.rate >= decrement,
-                Error::<T>::ReductionExceedingPatronageRate,
-            );
+        let token_info = Self::ensure_token_exists(token_id)?;
 
-            token_info.patronage_info.rate =
-                token_info.patronage_info.rate.saturating_sub(decrement);
+        // ensure new rate is >= 0
+        ensure!(
+            token_info.patronage_info.rate >= decrement,
+            Error::<T>::ReductionExceedingPatronageRate,
+        );
 
-            Ok(())
-        })
+        // == MUTATION SAFE ==
+
+        let new_rate = TokenInfoById::<T>::mutate(token_id, |token_info| {
+            let new_rate = token_info.patronage_info.rate.saturating_sub(decrement);
+            token_info.patronage_info.rate = new_rate;
+            new_rate
+        });
+
+        Self::deposit_event(RawEvent::PatronageRateDecreasedTo(token_id, new_rate));
+
+        Ok(())
     }
 
     fn get_patronage_credit(token_id: T::TokenId) -> Result<T::Balance, DispatchError> {
@@ -523,7 +530,7 @@ impl<T: Trait> PatronageTrait<T::AccountId, TokenIssuanceParametersOf<T>> for Mo
 
     fn claim_patronage_credit(token_id: T::TokenId, to_account: T::AccountId) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
-        let account_info = Self::ensure_account_data_exists(token_id, &to_account)?;
+        Self::ensure_account_data_exists(token_id, &to_account).map(|_| ())?;
 
         // == MUTATION SAFE ==
 
@@ -533,9 +540,13 @@ impl<T: Trait> PatronageTrait<T::AccountId, TokenIssuanceParametersOf<T>> for Mo
             token_info.patronage_info.outstanding_credit = T::Balance::zero();
         });
 
-        AccountInfoByTokenAndAccount::<T>::mutate(token_id, to_account, |account_info| {
+        AccountInfoByTokenAndAccount::<T>::mutate(token_id, &to_account, |account_info| {
             account_info.free_balance = account_info.free_balance.saturating_add(credit)
         });
+
+        Self::deposit_event(RawEvent::PatronageCreditClaimed(
+            token_id, credit, to_account,
+        ));
 
         Ok(())
     }
