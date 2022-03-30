@@ -207,12 +207,11 @@ type Bid @entity {
   "NFT's auction"
   auction: Auction!
 
+  "NFT's auction where this bid is the current top bid"
+  auctionTopBid: Auction @derivedFrom(field: "topBid")
+
   "Bidder membership"
   bidder: Membership!
-
-  # TODO: probably remove that
-  #"Bidder account, used to pay for NFT"
-  #bidderAccount: String!
 
   "Amount bidded"
   amount: BigInt!

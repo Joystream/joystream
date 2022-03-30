@@ -362,15 +362,11 @@ async function createBid(
     isCanceled: false,
   })
 
-  // save bid
-  await store.save<Bid>(bid)
-
-  if (!auction.topBid || auction.topBid.amount < bid.amount) {
-    // update last bid in auction
-    auction.topBid = bid
-
-    await store.save<Auction>(auction)
+  if (!auction.topBid || auction.topBid.amount.lt(bid.amount)) {
+    bid.auctionTopBid = auction
   }
+
+  await store.save<Bid>(bid)
 
   return { auction, member, video }
 }
