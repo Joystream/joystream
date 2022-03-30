@@ -60,11 +60,5 @@ pub trait WorkingGroupAuthenticator<T: crate::MembershipTypes> {
     fn ensure_worker_exists(worker_id: &T::ActorId) -> DispatchResult;
 }
 
-/// Working group interface to work with the its budget.
-pub trait WorkingGroupBudgetHandler<T: balances::Trait> {
-    /// Returns current working group balance.
-    fn get_budget() -> T::Balance;
-
-    /// Sets new working broup balance
-    fn set_budget(new_value: T::Balance);
-}
+/// Provides an interface for the working group budget.
+pub use crate::BudgetManager as WorkingGroupBudgetHandler;

@@ -1022,15 +1022,15 @@ parameter_types! {
 macro_rules! call_wg {
     ($working_group:ident, $function:ident $(,$x:expr)*) => {{
         match $working_group {
-            WorkingGroup::Content => <ContentWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
-            WorkingGroup::Storage => <StorageWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
-            WorkingGroup::Forum => <ForumWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
-            WorkingGroup::Membership => <MembershipWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
-            WorkingGroup::Gateway => <GatewayWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
-            WorkingGroup::Distribution => <DistributionWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
-            WorkingGroup::OperationsAlpha => <OperationsWorkingGroupAlpha as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
-            WorkingGroup::OperationsBeta => <OperationsWorkingGroupBeta as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
-            WorkingGroup::OperationsGamma => <OperationsWorkingGroupGamma as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+            WorkingGroup::Content => <ContentWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
+            WorkingGroup::Storage => <StorageWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
+            WorkingGroup::Forum => <ForumWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
+            WorkingGroup::Membership => <MembershipWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
+            WorkingGroup::Gateway => <GatewayWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
+            WorkingGroup::Distribution => <DistributionWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
+            WorkingGroup::OperationsAlpha => <OperationsWorkingGroupAlpha as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
+            WorkingGroup::OperationsBeta => <OperationsWorkingGroupBeta as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
+            WorkingGroup::OperationsGamma => <OperationsWorkingGroupGamma as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
         }
     }};
 }
