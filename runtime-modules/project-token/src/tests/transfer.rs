@@ -372,7 +372,7 @@ fn multiout_transfer_ok_without_src_removal() {
         let dst_pre = outputs
             .iter()
             .map(|(dst, _)| {
-                Token::account_info_by_token_and_account(token_id, dst.account).free_balance
+                Token::account_info_by_token_and_account(token_id, &dst.account).free_balance
             })
             .collect::<Vec<_>>();
 
@@ -385,7 +385,7 @@ fn multiout_transfer_ok_without_src_removal() {
         let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
         let src_post = Token::account_info_by_token_and_account(token_id, src).free_balance;
         let dst_post = outputs.iter().map(|(dst, _)| {
-            Token::account_info_by_token_and_account(token_id, dst.account).free_balance
+            Token::account_info_by_token_and_account(token_id, &dst.account).free_balance
         });
 
         assert_eq!(issuance_pre, issuance_post);

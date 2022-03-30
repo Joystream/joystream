@@ -97,11 +97,6 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId, TokenIssuanceParametersOf<T>> for
         // increase token issuance
         Self::do_mint(token_id, amount);
 
-        TokenInfoById::<T>::mutate(token_id, |token_data| {
-            token_data.current_total_issuance =
-                token_data.current_total_issuance.saturating_add(amount)
-        });
-
         if AccountInfoByTokenAndAccount::<T>::contains_key(token_id, &who) {
             AccountInfoByTokenAndAccount::<T>::mutate(token_id, &who, |account_data| {
                 account_data.free_balance = account_data.free_balance.saturating_add(amount)
@@ -666,13 +661,11 @@ impl<T: Trait> Module<T> {
     pub(crate) fn do_mint(token_id: T::TokenId, amount: T::Balance) {
         TokenInfoById::<T>::mutate(token_id, |token_data| {
             // increase patronage credit due to increase in amount
-            let credit_increase = token_data
-                .patronage_info
-                .rate
-                .saturating_reciprocal_mul_floor(amount);
+            let credit_increase = token_data.patronage_info.rate.mul_floor(amount);
 
             // reflect the credit in the issuance
             let issuance_increase = amount.saturating_add(credit_increase);
+
             token_data.current_total_issuance = token_data
                 .current_total_issuance
                 .saturating_add(issuance_increase);

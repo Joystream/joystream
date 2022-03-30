@@ -16,9 +16,8 @@ use sp_runtime::traits::{BlakeTwo256, Hash, IdentityLookup};
 
 // crate import
 use crate::{
-    types::{MerkleSide, VerifiableLocation},
-    AccountDataOf, GenesisConfig, SimpleLocation, TokenDataOf, TokenIssuanceParametersOf, Trait,
-    TransferPolicyOf,
+    types::{MerkleSide, SimpleLocation, VerifiableLocation},
+    AccountDataOf, GenesisConfig, TokenDataOf, TokenIssuanceParametersOf, Trait, TransferPolicyOf,
 };
 
 // Crate aliases
