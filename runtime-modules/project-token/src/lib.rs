@@ -521,13 +521,23 @@ impl<T: Trait> PatronageTrait<T::AccountId, TokenIssuanceParametersOf<T>> for Mo
             .map(|token_info| token_info.patronage_info.outstanding_credit)
     }
 
-    fn claim_patronage_credit(token_id: T::TokenId) -> Result<T::Balance, DispatchError> {
-        TokenInfoById::<T>::try_mutate(token_id, |token_info| {
-            let credit = token_info.patronage_info.outstanding_credit;
-            token_info.patronage_info.outstanding_credit = T::Balance::zero();
+    fn claim_patronage_credit(token_id: T::TokenId, to_account: T::AccountId) -> DispatchResult {
+        let token_info = Self::ensure_token_exists(token_id)?;
+        let account_info = Self::ensure_account_data_exists(token_id, &to_account)?;
 
-            Ok(credit)
-        })
+        // == MUTATION SAFE ==
+
+        let credit = token_info.patronage_info.outstanding_credit;
+
+        TokenInfoById::<T>::mutate(token_id, |token_info| {
+            token_info.patronage_info.outstanding_credit = T::Balance::zero();
+        });
+
+        AccountInfoByTokenAndAccount::<T>::mutate(token_id, to_account, |account_info| {
+            account_info.free_balance = account_info.free_balance.saturating_add(credit)
+        });
+
+        Ok(())
     }
 }
 
@@ -644,14 +654,17 @@ impl<T: Trait> Module<T> {
     #[inline]
     pub(crate) fn do_mint(token_id: T::TokenId, amount: T::Balance) {
         TokenInfoById::<T>::mutate(token_id, |token_data| {
-            token_data.current_total_issuance =
-                token_data.current_total_issuance.saturating_add(amount);
-
             // increase patronage credit due to increase in amount
             let credit_increase = token_data
                 .patronage_info
                 .rate
                 .saturating_reciprocal_mul_floor(amount);
+
+            // reflect the credit in the issuance
+            let issuance_increase = amount.saturating_add(credit_increase);
+            token_data.current_total_issuance = token_data
+                .current_total_issuance
+                .saturating_add(issuance_increase);
 
             token_data.patronage_info.outstanding_credit = token_data
                 .patronage_info

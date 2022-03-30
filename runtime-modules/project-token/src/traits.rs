@@ -139,8 +139,6 @@ pub trait PatronageTrait<AccountId, IssuanceParams> {
 
     fn claim_patronage_credit(
         token_id: <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::TokenId,
-    ) -> Result<
-        <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::Balance,
-        DispatchError,
-    >;
+        to_account: AccountId,
+    ) -> DispatchResult;
 }
