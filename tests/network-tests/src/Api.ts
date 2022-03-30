@@ -892,9 +892,6 @@ export class Api {
   }> {
     const boundaries = await this.getAuctionParametersBoundaries()
 
-    // auction duration must be larger than extension period (enforced in runtime)
-    const auctionDuration = BN.max(boundaries.auctionDuration.min, boundaries.extensionPeriod.min)
-
     const bidLockDuration = boundaries.bidLockDuration.min
 
     const auctionParams = this.api.createType('OpenAuctionParams', {
@@ -925,28 +922,17 @@ export class Api {
 
     // auction duration must be larger than extension period (enforced in runtime)
     const auctionDuration = BN.max(boundaries.auctionDuration.min, boundaries.extensionPeriod.min)
-    // set end block relatively to auction duration
-    const endBlock = (await this.getBestBlock()).add(auctionDuration)
 
     const startingPrice = boundaries.startingPrice.min
     const minimalBidStep = boundaries.bidStep.min
     const extensionPeriod = boundaries.extensionPeriod.min
 
-    /*
-    auctionDuration = auctionDuration || BN.max(boundaries.auctionDuration.min, boundaries.extensionPeriod.min)
-    extensionPeriod = extensionPeriod || boundaries.extensionPeriod.min
-
-    if (extensionPeriod && auctionDuration && extensionPeriod >= auctionDuration) {
-      throw new Error('Auction duration must be larger than extension period')
-    }
-    */
-
     const auctionParams = this.api.createType('EnglishAuctionParams', {
       starting_price: this.api.createType('u128', startingPrice),
-      buy_now_price: this.api.createType('Option<BlockNumber>', null),
+      buy_now_price: this.api.createType('Option<Balance>', null),
       whitelist: this.api.createType('BTreeSet<StorageBucketId>', whitelist),
-      end: this.api.createType('BlockNumber', endBlock),
-      auction_duration: auctionDuration,
+      starts_at: this.api.createType('Option<BlockNumber>', null),
+      duration: auctionDuration,
       extension_period: extensionPeriod,
       min_bid_step: this.api.createType('u128', minimalBidStep),
     })

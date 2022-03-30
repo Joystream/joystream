@@ -777,8 +777,8 @@
         "starting_price": "u128",
         "buy_now_price": "Option<u128>",
         "whitelist": "BTreeSet<MemberId>",
-        "duration": "u32",
         "starts_at": "Option<u32>",
+        "duration": "u32",
         "extension_period": "u32",
         "min_bid_step": "u128"
     },

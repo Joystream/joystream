@@ -665,9 +665,11 @@ export type Auction = BaseGraphQlObject & {
   buyNowPrice?: Maybe<Scalars['BigInt']>
   /** The type of auction */
   auctionType: AuctionType
-  lastBid?: Maybe<Bid>
-  lastBidId?: Maybe<Scalars['String']>
+  topBid?: Maybe<Bid>
+  topBidId?: Maybe<Scalars['String']>
   bids: Array<Bid>
+  /** Block when auction starts */
+  startsAtBlock: Scalars['Int']
   /** Block when auction ended */
   endedAtBlock?: Maybe<Scalars['Int']>
   /** Is auction canceled */
@@ -1092,7 +1094,8 @@ export type AuctionCreateInput = {
   startingPrice: Scalars['String']
   buyNowPrice?: Maybe<Scalars['String']>
   auctionType: Scalars['JSONObject']
-  lastBid?: Maybe<Scalars['ID']>
+  topBid?: Maybe<Scalars['ID']>
+  startsAtBlock: Scalars['Float']
   endedAtBlock?: Maybe<Scalars['Float']>
   isCanceled: Scalars['Boolean']
   isCompleted: Scalars['Boolean']
@@ -1120,8 +1123,10 @@ export enum AuctionOrderByInput {
   StartingPriceDesc = 'startingPrice_DESC',
   BuyNowPriceAsc = 'buyNowPrice_ASC',
   BuyNowPriceDesc = 'buyNowPrice_DESC',
-  LastBidAsc = 'lastBid_ASC',
-  LastBidDesc = 'lastBid_DESC',
+  TopBidAsc = 'topBid_ASC',
+  TopBidDesc = 'topBid_DESC',
+  StartsAtBlockAsc = 'startsAtBlock_ASC',
+  StartsAtBlockDesc = 'startsAtBlock_DESC',
   EndedAtBlockAsc = 'endedAtBlock_ASC',
   EndedAtBlockDesc = 'endedAtBlock_DESC',
   IsCanceledAsc = 'isCanceled_ASC',
@@ -1155,7 +1160,8 @@ export type AuctionUpdateInput = {
   startingPrice?: Maybe<Scalars['String']>
   buyNowPrice?: Maybe<Scalars['String']>
   auctionType?: Maybe<Scalars['JSONObject']>
-  lastBid?: Maybe<Scalars['ID']>
+  topBid?: Maybe<Scalars['ID']>
+  startsAtBlock?: Maybe<Scalars['Float']>
   endedAtBlock?: Maybe<Scalars['Float']>
   isCanceled?: Maybe<Scalars['Boolean']>
   isCompleted?: Maybe<Scalars['Boolean']>
@@ -1199,6 +1205,12 @@ export type AuctionWhereInput = {
   buyNowPrice_lte?: Maybe<Scalars['BigInt']>
   buyNowPrice_in?: Maybe<Array<Scalars['BigInt']>>
   auctionType_json?: Maybe<Scalars['JSONObject']>
+  startsAtBlock_eq?: Maybe<Scalars['Int']>
+  startsAtBlock_gt?: Maybe<Scalars['Int']>
+  startsAtBlock_gte?: Maybe<Scalars['Int']>
+  startsAtBlock_lt?: Maybe<Scalars['Int']>
+  startsAtBlock_lte?: Maybe<Scalars['Int']>
+  startsAtBlock_in?: Maybe<Array<Scalars['Int']>>
   endedAtBlock_eq?: Maybe<Scalars['Int']>
   endedAtBlock_gt?: Maybe<Scalars['Int']>
   endedAtBlock_gte?: Maybe<Scalars['Int']>
@@ -1212,7 +1224,7 @@ export type AuctionWhereInput = {
   nft?: Maybe<OwnedNftWhereInput>
   initialOwner?: Maybe<MembershipWhereInput>
   winningMember?: Maybe<MembershipWhereInput>
-  lastBid?: Maybe<BidWhereInput>
+  topBid?: Maybe<BidWhereInput>
   bids_none?: Maybe<BidWhereInput>
   bids_some?: Maybe<BidWhereInput>
   bids_every?: Maybe<BidWhereInput>
@@ -1322,7 +1334,9 @@ export type Bid = BaseGraphQlObject & {
   isCanceled: Scalars['Boolean']
   /** Block in which the bid was placed */
   createdInBlock: Scalars['Int']
-  auctionlastBid?: Maybe<Array<Auction>>
+  /** Index of event in block where bid was made. */
+  indexInBlock: Scalars['Int']
+  auctiontopBid?: Maybe<Array<Auction>>
 }
 
 export type BidConnection = {
@@ -1337,6 +1351,7 @@ export type BidCreateInput = {
   amount: Scalars['String']
   isCanceled: Scalars['Boolean']
   createdInBlock: Scalars['Float']
+  indexInBlock: Scalars['Float']
 }
 
 export type BidEdge = {
@@ -1491,6 +1506,8 @@ export enum BidOrderByInput {
   IsCanceledDesc = 'isCanceled_DESC',
   CreatedInBlockAsc = 'createdInBlock_ASC',
   CreatedInBlockDesc = 'createdInBlock_DESC',
+  IndexInBlockAsc = 'indexInBlock_ASC',
+  IndexInBlockDesc = 'indexInBlock_DESC',
 }
 
 export type BidUpdateInput = {
@@ -1499,6 +1516,7 @@ export type BidUpdateInput = {
   amount?: Maybe<Scalars['String']>
   isCanceled?: Maybe<Scalars['Boolean']>
   createdInBlock?: Maybe<Scalars['Float']>
+  indexInBlock?: Maybe<Scalars['Float']>
 }
 
 export type BidWhereInput = {
@@ -1540,11 +1558,17 @@ export type BidWhereInput = {
   createdInBlock_lt?: Maybe<Scalars['Int']>
   createdInBlock_lte?: Maybe<Scalars['Int']>
   createdInBlock_in?: Maybe<Array<Scalars['Int']>>
+  indexInBlock_eq?: Maybe<Scalars['Int']>
+  indexInBlock_gt?: Maybe<Scalars['Int']>
+  indexInBlock_gte?: Maybe<Scalars['Int']>
+  indexInBlock_lt?: Maybe<Scalars['Int']>
+  indexInBlock_lte?: Maybe<Scalars['Int']>
+  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
   auction?: Maybe<AuctionWhereInput>
   bidder?: Maybe<MembershipWhereInput>
-  auctionlastBid_none?: Maybe<AuctionWhereInput>
-  auctionlastBid_some?: Maybe<AuctionWhereInput>
-  auctionlastBid_every?: Maybe<AuctionWhereInput>
+  auctiontopBid_none?: Maybe<AuctionWhereInput>
+  auctiontopBid_some?: Maybe<AuctionWhereInput>
+  auctiontopBid_every?: Maybe<AuctionWhereInput>
   AND?: Maybe<Array<BidWhereInput>>
   OR?: Maybe<Array<BidWhereInput>>
 }

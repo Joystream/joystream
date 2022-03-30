@@ -83,7 +83,7 @@ type OwnedNft
 
   "Is NFT owned by channel"
   isOwnedByChannel: Boolean!
-  
+
   "NFT creator's channel"
   creatorChannel: Channel!
 }
@@ -182,7 +182,7 @@ type Auction @entity {
   auctionType: AuctionType!
 
   "Auction last bid (if exists)"
-  lastBid: Bid
+  topBid: Bid
 
   bids: [Bid!]! @derivedFrom(field: "auction")
 
@@ -222,6 +222,9 @@ type Bid @entity {
 
   "Block in which the bid was placed"
   createdInBlock: Int!
+
+  "Index of event in block where bid was made."
+  indexInBlock: Int!
 }
 
 # TODO entity for (cancelable) offers; will be needed to see history of offers

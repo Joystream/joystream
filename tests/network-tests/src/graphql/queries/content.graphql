@@ -112,7 +112,7 @@ fragment OwnedNftFields on OwnedNft {
           amount
           createdInBlock
         }
-        lastBid {
+        topBid {
           id
           amount
           bidder {

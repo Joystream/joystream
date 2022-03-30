@@ -4,7 +4,7 @@ import { Utils } from '../../../utils'
 import { assert } from 'chai'
 import { OwnedNftFieldsFragment } from '../../../graphql/generated/queries'
 
-export async function assertAuctionAndBids(query: QueryNodeApi, videoId: number, lastBidder: IMember): Promise<void> {
+export async function assertAuctionAndBids(query: QueryNodeApi, videoId: number, topBidder: IMember): Promise<void> {
   await query.tryQueryWithTimeout(
     () => query.ownedNftByVideoId(videoId.toString()),
     (ownedNft) => {
@@ -12,10 +12,10 @@ export async function assertAuctionAndBids(query: QueryNodeApi, videoId: number,
       Utils.assert(ownedNft.transactionalStatus.__typename === 'TransactionalStatusAuction', 'NFT not in Auction state')
       Utils.assert(ownedNft.transactionalStatus.auction, 'NFT Auction not found')
       Utils.assert(ownedNft.transactionalStatus.auction.bids, 'Bids not found')
-      Utils.assert(ownedNft.transactionalStatus.auction.lastBid, 'Last bid not found')
+      Utils.assert(ownedNft.transactionalStatus.auction.topBid, 'Top bid not found')
       assert.equal(
-        ownedNft.transactionalStatus.auction.lastBid.bidder.id,
-        lastBidder.memberId.toString(),
+        ownedNft.transactionalStatus.auction.topBid.bidder.id,
+        topBidder.memberId.toString(),
         'Invalid last bidder'
       )
     }

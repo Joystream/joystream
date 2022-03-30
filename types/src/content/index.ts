@@ -76,8 +76,8 @@ export class EnglishAuctionParams extends JoyStructDecorated({
   starting_price: Balance,
   buy_now_price: Option.with(Balance),
   whitelist: BTreeSet.with(MemberId),
-  duration: BlockNumber,
   starts_at: Option.with(BlockNumber),
+  duration: BlockNumber,
   extension_period: BlockNumber,
   min_bid_step: Balance,
 }) {}
