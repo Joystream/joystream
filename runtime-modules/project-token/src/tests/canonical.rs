@@ -5,7 +5,7 @@ use sp_arithmetic::traits::One;
 
 use crate::tests::mock::*;
 use crate::traits::{MultiCurrencyBase, ReservableMultiCurrency};
-use crate::Error;
+use crate::{last_event_eq, Error, RawEvent};
 
 // base_issue test
 #[test]
@@ -130,7 +130,11 @@ fn deposit_creating_ok_with_non_existing_account() {
         );
 
         let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
-        assert_eq!(issuance_pre.saturating_add(amount), issuance_post,);
+        assert_eq!(issuance_pre.saturating_add(amount), issuance_post);
+
+        last_event_eq!(RawEvent::TokenAmountDepositedInto(
+            token_id, account_id, amount
+        ));
     })
 }
 
@@ -158,8 +162,10 @@ fn deposit_creating_ok_with_existing_account() {
             Token::account_info_by_token_and_account(token_id, account_id).free_balance;
 
         assert_eq!(free_balance_pre.saturating_add(amount), free_balance_post);
-
         assert_eq!(issuance_pre.saturating_add(amount), issuance_post);
+        last_event_eq!(RawEvent::TokenAmountDepositedInto(
+            token_id, account_id, amount
+        ));
     })
 }
 
@@ -189,6 +195,9 @@ fn deposit_into_existing_ok() {
         assert_eq!(free_balance_pre.saturating_add(amount), free_balance_post);
 
         assert_eq!(issuance_pre.saturating_add(amount), issuance_post);
+        last_event_eq!(RawEvent::TokenAmountDepositedInto(
+            token_id, account_id, amount
+        ));
     })
 }
 
@@ -290,6 +299,9 @@ fn reserve_ok_with_remaining_free_balance_above_ex_deposit() {
             account_data_pre.reserved_balance.saturating_add(amount),
             account_data_post.reserved_balance,
         );
+        last_event_eq!(RawEvent::TokenAmountReservedFrom(
+            token_id, account_id, amount
+        ));
     })
 }
 
@@ -320,6 +332,9 @@ fn reserve_ok_with_remaining_free_balance_below_ex_deposit() {
             account_data_post.reserved_balance.saturating_sub(amount),
             account_data_pre.reserved_balance,
         );
+        last_event_eq!(RawEvent::TokenAmountReservedFrom(
+            token_id, account_id, amount
+        ));
     })
 }
 
@@ -350,6 +365,9 @@ fn reserve_ok_with_remaining_zero_free_balance() {
             account_data_post.reserved_balance.saturating_sub(amount),
             account_data_pre.reserved_balance,
         );
+        last_event_eq!(RawEvent::TokenAmountReservedFrom(
+            token_id, account_id, amount
+        ));
     })
 }
 
@@ -442,6 +460,9 @@ fn unreserve_ok() {
             account_data_post.reserved_balance.saturating_add(amount),
             account_data_pre.reserved_balance,
         );
+        last_event_eq!(RawEvent::TokenAmountUnreservedFrom(
+            token_id, account_id, amount
+        ));
     })
 }
 
@@ -520,6 +541,9 @@ fn slash_ok_without_account_removal() {
         let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
         assert_eq!(free_balance_pre, free_balance_post.saturating_add(amount));
         assert_eq!(issuance_pre, issuance_post.saturating_add(amount));
+        last_event_eq!(RawEvent::TokenAmountSlashedFrom(
+            token_id, account_id, amount
+        ));
     })
 }
 
@@ -549,6 +573,9 @@ fn slash_ok_with_account_removal_and_zero_total_balance() {
             .free_balance
             .saturating_add(account_data.reserved_balance);
         assert_eq!(issuance_pre, issuance_post.saturating_add(total_reduction));
+        last_event_eq!(RawEvent::TokenAmountSlashedFrom(
+            token_id, account_id, amount
+        ));
     })
 }
 
@@ -578,6 +605,9 @@ fn slash_ok_with_account_removal_by_ex_deposit_underflow() {
             .free_balance
             .saturating_add(account_data.reserved_balance);
         assert_eq!(issuance_pre, issuance_post.saturating_add(total_reduction));
+        last_event_eq!(RawEvent::TokenAmountSlashedFrom(
+            token_id, account_id, amount
+        ));
     })
 }
 
@@ -606,5 +636,8 @@ fn slash_ok_with_account_and_token_removal() {
             token_id, account_id
         ));
         assert!(!<crate::TokenInfoById<Test>>::contains_key(token_id));
+        last_event_eq!(RawEvent::TokenAmountSlashedFrom(
+            token_id, account_id, amount
+        ));
     })
 }

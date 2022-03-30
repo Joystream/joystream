@@ -213,6 +213,8 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId, TokenIssuanceParametersOf<T>> for
             }
         }
 
+        Self::deposit_event(RawEvent::TokenAmountSlashedFrom(token_id, who, amount));
+
         Ok(())
     }
 
