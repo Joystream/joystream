@@ -6,7 +6,7 @@ use sp_runtime::Percent;
 use crate::tests::mock::*;
 use crate::traits::{MultiCurrencyBase, PatronageTrait};
 use crate::types::TokenIssuanceParametersOf;
-use crate::Error;
+use crate::{last_event_eq, Error, RawEvent};
 
 #[test]
 fn deposit_creating_ok_with_non_existing_account_and_patronage() {
@@ -51,6 +51,10 @@ fn deposit_creating_ok_with_non_existing_account_and_patronage() {
         );
 
         assert_eq!(credit_pre.saturating_add(credit_increase), credit_post);
+
+        last_event_eq!(RawEvent::TokenAmountDepositedInto(
+            token_id, account_id, amount
+        ));
     })
 }
 
@@ -100,6 +104,9 @@ fn deposit_creating_ok_with_existing_account_and_patronage() {
         );
 
         assert_eq!(credit_pre.saturating_add(credit_increase), credit_post);
+        last_event_eq!(RawEvent::TokenAmountDepositedInto(
+            token_id, account_id, amount
+        ));
     })
 }
 
@@ -130,6 +137,11 @@ fn decreasing_patronage_rate_ok() {
             patronage_rate_pre,
             patronage_rate_post.saturating_add(decrease)
         );
+
+        last_event_eq!(RawEvent::PatronageRateDecreasedTo(
+            token_id,
+            patronage_rate_post
+        ));
     })
 }
 
@@ -229,6 +241,11 @@ fn claim_patronage_credit_ok() {
                 .outstanding_credit,
             0
         );
+        last_event_eq!(RawEvent::PatronageCreditClaimed(
+            token_id,
+            credit,
+            owner_account
+        ));
     })
 }
 
