@@ -7,7 +7,7 @@ use crate::tests::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
 
-const AUCTION_ENDING_BLOCK: u64 = 10;
+const AUCTION_DURATION: u64 = 10;
 #[test]
 fn cancel_nft_auction() {
     with_default_mock_builder(|| {
@@ -253,9 +253,9 @@ fn cancel_nft_auction_english_auction_with_bids() {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
             extension_period: Content::min_auction_extension_period(),
-            auction_duration: Content::max_auction_duration(),
             min_bid_step: Content::max_bid_step(),
-            end: AUCTION_ENDING_BLOCK,
+            starts_at: None,
+            duration: AUCTION_DURATION,
             whitelist: BTreeSet::new(),
         };
 

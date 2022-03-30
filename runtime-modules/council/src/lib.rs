@@ -66,6 +66,8 @@ mod benchmarking;
 mod mock;
 mod tests;
 
+type Balances<T> = balances::Module<T>;
+
 /////////////////// Data Structures ////////////////////////////////////////////
 
 /// Information about council's current state and when it changed the last time.
@@ -476,6 +478,9 @@ decl_error! {
 
         /// Candidate id not found
         CandidateDoesNotExist,
+
+        /// Cannot transfer: insufficient budget balance.
+        InsufficientBalanceForTransfer,
     }
 }
 
@@ -1712,12 +1717,31 @@ impl<T: Trait + common::membership::MembershipTypes>
     }
 }
 
-impl<T: Trait + balances::Trait> common::council::CouncilBudgetManager<Balance<T>> for Module<T> {
+impl<T: Trait + balances::Trait> common::council::CouncilBudgetManager<T::AccountId, Balance<T>>
+    for Module<T>
+{
     fn get_budget() -> Balance<T> {
         Self::budget()
     }
 
     fn set_budget(budget: Balance<T>) {
         Mutations::<T>::set_budget(budget);
+    }
+
+    fn try_withdraw(account_id: &T::AccountId, amount: Balance<T>) -> DispatchResult {
+        ensure!(
+            Self::get_budget() >= amount,
+            Error::<T>::InsufficientBalanceForTransfer
+        );
+
+        let _ = Balances::<T>::deposit_creating(account_id, amount);
+
+        let current_budget = Self::get_budget();
+        let new_budget = current_budget.saturating_sub(amount);
+        <Self as common::council::CouncilBudgetManager<T::AccountId, Balance<T>>>::set_budget(
+            new_budget,
+        );
+
+        Ok(())
     }
 }

@@ -8,7 +8,7 @@ use crate::*;
 use frame_support::{assert_err, assert_ok};
 
 const NEXT_BID_OFFSET: u64 = 10;
-const AUCTION_ENDING_BLOCK: u64 = 10;
+const AUCTION_DURATION: u64 = 10;
 
 #[test]
 fn pick_open_auction_winner() {
@@ -36,6 +36,7 @@ fn pick_open_auction_winner() {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
             bid_lock_duration,
+            starts_at: None,
             whitelist: BTreeSet::new(),
         };
 
@@ -124,6 +125,7 @@ fn pick_open_auction_winner_auth_failed() {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
             bid_lock_duration,
+            starts_at: None,
             whitelist: BTreeSet::new(),
         };
 
@@ -193,6 +195,7 @@ fn pick_open_auction_winner_actor_not_authorized() {
         let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
+            starts_at: None,
             bid_lock_duration,
             whitelist: BTreeSet::new(),
         };
@@ -353,9 +356,9 @@ fn pick_open_auction_winner_is_not_open_auction_type() {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
             extension_period: Content::min_auction_extension_period(),
-            auction_duration: Content::max_auction_duration(),
             min_bid_step: Content::max_bid_step(),
-            end: AUCTION_ENDING_BLOCK,
+            starts_at: None,
+            duration: AUCTION_DURATION,
             whitelist: BTreeSet::new(),
         };
 
@@ -422,6 +425,7 @@ fn pick_open_auction_winner_bid_does_not_exist() {
         let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
+            starts_at: None,
             bid_lock_duration,
             whitelist: BTreeSet::new(),
         };
@@ -480,6 +484,7 @@ fn pick_open_auction_winner_fails_with_invalid_bid_commit() {
         let auction_params = OpenAuctionParams::<Test> {
             starting_price: Content::min_starting_price(),
             buy_now_price: None,
+            starts_at: None,
             bid_lock_duration,
             whitelist: BTreeSet::new(),
         };
