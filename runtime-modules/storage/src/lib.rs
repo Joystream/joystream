@@ -1612,7 +1612,7 @@ decl_event! {
 decl_error! {
     /// Storage module predefined errors
     pub enum Error for Module<T: Trait>{
-        /// Invalid CID length (must be 32 bytes)
+        /// Invalid CID length (must be 46 bytes)
         InvalidCidLength,
 
         /// Empty "data object creation" collection.
