@@ -527,6 +527,10 @@ impl<T: Trait> PatronageTrait<T::AccountId, TokenIssuanceParametersOf<T>> for Mo
         let token_info = Self::ensure_token_exists(token_id)?;
         Self::ensure_account_data_exists(token_id, &to_account).map(|_| ())?;
 
+        if token_info.patronage_info.outstanding_credit.is_zero() {
+            return Ok(());
+        }
+
         // == MUTATION SAFE ==
 
         let credit = token_info.patronage_info.outstanding_credit;
