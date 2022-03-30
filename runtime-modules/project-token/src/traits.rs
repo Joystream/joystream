@@ -125,11 +125,13 @@ pub trait PatronageTrait<AccountId, IssuanceParams> {
     /// The MultiCurrency type used
     type MultiCurrency: MultiCurrencyBase<AccountId, IssuanceParams>;
 
+    /// Reduce patronage rate by amount
     fn reduce_patronage_rate_by(
         token_id: <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::TokenId,
         decrement: Percent,
     ) -> DispatchResult;
 
+    /// Query for patronage credit for token    
     fn get_patronage_credit(
         token_id: <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::TokenId,
     ) -> Result<
@@ -137,6 +139,7 @@ pub trait PatronageTrait<AccountId, IssuanceParams> {
         DispatchError,
     >;
 
+    /// Allow creator to receive credit into his accounts
     fn claim_patronage_credit(
         token_id: <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::TokenId,
         to_account: AccountId,

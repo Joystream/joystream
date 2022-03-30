@@ -79,7 +79,9 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId, TokenIssuanceParametersOf<T>> for
     /// - `token_id` must exists
     ///
     /// Postconditions:
-    /// - free balance of `who` is increased by `amount`
+    /// - free balance of `who` is increased by `amount
+    /// - patronage credit accounted for `token_id`
+    /// - `token_id` issuance increased by amount + credit
     /// if `amount` is zero it is equivalent to a no-op
     fn deposit_creating(
         token_id: T::TokenId,
@@ -125,6 +127,8 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId, TokenIssuanceParametersOf<T>> for
     ///
     /// Postconditions:
     /// - free balance of `who` is increased by `amount`
+    /// - patronage credit accounted for `token_id`
+    /// - `token_id` issuance increased by amount + credit
     /// if `amount` is zero it is equivalent to a no-op
     fn deposit_into_existing(
         token_id: T::TokenId,
@@ -498,6 +502,13 @@ impl<T: Trait> ControlledTransfer<T::AccountId, TransferPolicyOf<T>, TokenIssuan
 impl<T: Trait> PatronageTrait<T::AccountId, TokenIssuanceParametersOf<T>> for Module<T> {
     type MultiCurrency = Self;
 
+    /// Reduce patronage rate by amount
+    /// Preconditions:
+    /// - `token_id` must exists
+    /// - `decrement` must be less or equal than current patronage rate for `token_id`
+    ///
+    /// Postconditions:
+    /// - patronage rate for `token_id` reduced by `decrement`
     fn reduce_patronage_rate_by(token_id: T::TokenId, decrement: Percent) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
 
@@ -520,11 +531,23 @@ impl<T: Trait> PatronageTrait<T::AccountId, TokenIssuanceParametersOf<T>> for Mo
         Ok(())
     }
 
+    /// Query for patronage credit for token
+    /// Preconditions
+    /// - `token_id` must exists
     fn get_patronage_credit(token_id: T::TokenId) -> Result<T::Balance, DispatchError> {
         Self::ensure_token_exists(token_id)
             .map(|token_info| token_info.patronage_info.outstanding_credit)
     }
 
+    /// Allow creator to receive credit into his accounts
+    /// Preconditions:
+    /// - `token_id` must exists
+    /// - `to_account` must be valid for `token_id`
+    ///
+    /// Postconditions:
+    /// - outstanding patronage credit for `token_id` transferred to `to_account`
+    /// - outstanding patronage credit subsequently set to 0
+    /// no-op if outstanding credit is zero
     fn claim_patronage_credit(token_id: T::TokenId, to_account: T::AccountId) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
         Self::ensure_account_data_exists(token_id, &to_account).map(|_| ())?;
