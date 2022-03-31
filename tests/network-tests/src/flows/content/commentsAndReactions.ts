@@ -19,7 +19,7 @@ import {
 import { FlowProps } from '../../Flow'
 import { createJoystreamCli } from '../utils'
 
-export default async function comments({ api, query, env }: FlowProps): Promise<void> {
+export default async function commentsAndReactions({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:comments and reactions')
   debug('Started')
   api.enableDebugTxLogs()
