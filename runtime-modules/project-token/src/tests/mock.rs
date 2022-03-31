@@ -6,10 +6,7 @@ use frame_support::{
 };
 
 use codec::Encode;
-use sp_arithmetic::{
-    traits::{One, Zero},
-    Perbill,
-};
+use sp_arithmetic::{traits::One, Perbill};
 use sp_io::TestExternalities;
 use sp_runtime::testing::{Header, H256};
 use sp_runtime::traits::{BlakeTwo256, Hash, IdentityLookup};
@@ -101,102 +98,9 @@ impl Trait for Test {
 
 /// Genesis config builder
 pub struct GenesisConfigBuilder {
-    account_info_by_token_and_account: Vec<(TokenId, AccountId, AccountData)>,
-    token_info_by_id: Vec<(TokenId, TokenData)>,
-    next_token_id: TokenId,
-}
-
-impl GenesisConfigBuilder {
-    pub fn new() -> Self {
-        Self {
-            token_info_by_id: vec![],
-            account_info_by_token_and_account: vec![],
-            next_token_id: One::one(),
-        }
-    }
-
-    // add token with given params & zero issuance
-    pub fn add_token_with_params(mut self, params: IssuanceParams) -> Self {
-        let new_id = self.next_token_id;
-        let mut token_info = params.try_build::<Test>().unwrap();
-        token_info.current_total_issuance = Zero::zero();
-
-        self.token_info_by_id.push((new_id, token_info));
-        self.next_token_id = self.next_token_id.saturating_add(TokenId::one());
-        self
-    }
-
-    // add basic token with proper issuance
-    pub fn add_token_and_account_info(mut self) -> Self {
-        let new_id = self.next_token_id;
-        let new_token_info = (
-            new_id,
-            TokenIssuanceParametersOf::<Test> {
-                initial_issuance: Balance::from(DEFAULT_FREE_BALANCE),
-                existential_deposit: Balance::from(DEFAULT_EXISTENTIAL_DEPOSIT),
-                initial_state: crate::types::IssuanceState::Idle,
-                ..Default::default()
-            }
-            .try_build::<Test>()
-            .unwrap(),
-        );
-        let new_account_info = AccountData {
-            free_balance: Balance::from(DEFAULT_FREE_BALANCE),
-            reserved_balance: Balance::zero(),
-        };
-
-        self.next_token_id = new_id.saturating_add(One::one());
-        self.token_info_by_id.push(new_token_info);
-        self.account_info_by_token_and_account.push((
-            new_id,
-            AccountId::from(DEFAULT_ACCOUNT_ID),
-            new_account_info,
-        ));
-
-        self
-    }
-
-    // add account & updates token issuance
-    pub fn add_account_info(mut self) -> Self {
-        let id = self.next_token_id.saturating_sub(One::one());
-        let new_account_info = AccountData {
-            free_balance: Balance::from(DEFAULT_FREE_BALANCE),
-            reserved_balance: Balance::zero(),
-        };
-
-        let new_issuance = self
-            .token_info_by_id
-            .last()
-            .unwrap()
-            .1
-            .current_total_issuance
-            .saturating_add(Balance::from(DEFAULT_FREE_BALANCE));
-
-        let new_account_id = self
-            .account_info_by_token_and_account
-            .last()
-            .map_or(AccountId::from(DEFAULT_ACCOUNT_ID), |(_, account_id, _)| {
-                account_id.saturating_add(One::one())
-            });
-
-        self.account_info_by_token_and_account
-            .push((id, new_account_id, new_account_info));
-
-        self.token_info_by_id
-            .last_mut()
-            .unwrap()
-            .1
-            .current_total_issuance = new_issuance;
-        self
-    }
-
-    pub fn build(self) -> GenesisConfig<Test> {
-        GenesisConfig::<Test> {
-            account_info_by_token_and_account: self.account_info_by_token_and_account,
-            token_info_by_id: self.token_info_by_id,
-            next_token_id: self.next_token_id,
-        }
-    }
+    pub(crate) account_info_by_token_and_account: Vec<(TokenId, AccountId, AccountData)>,
+    pub(crate) token_info_by_id: Vec<(TokenId, TokenData)>,
+    pub(crate) next_token_id: TokenId,
 }
 
 /// test externalities
