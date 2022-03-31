@@ -479,7 +479,7 @@ decl_error! {
         /// Candidate id not found
         CandidateDoesNotExist,
 
-        /// Cannot transfer: insufficient budget balance.
+        /// Cannot withdraw: insufficient budget balance.
         InsufficientBalanceForTransfer,
     }
 }

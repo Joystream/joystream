@@ -451,7 +451,7 @@ impl balances::Trait for Runtime {
 impl membership::Trait for Runtime {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
-    type WorkingGroup = ();
+    type WorkingGroup = Wg;
     type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
@@ -461,7 +461,8 @@ impl membership::Trait for Runtime {
     type CandidateStake = CandidateStake;
 }
 
-impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
+pub struct Wg;
+impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
     fn get_budget() -> u64 {
         unimplemented!()
     }
@@ -469,9 +470,13 @@ impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
     fn set_budget(_new_value: u64) {
         unimplemented!()
     }
+
+    fn try_withdraw(_account_id: &u64, _amount: u64) -> DispatchResult {
+        unimplemented!()
+    }
 }
 
-impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
+impl common::working_group::WorkingGroupAuthenticator<Runtime> for Wg {
     fn ensure_worker_origin(
         _origin: <Runtime as frame_system::Trait>::Origin,
         _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
