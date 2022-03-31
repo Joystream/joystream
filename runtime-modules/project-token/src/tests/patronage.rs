@@ -4,7 +4,8 @@ use sp_arithmetic::traits::{One, Saturating, Zero};
 use sp_runtime::Percent;
 
 use crate::tests::mock::*;
-use crate::traits::{MultiCurrencyBase, PatronageTrait};
+use crate::tests::test_utils::TokenDataBuilder;
+use crate::traits::PalletToken;
 use crate::{last_event_eq, Error, RawEvent};
 
 #[test]
@@ -14,15 +15,13 @@ fn deposit_creating_ok() {
     let account_id = AccountId::one();
     let amount = Balance::from(100u32);
 
-    let params = IssuanceParams::new_empty().with_patronage_rate(patronage_rate);
+    let params = TokenDataBuilder::new_empty().with_patronage_rate(patronage_rate);
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params)
+        .with_token(token_id, params.build())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result = <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_creating(
-            token_id, account_id, amount,
-        );
+        let result = Token::deposit_creating(token_id, account_id, amount);
 
         assert_ok!(result);
     })
@@ -35,15 +34,13 @@ fn deposit_creating_ok_with_destination_free_balance_increase() {
     let account_id = AccountId::one();
     let amount = Balance::from(100u32);
 
-    let params = IssuanceParams::new_empty().with_patronage_rate(patronage_rate);
+    let params = TokenDataBuilder::new_empty().with_patronage_rate(patronage_rate);
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params)
+        .with_token(token_id, params.build())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_creating(
-            token_id, account_id, amount,
-        );
+        let _ = Token::deposit_creating(token_id, account_id, amount);
 
         assert_eq!(
             amount,
@@ -58,15 +55,13 @@ fn deposit_creating_ok_with_total_issuance_increase_and_no_patronage() {
     let account_id = AccountId::one();
     let amount = Balance::from(100u32);
 
-    let params = IssuanceParams::new_empty();
+    let params = TokenDataBuilder::new_empty();
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params)
+        .with_token(token_id, params.build())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_creating(
-            token_id, account_id, amount,
-        );
+        let _ = Token::deposit_creating(token_id, account_id, amount);
 
         assert_eq!(
             amount,
@@ -82,15 +77,13 @@ fn deposit_creating_ok_with_event_deposit() {
     let account_id = AccountId::one();
     let amount = Balance::from(100u32);
 
-    let params = IssuanceParams::new_empty().with_patronage_rate(patronage_rate);
+    let params = TokenDataBuilder::new_empty().with_patronage_rate(patronage_rate);
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params)
+        .with_token(token_id, params.build())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_creating(
-            token_id, account_id, amount,
-        );
+        let _ = Token::deposit_creating(token_id, account_id, amount);
 
         last_event_eq!(RawEvent::TokenAmountDepositedInto(
             token_id, account_id, amount
@@ -105,15 +98,13 @@ fn deposit_creating_ok_with_patronage_and_issuance_increase() {
     let account_id = AccountId::one();
     let amount = Balance::from(100u32);
 
-    let params = IssuanceParams::new_empty().with_patronage_rate(patronage_rate);
+    let params = TokenDataBuilder::new_empty().with_patronage_rate(patronage_rate);
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params)
+        .with_token(token_id, params.build())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_creating(
-            token_id, account_id, amount,
-        );
+        let _ = Token::deposit_creating(token_id, account_id, amount);
 
         assert_eq!(
             amount.saturating_add(patronage_rate.mul_floor(amount)),
@@ -129,16 +120,14 @@ fn deposit_creating_ok_with_free_balance_addition_to_existing_account() {
     let (initial_free_balance, initial_reserved) = (Balance::from(10u32), Balance::zero());
     let amount = Balance::from(10u32);
 
-    let params = IssuanceParams::new_empty();
+    let params = TokenDataBuilder::new_empty();
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params)
+        .with_token(token_id, params.build())
         .with_account(account_id, initial_free_balance, initial_reserved)
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_creating(
-            token_id, account_id, amount,
-        );
+        let _ = Token::deposit_creating(token_id, account_id, amount);
 
         assert_eq!(
             initial_free_balance.saturating_add(amount),
@@ -154,16 +143,14 @@ fn deposit_creating_ok_without_reserved_balance_addition_to_existing_account() {
     let (initial_free_balance, initial_reserved) = (Balance::from(10u32), Balance::zero());
     let amount = Balance::from(10u32);
 
-    let params = IssuanceParams::new_empty();
+    let params = TokenDataBuilder::new_empty();
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params)
+        .with_token(token_id, params.build())
         .with_account(account_id, initial_free_balance, initial_reserved)
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_creating(
-            token_id, account_id, amount,
-        );
+        let _ = Token::deposit_creating(token_id, account_id, amount);
 
         assert_eq!(
             initial_reserved,
@@ -180,15 +167,13 @@ fn deposit_creating_ok_with_owner_credit_accounted() {
     let amount = Balance::from(10u32);
     let credit = patronage_rate.mul_floor(amount);
 
-    let params = IssuanceParams::new_empty().with_patronage_rate(patronage_rate);
+    let params = TokenDataBuilder::new_empty().with_patronage_rate(patronage_rate);
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params)
+        .with_token(token_id, params.build())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_creating(
-            token_id, account_id, amount,
-        );
+        let _ = Token::deposit_creating(token_id, account_id, amount);
 
         assert_eq!(
             credit,
@@ -205,15 +190,16 @@ fn decrease_patronage_ok() {
     let token_id = TokenId::one();
     let decrement = Percent::from_percent(20);
 
-    let params = IssuanceParams::new_empty().with_patronage_rate(patronage_rate);
+    let params = TokenDataBuilder::new_empty().with_patronage_rate(patronage_rate);
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params)
+        .with_token(token_id, params.build())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result = <Token as PatronageTrait<AccountId, IssuanceParams>>::reduce_patronage_rate_by(
-            token_id, decrement,
-        );
+        let result =
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_by(
+                token_id, decrement,
+            );
 
         assert_ok!(result);
     })
@@ -225,13 +211,13 @@ fn decrease_patronage_ok_with_event_deposit() {
     let token_id = TokenId::one();
     let decrement = Percent::from_percent(20);
 
-    let params = IssuanceParams::new_empty().with_patronage_rate(patronage_rate);
+    let params = TokenDataBuilder::new_empty().with_patronage_rate(patronage_rate);
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params)
+        .with_token(token_id, params.build())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as PatronageTrait<AccountId, IssuanceParams>>::reduce_patronage_rate_by(
+        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_by(
             token_id, decrement,
         );
 
@@ -248,13 +234,13 @@ fn decrease_patronage_ok_with_correct_final_rate() {
     let token_id = TokenId::one();
     let decrement = Percent::from_percent(20);
 
-    let params = IssuanceParams::new_empty().with_patronage_rate(patronage_rate);
+    let params = TokenDataBuilder::new_empty().with_patronage_rate(patronage_rate);
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params)
+        .with_token(token_id, params.build())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as PatronageTrait<AccountId, IssuanceParams>>::reduce_patronage_rate_by(
+        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_by(
             token_id, decrement,
         );
 
@@ -271,15 +257,16 @@ fn decreasing_patronage_rate_fails_with_decrease_amount_too_large() {
     let token_id = TokenId::one();
     let decrease = Percent::from_percent(70);
 
-    let params = IssuanceParams::new_empty().with_patronage_rate(patronage_rate);
+    let params = TokenDataBuilder::new_empty().with_patronage_rate(patronage_rate);
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params)
+        .with_token(token_id, params.build())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result = <Token as PatronageTrait<AccountId, IssuanceParams>>::reduce_patronage_rate_by(
-            token_id, decrease,
-        );
+        let result =
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_by(
+                token_id, decrease,
+            );
 
         assert_noop!(result, Error::<Test>::ReductionExceedingPatronageRate);
     })
@@ -289,13 +276,13 @@ fn decreasing_patronage_rate_fails_with_decrease_amount_too_large() {
 fn decreasing_patronage_rate_fails_invalid_token() {
     let config = GenesisConfigBuilder::new_empty().build();
     let decrease = Percent::from_percent(20);
+    let token_id = TokenId::one();
 
     build_test_externalities(config).execute_with(|| {
-        let token_id = Token::next_token_id();
-
-        let result = <Token as PatronageTrait<AccountId, IssuanceParams>>::reduce_patronage_rate_by(
-            token_id, decrease,
-        );
+        let result =
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_by(
+                token_id, decrease,
+            );
 
         assert_noop!(result, Error::<Test>::TokenDoesNotExist,);
     })
@@ -303,58 +290,48 @@ fn decreasing_patronage_rate_fails_invalid_token() {
 
 #[test]
 fn claim_patronage_ok() {
-    let patronage_rate = Percent::from_percent(1);
     let token_id = TokenId::one();
-    let account_id = AccountId::one();
-    let amount = Balance::from(100u32);
+    let owner_account_id = AccountId::one();
+    let credit = Balance::from(100u32);
 
-    let params = IssuanceParams::new_empty().with_patronage_rate(patronage_rate);
+    let params = TokenDataBuilder::new_empty().with_patronage_credit(credit);
+
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params)
+        .with_token(token_id, params.build())
+        .with_account(owner_account_id, 0, 0)
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_creating(
-            token_id, account_id, amount,
-        );
+        let result =
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
+                token_id,
+                owner_account_id,
+            );
 
-        // act
-        let result = <Token as PatronageTrait<AccountId, IssuanceParams>>::claim_patronage_credit(
-            token_id, account_id,
-        );
-
-        // assert
         assert_ok!(result);
     })
 }
 
 #[test]
 fn claim_patronage_ok_with_event_deposit() {
-    let patronage_rate = Percent::from_percent(50);
     let token_id = TokenId::one();
     let account_id = AccountId::one();
-    let owner_account_id = account_id.saturating_add(One::one());
-    let amount = Balance::from(100u32);
-    let credit = patronage_rate.mul_floor(amount);
+    let owner_account_id = account_id.saturating_add(AccountId::one());
+    let credit = Balance::from(100u32);
 
-    let params = IssuanceParams::new_empty().with_patronage_rate(patronage_rate);
+    let params = TokenDataBuilder::new_empty().with_patronage_credit(credit);
+
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params)
-        .with_account(owner_account_id, 0u64, 0u64) // free, reserved = 0 for owner
+        .with_token(token_id, params.build())
+        .with_account(owner_account_id, 0, 0)
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_creating(
-            token_id, account_id, amount,
-        );
-
-        // act
-        let _ = <Token as PatronageTrait<AccountId, IssuanceParams>>::claim_patronage_credit(
+        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
             token_id,
             owner_account_id,
         );
 
-        // assert
         last_event_eq!(RawEvent::PatronageCreditClaimed(
             token_id,
             credit,
@@ -365,63 +342,51 @@ fn claim_patronage_ok_with_event_deposit() {
 
 #[test]
 fn claim_patronage_ok_with_credit_accounting() {
-    let patronage_rate = Percent::from_percent(50);
     let token_id = TokenId::one();
     let account_id = AccountId::one();
-    let owner_account_id = account_id.saturating_add(One::one());
-    let amount = Balance::from(100u32);
+    let owner_account_id = account_id.saturating_add(AccountId::one());
+    let credit = Balance::from(100u32);
 
-    let params = IssuanceParams::new_empty().with_patronage_rate(patronage_rate);
+    let params = TokenDataBuilder::new_empty().with_patronage_credit(credit);
+
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params)
-        .with_account(owner_account_id, 0u64, 0u64) // free, reserved = 0 for owner
+        .with_token(token_id, params.build())
+        .with_account(owner_account_id, 0, 0)
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_creating(
-            token_id, account_id, amount,
-        );
-
-        // act
-        let _ = <Token as PatronageTrait<AccountId, IssuanceParams>>::claim_patronage_credit(
+        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
             token_id,
             owner_account_id,
         );
 
-        // assert
         assert_eq!(
             Token::account_info_by_token_and_account(token_id, owner_account_id).free_balance,
-            patronage_rate.mul_floor(amount)
+            credit,
         );
     })
 }
 
 #[test]
 fn claim_patronage_ok_with_outstanding_credit_reset() {
-    let patronage_rate = Percent::from_percent(50);
     let token_id = TokenId::one();
     let account_id = AccountId::one();
-    let owner_account_id = account_id.saturating_add(One::one());
-    let amount = Balance::from(100u32);
+    let owner_account_id = account_id.saturating_add(AccountId::one());
+    let credit = Balance::from(100u32);
 
-    let params = IssuanceParams::new_empty().with_patronage_rate(patronage_rate);
+    let params = TokenDataBuilder::new_empty().with_patronage_credit(credit);
+
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params)
-        .with_account(owner_account_id, 0u64, 0u64) // free, reserved = 0 for owner
+        .with_token(token_id, params.build())
+        .with_account(account_id, 0, 0)
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_creating(
-            token_id, account_id, amount,
-        );
-
-        // act
-        let _ = <Token as PatronageTrait<AccountId, IssuanceParams>>::claim_patronage_credit(
+        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
             token_id,
             owner_account_id,
         );
 
-        // assert
         assert!(Token::token_info_by_id(token_id)
             .patronage_info
             .outstanding_credit
@@ -436,40 +401,38 @@ fn claim_patronage_credit_fails_with_invalid_token_id() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let result = <Token as PatronageTrait<AccountId, IssuanceParams>>::claim_patronage_credit(
-            token_id,
-            owner_account,
-        );
+        let result =
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
+                token_id,
+                owner_account,
+            );
 
         assert_noop!(result, Error::<Test>::TokenDoesNotExist,);
     })
 }
 
 #[test]
-fn claim_patronage_fails_with_invalid_owner_account_id() {
+fn claim_patronage_credit_fails_with_invalid_owner_account_id() {
     let patronage_rate = Percent::from_percent(50);
     let token_id = TokenId::one();
     let account_id = AccountId::one();
-    let owner_account_id = account_id.saturating_add(One::one());
+    let owner_account_id = account_id.saturating_add(AccountId::one());
     let amount = Balance::from(100u32);
+    let credit = patronage_rate.mul_floor(amount);
 
-    let params = IssuanceParams::new_empty().with_patronage_rate(patronage_rate);
+    let params = TokenDataBuilder::new_empty().with_patronage_rate(patronage_rate);
+
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params)
+        .with_token(token_id, params.build())
+        .with_account(account_id, amount, 0)
         .build();
-
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_creating(
-            token_id, account_id, amount,
-        );
+        let result =
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
+                token_id,
+                owner_account_id,
+            );
 
-        // act
-        let result = <Token as PatronageTrait<AccountId, IssuanceParams>>::claim_patronage_credit(
-            token_id,
-            owner_account_id,
-        );
-
-        // assert
-        assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist,);
+        assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
     })
 }

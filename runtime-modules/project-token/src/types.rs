@@ -243,7 +243,6 @@ impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, H
             current_total_issuance: self.initial_issuance,
             issuance_state: self.initial_state,
             existential_deposit: self.existential_deposit,
-            symbol: self.symbol,
             transfer_policy: self.transfer_policy,
             patronage_info,
         })
