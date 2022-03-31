@@ -412,23 +412,6 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Retrieve usable (free) balance for token and account
-    /// Preconditions:
-    /// - `token_id` must be a valid token identifier
-    /// - `who` account id must exist for token
-    fn balance(token_id: T::TokenId, who: T::AccountId) -> Result<T::Balance, DispatchError> {
-        let account_info = Self::ensure_account_data_exists(token_id, &who)?;
-
-        Ok(account_info.free_balance)
-    }
-
-    /// Retrieve total current issuance for token
-    /// Preconditions
-    /// - `token_id` must be valid
-    fn current_issuance(token_id: T::TokenId) -> Result<T::Balance, DispatchError> {
-        Self::ensure_token_exists(token_id).map(|token_data| token_data.current_total_issuance)
-    }
-
     /// Reserve `amount` of token for `who`
     /// Preconditions:
     /// - `token_id` must id
