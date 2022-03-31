@@ -795,6 +795,150 @@ fn winners_multiple_winners() {
     });
 }
 
+/// Test that illustrates that once the number of current_winners reaches winning_target_count, it becomes problematic for rivals to crowd out the top candidates
+#[test]
+fn full_list_of_intermediate_winners_problem() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let voting_stage_duration = <Runtime as Trait>::VoteStageDuration::get();
+        let reveal_stage_duration = <Runtime as Trait>::RevealStageDuration::get();
+        let account_superuser = USER_ADMIN;
+        let account_id1 = USER_REGULAR;
+        let account_id2 = USER_REGULAR_2;
+        let account_id3 = USER_REGULAR_3;
+        let account_id4 = USER_REGULAR_4;
+        let account_id5 = USER_REGULAR_5;
+
+        let origin = OriginType::Signed(account_superuser);
+        let origin_voter1 = OriginType::Signed(account_id1);
+        let origin_voter2 = OriginType::Signed(account_id2);
+        let origin_voter3 = OriginType::Signed(account_id3);
+        let origin_voter4 = OriginType::Signed(account_id4);
+        let origin_voter5 = OriginType::Signed(account_id5);
+        let cycle_id = 1;
+        let winning_target_count = 2;
+
+        let option_to_vote_for1 = 0;
+        let option_to_vote_for2 = 1;
+        let option_to_vote_for3 = 2;
+        let stake = <Runtime as Trait>::MinimumStake::get();
+        let (commitment1, salt1) =
+            MockUtils::calculate_commitment(&account_id1, &option_to_vote_for1, &cycle_id);
+        let (commitment2, salt2) =
+            MockUtils::calculate_commitment(&account_id2, &option_to_vote_for2, &cycle_id);
+        let (commitment3, salt3) =
+            MockUtils::calculate_commitment(&account_id3, &option_to_vote_for3, &cycle_id);
+        let (commitment4, salt4) =
+            MockUtils::calculate_commitment(&account_id4, &option_to_vote_for3, &cycle_id);
+        let (commitment5, salt5) =
+            MockUtils::calculate_commitment(&account_id5, &option_to_vote_for3, &cycle_id);
+
+        Mocks::start_referendum_extrinsic(
+            origin.clone(),
+            winning_target_count.clone(),
+            cycle_id,
+            Ok(()),
+        );
+        Mocks::vote(
+            origin_voter1.clone(),
+            account_id1,
+            commitment1,
+            stake + 100,
+            cycle_id.clone(),
+            Ok(()),
+        );
+        Mocks::vote(
+            origin_voter2.clone(),
+            account_id2,
+            commitment2,
+            stake + 50,
+            cycle_id.clone(),
+            Ok(()),
+        );
+        Mocks::vote(
+            origin_voter3.clone(),
+            account_id3,
+            commitment3,
+            stake + 30,
+            cycle_id.clone(),
+            Ok(()),
+        );
+        Mocks::vote(
+            origin_voter4.clone(),
+            account_id4,
+            commitment4,
+            stake + 30,
+            cycle_id.clone(),
+            Ok(()),
+        );
+        Mocks::vote(
+            origin_voter5.clone(),
+            account_id5,
+            commitment5,
+            stake + 30,
+            cycle_id.clone(),
+            Ok(()),
+        );
+        // voting period starts at block 1
+        MockUtils::move_to_block(voting_stage_duration + 1);
+
+        Mocks::check_voting_finished(winning_target_count, cycle_id);
+
+        Mocks::reveal_vote(
+            origin_voter1.clone(),
+            account_id1,
+            salt1,
+            option_to_vote_for1,
+            Ok(()),
+        );
+        Mocks::reveal_vote(
+            origin_voter2.clone(),
+            account_id2,
+            salt2,
+            option_to_vote_for2,
+            Ok(()),
+        ); // at this time, the size of current_winners is 2, equal to winning_target_count, so revelaling smaller votes don't help the user3 to crowd out user2
+
+        Mocks::reveal_vote(
+            origin_voter3.clone(),
+            account_id3,
+            salt3,
+            option_to_vote_for3,
+            Ok(()),
+        );
+        Mocks::reveal_vote(
+            origin_voter4.clone(),
+            account_id4,
+            salt4,
+            option_to_vote_for3,
+            Ok(()),
+        );
+        Mocks::reveal_vote(
+            origin_voter5.clone(),
+            account_id5,
+            salt5,
+            option_to_vote_for3,
+            Ok(()),
+        );
+        MockUtils::increase_block_number(reveal_stage_duration);
+
+        Mocks::check_revealing_finished(
+            vec![
+                OptionResult {
+                    option_id: option_to_vote_for1,
+                    vote_power: stake + 100,
+                },
+                OptionResult {
+                    option_id: option_to_vote_for3,
+                    vote_power: stake + 90,
+                },
+            ],
+            MockUtils::transform_results(vec![100 + stake, 90 + stake, 0]),
+        );
+    });
+}
+
 /// Test that winners are properly selected when there is a important tie.
 /// N-th option and (N+1)-th option has the same amount of votes but only N winners are expected.
 #[test]

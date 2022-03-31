@@ -38,6 +38,8 @@ pub const USER_REGULAR: u64 = 2;
 pub const USER_REGULAR_POWER_VOTES: u64 = 3;
 pub const USER_REGULAR_2: u64 = 4;
 pub const USER_REGULAR_3: u64 = 5;
+pub const USER_REGULAR_4: u64 = 6;
+pub const USER_REGULAR_5: u64 = 7;
 
 pub const POWER_VOTE_STRENGTH: u64 = 10;
 
@@ -450,6 +452,8 @@ pub fn build_test_externalities(
         topup_account(USER_REGULAR, amount);
         topup_account(USER_REGULAR_2, amount);
         topup_account(USER_REGULAR_3, amount);
+        topup_account(USER_REGULAR_4, amount);
+        topup_account(USER_REGULAR_5, amount);
         topup_account(USER_REGULAR_POWER_VOTES, amount);
 
         InstanceMockUtils::<Runtime, DefaultInstance>::increase_block_number(1)
