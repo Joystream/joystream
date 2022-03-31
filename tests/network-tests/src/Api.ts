@@ -1080,8 +1080,13 @@ export class Api {
     accountFrom: string,
     ownerId: number,
     videoId: number,
-    auctionParams: EnglishAuctionParams
+    auctionParams: OpenAuctionParams | EnglishAuctionParams
   ): Promise<ISubmittableResult> {
+    const initTransactionalStatus = this.api.createType(
+      'InitTransactionalStatus',
+      auctionParams instanceof OpenAuctionParams ? { OpenAuction: auctionParams } : { EnglishAuction: auctionParams }
+    )
+
     const updateParameters = this.createType('VideoUpdateParameters', {
       assets_to_upload: null,
       new_meta: null,
@@ -1091,7 +1096,7 @@ export class Api {
         royalty: null,
         nft_metadata: this.api.createType('NftMetadata', '').toU8a(),
         non_channel_owner: ownerId,
-        init_transactional_status: this.api.createType('InitTransactionalStatus', { Auction: auctionParams }),
+        init_transactional_status: initTransactionalStatus,
       }),
     })
 

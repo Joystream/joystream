@@ -45,9 +45,7 @@ export class NftEnglishAuctionWithExtensionFixture extends BaseQueryNodeFixture 
       minimalBidStep,
       extensionPeriod,
       auctionDuration,
-    } = await this.api.createEnglishAuctionParameters(
-      undefined
-    )
+    } = await this.api.createEnglishAuctionParameters()
 
     await this.api.startEnglishAuction(
       this.author.keyringPair.address,
