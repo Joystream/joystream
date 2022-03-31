@@ -64,9 +64,9 @@ fn setup_english_auction_scenario() {
         starting_price: Content::min_starting_price(),
         buy_now_price: Some(DEFAULT_BUY_NOW_PRICE),
         extension_period: Content::min_auction_extension_period(),
-        auction_duration: Content::min_auction_duration(),
         min_bid_step: Content::min_bid_step(),
-        end: DEFAULT_AUCTION_END,
+        starts_at: None,
+        duration: AUCTION_DURATION,
         whitelist: BTreeSet::new(),
     };
 
