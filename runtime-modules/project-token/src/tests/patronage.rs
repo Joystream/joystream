@@ -1,19 +1,19 @@
 #[cfg(test)]
 use frame_support::{assert_noop, assert_ok};
-use sp_arithmetic::traits::{One, Saturating, Zero};
+use sp_arithmetic::traits::{Saturating, Zero};
 use sp_runtime::Percent;
 
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
-use crate::{last_event_eq, Error, RawEvent};
+use crate::{account, balance, last_event_eq, token, Error, RawEvent};
 
 #[test]
 fn deposit_creating_ok() {
     let patronage_rate = Percent::from_percent(1);
-    let token_id = TokenId::one();
-    let account_id = AccountId::one();
-    let amount = Balance::from(100u32);
+    let token_id = token!(1);
+    let account_id = account!(1);
+    let amount = balance!(100);
 
     let params = TokenDataBuilder::new_empty().with_patronage_rate(patronage_rate);
     let config = GenesisConfigBuilder::new_empty()
@@ -30,9 +30,9 @@ fn deposit_creating_ok() {
 #[test]
 fn deposit_creating_ok_with_destination_free_balance_increase() {
     let patronage_rate = Percent::from_percent(1);
-    let token_id = TokenId::one();
-    let account_id = AccountId::one();
-    let amount = Balance::from(100u32);
+    let token_id = token!(1);
+    let account_id = account!(1);
+    let amount = balance!(100);
 
     let params = TokenDataBuilder::new_empty().with_patronage_rate(patronage_rate);
     let config = GenesisConfigBuilder::new_empty()
@@ -51,9 +51,9 @@ fn deposit_creating_ok_with_destination_free_balance_increase() {
 
 #[test]
 fn deposit_creating_ok_with_total_issuance_increase_and_no_patronage() {
-    let token_id = TokenId::one();
-    let account_id = AccountId::one();
-    let amount = Balance::from(100u32);
+    let token_id = token!(1);
+    let account_id = account!(1);
+    let amount = balance!(100);
 
     let params = TokenDataBuilder::new_empty();
     let config = GenesisConfigBuilder::new_empty()
@@ -73,9 +73,9 @@ fn deposit_creating_ok_with_total_issuance_increase_and_no_patronage() {
 #[test]
 fn deposit_creating_ok_with_event_deposit() {
     let patronage_rate = Percent::from_percent(1);
-    let token_id = TokenId::one();
-    let account_id = AccountId::one();
-    let amount = Balance::from(100u32);
+    let token_id = token!(1);
+    let account_id = account!(1);
+    let amount = balance!(100);
 
     let params = TokenDataBuilder::new_empty().with_patronage_rate(patronage_rate);
     let config = GenesisConfigBuilder::new_empty()
@@ -94,9 +94,9 @@ fn deposit_creating_ok_with_event_deposit() {
 #[test]
 fn deposit_creating_ok_with_patronage_and_issuance_increase() {
     let patronage_rate = Percent::from_percent(1);
-    let token_id = TokenId::one();
-    let account_id = AccountId::one();
-    let amount = Balance::from(100u32);
+    let token_id = token!(1);
+    let account_id = account!(1);
+    let amount = balance!(100);
 
     let params = TokenDataBuilder::new_empty().with_patronage_rate(patronage_rate);
     let config = GenesisConfigBuilder::new_empty()
@@ -115,10 +115,10 @@ fn deposit_creating_ok_with_patronage_and_issuance_increase() {
 
 #[test]
 fn deposit_creating_ok_with_free_balance_addition_to_existing_account() {
-    let token_id = TokenId::one();
-    let account_id = AccountId::one();
-    let (initial_free_balance, initial_reserved) = (Balance::from(10u32), Balance::zero());
-    let amount = Balance::from(10u32);
+    let token_id = token!(1);
+    let account_id = account!(1);
+    let (initial_free_balance, initial_reserved) = (balance!(10), balance!(0));
+    let amount = balance!(10);
 
     let params = TokenDataBuilder::new_empty();
     let config = GenesisConfigBuilder::new_empty()
@@ -138,10 +138,10 @@ fn deposit_creating_ok_with_free_balance_addition_to_existing_account() {
 
 #[test]
 fn deposit_creating_ok_without_reserved_balance_addition_to_existing_account() {
-    let token_id = TokenId::one();
-    let account_id = AccountId::one();
-    let (initial_free_balance, initial_reserved) = (Balance::from(10u32), Balance::zero());
-    let amount = Balance::from(10u32);
+    let token_id = token!(1);
+    let account_id = account!(1);
+    let (initial_free_balance, initial_reserved) = (balance!(10), balance!(0));
+    let amount = balance!(10);
 
     let params = TokenDataBuilder::new_empty();
     let config = GenesisConfigBuilder::new_empty()
@@ -161,10 +161,10 @@ fn deposit_creating_ok_without_reserved_balance_addition_to_existing_account() {
 
 #[test]
 fn deposit_creating_ok_with_owner_credit_accounted() {
-    let token_id = TokenId::one();
+    let token_id = token!(1);
     let patronage_rate = Percent::from_percent(50);
-    let account_id = AccountId::one();
-    let amount = Balance::from(10u32);
+    let account_id = account!(1);
+    let amount = balance!(10);
     let credit = patronage_rate.mul_floor(amount);
 
     let params = TokenDataBuilder::new_empty().with_patronage_rate(patronage_rate);
@@ -187,7 +187,7 @@ fn deposit_creating_ok_with_owner_credit_accounted() {
 #[test]
 fn decrease_patronage_ok() {
     let patronage_rate = Percent::from_percent(50);
-    let token_id = TokenId::one();
+    let token_id = token!(1);
     let decrement = Percent::from_percent(20);
 
     let params = TokenDataBuilder::new_empty().with_patronage_rate(patronage_rate);
@@ -208,7 +208,7 @@ fn decrease_patronage_ok() {
 #[test]
 fn decrease_patronage_ok_with_event_deposit() {
     let patronage_rate = Percent::from_percent(50);
-    let token_id = TokenId::one();
+    let token_id = token!(1);
     let decrement = Percent::from_percent(20);
 
     let params = TokenDataBuilder::new_empty().with_patronage_rate(patronage_rate);
@@ -231,7 +231,7 @@ fn decrease_patronage_ok_with_event_deposit() {
 #[test]
 fn decrease_patronage_ok_with_correct_final_rate() {
     let patronage_rate = Percent::from_percent(50);
-    let token_id = TokenId::one();
+    let token_id = token!(1);
     let decrement = Percent::from_percent(20);
 
     let params = TokenDataBuilder::new_empty().with_patronage_rate(patronage_rate);
@@ -254,7 +254,7 @@ fn decrease_patronage_ok_with_correct_final_rate() {
 #[test]
 fn decreasing_patronage_rate_fails_with_decrease_amount_too_large() {
     let patronage_rate = Percent::from_percent(50);
-    let token_id = TokenId::one();
+    let token_id = token!(1);
     let decrease = Percent::from_percent(70);
 
     let params = TokenDataBuilder::new_empty().with_patronage_rate(patronage_rate);
@@ -276,7 +276,7 @@ fn decreasing_patronage_rate_fails_with_decrease_amount_too_large() {
 fn decreasing_patronage_rate_fails_invalid_token() {
     let config = GenesisConfigBuilder::new_empty().build();
     let decrease = Percent::from_percent(20);
-    let token_id = TokenId::one();
+    let token_id = token!(1);
 
     build_test_externalities(config).execute_with(|| {
         let result =
@@ -290,9 +290,9 @@ fn decreasing_patronage_rate_fails_invalid_token() {
 
 #[test]
 fn claim_patronage_ok() {
-    let token_id = TokenId::one();
-    let owner_account_id = AccountId::one();
-    let credit = Balance::from(100u32);
+    let token_id = token!(1);
+    let owner_account_id = account!(1);
+    let credit = balance!(100);
 
     let params = TokenDataBuilder::new_empty().with_patronage_credit(credit);
 
@@ -314,10 +314,9 @@ fn claim_patronage_ok() {
 
 #[test]
 fn claim_patronage_ok_with_event_deposit() {
-    let token_id = TokenId::one();
-    let account_id = AccountId::one();
-    let owner_account_id = account_id.saturating_add(AccountId::one());
-    let credit = Balance::from(100u32);
+    let token_id = token!(1);
+    let owner_account_id = account!(2);
+    let credit = balance!(100);
 
     let params = TokenDataBuilder::new_empty().with_patronage_credit(credit);
 
@@ -342,10 +341,9 @@ fn claim_patronage_ok_with_event_deposit() {
 
 #[test]
 fn claim_patronage_ok_with_credit_accounting() {
-    let token_id = TokenId::one();
-    let account_id = AccountId::one();
-    let owner_account_id = account_id.saturating_add(AccountId::one());
-    let credit = Balance::from(100u32);
+    let token_id = token!(1);
+    let owner_account_id = account!(2);
+    let credit = balance!(100);
 
     let params = TokenDataBuilder::new_empty().with_patronage_credit(credit);
 
@@ -369,16 +367,17 @@ fn claim_patronage_ok_with_credit_accounting() {
 
 #[test]
 fn claim_patronage_ok_with_outstanding_credit_reset() {
-    let token_id = TokenId::one();
-    let account_id = AccountId::one();
-    let owner_account_id = account_id.saturating_add(AccountId::one());
-    let credit = Balance::from(100u32);
+    let token_id = token!(1);
+    let account_id = account!(1);
+    let owner_account_id = account!(2);
+    let credit = balance!(100);
 
     let params = TokenDataBuilder::new_empty().with_patronage_credit(credit);
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
         .with_account(account_id, 0, 0)
+        .with_account(owner_account_id, 0, 0)
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -396,8 +395,8 @@ fn claim_patronage_ok_with_outstanding_credit_reset() {
 
 #[test]
 fn claim_patronage_credit_fails_with_invalid_token_id() {
-    let token_id = TokenId::one();
-    let owner_account = AccountId::one();
+    let token_id = token!(1);
+    let owner_account = account!(1);
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
@@ -414,11 +413,10 @@ fn claim_patronage_credit_fails_with_invalid_token_id() {
 #[test]
 fn claim_patronage_credit_fails_with_invalid_owner_account_id() {
     let patronage_rate = Percent::from_percent(50);
-    let token_id = TokenId::one();
-    let account_id = AccountId::one();
-    let owner_account_id = account_id.saturating_add(AccountId::one());
-    let amount = Balance::from(100u32);
-    let credit = patronage_rate.mul_floor(amount);
+    let token_id = token!(1);
+    let account_id = account!(1);
+    let owner_account_id = account!(2);
+    let amount = balance!(100);
 
     let params = TokenDataBuilder::new_empty().with_patronage_rate(patronage_rate);
 
