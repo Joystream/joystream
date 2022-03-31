@@ -134,7 +134,15 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
 
         Self::do_transfer(token_id, &src, outputs, decrease_operation);
 
-        // TODO: establish proper event
+        let outputs_for_event = outputs
+            .iter()
+            .map(|(dst, amount)| (dst.location_account(), *amount));
+
+        Self::deposit_event(RawEvent::TokenAmountMultiTransferred(
+            token_id,
+            src,
+            outputs_for_event.collect(),
+        ));
 
         Ok(())
     }

@@ -130,6 +130,28 @@ pub fn increase_block_number_by(n: u64) {
     })
 }
 
+// helper macros
+#[macro_export]
+macro_rules! account {
+    ($acc:expr) => {
+        AccountId::from($acc as u32)
+    };
+}
+
+#[macro_export]
+macro_rules! token {
+    ($id:expr) => {
+        TokenId::from($id as u32)
+    };
+}
+
+#[macro_export]
+macro_rules! balance {
+    ($bal:expr) => {
+        Balance::from($bal as u32)
+    };
+}
+
 // Modules aliases
 pub type Token = crate::Module<Test>;
 pub type System = frame_system::Module<Test>;
@@ -232,4 +254,18 @@ pub(crate) fn build_merkle_path_helper<E: Encode + Clone>(
         .iter()
         .map(|idx_item| (merkle_tree[idx_item.index - 1], idx_item.side))
         .collect()
+}
+
+#[macro_export]
+macro_rules! merkle_root {
+    [$($vals:expr),*] => {
+        generate_merkle_root_helper(&vec![$($vals,)*]).pop().unwrap()
+    };
+}
+
+#[macro_export]
+macro_rules! merkle_proof {
+    ($idx:expr,[$($vals:expr),*]) => {
+        build_merkle_path_helper(&vec![$($vals,)*], $idx as usize)
+    };
 }

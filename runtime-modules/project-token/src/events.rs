@@ -30,6 +30,13 @@ decl_event! {
         /// - amount transferred
         TokenAmountTransferred(TokenId, AccountId, AccountId, Balance),
 
+        /// Token amount is transferred from src to dst
+        /// Params:
+        /// - token identifier
+        /// - source account
+        /// - outputs: list of pairs (destination account, amount)
+        TokenAmountMultiTransferred(TokenId, AccountId, Vec<(AccountId, Balance)>),
+
         /// Token amount is reserved
         /// Params:
         /// - token identifier
