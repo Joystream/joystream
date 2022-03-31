@@ -1722,4 +1722,17 @@ impl<T: Trait + balances::Trait> common::council::CouncilBudgetManager<Balance<T
     fn set_budget(budget: Balance<T>) {
         Mutations::<T>::set_budget(budget);
     }
+
+    fn transfer(account_id: &T::AccountId, amount: Balance<T>) {
+        let _ = Self::try_transfer(account_id, amount);
+    }
+
+    fn increase_budget(amount: Balance<T>) {
+        let current_budget = Self::get_budget();
+        let new_budget = current_budget.saturating_add(amount);
+
+        <Self as common::council::CouncilBudgetManager<T::AccountId, Balance<T>>>::set_budget(
+            new_budget,
+        );
+    }
 }

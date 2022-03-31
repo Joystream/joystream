@@ -1,5 +1,4 @@
 use frame_support::dispatch::DispatchResult;
-use sp_arithmetic::traits::Saturating;
 
 /// Provides an interface for the council budget.
 pub trait CouncilBudgetManager<Balance> {
