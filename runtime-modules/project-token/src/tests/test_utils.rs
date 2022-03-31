@@ -1,14 +1,32 @@
-use sp_arithmetic::traits::{One, Zero};
+use sp_arithmetic::traits::{One, Saturating, Zero};
 use sp_runtime::Percent;
 
 use crate::tests::mock::*;
-use crate::types::{IssuanceState, TokenDataOf, TokenIssuanceParameters, TransferPolicy};
+use crate::types::{IssuanceState, PatronageData, TransferPolicy};
 use crate::GenesisConfig;
 
-impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, Hash> {
-    pub fn with_initial_issuance(self, initial_issuance: Balance) -> Self {
+pub struct TokenDataBuilder<Balance, Hash> {
+    pub(crate) current_total_issuance: Balance,
+    pub(crate) existential_deposit: Balance,
+    pub(crate) issuance_state: IssuanceState,
+    pub(crate) transfer_policy: TransferPolicy<Hash>,
+    pub(crate) patronage_info: PatronageData<Balance>,
+}
+
+impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash> TokenDataBuilder<Balance, Hash> {
+    pub fn build(self) -> crate::types::TokenData<Balance, Hash> {
+        crate::types::TokenData::<Balance, Hash> {
+            current_total_issuance: self.current_total_issuance,
+            existential_deposit: self.existential_deposit,
+            issuance_state: self.issuance_state,
+            transfer_policy: self.transfer_policy,
+            patronage_info: self.patronage_info,
+        }
+    }
+
+    pub fn with_issuance(self, current_total_issuance: Balance) -> Self {
         Self {
-            initial_issuance,
+            current_total_issuance,
             ..self
         }
     }
@@ -27,21 +45,39 @@ impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, H
         }
     }
 
-    pub fn with_patronage_rate(self, patronage_rate: Percent) -> Self {
+    pub fn with_patronage_rate(self, rate: Percent) -> Self {
         Self {
-            patronage_rate,
+            patronage_info: PatronageData::<Balance> {
+                rate,
+                ..self.patronage_info
+            },
+            ..self
+        }
+    }
+
+    pub fn with_patronage_credit(self, outstanding_credit: Balance) -> Self {
+        Self {
+            patronage_info: PatronageData::<Balance> {
+                outstanding_credit,
+                ..self.patronage_info
+            },
+            current_total_issuance: self
+                .current_total_issuance
+                .saturating_add(outstanding_credit),
             ..self
         }
     }
 
     pub fn new_empty() -> Self {
         Self {
-            initial_issuance: Balance::zero(),
-            initial_state: IssuanceState::Idle,
+            current_total_issuance: Balance::zero(),
+            issuance_state: IssuanceState::Idle,
             existential_deposit: Balance::zero(),
-            symbol: (),
             transfer_policy: TransferPolicy::<Hash>::Permissionless,
-            patronage_rate: Percent::from_percent(0),
+            patronage_info: PatronageData::<Balance> {
+                rate: Percent::zero(),
+                outstanding_credit: Balance::zero(),
+            },
         }
     }
 }
@@ -56,9 +92,7 @@ impl GenesisConfigBuilder {
     }
 
     // add token with given params & zero issuance
-    pub fn with_token(mut self, token_id: TokenId, params: IssuanceParams) -> Self {
-        let token_info = params.try_build::<Test>().unwrap();
-
+    pub fn with_token(mut self, token_id: TokenId, token_info: TokenData) -> Self {
         self.token_info_by_id.push((token_id, token_info));
         self.next_token_id = self.next_token_id.saturating_add(TokenId::one());
         self
@@ -110,7 +144,7 @@ impl GenesisConfigBuilder {
 #[test]
 fn with_token_assigns_correct_token_id() {
     let token_id: TokenId = 1;
-    let token_params = IssuanceParams::new_empty();
+    let token_params = TokenDataBuilder::new_empty().build();
 
     let builder = GenesisConfigBuilder::new_empty().with_token(token_id, token_params);
 
@@ -121,7 +155,7 @@ fn with_token_assigns_correct_token_id() {
 #[ignore]
 #[test]
 fn with_issuance_adds_issuance_to_token() {
-    let token_params = IssuanceParams::new_empty().with_initial_issuance(5);
+    let token_params = TokenDataBuilder::new_empty().with_issuance(5).build();
 
     let builder = GenesisConfigBuilder::new_empty().with_token(1, token_params);
 
@@ -137,7 +171,7 @@ fn with_issuance_adds_issuance_to_token() {
 #[ignore]
 #[test]
 fn adding_account_with_free_balance_also_adds_issuance() {
-    let token_params = IssuanceParams::new_empty().with_initial_issuance(5);
+    let token_params = TokenDataBuilder::new_empty().with_issuance(5).build();
     let mut builder = GenesisConfigBuilder::new_empty().with_token(1, token_params);
     builder = builder.with_account(1, 5, 5);
 

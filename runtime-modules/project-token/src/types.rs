@@ -60,9 +60,6 @@ pub struct TokenData<Balance, Hash> {
     /// Initial issuance state
     pub(crate) issuance_state: IssuanceState,
 
-    /// Token Symbol
-    pub(crate) symbol: Symbol,
-
     /// Transfer policy
     pub(crate) transfer_policy: TransferPolicy<Hash>,
 
