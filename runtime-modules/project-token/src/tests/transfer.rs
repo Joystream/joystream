@@ -825,7 +825,7 @@ fn permissioned_transfer_fails_with_invalid_merkle_proof() {
     let (src, src_balance) = (account!(1), amount + dust);
     let (dst1, dst2) = (account!(2), account!(3));
     let commit = merkle_root![dst1, dst2];
-    let dst1_proof = merkle_proof!(1, [dst1, dst1]);
+    let dst1_proof = merkle_proof!(0, [dst1, dst1]);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -885,336 +885,374 @@ fn permissioned_transfer_fails_with_invalid_location_type() {
     })
 }
 
-// #[test]
-// fn permissioned_transfer_fails_with_failed_merkle_proof() {
-//     let dest_accounts = vec![
-//         AccountId::from(DEFAULT_ACCOUNT_ID + 1),
-//         AccountId::from(DEFAULT_ACCOUNT_ID + 2),
-//         AccountId::from(DEFAULT_ACCOUNT_ID + 3),
-//     ];
+#[test]
+fn permissioned_multi_out_transfer_fails_with_invalid_merkle_proof() {
+    let token_id = token!(1);
+    let existential_deposit = balance!(20);
+    let src = account!(1);
+    let (dst1, amount1) = (account!(2), balance!(1));
+    let (dst2, amount2) = (account!(3), balance!(1));
+    let commit = merkle_root![dst1, dst2];
+    let dst1_proof = merkle_proof!(0, [dst1, dst1]);
+    let dst2_proof = merkle_proof!(1, [dst1, dst2]);
 
-//     // second element in the dest accounts is the one of interest
-//     let index = 1usize;
-//     let mut amounts = vec![Balance::one(), Balance::one(), Balance::one()];
-//     amounts[index] = Balance::from(DEFAULT_FREE_BALANCE - DEFAULT_EXISTENTIAL_DEPOSIT + 1);
+    let outputs = vec![
+        verifiable_out!(dst1, dst1_proof, amount1),
+        verifiable_out!(dst2, dst2_proof, amount2),
+    ];
 
-//     // merkle proof for index-th element
-//     let merkle_proof = build_merkle_path_helper(&dest_accounts, index);
-//     let commit = Hashing::hash_of(&b"WRONG COMMIT");
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .with_existential_deposit(existential_deposit)
+        .build();
 
-//     let params = TokenIssuanceParametersOf::<Test> {
-//         existential_deposit: Balance::from(DEFAULT_EXISTENTIAL_DEPOSIT),
-//         transfer_policy: Policy::Permissioned(commit),
-//         ..Default::default()
-//     };
-//     let config = GenesisConfigBuilder::new()
-//         .add_token_with_params(params)
-//         .add_account_info() // src
-//         .add_account_info() // account 1
-//         .add_account_info() // account 2
-//         .add_account_info() // account 3
-//         .build();
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(src, amount1 + amount2, 0)
+        .with_account(dst1, 0, 0)
+        .with_account(dst2, 0, 0)
+        .build();
 
-//     let src = AccountId::from(DEFAULT_ACCOUNT_ID);
-//     let dst = Verifiable::new(merkle_proof, dest_accounts[index]);
-//     let token_id = token!(1u32);
+    build_test_externalities(config).execute_with(|| {
+        let result =
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
+                token_id, src, &outputs,
+            );
 
-//     build_test_externalities(config).execute_with(|| {
-//         assert_noop!(
-//             <Token as ControlledTransfer<AccountId, Policy, IssuanceParams>>::transfer(
-//                 token_id,
-//                 src,
-//                 dst,
-//                 amounts[index]
-//             ),
-//             Error::<Test>::LocationIncompatibleWithCurrentPolicy
-//         );
-//     })
-// }
+        assert_noop!(result, Error::<Test>::LocationIncompatibleWithCurrentPolicy,);
+    })
+}
 
-// #[test]
-// fn permissioned_transfer_fails_with_wrong_dest_location_type() {
-//     let dest_accounts = vec![
-//         AccountId::from(DEFAULT_ACCOUNT_ID + 1),
-//         AccountId::from(DEFAULT_ACCOUNT_ID + 2),
-//         AccountId::from(DEFAULT_ACCOUNT_ID + 3),
-//     ];
+#[test]
+fn permissioned_multi_out_transfer_fails_with_invalid_destination_types() {
+    let token_id = token!(1);
+    let existential_deposit = balance!(20);
+    let src = account!(1);
+    let (dst1, amount1) = (account!(2), balance!(1));
+    let (dst2, amount2) = (account!(3), balance!(1));
+    let commit = merkle_root![dst1, dst2];
 
-//     // second element in the dest accounts is the one of interest
-//     let index = 1usize;
-//     let amounts = vec![Balance::one(), Balance::one(), Balance::one()];
+    let outputs = vec![simple_out!(dst1, amount1), simple_out!(dst2, amount2)];
 
-//     // merkle proof for index-th element
-//     let commit = generate_merkle_root_helper(&dest_accounts).pop().unwrap();
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .with_existential_deposit(existential_deposit)
+        .build();
 
-//     let params = TokenIssuanceParametersOf::<Test> {
-//         existential_deposit: Balance::from(DEFAULT_EXISTENTIAL_DEPOSIT),
-//         transfer_policy: Policy::Permissioned(commit),
-//         ..Default::default()
-//     };
-//     let config = GenesisConfigBuilder::new()
-//         .add_token_with_params(params)
-//         .add_account_info() // src
-//         .add_account_info() // account 1
-//         .add_account_info() // account 2
-//         .add_account_info() // account 3
-//         .build();
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(src, amount1 + amount2, 0)
+        .with_account(dst1, 0, 0)
+        .with_account(dst2, 0, 0)
+        .build();
 
-//     let src = AccountId::from(DEFAULT_ACCOUNT_ID);
-//     // Simple (Permissionless-compliant type) location
-//     let dst = Simple::new(dest_accounts[index]);
-//     let token_id = token!(1u32);
+    build_test_externalities(config).execute_with(|| {
+        let result =
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
+                token_id, src, &outputs,
+            );
 
-//     build_test_externalities(config).execute_with(|| {
-//         assert_noop!(
-//             <Token as ControlledTransfer<AccountId, Policy, IssuanceParams>>::transfer(
-//                 token_id,
-//                 src,
-//                 dst,
-//                 amounts[index]
-//             ),
-//             Error::<Test>::LocationIncompatibleWithCurrentPolicy
-//         );
-//     })
-// }
+        assert_noop!(result, Error::<Test>::LocationIncompatibleWithCurrentPolicy);
+    })
+}
 
-// #[test]
-// fn permissioned_multiout_transfer_ok_without_src_removal() {
-//     let dest_accounts = vec![
-//         AccountId::from(DEFAULT_ACCOUNT_ID + 1),
-//         AccountId::from(DEFAULT_ACCOUNT_ID + 2),
-//         AccountId::from(DEFAULT_ACCOUNT_ID + 3),
-//     ];
-//     let outputs_no = dest_accounts.len();
-//     let amounts = vec![Balance::one(), Balance::one(), Balance::one()];
+#[test]
+fn permissioned_multi_out_transfer_fails_with_invalid_token_id() {
+    let token_id = token!(1);
+    let src = account!(1);
+    let (dst1, amount1) = (account!(2), balance!(1));
+    let (dst2, amount2) = (account!(3), balance!(1));
+    let dst1_proof = merkle_proof!(0, [dst1, dst2]);
+    let dst2_proof = merkle_proof!(1, [dst1, dst2]);
 
-//     // merkle proof for 2nd element
-//     let merkle_proofs = (0..outputs_no).map(|i| build_merkle_path_helper(&dest_accounts, i));
-//     let commit = generate_merkle_root_helper(&dest_accounts).pop().unwrap();
+    let outputs = vec![
+        verifiable_out!(dst1, dst1_proof, amount1),
+        verifiable_out!(dst2, dst2_proof, amount2),
+    ];
 
-//     let params = TokenIssuanceParametersOf::<Test> {
-//         existential_deposit: Balance::from(DEFAULT_EXISTENTIAL_DEPOSIT),
-//         transfer_policy: Policy::Permissioned(commit),
-//         ..Default::default()
-//     };
-//     let config = GenesisConfigBuilder::new()
-//         .add_token_with_params(params)
-//         .add_account_info() // src
-//         .add_account_info() // account 1
-//         .add_account_info() // account 2
-//         .add_account_info() // account 3
-//         .build();
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, TokenDataBuilder::new_empty().build())
+        .with_account(src, amount1 + amount2, 0)
+        .with_account(dst1, 0, 0)
+        .with_account(dst2, 0, 0)
+        .build();
 
-//     let src = AccountId::from(DEFAULT_ACCOUNT_ID);
-//     let dests = merkle_proofs
-//         .zip(dest_accounts.iter())
-//         .map(|(proof, account)| Verifiable::new(proof, *account));
-//     let outputs = dests.zip(amounts.iter().cloned()).collect::<Vec<_>>();
-//     let token_id = token!(1u32);
+    build_test_externalities(config).execute_with(|| {
+        let result =
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
+                token_id + 1,
+                src,
+                &outputs,
+            );
 
-//     build_test_externalities(config).execute_with(|| {
-//         let src_pre = Token::account_info_by_token_and_account(token_id, src).free_balance;
-//         let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
-//         let dst_pre = (0..outputs_no)
-//             .map(|index| {
-//                 Token::account_info_by_token_and_account(token_id, dest_accounts[index])
-//                     .free_balance
-//             })
-//             .collect::<Vec<_>>();
+        assert_noop!(result, Error::<Test>::TokenDoesNotExist);
+    })
+}
 
-//         assert_ok!(<Token as ControlledTransfer<
-//             AccountId,
-//             Policy,
-//             IssuanceParams,
-//         >>::multi_output_transfer(
-//             token_id, src, outputs.as_slice()
-//         ));
+#[test]
+fn permissioned_multi_out_transfer_fails_with_invalid_source_account() {
+    let token_id = token!(1);
+    let src = account!(1);
+    let (dst1, amount1) = (account!(2), balance!(1));
+    let (dst2, amount2) = (account!(3), balance!(1));
+    let commit = merkle_root![dst1, dst2];
+    let dst1_proof = merkle_proof!(0, [dst1, dst1]);
+    let dst2_proof = merkle_proof!(1, [dst1, dst2]);
 
-//         let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
-//         let src_post = Token::account_info_by_token_and_account(token_id, src).free_balance;
-//         let dst_post = (0..outputs_no).map(|index| {
-//             Token::account_info_by_token_and_account(token_id, dest_accounts[index]).free_balance
-//         });
+    let outputs = vec![
+        verifiable_out!(dst1, dst1_proof, amount1),
+        verifiable_out!(dst2, dst2_proof, amount2),
+    ];
 
-//         assert_eq!(issuance_pre, issuance_post);
-//         assert_eq!(src_pre, src_post.saturating_add(amounts.iter().sum()));
-//         assert!(dst_pre
-//             .iter()
-//             .zip(dst_post)
-//             .zip(amounts.iter())
-//             .all(|((pre, post), amount)| pre.saturating_add(*amount) == post));
-//     })
-// }
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
 
-// #[test]
-// fn permissioned_multiout_transfer_ok_with_src_removal() {
-//     let dest_accounts = vec![
-//         AccountId::from(DEFAULT_ACCOUNT_ID + 1),
-//         AccountId::from(DEFAULT_ACCOUNT_ID + 2),
-//         AccountId::from(DEFAULT_ACCOUNT_ID + 3),
-//     ];
-//     let outputs_no = dest_accounts.len();
-//     let amounts = vec![
-//         Balance::one(),
-//         Balance::one(),
-//         Balance::from(DEFAULT_FREE_BALANCE - DEFAULT_EXISTENTIAL_DEPOSIT - 1),
-//     ];
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(dst1, 0, 0)
+        .with_account(dst2, 0, 0)
+        .build();
 
-//     // merkle proof for 2nd element
-//     let merkle_proofs = (0..outputs_no).map(|i| build_merkle_path_helper(&dest_accounts, i));
-//     let commit = generate_merkle_root_helper(&dest_accounts).pop().unwrap();
+    build_test_externalities(config).execute_with(|| {
+        let result =
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
+                token_id, src, &outputs,
+            );
 
-//     let params = TokenIssuanceParametersOf::<Test> {
-//         existential_deposit: Balance::from(DEFAULT_EXISTENTIAL_DEPOSIT),
-//         transfer_policy: Policy::Permissioned(commit),
-//         ..Default::default()
-//     };
-//     let config = GenesisConfigBuilder::new()
-//         .add_token_with_params(params)
-//         .add_account_info() // src
-//         .add_account_info() // account 1
-//         .add_account_info() // account 2
-//         .add_account_info() // account 3
-//         .build();
+        assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
+    })
+}
 
-//     let src = AccountId::from(DEFAULT_ACCOUNT_ID);
-//     let dests = merkle_proofs
-//         .zip(dest_accounts.iter())
-//         .map(|(proof, account)| Verifiable::new(proof, *account));
-//     let outputs = dests.zip(amounts.iter().cloned()).collect::<Vec<_>>();
-//     let token_id = token!(1u32);
+#[test]
+fn permissioned_multi_out_transfer_fails_with_invalid_destination_account() {
+    let token_id = token!(1);
+    let src = account!(1);
+    let (dst1, amount1) = (account!(2), balance!(1));
+    let (dst2, amount2) = (account!(3), balance!(1));
+    let commit = merkle_root![dst1, dst2];
+    let dst1_proof = merkle_proof!(0, [dst1, dst1]);
+    let dst2_proof = merkle_proof!(1, [dst1, dst2]);
 
-//     build_test_externalities(config).execute_with(|| {
-//         let src_pre = Token::account_info_by_token_and_account(token_id, src).free_balance;
-//         let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
-//         let dust = src_pre.saturating_sub(amounts.iter().sum());
-//         let dst_pre = (0..outputs_no)
-//             .map(|index| {
-//                 Token::account_info_by_token_and_account(token_id, dest_accounts[index])
-//                     .free_balance
-//             })
-//             .collect::<Vec<_>>();
+    let outputs = vec![
+        verifiable_out!(dst1, dst1_proof, amount1),
+        verifiable_out!(dst2, dst2_proof, amount2),
+    ];
 
-//         assert_ok!(<Token as ControlledTransfer<
-//             AccountId,
-//             Policy,
-//             IssuanceParams,
-//         >>::multi_output_transfer(
-//             token_id, src, outputs.as_slice()
-//         ));
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
 
-//         let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
-//         let dst_post = (0..outputs_no).map(|index| {
-//             Token::account_info_by_token_and_account(token_id, dest_accounts[index]).free_balance
-//         });
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(src, amount1 + amount2, 0)
+        .with_account(dst2, 0, 0)
+        .build();
 
-//         assert_eq!(issuance_pre, issuance_post.saturating_add(dust));
-//         assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
-//             token_id, src
-//         ));
-//         assert!(dst_pre
-//             .iter()
-//             .zip(dst_post)
-//             .zip(amounts.iter())
-//             .all(|((pre, post), amount)| pre.saturating_add(*amount) == post));
-//     })
-// }
+    build_test_externalities(config).execute_with(|| {
+        let result =
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
+                token_id, src, &outputs,
+            );
 
-// #[test]
-// fn permissioned_multiout_transfer_fails_with_wrong_commit() {
-//     let dest_accounts = vec![
-//         AccountId::from(DEFAULT_ACCOUNT_ID + 1),
-//         AccountId::from(DEFAULT_ACCOUNT_ID + 2),
-//         AccountId::from(DEFAULT_ACCOUNT_ID + 3),
-//     ];
-//     let outputs_no = dest_accounts.len();
-//     let amounts = vec![
-//         Balance::one(),
-//         Balance::one(),
-//         Balance::from(DEFAULT_FREE_BALANCE - DEFAULT_EXISTENTIAL_DEPOSIT - 1),
-//     ];
+        assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
+    })
+}
 
-//     // merkle proof for 2nd element
-//     let merkle_proofs = (0..outputs_no).map(|i| build_merkle_path_helper(&dest_accounts, i));
-//     let commit = Hashing::hash_of(&b"WRONG COMMIT");
+#[test]
+fn permissioned_multi_out_ok() {
+    let token_id = token!(1);
+    let src = account!(1);
+    let (dst1, amount1) = (account!(2), balance!(1));
+    let (dst2, amount2) = (account!(3), balance!(1));
+    let commit = merkle_root![dst1, dst2];
+    let dst1_proof = merkle_proof!(0, [dst1, dst2]);
+    let dst2_proof = merkle_proof!(1, [dst1, dst2]);
 
-//     let params = TokenIssuanceParametersOf::<Test> {
-//         existential_deposit: Balance::from(DEFAULT_EXISTENTIAL_DEPOSIT),
-//         transfer_policy: Policy::Permissioned(commit),
-//         ..Default::default()
-//     };
-//     let config = GenesisConfigBuilder::new()
-//         .add_token_with_params(params)
-//         .add_account_info() // src
-//         .add_account_info() // account 1
-//         .add_account_info() // account 2
-//         .add_account_info() // account 3
-//         .build();
+    let outputs = vec![
+        verifiable_out!(dst1, dst1_proof, amount1),
+        verifiable_out!(dst2, dst2_proof, amount2),
+    ];
 
-//     let src = AccountId::from(DEFAULT_ACCOUNT_ID);
-//     let dests = merkle_proofs
-//         .zip(dest_accounts.iter())
-//         .map(|(proof, account)| Verifiable::new(proof, *account));
-//     let outputs = dests.zip(amounts.iter().cloned()).collect::<Vec<_>>();
-//     let token_id = token!(1u32);
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
 
-//     build_test_externalities(config).execute_with(|| {
-//         assert_noop!(
-//             <Token as ControlledTransfer<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
-//                 token_id,
-//                 src,
-//                 outputs.as_slice()
-//             ),
-//             Error::<Test>::LocationIncompatibleWithCurrentPolicy,
-//         );
-//     })
-// }
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(src, amount1 + amount2, 0)
+        .with_account(dst1, 0, 0)
+        .with_account(dst2, 0, 0)
+        .build();
 
-// #[test]
-// fn permissioned_multiout_transfer_fails_with_invalid_destination_types() {
-//     let dest_accounts = vec![
-//         AccountId::from(DEFAULT_ACCOUNT_ID + 1),
-//         AccountId::from(DEFAULT_ACCOUNT_ID + 2),
-//         AccountId::from(DEFAULT_ACCOUNT_ID + 3),
-//     ];
-//     let amounts = vec![
-//         Balance::one(),
-//         Balance::one(),
-//         Balance::from(DEFAULT_FREE_BALANCE - DEFAULT_EXISTENTIAL_DEPOSIT - 1),
-//     ];
+    build_test_externalities(config).execute_with(|| {
+        let result =
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
+                token_id, src, &outputs,
+            );
 
-//     let commit = generate_merkle_root_helper(&dest_accounts).pop().unwrap();
+        assert_ok!(result);
+    })
+}
 
-//     let params = TokenIssuanceParametersOf::<Test> {
-//         existential_deposit: Balance::from(DEFAULT_EXISTENTIAL_DEPOSIT),
-//         transfer_policy: Policy::Permissioned(commit),
-//         ..Default::default()
-//     };
-//     let config = GenesisConfigBuilder::new()
-//         .add_token_with_params(params)
-//         .add_account_info() // src
-//         .add_account_info() // account 1
-//         .add_account_info() // account 2
-//         .add_account_info() // account 3
-//         .build();
+#[test]
+fn permissioned_multi_out_ok_with_event_deposit() {
+    let token_id = token!(1);
+    let existential_deposit = balance!(20);
+    let src = account!(1);
+    let (dst1, amount1) = (account!(2), balance!(1));
+    let (dst2, amount2) = (account!(3), balance!(1));
+    let commit = merkle_root![dst1, dst2];
+    let dst1_proof = merkle_proof!(0, [dst1, dst2]);
+    let dst2_proof = merkle_proof!(1, [dst1, dst2]);
 
-//     let src = AccountId::from(DEFAULT_ACCOUNT_ID);
+    let outputs = vec![
+        verifiable_out!(dst1, dst1_proof, amount1),
+        verifiable_out!(dst2, dst2_proof, amount2),
+    ];
 
-//     // current design imposes same destination type for all accounts
-//     let dests = dest_accounts.iter().map(|account| Simple::new(*account));
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .with_existential_deposit(existential_deposit)
+        .build();
 
-//     let outputs = dests.zip(amounts.iter().cloned()).collect::<Vec<_>>();
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(src, amount1 + amount2, 0)
+        .with_account(dst1, 0, 0)
+        .with_account(dst2, 0, 0)
+        .build();
 
-//     let token_id = token!(1u32);
+    build_test_externalities(config).execute_with(|| {
+        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
+            token_id, src, &outputs,
+        );
 
-//     build_test_externalities(config).execute_with(|| {
-//         assert_noop!(
-//             <Token as ControlledTransfer<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
-//                 token_id,
-//                 src,
-//                 outputs.as_slice()
-//             ),
-//             Error::<Test>::LocationIncompatibleWithCurrentPolicy,
-//         );
-//     })
-// }
+        last_event_eq!(RawEvent::TokenAmountMultiTransferred(
+            token_id,
+            src,
+            vec![(dst1, amount1), (dst2, amount2)],
+        ));
+    })
+}
+
+#[test]
+fn permissioned_multi_out_ok_with_ex_deposit_and_without_source_removal() {
+    let token_id = token!(1);
+    let existential_deposit = balance!(20);
+    let (dst1, amount1) = (account!(2), balance!(1));
+    let (dst2, amount2) = (account!(3), balance!(1));
+    let (src, src_balance) = (account!(1), amount1 + amount2 + existential_deposit);
+    let commit = merkle_root![dst1, dst2];
+    let dst1_proof = merkle_proof!(0, [dst1, dst2]);
+    let dst2_proof = merkle_proof!(1, [dst1, dst2]);
+
+    let outputs = vec![
+        verifiable_out!(dst1, dst1_proof, amount1),
+        verifiable_out!(dst2, dst2_proof, amount2),
+    ];
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .with_existential_deposit(existential_deposit)
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(src, src_balance, 0)
+        .with_account(dst1, 0, 0)
+        .with_account(dst2, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
+            token_id, src, &outputs,
+        );
+
+        assert_eq!(
+            Token::account_info_by_token_and_account(token_id, src).free_balance,
+            src_balance - amount1 - amount2,
+        );
+    })
+}
+
+#[test]
+fn permissioned_multi_out_ok_with_ex_deposit_and_source_removal() {
+    let token_id = token!(1);
+    let existential_deposit = balance!(20);
+    let dust = balance!(5);
+    let (dst1, amount1) = (account!(2), balance!(1));
+    let (dst2, amount2) = (account!(3), balance!(1));
+    let (src, src_balance) = (account!(1), amount1 + amount2 + dust);
+    let commit = merkle_root![dst1, dst2];
+    let dst1_proof = merkle_proof!(0, [dst1, dst2]);
+    let dst2_proof = merkle_proof!(1, [dst1, dst2]);
+
+    let outputs = vec![
+        verifiable_out!(dst1, dst1_proof, amount1),
+        verifiable_out!(dst2, dst2_proof, amount2),
+    ];
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .with_existential_deposit(existential_deposit)
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(src, src_balance, 0)
+        .with_account(dst1, 0, 0)
+        .with_account(dst2, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
+            token_id, src, &outputs,
+        );
+
+        assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
+            token_id, src
+        ));
+    })
+}
+
+#[test]
+fn permissioned_multi_out_ok_with_ex_deposit_and_source_removal_and_issuance_decrease() {
+    let token_id = token!(1);
+    let existential_deposit = balance!(20);
+    let dust = balance!(5);
+    let (dst1, amount1) = (account!(2), balance!(1));
+    let (dst2, amount2) = (account!(3), balance!(1));
+    let (src, src_balance) = (account!(1), amount1 + amount2 + dust);
+    let commit = merkle_root![dst1, dst2];
+    let dst1_proof = merkle_proof!(0, [dst1, dst2]);
+    let dst2_proof = merkle_proof!(1, [dst1, dst2]);
+
+    let outputs = vec![
+        verifiable_out!(dst1, dst1_proof, amount1),
+        verifiable_out!(dst2, dst2_proof, amount2),
+    ];
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .with_existential_deposit(existential_deposit)
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(src, src_balance, 0)
+        .with_account(dst1, 0, 0)
+        .with_account(dst2, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
+            token_id, src, &outputs,
+        );
+
+        assert_eq!(
+            Token::token_info_by_id(token_id).current_total_issuance,
+            src_balance - dust
+        );
+    })
+}
