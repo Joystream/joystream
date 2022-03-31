@@ -1,4 +1,34 @@
-type AuctionStartedEvent implements Event @entity {
+type OpenAuctionStartedEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}."
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted."
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in."
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Actor that started this auction."
+  actor: ContentActor!
+
+  "Video that's being auctioned."
+  video: Video!
+
+  "Auction started."
+  auction: Auction!
+}
+
+type EnglishAuctionStartedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}."
@@ -93,9 +123,6 @@ type AuctionBidMadeEvent implements Event @entity {
 
   "Bid made."
   bidAmount: BigInt!
-
-  "Sign of auction duration being extended by making this bid."
-  extendsAuction: Boolean!
 }
 
 type AuctionBidCanceledEvent implements Event @entity {

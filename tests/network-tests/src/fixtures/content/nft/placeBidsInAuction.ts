@@ -9,6 +9,7 @@ export class PlaceBidsInAuctionFixture extends BaseQueryNodeFixture {
   private startingPrice: BN
   private minimalBidStep: BN
   private videoId: number
+  private auctionType: 'Open' | 'English'
 
   constructor(
     api: Api,
@@ -16,13 +17,15 @@ export class PlaceBidsInAuctionFixture extends BaseQueryNodeFixture {
     participants: IMember[],
     startingPrice: BN,
     minimalBidStep: BN,
-    videoId: number
+    videoId: number,
+    auctionType: 'Open' | 'English'
   ) {
     super(api, query)
     this.participants = participants
     this.startingPrice = startingPrice
     this.minimalBidStep = minimalBidStep
     this.videoId = videoId
+    this.auctionType = auctionType
   }
 
   /*
@@ -33,9 +36,23 @@ export class PlaceBidsInAuctionFixture extends BaseQueryNodeFixture {
     const winner = this.participants[this.participants.length - 1]
 
     for (const [index, participant] of this.participants.entries()) {
-      const bidAmount = this.startingPrice.add(this.minimalBidStep.mul(new BN(index)))
+      const bidAmount = this.calcBidAmount(index)
       this.debug('Bid-' + index)
-      await this.api.bidInNftAuction(participant.account, participant.memberId.toNumber(), this.videoId, bidAmount)
+
+      await this.placeBid(participant, bidAmount)
     }
+  }
+
+  public calcBidAmount(index: number): BN {
+    return this.startingPrice.add(this.minimalBidStep.muln(index))
+  }
+
+  private async placeBid(participant: IMember, bidAmount: BN): Promise<void> {
+    if (this.auctionType === 'Open') {
+      await this.api.bidInOpenAuction(participant.account, participant.memberId.toNumber(), this.videoId, bidAmount)
+      return
+    }
+
+    await this.api.bidInEnglishAuction(participant.account, participant.memberId.toNumber(), this.videoId, bidAmount)
   }
 }

@@ -83,7 +83,7 @@ type OwnedNft
 
   "Is NFT owned by channel"
   isOwnedByChannel: Boolean!
-  
+
   "NFT creator's channel"
   creatorChannel: Channel!
 }
@@ -144,13 +144,19 @@ type AuctionTypeEnglish @variant {
   duration: Int!
 
   "Auction extension time"
-  extensionPeriod: Int
+  extensionPeriod: Int!
+
+  "Block when auction is supposed to end"
+  plannedEndAtBlock: Int!
+
+  "Minimal step between auction bids"
+  minimalBidStep: BigInt!
 }
 
 "Represents Open auction details"
 type AuctionTypeOpen @variant {
   "Auction bid lock duration"
-  bidLockingTime: Int!
+  bidLockDuration: Int!
 }
 
 "Represents NFT auction"
@@ -175,11 +181,8 @@ type Auction @entity {
   "The type of auction"
   auctionType: AuctionType!
 
-  "Minimal step between auction bids"
-  minimalBidStep: BigInt!
-
   "Auction last bid (if exists)"
-  lastBid: Bid
+  topBid: Bid
 
   bids: [Bid!]! @derivedFrom(field: "auction")
 
@@ -188,9 +191,6 @@ type Auction @entity {
 
   "Block when auction ended"
   endedAtBlock: Int
-
-  "Block when auction is supposed to end"
-  plannedEndAtBlock: Int
 
   "Is auction canceled"
   isCanceled: Boolean!
@@ -207,12 +207,11 @@ type Bid @entity {
   "NFT's auction"
   auction: Auction!
 
+  "NFT's auction where this bid is the current top bid"
+  auctionTopBid: Auction @derivedFrom(field: "topBid")
+
   "Bidder membership"
   bidder: Membership!
-
-  # TODO: probably remove that
-  #"Bidder account, used to pay for NFT"
-  #bidderAccount: String!
 
   "Amount bidded"
   amount: BigInt!
@@ -222,6 +221,9 @@ type Bid @entity {
 
   "Block in which the bid was placed"
   createdInBlock: Int!
+
+  "Index of event in block where bid was made."
+  indexInBlock: Int!
 }
 
 # TODO entity for (cancelable) offers; will be needed to see history of offers

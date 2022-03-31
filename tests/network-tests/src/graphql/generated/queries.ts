@@ -81,14 +81,18 @@ export type OwnedNftFieldsFragment = {
           startsAtBlock: number
           isCompleted: boolean
           endedAtBlock?: Types.Maybe<number>
-          plannedEndAtBlock?: Types.Maybe<number>
-          minimalBidStep: any
           startingPrice: any
           auctionType:
-            | { __typename: 'AuctionTypeEnglish'; extensionPeriod?: Types.Maybe<number>; duration: number }
-            | { __typename: 'AuctionTypeOpen'; bidLockingTime: number }
+            | {
+                __typename: 'AuctionTypeEnglish'
+                extensionPeriod: number
+                duration: number
+                plannedEndAtBlock: number
+                minimalBidStep: number
+              }
+            | { __typename: 'AuctionTypeOpen'; bidLockDuration: number }
           bids: Array<{ id: string; amount: any; createdInBlock: number; bidder: { id: string; handle: string } }>
-          lastBid?: Types.Maybe<{ id: string; amount: any; bidder: { id: string } }>
+          topBid?: Types.Maybe<{ id: string; amount: any; bidder: { id: string } }>
         }>
       }
     | { __typename: 'TransactionalStatusBuyNow' }
@@ -2136,17 +2140,17 @@ export const OwnedNftFields = gql`
           startsAtBlock
           isCompleted
           endedAtBlock
-          plannedEndAtBlock
-          minimalBidStep
           startingPrice
           auctionType {
             __typename
             ... on AuctionTypeOpen {
-              bidLockingTime
+              bidLockDuration
             }
             ... on AuctionTypeEnglish {
               extensionPeriod
               duration
+              plannedEndAtBlock
+              minimalBidStep
             }
           }
           bids {
@@ -2158,7 +2162,7 @@ export const OwnedNftFields = gql`
             amount
             createdInBlock
           }
-          lastBid {
+          topBid {
             id
             amount
             bidder {
