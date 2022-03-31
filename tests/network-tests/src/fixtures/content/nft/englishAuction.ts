@@ -59,12 +59,15 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
       auctionDuration,
       extensionPeriod,
     } = await this.api.createEnglishAuctionParameters()
+
     await this.api.startEnglishAuction(
       this.author.keyringPair.address,
       this.author.memberId.toNumber(),
       this.videoId,
       auctionParams
     )
+    // remember auction start block
+    const startBlockNumber = await this.api.getBestBlock()
 
     const winner = this.participants[this.participants.length - 1]
 
@@ -80,8 +83,17 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
     )
     await new FixtureRunner(placeBidsFixture).run()
 
+    // remember block in which last bid was made
+    const lastBidBlockNumber = await this.api.getBestBlock()
+
+    // calculate auction ending block (accounting for auction extension caused by bids)
+    const initialEndBlockNumber = startBlockNumber.add(auctionDuration)
+    const realEndBlockNumber = lastBidBlockNumber < initialEndBlockNumber.sub(extensionPeriod)
+      ? initialEndBlockNumber.add(extensionPeriod)
+      : initialEndBlockNumber
+
     this.debug('Wait for auction to end')
-    const waitBlocks = Math.min(auctionDuration.toNumber(), extensionPeriod.toNumber() + this.participants.length) + 1
+    const waitBlocks = realEndBlockNumber.sub(lastBidBlockNumber).toNumber() + 1
     await Utils.wait(this.api.getBlockDuration().muln(waitBlocks).toNumber())
 
     this.debug('Check NFT Auction and bids')

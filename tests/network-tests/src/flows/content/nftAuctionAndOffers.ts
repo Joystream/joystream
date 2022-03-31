@@ -14,7 +14,6 @@ import {
   NftCreateVideoWithAuctionFixture,
   UpdateVideoForNftCreationFixture,
   IMember,
-  NftEnglishAuctionWithExtensionFixture,
 } from '../../fixtures/content'
 import BN from 'bn.js'
 import { createJoystreamCli } from '../utils'
@@ -28,7 +27,7 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
   const joystreamCli = await createJoystreamCli()
 
   // settings
-  const videoCount = 7 // should be equal to number of uses of `nextVideo()` below
+  const videoCount = 6 // should be equal to number of uses of `nextVideo()` below
   const videoCategoryCount = 1
   const channelCount = 1
   const channelCategoryCount = 1
@@ -84,18 +83,6 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
   )
 
   await new FixtureRunner(nftAuctionFixture).run()
-
-  const nftAuctionWithExtensionFixture = new NftEnglishAuctionWithExtensionFixture(
-    api,
-    query,
-    nextVideo().videoId,
-    author as IMember,
-    auctionParticipants,
-    5, // auction duration
-    3 // extension period
-  )
-
-  await new FixtureRunner(nftAuctionWithExtensionFixture).run()
 
   const openAuctionFixture = new NftOpenAuctionFixture(
     api,
