@@ -1,7 +1,7 @@
 version: '3.0'
 description: Joystream query-node manifest file for Olympia
 repository: https://github.com/Joystream/joystream
-hydraVersion: '3'
+hydraVersion: "3"
 dataSource:
   kind: substrate
   chain: joystream
@@ -952,6 +952,6 @@ mappings:
   preBlockHooks:
     - handler: bootstrapData
       filter:
-        height: '[0,0]' # will be executed only at genesis
+        height: "[0,0]" # will be executed only at genesis
   postBlockHooks:
     - handler: runScheduler
