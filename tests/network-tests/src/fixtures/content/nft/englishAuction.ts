@@ -88,9 +88,10 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
 
     // calculate auction ending block (accounting for auction extension caused by bids)
     const initialEndBlockNumber = startBlockNumber.add(auctionDuration)
-    const realEndBlockNumber = lastBidBlockNumber < initialEndBlockNumber.sub(extensionPeriod)
-      ? initialEndBlockNumber.add(extensionPeriod)
-      : initialEndBlockNumber
+    const realEndBlockNumber =
+      lastBidBlockNumber < initialEndBlockNumber.sub(extensionPeriod)
+        ? initialEndBlockNumber.add(extensionPeriod)
+        : initialEndBlockNumber
 
     this.debug('Wait for auction to end')
     const waitBlocks = realEndBlockNumber.sub(lastBidBlockNumber).toNumber() + 1
