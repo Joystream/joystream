@@ -11,7 +11,7 @@ use crate::{last_event_eq, Error, RawEvent};
 fn deposit_creating_ok() {
     let patronage_rate = Percent::from_percent(1);
     let token_id = TokenId::one();
-    let account_id = AccountId::one();;
+    let account_id = AccountId::one();
     let amount = Balance::from(100u32);
 
     let params = IssuanceParams::new_empty().with_patronage_rate(patronage_rate);
@@ -32,7 +32,7 @@ fn deposit_creating_ok() {
 fn deposit_creating_ok_with_destination_free_balance_increase() {
     let patronage_rate = Percent::from_percent(1);
     let token_id = TokenId::one();
-    let account_id = AccountId::one();;
+    let account_id = AccountId::one();
     let amount = Balance::from(100u32);
 
     let params = IssuanceParams::new_empty().with_patronage_rate(patronage_rate);
@@ -55,7 +55,7 @@ fn deposit_creating_ok_with_destination_free_balance_increase() {
 #[test]
 fn deposit_creating_ok_with_total_issuance_increase_and_no_patronage() {
     let token_id = TokenId::one();
-    let account_id = AccountId::one();;
+    let account_id = AccountId::one();
     let amount = Balance::from(100u32);
 
     let params = IssuanceParams::new_empty();
@@ -79,7 +79,7 @@ fn deposit_creating_ok_with_total_issuance_increase_and_no_patronage() {
 fn deposit_creating_ok_with_event_deposit() {
     let patronage_rate = Percent::from_percent(1);
     let token_id = TokenId::one();
-    let account_id = AccountId::one();;
+    let account_id = AccountId::one();
     let amount = Balance::from(100u32);
 
     let params = IssuanceParams::new_empty().with_patronage_rate(patronage_rate);
@@ -102,7 +102,7 @@ fn deposit_creating_ok_with_event_deposit() {
 fn deposit_creating_ok_with_patronage_and_issuance_increase() {
     let patronage_rate = Percent::from_percent(1);
     let token_id = TokenId::one();
-    let account_id = AccountId::one();;
+    let account_id = AccountId::one();
     let amount = Balance::from(100u32);
 
     let params = IssuanceParams::new_empty().with_patronage_rate(patronage_rate);
@@ -125,7 +125,7 @@ fn deposit_creating_ok_with_patronage_and_issuance_increase() {
 #[test]
 fn deposit_creating_ok_with_free_balance_addition_to_existing_account() {
     let token_id = TokenId::one();
-    let account_id = AccountId::one();;
+    let account_id = AccountId::one();
     let (initial_free_balance, initial_reserved) = (Balance::from(10u32), Balance::zero());
     let amount = Balance::from(10u32);
 
@@ -150,7 +150,7 @@ fn deposit_creating_ok_with_free_balance_addition_to_existing_account() {
 #[test]
 fn deposit_creating_ok_without_reserved_balance_addition_to_existing_account() {
     let token_id = TokenId::one();
-    let account_id = AccountId::one();;
+    let account_id = AccountId::one();
     let (initial_free_balance, initial_reserved) = (Balance::from(10u32), Balance::zero());
     let amount = Balance::from(10u32);
 
@@ -176,7 +176,7 @@ fn deposit_creating_ok_without_reserved_balance_addition_to_existing_account() {
 fn deposit_creating_ok_with_owner_credit_accounted() {
     let token_id = TokenId::one();
     let patronage_rate = Percent::from_percent(50);
-    let account_id = AccountId::one();;
+    let account_id = AccountId::one();
     let amount = Balance::from(10u32);
     let credit = patronage_rate.mul_floor(amount);
 
@@ -305,7 +305,7 @@ fn decreasing_patronage_rate_fails_invalid_token() {
 fn claim_patronage_ok() {
     let patronage_rate = Percent::from_percent(1);
     let token_id = TokenId::one();
-    let account_id = AccountId::one();;
+    let account_id = AccountId::one();
     let amount = Balance::from(100u32);
 
     let params = IssuanceParams::new_empty().with_patronage_rate(patronage_rate);
@@ -332,7 +332,7 @@ fn claim_patronage_ok() {
 fn claim_patronage_ok_with_event_deposit() {
     let patronage_rate = Percent::from_percent(50);
     let token_id = TokenId::one();
-    let account_id = AccountId::one();;
+    let account_id = AccountId::one();
     let owner_account_id = account_id.saturating_add(One::one());
     let amount = Balance::from(100u32);
     let credit = patronage_rate.mul_floor(amount);
@@ -367,7 +367,7 @@ fn claim_patronage_ok_with_event_deposit() {
 fn claim_patronage_ok_with_credit_accounting() {
     let patronage_rate = Percent::from_percent(50);
     let token_id = TokenId::one();
-    let account_id = AccountId::one();;
+    let account_id = AccountId::one();
     let owner_account_id = account_id.saturating_add(One::one());
     let amount = Balance::from(100u32);
 
@@ -400,7 +400,7 @@ fn claim_patronage_ok_with_credit_accounting() {
 fn claim_patronage_ok_with_outstanding_credit_reset() {
     let patronage_rate = Percent::from_percent(50);
     let token_id = TokenId::one();
-    let account_id = AccountId::one();;
+    let account_id = AccountId::one();
     let owner_account_id = account_id.saturating_add(One::one());
     let amount = Balance::from(100u32);
 
@@ -432,7 +432,7 @@ fn claim_patronage_ok_with_outstanding_credit_reset() {
 #[test]
 fn claim_patronage_credit_fails_with_invalid_token_id() {
     let token_id = TokenId::one();
-    let owner_account = AccountId::one();;
+    let owner_account = AccountId::one();
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
@@ -449,7 +449,7 @@ fn claim_patronage_credit_fails_with_invalid_token_id() {
 fn claim_patronage_fails_with_invalid_owner_account_id() {
     let patronage_rate = Percent::from_percent(50);
     let token_id = TokenId::one();
-    let account_id = AccountId::one();;
+    let account_id = AccountId::one();
     let owner_account_id = account_id.saturating_add(One::one());
     let amount = Balance::from(100u32);
 

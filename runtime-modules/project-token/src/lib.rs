@@ -18,10 +18,7 @@ mod types;
 // crate imports
 use errors::Error;
 pub use events::{Event, RawEvent};
-use traits::{
-    ControlledTransfer, MultiCurrencyBase, PatronageTrait, ReservableMultiCurrency,
-    TransferLocationTrait,
-};
+use traits::{PalletToken, TransferLocationTrait};
 use types::{AccountDataOf, DecOp, TokenDataOf, TokenIssuanceParametersOf, TransferPolicyOf};
 
 /// Pallet Configuration Trait
@@ -67,11 +64,169 @@ decl_module! {
     }
 }
 
-/// MultiCurrencyBase Trait Implementation for Module
-impl<T: Trait> MultiCurrencyBase<T::AccountId, TokenIssuanceParametersOf<T>> for Module<T> {
+impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParametersOf<T>>
+    for Module<T>
+{
     type Balance = T::Balance;
+
     type TokenId = T::TokenId;
 
+    /// Transfer `amount` from `src` account to `dst` according to provided policy
+    /// Preconditions:
+    /// - `token_id` must exists
+    /// - `dst` underlying account must be valid for `token_id`
+    /// - `src` must be valid for `token_id`
+    /// - `dst` is compatible con `token_id` transfer policy
+    ///
+    /// Postconditions:
+    /// - `src` free balance decreased by `amount` or removed if final balance < existential deposit
+    /// - `dst` free balance increased by `amount`
+    /// - `token_id` issuance eventually decreased by dust amount in case of src removalp
+    /// if `amount` is zero it is equivalent to a no-op
+    fn transfer<Destination>(
+        token_id: T::TokenId,
+        src: T::AccountId,
+        dst: Destination,
+        amount: T::Balance,
+    ) -> DispatchResult
+    where
+        Destination: TransferLocationTrait<T::AccountId, TransferPolicyOf<T>> + Clone,
+    {
+        if amount.is_zero() {
+            return Ok(());
+        }
+
+        // Currency transfer preconditions
+        let outputs = [(dst.clone(), amount)];
+        let (decrease_operation, token_info) = Self::ensure_can_transfer(token_id, &src, &outputs)?;
+
+        // validate according to policy
+        token_info.ensure_valid_location_for_policy::<T, T::AccountId, _>(&dst)?;
+
+        // == MUTATION SAFE ==
+
+        Self::do_transfer(token_id, &src, &outputs, decrease_operation);
+
+        Self::deposit_event(RawEvent::TokenAmountTransferred(
+            token_id,
+            src,
+            dst.location_account(),
+            amount,
+        ));
+        Ok(())
+    }
+
+    fn multi_output_transfer<Destination>(
+        token_id: T::TokenId,
+        src: T::AccountId,
+        outputs: &[(Destination, T::Balance)],
+    ) -> DispatchResult
+    where
+        Destination: TransferLocationTrait<T::AccountId, TransferPolicyOf<T>>,
+    {
+        let (decrease_operation, token_info) = Self::ensure_can_transfer(token_id, &src, outputs)?;
+        // validate according to policy
+        outputs.iter().try_for_each(|(dst, _)| {
+            token_info.ensure_valid_location_for_policy::<T, T::AccountId, _>(dst)
+        })?;
+
+        // == MUTATION SAFE ==
+
+        Self::do_transfer(token_id, &src, outputs, decrease_operation);
+
+        // TODO: establish proper event
+
+        Ok(())
+    }
+
+    /// Change to permissionless
+    /// Preconditions:
+    /// - Token `token_id` must exist
+    /// Postconditions
+    /// - transfer policy of `token_id` changed to permissionless
+    fn change_to_permissionless(token_id: T::TokenId) -> DispatchResult {
+        TokenInfoById::<T>::try_mutate(token_id, |token_info| {
+            token_info.transfer_policy = TransferPolicyOf::<T>::Permissionless;
+            Ok(())
+        })
+    }
+
+    /// Reduce patronage rate by amount
+    /// Preconditions:
+    /// - `token_id` must exists
+    /// - `decrement` must be less or equal than current patronage rate for `token_id`
+    ///
+    /// Postconditions:
+    /// - patronage rate for `token_id` reduced by `decrement`
+    fn reduce_patronage_rate_by(token_id: T::TokenId, decrement: Percent) -> DispatchResult {
+        let token_info = Self::ensure_token_exists(token_id)?;
+
+        // ensure new rate is >= 0
+        ensure!(
+            token_info.patronage_info.rate >= decrement,
+            Error::<T>::ReductionExceedingPatronageRate,
+        );
+
+        // == MUTATION SAFE ==
+
+        let new_rate = TokenInfoById::<T>::mutate(token_id, |token_info| {
+            let new_rate = token_info.patronage_info.rate.saturating_sub(decrement);
+            token_info.patronage_info.rate = new_rate;
+            new_rate
+        });
+
+        Self::deposit_event(RawEvent::PatronageRateDecreasedTo(token_id, new_rate));
+
+        Ok(())
+    }
+
+    /// Query for patronage credit for token
+    /// Preconditions
+    /// - `token_id` must exists
+    fn get_patronage_credit(token_id: T::TokenId) -> Result<T::Balance, DispatchError> {
+        Self::ensure_token_exists(token_id)
+            .map(|token_info| token_info.patronage_info.outstanding_credit)
+    }
+
+    /// Allow creator to receive credit into his accounts
+    /// Preconditions:
+    /// - `token_id` must exists
+    /// - `to_account` must be valid for `token_id`
+    ///
+    /// Postconditions:
+    /// - outstanding patronage credit for `token_id` transferred to `to_account`
+    /// - outstanding patronage credit subsequently set to 0
+    /// no-op if outstanding credit is zero
+    fn claim_patronage_credit(token_id: T::TokenId, to_account: T::AccountId) -> DispatchResult {
+        let token_info = Self::ensure_token_exists(token_id)?;
+        Self::ensure_account_data_exists(token_id, &to_account).map(|_| ())?;
+
+        if token_info.patronage_info.outstanding_credit.is_zero() {
+            return Ok(());
+        }
+
+        // == MUTATION SAFE ==
+
+        let credit = token_info.patronage_info.outstanding_credit;
+
+        TokenInfoById::<T>::mutate(token_id, |token_info| {
+            token_info.patronage_info.outstanding_credit = T::Balance::zero();
+        });
+
+        AccountInfoByTokenAndAccount::<T>::mutate(token_id, &to_account, |account_info| {
+            account_info.free_balance = account_info.free_balance.saturating_add(credit)
+        });
+
+        Self::deposit_event(RawEvent::PatronageCreditClaimed(
+            token_id, credit, to_account,
+        ));
+
+        Ok(())
+    }
+}
+
+/// Module implementation
+impl<T: Trait> Module<T> {
     /// Mint `amount` into account `who` (possibly creating it)
     /// for specified token `token_id`
     ///
@@ -222,40 +377,6 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId, TokenIssuanceParametersOf<T>> for
         Ok(())
     }
 
-    // /// Transfer `amount` from `src` account to `dst`
-    // /// Preconditions:
-    // /// - `token_id` must exists
-    // /// - `src` must exists
-    // /// - `src` free balance must be greater than or equal to `amount`
-    // /// - `dst` must exists
-    // ///
-    // /// Postconditions:
-    // /// - free balance of `src` is decreased by `amount or set to zero if below existential
-    // ///   deposit`
-    // /// - free balance of `dst` is increased by `amount`
-    // /// if `amount` is zero it is equivalent to a no-op
-    // fn transfer(
-    //     token_id: T::TokenId,
-    //     src: T::AccountId,
-    //     dst: T::AccountId,
-    //     amount: T::Balance,
-    // ) -> DispatchResult {
-    //     if amount.is_zero() {
-    //         return Ok(());
-    //     }
-
-    //     // tranfer preconditions
-    //     let outputs = [(SimpleLocation::<T::AccountId>::new(dst.clone()), amount)];
-    //     let (decrease_operation, _) = Self::ensure_can_transfer(token_id, &src, &outputs)?;
-
-    //     // == MUTATION SAFE ==
-
-    //     Self::do_transfer(token_id, &src, &outputs, decrease_operation);
-
-    //     Self::deposit_event(RawEvent::TokenAmountTransferred(token_id, src, dst, amount));
-    //     Ok(())
-    // }
-
     /// Issue token with specified characteristics
     /// Preconditions:
     /// -
@@ -304,15 +425,9 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId, TokenIssuanceParametersOf<T>> for
     /// Retrieve total current issuance for token
     /// Preconditions
     /// - `token_id` must be valid
-    fn current_issuance(token_id: Self::TokenId) -> Result<Self::Balance, DispatchError> {
+    fn current_issuance(token_id: T::TokenId) -> Result<T::Balance, DispatchError> {
         Self::ensure_token_exists(token_id).map(|token_data| token_data.current_total_issuance)
     }
-}
-
-/// ReservableMultiCurrency trait implementation for Module
-impl<T: Trait> ReservableMultiCurrency<T::AccountId> for Module<T> {
-    type TokenId = T::TokenId;
-    type Balance = T::Balance;
 
     /// Reserve `amount` of token for `who`
     /// Preconditions:
@@ -415,169 +530,6 @@ impl<T: Trait> ReservableMultiCurrency<T::AccountId> for Module<T> {
             .reserved_balance
             .saturating_add(account_info.free_balance))
     }
-}
-
-impl<T: Trait> ControlledTransfer<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParametersOf<T>>
-    for Module<T>
-{
-    type MultiCurrency = Self;
-
-    /// Transfer `amount` from `src` account to `dst` according to provided policy
-    /// Preconditions:
-    /// - `PRECONDITIONS[MultiCurrency::transfer(token_id, src, dst.into(), amount)]`
-    /// - `dst` is compatible con `token_id` transfer policy
-    ///
-    /// Postconditions:
-    /// - `POSTCONDITIONS[MultiCurrency::transfer(token_id, src, dst.into(), amount)]`
-    /// if `amount` is zero it is equivalent to a no-op
-    fn transfer<Destination>(
-        token_id: T::TokenId,
-        src: T::AccountId,
-        dst: Destination,
-        amount: T::Balance,
-    ) -> DispatchResult
-    where
-        Destination: TransferLocationTrait<T::AccountId, TransferPolicyOf<T>> + Clone,
-    {
-        if amount.is_zero() {
-            return Ok(());
-        }
-
-        // Currency transfer preconditions
-        let outputs = [(dst.clone(), amount)];
-        let (decrease_operation, token_info) = Self::ensure_can_transfer(token_id, &src, &outputs)?;
-
-        // validate according to policy
-        token_info.ensure_valid_location_for_policy::<T, T::AccountId, _>(&dst)?;
-
-        // == MUTATION SAFE ==
-
-        Self::do_transfer(token_id, &src, &outputs, decrease_operation);
-
-        Self::deposit_event(RawEvent::TokenAmountTransferred(
-            token_id,
-            src,
-            dst.location_account(),
-            amount,
-        ));
-        Ok(())
-    }
-
-    fn multi_output_transfer<Destination>(
-        token_id: T::TokenId,
-        src: T::AccountId,
-        outputs: &[(Destination, T::Balance)],
-    ) -> DispatchResult
-    where
-        Destination: TransferLocationTrait<T::AccountId, TransferPolicyOf<T>>,
-    {
-        let (decrease_operation, token_info) = Self::ensure_can_transfer(token_id, &src, outputs)?;
-        // validate according to policy
-        outputs.iter().try_for_each(|(dst, _)| {
-            token_info.ensure_valid_location_for_policy::<T, T::AccountId, _>(dst)
-        })?;
-
-        // == MUTATION SAFE ==
-
-        Self::do_transfer(token_id, &src, outputs, decrease_operation);
-
-        // TODO: establish proper event
-
-        Ok(())
-    }
-
-    /// Change to permissionless
-    /// Preconditions:
-    /// - Token `token_id` must exist
-    /// Postconditions
-    /// - transfer policy of `token_id` changed to permissionless
-    fn change_to_permissionless(token_id: T::TokenId) -> DispatchResult {
-        TokenInfoById::<T>::try_mutate(token_id, |token_info| {
-            token_info.transfer_policy = TransferPolicyOf::<T>::Permissionless;
-            Ok(())
-        })
-    }
-}
-
-impl<T: Trait> PatronageTrait<T::AccountId, TokenIssuanceParametersOf<T>> for Module<T> {
-    type MultiCurrency = Self;
-
-    /// Reduce patronage rate by amount
-    /// Preconditions:
-    /// - `token_id` must exists
-    /// - `decrement` must be less or equal than current patronage rate for `token_id`
-    ///
-    /// Postconditions:
-    /// - patronage rate for `token_id` reduced by `decrement`
-    fn reduce_patronage_rate_by(token_id: T::TokenId, decrement: Percent) -> DispatchResult {
-        let token_info = Self::ensure_token_exists(token_id)?;
-
-        // ensure new rate is >= 0
-        ensure!(
-            token_info.patronage_info.rate >= decrement,
-            Error::<T>::ReductionExceedingPatronageRate,
-        );
-
-        // == MUTATION SAFE ==
-
-        let new_rate = TokenInfoById::<T>::mutate(token_id, |token_info| {
-            let new_rate = token_info.patronage_info.rate.saturating_sub(decrement);
-            token_info.patronage_info.rate = new_rate;
-            new_rate
-        });
-
-        Self::deposit_event(RawEvent::PatronageRateDecreasedTo(token_id, new_rate));
-
-        Ok(())
-    }
-
-    /// Query for patronage credit for token
-    /// Preconditions
-    /// - `token_id` must exists
-    fn get_patronage_credit(token_id: T::TokenId) -> Result<T::Balance, DispatchError> {
-        Self::ensure_token_exists(token_id)
-            .map(|token_info| token_info.patronage_info.outstanding_credit)
-    }
-
-    /// Allow creator to receive credit into his accounts
-    /// Preconditions:
-    /// - `token_id` must exists
-    /// - `to_account` must be valid for `token_id`
-    ///
-    /// Postconditions:
-    /// - outstanding patronage credit for `token_id` transferred to `to_account`
-    /// - outstanding patronage credit subsequently set to 0
-    /// no-op if outstanding credit is zero
-    fn claim_patronage_credit(token_id: T::TokenId, to_account: T::AccountId) -> DispatchResult {
-        let token_info = Self::ensure_token_exists(token_id)?;
-        Self::ensure_account_data_exists(token_id, &to_account).map(|_| ())?;
-
-        if token_info.patronage_info.outstanding_credit.is_zero() {
-            return Ok(());
-        }
-
-        // == MUTATION SAFE ==
-
-        let credit = token_info.patronage_info.outstanding_credit;
-
-        TokenInfoById::<T>::mutate(token_id, |token_info| {
-            token_info.patronage_info.outstanding_credit = T::Balance::zero();
-        });
-
-        AccountInfoByTokenAndAccount::<T>::mutate(token_id, &to_account, |account_info| {
-            account_info.free_balance = account_info.free_balance.saturating_add(credit)
-        });
-
-        Self::deposit_event(RawEvent::PatronageCreditClaimed(
-            token_id, credit, to_account,
-        ));
-
-        Ok(())
-    }
-}
-
-/// Module implementation
-impl<T: Trait> Module<T> {
     // Utility ensure checks
 
     pub(crate) fn ensure_account_data_exists(
