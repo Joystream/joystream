@@ -1723,9 +1723,11 @@ impl<T: Trait + balances::Trait> common::council::CouncilBudgetManager<Balance<T
         Mutations::<T>::set_budget(budget);
     }
 
-    fn transfer(account_id: &T::AccountId, amount: Balance<T>) {
-        let _ = Self::try_transfer(account_id, amount);
-    }
+    fn try_transfer(account_id: &T::AccountId, amount: Balance<T>) -> DispatchResult {
+        ensure!(
+            Self::get_budget() >= amount,
+            Error::<T>::InsufficientBalanceForTransfer
+        );
 
     fn increase_budget(amount: Balance<T>) {
         let current_budget = Self::get_budget();
