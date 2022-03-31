@@ -207,6 +207,10 @@ type BountyContribution @entity {
   "Member making the contribution (if a member and not the council)"
   contributor: Membership
 
+  # This exposes internal Hydra value related to `contributor`
+  "The id of the contributor"
+  contributorId: ID
+
   "Amount of the contribution"
   amount: BigInt!
 

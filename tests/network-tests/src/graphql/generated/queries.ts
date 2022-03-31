@@ -114,8 +114,28 @@ export type OwnedNftFieldsFragment = {
   transactionalStatus:
     | { __typename: 'TransactionalStatusIdle' }
     | { __typename: 'TransactionalStatusInitiatedOfferToMember' }
-    | { __typename: 'TransactionalStatusAuction' }
+    | {
+        __typename: 'TransactionalStatusAuction'
+        auction?: Types.Maybe<{
+          startsAtBlock: number
+          isCompleted: boolean
+          endedAtBlock?: Types.Maybe<number>
+          startingPrice: any
+          auctionType:
+            | {
+                __typename: 'AuctionTypeEnglish'
+                extensionPeriod: number
+                duration: number
+                plannedEndAtBlock: number
+                minimalBidStep: number
+              }
+            | { __typename: 'AuctionTypeOpen'; bidLockDuration: number }
+          bids: Array<{ id: string; amount: any; createdInBlock: number; bidder: { id: string; handle: string } }>
+          topBid?: Types.Maybe<{ id: string; amount: any; bidder: { id: string } }>
+        }>
+      }
     | { __typename: 'TransactionalStatusBuyNow' }
+  creatorChannel: { id: string }
 }
 
 export type GetChannelByIdQueryVariables = Types.Exact<{
@@ -2447,8 +2467,47 @@ export const OwnedNftFields = gql`
     metadata
     transactionalStatus {
       __typename
+      ... on TransactionalStatusAuction {
+        auction {
+          startsAtBlock
+          isCompleted
+          endedAtBlock
+          startingPrice
+          auctionType {
+            __typename
+            ... on AuctionTypeOpen {
+              bidLockDuration
+            }
+            ... on AuctionTypeEnglish {
+              extensionPeriod
+              duration
+              plannedEndAtBlock
+              minimalBidStep
+            }
+          }
+          bids {
+            id
+            bidder {
+              id
+              handle
+            }
+            amount
+            createdInBlock
+          }
+          topBid {
+            id
+            amount
+            bidder {
+              id
+            }
+          }
+        }
+      }
     }
     creatorRoyalty
+    creatorChannel {
+      id
+    }
   }
 `
 export const CommentCreatedEventFields = gql`

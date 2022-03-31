@@ -25,7 +25,7 @@ export class NftCreateVideoWithAuctionFixture extends BaseQueryNodeFixture {
   */
   public async execute(): Promise<void> {
     this.debug('Create video with NFT being auctioned')
-    const { auctionParams } = await this.api.createAuctionParameters('English')
+    const { auctionParams } = await this.api.createEnglishAuctionParameters()
 
     const response = await this.api.createVideoWithNftAuction(
       this.author.keyringPair.address,

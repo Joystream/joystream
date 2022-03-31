@@ -66,7 +66,6 @@ import {
   genericEventFields,
   getWorkingGroupModuleName,
   INT32MAX,
-  MemoryCache,
   perpareString,
   toNumber,
 } from './common'
@@ -352,15 +351,14 @@ async function handleRuntimeUpgradeProposalExecution(event: SubstrateEvent, stor
 }
 
 export async function proposalsCodex_ProposalCreated({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [proposalId, generalProposalParameters, runtimeProposalDetails] = new ProposalsCodex.ProposalCreatedEvent(
-    event
-  ).params
+  const [
+    proposalId,
+    generalProposalParameters,
+    runtimeProposalDetails,
+    proposalThreadId,
+  ] = new ProposalsCodex.ProposalCreatedEvent(event).params
   const eventTime = new Date(event.blockTimestamp)
   const proposalDetails = await parseProposalDetails(event, store, runtimeProposalDetails)
-
-  if (!MemoryCache.lastCreatedProposalThreadId) {
-    throw new Error('Unexpected state: MemoryCache.lastCreatedProposalThreadId is empty')
-  }
 
   const proposal = new Proposal({
     id: proposalId.toString(),
@@ -384,7 +382,7 @@ export async function proposalsCodex_ProposalCreated({ store, event }: EventCont
 
   // Thread is always created along with the proposal
   const proposalThread = new ProposalDiscussionThread({
-    id: MemoryCache.lastCreatedProposalThreadId.toString(),
+    id: proposalThreadId.toString(),
     createdAt: eventTime,
     updatedAt: eventTime,
     mode: new ProposalDiscussionThreadModeOpen(),

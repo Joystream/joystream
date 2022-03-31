@@ -424,7 +424,7 @@ impl Default for ExtBuilder {
             min_cashout_allowed: BalanceOf::<Test>::from(1u32),
             min_auction_duration: 5,
             max_auction_duration: 20,
-            min_auction_extension_period: 4,
+            min_auction_extension_period: 3,
             max_auction_extension_period: 30,
             min_bid_lock_duration: 2,
             max_bid_lock_duration: 10,
@@ -510,6 +510,7 @@ pub fn get_open_auction_params() -> OpenAuctionParams<Test> {
         buy_now_price: None,
         whitelist: BTreeSet::new(),
         bid_lock_duration: Content::min_bid_lock_duration(),
+        starts_at: None,
     }
 }
 

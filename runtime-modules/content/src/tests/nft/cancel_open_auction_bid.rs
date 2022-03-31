@@ -25,6 +25,7 @@ fn setup_open_auction_scenario() {
     let auction_params = OpenAuctionParams::<Test> {
         starting_price: Content::min_starting_price(),
         buy_now_price: None,
+        starts_at: None,
         bid_lock_duration: Content::min_bid_lock_duration(),
         whitelist: BTreeSet::new(),
     };

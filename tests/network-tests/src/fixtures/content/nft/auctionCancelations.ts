@@ -37,10 +37,13 @@ export class AuctionCancelationsFixture extends BaseQueryNodeFixture {
     await this.api.issueNft(this.author.keyringPair.address, this.author.memberId.toNumber(), this.videoId)
 
     this.debug('Start NFT auction')
-    const { auctionParams, startingPrice, minimalBidStep, bidLockDuration } = await this.api.createAuctionParameters(
-      'Open'
-    )
-    await this.api.startNftAuction(
+    const {
+      auctionParams,
+      startingPrice,
+      minimalBidStep,
+      bidLockDuration,
+    } = await this.api.createOpenAuctionParameters()
+    await this.api.startOpenAuction(
       this.author.keyringPair.address,
       this.author.memberId.toNumber(),
       this.videoId,
@@ -54,7 +57,8 @@ export class AuctionCancelationsFixture extends BaseQueryNodeFixture {
       [this.participant],
       startingPrice,
       minimalBidStep,
-      this.videoId
+      this.videoId,
+      'Open'
     )
     await new FixtureRunner(placeBidsFixture).run()
 
@@ -67,7 +71,7 @@ export class AuctionCancelationsFixture extends BaseQueryNodeFixture {
     await this.api.cancelOpenAuctionBid(this.participant.account, this.participant.memberId.toNumber(), this.videoId)
 
     this.debug('Cancel auction')
-    await this.api.cancelNftAuction(this.author.account, this.author.memberId.toNumber(), this.videoId)
+    await this.api.cancelOpenAuction(this.author.account, this.author.memberId.toNumber(), this.videoId)
 
     this.debug(`Check NFT ownership haven't change`)
     await assertNftOwner(this.query, this.videoId, this.author)

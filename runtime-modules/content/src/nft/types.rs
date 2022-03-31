@@ -136,25 +136,29 @@ pub struct EnglishAuctionRecord<BlockNumber, Balance, MemberId: Ord> {
     pub buy_now_price: Option<Balance>,
     pub whitelist: BTreeSet<MemberId>,
     pub end: BlockNumber,
-    pub auction_duration: BlockNumber,
+    pub start: BlockNumber, // starting block
     pub extension_period: BlockNumber,
     pub min_bid_step: Balance,
     pub top_bid: Option<EnglishAuctionBid<Balance, MemberId>>,
 }
 
 impl<
-        BlockNumber: Copy + PartialOrd + Saturating,
+        BlockNumber: Copy + PartialOrd + Saturating + Zero,
         Balance: Copy + PartialOrd + Saturating,
         MemberId: Ord + Copy,
     > EnglishAuctionRecord<BlockNumber, Balance, MemberId>
 {
-    pub fn new(params: EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>) -> Self {
+    pub fn new(
+        params: EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId>,
+        current_block: BlockNumber,
+    ) -> Self {
+        let start = params.starts_at.unwrap_or(current_block);
         Self {
             starting_price: params.starting_price,
             buy_now_price: params.buy_now_price,
             whitelist: params.whitelist.clone(),
-            end: params.end,
-            auction_duration: params.auction_duration,
+            start,
+            end: start.saturating_add(params.duration),
             extension_period: params.extension_period,
             min_bid_step: params.min_bid_step,
             top_bid: None,
@@ -214,6 +218,11 @@ impl<
         }
     }
 
+    pub(crate) fn ensure_auction_started<T: Trait>(&self, now: BlockNumber) -> DispatchResult {
+        ensure!(now >= self.start, Error::<T>::AuctionDidNotStart);
+        Ok(())
+    }
+
     pub(crate) fn ensure_auction_is_not_expired<T: Trait>(
         &self,
         now: BlockNumber,
@@ -233,18 +242,16 @@ impl<
     }
 
     pub(crate) fn with_bid(self, amount: Balance, bidder_id: MemberId, block: BlockNumber) -> Self {
-        let (auction_duration, end) = if self.end.saturating_sub(self.extension_period) < block {
-            (
-                self.auction_duration.saturating_add(self.extension_period),
-                self.end.saturating_add(self.extension_period),
-            )
+        // sniping extension logic:
+        // If bid block is in [end - extension_period, end) then new end += extension_period
+        let end = if self.end.saturating_sub(self.extension_period) <= block {
+            self.end.saturating_add(self.extension_period)
         } else {
-            (self.auction_duration, self.end)
+            self.end
         };
 
         Self {
             end,
-            auction_duration,
             top_bid: Some(EnglishAuctionBid { amount, bidder_id }),
             ..self
         }
@@ -260,6 +267,7 @@ pub struct OpenAuctionRecord<BlockNumber, AuctionId, Balance, MemberId: Ord> {
     pub whitelist: BTreeSet<MemberId>,
     pub bid_lock_duration: BlockNumber,
     pub auction_id: AuctionId,
+    pub start: BlockNumber, // starting block
 }
 
 impl<
@@ -314,14 +322,22 @@ impl<
     pub fn new(
         params: OpenAuctionParamsRecord<BlockNumber, Balance, MemberId>,
         auction_nonce: AuctionId,
+        current_block: BlockNumber,
     ) -> Self {
+        let start = params.starts_at.unwrap_or(current_block);
         Self {
             starting_price: params.starting_price,
             buy_now_price: params.buy_now_price,
             whitelist: params.whitelist.clone(),
             bid_lock_duration: params.bid_lock_duration,
+            start,
             auction_id: auction_nonce,
         }
+    }
+
+    pub(crate) fn ensure_auction_started<T: Trait>(&self, now: BlockNumber) -> DispatchResult {
+        ensure!(now >= self.start, Error::<T>::AuctionDidNotStart);
+        Ok(())
     }
 
     pub(crate) fn ensure_whitelisted_participant<T: Trait>(
@@ -419,15 +435,16 @@ pub struct EnglishAuctionBid<Balance, MemberId> {
     pub bidder_id: MemberId,
 }
 
-/// English Auction Init Params
+/// English Auction Init Params:
+/// auction is started IMMEDIATELY after it is created with extr: `start_open_auction`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId: Ord> {
     pub starting_price: Balance,
     pub buy_now_price: Option<Balance>,
     pub whitelist: BTreeSet<MemberId>,
-    pub end: BlockNumber,
-    pub auction_duration: BlockNumber,
+    pub starts_at: Option<BlockNumber>, // auction starting block
+    pub duration: BlockNumber,
     pub extension_period: BlockNumber,
     pub min_bid_step: Balance,
 }
@@ -438,6 +455,7 @@ pub struct EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId: Ord> {
 pub struct OpenAuctionParamsRecord<BlockNumber, Balance, MemberId: Ord> {
     pub starting_price: Balance,
     pub buy_now_price: Option<Balance>,
+    pub starts_at: Option<BlockNumber>, // auction starting block
     pub whitelist: BTreeSet<MemberId>,
     pub bid_lock_duration: BlockNumber,
 }

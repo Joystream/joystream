@@ -220,6 +220,7 @@ fn issue_nft_fails_with_invalid_open_auction_parameters() {
             starting_price: Content::min_starting_price() - 1,
             buy_now_price: None,
             bid_lock_duration: Content::min_bid_lock_duration(),
+            starts_at: None,
             whitelist: BTreeSet::new(),
         };
 

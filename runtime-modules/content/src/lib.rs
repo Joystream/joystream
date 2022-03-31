@@ -1388,7 +1388,8 @@ decl_module! {
 
             // Create new auction
             let new_nonce = nft.open_auctions_nonce.saturating_add(One::one());
-            let auction = OpenAuction::<T>::new(auction_params.clone(), new_nonce);
+            let current_block = <frame_system::Module<T>>::block_number();
+            let auction = OpenAuction::<T>::new(auction_params.clone(), new_nonce, current_block);
 
             // Update the video
             let new_nft = nft
@@ -1432,7 +1433,8 @@ decl_module! {
             //
 
             // Create new auction
-            let auction = EnglishAuction::<T>::new(auction_params.clone());
+            let current_block = <frame_system::Module<T>>::block_number();
+            let auction = EnglishAuction::<T>::new(auction_params.clone(), current_block);
 
             // Update the video
             VideoById::<T>::mutate(
@@ -1630,8 +1632,11 @@ decl_module! {
             // check whitelisted participant
             open_auction.ensure_whitelisted_participant::<T>(participant_id)?;
 
-            // ensure bid can be made
+            // ensure auction started
             let current_block = <frame_system::Module<T>>::block_number();
+            open_auction.ensure_auction_started::<T>(current_block)?;
+
+            // ensure bid can be made
             let maybe_old_bid = Self::ensure_open_bid_exists(video_id, participant_id).ok();
             open_auction.ensure_can_make_bid::<T>(current_block, bid_amount, &maybe_old_bid)?;
 
@@ -1660,7 +1665,7 @@ decl_module! {
 
                     (
                         updated_nft,
-                        RawEvent::BidMadeCompletingAuction(participant_id, video_id),
+                        RawEvent::BidMadeCompletingAuction(participant_id, video_id, None),
                     )
                 },
                 _ =>  {
@@ -1680,7 +1685,7 @@ decl_module! {
                         open_auction.make_bid(bid_amount, current_block),
                     );
 
-                    (nft,RawEvent::AuctionBidMade(participant_id, video_id, bid_amount))
+                    (nft,RawEvent::AuctionBidMade(participant_id, video_id, bid_amount, None))
                 }
             };
 
@@ -1718,11 +1723,16 @@ decl_module! {
             let current_block = <frame_system::Module<T>>::block_number();
             eng_auction.ensure_auction_is_not_expired::<T>(current_block)?;
 
+            // ensure auctio started
+            eng_auction.ensure_auction_started::<T>(current_block)?;
+
             // ensure bidder is whitelisted
             eng_auction.ensure_whitelisted_participant::<T>(participant_id)?;
 
             // ensure constraints on bid amount are satisfied
             eng_auction.ensure_constraints_on_bid_amount::<T>(bid_amount)?;
+
+            let prev_top_bidder = eng_auction.top_bid.as_ref().map(|b| b.bidder_id);
 
             //
             // == MUTATION_SAFE ==
@@ -1741,7 +1751,7 @@ decl_module! {
 
                     (
                         updated_nft,
-                        RawEvent::BidMadeCompletingAuction(participant_id, video_id),
+                        RawEvent::BidMadeCompletingAuction(participant_id, video_id, prev_top_bidder),
                     )
                 },
                 _ => {
@@ -1764,7 +1774,7 @@ decl_module! {
                     (
                         nft.with_transactional_status(
                             TransactionalStatus::<T>::EnglishAuction(updated_auction)),
-                        RawEvent::AuctionBidMade(participant_id, video_id, bid_amount)
+                        RawEvent::AuctionBidMade(participant_id, video_id, bid_amount, prev_top_bidder)
                     )
                 }
             };
@@ -2268,16 +2278,18 @@ impl<T: Trait> Module<T> {
             }
             InitTransactionalStatus::<T>::EnglishAuction(ref params) => {
                 Self::validate_english_auction_params(params)?;
+                let current_block = <frame_system::Module<T>>::block_number();
                 Ok(TransactionalStatus::<T>::EnglishAuction(
-                    EnglishAuction::<T>::new(params.clone()),
+                    EnglishAuction::<T>::new(params.clone(), current_block),
                 ))
             }
             InitTransactionalStatus::<T>::OpenAuction(ref params) => {
                 Self::validate_open_auction_params(params)?;
+                let current_block = <frame_system::Module<T>>::block_number();
                 let new_nonce = Self::ensure_nft_exists(video_id)
                     .map(|nft| nft.open_auctions_nonce.saturating_add(One::one()))?;
                 Ok(TransactionalStatus::<T>::OpenAuction(
-                    OpenAuction::<T>::new(params.clone(), new_nonce),
+                    OpenAuction::<T>::new(params.clone(), new_nonce, current_block),
                 ))
             }
         }
@@ -2524,11 +2536,11 @@ decl_event!(
         EnglishAuctionStarted(ContentActor, VideoId, EnglishAuctionParams),
         OpenAuctionStarted(ContentActor, VideoId, OpenAuctionParams, OpenAuctionId),
         NftIssued(ContentActor, VideoId, NftIssuanceParameters),
-        AuctionBidMade(MemberId, VideoId, CurrencyAmount),
+        AuctionBidMade(MemberId, VideoId, CurrencyAmount, Option<MemberId>),
         AuctionBidCanceled(MemberId, VideoId),
         AuctionCanceled(ContentActor, VideoId),
         EnglishAuctionCompleted(MemberId, VideoId),
-        BidMadeCompletingAuction(MemberId, VideoId),
+        BidMadeCompletingAuction(MemberId, VideoId, Option<MemberId>),
         OpenAuctionBidAccepted(ContentActor, VideoId, CurrencyAmount),
         OfferStarted(VideoId, ContentActor, MemberId, Option<CurrencyAmount>),
         OfferAccepted(VideoId),

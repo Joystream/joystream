@@ -18,10 +18,20 @@ use sp_std::vec::Vec;
 /// `SLOT_DURATION` instead (like the timestamp module for calculating the
 /// minimum period).
 /// <https://research.web3.foundation/en/latest/polkadot/BABE/Babe/#6-practical-results>
-pub const MILLISECS_PER_BLOCK: Moment = 6000;
-pub const SECS_PER_BLOCK: Moment = MILLISECS_PER_BLOCK / 1000;
 
+// Normal 6s block interval
+#[cfg(not(feature = "testing_runtime"))]
+pub const MILLISECS_PER_BLOCK: Moment = 6000;
+#[cfg(not(feature = "testing_runtime"))]
 pub const SLOT_DURATION: Moment = 6000;
+
+// 1s block interval for integration testing
+#[cfg(feature = "testing_runtime")]
+pub const MILLISECS_PER_BLOCK: Moment = 1000;
+#[cfg(feature = "testing_runtime")]
+pub const SLOT_DURATION: Moment = 1000;
+
+pub const SECS_PER_BLOCK: Moment = MILLISECS_PER_BLOCK / 1000;
 pub const BONDING_DURATION: u32 = 24 * 7;
 
 pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = 10 * MINUTES;
@@ -138,7 +148,7 @@ lazy_static! {
 
 // Change it when changing the currency constants!
 parameter_types! {
-    pub const ExistentialDeposit: u128 = 10;
+    pub const ExistentialDeposit: u128 = 1;
 }
 
 pub mod currency {
