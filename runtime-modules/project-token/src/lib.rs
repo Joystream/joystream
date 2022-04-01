@@ -245,18 +245,20 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
     /// - token with specified characteristics is added to storage state
     /// - `NextTokenId` increased by 1
     fn issue_token(issuance_parameters: TokenIssuanceParametersOf<T>) -> DispatchResult {
-        let sym_hash = <T as frame_system::Trait>::Hashing::hash_of(&issuance_parameters.symbol);
-        let token_data = issuance_parameters.try_build::<T>()?;
+        // TODO: consider adding symbol as separate parameter
+        let sym = issuance_parameters.symbol;
         ensure!(
-            !crate::SymbolsUsed::<T>::contains_key(sym_hash),
+            !crate::SymbolsUsed::<T>::contains_key(&sym),
             crate::Error::<T>::TokenSymbolAlreadyInUse,
         );
+
+        let token_data = issuance_parameters.try_build::<T>()?;
 
         // == MUTATION SAFE ==
 
         let token_id = Self::next_token_id();
         TokenInfoById::<T>::insert(token_id, token_data);
-        SymbolsUsed::<T>::insert(sym_hash, ());
+        SymbolsUsed::<T>::insert(sym, ());
         NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
 
         Ok(())

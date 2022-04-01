@@ -9,9 +9,6 @@ use sp_runtime::{traits::Hash, Percent};
 // crate imports
 use crate::traits::TransferLocationTrait;
 
-// TODO: find a suitable symbol representation
-pub type Symbol = ();
-
 pub(crate) enum DecreaseOp<Balance> {
     /// reduce amount by
     Reduce(Balance),
@@ -120,7 +117,7 @@ pub struct TokenIssuanceParameters<Balance, Hash> {
     pub(crate) existential_deposit: Balance,
 
     /// Token Symbol
-    pub(crate) symbol: Symbol,
+    pub(crate) symbol: Hash,
 
     /// Initial transfer policy:
     pub(crate) transfer_policy: TransferPolicy<Hash>,
