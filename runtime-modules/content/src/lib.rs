@@ -1102,25 +1102,6 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn set_featured_videos(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            list: Vec<T::VideoId>
-        ) {
-            // can only be set by lead
-            ensure_actor_authorized_to_set_featured_videos::<T>(
-                origin,
-                &actor,
-            )?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            Self::deposit_event(RawEvent::FeaturedVideosSet(actor, list));
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_video_category(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2907,9 +2888,6 @@ decl_event!(
             bool,
             Vec<u8>, /* rationale */
         ),
-
-        // Featured Videos
-        FeaturedVideosSet(ContentActor, Vec<VideoId>),
 
         // VideoPosts & Replies
         VideoPostCreated(VideoPost, VideoPostId),
