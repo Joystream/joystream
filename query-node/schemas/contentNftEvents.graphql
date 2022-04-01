@@ -103,10 +103,6 @@ type NftIssuedEvent implements Event @entity {
   "NFT's metadata."
   metadata: String!
 
-  # TODO: remove this field ???
-  # "Member NFT was originally issued to."
-  # newOwner: Membership
-
   "Member owning the Nft (if any)."
   ownerMember: Membership
 

@@ -68,12 +68,16 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
       auctionDuration,
       extensionPeriod,
     } = await this.api.createEnglishAuctionParameters()
+
     const auctionStartedResult = await this.api.startEnglishAuction(
       this.author.keyringPair.address,
       this.author.memberId.toNumber(),
       this.videoId,
       auctionParams
     )
+    // remember auction start block
+    const startBlockNumber = await this.api.getBestBlock()
+
     const auctionStartedRuntimeEvent = await this.api.getEventDetails(
       auctionStartedResult,
       'content',
