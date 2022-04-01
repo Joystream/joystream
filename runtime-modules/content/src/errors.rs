@@ -289,5 +289,8 @@ decl_error! {
         /// Cannot accept the channel transfer: provided commitment parameters doesn't match with
         /// channel pending transfer parameters.
         InvalidChannelTransferCommitmentParams,
+
+        /// Cannot transfer the channel: channel owner has insufficient balance (budget for WGs)
+        InsufficientBalanceForTransfer,
     }
 }

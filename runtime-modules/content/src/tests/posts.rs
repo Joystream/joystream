@@ -478,7 +478,7 @@ pub fn unsuccessful_comment_update_with_pending_active_transfers() {
         create_default_member_owned_channel_with_video_and_comment();
 
         UpdateChannelTransferStatusFixture::default()
-            .with_transfer_status_by_member_id(DEFAULT_MEMBER_ID)
+            .with_new_member_channel_owner(DEFAULT_MEMBER_ID)
             .call_and_assert(Ok(()));
 
         EditPostTextFixture::default()
@@ -854,7 +854,7 @@ pub fn unsuccessful_post_deletion_with_active_channel_transfer() {
         create_default_member_owned_channel_with_video_and_comment();
 
         UpdateChannelTransferStatusFixture::default()
-            .with_transfer_status_by_member_id(DEFAULT_MEMBER_ID)
+            .with_new_member_channel_owner(DEFAULT_MEMBER_ID)
             .call_and_assert(Ok(()));
 
         DeletePostFixture::default()
@@ -1164,7 +1164,7 @@ pub fn successful_moderators_update_by_member_owner() {
         create_default_member_owned_channel();
 
         UpdateChannelTransferStatusFixture::default()
-            .with_transfer_status_by_member_id(DEFAULT_MEMBER_ID)
+            .with_new_member_channel_owner(DEFAULT_MEMBER_ID)
             .call_and_assert(Ok(()));
 
         UpdateModeratorSetFixture::default()

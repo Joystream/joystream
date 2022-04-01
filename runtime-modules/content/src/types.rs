@@ -75,7 +75,7 @@ pub struct ChannelCategoryUpdateParameters {
 pub struct ChannelRecord<
     MemberId: Ord + PartialEq,
     CuratorGroupId: PartialEq,
-    Balance: PartialEq,
+    Balance: PartialEq + Zero,
     ChannelPrivilegeLevel,
     DataObjectId: Ord,
 > {
@@ -105,16 +105,16 @@ pub struct ChannelRecord<
 pub enum ChannelTransferStatus<
     MemberId: Ord + PartialEq,
     CuratorGroupId: PartialEq,
-    Balance: PartialEq,
+    Balance: PartialEq + Zero,
 > {
-    /// Default transfer status: no pending tranfers.
+    /// Default transfer status: no pending transfers.
     NoActiveTransfer,
 
     /// There is ongoing transfer with parameters.
     PendingTransfer(PendingTransfer<MemberId, CuratorGroupId, Balance>),
 }
 
-impl<MemberId: Ord + PartialEq, CuratorGroupId: PartialEq, Balance: PartialEq> Default
+impl<MemberId: Ord + PartialEq, CuratorGroupId: PartialEq, Balance: PartialEq + Zero> Default
     for ChannelTransferStatus<MemberId, CuratorGroupId, Balance>
 {
     fn default() -> Self {
@@ -125,7 +125,7 @@ impl<MemberId: Ord + PartialEq, CuratorGroupId: PartialEq, Balance: PartialEq> D
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 /// Contains parameters for the pending transfer.
-pub struct PendingTransfer<MemberId: Ord, CuratorGroupId, Balance> {
+pub struct PendingTransfer<MemberId: Ord, CuratorGroupId, Balance: Zero> {
     /// New channel owner.
     pub new_owner: ChannelOwner<MemberId, CuratorGroupId>,
     /// Transfer parameters.
@@ -135,17 +135,24 @@ pub struct PendingTransfer<MemberId: Ord, CuratorGroupId, Balance> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 /// Contains parameters for the pending transfer.
-pub struct TransferParameters<MemberId: Ord, Balance> {
+pub struct TransferParameters<MemberId: Ord, Balance: Zero> {
     /// New set of the channel's collaborators.
     pub new_collaborators: BTreeSet<MemberId>,
     /// Transfer price: can be 0, which means free.
     pub price: Balance,
 }
 
+impl<MemberId: Ord, Balance: Zero> TransferParameters<MemberId, Balance> {
+    // Defines whether the transfer is free.
+    pub(crate) fn is_free_of_charge(&self) -> bool {
+        self.price.is_zero()
+    }
+}
+
 impl<
         MemberId: Ord + PartialEq,
         CuratorGroupId: PartialEq,
-        Balance: PartialEq,
+        Balance: PartialEq + Zero,
         ChannelPrivilegeLevel,
         DataObjectId: Ord,
     > ChannelRecord<MemberId, CuratorGroupId, Balance, ChannelPrivilegeLevel, DataObjectId>
