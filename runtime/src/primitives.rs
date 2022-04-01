@@ -55,9 +55,6 @@ pub type VideoId = u64;
 /// Content Directory Open Auction identifier.
 pub type OpenAuctionId = u64;
 
-/// Content Directory Video Category identifier.
-pub type VideoCategoryId = u64;
-
 /// Curator group identifier.
 pub type CuratorGroupId = u64;
 
