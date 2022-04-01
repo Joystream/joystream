@@ -96,11 +96,14 @@ pub trait WeightInfo {
     fn unlock_work_entrant_stake() -> Weight;
     fn withdraw_state_bloat_bond_amount_by_council() -> Weight;
     fn withdraw_state_bloat_bond_amount_by_member() -> Weight;
+    fn withdraw_oracle_reward_by_oracle_council() -> Weight;
+    fn withdraw_oracle_reward_by_oracle_member() -> Weight;
 }
 
 type WeightInfoBounty<T> = <T as Trait>::WeightInfo;
 
 pub(crate) use actors::BountyActorManager;
+// use council::Balance;
 pub(crate) use stages::BountyStageCalculator;
 
 use codec::{Decode, Encode};
@@ -291,6 +294,9 @@ pub enum BountyStage {
     /// Bounty funding period expired with no contributions.
     FundingExpired,
 
+    /// Bounty cancelled in funding period expired with no contributions.
+    Cancelled,
+
     /// A bounty has gathered necessary funds and ready to accept work submissions.
     WorkSubmission,
 
@@ -323,6 +329,9 @@ pub enum BountyMilestone<BlockNumber> {
         ///  A bounty funding was successful on the provided block.
         max_funding_reached_at: BlockNumber,
     },
+
+    /// Bounty cancelled in funding period expired with no contributions.
+    CancelledBounty,
 
     /// Oracle ended the work submission stage.
     WorkSubmitted,
@@ -372,6 +381,9 @@ pub struct BountyRecord<Balance, BlockNumber, MemberId: Ord> {
 
     /// Current active work entry counter.
     pub active_work_entry_count: u32,
+
+    ///This flag is set to true, if oracle called withdraw_oracle_reward.
+    pub oracle_withrew_reward: bool,
 }
 
 impl<Balance: PartialOrd + Clone, BlockNumber: Clone, MemberId: Ord>
@@ -610,7 +622,8 @@ decl_event! {
         /// Params:
         /// - bounty ID
         /// - bounty creator
-        BountyOracleRewardWithdrawal(BountyId, BountyActor<MemberId>),
+        /// - Oracle Reward
+        BountyOracleRewardWithdrawal(BountyId, BountyActor<MemberId>, Balance),
 
         /// A bounty was removed.
         /// Params:
@@ -692,6 +705,9 @@ decl_error! {
         /// Unexpected bounty stage for an operation: FundingExpired.
         InvalidStageUnexpectedFundingExpired,
 
+        /// Unexpected bounty stage for an operation: Cancelled.
+        InvalidStageUnexpectedCancelled,
+
         /// Unexpected bounty stage for an operation: WorkSubmission.
         InvalidStageUnexpectedWorkSubmission,
 
@@ -759,6 +775,12 @@ decl_error! {
 
         ///Worker tried to access a work entry that doesn't belong to him
         WorkEntryDoesntBelongToWorker,
+
+        ///Cannot withdraw a zero amount reward
+        OracleRewardIsZero,
+
+        ///Oracle have already been withdrawn
+        OracleRewardAlreadyWithdrawn
     }
 }
 
@@ -824,6 +846,7 @@ decl_module! {
                 creation_params: params.clone(),
                 milestone: created_bounty_milestone,
                 active_work_entry_count: 0,
+                oracle_withrew_reward: false
             };
 
             <Bounties<T>>::insert(bounty_id, bounty);
@@ -861,10 +884,16 @@ decl_module! {
             //
 
             Self::return_bounty_cherry_to_creator(bounty_id, &bounty, &bounty_creator_manager);
-            Self::return_bounty_oracle_reward_to_creator(bounty_id, &bounty, &bounty_creator_manager);
-            Self::remove_bounty(&bounty_id);
-            Self::deposit_event(RawEvent::BountyCanceled(bounty_id, bounty.creation_params.creator));
+            let creator = bounty.creation_params.creator.clone();
+            Self::deposit_event(RawEvent::BountyCanceled(bounty_id, creator));
 
+            <Bounties<T>>::mutate(bounty_id, |bounty| {
+                bounty.milestone = BountyMilestone::CancelledBounty;
+            });
+
+            if Self::can_remove_bounty(&bounty_id, &bounty) {
+                Self::remove_bounty(&bounty_id)
+            }
         }
 
         /// Provides bounty funding.
@@ -962,7 +991,7 @@ decl_module! {
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
 
             ensure!(matches!(current_bounty_stage,
-                BountyStage::Funding { has_contributions: false }|
+                BountyStage::Funding { .. }|
                 BountyStage::WorkSubmission|
                 BountyStage::Judgment),
                 Self::unexpected_bounty_stage_error(current_bounty_stage));
@@ -971,7 +1000,6 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::return_bounty_oracle_reward_to_creator(bounty_id, &bounty, &bounty_creator_manager);
             Self::deposit_event(
                 RawEvent::BountyTerminatedByCouncil(
                     bounty_id,
@@ -980,14 +1008,11 @@ decl_module! {
 
             if let BountyStage::Funding { has_contributions: false } = current_bounty_stage{
                 Self::return_bounty_cherry_to_creator(bounty_id, &bounty, &bounty_creator_manager);
-                Self::remove_bounty(&bounty_id);
             }
-            else{
-                // Update bounty record.
-                <Bounties<T>>::mutate(bounty_id, |bounty| {
-                    bounty.milestone = BountyMilestone::OraclePerpetualWorkingInterruption
-                });
-            }
+            // Update bounty record.
+            <Bounties<T>>::mutate(bounty_id, |bounty| {
+                bounty.milestone = BountyMilestone::OraclePerpetualWorkingInterruption
+            });
         }
 
         ///Council switches the oracle to a new one
@@ -1122,8 +1147,6 @@ decl_module! {
 
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
-            let bounty_creator_manager = Self::ensure_creator_actor_manager(&bounty)?;
-
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
             ensure!(
                 current_bounty_stage == BountyStage::FailedBountyWithdrawal,
@@ -1145,14 +1168,7 @@ decl_module! {
 
             Self::deposit_event(RawEvent::BountyFundingWithdrawal(bounty_id, funder));
 
-            if Self::has_no_contributions_or_work_entries(&bounty_id) {
-                //A bounty can reach the failed state in a number of ways.
-                //If one of these paths was because the funding period expired,
-                //then we must return the oracle reward to the creator.
-                //The oracle reward, in the other paths, has already been taken into account.
-                if Self::is_funding_expired(&bounty){
-                    Self::return_bounty_oracle_reward_to_creator(bounty_id, &bounty, &bounty_creator_manager);
-                }
+            if Self::can_remove_bounty(&bounty_id, &bounty) {
                 Self::remove_bounty(&bounty_id);
             }
         }
@@ -1280,30 +1296,22 @@ decl_module! {
             origin,
             bounty_id: T::BountyId,
         ) {
-
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
             let current_oracle = bounty.creation_params.oracle.clone();
-            let oracle_reward = bounty.creation_params.oracle_reward;
+
             //Checks if the function caller (origin) is current oracle
             BountyActorManager::<T>::ensure_bounty_actor_manager(
                 origin,
                 current_oracle.clone(),
             )?;
 
-            let bounty_creator_manager = Self::ensure_creator_actor_manager(&bounty)?;
-
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
 
             Self::ensure_bounty_stage(current_bounty_stage, BountyStage::WorkSubmission)?;
+
             //
             // == MUTATION SAFE ==
             //
-            if bounty.active_work_entry_count == 0{
-                let account_id = Self::bounty_account_id(bounty_id);
-                ensure!(Self::check_balance_for_account(oracle_reward, &account_id),
-                Error::<T>::NoBountyBalanceToOracleRewardWithdrawal);
-                Self::return_bounty_oracle_reward_to_creator(bounty_id, &bounty, &bounty_creator_manager);
-            }
 
             <Bounties<T>>::mutate(bounty_id, |bounty| {
                 bounty.milestone = BountyMilestone::WorkSubmitted;
@@ -1329,7 +1337,7 @@ decl_module! {
             judgment: OracleJudgment<T::EntryId, BalanceOf<T>>
         ) {
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
-            let bounty_oracle_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
+            BountyActorManager::<T>::ensure_bounty_actor_manager(
                 origin,
                 bounty.creation_params.oracle.clone(),
             )?;
@@ -1354,7 +1362,6 @@ decl_module! {
                 Self::return_bounty_cherry_to_creator(bounty_id, &bounty, &bounty_creator_manager);
             }
 
-            Self::withdraw_oracle_reward_to_oracle(bounty_id, &bounty, &bounty_oracle_manager);
             // Update bounty record.
             <Bounties<T>>::mutate(bounty_id, |bounty| {
                 bounty.milestone = BountyMilestone::JudgmentSubmitted{
@@ -1455,7 +1462,7 @@ decl_module! {
             );
             Self::remove_work_entry(&bounty_id, &entry_id);
 
-            if Self::has_no_contributions_or_work_entries(&bounty_id) {
+            if Self::can_remove_bounty(&bounty_id, &bounty) {
                 Self::remove_bounty(&bounty_id);
             }
         }
@@ -1506,7 +1513,63 @@ decl_module! {
                     funder)
             );
 
-            if Self::has_no_contributions_or_work_entries(&bounty_id) {
+            if Self::can_remove_bounty(&bounty_id, &bounty) {
+                Self::remove_bounty(&bounty_id);
+            }
+        }
+
+        ///Withraws the oracle reward to oracle
+        ///If bounty is successfully, Failed or Cancelled oracle must call this
+        ///extrinsic to withdraw the oracle reward,
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoBounty::<T>::withdraw_oracle_reward_by_oracle_council()
+        .max(WeightInfoBounty::<T>::withdraw_oracle_reward_by_oracle_member())]
+        pub fn withdraw_oracle_reward(
+            origin,
+            bounty_id: T::BountyId,
+        ) {
+            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
+
+            let bounty_oracle_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
+                origin,
+                bounty.creation_params.oracle.clone(),
+            )?;
+            let oracle_reward = bounty.creation_params.oracle_reward;
+            let current_bounty_stage = Self::get_bounty_stage(&bounty);
+
+            ensure!(
+                matches!(current_bounty_stage,
+                    BountyStage::Cancelled|
+                    BountyStage::FailedBountyWithdrawal |
+                    BountyStage::SuccessfulBountyWithdrawal ),
+                Self::unexpected_bounty_stage_error(current_bounty_stage)
+            );
+            ensure!(!bounty.oracle_withrew_reward, Error::<T>::OracleRewardAlreadyWithdrawn);
+            ensure!(!oracle_reward.is_zero(), Error::<T>::OracleRewardIsZero);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            bounty_oracle_manager.transfer_funds_from_bounty_account(bounty_id, oracle_reward);
+
+            <Bounties<T>>::mutate(bounty_id, |bounty| {
+                bounty.oracle_withrew_reward = true;
+            });
+
+            Self::deposit_event(RawEvent::BountyOracleRewardWithdrawal(
+                bounty_id,
+                bounty.creation_params.oracle,
+                oracle_reward
+            ));
+
+            if Self::has_no_contributions_and_no_work_entries(&bounty_id) {
                 Self::remove_bounty(&bounty_id);
             }
         }
@@ -1677,7 +1740,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Verifies that the bounty has no pending fund withdrawals left.
-    fn has_no_contributions_or_work_entries(bounty_id: &T::BountyId) -> bool {
+    fn has_no_contributions_and_no_work_entries(bounty_id: &T::BountyId) -> bool {
         let has_no_contributions = !Self::contributions_exist(bounty_id);
         let has_no_work_entries = Self::bounties(bounty_id).active_work_entry_count == 0;
         // All work entrants withdrew their stakes and all funders withdrew cherry and
@@ -1692,6 +1755,12 @@ impl<T: Trait> Module<T> {
             .peekable()
             .peek()
             .is_some()
+    }
+    // Verifies that bounty has some contribution to withdraw.
+    // Should be O(1) because of the single inner call of the next() function of the iterator.
+    pub(crate) fn can_remove_bounty(bounty_id: &T::BountyId, bounty: &Bounty<T>) -> bool {
+        (bounty.creation_params.oracle_reward.is_zero() || bounty.oracle_withrew_reward)
+            && Self::has_no_contributions_and_no_work_entries(bounty_id)
     }
 
     // The account ID of a bounty account. Tests require AccountID type to be at least u128.
@@ -1726,21 +1795,6 @@ impl<T: Trait> Module<T> {
             // No changes.
             previous_milestone
         }
-    }
-
-    fn is_funding_expired(bounty: &Bounty<T>) -> bool {
-        // Bounty was created. There can be some contributions. Funding period is not over.
-        if let BountyMilestone::Created { created_at, .. } = bounty.milestone.clone() {
-            return match bounty.creation_params.funding_type {
-                // Never expires
-                FundingType::Perpetual { .. } => false,
-                FundingType::Limited { funding_period, .. } => {
-                    created_at + funding_period < Self::current_block()
-                }
-            };
-        }
-
-        false
     }
 
     fn get_adjusted_contribution(
@@ -1938,6 +1992,7 @@ impl<T: Trait> Module<T> {
         match unexpected_stage {
             BountyStage::Funding { .. } => Error::<T>::InvalidStageUnexpectedFunding.into(),
             BountyStage::FundingExpired => Error::<T>::InvalidStageUnexpectedFundingExpired.into(),
+            BountyStage::Cancelled => Error::<T>::InvalidStageUnexpectedCancelled.into(),
             BountyStage::WorkSubmission => Error::<T>::InvalidStageUnexpectedWorkSubmission.into(),
             BountyStage::Judgment => Error::<T>::InvalidStageUnexpectedJudgment.into(),
             BountyStage::SuccessfulBountyWithdrawal => {
@@ -1966,36 +2021,6 @@ impl<T: Trait> Module<T> {
         Self::deposit_event(RawEvent::BountyCreatorCherryWithdrawal(
             bounty_id,
             bounty.creation_params.creator.clone(),
-        ));
-    }
-
-    // Transfers oracle cherry back to the bounty creator and fires an event.
-    fn return_bounty_oracle_reward_to_creator(
-        bounty_id: T::BountyId,
-        bounty: &Bounty<T>,
-        bounty_creator_manager: &BountyActorManager<T>,
-    ) {
-        bounty_creator_manager
-            .transfer_funds_from_bounty_account(bounty_id, bounty.creation_params.oracle_reward);
-
-        Self::deposit_event(RawEvent::BountyCreatorOracleRewardWithdrawal(
-            bounty_id,
-            bounty.creation_params.creator.clone(),
-        ));
-    }
-
-    // Transfers oracle cherry to oracle and fires an event.
-    fn withdraw_oracle_reward_to_oracle(
-        bounty_id: T::BountyId,
-        bounty: &Bounty<T>,
-        bounty_oracle_manager: &BountyActorManager<T>,
-    ) {
-        bounty_oracle_manager
-            .transfer_funds_from_bounty_account(bounty_id, bounty.creation_params.oracle_reward);
-
-        Self::deposit_event(RawEvent::BountyOracleRewardWithdrawal(
-            bounty_id,
-            bounty.creation_params.oracle.clone(),
         ));
     }
 

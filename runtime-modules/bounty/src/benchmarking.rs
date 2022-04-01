@@ -305,7 +305,7 @@ benchmarks! {
         assert!(Bounties::<T>::contains_key(bounty_id));
     }: cancel_bounty(RawOrigin::Root, bounty_id)
     verify {
-        assert!(!Bounties::<T>::contains_key(bounty_id));
+        assert!(Bounties::<T>::contains_key(bounty_id));
         assert_last_event::<T>(Event::<T>::BountyCanceled(bounty_id, creator).into());
     }
 
@@ -342,7 +342,7 @@ benchmarks! {
         assert!(Bounties::<T>::contains_key(bounty_id));
     }: cancel_bounty(RawOrigin::Signed(account_id), bounty_id)
     verify {
-        assert!(!Bounties::<T>::contains_key(bounty_id));
+        assert!(Bounties::<T>::contains_key(bounty_id));
         assert_last_event::<T>(Event::<T>::BountyCanceled(bounty_id, creator).into());
     }
 
@@ -454,13 +454,13 @@ benchmarks! {
 
     }: withdraw_funding (RawOrigin::Signed(account_id.clone()), funder, bounty_id)
     verify {
+        assert!(Bounties::<T>::contains_key(bounty_id));
         assert_eq!(
             Balances::<T>::usable_balance(&account_id),
             // included staking account deposit
             initial_balance::<T>() - T::CandidateStake::get() + cherry
         );
 
-        assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
     }
 
     withdraw_funding_by_council {
@@ -504,8 +504,8 @@ benchmarks! {
 
     }: withdraw_funding(RawOrigin::Root, funder, bounty_id)
     verify {
-        assert_eq!(T::CouncilBudgetManager::get_budget(), cherry + oracle_reward + funding_amount + get_state_bloat_bond_amount::<T>());
-        assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
+        assert!(Bounties::<T>::contains_key(bounty_id));
+        assert_eq!(T::CouncilBudgetManager::get_budget(), cherry + funding_amount + get_state_bloat_bond_amount::<T>());
     }
 
     announce_work_entry {
@@ -1192,8 +1192,8 @@ benchmarks! {
 
     }: withdraw_state_bloat_bond_amount(RawOrigin::Root, funder.clone(), bounty_id)
     verify {
+        assert!(Bounties::<T>::contains_key(bounty_id));
         assert_was_fired::<T>(Event::<T>::StateBloatBondWithdrawn(bounty_id, funder).into());
-        assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into())
     }
 
     withdraw_state_bloat_bond_amount_by_member{
@@ -1265,7 +1265,74 @@ benchmarks! {
     }: withdraw_state_bloat_bond_amount(RawOrigin::Signed(account_id), funder.clone(), bounty_id)
     verify {
         assert_was_fired::<T>(Event::<T>::StateBloatBondWithdrawn(bounty_id, funder).into());
-        assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into())
+        assert!(Bounties::<T>::contains_key(bounty_id));
+    }
+
+    withdraw_oracle_reward_by_oracle_council{
+        let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_reward: BalanceOf<T> = 100u32.into();
+        let max_amount: BalanceOf<T> = 1000u32.into();
+        let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
+        let oracle = BountyActor::Council;
+        T::CouncilBudgetManager::set_budget(cherry + oracle_reward);
+
+        let creator = BountyActor::Council;
+        let params = BountyCreationParameters::<T>{
+            cherry,
+            oracle_reward,
+            creator,
+            // same complexity with limited funding and FundingExpired stage.
+            funding_type: FundingType::Perpetual{ target: max_amount },
+            entrant_stake,
+            oracle: oracle.clone(),
+            ..Default::default()
+        };
+
+        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
+
+        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
+
+        Bounty::<T>::cancel_bounty(RawOrigin::Root.into(), bounty_id).unwrap();
+
+    }: withdraw_oracle_reward(RawOrigin::Root, bounty_id)
+    verify {
+        assert!(!Bounties::<T>::contains_key(bounty_id));
+        assert_was_fired::<T>(Event::<T>::BountyOracleRewardWithdrawal(bounty_id, oracle, oracle_reward).into());
+        assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
+    }
+
+    withdraw_oracle_reward_by_oracle_member{
+        let cherry: BalanceOf<T> = 100u32.into();
+        let oracle_reward: BalanceOf<T> = 100u32.into();
+        let max_amount: BalanceOf<T> = 1000u32.into();
+        let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
+        let (oracle_account_id, oracle_member_id) = member_funded_account::<T>("oracle", 0);
+        let oracle = BountyActor::Member(oracle_member_id);
+        T::CouncilBudgetManager::set_budget(cherry + oracle_reward);
+
+        let creator = BountyActor::Council;
+        let params = BountyCreationParameters::<T>{
+            cherry,
+            oracle_reward,
+            creator,
+            // same complexity with limited funding and FundingExpired stage.
+            funding_type: FundingType::Perpetual{ target: max_amount },
+            entrant_stake,
+            oracle: oracle.clone(),
+            ..Default::default()
+        };
+
+        Bounty::<T>::create_bounty(RawOrigin::Root.into(), params, Vec::new()).unwrap();
+
+        let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
+
+        Bounty::<T>::cancel_bounty(RawOrigin::Root.into(), bounty_id).unwrap();
+
+    }: withdraw_oracle_reward(RawOrigin::Signed(oracle_account_id), bounty_id)
+    verify {
+        assert!(!Bounties::<T>::contains_key(bounty_id));
+        assert_was_fired::<T>(Event::<T>::BountyOracleRewardWithdrawal(bounty_id, oracle, oracle_reward).into());
+        assert_last_event::<T>(Event::<T>::BountyRemoved(bounty_id).into());
     }
 }
 
@@ -1436,16 +1503,34 @@ mod tests {
             assert_ok!(test_benchmark_unlock_work_entrant_stake::<Test>());
         });
     }
+
     #[test]
     fn withdraw_state_bloat_bond_amount_by_council() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_withdraw_state_bloat_bond_amount_by_council::<Test>());
         });
     }
+
     #[test]
     fn withdraw_state_bloat_bond_amount_by_member() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_withdraw_state_bloat_bond_amount_by_member::<
+                Test,
+            >());
+        });
+    }
+
+    #[test]
+    fn withdraw_oracle_reward_by_oracle_member() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_withdraw_oracle_reward_by_oracle_member::<Test>());
+        });
+    }
+
+    #[test]
+    fn withdraw_oracle_reward_by_oracle_council() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_withdraw_oracle_reward_by_oracle_council::<
                 Test,
             >());
         });

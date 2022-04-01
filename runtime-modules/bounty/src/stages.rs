@@ -15,11 +15,22 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
     // Calculates the current bounty stage.
     pub(crate) fn get_bounty_stage(&self) -> BountyStage {
         self.is_funding_stage()
+            .or_else(|| self.is_cancelled_stage())
             .or_else(|| self.is_funding_expired_stage())
             .or_else(|| self.is_work_submission_stage())
             .or_else(|| self.is_judgment_stage())
             .or_else(|| self.is_successful_bounty_withdrawal_stage())
             .unwrap_or(BountyStage::FailedBountyWithdrawal)
+    }
+
+    // Calculates cancelled stage of the bounty.
+    // Returns None if conditions are not met.
+    fn is_cancelled_stage(&self) -> Option<BountyStage> {
+        // Bounty was created. There can be some contributions. Funding period is not over.
+        match self.bounty.milestone {
+            BountyMilestone::CancelledBounty => Some(BountyStage::Cancelled),
+            _ => None,
+        }
     }
 
     // Calculates funding stage of the bounty.

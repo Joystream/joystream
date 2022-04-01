@@ -45,10 +45,6 @@ pub fn increase_account_balance(account_id: &u128, balance: u64) {
     let _ = Balances::deposit_creating(&account_id, balance);
 }
 
-pub fn decrease_bounty_account_balance(bounty_id: u64, amount: u64) {
-    let account_id = Bounty::bounty_account_id(bounty_id);
-    let _ = Balances::slash(&account_id, amount);
-}
 pub fn get_state_bloat_bond_amount() -> u64 {
     crate::STATE_BLOAT_BOND_AMOUNT.into()
 }
@@ -103,7 +99,11 @@ impl EventFixture {
             topics: vec![],
         };
 
-        assert!(System::events().iter().any(|ev| *ev == expected_event));
+        assert!(
+            System::events().iter().any(|ev| *ev == expected_event),
+            "Event not found: {:?}",
+            expected_event.event
+        );
     }
 }
 
@@ -284,6 +284,7 @@ impl CreateBountyFixture {
                 total_funding: 0,
                 milestone: expected_milestone,
                 active_work_entry_count: 0,
+                oracle_withrew_reward: false,
             };
 
             assert_eq!(expected_bounty, Bounty::bounties(bounty_id));
@@ -320,10 +321,6 @@ impl CancelBountyFixture {
             Bounty::cancel_bounty(self.origin.clone().into(), self.bounty_id.clone());
 
         assert_eq!(actual_result, expected_result);
-
-        if actual_result.is_ok() {
-            assert!(!<crate::Bounties<Test>>::contains_key(&self.bounty_id));
-        }
     }
 }
 
@@ -886,5 +883,30 @@ impl WithdrawStateBloatBondFixture {
                 &self.funder
             ));
         }
+    }
+}
+
+pub struct WithdrawOracleRewardFixture {
+    origin: RawOrigin<u128>,
+    bounty_id: u64,
+}
+
+impl WithdrawOracleRewardFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Root,
+            bounty_id: 1,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result =
+            Bounty::withdraw_oracle_reward(self.origin.clone().into(), self.bounty_id.clone());
+
+        assert_eq!(actual_result, expected_result);
     }
 }

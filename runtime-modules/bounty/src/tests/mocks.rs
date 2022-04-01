@@ -219,6 +219,12 @@ impl crate::WeightInfo for () {
     fn withdraw_state_bloat_bond_amount_by_member() -> u64 {
         0
     }
+    fn withdraw_oracle_reward_by_oracle_council() -> u64 {
+        0
+    }
+    fn withdraw_oracle_reward_by_oracle_member() -> u64 {
+        0
+    }
 }
 
 impl common::membership::MembershipTypes for Test {
