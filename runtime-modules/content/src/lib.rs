@@ -880,8 +880,7 @@ decl_module! {
             // Ensure nft is not issued for the video. Videos with issued nfts are immutable.
             video.ensure_nft_is_not_issued::<T>()?;
 
-            let channel_id = video.in_channel;
-            let channel = Self::ensure_channel_exists(&channel_id)?;
+            let (channel, channel_id) = Self::get_channel_from_video(&video)?;
             channel.ensure_has_no_active_transfer::<T>()?;
 
             // Check for permission to update channel assets
@@ -958,8 +957,7 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // get information regarding channel
-            let channel_id = video.in_channel;
-            let channel = ChannelById::<T>::get(channel_id);
+            let (channel, channel_id) = Self::get_channel_from_video(&video)?;
             channel.ensure_has_no_active_transfer::<T>()?;
 
             ensure_actor_authorized_to_update_channel_assets::<T>(
@@ -998,8 +996,7 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // get information regarding channel
-            let channel_id = video.in_channel;
-            let channel = ChannelById::<T>::get(channel_id);
+            let (channel, channel_id) = Self::get_channel_from_video(&video)?;
 
             // permissions check
             let is_nft = video.nft_status.is_some();
@@ -1045,8 +1042,7 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // get information regarding channel
-            let channel_id = video.in_channel;
-            let channel = ChannelById::<T>::get(channel_id);
+            let (channel, channel_id) = Self::get_channel_from_video(&video)?;
 
             // Permissions check
             let actions_to_perform = vec![ContentModerationAction::DeleteVideo];
@@ -1084,8 +1080,7 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // get information regarding channel
-            let channel_id = video.in_channel;
-            let channel = ChannelById::<T>::get(channel_id);
+            let (channel, _channel_id) = Self::get_channel_from_video(&video)?;
 
             // Permissions check
             let actions_to_perform = vec![ContentModerationAction::HideVideo];
@@ -1190,7 +1185,8 @@ decl_module! {
 
             // ensure channel is valid
             let video = Self::ensure_video_exists(&params.video_reference)?;
-            let owner = ChannelById::<T>::get(video.in_channel).owner;
+            let (channel, _channel_id) = Self::get_channel_from_video(&video)?;
+            let owner = channel.owner;
 
             match params.post_type {
                 VideoPostType::<T>::Comment(parent_id) => {
@@ -1255,10 +1251,10 @@ decl_module! {
             new_text: Vec<u8>,
         ) {
             let sender = ensure_signed(origin)?;
-            let post = Self::ensure_post_exists(video_id, post_id)?;
-            let video = VideoById::<T>::get(video_id);
-            let channel = ChannelById::<T>::get(video.in_channel);
+            let video = Self::ensure_video_exists(&video_id)?;
+            let (channel, _channel_id) = Self::get_channel_from_video(&video)?;
             channel.ensure_has_no_active_transfer::<T>()?;
+            let post = Self::ensure_post_exists(video_id, post_id)?;
 
             match post.post_type {
                 VideoPostType::<T>::Description => ensure_actor_authorized_to_edit_video_post::<T>(
@@ -1286,10 +1282,10 @@ decl_module! {
             params: VideoPostDeletionParameters<T>,
         ) {
             let sender = ensure_signed(origin)?;
-            let post = Self::ensure_post_exists(video_id, post_id)?;
-            let video = VideoById::<T>::get(video_id);
-            let channel = ChannelById::<T>::get(video.in_channel);
+            let video = Self::ensure_video_exists(&video_id)?;
+            let (channel, _channel_id) = Self::get_channel_from_video(&video)?;
             channel.ensure_has_no_active_transfer::<T>()?;
+            let post = Self::ensure_post_exists(video_id, post_id)?;
 
             let cleanup_actor = match post.post_type {
                 VideoPostType::<T>::Description => {
@@ -1365,6 +1361,9 @@ decl_module! {
             let sender = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&sender, &member_id)?;
 
+            let _video = Self::ensure_video_exists(&video_id)?;
+            let _post = Self::ensure_post_exists(video_id, post_id)?;
+
             //
             // == MUTATION_SAFE ==
             //
@@ -1382,6 +1381,8 @@ decl_module! {
             // video existence verification purposely avoided
             let sender = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&sender, &member_id)?;
+
+            let _video = Self::ensure_video_exists(&video_id)?;
 
             //
             // == MUTATION_SAFE ==
@@ -1509,10 +1510,7 @@ decl_module! {
             // Ensure have not been issued yet
             video.ensure_nft_is_not_issued::<T>()?;
 
-            let channel_id = video.in_channel;
-
-            // Ensure channel exists, retrieve channel owner
-            let channel = Self::ensure_channel_exists(&channel_id)?;
+            let (channel, _channel_id) = Self::get_channel_from_video(&video)?;
 
             ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
 
@@ -2465,10 +2463,21 @@ impl<T: Trait> Module<T> {
         Ok(ChannelById::<T>::get(channel_id))
     }
 
+    fn get_channel_from_video(video: &Video<T>) -> Result<(Channel<T>, T::ChannelId), Error<T>> {
+        // This aught to be an invariant check or assertion. If video was read from state and channel is not
+        // found, it means we have inconsistent state
+        ensure!(
+            ChannelById::<T>::contains_key(video.in_channel),
+            Error::<T>::ChannelDoesNotExist
+        );
+        Ok((ChannelById::<T>::get(video.in_channel), video.in_channel))
+    }
+
     fn ensure_post_exists(
         video_id: T::VideoId,
         post_id: T::VideoPostId,
     ) -> Result<VideoPost<T>, Error<T>> {
+        Self::ensure_video_exists(&video_id)?;
         ensure!(
             VideoPostById::<T>::contains_key(video_id, post_id),
             Error::<T>::VideoPostDoesNotExist
