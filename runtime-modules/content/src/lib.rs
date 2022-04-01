@@ -1548,13 +1548,8 @@ decl_module! {
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
 
-            // Ensure channel exists, retrieve channel owner
-            // let channel = Self::ensure_channel_exists(&video.in_channel)?;
-            // Question - Should NFT Destruction be a pausable feature?
-            // channel.ensure_feature_not_paused::<T>(PausableChannelFeature::VideoNftDestruction)?;
-
             // Authorize nft destruction
-            ensure_actor_authorized_to_destroy_nft::<T>(origin, &actor, &nft.owner, video.in_channel)?;
+            ensure_actor_authorized_to_manage_nft::<T>(origin, &actor, &nft.owner, video.in_channel)?;
 
             // Ensure there nft transactional status is set to idle.
             Self::ensure_nft_transactional_status_is_idle(&nft)?;

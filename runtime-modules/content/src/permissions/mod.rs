@@ -299,50 +299,6 @@ pub fn ensure_actor_authorized_to_manage_nft<T: Trait>(
     Ok(())
 }
 
-/// Ensure actor can destroy nft
-pub fn ensure_actor_authorized_to_destroy_nft<T: Trait>(
-    origin: T::Origin,
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    nft_owner: &NftOwner<T::MemberId>,
-    in_channel: T::ChannelId,
-) -> DispatchResult {
-    let sender = ensure_signed(origin)?;
-    ensure_actor_auth_success::<T>(&sender, actor)?;
-
-    // Only when nft is owned by original artist can it be destroyed
-    if let NftOwner::ChannelOwner = nft_owner {
-        let channel_owner = Module::<T>::ensure_channel_exists(&in_channel)?.owner;
-
-        match actor {
-            ContentActor::Lead => {
-                if let ChannelOwner::CuratorGroup(_) = channel_owner {
-                    return Ok(());
-                } else {
-                    return Err(Error::<T>::ActorNotAuthorized.into());
-                }
-            }
-            ContentActor::Curator(curator_group_id, _) => {
-                // Ensure curator group is the channel owner.
-                ensure!(
-                    channel_owner == ChannelOwner::CuratorGroup(*curator_group_id),
-                    Error::<T>::ActorNotAuthorized
-                );
-            }
-            ContentActor::Member(member_id) => {
-                // Ensure the member is the channel owner.
-                ensure!(
-                    channel_owner == ChannelOwner::Member(*member_id),
-                    Error::<T>::ActorNotAuthorized
-                );
-            }
-        }
-
-        Ok(())
-    } else {
-        Err(Error::<T>::ActorNotAuthorized.into())
-    }
-}
-
 // Enure actor can update or delete channels and videos
 pub fn ensure_actor_authorized_to_set_featured_videos<T: Trait>(
     origin: T::Origin,
