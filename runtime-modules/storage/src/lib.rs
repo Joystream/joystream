@@ -1229,6 +1229,14 @@ decl_storage! {
     }
     add_extra_genesis {
         build(|_| {
+            // We deposit some initial balance to the pallet's module account on the genesis block
+            // to protect the account from being deleted ("dusted") on early stages of pallet's work
+            // by the "garbage collector" of the balances pallet.
+            // It should be equal to at least `ExistentialDeposit` from the balances pallet setting.
+            // Original issues:
+            // - https://github.com/Joystream/joystream/issues/3497
+            // - https://github.com/Joystream/joystream/issues/3510
+
             let module_account_id = StorageTreasury::<T>::module_account_id();
             let deposit: BalanceOf<T> = T::ModuleAccountInitialBalance::get();
 
