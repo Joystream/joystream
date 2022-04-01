@@ -286,7 +286,7 @@ async function finishAuction(
   // load winner member
   const winnerMemberId = winningBid.bidder.id
   // load bid amount for which NFT is bought
-  const boughtPrice = (auction.topBid as Bid).amount
+  const boughtPrice = winningBid.amount
   const winner = await getRequiredExistingEntity(
     store,
     Membership,
