@@ -490,7 +490,6 @@ impl content::Trait for Runtime {
     type ChannelCategoryId = ChannelCategoryId;
     type VideoId = VideoId;
     type OpenAuctionId = OpenAuctionId;
-    type VideoCategoryId = VideoCategoryId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type DataObjectStorage = Storage;
     type VideoPostId = VideoPostId;
