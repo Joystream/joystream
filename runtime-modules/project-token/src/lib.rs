@@ -6,7 +6,7 @@ use frame_support::{
     ensure,
 };
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
-use sp_runtime::Percent;
+use sp_runtime::{traits::Hash, Percent};
 
 // crate modules
 mod errors;
@@ -40,7 +40,7 @@ decl_storage! {
         pub AccountInfoByTokenAndAccount get(fn account_info_by_token_and_account) config():
         double_map
             hasher(blake2_128_concat) T::TokenId,
-        hasher(blake2_128_concat) T::AccountId => AccountDataOf<T>;
+            hasher(blake2_128_concat) T::AccountId => AccountDataOf<T>;
 
         /// map TokenId => TokenData to retrieve token information
         pub TokenInfoById get(fn token_info_by_id) config():
@@ -49,6 +49,11 @@ decl_storage! {
 
         /// Token Id nonce
         pub NextTokenId get(fn next_token_id) config(): T::TokenId;
+
+        /// Set for the tokens symbols
+        pub SymbolsUsed get (fn symbol_used) config():
+        map
+            hasher(blake2_128_concat) T::Hash => ();
     }
 }
 
@@ -240,12 +245,18 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
     /// - token with specified characteristics is added to storage state
     /// - `NextTokenId` increased by 1
     fn issue_token(issuance_parameters: TokenIssuanceParametersOf<T>) -> DispatchResult {
+        let sym_hash = <T as frame_system::Trait>::Hashing::hash_of(&issuance_parameters.symbol);
         let token_data = issuance_parameters.try_build::<T>()?;
+        ensure!(
+            !crate::SymbolsUsed::<T>::contains_key(sym_hash),
+            crate::Error::<T>::TokenSymbolAlreadyInUse,
+        );
 
         // == MUTATION SAFE ==
 
         let token_id = Self::next_token_id();
         TokenInfoById::<T>::insert(token_id, token_data);
+        SymbolsUsed::<T>::insert(sym_hash, ());
         NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
 
         Ok(())

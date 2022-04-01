@@ -36,5 +36,7 @@ decl_error! {
         /// Patronage reduction exceeeding patronage rate
         ReductionExceedingPatronageRate,
 
+        /// Symbol already in use
+        TokenSymbolAlreadyInUse,
     }
 }

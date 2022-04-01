@@ -231,10 +231,7 @@ impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, H
     /// Forward `self` state
     pub fn try_build<T: crate::Trait>(self) -> Result<TokenData<Balance, Hash>, DispatchError> {
         // validation
-        // ensure!(
-        //     self.initial_issuance >= self.existential_deposit,
-        //     crate::Error::<T>::ExistentialDepositExceedsInitialIssuance,
-        // );
+
         let patronage_info = PatronageData::<Balance> {
             outstanding_credit: Balance::zero(),
             rate: self.patronage_rate,
