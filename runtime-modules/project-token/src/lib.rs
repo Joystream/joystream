@@ -231,10 +231,42 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
 
         Ok(())
     }
-}
 
-/// Module implementation
-impl<T: Trait> Module<T> {
+    /// Issue token with specified characteristics
+    /// Preconditions:
+    /// -
+    ///
+    /// Postconditions:
+    /// - token with specified characteristics is added to storage state
+    /// - `NextTokenId` increased by 1
+    fn issue_token(issuance_parameters: TokenIssuanceParametersOf<T>) -> DispatchResult {
+        let token_data = issuance_parameters.try_build::<T>()?;
+
+        // == MUTATION SAFE ==
+
+        let token_id = Self::next_token_id();
+        TokenInfoById::<T>::insert(token_id, token_data);
+        NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
+
+        Ok(())
+    }
+
+    /// Remove token data from storage
+    /// Preconditions:
+    /// - `token_id` must exists
+    ///
+    /// Postconditions:
+    /// - token data @ `token_Id` removed from storage
+    /// - all account data for `token_Id` removed
+    fn deissue_token(token_id: T::TokenId) -> DispatchResult {
+        Self::ensure_token_exists(token_id).map(|_| ())?;
+
+        // == MUTATION SAFE ==
+
+        Self::do_deissue_token(token_id);
+        Ok(())
+    }
+
     /// Mint `amount` into account `who` (possibly creating it)
     /// for specified token `token_id`
     ///
@@ -280,7 +312,10 @@ impl<T: Trait> Module<T> {
         Self::deposit_event(RawEvent::TokenAmountDepositedInto(token_id, who, amount));
         Ok(())
     }
+}
 
+/// Module implementation
+impl<T: Trait> Module<T> {
     /// Mint `amount` into valid account `who`
     /// for specified token `token_id`
     ///
@@ -293,7 +328,7 @@ impl<T: Trait> Module<T> {
     /// - patronage credit accounted for `token_id`
     /// - `token_id` issuance increased by amount + credit
     /// if `amount` is zero it is equivalent to a no-op
-    fn deposit_into_existing(
+    fn _deposit_into_existing(
         token_id: T::TokenId,
         who: T::AccountId,
         amount: T::Balance,
@@ -332,7 +367,7 @@ impl<T: Trait> Module<T> {
     /// - free balance of `who` is decreased by `amount` or set to zero if below existential
     ///   deposit
     /// if `amount` is zero it is equivalent to a no-op
-    fn slash(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult {
+    fn _slash(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult {
         if amount.is_zero() {
             return Ok(());
         }
@@ -385,41 +420,6 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Issue token with specified characteristics
-    /// Preconditions:
-    /// -
-    ///
-    /// Postconditions:
-    /// - token with specified characteristics is added to storage state
-    /// - `NextTokenId` increased by 1
-    fn issue_token(issuance_parameters: TokenIssuanceParametersOf<T>) -> DispatchResult {
-        let token_data = issuance_parameters.try_build::<T>()?;
-
-        // == MUTATION SAFE ==
-
-        let token_id = Self::next_token_id();
-        TokenInfoById::<T>::insert(token_id, token_data);
-        NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
-
-        Ok(())
-    }
-
-    /// Remove token data from storage
-    /// Preconditions:
-    /// - `token_id` must exists
-    ///
-    /// Postconditions:
-    /// - token data @ `token_Id` removed from storage
-    /// - all account data for `token_Id` removed
-    fn deissue_token(token_id: T::TokenId) -> DispatchResult {
-        Self::ensure_token_exists(token_id).map(|_| ())?;
-
-        // == MUTATION SAFE ==
-
-        Self::do_deissue_token(token_id);
-        Ok(())
-    }
-
     /// Reserve `amount` of token for `who`
     /// Preconditions:
     /// - `token_id` must id
@@ -430,7 +430,7 @@ impl<T: Trait> Module<T> {
     /// - `who` free balance decreased by `amount`
     /// - `who` reserved balance increased by `amount`
     /// if `amount` is zero it is equivalent to a no-op
-    fn reserve(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult {
+    fn _reserve(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult {
         if amount.is_zero() {
             return Ok(());
         }
@@ -468,7 +468,7 @@ impl<T: Trait> Module<T> {
     /// - `who` free balance increased by `amount`
     /// - `who` reserved balance decreased by `amount`
     /// if `amount` is zero it is equivalent to a no-op
-    fn unreserve(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult {
+    fn _unreserve(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult {
         if amount.is_zero() {
             return Ok(());
         }
@@ -497,30 +497,6 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Retrieve reserved balance for token and account
-    /// Preconditions:
-    /// - `token_id` must be a valid token identifier
-    /// - `who` account id must exist for token
-    fn reserved_balance(
-        token_id: T::TokenId,
-        who: T::AccountId,
-    ) -> Result<T::Balance, DispatchError> {
-        let account_info = Self::ensure_account_data_exists(token_id, &who)?;
-
-        Ok(account_info.reserved_balance)
-    }
-
-    /// Retrieve total balance for token and account
-    /// Preconditions:
-    /// - `token_id` must be a valid token identifier
-    /// - `who` account id must exist for token
-    fn total_balance(token_id: T::TokenId, who: T::AccountId) -> Result<T::Balance, DispatchError> {
-        let account_info = Self::ensure_account_data_exists(token_id, &who)?;
-
-        Ok(account_info
-            .reserved_balance
-            .saturating_add(account_info.free_balance))
-    }
     // Utility ensure checks
 
     pub(crate) fn ensure_account_data_exists(

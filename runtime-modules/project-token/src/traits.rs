@@ -18,6 +18,19 @@ pub trait PalletToken<AccountId, Policy, IssuanceParams> {
     /// Token Identifier type used
     type TokenId;
 
+    /// Mint `amount` into account `who` (possibly creating it)
+    fn deposit_creating(
+        token_id: Self::TokenId,
+        who: AccountId,
+        amount: Self::Balance,
+    ) -> DispatchResult;
+
+    /// Issue token with specified characteristics
+    fn issue_token(issuance_parameters: IssuanceParams) -> DispatchResult;
+
+    /// Remove token data from storage
+    fn deissue_token(token_id: Self::TokenId) -> DispatchResult;
+
     /// Change to permissionless
     fn change_to_permissionless(token_id: Self::TokenId) -> DispatchResult;
 
