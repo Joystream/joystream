@@ -71,9 +71,6 @@ pub trait Trait:
     /// Type of identifier for OpenAuction
     type OpenAuctionId: NumericIdentifier;
 
-    /// Type of identifier for Video Categories
-    type VideoCategoryId: NumericIdentifier;
-
     /// Type of identifier for Channel Categories
     type ChannelCategoryId: NumericIdentifier;
 
@@ -136,14 +133,9 @@ decl_storage! {
 
         pub VideoById get(fn video_by_id): map hasher(blake2_128_concat) T::VideoId => Video<T>;
 
-        pub VideoCategoryById get(fn video_category_by_id):
-        map hasher(blake2_128_concat) T::VideoCategoryId => VideoCategory;
-
         pub NextChannelCategoryId get(fn next_channel_category_id) config(): T::ChannelCategoryId;
 
         pub NextChannelId get(fn next_channel_id) config(): T::ChannelId;
-
-        pub NextVideoCategoryId get(fn next_video_category_id) config(): T::VideoCategoryId;
 
         pub NextVideoId get(fn next_video_id) config(): T::VideoId;
 
@@ -1099,65 +1091,6 @@ decl_module! {
             Self::deposit_event(RawEvent::VideoVisibilitySetByModerator(actor, video_id, is_hidden, rationale));
 
             Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_video_category(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            params: VideoCategoryCreationParameters,
-        ) {
-            ensure_actor_authorized_to_manage_categories::<T>(
-                origin,
-                &actor
-            )?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            let category_id = Self::next_video_category_id();
-            NextVideoCategoryId::<T>::mutate(|id| *id += T::VideoCategoryId::one());
-
-            let category = VideoCategory {};
-            VideoCategoryById::<T>::insert(category_id, category);
-
-            Self::deposit_event(RawEvent::VideoCategoryCreated(actor, category_id, params));
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_video_category(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            category_id: T::VideoCategoryId,
-            params: VideoCategoryUpdateParameters,
-        ) {
-            ensure_actor_authorized_to_manage_categories::<T>(
-                origin,
-                &actor
-            )?;
-
-            Self::ensure_video_category_exists(&category_id)?;
-
-            Self::deposit_event(RawEvent::VideoCategoryUpdated(actor, category_id, params));
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_video_category(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            category_id: T::VideoCategoryId,
-        ) {
-            ensure_actor_authorized_to_manage_categories::<T>(
-                origin,
-                &actor
-            )?;
-
-            Self::ensure_video_category_exists(&category_id)?;
-
-            VideoCategoryById::<T>::remove(&category_id);
-
-            Self::deposit_event(RawEvent::VideoCategoryDeleted(actor, category_id));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -2420,16 +2353,6 @@ impl<T: Trait> Module<T> {
         Ok(ChannelCategoryById::<T>::get(channel_category_id))
     }
 
-    fn ensure_video_category_exists(
-        video_category_id: &T::VideoCategoryId,
-    ) -> Result<VideoCategory, Error<T>> {
-        ensure!(
-            VideoCategoryById::<T>::contains_key(video_category_id),
-            Error::<T>::CategoryDoesNotExist
-        );
-        Ok(VideoCategoryById::<T>::get(video_category_id))
-    }
-
     fn ensure_video_exists(video_id: &T::VideoId) -> Result<Video<T>, Error<T>> {
         ensure!(
             VideoById::<T>::contains_key(video_id),
@@ -2776,7 +2699,6 @@ decl_event!(
         CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
         CuratorId = <T as ContentActorAuthenticator>::CuratorId,
         VideoId = <T as Trait>::VideoId,
-        VideoCategoryId = <T as Trait>::VideoCategoryId,
         ChannelId = <T as storage::Trait>::ChannelId,
         ChannelCategoryId = <T as Trait>::ChannelCategoryId,
         Channel = Channel<T>,
@@ -2857,14 +2779,6 @@ decl_event!(
         ChannelCategoryDeleted(ContentActor, ChannelCategoryId),
 
         // Videos
-        VideoCategoryCreated(
-            ContentActor,
-            VideoCategoryId,
-            VideoCategoryCreationParameters,
-        ),
-        VideoCategoryUpdated(ContentActor, VideoCategoryId, VideoCategoryUpdateParameters),
-        VideoCategoryDeleted(ContentActor, VideoCategoryId),
-
         VideoCreated(
             ContentActor,
             ChannelId,
