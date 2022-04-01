@@ -36,7 +36,7 @@ impl_outer_event! {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: u32 = 0;
+    pub const ExistentialDeposit: u32 = 1;
 }
 
 impl balances::Trait for Test {
@@ -103,6 +103,7 @@ impl crate::Trait for Test {
     type ContentId = u64;
     type StorageWorkingGroup = StorageWG;
     type DistributionWorkingGroup = DistributionWG;
+    type ModuleAccountInitialBalance = ExistentialDeposit;
 }
 
 pub const DEFAULT_MEMBER_ID: u64 = 100;
@@ -167,6 +168,18 @@ impl frame_system::Trait for Test {
 pub fn build_test_externalities() -> sp_io::TestExternalities {
     let t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
+        .unwrap();
+
+    t.into()
+}
+
+pub fn build_test_externalities_with_genesis() -> sp_io::TestExternalities {
+    let mut t = frame_system::GenesisConfig::default()
+        .build_storage::<Test>()
+        .unwrap();
+
+    crate::GenesisConfig::default()
+        .assimilate_storage::<Test>(&mut t)
         .unwrap();
 
     t.into()

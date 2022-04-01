@@ -309,9 +309,9 @@ impl storage::Trait for Test {
         MaxNumberOfPendingInvitationsPerDistributionBucket;
     type ContentId = u64;
     type MaxDataObjectSize = MaxDataObjectSize;
-
     type StorageWorkingGroup = StorageWG;
     type DistributionWorkingGroup = DistributionWG;
+    type ModuleAccountInitialBalance = ExistentialDeposit;
 }
 
 // Anyone can upload and delete without restriction
