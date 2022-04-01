@@ -128,6 +128,9 @@ type TransactionalStatusAuction @variant {
 
   "Auction"
   auction: Auction!
+
+  "Auction Id - temporary variable that helps to workaround a bug" # see https://github.com/Joystream/joystream/issues/3342
+  tmpAuctionId: String!
 }
 
 "Represents TransactionalStatus BuyNow"

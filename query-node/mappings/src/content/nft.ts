@@ -486,6 +486,7 @@ export async function convertTransactionalStatus(
 
     const status = new TransactionalStatusAuction()
     status.auctionId = auction.id
+    status.tmpAuctionId = auction.id
 
     return status
   }
@@ -524,6 +525,7 @@ export async function contentNft_OpenAuctionStarted({ event, store }: EventConte
   // update NFT transactional status
   const transactionalStatus = new TransactionalStatusAuction()
   transactionalStatus.auctionId = auction.id
+  transactionalStatus.tmpAuctionId = auction.id
   await setNewNftTransactionalStatus(store, nft, transactionalStatus, event.blockNumber)
 
   // common event processing - second
@@ -569,6 +571,7 @@ export async function contentNft_EnglishAuctionStarted({ event, store }: EventCo
   // update NFT transactional status
   const transactionalStatus = new TransactionalStatusAuction()
   transactionalStatus.auctionId = auction.id
+  transactionalStatus.tmpAuctionId = auction.id
   await setNewNftTransactionalStatus(store, nft, transactionalStatus, event.blockNumber)
 
   // common event processing - second
