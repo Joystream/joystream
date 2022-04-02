@@ -1449,6 +1449,38 @@ decl_module! {
             ));
         }
 
+        /// Destroy NFT
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn destroy_nft(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            video_id: T::VideoId
+        ) {
+            // Ensure given video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            // Ensure nft is already issued
+            let nft = video.ensure_nft_is_issued::<T>()?;
+
+            // Authorize nft destruction
+            ensure_actor_authorized_to_manage_nft::<T>(origin, &actor, &nft.owner, video.in_channel)?;
+
+            // Ensure there nft transactional status is set to idle.
+            Self::ensure_nft_transactional_status_is_idle(&nft)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update the video
+            VideoById::<T>::mutate(video_id, |v| v.destroy_nft());
+
+            Self::deposit_event(RawEvent::NftDestroyed(
+                actor,
+                video_id,
+            ));
+        }
+
         /// Start video nft open auction
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn start_open_auction(
@@ -2820,6 +2852,7 @@ decl_event!(
         EnglishAuctionStarted(ContentActor, VideoId, EnglishAuctionParams),
         OpenAuctionStarted(ContentActor, VideoId, OpenAuctionParams, OpenAuctionId),
         NftIssued(ContentActor, VideoId, NftIssuanceParameters),
+        NftDestroyed(ContentActor, VideoId),
         AuctionBidMade(MemberId, VideoId, Balance),
         AuctionBidCanceled(MemberId, VideoId),
         AuctionCanceled(ContentActor, VideoId),
