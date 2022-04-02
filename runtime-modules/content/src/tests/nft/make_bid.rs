@@ -635,7 +635,7 @@ fn make_bid_succeeds_with_auction_completion_and_outstanding_bids() {
             MetaEvent::content(RawEvent::BidMadeCompletingAuction(
                 SECOND_MEMBER_ID,
                 video_id,
-                None
+                None,
             ))
         );
     })
@@ -663,7 +663,7 @@ fn make_bid_succeeds_with_auction_completion_and_no_outstanding_bids() {
             MetaEvent::content(RawEvent::BidMadeCompletingAuction(
                 SECOND_MEMBER_ID,
                 video_id,
-                None
+                None,
             ))
         );
     })

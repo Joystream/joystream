@@ -1749,9 +1749,11 @@ decl_module! {
                         buy_now_price,
                     );
 
+                    let prev_bidder = eng_auction.top_bid.map(|bid| bid.bidder_id);
+
                     (
                         updated_nft,
-                        RawEvent::BidMadeCompletingAuction(participant_id, video_id, prev_top_bidder),
+                        RawEvent::BidMadeCompletingAuction(participant_id, video_id, prev_bidder),
                     )
                 },
                 _ => {
