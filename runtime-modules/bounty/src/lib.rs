@@ -1772,12 +1772,6 @@ impl<T: Trait> Module<T> {
 
         <Bounties<T>>::remove(bounty_id);
         <BountyContributions<T>>::remove_prefix(bounty_id);
-        // Slash remaining funds.
-        let bounty_account_id = Self::bounty_account_id(*bounty_id);
-        let all = balances::Module::<T>::usable_balance(&bounty_account_id);
-        if all != Zero::zero() {
-            let _ = balances::Module::<T>::slash(&bounty_account_id, all);
-        }
 
         Self::deposit_event(RawEvent::BountyRemoved(*bounty_id));
     }
