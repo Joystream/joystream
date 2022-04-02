@@ -124,10 +124,10 @@ async function getNftFromVideo(
     relations ? relations.concat(['nft']) : ['nft']
   )
 
-  // get auction
+  // get nft
   const nft = video.nft
 
-  // ensure auction exists
+  // ensure nft exists
   if (!nft) {
     return inconsistentState(errorMessageForNft, videoId)
   }
@@ -829,7 +829,11 @@ export async function contentNft_BidMadeCompletingAuction({
   await createBid(event, store, memberId.toNumber(), videoId.toNumber())
 
   // finish auction and transfer ownership
-  const { winner: member, video, boughtPrice } = await finishAuction(store, videoId.toNumber(), event.blockNumber)
+  const { winner: member, video, boughtPrice: price } = await finishAuction(
+    store,
+    videoId.toNumber(),
+    event.blockNumber
+  )
 
   // common event processing - second
 
@@ -838,7 +842,7 @@ export async function contentNft_BidMadeCompletingAuction({
 
     member,
     video,
-    price: boughtPrice.toNumber(),
+    price,
   })
 
   await store.save<BidMadeCompletingAuctionEvent>(announcingPeriodStartedEvent)
@@ -1015,13 +1019,10 @@ export async function contentNft_NftBought({ event, store }: EventContext & Stor
   // specific event processing
 
   // load video
-  const { video, nft } = await getNftFromVideo(
-    store,
-    videoId.toString(),
-    'Non-existing video was bought',
-    'Non-existing NFT was bought',
-    ['nft', 'nft.transactionalStatus']
-  )
+  const {
+    video,
+    nft: { transactionalStatus },
+  } = await getNftFromVideo(store, videoId.toString(), 'Non-existing video was bought', 'Non-existing NFT was bought')
 
   // read member
   const winner = new Membership({ id: memberId.toString() })
@@ -1037,12 +1038,13 @@ export async function contentNft_NftBought({ event, store }: EventContext & Stor
 
   // common event processing - second
 
+  console.log('TransactionalStatusBuyNow', transactionalStatus)
   const announcingPeriodStartedEvent = new NftBoughtEvent({
     ...genericEventFields(event),
 
     video,
     member: winner,
-    price: (nft.transactionalStatus as TransactionalStatusBuyNow).price.toNumber(),
+    price: (transactionalStatus as TransactionalStatusBuyNow).price,
   })
 
   await store.save<NftBoughtEvent>(announcingPeriodStartedEvent)
