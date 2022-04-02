@@ -45,9 +45,14 @@ pub fn increase_account_balance(account_id: &u128, balance: u64) {
     let _ = Balances::deposit_creating(&account_id, balance);
 }
 
-pub fn get_state_bloat_bond_amount() -> u64 {
-    crate::STATE_BLOAT_BOND_AMOUNT.into()
+pub fn get_funder_state_bloat_bond_amount() -> u64 {
+    crate::FUNDER_STATE_BLOAT_BOND_AMOUNT.into()
 }
+
+pub fn get_creator_state_bloat_bond_amount() -> u64 {
+    crate::CREATOR_STATE_BLOAT_BOND_AMOUNT.into()
+}
+
 pub struct EventFixture;
 impl EventFixture {
     pub fn assert_last_crate_event(
@@ -110,8 +115,7 @@ impl EventFixture {
 pub const DEFAULT_BOUNTY_CHERRY: u64 = 10;
 pub const DEFAULT_BOUNTY_ORACLE_REWARD: u64 = 10;
 pub const DEFAULT_BOUNTY_ENTRANT_STAKE: u64 = 10;
-pub const DEFAULT_BOUNTY_MAX_AMOUNT: u64 = 1000;
-pub const DEFAULT_BOUNTY_MIN_AMOUNT: u64 = 1;
+pub const DEFAULT_BOUNTY_TARGET_AMOUNT: u64 = 1000;
 pub const DEFAULT_BOUNTY_FUNDING_PERIOD: u64 = 1;
 
 pub struct CreateBountyFixture {
@@ -134,7 +138,7 @@ impl CreateBountyFixture {
             metadata: Vec::new(),
             creator: BountyActor::Council,
             funding_type: FundingType::Perpetual {
-                target: DEFAULT_BOUNTY_MAX_AMOUNT,
+                target: DEFAULT_BOUNTY_TARGET_AMOUNT,
             },
             cherry: DEFAULT_BOUNTY_CHERRY,
             oracle_reward: DEFAULT_BOUNTY_ORACLE_REWARD,
@@ -167,23 +171,17 @@ impl CreateBountyFixture {
         Self { metadata, ..self }
     }
 
-    pub fn with_limited_funding(
-        self,
-        min_funding_amount: u64,
-        max_funding_amount: u64,
-        funding_period: u64,
-    ) -> Self {
+    pub fn with_limited_funding(self, target: u64, funding_period: u64) -> Self {
         Self {
             funding_type: FundingType::Limited {
                 funding_period,
-                min_funding_amount,
-                max_funding_amount,
+                target,
             },
             ..self
         }
     }
 
-    pub fn with_perpetual_funding(self, target: u64) -> Self {
+    pub fn with_perpetual_period_target_amount(self, target: u64) -> Self {
         Self {
             funding_type: FundingType::Perpetual { target },
             ..self
@@ -194,19 +192,17 @@ impl CreateBountyFixture {
         Self {
             funding_type: FundingType::Limited {
                 funding_period,
-                min_funding_amount: DEFAULT_BOUNTY_MIN_AMOUNT,
-                max_funding_amount: DEFAULT_BOUNTY_MAX_AMOUNT,
+                target: DEFAULT_BOUNTY_TARGET_AMOUNT,
             },
             ..self
         }
     }
 
-    pub fn with_max_funding_amount(self, max_funding_amount: u64) -> Self {
+    pub fn with_limit_period_target_amount(self, target: u64) -> Self {
         Self {
             funding_type: FundingType::Limited {
                 funding_period: DEFAULT_BOUNTY_FUNDING_PERIOD,
-                min_funding_amount: DEFAULT_BOUNTY_MIN_AMOUNT,
-                max_funding_amount,
+                target,
             },
             ..self
         }
@@ -270,13 +266,12 @@ impl CreateBountyFixture {
             assert_eq!(next_bounty_count_value, Bounty::bounty_count());
             assert!(<crate::Bounties<Test>>::contains_key(&bounty_id));
 
-            let expected_milestone = if let Some(milestone) = self.expected_milestone.clone() {
-                milestone
-            } else {
-                BountyMilestone::Created {
+            let expected_milestone = match self.expected_milestone.clone() {
+                Some(milestone) => milestone,
+                None => BountyMilestone::Created {
                     created_at: System::block_number(),
                     has_contributions: false,
-                }
+                },
             };
 
             let expected_bounty = BountyRecord::<u64, u64, u64> {
@@ -284,7 +279,7 @@ impl CreateBountyFixture {
                 total_funding: 0,
                 milestone: expected_milestone,
                 active_work_entry_count: 0,
-                oracle_withrew_reward: false,
+                oracle_withdrew_reward: false,
             };
 
             assert_eq!(expected_bounty, Bounty::bounties(bounty_id));
@@ -386,10 +381,10 @@ impl FundBountyFixture {
             Bounty::contribution_by_bounty_by_actor(self.bounty_id, &self.funder);
         if actual_result.is_ok() {
             let new_bounty = Bounty::bounties(self.bounty_id);
-            if new_bounty.total_funding == new_bounty.maximum_funding() {
+            if new_bounty.total_funding == new_bounty.target_funding() {
                 assert_eq!(
                     new_bounty_funding.amount,
-                    old_bounty_funding.amount + old_bounty.maximum_funding()
+                    old_bounty_funding.amount + old_bounty.target_funding()
                         - old_bounty.total_funding
                 );
             } else {
@@ -869,7 +864,7 @@ impl WithdrawStateBloatBondFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = Bounty::withdraw_state_bloat_bond_amount(
+        let actual_result = Bounty::withdraw_funder_state_bloat_bond_amount(
             self.origin.clone().into(),
             self.funder.clone(),
             self.bounty_id.clone(),

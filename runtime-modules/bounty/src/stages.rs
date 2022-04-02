@@ -37,38 +37,32 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
     // Returns None if conditions are not met.
     fn is_funding_stage(&self) -> Option<BountyStage> {
         // Bounty was created. There can be some contributions. Funding period is not over.
-        if let BountyMilestone::Created {
-            has_contributions,
-            created_at,
-        } = self.bounty.milestone.clone()
-        {
-            let funding_period_is_not_expired = !self.funding_period_expired(created_at);
-
-            if funding_period_is_not_expired {
-                return Some(BountyStage::Funding { has_contributions });
-            }
+        match self.bounty.milestone.clone() {
+            BountyMilestone::Created {
+                has_contributions,
+                created_at,
+            } => match self.funding_period_expired(created_at) {
+                true => None,
+                false => Some(BountyStage::Funding { has_contributions }),
+            },
+            _ => None,
         }
-
-        None
     }
 
     // Calculates 'funding expired' stage of the bounty.
     // Returns None if conditions are not met.
     fn is_funding_expired_stage(&self) -> Option<BountyStage> {
         // Bounty was created. There can be some contributions. Funding period is not over.
-        if let BountyMilestone::Created {
-            has_contributions,
-            created_at,
-        } = self.bounty.milestone.clone()
-        {
-            let funding_period_is_expired = self.funding_period_expired(created_at);
-
-            if funding_period_is_expired && !has_contributions {
-                return Some(BountyStage::FundingExpired);
-            }
+        match self.bounty.milestone.clone() {
+            BountyMilestone::Created {
+                has_contributions,
+                created_at,
+            } => match self.funding_period_expired(created_at) && !has_contributions {
+                true => Some(BountyStage::FundingExpired),
+                false => None,
+            },
+            _ => None,
         }
-
-        None
     }
 
     // Calculates work submission stage of the bounty.
@@ -79,25 +73,22 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
             BountyMilestone::Created { created_at, .. } => {
                 match self.bounty.creation_params.funding_type {
                     // Perpetual funding is not reached its target yet.
-                    FundingType::Perpetual { .. } => return None,
+                    FundingType::Perpetual { .. } => None,
                     FundingType::Limited { .. } => {
-                        let minimum_funding_reached = self.minimum_funding_reached();
-                        let funding_period_expired = self.funding_period_expired(created_at);
+                        let target_reached_and_period_expired = self.target_funding_reached()
+                            && self.funding_period_expired(created_at);
 
-                        if minimum_funding_reached && funding_period_expired {
-                            return Some(BountyStage::WorkSubmission);
+                        match target_reached_and_period_expired {
+                            true => Some(BountyStage::WorkSubmission),
+                            false => None,
                         }
                     }
                 }
             }
-            // Maximum funding reached. Work period is not expired.
-            BountyMilestone::BountyMaxFundingReached { .. } => {
-                return Some(BountyStage::WorkSubmission)
-            }
-            _ => return None,
+            // Target funding reached. Work period is not expired.
+            BountyMilestone::BountyMaxFundingReached { .. } => Some(BountyStage::WorkSubmission),
+            _ => None,
         }
-
-        None
     }
 
     // Calculates judgment stage of the bounty.
@@ -118,26 +109,21 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
     fn is_successful_bounty_withdrawal_stage(&self) -> Option<BountyStage> {
         //The bounty judgment was submitted and is successful (there are some winners)
         //or unsuccessful (all entries rejected).
-        if let BountyMilestone::JudgmentSubmitted { successful_bounty } =
-            self.bounty.milestone.clone()
-        {
-            return match successful_bounty {
+
+        match self.bounty.milestone.clone() {
+            BountyMilestone::JudgmentSubmitted { successful_bounty } => match successful_bounty {
                 true => Some(BountyStage::SuccessfulBountyWithdrawal),
                 false => Some(BountyStage::FailedBountyWithdrawal),
-            };
+            },
+            _ => None,
         }
-
-        None
     }
 
-    // Checks whether the minimum funding reached for the bounty.
-    fn minimum_funding_reached(&self) -> bool {
+    // Checks whether the target funding reached for the bounty.
+    fn target_funding_reached(&self) -> bool {
         match self.bounty.creation_params.funding_type {
-            // There is no minimum for the perpetual funding type - only maximum (target).
             FundingType::Perpetual { .. } => false,
-            FundingType::Limited {
-                min_funding_amount, ..
-            } => self.bounty.total_funding >= min_funding_amount,
+            FundingType::Limited { target, .. } => self.bounty.total_funding >= target,
         }
     }
 

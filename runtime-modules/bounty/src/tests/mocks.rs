@@ -57,8 +57,6 @@ parameter_types! {
     pub const BountyModuleId: ModuleId = ModuleId(*b"m:bounty"); // module : bounty
     pub const BountyLockId: [u8; 8] = [12; 8];
     pub const ClosedContractSizeLimit: u32 = 3;
-    pub const MinCherryLimit: u64 = 10;
-    pub const MinFundingLimit: u64 = 50;
     pub const MinWorkEntrantStake: u64 = 10;
 }
 
@@ -100,8 +98,6 @@ impl Trait for Test {
     type StakingHandler = StakingManager<Test, BountyLockId>;
     type EntryId = u64;
     type ClosedContractSizeLimit = ClosedContractSizeLimit;
-    type MinCherryLimit = MinCherryLimit;
-    type MinFundingLimit = MinFundingLimit;
     type MinWorkEntrantStake = MinWorkEntrantStake;
 }
 
@@ -213,10 +209,10 @@ impl crate::WeightInfo for () {
     fn unlock_work_entrant_stake() -> u64 {
         0
     }
-    fn withdraw_state_bloat_bond_amount_by_council() -> u64 {
+    fn withdraw_funder_state_bloat_bond_amount_by_council() -> u64 {
         0
     }
-    fn withdraw_state_bloat_bond_amount_by_member() -> u64 {
+    fn withdraw_funder_state_bloat_bond_amount_by_member() -> u64 {
         0
     }
     fn withdraw_oracle_reward_by_oracle_council() -> u64 {
