@@ -322,6 +322,7 @@ async function createBid(
   auction: Auction
   member: Membership
   video: Video
+  previousTopBid?: Bid
 }> {
   // load member
   const member = await getRequiredExistingEntity(
@@ -350,6 +351,7 @@ async function createBid(
   }
 
   const amount = bidAmount ? new BN(bidAmount.toString()) : (auction.buyNowPrice as BN)
+  const previousTopBid = auction.topBid
 
   // prepare bid record
   const bid = new Bid({
@@ -368,7 +370,7 @@ async function createBid(
 
   await store.save<Bid>(bid)
 
-  return { auction, member, video }
+  return { auction, member, video, previousTopBid }
 }
 
 export async function createNft(
@@ -655,7 +657,7 @@ export async function contentNft_AuctionBidMade({ event, store }: EventContext &
   // specific event processing
 
   // create record for winning bid
-  const { auction, member, video } = await createBid(
+  const { auction, member, video, previousTopBid } = await createBid(
     event,
     store,
     memberId.toNumber(),
@@ -680,6 +682,7 @@ export async function contentNft_AuctionBidMade({ event, store }: EventContext &
     member,
     video,
     bidAmount,
+    previousTopBid,
   })
 
   await store.save<AuctionBidMadeEvent>(announcingPeriodStartedEvent)
@@ -824,7 +827,7 @@ export async function contentNft_BidMadeCompletingAuction({
   // specific event processing
 
   // create record for winning bid
-  await createBid(event, store, memberId.toNumber(), videoId.toNumber())
+  const { previousTopBid } = await createBid(event, store, memberId.toNumber(), videoId.toNumber())
 
   // winish auction and transfer ownership
   const { winner: member, video } = await finishAuction(store, videoId.toNumber(), event.blockNumber)
@@ -836,6 +839,7 @@ export async function contentNft_BidMadeCompletingAuction({
 
     member,
     video,
+    previousTopBid,
   })
 
   await store.save<BidMadeCompletingAuctionEvent>(announcingPeriodStartedEvent)

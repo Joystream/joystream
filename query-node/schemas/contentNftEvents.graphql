@@ -123,6 +123,9 @@ type AuctionBidMadeEvent implements Event @entity {
 
   "Bid made."
   bidAmount: BigInt!
+
+  "Bid that is being displaced by current bid in English auction"
+  previousTopBid: Bid
 }
 
 type AuctionBidCanceledEvent implements Event @entity {
@@ -231,6 +234,9 @@ type BidMadeCompletingAuctionEvent implements Event @entity {
 
   "Auctioned video."
   video: Video!
+
+  "Bid that is being displaced by current bid in English auction"
+  previousTopBid: Bid
 }
 
 type OpenAuctionBidAcceptedEvent implements Event @entity {
