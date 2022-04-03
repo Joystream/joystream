@@ -7,6 +7,7 @@ use frame_support::dispatch::DispatchError;
 use frame_support::traits::Currency;
 use frame_support::{assert_err, assert_ok, StorageDoubleMap, StorageMap, StorageValue};
 use frame_system::RawOrigin;
+use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::convert::TryInto;
@@ -21,9 +22,9 @@ use crate::{
 };
 
 use mocks::{
-    build_test_externalities, Balances, BlacklistSizeLimit,
+    build_test_externalities, build_test_externalities_with_genesis, Balances, BlacklistSizeLimit,
     DefaultChannelDynamicBagNumberOfStorageBuckets, DefaultMemberDynamicBagNumberOfStorageBuckets,
-    MaxDataObjectSize, MaxDistributionBucketFamilyNumber, Storage, Test,
+    ExistentialDeposit, MaxDataObjectSize, MaxDistributionBucketFamilyNumber, Storage, Test,
     ANOTHER_DISTRIBUTION_PROVIDER_ID, ANOTHER_STORAGE_PROVIDER_ID, BAG_DELETION_PRIZE_VALUE,
     DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DEFAULT_DISTRIBUTION_PROVIDER_ID,
     DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID, DEFAULT_STORAGE_BUCKETS_NUMBER,
@@ -6012,6 +6013,18 @@ fn distribution_operator_remark_unsuccessful_with_invalid_origin() {
                 msg
             ),
             DispatchError::BadOrigin,
+        );
+    })
+}
+
+#[test]
+fn initial_module_account_balance_set() {
+    build_test_externalities_with_genesis().execute_with(|| {
+        run_to_block(1);
+
+        assert_eq!(
+            Balances::usable_balance(&crate::StorageTreasury::<Test>::module_account_id()),
+            ExistentialDeposit::get().saturated_into::<u64>()
         );
     })
 }

@@ -275,6 +275,7 @@ pub fn testnet_genesis(
         membership: Some(MembersConfig { members }),
         forum: Some(forum_config),
         content: Some(content_config),
+        storage: Some(Default::default()),
     }
 }
 

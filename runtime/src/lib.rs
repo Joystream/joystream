@@ -490,7 +490,6 @@ impl content::Trait for Runtime {
     type ChannelCategoryId = ChannelCategoryId;
     type VideoId = VideoId;
     type OpenAuctionId = OpenAuctionId;
-    type VideoCategoryId = VideoCategoryId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type DataObjectStorage = Storage;
     type VideoPostId = VideoPostId;
@@ -646,6 +645,7 @@ impl storage::Trait for Runtime {
     type ContentId = ContentId;
     type StorageWorkingGroup = StorageWorkingGroup;
     type DistributionWorkingGroup = DistributionWorkingGroup;
+    type ModuleAccountInitialBalance = ExistentialDeposit;
 }
 
 impl common::membership::MembershipTypes for Runtime {
@@ -1159,7 +1159,7 @@ construct_runtime!(
         Blog: blog::<Instance1>::{Module, Call, Storage, Event<T>},
         JoystreamUtility: joystream_utility::{Module, Call, Event<T>},
         Content: content::{Module, Call, Storage, Event<T>, Config<T>},
-        Storage: storage::{Module, Call, Storage, Event<T>},
+        Storage: storage::{Module, Call, Storage, Event<T>, Config},
         // --- Proposals
         ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
