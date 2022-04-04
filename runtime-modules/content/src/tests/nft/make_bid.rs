@@ -759,7 +759,7 @@ fn english_auction_bid_made_completing_auction_event_with_no_previous_bidder() {
             MetaEvent::content(RawEvent::BidMadeCompletingAuction(
                 DEFAULT_MEMBER_ID,
                 video_id,
-                None
+                Some(DEFAULT_MEMBER_ID),
             ))
         );
     })
@@ -805,7 +805,7 @@ fn english_auction_bid_made_completing_auction_event_with_previous_bidder() {
             MetaEvent::content(RawEvent::BidMadeCompletingAuction(
                 DEFAULT_MEMBER_ID,
                 video_id,
-                Some(SECOND_MEMBER_ID)
+                Some(DEFAULT_MEMBER_ID)
             ))
         );
     })
