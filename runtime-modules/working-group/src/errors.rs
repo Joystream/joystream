@@ -89,5 +89,8 @@ decl_error! {
 
         /// Worker storage text is too long.
         WorkerStorageValueTooLong,
+
+        /// Cannot withdraw: insufficient budget balance.
+        InsufficientBalanceForTransfer,
     }
 }

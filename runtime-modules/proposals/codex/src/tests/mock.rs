@@ -144,7 +144,7 @@ impl membership::WeightInfo for Weights {
 impl membership::Trait for Test {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
-    type WorkingGroup = ();
+    type WorkingGroup = Wg;
     type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = ();
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
@@ -154,7 +154,8 @@ impl membership::Trait for Test {
     type CandidateStake = CandidateStake;
 }
 
-impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
+pub struct Wg;
+impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
     fn get_budget() -> u64 {
         unimplemented!()
     }
@@ -162,9 +163,13 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
     fn set_budget(_new_value: u64) {
         unimplemented!()
     }
+
+    fn try_withdraw(_account_id: &u64, _amount: u64) -> DispatchResult {
+        unimplemented!()
+    }
 }
 
-impl common::working_group::WorkingGroupAuthenticator<Test> for () {
+impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     fn ensure_worker_origin(
         _origin: <Test as frame_system::Trait>::Origin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,

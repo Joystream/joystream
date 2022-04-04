@@ -61,12 +61,12 @@ fn setup_english_auction_scenario() {
     ));
 
     let auction_params = EnglishAuctionParams::<Test> {
-        starts_at: None,
         starting_price: Content::min_starting_price(),
         buy_now_price: Some(DEFAULT_BUY_NOW_PRICE),
         extension_period: Content::min_auction_extension_period(),
-        duration: Content::min_auction_duration(),
         min_bid_step: Content::min_bid_step(),
+        starts_at: None,
+        duration: AUCTION_DURATION,
         whitelist: BTreeSet::new(),
     };
 

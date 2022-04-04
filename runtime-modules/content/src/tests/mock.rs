@@ -10,7 +10,6 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
     ModuleId, Perbill,
 };
-use sp_std::cell::RefCell;
 use staking_handler::LockComparator;
 
 use crate::ContentActorAuthenticator;
@@ -547,7 +546,7 @@ impl membership::Trait for Test {
     type Event = MetaEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
-    type WorkingGroup = ();
+    type WorkingGroup = Wg;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type StakingCandidateStakingHandler =
@@ -556,26 +555,22 @@ impl membership::Trait for Test {
     type WeightInfo = ();
 }
 
-pub const WORKING_GROUP_BUDGET: u64 = 100;
-
-thread_local! {
-    pub static WG_BUDGET: RefCell<u64> = RefCell::new(WORKING_GROUP_BUDGET);
-    pub static LEAD_SET: RefCell<bool> = RefCell::new(bool::default());
-}
-
-impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
+pub struct Wg;
+impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
     fn get_budget() -> u64 {
-        WG_BUDGET.with(|val| *val.borrow())
+        unimplemented!()
     }
 
-    fn set_budget(new_value: u64) {
-        WG_BUDGET.with(|val| {
-            *val.borrow_mut() = new_value;
-        });
+    fn set_budget(_new_value: u64) {
+        unimplemented!()
+    }
+
+    fn try_withdraw(_account_id: &u64, _amount: u64) -> DispatchResult {
+        unimplemented!()
     }
 }
 
-impl common::working_group::WorkingGroupAuthenticator<Test> for () {
+impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     fn ensure_worker_origin(
         _origin: <Test as frame_system::Trait>::Origin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
@@ -645,6 +640,34 @@ impl MembershipInfoProvider<Test> for MemberInfoProvider {
 // working group integration
 pub struct StorageWG;
 pub struct DistributionWG;
+
+impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for StorageWG {
+    fn get_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget(_new_value: u64) {
+        unimplemented!()
+    }
+
+    fn try_withdraw(_account_id: &u64, _amount: u64) -> DispatchResult {
+        unimplemented!()
+    }
+}
+
+impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for DistributionWG {
+    fn get_budget() -> u64 {
+        unimplemented!()
+    }
+
+    fn set_budget(_new_value: u64) {
+        unimplemented!()
+    }
+
+    fn try_withdraw(_account_id: &u64, _amount: u64) -> DispatchResult {
+        unimplemented!()
+    }
+}
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
     fn ensure_worker_origin(
@@ -755,27 +778,6 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
         Ok(())
     }
 }
-
-impl common::working_group::WorkingGroupBudgetHandler<Test> for StorageWG {
-    fn get_budget() -> u64 {
-        unimplemented!()
-    }
-
-    fn set_budget(_new_value: u64) {
-        unimplemented!()
-    }
-}
-
-impl common::working_group::WorkingGroupBudgetHandler<Test> for DistributionWG {
-    fn get_budget() -> u64 {
-        unimplemented!()
-    }
-
-    fn set_budget(_new_value: u64) {
-        unimplemented!()
-    }
-}
-
 pub const COUNCIL_BUDGET_ACCOUNT_ID: u64 = 90000000;
 pub struct CouncilBudgetManager;
 impl common::council::CouncilBudgetManager<u64, u64> for CouncilBudgetManager {

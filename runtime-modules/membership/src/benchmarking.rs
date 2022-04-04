@@ -14,7 +14,7 @@ use frame_system::Module as System;
 use frame_system::{EventRecord, RawOrigin};
 use sp_arithmetic::traits::One;
 use sp_arithmetic::Perbill;
-use sp_runtime::traits::Bounded;
+use sp_runtime::traits::{Bounded, Saturating};
 use sp_std::prelude::*;
 use sp_std::vec;
 
