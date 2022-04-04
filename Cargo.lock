@@ -1077,6 +1077,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "derive-new"
+version = "0.5.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3418329ca0ad70234b9735dc4ceed10af4df60eff9c8e7b06cb5e520d92c3535"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "derive_more"
 version = "0.99.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4205,6 +4216,7 @@ name = "pallet-storage"
 version = "4.0.1"
 dependencies = [
  "derive-fixture",
+ "derive-new",
  "frame-benchmarking",
  "frame-support",
  "frame-system",

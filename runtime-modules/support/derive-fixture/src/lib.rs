@@ -7,7 +7,7 @@ use proc_macro2::TokenStream as TokenStream2;
 /// Generates setters methods for each field of the struct in the format `with_*`.
 /// Supports only structs with named fields. It supports generics.
 /// Usage:
-/// ```no_run
+/// ```ignore
 /// #[derive(Fixture, Default)]
 /// pub struct Foo{
 ///    pub val1: u32,
