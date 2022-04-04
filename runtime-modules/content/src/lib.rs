@@ -872,8 +872,9 @@ decl_module! {
             // Ensure nft is not issued for the video. Videos with issued nfts are immutable.
             video.ensure_nft_is_not_issued::<T>()?;
 
+            let channel = Self::get_channel_from_video(&video);
             let channel_id = video.in_channel;
-            let channel = Self::ensure_channel_exists(&channel_id)?;
+
             channel.ensure_has_no_active_transfer::<T>()?;
 
             // Check for permission to update channel assets
@@ -950,8 +951,9 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // get information regarding channel
+            let channel = Self::get_channel_from_video(&video);
             let channel_id = video.in_channel;
-            let channel = ChannelById::<T>::get(channel_id);
+
             channel.ensure_has_no_active_transfer::<T>()?;
 
             ensure_actor_authorized_to_update_channel_assets::<T>(
@@ -990,8 +992,8 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // get information regarding channel
+            let channel = Self::get_channel_from_video(&video);
             let channel_id = video.in_channel;
-            let channel = ChannelById::<T>::get(channel_id);
 
             // permissions check
             let is_nft = video.nft_status.is_some();
@@ -1037,8 +1039,8 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // get information regarding channel
+            let channel = Self::get_channel_from_video(&video);
             let channel_id = video.in_channel;
-            let channel = ChannelById::<T>::get(channel_id);
 
             // Permissions check
             let actions_to_perform = vec![ContentModerationAction::DeleteVideo];
@@ -1076,8 +1078,7 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // get information regarding channel
-            let channel_id = video.in_channel;
-            let channel = ChannelById::<T>::get(channel_id);
+            let channel = Self::get_channel_from_video(&video);
 
             // Permissions check
             let actions_to_perform = vec![ContentModerationAction::HideVideo];
@@ -1104,12 +1105,12 @@ decl_module! {
 
             // ensure channel is valid
             let video = Self::ensure_video_exists(&params.video_reference)?;
-            let owner = ChannelById::<T>::get(video.in_channel).owner;
+            let owner = Self::get_channel_from_video(&video).owner;
 
             match params.post_type {
                 VideoPostType::<T>::Comment(parent_id) => {
                     ensure!(video.enable_comments, Error::<T>::CommentsDisabled);
-                    Self::ensure_post_exists( params.video_reference, parent_id).map(|_| ())?;
+                    Self::ensure_post_exists(params.video_reference, parent_id).map(|_| ())?;
                     ensure_actor_authorized_to_add_comment::<T>(&sender, &actor)?
                 },
                 VideoPostType::<T>::Description => ensure_actor_authorized_to_add_video_post::<T>(
@@ -1169,10 +1170,10 @@ decl_module! {
             new_text: Vec<u8>,
         ) {
             let sender = ensure_signed(origin)?;
-            let post = Self::ensure_post_exists(video_id, post_id)?;
-            let video = VideoById::<T>::get(video_id);
-            let channel = ChannelById::<T>::get(video.in_channel);
+            let video = Self::ensure_video_exists(&video_id)?;
+            let channel = Self::get_channel_from_video(&video);
             channel.ensure_has_no_active_transfer::<T>()?;
+            let post = Self::ensure_post_exists(video_id, post_id)?;
 
             match post.post_type {
                 VideoPostType::<T>::Description => ensure_actor_authorized_to_edit_video_post::<T>(
@@ -1200,10 +1201,10 @@ decl_module! {
             params: VideoPostDeletionParameters<T>,
         ) {
             let sender = ensure_signed(origin)?;
-            let post = Self::ensure_post_exists(video_id, post_id)?;
-            let video = VideoById::<T>::get(video_id);
-            let channel = ChannelById::<T>::get(video.in_channel);
+            let video = Self::ensure_video_exists(&video_id)?;
+            let channel = Self::get_channel_from_video(&video);
             channel.ensure_has_no_active_transfer::<T>()?;
+            let post = Self::ensure_post_exists(video_id, post_id)?;
 
             let cleanup_actor = match post.post_type {
                 VideoPostType::<T>::Description => {
@@ -1279,6 +1280,9 @@ decl_module! {
             let sender = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&sender, &member_id)?;
 
+            let _video = Self::ensure_video_exists(&video_id)?;
+            let _post = Self::ensure_post_exists(video_id, post_id)?;
+
             //
             // == MUTATION_SAFE ==
             //
@@ -1296,6 +1300,8 @@ decl_module! {
             // video existence verification purposely avoided
             let sender = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&sender, &member_id)?;
+
+            let _video = Self::ensure_video_exists(&video_id)?;
 
             //
             // == MUTATION_SAFE ==
@@ -1423,10 +1429,7 @@ decl_module! {
             // Ensure have not been issued yet
             video.ensure_nft_is_not_issued::<T>()?;
 
-            let channel_id = video.in_channel;
-
-            // Ensure channel exists, retrieve channel owner
-            let channel = Self::ensure_channel_exists(&channel_id)?;
+            let channel = Self::get_channel_from_video(&video);
 
             ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
 
@@ -2399,6 +2402,10 @@ impl<T: Trait> Module<T> {
             Error::<T>::ChannelDoesNotExist
         );
         Ok(ChannelById::<T>::get(channel_id))
+    }
+
+    fn get_channel_from_video(video: &Video<T>) -> Channel<T> {
+        ChannelById::<T>::get(video.in_channel)
     }
 
     fn ensure_post_exists(
