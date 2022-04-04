@@ -528,6 +528,11 @@ impl<ChannelId: Clone, VideoPostId: Clone, OwnedNft: Clone, DataObjectId: Ord>
     pub fn set_nft_status(&mut self, nft: OwnedNft) {
         self.nft_status = Some(nft);
     }
+
+    /// Destroy nft status
+    pub fn destroy_nft(&mut self) {
+        self.nft_status = None;
+    }
 }
 
 /// Operations with local pallet account.

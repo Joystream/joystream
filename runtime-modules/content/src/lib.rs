@@ -71,9 +71,6 @@ pub trait Trait:
     /// Type of identifier for OpenAuction
     type OpenAuctionId: NumericIdentifier;
 
-    /// Type of identifier for Video Categories
-    type VideoCategoryId: NumericIdentifier;
-
     /// Type of identifier for Channel Categories
     type ChannelCategoryId: NumericIdentifier;
 
@@ -136,14 +133,9 @@ decl_storage! {
 
         pub VideoById get(fn video_by_id): map hasher(blake2_128_concat) T::VideoId => Video<T>;
 
-        pub VideoCategoryById get(fn video_category_by_id):
-        map hasher(blake2_128_concat) T::VideoCategoryId => VideoCategory;
-
         pub NextChannelCategoryId get(fn next_channel_category_id) config(): T::ChannelCategoryId;
 
         pub NextChannelId get(fn next_channel_id) config(): T::ChannelId;
-
-        pub NextVideoCategoryId get(fn next_video_category_id) config(): T::VideoCategoryId;
 
         pub NextVideoId get(fn next_video_id) config(): T::VideoId;
 
@@ -880,8 +872,9 @@ decl_module! {
             // Ensure nft is not issued for the video. Videos with issued nfts are immutable.
             video.ensure_nft_is_not_issued::<T>()?;
 
+            let channel = Self::get_channel_from_video(&video);
             let channel_id = video.in_channel;
-            let channel = Self::ensure_channel_exists(&channel_id)?;
+
             channel.ensure_has_no_active_transfer::<T>()?;
 
             // Check for permission to update channel assets
@@ -958,8 +951,9 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // get information regarding channel
+            let channel = Self::get_channel_from_video(&video);
             let channel_id = video.in_channel;
-            let channel = ChannelById::<T>::get(channel_id);
+
             channel.ensure_has_no_active_transfer::<T>()?;
 
             ensure_actor_authorized_to_update_channel_assets::<T>(
@@ -998,8 +992,8 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // get information regarding channel
+            let channel = Self::get_channel_from_video(&video);
             let channel_id = video.in_channel;
-            let channel = ChannelById::<T>::get(channel_id);
 
             // permissions check
             let is_nft = video.nft_status.is_some();
@@ -1045,8 +1039,8 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // get information regarding channel
+            let channel = Self::get_channel_from_video(&video);
             let channel_id = video.in_channel;
-            let channel = ChannelById::<T>::get(channel_id);
 
             // Permissions check
             let actions_to_perform = vec![ContentModerationAction::DeleteVideo];
@@ -1084,8 +1078,7 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // get information regarding channel
-            let channel_id = video.in_channel;
-            let channel = ChannelById::<T>::get(channel_id);
+            let channel = Self::get_channel_from_video(&video);
 
             // Permissions check
             let actions_to_perform = vec![ContentModerationAction::HideVideo];
@@ -1102,84 +1095,6 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn set_featured_videos(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            list: Vec<T::VideoId>
-        ) {
-            // can only be set by lead
-            ensure_actor_authorized_to_set_featured_videos::<T>(
-                origin,
-                &actor,
-            )?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            Self::deposit_event(RawEvent::FeaturedVideosSet(actor, list));
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_video_category(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            params: VideoCategoryCreationParameters,
-        ) {
-            ensure_actor_authorized_to_manage_categories::<T>(
-                origin,
-                &actor
-            )?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            let category_id = Self::next_video_category_id();
-            NextVideoCategoryId::<T>::mutate(|id| *id += T::VideoCategoryId::one());
-
-            let category = VideoCategory {};
-            VideoCategoryById::<T>::insert(category_id, category);
-
-            Self::deposit_event(RawEvent::VideoCategoryCreated(actor, category_id, params));
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_video_category(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            category_id: T::VideoCategoryId,
-            params: VideoCategoryUpdateParameters,
-        ) {
-            ensure_actor_authorized_to_manage_categories::<T>(
-                origin,
-                &actor
-            )?;
-
-            Self::ensure_video_category_exists(&category_id)?;
-
-            Self::deposit_event(RawEvent::VideoCategoryUpdated(actor, category_id, params));
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_video_category(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            category_id: T::VideoCategoryId,
-        ) {
-            ensure_actor_authorized_to_manage_categories::<T>(
-                origin,
-                &actor
-            )?;
-
-            Self::ensure_video_category_exists(&category_id)?;
-
-            VideoCategoryById::<T>::remove(&category_id);
-
-            Self::deposit_event(RawEvent::VideoCategoryDeleted(actor, category_id));
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_post(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -1190,12 +1105,12 @@ decl_module! {
 
             // ensure channel is valid
             let video = Self::ensure_video_exists(&params.video_reference)?;
-            let owner = ChannelById::<T>::get(video.in_channel).owner;
+            let owner = Self::get_channel_from_video(&video).owner;
 
             match params.post_type {
                 VideoPostType::<T>::Comment(parent_id) => {
                     ensure!(video.enable_comments, Error::<T>::CommentsDisabled);
-                    Self::ensure_post_exists( params.video_reference, parent_id).map(|_| ())?;
+                    Self::ensure_post_exists(params.video_reference, parent_id).map(|_| ())?;
                     ensure_actor_authorized_to_add_comment::<T>(&sender, &actor)?
                 },
                 VideoPostType::<T>::Description => ensure_actor_authorized_to_add_video_post::<T>(
@@ -1255,10 +1170,10 @@ decl_module! {
             new_text: Vec<u8>,
         ) {
             let sender = ensure_signed(origin)?;
-            let post = Self::ensure_post_exists(video_id, post_id)?;
-            let video = VideoById::<T>::get(video_id);
-            let channel = ChannelById::<T>::get(video.in_channel);
+            let video = Self::ensure_video_exists(&video_id)?;
+            let channel = Self::get_channel_from_video(&video);
             channel.ensure_has_no_active_transfer::<T>()?;
+            let post = Self::ensure_post_exists(video_id, post_id)?;
 
             match post.post_type {
                 VideoPostType::<T>::Description => ensure_actor_authorized_to_edit_video_post::<T>(
@@ -1286,10 +1201,10 @@ decl_module! {
             params: VideoPostDeletionParameters<T>,
         ) {
             let sender = ensure_signed(origin)?;
-            let post = Self::ensure_post_exists(video_id, post_id)?;
-            let video = VideoById::<T>::get(video_id);
-            let channel = ChannelById::<T>::get(video.in_channel);
+            let video = Self::ensure_video_exists(&video_id)?;
+            let channel = Self::get_channel_from_video(&video);
             channel.ensure_has_no_active_transfer::<T>()?;
+            let post = Self::ensure_post_exists(video_id, post_id)?;
 
             let cleanup_actor = match post.post_type {
                 VideoPostType::<T>::Description => {
@@ -1365,6 +1280,9 @@ decl_module! {
             let sender = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&sender, &member_id)?;
 
+            let _video = Self::ensure_video_exists(&video_id)?;
+            let _post = Self::ensure_post_exists(video_id, post_id)?;
+
             //
             // == MUTATION_SAFE ==
             //
@@ -1382,6 +1300,8 @@ decl_module! {
             // video existence verification purposely avoided
             let sender = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&sender, &member_id)?;
+
+            let _video = Self::ensure_video_exists(&video_id)?;
 
             //
             // == MUTATION_SAFE ==
@@ -1509,10 +1429,7 @@ decl_module! {
             // Ensure have not been issued yet
             video.ensure_nft_is_not_issued::<T>()?;
 
-            let channel_id = video.in_channel;
-
-            // Ensure channel exists, retrieve channel owner
-            let channel = Self::ensure_channel_exists(&channel_id)?;
+            let channel = Self::get_channel_from_video(&video);
 
             ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
 
@@ -1532,6 +1449,38 @@ decl_module! {
                 actor,
                 video_id,
                 params,
+            ));
+        }
+
+        /// Destroy NFT
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn destroy_nft(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            video_id: T::VideoId
+        ) {
+            // Ensure given video exists
+            let video = Self::ensure_video_exists(&video_id)?;
+
+            // Ensure nft is already issued
+            let nft = video.ensure_nft_is_issued::<T>()?;
+
+            // Authorize nft destruction
+            ensure_actor_authorized_to_manage_nft::<T>(origin, &actor, &nft.owner, video.in_channel)?;
+
+            // Ensure there nft transactional status is set to idle.
+            Self::ensure_nft_transactional_status_is_idle(&nft)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update the video
+            VideoById::<T>::mutate(video_id, |v| v.destroy_nft());
+
+            Self::deposit_event(RawEvent::NftDestroyed(
+                actor,
+                video_id,
             ));
         }
 
@@ -2439,16 +2388,6 @@ impl<T: Trait> Module<T> {
         Ok(ChannelCategoryById::<T>::get(channel_category_id))
     }
 
-    fn ensure_video_category_exists(
-        video_category_id: &T::VideoCategoryId,
-    ) -> Result<VideoCategory, Error<T>> {
-        ensure!(
-            VideoCategoryById::<T>::contains_key(video_category_id),
-            Error::<T>::CategoryDoesNotExist
-        );
-        Ok(VideoCategoryById::<T>::get(video_category_id))
-    }
-
     fn ensure_video_exists(video_id: &T::VideoId) -> Result<Video<T>, Error<T>> {
         ensure!(
             VideoById::<T>::contains_key(video_id),
@@ -2463,6 +2402,10 @@ impl<T: Trait> Module<T> {
             Error::<T>::ChannelDoesNotExist
         );
         Ok(ChannelById::<T>::get(channel_id))
+    }
+
+    fn get_channel_from_video(video: &Video<T>) -> Channel<T> {
+        ChannelById::<T>::get(video.in_channel)
     }
 
     fn ensure_post_exists(
@@ -2795,7 +2738,6 @@ decl_event!(
         CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
         CuratorId = <T as ContentActorAuthenticator>::CuratorId,
         VideoId = <T as Trait>::VideoId,
-        VideoCategoryId = <T as Trait>::VideoCategoryId,
         ChannelId = <T as storage::Trait>::ChannelId,
         ChannelCategoryId = <T as Trait>::ChannelCategoryId,
         Channel = Channel<T>,
@@ -2876,14 +2818,6 @@ decl_event!(
         ChannelCategoryDeleted(ContentActor, ChannelCategoryId),
 
         // Videos
-        VideoCategoryCreated(
-            ContentActor,
-            VideoCategoryId,
-            VideoCategoryCreationParameters,
-        ),
-        VideoCategoryUpdated(ContentActor, VideoCategoryId, VideoCategoryUpdateParameters),
-        VideoCategoryDeleted(ContentActor, VideoCategoryId),
-
         VideoCreated(
             ContentActor,
             ChannelId,
@@ -2908,9 +2842,6 @@ decl_event!(
             Vec<u8>, /* rationale */
         ),
 
-        // Featured Videos
-        FeaturedVideosSet(ContentActor, Vec<VideoId>),
-
         // VideoPosts & Replies
         VideoPostCreated(VideoPost, VideoPostId),
         VideoPostTextUpdated(ContentActor, Vec<u8>, VideoPostId, VideoId),
@@ -2928,6 +2859,7 @@ decl_event!(
         EnglishAuctionStarted(ContentActor, VideoId, EnglishAuctionParams),
         OpenAuctionStarted(ContentActor, VideoId, OpenAuctionParams, OpenAuctionId),
         NftIssued(ContentActor, VideoId, NftIssuanceParameters),
+        NftDestroyed(ContentActor, VideoId),
         AuctionBidMade(MemberId, VideoId, Balance),
         AuctionBidCanceled(MemberId, VideoId),
         AuctionCanceled(ContentActor, VideoId),

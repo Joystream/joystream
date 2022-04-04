@@ -299,20 +299,6 @@ pub fn ensure_actor_authorized_to_manage_nft<T: Trait>(
     Ok(())
 }
 
-// Enure actor can update or delete channels and videos
-pub fn ensure_actor_authorized_to_set_featured_videos<T: Trait>(
-    origin: T::Origin,
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-) -> DispatchResult {
-    let sender = ensure_signed(origin)?;
-    ensure_actor_auth_success::<T>(&sender, actor)?;
-    if let ContentActor::Lead = actor {
-        Ok(())
-    } else {
-        Err(Error::<T>::ActorNotAuthorized.into())
-    }
-}
-
 // Ensure actor can manage categories
 pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
     origin: T::Origin,

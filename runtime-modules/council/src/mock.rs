@@ -15,7 +15,9 @@ use frame_support::weights::Weight;
 use frame_support::{
     ensure, impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
 };
-use frame_system::{ensure_signed, EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
+use frame_system::{
+    ensure_signed, EnsureOneOf, EnsureRoot, EnsureSigned, EventRecord, Phase, RawOrigin,
+};
 use rand::Rng;
 use referendum::{
     CastVote, OptionResult, ReferendumManager, ReferendumStage, ReferendumStageRevealing,
@@ -171,6 +173,9 @@ impl WeightInfo for () {
         0
     }
     fn funding_request(_: u32) -> Weight {
+        0
+    }
+    fn fund_council_budget() -> Weight {
         0
     }
     fn councilor_remark() -> Weight {
@@ -1519,3 +1524,93 @@ where
 }
 
 pub type Council = crate::Module<Runtime>;
+
+pub const DEFAULT_ACCOUNT_ID: u64 = 1u64;
+pub const DEFAULT_MEMBER_ID: u64 = 1u64;
+pub struct FundCouncilBudgetFixture {
+    origin: RawOrigin<u64>,
+    member_id: u64,
+    amount: u64,
+    rationale: Vec<u8>,
+}
+
+impl Default for FundCouncilBudgetFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
+            member_id: DEFAULT_MEMBER_ID,
+            amount: 100,
+            rationale: Vec::new(),
+        }
+    }
+}
+
+impl FundCouncilBudgetFixture {
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_member_id(self, member_id: u64) -> Self {
+        Self { member_id, ..self }
+    }
+
+    pub fn with_amount(self, amount: u64) -> Self {
+        Self { amount, ..self }
+    }
+
+    pub fn with_rationale(self, rationale: Vec<u8>) -> Self {
+        Self { rationale, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_budget = Council::budget();
+
+        let actual_result = Council::fund_council_budget(
+            self.origin.clone().into(),
+            self.member_id,
+            self.amount,
+            self.rationale.clone(),
+        );
+
+        assert_eq!(actual_result.clone(), expected_result);
+
+        let new_budget = Council::budget();
+
+        if actual_result.is_ok() {
+            assert_eq!(new_budget, old_budget + self.amount);
+        } else {
+            assert_eq!(old_budget, new_budget);
+        }
+    }
+}
+
+pub type System = frame_system::Module<Runtime>;
+
+// Recommendation from Parity on testing on_finalize
+// https://substrate.dev/docs/en/next/development/module/tests
+pub fn run_to_block(n: u64) {
+    while System::block_number() < n {
+        <System as OnFinalize<u64>>::on_finalize(System::block_number());
+        System::set_block_number(System::block_number() + 1);
+        <System as OnInitialize<u64>>::on_initialize(System::block_number());
+    }
+}
+
+pub struct EventFixture;
+impl EventFixture {
+    pub fn assert_last_crate_event(expected_raw_event: RawEvent<u64, u64, u64, u64>) {
+        let converted_event = TestEvent::event_mod(expected_raw_event);
+
+        Self::assert_last_global_event(converted_event)
+    }
+
+    pub fn assert_last_global_event(expected_event: TestEvent) {
+        let expected_event = EventRecord {
+            phase: Phase::Initialization,
+            event: expected_event,
+            topics: vec![],
+        };
+
+        assert_eq!(System::events().pop().unwrap(), expected_event);
+    }
+}

@@ -7,10 +7,10 @@ pub use mock::{build_test_externalities, Test, DEFAULT_WORKER_ACCOUNT_ID};
 use frame_system::RawOrigin;
 
 use crate::tests::fixtures::{
-    CancelOpeningFixture, DecreaseWorkerStakeFixture, IncreaseWorkerStakeFixture, SetBudgetFixture,
-    SetStatusTextFixture, SlashWorkerStakeFixture, SpendFromBudgetFixture,
-    UpdateRewardAccountFixture, UpdateRewardAmountFixture, UpdateWorkerStorageFixture,
-    WithdrawApplicationFixture,
+    CancelOpeningFixture, DecreaseWorkerStakeFixture, FundWorkingGroupBudgetFixture,
+    IncreaseWorkerStakeFixture, SetBudgetFixture, SetStatusTextFixture, SlashWorkerStakeFixture,
+    SpendFromBudgetFixture, UpdateRewardAccountFixture, UpdateRewardAmountFixture,
+    UpdateWorkerStorageFixture, WithdrawApplicationFixture,
 };
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::tests::mock::{
@@ -28,6 +28,7 @@ use fixtures::{
     LeaveWorkerRoleFixture, TerminateWorkerRoleFixture, UpdateWorkerRoleAccountFixture,
 };
 use frame_support::dispatch::DispatchError;
+use frame_support::traits::Currency;
 use frame_support::StorageMap;
 use mock::{run_to_block, Balances, RewardPeriod, TestWorkingGroup, ACTOR_ORIGIN_ERROR};
 use sp_runtime::traits::Hash;
@@ -2619,5 +2620,77 @@ fn update_worker_storage_fails_with_too_long_text() {
         update_storage_fixture.call_and_assert(Err(
             Error::<Test, DefaultInstance>::WorkerStorageValueTooLong.into(),
         ));
+    });
+}
+
+#[test]
+fn fund_wg_budget_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 2;
+        let member_id = 1;
+        let amount = 100;
+        let initial_budget = 1000;
+        let rationale = b"text".to_vec();
+        run_to_block(1);
+
+        let _ = Balances::deposit_creating(&account_id, initial_budget);
+
+        let set_budget_fixture = SetBudgetFixture::default().with_budget(initial_budget);
+        assert_eq!(set_budget_fixture.call(), Ok(()));
+
+        FundWorkingGroupBudgetFixture::default()
+            .with_origin(RawOrigin::Signed(account_id).into())
+            .with_member_id(member_id)
+            .with_amount(amount)
+            .with_rationale(rationale.clone())
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&account_id),
+            initial_budget - amount
+        );
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkingGroupBudgetFunded(
+            member_id, amount, rationale,
+        ));
+    });
+}
+
+#[test]
+fn fund_wg_budget_failed_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        FundWorkingGroupBudgetFixture::default()
+            .with_origin(RawOrigin::None.into())
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn fund_wg_budget_fails_with_insufficient_balance() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 2;
+        let member_id = 2;
+        let amount = 100;
+
+        FundWorkingGroupBudgetFixture::default()
+            .with_origin(RawOrigin::Signed(account_id).into())
+            .with_member_id(member_id)
+            .with_amount(amount)
+            .call_and_assert(Err(
+                Error::<Test, DefaultInstance>::InsufficientTokensForFunding.into(),
+            ));
+    });
+}
+
+#[test]
+fn fund_wg_budget_fails_with_zero_amount() {
+    build_test_externalities().execute_with(|| {
+        let member_id = 2;
+        let amount = 0;
+
+        FundWorkingGroupBudgetFixture::default()
+            .with_member_id(member_id)
+            .with_amount(amount)
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::ZeroTokensFunding.into()));
     });
 }

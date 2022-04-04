@@ -442,6 +442,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::MembershipTypes
 
     type DistributionWorkingGroup: common::working_group::WorkingGroupAuthenticator<Self>
         + common::working_group::WorkingGroupBudgetHandler<Self>;
+
+    /// Module account initial balance (existential deposit).
+    type ModuleAccountInitialBalance: Get<BalanceOf<Self>>;
 }
 
 /// Operations with local pallet account.
@@ -1271,6 +1274,22 @@ decl_storage! {
 
         /// "Distribution buckets per bag" number limit.
         pub DistributionBucketsPerBagLimit get (fn distribution_buckets_per_bag_limit): u64;
+    }
+    add_extra_genesis {
+        build(|_| {
+            // We deposit some initial balance to the pallet's module account on the genesis block
+            // to protect the account from being deleted ("dusted") on early stages of pallet's work
+            // by the "garbage collector" of the balances pallet.
+            // It should be equal to at least `ExistentialDeposit` from the balances pallet setting.
+            // Original issues:
+            // - https://github.com/Joystream/joystream/issues/3497
+            // - https://github.com/Joystream/joystream/issues/3510
+
+            let module_account_id = StorageTreasury::<T>::module_account_id();
+            let deposit: BalanceOf<T> = T::ModuleAccountInitialBalance::get();
+
+            let _ = Balances::<T>::deposit_creating(&module_account_id, deposit);
+        });
     }
 }
 

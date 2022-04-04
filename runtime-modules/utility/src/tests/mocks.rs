@@ -453,6 +453,9 @@ impl working_group::WeightInfo for WorkingGroupWeightInfo {
     fn leave_role(_: u32) -> Weight {
         0
     }
+    fn fund_working_group_budget() -> Weight {
+        0
+    }
     fn lead_remark() -> Weight {
         0
     }
@@ -618,6 +621,9 @@ impl council::WeightInfo for CouncilWeightInfo {
         0
     }
     fn funding_request(_: u32) -> Weight {
+        0
+    }
+    fn fund_council_budget() -> Weight {
         0
     }
     fn councilor_remark() -> Weight {

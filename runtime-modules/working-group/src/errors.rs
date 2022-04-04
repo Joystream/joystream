@@ -89,5 +89,11 @@ decl_error! {
 
         /// Worker storage text is too long.
         WorkerStorageValueTooLong,
+
+        /// Insufficient tokens for funding (on member controller account)
+        InsufficientTokensForFunding,
+
+        /// Trying to fund with zero tokens
+        ZeroTokensFunding,
     }
 }

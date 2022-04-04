@@ -354,7 +354,7 @@ pub fn unsuccessful_post_update_with_invalid_video_id() {
 
         EditPostTextFixture::default()
             .with_video_id(VideoPostId::zero())
-            .call_and_assert(Err(Error::<Test>::VideoPostDoesNotExist.into()))
+            .call_and_assert(Err(Error::<Test>::VideoDoesNotExist.into()))
     })
 }
 
