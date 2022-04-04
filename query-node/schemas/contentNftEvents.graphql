@@ -318,6 +318,9 @@ type OfferAcceptedEvent implements Event @entity {
 
   "NFT's video."
   video: Video!
+
+  "Price for which the NFT was bought"
+  price: BigInt
 }
 
 type OfferCanceledEvent implements Event @entity {

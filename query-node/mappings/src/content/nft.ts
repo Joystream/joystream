@@ -921,6 +921,8 @@ export async function contentNft_OfferAccepted({ event, store }: EventContext & 
 
   // read member from offer
   const memberId = (nft.transactionalStatus as TransactionalStatusInitiatedOfferToMember).memberId
+  // read price from offer
+  const price = (nft.transactionalStatus as TransactionalStatusInitiatedOfferToMember).price
   const member = new Membership({ id: memberId.toString() })
 
   // update NFT's transactional status
@@ -938,6 +940,7 @@ export async function contentNft_OfferAccepted({ event, store }: EventContext & 
     ...genericEventFields(event),
 
     video,
+    price,
   })
 
   await store.save<OfferAcceptedEvent>(announcingPeriodStartedEvent)
@@ -1038,7 +1041,6 @@ export async function contentNft_NftBought({ event, store }: EventContext & Stor
 
   // common event processing - second
 
-  console.log('TransactionalStatusBuyNow', transactionalStatus)
   const announcingPeriodStartedEvent = new NftBoughtEvent({
     ...genericEventFields(event),
 
