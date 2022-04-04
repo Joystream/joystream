@@ -123,6 +123,9 @@ type AuctionBidMadeEvent implements Event @entity {
 
   "Bid made."
   bidAmount: BigInt!
+
+  "Bid that is being displaced by current bid in English auction"
+  previousTopBid: Bid
 }
 
 type AuctionBidCanceledEvent implements Event @entity {
@@ -234,6 +237,9 @@ type BidMadeCompletingAuctionEvent implements Event @entity {
 
   "Price for which the NFT was bought"
   price: BigInt!
+
+  "Bid that is being displaced by current bid in English auction"
+  previousTopBid: Bid
 }
 
 type OpenAuctionBidAcceptedEvent implements Event @entity {
