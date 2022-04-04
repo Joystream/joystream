@@ -9,15 +9,13 @@ use crate::sp_api_hidden_includes_decl_storage::hidden_include::IterableStorageD
 use crate::sp_api_hidden_includes_decl_storage::hidden_include::StorageDoubleMap;
 
 use super::mocks::{
-    Balances, CollectiveFlip, Storage, System, Test, TestEvent, DEFAULT_MEMBER_ACCOUNT_ID,
-    DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, STORAGE_WG_LEADER_ACCOUNT_ID,
+    create_cid, Balances, CollectiveFlip, Storage, System, Test, TestEvent,
+    DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID,
+    DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT, DEFAULT_STORAGE_BUCKET_SIZE_LIMIT,
+    DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
+    STORAGE_WG_LEADER_ACCOUNT_ID,
 };
 
-use crate::tests::mocks::{
-    DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DEFAULT_MEMBER_ID,
-    DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT, DEFAULT_STORAGE_BUCKET_SIZE_LIMIT,
-    DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
-};
 use crate::{
     BagId, Cid, DataObjectCreationParameters, DataObjectStorage, DistributionBucket,
     DistributionBucketId, DynBagCreationParameters, DynamicBagId, DynamicBagType, RawEvent,
@@ -460,7 +458,7 @@ pub fn create_data_object_candidates(
         .into_iter()
         .map(|idx| DataObjectCreationParameters {
             size: DEFAULT_DATA_OBJECTS_SIZE,
-            ipfs_content_id: vec![idx],
+            ipfs_content_id: create_cid(idx.into()),
         })
         .collect()
 }

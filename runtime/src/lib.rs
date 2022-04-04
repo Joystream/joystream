@@ -643,6 +643,7 @@ impl storage::Trait for Runtime {
         MaxNumberOfPendingInvitationsPerDistributionBucket;
     type MaxDataObjectSize = MaxDataObjectSize;
     type ContentId = ContentId;
+    type WeightInfo = weights::storage::WeightInfo;
     type StorageWorkingGroup = StorageWorkingGroup;
     type DistributionWorkingGroup = DistributionWorkingGroup;
     type ModuleAccountInitialBalance = ExistentialDeposit;

@@ -22,10 +22,11 @@ use crate::{
 };
 
 use mocks::{
-    build_test_externalities, build_test_externalities_with_genesis, Balances, BlacklistSizeLimit,
-    DefaultChannelDynamicBagNumberOfStorageBuckets, DefaultMemberDynamicBagNumberOfStorageBuckets,
-    ExistentialDeposit, MaxDataObjectSize, MaxDistributionBucketFamilyNumber, Storage, Test,
-    ANOTHER_DISTRIBUTION_PROVIDER_ID, ANOTHER_STORAGE_PROVIDER_ID, BAG_DELETION_PRIZE_VALUE,
+    build_test_externalities, build_test_externalities_with_genesis, create_cid, Balances,
+    BlacklistSizeLimit, DefaultChannelDynamicBagNumberOfStorageBuckets,
+    DefaultMemberDynamicBagNumberOfStorageBuckets, ExistentialDeposit, MaxDataObjectSize,
+    MaxDistributionBucketFamilyNumber, Storage, Test, ANOTHER_DISTRIBUTION_PROVIDER_ID,
+    ANOTHER_STORAGE_PROVIDER_ID, BAG_DELETION_PRIZE_VALUE,
     DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DEFAULT_DISTRIBUTION_PROVIDER_ID,
     DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID, DEFAULT_STORAGE_BUCKETS_NUMBER,
     DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT, DEFAULT_STORAGE_BUCKET_SIZE_LIMIT,
@@ -196,7 +197,7 @@ fn accept_storage_bucket_invitation_succeeded() {
 #[test]
 fn accept_storage_bucket_invitation_fails_with_non_leader_origin() {
     build_test_externalities().execute_with(|| {
-        let non_storage_provider_id = 1;
+        let non_storage_provider_id = 51;
 
         AcceptStorageBucketInvitationFixture::default()
             .with_origin(RawOrigin::Signed(non_storage_provider_id))
@@ -634,7 +635,7 @@ fn update_storage_buckets_for_dynamic_bags_succeeded() {
 #[test]
 fn update_storage_buckets_for_bags_fails_with_non_leader_origin() {
     build_test_externalities().execute_with(|| {
-        let non_leader_id = 1;
+        let non_leader_id = 11;
 
         UpdateStorageBucketForBagsFixture::default()
             .with_origin(RawOrigin::Signed(non_leader_id))
@@ -2582,8 +2583,8 @@ fn update_blacklist_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let cid1 = vec![1];
-        let cid2 = vec![2];
+        let cid1 = create_cid(1);
+        let cid2 = create_cid(2);
 
         let add_hashes = BTreeSet::from_iter(vec![cid1.clone()]);
         UpdateBlacklistFixture::default()
@@ -2614,11 +2615,16 @@ fn update_blacklist_succeeded() {
 #[test]
 fn update_blacklist_failed_with_exceeding_size_limit() {
     build_test_externalities().execute_with(|| {
-        let cid1 = vec![1];
-        let cid2 = vec![2];
-        let cid3 = vec![3];
+        let b: usize = BlacklistSizeLimit::get().saturated_into();
+        let hashes = (0..b)
+            .into_iter()
+            .map(|i| create_cid(i.saturated_into()))
+            .collect::<Vec<_>>();
+        let cid1 = create_cid(1);
+        let cid2 = create_cid(220);
+        let cid3 = create_cid(221);
 
-        let add_hashes = BTreeSet::from_iter(vec![cid1.clone()]);
+        let add_hashes = BTreeSet::from_iter(hashes);
 
         UpdateBlacklistFixture::default()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
@@ -2643,11 +2649,16 @@ fn update_blacklist_failed_with_exceeding_size_limit() {
 #[test]
 fn update_blacklist_failed_with_exceeding_size_limit_with_non_existent_remove_hashes() {
     build_test_externalities().execute_with(|| {
-        let cid1 = vec![1];
-        let cid2 = vec![2];
-        let cid3 = vec![3];
+        let b: usize = BlacklistSizeLimit::get().saturated_into();
+        let hashes = (0..b)
+            .into_iter()
+            .map(|i| create_cid(i.saturated_into()))
+            .collect::<Vec<_>>();
+        let cid1 = create_cid(1);
+        let cid2 = create_cid(220);
+        let cid3 = create_cid(221);
 
-        let add_hashes = BTreeSet::from_iter(vec![cid1.clone()]);
+        let add_hashes = BTreeSet::from_iter(hashes);
 
         UpdateBlacklistFixture::default()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
@@ -2672,7 +2683,7 @@ fn update_blacklist_failed_with_exceeding_size_limit_with_non_existent_remove_ha
 #[test]
 fn update_blacklist_succeeds_with_existent_remove_hashes() {
     build_test_externalities().execute_with(|| {
-        let cid1 = vec![1];
+        let cid1 = create_cid(1);
 
         let add_hashes = BTreeSet::from_iter(vec![cid1.clone()]);
 
@@ -2688,6 +2699,19 @@ fn update_blacklist_succeeds_with_existent_remove_hashes() {
 
         assert!(crate::Blacklist::contains_key(&cid1));
         assert_eq!(Storage::current_blacklist_size(), 1);
+    });
+}
+
+#[test]
+fn update_blacklist_fails_with_invalid_length() {
+    build_test_externalities().execute_with(|| {
+        let cid1 = vec![1];
+
+        let add_hashes = BTreeSet::from_iter(vec![cid1.clone()]);
+        UpdateBlacklistFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_add_hashes(add_hashes.clone())
+            .call_and_assert(Err(Error::<Test>::InvalidCidLength.into()));
     });
 }
 
@@ -4332,7 +4356,7 @@ fn update_distribution_buckets_for_bags_fails_with_non_accepting_new_bags_bucket
 #[test]
 fn update_distribution_buckets_for_bags_fails_with_non_leader_origin() {
     build_test_externalities().execute_with(|| {
-        let non_leader_id = 1;
+        let non_leader_id = 11;
 
         UpdateDistributionBucketForBagsFixture::default()
             .with_origin(RawOrigin::Signed(non_leader_id))
@@ -4409,7 +4433,7 @@ fn update_distribution_buckets_per_bag_limit_succeeded() {
 #[test]
 fn update_distribution_buckets_per_bag_limit_origin() {
     build_test_externalities().execute_with(|| {
-        let non_leader_id = 1;
+        let non_leader_id = 11;
 
         UpdateDistributionBucketsPerBagLimitFixture::default()
             .with_origin(RawOrigin::Signed(non_leader_id))
@@ -4534,7 +4558,7 @@ fn update_families_in_dynamic_bag_creation_policy_succeeded() {
 #[test]
 fn update_families_in_dynamic_bag_creation_policy_fails_with_bad_origin() {
     build_test_externalities().execute_with(|| {
-        let non_leader_id = 1;
+        let non_leader_id = 11;
 
         UpdateFamiliesInDynamicBagCreationPolicyFixture::default()
             .with_origin(RawOrigin::Signed(non_leader_id))
@@ -4622,7 +4646,7 @@ fn invite_distribution_bucket_operator_succeeded() {
 #[test]
 fn invite_distribution_bucket_operator_fails_with_non_leader_origin() {
     build_test_externalities().execute_with(|| {
-        let non_leader_id = 1;
+        let non_leader_id = 11;
 
         InviteDistributionBucketOperatorFixture::default()
             .with_origin(RawOrigin::Signed(non_leader_id))
@@ -5107,8 +5131,9 @@ fn remove_distribution_bucket_operator_succeeded() {
 #[test]
 fn remove_distribution_bucket_operator_fails_with_non_leader_origin() {
     build_test_externalities().execute_with(|| {
+        let non_leader_account = 11;
         RemoveDistributionBucketOperatorFixture::default()
-            .with_origin(RawOrigin::Signed(DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID))
+            .with_origin(RawOrigin::Signed(non_leader_account))
             .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
@@ -5565,7 +5590,7 @@ fn unsuccessful_dyn_bag_creation_with_blacklisted_ipfs_id() {
         let objects: Vec<DataObjectCreationParameters> = (0..BlacklistSizeLimit::get())
             .map(|idx| DataObjectCreationParameters {
                 size: DEFAULT_DATA_OBJECTS_SIZE,
-                ipfs_content_id: vec![idx.try_into().unwrap()],
+                ipfs_content_id: create_cid(idx.saturated_into()),
             })
             .collect();
 

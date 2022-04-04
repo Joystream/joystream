@@ -309,6 +309,7 @@ impl storage::Trait for Test {
         MaxNumberOfPendingInvitationsPerDistributionBucket;
     type ContentId = u64;
     type MaxDataObjectSize = MaxDataObjectSize;
+    type WeightInfo = ();
     type StorageWorkingGroup = StorageWG;
     type DistributionWorkingGroup = DistributionWG;
     type ModuleAccountInitialBalance = ExistentialDeposit;
