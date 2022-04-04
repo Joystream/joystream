@@ -1753,7 +1753,7 @@ decl_module! {
 
                     (
                         updated_nft,
-                        RawEvent::BidMadeCompletingAuction(participant_id, video_id, prev_bidder),
+                        RawEvent::BidMadeCompletingAuction(participant_id, video_id, participant_id),
                     )
                 },
                 _ => {
