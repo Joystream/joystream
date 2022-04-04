@@ -19,6 +19,7 @@ members = [
 	"runtime-modules/utility",
 	"node",
 	"utils/chain-spec-builder/",
+	"runtime-modules/support/derive-fixture",
 ]
 exclude = [
     "analyses/bench"
