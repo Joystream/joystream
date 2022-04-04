@@ -254,17 +254,24 @@ async function setNewNftTransactionalStatus(
   await store.save<TransactionalStatusUpdate>(transactionalStatusUpdate)
 }
 
+interface IOpenAuctionWinner {
+  bidAmount: BN
+  winnerId: number
+}
+
 async function finishAuction(
   store: DatabaseManager,
   videoId: number,
   blockNumber: number,
-  openAuctionWinningBidAmount?: BN
+  openAuctionWinner?: IOpenAuctionWinner
 ) {
-  function findOpenAuctionWinningBid(bids: Bid[], bidAmount: BN, videoId: number): Bid {
-    const winningBid = bids.find((bid) => !bid.isCanceled && bid.amount.eq(bidAmount))
+  function findOpenAuctionWinningBid(bids: Bid[], bidAmount: BN, winnerId: number, videoId: number): Bid {
+    const winningBid = bids.find(
+      (bid) => !bid.isCanceled && bid.bidder.id.toString() === winnerId.toString() && bid.amount.eq(bidAmount)
+    )
 
     if (!winningBid) {
-      return inconsistentState('Open auction won by non-existing bid', videoId)
+      return inconsistentState('Open auction won by non-existing bid', { videoId, bidAmount, winnerId })
     }
 
     return winningBid
@@ -279,8 +286,8 @@ async function finishAuction(
     ['topBid', 'topBid.bidder', 'bids', 'bids.bidder']
   )
 
-  const winningBid = openAuctionWinningBidAmount
-    ? findOpenAuctionWinningBid(auction.bids || [], openAuctionWinningBidAmount, videoId)
+  const winningBid = openAuctionWinner
+    ? findOpenAuctionWinningBid(auction.bids || [], openAuctionWinner.bidAmount, openAuctionWinner.winnerId, videoId)
     : (auction.topBid as Bid)
 
   // load winner member
@@ -848,11 +855,14 @@ export async function contentNft_BidMadeCompletingAuction({
 export async function contentNft_OpenAuctionBidAccepted({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [contentActor, videoId, bidAmount] = new Content.OpenAuctionBidAcceptedEvent(event).params
+  const [contentActor, videoId, winnerId, bidAmount] = new Content.OpenAuctionBidAcceptedEvent(event).params
 
   // specific event processing
 
-  const { video } = await finishAuction(store, videoId.toNumber(), event.blockNumber, bidAmount)
+  const { video } = await finishAuction(store, videoId.toNumber(), event.blockNumber, {
+    bidAmount,
+    winnerId: winnerId.toNumber(),
+  })
 
   // common event processing - second
 
