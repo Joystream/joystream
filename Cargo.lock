@@ -4204,6 +4204,7 @@ dependencies = [
 name = "pallet-storage"
 version = "4.0.1"
 dependencies = [
+ "derive-fixture",
  "frame-benchmarking",
  "frame-support",
  "frame-system",

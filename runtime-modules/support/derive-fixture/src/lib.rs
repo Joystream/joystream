@@ -1,4 +1,5 @@
 //! Contains procedural macros.
+//! Heavily influenced by [derive_new](https://github.com/nrc/derive-new)
 
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
@@ -6,7 +7,7 @@ use proc_macro2::TokenStream as TokenStream2;
 /// Generates setters methods for each field of the struct in the format `with_*`.
 /// Supports only structs with named fields. It supports generics.
 /// Usage:
-/// ```
+/// ```no_run
 /// #[derive(Fixture, Default)]
 /// pub struct Foo{
 ///    pub val1: u32,

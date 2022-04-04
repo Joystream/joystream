@@ -2220,7 +2220,7 @@ fn delete_data_objects_succeeded() {
         DeleteDataObjectsFixture::default()
             .with_bag_id(bag_id.clone())
             .with_data_object_ids(data_object_ids.clone())
-            .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_deletion_prize_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Ok(()));
 
         // post-checks
@@ -2262,7 +2262,7 @@ fn delete_data_objects_fails_with_non_existent_dynamic_bag() {
         DeleteDataObjectsFixture::default()
             .with_bag_id(bag_id.clone())
             .with_data_object_ids(data_object_ids.clone())
-            .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_deletion_prize_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Err(Error::<Test>::DynamicBagDoesntExist.into()));
     });
 }
@@ -2310,7 +2310,7 @@ fn delete_data_objects_fails_with_invalid_treasury_balance() {
         DeleteDataObjectsFixture::default()
             .with_bag_id(council_bag_id.clone())
             .with_data_object_ids(data_object_ids.clone())
-            .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_deletion_prize_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Err(Error::<Test>::InsufficientTreasuryBalance.into()));
     });
 }
@@ -2625,7 +2625,7 @@ fn delete_dynamic_bags_succeeded() {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
         CreateDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
-            .with_deletion_prize(DynamicBagDeletionPrize::<Test> {
+            .with_some_deletion_prize(DynamicBagDeletionPrize::<Test> {
                 account_id: DEFAULT_MEMBER_ACCOUNT_ID,
                 prize: deletion_prize_value,
             })
@@ -2693,7 +2693,7 @@ fn delete_dynamic_bags_succeeded_with_assigned_distribution_buckets() {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
         CreateDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
-            .with_deletion_prize(DynamicBagDeletionPrize::<Test> {
+            .with_some_deletion_prize(DynamicBagDeletionPrize::<Test> {
                 account_id: DEFAULT_MEMBER_ACCOUNT_ID,
                 prize: deletion_prize_value,
             })
@@ -2746,7 +2746,7 @@ fn delete_dynamic_bags_succeeded_with_assigned_storage_buckets() {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
         CreateDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
-            .with_deletion_prize(DynamicBagDeletionPrize::<Test> {
+            .with_some_deletion_prize(DynamicBagDeletionPrize::<Test> {
                 account_id: DEFAULT_MEMBER_ACCOUNT_ID,
                 prize: deletion_prize_value,
             })
@@ -2798,7 +2798,7 @@ fn delete_dynamic_bags_fails_with_insufficient_balance_for_deletion_prize() {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
         CreateDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
-            .with_deletion_prize(DynamicBagDeletionPrize::<Test> {
+            .with_some_deletion_prize(DynamicBagDeletionPrize::<Test> {
                 account_id: DEFAULT_MEMBER_ACCOUNT_ID,
                 prize: deletion_prize_value,
             })
@@ -3343,7 +3343,7 @@ fn create_dynamic_bag_succeeded() {
 
         CreateDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
-            .with_deletion_prize(deletion_prize.clone())
+            .with_some_deletion_prize(deletion_prize.clone())
             .call_and_assert(Ok(()));
 
         let bag = Storage::dynamic_bag(&dynamic_bag_id);
@@ -3410,7 +3410,7 @@ fn create_dynamic_bag_fails_with_insufficient_balance() {
 
         CreateDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
-            .with_deletion_prize(deletion_prize)
+            .with_some_deletion_prize(deletion_prize)
             .call_and_assert(Err(Error::<Test>::InsufficientBalance.into()));
     });
 }
@@ -3961,7 +3961,7 @@ fn update_distribution_bucket_status_succeeded() {
         let new_status = true;
         UpdateDistributionBucketStatusFixture::default()
             .with_family_id(family_id)
-            .with_bucket_index(bucket_index)
+            .with_distribution_bucket_index(bucket_index)
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
             .with_new_status(new_status)
             .call_and_assert(Ok(()));
@@ -4021,7 +4021,7 @@ fn delete_distribution_bucket_succeeded() {
             .unwrap();
 
         DeleteDistributionBucketFixture::default()
-            .with_bucket_index(bucket_index)
+            .with_distribution_bucket_index(bucket_index)
             .with_family_id(family_id)
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
             .call_and_assert(Ok(()));
@@ -4069,7 +4069,7 @@ fn delete_distribution_bucket_fails_with_assgined_bags() {
         assert_eq!(bag.distributed_by, add_buckets);
 
         DeleteDistributionBucketFixture::default()
-            .with_bucket_index(bucket_index)
+            .with_distribution_bucket_index(bucket_index)
             .with_family_id(family_id)
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
             .call_and_assert(Err(Error::<Test>::DistributionBucketIsBoundToBag.into()));
@@ -4105,7 +4105,7 @@ fn delete_distribution_bucket_failed_with_existing_operators() {
             .call_and_assert(Ok(()));
 
         DeleteDistributionBucketFixture::default()
-            .with_bucket_index(bucket_index)
+            .with_distribution_bucket_index(bucket_index)
             .with_family_id(family_id)
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
             .call_and_assert(Err(Error::<Test>::DistributionProviderOperatorSet.into()));
@@ -4435,7 +4435,7 @@ fn update_distribution_bucket_mode_succeeded() {
         let distributing = false;
         UpdateDistributionBucketModeFixture::default()
             .with_family_id(family_id)
-            .with_bucket_index(bucket_index)
+            .with_distribution_bucket_index(bucket_index)
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
             .with_distributing(distributing)
             .call_and_assert(Ok(()));
@@ -4585,7 +4585,7 @@ fn distribution_bucket_family_pick_during_dynamic_bag_creation_succeeded() {
         DeleteDistributionBucketFixture::default()
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
             .with_family_id(deleted_bucket_id.distribution_bucket_family_id)
-            .with_bucket_index(deleted_bucket_id.distribution_bucket_index)
+            .with_distribution_bucket_index(deleted_bucket_id.distribution_bucket_index)
             .call_and_assert(Ok(()));
 
         let disabled_bucket_id = bucket_id6[0].clone();
@@ -4593,7 +4593,7 @@ fn distribution_bucket_family_pick_during_dynamic_bag_creation_succeeded() {
             .with_new_status(false)
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
             .with_family_id(disabled_bucket_id.distribution_bucket_family_id)
-            .with_bucket_index(disabled_bucket_id.distribution_bucket_index)
+            .with_distribution_bucket_index(disabled_bucket_id.distribution_bucket_index)
             .call_and_assert(Ok(()));
 
         let families = BTreeMap::from_iter(vec![
@@ -4613,8 +4613,6 @@ fn distribution_bucket_family_pick_during_dynamic_bag_creation_succeeded() {
 
         let picked_bucket_ids =
             Storage::pick_distribution_buckets_for_dynamic_bag(dynamic_bag_type);
-
-        println!("{:?}", picked_bucket_ids);
 
         assert_eq!(picked_bucket_ids.len(), (new_bucket_number * 2) as usize); // buckets from two families
 

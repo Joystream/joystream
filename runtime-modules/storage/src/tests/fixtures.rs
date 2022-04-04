@@ -1,3 +1,4 @@
+use derive_fixture::Fixture;
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::StorageMap;
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
@@ -110,6 +111,7 @@ pub const DEFAULT_DATA_OBJECTS_NUMBER: u64 = DEFAULT_STORAGE_BUCKET_OBJECTS_LIMI
 pub const DEFAULT_DATA_OBJECTS_SIZE: u64 =
     DEFAULT_STORAGE_BUCKET_SIZE_LIMIT / DEFAULT_DATA_OBJECTS_NUMBER - 1;
 
+#[derive(Fixture)]
 pub struct CreateStorageBucketFixture {
     origin: RawOrigin<u64>,
     invite_worker: Option<u64>,
@@ -126,35 +128,6 @@ impl CreateStorageBucketFixture {
             accepting_new_bags: true,
             size_limit: 0,
             objects_limit: 0,
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_invite_worker(self, invite_worker: Option<u64>) -> Self {
-        Self {
-            invite_worker,
-            ..self
-        }
-    }
-
-    pub fn with_accepting_new_bags(self, accepting_new_bags: bool) -> Self {
-        Self {
-            accepting_new_bags,
-            ..self
-        }
-    }
-
-    pub fn with_size_limit(self, size_limit: u64) -> Self {
-        Self { size_limit, ..self }
-    }
-
-    pub fn with_objects_limit(self, objects_limit: u64) -> Self {
-        Self {
-            objects_limit,
-            ..self
         }
     }
 
@@ -191,6 +164,7 @@ impl CreateStorageBucketFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct AcceptStorageBucketInvitationFixture {
     origin: RawOrigin<u64>,
     worker_id: u64,
@@ -205,27 +179,6 @@ impl AcceptStorageBucketInvitationFixture {
             worker_id: DEFAULT_WORKER_ID,
             storage_bucket_id: Default::default(),
             transactor_account_id: DEFAULT_ACCOUNT_ID,
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_worker_id(self, worker_id: u64) -> Self {
-        Self { worker_id, ..self }
-    }
-    pub fn with_transactor_account_id(self, transactor_account_id: u64) -> Self {
-        Self {
-            transactor_account_id,
-            ..self
-        }
-    }
-
-    pub fn with_storage_bucket_id(self, storage_bucket_id: u64) -> Self {
-        Self {
-            storage_bucket_id,
-            ..self
         }
     }
 
@@ -256,6 +209,7 @@ impl AcceptStorageBucketInvitationFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct UpdateStorageBucketForBagsFixture {
     origin: RawOrigin<u64>,
     bag_id: BagId<Test>,
@@ -273,28 +227,6 @@ impl UpdateStorageBucketForBagsFixture {
         }
     }
 
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_add_bucket_ids(self, add_bucket_ids: BTreeSet<u64>) -> Self {
-        Self {
-            add_bucket_ids,
-            ..self
-        }
-    }
-
-    pub fn with_remove_bucket_ids(self, remove_bucket_ids: BTreeSet<u64>) -> Self {
-        Self {
-            remove_bucket_ids,
-            ..self
-        }
-    }
-
-    pub fn with_bag_id(self, bag_id: BagId<Test>) -> Self {
-        Self { bag_id, ..self }
-    }
-
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::update_storage_buckets_for_bag(
             self.origin.clone().into(),
@@ -307,21 +239,12 @@ impl UpdateStorageBucketForBagsFixture {
     }
 }
 
+#[derive(Fixture, Default)]
 pub struct UploadFixture {
     params: UploadParameters<Test>,
 }
 
 impl UploadFixture {
-    pub fn default() -> Self {
-        Self {
-            params: Default::default(),
-        }
-    }
-
-    pub fn with_params(self, params: UploadParameters<Test>) -> Self {
-        Self { params, ..self }
-    }
-
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let old_next_data_object_id = Storage::next_data_object_id();
         let actual_result = Storage::upload_data_objects(self.params.clone());
@@ -359,6 +282,7 @@ pub fn create_single_data_object() -> Vec<DataObjectCreationParameters> {
     create_data_object_candidates(1, 1)
 }
 
+#[derive(Fixture)]
 pub struct SetStorageOperatorMetadataFixture {
     origin: RawOrigin<u64>,
     worker_id: u64,
@@ -376,25 +300,6 @@ impl SetStorageOperatorMetadataFixture {
         }
     }
 
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_worker_id(self, worker_id: u64) -> Self {
-        Self { worker_id, ..self }
-    }
-
-    pub fn with_storage_bucket_id(self, storage_bucket_id: u64) -> Self {
-        Self {
-            storage_bucket_id,
-            ..self
-        }
-    }
-
-    pub fn with_metadata(self, metadata: Vec<u8>) -> Self {
-        Self { metadata, ..self }
-    }
-
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::set_storage_operator_metadata(
             self.origin.clone().into(),
@@ -407,6 +312,7 @@ impl SetStorageOperatorMetadataFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct AcceptPendingDataObjectsFixture {
     origin: RawOrigin<u64>,
     worker_id: u64,
@@ -426,32 +332,6 @@ impl AcceptPendingDataObjectsFixture {
         }
     }
 
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_worker_id(self, worker_id: u64) -> Self {
-        Self { worker_id, ..self }
-    }
-
-    pub fn with_bag_id(self, bag_id: BagId<Test>) -> Self {
-        Self { bag_id, ..self }
-    }
-
-    pub fn with_data_object_ids(self, data_object_ids: BTreeSet<u64>) -> Self {
-        Self {
-            data_object_ids,
-            ..self
-        }
-    }
-
-    pub fn with_storage_bucket_id(self, storage_bucket_id: u64) -> Self {
-        Self {
-            storage_bucket_id,
-            ..self
-        }
-    }
-
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::accept_pending_data_objects(
             self.origin.clone().into(),
@@ -465,6 +345,7 @@ impl AcceptPendingDataObjectsFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct CancelStorageBucketInvitationFixture {
     origin: RawOrigin<u64>,
     storage_bucket_id: u64,
@@ -475,17 +356,6 @@ impl CancelStorageBucketInvitationFixture {
         Self {
             origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
             storage_bucket_id: Default::default(),
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_storage_bucket_id(self, storage_bucket_id: u64) -> Self {
-        Self {
-            storage_bucket_id,
-            ..self
         }
     }
 
@@ -511,6 +381,7 @@ impl CancelStorageBucketInvitationFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct InviteStorageBucketOperatorFixture {
     origin: RawOrigin<u64>,
     operator_worker_id: u64,
@@ -523,24 +394,6 @@ impl InviteStorageBucketOperatorFixture {
             origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
             operator_worker_id: DEFAULT_WORKER_ID,
             storage_bucket_id: Default::default(),
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_operator_worker_id(self, operator_worker_id: u64) -> Self {
-        Self {
-            operator_worker_id,
-            ..self
-        }
-    }
-
-    pub fn with_storage_bucket_id(self, storage_bucket_id: u64) -> Self {
-        Self {
-            storage_bucket_id,
-            ..self
         }
     }
 
@@ -567,6 +420,7 @@ impl InviteStorageBucketOperatorFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct UpdateUploadingBlockedStatusFixture {
     origin: RawOrigin<u64>,
     new_status: bool,
@@ -578,14 +432,6 @@ impl UpdateUploadingBlockedStatusFixture {
             origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
             new_status: false,
         }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_new_status(self, new_status: bool) -> Self {
-        Self { new_status, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -604,6 +450,7 @@ impl UpdateUploadingBlockedStatusFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct MoveDataObjectsFixture {
     src_bag_id: BagId<Test>,
     dest_bag_id: BagId<Test>,
@@ -619,24 +466,6 @@ impl MoveDataObjectsFixture {
         }
     }
 
-    pub fn with_src_bag_id(self, src_bag_id: BagId<Test>) -> Self {
-        Self { src_bag_id, ..self }
-    }
-
-    pub fn with_dest_bag_id(self, dest_bag_id: BagId<Test>) -> Self {
-        Self {
-            dest_bag_id,
-            ..self
-        }
-    }
-
-    pub fn with_data_object_ids(self, data_object_ids: BTreeSet<u64>) -> Self {
-        Self {
-            data_object_ids,
-            ..self
-        }
-    }
-
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::move_data_objects(
             self.src_bag_id.clone(),
@@ -648,6 +477,7 @@ impl MoveDataObjectsFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct DeleteDataObjectsFixture {
     deletion_prize_account_id: u64,
     bag_id: BagId<Test>,
@@ -663,24 +493,6 @@ impl DeleteDataObjectsFixture {
         }
     }
 
-    pub fn with_bag_id(self, bag_id: BagId<Test>) -> Self {
-        Self { bag_id, ..self }
-    }
-
-    pub fn with_data_object_ids(self, data_object_ids: BTreeSet<u64>) -> Self {
-        Self {
-            data_object_ids,
-            ..self
-        }
-    }
-
-    pub fn with_deletion_account_id(self, deletion_prize_account_id: u64) -> Self {
-        Self {
-            deletion_prize_account_id,
-            ..self
-        }
-    }
-
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::delete_data_objects(
             self.deletion_prize_account_id,
@@ -692,6 +504,7 @@ impl DeleteDataObjectsFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct UpdateStorageBucketStatusFixture {
     origin: RawOrigin<u64>,
     storage_bucket_id: u64,
@@ -705,21 +518,6 @@ impl UpdateStorageBucketStatusFixture {
             storage_bucket_id: Default::default(),
             new_status: false,
         }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_storage_bucket_id(self, storage_bucket_id: u64) -> Self {
-        Self {
-            storage_bucket_id,
-            ..self
-        }
-    }
-
-    pub fn with_new_status(self, new_status: bool) -> Self {
-        Self { new_status, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -739,6 +537,7 @@ impl UpdateStorageBucketStatusFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct UpdateBlacklistFixture {
     origin: RawOrigin<u64>,
     remove_hashes: BTreeSet<Cid>,
@@ -754,21 +553,6 @@ impl UpdateBlacklistFixture {
         }
     }
 
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_add_hashes(self, add_hashes: BTreeSet<Cid>) -> Self {
-        Self { add_hashes, ..self }
-    }
-
-    pub fn with_remove_hashes(self, remove_hashes: BTreeSet<Cid>) -> Self {
-        Self {
-            remove_hashes,
-            ..self
-        }
-    }
-
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::update_blacklist(
             self.origin.clone().into(),
@@ -780,6 +564,7 @@ impl UpdateBlacklistFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct DeleteDynamicBagFixture {
     bag_id: DynamicBagId<Test>,
     deletion_account_id: u64,
@@ -793,17 +578,6 @@ impl DeleteDynamicBagFixture {
         }
     }
 
-    pub fn with_deletion_account_id(self, deletion_account_id: u64) -> Self {
-        Self {
-            deletion_account_id,
-            ..self
-        }
-    }
-
-    pub fn with_bag_id(self, bag_id: DynamicBagId<Test>) -> Self {
-        Self { bag_id, ..self }
-    }
-
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result =
             Storage::delete_dynamic_bag(self.deletion_account_id, self.bag_id.clone());
@@ -812,21 +586,12 @@ impl DeleteDynamicBagFixture {
     }
 }
 
+#[derive(Fixture, Default)]
 pub struct CanDeleteDynamicBagWithObjectsFixture {
     bag_id: DynamicBagId<Test>,
 }
 
 impl CanDeleteDynamicBagWithObjectsFixture {
-    pub fn default() -> Self {
-        Self {
-            bag_id: Default::default(),
-        }
-    }
-
-    pub fn with_bag_id(self, bag_id: DynamicBagId<Test>) -> Self {
-        Self { bag_id, ..self }
-    }
-
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::can_delete_dynamic_bag_with_objects(&self.bag_id.clone());
 
@@ -834,6 +599,7 @@ impl CanDeleteDynamicBagWithObjectsFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct DeleteStorageBucketFixture {
     origin: RawOrigin<u64>,
     storage_bucket_id: u64,
@@ -844,17 +610,6 @@ impl DeleteStorageBucketFixture {
         Self {
             origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
             storage_bucket_id: Default::default(),
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_storage_bucket_id(self, storage_bucket_id: u64) -> Self {
-        Self {
-            storage_bucket_id,
-            ..self
         }
     }
 
@@ -872,6 +627,7 @@ impl DeleteStorageBucketFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct RemoveStorageBucketOperatorFixture {
     origin: RawOrigin<u64>,
     storage_bucket_id: u64,
@@ -882,17 +638,6 @@ impl RemoveStorageBucketOperatorFixture {
         Self {
             origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
             storage_bucket_id: Default::default(),
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_storage_bucket_id(self, storage_bucket_id: u64) -> Self {
-        Self {
-            storage_bucket_id,
-            ..self
         }
     }
 
@@ -918,6 +663,7 @@ impl RemoveStorageBucketOperatorFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct UpdateDataObjectPerMegabyteFeeFixture {
     origin: RawOrigin<u64>,
     new_fee: u64,
@@ -929,14 +675,6 @@ impl UpdateDataObjectPerMegabyteFeeFixture {
             origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
             new_fee: 0,
         }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_new_fee(self, new_fee: u64) -> Self {
-        Self { new_fee, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -954,6 +692,7 @@ impl UpdateDataObjectPerMegabyteFeeFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct UpdateStorageBucketsPerBagLimitFixture {
     origin: RawOrigin<u64>,
     new_limit: u64,
@@ -965,14 +704,6 @@ impl UpdateStorageBucketsPerBagLimitFixture {
             origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
             new_limit: 0,
         }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_new_limit(self, new_limit: u64) -> Self {
-        Self { new_limit, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -993,6 +724,7 @@ impl UpdateStorageBucketsPerBagLimitFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct SetStorageBucketVoucherLimitsFixture {
     origin: RawOrigin<u64>,
     storage_bucket_id: u64,
@@ -1007,31 +739,6 @@ impl SetStorageBucketVoucherLimitsFixture {
             storage_bucket_id: Default::default(),
             new_objects_size_limit: 0,
             new_objects_number_limit: 0,
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_storage_bucket_id(self, storage_bucket_id: u64) -> Self {
-        Self {
-            storage_bucket_id,
-            ..self
-        }
-    }
-
-    pub fn with_new_objects_size_limit(self, new_objects_size_limit: u64) -> Self {
-        Self {
-            new_objects_size_limit,
-            ..self
-        }
-    }
-
-    pub fn with_new_objects_number_limit(self, new_objects_number_limit: u64) -> Self {
-        Self {
-            new_objects_number_limit,
-            ..self
         }
     }
 
@@ -1056,6 +763,8 @@ impl SetStorageBucketVoucherLimitsFixture {
         }
     }
 }
+
+#[derive(Fixture)]
 pub struct UpdateStorageBucketsVoucherMaxLimitsFixture {
     origin: RawOrigin<u64>,
     new_objects_size_limit: u64,
@@ -1068,24 +777,6 @@ impl UpdateStorageBucketsVoucherMaxLimitsFixture {
             origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
             new_objects_size_limit: 0,
             new_objects_number_limit: 0,
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_new_objects_size_limit(self, new_objects_size_limit: u64) -> Self {
-        Self {
-            new_objects_size_limit,
-            ..self
-        }
-    }
-
-    pub fn with_new_objects_number_limit(self, new_objects_number_limit: u64) -> Self {
-        Self {
-            new_objects_number_limit,
-            ..self
         }
     }
 
@@ -1120,28 +811,15 @@ impl UpdateStorageBucketsVoucherMaxLimitsFixture {
     }
 }
 
+#[derive(Fixture, Default)]
 pub struct CreateDynamicBagFixture {
     bag_id: DynamicBagId<Test>,
     deletion_prize: Option<DynamicBagDeletionPrize<Test>>,
 }
 
 impl CreateDynamicBagFixture {
-    pub fn default() -> Self {
-        Self {
-            bag_id: Default::default(),
-            deletion_prize: Default::default(),
-        }
-    }
-
-    pub fn with_bag_id(self, bag_id: DynamicBagId<Test>) -> Self {
-        Self { bag_id, ..self }
-    }
-
-    pub fn with_deletion_prize(self, deletion_prize: DynamicBagDeletionPrize<Test>) -> Self {
-        Self {
-            deletion_prize: Some(deletion_prize),
-            ..self
-        }
+    pub fn with_some_deletion_prize(self, deletion_prize: DynamicBagDeletionPrize<Test>) -> Self {
+        self.with_deletion_prize(Some(deletion_prize))
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -1157,6 +835,7 @@ impl CreateDynamicBagFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct CreateDynamicBagWithObjectsFixture {
     sender: u64,
     bag_id: DynamicBagId<Test>,
@@ -1214,33 +893,12 @@ impl CreateDynamicBagWithObjectsFixture {
         }
     }
 
-    pub fn with_upload_parameters(self, upload_parameters: UploadParameters<Test>) -> Self {
-        Self {
-            upload_parameters,
-            ..self
-        }
-    }
-
     pub fn with_objects_prize_source_account(self, deletion_prize_source_account_id: u64) -> Self {
         Self {
             upload_parameters: UploadParameters::<Test> {
                 deletion_prize_source_account_id,
                 ..self.upload_parameters
             },
-            ..self
-        }
-    }
-
-    pub fn with_bag_id(self, bag_id: DynamicBagId<Test>) -> Self {
-        Self { bag_id, ..self }
-    }
-
-    pub fn with_deletion_prize(
-        self,
-        deletion_prize: Option<DynamicBagDeletionPrize<Test>>,
-    ) -> Self {
-        Self {
-            deletion_prize: deletion_prize,
             ..self
         }
     }
@@ -1298,6 +956,7 @@ impl CreateDynamicBagWithObjectsFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct UpdateNumberOfStorageBucketsInDynamicBagCreationPolicyFixture {
     origin: RawOrigin<u64>,
     new_storage_buckets_number: u64,
@@ -1310,24 +969,6 @@ impl UpdateNumberOfStorageBucketsInDynamicBagCreationPolicyFixture {
             origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
             new_storage_buckets_number: 0,
             dynamic_bag_type: Default::default(),
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_new_storage_buckets_number(self, new_storage_buckets_number: u64) -> Self {
-        Self {
-            new_storage_buckets_number,
-            ..self
-        }
-    }
-
-    pub fn with_dynamic_bag_type(self, dynamic_bag_type: DynamicBagType) -> Self {
-        Self {
-            dynamic_bag_type,
-            ..self
         }
     }
 
@@ -1355,6 +996,7 @@ impl UpdateNumberOfStorageBucketsInDynamicBagCreationPolicyFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct CreateDistributionBucketFamilyFixture {
     origin: RawOrigin<u64>,
 }
@@ -1364,10 +1006,6 @@ impl CreateDistributionBucketFamilyFixture {
         Self {
             origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
         }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) -> Option<u64> {
@@ -1406,6 +1044,7 @@ impl CreateDistributionBucketFamilyFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct DeleteDistributionBucketFamilyFixture {
     origin: RawOrigin<u64>,
     family_id: u64,
@@ -1417,14 +1056,6 @@ impl DeleteDistributionBucketFamilyFixture {
             origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
             family_id: Default::default(),
         }
-    }
-
-    pub fn with_family_id(self, family_id: u64) -> Self {
-        Self { family_id, ..self }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -1448,6 +1079,7 @@ impl DeleteDistributionBucketFamilyFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct CreateDistributionBucketFixture {
     origin: RawOrigin<u64>,
     family_id: u64,
@@ -1460,21 +1092,6 @@ impl CreateDistributionBucketFixture {
             origin: RawOrigin::Signed(DEFAULT_ACCOUNT_ID),
             family_id: Default::default(),
             accept_new_bags: false,
-        }
-    }
-
-    pub fn with_family_id(self, family_id: u64) -> Self {
-        Self { family_id, ..self }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_accept_new_bags(self, accept_new_bags: bool) -> Self {
-        Self {
-            accept_new_bags,
-            ..self
         }
     }
 
@@ -1517,6 +1134,7 @@ impl CreateDistributionBucketFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct UpdateDistributionBucketStatusFixture {
     origin: RawOrigin<u64>,
     family_id: u64,
@@ -1533,24 +1151,6 @@ impl UpdateDistributionBucketStatusFixture {
             new_status: false,
         }
     }
-    pub fn with_bucket_index(self, bucket_index: u64) -> Self {
-        Self {
-            distribution_bucket_index: bucket_index,
-            ..self
-        }
-    }
-
-    pub fn with_family_id(self, family_id: u64) -> Self {
-        Self { family_id, ..self }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_new_status(self, new_status: bool) -> Self {
-        Self { new_status, ..self }
-    }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::update_distribution_bucket_status(
@@ -1563,6 +1163,7 @@ impl UpdateDistributionBucketStatusFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct DeleteDistributionBucketFixture {
     origin: RawOrigin<u64>,
     family_id: u64,
@@ -1578,21 +1179,6 @@ impl DeleteDistributionBucketFixture {
         }
     }
 
-    pub fn with_bucket_index(self, bucket_index: u64) -> Self {
-        Self {
-            distribution_bucket_index: bucket_index,
-            ..self
-        }
-    }
-
-    pub fn with_family_id(self, family_id: u64) -> Self {
-        Self { family_id, ..self }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::delete_distribution_bucket(
             self.origin.clone().into(),
@@ -1603,6 +1189,7 @@ impl DeleteDistributionBucketFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct UpdateDistributionBucketForBagsFixture {
     origin: RawOrigin<u64>,
     bag_id: BagId<Test>,
@@ -1622,32 +1209,6 @@ impl UpdateDistributionBucketForBagsFixture {
         }
     }
 
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_add_bucket_indices(self, add_bucket_indices: BTreeSet<u64>) -> Self {
-        Self {
-            add_bucket_indices,
-            ..self
-        }
-    }
-
-    pub fn with_remove_bucket_indices(self, remove_bucket_indices: BTreeSet<u64>) -> Self {
-        Self {
-            remove_bucket_indices,
-            ..self
-        }
-    }
-
-    pub fn with_bag_id(self, bag_id: BagId<Test>) -> Self {
-        Self { bag_id, ..self }
-    }
-
-    pub fn with_family_id(self, family_id: u64) -> Self {
-        Self { family_id, ..self }
-    }
-
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::update_distribution_buckets_for_bag(
             self.origin.clone().into(),
@@ -1661,6 +1222,7 @@ impl UpdateDistributionBucketForBagsFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct UpdateDistributionBucketsPerBagLimitFixture {
     origin: RawOrigin<u64>,
     new_limit: u64,
@@ -1672,14 +1234,6 @@ impl UpdateDistributionBucketsPerBagLimitFixture {
             origin: RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID),
             new_limit: 0,
         }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_new_limit(self, new_limit: u64) -> Self {
-        Self { new_limit, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -1703,6 +1257,7 @@ impl UpdateDistributionBucketsPerBagLimitFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct UpdateDistributionBucketModeFixture {
     origin: RawOrigin<u64>,
     family_id: u64,
@@ -1719,27 +1274,6 @@ impl UpdateDistributionBucketModeFixture {
             distributing: true,
         }
     }
-    pub fn with_bucket_index(self, bucket_index: u64) -> Self {
-        Self {
-            distribution_bucket_index: bucket_index,
-            ..self
-        }
-    }
-
-    pub fn with_family_id(self, family_id: u64) -> Self {
-        Self { family_id, ..self }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_distributing(self, distributing: bool) -> Self {
-        Self {
-            distributing,
-            ..self
-        }
-    }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::update_distribution_bucket_mode(
@@ -1752,6 +1286,7 @@ impl UpdateDistributionBucketModeFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct UpdateFamiliesInDynamicBagCreationPolicyFixture {
     origin: RawOrigin<u64>,
     dynamic_bag_type: DynamicBagType,
@@ -1764,21 +1299,6 @@ impl UpdateFamiliesInDynamicBagCreationPolicyFixture {
             origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
             dynamic_bag_type: Default::default(),
             families: Default::default(),
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_families(self, families: BTreeMap<u64, u32>) -> Self {
-        Self { families, ..self }
-    }
-
-    pub fn with_dynamic_bag_type(self, dynamic_bag_type: DynamicBagType) -> Self {
-        Self {
-            dynamic_bag_type,
-            ..self
         }
     }
 
@@ -1807,6 +1327,7 @@ impl UpdateFamiliesInDynamicBagCreationPolicyFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct InviteDistributionBucketOperatorFixture {
     origin: RawOrigin<u64>,
     operator_worker_id: u64,
@@ -1822,28 +1343,6 @@ impl InviteDistributionBucketOperatorFixture {
             bucket_index: Default::default(),
             family_id: Default::default(),
         }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_operator_worker_id(self, operator_worker_id: u64) -> Self {
-        Self {
-            operator_worker_id,
-            ..self
-        }
-    }
-
-    pub fn with_bucket_index(self, bucket_index: u64) -> Self {
-        Self {
-            bucket_index,
-            ..self
-        }
-    }
-
-    pub fn with_family_id(self, family_id: u64) -> Self {
-        Self { family_id, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -1869,6 +1368,7 @@ impl InviteDistributionBucketOperatorFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct CancelDistributionBucketInvitationFixture {
     origin: RawOrigin<u64>,
     bucket_index: u64,
@@ -1883,28 +1383,6 @@ impl CancelDistributionBucketInvitationFixture {
             bucket_index: Default::default(),
             family_id: Default::default(),
             operator_worker_id: Default::default(),
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_bucket_index(self, bucket_index: u64) -> Self {
-        Self {
-            bucket_index,
-            ..self
-        }
-    }
-
-    pub fn with_family_id(self, family_id: u64) -> Self {
-        Self { family_id, ..self }
-    }
-
-    pub fn with_operator_worker_id(self, operator_worker_id: u64) -> Self {
-        Self {
-            operator_worker_id,
-            ..self
         }
     }
 
@@ -1931,6 +1409,7 @@ impl CancelDistributionBucketInvitationFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct AcceptDistributionBucketInvitationFixture {
     origin: RawOrigin<u64>,
     bucket_index: u64,
@@ -1946,25 +1425,6 @@ impl AcceptDistributionBucketInvitationFixture {
             family_id: Default::default(),
             worker_id: Default::default(),
         }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_bucket_index(self, bucket_index: u64) -> Self {
-        Self {
-            bucket_index,
-            ..self
-        }
-    }
-
-    pub fn with_family_id(self, family_id: u64) -> Self {
-        Self { family_id, ..self }
-    }
-
-    pub fn with_worker_id(self, worker_id: u64) -> Self {
-        Self { worker_id, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -1990,6 +1450,7 @@ impl AcceptDistributionBucketInvitationFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct SetDistributionBucketMetadataFixture {
     origin: RawOrigin<u64>,
     bucket_index: u64,
@@ -2009,29 +1470,6 @@ impl SetDistributionBucketMetadataFixture {
         }
     }
 
-    pub fn with_metadata(self, metadata: Vec<u8>) -> Self {
-        Self { metadata, ..self }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_bucket_index(self, bucket_index: u64) -> Self {
-        Self {
-            bucket_index,
-            ..self
-        }
-    }
-
-    pub fn with_family_id(self, family_id: u64) -> Self {
-        Self { family_id, ..self }
-    }
-
-    pub fn with_worker_id(self, worker_id: u64) -> Self {
-        Self { worker_id, ..self }
-    }
-
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Storage::set_distribution_operator_metadata(
             self.origin.clone().into(),
@@ -2044,6 +1482,7 @@ impl SetDistributionBucketMetadataFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct RemoveDistributionBucketOperatorFixture {
     origin: RawOrigin<u64>,
     bucket_index: u64,
@@ -2058,28 +1497,6 @@ impl RemoveDistributionBucketOperatorFixture {
             bucket_index: Default::default(),
             family_id: Default::default(),
             operator_worker_id: Default::default(),
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_bucket_index(self, bucket_index: u64) -> Self {
-        Self {
-            bucket_index,
-            ..self
-        }
-    }
-
-    pub fn with_family_id(self, family_id: u64) -> Self {
-        Self { family_id, ..self }
-    }
-
-    pub fn with_operator_worker_id(self, operator_worker_id: u64) -> Self {
-        Self {
-            operator_worker_id,
-            ..self
         }
     }
 
@@ -2103,6 +1520,7 @@ impl RemoveDistributionBucketOperatorFixture {
     }
 }
 
+#[derive(Fixture)]
 pub struct SetDistributionBucketFamilyMetadataFixture {
     origin: RawOrigin<u64>,
     family_id: u64,
@@ -2116,18 +1534,6 @@ impl SetDistributionBucketFamilyMetadataFixture {
             family_id: Default::default(),
             metadata: Default::default(),
         }
-    }
-
-    pub fn with_metadata(self, metadata: Vec<u8>) -> Self {
-        Self { metadata, ..self }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_family_id(self, family_id: u64) -> Self {
-        Self { family_id, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
