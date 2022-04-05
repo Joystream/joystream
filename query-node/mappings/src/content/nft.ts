@@ -237,15 +237,26 @@ async function setNewNftTransactionalStatus(
   transactionalStatus: typeof TransactionalStatus,
   blockNumber: number
 ) {
+  const transactionalStatusAuction =
+    transactionalStatus instanceof TransactionalStatusAuction
+      ? await store.get(Auction, {
+          where: {
+            id: transactionalStatus.auctionId,
+          },
+        })
+      : undefined
+  
   // update transactionalStatus
   nft.transactionalStatus = transactionalStatus
-
+  // update transactionStatusAuction
+  nft.transactionalStatusAuction = transactionalStatusAuction
   // save NFT
   await store.save<OwnedNft>(nft)
 
   // create transactional status update record
   const transactionalStatusUpdate = new TransactionalStatusUpdate({
     nft,
+    transactionalStatusAuction,
     transactionalStatus: nft.transactionalStatus,
     changedAt: blockNumber,
   })

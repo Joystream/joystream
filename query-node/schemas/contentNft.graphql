@@ -72,6 +72,11 @@ type OwnedNft
   "NFT transactional status"
   transactionalStatus: TransactionalStatus!
 
+  # It's a duplicate value used (probably) because of
+  # limitations in querying deeply nested variant relations
+  "NFT's auction transactional status (if any)"
+  transactionalStatusAuction: Auction
+
   "History of transacional status changes"
   transactionalStatusUpdates: [TransactionalStatusUpdate!]! @derivedFrom(field: "nft")
 
@@ -94,6 +99,11 @@ type TransactionalStatusUpdate @entity {
 
   "NFT transactional status"
   transactionalStatus: TransactionalStatus!
+
+  # It's a duplicate value used (probably) because of
+  # limitations in querying deeply nested variant relations
+  "NFT's auction transactional status (if any)"
+  transactionalStatusAuction: Auction
 
   "Block number at which change happened"
   changedAt: Int!
