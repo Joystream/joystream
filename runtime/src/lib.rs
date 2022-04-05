@@ -502,6 +502,7 @@ impl content::Trait for Runtime {
     type CleanupCost = CleanupCost;
     type ModuleId = ContentModuleId;
     type MemberAuthenticator = Members;
+    type CouncilBudgetManager = Council;
 }
 
 // The referendum instance alias.
@@ -1101,6 +1102,7 @@ impl proposals_codex::Trait for Runtime {
     type LockBlogPostProposalParameters = LockBlogPostProposalParameters;
     type UnlockBlogPostProposalParameters = UnlockBlogPostProposalParameters;
     type VetoProposalProposalParameters = VetoProposalProposalParameters;
+    type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;
     type WeightInfo = weights::proposals_codex::WeightInfo;
 }
 

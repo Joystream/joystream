@@ -1,6 +1,6 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
-#![recursion_limit = "256"]
+#![recursion_limit = "512"]
 
 #[cfg(test)]
 mod tests;
@@ -12,6 +12,7 @@ mod types;
 
 use sp_std::cmp::max;
 use sp_std::mem::size_of;
+use sp_std::vec;
 
 pub use errors::*;
 pub use nft::*;
@@ -22,13 +23,14 @@ use codec::Codec;
 use codec::{Decode, Encode};
 
 pub use storage::{
-    BagIdType, DataObjectCreationParameters, DataObjectStorage, DynamicBagIdType, UploadParameters,
-    UploadParametersRecord,
+    BagIdType, DataObjectCreationParameters, DataObjectStorage, DynamicBagIdType, StaticBagId,
+    UploadParameters, UploadParametersRecord,
 };
 
 pub use common::{
-    currency::GovernanceCurrency, membership::MembershipInfoProvider, working_group::WorkingGroup,
-    MembershipTypes, StorageOwnership, Url,
+    council::CouncilBudgetManager, currency::GovernanceCurrency,
+    membership::MembershipInfoProvider, working_group::WorkingGroup, MembershipTypes,
+    StorageOwnership, Url,
 };
 use frame_support::{
     decl_event, decl_module, decl_storage,
@@ -38,7 +40,7 @@ use frame_support::{
     Parameter,
 };
 
-use frame_system::ensure_signed;
+use frame_system::{ensure_root, ensure_signed};
 
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
@@ -108,11 +110,15 @@ pub trait Trait:
 
     /// Type in order to retrieve controller account from channel member owner
     type MemberAuthenticator: MembershipInfoProvider<Self>;
+
+    /// Provides an access for the council budget.
+    type CouncilBudgetManager: CouncilBudgetManager<Self::AccountId, BalanceOf<Self>>;
 }
 
 decl_storage! {
     trait Store for Module<T: Trait> as Content {
-        pub ChannelById get(fn channel_by_id): map hasher(blake2_128_concat) T::ChannelId => Channel<T>;
+        pub ChannelById get(fn channel_by_id):
+        map hasher(blake2_128_concat) T::ChannelId => Channel<T>;
 
         pub ChannelCategoryById get(fn channel_category_by_id):
         map hasher(blake2_128_concat) T::ChannelCategoryId => ChannelCategory;
@@ -135,16 +141,19 @@ decl_storage! {
         pub CuratorGroupById get(fn curator_group_by_id):
         map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
 
-        pub VideoPostById get(fn video_post_by_id) : double_map hasher(blake2_128_concat) T::VideoId,
+        pub VideoPostById get(fn video_post_by_id):
+        double_map hasher(blake2_128_concat) T::VideoId,
         hasher(blake2_128_concat) T::VideoPostId => VideoPost<T>;
 
         pub NextVideoPostId get(fn next_video_post_id) config(): T::VideoPostId;
 
         pub Commitment get(fn commitment): <T as frame_system::Trait>::Hash;
 
-        pub MaxRewardAllowed get(fn max_reward_allowed) config(): BalanceOf<T>;
+        pub MaxCashoutAllowed get(fn max_cashout_allowed) config(): BalanceOf<T>;
 
         pub MinCashoutAllowed get(fn min_cashout_allowed) config(): BalanceOf<T>;
+
+        pub ChannelCashoutsEnabled get(fn channel_cashouts_enabled) config(): bool;
 
         /// Min auction duration
         pub MinAuctionDuration get(fn min_auction_duration) config(): T::BlockNumber;
@@ -153,10 +162,12 @@ decl_storage! {
         pub MaxAuctionDuration get(fn max_auction_duration) config(): T::BlockNumber;
 
         /// Min auction extension period
-        pub MinAuctionExtensionPeriod get(fn min_auction_extension_period) config(): T::BlockNumber;
+        pub MinAuctionExtensionPeriod
+        get(fn min_auction_extension_period) config(): T::BlockNumber;
 
         /// Max auction extension period
-        pub MaxAuctionExtensionPeriod get(fn max_auction_extension_period) config(): T::BlockNumber;
+        pub MaxAuctionExtensionPeriod
+        get(fn max_auction_extension_period) config(): T::BlockNumber;
 
         /// Min bid lock duration
         pub MinBidLockDuration get(fn min_bid_lock_duration) config(): T::BlockNumber;
@@ -281,7 +292,8 @@ decl_module! {
             // Ensure given origin is lead
             ensure_lead_auth_success::<T>(&sender)?;
 
-            // Ensure curator group under provided curator_group_id already exist, retrieve corresponding one
+            // Ensure curator group under provided curator_group_id already exist,
+            // retrieve corresponding one
             let curator_group = Self::ensure_curator_group_exists(&curator_group_id)?;
 
             // Ensure that curator_id is infact a worker in content working group
@@ -319,7 +331,8 @@ decl_module! {
             // Ensure given origin is lead
             ensure_lead_auth_success::<T>(&sender)?;
 
-            // Ensure curator group under provided curator_group_id already exist, retrieve corresponding one
+            // Ensure curator group under provided curator_group_id already exist,
+            // retrieve corresponding one
             let curator_group = Self::ensure_curator_group_exists(&curator_group_id)?;
 
             // Ensure curator under provided curator_id is CuratorGroup member
@@ -402,7 +415,8 @@ decl_module! {
                         Some(deletion_prize),
                         params,
                     )?;
-                    // create_dynamic_bag_with_objects with its can* guard ensures that this invocation succeds
+                    // create_dynamic_bag_with_objects with its can* guard ensures
+                    // that this invocation succeds
                 } else {
                     Storage::<T>::create_dynamic_bag(
                         DynamicBagIdType::<T::MemberId, T::ChannelId>::Channel(channel_id),
@@ -411,7 +425,8 @@ decl_module! {
                 }
             }
 
-            // this will not fail because can_create_dynamic_bag_with_objects_constraints will check also for successful upload conditions
+            // this will not fail because can_create_dynamic_bag_with_objects_constraints
+            // will check also for successful upload conditions
             if let Some(params) = upload_params{
                 Storage::<T>::upload_data_objects(params)?;
             }
@@ -427,7 +442,7 @@ decl_module! {
                 reward_account: params.reward_account.clone(),
                 collaborators: params.collaborators.clone(),
                 moderators: params.moderators.clone(),
-                cumulative_payout_earned: BalanceOf::<T>::zero(),
+                cumulative_reward_claimed: BalanceOf::<T>::zero(),
             };
 
             // add channel to onchain state
@@ -623,7 +638,12 @@ decl_module! {
                 channel.is_censored = is_censored
             });
 
-            Self::deposit_event(RawEvent::ChannelCensorshipStatusUpdated(actor, channel_id, is_censored, rationale));
+            Self::deposit_event(RawEvent::ChannelCensorshipStatusUpdated(
+                actor,
+                channel_id,
+                is_censored,
+                rationale
+            ));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -865,7 +885,8 @@ decl_module! {
 
             // bloat bond logic: channel owner is refunded
             video.video_post_id.as_ref().map(
-                |video_post_id| Self::video_deletion_refund_logic(&sender, &video_id, &video_post_id)
+                |video_post_id|
+                    Self::video_deletion_refund_logic(&sender, &video_id, &video_post_id)
             ).transpose()?;
 
             //
@@ -1107,7 +1128,9 @@ decl_module! {
             };
 
             // deposit event
-            Self::deposit_event(RawEvent::VideoPostTextUpdated(actor, new_text, post_id, video_id));
+            Self::deposit_event(
+                RawEvent::VideoPostTextUpdated(actor, new_text, post_id, video_id)
+            );
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1201,7 +1224,9 @@ decl_module! {
             // == MUTATION_SAFE ==
             //
 
-            Self::deposit_event(RawEvent::ReactionToVideoPost(member_id, video_id, post_id, reaction_id));
+            Self::deposit_event(
+                RawEvent::ReactionToVideoPost(member_id, video_id, post_id, reaction_id)
+            );
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1255,15 +1280,60 @@ decl_module! {
         }
 
         #[weight = 10_000_000] // TODO: adjust Weight
-        pub fn update_commitment(
+        pub fn update_channel_payouts(
             origin,
-            new_commitment: <T as frame_system::Trait>::Hash,
+            params: UpdateChannelPayoutsParameters<T>
         ) {
-            let sender = ensure_signed(origin)?;
-            ensure_authorized_to_update_commitment::<T>(&sender)?;
+            ensure_root(origin)?;
 
-            <Commitment<T>>::put(new_commitment);
-            Self::deposit_event(RawEvent::CommitmentUpdated(new_commitment));
+            let new_min_cashout_allowed = params.min_cashout_allowed
+                .unwrap_or_else(Self::min_cashout_allowed);
+            let new_max_cashout_allowed = params.max_cashout_allowed
+                .unwrap_or_else(Self::max_cashout_allowed);
+
+            ensure!(
+                new_min_cashout_allowed <= new_max_cashout_allowed,
+                Error::<T>::MinCashoutAllowedExceedsMaxCashoutAllowed
+            );
+
+            let payload_data_object_id = params.payload
+                .as_ref()
+                .map(|_| { Storage::<T>::next_data_object_id() });
+
+            if let Some(payload) = params.payload.as_ref() {
+                let upload_params = UploadParameters::<T> {
+                    bag_id: storage::BagId::<T>::from(StaticBagId::Council),
+                    object_creation_list: vec![payload.object_creation_params.clone()],
+                    deletion_prize_source_account_id: payload.uploader_account.clone(),
+                    expected_data_size_fee: payload.expected_data_size_fee,
+                };
+                Storage::<T>::upload_data_objects(upload_params)?;
+            }
+
+            //
+            // == MUTATION_SAFE ==
+            //
+
+            if let Some(min_cashout_allowed) = params.min_cashout_allowed.as_ref() {
+                <MinCashoutAllowed<T>>::put(min_cashout_allowed);
+            }
+
+            if let Some(max_cashout_allowed) = params.max_cashout_allowed.as_ref() {
+                <MaxCashoutAllowed<T>>::put(max_cashout_allowed);
+            }
+
+            if let Some(channel_cashouts_enabled) = params.channel_cashouts_enabled.as_ref() {
+                ChannelCashoutsEnabled::put(channel_cashouts_enabled);
+            }
+
+            if let Some(commitment) = params.commitment.as_ref() {
+                <Commitment<T>>::put(*commitment);
+            }
+
+            Self::deposit_event(RawEvent::ChannelPayoutsUpdated(
+                params,
+                payload_data_object_id
+            ));
         }
 
         #[weight = 10_000_000] // TODO: adjust Weight
@@ -1273,49 +1343,82 @@ decl_module! {
             proof: Vec<ProofElement<T>>,
             item: PullPayment<T>,
         ) -> DispatchResult {
-            let channel = Self::ensure_channel_exists(&item.channel_id)?;
+            let (.., reward_account, amount) =
+                Self::ensure_can_claim_channel_reward(&origin, &actor, &item, &proof)?;
 
-            let reward_account = Self::ensure_reward_account(&channel)?;
+            // == MUTATION_SAFE ==
+            //
 
-            ensure_actor_authorized_to_claim_payment::<T>(origin, &actor, &channel.owner)?;
+            Self::execute_channel_reward_claim(item.channel_id, &reward_account, amount);
 
-            let cashout = item
-                .cumulative_payout_claimed
-                .saturating_sub(channel.cumulative_payout_earned);
-
-            ensure!(
-                <MaxRewardAllowed<T>>::get() > item.cumulative_payout_claimed,
-                Error::<T>::TotalRewardLimitExceeded
+            Self::deposit_event(
+                RawEvent::ChannelRewardUpdated(item.cumulative_reward_earned, item.channel_id)
             );
-            ensure!(<MinCashoutAllowed<T>>::get() < cashout, Error::<T>::UnsufficientCashoutAmount);
-            Self::verify_proof(&proof, &item)?;
-
-            ContentTreasury::<T>::transfer_reward(&reward_account, cashout);
-            ChannelById::<T>::mutate(
-                &item.channel_id,
-                |channel| channel.cumulative_payout_earned =
-                    channel.cumulative_payout_earned.saturating_add(item.cumulative_payout_claimed)
-            );
-
-            Self::deposit_event(RawEvent::ChannelRewardUpdated(item.cumulative_payout_claimed, item.channel_id));
 
             Ok(())
         }
 
         #[weight = 10_000_000] // TODO: adjust Weight
-        pub fn update_max_reward_allowed(origin, amount: BalanceOf<T>) {
-            let sender = ensure_signed(origin)?;
-            ensure_authorized_to_update_max_reward::<T>(&sender)?;
-            <MaxRewardAllowed<T>>::put(amount);
-            Self::deposit_event(RawEvent::MaxRewardUpdated(amount));
+        pub fn withdraw_from_channel_balance(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            amount: BalanceOf<T>,
+            destination: T::AccountId,
+        ) -> DispatchResult {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            let reward_account = Self::ensure_reward_account(&channel)?;
+            ensure_actor_authorized_to_withdraw_from_channel::<T>(origin, &actor, &channel.owner)?;
+
+            ensure!(
+                <Balances<T>>::usable_balance(&reward_account) >= amount,
+                Error::<T>::WithdrawFromChannelAmountExceedsBalance
+            );
+
+            //
+            // == MUTATION_SAFE ==
+            //
+            Self::execute_channel_balance_withdrawal(&reward_account, &destination, amount)?;
+
+            Self::deposit_event(RawEvent::ChannelFundsWithdrawn(
+                actor,
+                channel_id,
+                amount,
+                destination,
+            ));
+
+            Ok(())
         }
 
         #[weight = 10_000_000] // TODO: adjust Weight
-        pub fn update_min_cashout_allowed(origin, amount: BalanceOf<T>) {
-            let sender = ensure_signed(origin)?;
-            ensure_authorized_to_update_min_cashout::<T>(&sender)?;
-            <MinCashoutAllowed<T>>::put(amount);
-            Self::deposit_event(RawEvent::MinCashoutUpdated(amount));
+        pub fn claim_and_withdraw_channel_reward(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            proof: Vec<ProofElement<T>>,
+            item: PullPayment<T>,
+            destination: T::AccountId,
+        ) -> DispatchResult {
+            let (channel, reward_account, amount) =
+                Self::ensure_can_claim_channel_reward(&origin, &actor, &item, &proof)?;
+
+            ensure_actor_authorized_to_withdraw_from_channel::<T>(origin, &actor, &channel.owner)?;
+
+            //
+            // == MUTATION_SAFE ==
+            //
+            Self::execute_channel_reward_claim(item.channel_id, &reward_account, amount);
+            // This call should (and is assumed to) never fail:
+            Self::execute_channel_balance_withdrawal(&reward_account, &destination, amount)?;
+
+            Self::deposit_event(RawEvent::ChannelRewardClaimedAndWithdrawn(
+                actor,
+                item.channel_id,
+                amount,
+                destination,
+            ));
+
+            Ok(())
         }
 
         /// Issue NFT
@@ -1374,7 +1477,12 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Authorize nft owner
-            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
+            ensure_actor_authorized_to_manage_nft::<T>(
+                origin,
+                &owner_id,
+                &nft.owner,
+                video.in_channel
+            )?;
 
             // Ensure there nft transactional status is set to idle.
             Self::ensure_nft_transactional_status_is_idle(&nft)?;
@@ -1402,7 +1510,9 @@ decl_module! {
             );
 
             // Trigger event
-            Self::deposit_event(RawEvent::OpenAuctionStarted(owner_id, video_id, auction_params, new_nonce));
+            Self::deposit_event(
+                RawEvent::OpenAuctionStarted(owner_id, video_id, auction_params, new_nonce)
+            );
         }
 
         /// Start video nft english auction
@@ -1420,7 +1530,12 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Authorize nft owner
-            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
+            ensure_actor_authorized_to_manage_nft::<T>(
+                origin,
+                &owner_id,
+                &nft.owner,
+                video.in_channel
+            )?;
 
             // Ensure there nft transactional status is set to idle.
             Self::ensure_nft_transactional_status_is_idle(&nft)?;
@@ -1439,10 +1554,17 @@ decl_module! {
             // Update the video
             VideoById::<T>::mutate(
                 video_id,
-                |v| v.set_nft_status(nft.with_transactional_status(TransactionalStatus::<T>::EnglishAuction(auction))));
+                |v| v.set_nft_status(
+                    nft.with_transactional_status(
+                        TransactionalStatus::<T>::EnglishAuction(auction)
+                    )
+                )
+            );
 
             // Trigger event
-            Self::deposit_event(RawEvent::EnglishAuctionStarted(owner_id, video_id, auction_params));
+            Self::deposit_event(
+                RawEvent::EnglishAuctionStarted(owner_id, video_id, auction_params)
+            );
         }
 
         // Cancel video nft english auction
@@ -1459,7 +1581,12 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Authorize nft owner
-            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
+            ensure_actor_authorized_to_manage_nft::<T>(
+                origin,
+                &owner_id,
+                &nft.owner,
+                video.in_channel
+            )?;
 
             // Ensure auction state that can be canceled
             Self::ensure_in_english_auction_state(&nft)
@@ -1492,7 +1619,12 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Authorize nft owner
-            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
+            ensure_actor_authorized_to_manage_nft::<T>(
+                origin,
+                &owner_id,
+                &nft.owner,
+                video.in_channel
+            )?;
 
             // Ensure auction state that can be canceled
             Self::ensure_in_open_auction_state(&nft)?;
@@ -1524,7 +1656,12 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Authorize nft owner
-            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
+            ensure_actor_authorized_to_manage_nft::<T>(
+                origin,
+                &owner_id,
+                &nft.owner,
+                video.in_channel
+            )?;
 
             // Ensure nft in pending offer state
             Self::ensure_in_pending_offer_state(&nft)?;
@@ -1555,7 +1692,12 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Authorize nft owner
-            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
+            ensure_actor_authorized_to_manage_nft::<T>(
+                origin,
+                &owner_id,
+                &nft.owner,
+                video.in_channel
+            )?;
 
             // Ensure nft in buy now state
             Self::ensure_in_buy_now_state(&nft)?;
@@ -1587,7 +1729,12 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Authorize nft owner
-            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
+            ensure_actor_authorized_to_manage_nft::<T>(
+                origin,
+                &owner_id,
+                &nft.owner,
+                video.in_channel
+            )?;
 
             // Ensure nft in buy now state
             let _ = Self::ensure_in_buy_now_state(&nft)?;
@@ -1769,7 +1916,8 @@ decl_module! {
                     T::Currency::reserve(&participant_account_id, bid_amount)?;
 
                     // update nft auction state
-                    let updated_auction = eng_auction.with_bid(bid_amount, participant_id, current_block);
+                    let updated_auction =
+                        eng_auction.with_bid(bid_amount, participant_id, current_block);
 
                     (
                         nft.with_transactional_status(
@@ -1894,7 +2042,12 @@ decl_module! {
             let auction = Self::ensure_in_open_auction_state(&nft)?;
 
             // Ensure actor is authorized to accept open auction bid
-            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
+            ensure_actor_authorized_to_manage_nft::<T>(
+                origin,
+                &owner_id,
+                &nft.owner,
+                video.in_channel
+            )?;
 
             // Ensure open auction bid exists
             let bid = Self::ensure_open_bid_exists(video_id, winner_id)?;
@@ -1944,7 +2097,12 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Authorize nft owner
-            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
+            ensure_actor_authorized_to_manage_nft::<T>(
+                origin,
+                &owner_id,
+                &nft.owner,
+                video.in_channel
+            )?;
 
             // Ensure there is no pending offer or existing auction for given nft.
             Self::ensure_nft_transactional_status_is_idle(&nft)?;
@@ -1982,7 +2140,12 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Authorize nft owner
-            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
+            ensure_actor_authorized_to_manage_nft::<T>(
+                origin,
+                &owner_id,
+                &nft.owner,
+                video.in_channel
+            )?;
 
             // Ensure there is no pending offer or existing auction for given nft.
             Self::ensure_nft_transactional_status_is_idle(&nft)?;
@@ -2028,7 +2191,12 @@ decl_module! {
             //
 
             // Complete nft offer
-            let nft = Self::complete_nft_offer(video.in_channel, nft, owner_account_id, receiver_account_id);
+            let nft = Self::complete_nft_offer(
+                video.in_channel,
+                nft,
+                owner_account_id,
+                receiver_account_id
+            );
 
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
 
@@ -2052,7 +2220,12 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Authorize nft owner
-            ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
+            ensure_actor_authorized_to_manage_nft::<T>(
+                origin,
+                &owner_id,
+                &nft.owner,
+                video.in_channel
+            )?;
 
             // Ensure there is no pending transfer or existing auction for given nft.
             Self::ensure_nft_transactional_status_is_idle(&nft)?;
@@ -2104,7 +2277,13 @@ decl_module! {
             //
 
             // Buy nft
-            let nft = Self::buy_now(video.in_channel, nft, owner_account_id, participant_account_id, participant_id);
+            let nft = Self::buy_now(
+                video.in_channel,
+                nft,
+                owner_account_id,
+                participant_account_id,
+                participant_id
+            );
 
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
 
@@ -2114,7 +2293,12 @@ decl_module! {
 
         /// Channel owner remark
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn channel_owner_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, channel_id: T::ChannelId, msg: Vec<u8>) {
+        pub fn channel_owner_remark(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            msg: Vec<u8>
+        ) {
             let sender = ensure_signed(origin)?;
             let channel = Self::ensure_channel_exists(&channel_id)?;
             ensure_actor_auth_success::<T>(&sender, &actor)?;
@@ -2129,7 +2313,14 @@ decl_module! {
 
         /// Channel collaborator remark
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn channel_collaborator_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, channel_id: T::ChannelId, msg: Vec<u8>) {
+        pub fn channel_collaborator_remark(
+            origin,
+            actor: ContentActor<T::CuratorGroupId,
+            T::CuratorId,
+            T::MemberId>,
+            channel_id: T::ChannelId,
+            msg: Vec<u8>
+        ) {
             let sender = ensure_signed(origin)?;
             let channel = Self::ensure_channel_exists(&channel_id)?;
             ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
@@ -2142,7 +2333,12 @@ decl_module! {
 
         /// Channel moderator remark
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn channel_moderator_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, channel_id: T::ChannelId, msg: Vec<u8>) {
+        pub fn channel_moderator_remark(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            msg: Vec<u8>
+        ) {
             let sender = ensure_signed(origin)?;
             let channel = Self::ensure_channel_exists(&channel_id)?;
             ensure_actor_auth_success::<T>(&sender, &actor)?;
@@ -2157,10 +2353,21 @@ decl_module! {
 
         /// NFT owner remark
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn nft_owner_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, video_id: T::VideoId, msg: Vec<u8>) {
+        pub fn nft_owner_remark(
+            origin,
+            actor: ContentActor<T::CuratorGroupId,
+            T::CuratorId, T::MemberId>,
+            video_id: T::VideoId,
+            msg: Vec<u8>
+        ) {
             let video = Self::ensure_video_exists(&video_id)?;
             let nft = video.ensure_nft_is_issued::<T>()?;
-            ensure_actor_authorized_to_manage_nft::<T>(origin, &actor, &nft.owner, video.in_channel)?;
+            ensure_actor_authorized_to_manage_nft::<T>(
+                origin,
+                &actor,
+                &nft.owner,
+                video.in_channel
+            )?;
 
             //
             // == MUTATION SAFE ==
@@ -2428,6 +2635,72 @@ impl<T: Trait> Module<T> {
             video_id, member_id,
         ))
     }
+
+    fn ensure_can_claim_channel_reward(
+        origin: &T::Origin,
+        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        item: &PullPayment<T>,
+        proof: &[ProofElement<T>],
+    ) -> Result<ChannelRewardClaimInfo<T>, DispatchError> {
+        let channel = Self::ensure_channel_exists(&item.channel_id)?;
+
+        ensure_actor_authorized_to_claim_payment::<T>(origin.clone(), &actor, &channel.owner)?;
+
+        ensure!(
+            Self::channel_cashouts_enabled(),
+            Error::<T>::ChannelCashoutsDisabled
+        );
+
+        let reward_account = Self::ensure_reward_account(&channel)?;
+
+        let cashout = item
+            .cumulative_reward_earned
+            .saturating_sub(channel.cumulative_reward_claimed);
+
+        ensure!(
+            <MaxCashoutAllowed<T>>::get() >= cashout,
+            Error::<T>::CashoutAmountExceedsMaximumAmount
+        );
+        ensure!(
+            <MinCashoutAllowed<T>>::get() <= cashout,
+            Error::<T>::CashoutAmountBelowMinimumAmount
+        );
+
+        ensure!(
+            cashout <= T::CouncilBudgetManager::get_budget(),
+            Error::<T>::InsufficientCouncilBudget
+        );
+
+        Self::verify_proof(proof, item)?;
+
+        Ok((channel, reward_account, cashout))
+    }
+
+    fn execute_channel_reward_claim(
+        channel_id: T::ChannelId,
+        reward_account: &T::AccountId,
+        amount: BalanceOf<T>,
+    ) {
+        T::CouncilBudgetManager::withdraw(reward_account, amount);
+        ChannelById::<T>::mutate(&channel_id, |channel| {
+            channel.cumulative_reward_claimed =
+                channel.cumulative_reward_claimed.saturating_add(amount)
+        });
+    }
+
+    fn execute_channel_balance_withdrawal(
+        reward_account: &T::AccountId,
+        destination: &T::AccountId,
+        amount: BalanceOf<T>,
+    ) -> DispatchResult {
+        <Balances<T> as Currency<T::AccountId>>::transfer(
+            reward_account,
+            destination,
+            amount,
+            ExistenceRequirement::AllowDeath,
+        )?;
+        Ok(())
+    }
 }
 
 decl_event!(
@@ -2462,7 +2735,8 @@ decl_event!(
         VideoPostId = <T as Trait>::VideoPostId,
         ReactionId = <T as Trait>::ReactionId,
         ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
-        Hash = <T as frame_system::Trait>::Hash,
+        AccountId = <T as frame_system::Trait>::AccountId,
+        UpdateChannelPayoutsParameters = UpdateChannelPayoutsParameters<T>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2482,6 +2756,9 @@ decl_event!(
             IsCensored,
             Vec<u8>, /* rationale */
         ),
+
+        ChannelFundsWithdrawn(ContentActor, ChannelId, Balance, AccountId),
+        ChannelRewardClaimedAndWithdrawn(ContentActor, ChannelId, Balance, AccountId),
 
         // Channel Categories
         ChannelCategoryCreated(
@@ -2528,10 +2805,8 @@ decl_event!(
         ModeratorSetUpdated(ChannelId, ModeratorSet),
 
         // Rewards
-        CommitmentUpdated(Hash),
+        ChannelPayoutsUpdated(UpdateChannelPayoutsParameters, Option<DataObjectId>),
         ChannelRewardUpdated(Balance, ChannelId),
-        MaxRewardUpdated(Balance),
-        MinCashoutUpdated(Balance),
         // Nft auction
         EnglishAuctionStarted(ContentActor, VideoId, EnglishAuctionParams),
         OpenAuctionStarted(ContentActor, VideoId, OpenAuctionParams, OpenAuctionId),

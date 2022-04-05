@@ -1,6 +1,7 @@
 use super::curators;
 use super::mock::*;
 use crate::*;
+use common::council::CouncilBudgetManager;
 use frame_support::assert_ok;
 use frame_support::traits::Currency;
 use sp_std::cmp::min;
@@ -120,7 +121,7 @@ impl CreateChannelFixture {
                         collaborators: self.params.collaborators.clone(),
                         moderators: self.params.moderators.clone(),
                         num_videos: Zero::zero(),
-                        cumulative_payout_earned: Zero::zero(),
+                        cumulative_reward_claimed: Zero::zero(),
                     },
                     self.params.clone(),
                 ))
@@ -433,7 +434,7 @@ impl UpdateChannelFixture {
                                 .unwrap_or(channel_pre.collaborators),
                             num_videos: channel_pre.num_videos,
                             moderators: channel_pre.moderators,
-                            cumulative_payout_earned: BalanceOf::<Test>::zero(),
+                            cumulative_reward_claimed: BalanceOf::<Test>::zero(),
                         },
                         self.params.clone(),
                     ))
@@ -1171,123 +1172,177 @@ impl UpdateModeratorSetFixture {
     }
 }
 
-pub struct UpdateMaximumRewardFixture {
-    sender: AccountId,
-    new_amount: BalanceOf<Test>,
+pub struct UpdateChannelPayoutsFixture {
+    origin: Origin,
+    params: UpdateChannelPayoutsParameters<Test>,
 }
 
-impl UpdateMaximumRewardFixture {
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UpdateChannelPayoutsFixtureStateSnapshot {
+    pub commitment: HashOutput,
+    pub min_cashout_allowed: BalanceOf<Test>,
+    pub max_cashout_allowed: BalanceOf<Test>,
+    pub cashouts_enabled: bool,
+    pub uploader_account_balance: BalanceOf<Test>,
+    pub next_object_id: DataObjectId<Test>,
+}
+
+impl UpdateChannelPayoutsFixture {
     pub fn default() -> Self {
         Self {
-            sender: LEAD_ACCOUNT_ID,
-            new_amount: BalanceOf::<Test>::zero(),
+            origin: Origin::root(),
+            params: UpdateChannelPayoutsParameters::<Test>::default(),
         }
     }
 
-    pub fn with_sender(self, sender: AccountId) -> Self {
-        Self { sender, ..self }
+    pub fn with_origin(self, origin: Origin) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_commitment(self, commitment: Option<HashOutput>) -> Self {
+        let params = UpdateChannelPayoutsParameters::<Test> {
+            commitment,
+            ..self.params
+        };
+        Self { params, ..self }
+    }
+
+    pub fn with_payload(self, payload: Option<ChannelPayoutsPayloadParameters<Test>>) -> Self {
+        let params = UpdateChannelPayoutsParameters::<Test> {
+            payload,
+            ..self.params
+        };
+        Self { params, ..self }
+    }
+
+    pub fn with_min_cashout_allowed(self, min_cashout_allowed: Option<BalanceOf<Test>>) -> Self {
+        let params = UpdateChannelPayoutsParameters::<Test> {
+            min_cashout_allowed,
+            ..self.params
+        };
+        Self { params, ..self }
+    }
+
+    pub fn with_max_cashout_allowed(self, max_cashout_allowed: Option<BalanceOf<Test>>) -> Self {
+        let params = UpdateChannelPayoutsParameters::<Test> {
+            max_cashout_allowed,
+            ..self.params
+        };
+        Self { params, ..self }
+    }
+
+    pub fn with_channel_cashouts_enabled(self, channel_cashouts_enabled: Option<bool>) -> Self {
+        let params = UpdateChannelPayoutsParameters::<Test> {
+            channel_cashouts_enabled,
+            ..self.params
+        };
+        Self { params, ..self }
+    }
+
+    fn get_state_snapshot(&self) -> UpdateChannelPayoutsFixtureStateSnapshot {
+        UpdateChannelPayoutsFixtureStateSnapshot {
+            commitment: Content::commitment(),
+            min_cashout_allowed: Content::min_cashout_allowed(),
+            max_cashout_allowed: Content::max_cashout_allowed(),
+            cashouts_enabled: Content::channel_cashouts_enabled(),
+            uploader_account_balance: self
+                .params
+                .payload
+                .as_ref()
+                .map_or(0, |p| Balances::<Test>::usable_balance(p.uploader_account)),
+            next_object_id: storage::NextDataObjectId::<Test>::get(),
+        }
+    }
+
+    fn verify_success_state(
+        &self,
+        snapshot_pre: &UpdateChannelPayoutsFixtureStateSnapshot,
+        snapshot_post: &UpdateChannelPayoutsFixtureStateSnapshot,
+    ) {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ChannelPayoutsUpdated(
+                self.params.clone(),
+                self.params
+                    .payload
+                    .as_ref()
+                    .map(|_| snapshot_pre.next_object_id)
+            ))
+        );
+        if let Some(commitment) = self.params.commitment {
+            assert_eq!(snapshot_post.commitment, commitment);
+        } else {
+            assert_eq!(snapshot_post.commitment, snapshot_pre.commitment);
+        }
+
+        if let Some(min_cashout_allowed) = self.params.min_cashout_allowed {
+            assert_eq!(snapshot_post.min_cashout_allowed, min_cashout_allowed);
+        } else {
+            assert_eq!(
+                snapshot_post.min_cashout_allowed,
+                snapshot_pre.min_cashout_allowed
+            );
+        }
+
+        if let Some(max_cashout_allowed) = self.params.max_cashout_allowed {
+            assert_eq!(snapshot_post.max_cashout_allowed, max_cashout_allowed);
+        } else {
+            assert_eq!(
+                snapshot_post.max_cashout_allowed,
+                snapshot_pre.max_cashout_allowed
+            );
+        }
+
+        if let Some(cashouts_enabled) = self.params.channel_cashouts_enabled {
+            assert_eq!(snapshot_post.cashouts_enabled, cashouts_enabled);
+        } else {
+            assert_eq!(
+                snapshot_post.cashouts_enabled,
+                snapshot_pre.cashouts_enabled
+            );
+        }
+
+        if self.params.payload.is_some() {
+            assert_eq!(
+                snapshot_post.next_object_id,
+                snapshot_pre.next_object_id.saturating_add(One::one())
+            );
+            assert_eq!(
+                snapshot_post.uploader_account_balance,
+                snapshot_pre
+                    .uploader_account_balance
+                    .saturating_sub(<Test as storage::Trait>::DataObjectDeletionPrize::get())
+            );
+        } else {
+            assert_eq!(snapshot_post.next_object_id, snapshot_pre.next_object_id);
+            assert_eq!(
+                snapshot_post.uploader_account_balance,
+                snapshot_pre.uploader_account_balance
+            );
+        }
+    }
+
+    fn verify_error_state(
+        &self,
+        snapshot_pre: &UpdateChannelPayoutsFixtureStateSnapshot,
+        snapshot_post: &UpdateChannelPayoutsFixtureStateSnapshot,
+    ) {
+        assert_eq!(snapshot_post, snapshot_pre);
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender.clone());
-        let max_reward_pre = Content::max_reward_allowed();
+        let snapshot_pre = self.get_state_snapshot();
 
-        let actual_result = Content::update_max_reward_allowed(origin, self.new_amount.clone());
+        let actual_result =
+            Content::update_channel_payouts(self.origin.clone(), self.params.clone());
 
-        let max_reward_post = Content::max_reward_allowed();
-
-        assert_eq!(actual_result, expected_result);
-        if actual_result.is_ok() {
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::MaxRewardUpdated(self.new_amount.clone()))
-            );
-            assert_eq!(max_reward_post, self.new_amount);
-        } else {
-            assert_eq!(max_reward_post, max_reward_pre);
-        }
-    }
-}
-
-pub struct UpdateMinCashoutFixture {
-    sender: AccountId,
-    new_amount: BalanceOf<Test>,
-}
-
-impl UpdateMinCashoutFixture {
-    pub fn default() -> Self {
-        Self {
-            sender: LEAD_ACCOUNT_ID,
-            new_amount: BalanceOf::<Test>::zero(),
-        }
-    }
-
-    pub fn with_sender(self, sender: AccountId) -> Self {
-        Self { sender, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender.clone());
-        let min_cashout_pre = Content::min_cashout_allowed();
-
-        let actual_result = Content::update_min_cashout_allowed(origin, self.new_amount.clone());
-
-        let min_cashout_post = Content::min_cashout_allowed();
+        let snapshot_post = self.get_state_snapshot();
 
         assert_eq!(actual_result, expected_result);
         if actual_result.is_ok() {
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::MinCashoutUpdated(self.new_amount.clone()))
-            );
-            assert_eq!(min_cashout_post, self.new_amount);
+            self.verify_success_state(&snapshot_pre, &snapshot_post);
         } else {
-            assert_eq!(min_cashout_post, min_cashout_pre);
-        }
-    }
-}
-
-pub struct UpdateCommitmentValueFixture {
-    sender: AccountId,
-    new_commitment: HashOutput,
-}
-
-impl UpdateCommitmentValueFixture {
-    pub fn default() -> Self {
-        Self {
-            sender: LEAD_ACCOUNT_ID,
-            new_commitment: Hashing::hash_of(&PullPayment::<Test>::default()),
-        }
-    }
-
-    pub fn with_sender(self, sender: AccountId) -> Self {
-        Self { sender, ..self }
-    }
-
-    pub fn with_commit(self, new_commitment: HashOutput) -> Self {
-        Self {
-            new_commitment,
-            ..self
-        }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender.clone());
-        let commitment_pre = Content::commitment();
-
-        let actual_result = Content::update_commitment(origin, self.new_commitment.clone());
-
-        let commitment_post = Content::commitment();
-
-        assert_eq!(actual_result, expected_result);
-        if actual_result.is_ok() {
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::CommitmentUpdated(self.new_commitment))
-            );
-            assert_eq!(commitment_post, self.new_commitment);
-        } else {
-            assert_eq!(commitment_post, commitment_pre);
+            self.verify_error_state(&snapshot_pre, &snapshot_post);
         }
     }
 }
@@ -1307,7 +1362,7 @@ impl ClaimChannelRewardFixture {
             payments: create_some_pull_payments_helper(),
             item: PullPayment::<Test> {
                 channel_id: ChannelId::one(),
-                cumulative_payout_claimed: BalanceOf::<Test>::from(DEFAULT_PAYOUT_CLAIMED),
+                cumulative_reward_earned: BalanceOf::<Test>::from(DEFAULT_PAYOUT_CLAIMED),
                 reason: Hashing::hash_of(&b"reason".to_vec()),
             },
         }
@@ -1331,11 +1386,9 @@ impl ClaimChannelRewardFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
-        let channel = Content::channel_by_id(self.item.channel_id);
-        let reward_account = Content::ensure_reward_account(&channel).unwrap_or_default();
-        let balance_pre = Balances::<Test>::usable_balance(&reward_account);
-        let payout_earned_pre =
-            Content::channel_by_id(self.item.channel_id).cumulative_payout_earned;
+        let channel_pre = Content::channel_by_id(self.item.channel_id);
+        let channel_balance_pre = channel_reward_account_balance(&channel_pre);
+        let council_budget_pre = <Test as Trait>::CouncilBudgetManager::get_budget();
 
         let proof = if self.payments.is_empty() {
             vec![]
@@ -1346,26 +1399,240 @@ impl ClaimChannelRewardFixture {
         let actual_result =
             Content::claim_channel_reward(origin, self.actor.clone(), proof, self.item.clone());
 
-        let balance_post = Balances::<Test>::usable_balance(&reward_account);
-        let payout_earned_post =
-            Content::channel_by_id(self.item.channel_id).cumulative_payout_earned;
+        let channel_post = Content::channel_by_id(self.item.channel_id);
+        let channel_balance_post = channel_reward_account_balance(&channel_post);
+        let council_budget_post = <Test as Trait>::CouncilBudgetManager::get_budget();
 
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            let cashout = payout_earned_post.saturating_sub(payout_earned_pre);
-            assert_eq!(balance_post.saturating_sub(balance_pre), cashout);
-            assert_eq!(payout_earned_post, self.item.cumulative_payout_claimed);
+            let cashout = self
+                .item
+                .cumulative_reward_earned
+                .saturating_sub(channel_pre.cumulative_reward_claimed);
+            assert_eq!(
+                channel_balance_post.saturating_sub(channel_balance_pre),
+                cashout
+            );
+            assert_eq!(
+                channel_post.cumulative_reward_claimed,
+                self.item.cumulative_reward_earned
+            );
+            assert_eq!(
+                council_budget_post,
+                council_budget_pre.saturating_sub(cashout)
+            );
             assert_eq!(
                 System::events().last().unwrap().event,
                 MetaEvent::content(RawEvent::ChannelRewardUpdated(
-                    self.item.cumulative_payout_claimed,
+                    self.item.cumulative_reward_earned,
                     self.item.channel_id
                 ))
             );
         } else {
-            assert_eq!(balance_post, balance_pre);
-            assert_eq!(payout_earned_post, payout_earned_pre);
+            assert_eq!(council_budget_post, council_budget_pre);
+            assert_eq!(channel_balance_post, channel_balance_pre);
+            assert_eq!(channel_post, channel_pre);
+        }
+    }
+}
+
+pub struct WithdrawFromChannelBalanceFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    amount: BalanceOf<Test>,
+    destination: AccountId,
+}
+
+impl WithdrawFromChannelBalanceFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+            amount: DEFAULT_PAYOUT_EARNED,
+            destination: DEFAULT_CHANNEL_REWARD_WITHDRAWAL_ACCOUNT_ID,
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
+
+    pub fn with_amount(self, amount: BalanceOf<Test>) -> Self {
+        Self { amount, ..self }
+    }
+
+    pub fn with_destination(self, destination: AccountId) -> Self {
+        Self {
+            destination,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let dest_balance_pre = Balances::<Test>::usable_balance(self.destination);
+        let channel_pre = Content::channel_by_id(self.channel_id);
+        let channel_balance_pre = channel_reward_account_balance(&channel_pre);
+
+        let actual_result = Content::withdraw_from_channel_balance(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.amount,
+            self.destination.clone(),
+        );
+
+        let dest_balance_post = Balances::<Test>::usable_balance(&self.destination);
+        let channel_post = Content::channel_by_id(self.channel_id);
+        let channel_balance_post = channel_reward_account_balance(&channel_post);
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                dest_balance_post,
+                dest_balance_pre.saturating_add(self.amount)
+            );
+            assert_eq!(
+                channel_balance_post,
+                channel_balance_pre.saturating_sub(self.amount)
+            );
+            assert_eq!(channel_post, channel_pre);
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::ChannelFundsWithdrawn(
+                    self.actor.clone(),
+                    self.channel_id,
+                    self.amount,
+                    self.destination.clone(),
+                ))
+            );
+        } else {
+            assert_eq!(channel_balance_post, channel_balance_pre);
+            assert_eq!(dest_balance_post, dest_balance_pre);
+            assert_eq!(channel_post, channel_pre);
+        }
+    }
+}
+
+pub struct ClaimAndWithdrawChannelRewardFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    payments: Vec<PullPayment<Test>>,
+    item: PullPayment<Test>,
+    destination: AccountId,
+}
+
+impl ClaimAndWithdrawChannelRewardFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            payments: create_some_pull_payments_helper(),
+            item: PullPayment::<Test> {
+                channel_id: ChannelId::one(),
+                cumulative_reward_earned: BalanceOf::<Test>::from(DEFAULT_PAYOUT_CLAIMED),
+                reason: Hashing::hash_of(&b"reason".to_vec()),
+            },
+            destination: DEFAULT_CHANNEL_REWARD_WITHDRAWAL_ACCOUNT_ID,
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_payments(self, payments: Vec<PullPayment<Test>>) -> Self {
+        Self { payments, ..self }
+    }
+
+    pub fn with_item(self, item: PullPayment<Test>) -> Self {
+        Self { item, ..self }
+    }
+
+    pub fn with_destination(self, destination: AccountId) -> Self {
+        Self {
+            destination,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let dest_balance_pre = Balances::<Test>::usable_balance(&self.destination);
+        let channel_pre = Content::channel_by_id(&self.item.channel_id);
+        let channel_balance_pre = channel_reward_account_balance(&channel_pre);
+        let council_budget_pre = <Test as Trait>::CouncilBudgetManager::get_budget();
+
+        let proof = if self.payments.is_empty() {
+            vec![]
+        } else {
+            build_merkle_path_helper(&self.payments, DEFAULT_PROOF_INDEX)
+        };
+
+        let actual_result = Content::claim_and_withdraw_channel_reward(
+            origin,
+            self.actor.clone(),
+            proof.clone(),
+            self.item.clone(),
+            self.destination.clone(),
+        );
+
+        let dest_balance_post = Balances::<Test>::usable_balance(&self.destination);
+        let channel_post = Content::channel_by_id(&self.item.channel_id);
+        let channel_balance_post = channel_reward_account_balance(&channel_post);
+        let council_budget_post = <Test as Trait>::CouncilBudgetManager::get_budget();
+
+        assert_eq!(actual_result, expected_result);
+
+        let amount_claimed = self
+            .item
+            .cumulative_reward_earned
+            .saturating_sub(channel_pre.cumulative_reward_claimed);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                channel_post.cumulative_reward_claimed,
+                self.item.cumulative_reward_earned
+            );
+            assert_eq!(
+                dest_balance_post,
+                dest_balance_pre.saturating_add(amount_claimed)
+            );
+            assert_eq!(channel_balance_post, channel_balance_pre);
+            assert_eq!(
+                council_budget_post,
+                council_budget_pre.saturating_sub(amount_claimed)
+            );
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::ChannelRewardClaimedAndWithdrawn(
+                    self.actor.clone(),
+                    self.item.channel_id,
+                    amount_claimed,
+                    self.destination.clone(),
+                ))
+            );
+        } else {
+            assert_eq!(council_budget_post, council_budget_pre);
+            assert_eq!(channel_balance_post, channel_balance_pre);
+            assert_eq!(dest_balance_post, dest_balance_pre);
+            assert_eq!(channel_post, channel_pre);
         }
     }
 }
@@ -1430,7 +1697,7 @@ pub fn create_default_member_owned_channel() {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
             object_creation_list: create_data_objects_helper(),
         })
-        .with_reward_account(DEFAULT_MEMBER_ACCOUNT_ID)
+        .with_reward_account(DEFAULT_MEMBER_CHANNEL_REWARD_ACCOUNT_ID)
         .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
         .with_moderators(vec![DEFAULT_MODERATOR_ID].into_iter().collect())
         .call_and_assert(Ok(()));
@@ -1445,7 +1712,7 @@ pub fn create_default_curator_owned_channel() {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
             object_creation_list: create_data_objects_helper(),
         })
-        .with_reward_account(DEFAULT_CURATOR_ACCOUNT_ID)
+        .with_reward_account(DEFAULT_CURATOR_CHANNEL_REWARD_ACCOUNT_ID)
         .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
         .with_moderators(vec![DEFAULT_MODERATOR_ID].into_iter().collect())
         .call_and_assert(Ok(()));
@@ -1563,7 +1830,7 @@ fn index_path_helper(len: usize, index: usize) -> Vec<IndexItem> {
     return path;
 }
 
-fn generate_merkle_root_helper<E: Encode>(collection: &[E]) -> Vec<HashOutput> {
+pub fn generate_merkle_root_helper<E: Encode>(collection: &[E]) -> Vec<HashOutput> {
     // generates merkle root from the ordered sequence collection.
     // The resulting vector is structured as follows: elements in range
     // [0..collection.len()) will be the tree leaves (layer 0), elements in range
@@ -1619,21 +1886,49 @@ fn build_merkle_path_helper<E: Encode + Clone>(
 }
 
 // generate some payments claims
-pub fn create_some_pull_payments_helper() -> Vec<PullPayment<Test>> {
+pub fn create_some_pull_payments_helper_with_rewards(
+    cumulative_reward_earned: u64,
+) -> Vec<PullPayment<Test>> {
     let mut payments = Vec::new();
     for i in 0..PAYMENTS_NUMBER {
         payments.push(PullPayment::<Test> {
             channel_id: ChannelId::from(i % 2),
-            cumulative_payout_claimed: BalanceOf::<Test>::from(DEFAULT_PAYOUT_EARNED),
+            cumulative_reward_earned: BalanceOf::<Test>::from(cumulative_reward_earned),
             reason: Hashing::hash_of(&b"reason".to_vec()),
         });
     }
     payments
 }
 
+pub fn create_some_pull_payments_helper() -> Vec<PullPayment<Test>> {
+    create_some_pull_payments_helper_with_rewards(DEFAULT_PAYOUT_EARNED)
+}
+
 pub fn update_commit_value_with_payments_helper(payments: &[PullPayment<Test>]) {
     let commit = generate_merkle_root_helper(payments).pop().unwrap();
-    UpdateCommitmentValueFixture::default()
-        .with_commit(commit)
+    UpdateChannelPayoutsFixture::default()
+        .with_commitment(Some(commit))
         .call_and_assert(Ok(()));
+}
+
+fn channel_reward_account(channel: &Channel<Test>) -> Option<AccountId> {
+    channel.reward_account.map_or_else(
+        || {
+            if let ChannelOwner::Member(member_id) = channel.owner {
+                let acc = MemberInfoProvider::controller_account_id(member_id);
+                acc.map_or(None, |a| Some(a))
+            } else {
+                None
+            }
+        },
+        |a| Some(a),
+    )
+}
+
+fn channel_reward_account_balance(channel: &Channel<Test>) -> u64 {
+    if let Some(reward_account) = channel_reward_account(channel) {
+        Balances::<Test>::usable_balance(&reward_account)
+    } else {
+        Zero::zero()
+    }
 }

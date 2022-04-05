@@ -4004,6 +4004,7 @@ dependencies = [
  "pallet-blog",
  "pallet-common",
  "pallet-constitution",
+ "pallet-content",
  "pallet-council",
  "pallet-membership",
  "pallet-proposals-discussion",

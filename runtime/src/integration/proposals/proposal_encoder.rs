@@ -149,6 +149,9 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::VetoProposal(proposal_id) => {
                 Call::ProposalsEngine(proposals_engine::Call::veto_proposal(proposal_id))
             }
+            ProposalDetails::UpdateChannelPayouts(params) => {
+                Call::Content(content::Call::update_channel_payouts(params))
+            }
         };
 
         call.encode()

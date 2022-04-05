@@ -86,7 +86,7 @@ pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance> {
     /// moderator set
     pub moderators: BTreeSet<MemberId>,
     /// Cumulative cashout
-    pub cumulative_payout_earned: Balance,
+    pub cumulative_reward_claimed: Balance,
 }
 
 impl<MemberId: Ord, CuratorGroupId, AccountId, Balance>
@@ -399,7 +399,7 @@ pub type VideoPostDeletionParameters<T> =
 #[derive(Encode, Decode, Default, Copy, Clone, PartialEq, Eq, Debug)]
 pub struct PullPaymentElement<ChannelId, Balance, Hash> {
     pub channel_id: ChannelId,
-    pub cumulative_payout_claimed: Balance,
+    pub cumulative_reward_earned: Balance,
     pub reason: Hash,
 }
 
@@ -442,6 +442,47 @@ impl<ChannelId: Clone, VideoPostId: Clone, OwnedNft: Clone>
     }
 }
 
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
+pub struct ChannelPayoutsPayloadParametersRecord<AccountId, Balance> {
+    pub uploader_account: AccountId,
+    pub object_creation_params: DataObjectCreationParameters,
+    pub expected_data_size_fee: Balance,
+}
+
+pub type ChannelPayoutsPayloadParameters<T> =
+    ChannelPayoutsPayloadParametersRecord<<T as frame_system::Trait>::AccountId, BalanceOf<T>>;
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
+pub struct UpdateChannelPayoutsParametersRecord<ChannelPayoutsPayloadParameters, Balance, Hash> {
+    pub commitment: Option<Hash>,
+    pub payload: Option<ChannelPayoutsPayloadParameters>,
+    pub min_cashout_allowed: Option<Balance>,
+    pub max_cashout_allowed: Option<Balance>,
+    pub channel_cashouts_enabled: Option<bool>,
+}
+
+impl<ChannelPayoutsPayloadParameters, Balance, Hash> Default
+    for UpdateChannelPayoutsParametersRecord<ChannelPayoutsPayloadParameters, Balance, Hash>
+{
+    fn default() -> Self {
+        Self {
+            commitment: None,
+            payload: None,
+            min_cashout_allowed: None,
+            max_cashout_allowed: None,
+            channel_cashouts_enabled: None,
+        }
+    }
+}
+
+pub type UpdateChannelPayoutsParameters<T> = UpdateChannelPayoutsParametersRecord<
+    ChannelPayoutsPayloadParameters<T>,
+    BalanceOf<T>,
+    <T as frame_system::Trait>::Hash,
+>;
+
 /// Operations with local pallet account.
 pub trait ModuleAccount<T: balances::Trait> {
     /// The module id, used for deriving its sovereign account ID.
@@ -477,11 +518,6 @@ pub trait ModuleAccount<T: balances::Trait> {
     fn usable_balance() -> BalanceOf<T> {
         <Balances<T>>::usable_balance(&Self::module_account_id())
     }
-
-    /// Mints the reward into the destination account provided
-    fn transfer_reward(dest_account_id: &T::AccountId, amount: BalanceOf<T>) {
-        let _ = <Balances<T> as Currency<T::AccountId>>::deposit_creating(dest_account_id, amount);
-    }
 }
 
 /// Implementation of the ModuleAccountHandler.
@@ -503,6 +539,11 @@ pub type Balances<T> = balances::Module<T>;
 pub type BalanceOf<T> = <Balances<T> as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 pub type CurrencyOf<T> = common::currency::BalanceOf<T>;
 pub type Storage<T> = storage::Module<T>;
+pub type ChannelRewardClaimInfo<T> = (
+    Channel<T>,
+    <T as frame_system::Trait>::AccountId,
+    BalanceOf<T>,
+);
 
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;

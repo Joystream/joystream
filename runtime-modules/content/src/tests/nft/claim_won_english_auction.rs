@@ -92,7 +92,8 @@ fn claim_won_english_auction() {
                 SECOND_MEMBER_ID,
                 video_id,
             )),
-            number_of_events_before_call + 1,
+            // 3 events: NewAccount (channel reward acc), Endowed (channel reward acc), EnglishAuctionCompleted
+            number_of_events_before_call + 3,
         );
     })
 }

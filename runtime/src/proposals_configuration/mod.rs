@@ -97,4 +97,7 @@ parameter_types! {
 
     pub VetoProposalProposalParameters: ProposalParameters<BlockNumber, Balance> =
         veto_proposal_proposal();
+
+    pub UpdateChannelPayoutsProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        update_channel_payouts_proposal();
 }

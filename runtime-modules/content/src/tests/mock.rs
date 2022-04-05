@@ -44,6 +44,9 @@ pub const UNAUTHORIZED_LEAD_ACCOUNT_ID: u64 = 113;
 pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID: u64 = 114;
 pub const UNAUTHORIZED_MODERATOR_ACCOUNT_ID: u64 = 115;
 pub const SECOND_MEMBER_ACCOUNT_ID: u64 = 116;
+pub const DEFAULT_MEMBER_CHANNEL_REWARD_ACCOUNT_ID: u64 = 117;
+pub const DEFAULT_CURATOR_CHANNEL_REWARD_ACCOUNT_ID: u64 = 118;
+pub const DEFAULT_CHANNEL_REWARD_WITHDRAWAL_ACCOUNT_ID: u64 = 119;
 
 /// Runtime Id's
 pub const DEFAULT_MEMBER_ID: u64 = 201;
@@ -380,6 +383,9 @@ impl Trait for Test {
 
     /// membership info provider
     type MemberAuthenticator = MemberInfoProvider;
+
+    /// council budget manager
+    type CouncilBudgetManager = CouncilBudgetManager;
 }
 
 // #[derive (Default)]
@@ -390,8 +396,9 @@ pub struct ExtBuilder {
     next_video_id: u64,
     next_curator_group_id: u64,
     next_video_post_id: u64,
-    max_reward_allowed: BalanceOf<Test>,
+    max_cashout_allowed: BalanceOf<Test>,
     min_cashout_allowed: BalanceOf<Test>,
+    channel_cashouts_enabled: bool,
     min_auction_duration: u64,
     max_auction_duration: u64,
     min_auction_extension_period: u64,
@@ -419,8 +426,9 @@ impl Default for ExtBuilder {
             next_video_id: 1,
             next_curator_group_id: 1,
             next_video_post_id: 1,
-            max_reward_allowed: BalanceOf::<Test>::from(1_000u32),
+            max_cashout_allowed: BalanceOf::<Test>::from(1_000u32),
             min_cashout_allowed: BalanceOf::<Test>::from(1u32),
+            channel_cashouts_enabled: true,
             min_auction_duration: 5,
             max_auction_duration: 20,
             min_auction_extension_period: 3,
@@ -454,8 +462,9 @@ impl ExtBuilder {
             next_video_id: self.next_video_id,
             next_curator_group_id: self.next_curator_group_id,
             next_video_post_id: self.next_video_post_id,
-            max_reward_allowed: self.max_reward_allowed,
+            max_cashout_allowed: self.max_cashout_allowed,
             min_cashout_allowed: self.min_cashout_allowed,
+            channel_cashouts_enabled: self.channel_cashouts_enabled,
             min_auction_duration: self.min_auction_duration,
             max_auction_duration: self.max_auction_duration,
             min_auction_extension_period: self.min_auction_extension_period,
@@ -766,6 +775,44 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
             allowed_storage_providers.contains(worker_id),
             DispatchError::Other("Invailid worker"),
         );
+        Ok(())
+    }
+}
+pub const COUNCIL_BUDGET_ACCOUNT_ID: u64 = 90000000;
+pub struct CouncilBudgetManager;
+impl common::council::CouncilBudgetManager<u64, u64> for CouncilBudgetManager {
+    fn get_budget() -> u64 {
+        balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID)
+    }
+
+    fn set_budget(budget: u64) {
+        let old_budget = Self::get_budget();
+
+        if budget > old_budget {
+            let _ = balances::Module::<Test>::deposit_creating(
+                &COUNCIL_BUDGET_ACCOUNT_ID,
+                budget - old_budget,
+            );
+        }
+
+        if budget < old_budget {
+            let _ =
+                balances::Module::<Test>::slash(&COUNCIL_BUDGET_ACCOUNT_ID, old_budget - budget);
+        }
+    }
+
+    fn try_withdraw(account_id: &u64, amount: u64) -> DispatchResult {
+        ensure!(
+            Self::get_budget() >= amount,
+            DispatchError::Other("CouncilBudgetManager: try_withdraw - not enough balance.")
+        );
+
+        let _ = Balances::<Test>::deposit_creating(account_id, amount);
+
+        let current_budget = Self::get_budget();
+        let new_budget = current_budget.saturating_sub(amount);
+        Self::set_budget(new_budget);
+
         Ok(())
     }
 }
