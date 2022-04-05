@@ -2979,6 +2979,59 @@ impl NftOwnerRemarkFixture {
     }
 }
 
+pub struct DestroyNftFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: VideoId,
+}
+
+impl DestroyNftFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: SECOND_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id: VideoId::one(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let video_pre = Content::video_by_id(self.video_id);
+
+        let actual_result = Content::destroy_nft(
+            Origin::signed(self.sender.clone()),
+            self.actor.clone(),
+            self.video_id,
+        );
+
+        let video_post = Content::video_by_id(self.video_id);
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert!(video_post.nft_status.is_none());
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::NftDestroyed(self.actor.clone(), self.video_id))
+            );
+        } else {
+            assert_eq!(video_post, video_pre);
+        }
+    }
+}
+
 pub struct ChannelAgentRemarkFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
@@ -3502,16 +3555,15 @@ impl SuccessfulNftManagementFlow {
             .with_actor(self.actor.clone())
             .with_nft_issuance(NftIssuanceParameters::<Test>::default())
             .call_and_assert(Ok(()));
-        // Issue nft during video update
-        let video_id_for_update = Content::next_video_id();
-        CreateVideoFixture::default()
+        // Destroy nft
+        DestroyNftFixture::default()
             .with_sender(self.sender.clone())
             .with_actor(self.actor.clone())
             .call_and_assert(Ok(()));
+        // Issue nft during video update
         UpdateVideoFixture::default()
             .with_sender(self.sender.clone())
             .with_actor(self.actor.clone())
-            .with_video_id(video_id_for_update)
             .with_nft_issuance(NftIssuanceParameters::<Test>::default())
             .call_and_assert(Ok(()));
         // Start open auction
@@ -4601,6 +4653,10 @@ pub fn run_all_fixtures_with_contexts(
             .with_actor(actor)
             .call_and_assert(expected_err.clone());
         NftOwnerRemarkFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        DestroyNftFixture::default()
             .with_sender(sender)
             .with_actor(actor)
             .call_and_assert(expected_err.clone());

@@ -2925,6 +2925,22 @@ fn unsuccessful_nft_owner_remark_by_curator_agent_without_permissions() {
 }
 
 #[test]
+fn unsuccessful_nft_destruction_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video_nft()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        DestroyNftFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
 fn succesfull_nft_management_actions_by_curator_agent() {
     with_default_mock_builder(|| {
         ContentTest::with_curator_channel()
@@ -3173,6 +3189,22 @@ fn unsuccessful_nft_owner_remark_by_collaborator_without_permissions() {
             .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
             .setup();
         NftOwnerRemarkFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_nft_destruction_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video_nft()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        DestroyNftFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
             .call_and_assert(Err(

@@ -118,6 +118,7 @@ pub enum ChannelActionPermission {
     // - `update_buy_now_price`,
     // - `pick_open_auction_winner`
     // - `nft_owner_remark`
+    // - `destroy_nft`
     ManageVideoNfts,
     // Allows executing `channel_agent_remark` for given channel
     AgentRemark,
