@@ -212,7 +212,7 @@ export interface CategoryId extends u64 {}
 export interface Channel extends Struct {
   readonly owner: ChannelOwner;
   readonly num_videos: u64;
-  readonly collaborators: BTreeSet<MemberId>;
+  readonly collaborators: BTreeMap<MemberId, ChannelAgentPermissions>;
   readonly moderators: BTreeSet<MemberId>;
   readonly cumulative_payout_earned: u128;
   readonly privilege_level: ChannelPrivilegeLevel;
@@ -220,6 +220,29 @@ export interface Channel extends Struct {
   readonly transfer_status: ChannelTransferStatus;
   readonly data_objects: BTreeSet<DataObjectId>;
 }
+
+/** @name ChannelActionPermission */
+export interface ChannelActionPermission extends Enum {
+  readonly isUpdateChannelMetadata: boolean;
+  readonly isManageNonVideoChannelAssets: boolean;
+  readonly isManageChannelCollaborators: boolean;
+  readonly isManageChannelModerators: boolean;
+  readonly isUpdateVideoMetadata: boolean;
+  readonly isUpdateVideoCommentsStatus: boolean;
+  readonly isAddVideo: boolean;
+  readonly isManageVideoAssets: boolean;
+  readonly isDeleteChannel: boolean;
+  readonly isDeleteVideo: boolean;
+  readonly isManageVideoDescriptionPost: boolean;
+  readonly isManageVideoNfts: boolean;
+  readonly isAgentRemark: boolean;
+  readonly isTransferChannel: boolean;
+  readonly isClaimChannelReward: boolean;
+  readonly isWithdrawFromChannelBalance: boolean;
+}
+
+/** @name ChannelAgentPermissions */
+export interface ChannelAgentPermissions extends BTreeSet<ChannelActionPermission> {}
 
 /** @name ChannelCategory */
 export interface ChannelCategory extends Struct {}
@@ -241,7 +264,7 @@ export interface ChannelCategoryUpdateParameters extends Struct {
 export interface ChannelCreationParameters extends Struct {
   readonly assets: Option<StorageAssets>;
   readonly meta: Option<Bytes>;
-  readonly collaborators: BTreeSet<MemberId>;
+  readonly collaborators: BTreeMap<MemberId, ChannelAgentPermissions>;
   readonly moderators: BTreeSet<MemberId>;
   readonly expected_dynamic_bag_deletion_prize: u128;
   readonly expected_data_object_deletion_prize: u128;
@@ -279,7 +302,7 @@ export interface ChannelUpdateParameters extends Struct {
   readonly assets_to_upload: Option<StorageAssets>;
   readonly new_meta: Option<Bytes>;
   readonly assets_to_remove: BTreeSet<DataObjectId>;
-  readonly collaborators: Option<BTreeSet<MemberId>>;
+  readonly collaborators: Option<BTreeMap<MemberId, ChannelAgentPermissions>>;
   readonly expected_data_object_deletion_prize: u128;
 }
 
@@ -364,7 +387,7 @@ export interface CreateOpeningParameters extends Struct {
 
 /** @name CuratorGroup */
 export interface CuratorGroup extends Struct {
-  readonly curators: BTreeSet<CuratorId>;
+  readonly curators: BTreeMap<CuratorId, ChannelAgentPermissions>;
   readonly active: bool;
   readonly permissions_by_level: ModerationPermissionsByLevel;
 }
@@ -436,6 +459,12 @@ export interface DistributionBucketIndex extends u64 {}
 
 /** @name DistributionBucketIndexSet */
 export interface DistributionBucketIndexSet extends BTreeSet<DistributionBucketIndex> {}
+
+/** @name DistributionBucketsPerBagValueConstraint */
+export interface DistributionBucketsPerBagValueConstraint extends Struct {
+  readonly min: u16;
+  readonly max_min_diff: u16;
+}
 
 /** @name Dynamic */
 export interface Dynamic extends Enum {
@@ -1175,6 +1204,8 @@ export interface UploadParameters extends Struct {
   readonly expectedDataSizeFee: u128;
   readonly expectedDynamicBagDeletionPrize: u128;
   readonly expectedDataObjectDeletionPrize: u128;
+  readonly storageBuckets: BTreeSet<StorageBucketId>;
+  readonly distributionBuckets: BTreeSet<DistributionBucketId>;
 }
 
 /** @name Url */

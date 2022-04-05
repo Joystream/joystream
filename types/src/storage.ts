@@ -14,7 +14,14 @@ import {
 } from '@polkadot/types'
 import { Balance } from '@polkadot/types/interfaces'
 import { RegistryTypes } from '@polkadot/types/types'
-import { JoyEnum, JoyStructDecorated, WorkingGroup, BalanceOf, MemberId } from './common'
+import {
+  JoyEnum,
+  JoyStructDecorated,
+  WorkingGroup,
+  BalanceOf,
+  MemberId,
+  InputValidationLengthConstraint,
+} from './common'
 import { WorkerId } from './working-group'
 
 export class DataObjectId extends u64 {}
@@ -200,6 +207,10 @@ export type IUploadParameters = {
   objectCreationList: Vec<DataObjectCreationParameters>
   deletionPrizeSourceAccountId: AccountId
   expectedDataSizeFee: BalanceOf
+  expectedDynamicBagDeletionPrize: BalanceOf
+  expectedDataObjectDeletionPrize: BalanceOf
+  storageBuckets: BTreeSet<StorageBucketId>
+  distributionBuckets: BTreeSet<DistributionBucketId>
 }
 
 export class UploadParameters
@@ -210,6 +221,8 @@ export class UploadParameters
     expectedDataSizeFee: BalanceOf,
     expectedDynamicBagDeletionPrize: BalanceOf,
     expectedDataObjectDeletionPrize: BalanceOf,
+    storageBuckets: BTreeSet.with(StorageBucketId),
+    distributionBuckets: BTreeSet.with(DistributionBucketId),
   })
   implements IUploadParameters {}
 
@@ -253,6 +266,8 @@ export class DistributionBucketFamily
 
 export class DynamicBagCreationPolicyDistributorFamiliesMap extends BTreeMap.with(DistributionBucketFamilyId, u32) {}
 
+export class DistributionBucketsPerBagValueConstraint extends InputValidationLengthConstraint {}
+
 export const storageTypes: RegistryTypes = {
   StorageBucketId,
   StorageBucketsPerBagValueConstraint,
@@ -283,6 +298,7 @@ export const storageTypes: RegistryTypes = {
   DistributionBucketFamilyId,
   DistributionBucket,
   DistributionBucketFamily,
+  DistributionBucketsPerBagValueConstraint,
   // Utility types:
   DataObjectIdMap,
   DistributionBucketIndexSet,
