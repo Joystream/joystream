@@ -28,8 +28,9 @@ pub use storage::{
 };
 
 pub use common::{
-    currency::GovernanceCurrency, membership::MembershipInfoProvider, working_group::WorkingGroup,
-    MembershipTypes, StorageOwnership, Url,
+    council::CouncilBudgetManager, currency::GovernanceCurrency,
+    membership::MembershipInfoProvider, working_group::WorkingGroup, MembershipTypes,
+    StorageOwnership, Url,
 };
 use frame_support::{
     decl_event, decl_module, decl_storage,
@@ -52,6 +53,7 @@ use sp_runtime::{
     ModuleId,
 };
 use sp_std::{collections::btree_set::BTreeSet, vec::Vec};
+
 /// Module configuration trait for Content Directory Module
 pub trait Trait:
     frame_system::Trait
@@ -122,6 +124,9 @@ pub trait Trait:
         + Copy
         + MaybeSerializeDeserialize
         + PartialEq;
+
+    /// Provides an access for the council budget.
+    type CouncilBudgetManager: CouncilBudgetManager<BalanceOf<Self>>;
 }
 
 decl_storage! {
@@ -2348,6 +2353,39 @@ decl_module! {
             }
         }
 
+        /// Claims an accumulated channel reward for a council.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn claim_council_reward(
+            origin,
+            channel_id: T::ChannelId,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            ensure_actor_authorized_to_claim_council_reward::<T>(origin, &channel.owner)?;
+
+            ensure!(
+                channel.transfer_status == ChannelTransferStatus::NoActiveTransfer,
+                Error::<T>::InvalidChannelTransferStatus
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let channel_account_id = ContentTreasury::<T>::account_for_channel(channel_id);
+            let reward: BalanceOf<T> = Balances::<T>::usable_balance(&channel_account_id);
+
+            if !reward.is_zero(){
+                let _ = Balances::<T>::slash(&channel_account_id, reward);
+
+                let budget = T::CouncilBudgetManager::get_budget();
+                let new_budget = budget.saturating_add(reward);
+
+                T::CouncilBudgetManager::set_budget(new_budget);
+            }
+
+            Self::deposit_event(RawEvent::CouncilRewardClaimed(channel_id, reward));
+        }
     }
 }
 
@@ -2855,6 +2893,7 @@ decl_event!(
         ChannelRewardUpdated(Balance, ChannelId),
         MaxRewardUpdated(Balance),
         MinCashoutUpdated(Balance),
+        CouncilRewardClaimed(ChannelId, Balance),
         // Nft auction
         EnglishAuctionStarted(ContentActor, VideoId, EnglishAuctionParams),
         OpenAuctionStarted(ContentActor, VideoId, OpenAuctionParams, OpenAuctionId),
