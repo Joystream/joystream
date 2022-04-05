@@ -6,7 +6,7 @@ use super::curators;
 use super::fixtures::*;
 use super::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok};
+use frame_support::assert_err;
 use storage::DynamicBagType;
 
 #[test]
@@ -29,38 +29,6 @@ fn delete_video_nft_is_issued() {
                 DATA_OBJECTS_NUMBER,
             ),
             Error::<Test>::NftAlreadyExists
-        );
-    })
-}
-
-#[test]
-fn featured_videos() {
-    with_default_mock_builder(|| {
-        // Run to block one to see emitted events
-        run_to_block(1);
-
-        // Lead can update curator owned channels
-        assert_ok!(Content::set_featured_videos(
-            Origin::signed(LEAD_ACCOUNT_ID),
-            ContentActor::Lead,
-            vec![1, 2, 3]
-        ));
-
-        assert_eq!(
-            System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::FeaturedVideosSet(
-                ContentActor::Lead,
-                vec![1, 2, 3]
-            ))
-        );
-
-        assert_err!(
-            Content::set_featured_videos(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-                vec![1, 2, 3]
-            ),
-            Error::<Test>::ActorNotAuthorized
         );
     })
 }
