@@ -47,6 +47,7 @@ import { Content } from '../../generated/types'
 import { FindConditions } from 'typeorm'
 import BN from 'bn.js'
 import { PERBILL_ONE_PERCENT } from '../temporaryConstants'
+import { getAllManagers } from '../derivedPropertiesManager/applications'
 
 async function getExistingEntity<Type extends Video | Membership>(
   store: DatabaseManager,
@@ -146,7 +147,10 @@ async function resetNftTransactionalStatusFromVideo(
   newOwner?: Membership
 ) {
   // load NFT
-  const nft = await store.get(OwnedNft, { where: { id: videoId.toString() } as FindConditions<OwnedNft> })
+  const nft = await store.get(OwnedNft, {
+    where: { id: videoId.toString() } as FindConditions<OwnedNft>,
+    relations: ['ownerMember', 'ownerCuratorGroup', 'creatorChannel'],
+  })
 
   // ensure NFT
   if (!nft) {
@@ -239,6 +243,8 @@ async function setNewNftTransactionalStatus(
 ) {
   // update transactionalStatus
   nft.transactionalStatus = transactionalStatus
+
+  await getAllManagers(store).videoNfts.onMainEntityUpdate(nft)
 
   // save NFT
   await store.save<OwnedNft>(nft)
@@ -417,6 +423,8 @@ export async function createNft(
     transactionalStatus: new TransactionalStatusIdle(),
   })
 
+  await getAllManagers(store).videoNfts.onMainEntityCreation(nft)
+
   // save nft
   await store.save<OwnedNft>(nft)
 
@@ -516,7 +524,7 @@ export async function contentNft_OpenAuctionStarted({ event, store }: EventConte
     Video,
     videoId.toString(),
     `Non-existing video's auction started`,
-    ['nft', 'nft.ownerMember']
+    ['nft', 'nft.ownerMember', 'nft.ownerCuratorGroup', 'nft.creatorChannel']
   )
 
   // ensure NFT has been issued
@@ -561,7 +569,7 @@ export async function contentNft_EnglishAuctionStarted({ event, store }: EventCo
     Video,
     videoId.toString(),
     `Non-existing video's auction started`,
-    ['nft', 'nft.ownerMember']
+    ['nft', 'nft.ownerMember', 'nft.ownerCuratorGroup', 'nft.creatorChannel']
   )
 
   // ensure NFT has been issued
@@ -888,7 +896,8 @@ export async function contentNft_OfferStarted({ event, store }: EventContext & S
     store,
     videoId.toString(),
     'Non-existing video was offered',
-    'Non-existing nft was offered'
+    'Non-existing nft was offered',
+    ['nft.ownerMember', 'nft.ownerCuratorGroup', 'nft.creatorChannel']
   )
 
   // update NFT transactional status
@@ -997,7 +1006,8 @@ export async function contentNft_NftSellOrderMade({ event, store }: EventContext
     store,
     videoId.toString(),
     'Non-existing video was offered',
-    'Non-existing nft was offered'
+    'Non-existing nft was offered',
+    ['nft.ownerMember', 'nft.ownerCuratorGroup', 'nft.creatorChannel']
   )
 
   // update NFT transactional status

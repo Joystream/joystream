@@ -1326,6 +1326,7 @@ export type Bid = BaseGraphQlObject & {
   version: Scalars['Int']
   auction: Auction
   auctionId: Scalars['String']
+  auctionTopBid?: Maybe<Auction>
   bidder: Membership
   bidderId: Scalars['String']
   /** Amount bidded */
@@ -1336,7 +1337,6 @@ export type Bid = BaseGraphQlObject & {
   createdInBlock: Scalars['Int']
   /** Index of event in block where bid was made. */
   indexInBlock: Scalars['Int']
-  auctiontopBid?: Maybe<Array<Auction>>
 }
 
 export type BidConnection = {
@@ -1565,10 +1565,8 @@ export type BidWhereInput = {
   indexInBlock_lte?: Maybe<Scalars['Int']>
   indexInBlock_in?: Maybe<Array<Scalars['Int']>>
   auction?: Maybe<AuctionWhereInput>
+  auctionTopBid?: Maybe<AuctionWhereInput>
   bidder?: Maybe<MembershipWhereInput>
-  auctiontopBid_none?: Maybe<AuctionWhereInput>
-  auctiontopBid_some?: Maybe<AuctionWhereInput>
-  auctiontopBid_every?: Maybe<AuctionWhereInput>
   AND?: Maybe<Array<BidWhereInput>>
   OR?: Maybe<Array<BidWhereInput>>
 }
@@ -6270,6 +6268,7 @@ export type CuratorGroup = BaseGraphQlObject & {
   isActive: Scalars['Boolean']
   curators: Array<Curator>
   channels: Array<Channel>
+  channelnftcollectorscuratorGroup?: Maybe<Array<ChannelNftCollectors>>
   ownednftownerCuratorGroup?: Maybe<Array<OwnedNft>>
 }
 
@@ -6336,6 +6335,9 @@ export type CuratorGroupWhereInput = {
   channels_none?: Maybe<ChannelWhereInput>
   channels_some?: Maybe<ChannelWhereInput>
   channels_every?: Maybe<ChannelWhereInput>
+  channelnftcollectorscuratorGroup_none?: Maybe<ChannelNftCollectorsWhereInput>
+  channelnftcollectorscuratorGroup_some?: Maybe<ChannelNftCollectorsWhereInput>
+  channelnftcollectorscuratorGroup_every?: Maybe<ChannelNftCollectorsWhereInput>
   ownednftownerCuratorGroup_none?: Maybe<OwnedNftWhereInput>
   ownednftownerCuratorGroup_some?: Maybe<OwnedNftWhereInput>
   ownednftownerCuratorGroup_every?: Maybe<OwnedNftWhereInput>
@@ -9089,6 +9091,7 @@ export type Channel = BaseGraphQlObject & {
   /** Number of the block the channel was created in */
   createdInBlock: Scalars['Int']
   collaborators: Array<Membership>
+  channelnftcollectorschannel?: Maybe<Array<ChannelNftCollectors>>
   ownednftcreatorChannel?: Maybe<Array<OwnedNft>>
 }
 
@@ -9237,6 +9240,120 @@ export type ChannelEdge = {
   cursor: Scalars['String']
 }
 
+export type ChannelNftCollectors = BaseGraphQlObject & {
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['String']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['String']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['String']>
+  version: Scalars['Int']
+  channel: Channel
+  channelId: Scalars['String']
+  member?: Maybe<Membership>
+  memberId?: Maybe<Scalars['String']>
+  curatorGroup?: Maybe<CuratorGroup>
+  curatorGroupId?: Maybe<Scalars['String']>
+  /** Amount of NFTs owned in the channel */
+  amount: Scalars['Int']
+  /** Time of last NFT amount increase */
+  lastIncreaseAt: Scalars['DateTime']
+}
+
+export type ChannelNftCollectorsConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<ChannelNftCollectorsEdge>
+  pageInfo: PageInfo
+}
+
+export type ChannelNftCollectorsCreateInput = {
+  channel: Scalars['ID']
+  member?: Maybe<Scalars['ID']>
+  curatorGroup?: Maybe<Scalars['ID']>
+  amount: Scalars['Float']
+  lastIncreaseAt: Scalars['DateTime']
+}
+
+export type ChannelNftCollectorsEdge = {
+  node: ChannelNftCollectors
+  cursor: Scalars['String']
+}
+
+export enum ChannelNftCollectorsOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  ChannelAsc = 'channel_ASC',
+  ChannelDesc = 'channel_DESC',
+  MemberAsc = 'member_ASC',
+  MemberDesc = 'member_DESC',
+  CuratorGroupAsc = 'curatorGroup_ASC',
+  CuratorGroupDesc = 'curatorGroup_DESC',
+  AmountAsc = 'amount_ASC',
+  AmountDesc = 'amount_DESC',
+  LastIncreaseAtAsc = 'lastIncreaseAt_ASC',
+  LastIncreaseAtDesc = 'lastIncreaseAt_DESC',
+}
+
+export type ChannelNftCollectorsUpdateInput = {
+  channel?: Maybe<Scalars['ID']>
+  member?: Maybe<Scalars['ID']>
+  curatorGroup?: Maybe<Scalars['ID']>
+  amount?: Maybe<Scalars['Float']>
+  lastIncreaseAt?: Maybe<Scalars['DateTime']>
+}
+
+export type ChannelNftCollectorsWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  amount_eq?: Maybe<Scalars['Int']>
+  amount_gt?: Maybe<Scalars['Int']>
+  amount_gte?: Maybe<Scalars['Int']>
+  amount_lt?: Maybe<Scalars['Int']>
+  amount_lte?: Maybe<Scalars['Int']>
+  amount_in?: Maybe<Array<Scalars['Int']>>
+  lastIncreaseAt_eq?: Maybe<Scalars['DateTime']>
+  lastIncreaseAt_lt?: Maybe<Scalars['DateTime']>
+  lastIncreaseAt_lte?: Maybe<Scalars['DateTime']>
+  lastIncreaseAt_gt?: Maybe<Scalars['DateTime']>
+  lastIncreaseAt_gte?: Maybe<Scalars['DateTime']>
+  channel?: Maybe<ChannelWhereInput>
+  member?: Maybe<MembershipWhereInput>
+  curatorGroup?: Maybe<CuratorGroupWhereInput>
+  AND?: Maybe<Array<ChannelNftCollectorsWhereInput>>
+  OR?: Maybe<Array<ChannelNftCollectorsWhereInput>>
+}
+
+export type ChannelNftCollectorsWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
 export enum ChannelOrderByInput {
   CreatedAtAsc = 'createdAt_ASC',
   CreatedAtDesc = 'createdAt_DESC',
@@ -9356,6 +9473,9 @@ export type ChannelWhereInput = {
   collaborators_none?: Maybe<MembershipWhereInput>
   collaborators_some?: Maybe<MembershipWhereInput>
   collaborators_every?: Maybe<MembershipWhereInput>
+  channelnftcollectorschannel_none?: Maybe<ChannelNftCollectorsWhereInput>
+  channelnftcollectorschannel_some?: Maybe<ChannelNftCollectorsWhereInput>
+  channelnftcollectorschannel_every?: Maybe<ChannelNftCollectorsWhereInput>
   ownednftcreatorChannel_none?: Maybe<OwnedNftWhereInput>
   ownednftcreatorChannel_some?: Maybe<OwnedNftWhereInput>
   ownednftcreatorChannel_every?: Maybe<OwnedNftWhereInput>
@@ -11004,6 +11124,7 @@ export type Membership = BaseGraphQlObject & {
   bountyoracle?: Maybe<Array<Bounty>>
   bountycontributioncontributor?: Maybe<Array<BountyContribution>>
   bountyentryworker?: Maybe<Array<BountyEntry>>
+  channelnftcollectorsmember?: Maybe<Array<ChannelNftCollectors>>
   englishauctioncompletedeventwinner?: Maybe<Array<EnglishAuctionCompletedEvent>>
   forumpostauthor?: Maybe<Array<ForumPost>>
   forumpostreactionmember?: Maybe<Array<ForumPostReaction>>
@@ -11670,6 +11791,9 @@ export type MembershipWhereInput = {
   bountyentryworker_none?: Maybe<BountyEntryWhereInput>
   bountyentryworker_some?: Maybe<BountyEntryWhereInput>
   bountyentryworker_every?: Maybe<BountyEntryWhereInput>
+  channelnftcollectorsmember_none?: Maybe<ChannelNftCollectorsWhereInput>
+  channelnftcollectorsmember_some?: Maybe<ChannelNftCollectorsWhereInput>
+  channelnftcollectorsmember_every?: Maybe<ChannelNftCollectorsWhereInput>
   englishauctioncompletedeventwinner_none?: Maybe<EnglishAuctionCompletedEventWhereInput>
   englishauctioncompletedeventwinner_some?: Maybe<EnglishAuctionCompletedEventWhereInput>
   englishauctioncompletedeventwinner_every?: Maybe<EnglishAuctionCompletedEventWhereInput>
@@ -17569,6 +17693,9 @@ export type Query = {
   channelCategories: Array<ChannelCategory>
   channelCategoryByUniqueInput?: Maybe<ChannelCategory>
   channelCategoriesConnection: ChannelCategoryConnection
+  channelNftCollectors: Array<ChannelNftCollectors>
+  channelNftCollectorsByUniqueInput?: Maybe<ChannelNftCollectors>
+  channelNftCollectorsConnection: ChannelNftCollectorsConnection
   channels: Array<Channel>
   channelByUniqueInput?: Maybe<Channel>
   channelsConnection: ChannelConnection
@@ -19285,6 +19412,26 @@ export type QueryChannelCategoriesConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<ChannelCategoryWhereInput>
   orderBy?: Maybe<Array<ChannelCategoryOrderByInput>>
+}
+
+export type QueryChannelNftCollectorsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<ChannelNftCollectorsWhereInput>
+  orderBy?: Maybe<Array<ChannelNftCollectorsOrderByInput>>
+}
+
+export type QueryChannelNftCollectorsByUniqueInputArgs = {
+  where: ChannelNftCollectorsWhereUniqueInput
+}
+
+export type QueryChannelNftCollectorsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<ChannelNftCollectorsWhereInput>
+  orderBy?: Maybe<Array<ChannelNftCollectorsOrderByInput>>
 }
 
 export type QueryChannelsArgs = {

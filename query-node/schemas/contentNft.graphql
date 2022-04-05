@@ -54,9 +54,9 @@ type Curator @entity {
   curatorGroups: [CuratorGroup!]!
 }
 
+# NFT in name can't be UPPERCASE because it causes codegen errors
 "Represents NFT details"
-type OwnedNft
-  @entity { # NFT in name can't be UPPERCASE because it causes codegen errors
+type OwnedNft @entity {
   "NFT's video"
   video: Video! @derivedFrom(field: "nft")
 
@@ -86,6 +86,23 @@ type OwnedNft
 
   "NFT creator's channel"
   creatorChannel: Channel!
+}
+
+type ChannelNftCollectors @entity {
+  "Reference to videos's channel"
+  channel: Channel!
+
+  "Member owning the channel (if any)"
+  member: Membership
+
+  "Curator group owning the channel (if any)"
+  curatorGroup: CuratorGroup
+
+  "Amount of NFTs owned in the channel"
+  amount: Int!
+
+  "Time of last NFT amount increase"
+  lastIncreaseAt: DateTime!
 }
 
 type TransactionalStatusUpdate @entity {

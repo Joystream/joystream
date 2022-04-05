@@ -72,6 +72,9 @@ type Channel @entity {
 
   "List of channel collaborators (members)"
   collaborators: [Membership!]
+
+  #"List of biggest video NFT owners."
+  #nftCollectors: [Membership!]!
 }
 
 type VideoCategory @entity {
@@ -93,7 +96,7 @@ type Video @entity {
   "Runtime identifier"
   id: ID!
 
-  "Reference to member's channel"
+  "Reference to videos's channel"
   channel: Channel!
 
   "Reference to a video category"

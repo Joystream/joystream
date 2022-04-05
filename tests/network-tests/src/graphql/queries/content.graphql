@@ -128,6 +128,21 @@ fragment OwnedNftFields on OwnedNft {
   }
 }
 
+fragment ChannelNftCollectorFields on ChannelNftCollectors {
+  id
+  channel {
+    id
+  }
+  member {
+    id
+  }
+  curatorGroup {
+    id
+  }
+  amount
+  lastIncreaseAt
+}
+
 query getChannelById($id: ID!) {
   channelByUniqueInput(where: { id: $id }) {
     ...ChannelFields
@@ -149,5 +164,11 @@ query getVideoCategoryById($id: ID!) {
 query getOwnedNftByVideoId($videoId: ID!) {
   ownedNfts(where: { video: { id_eq: $videoId } }) {
     ...OwnedNftFields
+  }
+}
+
+query getChannelNftCollectors {
+  channelNftCollectors {
+    ...ChannelNftCollectorFields
   }
 }

@@ -99,6 +99,15 @@ export type OwnedNftFieldsFragment = {
   creatorChannel: { id: string }
 }
 
+export type ChannelNftCollectorFieldsFragment = {
+  id: string
+  amount: number
+  lastIncreaseAt: any
+  channel: { id: string }
+  member?: Types.Maybe<{ id: string }>
+  curatorGroup?: Types.Maybe<{ id: string }>
+}
+
 export type GetChannelByIdQueryVariables = Types.Exact<{
   id: Types.Scalars['ID']
 }>
@@ -122,6 +131,10 @@ export type GetOwnedNftByVideoIdQueryVariables = Types.Exact<{
 }>
 
 export type GetOwnedNftByVideoIdQuery = { ownedNfts: Array<OwnedNftFieldsFragment> }
+
+export type GetChannelNftCollectorsQueryVariables = Types.Exact<{ [key: string]: never }>
+
+export type GetChannelNftCollectorsQuery = { channelNftCollectors: Array<ChannelNftCollectorFieldsFragment> }
 
 export type CouncilMemberFieldsFragment = { id: string; member: { id: string } }
 
@@ -2178,6 +2191,22 @@ export const OwnedNftFields = gql`
     }
   }
 `
+export const ChannelNftCollectorFields = gql`
+  fragment ChannelNftCollectorFields on ChannelNftCollectors {
+    id
+    channel {
+      id
+    }
+    member {
+      id
+    }
+    curatorGroup {
+      id
+    }
+    amount
+    lastIncreaseAt
+  }
+`
 export const CouncilMemberFields = gql`
   fragment CouncilMemberFields on CouncilMember {
     id
@@ -3980,6 +4009,14 @@ export const GetOwnedNftByVideoId = gql`
     }
   }
   ${OwnedNftFields}
+`
+export const GetChannelNftCollectors = gql`
+  query getChannelNftCollectors {
+    channelNftCollectors {
+      ...ChannelNftCollectorFields
+    }
+  }
+  ${ChannelNftCollectorFields}
 `
 export const GetCurrentCouncilMembers = gql`
   query getCurrentCouncilMembers {

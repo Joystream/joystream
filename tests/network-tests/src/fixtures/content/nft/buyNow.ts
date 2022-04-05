@@ -35,7 +35,7 @@ export class NftBuyNowFixture extends BaseQueryNodeFixture {
     this.debug('Issue video NFT')
     await this.api.issueNft(this.author.keyringPair.address, this.author.memberId.toNumber(), this.videoId)
 
-    this.debug('Start buy now auction')
+    this.debug(`Start buy now auction (expected winner id ${this.participant.memberId})`)
     const buyNowPrice = new BN(100) // value doesn't matter
     await this.api.sellNft(this.author.keyringPair.address, this.videoId, this.author.memberId.toNumber(), buyNowPrice)
 

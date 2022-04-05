@@ -311,6 +311,10 @@ import {
   GetOwnedNftByVideoId,
   GetOwnedNftByVideoIdQuery,
   GetOwnedNftByVideoIdQueryVariables,
+  ChannelNftCollectorFieldsFragment,
+  GetChannelNftCollectorsQuery,
+  GetChannelNftCollectorsQueryVariables,
+  GetChannelNftCollectors,
   MemberVerificationStatusUpdatedEventFieldsFragment,
   GetMemberVerificationStatusUpdatedEventsByEventIdsQuery,
   GetMemberVerificationStatusUpdatedEventsByEventIdsQueryVariables,
@@ -1121,6 +1125,14 @@ export class QueryNodeApi {
       GetOwnedNftByVideoId,
       { videoId },
       'ownedNfts'
+    )
+  }
+
+  public async getChannelNftCollectors(): Promise<ChannelNftCollectorFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetChannelNftCollectorsQuery, GetChannelNftCollectorsQueryVariables>(
+      GetChannelNftCollectors,
+      {},
+      'channelNftCollectors'
     )
   }
 
