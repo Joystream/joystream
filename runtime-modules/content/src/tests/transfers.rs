@@ -91,7 +91,10 @@ fn update_channel_transfer_status_fails_with_non_channel_owner() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel();
-        let curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
+        let curator_group_id = add_curator_to_new_group(
+            DEFAULT_CURATOR_ID,
+            &[ChannelActionPermission::TransferChannel],
+        );
 
         UpdateChannelTransferStatusFixture::default()
             .with_origin(RawOrigin::Signed(DEFAULT_CURATOR_ACCOUNT_ID))
@@ -195,7 +198,7 @@ fn accept_transfer_status_fails_with_non_channel_owner() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel();
-        let curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
+        add_curator_to_new_group(DEFAULT_CURATOR_ID, &[]);
 
         UpdateChannelTransferStatusFixture::default()
             .with_transfer_status(ChannelTransferStatus::PendingTransfer(PendingTransfer {
@@ -206,7 +209,6 @@ fn accept_transfer_status_fails_with_non_channel_owner() {
 
         AcceptChannelTransferFixture::default()
             .with_origin(RawOrigin::Signed(DEFAULT_CURATOR_ACCOUNT_ID))
-            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
+            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()))
     })
 }

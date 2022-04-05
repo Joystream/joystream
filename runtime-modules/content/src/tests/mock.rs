@@ -45,6 +45,7 @@ pub const UNAUTHORIZED_LEAD_ACCOUNT_ID: u64 = 113;
 pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID: u64 = 114;
 pub const UNAUTHORIZED_MODERATOR_ACCOUNT_ID: u64 = 115;
 pub const SECOND_MEMBER_ACCOUNT_ID: u64 = 116;
+pub const THIRD_MEMBER_ACCOUNT_ID: u64 = 117;
 
 /// Runtime Id's
 pub const DEFAULT_MEMBER_ID: u64 = 201;
@@ -56,6 +57,7 @@ pub const UNAUTHORIZED_CURATOR_ID: u64 = 212;
 pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ID: u64 = 214;
 pub const UNAUTHORIZED_MODERATOR_ID: u64 = 215;
 pub const SECOND_MEMBER_ID: u64 = 216;
+pub const THIRD_MEMBER_ID: u64 = 217;
 
 pub const DATA_OBJECT_DELETION_PRIZE: u64 = 0;
 pub const DEFAULT_OBJECT_SIZE: u64 = 5;
@@ -190,6 +192,7 @@ impl ContentActorAuthenticator for Test {
         match *member_id {
             DEFAULT_MEMBER_ID => true,
             SECOND_MEMBER_ID => true,
+            THIRD_MEMBER_ID => true,
             UNAUTHORIZED_MEMBER_ID => true,
             COLLABORATOR_MEMBER_ID => true,
             DEFAULT_MODERATOR_ID => true,
@@ -225,6 +228,10 @@ impl ContentActorAuthenticator for Test {
 
             SECOND_MEMBER_ID => {
                 *account_id == ensure_signed(Origin::signed(SECOND_MEMBER_ACCOUNT_ID)).unwrap()
+            }
+
+            THIRD_MEMBER_ID => {
+                *account_id == ensure_signed(Origin::signed(THIRD_MEMBER_ACCOUNT_ID)).unwrap()
             }
 
             UNAUTHORIZED_MEMBER_ID => {
@@ -626,6 +633,7 @@ impl MembershipInfoProvider<Test> for MemberInfoProvider {
         match member_id {
             DEFAULT_MEMBER_ID => Ok(DEFAULT_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID => Ok(SECOND_MEMBER_ACCOUNT_ID),
+            THIRD_MEMBER_ID => Ok(THIRD_MEMBER_ACCOUNT_ID),
             UNAUTHORIZED_MEMBER_ID => Ok(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             UNAUTHORIZED_COLLABORATOR_MEMBER_ID => Ok(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID),
             COLLABORATOR_MEMBER_ID => Ok(COLLABORATOR_MEMBER_ACCOUNT_ID),

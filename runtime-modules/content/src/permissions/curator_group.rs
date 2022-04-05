@@ -3,6 +3,8 @@ use sp_std::collections::btree_map::BTreeMap;
 #[cfg(feature = "std")]
 use strum_macros::EnumIter;
 
+// TODO: Rename to types.rs
+
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord)]
 pub enum PausableChannelFeature {
@@ -78,7 +80,7 @@ where
     T::ActorId: Ord,
 {
     /// Curators set, associated with a iven curator group
-    curators: BTreeSet<T::CuratorId>,
+    curators: BTreeMap<T::CuratorId, ChannelAgentPermissions>,
 
     /// When `false`, curator in a given group is forbidden to act
     active: bool,
@@ -90,7 +92,7 @@ where
 impl<T: Trait> Default for CuratorGroup<T> {
     fn default() -> Self {
         Self {
-            curators: BTreeSet::new(),
+            curators: BTreeMap::new(),
             // default curator group status right after creation
             active: false,
             permissions_by_level: BTreeMap::new(),
@@ -101,7 +103,7 @@ impl<T: Trait> Default for CuratorGroup<T> {
 impl<T: Trait> CuratorGroup<T> {
     pub fn create(active: bool, permissions_by_level: &ModerationPermissionsByLevel<T>) -> Self {
         Self {
-            curators: BTreeSet::new(),
+            curators: BTreeMap::new(),
             active,
             permissions_by_level: permissions_by_level.clone(),
         }
@@ -109,7 +111,7 @@ impl<T: Trait> CuratorGroup<T> {
 
     /// Check if `CuratorGroup` contains curator under given `curator_id`
     pub fn has_curator(&self, curator_id: &T::CuratorId) -> bool {
-        self.curators.contains(curator_id)
+        self.curators.contains_key(curator_id)
     }
 
     /// Check if `CuratorGroup` is active
@@ -136,12 +138,12 @@ impl<T: Trait> CuratorGroup<T> {
     }
 
     /// Retrieve set of all curator_ids related to `CuratorGroup` by reference
-    pub fn get_curators(&self) -> &BTreeSet<T::CuratorId> {
+    pub fn get_curators(&self) -> &BTreeMap<T::CuratorId, ChannelAgentPermissions> {
         &self.curators
     }
 
     /// Retrieve set of all curator_ids related to `CuratorGroup` by mutable  reference
-    pub fn get_curators_mut(&mut self) -> &mut BTreeSet<T::CuratorId> {
+    pub fn get_curators_mut(&mut self) -> &mut BTreeMap<T::CuratorId, ChannelAgentPermissions> {
         &mut self.curators
     }
 
@@ -198,7 +200,7 @@ impl<T: Trait> CuratorGroup<T> {
         Ok(())
     }
 
-    pub fn can_perform_actions(
+    pub fn can_group_member_perform_moderation_actions(
         &self,
         actions: &[ContentModerationAction],
         privilege_level: T::ChannelPrivilegeLevel,
@@ -216,35 +218,24 @@ impl<T: Trait> CuratorGroup<T> {
         }
     }
 
-    pub fn can_perform_action(
-        &self,
-        action: ContentModerationAction,
-        privilege_level: T::ChannelPrivilegeLevel,
-    ) -> bool {
-        self.can_perform_actions(&[action], privilege_level)
-    }
-
-    pub fn ensure_can_perform_action(
-        &self,
-        action: ContentModerationAction,
-        privilege_level: T::ChannelPrivilegeLevel,
-    ) -> DispatchResult {
-        ensure!(
-            self.can_perform_action(action, privilege_level),
-            Error::<T>::CuratorModerationActionNotAllowed
-        );
-        Ok(())
-    }
-
-    pub fn ensure_can_perform_actions(
+    pub fn ensure_group_member_can_perform_moderation_actions(
         &self,
         actions: &[ContentModerationAction],
         privilege_level: T::ChannelPrivilegeLevel,
     ) -> DispatchResult {
         ensure!(
-            self.can_perform_actions(actions, privilege_level),
+            self.can_group_member_perform_moderation_actions(actions, privilege_level),
             Error::<T>::CuratorModerationActionNotAllowed
         );
         Ok(())
+    }
+
+    pub fn get_existing_group_member_channel_agent_permissions(
+        &self,
+        curator_id: &T::CuratorId,
+    ) -> Result<&ChannelAgentPermissions, DispatchError> {
+        self.curators
+            .get(&curator_id)
+            .ok_or_else(|| Error::<T>::ActorNotAuthorized.into())
     }
 }

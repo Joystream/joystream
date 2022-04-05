@@ -1,4 +1,7 @@
 use crate::*;
+use sp_std::collections::btree_map::BTreeMap;
+#[cfg(feature = "std")]
+use strum_macros::EnumIter;
 
 /// Specifies how a new asset will be provided on creating and updating
 /// Channels, Videos, Series and Person
@@ -69,6 +72,67 @@ pub struct ChannelCategoryUpdateParameters {
     new_meta: Vec<u8>,
 }
 
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord)]
+pub enum ChannelActionPermission {
+    // Allows updating channel metadata through `update_channel` tx
+    UpdateChannelMetadata,
+    // Allows adding/setting/unsetting/removing channel assets through `update_channel` tx
+    ManageNonVideoChannelAssets,
+    // Allows adding/updating/removing channel collaborators through `update_channel`, provided that:
+    // - all affected collaborators currently have permissions that are a subset of sender agent permissions
+    // - all affected collaborators will have permissions that are a subset of sender agent permissions AFTER the update
+    ManageChannelCollaborators,
+    // Allows adding/removing moderators through `update_moderator_set` tx
+    ManageChannelModerators,
+    // Allows updating video metadata through `update_video` tx
+    UpdateVideoMetadata,
+    // Allows updating video's `enable_comments` flag through `update_video` tx
+    UpdateVideoCommentsStatus,
+    // Allows adding a new video through `create_video` tx:
+    // - allows including new assets, even without `ManageVideoAssets` permissions
+    // - does not allow issuing an nft through optional `auto_issue_nft` parameter
+    //   (unless `ManageVideoNfts` permissions are also granted)
+    AddVideo,
+    // Allows adding/setting/unsetting/removing video assets through `update_video` tx
+    ManageVideoAssets,
+    // Allows deleting the channel through `delete_channel` tx
+    // (provided it has no assets, otherwise ManageNonVideoChannelAssets needs to be additionally granted)
+    DeleteChannel,
+    // Allows deleting a video through `delete_video` tx
+    // (provided it has no assets, otherwise ManageVideoAssets needs to be additionally granted)
+    DeleteVideo,
+    // Allows adding/removing/editing root video post (VideoPostType::Description) through:
+    // - `create_post`
+    // - `edit_post_text`
+    // - `delete_post`
+    ManageVideoDescriptionPost,
+    // Allows managing video nfts owned by the channel, this includes actions such as:
+    // - issuing nft through `issue_nft` / `create_video` / `update_video`
+    // - starting nft auctions: `start_open_auction`, `start_english_auction`
+    // - canceling nft auctions: `cancel_english_auction`, `cancel_open_auction`
+    // - `offer_nft`
+    // - `cancel_offer`,
+    // - `sell_nft`
+    // - `cancel_buy_now`,
+    // - `update_buy_now_price`,
+    // - `pick_open_auction_winner`
+    // - `nft_owner_remark`
+    ManageVideoNfts,
+    // Allows executing `channel_agent_remark` for given channel
+    AgentRemark,
+    // Allows updating channel transfer status through `update_channel_transfer_status` tx
+    TransferChannel,
+    // Allows claiming channel reward through `claim_channel_reward` tx
+    // TODO: or `claim_and_withdraw_channel_reward` tx (provided `WithdrawFromChannelBalance` permission is also granted)
+    ClaimChannelReward,
+    // TODO: Allows withdrawing channel balance through `withdraw_from_channel_balance` tx
+    // or `claim_and_withdraw_channel_reward` tx (provided `ClaimChannelReward` permission is also granted)
+    WithdrawFromChannelBalance,
+}
+
+pub type ChannelAgentPermissions = BTreeSet<ChannelActionPermission>;
+
 /// Type representing an owned channel which videos, playlists, and series can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
@@ -84,7 +148,7 @@ pub struct ChannelRecord<
     /// The videos under this channel
     pub num_videos: u64,
     /// collaborator set
-    pub collaborators: BTreeSet<MemberId>,
+    pub collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
     /// moderator set
     pub moderators: BTreeSet<MemberId>,
     /// Cumulative cashout
@@ -175,6 +239,15 @@ impl<
     fn has_active_transfer(&self) -> bool {
         self.transfer_status != ChannelTransferStatus::NoActiveTransfer
     }
+
+    pub fn get_existing_collaborator_permissions<T: Trait>(
+        &self,
+        member_id: &MemberId,
+    ) -> Result<&ChannelAgentPermissions, DispatchError> {
+        self.collaborators
+            .get(&member_id)
+            .ok_or_else(|| Error::<T>::ActorNotAuthorized.into())
+    }
 }
 
 // Channel alias type for simplification.
@@ -218,7 +291,7 @@ pub struct ChannelCreationParametersRecord<
     /// Metadata about the channel.
     pub meta: Option<Vec<u8>>,
     /// initial collaborator set
-    pub collaborators: BTreeSet<MemberId>,
+    pub collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
     /// initial moderator set
     pub moderators: BTreeSet<MemberId>,
     /// Storage buckets to assign to a bag.
@@ -250,7 +323,7 @@ pub struct ChannelUpdateParametersRecord<StorageAssets, DataObjectId: Ord, Membe
     /// assets to be removed from channel
     pub assets_to_remove: BTreeSet<DataObjectId>,
     /// collaborator set
-    pub collaborators: Option<BTreeSet<MemberId>>,
+    pub collaborators: Option<BTreeMap<MemberId, ChannelAgentPermissions>>,
     /// Commitment for the data object deletion prize for the storage pallet.
     pub expected_data_object_deletion_prize: Balance,
 }

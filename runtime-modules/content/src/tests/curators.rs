@@ -18,12 +18,16 @@ pub fn create_curator_group(permissions: ModerationPermissionsByLevel<Test>) -> 
     curator_group_id
 }
 
-pub fn add_curator_to_new_group(curator_id: CuratorId) -> CuratorGroupId {
+pub fn add_curator_to_new_group(
+    curator_id: CuratorId,
+    curator_agent_permissions: &[ChannelActionPermission],
+) -> CuratorGroupId {
     let curator_group_id = create_curator_group(BTreeMap::new());
     assert_ok!(Content::add_curator_to_group(
         Origin::signed(LEAD_ACCOUNT_ID),
         curator_group_id,
-        curator_id
+        curator_id,
+        curator_agent_permissions.iter().cloned().collect()
     ));
     curator_group_id
 }
@@ -36,7 +40,8 @@ pub fn add_curator_to_new_group_with_permissions(
     assert_ok!(Content::add_curator_to_group(
         Origin::signed(LEAD_ACCOUNT_ID),
         curator_group_id,
-        curator_id
+        curator_id,
+        BTreeSet::new()
     ));
     curator_group_id
 }
@@ -159,7 +164,8 @@ fn curator_group_management() {
             Content::add_curator_to_group(
                 Origin::signed(LEAD_ACCOUNT_ID),
                 curator_group_id,
-                DEFAULT_CURATOR_ID + 1 // not a curator
+                DEFAULT_CURATOR_ID + 1, // not a curator,
+                BTreeSet::new()
             ),
             Error::<Test>::CuratorIdInvalid
         );
@@ -168,12 +174,17 @@ fn curator_group_management() {
         assert_ok!(Content::add_curator_to_group(
             Origin::signed(LEAD_ACCOUNT_ID),
             curator_group_id,
-            DEFAULT_CURATOR_ID
+            DEFAULT_CURATOR_ID,
+            BTreeSet::new()
         ));
 
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::CuratorAdded(curator_group_id, DEFAULT_CURATOR_ID))
+            MetaEvent::content(RawEvent::CuratorAdded(
+                curator_group_id,
+                DEFAULT_CURATOR_ID,
+                BTreeSet::new()
+            ))
         );
 
         // Ensure curator is in group
@@ -185,7 +196,8 @@ fn curator_group_management() {
             Content::add_curator_to_group(
                 Origin::signed(LEAD_ACCOUNT_ID),
                 curator_group_id,
-                DEFAULT_CURATOR_ID
+                DEFAULT_CURATOR_ID,
+                BTreeSet::new()
             ),
             Error::<Test>::CuratorIsAlreadyAMemberOfGivenCuratorGroup
         );

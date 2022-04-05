@@ -9,7 +9,10 @@ use super::fixtures::*;
 use super::mock::*;
 use crate::*;
 
-// channel creation tests
+///////////////////////////////////////////////////////////////////
+////////////////////// Channel creation tests /////////////////////
+///////////////////////////////////////////////////////////////////
+
 #[test]
 fn successful_channel_creation_with_member_context() {
     with_default_mock_builder(|| {
@@ -20,39 +23,25 @@ fn successful_channel_creation_with_member_context() {
         CreateChannelFixture::default()
             .with_default_storage_buckets()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_channel_owner(ChannelOwner::Member(DEFAULT_MEMBER_ID))
             .call_and_assert(Ok(()));
     })
 }
 
 #[test]
-fn successful_channel_creation_with_curator_context() {
+fn successful_curator_group_channel_creation_with_lead_context() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
         set_dynamic_bag_creation_policy_for_storage_numbers(0);
 
         create_initial_storage_buckets_helper();
-        let default_curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+        let default_curator_group_id = curators::create_curator_group(BTreeMap::new());
         CreateChannelFixture::default()
             .with_default_storage_buckets()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn unsuccessful_channel_creation_with_lead_context() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-        CreateChannelFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            .call_and_assert(Err(Error::<Test>::ActorCannotOwnChannel.into()));
+            .with_channel_owner(ChannelOwner::CuratorGroup(default_curator_group_id))
+            .call_and_assert(Ok(()));
     })
 }
 
@@ -62,23 +51,20 @@ fn unsuccessful_channel_creation_with_uncorresponding_member_id_and_origin() {
         run_to_block(1);
         CreateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID + 100)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_channel_owner(ChannelOwner::Member(DEFAULT_MEMBER_ID))
             .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
     })
 }
 
 #[test]
-fn unsuccessful_channel_creation_with_uncorresponding_curator_id_and_origin() {
+fn unsuccessful_curator_group_channel_creation_by_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        let default_curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+        let default_curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID, &[]);
         CreateChannelFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID + 100)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
-            .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()));
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_channel_owner(ChannelOwner::CuratorGroup(default_curator_group_id))
+            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()));
     })
 }
 
@@ -91,7 +77,7 @@ fn successful_channel_creation_with_storage_upload_and_member_context() {
         CreateChannelFixture::default()
             .with_default_storage_buckets()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_channel_owner(ChannelOwner::Member(DEFAULT_MEMBER_ID))
             .with_assets(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_objects_helper(),
@@ -101,19 +87,16 @@ fn successful_channel_creation_with_storage_upload_and_member_context() {
 }
 
 #[test]
-fn successful_channel_creation_with_storage_upload_and_curator_context() {
+fn successful_curator_group_channel_creation_with_storage_upload_and_lead_context() {
     with_default_mock_builder(|| {
         run_to_block(1);
         create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        let default_curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+        increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
+        let default_curator_group_id = curators::create_curator_group(BTreeMap::new());
         CreateChannelFixture::default()
             .with_default_storage_buckets()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_channel_owner(ChannelOwner::CuratorGroup(default_curator_group_id))
             .with_assets(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_objects_helper(),
@@ -127,15 +110,12 @@ fn unsuccessful_channel_creation_with_invalid_expected_data_size_fee() {
     with_default_mock_builder(|| {
         run_to_block(1);
         create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        let default_curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+        increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
+        let default_curator_group_id = curators::create_curator_group(BTreeMap::new());
         CreateChannelFixture::default()
             .with_default_storage_buckets()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_channel_owner(ChannelOwner::CuratorGroup(default_curator_group_id))
             .with_assets(StorageAssets::<Test> {
                 // setting a purposely high fee to trigger error
                 expected_data_size_fee: BalanceOf::<Test>::from(1_000_000u64),
@@ -158,7 +138,7 @@ fn unsuccessful_channel_creation_with_insufficient_balance() {
             .with_default_storage_buckets()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_data_object_deletion_prize(data_object_deletion_prize)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_channel_owner(ChannelOwner::Member(DEFAULT_MEMBER_ID))
             .with_assets(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_objects_helper(),
@@ -178,7 +158,7 @@ fn unsuccessful_channel_creation_with_no_bucket_with_sufficient_size_available()
         CreateChannelFixture::default()
             .with_default_storage_buckets()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_channel_owner(ChannelOwner::Member(DEFAULT_MEMBER_ID))
             .with_assets(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: vec![DataObjectCreationParameters {
@@ -207,7 +187,7 @@ fn unsuccessful_channel_creation_with_no_bucket_with_sufficient_number_available
         CreateChannelFixture::default()
             .with_default_storage_buckets()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_channel_owner(ChannelOwner::Member(DEFAULT_MEMBER_ID))
             .with_assets(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: (0..(STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1))
@@ -234,7 +214,7 @@ fn unsuccessful_channel_creation_with_data_limits_exceeded() {
         CreateChannelFixture::default()
             .with_default_storage_buckets()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_channel_owner(ChannelOwner::Member(DEFAULT_MEMBER_ID))
             .with_assets(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: vec![DataObjectCreationParameters {
@@ -258,20 +238,25 @@ fn successful_channel_creation_with_collaborators_set() {
         CreateChannelFixture::default()
             .with_default_storage_buckets()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
+            .with_channel_owner(ChannelOwner::Member(DEFAULT_MEMBER_ID))
+            .with_collaborators(
+                vec![(COLLABORATOR_MEMBER_ID, BTreeSet::new())]
+                    .into_iter()
+                    .collect(),
+            )
             .call_and_assert(Ok(()));
 
-        let default_curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+        let default_curator_group_id = curators::create_curator_group(BTreeMap::new());
         CreateChannelFixture::default()
             .with_default_storage_buckets()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_channel_owner(ChannelOwner::CuratorGroup(default_curator_group_id))
             .with_default_storage_buckets()
-            .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
+            .with_collaborators(
+                vec![(COLLABORATOR_MEMBER_ID, BTreeSet::new())]
+                    .into_iter()
+                    .collect(),
+            )
             .call_and_assert(Ok(()));
     })
 }
@@ -282,64 +267,31 @@ fn unsuccessful_channel_creation_with_invalid_collaborators_set() {
         run_to_block(1);
         CreateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_collaborators(vec![COLLABORATOR_MEMBER_ID + 100].into_iter().collect())
+            .with_channel_owner(ChannelOwner::Member(DEFAULT_MEMBER_ID))
+            .with_collaborators(
+                vec![(COLLABORATOR_MEMBER_ID + 100, BTreeSet::new())]
+                    .into_iter()
+                    .collect(),
+            )
             .call_and_assert(Err(Error::<Test>::InvalidMemberProvided.into()));
     })
 }
 
-// channel update tests
 #[test]
-fn unsuccessful_channel_update_with_uncorresponding_member_id_and_origin() {
+fn unsuccessful_channel_creation_with_invalid_moderator_set() {
     with_default_mock_builder(|| {
         run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        UpdateChannelFixture::default()
-            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID + 100)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
+        CreateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_channel_owner(ChannelOwner::Member(DEFAULT_MEMBER_ID))
+            .with_moderators(vec![DEFAULT_MODERATOR_ID + 100].into_iter().collect())
+            .call_and_assert(Err(Error::<Test>::InvalidMemberProvided.into()));
     })
 }
 
-#[test]
-fn unsuccessful_channel_update_with_uncorresponding_curator_id_and_origin() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
-
-        let default_curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
-        UpdateChannelFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID + 100)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
-            .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()));
-    })
-}
-
-#[test]
-fn unsuccessful_channel_update_with_uncorresponding_collaborator_id_and_origin() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        UpdateChannelFixture::default()
-            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID + 100)
-            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
-    })
-}
+/////////////////////////////////////////////////////////////////////
+// Channel update failures (excluding invalid context/permissions) //
+/////////////////////////////////////////////////////////////////////
 
 #[test]
 fn unsuccessful_channel_update_with_invalid_channel_id() {
@@ -355,65 +307,6 @@ fn unsuccessful_channel_update_with_invalid_channel_id() {
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
             .with_channel_id(ChannelId::zero())
             .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()));
-    })
-}
-
-#[test]
-fn successful_channel_update_with_assets_uploaded_by_collaborator() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_account_balance_helper(COLLABORATOR_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        UpdateChannelFixture::default()
-            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .with_assets_to_upload(StorageAssets::<Test> {
-                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
-                object_creation_list: create_data_objects_helper(),
-            })
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn successful_channel_update_with_assets_removed_by_collaborator() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        UpdateChannelFixture::default()
-            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            // data objects ids start at index 1
-            .with_assets_to_remove((1..(DATA_OBJECTS_NUMBER as u64 - 1)).collect())
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn successful_channel_update_with_assets_uploaded_by_member() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        UpdateChannelFixture::default()
-            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_assets_to_upload(StorageAssets::<Test> {
-                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
-                object_creation_list: create_data_objects_helper(),
-            })
-            .call_and_assert(Ok(()));
     })
 }
 
@@ -438,462 +331,6 @@ fn unsuccessful_channel_update_with_pending_status_transfer() {
                 object_creation_list: create_data_objects_helper(),
             })
             .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
-    })
-}
-
-#[test]
-fn successful_channel_update_with_assets_removed_by_member() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        UpdateChannelFixture::default()
-            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            // data objects ids start at index 1
-            .with_assets_to_remove((1..(DATA_OBJECTS_NUMBER as u64 - 1)).collect())
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn successful_channel_update_with_assets_uploaded_by_curator() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
-
-        let default_curator_group_id = NextCuratorGroupId::<Test>::get() - 1;
-        UpdateChannelFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
-            .with_assets_to_upload(StorageAssets::<Test> {
-                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
-                object_creation_list: create_data_objects_helper(),
-            })
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn successful_channel_update_with_assets_removed_by_curator() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
-
-        let default_curator_group_id = NextCuratorGroupId::<Test>::get() - 1;
-        UpdateChannelFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
-            // data objects ids start at index 1
-            .with_assets_to_remove((1..(DATA_OBJECTS_NUMBER as u64 - 1)).collect())
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn successful_curator_channel_update_with_assets_uploaded_by_lead() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
-
-        UpdateChannelFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            .with_assets_to_upload(StorageAssets::<Test> {
-                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
-                object_creation_list: create_data_objects_helper(),
-            })
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn unsuccessful_curator_channel_update_with_assets_uploaded_by_invalid_lead_origin() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
-
-        UpdateChannelFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID + 100)
-            .with_actor(ContentActor::Lead)
-            .with_assets_to_upload(StorageAssets::<Test> {
-                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
-                object_creation_list: create_data_objects_helper(),
-            })
-            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()));
-    })
-}
-
-#[test]
-fn successful_channel_update_with_assets_removed_by_lead() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
-
-        UpdateChannelFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            // data objects ids start at index 1
-            .with_assets_to_remove((1..(DATA_OBJECTS_NUMBER as u64 - 1)).collect())
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn unsuccessful_channel_update_with_assets_removed_by_invalid_lead_origin() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
-
-        UpdateChannelFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID + 100)
-            .with_actor(ContentActor::Lead)
-            // data objects ids start at index 1
-            .with_assets_to_remove((1..(DATA_OBJECTS_NUMBER as u64 - 1)).collect())
-            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()));
-    })
-}
-
-#[test]
-fn unsuccessful_channel_update_with_assets_uploaded_by_unauthorized_collaborator() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_account_balance_helper(
-            UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID,
-            INITIAL_BALANCE,
-        );
-        create_default_member_owned_channel();
-
-        UpdateChannelFixture::default()
-            .with_sender(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(UNAUTHORIZED_COLLABORATOR_MEMBER_ID))
-            .with_assets_to_upload(StorageAssets::<Test> {
-                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
-                object_creation_list: create_data_objects_helper(),
-            })
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
-    })
-}
-
-#[test]
-fn unsuccessful_channel_update_with_assets_removed_by_unauthorized_collaborator() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        UpdateChannelFixture::default()
-            .with_sender(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(UNAUTHORIZED_COLLABORATOR_MEMBER_ID))
-            // data objects ids start at index 1
-            .with_assets_to_remove((1..(DATA_OBJECTS_NUMBER as u64 - 1)).collect())
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
-    })
-}
-
-#[test]
-fn unsuccessful_channel_update_with_assets_uploaded_by_unauthorized_member() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_account_balance_helper(UNAUTHORIZED_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        UpdateChannelFixture::default()
-            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(UNAUTHORIZED_MEMBER_ID))
-            .with_assets_to_upload(StorageAssets::<Test> {
-                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
-                object_creation_list: create_data_objects_helper(),
-            })
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
-    })
-}
-
-#[test]
-fn unsuccessful_channel_update_with_assets_removed_by_unathorized_member() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        UpdateChannelFixture::default()
-            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(UNAUTHORIZED_MEMBER_ID))
-            // data objects ids start at index 1
-            .with_assets_to_remove((1..(DATA_OBJECTS_NUMBER as u64 - 1)).collect())
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
-    })
-}
-
-#[test]
-fn unsuccessful_channel_update_with_assets_uploaded_by_unauthorized_curator() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_account_balance_helper(UNAUTHORIZED_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
-
-        let unauthorized_curator_group_id =
-            curators::add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
-        UpdateChannelFixture::default()
-            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                unauthorized_curator_group_id,
-                UNAUTHORIZED_CURATOR_ID,
-            ))
-            .with_assets_to_upload(StorageAssets::<Test> {
-                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
-                object_creation_list: create_data_objects_helper(),
-            })
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
-    })
-}
-
-#[test]
-fn unsuccessful_channel_update_with_assets_removed_by_unauthorized_curator() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
-
-        let unauthorized_curator_group_id =
-            curators::add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
-        UpdateChannelFixture::default()
-            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                unauthorized_curator_group_id,
-                UNAUTHORIZED_CURATOR_ID,
-            ))
-            // data objects ids start at index 1
-            .with_assets_to_remove((1..(DATA_OBJECTS_NUMBER as u64 - 1)).collect())
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
-    })
-}
-
-#[test]
-fn unsuccessful_member_channel_update_with_assets_uploaded_by_lead() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        UpdateChannelFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            .with_assets_to_upload(StorageAssets::<Test> {
-                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
-                object_creation_list: create_data_objects_helper(),
-            })
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
-    })
-}
-
-#[test]
-fn unsuccessful_member_channel_update_with_assets_removed_by_lead() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        UpdateChannelFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            // data objects ids start at index 1
-            .with_assets_to_remove((1..(DATA_OBJECTS_NUMBER as u64 - 1)).collect())
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
-    })
-}
-
-#[test]
-fn successful_channel_update_with_collaborators_set_updated_by_member() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        UpdateChannelFixture::default()
-            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_collaborators(BTreeSet::new())
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn unsuccessful_channel_update_with_collaborators_set_updated_by_unauthorized_member() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        UpdateChannelFixture::default()
-            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(UNAUTHORIZED_MEMBER_ID))
-            .with_collaborators(BTreeSet::new())
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
-    })
-}
-
-#[test]
-fn successful_channel_update_with_collaborators_set_updated_by_curator() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
-
-        let default_curator_group_id = NextCuratorGroupId::<Test>::get() - 1;
-        UpdateChannelFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
-            .with_collaborators(BTreeSet::new())
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn unsuccessful_channel_update_with_collaborators_set_updated_by_unauthorized_curator() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
-
-        let unauthorized_curator_group_id =
-            curators::add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
-        UpdateChannelFixture::default()
-            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                unauthorized_curator_group_id,
-                UNAUTHORIZED_CURATOR_ID,
-            ))
-            .with_collaborators(BTreeSet::new())
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
-    })
-}
-
-#[test]
-fn unsuccessful_channel_update_with_collaborators_set_updated_by_collaborator() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        UpdateChannelFixture::default()
-            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .with_collaborators(BTreeSet::new())
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
-    })
-}
-
-#[test]
-fn unsuccessful_member_channel_update_with_collaborators_set_updated_by_lead() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        UpdateChannelFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            .with_collaborators(BTreeSet::new())
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
-    })
-}
-
-#[test]
-fn successful_curator_channel_update_with_collaborators_set_updated_by_lead() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
-
-        UpdateChannelFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            .with_collaborators(BTreeSet::new())
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn unsuccessful_curator_channel_update_with_collaborators_set_updated_by_invalid_lead_origin() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
-
-        UpdateChannelFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID + 100)
-            .with_actor(ContentActor::Lead)
-            .with_collaborators(BTreeSet::new())
-            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()));
     })
 }
 
@@ -953,7 +390,11 @@ fn unsuccessful_channel_update_with_invalid_collaborators_set() {
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_collaborators(vec![COLLABORATOR_MEMBER_ID + 100].into_iter().collect())
+            .with_collaborators(
+                vec![(COLLABORATOR_MEMBER_ID + 100, BTreeSet::new())]
+                    .into_iter()
+                    .collect(),
+            )
             .call_and_assert(Err(Error::<Test>::InvalidMemberProvided.into()));
     })
 }
@@ -1062,7 +503,10 @@ fn unsuccessful_channel_update_with_no_bucket_with_sufficient_object_number_limi
     })
 }
 
-// channel privilege level tests
+/////////////////////////////////////////////////////////////////////
+/////////////////// Channel privilege level tests ///////////////////
+/////////////////////////////////////////////////////////////////////
+
 #[test]
 fn unsuccessful_channel_privilege_level_update_with_curator_origin() {
     with_default_mock_builder(|| {
@@ -1106,179 +550,9 @@ fn successful_channel_privilege_level_update_with_lead_origin() {
     })
 }
 
-// channel deletion tests
-#[test]
-fn successful_curator_channel_deletion_by_lead() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
-
-        DeleteChannelFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn unsuccessful_curator_channel_deletion_by_invalid_lead_origin() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
-
-        DeleteChannelFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID + 100)
-            .with_actor(ContentActor::Lead)
-            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()));
-    })
-}
-
-#[test]
-fn unsuccessful_member_channel_deletion_by_lead() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        DeleteChannelFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
-    })
-}
-
-#[test]
-fn unsuccessful_channel_deletion_by_collaborator() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        DeleteChannelFixture::default()
-            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
-    })
-}
-
-#[test]
-fn successful_channel_deletion_by_member() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        DeleteChannelFixture::default()
-            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn successful_channel_deletion_by_curator() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
-
-        let default_curator_group_id = Content::next_curator_group_id() - 1;
-        DeleteChannelFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn unsuccessful_channel_deletion_by_unauthorized_member() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        DeleteChannelFixture::default()
-            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(UNAUTHORIZED_MEMBER_ID))
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
-    })
-}
-
-#[test]
-fn unsuccessful_channel_deletion_by_unauthorized_curator() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
-
-        let unauthorized_curator_group_id =
-            curators::add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
-        DeleteChannelFixture::default()
-            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                unauthorized_curator_group_id,
-                UNAUTHORIZED_CURATOR_ID,
-            ))
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
-    })
-}
-
-#[test]
-fn unsuccessful_channel_deletion_by_uncorresponding_member_id_and_origin() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        DeleteChannelFixture::default()
-            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
-    })
-}
-
-#[test]
-fn unsuccessful_channel_deletion_by_uncorresponding_curator_id_and_origin() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
-
-        let default_curator_group_id = Content::next_curator_group_id() - 1;
-        DeleteChannelFixture::default()
-            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
-            .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()));
-    })
-}
+///////////////////////////////////////////////////////////////////////
+// Channel deletion failures (excluding invalid context/permissions) //
+///////////////////////////////////////////////////////////////////////
 
 #[test]
 fn unsuccessful_channel_deletion_with_invalid_channel_id() {
@@ -1317,18 +591,11 @@ fn unsuccessful_channel_deletion_with_invalid_bag_size() {
     })
 }
 
-#[test]
-fn unsuccessful_channel_creation_with_invalid_moderator_set() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-        CreateChannelFixture::default()
-            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_moderators(vec![DEFAULT_MODERATOR_ID + 100].into_iter().collect())
-            .call_and_assert(Err(Error::<Test>::InvalidMemberProvided.into()));
-    })
-}
-/// MODERATION ACTIONS
+///////////////////////////////////////////////////////////////////////
+////////////////////// Channel moderation actions /////////////////////
+///////////////////////////////////////////////////////////////////////
+
+// Channel deletion
 
 #[test]
 fn unsuccessful_moderation_action_channel_deletion_by_actors_with_auth_failure() {
@@ -1396,7 +663,7 @@ fn unsuccessful_moderation_action_channel_deletion_by_curator_without_permission
             .with_default_storage_buckets()
             .call_and_assert(Ok(()));
 
-        let group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+        let group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID, &[]);
 
         DeleteChannelAsModeratorFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
@@ -1571,6 +838,8 @@ fn successful_moderation_action_channel_with_assets_deletion_by_lead() {
     })
 }
 
+// Channel visibility status
+
 #[test]
 fn unsuccessful_moderation_action_channel_visibility_change_by_actors_with_auth_failure() {
     with_default_mock_builder(|| {
@@ -1658,7 +927,7 @@ fn unsuccessful_moderation_action_channel_visibility_change_by_curator_without_p
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel();
 
-        let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+        let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID, &[]);
         // As curator
         SetChannelVisibilityAsModeratorFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
@@ -1714,6 +983,8 @@ fn successful_moderation_action_channel_visibility_change_by_lead() {
             .call_and_assert(Ok(()));
     })
 }
+
+// Channel features status (pausing/unpausing)
 
 #[test]
 fn unsuccessful_moderation_action_channel_features_status_change_by_actors_with_auth_failure() {
@@ -1882,120 +1153,7 @@ fn successful_moderation_action_channel_features_status_change_by_lead() {
     })
 }
 
-/// Paused features
-
-#[test]
-fn channel_cannot_be_updated_when_channel_update_paused() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-        pause_channel_feature(ChannelId::one(), PausableChannelFeature::ChannelUpdate);
-
-        // Try to update as owner
-        UpdateChannelFixture::default()
-            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
-        // Try to update as collaborator
-        UpdateChannelFixture::default()
-            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
-    })
-}
-
-#[test]
-fn video_cannot_created_when_channel_video_creation_paused() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_account_balance_helper(COLLABORATOR_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-        pause_channel_feature(ChannelId::one(), PausableChannelFeature::VideoCreation);
-
-        // Try to add video as owner
-        CreateVideoFixture::default()
-            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
-        // Try to add video as collaborator
-        CreateVideoFixture::default()
-            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
-    })
-}
-
-#[test]
-fn video_nft_cannot_be_issued_when_channel_video_nft_issuance_paused() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_account_balance_helper(COLLABORATOR_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-        pause_channel_feature(ChannelId::one(), PausableChannelFeature::VideoNftIssuance);
-
-        let nft_params = NftIssuanceParameters::<Test> {
-            royalty: None,
-            nft_metadata: b"metablob".to_vec(),
-            non_channel_owner: None,
-            init_transactional_status: InitTransactionalStatus::<Test>::Idle,
-        };
-
-        // Try to issue nft during new video creation as owner
-        CreateVideoFixture::default()
-            .with_nft_issuance(nft_params.clone())
-            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
-
-        // Try to issue nft during new video creation as collaborator
-        CreateVideoFixture::default()
-            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .with_nft_issuance(nft_params.clone())
-            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
-
-        // Create default video
-        CreateVideoFixture::default().call_and_assert(Ok(()));
-
-        // Try to issue nft for existing video as owner
-        assert_eq!(
-            Content::issue_nft(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-                VideoId::one(),
-                nft_params.clone()
-            ),
-            Err(Error::<Test>::ChannelFeaturePaused.into())
-        );
-        // Try to issue nft for existing video as collaborator
-        assert_eq!(
-            Content::issue_nft(
-                Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
-                ContentActor::Member(COLLABORATOR_MEMBER_ID),
-                VideoId::one(),
-                nft_params.clone()
-            ),
-            Err(Error::<Test>::ChannelFeaturePaused.into())
-        );
-
-        // Try to issue video nft through an update as owner
-        UpdateVideoFixture::default()
-            .with_nft_issuance(nft_params.clone())
-            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
-
-        // Try to issue video nft through an update as collaborator
-        UpdateVideoFixture::default()
-            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .with_nft_issuance(nft_params.clone())
-            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
-    })
-}
-
-// Channel assets removal
+// Channel assets deletion
 
 #[test]
 fn unsuccessful_moderation_action_channel_assets_deletion_by_actors_with_auth_failure() {
@@ -2061,7 +1219,7 @@ fn unsuccessful_moderation_action_channel_assets_deletion_by_curator_with_no_per
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel();
 
-        let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+        let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID, &[]);
 
         DeleteChannelAssetsAsModeratorFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
@@ -2160,5 +1318,2159 @@ fn successful_moderation_action_channel_assets_deletion_by_lead() {
         create_default_member_owned_channel();
 
         DeleteChannelAssetsAsModeratorFixture::default().call_and_assert(Ok(()));
+    })
+}
+
+///////////////////////////////////////////////////////////////////////
+//////////////////////////// Paused features //////////////////////////
+///////////////////////////////////////////////////////////////////////
+
+#[test]
+fn channel_cannot_be_updated_when_channel_update_paused() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+        pause_channel_feature(ChannelId::one(), PausableChannelFeature::ChannelUpdate);
+
+        // Try to update as owner
+        UpdateChannelFixture::default()
+            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
+        // Try to update as collaborator
+        UpdateChannelFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
+    })
+}
+
+#[test]
+fn video_cannot_created_when_channel_video_creation_paused() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(COLLABORATOR_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_collaborator_permissions(&[
+            ChannelActionPermission::AddVideo,
+        ]);
+        pause_channel_feature(ChannelId::one(), PausableChannelFeature::VideoCreation);
+
+        // Try to add video as owner
+        CreateVideoFixture::default()
+            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
+        // Try to add video as collaborator
+        CreateVideoFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
+    })
+}
+
+#[test]
+fn video_nft_cannot_be_issued_when_channel_video_nft_issuance_paused() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(COLLABORATOR_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_collaborator_permissions(&[
+            ChannelActionPermission::AddVideo,
+            ChannelActionPermission::ManageVideoNfts,
+        ]);
+        pause_channel_feature(ChannelId::one(), PausableChannelFeature::VideoNftIssuance);
+
+        let nft_params = NftIssuanceParameters::<Test> {
+            royalty: None,
+            nft_metadata: b"metablob".to_vec(),
+            non_channel_owner: None,
+            init_transactional_status: InitTransactionalStatus::<Test>::Idle,
+        };
+
+        // Try to issue nft during new video creation as owner
+        CreateVideoFixture::default()
+            .with_nft_issuance(nft_params.clone())
+            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
+
+        // Try to issue nft during new video creation as collaborator
+        CreateVideoFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_nft_issuance(nft_params.clone())
+            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
+
+        // Create default video
+        CreateVideoFixture::default().call_and_assert(Ok(()));
+
+        // Try to issue nft for existing video as owner
+        assert_eq!(
+            Content::issue_nft(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                VideoId::one(),
+                nft_params.clone()
+            ),
+            Err(Error::<Test>::ChannelFeaturePaused.into())
+        );
+        // Try to issue nft for existing video as collaborator
+        assert_eq!(
+            Content::issue_nft(
+                Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(COLLABORATOR_MEMBER_ID),
+                VideoId::one(),
+                nft_params.clone()
+            ),
+            Err(Error::<Test>::ChannelFeaturePaused.into())
+        );
+
+        // Try to issue video nft through an update as owner
+        UpdateVideoFixture::default()
+            .with_nft_issuance(nft_params.clone())
+            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
+
+        // Try to issue video nft through an update as collaborator
+        UpdateVideoFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_nft_issuance(nft_params.clone())
+            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
+    })
+}
+
+/////////////////////////////////////////////////////////////
+////////////// Invalid contexts (actor/origin) //////////////
+/////////////////////////////////////////////////////////////
+
+// Curator channels
+
+#[test]
+fn unsuccessful_curator_channel_actions_with_invalid_context() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_video_post()
+            .with_video_nft()
+            .with_agent_permissions(&Vec::from_iter(ChannelActionPermission::iter()))
+            .setup();
+
+        curators::add_curator_to_new_group(
+            UNAUTHORIZED_CURATOR_ID,
+            &Vec::from_iter(ChannelActionPermission::iter()),
+        );
+
+        run_all_fixtures_with_contexts(get_default_curator_channel_invalid_contexts());
+    })
+}
+
+// Member channels
+
+#[test]
+fn unsuccessful_member_channel_actions_with_invalid_context() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video()
+            .with_video_post()
+            .with_video_nft()
+            .with_agent_permissions(&Vec::from_iter(ChannelActionPermission::iter()))
+            .setup();
+
+        curators::add_curator_to_new_group(
+            DEFAULT_CURATOR_ID,
+            &Vec::from_iter(ChannelActionPermission::iter()),
+        );
+
+        run_all_fixtures_with_contexts(get_default_member_channel_invalid_contexts());
+    })
+}
+
+///////////////////////////////////////////////////////////////
+// Channel agent / owner permissions - UpdateChannelMetadata //
+///////////////////////////////////////////////////////////////
+
+// Curator channels
+
+#[test]
+fn unsuccessful_channel_metadata_update_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::UpdateChannelMetadata])
+            .setup();
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .with_new_meta(Some(b"new meta".to_vec()))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_channel_metadata_update_by_curator_agent() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_agent_permissions(&[ChannelActionPermission::UpdateChannelMetadata])
+            .setup();
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .with_new_meta(Some(b"new meta".to_vec()))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_channel_metadata_update_by_lead() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel().setup();
+        UpdateChannelFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .with_new_meta(Some(b"new meta".to_vec()))
+            .call_and_assert(Ok(()));
+    })
+}
+
+// Member channels
+
+#[test]
+fn unsuccessful_channel_metadata_update_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::UpdateChannelMetadata])
+            .setup();
+        UpdateChannelFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_new_meta(Some(b"new meta".to_vec()))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_channel_metadata_update_by_collaborator() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_agent_permissions(&[ChannelActionPermission::UpdateChannelMetadata])
+            .setup();
+        UpdateChannelFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_new_meta(Some(b"new meta".to_vec()))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_channel_metadata_update_by_owner_member() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_new_meta(Some(b"new meta".to_vec()))
+            .call_and_assert(Ok(()));
+    })
+}
+
+/////////////////////////////////////////////////////////////////////
+// Channel agent / owner permissions - ManageNonVideoChannelAssets //
+/////////////////////////////////////////////////////////////////////
+
+// Curator channels
+
+#[test]
+fn unsuccessful_channel_assets_update_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_all_agent_permissions_except(&[
+                ChannelActionPermission::ManageNonVideoChannelAssets,
+            ])
+            .setup();
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .with_assets_to_upload(create_default_assets_helper())
+            .with_assets_to_remove(BTreeSet::from_iter(0..DATA_OBJECTS_NUMBER))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_channel_assets_update_by_curator_agent() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_agent_permissions(&[ChannelActionPermission::ManageNonVideoChannelAssets])
+            .setup();
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .with_assets_to_upload(create_default_assets_helper())
+            .with_assets_to_remove(BTreeSet::from_iter(0..DATA_OBJECTS_NUMBER))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_channel_assets_update_by_lead() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel().setup();
+        UpdateChannelFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .with_assets_to_upload(create_default_assets_helper())
+            .with_assets_to_remove(BTreeSet::from_iter(0..DATA_OBJECTS_NUMBER))
+            .call_and_assert(Ok(()));
+    })
+}
+
+// Member channels
+
+#[test]
+fn unsuccessful_channel_assets_update_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_all_agent_permissions_except(&[
+                ChannelActionPermission::ManageNonVideoChannelAssets,
+            ])
+            .setup();
+        UpdateChannelFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_assets_to_upload(create_default_assets_helper())
+            .with_assets_to_remove(BTreeSet::from_iter(0..DATA_OBJECTS_NUMBER))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_channel_assets_update_by_collaborator() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_agent_permissions(&[ChannelActionPermission::ManageNonVideoChannelAssets])
+            .setup();
+        UpdateChannelFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_assets_to_upload(create_default_assets_helper())
+            .with_assets_to_remove(BTreeSet::from_iter(0..DATA_OBJECTS_NUMBER))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_channel_assets_update_by_owner_member() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_assets_to_upload(create_default_assets_helper())
+            .with_assets_to_remove(BTreeSet::from_iter(0..DATA_OBJECTS_NUMBER))
+            .call_and_assert(Ok(()));
+    })
+}
+
+/////////////////////////////////////////////////////////////////////
+// Channel agent / owner permissions - ManageChannelCollaborators //
+/////////////////////////////////////////////////////////////////////
+
+// Curator channels
+
+#[test]
+fn unsuccessful_channel_collaborators_update_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_all_agent_permissions_except(&[
+                ChannelActionPermission::ManageChannelCollaborators,
+            ])
+            .setup();
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .with_collaborators(BTreeMap::new())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_collaborator_removal_by_curator_agent_with_insufficient_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::AgentRemark])
+            .with_collaborators(&[(
+                SECOND_MEMBER_ID,
+                BTreeSet::from_iter(vec![ChannelActionPermission::AgentRemark]),
+            )])
+            .setup();
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .with_collaborators(BTreeMap::new())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_collaborator_update_by_curator_agent_with_insufficient_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::AgentRemark])
+            .with_collaborators(&[(
+                SECOND_MEMBER_ID,
+                BTreeSet::from_iter(vec![ChannelActionPermission::AgentRemark]),
+            )])
+            .setup();
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .with_collaborators(BTreeMap::from_iter(vec![(
+                SECOND_MEMBER_ID,
+                BTreeSet::new(),
+            )]))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_collaborator_insertion_by_curator_agent_with_insufficient_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::AgentRemark])
+            .setup();
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .with_collaborators(BTreeMap::from_iter(vec![(
+                SECOND_MEMBER_ID,
+                BTreeSet::from_iter(vec![ChannelActionPermission::AgentRemark]),
+            )]))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_channel_collaborator_management_by_curator_agent() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::AgentRemark])
+            .setup();
+        SuccessfulChannelCollaboratorsManagementFlow::default()
+            .with_owner_sender(LEAD_ACCOUNT_ID)
+            .with_owner_actor(ContentActor::Lead)
+            .with_agent_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_agent_actor(default_curator_actor())
+            .run();
+    })
+}
+
+// Member channels
+
+#[test]
+fn unsuccessful_channel_collaborators_update_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        UpdateChannelFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_collaborators(BTreeMap::new())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_collaborator_removal_by_collaborator_with_insufficient_permissions() {
+    with_default_mock_builder(|| {
+        let default_collaborator = (
+            COLLABORATOR_MEMBER_ID,
+            all_permissions_except(&[ChannelActionPermission::AgentRemark]),
+        );
+        ContentTest::with_member_channel()
+            .with_collaborators(&[
+                default_collaborator.clone(),
+                (
+                    SECOND_MEMBER_ID,
+                    agent_permissions(&[ChannelActionPermission::AgentRemark]),
+                ),
+            ])
+            .setup();
+        UpdateChannelFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_collaborators(BTreeMap::from_iter(vec![default_collaborator.clone()]))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_collaborator_update_by_collaborator_with_insufficient_permissions() {
+    with_default_mock_builder(|| {
+        let default_collaborator = (
+            COLLABORATOR_MEMBER_ID,
+            all_permissions_except(&[ChannelActionPermission::AgentRemark]),
+        );
+        ContentTest::with_member_channel()
+            .with_collaborators(&[
+                default_collaborator.clone(),
+                (
+                    SECOND_MEMBER_ID,
+                    agent_permissions(&[ChannelActionPermission::AgentRemark]),
+                ),
+            ])
+            .setup();
+        UpdateChannelFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_collaborators(BTreeMap::from_iter(vec![
+                (SECOND_MEMBER_ID, BTreeSet::new()),
+                default_collaborator.clone(),
+            ]))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_collaborator_insertion_by_collaborator_with_insufficient_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::AgentRemark])
+            .setup();
+        UpdateChannelFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_collaborators(BTreeMap::from_iter(vec![(
+                SECOND_MEMBER_ID,
+                BTreeSet::from_iter(vec![ChannelActionPermission::AgentRemark]),
+            )]))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_channel_collaborator_management_by_collaborator() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::AgentRemark])
+            .setup();
+        SuccessfulChannelCollaboratorsManagementFlow::default()
+            .with_owner_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_owner_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_agent_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_agent_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .run();
+    })
+}
+
+/////////////////////////////////////////////////////////////////////
+//// Channel agent / owner permissions - ManageChannelModerators ////
+/////////////////////////////////////////////////////////////////////
+
+// Curator channels
+
+#[test]
+fn unsuccessful_channel_moderators_update_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageChannelModerators])
+            .setup();
+        UpdateModeratorSetFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_channel_moderators_update_by_curator_agent() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_agent_permissions(&[ChannelActionPermission::ManageChannelModerators])
+            .setup();
+        UpdateModeratorSetFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_channel_moderators_update_by_lead() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel().setup();
+        UpdateModeratorSetFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Ok(()));
+    })
+}
+
+// Member channels
+
+#[test]
+fn unsuccessful_channel_moderators_update_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageChannelModerators])
+            .setup();
+        UpdateModeratorSetFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_channel_moderators_update_by_collaborator() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_agent_permissions(&[ChannelActionPermission::ManageChannelModerators])
+            .setup();
+        UpdateModeratorSetFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_channel_moderators_update_by_owner_member() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        UpdateModeratorSetFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Ok(()));
+    })
+}
+
+/////////////////////////////////////////////////////////////////////
+/////////// Channel agent / owner permissions - AddVideo ////////////
+/////////////////////////////////////////////////////////////////////
+
+// Curator channels
+
+#[test]
+fn unsuccessful_video_creation_with_assets_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::AddVideo])
+            .setup();
+        CreateVideoFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .with_assets(create_default_assets_helper())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_video_creation_with_assets_by_curator_agent() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_agent_permissions(&[ChannelActionPermission::AddVideo])
+            .setup();
+        CreateVideoFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .with_assets(create_default_assets_helper())
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_video_creation_with_assets_by_lead() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel().setup();
+        CreateVideoFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .with_assets(create_default_assets_helper())
+            .call_and_assert(Ok(()));
+    })
+}
+
+// Member channels
+
+#[test]
+fn unsuccessful_video_creation_with_assets_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::AddVideo])
+            .setup();
+        CreateVideoFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_assets(create_default_assets_helper())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_video_creation_with_assets_by_collaborator() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_agent_permissions(&[ChannelActionPermission::AddVideo])
+            .setup();
+        CreateVideoFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_assets(create_default_assets_helper())
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_video_creation_with_assets_by_owner_member() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        CreateVideoFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_assets(create_default_assets_helper())
+            .call_and_assert(Ok(()));
+    })
+}
+
+/////////////////////////////////////////////////////////////////////
+////// Channel agent / owner permissions - UpdateVideoMetadata //////
+/////////////////////////////////////////////////////////////////////
+
+// Curator channels
+
+#[test]
+fn unsuccessful_video_metadata_update_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::UpdateVideoMetadata])
+            .setup();
+        UpdateVideoFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .with_new_meta(Some(b"new meta".to_vec()))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_video_metadata_update_by_curator_agent() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_agent_permissions(&[ChannelActionPermission::UpdateVideoMetadata])
+            .setup();
+        UpdateVideoFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .with_new_meta(Some(b"new meta".to_vec()))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_video_metadata_update_by_lead() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel().with_video().setup();
+        UpdateVideoFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .with_new_meta(Some(b"new meta".to_vec()))
+            .call_and_assert(Ok(()));
+    })
+}
+
+// Member channels
+
+#[test]
+fn unsuccessful_video_metadata_update_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::UpdateVideoMetadata])
+            .setup();
+        UpdateVideoFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_new_meta(Some(b"new meta".to_vec()))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_video_metadata_update_by_collaborator() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video()
+            .with_agent_permissions(&[ChannelActionPermission::UpdateVideoMetadata])
+            .setup();
+        UpdateVideoFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_new_meta(Some(b"new meta".to_vec()))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_video_metadata_update_by_owner_member() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video()
+            .with_agent_permissions(&[ChannelActionPermission::UpdateVideoMetadata])
+            .setup();
+        UpdateVideoFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_new_meta(Some(b"new meta".to_vec()))
+            .call_and_assert(Ok(()));
+    })
+}
+
+/////////////////////////////////////////////////////////////////////
+/////// Channel agent / owner permissions - ManageVideoAssets ///////
+/////////////////////////////////////////////////////////////////////
+
+// Curator channels
+
+#[test]
+fn unsuccessful_video_assets_update_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoAssets])
+            .setup();
+        UpdateVideoFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .with_assets_to_upload(create_default_assets_helper())
+            .with_assets_to_remove(BTreeSet::from_iter(
+                DATA_OBJECTS_NUMBER..DATA_OBJECTS_NUMBER * 2,
+            ))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_video_assets_update_by_curator_agent() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_agent_permissions(&[ChannelActionPermission::ManageVideoAssets])
+            .setup();
+        UpdateVideoFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .with_assets_to_upload(create_default_assets_helper())
+            .with_assets_to_remove(BTreeSet::from_iter(
+                DATA_OBJECTS_NUMBER..DATA_OBJECTS_NUMBER * 2,
+            ))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_video_assets_update_by_lead() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel().with_video().setup();
+        UpdateVideoFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .with_assets_to_upload(create_default_assets_helper())
+            .with_assets_to_remove(BTreeSet::from_iter(
+                DATA_OBJECTS_NUMBER..DATA_OBJECTS_NUMBER * 2,
+            ))
+            .call_and_assert(Ok(()));
+    })
+}
+
+// Member channels
+
+#[test]
+fn unsuccessful_video_assets_update_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoAssets])
+            .setup();
+        UpdateVideoFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_assets_to_upload(create_default_assets_helper())
+            .with_assets_to_remove(BTreeSet::from_iter(
+                DATA_OBJECTS_NUMBER..DATA_OBJECTS_NUMBER * 2,
+            ))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_video_assets_update_by_collaborator() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video()
+            .with_agent_permissions(&[ChannelActionPermission::ManageVideoAssets])
+            .setup();
+        UpdateVideoFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_assets_to_upload(create_default_assets_helper())
+            .with_assets_to_remove(BTreeSet::from_iter(
+                DATA_OBJECTS_NUMBER..DATA_OBJECTS_NUMBER * 2,
+            ))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_video_assets_update_by_owner_member() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+        UpdateVideoFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_assets_to_upload(create_default_assets_helper())
+            .with_assets_to_remove(BTreeSet::from_iter(
+                DATA_OBJECTS_NUMBER..DATA_OBJECTS_NUMBER * 2,
+            ))
+            .call_and_assert(Ok(()));
+    })
+}
+
+/////////////////////////////////////////////////////////////////////
+/// Channel agent / owner permissions - UpdateVideoCommentsStatus ///
+/////////////////////////////////////////////////////////////////////
+
+// Curator channels
+
+#[test]
+fn unsuccessful_video_comments_status_update_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_all_agent_permissions_except(&[
+                ChannelActionPermission::UpdateVideoCommentsStatus,
+            ])
+            .setup();
+        UpdateVideoFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .with_enable_comments(Some(false))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_video_comments_status_update_by_curator_agent() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_agent_permissions(&[ChannelActionPermission::UpdateVideoCommentsStatus])
+            .setup();
+        UpdateVideoFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .with_enable_comments(Some(false))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_video_comments_status_update_by_lead() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel().with_video().setup();
+        UpdateVideoFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .with_enable_comments(Some(false))
+            .call_and_assert(Ok(()));
+    })
+}
+
+// Member channels
+
+#[test]
+fn unsuccessful_video_comments_status_update_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video()
+            .with_all_agent_permissions_except(&[
+                ChannelActionPermission::UpdateVideoCommentsStatus,
+            ])
+            .setup();
+        UpdateVideoFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_enable_comments(Some(false))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_video_comments_status_update_by_collaborator() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video()
+            .with_agent_permissions(&[ChannelActionPermission::UpdateVideoCommentsStatus])
+            .setup();
+        UpdateVideoFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_enable_comments(Some(false))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_video_comments_status_update_by_owner_member() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+        UpdateVideoFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_enable_comments(Some(false))
+            .call_and_assert(Ok(()));
+    })
+}
+
+///////////////////////////////////////////////////////////////
+/////// Channel agent / owner permissions - DeleteVideo ///////
+///////////////////////////////////////////////////////////////
+
+// Curator channels
+
+#[test]
+fn unsuccessful_empty_video_deletion_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_video_assets(None)
+            .with_all_agent_permissions_except(&[ChannelActionPermission::DeleteVideo])
+            .setup();
+        DeleteVideoFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .with_num_objects_to_delete(0)
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_empty_video_deletion_by_curator_agent() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_video_assets(None)
+            .with_agent_permissions(&[ChannelActionPermission::DeleteVideo])
+            .setup();
+        DeleteVideoFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .with_num_objects_to_delete(0)
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_empty_video_deletion_by_lead() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_video_assets(None)
+            .setup();
+        DeleteVideoFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .with_num_objects_to_delete(0)
+            .call_and_assert(Ok(()));
+    })
+}
+
+// Member channels
+
+#[test]
+fn unsuccessful_empty_video_deletion_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video()
+            .with_video_assets(None)
+            .with_all_agent_permissions_except(&[ChannelActionPermission::DeleteVideo])
+            .setup();
+        DeleteVideoFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_num_objects_to_delete(0)
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_empty_video_deletion_by_collaborator() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video()
+            .with_video_assets(None)
+            .with_agent_permissions(&[ChannelActionPermission::DeleteVideo])
+            .setup();
+        DeleteVideoFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_num_objects_to_delete(0)
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_empty_video_deletion_by_owner_member() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video()
+            .with_video_assets(None)
+            .setup();
+        DeleteVideoFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_num_objects_to_delete(0)
+            .call_and_assert(Ok(()));
+    })
+}
+
+////////////////////////////////////////////////////////////////////////
+//// Channel agent / owner permissions - ManageVideoDescriptionPost ////
+////////////////////////////////////////////////////////////////////////
+
+// Curator channels
+
+#[test]
+fn unsuccessful_video_description_post_creation_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_all_agent_permissions_except(&[
+                ChannelActionPermission::ManageVideoDescriptionPost,
+            ])
+            .setup();
+        CreatePostFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_video_description_post_update_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_video_post()
+            .with_all_agent_permissions_except(&[
+                ChannelActionPermission::ManageVideoDescriptionPost,
+            ])
+            .setup();
+        EditPostTextFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_video_description_post_deletion_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_video_post()
+            .with_all_agent_permissions_except(&[
+                ChannelActionPermission::ManageVideoDescriptionPost,
+            ])
+            .setup();
+        DeletePostFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_video_description_post_management_by_curator_agent() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_agent_permissions(&[ChannelActionPermission::ManageVideoDescriptionPost])
+            .setup();
+        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        CreatePostFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Ok(()));
+        EditPostTextFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Ok(()));
+        DeletePostFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_video_description_post_management_by_lead() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel().with_video().setup();
+        CreatePostFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Ok(()));
+        EditPostTextFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Ok(()));
+        DeletePostFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Ok(()));
+    })
+}
+
+// Member channels
+
+#[test]
+fn unsuccessful_video_description_post_creation_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video()
+            .with_all_agent_permissions_except(&[
+                ChannelActionPermission::ManageVideoDescriptionPost,
+            ])
+            .setup();
+        CreatePostFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_video_description_post_update_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video()
+            .with_video_post()
+            .with_all_agent_permissions_except(&[
+                ChannelActionPermission::ManageVideoDescriptionPost,
+            ])
+            .setup();
+        EditPostTextFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_video_description_post_deletion_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video()
+            .with_video_post()
+            .with_all_agent_permissions_except(&[
+                ChannelActionPermission::ManageVideoDescriptionPost,
+            ])
+            .setup();
+        DeletePostFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_video_description_post_management_by_collaborator() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video()
+            .with_agent_permissions(&[ChannelActionPermission::ManageVideoDescriptionPost])
+            .setup();
+        increase_account_balance_helper(COLLABORATOR_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        CreatePostFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Ok(()));
+        EditPostTextFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Ok(()));
+        DeletePostFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_video_description_post_management_by_owner_member() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video()
+            .with_agent_permissions(&[ChannelActionPermission::ManageVideoDescriptionPost])
+            .setup();
+        CreatePostFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Ok(()));
+        EditPostTextFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Ok(()));
+        DeletePostFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Ok(()));
+    })
+}
+
+///////////////////////////////////////////////////////////////////
+/////// Channel agent / owner permissions - ManageVideoNfts ///////
+///////////////////////////////////////////////////////////////////
+
+// Curator channels
+
+#[test]
+fn unsuccessful_video_nft_issuance_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        IssueNftFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_create_video_with_auto_issue_nft_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        CreateVideoFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .with_nft_issuance(NftIssuanceParameters::<Test>::default())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_update_video_with_auto_issue_nft_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        UpdateVideoFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .with_nft_issuance(NftIssuanceParameters::<Test>::default())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_start_open_auction_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_video_nft()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        StartOpenAuctionFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_start_english_auction_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_video_nft()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        StartEnglishAuctionFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_cancel_open_auction_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::Open))
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        CancelAuctionFixture::default(AuctionType::Open)
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_cancel_english_auction_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::English))
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        CancelAuctionFixture::default(AuctionType::English)
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_offer_nft_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video_nft()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        OfferNftFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_cancel_nft_offer_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video_nft_status(NftTransactionalStatusType::Offer)
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        CancelOfferFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_sell_nft_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video_nft()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        SellNftFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_cancel_buy_now_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video_nft_status(NftTransactionalStatusType::BuyNow)
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        CancelBuyNowFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_update_buy_now_price_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video_nft_status(NftTransactionalStatusType::BuyNow)
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        UpdateBuyNowPriceFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_pick_open_auction_winner_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_nft_open_auction_bid()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        PickOpenAuctionWinnerFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_nft_owner_remark_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video_nft()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        NftOwnerRemarkFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn succesfull_nft_management_actions_by_curator_agent() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_video()
+            .with_agent_permissions(&[
+                ChannelActionPermission::ManageVideoNfts,
+                ChannelActionPermission::AddVideo,
+            ])
+            .setup();
+        SuccessfulNftManagementFlow::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .run()
+    })
+}
+
+#[test]
+fn succesfull_nft_management_actions_by_lead() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel().with_video().setup();
+        SuccessfulNftManagementFlow::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .run()
+    })
+}
+
+// Member channels
+
+#[test]
+fn unsuccessful_video_nft_issuance_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        IssueNftFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_create_video_with_auto_issue_nft_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        CreateVideoFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_nft_issuance(NftIssuanceParameters::<Test>::default())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_update_video_with_auto_issue_nft_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        UpdateVideoFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_nft_issuance(NftIssuanceParameters::<Test>::default())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_start_open_auction_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video()
+            .with_video_nft()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        StartOpenAuctionFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_start_english_auction_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video()
+            .with_video_nft()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        StartEnglishAuctionFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_cancel_open_auction_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::Open))
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        CancelAuctionFixture::default(AuctionType::Open)
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_cancel_english_auction_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::English))
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        CancelAuctionFixture::default(AuctionType::English)
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_offer_nft_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video_nft()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        OfferNftFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_cancel_nft_offer_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video_nft_status(NftTransactionalStatusType::Offer)
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        CancelOfferFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_sell_nft_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video_nft()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        SellNftFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_cancel_buy_now_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video_nft_status(NftTransactionalStatusType::BuyNow)
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        CancelBuyNowFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_update_buy_now_price_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video_nft_status(NftTransactionalStatusType::BuyNow)
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        UpdateBuyNowPriceFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_pick_open_auction_winner_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_nft_open_auction_bid()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        PickOpenAuctionWinnerFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_nft_owner_remark_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video_nft()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ManageVideoNfts])
+            .setup();
+        NftOwnerRemarkFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn succesfull_nft_management_actions_by_collaborator() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_video()
+            .with_agent_permissions(&[
+                ChannelActionPermission::ManageVideoNfts,
+                ChannelActionPermission::AddVideo,
+            ])
+            .setup();
+        SuccessfulNftManagementFlow::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .run()
+    })
+}
+
+#[test]
+fn succesfull_nft_management_actions_by_owner_member() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().with_video().setup();
+        SuccessfulNftManagementFlow::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .run()
+    })
+}
+
+///////////////////////////////////////////////////////////////
+/////// Channel agent / owner permissions - AgentRemark ///////
+///////////////////////////////////////////////////////////////
+
+// Curator channels
+
+#[test]
+fn unsuccessful_channel_agent_remark_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::AgentRemark])
+            .setup();
+        ChannelAgentRemarkFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_channel_agent_remark_by_curator_agent() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_agent_permissions(&[ChannelActionPermission::AgentRemark])
+            .setup();
+        ChannelAgentRemarkFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_channel_agent_remark_by_lead() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel().setup();
+        ChannelAgentRemarkFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Ok(()));
+    })
+}
+
+// Member channels
+
+#[test]
+fn unsuccessful_channel_agent_remark_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::AgentRemark])
+            .setup();
+        ChannelAgentRemarkFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_channel_agent_remark_by_collaborator() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_agent_permissions(&[ChannelActionPermission::AgentRemark])
+            .setup();
+        ChannelAgentRemarkFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_channel_agent_remark_by_owner_member() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        ChannelAgentRemarkFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Ok(()));
+    })
+}
+
+///////////////////////////////////////////////////////////////////
+/////// Channel agent / owner permissions - TransferChannel ///////
+///////////////////////////////////////////////////////////////////
+
+// Curator channels
+
+#[test]
+fn unsuccessful_channel_transfer_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::TransferChannel])
+            .setup();
+        UpdateChannelTransferStatusFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_transfer_by_curator_agent() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_agent_permissions(&[ChannelActionPermission::TransferChannel])
+            .setup();
+        UpdateChannelTransferStatusFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_channel_transfer_by_lead() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel().setup();
+        UpdateChannelTransferStatusFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Ok(()));
+    })
+}
+
+// Member channels
+
+#[test]
+fn unsuccessful_channel_transfer_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::TransferChannel])
+            .setup();
+        UpdateChannelTransferStatusFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_channel_transfer_by_collaborator() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_agent_permissions(&[ChannelActionPermission::TransferChannel])
+            .setup();
+        UpdateChannelTransferStatusFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_channel_transfer_by_owner_member() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        UpdateChannelTransferStatusFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Ok(()));
+    })
+}
+
+//////////////////////////////////////////////////////////////////////
+/////// Channel agent / owner permissions - ClaimChannelReward ///////
+//////////////////////////////////////////////////////////////////////
+
+// Curator channels
+
+#[test]
+fn unsuccessful_channel_reward_claim_by_curator_agent_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_claimable_reward()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ClaimChannelReward])
+            .setup();
+        ClaimChannelRewardFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_channel_reward_claim_by_curator_agent() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_claimable_reward()
+            .with_agent_permissions(&[ChannelActionPermission::ClaimChannelReward])
+            .setup();
+        ClaimChannelRewardFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_channel_reward_claim_by_lead() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_claimable_reward()
+            .setup();
+        ClaimChannelRewardFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Ok(()));
+    })
+}
+
+// Member channels
+
+#[test]
+fn unsuccessful_channel_reward_claim_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_claimable_reward()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ClaimChannelReward])
+            .setup();
+        ClaimChannelRewardFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_channel_reward_claim_by_collaborator() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_claimable_reward()
+            .with_agent_permissions(&[ChannelActionPermission::ClaimChannelReward])
+            .setup();
+        ClaimChannelRewardFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_channel_reward_claim_by_owner_member() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_claimable_reward()
+            .setup();
+        ClaimChannelRewardFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Ok(()));
     })
 }
