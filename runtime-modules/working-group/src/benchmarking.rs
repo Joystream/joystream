@@ -801,7 +801,7 @@ benchmarks_instance! {
 
         let (account_id, member_id) = member_funded_account::<T, I>("member", 0);
 
-    }: _ (RawOrigin::Signed(account_id.clone()), member_id.clone(), amount, Vec::new())
+    }: _ (RawOrigin::Signed(account_id.clone()), member_id, amount, Vec::new())
     verify {
         assert_eq!(WorkingGroup::<T, I>::budget(), amount, "Budget not updated");
         assert_last_event::<T, I>(
