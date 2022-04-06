@@ -83,7 +83,7 @@ fn buy_nft() {
         // Last event checked
         assert_event(
             MetaEvent::content(RawEvent::NftBought(video_id, SECOND_MEMBER_ID)),
-            number_of_events_before_call + 3,
+            number_of_events_before_call + 4,
         );
     })
 }

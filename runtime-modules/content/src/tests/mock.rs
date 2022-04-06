@@ -310,6 +310,8 @@ impl storage::Trait for Test {
     type MaxDataObjectSize = MaxDataObjectSize;
     type StorageWorkingGroup = StorageWG;
     type DistributionWorkingGroup = DistributionWG;
+    type WeightInfo = ();
+    type ModuleAccountInitialBalance = ExistentialDeposit;
 }
 
 // Anyone can upload and delete without restriction
@@ -516,7 +518,7 @@ pub fn get_open_auction_params() -> OpenAuctionParams<Test> {
 // membership trait implementation and related stuff
 
 parameter_types! {
-    pub const ExistentialDeposit: u32 = 0;
+    pub const ExistentialDeposit: u32 = 1;
     pub const DefaultMembershipPrice: u64 = 100;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
     pub const StakingCandidateLockId: [u8; 8] = [3; 8];

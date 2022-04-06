@@ -299,8 +299,6 @@ pub struct VideoCreationParametersRecord<StorageAssets, NftIssuanceParameters, B
     pub assets: Option<StorageAssets>,
     /// Metadata for the video.
     pub meta: Option<Vec<u8>>,
-    /// Comments enabled or not
-    pub enable_comments: bool,
     /// Parameters for issuing video Nft
     pub auto_issue_nft: Option<NftIssuanceParameters>,
     /// Commitment for the data object deletion prize for the storage pallet.
@@ -325,8 +323,6 @@ pub struct VideoUpdateParametersRecord<
     pub new_meta: Option<Vec<u8>>,
     /// video assets to be removed from channel
     pub assets_to_remove: BTreeSet<DataObjectId>,
-    /// If set enable/disable comments to video
-    pub enable_comments: Option<bool>,
     /// Parameters for updating Nft along with video
     pub auto_issue_nft: Option<NftIssuanceParameters>,
     /// Commitment for the data object deletion prize for the storage pallet.

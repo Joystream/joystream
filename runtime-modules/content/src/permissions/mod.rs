@@ -313,74 +313,6 @@ pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
     Ok(())
 }
 
-// POST RELATED PERMISSIONS
-
-// Ensure actor can add a comment
-pub fn ensure_actor_authorized_to_add_comment<T: Trait>(
-    sender: &T::AccountId,
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-) -> DispatchResult {
-    ensure_actor_auth_success::<T>(sender, actor)
-}
-
-// Ensure actor can add a video post
-pub fn ensure_actor_authorized_to_add_video_post<T: Trait>(
-    sender: &T::AccountId,
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
-) -> DispatchResult {
-    ensure_actor_auth_success::<T>(sender, actor)?;
-    ensure_actor_is_channel_owner::<T>(actor, owner)
-}
-
-// Ensure actor can edit a video post description
-pub fn ensure_actor_authorized_to_edit_video_post<T: Trait>(
-    sender: &T::AccountId,
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
-) -> DispatchResult {
-    ensure_actor_auth_success::<T>(sender, actor)?;
-    ensure_actor_is_channel_owner::<T>(actor, owner)
-}
-
-// Ensure actor can edit a post comment text
-pub fn ensure_actor_authorized_to_edit_comment<T: Trait>(
-    sender: &T::AccountId,
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    post: &VideoPost<T>,
-) -> DispatchResult {
-    ensure_actor_auth_success::<T>(sender, actor)?;
-    ensure_actor_is_comment_author::<T>(actor, &post.author)
-}
-
-// Ensure actor can create post: same rules as if he is trying to update channel
-pub fn ensure_actor_authorized_to_remove_comment<T: Trait>(
-    sender: &T::AccountId,
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    channel: &Channel<T>,
-    post: &VideoPost<T>,
-) -> Result<CleanupActor, DispatchError> {
-    ensure_actor_auth_success::<T>(sender, actor)?;
-    let actor_is_owner = ensure_actor_is_channel_owner::<T>(actor, &channel.owner)
-        .map(|_| CleanupActor::ChannelOwner);
-    let actor_is_author = ensure_actor_is_comment_author::<T>(actor, &post.author)
-        .map(|_| CleanupActor::VideoPostAuthor);
-    let actor_is_moderator =
-        ensure_actor_is_moderator::<T>(actor, &channel.moderators).map(|_| CleanupActor::Moderator);
-
-    actor_is_author.or(actor_is_owner).or(actor_is_moderator)
-}
-
-// Ensure actor can create post: same rules as if he is trying to update channel
-pub fn ensure_actor_authorized_to_remove_video_post<T: Trait>(
-    sender: &T::AccountId,
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    channel: &Channel<T>,
-) -> DispatchResult {
-    ensure_actor_auth_success::<T>(sender, actor)?;
-    ensure_actor_is_channel_owner::<T>(actor, &channel.owner)
-}
-
 // Ensure actor is a moderator
 pub fn ensure_actor_is_moderator<T: Trait>(
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -395,14 +327,6 @@ pub fn ensure_actor_is_moderator<T: Trait>(
     } else {
         Err(Error::<T>::ActorNotAuthorized.into())
     }
-}
-// Ensure actor is comment author
-pub fn ensure_actor_is_comment_author<T: Trait>(
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    author: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-) -> DispatchResult {
-    ensure!(actor == author, Error::<T>::ActorNotAuthorized);
-    Ok(())
 }
 
 pub fn actor_to_channel_owner<T: Trait>(

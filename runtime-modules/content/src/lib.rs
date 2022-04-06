@@ -2525,7 +2525,6 @@ decl_event!(
         ChannelUpdateParameters = ChannelUpdateParameters<T>,
         VideoCreationParameters = VideoCreationParameters<T>,
         VideoUpdateParameters = VideoUpdateParameters<T>,
-        ReactionId = <T as Trait>::ReactionId,
         ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
         Hash = <T as frame_system::Trait>::Hash,
         ChannelPrivilegeLevel = <T as Trait>::ChannelPrivilegeLevel,
@@ -2640,7 +2639,7 @@ decl_event!(
         NftSellOrderMade(VideoId, ContentActor, Balance),
         NftBought(VideoId, MemberId),
         BuyNowCanceled(VideoId, ContentActor),
-        BnuyNowPriceUpdated(VideoId, ContentActor, Balance),
+        BuyNowPriceUpdated(VideoId, ContentActor, Balance),
         NftSlingedBackToTheOriginalArtist(VideoId, ContentActor),
 
         // Metaprotocols related event
