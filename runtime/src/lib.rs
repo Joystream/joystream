@@ -504,6 +504,7 @@ impl content::Trait for Runtime {
     type MemberAuthenticator = Members;
     type MaxKeysPerCuratorGroupPermissionsByLevelMap = MaxKeysPerCuratorGroupPermissionsByLevelMap;
     type ChannelPrivilegeLevel = ChannelPrivilegeLevel;
+    type ContentWorkingGroup = ContentWorkingGroup;
 }
 
 // The referendum instance alias.

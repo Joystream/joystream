@@ -28,7 +28,9 @@ pub use storage::{
 };
 
 pub use common::{
-    currency::GovernanceCurrency, membership::MembershipInfoProvider, working_group::WorkingGroup,
+    currency::GovernanceCurrency,
+    membership::MembershipInfoProvider,
+    working_group::{WorkingGroup, WorkingGroupBudgetHandler},
     MembershipTypes, StorageOwnership, Url,
 };
 use frame_support::{
@@ -52,6 +54,7 @@ use sp_runtime::{
     ModuleId,
 };
 use sp_std::{collections::btree_set::BTreeSet, vec::Vec};
+
 /// Module configuration trait for Content Directory Module
 pub trait Trait:
     frame_system::Trait
@@ -122,6 +125,9 @@ pub trait Trait:
         + Copy
         + MaybeSerializeDeserialize
         + PartialEq;
+
+    /// Content working group pallet integration.
+    type ContentWorkingGroup: common::working_group::WorkingGroupBudgetHandler<Self>;
 }
 
 decl_storage! {
@@ -2321,33 +2327,36 @@ decl_module! {
             commitment_params: TransferParameters<T::MemberId, BalanceOf<T>>
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
-            ensure_actor_authorized_to_accept_channel::<T>(origin, &actor, &channel.owner)?;
 
-            if let ChannelTransferStatus::PendingTransfer(ref params) = channel.transfer_status {
-                ensure!(
-                    params.transfer_params == commitment_params,
-                    Error::<T>::InvalidChannelTransferCommitmentParams
-                );
-            } else {
-                return Err(Error::<T>::InvalidChannelTransferStatus.into())
-            }
+            let params =
+                if let ChannelTransferStatus::PendingTransfer(ref params) =channel.transfer_status {
+                    ensure_actor_authorized_to_accept_channel::<T>(origin, &actor, &params.new_owner)?;
+                    Self::validate_channel_transfer_acceptance(&actor, &commitment_params, params)?;
+
+                    params
+                } else {
+                    return Err(Error::<T>::InvalidChannelTransferStatus.into());
+                };
+
+            let new_owner = actor_to_channel_owner::<T>(&actor)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            if let ChannelTransferStatus::PendingTransfer(params) = channel.transfer_status {
-                ChannelById::<T>::mutate(&channel_id, |channel| {
-                    channel.transfer_status = ChannelTransferStatus::NoActiveTransfer;
-                    channel.owner = params.new_owner.clone();
-                });
-
-                Self::deposit_event(
-                    RawEvent::ChannelTransferAccepted(channel_id, actor, commitment_params)
-                );
+            if !params.transfer_params.is_free_of_charge() {
+                Self::pay_for_channel_swap(&channel.owner, &new_owner, commitment_params.price)?;
             }
-        }
 
+            ChannelById::<T>::mutate(&channel_id, |channel| {
+                channel.transfer_status = ChannelTransferStatus::NoActiveTransfer;
+                channel.owner = params.new_owner.clone();
+            });
+
+            Self::deposit_event(
+                RawEvent::ChannelTransferAccepted(channel_id, actor, commitment_params)
+            );
+        }
     }
 }
 
@@ -2723,6 +2732,91 @@ impl<T: Trait> Module<T> {
             .difference(&ids_to_remove)
             .cloned()
             .collect::<BTreeSet<_>>()
+    }
+
+    fn ensure_sufficient_balance_for_channel_transfer(
+        owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
+        transfer_cost: BalanceOf<T>,
+    ) -> DispatchResult {
+        let balance = match owner {
+            ChannelOwner::Member(member_id) => {
+                let controller_account_id =
+                    T::MemberAuthenticator::controller_account_id(*member_id)?;
+
+                // Funds received from the member invitation cannot be used!!
+                Balances::<T>::usable_balance(&controller_account_id)
+            }
+            ChannelOwner::CuratorGroup(_) => T::ContentWorkingGroup::get_budget(),
+        };
+
+        ensure!(
+            balance >= transfer_cost,
+            Error::<T>::InsufficientBalanceForTransfer
+        );
+        Ok(())
+    }
+
+    // Validates channel transfer acceptance parameters: commitment params, new owner balance.
+    fn validate_channel_transfer_acceptance(
+        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        commitment_params: &TransferParameters<T::MemberId, BalanceOf<T>>,
+        params: &PendingTransfer<T::MemberId, T::CuratorGroupId, BalanceOf<T>>,
+    ) -> DispatchResult {
+        ensure!(
+            params.transfer_params == *commitment_params,
+            Error::<T>::InvalidChannelTransferCommitmentParams
+        );
+
+        // Check for new owner balance only if the transfer is not free.
+        if !params.transfer_params.is_free_of_charge() {
+            let owner = actor_to_channel_owner::<T>(actor)?;
+
+            Self::ensure_sufficient_balance_for_channel_transfer(
+                &owner,
+                params.transfer_params.price,
+            )?;
+        }
+
+        Ok(())
+    }
+    // Transfers balance from the new channel owner to the old channel owner.
+    fn pay_for_channel_swap(
+        old_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
+        new_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
+        price: BalanceOf<T>,
+    ) -> DispatchResult {
+        // Decrease (or slash) balance for the new owner
+        match new_owner {
+            ChannelOwner::Member(member_id) => {
+                let controller_account_id =
+                    T::MemberAuthenticator::controller_account_id(*member_id)?;
+
+                let _ = Balances::<T>::slash(&controller_account_id, price);
+            }
+            ChannelOwner::CuratorGroup(_) => {
+                // The budget is sufficient. It was checked previously in functions:
+                // validate_channel_transfer_acceptance() ->
+                // ensure_sufficient_balance_for_channel_transfer()
+                let new_budget = T::ContentWorkingGroup::get_budget().saturating_sub(price);
+                T::ContentWorkingGroup::set_budget(new_budget);
+            }
+        };
+
+        // Increase (deposit) balance for the old owner
+        match old_owner {
+            ChannelOwner::Member(member_id) => {
+                let controller_account_id =
+                    T::MemberAuthenticator::controller_account_id(*member_id)?;
+
+                let _ = Balances::<T>::deposit_creating(&controller_account_id, price);
+            }
+            ChannelOwner::CuratorGroup(_) => {
+                let new_budget = T::ContentWorkingGroup::get_budget().saturating_add(price);
+                T::ContentWorkingGroup::set_budget(new_budget);
+            }
+        };
+
+        Ok(())
     }
 }
 

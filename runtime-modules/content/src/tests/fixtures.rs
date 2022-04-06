@@ -2159,16 +2159,19 @@ impl UpdateChannelTransferStatusFixture {
     }
 
     pub fn with_collaborators(self, new_collaborators: BTreeSet<MemberId>) -> Self {
-        Self {
-            transfer_status: ChannelTransferStatus::PendingTransfer(PendingTransfer {
-                transfer_params: TransferParameters {
-                    new_collaborators,
-                    ..Default::default()
-                },
-                ..Default::default()
-            }),
-            ..self
-        }
+        let old_transfer_params = self.get_transfer_params();
+        self.with_transfer_parameters(TransferParameters {
+            new_collaborators,
+            ..old_transfer_params
+        })
+    }
+
+    pub fn with_price(self, price: u64) -> Self {
+        let old_transfer_params = self.get_transfer_params();
+        self.with_transfer_parameters(TransferParameters {
+            price,
+            ..old_transfer_params
+        })
     }
 
     pub fn with_transfer_status(
@@ -2181,18 +2184,65 @@ impl UpdateChannelTransferStatusFixture {
         }
     }
 
-    pub fn with_transfer_status_by_member_id(self, member_id: MemberId) -> Self {
-        Self {
-            transfer_status: ChannelTransferStatus::PendingTransfer(PendingTransfer::<
-                MemberId,
-                CuratorGroupId,
-                BalanceOf<Test>,
-            > {
-                new_owner: ChannelOwner::Member(member_id),
-                ..Default::default()
-            }),
-            ..self
+    pub fn with_new_member_channel_owner(self, member_id: MemberId) -> Self {
+        let old_pending_transfer_params = self.get_pending_transfer_params();
+        self.with_transfer_status(ChannelTransferStatus::PendingTransfer(PendingTransfer::<
+            MemberId,
+            CuratorGroupId,
+            BalanceOf<Test>,
+        > {
+            new_owner: ChannelOwner::Member(member_id),
+            ..old_pending_transfer_params
+        }))
+    }
+
+    pub fn with_new_channel_owner(self, owner: ChannelOwner<MemberId, CuratorGroupId>) -> Self {
+        let old_pending_transfer_params = self.get_pending_transfer_params();
+        self.with_transfer_status(ChannelTransferStatus::PendingTransfer(PendingTransfer::<
+            MemberId,
+            CuratorGroupId,
+            BalanceOf<Test>,
+        > {
+            new_owner: owner,
+            ..old_pending_transfer_params
+        }))
+    }
+
+    fn get_pending_transfer_params(
+        &self,
+    ) -> PendingTransfer<MemberId, CuratorGroupId, BalanceOf<Test>> {
+        if let ChannelTransferStatus::PendingTransfer(transfer_status) =
+            self.transfer_status.clone()
+        {
+            transfer_status
+        } else {
+            Default::default()
         }
+    }
+
+    fn get_transfer_params(&self) -> TransferParameters<MemberId, BalanceOf<Test>> {
+        if let ChannelTransferStatus::PendingTransfer(transfer_status) =
+            self.transfer_status.clone()
+        {
+            transfer_status.transfer_params
+        } else {
+            Default::default()
+        }
+    }
+
+    pub fn with_transfer_parameters(
+        self,
+        transfer_params: TransferParameters<MemberId, BalanceOf<Test>>,
+    ) -> Self {
+        let old_pending_transfer_params = self.get_pending_transfer_params();
+        self.with_transfer_status(ChannelTransferStatus::PendingTransfer(PendingTransfer::<
+            MemberId,
+            CuratorGroupId,
+            BalanceOf<Test>,
+        > {
+            transfer_params,
+            ..old_pending_transfer_params
+        }))
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -2258,6 +2308,14 @@ impl AcceptChannelTransferFixture {
         params: TransferParameters<MemberId, BalanceOf<Test>>,
     ) -> Self {
         Self { params, ..self }
+    }
+
+    pub fn with_price(self, price: u64) -> Self {
+        let old_transfer_params = self.params.clone();
+        self.with_transfer_params(TransferParameters {
+            price,
+            ..old_transfer_params
+        })
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
