@@ -712,7 +712,7 @@ export async function contentNft_AuctionBidCanceled({ event, store }: EventConte
   )
 
   // retrieve relevant bid
-  const bid = (auction.bids || []).find((bid) => bid.bidder.id.toString() === memberId.toString())
+  const bid = (auction.bids || []).find((bid) => !bid.isCanceled && bid.bidder.id.toString() === memberId.toString())
 
   // ensure bid exists
   if (!bid) {
