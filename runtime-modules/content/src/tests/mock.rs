@@ -26,7 +26,6 @@ pub type HashOutput = <Test as frame_system::Trait>::Hash;
 pub type Hashing = <Test as frame_system::Trait>::Hashing;
 pub type AccountId = <Test as frame_system::Trait>::AccountId;
 pub type VideoId = <Test as Trait>::VideoId;
-pub type VideoPostId = <Test as Trait>::VideoPostId;
 pub type CuratorId = <Test as ContentActorAuthenticator>::CuratorId;
 pub type CuratorGroupId = <Test as ContentActorAuthenticator>::CuratorGroupId;
 pub type MemberId = <Test as MembershipTypes>::MemberId;
@@ -309,10 +308,8 @@ impl storage::Trait for Test {
         MaxNumberOfPendingInvitationsPerDistributionBucket;
     type ContentId = u64;
     type MaxDataObjectSize = MaxDataObjectSize;
-    type WeightInfo = ();
     type StorageWorkingGroup = StorageWG;
     type DistributionWorkingGroup = DistributionWG;
-    type ModuleAccountInitialBalance = ExistentialDeposit;
 }
 
 // Anyone can upload and delete without restriction
@@ -350,30 +347,16 @@ impl Trait for Test {
     /// The data object used in storage
     type DataObjectStorage = storage::Module<Self>;
 
-    /// VideoPostId Type
-    type VideoPostId = u64;
-
-    /// VideoPost Reaction Type
-    type ReactionId = u64;
-
     /// moderators limit
     type MaxModerators = MaxModerators;
 
     /// price per byte
     type PricePerByte = PricePerByte;
 
-    /// cleanup margin
-    type CleanupMargin = CleanupMargin;
-
-    /// bloat bond cap
-    type BloatBondCap = BloatBondCap;
-
-    /// cleanup cost
-    type CleanupCost = CleanupCost;
-
     /// module id
     type ModuleId = ContentModuleId;
 
+    /// Bag deletion prize for channel bag
     type BagDeletionPrize = BagDeletionPrize;
 
     /// membership info provider
@@ -412,7 +395,6 @@ pub struct ExtBuilder {
     next_channel_id: u64,
     next_video_id: u64,
     next_curator_group_id: u64,
-    next_video_post_id: u64,
     max_reward_allowed: BalanceOf<Test>,
     min_cashout_allowed: BalanceOf<Test>,
     min_auction_duration: u64,
@@ -440,7 +422,6 @@ impl Default for ExtBuilder {
             next_channel_id: 1,
             next_video_id: 1,
             next_curator_group_id: 1,
-            next_video_post_id: 1,
             max_reward_allowed: BalanceOf::<Test>::from(1_000u32),
             min_cashout_allowed: BalanceOf::<Test>::from(1u32),
             min_auction_duration: 5,
@@ -474,7 +455,6 @@ impl ExtBuilder {
             next_channel_id: self.next_channel_id,
             next_video_id: self.next_video_id,
             next_curator_group_id: self.next_curator_group_id,
-            next_video_post_id: self.next_video_post_id,
             max_reward_allowed: self.max_reward_allowed,
             min_cashout_allowed: self.min_cashout_allowed,
             min_auction_duration: self.min_auction_duration,
