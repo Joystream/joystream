@@ -2379,12 +2379,15 @@ decl_module! {
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            if let ChannelTransferStatus::PendingTransfer(ref params) = channel.transfer_status {
-                ensure_actor_authorized_to_accept_channel::<T>(origin, &actor, &params.new_owner)?;
-                Self::validate_channel_transfer_acceptance(&actor, &commitment_params, params)?;
-            } else {
-                return Err(Error::<T>::InvalidChannelTransferStatus.into());
-            }
+            let params =
+                if let ChannelTransferStatus::PendingTransfer(ref params) =channel.transfer_status {
+                    ensure_actor_authorized_to_accept_channel::<T>(origin, &actor, &params.new_owner)?;
+                    Self::validate_channel_transfer_acceptance(&actor, &commitment_params, params)?;
+
+                    params
+                } else {
+                    return Err(Error::<T>::InvalidChannelTransferStatus.into());
+                };
 
             let new_owner = actor_to_channel_owner::<T>(&actor)?;
 
@@ -2392,22 +2395,19 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            if let ChannelTransferStatus::PendingTransfer(params) = channel.transfer_status {
-                if !params.transfer_params.is_free_of_charge() {
-                    Self::pay_for_channel_swap(&channel.owner, &new_owner, commitment_params.price)?;
-                }
-
-                ChannelById::<T>::mutate(&channel_id, |channel| {
-                    channel.transfer_status = ChannelTransferStatus::NoActiveTransfer;
-                    channel.owner = params.new_owner.clone();
-                });
-
-                Self::deposit_event(
-                    RawEvent::ChannelTransferAccepted(channel_id, actor, commitment_params)
-                );
+            if !params.transfer_params.is_free_of_charge() {
+                Self::pay_for_channel_swap(&channel.owner, &new_owner, commitment_params.price)?;
             }
-        }
 
+            ChannelById::<T>::mutate(&channel_id, |channel| {
+                channel.transfer_status = ChannelTransferStatus::NoActiveTransfer;
+                channel.owner = params.new_owner.clone();
+            });
+
+            Self::deposit_event(
+                RawEvent::ChannelTransferAccepted(channel_id, actor, commitment_params)
+            );
+        }
     }
 }
 
@@ -2800,6 +2800,7 @@ impl<T: Trait> Module<T> {
                 let controller_account_id =
                     T::MemberAuthenticator::controller_account_id(*member_id)?;
 
+                // Funds received from the member invitation cannot be used!!
                 Balances::<T>::usable_balance(&controller_account_id)
             }
             ChannelOwner::CuratorGroup(_) => T::ContentWorkingGroup::get_budget(),
@@ -2850,6 +2851,9 @@ impl<T: Trait> Module<T> {
                 let _ = Balances::<T>::slash(&controller_account_id, price);
             }
             ChannelOwner::CuratorGroup(_) => {
+                // The budget is sufficient. It was checked previously in functions:
+                // validate_channel_transfer_acceptance() ->
+                // ensure_sufficient_balance_for_channel_transfer()
                 let new_budget = T::ContentWorkingGroup::get_budget().saturating_sub(price);
                 T::ContentWorkingGroup::set_budget(new_budget);
             }
