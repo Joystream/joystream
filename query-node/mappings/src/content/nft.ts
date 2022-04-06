@@ -124,10 +124,10 @@ async function getNftFromVideo(
     relations ? relations.concat(['nft']) : ['nft']
   )
 
-  // get auction
+  // get nft
   const nft = video.nft
 
-  // ensure auction exists
+  // ensure nft exists
   if (!nft) {
     return inconsistentState(errorMessageForNft, videoId)
   }
@@ -292,6 +292,8 @@ async function finishAuction(
 
   // load winner member
   const winnerMemberId = winningBid.bidder.id
+  // load bid amount for which NFT is bought
+  const boughtPrice = winningBid.amount
   const winner = await getRequiredExistingEntity(
     store,
     Membership,
@@ -316,7 +318,7 @@ async function finishAuction(
   // save auction
   await store.save<Auction>(auction)
 
-  return { video, winner }
+  return { video, winner, boughtPrice }
 }
 
 async function createBid(
@@ -836,8 +838,12 @@ export async function contentNft_BidMadeCompletingAuction({
   // create record for winning bid
   const { previousTopBid } = await createBid(event, store, memberId.toNumber(), videoId.toNumber())
 
-  // winish auction and transfer ownership
-  const { winner: member, video } = await finishAuction(store, videoId.toNumber(), event.blockNumber)
+  // finish auction and transfer ownership
+  const { winner: member, video, boughtPrice: price } = await finishAuction(
+    store,
+    videoId.toNumber(),
+    event.blockNumber
+  )
 
   // common event processing - second
 
@@ -846,6 +852,7 @@ export async function contentNft_BidMadeCompletingAuction({
 
     member,
     video,
+    price,
     previousTopBid,
   })
 
@@ -928,6 +935,8 @@ export async function contentNft_OfferAccepted({ event, store }: EventContext & 
 
   // read member from offer
   const memberId = (nft.transactionalStatus as TransactionalStatusInitiatedOfferToMember).memberId
+  // read price from offer
+  const price = (nft.transactionalStatus as TransactionalStatusInitiatedOfferToMember).price
   const member = new Membership({ id: memberId.toString() })
 
   // update NFT's transactional status
@@ -945,6 +954,7 @@ export async function contentNft_OfferAccepted({ event, store }: EventContext & 
     ...genericEventFields(event),
 
     video,
+    price,
   })
 
   await store.save<OfferAcceptedEvent>(announcingPeriodStartedEvent)
@@ -1026,7 +1036,10 @@ export async function contentNft_NftBought({ event, store }: EventContext & Stor
   // specific event processing
 
   // load video
-  const video = await getRequiredExistingEntity(store, Video, videoId.toString(), 'Non-existing video was bought')
+  const {
+    video,
+    nft: { transactionalStatus },
+  } = await getNftFromVideo(store, videoId.toString(), 'Non-existing video was bought', 'Non-existing NFT was bought')
 
   // read member
   const winner = new Membership({ id: memberId.toString() })
@@ -1047,6 +1060,7 @@ export async function contentNft_NftBought({ event, store }: EventContext & Stor
 
     video,
     member: winner,
+    price: (transactionalStatus as TransactionalStatusBuyNow).price,
   })
 
   await store.save<NftBoughtEvent>(announcingPeriodStartedEvent)
