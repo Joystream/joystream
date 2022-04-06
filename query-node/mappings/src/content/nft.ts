@@ -351,9 +351,11 @@ async function createBid(
   )
 
   // cancel any previous bids done by same member
+  const cancelledBidsIds: string[] = []
   for (const bid of auction.bids || []) {
     if (!bid.isCanceled && bid.bidder.id.toString() === memberId.toString()) {
       bid.isCanceled = true
+      cancelledBidsIds.push(bid.id)
 
       await store.save<Bid>(bid)
     }
@@ -373,8 +375,17 @@ async function createBid(
     isCanceled: false,
   })
 
+  // if the auction has no top bid or the new bid is higher, use the new bid
   if (!auction.topBid || auction.topBid.amount.lt(bid.amount)) {
     bid.auctionTopBid = auction
+  } else if (cancelledBidsIds.includes(auction.topBid.id)) {
+    // current top bid got cancelled, need to update it
+    const bidsList = [...(auction.bids || []), bid]
+    const newTopBid = findTopBid(bidsList)
+    if (newTopBid) {
+      newTopBid.auctionTopBid = auction
+      await store.save<Bid>(newTopBid)
+    }
   }
 
   await store.save<Bid>(bid)
@@ -432,6 +443,30 @@ export async function createNft(
   await setNewNftTransactionalStatus(store, nft, transactionalStatus, blockNumber)
 
   return nft
+}
+
+function findTopBid(bids: Bid[]): Bid | undefined {
+  return bids.reduce((topBid, bid) => {
+    if (bid.isCanceled) {
+      return topBid
+    }
+
+    if (!topBid) {
+      return bid
+    }
+
+    if (topBid.amount.gt(bid.amount)) {
+      return topBid
+    }
+    if (topBid.amount.lt(bid.amount)) {
+      return bid
+    }
+    // bids are equal, use the oldest one
+    return topBid.createdInBlock < bid.createdInBlock ||
+      (topBid.createdInBlock === bid.createdInBlock && topBid.indexInBlock < bid.indexInBlock)
+      ? topBid
+      : bid
+  }, undefined as Bid | undefined)
 }
 
 async function createAuction(
@@ -728,22 +763,7 @@ export async function contentNft_AuctionBidCanceled({ event, store }: EventConte
 
   if (auction.topBid && bid.id.toString() === auction.topBid.id.toString()) {
     // find new top bid
-    auction.topBid = (auction.bids || []).reduce((acc, bid) => {
-      if (bid.isCanceled) {
-        return acc
-      }
-
-      if (!acc) {
-        return bid
-      }
-
-      if (acc.amount.eq(bid.amount)) {
-        return acc.createdInBlock < bid.createdInBlock ||
-          (acc.createdInBlock === bid.createdInBlock && acc.indexInBlock < bid.indexInBlock)
-          ? acc
-          : bid
-      }
-    }, undefined as Bid | undefined)
+    auction.topBid = findTopBid(auction.bids || [])
 
     // save auction
     await store.save<Auction>(auction)
