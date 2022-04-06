@@ -81,9 +81,6 @@ pub trait Trait:
     /// The storage type used
     type DataObjectStorage: storage::DataObjectStorage<Self>;
 
-    /// Max Number of moderators
-    type MaxModerators: Get<u64>;
-
     /// Price per byte
     type PricePerByte: Get<<Self as balances::Trait>::Balance>;
 
@@ -380,8 +377,7 @@ decl_module! {
                 &actor,
             )?;
 
-            // ensure collaborator & moderator member ids are valid
-            Self::validate_member_set(&params.moderators)?;
+            // ensure collaborator member ids are valid
             Self::validate_member_set(&params.collaborators)?;
 
             // The channel owner will be..
@@ -420,7 +416,6 @@ decl_module! {
                 owner: channel_owner,
                 num_videos: 0u64,
                 collaborators: params.collaborators.clone(),
-                moderators: params.moderators.clone(),
                 cumulative_payout_earned: BalanceOf::<T>::zero(),
                 transfer_status: ChannelTransferStatus::NoActiveTransfer,
                 privilege_level: Zero::zero(),
@@ -1074,41 +1069,6 @@ decl_module! {
             Self::deposit_event(RawEvent::VideoVisibilitySetByModerator(actor, video_id, is_hidden, rationale));
 
             Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        fn update_moderator_set(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            new_moderators: BTreeSet<T::MemberId>,
-            channel_id: T::ChannelId
-        ) {
-            // ensure (origin, actor) is channel owner
-            let sender = ensure_signed(origin)?;
-            let channel = Self::ensure_channel_exists(&channel_id)?;
-            channel.ensure_has_no_active_transfer::<T>()?;
-
-            let owner = channel.owner;
-
-            ensure_actor_can_manage_moderators::<T>(
-                &sender,
-                &owner,
-                &actor,
-            )?;
-
-            Self::validate_member_set(&new_moderators)?;
-
-            //
-            // == MUTATION_SAFE ==
-            //
-
-            <ChannelById<T>>::mutate(channel_id, |x| x.moderators = new_moderators.clone());
-
-            Self::deposit_event(
-                RawEvent::ModeratorSetUpdated(
-                    channel_id,
-                    new_moderators
-                ));
         }
 
         #[weight = 10_000_000] // TODO: adjust Weight
@@ -2020,21 +1980,6 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelCollaboratorRemarked(actor, channel_id, msg));
         }
 
-        /// Channel moderator remark
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn channel_moderator_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, channel_id: T::ChannelId, msg: Vec<u8>) {
-            let sender = ensure_signed(origin)?;
-            let channel = Self::ensure_channel_exists(&channel_id)?;
-            ensure_actor_auth_success::<T>(&sender, &actor)?;
-            ensure_actor_is_moderator::<T>(&actor, &channel.moderators)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            Self::deposit_event(RawEvent::ChannelModeratorRemarked(actor, channel_id, msg));
-        }
-
         /// NFT owner remark
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn nft_owner_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, video_id: T::VideoId, msg: Vec<u8>) {
@@ -2525,7 +2470,6 @@ decl_event!(
         ChannelUpdateParameters = ChannelUpdateParameters<T>,
         VideoCreationParameters = VideoCreationParameters<T>,
         VideoUpdateParameters = VideoUpdateParameters<T>,
-        ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
         Hash = <T as frame_system::Trait>::Hash,
         ChannelPrivilegeLevel = <T as Trait>::ChannelPrivilegeLevel,
         ModerationPermissionsByLevel = ModerationPermissionsByLevel<T>,
@@ -2613,9 +2557,6 @@ decl_event!(
             Vec<u8>, /* rationale */
         ),
 
-        // Moderator set updated
-        ModeratorSetUpdated(ChannelId, ModeratorSet),
-
         // Rewards
         CommitmentUpdated(Hash),
         ChannelRewardUpdated(Balance, ChannelId),
@@ -2645,7 +2586,6 @@ decl_event!(
         // Metaprotocols related event
         ChannelOwnerRemarked(ContentActor, ChannelId, Vec<u8>),
         ChannelCollaboratorRemarked(ContentActor, ChannelId, Vec<u8>),
-        ChannelModeratorRemarked(ContentActor, ChannelId, Vec<u8>),
         NftOwnerRemarked(ContentActor, VideoId, Vec<u8>),
 
         // Channel transfer

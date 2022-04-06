@@ -70,8 +70,6 @@ pub struct ChannelRecord<
     pub num_videos: u64,
     /// collaborator set
     pub collaborators: BTreeSet<MemberId>,
-    /// moderator set
-    pub moderators: BTreeSet<MemberId>,
     /// Cumulative cashout
     pub cumulative_payout_earned: Balance,
     /// Privilege level (curators will have different moderation permissions w.r.t. this channel depending on this value)
@@ -211,8 +209,6 @@ pub struct ChannelCreationParametersRecord<
     pub meta: Option<Vec<u8>>,
     /// initial collaborator set
     pub collaborators: BTreeSet<MemberId>,
-    /// initial moderator set
-    pub moderators: BTreeSet<MemberId>,
     /// Storage buckets to assign to a bag.
     pub storage_buckets: BTreeSet<StorageBucketId>,
     /// Distribution buckets to assign to a bag.

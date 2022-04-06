@@ -311,7 +311,7 @@ impl storage::Trait for Test {
     type StorageWorkingGroup = StorageWG;
     type DistributionWorkingGroup = DistributionWG;
     type WeightInfo = ();
-    type ModuleAccountInitialBalance = ExistentialDeposit;
+    type ModuleAccountInitialBalance = ModuleAccountInitialBalance;
 }
 
 // Anyone can upload and delete without restriction
@@ -325,9 +325,9 @@ parameter_types! {
     pub const CleanupCost: u32 = 1;
     pub const PricePerByte: u32 = 2;
     pub const VideoCommentsModuleId: ModuleId = ModuleId(*b"m0:forum"); // module : forum
-    pub const BloatBondCap: u32 = 1000;
     pub const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = 25;
     pub const BagDeletionPrize: u64 = BAG_DELETION_PRIZE;
+    pub const ModuleAccountInitialBalance: u64 = 1;
 }
 
 impl Trait for Test {
@@ -348,9 +348,6 @@ impl Trait for Test {
 
     /// The data object used in storage
     type DataObjectStorage = storage::Module<Self>;
-
-    /// moderators limit
-    type MaxModerators = MaxModerators;
 
     /// price per byte
     type PricePerByte = PricePerByte;
@@ -518,7 +515,7 @@ pub fn get_open_auction_params() -> OpenAuctionParams<Test> {
 // membership trait implementation and related stuff
 
 parameter_types! {
-    pub const ExistentialDeposit: u32 = 1;
+    pub const ExistentialDeposit: u32 = 0;
     pub const DefaultMembershipPrice: u64 = 100;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
     pub const StakingCandidateLockId: [u8; 8] = [3; 8];

@@ -94,7 +94,6 @@ impl CreateChannelFixture {
                 assets: None,
                 meta: None,
                 collaborators: BTreeSet::new(),
-                moderators: BTreeSet::new(),
                 storage_buckets: BTreeSet::new(),
                 distribution_buckets: BTreeSet::new(),
                 expected_dynamic_bag_deletion_prize: Default::default(),
@@ -134,16 +133,6 @@ impl CreateChannelFixture {
         Self {
             params: ChannelCreationParameters::<Test> {
                 collaborators: collaborators,
-                ..self.params
-            },
-            ..self
-        }
-    }
-
-    pub fn with_moderators(self, moderators: BTreeSet<MemberId>) -> Self {
-        Self {
-            params: ChannelCreationParameters::<Test> {
-                moderators,
                 ..self.params
             },
             ..self
@@ -208,7 +197,6 @@ impl CreateChannelFixture {
                     Channel::<Test> {
                         owner: owner,
                         collaborators: self.params.collaborators.clone(),
-                        moderators: self.params.moderators.clone(),
                         num_videos: Zero::zero(),
                         cumulative_payout_earned: Zero::zero(),
                         privilege_level: Zero::zero(),
@@ -1575,72 +1563,6 @@ impl VideoDeletion for DeleteVideoAsModeratorFixture {
     }
 }
 
-pub struct UpdateModeratorSetFixture {
-    sender: AccountId,
-    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    new_moderators: BTreeSet<MemberId>,
-    channel_id: ChannelId,
-}
-
-impl UpdateModeratorSetFixture {
-    pub fn default() -> Self {
-        Self {
-            sender: DEFAULT_MEMBER_ACCOUNT_ID,
-            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
-            new_moderators: BTreeSet::new(),
-            channel_id: ChannelId::one(),
-        }
-    }
-
-    pub fn with_moderators(self, new_moderators: BTreeSet<MemberId>) -> Self {
-        Self {
-            new_moderators,
-            ..self
-        }
-    }
-
-    pub fn with_sender(self, sender: AccountId) -> Self {
-        Self { sender, ..self }
-    }
-
-    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
-        Self { actor, ..self }
-    }
-
-    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
-        Self { channel_id, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender.clone());
-        let channel_pre = ChannelById::<Test>::get(&self.channel_id);
-
-        let actual_result = Content::update_moderator_set(
-            origin,
-            self.actor.clone(),
-            self.new_moderators.clone(),
-            self.channel_id.clone(),
-        );
-
-        assert_eq!(actual_result, expected_result);
-
-        let channel_post = ChannelById::<Test>::get(&self.channel_id);
-
-        if actual_result.is_ok() {
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::ModeratorSetUpdated(
-                    self.channel_id,
-                    self.new_moderators.clone(),
-                ))
-            );
-            assert_eq!(channel_post.moderators, self.new_moderators);
-        } else {
-            assert_eq!(channel_pre, channel_post);
-        }
-    }
-}
-
 pub struct UpdateMaximumRewardFixture {
     sender: AccountId,
     new_amount: BalanceOf<Test>,
@@ -2237,8 +2159,7 @@ pub fn create_default_member_owned_channel_with_storage_buckets(
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
             object_creation_list: create_data_objects_helper(),
         })
-        .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
-        .with_moderators(vec![DEFAULT_MODERATOR_ID].into_iter().collect());
+        .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect());
 
     if include_storage_buckets {
         set_dynamic_bag_creation_policy_for_storage_numbers(1);
@@ -2260,7 +2181,6 @@ pub fn create_default_curator_owned_channel(deletion_prize: u64) {
             object_creation_list: create_data_objects_helper(),
         })
         .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
-        .with_moderators(vec![DEFAULT_MODERATOR_ID].into_iter().collect())
         .call_and_assert(Ok(()));
 }
 

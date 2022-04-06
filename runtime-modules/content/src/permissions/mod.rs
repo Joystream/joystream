@@ -171,19 +171,6 @@ pub fn ensure_actor_can_manage_collaborators<T: Trait>(
     }
 }
 
-/// Ensure actor is authorized to manage moderator set for a channel
-pub fn ensure_actor_can_manage_moderators<T: Trait>(
-    sender: &T::AccountId,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-) -> DispatchResult {
-    ensure_actor_auth_success::<T>(sender, actor)?;
-    match actor {
-        ContentActor::Lead => ensure_channel_is_owned_by_curators::<T>(owner),
-        _ => ensure_actor_is_channel_owner::<T>(actor, owner),
-    }
-}
-
 /// Ensure actor is authorized to manage reward account for a channel
 pub fn ensure_actor_can_manage_reward_account<T: Trait>(
     sender: &T::AccountId,
@@ -311,22 +298,6 @@ pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
         return Err(Error::<T>::ActorNotAuthorized.into());
     }
     Ok(())
-}
-
-// Ensure actor is a moderator
-pub fn ensure_actor_is_moderator<T: Trait>(
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    moderators: &BTreeSet<T::MemberId>,
-) -> DispatchResult {
-    if let ContentActor::Member(member_id) = actor {
-        ensure!(
-            moderators.contains(member_id),
-            Error::<T>::ActorNotAuthorized
-        );
-        Ok(())
-    } else {
-        Err(Error::<T>::ActorNotAuthorized.into())
-    }
 }
 
 pub fn actor_to_channel_owner<T: Trait>(
