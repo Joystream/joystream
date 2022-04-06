@@ -586,7 +586,7 @@ benchmarks_instance! {
 
         let (opening_id, successful_application_ids, _) =
             add_opening_and_apply_with_multiple_ids::<T, I>(
-                &(1..i).collect::<Vec<_>>(),
+                &(1..i+1).collect::<Vec<_>>(),
                 &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
                 &OpeningType::Regular
             );
