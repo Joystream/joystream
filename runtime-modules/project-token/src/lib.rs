@@ -5,8 +5,9 @@ use frame_support::{
     dispatch::{fmt::Debug, marker::Copy, DispatchError, DispatchResult},
     ensure,
 };
+use frame_system::ensure_signed;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
-use sp_runtime::{traits::Hash, Percent};
+use sp_runtime::Percent;
 
 // crate modules
 mod errors;
@@ -19,7 +20,10 @@ mod types;
 use errors::Error;
 pub use events::{Event, RawEvent};
 use traits::{PalletToken, TransferLocationTrait};
-use types::{AccountDataOf, DecOp, TokenDataOf, TokenIssuanceParametersOf, TransferPolicyOf};
+use types::{
+    AccountDataOf, DecOp, SimpleOf, TokenDataOf, TokenIssuanceParametersOf, TransferPolicyOf,
+    VerifiableOf,
+};
 
 /// Pallet Configuration Trait
 pub trait Trait: frame_system::Trait {
@@ -59,13 +63,64 @@ decl_storage! {
 
 decl_module! {
     /// _MultiCurrency_ substrate module.
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Trait> for enum Call
+    where
+        origin: T::Origin
+    {
+
         /// Default deposit_event() handler
         fn deposit_event() = default;
 
         /// Predefined errors.
         type Error = Error<T>;
 
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn transfer_permissionless(
+            origin,
+            token_id: T::TokenId,
+            destination: T::AccountId,
+            amount: T::Balance,
+        ) -> DispatchResult {
+            let src = ensure_signed(origin)?;
+            let dst = SimpleOf::<T>::new(destination);
+            Self::transfer(token_id, src, dst, amount)
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn transfer_permissioned(
+            origin,
+            token_id: T::TokenId,
+            destination: VerifiableOf<T>,
+            amount: T::Balance,
+        ) -> DispatchResult {
+            let src = ensure_signed(origin)?;
+            Self::transfer(token_id, src, destination, amount)
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn transfer_permissionless_multi_output(
+            origin,
+            token_id: T::TokenId,
+            outputs: Vec<(T::AccountId, T::Balance)>,
+        ) -> DispatchResult {
+            let src = ensure_signed(origin)?;
+            let simple_outputs = outputs.into_iter().map(|(acc, amount)| {
+                (SimpleOf::<T>::new(acc), amount)
+            }).collect::<Vec<_>>();
+
+            Self::multi_output_transfer(token_id, src, &simple_outputs)
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn transfer_permissioned_multi_output(
+            origin,
+            token_id: T::TokenId,
+            outputs: Vec<(VerifiableOf<T>, T::Balance)>,
+        ) -> DispatchResult {
+            let src = ensure_signed(origin)?;
+
+            Self::multi_output_transfer(token_id, src, &outputs)
+        }
     }
 }
 
@@ -443,7 +498,11 @@ impl<T: Trait> Module<T> {
     /// - `who` free balance decreased by `amount`
     /// - `who` reserved balance increased by `amount`
     /// if `amount` is zero it is equivalent to a no-op
-    fn _reserve(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult {
+    fn _reserve(
+        token_id: T::TokenId,
+        who: T::AccountId,
+        amount: <T as Trait>::Balance,
+    ) -> DispatchResult {
         if amount.is_zero() {
             return Ok(());
         }
@@ -481,7 +540,11 @@ impl<T: Trait> Module<T> {
     /// - `who` free balance increased by `amount`
     /// - `who` reserved balance decreased by `amount`
     /// if `amount` is zero it is equivalent to a no-op
-    fn _unreserve(token_id: T::TokenId, who: T::AccountId, amount: T::Balance) -> DispatchResult {
+    fn _unreserve(
+        token_id: T::TokenId,
+        who: T::AccountId,
+        amount: <T as Trait>::Balance,
+    ) -> DispatchResult {
         if amount.is_zero() {
             return Ok(());
         }

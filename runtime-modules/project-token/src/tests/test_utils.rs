@@ -1,8 +1,9 @@
+use codec::Encode;
 use sp_arithmetic::traits::{One, Saturating, Zero};
-use sp_runtime::Percent;
+use sp_runtime::{traits::Hash, Percent};
 
 use crate::tests::mock::*;
-use crate::types::{IssuanceState, PatronageData, TransferPolicy};
+use crate::types::{IssuanceState, MerkleSide, PatronageData, TransferPolicy, VerifiableLocation};
 use crate::GenesisConfig;
 
 pub struct TokenDataBuilder<Balance, Hash> {
@@ -88,6 +89,7 @@ impl GenesisConfigBuilder {
             token_info_by_id: vec![],
             account_info_by_token_and_account: vec![],
             next_token_id: TokenId::one(),
+            symbol_used: vec![],
         }
     }
 
@@ -95,6 +97,7 @@ impl GenesisConfigBuilder {
     pub fn with_token(mut self, token_id: TokenId, token_info: TokenData) -> Self {
         self.token_info_by_id.push((token_id, token_info));
         self.next_token_id = self.next_token_id.saturating_add(TokenId::one());
+        self.symbol_used = vec![(Hashing::hash_of(&token_id), ())];
         self
     }
 
@@ -135,6 +138,16 @@ impl GenesisConfigBuilder {
             account_info_by_token_and_account: self.account_info_by_token_and_account,
             token_info_by_id: self.token_info_by_id,
             next_token_id: self.next_token_id,
+            symbol_used: self.symbol_used,
+        }
+    }
+}
+
+impl<AccountId: Encode, Hasher: Hash> VerifiableLocation<AccountId, Hasher> {
+    pub fn new(merkle_proof: Vec<(Hasher::Output, MerkleSide)>, account: AccountId) -> Self {
+        Self {
+            merkle_proof,
+            account,
         }
     }
 }

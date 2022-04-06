@@ -128,14 +128,12 @@ pub struct TokenIssuanceParameters<Balance, Hash> {
 
 /// Transfer location without merkle proof
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
-pub struct SimpleLocation<AccountId> {
-    pub(crate) account: AccountId,
-}
+pub struct SimpleLocation<AccountId>(pub(crate) AccountId);
 
 /// Transfer location with merkle proof
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
 pub struct VerifiableLocation<AccountId, Hasher: Hash> {
-    merkle_proof: Vec<(Hasher::Output, MerkleSide)>,
+    pub(crate) merkle_proof: Vec<(Hasher::Output, MerkleSide)>,
     pub account: AccountId,
 }
 
@@ -252,13 +250,13 @@ impl<AccountId: Clone, Hash> TransferLocationTrait<AccountId, TransferPolicy<Has
     }
 
     fn location_account(&self) -> AccountId {
-        self.account.to_owned()
+        self.0.to_owned()
     }
 }
 
 impl<AccountId> SimpleLocation<AccountId> {
-    pub(crate) fn _new(account: AccountId) -> Self {
-        Self { account }
+    pub(crate) fn new(account: AccountId) -> Self {
+        Self(account)
     }
 }
 
@@ -296,13 +294,6 @@ impl<AccountId: Encode, Hasher: Hash> VerifiableLocation<AccountId, Hasher> {
 
         proof_result == commit
     }
-
-    pub fn _new(merkle_proof: Vec<(Hasher::Output, MerkleSide)>, account: AccountId) -> Self {
-        Self {
-            merkle_proof,
-            account,
-        }
-    }
 }
 
 // Aliases
@@ -322,3 +313,10 @@ pub(crate) type TransferPolicyOf<T> = TransferPolicy<<T as frame_system::Trait>:
 
 /// Alias for decrease operation
 pub(crate) type DecOp<T> = DecreaseOp<<T as crate::Trait>::Balance>;
+
+/// Alias for simple location
+pub(crate) type SimpleOf<T> = SimpleLocation<<T as frame_system::Trait>::AccountId>;
+
+/// Alias for simple location
+pub(crate) type VerifiableOf<T> =
+    VerifiableLocation<<T as frame_system::Trait>::AccountId, <T as frame_system::Trait>::Hashing>;
