@@ -635,7 +635,7 @@ fn make_bid_succeeds_with_auction_completion_and_outstanding_bids() {
             MetaEvent::content(RawEvent::BidMadeCompletingAuction(
                 SECOND_MEMBER_ID,
                 video_id,
-                None
+                None,
             ))
         );
     })
@@ -663,7 +663,7 @@ fn make_bid_succeeds_with_auction_completion_and_no_outstanding_bids() {
             MetaEvent::content(RawEvent::BidMadeCompletingAuction(
                 SECOND_MEMBER_ID,
                 video_id,
-                None
+                None,
             ))
         );
     })
@@ -759,7 +759,7 @@ fn english_auction_bid_made_completing_auction_event_with_no_previous_bidder() {
             MetaEvent::content(RawEvent::BidMadeCompletingAuction(
                 DEFAULT_MEMBER_ID,
                 video_id,
-                None
+                None,
             ))
         );
     })
