@@ -63,7 +63,7 @@ fn unuccessful_video_creation_with_pending_channel_transfer() {
         create_default_member_owned_channel();
 
         UpdateChannelTransferStatusFixture::default()
-            .with_transfer_status_by_member_id(DEFAULT_MEMBER_ID)
+            .with_new_member_channel_owner(DEFAULT_MEMBER_ID)
             .call_and_assert(Ok(()));
 
         CreateVideoFixture::default()
@@ -582,7 +582,7 @@ fn unsuccessful_video_update_with_pending_channel_transfer() {
             .collect::<BTreeSet<_>>();
 
         UpdateChannelTransferStatusFixture::default()
-            .with_transfer_status_by_member_id(DEFAULT_MEMBER_ID)
+            .with_new_member_channel_owner(DEFAULT_MEMBER_ID)
             .call_and_assert(Ok(()));
 
         UpdateVideoFixture::default()
@@ -980,7 +980,7 @@ fn unsuccessful_video_deletion_with_pending_transfer() {
         create_default_member_owned_channel_with_video();
 
         UpdateChannelTransferStatusFixture::default()
-            .with_transfer_status_by_member_id(DEFAULT_MEMBER_ID)
+            .with_new_member_channel_owner(DEFAULT_MEMBER_ID)
             .call_and_assert(Ok(()));
 
         DeleteVideoFixture::default()

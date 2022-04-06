@@ -320,7 +320,7 @@ fn unsuccessful_channel_update_with_pending_status_transfer() {
         create_default_member_owned_channel();
 
         UpdateChannelTransferStatusFixture::default()
-            .with_transfer_status_by_member_id(DEFAULT_MEMBER_ID)
+            .with_new_member_channel_owner(DEFAULT_MEMBER_ID)
             .call_and_assert(Ok(()));
 
         UpdateChannelFixture::default()

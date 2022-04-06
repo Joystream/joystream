@@ -391,6 +391,26 @@ impl Trait for Test {
 
     /// channel privilege level
     type ChannelPrivilegeLevel = u8;
+
+    /// content working group
+    type ContentWorkingGroup = ContentWG;
+}
+
+thread_local! {
+    pub static CONTENT_WG_BUDGET: RefCell<u64> = RefCell::new(WORKING_GROUP_BUDGET);
+}
+
+pub struct ContentWG;
+impl common::working_group::WorkingGroupBudgetHandler<Test> for ContentWG {
+    fn get_budget() -> u64 {
+        CONTENT_WG_BUDGET.with(|val| *val.borrow())
+    }
+
+    fn set_budget(new_value: u64) {
+        CONTENT_WG_BUDGET.with(|val| {
+            *val.borrow_mut() = new_value;
+        });
+    }
 }
 
 // #[derive (Default)]

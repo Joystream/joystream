@@ -292,5 +292,8 @@ decl_error! {
 
         // Insufficient permissions to perform given action as a channel agent
         ChannelAgentInsufficientPermissions,
+
+        /// Cannot transfer the channel: channel owner has insufficient balance (budget for WGs)
+        InsufficientBalanceForTransfer,
     }
 }
