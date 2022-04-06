@@ -13,7 +13,7 @@ import {
   AuctionCancelationsFixture,
   NftCreateVideoWithAuctionFixture,
   NftCreateVideoWithBuyNowFixture,
-  NftUpdateVideoWithAuctionFixture,
+  UpdateVideoForNftCreationFixture,
   IMember,
 } from '../../fixtures/content'
 import BN from 'bn.js'
@@ -130,7 +130,7 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
 
   await new FixtureRunner(createVideoWithBuyNowFixture).run()
 
-  const updateVideoWithAuctionFixture = new NftUpdateVideoWithAuctionFixture(
+  const updateVideoWithAuctionFixture = new UpdateVideoForNftCreationFixture(
     api,
     query,
     author as IMember,

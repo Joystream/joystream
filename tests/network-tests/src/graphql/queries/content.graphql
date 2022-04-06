@@ -84,8 +84,48 @@ fragment OwnedNftFields on OwnedNft {
   metadata
   transactionalStatus {
     __typename
+    ... on TransactionalStatusAuction {
+      auction {
+        startsAtBlock
+        isCompleted
+
+        endedAtBlock
+        startingPrice
+        auctionType {
+          __typename
+          ... on AuctionTypeOpen {
+            bidLockDuration
+          }
+          ... on AuctionTypeEnglish {
+            extensionPeriod
+            duration
+            plannedEndAtBlock
+            minimalBidStep
+          }
+        }
+        bids {
+          id
+          bidder {
+            id
+            handle
+          }
+          amount
+          createdInBlock
+        }
+        topBid {
+          id
+          amount
+          bidder {
+            id
+          }
+        }
+      }
+    }
   }
   creatorRoyalty
+  creatorChannel {
+    id
+  }
 }
 
 query getChannelById($id: ID!) {

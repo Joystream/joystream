@@ -16,6 +16,9 @@ export const WorkingGroupOpeningInputSchema: JsonSchema<WorkingGroupOpeningInput
       type: 'integer',
       minimum: 1,
     },
+    title: {
+      type: 'string',
+    },
     shortDescription: {
       type: 'string',
     },
@@ -46,7 +49,7 @@ export const WorkingGroupOpeningInputSchema: JsonSchema<WorkingGroupOpeningInput
       required: ['amount', 'unstakingPeriod'],
       properties: {
         amount: { type: 'integer', minimum: 2000 },
-        unstakingPeriod: { type: 'integer', minimum: 43201 },
+        unstakingPeriod: { type: 'integer', minimum: 43200 },
       },
     },
     rewardPerBlock: {

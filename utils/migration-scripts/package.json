@@ -89,7 +89,8 @@
     "lint": "eslint ./src --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
     "format": "prettier ./ --write",
-    "generate:types:graphql": "yarn graphql-codegen -c ./src/sumer-giza/sumer-query-node/codegen.yml"
+    "sumer-giza:generate:types:graphql": "yarn graphql-codegen -c ./src/sumer-giza/sumer-query-node/codegen.yml",
+    "giza-olympia:generate:types:graphql": "yarn graphql-codegen -c ./src/giza-olympia/giza-query-node/codegen.yml"
   },
   "types": "lib/index.d.ts"
 }

@@ -19,6 +19,7 @@
     "db:create": "yarn workspace query-node db:create",
     "db:drop": "yarn workspace query-node db:drop",
     "db:prepare": "yarn workspace query-node db:create && yarn workspace query-node db:sync",
+    "db:reset": "yarn db:drop && yarn db:prepare && yarn db:migrate",
     "db:schema:migrate": "yarn workspace query-node db:migrate",
     "db:processor:migrate": "hydra-processor migrate --env ../.env",
     "db:migrate": "yarn db:schema:migrate && yarn db:processor:migrate",
