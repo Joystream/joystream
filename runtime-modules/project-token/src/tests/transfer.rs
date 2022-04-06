@@ -1,6 +1,6 @@
 #![cfg(test)]
 use frame_support::{assert_noop, assert_ok, StorageDoubleMap};
-use sp_arithmetic::traits::{One, Zero};
+use sp_arithmetic::traits::One;
 use sp_runtime::traits::Hash;
 
 use crate::tests::mock::*;
