@@ -475,8 +475,6 @@ impl common::currency::GovernanceCurrency for Runtime {
 
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
-    pub const CleanupMargin: u32 = 3;    // TODO: update
-    pub const CleanupCost: u32 = 1; // TODO: update
     pub const PricePerByte: u32 = 2; // TODO: update
     pub const ContentModuleId: ModuleId = ModuleId(*b"mContent"); // module content
     pub const BagDeletionPrize: Balance = 0; // TODO: update

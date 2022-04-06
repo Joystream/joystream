@@ -37,29 +37,25 @@ pub const DEFAULT_MEMBER_ACCOUNT_ID: u64 = 101;
 pub const DEFAULT_CURATOR_ACCOUNT_ID: u64 = 102;
 pub const LEAD_ACCOUNT_ID: u64 = 103;
 pub const COLLABORATOR_MEMBER_ACCOUNT_ID: u64 = 104;
-pub const DEFAULT_MODERATOR_ACCOUNT_ID: u64 = 105;
 pub const UNAUTHORIZED_MEMBER_ACCOUNT_ID: u64 = 111;
 pub const UNAUTHORIZED_CURATOR_ACCOUNT_ID: u64 = 112;
 pub const UNAUTHORIZED_LEAD_ACCOUNT_ID: u64 = 113;
 pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID: u64 = 114;
-pub const UNAUTHORIZED_MODERATOR_ACCOUNT_ID: u64 = 115;
 pub const SECOND_MEMBER_ACCOUNT_ID: u64 = 116;
+pub const THIRD_MEMBER_ACCOUNT_ID: u64 = 117;
 
 /// Runtime Id's
 pub const DEFAULT_MEMBER_ID: u64 = 201;
 pub const DEFAULT_CURATOR_ID: u64 = 202;
 pub const COLLABORATOR_MEMBER_ID: u64 = 204;
-pub const DEFAULT_MODERATOR_ID: u64 = 205;
 pub const UNAUTHORIZED_MEMBER_ID: u64 = 211;
 pub const UNAUTHORIZED_CURATOR_ID: u64 = 212;
 pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ID: u64 = 214;
-pub const UNAUTHORIZED_MODERATOR_ID: u64 = 215;
 pub const SECOND_MEMBER_ID: u64 = 216;
-
+pub const THIRD_MEMBER_ID: u64 = 217;
 pub const DATA_OBJECT_DELETION_PRIZE: u64 = 0;
 pub const DEFAULT_OBJECT_SIZE: u64 = 5;
 pub const DATA_OBJECTS_NUMBER: u64 = 10;
-
 pub const OUTSTANDING_VIDEOS: u64 = 5;
 pub const OUTSTANDING_CHANNELS: u64 = 3;
 pub const TOTAL_OBJECTS_NUMBER: u64 =
@@ -189,9 +185,9 @@ impl ContentActorAuthenticator for Test {
         match *member_id {
             DEFAULT_MEMBER_ID => true,
             SECOND_MEMBER_ID => true,
+            THIRD_MEMBER_ID => true,
             UNAUTHORIZED_MEMBER_ID => true,
             COLLABORATOR_MEMBER_ID => true,
-            DEFAULT_MODERATOR_ID => true,
             UNAUTHORIZED_COLLABORATOR_MEMBER_ID => true,
             _ => false,
         }
@@ -226,6 +222,10 @@ impl ContentActorAuthenticator for Test {
                 *account_id == ensure_signed(Origin::signed(SECOND_MEMBER_ACCOUNT_ID)).unwrap()
             }
 
+            THIRD_MEMBER_ID => {
+                *account_id == ensure_signed(Origin::signed(THIRD_MEMBER_ACCOUNT_ID)).unwrap()
+            }
+
             UNAUTHORIZED_MEMBER_ID => {
                 *account_id
                     == ensure_signed(Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID)).unwrap()
@@ -240,14 +240,6 @@ impl ContentActorAuthenticator for Test {
             COLLABORATOR_MEMBER_ID => {
                 *account_id
                     == ensure_signed(Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID)).unwrap()
-            }
-            UNAUTHORIZED_MODERATOR_ID => {
-                *account_id
-                    == ensure_signed(Origin::signed(UNAUTHORIZED_MODERATOR_ACCOUNT_ID)).unwrap()
-            }
-
-            DEFAULT_MODERATOR_ID => {
-                *account_id == ensure_signed(Origin::signed(DEFAULT_MODERATOR_ACCOUNT_ID)).unwrap()
             }
             _ => false,
         }
@@ -320,11 +312,7 @@ parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: u32 = 10;
     pub const ChannelOwnershipPaymentEscrowId: [u8; 8] = *b"12345678";
     pub const ContentModuleId: ModuleId = ModuleId(*b"mContent"); // module content
-    pub const MaxModerators: u64 = 5;
-    pub const CleanupMargin: u32 = 3;
-    pub const CleanupCost: u32 = 1;
     pub const PricePerByte: u32 = 2;
-    pub const VideoCommentsModuleId: ModuleId = ModuleId(*b"m0:forum"); // module : forum
     pub const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = 25;
     pub const BagDeletionPrize: u64 = BAG_DELETION_PRIZE;
     pub const ModuleAccountInitialBalance: u64 = 1;
@@ -620,11 +608,10 @@ impl MembershipInfoProvider<Test> for MemberInfoProvider {
         match member_id {
             DEFAULT_MEMBER_ID => Ok(DEFAULT_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID => Ok(SECOND_MEMBER_ACCOUNT_ID),
+            THIRD_MEMBER_ID => Ok(THIRD_MEMBER_ACCOUNT_ID),
             UNAUTHORIZED_MEMBER_ID => Ok(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             UNAUTHORIZED_COLLABORATOR_MEMBER_ID => Ok(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID),
             COLLABORATOR_MEMBER_ID => Ok(COLLABORATOR_MEMBER_ACCOUNT_ID),
-            UNAUTHORIZED_MODERATOR_ID => Ok(UNAUTHORIZED_MODERATOR_ACCOUNT_ID),
-            DEFAULT_MODERATOR_ID => Ok(DEFAULT_MODERATOR_ACCOUNT_ID),
             _ => Err(DispatchError::Other("no account found")),
         }
     }

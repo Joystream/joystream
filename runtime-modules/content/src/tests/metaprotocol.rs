@@ -355,8 +355,8 @@ fn unsuccessful_nft_owner_by_non_authorized_actor() {
 
         assert_err!(
             Content::nft_owner_remark(
-                Origin::signed(DEFAULT_MODERATOR_ACCOUNT_ID),
-                ContentActor::Member(DEFAULT_MODERATOR_ID),
+                Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(UNAUTHORIZED_MEMBER_ID),
                 video_id,
                 msg
             ),
@@ -377,7 +377,7 @@ fn unsuccessful_nft_owner_with_invalid_acount() {
 
         assert_err!(
             Content::nft_owner_remark(
-                Origin::signed(DEFAULT_MODERATOR_ACCOUNT_ID),
+                Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(SECOND_MEMBER_ID),
                 video_id,
                 msg
