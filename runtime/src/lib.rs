@@ -475,7 +475,6 @@ impl common::currency::GovernanceCurrency for Runtime {
 
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
-    pub const MaxModerators: u64 = 5;    // TODO: update
     pub const CleanupMargin: u32 = 3;    // TODO: update
     pub const CleanupCost: u32 = 1; // TODO: update
     pub const PricePerByte: u32 = 2; // TODO: update
@@ -491,7 +490,6 @@ impl content::Trait for Runtime {
     type OpenAuctionId = OpenAuctionId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type DataObjectStorage = Storage;
-    type MaxModerators = MaxModerators;
     type PricePerByte = PricePerByte;
     type ModuleId = ContentModuleId;
     type BagDeletionPrize = BagDeletionPrize;
