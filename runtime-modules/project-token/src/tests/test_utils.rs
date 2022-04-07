@@ -1,23 +1,24 @@
-use sp_arithmetic::traits::{One, Saturating, Zero};
+use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::Hash;
 
 use crate::tests::mock::*;
-use crate::types::{OfferingState, Output, Outputs, PatronageData, TransferPolicy, MerkleProof, MerkleSide};
+use crate::types::{
+    MerkleProof, MerkleSide, OfferingStateOf, Output, Outputs, PatronageData, TransferPolicyOf,
+};
 use crate::GenesisConfig;
 
-pub struct TokenDataBuilder<Balance, Hash, BlockNumber> {
-    pub(crate) current_total_issuance: Balance,
-    pub(crate) existential_deposit: Balance,
-    pub(crate) issuance_state: OfferingState,
-    pub(crate) transfer_policy: TransferPolicy<Hash>,
-    pub(crate) patronage_info: PatronageData<Balance, BlockNumber>,
+pub struct TokenDataBuilder {
+    pub(crate) current_total_issuance: <Test as crate::Trait>::Balance,
+    pub(crate) existential_deposit: <Test as crate::Trait>::Balance,
+    pub(crate) issuance_state: OfferingStateOf<Test>,
+    pub(crate) transfer_policy: TransferPolicyOf<Test>,
+    pub(crate) patronage_info:
+        PatronageData<<Test as crate::Trait>::Balance, <Test as frame_system::Trait>::BlockNumber>,
 }
 
-impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash, BlockNumber: One>
-    TokenDataBuilder<Balance, Hash, BlockNumber>
-{
-    pub fn build(self) -> crate::types::TokenData<Balance, Hash, BlockNumber> {
-        crate::types::TokenData::<_, _, _> {
+impl TokenDataBuilder {
+    pub fn build(self) -> crate::types::TokenDataOf<Test> {
+        crate::types::TokenDataOf::<Test> {
             current_total_issuance: self.current_total_issuance,
             existential_deposit: self.existential_deposit,
             issuance_state: self.issuance_state,
@@ -40,7 +41,7 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash, BlockNumber: One>
         }
     }
 
-    pub fn with_transfer_policy(self, transfer_policy: TransferPolicy<Hash>) -> Self {
+    pub fn with_transfer_policy(self, transfer_policy: TransferPolicyOf<Test>) -> Self {
         Self {
             transfer_policy,
             ..self
@@ -61,9 +62,9 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash, BlockNumber: One>
     pub fn new_empty() -> Self {
         Self {
             current_total_issuance: Balance::zero(),
-            issuance_state: OfferingState::Idle,
+            issuance_state: OfferingStateOf::<Test>::Idle,
             existential_deposit: Balance::zero(),
-            transfer_policy: TransferPolicy::<Hash>::Permissionless,
+            transfer_policy: TransferPolicy::Permissionless,
             patronage_info: PatronageData::<Balance, BlockNumber> {
                 rate: Balance::zero(),
                 tally: Balance::zero(),

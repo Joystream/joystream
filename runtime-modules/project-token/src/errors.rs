@@ -45,5 +45,10 @@ decl_error! {
         /// Account Already exists
         AccountAlreadyExists,
 
+        /// Specified sale starting block is in the past
+        SaleStartingBlockInThePast,
+
+        /// Number of tokens available for sale exceeds number of tokens issued during issue_token
+        SaleUpperBoundQuantityExceedsInitialTokenSupply,
     }
 }

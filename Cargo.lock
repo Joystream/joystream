@@ -4000,6 +4000,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "pallet-balances",
+ "pallet-storage",
  "parity-scale-codec",
  "serde",
  "sp-arithmetic",

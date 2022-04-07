@@ -27,7 +27,7 @@ use types::{
 };
 
 /// Pallet Configuration Trait
-pub trait Trait: frame_system::Trait {
+pub trait Trait: frame_system::Trait + balances::Trait {
     /// Events
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
@@ -39,7 +39,7 @@ pub trait Trait: frame_system::Trait {
     type TokenId: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug;
 
     /// Block number to balance converter used for interest calculation
-    type BlockNumberToBalance: Convert<Self::BlockNumber, Self::Balance>;
+    type BlockNumberToBalance: Convert<Self::BlockNumber, <Self as Trait>::Balance>;
 }
 
 decl_storage! {
@@ -147,7 +147,7 @@ decl_module! {
 impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParametersOf<T>>
     for Module<T>
 {
-    type Balance = T::Balance;
+    type Balance = <T as Trait>::Balance;
 
     type TokenId = T::TokenId;
 
@@ -172,7 +172,7 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
     ///
     /// Postconditions:
     /// - patronage rate for `token_id` reduced by `decrement`
-    fn reduce_patronage_rate_by(token_id: T::TokenId, decrement: T::Balance) -> DispatchResult {
+    fn reduce_patronage_rate_by(token_id: T::TokenId, decrement: Self::Balance) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
 
         // ensure new rate is >= 0
@@ -256,8 +256,7 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
             Error::<T>::TokenSymbolAlreadyInUse,
         );
 
-        let now = Self::current_block();
-        let token_data = issuance_parameters.try_build::<T, _>(now)?;
+        let token_data = TokenDataOf::<T>::try_from_params::<T>(issuance_parameters)?;
 
         // == MUTATION SAFE ==
 

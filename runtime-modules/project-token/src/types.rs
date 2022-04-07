@@ -1,8 +1,17 @@
 use codec::{Decode, Encode};
-use frame_support::{dispatch::{DispatchError, DispatchResult}, ensure};
+use frame_support::{
+    dispatch::{DispatchError, DispatchResult},
+    ensure,
+};
 use sp_arithmetic::traits::{Saturating, Zero};
 use sp_runtime::traits::{Convert, Hash};
+use sp_runtime::Permill;
 use sp_std::{iter::Sum, slice::Iter};
+
+use storage::DataObjectCreationParameters;
+
+// crate imports
+use crate::{errors::Error, Trait};
 
 pub(crate) enum DecreaseOp<Balance> {
     /// reduce amount by
@@ -28,7 +37,7 @@ pub struct AccountData<Balance> {
 
 /// Info for the token
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
-pub struct TokenData<Balance, Hash, BlockNumber> {
+pub struct TokenData<Balance, Hash, BlockNumber, OfferingState> {
     /// Current token issuance
     pub(crate) current_total_issuance: Balance,
 
@@ -74,28 +83,132 @@ impl<Hash> Default for TransferPolicy<Hash> {
     }
 }
 
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct VestingScheduleParams<BlockNumber> {
+    // Vesting duration
+    pub(crate) duration: BlockNumber,
+    // Number of blocks before the vesting begins
+    pub(crate) cliff: BlockNumber,
+    // Initial instant liquiditiy once vesting begins
+    pub(crate) initial_liquidity: Permill,
+}
+
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct SingleDataObjectUploadParams<JOYBalance> {
+    object_creation_params: DataObjectCreationParameters,
+    expected_data_size_fee: JOYBalance,
+    expected_data_object_deletion_prize: JOYBalance,
+}
+
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct WhitelistParams<Hash, SingleDataObjectUploadParams> {
+    commitment: Hash,
+    payload: Option<SingleDataObjectUploadParams>,
+}
+
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct TokenSaleParams<JOYBalance, Balance, BlockNumber, VestingScheduleParams, WhitelistParams>
+{
+    /// Token's unit price in JOY
+    pub unit_price: JOYBalance,
+    /// Number of tokens on sale
+    pub upper_bound_quantity: Balance,
+    /// Optional block in the future when the sale should start (by default: starts immediately)
+    pub starts_at: Option<BlockNumber>,
+    /// Sale duration in blocks
+    pub duration: BlockNumber,
+    /// Optional whitelist parameters (merkle tree data)
+    pub whitelist: Option<WhitelistParams>,
+    /// Optional vesting schedule for all tokens on sale
+    pub vesting_schedule: Option<VestingScheduleParams>,
+    /// Optional sale metadata
+    pub metadata: Option<Vec<u8>>,
+}
+
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Hash> {
+    /// Token's unit price in JOY
+    pub unit_price: JOYBalance,
+    /// Number of tokens on sale
+    pub upper_bound_quantity: Balance,
+    /// Block at which the sale started / will start
+    pub start_block: BlockNumber,
+    /// Block at which the sale will finish
+    pub end_block: BlockNumber,
+    /// Optional whitelist merkle root comittment
+    pub whitelist_commitment: Option<Hash>,
+    /// Optional vesting schedule for all tokens on sale
+    pub vesting_schedule: Option<VestingScheduleParams>,
+}
+
+impl<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Hash>
+    TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Hash>
+{
+    fn try_from_params<T: Trait>(
+        params: TokenSaleParamsOf<T>,
+    ) -> Result<TokenSaleOf<T>, DispatchError> {
+        let current_block = <frame_system::Module<T>>::block_number();
+        let start_block = params.starts_at.unwrap_or(current_block);
+
+        ensure!(
+            start_block >= current_block,
+            Error::<T>::SaleStartingBlockInThePast
+        );
+
+        Ok(TokenSale {
+            start_block,
+            end_block: start_block.saturating_add(params.duration),
+            unit_price: params.unit_price,
+            upper_bound_quantity: params.upper_bound_quantity,
+            vesting_schedule: params.vesting_schedule,
+            whitelist_commitment: params.whitelist.map(|p| p.commitment),
+        })
+    }
+}
+
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum InitialOfferingState<TokenSaleParams> {
+    Idle,
+    Sale(TokenSaleParams),
+}
+
 /// The possible issuance variants: This is a stub
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub(crate) enum OfferingState {
+pub enum OfferingState<TokenSale> {
     /// Initial idle state
     Idle,
 
-    /// Initial state sale (this has to be defined)
-    Sale,
+    /// Initial state sale
+    Sale(TokenSale),
 
     /// state for IBCO, it might get decorated with the JOY reserve
     /// amount for the token
     BondingCurve,
 }
 
+/// Encapsules validation + IssuanceState construction
+impl<TokenSale> OfferingState<TokenSale> {
+    pub(crate) fn try_from_initial<T: crate::Trait>(
+        initial_issuance_state: InitialOfferingStateOf<T>,
+    ) -> Result<OfferingStateOf<T>, DispatchError> {
+        match initial_issuance_state {
+            InitialOfferingState::Idle => Ok(OfferingStateOf::<T>::Idle),
+            InitialOfferingState::Sale(sale_params) => {
+                let token_sale = TokenSaleOf::<T>::try_from_params::<T>(sale_params)?;
+                Ok(OfferingStateOf::<T>::Sale(token_sale))
+            }
+        }
+    }
+}
+
 /// Builder for the token data struct
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
-pub struct TokenIssuanceParameters<Balance, Hash> {
+pub struct TokenIssuanceParameters<Balance, Hash, InitialOfferingState> {
     /// Initial issuance
     pub(crate) initial_issuance: Balance,
 
     /// Initial State builder: stub
-    pub(crate) initial_state: OfferingState,
+    pub(crate) initial_state: InitialOfferingState,
 
     /// Initial existential deposit
     pub(crate) existential_deposit: Balance,
@@ -122,9 +235,7 @@ pub enum MerkleSide {
 
 /// Wrapper around a merkle proof path
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct MerkleProof<Hasher: Hash> (
-    pub Option<Vec<(Hasher::Output, MerkleSide)>>
-);
+pub struct MerkleProof<Hasher: Hash>(pub Option<Vec<(Hasher::Output, MerkleSide)>>);
 
 /// Output for a transfer containing beneficiary + amount due
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -149,10 +260,17 @@ impl Default for MerkleSide {
 
 // implementation
 
-/// Default trait for Issuance state
-impl Default for OfferingState {
+/// Default trait for OfferingState
+impl<TokenSale> Default for OfferingState<TokenSale> {
     fn default() -> Self {
         OfferingState::Idle
+    }
+}
+
+/// Default trait for InitialOfferingState
+impl<TokenSaleParams> Default for InitialOfferingState<TokenSaleParams> {
+    fn default() -> Self {
+        InitialOfferingState::Idle
     }
 }
 
@@ -207,7 +325,9 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
     }
 }
 /// Token Data implementation
-impl<Balance: Saturating + Copy, Hash, BlockNumber> TokenData<Balance, Hash, BlockNumber> {
+impl<Balance: Saturating + Copy, Hash, BlockNumber, OfferingState>
+    TokenData<Balance, Hash, BlockNumber, OfferingState>
+{
     // increase total issuance
     pub(crate) fn increase_issuance_by(&mut self, amount: Balance) {
         self.current_total_issuance = self.current_total_issuance.saturating_add(amount);
@@ -217,36 +337,51 @@ impl<Balance: Saturating + Copy, Hash, BlockNumber> TokenData<Balance, Hash, Blo
     pub(crate) fn decrease_issuance_by(&mut self, amount: Balance) {
         self.current_total_issuance = self.current_total_issuance.saturating_sub(amount);
     }
-}
-/// Encapsules parameters validation + TokenData construction
-impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, Hash> {
-    /// Forward `self` state
-    pub fn try_build<T: crate::Trait, BlockNumber>(
-        self,
-        block: BlockNumber,
-    ) -> Result<TokenData<Balance, Hash, BlockNumber>, DispatchError> {
-        // validation
 
-        let patronage_info = PatronageData::<Balance, BlockNumber> {
-            last_tally_update_block: block,
-            tally: Balance::zero(),
-            rate: self.patronage_rate,
-        };
-        Ok(TokenData::<Balance, Hash, BlockNumber> {
-            current_total_issuance: self.initial_issuance,
-            issuance_state: self.initial_state,
-            existential_deposit: self.existential_deposit,
-            transfer_policy: self.transfer_policy,
+    pub(crate) fn try_from_params<T: crate::Trait>(
+        params: TokenIssuanceParametersOf<T>,
+    ) -> Result<TokenDataOf<T>, DispatchError> {
+        let current_block = <frame_system::Module<T>>::block_number();
+
+        // Validation
+        if let InitialOfferingStateOf::<T>::Sale(sale_params) = &params.initial_state {
+            ensure!(
+                sale_params.upper_bound_quantity <= params.initial_issuance,
+                Error::<T>::SaleUpperBoundQuantityExceedsInitialTokenSupply
+            )
+        }
+
+        // Conversion
+        let patronage_info =
+            PatronageData::<<T as Trait>::Balance, <T as frame_system::Trait>::BlockNumber> {
+                last_tally_update_block: current_block,
+                tally: <T as Trait>::Balance::zero(),
+                rate: params.patronage_rate,
+            };
+
+        let issuance_state = OfferingStateOf::<T>::try_from_initial::<T>(params.initial_state)?;
+
+        let token_data = TokenData {
+            current_total_issuance: params.initial_issuance,
+            issuance_state,
+            existential_deposit: params.existential_deposit,
+            transfer_policy: params.transfer_policy,
             patronage_info,
-        })
+        };
+
+        Ok(token_data)
     }
 }
 
 impl<Hasher: Hash> MerkleProof<Hasher> {
-    pub(crate) fn verify_for_commit<T, AccountId>(&self, account_id: &AccountId,  commit: Hasher::Output) -> DispatchResult
+    pub(crate) fn verify_for_commit<T, AccountId>(
+        &self,
+        account_id: &AccountId,
+        commit: Hasher::Output,
+    ) -> DispatchResult
     where
         T: crate::Trait,
-    AccountId: Encode,
+        AccountId: Encode,
     {
         match &self.0 {
             None => Err(crate::Error::<T>::MerkleProofNotProvided.into()),
@@ -325,11 +460,15 @@ pub(crate) type TokenDataOf<T> = TokenData<
     <T as crate::Trait>::Balance,
     <T as frame_system::Trait>::Hash,
     <T as frame_system::Trait>::BlockNumber,
+    OfferingStateOf<T>,
 >;
 
 /// Alias for Token Issuance Parameters
-pub(crate) type TokenIssuanceParametersOf<T> =
-    TokenIssuanceParameters<<T as crate::Trait>::Balance, <T as frame_system::Trait>::Hash>;
+pub(crate) type TokenIssuanceParametersOf<T> = TokenIssuanceParameters<
+    <T as crate::Trait>::Balance,
+    <T as frame_system::Trait>::Hash,
+    InitialOfferingStateOf<T>,
+>;
 
 /// Alias for TransferPolicy
 pub(crate) type TransferPolicyOf<T> = TransferPolicy<<T as frame_system::Trait>::Hash>;
@@ -338,9 +477,44 @@ pub(crate) type TransferPolicyOf<T> = TransferPolicy<<T as frame_system::Trait>:
 pub(crate) type DecOp<T> = DecreaseOp<<T as crate::Trait>::Balance>;
 
 /// Alias for the Merkle Proof type
-pub(crate) type MerkleProofOf<T> =
-    MerkleProof<<T as frame_system::Trait>::Hashing>;
+pub(crate) type MerkleProofOf<T> = MerkleProof<<T as frame_system::Trait>::Hashing>;
 
 /// Alias for the output type
 pub(crate) type OutputsOf<T> =
     Outputs<<T as frame_system::Trait>::AccountId, <T as crate::Trait>::Balance>;
+
+/// Alias for VestingScheduleParams
+pub(crate) type VestingScheduleParamsOf<T> =
+    VestingScheduleParams<<T as frame_system::Trait>::BlockNumber>;
+
+/// Alias for SingleDataObjectUploadParams
+pub(crate) type SingleDataObjectUploadParamsOf<T> =
+    SingleDataObjectUploadParams<<T as balances::Trait>::Balance>;
+
+/// Alias for WhitelistParams
+pub(crate) type WhitelistParamsOf<T> =
+    WhitelistParams<<T as frame_system::Trait>::Hash, SingleDataObjectUploadParamsOf<T>>;
+
+/// Alias for TokenSaleParams
+pub(crate) type TokenSaleParamsOf<T> = TokenSaleParams<
+    <T as balances::Trait>::Balance,
+    <T as crate::Trait>::Balance,
+    <T as frame_system::Trait>::BlockNumber,
+    VestingScheduleParamsOf<T>,
+    WhitelistParamsOf<T>,
+>;
+
+/// Alias for TokenSale
+pub(crate) type TokenSaleOf<T> = TokenSale<
+    <T as balances::Trait>::Balance,
+    <T as crate::Trait>::Balance,
+    <T as frame_system::Trait>::BlockNumber,
+    VestingScheduleParamsOf<T>,
+    <T as frame_system::Trait>::Hash,
+>;
+
+/// Alias for InitialOfferingState
+pub(crate) type InitialOfferingStateOf<T> = InitialOfferingState<TokenSaleParamsOf<T>>;
+
+/// Alias for OfferingState
+pub(crate) type OfferingStateOf<T> = OfferingState<TokenSaleOf<T>>;

@@ -4,7 +4,7 @@ use frame_support::{assert_noop, assert_ok, StorageDoubleMap};
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
 use crate::types::{MerkleProofOf, Output};
-use crate::{account, balance, last_event_eq, merkle_root, merkle_proof, token, Error, RawEvent};
+use crate::{account, balance, last_event_eq, merkle_proof, merkle_root, token, Error, RawEvent};
 
 // some helpers
 macro_rules! outputs {
@@ -907,10 +907,7 @@ fn join_whitelist_fails_with_token_id_not_valid() {
     build_test_externalities(config).execute_with(|| {
         let result = Token::join_whitelist(origin!(acc1), token_id + 1, proof);
 
-        assert_noop!(
-            result,
-            Error::<Test>::TokenDoesNotExist,
-        );
+        assert_noop!(result, Error::<Test>::TokenDoesNotExist,);
     })
 }
 
@@ -934,10 +931,7 @@ fn join_whitelist_fails_with_existing_account() {
     build_test_externalities(config).execute_with(|| {
         let result = Token::join_whitelist(origin!(acc1), token_id, proof);
 
-        assert_noop!(
-            result,
-            Error::<Test>::AccountAlreadyExists,
-        );
+        assert_noop!(result, Error::<Test>::AccountAlreadyExists,);
     })
 }
 
@@ -960,10 +954,7 @@ fn join_whitelist_fails_with_invalid_proof() {
     build_test_externalities(config).execute_with(|| {
         let result = Token::join_whitelist(origin!(acc1), token_id, proof);
 
-        assert_noop!(
-            result,
-            Error::<Test>::MerkleProofVerificationFailure,
-        );
+        assert_noop!(result, Error::<Test>::MerkleProofVerificationFailure,);
     })
 }
 
@@ -986,10 +977,7 @@ fn join_whitelist_fails_with_no_proof_provided() {
     build_test_externalities(config).execute_with(|| {
         let result = Token::join_whitelist(origin!(acc1), token_id, proof);
 
-        assert_noop!(
-            result,
-            Error::<Test>::MerkleProofNotProvided,
-        );
+        assert_noop!(result, Error::<Test>::MerkleProofNotProvided,);
     })
 }
 
@@ -1035,7 +1023,11 @@ fn join_whitelist_ok_with_event_deposit() {
     build_test_externalities(config).execute_with(|| {
         let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
 
-        last_event_eq!(RawEvent::MemberJoinedWhitelist(token_id, acc1, Policy::Permissioned(commit)));
+        last_event_eq!(RawEvent::MemberJoinedWhitelist(
+            token_id,
+            acc1,
+            Policy::Permissioned(commit)
+        ));
     })
 }
 
@@ -1068,8 +1060,7 @@ fn join_whitelist_ok_with_new_account_created() {
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let proof = merkle_proof!(0, [acc1, acc2]);
 
-    let token_data = TokenDataBuilder::new_empty()
-        .build();
+    let token_data = TokenDataBuilder::new_empty().build();
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
@@ -1079,7 +1070,9 @@ fn join_whitelist_ok_with_new_account_created() {
     build_test_externalities(config).execute_with(|| {
         let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
 
-        assert!(<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(token_id,acc1));
+        assert!(<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
+            token_id, acc1
+        ));
     })
 }
 

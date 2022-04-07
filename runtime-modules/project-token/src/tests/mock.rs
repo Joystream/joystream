@@ -13,14 +13,20 @@ use sp_runtime::traits::{BlakeTwo256, Convert, Hash, IdentityLookup};
 
 // crate import
 use crate::{
-    types::{MerkleSide, OutputsOf},
+    types::{
+        InitialOfferingStateOf, MerkleSide, OutputsOf, TokenSaleParamsOf, VestingScheduleParamsOf,
+    },
     AccountDataOf, GenesisConfig, TokenDataOf, TokenIssuanceParametersOf, Trait, TransferPolicyOf,
 };
 
 // Crate aliases
 pub type TokenId = <Test as Trait>::TokenId;
 pub type TokenData = TokenDataOf<Test>;
+pub type TokenSaleParams = TokenSaleParamsOf<Test>;
 pub type IssuanceParams = TokenIssuanceParametersOf<Test>;
+pub type VestingScheduleParams = VestingScheduleParamsOf<Test>;
+pub type InitialIssuanceState = InitialOfferingStateOf<Test>;
+pub type TransferPolicy = TransferPolicyOf<Test>;
 pub type AccountData = AccountDataOf<Test>;
 pub type AccountId = <Test as frame_system::Trait>::AccountId;
 pub type BlockNumber = <Test as frame_system::Trait>::BlockNumber;
@@ -52,10 +58,12 @@ impl_outer_event! {
     pub enum TestEvent for Test {
         token<T>,
         frame_system<T>,
+        balances<T>,
     }
 }
 
 parameter_types! {
+    pub const ExistentialDeposit: u64 = 0;
     pub const BlockHashCount: u64 = 250;
     pub const MaximumBlockWeight: u32 = 1024;
     pub const MaximumBlockLength: u32 = 2 * 1024;
@@ -89,6 +97,16 @@ impl frame_system::Trait for Test {
     type OnKilledAccount = ();
     type PalletInfo = ();
     type SystemWeightInfo = ();
+}
+
+impl balances::Trait for Test {
+    type Balance = u64;
+    type DustRemoval = ();
+    type Event = TestEvent;
+    type ExistentialDeposit = ExistentialDeposit;
+    type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = ();
 }
 
 impl Trait for Test {
@@ -165,6 +183,11 @@ macro_rules! block {
 // Modules aliases
 pub type Token = crate::Module<Test>;
 pub type System = frame_system::Module<Test>;
+
+pub const DEFAULT_EXISTENTIAL_DEPOSIT: u64 = 5;
+pub const DEFAULT_FREE_BALANCE: u64 = 10;
+pub const DEFAULT_ACCOUNT_ID: u64 = 1;
+pub const DEFAULT_INITIAL_ISSUANCE: u64 = 1_000_000;
 
 // Merkle tree Helpers
 #[derive(Debug)]
