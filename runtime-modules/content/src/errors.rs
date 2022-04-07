@@ -211,9 +211,6 @@ decl_error! {
         /// Bag Size specified is not valid
         InvalidBagSizeSpecified,
 
-        /// VideoPost does not exists
-        VideoPostDoesNotExist,
-
         /// Migration not done yet
         MigrationNotFinished,
 
@@ -223,9 +220,6 @@ decl_error! {
         /// comments disabled
         CommentsDisabled,
 
-        /// moderators limit reached
-        ModeratorsLimitReached,
-
         /// cannot edit video post
         CannotEditDescription,
 
@@ -234,9 +228,6 @@ decl_error! {
 
         /// witness not provided
         WitnessNotProvided,
-
-        /// rationale not provided
-        RationaleNotProvidedByModerator,
 
         /// Insufficient balance
         UnsufficientBalance,
@@ -295,5 +286,8 @@ decl_error! {
 
         /// Cannot claim zero reward.
         ZeroReward,
+
+        /// Cannot transfer the channel: channel owner has insufficient balance (budget for WGs)
+        InsufficientBalanceForTransfer,
     }
 }

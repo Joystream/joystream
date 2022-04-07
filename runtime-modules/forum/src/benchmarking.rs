@@ -1739,7 +1739,7 @@ benchmarks! {
         thread.number_of_posts -= k as u64;
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
 
-        for (extended_post, _) in &posts {
+        for extended_post in posts.keys() {
             assert!(!<PostById<T>>::contains_key(extended_post.thread_id, extended_post.post_id));
         }
 

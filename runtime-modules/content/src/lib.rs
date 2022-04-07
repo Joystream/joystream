@@ -10,8 +10,6 @@ mod nft;
 mod permissions;
 mod types;
 
-use sp_std::cmp::max;
-use sp_std::mem::size_of;
 use sp_std::vec;
 
 pub use errors::*;
@@ -28,9 +26,11 @@ pub use storage::{
 };
 
 pub use common::{
-    council::CouncilBudgetManager, currency::GovernanceCurrency,
-    membership::MembershipInfoProvider, working_group::WorkingGroup, MembershipTypes,
-    StorageOwnership, Url,
+    council::CouncilBudgetManager,
+    currency::GovernanceCurrency,
+    membership::MembershipInfoProvider,
+    working_group::{WorkingGroup, WorkingGroupBudgetHandler},
+    MembershipTypes, StorageOwnership, Url,
 };
 use frame_support::{
     decl_event, decl_module, decl_storage,
@@ -82,29 +82,11 @@ pub trait Trait:
     /// The storage type used
     type DataObjectStorage: storage::DataObjectStorage<Self>;
 
-    /// Type of VideoPostId
-    type VideoPostId: NumericIdentifier;
-
-    /// Type of VideoPostId
-    type ReactionId: NumericIdentifier;
-
-    /// Max Number of moderators
-    type MaxModerators: Get<u64>;
-
     /// Price per byte
     type PricePerByte: Get<<Self as balances::Trait>::Balance>;
 
-    /// Cleanup Margin used in bloat bond calculation
-    type CleanupMargin: Get<<Self as balances::Trait>::Balance>;
-
-    /// Cleanup Cost used in bloat bond calculation
-    type CleanupCost: Get<<Self as balances::Trait>::Balance>;
-
     /// Content Module Id
     type ModuleId: Get<ModuleId>;
-
-    /// Refund cap during cleanup
-    type BloatBondCap: Get<u32>;
 
     /// Deletion prize to be set when creating a dynamic bag
     type BagDeletionPrize: Get<<Self as balances::Trait>::Balance>;
@@ -124,6 +106,9 @@ pub trait Trait:
         + Copy
         + MaybeSerializeDeserialize
         + PartialEq;
+
+    /// Content working group pallet integration.
+    type ContentWorkingGroup: common::working_group::WorkingGroupBudgetHandler<Self>;
 
     /// Provides an access for the council budget.
     type CouncilBudgetManager: CouncilBudgetManager<BalanceOf<Self>>;
@@ -148,11 +133,6 @@ decl_storage! {
 
         pub CuratorGroupById get(fn curator_group_by_id):
         map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
-
-        pub VideoPostById get(fn video_post_by_id) : double_map hasher(blake2_128_concat) T::VideoId,
-        hasher(blake2_128_concat) T::VideoPostId => VideoPost<T>;
-
-        pub NextVideoPostId get(fn next_video_post_id) config(): T::VideoPostId;
 
         pub Commitment get(fn commitment): <T as frame_system::Trait>::Hash;
 
@@ -401,8 +381,7 @@ decl_module! {
                 &actor,
             )?;
 
-            // ensure collaborator & moderator member ids are valid
-            Self::validate_member_set(&params.moderators)?;
+            // ensure collaborator member ids are valid
             Self::validate_member_set(&params.collaborators)?;
 
             // The channel owner will be..
@@ -441,7 +420,6 @@ decl_module! {
                 owner: channel_owner,
                 num_videos: 0u64,
                 collaborators: params.collaborators.clone(),
-                moderators: params.moderators.clone(),
                 cumulative_payout_earned: BalanceOf::<T>::zero(),
                 transfer_status: ChannelTransferStatus::NoActiveTransfer,
                 privilege_level: Zero::zero(),
@@ -826,8 +804,6 @@ decl_module! {
             // create the video struct
             let video: Video<T> = VideoRecord {
                 in_channel: channel_id,
-                enable_comments: params.enable_comments,
-                video_post_id:  None,
                 nft_status,
                 data_objects: data_objects_ids.clone(),
             };
@@ -1097,257 +1073,6 @@ decl_module! {
             Self::deposit_event(RawEvent::VideoVisibilitySetByModerator(actor, video_id, is_hidden, rationale));
 
             Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_post(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            params: VideoPostCreationParameters<T>,
-        ) -> DispatchResult {
-
-            let sender = ensure_signed(origin)?;
-
-            // ensure channel is valid
-            let video = Self::ensure_video_exists(&params.video_reference)?;
-            let owner = Self::get_channel_from_video(&video).owner;
-
-            match params.post_type {
-                VideoPostType::<T>::Comment(parent_id) => {
-                    ensure!(video.enable_comments, Error::<T>::CommentsDisabled);
-                    Self::ensure_post_exists(params.video_reference, parent_id).map(|_| ())?;
-                    ensure_actor_authorized_to_add_comment::<T>(&sender, &actor)?
-                },
-                VideoPostType::<T>::Description => ensure_actor_authorized_to_add_video_post::<T>(
-                    &sender,
-                    &actor,
-                    &owner
-                )?
-            };
-
-            let initial_bloat_bond = Self::compute_initial_bloat_bond();
-            let post_id = <NextVideoPostId<T>>::get();
-
-            let post = VideoPost::<T> {
-                author: actor,
-                bloat_bond: initial_bloat_bond,
-                replies_count: T::VideoPostId::zero(),
-                video_reference: params.video_reference,
-                post_type: params.post_type.clone(),
-            };
-
-            ensure!(
-                Balances::<T>::usable_balance(&sender) >= initial_bloat_bond,
-                Error::<T>::UnsufficientBalance,
-            );
-            //
-            // == MUTATION SAFE ==
-            //
-
-            <ContentTreasury<T>>::deposit(&sender, initial_bloat_bond)?;
-
-            <NextVideoPostId<T>>::mutate(|x| *x = x.saturating_add(One::one()));
-            <VideoPostById<T>>::insert(&params.video_reference, &post_id, post.clone());
-
-            // increment replies count in the parent post
-            match params.post_type {
-                VideoPostType::<T>::Comment(parent_id) => <VideoPostById<T>>::mutate(
-                    &params.video_reference,
-                    parent_id,
-                    |x| x.replies_count = x.replies_count.saturating_add(One::one())),
-                VideoPostType::<T>::Description => VideoById::<T>::mutate(
-                    &params.video_reference,
-                    |video| video.video_post_id = Some(post_id)),
-            };
-
-            // deposit event
-            Self::deposit_event(RawEvent::VideoPostCreated(post, post_id));
-
-            Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn edit_post_text(
-            origin,
-            video_id: T::VideoId,
-            post_id: T::VideoPostId,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            new_text: Vec<u8>,
-        ) {
-            let sender = ensure_signed(origin)?;
-            let video = Self::ensure_video_exists(&video_id)?;
-            let channel = Self::get_channel_from_video(&video);
-            channel.ensure_has_no_active_transfer::<T>()?;
-            let post = Self::ensure_post_exists(video_id, post_id)?;
-
-            match post.post_type {
-                VideoPostType::<T>::Description => ensure_actor_authorized_to_edit_video_post::<T>(
-                    &sender,
-                    &actor,
-                    &channel.owner
-                )?,
-                VideoPostType::<T>::Comment(_) => ensure_actor_authorized_to_edit_comment::<T>(
-                    &sender,
-                    &actor,
-                    &post
-                )?
-            };
-
-            // deposit event
-            Self::deposit_event(RawEvent::VideoPostTextUpdated(actor, new_text, post_id, video_id));
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_post(
-            origin,
-            post_id: T::VideoPostId,
-            video_id: T::VideoId,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            params: VideoPostDeletionParameters<T>,
-        ) {
-            let sender = ensure_signed(origin)?;
-            let video = Self::ensure_video_exists(&video_id)?;
-            let channel = Self::get_channel_from_video(&video);
-            channel.ensure_has_no_active_transfer::<T>()?;
-            let post = Self::ensure_post_exists(video_id, post_id)?;
-
-            let cleanup_actor = match post.post_type {
-                VideoPostType::<T>::Description => {
-                    Self::ensure_witness_verification(
-                        params.witness,
-                        post.replies_count,
-                    )?;
-                    ensure_actor_authorized_to_remove_video_post::<T>(&sender, &actor, &channel)?;
-                    CleanupActor::VideoPostAuthor
-                },
-                VideoPostType::<T>::Comment(_) => {
-                    let cleanup_actor = ensure_actor_authorized_to_remove_comment::<T>(
-                        &sender,
-                        &actor,
-                        &channel,
-                        &post
-                    )?;
-                    if let CleanupActor::Moderator = &cleanup_actor {
-                        ensure!(
-                            params.rationale.is_some(),
-                            Error::<T>::RationaleNotProvidedByModerator
-                        );
-                    }
-                    cleanup_actor
-                }
-            };
-
-            ensure!(
-                ContentTreasury::<T>::usable_balance() >= post.bloat_bond,
-                Error::<T>::InsufficientTreasuryBalance,
-            );
-
-            //
-            // == MUTATION_SAFE ==
-            //
-
-            Self::refund(&sender, cleanup_actor, post.bloat_bond)?;
-
-            match post.post_type {
-                VideoPostType::<T>::Comment(parent_id) => {
-                    VideoPostById::<T>::remove(&video_id, &post_id);
-                    // parent post might have been already deleted
-                    if let Ok(mut parent_post) = Self::ensure_post_exists(
-                        video_id,
-                        parent_id,
-                    ){
-                        parent_post.replies_count =
-                            parent_post.replies_count.saturating_sub(T::VideoPostId::one());
-                        VideoPostById::<T>::insert(&video_id, &parent_id, parent_post);
-                    }
-                }
-                VideoPostType::<T>::Description => VideoPostById::<T>::remove_prefix(&video_id),
-            }
-
-            // deposit event
-            Self::deposit_event(
-                RawEvent::VideoPostDeleted(
-                    post,
-                    post_id,
-                    actor,
-                ));
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        fn react_to_post(
-            origin,
-            member_id: T::MemberId,
-            video_id: T::VideoId,
-            post_id: T::VideoPostId,
-            reaction_id: T::ReactionId,
-        ) {
-            // post existence verification purposely avoided
-            let sender = ensure_signed(origin)?;
-            ensure_member_auth_success::<T>(&sender, &member_id)?;
-
-            let _video = Self::ensure_video_exists(&video_id)?;
-            let _post = Self::ensure_post_exists(video_id, post_id)?;
-
-            //
-            // == MUTATION_SAFE ==
-            //
-
-            Self::deposit_event(RawEvent::ReactionToVideoPost(member_id, video_id, post_id, reaction_id));
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        fn react_to_video(
-            origin,
-            member_id: T::MemberId,
-            video_id: T::VideoId,
-            reaction_id: T::ReactionId,
-        ) {
-            // video existence verification purposely avoided
-            let sender = ensure_signed(origin)?;
-            ensure_member_auth_success::<T>(&sender, &member_id)?;
-
-            let _video = Self::ensure_video_exists(&video_id)?;
-
-            //
-            // == MUTATION_SAFE ==
-            //
-
-            Self::deposit_event(RawEvent::ReactionToVideo(member_id, video_id, reaction_id));
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        fn update_moderator_set(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            new_moderators: BTreeSet<T::MemberId>,
-            channel_id: T::ChannelId
-        ) {
-            // ensure (origin, actor) is channel owner
-            let sender = ensure_signed(origin)?;
-            let channel = Self::ensure_channel_exists(&channel_id)?;
-            channel.ensure_has_no_active_transfer::<T>()?;
-
-            let owner = channel.owner;
-
-            ensure_actor_can_manage_moderators::<T>(
-                &sender,
-                &owner,
-                &actor,
-            )?;
-
-            Self::validate_member_set(&new_moderators)?;
-
-            //
-            // == MUTATION_SAFE ==
-            //
-
-            <ChannelById<T>>::mutate(channel_id, |x| x.moderators = new_moderators.clone());
-
-            Self::deposit_event(
-                RawEvent::ModeratorSetUpdated(
-                    channel_id,
-                    new_moderators
-                ));
         }
 
         #[weight = 10_000_000] // TODO: adjust Weight
@@ -2259,21 +1984,6 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelCollaboratorRemarked(actor, channel_id, msg));
         }
 
-        /// Channel moderator remark
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn channel_moderator_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, channel_id: T::ChannelId, msg: Vec<u8>) {
-            let sender = ensure_signed(origin)?;
-            let channel = Self::ensure_channel_exists(&channel_id)?;
-            ensure_actor_auth_success::<T>(&sender, &actor)?;
-            ensure_actor_is_moderator::<T>(&actor, &channel.moderators)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            Self::deposit_event(RawEvent::ChannelModeratorRemarked(actor, channel_id, msg));
-        }
-
         /// NFT owner remark
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn nft_owner_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, video_id: T::VideoId, msg: Vec<u8>) {
@@ -2326,31 +2036,35 @@ decl_module! {
             commitment_params: TransferParameters<T::MemberId, BalanceOf<T>>
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
-            ensure_actor_authorized_to_accept_channel::<T>(origin, &actor, &channel.owner)?;
 
-            if let ChannelTransferStatus::PendingTransfer(ref params) = channel.transfer_status {
-                ensure!(
-                    params.transfer_params == commitment_params,
-                    Error::<T>::InvalidChannelTransferCommitmentParams
-                );
-            } else {
-                return Err(Error::<T>::InvalidChannelTransferStatus.into())
-            }
+            let params =
+                if let ChannelTransferStatus::PendingTransfer(ref params) =channel.transfer_status {
+                    ensure_actor_authorized_to_accept_channel::<T>(origin, &actor, &params.new_owner)?;
+                    Self::validate_channel_transfer_acceptance(&actor, &commitment_params, params)?;
+
+                    params
+                } else {
+                    return Err(Error::<T>::InvalidChannelTransferStatus.into());
+                };
+
+            let new_owner = actor_to_channel_owner::<T>(&actor)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            if let ChannelTransferStatus::PendingTransfer(params) = channel.transfer_status {
-                ChannelById::<T>::mutate(&channel_id, |channel| {
-                    channel.transfer_status = ChannelTransferStatus::NoActiveTransfer;
-                    channel.owner = params.new_owner.clone();
-                });
-
-                Self::deposit_event(
-                    RawEvent::ChannelTransferAccepted(channel_id, actor, commitment_params)
-                );
+            if !params.transfer_params.is_free_of_charge() {
+                Self::pay_for_channel_swap(&channel.owner, &new_owner, commitment_params.price)?;
             }
+
+            ChannelById::<T>::mutate(&channel_id, |channel| {
+                channel.transfer_status = ChannelTransferStatus::NoActiveTransfer;
+                channel.owner = params.new_owner.clone();
+            });
+
+            Self::deposit_event(
+                RawEvent::ChannelTransferAccepted(channel_id, actor, commitment_params)
+            );
         }
 
         /// Claims an accumulated channel reward for a council.
@@ -2443,41 +2157,6 @@ impl<T: Trait> Module<T> {
         ChannelById::<T>::get(video.in_channel)
     }
 
-    fn ensure_post_exists(
-        video_id: T::VideoId,
-        post_id: T::VideoPostId,
-    ) -> Result<VideoPost<T>, Error<T>> {
-        ensure!(
-            VideoPostById::<T>::contains_key(video_id, post_id),
-            Error::<T>::VideoPostDoesNotExist
-        );
-        Ok(VideoPostById::<T>::get(video_id, post_id))
-    }
-
-    fn refund(
-        sender: &<T as frame_system::Trait>::AccountId,
-        cleanup_actor: CleanupActor,
-        bloat_bond: <T as balances::Trait>::Balance,
-    ) -> DispatchResult {
-        match cleanup_actor {
-            CleanupActor::VideoPostAuthor => {
-                let cap = <T as balances::Trait>::Balance::from(T::BloatBondCap::get());
-
-                if bloat_bond > cap {
-                    let diff = bloat_bond.saturating_sub(cap);
-                    ContentTreasury::<T>::withdraw(sender, cap)?;
-                    let _ = balances::Module::<T>::burn(diff);
-                } else {
-                    ContentTreasury::<T>::withdraw(sender, bloat_bond)?;
-                }
-            }
-            _ => {
-                let _ = balances::Module::<T>::burn(bloat_bond);
-            }
-        }
-        Ok(())
-    }
-
     /// Convert InitTransactionalStatus to TransactionalStatus after checking requirements on the Auction variant
     fn ensure_valid_init_transactional_status(
         init_status: &InitTransactionalStatus<T>,
@@ -2543,38 +2222,6 @@ impl<T: Trait> Module<T> {
         BagIdType::from(dyn_bag)
     }
 
-    fn video_deletion_refund_logic(
-        sender: &T::AccountId,
-        video_id: &T::VideoId,
-        video_post_id: &T::VideoPostId,
-    ) -> DispatchResult {
-        let bloat_bond = <VideoPostById<T>>::get(video_id, video_post_id).bloat_bond;
-        Self::refund(&sender, CleanupActor::VideoPostAuthor, bloat_bond)?;
-        Ok(())
-    }
-
-    fn compute_initial_bloat_bond() -> BalanceOf<T> {
-        let storage_price =
-            T::PricePerByte::get().saturating_mul((size_of::<VideoPost<T>>() as u32).into());
-
-        let cleanup_cost = T::CleanupCost::get().saturating_add(T::CleanupMargin::get());
-
-        max(storage_price, cleanup_cost)
-    }
-
-    // If we are trying to delete a video post we need witness verification
-    fn ensure_witness_verification(
-        witness: Option<<T as frame_system::Trait>::Hash>,
-        replies_count: T::VideoPostId,
-    ) -> DispatchResult {
-        let wit_hash = witness.ok_or(Error::<T>::WitnessNotProvided)?;
-        ensure!(
-            <T as frame_system::Trait>::Hashing::hash_of(&replies_count) == wit_hash,
-            Error::<T>::WitnessVerificationFailed,
-        );
-        Ok(())
-    }
-
     // construct parameters to be upload to storage
     fn construct_upload_parameters(
         assets: &StorageAssets<T>,
@@ -2634,21 +2281,8 @@ impl<T: Trait> Module<T> {
             )?;
         }
 
-        // bloat bond logic: channel owner is refunded
-        // (this should never fail!)
-        video
-            .video_post_id
-            .as_ref()
-            .map(|video_post_id| {
-                Self::video_deletion_refund_logic(&sender, &video_id, &video_post_id)
-            })
-            .transpose()?;
-
         // Remove video
         VideoById::<T>::remove(video_id);
-
-        // Remove all comments related
-        <VideoPostById<T>>::remove_prefix(video_id);
 
         // Update corresponding channel
         // Remove recently deleted video from the channel
@@ -2759,6 +2393,91 @@ impl<T: Trait> Module<T> {
             .cloned()
             .collect::<BTreeSet<_>>()
     }
+
+    fn ensure_sufficient_balance_for_channel_transfer(
+        owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
+        transfer_cost: BalanceOf<T>,
+    ) -> DispatchResult {
+        let balance = match owner {
+            ChannelOwner::Member(member_id) => {
+                let controller_account_id =
+                    T::MemberAuthenticator::controller_account_id(*member_id)?;
+
+                // Funds received from the member invitation cannot be used!!
+                Balances::<T>::usable_balance(&controller_account_id)
+            }
+            ChannelOwner::CuratorGroup(_) => T::ContentWorkingGroup::get_budget(),
+        };
+
+        ensure!(
+            balance >= transfer_cost,
+            Error::<T>::InsufficientBalanceForTransfer
+        );
+        Ok(())
+    }
+
+    // Validates channel transfer acceptance parameters: commitment params, new owner balance.
+    fn validate_channel_transfer_acceptance(
+        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        commitment_params: &TransferParameters<T::MemberId, BalanceOf<T>>,
+        params: &PendingTransfer<T::MemberId, T::CuratorGroupId, BalanceOf<T>>,
+    ) -> DispatchResult {
+        ensure!(
+            params.transfer_params == *commitment_params,
+            Error::<T>::InvalidChannelTransferCommitmentParams
+        );
+
+        // Check for new owner balance only if the transfer is not free.
+        if !params.transfer_params.is_free_of_charge() {
+            let owner = actor_to_channel_owner::<T>(actor)?;
+
+            Self::ensure_sufficient_balance_for_channel_transfer(
+                &owner,
+                params.transfer_params.price,
+            )?;
+        }
+
+        Ok(())
+    }
+    // Transfers balance from the new channel owner to the old channel owner.
+    fn pay_for_channel_swap(
+        old_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
+        new_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
+        price: BalanceOf<T>,
+    ) -> DispatchResult {
+        // Decrease (or slash) balance for the new owner
+        match new_owner {
+            ChannelOwner::Member(member_id) => {
+                let controller_account_id =
+                    T::MemberAuthenticator::controller_account_id(*member_id)?;
+
+                let _ = Balances::<T>::slash(&controller_account_id, price);
+            }
+            ChannelOwner::CuratorGroup(_) => {
+                // The budget is sufficient. It was checked previously in functions:
+                // validate_channel_transfer_acceptance() ->
+                // ensure_sufficient_balance_for_channel_transfer()
+                let new_budget = T::ContentWorkingGroup::get_budget().saturating_sub(price);
+                T::ContentWorkingGroup::set_budget(new_budget);
+            }
+        };
+
+        // Increase (deposit) balance for the old owner
+        match old_owner {
+            ChannelOwner::Member(member_id) => {
+                let controller_account_id =
+                    T::MemberAuthenticator::controller_account_id(*member_id)?;
+
+                let _ = Balances::<T>::deposit_creating(&controller_account_id, price);
+            }
+            ChannelOwner::CuratorGroup(_) => {
+                let new_budget = T::ContentWorkingGroup::get_budget().saturating_add(price);
+                T::ContentWorkingGroup::set_budget(new_budget);
+            }
+        };
+
+        Ok(())
+    }
 }
 
 decl_event!(
@@ -2786,10 +2505,6 @@ decl_event!(
         ChannelUpdateParameters = ChannelUpdateParameters<T>,
         VideoCreationParameters = VideoCreationParameters<T>,
         VideoUpdateParameters = VideoUpdateParameters<T>,
-        VideoPost = VideoPost<T>,
-        VideoPostId = <T as Trait>::VideoPostId,
-        ReactionId = <T as Trait>::ReactionId,
-        ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
         Hash = <T as frame_system::Trait>::Hash,
         ChannelPrivilegeLevel = <T as Trait>::ChannelPrivilegeLevel,
         ModerationPermissionsByLevel = ModerationPermissionsByLevel<T>,
@@ -2877,14 +2592,6 @@ decl_event!(
             Vec<u8>, /* rationale */
         ),
 
-        // VideoPosts & Replies
-        VideoPostCreated(VideoPost, VideoPostId),
-        VideoPostTextUpdated(ContentActor, Vec<u8>, VideoPostId, VideoId),
-        VideoPostDeleted(VideoPost, VideoPostId, ContentActor),
-        ReactionToVideoPost(MemberId, VideoId, VideoPostId, ReactionId),
-        ReactionToVideo(MemberId, VideoId, ReactionId),
-        ModeratorSetUpdated(ChannelId, ModeratorSet),
-
         // Rewards
         CommitmentUpdated(Hash),
         ChannelRewardUpdated(Balance, ChannelId),
@@ -2911,13 +2618,12 @@ decl_event!(
         BuyNowPriceUpdated(VideoId, ContentActor, Balance),
         NftSlingedBackToTheOriginalArtist(VideoId, ContentActor),
 
-        /// Metaprotocols related event
+        // Metaprotocols related event
         ChannelOwnerRemarked(ContentActor, ChannelId, Vec<u8>),
         ChannelCollaboratorRemarked(ContentActor, ChannelId, Vec<u8>),
-        ChannelModeratorRemarked(ContentActor, ChannelId, Vec<u8>),
         NftOwnerRemarked(ContentActor, VideoId, Vec<u8>),
 
-        /// Channel transfer
+        // Channel transfer
         UpdateChannelTransferStatus(ChannelId, ContentActor, ChannelTransferStatus),
         ChannelTransferAccepted(ChannelId, ContentActor, TransferParameters),
     }

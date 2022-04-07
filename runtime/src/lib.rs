@@ -475,12 +475,8 @@ impl common::currency::GovernanceCurrency for Runtime {
 
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
-    pub const MaxModerators: u64 = 5;    // TODO: update
-    pub const CleanupMargin: u32 = 3;    // TODO: update
-    pub const CleanupCost: u32 = 1; // TODO: update
     pub const PricePerByte: u32 = 2; // TODO: update
     pub const ContentModuleId: ModuleId = ModuleId(*b"mContent"); // module content
-    pub const BloatBondCap: u32 = 1000;  // TODO: update
     pub const BagDeletionPrize: Balance = 0; // TODO: update
     pub const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = 25;
 }
@@ -492,19 +488,14 @@ impl content::Trait for Runtime {
     type OpenAuctionId = OpenAuctionId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type DataObjectStorage = Storage;
-    type VideoPostId = VideoPostId;
-    type ReactionId = ReactionId;
-    type MaxModerators = MaxModerators;
     type PricePerByte = PricePerByte;
-    type BloatBondCap = BloatBondCap;
-    type CleanupMargin = CleanupMargin;
-    type CleanupCost = CleanupCost;
     type ModuleId = ContentModuleId;
     type BagDeletionPrize = BagDeletionPrize;
     type MemberAuthenticator = Members;
     type MaxKeysPerCuratorGroupPermissionsByLevelMap = MaxKeysPerCuratorGroupPermissionsByLevelMap;
     type ChannelPrivilegeLevel = ChannelPrivilegeLevel;
     type CouncilBudgetManager = Council;
+    type ContentWorkingGroup = ContentWorkingGroup;
 }
 
 // The referendum instance alias.

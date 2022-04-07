@@ -4,7 +4,6 @@ use crate::*;
 use frame_support::assert_ok;
 use frame_support::traits::Currency;
 use frame_system::RawOrigin;
-use sp_std::cmp::min;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::FromIterator;
 use sp_std::iter::{IntoIterator, Iterator};
@@ -95,7 +94,6 @@ impl CreateChannelFixture {
                 assets: None,
                 meta: None,
                 collaborators: BTreeSet::new(),
-                moderators: BTreeSet::new(),
                 storage_buckets: BTreeSet::new(),
                 distribution_buckets: BTreeSet::new(),
                 expected_dynamic_bag_deletion_prize: Default::default(),
@@ -135,16 +133,6 @@ impl CreateChannelFixture {
         Self {
             params: ChannelCreationParameters::<Test> {
                 collaborators: collaborators,
-                ..self.params
-            },
-            ..self
-        }
-    }
-
-    pub fn with_moderators(self, moderators: BTreeSet<MemberId>) -> Self {
-        Self {
-            params: ChannelCreationParameters::<Test> {
-                moderators,
                 ..self.params
             },
             ..self
@@ -209,7 +197,6 @@ impl CreateChannelFixture {
                     Channel::<Test> {
                         owner: owner,
                         collaborators: self.params.collaborators.clone(),
-                        moderators: self.params.moderators.clone(),
                         num_videos: Zero::zero(),
                         cumulative_payout_earned: Zero::zero(),
                         privilege_level: Zero::zero(),
@@ -265,7 +252,6 @@ impl CreateVideoFixture {
             params: VideoCreationParameters::<Test> {
                 assets: None,
                 meta: None,
-                enable_comments: true,
                 auto_issue_nft: None,
                 expected_data_object_deletion_prize: DATA_OBJECT_DELETION_PRIZE,
             },
@@ -638,7 +624,6 @@ impl UpdateVideoFixture {
             params: VideoUpdateParameters::<Test> {
                 assets_to_upload: None,
                 assets_to_remove: BTreeSet::new(),
-                enable_comments: None,
                 new_meta: None,
                 auto_issue_nft: Default::default(),
                 expected_data_object_deletion_prize: Default::default(),
@@ -1280,293 +1265,6 @@ impl SetVideoVisibilityAsModeratorFixture {
     }
 }
 
-pub struct CreatePostFixture {
-    sender: AccountId,
-    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    params: VideoPostCreationParameters<Test>,
-}
-
-impl CreatePostFixture {
-    pub fn default() -> Self {
-        Self {
-            sender: DEFAULT_MEMBER_ACCOUNT_ID,
-            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
-            params: VideoPostCreationParameters::<Test> {
-                post_type: VideoPostType::<Test>::Description,
-                video_reference: VideoId::one(),
-            },
-        }
-    }
-
-    pub fn with_sender(self, sender: AccountId) -> Self {
-        Self { sender, ..self }
-    }
-
-    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
-        Self { actor, ..self }
-    }
-
-    pub fn with_params(self, params: VideoPostCreationParameters<Test>) -> Self {
-        Self { params, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender.clone());
-        let initial_bloat_bond = Content::compute_initial_bloat_bond();
-        let post_id = Content::next_video_post_id();
-        let balance_pre = Balances::<Test>::usable_balance(&self.sender);
-        let replies_count_pre = match &self.params.post_type {
-            VideoPostType::<Test>::Comment(parent_id) => {
-                Content::ensure_post_exists(self.params.video_reference, parent_id.clone())
-                    .map_or(VideoPostId::zero(), |p| p.replies_count)
-            }
-            VideoPostType::<Test>::Description => VideoPostId::zero(),
-        };
-        let video_pre = Content::video_by_id(&self.params.video_reference);
-
-        let actual_result = Content::create_post(origin, self.actor.clone(), self.params.clone());
-
-        let balance_post = Balances::<Test>::usable_balance(&self.sender);
-        let replies_count_post = match &self.params.post_type {
-            VideoPostType::<Test>::Comment(parent_id) => {
-                Content::ensure_post_exists(self.params.video_reference, *parent_id)
-                    .map_or(VideoPostId::zero(), |p| p.replies_count)
-            }
-            VideoPostType::<Test>::Description => VideoPostId::zero(),
-        };
-        let video_post = Content::video_by_id(&self.params.video_reference);
-
-        assert_eq!(actual_result, expected_result);
-
-        if actual_result.is_ok() {
-            assert_eq!(balance_pre, initial_bloat_bond.saturating_add(balance_post));
-            assert_eq!(
-                post_id.saturating_add(One::one()),
-                Content::next_video_post_id()
-            );
-            match &self.params.post_type {
-                VideoPostType::<Test>::Description => {
-                    assert_eq!(Some(post_id), video_post.video_post_id);
-                }
-                VideoPostType::<Test>::Comment(_) => {
-                    assert_eq!(
-                        replies_count_post,
-                        replies_count_pre.saturating_add(One::one())
-                    );
-                }
-            }
-
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::VideoPostCreated(
-                    VideoPost::<Test> {
-                        author: self.actor.clone(),
-                        bloat_bond: initial_bloat_bond,
-                        replies_count: VideoPostId::zero(),
-                        video_reference: self.params.video_reference,
-                        post_type: self.params.post_type.clone(),
-                    },
-                    post_id,
-                ))
-            );
-        } else {
-            assert_eq!(balance_pre, balance_post);
-            assert_eq!(post_id, Content::next_video_post_id());
-            match &self.params.post_type {
-                VideoPostType::<Test>::Description => {
-                    assert_eq!(video_pre, video_post);
-                }
-                VideoPostType::<Test>::Comment(_) => {
-                    assert_eq!(replies_count_post, replies_count_pre);
-                }
-            }
-        }
-    }
-}
-
-pub struct EditPostTextFixture {
-    sender: AccountId,
-    video_id: VideoId,
-    post_id: VideoPostId,
-    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    new_text: Vec<u8>,
-}
-
-impl EditPostTextFixture {
-    pub fn default() -> Self {
-        Self {
-            sender: DEFAULT_MEMBER_ACCOUNT_ID,
-            video_id: VideoId::one(),
-            post_id: VideoPostId::one(),
-            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
-            new_text: b"sample text".to_vec(),
-        }
-    }
-
-    pub fn with_sender(self, sender: AccountId) -> Self {
-        Self { sender, ..self }
-    }
-
-    pub fn with_post_id(self, post_id: VideoPostId) -> Self {
-        Self { post_id, ..self }
-    }
-
-    pub fn with_video_id(self, video_id: VideoId) -> Self {
-        Self { video_id, ..self }
-    }
-
-    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
-        Self { actor, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender.clone());
-
-        let actual_result = Content::edit_post_text(
-            origin,
-            self.video_id,
-            self.post_id,
-            self.actor.clone(),
-            self.new_text.clone(),
-        );
-
-        assert_eq!(actual_result, expected_result);
-        if actual_result.is_ok() {
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::VideoPostTextUpdated(
-                    self.actor,
-                    self.new_text.clone(),
-                    self.post_id,
-                    self.video_id,
-                ))
-            );
-        }
-    }
-}
-
-pub struct DeletePostFixture {
-    sender: AccountId,
-    post_id: VideoPostId,
-    video_id: VideoId,
-    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    params: VideoPostDeletionParameters<Test>,
-}
-
-impl DeletePostFixture {
-    pub fn default() -> Self {
-        Self {
-            sender: DEFAULT_MEMBER_ACCOUNT_ID,
-            post_id: VideoPostId::one(),
-            video_id: VideoId::one(),
-            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
-            params: VideoPostDeletionParameters::<Test> {
-                witness: Some(Hashing::hash_of(&VideoPostId::zero())),
-                rationale: Some(b"rationale".to_vec()),
-            },
-        }
-    }
-
-    pub fn with_sender(self, sender: AccountId) -> Self {
-        Self { sender, ..self }
-    }
-
-    pub fn with_post_id(self, post_id: VideoPostId) -> Self {
-        Self { post_id, ..self }
-    }
-
-    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
-        Self { actor, ..self }
-    }
-
-    pub fn with_params(self, params: VideoPostDeletionParameters<Test>) -> Self {
-        Self { params, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
-        let balance_pre = Balances::<Test>::usable_balance(&self.sender);
-        let initial_bloat_bond = Content::compute_initial_bloat_bond();
-        let post = Content::video_post_by_id(&self.video_id, &self.post_id);
-        let thread_size = VideoPostById::<Test>::iter_prefix(&self.video_id).count();
-        let replies_count_pre = match &post.post_type {
-            VideoPostType::<Test>::Comment(parent_id) => {
-                Content::ensure_post_exists(self.video_id, *parent_id)
-                    .map_or(VideoPostId::zero(), |p| p.replies_count)
-            }
-            VideoPostType::<Test>::Description => VideoPostId::zero(),
-        };
-
-        let actual_result = Content::delete_post(
-            origin,
-            self.post_id,
-            self.video_id,
-            self.actor.clone(),
-            self.params.clone(),
-        );
-
-        assert_eq!(actual_result, expected_result);
-
-        let balance_post = Balances::<Test>::usable_balance(&self.sender);
-        match actual_result {
-            Ok(()) => {
-                if post.author == self.actor.clone() {
-                    let cap = BalanceOf::<Test>::from(BloatBondCap::get());
-                    assert!(
-                        balance_post.saturating_sub(balance_pre) >= min(initial_bloat_bond, cap)
-                    )
-                } else {
-                    assert_eq!(balance_post, balance_pre)
-                };
-                assert!(!VideoPostById::<Test>::contains_key(
-                    &self.video_id,
-                    &self.post_id
-                ));
-                match &post.post_type {
-                    VideoPostType::<Test>::Description => assert_eq!(
-                        VideoPostById::<Test>::iter_prefix(&self.video_id).count(),
-                        0usize,
-                    ),
-                    VideoPostType::<Test>::Comment(parent_id) => {
-                        let replies_count_post =
-                            Content::ensure_post_exists(self.video_id, *parent_id)
-                                .map_or(VideoPostId::zero(), |p| p.replies_count);
-                        assert_eq!(
-                            replies_count_pre,
-                            replies_count_post.saturating_add(VideoPostId::one())
-                        )
-                    }
-                };
-                assert_eq!(
-                    System::events().last().unwrap().event,
-                    MetaEvent::content(RawEvent::VideoPostDeleted(post, self.post_id, self.actor))
-                );
-            }
-            Err(err) => {
-                assert_eq!(balance_pre, balance_post);
-                if err != Error::<Test>::VideoPostDoesNotExist.into() {
-                    assert_eq!(
-                        Content::video_post_by_id(&self.video_id, &self.post_id),
-                        post
-                    );
-                    match &post.post_type {
-                        VideoPostType::<Test>::Comment(parent_id) => {
-                            let replies_count_post =
-                                Content::ensure_post_exists(self.video_id, *parent_id)
-                                    .map_or(VideoPostId::zero(), |p| p.replies_count);
-                            assert_eq!(replies_count_pre, replies_count_post);
-                        }
-                        VideoPostType::<Test>::Description => assert_eq!(
-                            VideoPostById::<Test>::iter_prefix(&self.video_id).count(),
-                            thread_size,
-                        ),
-                    }
-                }
-            }
-        }
-    }
-}
-
 pub struct DeleteVideoAssetsAsModeratorFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
@@ -1865,72 +1563,6 @@ impl VideoDeletion for DeleteVideoAsModeratorFixture {
     }
 }
 
-pub struct UpdateModeratorSetFixture {
-    sender: AccountId,
-    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    new_moderators: BTreeSet<MemberId>,
-    channel_id: ChannelId,
-}
-
-impl UpdateModeratorSetFixture {
-    pub fn default() -> Self {
-        Self {
-            sender: DEFAULT_MEMBER_ACCOUNT_ID,
-            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
-            new_moderators: BTreeSet::new(),
-            channel_id: ChannelId::one(),
-        }
-    }
-
-    pub fn with_moderators(self, new_moderators: BTreeSet<MemberId>) -> Self {
-        Self {
-            new_moderators,
-            ..self
-        }
-    }
-
-    pub fn with_sender(self, sender: AccountId) -> Self {
-        Self { sender, ..self }
-    }
-
-    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
-        Self { actor, ..self }
-    }
-
-    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
-        Self { channel_id, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender.clone());
-        let channel_pre = ChannelById::<Test>::get(&self.channel_id);
-
-        let actual_result = Content::update_moderator_set(
-            origin,
-            self.actor.clone(),
-            self.new_moderators.clone(),
-            self.channel_id.clone(),
-        );
-
-        assert_eq!(actual_result, expected_result);
-
-        let channel_post = ChannelById::<Test>::get(&self.channel_id);
-
-        if actual_result.is_ok() {
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::ModeratorSetUpdated(
-                    self.channel_id,
-                    self.new_moderators.clone(),
-                ))
-            );
-            assert_eq!(channel_post.moderators, self.new_moderators);
-        } else {
-            assert_eq!(channel_pre, channel_post);
-        }
-    }
-}
-
 pub struct UpdateMaximumRewardFixture {
     sender: AccountId,
     new_amount: BalanceOf<Test>,
@@ -2159,16 +1791,19 @@ impl UpdateChannelTransferStatusFixture {
     }
 
     pub fn with_collaborators(self, new_collaborators: BTreeSet<MemberId>) -> Self {
-        Self {
-            transfer_status: ChannelTransferStatus::PendingTransfer(PendingTransfer {
-                transfer_params: TransferParameters {
-                    new_collaborators,
-                    ..Default::default()
-                },
-                ..Default::default()
-            }),
-            ..self
-        }
+        let old_transfer_params = self.get_transfer_params();
+        self.with_transfer_parameters(TransferParameters {
+            new_collaborators,
+            ..old_transfer_params
+        })
+    }
+
+    pub fn with_price(self, price: u64) -> Self {
+        let old_transfer_params = self.get_transfer_params();
+        self.with_transfer_parameters(TransferParameters {
+            price,
+            ..old_transfer_params
+        })
     }
 
     pub fn with_transfer_status(
@@ -2181,18 +1816,65 @@ impl UpdateChannelTransferStatusFixture {
         }
     }
 
-    pub fn with_transfer_status_by_member_id(self, member_id: MemberId) -> Self {
-        Self {
-            transfer_status: ChannelTransferStatus::PendingTransfer(PendingTransfer::<
-                MemberId,
-                CuratorGroupId,
-                BalanceOf<Test>,
-            > {
-                new_owner: ChannelOwner::Member(member_id),
-                ..Default::default()
-            }),
-            ..self
+    pub fn with_new_member_channel_owner(self, member_id: MemberId) -> Self {
+        let old_pending_transfer_params = self.get_pending_transfer_params();
+        self.with_transfer_status(ChannelTransferStatus::PendingTransfer(PendingTransfer::<
+            MemberId,
+            CuratorGroupId,
+            BalanceOf<Test>,
+        > {
+            new_owner: ChannelOwner::Member(member_id),
+            ..old_pending_transfer_params
+        }))
+    }
+
+    pub fn with_new_channel_owner(self, owner: ChannelOwner<MemberId, CuratorGroupId>) -> Self {
+        let old_pending_transfer_params = self.get_pending_transfer_params();
+        self.with_transfer_status(ChannelTransferStatus::PendingTransfer(PendingTransfer::<
+            MemberId,
+            CuratorGroupId,
+            BalanceOf<Test>,
+        > {
+            new_owner: owner,
+            ..old_pending_transfer_params
+        }))
+    }
+
+    fn get_pending_transfer_params(
+        &self,
+    ) -> PendingTransfer<MemberId, CuratorGroupId, BalanceOf<Test>> {
+        if let ChannelTransferStatus::PendingTransfer(transfer_status) =
+            self.transfer_status.clone()
+        {
+            transfer_status
+        } else {
+            Default::default()
         }
+    }
+
+    fn get_transfer_params(&self) -> TransferParameters<MemberId, BalanceOf<Test>> {
+        if let ChannelTransferStatus::PendingTransfer(transfer_status) =
+            self.transfer_status.clone()
+        {
+            transfer_status.transfer_params
+        } else {
+            Default::default()
+        }
+    }
+
+    pub fn with_transfer_parameters(
+        self,
+        transfer_params: TransferParameters<MemberId, BalanceOf<Test>>,
+    ) -> Self {
+        let old_pending_transfer_params = self.get_pending_transfer_params();
+        self.with_transfer_status(ChannelTransferStatus::PendingTransfer(PendingTransfer::<
+            MemberId,
+            CuratorGroupId,
+            BalanceOf<Test>,
+        > {
+            transfer_params,
+            ..old_pending_transfer_params
+        }))
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -2258,6 +1940,14 @@ impl AcceptChannelTransferFixture {
         params: TransferParameters<MemberId, BalanceOf<Test>>,
     ) -> Self {
         Self { params, ..self }
+    }
+
+    pub fn with_price(self, price: u64) -> Self {
+        let old_transfer_params = self.params.clone();
+        self.with_transfer_params(TransferParameters {
+            price,
+            ..old_transfer_params
+        })
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -2517,8 +2207,7 @@ pub fn create_default_member_owned_channel_with_storage_buckets(
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
             object_creation_list: create_data_objects_helper(),
         })
-        .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
-        .with_moderators(vec![DEFAULT_MODERATOR_ID].into_iter().collect());
+        .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect());
 
     if include_storage_buckets {
         set_dynamic_bag_creation_policy_for_storage_numbers(1);
@@ -2540,7 +2229,6 @@ pub fn create_default_curator_owned_channel(deletion_prize: u64) {
             object_creation_list: create_data_objects_helper(),
         })
         .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
-        .with_moderators(vec![DEFAULT_MODERATOR_ID].into_iter().collect())
         .call_and_assert(Ok(()));
 }
 
@@ -2598,49 +2286,6 @@ pub fn create_default_curator_owned_channel_with_video(deletion_prize: u64) {
             object_creation_list: create_data_objects_helper(),
         })
         .with_channel_id(NextChannelId::<Test>::get() - 1)
-        .call_and_assert(Ok(()));
-}
-
-pub fn create_default_member_owned_channel_with_video_and_post() {
-    create_default_member_owned_channel_with_video();
-    CreatePostFixture::default().call_and_assert(Ok(()));
-}
-
-pub fn create_default_curator_owned_channel_with_video_and_post(deletion_prize: u64) {
-    create_default_curator_owned_channel_with_video(deletion_prize);
-    let default_curator_group_id = Content::next_curator_group_id() - 1;
-    CreatePostFixture::default()
-        .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-        .with_actor(ContentActor::Curator(
-            default_curator_group_id,
-            DEFAULT_CURATOR_ID,
-        ))
-        .call_and_assert(Ok(()));
-}
-
-pub fn create_default_member_owned_channel_with_video_and_comment() {
-    create_default_member_owned_channel_with_video_and_post();
-    CreatePostFixture::default()
-        .with_params(VideoPostCreationParameters::<Test> {
-            post_type: VideoPostType::<Test>::Comment(VideoPostId::one()),
-            video_reference: VideoId::one(),
-        })
-        .call_and_assert(Ok(()));
-}
-
-pub fn create_default_curator_owned_channel_with_video_and_comment(deletion_prize: u64) {
-    create_default_curator_owned_channel_with_video_and_post(deletion_prize);
-    let default_curator_group_id = Content::next_curator_group_id() - 1;
-    CreatePostFixture::default()
-        .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-        .with_actor(ContentActor::Curator(
-            default_curator_group_id,
-            DEFAULT_CURATOR_ID,
-        ))
-        .with_params(VideoPostCreationParameters::<Test> {
-            post_type: VideoPostType::<Test>::Comment(VideoPostId::one()),
-            video_reference: VideoId::one(),
-        })
         .call_and_assert(Ok(()));
 }
 

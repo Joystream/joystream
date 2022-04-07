@@ -26,7 +26,7 @@ fn assert_last_event<T: Trait<I>, I: Instance>(generic_event: <T as Trait<I>>::E
 }
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
-    ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
+    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
 fn add_opening_helper<T: Trait<I>, I: Instance>(
@@ -94,7 +94,7 @@ fn apply_on_opening_helper<T: Trait<I>, I: Instance>(
 }
 
 fn add_opening_and_apply_with_multiple_ids<T: Trait<I> + membership::Trait, I: Instance>(
-    ids: &Vec<u32>,
+    ids: &[u32],
     add_opening_origin: &T::Origin,
     job_opening_type: &OpeningType,
 ) -> (OpeningId, BTreeSet<ApplicationId>, Vec<T::AccountId>) {
@@ -176,12 +176,12 @@ fn member_funded_account<T: Trait<I> + membership::Trait, I: Instance>(
     let member_id = T::MemberId::from(id.try_into().unwrap());
     Membership::<T>::add_staking_account_candidate(
         RawOrigin::Signed(account_id.clone()).into(),
-        member_id.clone(),
+        member_id,
     )
     .unwrap();
     Membership::<T>::confirm_staking_account(
         RawOrigin::Signed(account_id.clone()).into(),
-        member_id.clone(),
+        member_id,
         account_id.clone(),
     )
     .unwrap();
@@ -221,7 +221,7 @@ pub fn complete_opening<T: Trait<I> + membership::Trait, I: Instance>(
 ) -> WorkerId<T> {
     let add_worker_origin = match job_opening_type {
         OpeningType::Leader => RawOrigin::Root,
-        OpeningType::Regular => RawOrigin::Signed(lead_id.clone().unwrap()),
+        OpeningType::Regular => RawOrigin::Signed(lead_id.unwrap()),
     };
 
     let (opening_id, application_id) = add_and_apply_opening::<T, I>(
@@ -235,7 +235,7 @@ pub fn complete_opening<T: Trait<I> + membership::Trait, I: Instance>(
     let mut successful_application_ids = BTreeSet::<ApplicationId>::new();
     successful_application_ids.insert(application_id);
     WorkingGroup::<T, _>::fill_opening(
-        add_worker_origin.clone().into(),
+        add_worker_origin.into(),
         opening_id,
         successful_application_ids,
     )
@@ -270,7 +270,7 @@ benchmarks_instance! {
 
         let (opening_id, successful_application_ids, application_account_id) =
             add_opening_and_apply_with_multiple_ids::<T, I>(
-                &(1..i).collect(),
+                &(1..i).collect::<Vec<_>>(),
                 &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
                 &OpeningType::Regular
             );
@@ -318,7 +318,7 @@ benchmarks_instance! {
 
         // Force unstaking period to have passed
         let curr_block_number =
-            System::<T>::block_number().saturating_add(leaving_unstaking_period.into());
+            System::<T>::block_number().saturating_add(leaving_unstaking_period);
         System::<T>::set_block_number(curr_block_number);
         WorkingGroup::<T, _>::set_budget(
             RawOrigin::Root.into(),
@@ -355,12 +355,12 @@ benchmarks_instance! {
 
         let (opening_id, successful_application_ids, _) =
             add_opening_and_apply_with_multiple_ids::<T, I>(
-                &(1..i).collect(),
+                &(1..i).collect::<Vec<_>>(),
                 &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
                 &OpeningType::Regular
             );
 
-        WorkingGroup::<T, _>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
+        WorkingGroup::<T, _>::fill_opening(RawOrigin::Signed(lead_id).into(), opening_id,
         successful_application_ids.clone()).unwrap();
 
         for i in 1..successful_application_ids.len() {
@@ -415,12 +415,12 @@ benchmarks_instance! {
 
         let (opening_id, successful_application_ids, _) =
             add_opening_and_apply_with_multiple_ids::<T, I>(
-                &(1..i).collect(),
+                &(1..i).collect::<Vec<_>>(),
                 &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
                 &OpeningType::Regular
             );
 
-        WorkingGroup::<T, _>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
+        WorkingGroup::<T, _>::fill_opening(RawOrigin::Signed(lead_id).into(), opening_id,
         successful_application_ids.clone()).unwrap();
 
         for i in 1..successful_application_ids.len() {
@@ -464,12 +464,12 @@ benchmarks_instance! {
 
         let (opening_id, successful_application_ids, _) =
             add_opening_and_apply_with_multiple_ids::<T, I>(
-                &(1..i).collect(),
+                &(1..i).collect::<Vec<_>>(),
                 &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
                 &OpeningType::Regular
             );
 
-        WorkingGroup::<T, _>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
+        WorkingGroup::<T, _>::fill_opening(RawOrigin::Signed(lead_id).into(), opening_id,
         successful_application_ids.clone()).unwrap();
 
         for i in 1..successful_application_ids.len() {
@@ -518,7 +518,7 @@ benchmarks_instance! {
 
         let apply_on_opening_params = ApplyOnOpeningParameters::<T> {
             member_id: lead_member_id,
-            opening_id: opening_id.clone(),
+            opening_id,
             role_account_id: lead_account_id.clone(),
             reward_account_id: lead_account_id.clone(),
             description: vec![0u8; i.try_into().unwrap()],
@@ -586,7 +586,7 @@ benchmarks_instance! {
 
         let (opening_id, successful_application_ids, _) =
             add_opening_and_apply_with_multiple_ids::<T, I>(
-                &(1..i+1).collect(),
+                &(1..=i).collect::<Vec<_>>(),
                 &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
                 &OpeningType::Regular
             );
@@ -756,9 +756,9 @@ benchmarks_instance! {
 
         let old_stake = One::one();
         WorkingGroup::<T, _>::decrease_stake(
-            RawOrigin::Signed(lead_id.clone()).into(), worker_id.clone(), old_stake).unwrap();
+            RawOrigin::Signed(lead_id).into(), worker_id, old_stake).unwrap();
         let new_stake = old_stake + One::one();
-    }: _ (RawOrigin::Signed(caller_id.clone()), worker_id.clone(), new_stake)
+    }: _ (RawOrigin::Signed(caller_id.clone()), worker_id, new_stake)
     verify {
         assert_last_event::<T, I>(RawEvent::StakeIncreased(worker_id, new_stake).into());
     }
@@ -801,7 +801,7 @@ benchmarks_instance! {
 
         let (account_id, member_id) = member_funded_account::<T, I>("member", 0);
 
-    }: _ (RawOrigin::Signed(account_id.clone()), member_id.clone(), amount, Vec::new())
+    }: _ (RawOrigin::Signed(account_id.clone()), member_id, amount, Vec::new())
     verify {
         assert_eq!(WorkingGroup::<T, I>::budget(), amount, "Budget not updated");
         assert_last_event::<T, I>(
@@ -954,7 +954,7 @@ benchmarks_instance! {
         let (caller_id, worker_id) = insert_a_worker::<T, I>(
             OpeningType::Regular,
             1,
-            Some(lead_id.clone()));
+            Some(lead_id));
         let msg = b"test".to_vec();
     }: _ (RawOrigin::Signed(caller_id), worker_id, msg.clone())
         verify {

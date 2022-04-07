@@ -429,7 +429,7 @@ fn unsuccessful_channel_update_with_pending_status_transfer() {
         create_default_member_owned_channel();
 
         UpdateChannelTransferStatusFixture::default()
-            .with_transfer_status_by_member_id(DEFAULT_MEMBER_ID)
+            .with_new_member_channel_owner(DEFAULT_MEMBER_ID)
             .call_and_assert(Ok(()));
 
         UpdateChannelFixture::default()
@@ -1319,17 +1319,6 @@ fn unsuccessful_channel_deletion_with_invalid_bag_size() {
     })
 }
 
-#[test]
-fn unsuccessful_channel_creation_with_invalid_moderator_set() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-        CreateChannelFixture::default()
-            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_moderators(vec![DEFAULT_MODERATOR_ID + 100].into_iter().collect())
-            .call_and_assert(Err(Error::<Test>::InvalidMemberProvided.into()));
-    })
-}
 /// MODERATION ACTIONS
 
 #[test]
