@@ -292,5 +292,8 @@ decl_error! {
 
         /// Incorrect channel owner for an operation.
         InvalidChannelOwner,
+
+        /// Cannot claim zero reward.
+        ZeroReward,
     }
 }

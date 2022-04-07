@@ -504,3 +504,13 @@ pub fn ensure_actor_authorized_to_claim_council_reward<T: Trait>(
 
     Ok(())
 }
+
+// Validates that there are no pending channel transfers.
+pub fn ensure_no_channel_transfers<T: Trait>(channel: &Channel<T>) -> DispatchResult {
+    ensure!(
+        channel.transfer_status == ChannelTransferStatus::NoActiveTransfer,
+        Error::<T>::InvalidChannelTransferStatus
+    );
+
+    Ok(())
+}

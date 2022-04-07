@@ -2363,26 +2363,23 @@ decl_module! {
 
             ensure_actor_authorized_to_claim_council_reward::<T>(origin, &channel.owner)?;
 
-            ensure!(
-                channel.transfer_status == ChannelTransferStatus::NoActiveTransfer,
-                Error::<T>::InvalidChannelTransferStatus
-            );
+            ensure_no_channel_transfers::<T>(&channel)?;
+
+            let channel_account_id = ContentTreasury::<T>::account_for_channel(channel_id);
+            let reward: BalanceOf<T> = Balances::<T>::usable_balance(&channel_account_id);
+
+            ensure!(!reward.is_zero(), Error::<T>::ZeroReward);
 
             //
             // == MUTATION SAFE ==
             //
 
-            let channel_account_id = ContentTreasury::<T>::account_for_channel(channel_id);
-            let reward: BalanceOf<T> = Balances::<T>::usable_balance(&channel_account_id);
+            let _ = Balances::<T>::slash(&channel_account_id, reward);
 
-            if !reward.is_zero(){
-                let _ = Balances::<T>::slash(&channel_account_id, reward);
+            let budget = T::CouncilBudgetManager::get_budget();
+            let new_budget = budget.saturating_add(reward);
 
-                let budget = T::CouncilBudgetManager::get_budget();
-                let new_budget = budget.saturating_add(reward);
-
-                T::CouncilBudgetManager::set_budget(new_budget);
-            }
+            T::CouncilBudgetManager::set_budget(new_budget);
 
             Self::deposit_event(RawEvent::CouncilRewardClaimed(channel_id, reward));
         }
