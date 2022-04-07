@@ -1198,12 +1198,11 @@ export async function contentNft_BuyNowPriceUpdated({ event, store }: EventConte
     store,
     videoId.toString(),
     'Non-existing video sell offer was accepted',
-    'Non-existing nft sell offer was accepted',
-    ['nft.ownerMember', 'nft.ownerCuratorGroup']
+    'Non-existing nft sell offer was accepted'
   )
 
   const newTransactionalStatus = new TransactionalStatusBuyNow()
-  newTransactionalStatus.price = newPrice
+  newTransactionalStatus.price = new BN(newPrice.toString()) // this "typecast" is needed to prevent error
 
   await setNewNftTransactionalStatus(store, nft, newTransactionalStatus, event.blockNumber)
 
