@@ -1,4 +1,5 @@
 import { assert } from 'chai'
+import { Utils } from '../../../utils'
 import { Api } from '../../../Api'
 import { BaseQueryNodeFixture } from '../../../Fixture'
 import { QueryNodeApi } from '../../../QueryNodeApi'
@@ -33,7 +34,7 @@ export class UpdateVideoForNftCreationFixture extends BaseQueryNodeFixture {
 
     this.debug('Check NFT ownership')
     await assertNftOwner(this.query, event.data[1].toNumber(), this.author, (ownedNft) => {
-      assert.equal(ownedNft.transactionalStatus.__typename, 'TransactionalStatusAuction')
+      Utils.assert(ownedNft.transactionalStatusAuction, 'NFT not in auctioned state')
     })
   }
 }
