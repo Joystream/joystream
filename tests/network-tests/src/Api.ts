@@ -1030,6 +1030,18 @@ export class Api {
     return await this.sender.signAndSend(this.api.tx.content.buyNft(videoId, participantId, price), accountFrom)
   }
 
+  async updateBuyNowPrice(
+    accountFrom: string,
+    ownerId: number,
+    videoId: number,
+    price: BN
+  ): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(
+      this.api.tx.content.updateBuyNowPrice({ Member: ownerId }, videoId, price),
+      accountFrom
+    )
+  }
+
   async offerNft(
     accountFrom: string,
     videoId: number,

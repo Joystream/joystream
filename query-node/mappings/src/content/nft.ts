@@ -40,6 +40,7 @@ import {
   NftSellOrderMadeEvent,
   NftBoughtEvent,
   BuyNowCanceledEvent,
+  BuyNowPriceUpdatedEvent,
   NftSlingedBackToTheOriginalArtistEvent,
 } from 'query-node/dist/model'
 import * as joystreamTypes from '@joystream/types/augment/all/types'
@@ -1181,6 +1182,39 @@ export async function contentNft_BuyNowCanceled({ event, store }: EventContext &
     contentActor: await convertContentActor(store, contentActor),
     // prepare Nft owner (handles fields `ownerMember` and `ownerCuratorGroup`)
     ...(await convertContentActorToChannelOrNftOwner(store, contentActor)),
+  })
+
+  await store.save<BuyNowCanceledEvent>(announcingPeriodStartedEvent)
+}
+
+export async function contentNft_BuyNowPriceUpdated({ event, store }: EventContext & StoreContext): Promise<void> {
+  // common event processing
+
+  const [videoId, contentActor, newPrice] = new Content.BuyNowPriceUpdatedEvent(event).params
+
+  // specific event processing
+
+  const { nft, video } = await getNftFromVideo(
+    store,
+    videoId.toString(),
+    'Non-existing video sell offer was accepted',
+    'Non-existing nft sell offer was accepted',
+    ['nft.ownerMember', 'nft.ownerCuratorGroup']
+  )
+
+  const newTransactionalStatus = new TransactionalStatusBuyNow()
+  newTransactionalStatus.price = newPrice
+
+  await setNewNftTransactionalStatus(store, nft, newTransactionalStatus, event.blockNumber)
+
+  // common event processing - second
+
+  const announcingPeriodStartedEvent = new BuyNowPriceUpdatedEvent({
+    ...genericEventFields(event),
+
+    video,
+    contentActor: await convertContentActor(store, contentActor),
+    newPrice: newPrice,
   })
 
   await store.save<BuyNowCanceledEvent>(announcingPeriodStartedEvent)

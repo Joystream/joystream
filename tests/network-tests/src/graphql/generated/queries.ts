@@ -95,7 +95,7 @@ export type OwnedNftFieldsFragment = {
           topBid?: Types.Maybe<{ id: string; amount: any; bidder: { id: string } }>
         }>
       }
-    | { __typename: 'TransactionalStatusBuyNow' }
+    | { __typename: 'TransactionalStatusBuyNow'; price: number }
   creatorChannel: { id: string }
 }
 
@@ -2179,6 +2179,9 @@ export const OwnedNftFields = gql`
     metadata
     transactionalStatus {
       __typename
+      ... on TransactionalStatusBuyNow {
+        price
+      }
       ... on TransactionalStatusAuction {
         auction {
           startsAtBlock

@@ -84,6 +84,9 @@ fragment OwnedNftFields on OwnedNft {
   metadata
   transactionalStatus {
     __typename
+    ... on TransactionalStatusBuyNow {
+      price
+    }
     ... on TransactionalStatusAuction {
       auction {
         startsAtBlock

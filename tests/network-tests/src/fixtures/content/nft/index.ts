@@ -1,6 +1,7 @@
 export * from './englishAuction'
 export * from './openAuction'
 export * from './buyNow'
+export * from './updateBuyNowPrice'
 export * from './directOffer'
 export * from './auctionCancelations'
 export * from './createVideoWithAuction'

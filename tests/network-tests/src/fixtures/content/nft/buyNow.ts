@@ -20,7 +20,7 @@ export class NftBuyNowFixture extends BaseQueryNodeFixture {
 
   /*
       Execute this Fixture.
-    */
+  */
   public async execute(): Promise<void> {
     this.debug('Issue video NFT')
     await this.api.issueNft(this.author.keyringPair.address, this.author.memberId.toNumber(), this.videoId)
