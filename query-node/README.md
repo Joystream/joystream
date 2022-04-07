@@ -62,3 +62,73 @@ the base url to query node server via `GRAPHQL_PLAYGROUND_CDN` environment varia
 # use the following when serving playground at `/query/server/graphql`
 GRAPHQL_PLAYGROUND_CDN="query/server" yarn workspace query-node-root query-node:start:dev 
 ```
+## Development
+
+Run integration tests
+```
+./query-node/run-tests.sh
+```
+
+To run tests and keep services alive for further inspection, set `DEBUG` shell variable to any true-ish value.
+```
+DEBUG=true ./query-node/run-tests.sh
+```
+You can then use queries manually in GraphQL Playground (http://localhost:8081/graphql),
+see docker logs (e.g. `docker logs processor`), etc.
+
+After running tests in debug mode, you can run more testing scenarios or repeat some.
+This assumes the scenario is repeatable and any previous test errors didn't break
+the blockchain or processor state in a critical way.
+```
+DEBUG=true ./query-node/run-tests.sh # run tests first and make sure services stay alive
+REUSE_KEYS=true yarn workspace network-tests run-test-scenario content-directory
+```
+
+Commenting out some of the scenario's flow calls in `network-tests/src/scenarios/content-directory.ts` is not relevant to the current
+scope of development or debugging might speed out the process.
+
+### Processor setups
+**Running processor with local Joystream node and local indexer.**
+It's useful when you want to interact with Joystream node via Pioneer or Atlas and want to check results
+processed by the processor.
+```
+docker-compose up -d joystream-node indexer hydra-indexer-gateway processor
+
+# start the GraphQL server and Playground if needed via
+docker-compose up -d graphql-server
+```
+
+**Running processor with remote Joystream node and local indexer.**
+It's useful when you want to synchronize the indexer and processor with Joystream node hosted remotely from scratch.
+You can analyze any errors in docker logs and tweak mappings.
+```
+JOYSTREAM_NODE_WS=wss://target-domain.tmp/ws-rpc docker-compose up -d indexer hydra-indexer-gateway processor
+```
+
+**Running processor with remote Joystream node and remote indexer.**
+When debugging an error that happened in processor mappings on a remote server that has its own indexer, you can use it
+and skip potentially time-consuming indexer synchronization
+```
+PROCESSOR_INDEXER_GATEWAY=https://target-domain.tmp/query-node/indexer/graphql docker-compose up -d processor
+```
+
+### Restart processor from the beginning
+When debugging an error in mappings that breaks the state and processor needs to be restarted
+and mappings processed from the beginning, use the following commands.
+
+An example of such error is missed event creating a `Member` in block `123` and processing block `234`
+when the said `Member` created a forum post trying to create. The only way to create a missing `Member`
+is to start processing events all over.
+
+```
+docker-compose stop graphql-server # ensure graphql server is disconnected from db
+docker-compose rm -vfs processor # turn off processor
+WARTHOG_DB_OVERRIDE=true yarn workspace query-node-root db:reset # reset processor database
+docker-compose up -d processor # start processor again
+```
+
+### Debugging Hydra errors
+In situations when an error inside of Hydra occurs but it's not clear what event caused the issue,
+it might help to add `console.log(nextBlock.events)` to
+`node_modules/@joystream/hydra-processor/lib/process/MappingsProcessor.js`'s `processBlock` function
+to see what events are being processed.

@@ -4,6 +4,12 @@ import { Utils } from '../../../utils'
 import { assert } from 'chai'
 import { OwnedNftFieldsFragment } from '../../../graphql/generated/queries'
 
+export type Maybe<T> = T | null
+export interface NftOwnerInEventEntity {
+  ownerMember?: Maybe<{ id: string }>
+  ownerCuratorGroup?: Maybe<{ id: string }>
+}
+
 export async function assertAuctionAndBids(query: QueryNodeApi, videoId: number, topBidder: IMember): Promise<void> {
   await query.tryQueryWithTimeout(
     () => query.ownedNftByVideoId(videoId.toString()),
@@ -37,6 +43,33 @@ export async function assertNftOwner(
 
       if (customAsserts) {
         customAsserts(ownedNft)
+      }
+    }
+  )
+}
+
+export async function assertNftEventContentActor(
+  query: QueryNodeApi,
+  eventQuery: () => Promise<NftOwnerInEventEntity[]>,
+  ownerId: string,
+  ownerContext: 'Member' | 'CuratorGroup'
+): Promise<void> {
+  await query.tryQueryWithTimeout(
+    () => eventQuery(),
+    ([nftEvent]) => {
+      Utils.assert(nftEvent, 'NFT event not found')
+      if (ownerContext === 'Member') {
+        Utils.assert(nftEvent.ownerMember, 'NFT ownerMember not found in event')
+        assert.equal(nftEvent.ownerMember.id.toString(), ownerId.toString(), 'Invalid NFT ownerMember in event')
+      }
+
+      if (ownerContext === 'CuratorGroup') {
+        Utils.assert(nftEvent.ownerCuratorGroup, 'NFT ownerCuratorGroup not found in event')
+        assert.equal(
+          nftEvent.ownerCuratorGroup.id.toString(),
+          ownerId.toString(),
+          'Invalid NFT ownerCuratorGroup in event'
+        )
       }
     }
   )
