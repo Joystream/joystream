@@ -1043,7 +1043,7 @@ benchmarks! {
         let bag_id = BagId::<T>::Static(StaticBagId::Council);
         let family_id = create_distribution_family::<T>(lead_account_id.clone());
 
-        let new_limit: u64 = T::DistributionBucketsPerBagValueConstraint::get().max().into();
+        let new_limit: u64 = T::DistributionBucketsPerBagValueConstraint::get().max();
         Module::<T>::update_distribution_buckets_per_bag_limit(
             RawOrigin::Signed(lead_account_id.clone()).into(),
             new_limit

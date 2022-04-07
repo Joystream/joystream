@@ -114,7 +114,7 @@ where
 }
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
-    ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
+    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
 // Method to generate a distintic valid handle
@@ -367,7 +367,7 @@ benchmarks! {
         let winners = candidates_id.iter().map(|candidate_id| {
             let option_id: T::MemberId = *candidate_id;
             OptionResult {
-                option_id: option_id.into(),
+                option_id,
                 vote_power: Zero::zero(),
             }
         }).collect::<Vec<_>>();
@@ -384,7 +384,7 @@ benchmarks! {
             CouncilMember{
                 staking_account_id: accounts_id[idx].clone(),
                 reward_account_id: accounts_id[idx].clone(),
-                membership_id: member_id.clone(),
+                membership_id: *member_id,
                 stake: T::MinCandidateStake::get(),
                 last_payment_block: Zero::zero(),
                 unpaid_reward: Zero::zero(),
@@ -741,7 +741,7 @@ benchmarks! {
 
         let (account_id, member_id) = member_funded_account::<T>(0);
 
-    }: _ (RawOrigin::Signed(account_id.clone()), member_id.clone(), amount, Vec::new())
+    }: _ (RawOrigin::Signed(account_id.clone()), member_id, amount, Vec::new())
     verify {
         assert_eq!(Council::<T>::budget(), amount, "Budget not updated");
         assert_last_event::<T>(
@@ -771,7 +771,7 @@ benchmarks! {
         let winners = candidates_id.iter().map(|candidate_id| {
             let option_id: T::MemberId = *candidate_id;
             OptionResult {
-                option_id: option_id.into(),
+                option_id,
                 vote_power: Zero::zero(),
             }
         }).collect::<Vec<_>>();
@@ -788,7 +788,7 @@ benchmarks! {
             CouncilMember{
                 staking_account_id: accounts_id[idx].clone(),
                 reward_account_id: accounts_id[idx].clone(),
-                membership_id: member_id.clone(),
+                membership_id: *member_id,
                 stake: T::MinCandidateStake::get(),
                 last_payment_block: Zero::zero(),
                 unpaid_reward: Zero::zero(),
