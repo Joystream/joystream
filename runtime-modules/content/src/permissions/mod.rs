@@ -384,3 +384,28 @@ pub fn ensure_actor_authorized_to_accept_channel<T: Trait>(
 
     ensure_actor_is_channel_owner::<T>(actor, channel_acceptor)
 }
+
+// Council reward
+pub fn ensure_actor_authorized_to_claim_council_reward<T: Trait>(
+    origin: T::Origin,
+    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
+) -> DispatchResult {
+    let sender = ensure_signed(origin)?;
+    ensure_lead_auth_success::<T>(&sender)?;
+    ensure!(
+        matches!(owner, ChannelOwner::CuratorGroup(..)),
+        Error::<T>::InvalidChannelOwner
+    );
+
+    Ok(())
+}
+
+// Validates that there are no pending channel transfers.
+pub fn ensure_no_channel_transfers<T: Trait>(channel: &Channel<T>) -> DispatchResult {
+    ensure!(
+        channel.transfer_status == ChannelTransferStatus::NoActiveTransfer,
+        Error::<T>::InvalidChannelTransferStatus
+    );
+
+    Ok(())
+}

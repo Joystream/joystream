@@ -281,6 +281,12 @@ decl_error! {
         /// channel pending transfer parameters.
         InvalidChannelTransferCommitmentParams,
 
+        /// Incorrect channel owner for an operation.
+        InvalidChannelOwner,
+
+        /// Cannot claim zero reward.
+        ZeroReward,
+
         /// Cannot transfer the channel: channel owner has insufficient balance (budget for WGs)
         InsufficientBalanceForTransfer,
     }

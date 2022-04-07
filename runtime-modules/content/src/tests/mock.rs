@@ -355,8 +355,35 @@ impl Trait for Test {
     /// channel privilege level
     type ChannelPrivilegeLevel = u8;
 
-    /// content working group
+    /// Provides an access for the council budget.
+    type CouncilBudgetManager = CouncilBudgetManager;
+
+    /// Content working group pallet integration.
     type ContentWorkingGroup = ContentWG;
+}
+
+pub const COUNCIL_BUDGET_ACCOUNT_ID: u64 = 90000000;
+pub struct CouncilBudgetManager;
+impl common::council::CouncilBudgetManager<u64> for CouncilBudgetManager {
+    fn get_budget() -> u64 {
+        balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID)
+    }
+
+    fn set_budget(budget: u64) {
+        let old_budget = Self::get_budget();
+
+        if budget > old_budget {
+            let _ = balances::Module::<Test>::deposit_creating(
+                &COUNCIL_BUDGET_ACCOUNT_ID,
+                budget - old_budget,
+            );
+        }
+
+        if budget < old_budget {
+            let _ =
+                balances::Module::<Test>::slash(&COUNCIL_BUDGET_ACCOUNT_ID, old_budget - budget);
+        }
+    }
 }
 
 thread_local! {
