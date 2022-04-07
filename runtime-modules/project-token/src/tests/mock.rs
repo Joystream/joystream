@@ -6,10 +6,10 @@ use frame_support::{
 };
 
 use codec::Encode;
-use sp_arithmetic::{traits::One, Perbill};
+use sp_arithmetic::Perbill;
 use sp_io::TestExternalities;
 use sp_runtime::testing::{Header, H256};
-use sp_runtime::traits::{BlakeTwo256, Hash, IdentityLookup};
+use sp_runtime::traits::{BlakeTwo256, Convert, Hash, IdentityLookup};
 
 // crate import
 use crate::{
@@ -23,6 +23,7 @@ pub type TokenData = TokenDataOf<Test>;
 pub type IssuanceParams = TokenIssuanceParametersOf<Test>;
 pub type AccountData = AccountDataOf<Test>;
 pub type AccountId = <Test as frame_system::Trait>::AccountId;
+pub type BlockNumber = <Test as frame_system::Trait>::BlockNumber;
 pub type Balance = <Test as Trait>::Balance;
 pub type Simple = SimpleLocation<AccountId>;
 pub type Policy = TransferPolicyOf<Test>;
@@ -95,6 +96,7 @@ impl Trait for Test {
     type Event = TestEvent;
     type Balance = u64;
     type TokenId = u64;
+    type BlockNumberToBalance = Block2Balance;
 }
 
 /// Genesis config builder
@@ -154,13 +156,16 @@ macro_rules! balance {
     };
 }
 
+#[macro_export]
+macro_rules! block {
+    ($b:expr) => {
+        BlockNumber::from($b as u32)
+    };
+}
+
 // Modules aliases
 pub type Token = crate::Module<Test>;
 pub type System = frame_system::Module<Test>;
-
-pub const DEFAULT_EXISTENTIAL_DEPOSIT: u64 = 5;
-pub const DEFAULT_FREE_BALANCE: u64 = 10;
-pub const DEFAULT_ACCOUNT_ID: u64 = 1;
 
 // Merkle tree Helpers
 #[derive(Debug)]
@@ -270,4 +275,13 @@ macro_rules! merkle_proof {
     ($idx:expr,[$($vals:expr),*]) => {
         build_merkle_path_helper(&vec![$($vals,)*], $idx as usize)
     };
+}
+
+// utility types
+pub struct Block2Balance {}
+
+impl Convert<BlockNumber, Balance> for Block2Balance {
+    fn convert(block: BlockNumber) -> Balance {
+        block as u64
+    }
 }

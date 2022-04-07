@@ -326,9 +326,10 @@ impl<Balance: Zero + Copy + Saturating, BlockNumber: Copy + Saturating + Partial
         new_rate: Balance,
         block: BlockNumber,
     ) {
-        self.rate = new_rate;
+        // update tally according to old rate
         self.tally = self.outstanding_credit::<BlockNumberToBalance>(block);
         self.last_tally_update_block = block;
+        self.rate = new_rate;
     }
 
     pub fn reset_tally_at_block<BlockNumberToBalance: Convert<BlockNumber, Balance>>(

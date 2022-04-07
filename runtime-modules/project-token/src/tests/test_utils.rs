@@ -1,22 +1,24 @@
 use codec::Encode;
 use sp_arithmetic::traits::{One, Saturating, Zero};
-use sp_runtime::{traits::Hash, Percent};
+use sp_runtime::traits::Hash;
 
 use crate::tests::mock::*;
-use crate::types::{IssuanceState, MerkleSide, PatronageData, TransferPolicy, VerifiableLocation};
+use crate::types::{MerkleSide, OfferingState, PatronageData, TransferPolicy, VerifiableLocation};
 use crate::GenesisConfig;
 
-pub struct TokenDataBuilder<Balance, Hash> {
+pub struct TokenDataBuilder<Balance, Hash, BlockNumber> {
     pub(crate) current_total_issuance: Balance,
     pub(crate) existential_deposit: Balance,
-    pub(crate) issuance_state: IssuanceState,
+    pub(crate) issuance_state: OfferingState,
     pub(crate) transfer_policy: TransferPolicy<Hash>,
-    pub(crate) patronage_info: PatronageData<Balance>,
+    pub(crate) patronage_info: PatronageData<Balance, BlockNumber>,
 }
 
-impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash> TokenDataBuilder<Balance, Hash> {
-    pub fn build(self) -> crate::types::TokenData<Balance, Hash> {
-        crate::types::TokenData::<Balance, Hash> {
+impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash, BlockNumber: One>
+    TokenDataBuilder<Balance, Hash, BlockNumber>
+{
+    pub fn build(self) -> crate::types::TokenData<Balance, Hash, BlockNumber> {
+        crate::types::TokenData::<_, _, _> {
             current_total_issuance: self.current_total_issuance,
             existential_deposit: self.existential_deposit,
             issuance_state: self.issuance_state,
@@ -46,25 +48,13 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash> TokenDataBuilder<Bala
         }
     }
 
-    pub fn with_patronage_rate(self, rate: Percent) -> Self {
+    pub fn with_patronage_rate(self, rate: Balance) -> Self {
         Self {
-            patronage_info: PatronageData::<Balance> {
+            patronage_info: PatronageData::<_, _> {
+                tally: Balance::zero(),
                 rate,
-                ..self.patronage_info
+                last_tally_update_block: BlockNumber::one(),
             },
-            ..self
-        }
-    }
-
-    pub fn with_patronage_credit(self, outstanding_credit: Balance) -> Self {
-        Self {
-            patronage_info: PatronageData::<Balance> {
-                outstanding_credit,
-                ..self.patronage_info
-            },
-            current_total_issuance: self
-                .current_total_issuance
-                .saturating_add(outstanding_credit),
             ..self
         }
     }
@@ -72,12 +62,13 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash> TokenDataBuilder<Bala
     pub fn new_empty() -> Self {
         Self {
             current_total_issuance: Balance::zero(),
-            issuance_state: IssuanceState::Idle,
+            issuance_state: OfferingState::Idle,
             existential_deposit: Balance::zero(),
             transfer_policy: TransferPolicy::<Hash>::Permissionless,
-            patronage_info: PatronageData::<Balance> {
-                rate: Percent::zero(),
-                outstanding_credit: Balance::zero(),
+            patronage_info: PatronageData::<Balance, BlockNumber> {
+                rate: Balance::zero(),
+                tally: Balance::zero(),
+                last_tally_update_block: BlockNumber::one(),
             },
         }
     }
