@@ -262,14 +262,14 @@ fn cancel_open_auction_bid_ok_for_expired_auction() {
         run_to_block(1);
 
         let video_id = Content::next_video_id();
-        increase_account_balance_helper(DEFAULT_MODERATOR_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(THIRD_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         setup_open_auction_scenario_with_bid();
 
         let bid = Content::min_starting_price();
 
         assert_ok!(Content::make_open_auction_bid(
-            Origin::signed(DEFAULT_MODERATOR_ACCOUNT_ID),
-            DEFAULT_MODERATOR_ID,
+            Origin::signed(THIRD_MEMBER_ACCOUNT_ID),
+            THIRD_MEMBER_ID,
             video_id,
             bid,
         ));
@@ -278,7 +278,7 @@ fn cancel_open_auction_bid_ok_for_expired_auction() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            DEFAULT_MODERATOR_ID,
+            THIRD_MEMBER_ID,
             bid,
         ));
 

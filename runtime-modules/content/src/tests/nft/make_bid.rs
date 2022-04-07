@@ -393,7 +393,7 @@ fn make_bid_member_is_not_allowed_to_participate() {
             buy_now_price: None,
             bid_lock_duration: Content::min_bid_lock_duration(),
             whitelist: BTreeSet::from_iter(
-                vec![COLLABORATOR_MEMBER_ID, DEFAULT_MODERATOR_ID].into_iter(),
+                vec![COLLABORATOR_MEMBER_ID, DEFAULT_CURATOR_ID].into_iter(),
             ),
         };
 
