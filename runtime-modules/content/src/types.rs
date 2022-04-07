@@ -68,12 +68,8 @@ pub enum ChannelActionPermission {
     // - all affected collaborators currently have permissions that are a subset of sender agent permissions
     // - all affected collaborators will have permissions that are a subset of sender agent permissions AFTER the update
     ManageChannelCollaborators,
-    // Allows adding/removing moderators through `update_moderator_set` tx
-    ManageChannelModerators,
     // Allows updating video metadata through `update_video` tx
     UpdateVideoMetadata,
-    // Allows updating video's `enable_comments` flag through `update_video` tx
-    UpdateVideoCommentsStatus,
     // Allows adding a new video through `create_video` tx:
     // - allows including new assets, even without `ManageVideoAssets` permissions
     // - does not allow issuing an nft through optional `auto_issue_nft` parameter
@@ -87,11 +83,6 @@ pub enum ChannelActionPermission {
     // Allows deleting a video through `delete_video` tx
     // (provided it has no assets, otherwise ManageVideoAssets needs to be additionally granted)
     DeleteVideo,
-    // Allows adding/removing/editing root video post (VideoPostType::Description) through:
-    // - `create_post`
-    // - `edit_post_text`
-    // - `delete_post`
-    ManageVideoDescriptionPost,
     // Allows managing video nfts owned by the channel, this includes actions such as:
     // - issuing nft through `issue_nft` / `create_video` / `update_video`
     // - starting nft auctions: `start_open_auction`, `start_english_auction`

@@ -217,17 +217,6 @@ decl_error! {
         /// Partecipant is not a member
         ReplyDoesNotExist,
 
-        /// comments disabled
-        CommentsDisabled,
-
-        /// cannot edit video post
-        CannotEditDescription,
-
-        /// failed witness verification
-        WitnessVerificationFailed,
-
-        /// witness not provided
-        WitnessNotProvided,
 
         /// Insufficient balance
         UnsufficientBalance,

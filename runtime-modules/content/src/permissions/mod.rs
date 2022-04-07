@@ -254,10 +254,6 @@ pub fn ensure_actor_authorized_to_perform_video_update<T: Trait>(
         required_permissions.push(ChannelActionPermission::UpdateVideoMetadata);
     }
 
-    if params.enable_comments.is_some() {
-        required_permissions.push(ChannelActionPermission::UpdateVideoCommentsStatus);
-    }
-
     if params.assets_to_upload.is_some() || !params.assets_to_remove.is_empty() {
         required_permissions.push(ChannelActionPermission::ManageVideoAssets);
     }

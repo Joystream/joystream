@@ -668,16 +668,6 @@ impl UpdateVideoFixture {
         }
     }
 
-    pub fn with_enable_comments(self, enable_comments: Option<bool>) -> Self {
-        Self {
-            params: VideoUpdateParameters::<Test> {
-                enable_comments,
-                ..self.params.clone()
-            },
-            ..self
-        }
-    }
-
     pub fn with_data_object_deletion_prize(self, expected_data_object_deletion_prize: u64) -> Self {
         Self {
             params: VideoUpdateParameters::<Test> {
@@ -3864,7 +3854,6 @@ pub struct ContentTest {
     claimable_reward: bool,
     create_video: bool,
     video_assets: Option<StorageAssets<Test>>,
-    create_video_post: bool,
     create_video_nft: bool,
     nft_status: NftTransactionalStatusType,
     make_open_auction_bid: bool,
@@ -3880,7 +3869,6 @@ impl ContentTest {
             claimable_reward: false,
             create_video: false,
             video_assets: Some(create_default_assets_helper()),
-            create_video_post: false,
             create_video_nft: false,
             nft_status: NftTransactionalStatusType::Idle,
             make_open_auction_bid: false,
@@ -3956,13 +3944,6 @@ impl ContentTest {
         }
     }
 
-    pub fn with_video_post(self) -> Self {
-        Self {
-            create_video_post: true,
-            ..self.with_video()
-        }
-    }
-
     pub fn with_video_nft(self) -> Self {
         Self {
             create_video_nft: true,
@@ -4024,14 +4005,6 @@ impl ContentTest {
                 .with_sender(self.channel_owner_sender)
                 .with_actor(self.channel_owner_actor.clone())
                 .with_opt_assets(self.video_assets.clone())
-                .call_and_assert(Ok(()));
-        }
-
-        // Create video description post (optionally)
-        if self.create_video_post {
-            CreatePostFixture::default()
-                .with_sender(self.channel_owner_sender)
-                .with_actor(self.channel_owner_actor)
                 .call_and_assert(Ok(()));
         }
 
@@ -4237,18 +4210,6 @@ pub fn run_all_fixtures_with_contexts(
             .with_sender(sender)
             .with_actor(actor)
             .call_and_assert(expected_err.clone());
-        CreatePostFixture::default()
-            .with_sender(sender)
-            .with_actor(actor)
-            .call_and_assert(expected_err.clone());
-        EditPostTextFixture::default()
-            .with_sender(sender)
-            .with_actor(actor)
-            .call_and_assert(expected_err.clone());
-        DeletePostFixture::default()
-            .with_sender(sender)
-            .with_actor(actor)
-            .call_and_assert(expected_err.clone());
         IssueNftFixture::default()
             .with_sender(sender)
             .with_actor(actor)
@@ -4306,10 +4267,6 @@ pub fn run_all_fixtures_with_contexts(
             .with_actor(actor)
             .call_and_assert(expected_err.clone());
         UpdateChannelTransferStatusFixture::default()
-            .with_sender(sender)
-            .with_actor(actor)
-            .call_and_assert(expected_err.clone());
-        UpdateModeratorSetFixture::default()
             .with_sender(sender)
             .with_actor(actor)
             .call_and_assert(expected_err.clone());
