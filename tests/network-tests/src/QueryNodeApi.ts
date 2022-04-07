@@ -319,6 +319,17 @@ import {
   GetMemberVerificationStatusUpdatedEventsByEventIdsQuery,
   GetMemberVerificationStatusUpdatedEventsByEventIdsQueryVariables,
   GetMemberVerificationStatusUpdatedEventsByEventIds,
+  EnglishAuctionStartedEventFieldsFragment,
+  GetEnglishAuctionStartedEventsByEventIdsQuery,
+  GetEnglishAuctionStartedEventsByEventIdsQueryVariables,
+  GetEnglishAuctionStartedEventsByEventIds,
+  GetNftIssuedEventsByEventIds,
+  NftIssuedEventFieldsFragment,
+  GetNftIssuedEventsByEventIdsQuery,
+  GetNftIssuedEventsByEventIdsQueryVariables,
+  EnglishAuctionCompletedEventFieldsFragment,
+  GetEnglishAuctionCompletedEventsByEventIdsQuery,
+  GetEnglishAuctionCompletedEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1144,5 +1155,34 @@ export class QueryNodeApi {
       GetMemberVerificationStatusUpdatedEventsByEventIdsQuery,
       GetMemberVerificationStatusUpdatedEventsByEventIdsQueryVariables
     >(GetMemberVerificationStatusUpdatedEventsByEventIds, { eventIds }, 'memberVerificationStatusUpdatedEvents')
+  }
+
+  public async getEnglishAuctionStartedEvents(
+    events: EventDetails[]
+  ): Promise<EnglishAuctionStartedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetEnglishAuctionStartedEventsByEventIdsQuery,
+      GetEnglishAuctionStartedEventsByEventIdsQueryVariables
+    >(GetEnglishAuctionStartedEventsByEventIds, { eventIds }, 'englishAuctionStartedEvents')
+  }
+
+  public async getNftIssuedEvents(events: EventDetails[]): Promise<NftIssuedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<GetNftIssuedEventsByEventIdsQuery, GetNftIssuedEventsByEventIdsQueryVariables>(
+      GetNftIssuedEventsByEventIds,
+      { eventIds },
+      'nftIssuedEvents'
+    )
+  }
+
+  public async getEnglishAuctionCompletedEvents(
+    events: EventDetails[]
+  ): Promise<EnglishAuctionCompletedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetEnglishAuctionCompletedEventsByEventIdsQuery,
+      GetEnglishAuctionStartedEventsByEventIdsQueryVariables
+    >(GetEnglishAuctionCompletedEventsByEventIds, { eventIds }, 'englishAuctionCompletedEvents')
   }
 }
