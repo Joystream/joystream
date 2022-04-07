@@ -124,123 +124,6 @@ fn unsuccessful_agent_remark_by_non_agent() {
 }
 
 #[test]
-fn successful_moderator_remark() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        let channel_id = Content::next_channel_id() - 1;
-        let msg = b"test".to_vec();
-
-        assert_ok!(Content::channel_moderator_remark(
-            Origin::signed(DEFAULT_MODERATOR_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MODERATOR_ID),
-            channel_id,
-            msg
-        ));
-    })
-}
-
-#[test]
-fn unsuccessful_moderator_remark_with_invalid_channel_id() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        let invalid_channel_id = Content::next_channel_id();
-        let msg = b"test".to_vec();
-
-        assert_err!(
-            Content::channel_moderator_remark(
-                Origin::signed(DEFAULT_MODERATOR_ACCOUNT_ID),
-                ContentActor::Member(DEFAULT_MODERATOR_ID),
-                invalid_channel_id,
-                msg
-            ),
-            Error::<Test>::ChannelDoesNotExist
-        );
-    })
-}
-
-#[test]
-fn unsuccessful_moderator_remark_with_invalid_member_id() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        let channel_id = Content::next_channel_id() - 1;
-        let msg = b"test".to_vec();
-
-        assert_err!(
-            Content::channel_moderator_remark(
-                Origin::signed(DEFAULT_MODERATOR_ACCOUNT_ID),
-                ContentActor::Member(UNAUTHORIZED_MODERATOR_ID),
-                channel_id,
-                msg
-            ),
-            Error::<Test>::MemberAuthFailed
-        );
-    })
-}
-
-#[test]
-fn unsuccessful_moderator_remark_with_invalid_account_id() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        let channel_id = Content::next_channel_id() - 1;
-        let msg = b"test".to_vec();
-
-        assert_err!(
-            Content::channel_moderator_remark(
-                Origin::signed(UNAUTHORIZED_MODERATOR_ACCOUNT_ID),
-                ContentActor::Member(DEFAULT_MODERATOR_ID),
-                channel_id,
-                msg
-            ),
-            Error::<Test>::MemberAuthFailed
-        );
-    })
-}
-
-#[test]
-fn unsuccessful_moderator_remark_by_non_moderator() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        let channel_id = Content::next_channel_id() - 1;
-        let msg = b"test".to_vec();
-
-        assert_err!(
-            Content::channel_moderator_remark(
-                Origin::signed(UNAUTHORIZED_MODERATOR_ACCOUNT_ID),
-                ContentActor::Member(UNAUTHORIZED_MODERATOR_ID),
-                channel_id,
-                msg
-            ),
-            Error::<Test>::ActorNotAuthorized
-        );
-    })
-}
-
-#[test]
 fn unsuccessful_owner_remark_with_invalid_channel_id() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -446,8 +329,8 @@ fn unsuccessful_nft_owner_by_non_authorized_actor() {
 
         assert_err!(
             Content::nft_owner_remark(
-                Origin::signed(DEFAULT_MODERATOR_ACCOUNT_ID),
-                ContentActor::Member(DEFAULT_MODERATOR_ID),
+                Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(UNAUTHORIZED_MEMBER_ID),
                 video_id,
                 msg
             ),
@@ -468,7 +351,7 @@ fn unsuccessful_nft_owner_with_invalid_acount() {
 
         assert_err!(
             Content::nft_owner_remark(
-                Origin::signed(DEFAULT_MODERATOR_ACCOUNT_ID),
+                Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(SECOND_MEMBER_ID),
                 video_id,
                 msg

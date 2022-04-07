@@ -14,21 +14,6 @@ pub enum NewAsset<ContentParameters> {
     Urls(Vec<Url>),
 }
 
-/// Data structure in order to keep track of the migration
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct MigrationConfigRecord<NumericId> {
-    // at each block the videos/channels removed will be those with id in the
-    // half open range [current_id, final_id).
-    // when migration is triggered final_id will be updated
-    // when migration is performed current_id will be updated
-    pub current_id: NumericId,
-    pub final_id: NumericId,
-}
-
-pub type VideoMigrationConfig<T> = MigrationConfigRecord<<T as Trait>::VideoId>;
-pub type ChannelMigrationConfig<T> = MigrationConfigRecord<<T as storage::Trait>::ChannelId>;
-
 /// The owner of a channel, is the authorized "actor" that can update
 /// or delete or transfer a channel and its contents.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -150,8 +135,6 @@ pub struct ChannelRecord<
     pub num_videos: u64,
     /// collaborator set
     pub collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
-    /// moderator set
-    pub moderators: BTreeSet<MemberId>,
     /// Cumulative cashout
     pub cumulative_payout_earned: Balance,
     /// Privilege level (curators will have different moderation permissions w.r.t. this channel depending on this value)
@@ -300,8 +283,6 @@ pub struct ChannelCreationParametersRecord<
     pub meta: Option<Vec<u8>>,
     /// initial collaborator set
     pub collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
-    /// initial moderator set
-    pub moderators: BTreeSet<MemberId>,
     /// Storage buckets to assign to a bag.
     pub storage_buckets: BTreeSet<StorageBucketId>,
     /// Distribution buckets to assign to a bag.
@@ -388,8 +369,6 @@ pub struct VideoCreationParametersRecord<StorageAssets, NftIssuanceParameters, B
     pub assets: Option<StorageAssets>,
     /// Metadata for the video.
     pub meta: Option<Vec<u8>>,
-    /// Comments enabled or not
-    pub enable_comments: bool,
     /// Parameters for issuing video Nft
     pub auto_issue_nft: Option<NftIssuanceParameters>,
     /// Commitment for the data object deletion prize for the storage pallet.
@@ -414,8 +393,6 @@ pub struct VideoUpdateParametersRecord<
     pub new_meta: Option<Vec<u8>>,
     /// video assets to be removed from channel
     pub assets_to_remove: BTreeSet<DataObjectId>,
-    /// If set enable/disable comments to video
-    pub enable_comments: Option<bool>,
     /// Parameters for updating Nft along with video
     pub auto_issue_nft: Option<NftIssuanceParameters>,
     /// Commitment for the data object deletion prize for the storage pallet.
@@ -432,77 +409,17 @@ pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<
 /// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VideoRecord<ChannelId, VideoPostId, OwnedNft, DataObjectId: Ord> {
+pub struct VideoRecord<ChannelId, OwnedNft, DataObjectId: Ord> {
     pub in_channel: ChannelId,
-    /// enable or not comments
-    pub enable_comments: bool,
-    /// First post to a video works as a description
-    pub video_post_id: Option<VideoPostId>,
     /// Whether nft for this video have been issued.
     pub nft_status: Option<OwnedNft>,
     /// Set of associated data objects
     pub data_objects: BTreeSet<DataObjectId>,
 }
 
-pub type Video<T> = VideoRecord<
-    <T as storage::Trait>::ChannelId,
-    <T as Trait>::VideoPostId,
-    Nft<T>,
-    DataObjectId<T>,
->;
+pub type Video<T> = VideoRecord<<T as storage::Trait>::ChannelId, Nft<T>, DataObjectId<T>>;
 
 pub type DataObjectId<T> = <T as storage::Trait>::DataObjectId;
-
-/// A VideoPost associated to a video
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VideoPostRecord<ContentActor, Balance, VideoPostId, VideoPostType, VideoId> {
-    /// Author of post.
-    pub author: ContentActor,
-
-    /// Cleanup pay off
-    pub bloat_bond: Balance,
-
-    /// Overall replies counter
-    pub replies_count: VideoPostId,
-
-    /// video associated to the post (instead of the body hash as in the blog module)
-    pub post_type: VideoPostType,
-
-    /// video reference
-    pub video_reference: VideoId,
-}
-
-/// alias for VideoPost
-pub type VideoPost<T> = VideoPostRecord<
-    ContentActor<
-        <T as ContentActorAuthenticator>::CuratorGroupId,
-        <T as ContentActorAuthenticator>::CuratorId,
-        <T as MembershipTypes>::MemberId,
-    >,
-    BalanceOf<T>,
-    <T as Trait>::VideoPostId,
-    VideoPostType<T>,
-    <T as Trait>::VideoId,
->;
-
-/// VideoPost type structured as linked list with the video post as beginning
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum VideoPostTypeRecord<ParentVideoPostId> {
-    /// Equivalent to a video description
-    Description,
-    /// Comment to a post with specified id
-    Comment(ParentVideoPostId),
-}
-
-impl<ParentVideoPostId> Default for VideoPostTypeRecord<ParentVideoPostId> {
-    fn default() -> Self {
-        VideoPostTypeRecord::<ParentVideoPostId>::Description
-    }
-}
-
-pub type VideoPostType<T> = VideoPostTypeRecord<<T as Trait>::VideoPostId>;
 
 /// Side used to construct hash values during merkle proof verification
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -531,47 +448,6 @@ pub struct ProofElementRecord<Hash, Side> {
 // alias for the proof element
 pub type ProofElement<T> = ProofElementRecord<<T as frame_system::Trait>::Hash, Side>;
 
-/// An enum in order to differenciate between post author and moderator / owner
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum CleanupActor {
-    ChannelOwner,
-    Moderator,
-    VideoPostAuthor,
-}
-
-impl Default for CleanupActor {
-    fn default() -> Self {
-        CleanupActor::ChannelOwner
-    }
-}
-
-/// Information on the post being created
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VideoPostCreationParametersRecord<VideoPostType, VideoId> {
-    /// content
-    pub post_type: VideoPostType,
-    /// video reference
-    pub video_reference: VideoId,
-}
-
-pub type VideoPostCreationParameters<T> =
-    VideoPostCreationParametersRecord<VideoPostType<T>, <T as Trait>::VideoId>;
-
-/// Information on the post being deleted
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VideoPostDeletionParametersRecord<HashOutput> {
-    /// optional witnesses in case of video post deletion
-    pub witness: Option<HashOutput>,
-    /// rationale in case actor is moderator
-    pub rationale: Option<Vec<u8>>,
-}
-
-pub type VideoPostDeletionParameters<T> =
-    VideoPostDeletionParametersRecord<<T as frame_system::Trait>::Hash>;
-
 /// Payment claim by a channel
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Copy, Clone, PartialEq, Eq, Debug)]
@@ -587,8 +463,8 @@ pub type PullPayment<T> = PullPaymentElement<
     <T as frame_system::Trait>::Hash,
 >;
 
-impl<ChannelId: Clone, VideoPostId: Clone, OwnedNft: Clone, DataObjectId: Ord>
-    VideoRecord<ChannelId, VideoPostId, OwnedNft, DataObjectId>
+impl<ChannelId: Clone, OwnedNft: Clone, DataObjectId: Ord>
+    VideoRecord<ChannelId, OwnedNft, DataObjectId>
 {
     /// Ensure nft is not issued
     pub fn ensure_nft_is_not_issued<T: Trait>(&self) -> DispatchResult {
