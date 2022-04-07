@@ -16,20 +16,6 @@ pub(crate) enum DecreaseOp<Balance> {
     /// Remove Account (original amonut, dust below ex deposit)
     Remove(Balance, Balance),
 }
-impl<Balance: Clone + Saturating> DecreaseOp<Balance> {
-    pub(crate) fn amount(&self) -> Balance {
-        match self {
-            Self::Reduce(amount) => amount.to_owned(),
-            Self::Remove(amount, _) => amount.to_owned(),
-        }
-    }
-    pub(crate) fn total_amount(&self) -> Balance {
-        match self {
-            Self::Reduce(amount) => amount.to_owned(),
-            Self::Remove(amount, dust) => amount.to_owned().saturating_add(dust.to_owned()),
-        }
-    }
-}
 
 /// Info for the account
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -55,7 +41,7 @@ pub struct TokenData<Balance, Hash> {
     pub(crate) existential_deposit: Balance,
 
     /// Initial issuance state
-    pub(crate) issuance_state: IssuanceState,
+    pub(crate) issuance_state: OfferingState,
 
     /// Transfer policy
     pub(crate) transfer_policy: TransferPolicy<Hash>,
@@ -92,7 +78,7 @@ impl<Hash> Default for TransferPolicy<Hash> {
 
 /// The possible issuance variants: This is a stub
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub(crate) enum IssuanceState {
+pub(crate) enum OfferingState {
     /// Initial idle state
     Idle,
 
@@ -111,7 +97,7 @@ pub struct TokenIssuanceParameters<Balance, Hash> {
     pub(crate) initial_issuance: Balance,
 
     /// Initial State builder: stub
-    pub(crate) initial_state: IssuanceState,
+    pub(crate) initial_state: OfferingState,
 
     /// Initial existential deposit
     pub(crate) existential_deposit: Balance,
@@ -157,9 +143,9 @@ impl Default for MerkleSide {
 // implementation
 
 /// Default trait for Issuance state
-impl Default for IssuanceState {
+impl Default for OfferingState {
     fn default() -> Self {
-        IssuanceState::Idle
+        OfferingState::Idle
     }
 }
 
