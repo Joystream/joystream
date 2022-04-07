@@ -1,5 +1,4 @@
-use frame_support::dispatch::{DispatchError, DispatchResult};
-use sp_runtime::Percent;
+use frame_support::dispatch::DispatchResult;
 
 /// Account wrapper that encapsulates the validation for the transfer location
 /// by means of the visitor pattern
@@ -17,13 +16,6 @@ pub trait PalletToken<AccountId, Policy, IssuanceParams> {
 
     /// Token Identifier type used
     type TokenId;
-
-    /// Mint `amount` into account `who` (possibly creating it)
-    fn deposit_creating(
-        token_id: Self::TokenId,
-        who: AccountId,
-        amount: Self::Balance,
-    ) -> DispatchResult;
 
     /// Issue token with specified characteristics
     fn issue_token(issuance_parameters: IssuanceParams) -> DispatchResult;
@@ -54,10 +46,10 @@ pub trait PalletToken<AccountId, Policy, IssuanceParams> {
         Destination: TransferLocationTrait<AccountId, Policy>;
 
     /// Reduce patronage rate by amount
-    fn reduce_patronage_rate_by(token_id: Self::TokenId, decrement: Percent) -> DispatchResult;
-
-    /// Query for patronage credit for token    
-    fn get_patronage_credit(token_id: Self::TokenId) -> Result<Self::Balance, DispatchError>;
+    fn reduce_patronage_rate_by(
+        token_id: Self::TokenId,
+        decrement: Self::Balance,
+    ) -> DispatchResult;
 
     /// Allow creator to receive credit into his accounts
     fn claim_patronage_credit(token_id: Self::TokenId, to_account: AccountId) -> DispatchResult;

@@ -7,7 +7,7 @@ use frame_support::{
 };
 use frame_system::ensure_signed;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
-use sp_runtime::Percent;
+use sp_runtime::traits::Convert;
 
 // crate modules
 mod errors;
@@ -36,6 +36,9 @@ pub trait Trait: frame_system::Trait {
 
     /// The token identifier used
     type TokenId: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug;
+
+    /// Block number to balance converter used for interest calculation
+    type BlockNumberToBalance: Convert<Self::BlockNumber, Self::Balance>;
 }
 
 decl_storage! {
@@ -226,7 +229,7 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
     ///
     /// Postconditions:
     /// - patronage rate for `token_id` reduced by `decrement`
-    fn reduce_patronage_rate_by(token_id: T::TokenId, decrement: Percent) -> DispatchResult {
+    fn reduce_patronage_rate_by(token_id: T::TokenId, decrement: T::Balance) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
 
         // ensure new rate is >= 0
@@ -237,23 +240,17 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
 
         // == MUTATION SAFE ==
 
-        let new_rate = TokenInfoById::<T>::mutate(token_id, |token_info| {
-            let new_rate = token_info.patronage_info.rate.saturating_sub(decrement);
-            token_info.patronage_info.rate = new_rate;
-            new_rate
+        let now = Self::current_block();
+        let new_rate = token_info.patronage_info.rate.saturating_sub(decrement);
+        TokenInfoById::<T>::mutate(token_id, |token_info| {
+            token_info
+                .patronage_info
+                .set_new_rate_at_block::<T::BlockNumberToBalance>(new_rate, now);
         });
 
         Self::deposit_event(RawEvent::PatronageRateDecreasedTo(token_id, new_rate));
 
         Ok(())
-    }
-
-    /// Query for patronage credit for token
-    /// Preconditions
-    /// - `token_id` must exists
-    fn get_patronage_credit(token_id: T::TokenId) -> Result<T::Balance, DispatchError> {
-        Self::ensure_token_exists(token_id)
-            .map(|token_info| token_info.patronage_info.outstanding_credit)
     }
 
     /// Allow creator to receive credit into his accounts
@@ -269,24 +266,33 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
         let token_info = Self::ensure_token_exists(token_id)?;
         Self::ensure_account_data_exists(token_id, &to_account).map(|_| ())?;
 
-        if token_info.patronage_info.outstanding_credit.is_zero() {
+        let now = Self::current_block();
+        let outstanding_credit = token_info
+            .patronage_info
+            .outstanding_credit::<T::BlockNumberToBalance>(now);
+
+        if outstanding_credit.is_zero() {
             return Ok(());
         }
 
         // == MUTATION SAFE ==
 
-        let credit = token_info.patronage_info.outstanding_credit;
+        AccountInfoByTokenAndAccount::<T>::mutate(token_id, &to_account, |account_info| {
+            account_info.increase_liquidity_by(outstanding_credit)
+        });
 
         TokenInfoById::<T>::mutate(token_id, |token_info| {
-            token_info.patronage_info.outstanding_credit = T::Balance::zero();
+            token_info
+                .patronage_info
+                .reset_tally_at_block::<T::BlockNumberToBalance>(now);
+            token_info.increase_issuance_by(outstanding_credit);
         });
 
-        AccountInfoByTokenAndAccount::<T>::mutate(token_id, &to_account, |account_info| {
-            account_info.free_balance = account_info.free_balance.saturating_add(credit)
-        });
-
-        Self::deposit_event(RawEvent::PatronageCreditClaimed(
-            token_id, credit, to_account,
+        Self::deposit_event(RawEvent::PatronageCreditClaimedAtBlock(
+            token_id,
+            outstanding_credit,
+            to_account,
+            now,
         ));
 
         Ok(())
@@ -303,11 +309,12 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
         // TODO: consider adding symbol as separate parameter
         let sym = issuance_parameters.symbol;
         ensure!(
-            !crate::SymbolsUsed::<T>::contains_key(&sym),
-            crate::Error::<T>::TokenSymbolAlreadyInUse,
+            !SymbolsUsed::<T>::contains_key(&sym),
+            Error::<T>::TokenSymbolAlreadyInUse,
         );
 
-        let token_data = issuance_parameters.try_build::<T>()?;
+        let now = Self::current_block();
+        let token_data = issuance_parameters.try_build::<T, _>(now)?;
 
         // == MUTATION SAFE ==
 
@@ -332,52 +339,6 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
         // == MUTATION SAFE ==
 
         Self::do_deissue_token(token_id);
-        Ok(())
-    }
-
-    /// Mint `amount` into account `who` (possibly creating it)
-    /// for specified token `token_id`
-    ///
-    /// Preconditions:
-    /// - `token_id` must exists
-    ///
-    /// Postconditions:
-    /// - free balance of `who` is increased by `amount
-    /// - patronage credit accounted for `token_id`
-    /// - `token_id` issuance increased by amount + credit
-    /// if `amount` is zero it is equivalent to a no-op
-    fn deposit_creating(
-        token_id: T::TokenId,
-        who: T::AccountId,
-        amount: T::Balance,
-    ) -> DispatchResult {
-        if amount.is_zero() {
-            return Ok(());
-        }
-
-        Self::ensure_token_exists(token_id).map(|_| ())?;
-
-        // == MUTATION SAFE ==
-
-        // increase token issuance
-        Self::do_mint(token_id, amount);
-
-        if AccountInfoByTokenAndAccount::<T>::contains_key(token_id, &who) {
-            AccountInfoByTokenAndAccount::<T>::mutate(token_id, &who, |account_data| {
-                account_data.free_balance = account_data.free_balance.saturating_add(amount)
-            });
-        } else {
-            AccountInfoByTokenAndAccount::<T>::insert(
-                token_id,
-                &who,
-                AccountDataOf::<T> {
-                    free_balance: amount,
-                    reserved_balance: T::Balance::zero(),
-                },
-            );
-        }
-
-        Self::deposit_event(RawEvent::TokenAmountDepositedInto(token_id, who, amount));
         Ok(())
     }
 }
@@ -410,7 +371,6 @@ impl<T: Trait> Module<T> {
     }
 
     /// Perform token de-issuing: unfallible
-    #[inline]
     pub(crate) fn do_deissue_token(token_id: T::TokenId) {
         TokenInfoById::<T>::remove(token_id);
         AccountInfoByTokenAndAccount::<T>::remove_prefix(token_id);
@@ -458,7 +418,6 @@ impl<T: Trait> Module<T> {
     }
 
     /// Perform balance accounting for balances
-    #[inline]
     pub(crate) fn do_transfer<Destination>(
         token_id: T::TokenId,
         src: &T::AccountId,
@@ -472,43 +431,26 @@ impl<T: Trait> Module<T> {
                 token_id,
                 dst.location_account(),
                 |account_data| {
-                    account_data.free_balance = account_data.free_balance.saturating_add(*amount)
+                    account_data.increase_liquidity_by(*amount);
                 },
             );
         });
         match decrease_op {
             DecOp::<T>::Reduce(amount) => {
                 AccountInfoByTokenAndAccount::<T>::mutate(token_id, &src, |account_data| {
-                    account_data.free_balance = account_data.free_balance.saturating_sub(amount)
+                    account_data.decrease_liquidity_by(amount);
                 })
             }
-            DecOp::<T>::Remove(_, dust) => {
+            DecOp::<T>::Remove(_, dust_amount) => {
                 AccountInfoByTokenAndAccount::<T>::remove(token_id, &src);
                 TokenInfoById::<T>::mutate(token_id, |token_data| {
-                    token_data.current_total_issuance =
-                        token_data.current_total_issuance.saturating_sub(dust)
+                    token_data.decrease_issuance_by(dust_amount);
                 });
             }
         };
     }
 
-    #[inline]
-    pub(crate) fn do_mint(token_id: T::TokenId, amount: T::Balance) {
-        TokenInfoById::<T>::mutate(token_id, |token_data| {
-            // increase patronage credit due to increase in amount
-            let credit_increase = token_data.patronage_info.rate.mul_floor(amount);
-
-            // reflect the credit in the issuance
-            let issuance_increase = amount.saturating_add(credit_increase);
-
-            token_data.current_total_issuance = token_data
-                .current_total_issuance
-                .saturating_add(issuance_increase);
-
-            token_data.patronage_info.outstanding_credit = token_data
-                .patronage_info
-                .outstanding_credit
-                .saturating_add(credit_increase);
-        });
+    pub(crate) fn current_block() -> T::BlockNumber {
+        <frame_system::Module<T>>::block_number()
     }
 }

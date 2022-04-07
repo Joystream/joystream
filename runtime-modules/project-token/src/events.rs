@@ -1,5 +1,4 @@
 use frame_support::decl_event;
-use sp_runtime::Percent;
 
 decl_event! {
     pub enum Event<T>
@@ -7,6 +6,7 @@ decl_event! {
         Balance = <T as crate::Trait>::Balance,
         TokenId = <T as crate::Trait>::TokenId,
         AccountId = <T as frame_system::Trait>::AccountId,
+        BlockNumber = <T as frame_system::Trait>::BlockNumber,
     {
         /// Token amount is deposited
         /// Params:
@@ -55,14 +55,14 @@ decl_event! {
         /// Params:
         /// - token identifier
         /// - new patronage rate
-        PatronageRateDecreasedTo(TokenId, Percent),
+        PatronageRateDecreasedTo(TokenId, Balance),
 
         /// Patronage credit claimed by creator
         /// Params:
         /// - token identifier
         /// - credit amount
         /// - account
-        PatronageCreditClaimed(TokenId, Balance, AccountId),
+        PatronageCreditClaimedAtBlock(TokenId, Balance, AccountId, BlockNumber),
 
     }
 }

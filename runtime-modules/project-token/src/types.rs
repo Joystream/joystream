@@ -4,7 +4,7 @@ use frame_support::{
     ensure,
 };
 use sp_arithmetic::traits::{Saturating, Zero};
-use sp_runtime::{traits::Hash, Percent};
+use sp_runtime::traits::{Convert, Hash};
 
 // crate imports
 use crate::traits::TransferLocationTrait;
@@ -33,7 +33,7 @@ pub struct AccountData<Balance> {
 
 /// Info for the token
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
-pub struct TokenData<Balance, Hash> {
+pub struct TokenData<Balance, Hash, BlockNumber> {
     /// Current token issuance
     pub(crate) current_total_issuance: Balance,
 
@@ -47,17 +47,20 @@ pub struct TokenData<Balance, Hash> {
     pub(crate) transfer_policy: TransferPolicy<Hash>,
 
     /// Patronage Information
-    pub(crate) patronage_info: PatronageData<Balance>,
+    pub(crate) patronage_info: PatronageData<Balance, BlockNumber>,
 }
 
-/// Patronage information
+/// Patronage information, patronage configuration = set of values for its fields
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
-pub struct PatronageData<Balance> {
-    /// Outstanding patronage credit
-    pub(crate) outstanding_credit: Balance,
-
+pub struct PatronageData<Balance, BlockNumber> {
     /// Patronage rate
-    pub(crate) rate: Percent,
+    pub(crate) rate: Balance,
+
+    /// Tally count for the outstanding credit before latest patronage config change
+    pub(crate) tally: Balance,
+
+    /// Last block the patronage configuration was updated
+    pub(crate) last_tally_update_block: BlockNumber,
 }
 
 /// The two possible transfer policies
@@ -109,7 +112,7 @@ pub struct TokenIssuanceParameters<Balance, Hash> {
     pub(crate) transfer_policy: TransferPolicy<Hash>,
 
     /// Initial Patronage rate
-    pub(crate) patronage_rate: Percent,
+    pub(crate) patronage_rate: Balance,
 }
 
 /// Transfer location without merkle proof
@@ -161,6 +164,16 @@ impl<Balance: Zero> Default for AccountData<Balance> {
 
 /// Encapsules parameters validation + TokenData construction
 impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
+    /// Increase liquidity for an account
+    pub(crate) fn increase_liquidity_by(&mut self, amount: Balance) {
+        self.free_balance = self.free_balance.saturating_add(amount);
+    }
+
+    /// Decrease liquidity for an account
+    pub(crate) fn decrease_liquidity_by(&mut self, amount: Balance) {
+        self.free_balance = self.free_balance.saturating_sub(amount);
+    }
+
     /// Verify if amount can be decrease taking account existential deposit
     /// Returns the amount that should be removed
     pub(crate) fn decrease_with_ex_deposit<T: crate::Trait>(
@@ -190,7 +203,17 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
     }
 }
 /// Token Data implementation
-impl<Balance, Hash> TokenData<Balance, Hash> {
+impl<Balance: Saturating + Copy, Hash, BlockNumber> TokenData<Balance, Hash, BlockNumber> {
+    // increase total issuance
+    pub(crate) fn increase_issuance_by(&mut self, amount: Balance) {
+        self.current_total_issuance = self.current_total_issuance.saturating_add(amount);
+    }
+
+    // decrease total issuance
+    pub(crate) fn decrease_issuance_by(&mut self, amount: Balance) {
+        self.current_total_issuance = self.current_total_issuance.saturating_sub(amount);
+    }
+
     // validate transfer destination location according to self.policy
     pub(crate) fn ensure_valid_location_for_policy<T, AccountId, Location>(
         &self,
@@ -210,14 +233,18 @@ impl<Balance, Hash> TokenData<Balance, Hash> {
 /// Encapsules parameters validation + TokenData construction
 impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, Hash> {
     /// Forward `self` state
-    pub fn try_build<T: crate::Trait>(self) -> Result<TokenData<Balance, Hash>, DispatchError> {
+    pub fn try_build<T: crate::Trait, BlockNumber>(
+        self,
+        block: BlockNumber,
+    ) -> Result<TokenData<Balance, Hash, BlockNumber>, DispatchError> {
         // validation
 
-        let patronage_info = PatronageData::<Balance> {
-            outstanding_credit: Balance::zero(),
+        let patronage_info = PatronageData::<Balance, BlockNumber> {
+            last_tally_update_block: block,
+            tally: Balance::zero(),
             rate: self.patronage_rate,
         };
-        Ok(TokenData::<Balance, Hash> {
+        Ok(TokenData::<Balance, Hash, BlockNumber> {
             current_total_issuance: self.initial_issuance,
             issuance_state: self.initial_state,
             existential_deposit: self.existential_deposit,
@@ -282,13 +309,47 @@ impl<AccountId: Encode, Hasher: Hash> VerifiableLocation<AccountId, Hasher> {
     }
 }
 
+impl<Balance: Zero + Copy + Saturating, BlockNumber: Copy + Saturating + PartialOrd>
+    PatronageData<Balance, BlockNumber>
+{
+    pub fn outstanding_credit<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
+        &self,
+        block: BlockNumber,
+    ) -> Balance {
+        let period = block.saturating_sub(self.last_tally_update_block);
+        let accrued = BlockNumberToBalance::convert(period).saturating_mul(self.rate);
+        accrued.saturating_add(self.tally)
+    }
+
+    pub fn set_new_rate_at_block<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
+        &mut self,
+        new_rate: Balance,
+        block: BlockNumber,
+    ) {
+        self.rate = new_rate;
+        self.tally = self.outstanding_credit::<BlockNumberToBalance>(block);
+        self.last_tally_update_block = block;
+    }
+
+    pub fn reset_tally_at_block<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
+        &mut self,
+        block: BlockNumber,
+    ) {
+        self.last_tally_update_block = block;
+        self.tally = Balance::zero();
+    }
+}
+
 // Aliases
 /// Alias for Account Data
 pub(crate) type AccountDataOf<T> = AccountData<<T as crate::Trait>::Balance>;
 
 /// Alias for Token Data
-pub(crate) type TokenDataOf<T> =
-    TokenData<<T as crate::Trait>::Balance, <T as frame_system::Trait>::Hash>;
+pub(crate) type TokenDataOf<T> = TokenData<
+    <T as crate::Trait>::Balance,
+    <T as frame_system::Trait>::Hash,
+    <T as frame_system::Trait>::BlockNumber,
+>;
 
 /// Alias for Token Issuance Parameters
 pub(crate) type TokenIssuanceParametersOf<T> =
