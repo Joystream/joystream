@@ -16,7 +16,6 @@ import {
   TransactionalStatusInitiatedOfferToMember,
   TransactionalStatusIdle,
   TransactionalStatusBuyNow,
-  TransactionalStatusAuction,
   TransactionalStatusUpdate,
   ContentActor,
   ContentActorMember,
@@ -248,11 +247,22 @@ async function convertContentActor(
 async function setNewNftTransactionalStatus(
   store: DatabaseManager,
   nft: OwnedNft,
-  transactionalStatus: typeof TransactionalStatus,
+  transactionalStatusOrTransactionalStatusAuction: typeof TransactionalStatus | Auction,
   blockNumber: number
 ) {
+  let transactionalStatus: typeof TransactionalStatus | undefined
+  let transactionalStatusAuction: Auction | undefined
+  if (transactionalStatusOrTransactionalStatusAuction instanceof Auction) {
+    transactionalStatusAuction = transactionalStatusOrTransactionalStatusAuction
+  } else {
+    transactionalStatus = transactionalStatusOrTransactionalStatusAuction
+  }
+
   // update transactionalStatus
   nft.transactionalStatus = transactionalStatus
+
+  // update transactionStatusAuction
+  nft.transactionalStatusAuction = transactionalStatusAuction
 
   await getAllManagers(store).videoNfts.onMainEntityUpdate(nft)
 
@@ -262,7 +272,8 @@ async function setNewNftTransactionalStatus(
   // create transactional status update record
   const transactionalStatusUpdate = new TransactionalStatusUpdate({
     nft,
-    transactionalStatus: nft.transactionalStatus,
+    transactionalStatusAuction,
+    transactionalStatus,
     changedAt: blockNumber,
   })
 
@@ -527,7 +538,7 @@ export async function convertTransactionalStatus(
   store: DatabaseManager,
   nft: OwnedNft,
   blockNumber: number
-): Promise<typeof TransactionalStatus> {
+): Promise<typeof TransactionalStatus | Auction> {
   if (transactionalStatus.isIdle) {
     return new TransactionalStatusIdle()
   }
@@ -551,10 +562,7 @@ export async function convertTransactionalStatus(
     const auctionStart = auctionParams.starts_at.isSome ? auctionParams.starts_at.unwrap().toNumber() : blockNumber
     const auction = await createAuction(store, nft, auctionParams, auctionStart)
 
-    const status = new TransactionalStatusAuction()
-    status.auctionId = auction.id
-
-    return status
+    return auction
   }
 
   logger.error('Not implemented TransactionalStatus type', { contentActor: transactionalStatus.toString() })
@@ -588,10 +596,7 @@ export async function contentNft_OpenAuctionStarted({ event, store }: EventConte
   const auctionStart = auctionParams.starts_at.isSome ? auctionParams.starts_at.unwrap().toNumber() : event.blockNumber
   const auction = await createAuction(store, nft, auctionParams, auctionStart)
 
-  // update NFT transactional status
-  const transactionalStatus = new TransactionalStatusAuction()
-  transactionalStatus.auctionId = auction.id
-  await setNewNftTransactionalStatus(store, nft, transactionalStatus, event.blockNumber)
+  await setNewNftTransactionalStatus(store, nft, auction, event.blockNumber)
 
   // common event processing - second
 
@@ -635,10 +640,7 @@ export async function contentNft_EnglishAuctionStarted({ event, store }: EventCo
   const auctionStart = auctionParams.starts_at.isSome ? auctionParams.starts_at.unwrap().toNumber() : event.blockNumber
   const auction = await createAuction(store, nft, auctionParams, auctionStart)
 
-  // update NFT transactional status
-  const transactionalStatus = new TransactionalStatusAuction()
-  transactionalStatus.auctionId = auction.id
-  await setNewNftTransactionalStatus(store, nft, transactionalStatus, event.blockNumber)
+  await setNewNftTransactionalStatus(store, nft, auction, event.blockNumber)
 
   // common event processing - second
 

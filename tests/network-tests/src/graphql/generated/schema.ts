@@ -679,6 +679,8 @@ export type Auction = BaseGraphQlObject & {
   whitelistedMembers: Array<Membership>
   englishauctionstartedeventauction?: Maybe<Array<EnglishAuctionStartedEvent>>
   openauctionstartedeventauction?: Maybe<Array<OpenAuctionStartedEvent>>
+  ownednfttransactionalStatusAuction?: Maybe<Array<OwnedNft>>
+  transactionalstatusupdatetransactionalStatusAuction?: Maybe<Array<TransactionalStatusUpdate>>
 }
 
 export type AuctionBidCanceledEvent = Event &
@@ -1286,6 +1288,12 @@ export type AuctionWhereInput = {
   openauctionstartedeventauction_none?: Maybe<OpenAuctionStartedEventWhereInput>
   openauctionstartedeventauction_some?: Maybe<OpenAuctionStartedEventWhereInput>
   openauctionstartedeventauction_every?: Maybe<OpenAuctionStartedEventWhereInput>
+  ownednfttransactionalStatusAuction_none?: Maybe<OwnedNftWhereInput>
+  ownednfttransactionalStatusAuction_some?: Maybe<OwnedNftWhereInput>
+  ownednfttransactionalStatusAuction_every?: Maybe<OwnedNftWhereInput>
+  transactionalstatusupdatetransactionalStatusAuction_none?: Maybe<TransactionalStatusUpdateWhereInput>
+  transactionalstatusupdatetransactionalStatusAuction_some?: Maybe<TransactionalStatusUpdateWhereInput>
+  transactionalstatusupdatetransactionalStatusAuction_every?: Maybe<TransactionalStatusUpdateWhereInput>
   AND?: Maybe<Array<AuctionWhereInput>>
   OR?: Maybe<Array<AuctionWhereInput>>
 }
@@ -14965,8 +14973,10 @@ export type OwnedNft = BaseGraphQlObject & {
   ownerMemberId?: Maybe<Scalars['String']>
   /** NFT's metadata */
   metadata: Scalars['String']
-  /** NFT transactional status */
-  transactionalStatus: TransactionalStatus
+  /** NFT's non-auction transactional status (if any) */
+  transactionalStatus?: Maybe<TransactionalStatus>
+  transactionalStatusAuction?: Maybe<Auction>
+  transactionalStatusAuctionId?: Maybe<Scalars['String']>
   transactionalStatusUpdates: Array<TransactionalStatusUpdate>
   /** Creator royalty */
   creatorRoyalty?: Maybe<Scalars['Float']>
@@ -14988,6 +14998,7 @@ export type OwnedNftCreateInput = {
   ownerMember?: Maybe<Scalars['ID']>
   metadata: Scalars['String']
   transactionalStatus: Scalars['JSONObject']
+  transactionalStatusAuction?: Maybe<Scalars['ID']>
   creatorRoyalty?: Maybe<Scalars['Float']>
   ownerCuratorGroup?: Maybe<Scalars['ID']>
   isOwnedByChannel: Scalars['Boolean']
@@ -15010,6 +15021,8 @@ export enum OwnedNftOrderByInput {
   OwnerMemberDesc = 'ownerMember_DESC',
   MetadataAsc = 'metadata_ASC',
   MetadataDesc = 'metadata_DESC',
+  TransactionalStatusAuctionAsc = 'transactionalStatusAuction_ASC',
+  TransactionalStatusAuctionDesc = 'transactionalStatusAuction_DESC',
   CreatorRoyaltyAsc = 'creatorRoyalty_ASC',
   CreatorRoyaltyDesc = 'creatorRoyalty_DESC',
   OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
@@ -15024,6 +15037,7 @@ export type OwnedNftUpdateInput = {
   ownerMember?: Maybe<Scalars['ID']>
   metadata?: Maybe<Scalars['String']>
   transactionalStatus?: Maybe<Scalars['JSONObject']>
+  transactionalStatusAuction?: Maybe<Scalars['ID']>
   creatorRoyalty?: Maybe<Scalars['Float']>
   ownerCuratorGroup?: Maybe<Scalars['ID']>
   isOwnedByChannel?: Maybe<Scalars['Boolean']>
@@ -15074,6 +15088,7 @@ export type OwnedNftWhereInput = {
   auctions_some?: Maybe<AuctionWhereInput>
   auctions_every?: Maybe<AuctionWhereInput>
   ownerMember?: Maybe<MembershipWhereInput>
+  transactionalStatusAuction?: Maybe<AuctionWhereInput>
   transactionalStatusUpdates_none?: Maybe<TransactionalStatusUpdateWhereInput>
   transactionalStatusUpdates_some?: Maybe<TransactionalStatusUpdateWhereInput>
   transactionalStatusUpdates_every?: Maybe<TransactionalStatusUpdateWhereInput>
@@ -26444,15 +26459,7 @@ export type ThreadStatusRemoved = {
 export type TransactionalStatus =
   | TransactionalStatusIdle
   | TransactionalStatusInitiatedOfferToMember
-  | TransactionalStatusAuction
   | TransactionalStatusBuyNow
-
-export type TransactionalStatusAuction = {
-  /** Type needs to have at least one non-relation entity. This value is not used. */
-  dummy?: Maybe<Scalars['Int']>
-  /** Auction */
-  auction?: Maybe<Auction>
-}
 
 export type TransactionalStatusBuyNow = {
   price: Scalars['Float']
@@ -26481,8 +26488,10 @@ export type TransactionalStatusUpdate = BaseGraphQlObject & {
   version: Scalars['Int']
   nft: OwnedNft
   nftId: Scalars['String']
-  /** NFT transactional status */
-  transactionalStatus: TransactionalStatus
+  /** NFT's non-auction transactional status (if any) */
+  transactionalStatus?: Maybe<TransactionalStatus>
+  transactionalStatusAuction?: Maybe<Auction>
+  transactionalStatusAuctionId?: Maybe<Scalars['String']>
   /** Block number at which change happened */
   changedAt: Scalars['Int']
 }
@@ -26496,6 +26505,7 @@ export type TransactionalStatusUpdateConnection = {
 export type TransactionalStatusUpdateCreateInput = {
   nft: Scalars['ID']
   transactionalStatus: Scalars['JSONObject']
+  transactionalStatusAuction?: Maybe<Scalars['ID']>
   changedAt: Scalars['Float']
 }
 
@@ -26513,6 +26523,8 @@ export enum TransactionalStatusUpdateOrderByInput {
   DeletedAtDesc = 'deletedAt_DESC',
   NftAsc = 'nft_ASC',
   NftDesc = 'nft_DESC',
+  TransactionalStatusAuctionAsc = 'transactionalStatusAuction_ASC',
+  TransactionalStatusAuctionDesc = 'transactionalStatusAuction_DESC',
   ChangedAtAsc = 'changedAt_ASC',
   ChangedAtDesc = 'changedAt_DESC',
 }
@@ -26520,6 +26532,7 @@ export enum TransactionalStatusUpdateOrderByInput {
 export type TransactionalStatusUpdateUpdateInput = {
   nft?: Maybe<Scalars['ID']>
   transactionalStatus?: Maybe<Scalars['JSONObject']>
+  transactionalStatusAuction?: Maybe<Scalars['ID']>
   changedAt?: Maybe<Scalars['Float']>
 }
 
@@ -26556,6 +26569,7 @@ export type TransactionalStatusUpdateWhereInput = {
   changedAt_lte?: Maybe<Scalars['Int']>
   changedAt_in?: Maybe<Array<Scalars['Int']>>
   nft?: Maybe<OwnedNftWhereInput>
+  transactionalStatusAuction?: Maybe<AuctionWhereInput>
   AND?: Maybe<Array<TransactionalStatusUpdateWhereInput>>
   OR?: Maybe<Array<TransactionalStatusUpdateWhereInput>>
 }
