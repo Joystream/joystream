@@ -8,6 +8,7 @@ use frame_support::{
 use frame_system::ensure_signed;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::traits::Convert;
+use sp_std::iter::Sum;
 
 // crate modules
 mod errors;
@@ -19,10 +20,10 @@ mod types;
 // crate imports
 use errors::Error;
 pub use events::{Event, RawEvent};
-use traits::{PalletToken, TransferLocationTrait};
+use traits::PalletToken;
 use types::{
-    AccountDataOf, DecOp, SimpleOf, TokenDataOf, TokenIssuanceParametersOf, TransferPolicyOf,
-    VerifiableOf,
+    AccountDataOf, DecOp, MerkleProofOf, OutputsOf, TokenDataOf, TokenIssuanceParametersOf,
+    TransferPolicyOf,
 };
 
 /// Pallet Configuration Trait
@@ -32,7 +33,7 @@ pub trait Trait: frame_system::Trait {
 
     // TODO: Add frame_support::pallet_prelude::TypeInfo trait
     /// the Balance type used
-    type Balance: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug + Saturating;
+    type Balance: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug + Saturating + Sum;
 
     /// The token identifier used
     type TokenId: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug;
@@ -77,52 +78,38 @@ decl_module! {
         /// Predefined errors.
         type Error = Error<T>;
 
+        /// Transfer `amount` from `src` account to `dst` according to provided policy
+        /// Preconditions:
+        /// - `token_id` must exists
+        /// - `dst` underlying account must be valid for `token_id`
+        /// - `src` must be valid for `token_id`
+        /// - `dst` is compatible con `token_id` transfer policy
+        ///
+        /// Postconditions:
+        /// - `src` free balance decreased by `amount` or removed if final balance < existential deposit
+        /// - `dst` free balance increased by `amount`
+        /// - `token_id` issuance eventually decreased by dust amount in case of src removalp
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn transfer_permissionless(
+        pub fn transfer(
             origin,
             token_id: T::TokenId,
-            destination: T::AccountId,
-            amount: T::Balance,
-        ) -> DispatchResult {
-            let src = ensure_signed(origin)?;
-            let dst = SimpleOf::<T>::new(destination);
-            Self::transfer(token_id, src, dst, amount)
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn transfer_permissioned(
-            origin,
-            token_id: T::TokenId,
-            destination: VerifiableOf<T>,
-            amount: T::Balance,
-        ) -> DispatchResult {
-            let src = ensure_signed(origin)?;
-            Self::transfer(token_id, src, destination, amount)
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn transfer_permissionless_multi_output(
-            origin,
-            token_id: T::TokenId,
-            outputs: Vec<(T::AccountId, T::Balance)>,
-        ) -> DispatchResult {
-            let src = ensure_signed(origin)?;
-            let simple_outputs = outputs.into_iter().map(|(acc, amount)| {
-                (SimpleOf::<T>::new(acc), amount)
-            }).collect::<Vec<_>>();
-
-            Self::multi_output_transfer(token_id, src, &simple_outputs)
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn transfer_permissioned_multi_output(
-            origin,
-            token_id: T::TokenId,
-            outputs: Vec<(VerifiableOf<T>, T::Balance)>,
+            outputs: OutputsOf<T>,
         ) -> DispatchResult {
             let src = ensure_signed(origin)?;
 
-            Self::multi_output_transfer(token_id, src, &outputs)
+            // Currency transfer preconditions
+            let decrease_operation = Self::ensure_can_transfer(token_id, &src, &outputs)?;
+
+            // == MUTATION SAFE ==
+
+            Self::do_transfer(token_id, &src, &outputs, decrease_operation);
+
+            Self::deposit_event(RawEvent::TokenAmountTransferred(
+                token_id,
+                src,
+                outputs.into(),
+            ));
+            Ok(())
         }
     }
 }
@@ -134,81 +121,7 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
 
     type TokenId = T::TokenId;
 
-    /// Transfer `amount` from `src` account to `dst` according to provided policy
-    /// Preconditions:
-    /// - `token_id` must exists
-    /// - `dst` underlying account must be valid for `token_id`
-    /// - `src` must be valid for `token_id`
-    /// - `dst` is compatible con `token_id` transfer policy
-    ///
-    /// Postconditions:
-    /// - `src` free balance decreased by `amount` or removed if final balance < existential deposit
-    /// - `dst` free balance increased by `amount`
-    /// - `token_id` issuance eventually decreased by dust amount in case of src removalp
-    /// if `amount` is zero it is equivalent to a no-op
-    fn transfer<Destination>(
-        token_id: T::TokenId,
-        src: T::AccountId,
-        dst: Destination,
-        amount: T::Balance,
-    ) -> DispatchResult
-    where
-        Destination: TransferLocationTrait<T::AccountId, TransferPolicyOf<T>> + Clone,
-    {
-        if amount.is_zero() {
-            return Ok(());
-        }
-
-        // Currency transfer preconditions
-        let outputs = [(dst.clone(), amount)];
-        let (decrease_operation, token_info) = Self::ensure_can_transfer(token_id, &src, &outputs)?;
-
-        // validate according to policy
-        token_info.ensure_valid_location_for_policy::<T, T::AccountId, _>(&dst)?;
-
-        // == MUTATION SAFE ==
-
-        Self::do_transfer(token_id, &src, &outputs, decrease_operation);
-
-        Self::deposit_event(RawEvent::TokenAmountTransferred(
-            token_id,
-            src,
-            dst.location_account(),
-            amount,
-        ));
-        Ok(())
-    }
-
-    fn multi_output_transfer<Destination>(
-        token_id: T::TokenId,
-        src: T::AccountId,
-        outputs: &[(Destination, T::Balance)],
-    ) -> DispatchResult
-    where
-        Destination: TransferLocationTrait<T::AccountId, TransferPolicyOf<T>>,
-    {
-        let (decrease_operation, token_info) = Self::ensure_can_transfer(token_id, &src, outputs)?;
-        // validate according to policy
-        outputs.iter().try_for_each(|(dst, _)| {
-            token_info.ensure_valid_location_for_policy::<T, T::AccountId, _>(dst)
-        })?;
-
-        // == MUTATION SAFE ==
-
-        Self::do_transfer(token_id, &src, outputs, decrease_operation);
-
-        let outputs_for_event = outputs
-            .iter()
-            .map(|(dst, amount)| (dst.location_account(), *amount));
-
-        Self::deposit_event(RawEvent::TokenAmountMultiTransferred(
-            token_id,
-            src,
-            outputs_for_event.collect(),
-        ));
-
-        Ok(())
-    }
+    type MerkleProof = MerkleProofOf<T>;
 
     /// Change to permissionless
     /// Preconditions:
@@ -341,6 +254,17 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
         Self::do_deissue_token(token_id);
         Ok(())
     }
+
+    /// Join whitelist for permissioned case: used to add accounts for token
+    /// Preconditions:
+    /// - 'token_id' must be valid
+    /// - transfer policy is permissionless or transfer policy is permissioned and merkle proof is valid
+    ///
+    /// Postconditions:
+    /// - account added to the list
+    fn join_whitelist(token_id: T::TokenId, proof: MerkleProofOf<T>) -> DispatchResult {
+        todo!()
+    }
 }
 
 /// Module implementation
@@ -378,14 +302,11 @@ impl<T: Trait> Module<T> {
     }
 
     /// Transfer preconditions
-    pub(crate) fn ensure_can_transfer<Destination>(
+    pub(crate) fn ensure_can_transfer(
         token_id: T::TokenId,
         src: &T::AccountId,
-        outputs: &[(Destination, T::Balance)],
-    ) -> Result<(DecOp<T>, TokenDataOf<T>), DispatchError>
-    where
-        Destination: TransferLocationTrait<T::AccountId, TransferPolicyOf<T>>,
-    {
+        outputs: &OutputsOf<T>,
+    ) -> Result<DecOp<T>, DispatchError> {
         // ensure token validity
         let token_info = Self::ensure_token_exists(token_id)?;
 
@@ -393,47 +314,37 @@ impl<T: Trait> Module<T> {
         let src_account_info = Self::ensure_account_data_exists(token_id, src)?;
 
         // ensure dst account id validity
-        outputs.iter().try_for_each(|(dst, _)| {
-            let dst_account = dst.location_account();
-
+        outputs.iter().try_for_each(|out| {
             // enusure destination exists and that it differs from source
-            Self::ensure_account_data_exists(token_id, &dst_account).and_then(|_| {
+            Self::ensure_account_data_exists(token_id, &out.beneficiary).and_then(|_| {
                 ensure!(
-                    dst_account != *src,
+                    out.beneficiary != *src,
                     Error::<T>::SameSourceAndDestinationLocations,
                 );
                 Ok(())
             })
         })?;
 
-        let total_amount = outputs.iter().fold(T::Balance::zero(), |acc, (_, amount)| {
-            acc.saturating_add(*amount)
-        });
+        let total = outputs.total_amount();
 
         // Amount to decrease by accounting for existential deposit
         let decrease_op = src_account_info
-            .decrease_with_ex_deposit::<T>(total_amount, token_info.existential_deposit)
+            .decrease_with_ex_deposit::<T>(total, token_info.existential_deposit)
             .map_err(|_| Error::<T>::InsufficientFreeBalanceForTransfer)?;
-        Ok((decrease_op, token_info))
+        Ok(decrease_op)
     }
 
     /// Perform balance accounting for balances
-    pub(crate) fn do_transfer<Destination>(
+    pub(crate) fn do_transfer(
         token_id: T::TokenId,
         src: &T::AccountId,
-        outputs: &[(Destination, T::Balance)],
+        outputs: &OutputsOf<T>,
         decrease_op: DecOp<T>,
-    ) where
-        Destination: TransferLocationTrait<T::AccountId, TransferPolicyOf<T>>,
-    {
-        outputs.iter().for_each(|(dst, amount)| {
-            AccountInfoByTokenAndAccount::<T>::mutate(
-                token_id,
-                dst.location_account(),
-                |account_data| {
-                    account_data.increase_liquidity_by(*amount);
-                },
-            );
+    ) {
+        outputs.iter().for_each(|out| {
+            AccountInfoByTokenAndAccount::<T>::mutate(token_id, &out.beneficiary, |account_data| {
+                account_data.increase_liquidity_by(out.amount);
+            });
         });
         match decrease_op {
             DecOp::<T>::Reduce(amount) => {

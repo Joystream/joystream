@@ -1,13 +1,8 @@
 use codec::{Decode, Encode};
-use frame_support::{
-    dispatch::{DispatchError, DispatchResult},
-    ensure,
-};
+use frame_support::{dispatch::DispatchError, ensure};
 use sp_arithmetic::traits::{Saturating, Zero};
 use sp_runtime::traits::{Convert, Hash};
-
-// crate imports
-use crate::traits::TransferLocationTrait;
+use sp_std::{iter::Sum, slice::Iter};
 
 pub(crate) enum DecreaseOp<Balance> {
     /// reduce amount by
@@ -115,17 +110,6 @@ pub struct TokenIssuanceParameters<Balance, Hash> {
     pub(crate) patronage_rate: Balance,
 }
 
-/// Transfer location without merkle proof
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
-pub struct SimpleLocation<AccountId>(pub(crate) AccountId);
-
-/// Transfer location with merkle proof
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
-pub struct VerifiableLocation<AccountId, Hasher: Hash> {
-    pub(crate) merkle_proof: Vec<(Hasher::Output, MerkleSide)>,
-    pub account: AccountId,
-}
-
 /// Utility enum used in merkle proof verification
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy)]
 pub enum MerkleSide {
@@ -135,6 +119,30 @@ pub enum MerkleSide {
     /// This element appended to the left of the subtree hash
     Left,
 }
+
+/// Wrapper around a merkle proof path
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct MerkleProof<AccountId, Hasher: Hash> {
+    /// Proof path: [(hash, side)]
+    pub(crate) path: Vec<(Hasher::Output, MerkleSide)>,
+
+    /// Account for which membership is to be verified
+    pub(crate) account_id: AccountId,
+}
+
+/// Output for a transfer containing beneficiary + amount due
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct Output<AccountId, Balance> {
+    /// Beneficiary
+    pub beneficiary: AccountId,
+
+    /// Amount
+    pub amount: Balance,
+}
+
+/// Wrapper around Vec<Outputs>
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct Outputs<AccountId, Balance>(pub(crate) Vec<Output<AccountId, Balance>>);
 
 /// Default trait for Merkle Side
 impl Default for MerkleSide {
@@ -213,22 +221,6 @@ impl<Balance: Saturating + Copy, Hash, BlockNumber> TokenData<Balance, Hash, Blo
     pub(crate) fn decrease_issuance_by(&mut self, amount: Balance) {
         self.current_total_issuance = self.current_total_issuance.saturating_sub(amount);
     }
-
-    // validate transfer destination location according to self.policy
-    pub(crate) fn ensure_valid_location_for_policy<T, AccountId, Location>(
-        &self,
-        location: &Location,
-    ) -> DispatchResult
-    where
-        T: crate::Trait,
-        Location: TransferLocationTrait<AccountId, TransferPolicy<Hash>>,
-    {
-        ensure!(
-            location.is_valid_location_for_policy(&self.transfer_policy),
-            crate::Error::<T>::LocationIncompatibleWithCurrentPolicy
-        );
-        Ok(())
-    }
 }
 /// Encapsules parameters validation + TokenData construction
 impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, Hash> {
@@ -254,56 +246,13 @@ impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, H
     }
 }
 
-// Simple location
-impl<AccountId: Clone, Hash> TransferLocationTrait<AccountId, TransferPolicy<Hash>>
-    for SimpleLocation<AccountId>
-{
-    fn is_valid_location_for_policy(&self, policy: &TransferPolicy<Hash>) -> bool {
-        matches!(policy, TransferPolicy::<Hash>::Permissionless)
-    }
-
-    fn location_account(&self) -> AccountId {
-        self.0.to_owned()
-    }
-}
-
-impl<AccountId> SimpleLocation<AccountId> {
-    pub(crate) fn new(account: AccountId) -> Self {
-        Self(account)
-    }
-}
-
-// Verifiable Location implementation
-impl<AccountId: Clone + Encode, Hasher: Hash>
-    TransferLocationTrait<AccountId, TransferPolicy<Hasher::Output>>
-    for VerifiableLocation<AccountId, Hasher>
-{
-    fn is_valid_location_for_policy(&self, policy: &TransferPolicy<Hasher::Output>) -> bool {
-        // visitee dispatch
-        match policy {
-            TransferPolicy::<Hasher::Output>::Permissioned(whitelist_commit) => {
-                self.is_merkle_proof_valid(whitelist_commit.to_owned())
-            }
-            // ignore verification in the permissionless case
-            TransferPolicy::<Hasher::Output>::Permissionless => true,
-        }
-    }
-
-    fn location_account(&self) -> AccountId {
-        self.account.to_owned()
-    }
-}
-
-impl<AccountId: Encode, Hasher: Hash> VerifiableLocation<AccountId, Hasher> {
-    pub(crate) fn is_merkle_proof_valid(&self, commit: Hasher::Output) -> bool {
-        let init = Hasher::hash_of(&self.account);
-        let proof_result = self
-            .merkle_proof
-            .iter()
-            .fold(init, |acc, (hash, side)| match side {
-                MerkleSide::Left => Hasher::hash_of(&(hash, acc)),
-                MerkleSide::Right => Hasher::hash_of(&(acc, hash)),
-            });
+impl<AccountId: Encode, Hasher: Hash> MerkleProof<AccountId, Hasher> {
+    pub(crate) fn verify_for_commit(&self, commit: Hasher::Output) -> bool {
+        let init = Hasher::hash_of(&self.account_id);
+        let proof_result = self.path.iter().fold(init, |acc, (hash, side)| match side {
+            MerkleSide::Left => Hasher::hash_of(&(hash, acc)),
+            MerkleSide::Right => Hasher::hash_of(&(acc, hash)),
+        });
 
         proof_result == commit
     }
@@ -341,6 +290,22 @@ impl<Balance: Zero + Copy + Saturating, BlockNumber: Copy + Saturating + Partial
     }
 }
 
+impl<AccountId, Balance: Sum + Copy> Outputs<AccountId, Balance> {
+    pub fn total_amount(&self) -> Balance {
+        self.0.iter().map(|out| out.amount).sum()
+    }
+
+    pub fn iter(&self) -> Iter<'_, Output<AccountId, Balance>> {
+        self.0.iter()
+    }
+}
+
+impl<AccountId, Balance> From<Outputs<AccountId, Balance>> for Vec<Output<AccountId, Balance>> {
+    fn from(v: Outputs<AccountId, Balance>) -> Self {
+        v.0
+    }
+}
+
 // Aliases
 /// Alias for Account Data
 pub(crate) type AccountDataOf<T> = AccountData<<T as crate::Trait>::Balance>;
@@ -362,9 +327,10 @@ pub(crate) type TransferPolicyOf<T> = TransferPolicy<<T as frame_system::Trait>:
 /// Alias for decrease operation
 pub(crate) type DecOp<T> = DecreaseOp<<T as crate::Trait>::Balance>;
 
-/// Alias for simple location
-pub(crate) type SimpleOf<T> = SimpleLocation<<T as frame_system::Trait>::AccountId>;
+/// Alias for the Merkle Proof type
+pub(crate) type MerkleProofOf<T> =
+    MerkleProof<<T as frame_system::Trait>::AccountId, <T as frame_system::Trait>::Hashing>;
 
-/// Alias for simple location
-pub(crate) type VerifiableOf<T> =
-    VerifiableLocation<<T as frame_system::Trait>::AccountId, <T as frame_system::Trait>::Hashing>;
+/// Alias for the output type
+pub(crate) type OutputsOf<T> =
+    Outputs<<T as frame_system::Trait>::AccountId, <T as crate::Trait>::Balance>;

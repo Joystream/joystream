@@ -1,3 +1,4 @@
+use crate::types::Output;
 use frame_support::decl_event;
 
 decl_event! {
@@ -6,7 +7,9 @@ decl_event! {
         Balance = <T as crate::Trait>::Balance,
         TokenId = <T as crate::Trait>::TokenId,
         AccountId = <T as frame_system::Trait>::AccountId,
-        BlockNumber = <T as frame_system::Trait>::BlockNumber,
+    BlockNumber = <T as frame_system::Trait>::BlockNumber,
+    Output = Output<<T as frame_system::Trait>::AccountId, <T as crate::Trait>::Balance>,
+
     {
         /// Token amount is deposited
         /// Params:
@@ -26,16 +29,8 @@ decl_event! {
         /// Params:
         /// - token identifier
         /// - source account
-        /// - destination account
-        /// - amount transferred
-        TokenAmountTransferred(TokenId, AccountId, AccountId, Balance),
-
-        /// Token amount is transferred from src to dst
-        /// Params:
-        /// - token identifier
-        /// - source account
         /// - outputs: list of pairs (destination account, amount)
-        TokenAmountMultiTransferred(TokenId, AccountId, Vec<(AccountId, Balance)>),
+        TokenAmountTransferred(TokenId, AccountId, Vec<Output>),
 
         /// Token amount is reserved
         /// Params:

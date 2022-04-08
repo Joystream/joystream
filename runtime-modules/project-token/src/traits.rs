@@ -17,6 +17,9 @@ pub trait PalletToken<AccountId, Policy, IssuanceParams> {
     /// Token Identifier type used
     type TokenId;
 
+    /// Merkle Proof Type used
+    type MerkleProof;
+
     /// Issue token with specified characteristics
     fn issue_token(issuance_parameters: IssuanceParams) -> DispatchResult;
 
@@ -26,30 +29,14 @@ pub trait PalletToken<AccountId, Policy, IssuanceParams> {
     /// Change to permissionless
     fn change_to_permissionless(token_id: Self::TokenId) -> DispatchResult;
 
-    /// Transfer `amount` from `src` account to `dst` according to provided policy
-    fn transfer<Destination>(
-        token_id: Self::TokenId,
-        src: AccountId,
-        dst: Destination,
-        amount: Self::Balance,
-    ) -> DispatchResult
-    where
-        Destination: TransferLocationTrait<AccountId, Policy> + Clone;
-
-    /// Transfer `amount` from `src` account to `dst` according to provided policy
-    fn multi_output_transfer<Destination>(
-        token_id: Self::TokenId,
-        src: AccountId,
-        outputs: &[(Destination, Self::Balance)],
-    ) -> DispatchResult
-    where
-        Destination: TransferLocationTrait<AccountId, Policy>;
-
     /// Reduce patronage rate by amount
     fn reduce_patronage_rate_by(
         token_id: Self::TokenId,
         decrement: Self::Balance,
     ) -> DispatchResult;
+
+    /// Join whitelist for permissioned case: used to add accounts for token
+    fn join_whitelist(token_id: Self::TokenId, proof: Self::MerkleProof) -> DispatchResult;
 
     /// Allow creator to receive credit into his accounts
     fn claim_patronage_credit(token_id: Self::TokenId, to_account: AccountId) -> DispatchResult;
