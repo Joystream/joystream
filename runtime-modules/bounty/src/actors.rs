@@ -44,7 +44,13 @@ impl<T: Trait> BountyActorManager<T> {
             }
         }
     }
-
+    // Construct BountyActor.
+    pub(crate) fn get_bounty_actor(&self) -> BountyActor<MemberId<T>> {
+        match self {
+            BountyActorManager::Member(_, member_id) => BountyActor::Member(*member_id),
+            BountyActorManager::Council => BountyActor::Council,
+        }
+    }
     // Construct BountyActor.
     pub(crate) fn get_bounty_actor_manager(
         actor: BountyActor<MemberId<T>>,

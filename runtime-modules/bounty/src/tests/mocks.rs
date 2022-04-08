@@ -58,6 +58,8 @@ parameter_types! {
     pub const BountyLockId: [u8; 8] = [12; 8];
     pub const ClosedContractSizeLimit: u32 = 3;
     pub const MinWorkEntrantStake: u64 = 10;
+    pub const CreatorStateBloatBondAmount: u64 = 10;
+    pub const FunderStateBloatBondAmount: u64 = 10;
 }
 
 impl frame_system::Trait for Test {
@@ -99,6 +101,8 @@ impl Trait for Test {
     type EntryId = u64;
     type ClosedContractSizeLimit = ClosedContractSizeLimit;
     type MinWorkEntrantStake = MinWorkEntrantStake;
+    type CreatorStateBloatBondAmount = CreatorStateBloatBondAmount;
+    type FunderStateBloatBondAmount = FunderStateBloatBondAmount;
 }
 
 pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u128 = 10000;
@@ -149,13 +153,25 @@ impl crate::WeightInfo for () {
     fn create_bounty_by_member(_i: u32, _j: u32) -> u64 {
         0
     }
-    fn cancel_bounty_by_member() -> u64 {
+    fn terminate_bounty_w_oracle_reward_funding_expired() -> u64 {
         0
     }
-    fn cancel_bounty_by_council() -> u64 {
+    fn terminate_bounty_wo_oracle_reward_funding_expired() -> u64 {
         0
     }
-    fn terminate_bounty() -> u64 {
+    fn terminate_bounty_w_oracle_reward_wo_funds_funding() -> u64 {
+        0
+    }
+    fn terminate_bounty_wo_oracle_reward_wo_funds_funding() -> u64 {
+        0
+    }
+    fn terminate_bounty_w_oracle_reward_w_funds_funding() -> u64 {
+        0
+    }
+    fn terminate_bounty_wo_oracle_reward_w_funds_funding() -> u64 {
+        0
+    }
+    fn terminate_bounty_work_or_judging_period() -> u64 {
         0
     }
     fn end_working_period() -> u64 {

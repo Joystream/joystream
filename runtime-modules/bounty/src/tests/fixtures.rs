@@ -2,7 +2,7 @@ use super::mocks::{Balances, Bounty, System, Test, TestEvent};
 use crate::sp_api_hidden_includes_decl_storage::hidden_include::StorageDoubleMap;
 use crate::{
     AssuranceContractType, BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord,
-    Entry, FundingType, OracleJudgmentOf, RawEvent,
+    Entry, FundingType, OracleJudgmentOf, RawEvent, Trait,
 };
 use common::council::CouncilBudgetManager;
 use frame_support::dispatch::DispatchResult;
@@ -46,11 +46,11 @@ pub fn increase_account_balance(account_id: &u128, balance: u64) {
 }
 
 pub fn get_funder_state_bloat_bond_amount() -> u64 {
-    crate::FUNDER_STATE_BLOAT_BOND_AMOUNT.into()
+    <Test as Trait>::FunderStateBloatBondAmount::get()
 }
 
 pub fn get_creator_state_bloat_bond_amount() -> u64 {
-    crate::CREATOR_STATE_BLOAT_BOND_AMOUNT.into()
+    <Test as Trait>::CreatorStateBloatBondAmount::get()
 }
 
 pub struct EventFixture;
@@ -279,7 +279,7 @@ impl CreateBountyFixture {
                 total_funding: 0,
                 milestone: expected_milestone,
                 active_work_entry_count: 0,
-                oracle_withdrew_reward: false,
+                has_unpaid_oracle_reward: params.oracle_reward > 0,
             };
 
             assert_eq!(expected_bounty, Bounty::bounties(bounty_id));
@@ -287,35 +287,6 @@ impl CreateBountyFixture {
             assert_eq!(next_bounty_count_value - 1, Bounty::bounty_count());
             assert!(!<crate::Bounties<Test>>::contains_key(&bounty_id));
         }
-    }
-}
-
-pub struct CancelBountyFixture {
-    origin: RawOrigin<u128>,
-    bounty_id: u64,
-}
-
-impl CancelBountyFixture {
-    pub fn default() -> Self {
-        Self {
-            origin: RawOrigin::Root,
-            bounty_id: 1,
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_bounty_id(self, bounty_id: u64) -> Self {
-        Self { bounty_id, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result =
-            Bounty::cancel_bounty(self.origin.clone().into(), self.bounty_id.clone());
-
-        assert_eq!(actual_result, expected_result);
     }
 }
 

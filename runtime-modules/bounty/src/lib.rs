@@ -19,13 +19,12 @@
 //! - [create_bounty](./struct.Module.html#method.create_bounty) - creates a bounty
 //!
 //! #### Funding stage
-//! - [cancel_bounty](./struct.Module.html#method.cancel_bounty) - cancels a bounty
-//! - [veto_bounty](./struct.Module.html#method.veto_bounty) - vetoes a bounty
+//! - [terminate_bounty](./struct.Module.html#method.terminate_bounty) - terminate bounty (into failed stage or remove bounty).
 //! - [fund_bounty](./struct.Module.html#method.fund_bounty) - provide funding for a bounty
 //! - [switch_oracle](./struct.Module.html#method.switch_oracle) - switch the current oracle by another one.
 //!
 //! #### FundingExpired stage
-//! - [cancel_bounty](./struct.Module.html#method.cancel_bounty) - cancels a bounty
+//! - [terminate_bounty](./struct.Module.html#method.terminate_bounty) - terminate bounty (into failed stage or remove bounty).
 //! - [switch_oracle](./struct.Module.html#method.switch_oracle) - switch the current oracle by another one.
 //!
 //! #### Work submission stage
@@ -35,15 +34,14 @@
 //! by another one.
 //! - [submit_work](./struct.Module.html#method.submit_work) - submit work for a bounty.
 //! - [end_working_period](./struct.Module.html#method.end_working_period) - end working period by oracle.
-//! - [terminate_bounty](./struct.Module.html#method.terminate_bounty) - terminate bounty
-//! (into failed stage) by council.
+//! - [terminate_bounty](./struct.Module.html#method.terminate_bounty) - terminate bounty (into failed stage or remove bounty).
 //!
 //! #### Judgment stage
 //! - [submit_oracle_judgment](./struct.Module.html#method.submit_oracle_judgment) - submits an
 //! oracle judgment for a bounty.
 //!  - [switch_oracle](./struct.Module.html#method.switch_oracle) - switch the current oracle
 //! by another one.
-//!  - [terminate_bounty](./struct.Module.html#method.terminate_bounty) - terminate bounty (into failed stage).
+//! - [terminate_bounty](./struct.Module.html#method.terminate_bounty) - terminate bounty (into failed stage or remove bounty).
 //!
 //! #### SuccessfulBountyWithdrawal stage
 //! - [unlock_work_entrant_stake](./struct.Module.html#method.unlock_work_entrant_stake) -
@@ -74,9 +72,13 @@ mod benchmarking;
 pub trait WeightInfo {
     fn create_bounty_by_council(i: u32, j: u32) -> Weight;
     fn create_bounty_by_member(i: u32, j: u32) -> Weight;
-    fn cancel_bounty_by_member() -> Weight;
-    fn cancel_bounty_by_council() -> Weight;
-    fn terminate_bounty() -> Weight;
+    fn terminate_bounty_w_oracle_reward_funding_expired() -> Weight;
+    fn terminate_bounty_wo_oracle_reward_funding_expired() -> Weight;
+    fn terminate_bounty_w_oracle_reward_wo_funds_funding() -> Weight;
+    fn terminate_bounty_wo_oracle_reward_wo_funds_funding() -> Weight;
+    fn terminate_bounty_w_oracle_reward_w_funds_funding() -> Weight;
+    fn terminate_bounty_wo_oracle_reward_w_funds_funding() -> Weight;
+    fn terminate_bounty_work_or_judging_period() -> Weight;
     fn end_working_period() -> Weight;
     fn switch_oracle_to_council_by_council_approval_successful() -> Weight;
     fn switch_oracle_to_council_by_oracle_member() -> Weight;
@@ -103,6 +105,7 @@ pub trait WeightInfo {
 type WeightInfoBounty<T> = <T as Trait>::WeightInfo;
 
 pub(crate) use actors::BountyActorManager;
+use frame_support::error::BadOrigin;
 // use council::Balance;
 pub(crate) use stages::BountyStageCalculator;
 
@@ -169,6 +172,14 @@ pub trait Trait:
 
     /// Defines min work entrant stake for a bounty.
     type MinWorkEntrantStake: Get<BalanceOf<Self>>;
+
+    /// Current state bloat bond a funder has to pay to contribute (one time payment).
+    /// The funder can withdraw the bond after deleting the BountyContributions entry belonging to him
+    type FunderStateBloatBondAmount: Get<BalanceOf<Self>>;
+
+    /// Current state bloat bond a creator has to pay to create a bounty.
+    /// The creator can withdraw the bond after he or someone else removes the bounty
+    type CreatorStateBloatBondAmount: Get<BalanceOf<Self>>;
 }
 
 /// Alias type for the BountyParameters.
@@ -285,9 +296,6 @@ pub enum BountyStage {
     /// Bounty funding period expired with no contributions.
     FundingExpired,
 
-    /// Bounty cancelled in funding period expired with no contributions.
-    Cancelled,
-
     /// A bounty has gathered necessary funds and ready to accept work submissions.
     WorkSubmission,
 
@@ -307,7 +315,14 @@ pub enum BountyStage {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum BountyMilestone<BlockNumber> {
     /// Bounty was created at given block number.
+    ///
     /// Boolean value defines whether the bounty has some funding contributions.
+    ///
+    /// This state will tranlate into:
+    /// - BountyStage::Funding while now <= (created_at + funding_period) and total_funding < target
+    /// - BountyStage::FundingExpired if now > (created_at + funding_period) and
+    ///     has_contributions is false (total_funding = 0)
+    /// - BountyStage::WorkSubmission if total_funding >= target and if now > (created_at + funding_period)
     Created {
         /// Bounty creation block.
         created_at: BlockNumber,
@@ -316,25 +331,32 @@ pub enum BountyMilestone<BlockNumber> {
     },
 
     /// A bounty funding was successful and it exceeded max funding amount.
-    BountyMaxFundingReached {
-        ///  A bounty funding was successful on the provided block.
-        target_funding_reached_at: BlockNumber,
-    },
-
-    /// Bounty cancelled in funding period expired with no contributions.
-    CancelledBounty,
+    ///
+    /// This state will tranlate into:
+    /// - BountyStage::WorkSubmission if total_funding >= target
+    BountyMaxFundingReached,
 
     /// Oracle ended the work submission stage.
+    ///
+    /// This state will tranlate into:
+    /// - BountyStage::Judgment if active_work_entry_count > 0
     WorkSubmitted,
 
     /// Council terminated this bounty
+    ///
+    /// This state will tranlate into
+    /// - BountyStage::FailedBountyWithdrawal if bounty stage is in
+    ///     Funding (with contributions and/or oracle reward),
+    ///     FundingExpired (with oracle reward), WorkSubmission or Judgment
     OraclePerpetualWorkingInterruption,
 
     /// A judgment was submitted for a bounty.
+    ///
+    /// This state will tranlate into:
+    /// - BountyStage::FailedBountyWithdrawal if successful_bounty is false
+    /// - BountyStage::SuccessfulBountyWithdrawal if successful_bounty is true
     JudgmentSubmitted {
         ///This flag indicates the judgment result (there is at least one work entrant winner),
-        ///this is necessary in the stage logic, to determine if the bounty is in
-        ///the SuccessfulBountyWithdrawal or FailedBountyWithdrawal stage.
         successful_bounty: bool,
     },
 }
@@ -373,8 +395,8 @@ pub struct BountyRecord<Balance, BlockNumber, MemberId: Ord> {
     /// Current active work entry counter.
     pub active_work_entry_count: u32,
 
-    ///This flag is set to true, if oracle called withdraw_oracle_reward.
-    pub oracle_withdrew_reward: bool,
+    ///This flag is set to false, if oracle called withdraw_oracle_reward.
+    pub has_unpaid_oracle_reward: bool,
 }
 
 impl<Balance: PartialOrd + Clone, BlockNumber: Clone, MemberId: Ord>
@@ -471,11 +493,6 @@ struct RequiredStakeInfo<T: Trait> {
     account_id: T::AccountId,
 }
 
-// Current state bloat bond a funder has to pay to contribute (one time payment).
-// The funder can withdraw the bond after deleting the BountyContributions entry belonging to him
-const FUNDER_STATE_BLOAT_BOND_AMOUNT: u32 = 10;
-const CREATOR_STATE_BLOAT_BOND_AMOUNT: u32 = 10;
-
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct Contribution<T: Trait> {
@@ -485,14 +502,16 @@ pub struct Contribution<T: Trait> {
     funder_state_bloat_bond_amount: BalanceOf<T>,
 }
 impl<T: Trait> Contribution<T> {
-    fn add_funds(&self, amount: BalanceOf<T>) -> Contribution<T> {
+    ///Adds amount_to_add to the contribution amount,
+    fn add_funds(&self, amount_to_add: BalanceOf<T>) -> Contribution<T> {
         Contribution::<T> {
-            amount: self.amount.saturating_add(amount),
-            funder_state_bloat_bond_amount: T::Balance::from(FUNDER_STATE_BLOAT_BOND_AMOUNT),
+            amount: self.amount.saturating_add(amount_to_add),
+            funder_state_bloat_bond_amount: self.funder_state_bloat_bond_amount,
         }
     }
-    ///Get the sum of state bloat and amount if it's the the first contribution (zero amount)
-    fn get_total_amount(&self) -> BalanceOf<T> {
+
+    ///Returns the sum of state bloat and amount
+    fn total_bloat_bond_and_funding(&self) -> BalanceOf<T> {
         self.amount
             .saturating_add(self.funder_state_bloat_bond_amount)
     }
@@ -502,7 +521,7 @@ impl<T: Trait> Default for Contribution<T> {
     fn default() -> Self {
         Self {
             amount: Zero::zero(),
-            funder_state_bloat_bond_amount: T::Balance::from(FUNDER_STATE_BLOAT_BOND_AMOUNT),
+            funder_state_bloat_bond_amount: T::FunderStateBloatBondAmount::get(),
         }
     }
 }
@@ -565,18 +584,13 @@ decl_event! {
         /// - New oracle
         BountyOracleSwitchingByCouncilApproval(BountyId, BountyActor<MemberId>, BountyActor<MemberId>),
 
-        /// A bounty was canceled.
-        /// Params:
-        /// - bounty ID
-        /// - bounty creator
-        BountyCanceled(BountyId, BountyActor<MemberId>),
-
         /// A bounty was terminated by council.
         /// Params:
         /// - bounty ID
+        /// - bounty terminator
         /// - bounty creator
         /// - bounty oracle
-        BountyTerminatedByCouncil(BountyId, BountyActor<MemberId>, BountyActor<MemberId>),
+        BountyTerminated(BountyId, BountyActor<MemberId>, BountyActor<MemberId>, BountyActor<MemberId>),
 
         /// A bounty was funded by a member or a council.
         /// Params:
@@ -801,6 +815,12 @@ decl_module! {
         /// Exports const - min work entrant stake for a bounty.
         const MinWorkEntrantStake: BalanceOf<T> = T::MinWorkEntrantStake::get();
 
+        /// Exports const - funder state bloat bond amount for a bounty.
+        const FunderStateBloatBondAmount: BalanceOf<T> = T::FunderStateBloatBondAmount::get();
+
+        /// Exports const - creator state bloat bond amount for a bounty.
+        const CreatorStateBloatBondAmount: BalanceOf<T> = T::CreatorStateBloatBondAmount::get();
+
         /// Creates a bounty. Metadata stored in the transaction log but discarded after that.
         /// <weight>
         ///
@@ -823,7 +843,7 @@ decl_module! {
 
             let amount = params.cherry
             .saturating_add(params.oracle_reward)
-            .saturating_add(T::Balance::from(CREATOR_STATE_BLOAT_BOND_AMOUNT));
+            .saturating_add(T::CreatorStateBloatBondAmount::get());
             bounty_creator_manager.validate_balance_sufficiency(amount)?;
 
             //
@@ -845,7 +865,7 @@ decl_module! {
                 creation_params: params.clone(),
                 milestone: created_bounty_milestone,
                 active_work_entry_count: 0,
-                oracle_withdrew_reward: false
+                has_unpaid_oracle_reward: params.oracle_reward > Zero::zero()
             };
 
             <Bounties<T>>::insert(bounty_id, bounty);
@@ -853,50 +873,6 @@ decl_module! {
                 *count = next_bounty_count_value
             });
             Self::deposit_event(RawEvent::BountyCreated(bounty_id, params, metadata));
-        }
-
-        /// Cancels a bounty.
-        /// It returns a cherry to creator and removes bounty.
-        /// # <weight>
-        ///
-        /// ## weight
-        /// `O (1)`
-        /// - db:
-        ///    - `O(1)` doesn't depend on the state or parameters
-        /// # </weight>
-        #[weight = WeightInfoBounty::<T>::cancel_bounty_by_member()
-              .max(WeightInfoBounty::<T>::cancel_bounty_by_council())]
-        pub fn cancel_bounty(origin, bounty_id: T::BountyId) {
-
-            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
-            let bounty_creator_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
-                origin,
-                bounty.creation_params.creator.clone(),
-            )?;
-
-            let current_bounty_stage = Self::get_bounty_stage(&bounty);
-
-            Self::ensure_bounty_stage_for_canceling(current_bounty_stage)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            Self::return_bounty_cherry_to_creator(bounty_id, &bounty, &bounty_creator_manager);
-            let creator = bounty.creation_params.creator.clone();
-            Self::deposit_event(RawEvent::BountyCanceled(bounty_id, creator));
-
-            <Bounties<T>>::mutate(bounty_id, |bounty| {
-                bounty.milestone = BountyMilestone::CancelledBounty;
-            });
-
-            if Self::can_remove_bounty(&bounty_id, &bounty) {
-                Self::remove_bounty(
-                    &bounty_id,
-                    &bounty,
-                    &bounty_creator_manager
-                );
-            }
         }
 
         /// Provides bounty funding.
@@ -929,28 +905,31 @@ decl_module! {
                 Self::unexpected_bounty_stage_error(current_bounty_stage),
             );
 
+            let is_target_funding_reached = bounty.is_target_funding_reached(
+                bounty.total_funding.saturating_add(amount));
+
             //contribution is adjusted to prevent exceeding target funding.
-            let (is_target_funding_reached,
-                is_first_contribution,
+            //If funder already contributed transfer_amount is equal to adjusted_amount
+            let (current_contribution,
                 adjusted_amount,
-                adjusted_contribution) =
-                Self::get_adjusted_contribution(&bounty_id, &bounty, &funder, amount);
-            let state_bloat_bond_amount = adjusted_contribution.funder_state_bloat_bond_amount;
+                transfer_amount
+                ) = Self::get_adjusted_contribution(
+                    &bounty_id,
+                    &bounty,
+                    &funder,
+                    amount,
+                    is_target_funding_reached);
 
-            let transfer_amount = match is_first_contribution {
-                //If It's the first contribution, the transfer amount includes the state bloat bond amount.
-                true => adjusted_amount.saturating_add(state_bloat_bond_amount),
-                false => adjusted_amount
-            };
-
-            bounty_funder_manager.validate_balance_sufficiency(transfer_amount)?;
+            bounty_funder_manager.validate_balance_sufficiency(
+                transfer_amount)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            bounty_funder_manager
-                .transfer_funds_to_bounty_account(bounty_id, transfer_amount);
+            bounty_funder_manager.transfer_funds_to_bounty_account(
+                bounty_id,
+                transfer_amount);
 
             let new_milestone = Self::get_bounty_milestone_on_funding(
                 is_target_funding_reached,
@@ -963,18 +942,22 @@ decl_module! {
                 bounty.milestone = new_milestone;
             });
 
-            // Update member funding record
-            <BountyContributions<T>>::insert(bounty_id, funder.clone(), adjusted_contribution);
+            //Update member funding record
+            <BountyContributions<T>>::insert(
+                bounty_id, funder.clone(),
+                current_contribution.add_funds(adjusted_amount)
+                );
 
             // Fire events.
             Self::deposit_event(RawEvent::BountyFunded(bounty_id, funder, adjusted_amount));
+
             if is_target_funding_reached{
                 Self::deposit_event(RawEvent::BountyMaxFundingReached(bounty_id));
             }
         }
 
-        /// Terminates a bounty with perpetual working period.
-        /// It returns a oracle cherry to creator.
+        /// Terminates a bounty in funding, funding expired,
+        /// worksubmission, judging period.
         /// # <weight>
         ///
         /// ## weight
@@ -982,40 +965,67 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoBounty::<T>::terminate_bounty()]
+        #[weight = WeightInfoBounty::<T>::terminate_bounty_w_oracle_reward_funding_expired()
+              .max(WeightInfoBounty::<T>::terminate_bounty_wo_oracle_reward_funding_expired())
+              .max(WeightInfoBounty::<T>::terminate_bounty_w_oracle_reward_wo_funds_funding())
+              .max(WeightInfoBounty::<T>::terminate_bounty_wo_oracle_reward_wo_funds_funding())
+              .max(WeightInfoBounty::<T>::terminate_bounty_w_oracle_reward_w_funds_funding())
+              .max(WeightInfoBounty::<T>::terminate_bounty_wo_oracle_reward_w_funds_funding())
+              .max(WeightInfoBounty::<T>::terminate_bounty_work_or_judging_period())]
         pub fn terminate_bounty(origin, bounty_id: T::BountyId) {
-
-            ensure_root(origin)?;
 
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
+            let terminate_bounty_actor = Self::get_terminate_bounty_actor(origin, &bounty)?;
+
             let bounty_creator_manager = Self::ensure_creator_actor_manager(&bounty)?;
 
-            let current_bounty_stage = Self::get_bounty_stage(&bounty);
+            //If origin is council then
+            //Stage can be FundingExpired, Funding, WorkSubmission or Judgment
 
-            ensure!(matches!(current_bounty_stage,
-                BountyStage::Funding { .. }|
-                BountyStage::WorkSubmission|
-                BountyStage::Judgment),
-                Self::unexpected_bounty_stage_error(current_bounty_stage));
+            ////If origin is creator (not council) then
+            //Stage can be FundingExpired, Funding
+            let current_bounty_stage = Self::ensure_terminate_bounty_stage(&bounty, &terminate_bounty_actor)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            Self::deposit_event(
-                RawEvent::BountyTerminatedByCouncil(
-                    bounty_id,
-                    bounty.creation_params.creator.clone(),
-                    bounty.creation_params.oracle.clone()));
+            match current_bounty_stage {
+                BountyStage::FundingExpired => {
+                    //ensure_terminate_bounty_stage guarantees that
+                    //The origin is council or creator
+                    Self::return_bounty_cherry_to_creator(bounty_id, &bounty, &bounty_creator_manager);
+                    Self::terminate_bounty_removal(
+                        &bounty_id,
+                        &bounty,
+                        &bounty_creator_manager,
+                        &terminate_bounty_actor);
+                },
+                BountyStage::Funding{ has_contributions } => {
+                    //ensure_terminate_bounty_stage guarantees that
+                    //The origin is council or creator
+                    if !has_contributions {
+                        Self::return_bounty_cherry_to_creator(bounty_id, &bounty, &bounty_creator_manager);
+                    }
+                    Self::terminate_bounty_removal(
+                        &bounty_id,
+                        &bounty,
+                        &bounty_creator_manager,
+                        &terminate_bounty_actor);
+                },
+                _ => {
+                    //ensure_terminate_bounty_stage guarantees that
+                    //The origin is council and
+                    //stage is WorkSubmission or Judgment
+                    Self::fire_bounty_terminated_event_and_mutate_bounty(
+                        &bounty_id,
+                        &bounty,
+                        &terminate_bounty_actor);
+                }
 
-            if let BountyStage::Funding { has_contributions: false } = current_bounty_stage{
-                Self::return_bounty_cherry_to_creator(bounty_id, &bounty, &bounty_creator_manager);
             }
-            // Update bounty record.
-            <Bounties<T>>::mutate(bounty_id, |bounty| {
-                bounty.milestone = BountyMilestone::OraclePerpetualWorkingInterruption
-            });
+
         }
 
         ///Council switches the oracle to a new one
@@ -1169,7 +1179,8 @@ decl_module! {
 
             let cherry_fraction = Self::get_cherry_fraction_for_member(&bounty, funding.amount);
 
-            let withdrawal_amount = funding.get_total_amount().saturating_add(cherry_fraction);
+            let withdrawal_amount = funding
+                .total_bloat_bond_and_funding().saturating_add(cherry_fraction);
 
             bounty_funder_manager.transfer_funds_from_bounty_account(bounty_id, withdrawal_amount);
 
@@ -1541,7 +1552,7 @@ decl_module! {
                 RawEvent::FunderStateBloatBondWithdrawn(
                     bounty_id,
                     funder,
-                    T::Balance::from(FUNDER_STATE_BLOAT_BOND_AMOUNT)));
+                    T::FunderStateBloatBondAmount::get()));
 
             if Self::can_remove_bounty(&bounty_id, &bounty) {
                 Self::remove_bounty(
@@ -1582,13 +1593,11 @@ decl_module! {
 
             ensure!(
                 matches!(current_bounty_stage,
-                    BountyStage::Cancelled|
                     BountyStage::FailedBountyWithdrawal |
                     BountyStage::SuccessfulBountyWithdrawal ),
                 Self::unexpected_bounty_stage_error(current_bounty_stage)
             );
-            ensure!(!bounty.oracle_withdrew_reward, Error::<T>::OracleRewardAlreadyWithdrawn);
-            ensure!(!oracle_reward.is_zero(), Error::<T>::OracleRewardIsZero);
+            ensure!(bounty.has_unpaid_oracle_reward, Error::<T>::OracleRewardAlreadyWithdrawn);
 
             let bounty_creator_manager = BountyActorManager::<T>::get_bounty_actor_manager(
                 bounty.creation_params.creator.clone(),
@@ -1601,7 +1610,7 @@ decl_module! {
             bounty_oracle_manager.transfer_funds_from_bounty_account(bounty_id, oracle_reward);
 
             <Bounties<T>>::mutate(bounty_id, |bounty| {
-                bounty.oracle_withdrew_reward = true;
+                bounty.has_unpaid_oracle_reward = false;
             });
 
             Self::deposit_event(RawEvent::BountyOracleRewardWithdrawal(
@@ -1678,12 +1687,103 @@ impl<T: Trait> Module<T> {
     fn check_balance_for_account(amount: BalanceOf<T>, account_id: &T::AccountId) -> bool {
         balances::Module::<T>::usable_balance(account_id) >= amount
     }
+
     fn ensure_creator_actor_manager(
         bounty: &Bounty<T>,
     ) -> Result<BountyActorManager<T>, DispatchError> {
         let creator = bounty.creation_params.creator.clone();
         BountyActorManager::<T>::get_bounty_actor_manager(creator)
     }
+
+    fn get_terminate_bounty_actor(
+        origin: T::Origin,
+        bounty: &Bounty<T>,
+    ) -> Result<BountyActorManager<T>, BadOrigin> {
+        let bounty_creator_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
+            origin.clone(),
+            bounty.creation_params.creator.clone(),
+        );
+
+        let actor = match bounty_creator_manager {
+            Ok(creator_manager) => creator_manager,
+            Err(_) => {
+                ensure_root(origin)?;
+                BountyActorManager::Council
+            }
+        };
+
+        Ok(actor)
+    }
+
+    fn ensure_terminate_bounty_stage(
+        bounty: &Bounty<T>,
+        terminate_bounty_actor: &BountyActorManager<T>,
+    ) -> Result<BountyStage, DispatchError> {
+        let current_bounty_stage = Self::get_bounty_stage(&bounty);
+        match terminate_bounty_actor {
+            BountyActorManager::Council => {
+                ensure!(
+                    matches!(
+                        current_bounty_stage,
+                        BountyStage::Funding { .. }
+                            | BountyStage::FundingExpired
+                            | BountyStage::WorkSubmission
+                            | BountyStage::Judgment
+                    ),
+                    Self::unexpected_bounty_stage_error(current_bounty_stage)
+                );
+            }
+            _ => {
+                ensure!(
+                    matches!(
+                        current_bounty_stage,
+                        BountyStage::Funding { .. } | BountyStage::FundingExpired
+                    ),
+                    Self::unexpected_bounty_stage_error(current_bounty_stage)
+                );
+            }
+        }
+
+        Ok(current_bounty_stage)
+    }
+
+    //Checks if bounty can be removed, if not, fires a bounty terminated event,
+    //and progresses bounty to failled stage
+    fn terminate_bounty_removal(
+        bounty_id: &T::BountyId,
+        bounty: &Bounty<T>,
+        bounty_creator_manager: &BountyActorManager<T>,
+        terminate_bounty_actor: &BountyActorManager<T>,
+    ) {
+        if Self::can_remove_bounty(&bounty_id, &bounty) {
+            Self::remove_bounty(&bounty_id, &bounty, &bounty_creator_manager);
+        } else {
+            Self::fire_bounty_terminated_event_and_mutate_bounty(
+                &bounty_id,
+                &bounty,
+                &terminate_bounty_actor,
+            );
+        }
+    }
+
+    //fires a bounty terminated event and progresses bounty to failled stage
+    fn fire_bounty_terminated_event_and_mutate_bounty(
+        bounty_id: &T::BountyId,
+        bounty: &Bounty<T>,
+        terminate_bounty_actor: &BountyActorManager<T>,
+    ) {
+        <Bounties<T>>::mutate(bounty_id, |bounty| {
+            bounty.milestone = BountyMilestone::OraclePerpetualWorkingInterruption
+        });
+
+        Self::deposit_event(RawEvent::BountyTerminated(
+            *bounty_id,
+            terminate_bounty_actor.get_bounty_actor(),
+            bounty.creation_params.creator.clone(),
+            bounty.creation_params.oracle.clone(),
+        ));
+    }
+
     // Transfer funds from the member account to the bounty account.
     fn transfer_funds_to_bounty_account(
         account_id: &T::AccountId,
@@ -1727,6 +1827,7 @@ impl<T: Trait> Module<T> {
 
         Ok(bounty)
     }
+
     fn ensure_bounty_contribution_exists(
         bounty_id: &T::BountyId,
         funder: &BountyActor<MemberId<T>>,
@@ -1759,15 +1860,13 @@ impl<T: Trait> Module<T> {
         bounty: &Bounty<T>,
         bounty_creator_manager: &BountyActorManager<T>,
     ) {
-        bounty_creator_manager.transfer_funds_from_bounty_account(
-            *bounty_id,
-            T::Balance::from(CREATOR_STATE_BLOAT_BOND_AMOUNT),
-        );
+        bounty_creator_manager
+            .transfer_funds_from_bounty_account(*bounty_id, T::CreatorStateBloatBondAmount::get());
 
         Self::deposit_event(RawEvent::CreatorStateBloatBondWithdrawn(
             *bounty_id,
             bounty.creation_params.creator.clone(),
-            T::Balance::from(CREATOR_STATE_BLOAT_BOND_AMOUNT),
+            T::CreatorStateBloatBondAmount::get(),
         ));
 
         <Bounties<T>>::remove(bounty_id);
@@ -1793,10 +1892,10 @@ impl<T: Trait> Module<T> {
             .peek()
             .is_some()
     }
+
     // Verifies that bounty has some contribution to withdraw.
-    // Should be O(1) because of the single inner call of the next() function of the iterator.
     pub(crate) fn can_remove_bounty(bounty_id: &T::BountyId, bounty: &Bounty<T>) -> bool {
-        (bounty.creation_params.oracle_reward.is_zero() || bounty.oracle_withdrew_reward)
+        !bounty.has_unpaid_oracle_reward
             && Self::has_no_contributions_and_no_work_entries(bounty_id)
     }
 
@@ -1810,13 +1909,9 @@ impl<T: Trait> Module<T> {
         target_funding_reached: bool,
         previous_milestone: BountyMilestone<T::BlockNumber>,
     ) -> BountyMilestone<T::BlockNumber> {
-        let now = Self::current_block();
-
         if target_funding_reached {
             // Bounty target funding reached.
-            BountyMilestone::BountyMaxFundingReached {
-                target_funding_reached_at: now,
-            }
+            BountyMilestone::BountyMaxFundingReached
         // No previous contributions.
         } else if let BountyMilestone::Created {
             created_at,
@@ -1839,39 +1934,31 @@ impl<T: Trait> Module<T> {
         bounty: &Bounty<T>,
         funder: &BountyActor<MemberId<T>>,
         amount: T::Balance,
-    ) -> (bool, bool, T::Balance, Contribution<T>) {
-        //Adds the amount to the total funds and check if the target funding  is reached
-        let is_target_funding_reached =
-            bounty.is_target_funding_reached(bounty.total_funding.saturating_add(amount));
-
+        is_target_funding_reached: bool,
+    ) -> (Contribution<T>, BalanceOf<T>, BalanceOf<T>) {
         //The contribution should be saturated to the target funding,
         //in case of target funding is reached.
-        let adjusted_amount = if is_target_funding_reached {
-            bounty.target_funding().saturating_sub(bounty.total_funding)
-        } else {
-            amount
+        let adjusted_amount = match is_target_funding_reached {
+            true => bounty.target_funding().saturating_sub(bounty.total_funding),
+            false => amount,
         };
 
         //Check if is the first time a funder is contributiong
-        let (is_first_contribution, funds_so_far) =
-            if <BountyContributions<T>>::contains_key(&bounty_id, &funder) {
-                (
-                    false,
-                    Self::contribution_by_bounty_by_actor(bounty_id, &funder),
-                )
-            } else {
-                (true, Contribution::<T>::default())
-            };
-
-        //Add adjusted_amount to the current funds
-        let adjusted_contribution = funds_so_far.add_funds(adjusted_amount);
-
-        (
-            is_target_funding_reached,
-            is_first_contribution,
-            adjusted_amount,
-            adjusted_contribution,
-        )
+        //returns Contribution
+        match <BountyContributions<T>>::contains_key(&bounty_id, &funder) {
+            //Adds funds to an existing amount, is_first_contribution will be set to false
+            true => (
+                Self::contribution_by_bounty_by_actor(bounty_id, &funder),
+                adjusted_amount,
+                adjusted_amount,
+            ),
+            //Sets the first contribution amount, is_first_contribution is true.
+            false => (
+                Contribution::default(),
+                adjusted_amount,
+                adjusted_amount.saturating_add(T::FunderStateBloatBondAmount::get()),
+            ),
+        }
     }
 
     // Validates stake on announcing the work entry.
@@ -2008,26 +2095,11 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Bounty stage validator for cancel_bounty() extrinsic.
-    fn ensure_bounty_stage_for_canceling(actual_stage: BountyStage) -> DispatchResult {
-        ensure!(
-            matches!(
-                actual_stage,
-                BountyStage::Funding {
-                    has_contributions: false
-                } | BountyStage::FundingExpired
-            ),
-            Self::unexpected_bounty_stage_error(actual_stage)
-        );
-        Ok(())
-    }
-
     // Provides fined-grained errors for a bounty stages
     fn unexpected_bounty_stage_error(unexpected_stage: BountyStage) -> DispatchError {
         match unexpected_stage {
             BountyStage::Funding { .. } => Error::<T>::InvalidStageUnexpectedFunding.into(),
             BountyStage::FundingExpired => Error::<T>::InvalidStageUnexpectedFundingExpired.into(),
-            BountyStage::Cancelled => Error::<T>::InvalidStageUnexpectedCancelled.into(),
             BountyStage::WorkSubmission => Error::<T>::InvalidStageUnexpectedWorkSubmission.into(),
             BountyStage::Judgment => Error::<T>::InvalidStageUnexpectedJudgment.into(),
             BountyStage::SuccessfulBountyWithdrawal => {

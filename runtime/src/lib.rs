@@ -929,6 +929,8 @@ parameter_types! {
     pub const BountyModuleId: ModuleId = ModuleId(*b"m:bounty"); // module : bounty
     pub const ClosedContractSizeLimit: u32 = 50;
     pub const MinWorkEntrantStake: Balance = 100;
+    pub const FunderStateBloatBondAmount: Balance = 10;
+    pub const CreatorStateBloatBondAmount: Balance = 10;
 }
 
 impl bounty::Trait for Runtime {
@@ -942,6 +944,8 @@ impl bounty::Trait for Runtime {
     type EntryId = u64;
     type ClosedContractSizeLimit = ClosedContractSizeLimit;
     type MinWorkEntrantStake = MinWorkEntrantStake;
+    type FunderStateBloatBondAmount = FunderStateBloatBondAmount;
+    type CreatorStateBloatBondAmount = CreatorStateBloatBondAmount;
 }
 
 parameter_types! {
