@@ -94,8 +94,6 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
       'Member'
     )
 
-    const winner = this.participants[this.participants.length - 1]
-
     this.debug('Place bids')
     const placeBidsFixture = new PlaceBidsInAuctionFixture(
       this.api,
