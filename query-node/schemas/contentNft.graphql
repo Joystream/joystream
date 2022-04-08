@@ -69,8 +69,11 @@ type OwnedNft
   "NFT's metadata"
   metadata: String!
 
-  "NFT transactional status"
-  transactionalStatus: TransactionalStatus!
+  "NFT's non-auction transactional status (if any)"
+  transactionalStatus: TransactionalStatus
+
+  "NFT's auction transactional status (if any)"
+  transactionalStatusAuction: Auction
 
   "History of transacional status changes"
   transactionalStatusUpdates: [TransactionalStatusUpdate!]! @derivedFrom(field: "nft")
@@ -92,8 +95,11 @@ type TransactionalStatusUpdate @entity {
   "Video NFT details"
   nft: OwnedNft!
 
-  "NFT transactional status"
-  transactionalStatus: TransactionalStatus!
+  "NFT's non-auction transactional status (if any)"
+  transactionalStatus: TransactionalStatus
+
+  "NFT's auction transactional status (if any)"
+  transactionalStatusAuction: Auction
 
   "Block number at which change happened"
   changedAt: Int!
@@ -103,8 +109,11 @@ type TransactionalStatusUpdate @entity {
 union TransactionalStatus =
     TransactionalStatusIdle
   | TransactionalStatusInitiatedOfferToMember
-  | TransactionalStatusAuction
   | TransactionalStatusBuyNow
+
+# It's currently not used (probably) because of hydra
+# limitations in querying deeply nested variant relations
+# | TransactionalStatusAuction
 
 "Represents TransactionalStatus Idle"
 type TransactionalStatusIdle @variant {
@@ -121,14 +130,16 @@ type TransactionalStatusInitiatedOfferToMember @variant {
   price: BigInt
 }
 
-"Represents TransactionalStatus Auction"
-type TransactionalStatusAuction @variant {
-  "Type needs to have at least one non-relation entity. This value is not used."
-  dummy: Int
+# It's currently not used (probably) because of hydra
+# limitations in querying deeply nested variant relations
+# "Represents TransactionalStatus Auction"
+# type TransactionalStatusAuction @variant {
+#   "Type needs to have at least one non-relation entity. This value is not used."
+#   dummy: Int
 
-  "Auction"
-  auction: Auction!
-}
+#   "Auction"
+#   auction: Auction!
+# }
 
 "Represents TransactionalStatus BuyNow"
 type TransactionalStatusBuyNow @variant {

@@ -7,6 +7,7 @@ import { PlaceBidsInAuctionFixture } from './placeBidsInAuction'
 import BN from 'bn.js'
 import { assertNftOwner } from './utils'
 import { assert } from 'chai'
+import { Utils } from '../../../utils'
 
 export class NftCreateVideoWithAuctionFixture extends BaseQueryNodeFixture {
   private cli: JoystreamCLI
@@ -38,7 +39,7 @@ export class NftCreateVideoWithAuctionFixture extends BaseQueryNodeFixture {
 
     this.debug('Check NFT ownership change')
     await assertNftOwner(this.query, event.data[2].toNumber(), this.author, (ownedNft) => {
-      assert.equal(ownedNft.transactionalStatus.__typename, 'TransactionalStatusAuction')
+      Utils.assert(ownedNft.transactionalStatusAuction, 'NFT not in auctioned state')
     })
   }
 }

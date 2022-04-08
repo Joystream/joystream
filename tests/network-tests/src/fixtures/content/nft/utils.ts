@@ -15,12 +15,11 @@ export async function assertAuctionAndBids(query: QueryNodeApi, videoId: number,
     () => query.ownedNftByVideoId(videoId.toString()),
     (ownedNft) => {
       Utils.assert(ownedNft, 'NFT not found')
-      Utils.assert(ownedNft.transactionalStatus.__typename === 'TransactionalStatusAuction', 'NFT not in Auction state')
-      Utils.assert(ownedNft.transactionalStatus.auction, 'NFT Auction not found')
-      Utils.assert(ownedNft.transactionalStatus.auction.bids, 'Bids not found')
-      Utils.assert(ownedNft.transactionalStatus.auction.topBid, 'Top bid not found')
+      Utils.assert(ownedNft.transactionalStatusAuction, 'NFT not in Auction state')
+      Utils.assert(ownedNft.transactionalStatusAuction.bids, 'Bids not found')
+      Utils.assert(ownedNft.transactionalStatusAuction.topBid, 'Top bid not found')
       assert.equal(
-        ownedNft.transactionalStatus.auction.topBid.bidder.id,
+        ownedNft.transactionalStatusAuction.topBid.bidder.id,
         topBidder.memberId.toString(),
         'Invalid last bidder'
       )
