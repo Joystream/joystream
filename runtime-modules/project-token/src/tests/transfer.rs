@@ -1,24 +1,21 @@
 #![cfg(test)]
 use frame_support::{assert_noop, assert_ok, StorageDoubleMap};
-use sp_arithmetic::traits::One;
-use sp_runtime::traits::Hash;
 
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
-use crate::traits::PalletToken;
-use crate::types::{MerkleSide, Output};
-use crate::{account, balance, last_event_eq, merkle_proof, merkle_root, token, Error, RawEvent};
+use crate::types::Output;
+use crate::{account, balance, last_event_eq, merkle_root, token, Error, RawEvent};
 
 // some helpers
 macro_rules! outputs {
     [$(($a:expr, $b: expr)),*] => {
-        Outputs::new(vec![$(Output::<_,_> { beneficiary:$a, amount: $b})*])
+        Outputs::new(vec![$(Output::<_, _> {beneficiary: $a, amount: $b},)*])
     };
 }
 
 macro_rules! origin {
     ($a: expr) => {
-        Origin::signed(account!($a))
+        Origin::signed($a)
     };
 }
 
@@ -27,7 +24,7 @@ macro_rules! origin {
 fn permissionless_transfer_fails_with_non_existing_token() {
     let token_id = token!(1);
     let config = GenesisConfigBuilder::new_empty().build();
-    let origin = origin!(1);
+    let origin = origin!(account!(1));
     let out = outputs![(account!(2), balance!(1))];
 
     build_test_externalities(config).execute_with(|| {
@@ -40,8 +37,8 @@ fn permissionless_transfer_fails_with_non_existing_token() {
 #[test]
 fn permissionless_transfer_fails_with_non_existing_source() {
     let token_id = token!(1);
-    let (src, amount) = (account!(1), balance!(100));
-    let dst = account!(2);
+    let origin = origin!(account!(1));
+    let (dst, amount) = (account!(2), balance!(100));
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
@@ -49,16 +46,11 @@ fn permissionless_transfer_fails_with_non_existing_source() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(dst, 0, 0)
+        .with_account(dst, amount, 0)
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::transfer(
-            token_id,
-            src,
-            simple!(dst),
-            amount,
-        );
+        let result = Token::transfer(origin, token_id, outputs![(dst, amount)]);
 
         assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
     })
@@ -67,12 +59,11 @@ fn permissionless_transfer_fails_with_non_existing_source() {
 #[test]
 fn permissionless_transfer_fails_with_non_existing_destination() {
     let token_id = token!(1);
-    let amount = balance!(100);
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
         .build();
     let src = account!(1);
-    let dst = account!(2);
+    let (dst, amount) = (account!(2), balance!(100));
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
@@ -80,12 +71,7 @@ fn permissionless_transfer_fails_with_non_existing_destination() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::transfer(
-            token_id,
-            src,
-            simple!(dst),
-            amount,
-        );
+        let result = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
         assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
     })
@@ -94,13 +80,11 @@ fn permissionless_transfer_fails_with_non_existing_destination() {
 #[test]
 fn permissionless_transfer_fails_with_source_not_having_sufficient_free_balance() {
     let token_id = token!(1);
-    let amount = Balance::from(100u32);
-    let src_balance = amount.saturating_sub(Balance::one());
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
         .build();
-    let src = account!(1);
-    let dst = src.saturating_add(account!(1));
+    let (dst, amount) = (account!(1), balance!(100));
+    let (src, src_balance) = (account!(2), amount - balance!(1));
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
@@ -109,12 +93,7 @@ fn permissionless_transfer_fails_with_source_not_having_sufficient_free_balance(
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::transfer(
-            token_id,
-            src,
-            simple!(dst),
-            amount,
-        );
+        let result = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
         assert_noop!(result, Error::<Test>::InsufficientFreeBalanceForTransfer);
     })
@@ -123,12 +102,11 @@ fn permissionless_transfer_fails_with_source_not_having_sufficient_free_balance(
 #[test]
 fn permissionless_transfer_ok() {
     let token_id = token!(1);
-    let amount = Balance::from(100u32);
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
         .build();
     let src = account!(1);
-    let dst = src.saturating_add(account!(1));
+    let (dst, amount) = (account!(2), balance!(100));
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
@@ -137,40 +115,7 @@ fn permissionless_transfer_ok() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::transfer(
-            token_id,
-            src,
-            simple!(dst),
-            amount,
-        );
-
-        assert_ok!(result);
-    })
-}
-
-#[test]
-fn permissionless_transfer_ok_with_verifiable_destination() {
-    let token_id = token!(1);
-    let amount = balance!(100);
-    let token_data = TokenDataBuilder::new_empty()
-        .with_transfer_policy(Policy::Permissionless)
-        .build();
-    let src = account!(1);
-    let dst = account!(2);
-
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, token_data)
-        .with_account(src, amount, 0)
-        .with_account(dst, 0, 0)
-        .build();
-
-    build_test_externalities(config).execute_with(|| {
-        let result = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::transfer(
-            token_id,
-            src,
-            Verifiable::new(vec![(Hashing::hash_of(b"test"), MerkleSide::Left)], dst),
-            amount,
-        );
+        let result = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
         assert_ok!(result);
     })
@@ -183,6 +128,8 @@ fn permissionless_transfer_ok_with_event_deposit() {
         .with_transfer_policy(Policy::Permissionless)
         .build();
     let src = account!(1);
+    let (dst, amount) = (account!(2), balance!(100));
+    let outputs = outputs![(dst, amount)];
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
@@ -191,14 +138,13 @@ fn permissionless_transfer_ok_with_event_deposit() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::transfer(
+        let _ = Token::transfer(origin!(src), token_id, outputs.clone());
+
+        last_event_eq!(RawEvent::TokenAmountTransferred(
             token_id,
             src,
-            simple!(dst),
-            amount,
-        );
-
-        last_event_eq!(RawEvent::TokenAmountTransferred(token_id, src, dst, amount));
+            outputs.into()
+        ));
     })
 }
 
@@ -206,9 +152,8 @@ fn permissionless_transfer_ok_with_event_deposit() {
 fn permissionless_transfer_ok_with_ex_deposit_and_without_src_removal() {
     let token_id = token!(1);
     let existential_deposit = balance!(10);
-    let amount = balance!(100);
+    let (dst, amount) = (account!(2), balance!(100));
     let (src, src_balance) = (account!(1), existential_deposit + amount);
-    let dst = account!(2);
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
         .with_existential_deposit(existential_deposit)
@@ -221,12 +166,7 @@ fn permissionless_transfer_ok_with_ex_deposit_and_without_src_removal() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::transfer(
-            token_id,
-            src,
-            simple!(dst),
-            amount,
-        );
+        let _ = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
         assert_eq!(
             src_balance.saturating_sub(amount),
@@ -239,8 +179,7 @@ fn permissionless_transfer_ok_with_ex_deposit_and_without_src_removal() {
 fn permissionless_transfer_ok_with_ex_deposit_and_with_src_removal() {
     let token_id = token!(1);
     let existential_deposit = balance!(10u32);
-    let (src, amount) = (account!(1), balance!(100));
-    let dst = account!(2);
+    let (src, dst, amount) = (account!(1), account!(2), balance!(100));
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
@@ -254,12 +193,7 @@ fn permissionless_transfer_ok_with_ex_deposit_and_with_src_removal() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::transfer(
-            token_id,
-            src,
-            simple!(dst),
-            amount,
-        );
+        let _ = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
         assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
             token_id, src
@@ -274,7 +208,7 @@ fn permissionless_transfer_ok_with_destination_receiving_funds() {
         .with_transfer_policy(Policy::Permissionless)
         .build();
     let (src, amount) = (account!(1), balance!(100));
-    let dst = src.saturating_add(account!(1));
+    let dst = account!(2);
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
@@ -283,12 +217,7 @@ fn permissionless_transfer_ok_with_destination_receiving_funds() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::transfer(
-            token_id,
-            src,
-            simple!(dst),
-            amount,
-        );
+        let _ = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
         assert_eq!(
             Token::account_info_by_token_and_account(token_id, dst).free_balance,
@@ -301,9 +230,8 @@ fn permissionless_transfer_ok_with_destination_receiving_funds() {
 fn permissionless_transfer_ok_with_ex_deposit_and_dust_removal_from_issuance() {
     let token_id = token!(1);
     let dust = balance!(5);
-    let amount = balance!(100);
+    let (dst, amount) = (account!(2), balance!(100));
     let (src, src_balance) = (account!(1), dust + amount);
-    let dst = account!(2);
     let existential_deposit = balance!(10);
 
     let token_data = TokenDataBuilder::new_empty()
@@ -318,12 +246,7 @@ fn permissionless_transfer_ok_with_ex_deposit_and_dust_removal_from_issuance() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::transfer(
-            token_id,
-            src,
-            simple!(dst),
-            amount,
-        );
+        let _ = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
         assert_eq!(
             src_balance.saturating_sub(dust),
@@ -339,15 +262,12 @@ fn multiout_transfer_fails_with_non_existing_token() {
     let src = account!(1);
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
-    let outputs = vec![simple_out!(dst1, amount1), simple_out!(dst2, amount2)];
+    let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
-                token_id, src, &outputs,
-            );
+        let result = Token::transfer(origin!(src), token_id, outputs);
 
         assert_noop!(result, Error::<Test>::TokenDoesNotExist);
     })
@@ -362,7 +282,7 @@ fn multiout_transfer_fails_with_non_existing_source() {
     let src = account!(1);
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
-    let outputs = vec![simple_out!(dst1, amount1), simple_out!(dst2, amount2)];
+    let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_info)
@@ -371,10 +291,7 @@ fn multiout_transfer_fails_with_non_existing_source() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
-                token_id, src, &outputs,
-            );
+        let result = Token::transfer(origin!(src), token_id, outputs);
 
         assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
     })
@@ -389,7 +306,7 @@ fn multiout_transfer_fails_with_non_existing_destination() {
     let src = account!(1);
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
-    let outputs = vec![simple_out!(dst1, amount1), simple_out!(dst2, amount2)];
+    let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_info)
@@ -398,10 +315,7 @@ fn multiout_transfer_fails_with_non_existing_destination() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
-                token_id, src, &outputs,
-            );
+        let result = Token::transfer(origin!(src), token_id, outputs);
 
         assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
     })
@@ -416,7 +330,7 @@ fn multiout_transfer_ok() {
     let src = account!(1);
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
-    let outputs = vec![simple_out!(dst1, amount1), simple_out!(dst2, amount2)];
+    let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_info)
@@ -426,10 +340,7 @@ fn multiout_transfer_ok() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
-                token_id, src, &outputs,
-            );
+        let result = Token::transfer(origin!(src), token_id, outputs);
 
         assert_ok!(result);
     })
@@ -444,7 +355,7 @@ fn multiout_transfer_ok_with_event_deposit() {
     let src = account!(1);
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
-    let outputs = vec![simple_out!(dst1, amount1), simple_out!(dst2, amount2)];
+    let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_info)
@@ -454,14 +365,12 @@ fn multiout_transfer_ok_with_event_deposit() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
-            token_id, src, &outputs,
-        );
+        let result = Token::transfer(origin!(src), token_id, outputs.clone());
 
-        last_event_eq!(RawEvent::TokenAmountMultiTransferred(
+        last_event_eq!(RawEvent::TokenAmountTransferred(
             token_id,
             src,
-            vec![(dst1, amount1), (dst2, amount2)],
+            outputs.into()
         ));
     })
 }
@@ -475,7 +384,7 @@ fn multiout_transfer_fails_with_source_having_insufficient_balance() {
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
     let (src, src_balance) = (account!(1), amount1 + amount2 - 1);
-    let outputs = vec![simple_out!(dst1, amount1), simple_out!(dst2, amount2)];
+    let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_info)
@@ -485,10 +394,7 @@ fn multiout_transfer_fails_with_source_having_insufficient_balance() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
-                token_id, src, &outputs,
-            );
+        let result = Token::transfer(origin!(src), token_id, outputs);
 
         assert_noop!(result, Error::<Test>::InsufficientFreeBalanceForTransfer);
     })
@@ -502,7 +408,7 @@ fn multiout_transfer_fails_with_same_source_and_destination() {
         .build();
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
-    let outputs = vec![simple_out!(dst1, amount1), simple_out!(dst2, amount2)];
+    let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_info)
@@ -511,10 +417,7 @@ fn multiout_transfer_fails_with_same_source_and_destination() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
-                token_id, dst1, &outputs,
-            );
+        let result = Token::transfer(origin!(dst1), token_id, outputs);
 
         assert_noop!(result, Error::<Test>::SameSourceAndDestinationLocations);
     })
@@ -523,11 +426,11 @@ fn multiout_transfer_fails_with_same_source_and_destination() {
 #[test]
 fn permissioned_transfer_ok() {
     let token_id = token!(1);
-    let amount = balance!(100);
+    let (src, amount) = (account!(2), balance!(100));
     let src = account!(1);
     let (dst1, dst2) = (account!(2), account!(3));
     let commit = merkle_root![dst1, dst2];
-    let dst1_proof = merkle_proof!(0, [dst1, dst2]);
+    let outputs = outputs![(dst1, amount)];
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -541,12 +444,7 @@ fn permissioned_transfer_ok() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::transfer(
-            token_id,
-            src,
-            verifiable!(dst1, dst1_proof),
-            amount,
-        );
+        let result = Token::transfer(origin!(src), token_id, outputs);
 
         assert_ok!(result);
     })
@@ -559,7 +457,7 @@ fn permissioned_transfer_ok_with_event_deposit() {
     let src = account!(1);
     let (dst1, dst2) = (account!(2), account!(3));
     let commit = merkle_root![dst1, dst2];
-    let dst1_proof = merkle_proof!(0, [dst1, dst2]);
+    let outputs = outputs![(dst1, amount)];
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -573,15 +471,12 @@ fn permissioned_transfer_ok_with_event_deposit() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::transfer(
-            token_id,
-            src,
-            verifiable!(dst1, dst1_proof),
-            amount,
-        );
+        let result = Token::transfer(origin!(src), token_id, outputs.clone());
 
         last_event_eq!(RawEvent::TokenAmountTransferred(
-            token_id, src, dst1, amount
+            token_id,
+            src,
+            outputs.into()
         ));
     })
 }
@@ -593,7 +488,7 @@ fn permissioned_transfer_fails_with_invalid_src() {
     let src = account!(1);
     let (dst1, dst2) = (account!(2), account!(3));
     let commit = merkle_root![dst1, dst2];
-    let dst1_proof = merkle_proof!(0, [dst1, dst2]);
+    let outputs = outputs![(dst1, amount)];
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -606,12 +501,7 @@ fn permissioned_transfer_fails_with_invalid_src() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::transfer(
-            token_id,
-            src,
-            verifiable!(dst1, dst1_proof),
-            amount,
-        );
+        let result = Token::transfer(origin!(src), token_id, outputs);
 
         assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
     })
@@ -624,7 +514,7 @@ fn permissioned_transfer_fails_with_invalid_destination() {
     let src = account!(1);
     let (dst1, dst2) = (account!(2), account!(3));
     let commit = merkle_root![dst1, dst2];
-    let dst1_proof = merkle_proof!(0, [dst1, dst2]);
+    let outputs = outputs![(dst1, amount)];
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -637,12 +527,7 @@ fn permissioned_transfer_fails_with_invalid_destination() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::transfer(
-            token_id,
-            src,
-            verifiable!(dst1, dst1_proof),
-            amount,
-        );
+        let result = Token::transfer(origin!(src), token_id, outputs);
 
         assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
     })
@@ -655,7 +540,7 @@ fn permissioned_transfer_fails_with_insufficient_balance() {
     let (src, src_balance) = (account!(1), amount - 1);
     let (dst1, dst2) = (account!(2), account!(3));
     let commit = merkle_root![dst1, dst2];
-    let dst1_proof = merkle_proof!(0, [dst1, dst2]);
+    let outputs = outputs![(dst1, amount)];
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -669,12 +554,7 @@ fn permissioned_transfer_fails_with_insufficient_balance() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::transfer(
-            token_id,
-            src,
-            verifiable!(dst1, dst1_proof),
-            amount,
-        );
+        let result = Token::transfer(origin!(src), token_id, outputs);
 
         assert_noop!(result, Error::<Test>::InsufficientFreeBalanceForTransfer);
     })
@@ -688,7 +568,7 @@ fn permissioned_transfer_ok_without_src_removal() {
     let (src, src_balance) = (account!(1), amount + existential_deposit);
     let (dst1, dst2) = (account!(2), account!(3));
     let commit = merkle_root![dst1, dst2];
-    let dst1_proof = merkle_proof!(0, [dst1, dst2]);
+    let outputs = outputs![(dst1, amount)];
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -703,12 +583,7 @@ fn permissioned_transfer_ok_without_src_removal() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::transfer(
-            token_id,
-            src,
-            verifiable!(dst1, dst1_proof),
-            amount,
-        );
+        let _ = Token::transfer(origin!(src), token_id, outputs);
 
         assert_eq!(
             src_balance.saturating_sub(amount),
@@ -726,7 +601,7 @@ fn permissioned_transfer_ok_with_ex_deposit_and_with_src_removal() {
     let (src, src_balance) = (account!(1), amount + dust);
     let (dst1, dst2) = (account!(2), account!(3));
     let commit = merkle_root![dst1, dst2];
-    let dst1_proof = merkle_proof!(0, [dst1, dst2]);
+    let outputs = outputs![(dst1, amount)];
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -741,12 +616,7 @@ fn permissioned_transfer_ok_with_ex_deposit_and_with_src_removal() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::transfer(
-            token_id,
-            src,
-            verifiable!(dst1, dst1_proof),
-            amount,
-        );
+        let _ = Token::transfer(origin!(src), token_id, outputs);
 
         assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
             token_id, src
@@ -763,7 +633,7 @@ fn permissioned_transfer_ok_with_ex_deposit_and_decrease_in_issuance() {
     let (src, src_balance) = (account!(1), amount + dust);
     let (dst1, dst2) = (account!(2), account!(3));
     let commit = merkle_root![dst1, dst2];
-    let dst1_proof = merkle_proof!(0, [dst1, dst2]);
+    let outputs = outputs![(dst1, amount)];
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -778,12 +648,7 @@ fn permissioned_transfer_ok_with_ex_deposit_and_decrease_in_issuance() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::transfer(
-            token_id,
-            src,
-            verifiable!(dst1, dst1_proof),
-            amount,
-        );
+        let _ = Token::transfer(origin!(src), token_id, outputs);
 
         assert_eq!(
             Token::token_info_by_id(token_id).current_total_issuance,
@@ -793,158 +658,12 @@ fn permissioned_transfer_ok_with_ex_deposit_and_decrease_in_issuance() {
 }
 
 #[test]
-fn permissioned_transfer_fails_with_invalid_merkle_proof() {
-    let token_id = token!(1);
-    let amount = balance!(100);
-    let existential_deposit = balance!(20);
-    let dust = balance!(10);
-    let (src, src_balance) = (account!(1), amount + dust);
-    let (dst1, dst2) = (account!(2), account!(3));
-    let commit = merkle_root![dst1, dst2];
-    let dst1_proof = merkle_proof!(0, [dst1, dst1]);
-
-    let token_data = TokenDataBuilder::new_empty()
-        .with_transfer_policy(Policy::Permissioned(commit))
-        .with_existential_deposit(existential_deposit)
-        .build();
-
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, token_data)
-        .with_account(src, src_balance, 0)
-        .with_account(dst1, 0, 0)
-        .with_account(dst2, 0, 0)
-        .build();
-
-    build_test_externalities(config).execute_with(|| {
-        let result = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::transfer(
-            token_id,
-            src,
-            verifiable!(dst1, dst1_proof),
-            amount,
-        );
-
-        assert_noop!(result, Error::<Test>::LocationIncompatibleWithCurrentPolicy,);
-    })
-}
-
-#[test]
-fn permissioned_transfer_fails_with_invalid_location_type() {
-    let token_id = token!(1);
-    let amount = balance!(100);
-    let existential_deposit = balance!(20);
-    let dust = balance!(10);
-    let (src, src_balance) = (account!(1), amount + dust);
-    let (dst1, dst2) = (account!(2), account!(3));
-    let commit = merkle_root![dst1, dst2];
-
-    let token_data = TokenDataBuilder::new_empty()
-        .with_transfer_policy(Policy::Permissioned(commit))
-        .with_existential_deposit(existential_deposit)
-        .build();
-
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, token_data)
-        .with_account(src, src_balance, 0)
-        .with_account(dst1, 0, 0)
-        .with_account(dst2, 0, 0)
-        .build();
-
-    build_test_externalities(config).execute_with(|| {
-        let result = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::transfer(
-            token_id,
-            src,
-            simple!(dst1),
-            amount,
-        );
-
-        assert_noop!(result, Error::<Test>::LocationIncompatibleWithCurrentPolicy,);
-    })
-}
-
-#[test]
-fn permissioned_multi_out_transfer_fails_with_invalid_merkle_proof() {
-    let token_id = token!(1);
-    let existential_deposit = balance!(20);
-    let src = account!(1);
-    let (dst1, amount1) = (account!(2), balance!(1));
-    let (dst2, amount2) = (account!(3), balance!(1));
-    let commit = merkle_root![dst1, dst2];
-    let dst1_proof = merkle_proof!(0, [dst1, dst1]);
-    let dst2_proof = merkle_proof!(1, [dst1, dst2]);
-
-    let outputs = vec![
-        verifiable_out!(dst1, dst1_proof, amount1),
-        verifiable_out!(dst2, dst2_proof, amount2),
-    ];
-
-    let token_data = TokenDataBuilder::new_empty()
-        .with_transfer_policy(Policy::Permissioned(commit))
-        .with_existential_deposit(existential_deposit)
-        .build();
-
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, token_data)
-        .with_account(src, amount1 + amount2, 0)
-        .with_account(dst1, 0, 0)
-        .with_account(dst2, 0, 0)
-        .build();
-
-    build_test_externalities(config).execute_with(|| {
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
-                token_id, src, &outputs,
-            );
-
-        assert_noop!(result, Error::<Test>::LocationIncompatibleWithCurrentPolicy,);
-    })
-}
-
-#[test]
-fn permissioned_multi_out_transfer_fails_with_invalid_destination_types() {
-    let token_id = token!(1);
-    let existential_deposit = balance!(20);
-    let src = account!(1);
-    let (dst1, amount1) = (account!(2), balance!(1));
-    let (dst2, amount2) = (account!(3), balance!(1));
-    let commit = merkle_root![dst1, dst2];
-
-    let outputs = vec![simple_out!(dst1, amount1), simple_out!(dst2, amount2)];
-
-    let token_data = TokenDataBuilder::new_empty()
-        .with_transfer_policy(Policy::Permissioned(commit))
-        .with_existential_deposit(existential_deposit)
-        .build();
-
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, token_data)
-        .with_account(src, amount1 + amount2, 0)
-        .with_account(dst1, 0, 0)
-        .with_account(dst2, 0, 0)
-        .build();
-
-    build_test_externalities(config).execute_with(|| {
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
-                token_id, src, &outputs,
-            );
-
-        assert_noop!(result, Error::<Test>::LocationIncompatibleWithCurrentPolicy);
-    })
-}
-
-#[test]
 fn permissioned_multi_out_transfer_fails_with_invalid_token_id() {
     let token_id = token!(1);
     let src = account!(1);
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
-    let dst1_proof = merkle_proof!(0, [dst1, dst2]);
-    let dst2_proof = merkle_proof!(1, [dst1, dst2]);
-
-    let outputs = vec![
-        verifiable_out!(dst1, dst1_proof, amount1),
-        verifiable_out!(dst2, dst2_proof, amount2),
-    ];
+    let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, TokenDataBuilder::new_empty().build())
@@ -954,12 +673,7 @@ fn permissioned_multi_out_transfer_fails_with_invalid_token_id() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
-                token_id + 1,
-                src,
-                &outputs,
-            );
+        let result = Token::transfer(origin!(src), token_id + 1, outputs);
 
         assert_noop!(result, Error::<Test>::TokenDoesNotExist);
     })
@@ -972,13 +686,7 @@ fn permissioned_multi_out_transfer_fails_with_invalid_source_account() {
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
     let commit = merkle_root![dst1, dst2];
-    let dst1_proof = merkle_proof!(0, [dst1, dst1]);
-    let dst2_proof = merkle_proof!(1, [dst1, dst2]);
-
-    let outputs = vec![
-        verifiable_out!(dst1, dst1_proof, amount1),
-        verifiable_out!(dst2, dst2_proof, amount2),
-    ];
+    let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -991,10 +699,7 @@ fn permissioned_multi_out_transfer_fails_with_invalid_source_account() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
-                token_id, src, &outputs,
-            );
+        let result = Token::transfer(origin!(src), token_id, outputs);
 
         assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
     })
@@ -1007,13 +712,7 @@ fn permissioned_multi_out_transfer_fails_with_invalid_destination_account() {
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
     let commit = merkle_root![dst1, dst2];
-    let dst1_proof = merkle_proof!(0, [dst1, dst1]);
-    let dst2_proof = merkle_proof!(1, [dst1, dst2]);
-
-    let outputs = vec![
-        verifiable_out!(dst1, dst1_proof, amount1),
-        verifiable_out!(dst2, dst2_proof, amount2),
-    ];
+    let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -1026,10 +725,7 @@ fn permissioned_multi_out_transfer_fails_with_invalid_destination_account() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
-                token_id, src, &outputs,
-            );
+        let result = Token::transfer(origin!(src), token_id, outputs);
 
         assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
     })
@@ -1042,13 +738,7 @@ fn permissioned_multi_out_ok() {
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
     let commit = merkle_root![dst1, dst2];
-    let dst1_proof = merkle_proof!(0, [dst1, dst2]);
-    let dst2_proof = merkle_proof!(1, [dst1, dst2]);
-
-    let outputs = vec![
-        verifiable_out!(dst1, dst1_proof, amount1),
-        verifiable_out!(dst2, dst2_proof, amount2),
-    ];
+    let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -1062,10 +752,7 @@ fn permissioned_multi_out_ok() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
-                token_id, src, &outputs,
-            );
+        let result = Token::transfer(origin!(src), token_id, outputs);
 
         assert_ok!(result);
     })
@@ -1079,13 +766,7 @@ fn permissioned_multi_out_ok_with_event_deposit() {
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
     let commit = merkle_root![dst1, dst2];
-    let dst1_proof = merkle_proof!(0, [dst1, dst2]);
-    let dst2_proof = merkle_proof!(1, [dst1, dst2]);
-
-    let outputs = vec![
-        verifiable_out!(dst1, dst1_proof, amount1),
-        verifiable_out!(dst2, dst2_proof, amount2),
-    ];
+    let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -1100,14 +781,12 @@ fn permissioned_multi_out_ok_with_event_deposit() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
-            token_id, src, &outputs,
-        );
+        let _ = Token::transfer(origin!(src), token_id, outputs.clone());
 
-        last_event_eq!(RawEvent::TokenAmountMultiTransferred(
+        last_event_eq!(RawEvent::TokenAmountTransferred(
             token_id,
             src,
-            vec![(dst1, amount1), (dst2, amount2)],
+            outputs.into(),
         ));
     })
 }
@@ -1120,13 +799,7 @@ fn permissioned_multi_out_ok_with_ex_deposit_and_without_source_removal() {
     let (dst2, amount2) = (account!(3), balance!(1));
     let (src, src_balance) = (account!(1), amount1 + amount2 + existential_deposit);
     let commit = merkle_root![dst1, dst2];
-    let dst1_proof = merkle_proof!(0, [dst1, dst2]);
-    let dst2_proof = merkle_proof!(1, [dst1, dst2]);
-
-    let outputs = vec![
-        verifiable_out!(dst1, dst1_proof, amount1),
-        verifiable_out!(dst2, dst2_proof, amount2),
-    ];
+    let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -1141,9 +814,7 @@ fn permissioned_multi_out_ok_with_ex_deposit_and_without_source_removal() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
-            token_id, src, &outputs,
-        );
+        let _ = Token::transfer(origin!(src), token_id, outputs.clone());
 
         assert_eq!(
             Token::account_info_by_token_and_account(token_id, src).free_balance,
@@ -1161,13 +832,7 @@ fn permissioned_multi_out_ok_with_ex_deposit_and_source_removal() {
     let (dst2, amount2) = (account!(3), balance!(1));
     let (src, src_balance) = (account!(1), amount1 + amount2 + dust);
     let commit = merkle_root![dst1, dst2];
-    let dst1_proof = merkle_proof!(0, [dst1, dst2]);
-    let dst2_proof = merkle_proof!(1, [dst1, dst2]);
-
-    let outputs = vec![
-        verifiable_out!(dst1, dst1_proof, amount1),
-        verifiable_out!(dst2, dst2_proof, amount2),
-    ];
+    let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -1182,9 +847,7 @@ fn permissioned_multi_out_ok_with_ex_deposit_and_source_removal() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
-            token_id, src, &outputs,
-        );
+        let _ = Token::transfer(origin!(src), token_id, outputs);
 
         assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
             token_id, src
@@ -1201,13 +864,7 @@ fn permissioned_multi_out_ok_with_ex_deposit_and_source_removal_and_issuance_dec
     let (dst2, amount2) = (account!(3), balance!(1));
     let (src, src_balance) = (account!(1), amount1 + amount2 + dust);
     let commit = merkle_root![dst1, dst2];
-    let dst1_proof = merkle_proof!(0, [dst1, dst2]);
-    let dst2_proof = merkle_proof!(1, [dst1, dst2]);
-
-    let outputs = vec![
-        verifiable_out!(dst1, dst1_proof, amount1),
-        verifiable_out!(dst2, dst2_proof, amount2),
-    ];
+    let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -1222,9 +879,7 @@ fn permissioned_multi_out_ok_with_ex_deposit_and_source_removal_and_issuance_dec
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::multi_output_transfer(
-            token_id, src, &outputs,
-        );
+        let _ = Token::transfer(origin!(src), token_id, outputs);
 
         assert_eq!(
             Token::token_info_by_id(token_id).current_total_issuance,
