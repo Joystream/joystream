@@ -49,7 +49,7 @@ export class OpenAuction extends JoyStructDecorated({
   buy_now_price: Option.with(Balance),
   whitelist: BTreeSet.with(MemberId),
   bid_lock_duration: BlockNumber,
-  auction_id: AuctionId,
+  auction_id: OpenAuctionId,
   start: BlockNumber,
 }) {}
 
