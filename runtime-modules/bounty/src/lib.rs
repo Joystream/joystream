@@ -1641,7 +1641,7 @@ impl<T: Trait> Module<T> {
             BountyActorManager::<T>::ensure_bounty_actor_manager(origin.clone(), current_oracle);
 
         let switcher = match switcher_actor_manager {
-            Ok(creator_manager) => creator_manager.get_bounty_actor(),
+            Ok(oracle_switcher_manager) => oracle_switcher_manager.get_bounty_actor(),
             Err(_) => {
                 ensure_root(origin)?;
                 BountyActor::Council
