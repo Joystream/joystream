@@ -785,8 +785,8 @@
     "OpenAuctionParams": {
         "starting_price": "u128",
         "buy_now_price": "Option<u128>",
-        "whitelist": "BTreeSet<MemberId>",
         "starts_at": "Option<u32>",
+        "whitelist": "BTreeSet<MemberId>",
         "bid_lock_duration": "u32"
     },
     "EnglishAuction": {
