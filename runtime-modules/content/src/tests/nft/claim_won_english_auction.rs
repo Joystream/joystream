@@ -438,3 +438,79 @@ fn claim_won_english_auction_last_bid_does_not_exist() {
         );
     })
 }
+
+#[test]
+fn claim_won_english_auction_fails_with_nft_claimed_by_non_winner() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(AUCTION_START_BLOCK);
+
+        let video_id = NextVideoId::<Test>::get();
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(COLLABORATOR_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+
+        // Issue nft
+        assert_ok!(Content::issue_nft(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            NftIssuanceParameters::<Test>::default(),
+        ));
+
+        let auction_params = EnglishAuctionParams::<Test> {
+            starting_price: Content::min_starting_price(),
+            buy_now_price: None,
+            extension_period: Content::min_auction_extension_period(),
+            min_bid_step: Content::min_bid_step(),
+            starts_at: None,
+            duration: AUCTION_DURATION,
+            whitelist: BTreeSet::new(),
+        };
+
+        // Start nft auction
+        assert_ok!(Content::start_english_auction(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            auction_params.clone(),
+        ));
+
+        let bid = Content::min_starting_price();
+
+        // Make nft auction bid
+        assert_ok!(Content::make_english_auction_bid(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            video_id,
+            bid,
+        ));
+
+        // Make nft auction bid
+        assert_ok!(Content::make_english_auction_bid(
+            Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
+            COLLABORATOR_MEMBER_ID,
+            video_id,
+            bid + Content::min_bid_step(),
+        ));
+
+        // Run to the block where auction expires
+        run_to_block(Content::max_auction_duration() + 1);
+
+        // Make an attempt to claim won english auction if last bid does not exist
+        let claim_won_english_auction_result = Content::claim_won_english_auction(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            video_id,
+        );
+
+        // Failure checked
+        assert_err!(
+            claim_won_english_auction_result,
+            Error::<Test>::MemberClaimingIsNotWinner
+        );
+    })
+}
