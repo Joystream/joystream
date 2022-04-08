@@ -13,7 +13,7 @@ use sp_runtime::traits::{BlakeTwo256, Convert, Hash, IdentityLookup};
 
 // crate import
 use crate::{
-    types::{MerkleSide, SimpleLocation, VerifiableLocation},
+    types::{MerkleSide, OutputsOf},
     AccountDataOf, GenesisConfig, TokenDataOf, TokenIssuanceParametersOf, Trait, TransferPolicyOf,
 };
 
@@ -25,11 +25,10 @@ pub type AccountData = AccountDataOf<Test>;
 pub type AccountId = <Test as frame_system::Trait>::AccountId;
 pub type BlockNumber = <Test as frame_system::Trait>::BlockNumber;
 pub type Balance = <Test as Trait>::Balance;
-pub type Simple = SimpleLocation<AccountId>;
 pub type Policy = TransferPolicyOf<Test>;
 pub type Hashing = <Test as frame_system::Trait>::Hashing;
 pub type HashOut = <Test as frame_system::Trait>::Hash;
-pub type Verifiable = VerifiableLocation<AccountId, Hashing>;
+pub type Outputs = OutputsOf<Test>;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;

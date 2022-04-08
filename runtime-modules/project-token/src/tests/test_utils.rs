@@ -3,7 +3,9 @@ use sp_arithmetic::traits::{One, Saturating, Zero};
 use sp_runtime::traits::Hash;
 
 use crate::tests::mock::*;
-use crate::types::{MerkleSide, OfferingState, PatronageData, TransferPolicy, VerifiableLocation};
+use crate::types::{
+    MerkleSide, OfferingState, Output, Outputs, PatronageData, TransferPolicy, VerifiableLocation,
+};
 use crate::GenesisConfig;
 
 pub struct TokenDataBuilder<Balance, Hash, BlockNumber> {
@@ -134,12 +136,9 @@ impl GenesisConfigBuilder {
     }
 }
 
-impl<AccountId: Encode, Hasher: Hash> VerifiableLocation<AccountId, Hasher> {
-    pub fn new(merkle_proof: Vec<(Hasher::Output, MerkleSide)>, account: AccountId) -> Self {
-        Self {
-            merkle_proof,
-            account,
-        }
+impl<Balance, AccountId> Outputs<Balance, AccountId> {
+    pub fn new(v: Vec<Output<Balance, AccountId>>) -> Self {
+        Outputs::<_, _>(v)
     }
 }
 

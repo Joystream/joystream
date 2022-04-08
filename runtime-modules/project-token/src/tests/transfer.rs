@@ -6,35 +6,19 @@ use sp_runtime::traits::Hash;
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
-use crate::types::MerkleSide;
+use crate::types::{MerkleSide, Output};
 use crate::{account, balance, last_event_eq, merkle_proof, merkle_root, token, Error, RawEvent};
 
 // some helpers
-#[macro_export]
-macro_rules! simple {
-    ($acc:expr) => {
-        Simple::new($acc)
+macro_rules! outputs {
+    [$(($a:expr, $b: expr)),*] => {
+        Outputs::new(vec![$(Output::<_,_> { beneficiary:$a, amount: $b})*])
     };
 }
 
-#[macro_export]
-macro_rules! simple_out {
-    ($acc:expr, $bal:expr) => {
-        (simple!($acc), $bal)
-    };
-}
-
-#[macro_export]
-macro_rules! verifiable {
-    ($acc:expr,$proof:expr) => {
-        Verifiable::new($proof, $acc)
-    };
-}
-
-#[macro_export]
-macro_rules! verifiable_out {
-    ($acc:expr,$proof:expr,$bal:expr) => {
-        (verifiable!($acc, $proof), $bal)
+macro_rules! origin {
+    ($a: expr) => {
+        Origin::signed(account!($a))
     };
 }
 
@@ -43,17 +27,11 @@ macro_rules! verifiable_out {
 fn permissionless_transfer_fails_with_non_existing_token() {
     let token_id = token!(1);
     let config = GenesisConfigBuilder::new_empty().build();
-    let src = account!(1);
-    let dst = account!(2);
-    let amount = balance!(1);
+    let origin = origin!(1);
+    let out = outputs![(account!(2), balance!(1))];
 
     build_test_externalities(config).execute_with(|| {
-        let result = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::transfer(
-            token_id,
-            src,
-            simple!(dst),
-            amount,
-        );
+        let result = Token::transfer(origin, token_id, out);
 
         assert_noop!(result, Error::<Test>::TokenDoesNotExist,);
     })
@@ -201,12 +179,10 @@ fn permissionless_transfer_ok_with_verifiable_destination() {
 #[test]
 fn permissionless_transfer_ok_with_event_deposit() {
     let token_id = token!(1);
-    let amount = Balance::from(100u32);
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
         .build();
     let src = account!(1);
-    let dst = src.saturating_add(account!(1));
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
