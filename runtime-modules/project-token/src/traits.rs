@@ -10,7 +10,7 @@ pub trait TransferLocationTrait<AccountId, Policy> {
     fn location_account(&self) -> AccountId;
 }
 
-pub trait PalletToken<AccountId, Policy, IssuanceParams> {
+pub trait PalletToken<AccountId, Policy, IssuanceParams, UploadContext> {
     /// Balance type used
     type Balance;
 
@@ -21,7 +21,10 @@ pub trait PalletToken<AccountId, Policy, IssuanceParams> {
     type MerkleProof;
 
     /// Issue token with specified characteristics
-    fn issue_token(issuance_parameters: IssuanceParams) -> DispatchResult;
+    fn issue_token(
+        issuance_parameters: IssuanceParams,
+        payload_upload_context: UploadContext,
+    ) -> DispatchResult;
 
     /// Remove token data from storage
     fn deissue_token(token_id: Self::TokenId) -> DispatchResult;

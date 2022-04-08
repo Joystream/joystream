@@ -4000,6 +4000,8 @@ dependencies = [
  "frame-support",
  "frame-system",
  "pallet-balances",
+ "pallet-common",
+ "pallet-randomness-collective-flip",
  "pallet-storage",
  "parity-scale-codec",
  "serde",

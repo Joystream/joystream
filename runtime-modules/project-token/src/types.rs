@@ -8,7 +8,7 @@ use sp_runtime::traits::{Convert, Hash};
 use sp_runtime::Permill;
 use sp_std::{iter::Sum, slice::Iter};
 
-use storage::DataObjectCreationParameters;
+use storage::{BagId, DataObjectCreationParameters};
 
 // crate imports
 use crate::{errors::Error, Trait};
@@ -37,15 +37,15 @@ pub struct AccountData<Balance> {
 
 /// Info for the token
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
-pub struct TokenData<Balance, Hash, BlockNumber, OfferingState> {
+pub struct TokenData<Balance, Hash, BlockNumber, TokenSale> {
     /// Current token issuance
     pub(crate) current_total_issuance: Balance,
 
     /// Existential deposit allowed for the token
     pub(crate) existential_deposit: Balance,
 
-    /// Initial issuance state
-    pub(crate) issuance_state: OfferingState,
+    /// Last token sale (upcoming / ongoing / past)
+    pub(crate) last_sale: Option<TokenSale>,
 
     /// Transfer policy
     pub(crate) transfer_policy: TransferPolicy<Hash>,
@@ -83,7 +83,7 @@ impl<Hash> Default for TransferPolicy<Hash> {
     }
 }
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default)]
 pub struct VestingScheduleParams<BlockNumber> {
     // Vesting duration
     pub(crate) duration: BlockNumber,
@@ -95,15 +95,22 @@ pub struct VestingScheduleParams<BlockNumber> {
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct SingleDataObjectUploadParams<JOYBalance> {
-    object_creation_params: DataObjectCreationParameters,
-    expected_data_size_fee: JOYBalance,
-    expected_data_object_deletion_prize: JOYBalance,
+    pub object_creation_params: DataObjectCreationParameters,
+    pub expected_data_size_fee: JOYBalance,
+}
+
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct UploadContext<AccountId, BagId> {
+    pub uploader_account: AccountId,
+    pub bag_id: BagId,
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct WhitelistParams<Hash, SingleDataObjectUploadParams> {
-    commitment: Hash,
-    payload: Option<SingleDataObjectUploadParams>,
+    /// Whitelist merkle root
+    pub commitment: Hash,
+    /// Optional payload data to upload to storage
+    pub payload: Option<SingleDataObjectUploadParams>,
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -125,7 +132,7 @@ pub struct TokenSaleParams<JOYBalance, Balance, BlockNumber, VestingSchedulePara
     pub metadata: Option<Vec<u8>>,
 }
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default)]
 pub struct TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Hash> {
     /// Token's unit price in JOY
     pub unit_price: JOYBalance,
@@ -144,7 +151,22 @@ pub struct TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Ha
 impl<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Hash>
     TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Hash>
 {
-    fn try_from_params<T: Trait>(
+    fn try_extract_from_issuance_params<T: Trait>(
+        params: TokenIssuanceParametersOf<T>,
+    ) -> Result<Option<TokenSaleOf<T>>, DispatchError> {
+        if let InitialOfferingStateOf::<T>::Sale(sale_params) = params.initial_state {
+            ensure!(
+                sale_params.upper_bound_quantity <= params.initial_issuance,
+                Error::<T>::SaleUpperBoundQuantityExceedsInitialTokenSupply
+            );
+            let token_sale = Self::try_from_params::<T>(sale_params)?;
+            return Ok(Some(token_sale));
+        }
+
+        Ok(None)
+    }
+
+    pub(crate) fn try_from_params<T: Trait>(
         params: TokenSaleParamsOf<T>,
     ) -> Result<TokenSaleOf<T>, DispatchError> {
         let current_block = <frame_system::Module<T>>::block_number();
@@ -188,16 +210,18 @@ pub enum OfferingState<TokenSale> {
 
 /// Encapsules validation + IssuanceState construction
 impl<TokenSale> OfferingState<TokenSale> {
-    pub(crate) fn try_from_initial<T: crate::Trait>(
-        initial_issuance_state: InitialOfferingStateOf<T>,
-    ) -> Result<OfferingStateOf<T>, DispatchError> {
-        match initial_issuance_state {
-            InitialOfferingState::Idle => Ok(OfferingStateOf::<T>::Idle),
-            InitialOfferingState::Sale(sale_params) => {
-                let token_sale = TokenSaleOf::<T>::try_from_params::<T>(sale_params)?;
-                Ok(OfferingStateOf::<T>::Sale(token_sale))
-            }
-        }
+    pub(crate) fn of<T: crate::Trait>(token: &TokenDataOf<T>) -> OfferingStateOf<T> {
+        token
+            .last_sale
+            .as_ref()
+            .map_or(OfferingStateOf::<T>::Idle, |sale| {
+                let current_block = <frame_system::Module<T>>::block_number();
+                if current_block >= sale.start_block && current_block < sale.end_block {
+                    OfferingStateOf::<T>::Sale(sale.clone())
+                } else {
+                    OfferingStateOf::<T>::Idle
+                }
+            })
     }
 }
 
@@ -359,11 +383,11 @@ impl<Balance: Saturating + Copy, Hash, BlockNumber, OfferingState>
                 rate: params.patronage_rate,
             };
 
-        let issuance_state = OfferingStateOf::<T>::try_from_initial::<T>(params.initial_state)?;
+        let sale = TokenSaleOf::<T>::try_extract_from_issuance_params::<T>(params.clone())?;
 
         let token_data = TokenData {
             current_total_issuance: params.initial_issuance,
-            issuance_state,
+            last_sale: sale,
             existential_deposit: params.existential_deposit,
             transfer_policy: params.transfer_policy,
             patronage_info,
@@ -460,7 +484,7 @@ pub(crate) type TokenDataOf<T> = TokenData<
     <T as crate::Trait>::Balance,
     <T as frame_system::Trait>::Hash,
     <T as frame_system::Trait>::BlockNumber,
-    OfferingStateOf<T>,
+    TokenSaleOf<T>,
 >;
 
 /// Alias for Token Issuance Parameters
@@ -518,3 +542,6 @@ pub(crate) type InitialOfferingStateOf<T> = InitialOfferingState<TokenSaleParams
 
 /// Alias for OfferingState
 pub(crate) type OfferingStateOf<T> = OfferingState<TokenSaleOf<T>>;
+
+/// Alias for UploadContext
+pub(crate) type UploadContextOf<T> = UploadContext<<T as frame_system::Trait>::AccountId, BagId<T>>;

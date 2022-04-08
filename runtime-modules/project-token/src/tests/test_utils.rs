@@ -3,14 +3,14 @@ use sp_runtime::traits::Hash;
 
 use crate::tests::mock::*;
 use crate::types::{
-    MerkleProof, MerkleSide, OfferingStateOf, Output, Outputs, PatronageData, TransferPolicyOf,
+    MerkleProof, MerkleSide, Output, Outputs, PatronageData, TokenSaleOf, TransferPolicyOf,
 };
 use crate::GenesisConfig;
 
 pub struct TokenDataBuilder {
     pub(crate) current_total_issuance: <Test as crate::Trait>::Balance,
     pub(crate) existential_deposit: <Test as crate::Trait>::Balance,
-    pub(crate) issuance_state: OfferingStateOf<Test>,
+    pub(crate) last_sale: Option<TokenSaleOf<Test>>,
     pub(crate) transfer_policy: TransferPolicyOf<Test>,
     pub(crate) patronage_info:
         PatronageData<<Test as crate::Trait>::Balance, <Test as frame_system::Trait>::BlockNumber>,
@@ -21,7 +21,7 @@ impl TokenDataBuilder {
         crate::types::TokenDataOf::<Test> {
             current_total_issuance: self.current_total_issuance,
             existential_deposit: self.existential_deposit,
-            issuance_state: self.issuance_state,
+            last_sale: self.last_sale,
             transfer_policy: self.transfer_policy,
             patronage_info: self.patronage_info,
         }
@@ -62,7 +62,7 @@ impl TokenDataBuilder {
     pub fn new_empty() -> Self {
         Self {
             current_total_issuance: Balance::zero(),
-            issuance_state: OfferingStateOf::<Test>::Idle,
+            last_sale: None,
             existential_deposit: Balance::zero(),
             transfer_policy: TransferPolicy::Permissionless,
             patronage_info: PatronageData::<Balance, BlockNumber> {

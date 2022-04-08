@@ -9,6 +9,7 @@ use frame_system::ensure_signed;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::traits::Convert;
 use sp_std::iter::Sum;
+use storage::{DataObjectStorage, UploadParameters};
 
 // crate modules
 mod errors;
@@ -20,14 +21,11 @@ mod types;
 // crate imports
 use errors::Error;
 pub use events::{Event, RawEvent};
-use traits::PalletToken;
-use types::{
-    AccountDataOf, DecOp, MerkleProofOf, OutputsOf, TokenDataOf, TokenIssuanceParametersOf,
-    TransferPolicyOf,
-};
+use traits::{PalletToken};
+use types::*;
 
 /// Pallet Configuration Trait
-pub trait Trait: frame_system::Trait + balances::Trait {
+pub trait Trait: frame_system::Trait + balances::Trait + storage::Trait {
     /// Events
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
@@ -40,6 +38,9 @@ pub trait Trait: frame_system::Trait + balances::Trait {
 
     /// Block number to balance converter used for interest calculation
     type BlockNumberToBalance: Convert<Self::BlockNumber, <Self as Trait>::Balance>;
+
+    /// The storage type used
+    type DataObjectStorage: storage::DataObjectStorage<Self>;
 }
 
 decl_storage! {
@@ -144,7 +145,8 @@ decl_module! {
     }
 }
 
-impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParametersOf<T>>
+impl<T: Trait>
+    PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParametersOf<T>, UploadContextOf<T>>
     for Module<T>
 {
     type Balance = <T as Trait>::Balance;
@@ -248,7 +250,10 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
     /// Postconditions:
     /// - token with specified characteristics is added to storage state
     /// - `NextTokenId` increased by 1
-    fn issue_token(issuance_parameters: TokenIssuanceParametersOf<T>) -> DispatchResult {
+    fn issue_token(
+        issuance_parameters: TokenIssuanceParametersOf<T>,
+        payload_upload_context: UploadContextOf<T>,
+    ) -> DispatchResult {
         // TODO: consider adding symbol as separate parameter
         let sym = issuance_parameters.symbol;
         ensure!(
@@ -256,7 +261,20 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
             Error::<T>::TokenSymbolAlreadyInUse,
         );
 
-        let token_data = TokenDataOf::<T>::try_from_params::<T>(issuance_parameters)?;
+        let token_data = TokenDataOf::<T>::try_from_params::<T>(issuance_parameters.clone())?;
+
+        if let InitialOfferingStateOf::<T>::Sale(sale_params) = &issuance_parameters.initial_state {
+            if let Some(Some(payload)) = sale_params.whitelist.as_ref().map(|p| p.payload.clone()) {
+                let upload_params = UploadParameters::<T> {
+                    bag_id: payload_upload_context.bag_id,
+                    deletion_prize_source_account_id: payload_upload_context.uploader_account,
+                    expected_data_size_fee: payload.expected_data_size_fee,
+                    object_creation_list: vec![payload.object_creation_params],
+                };
+                // Validation + first mutation (!)
+                storage::Module::<T>::upload_data_objects(upload_params)?;
+            }
+        }
 
         // == MUTATION SAFE ==
 

@@ -4,6 +4,7 @@ use crate::{traits::PalletToken, SymbolsUsed};
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::StorageMap;
 use sp_runtime::{traits::Hash, DispatchError, Permill};
+use storage::{BagId, StaticBagId};
 
 use crate::tests::mock::*;
 
@@ -34,7 +35,7 @@ pub trait Fixture<S: std::fmt::Debug + std::cmp::PartialEq> {
 
 pub fn default_token_sale_params() -> TokenSaleParams {
     TokenSaleParams {
-        duration: 100,
+        duration: DEFAULT_SALE_DURATION,
         metadata: None,
         starts_at: None,
         unit_price: 100,
@@ -48,38 +49,22 @@ pub fn default_token_sale_params() -> TokenSaleParams {
     }
 }
 
+pub fn default_upload_context() -> UploadContext {
+    UploadContext {
+        bag_id: BagId::<Test>::Static(StaticBagId::Council),
+        uploader_account: DEFAULT_ACCOUNT_ID,
+    }
+}
+
 pub struct IssueTokenFixture {
     params: IssuanceParams,
+    upload_context: UploadContext,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct IssueTokenFixtureStateSnapshot {
     next_token_id: u64,
-}
-
-impl Fixture<IssueTokenFixtureStateSnapshot> for IssueTokenFixture {
-    fn get_state_snapshot(&self) -> IssueTokenFixtureStateSnapshot {
-        IssueTokenFixtureStateSnapshot {
-            next_token_id: Token::next_token_id(),
-        }
-    }
-
-    fn execute_call(&self) -> DispatchResult {
-        <Token as PalletToken<AccountId, Policy, IssuanceParams>>::issue_token(self.params.clone())
-    }
-
-    fn on_success(
-        &self,
-        snapshot_pre: &IssueTokenFixtureStateSnapshot,
-        snapshot_post: &IssueTokenFixtureStateSnapshot,
-    ) {
-        assert_eq!(snapshot_post.next_token_id, snapshot_pre.next_token_id + 1);
-        assert_eq!(
-            Token::token_info_by_id(snapshot_pre.next_token_id),
-            TokenData::try_from_params::<Test>(self.params.clone()).unwrap()
-        );
-        assert!(SymbolsUsed::<Test>::contains_key(self.params.symbol))
-    }
+    next_data_object_id: u64,
 }
 
 impl IssueTokenFixture {
@@ -93,6 +78,7 @@ impl IssueTokenFixture {
                 symbol: Hashing::hash_of(b"ABC"),
                 transfer_policy: TransferPolicy::Permissionless,
             },
+            upload_context: default_upload_context(),
         }
     }
 
@@ -102,6 +88,48 @@ impl IssueTokenFixture {
                 initial_state: InitialIssuanceState::Sale(sale_params),
                 ..self.params
             },
+            ..self
+        }
+    }
+}
+
+impl Fixture<IssueTokenFixtureStateSnapshot> for IssueTokenFixture {
+    fn get_state_snapshot(&self) -> IssueTokenFixtureStateSnapshot {
+        IssueTokenFixtureStateSnapshot {
+            next_token_id: Token::next_token_id(),
+            next_data_object_id: storage::Module::<Test>::next_data_object_id(),
+        }
+    }
+
+    fn execute_call(&self) -> DispatchResult {
+        <Token as PalletToken<AccountId, Policy, IssuanceParams, UploadContext>>::issue_token(
+            self.params.clone(),
+            self.upload_context.clone(),
+        )
+    }
+
+    fn on_success(
+        &self,
+        snapshot_pre: &IssueTokenFixtureStateSnapshot,
+        snapshot_post: &IssueTokenFixtureStateSnapshot,
+    ) {
+        assert_eq!(snapshot_post.next_token_id, snapshot_pre.next_token_id + 1);
+        assert_eq!(
+            Token::token_info_by_id(snapshot_pre.next_token_id),
+            TokenData::try_from_params::<Test>(self.params.clone()).unwrap()
+        );
+        assert!(SymbolsUsed::<Test>::contains_key(self.params.symbol));
+
+        // Whitelist payload
+        if let InitialIssuanceState::Sale(sale_params) = &self.params.initial_state {
+            sale_params.whitelist.as_ref().map(|params| {
+                params.payload.as_ref().map(|_| {
+                    assert_eq!(
+                        snapshot_post.next_data_object_id,
+                        snapshot_pre.next_data_object_id + 1
+                    );
+                })
+            });
         }
     }
 }
