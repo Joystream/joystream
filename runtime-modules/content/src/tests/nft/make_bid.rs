@@ -683,11 +683,11 @@ fn make_bid_ok_with_open_auction_completion_and_total_balance_slashed() {
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
-            DEFAULT_BUY_NOW_PRICE,
+            DEFAULT_BUY_NOW_PRICE + 10,
         ));
 
         assert_eq!(
-            Balances::<Test>::total_balance(&SECOND_MEMBER_ACCOUNT_ID),
+            Balances::<Test>::free_balance(&SECOND_MEMBER_ACCOUNT_ID),
             BIDDER_BALANCE - DEFAULT_BUY_NOW_PRICE,
         );
     })
@@ -707,12 +707,64 @@ fn make_bid_ok_with_english_auction_completion_and_total_balance_slashed() {
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
-            DEFAULT_BUY_NOW_PRICE,
+            DEFAULT_BUY_NOW_PRICE + 10,
         ));
 
         assert_eq!(
-            Balances::<Test>::total_balance(&SECOND_MEMBER_ACCOUNT_ID),
+            Balances::<Test>::free_balance(&SECOND_MEMBER_ACCOUNT_ID),
             BIDDER_BALANCE - DEFAULT_BUY_NOW_PRICE,
+        );
+    })
+}
+
+#[test]
+fn make_bid_ok_with_open_auction_owner_account_increased_balance_by_correct_amount() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        let video_id = Content::next_video_id();
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE);
+        setup_open_auction_scenario();
+        let balance_pre = Balances::<Test>::free_balance(DEFAULT_MEMBER_ACCOUNT_ID);
+        let auction_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_BUY_NOW_PRICE);
+
+        assert_ok!(Content::make_open_auction_bid(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            video_id,
+            DEFAULT_BUY_NOW_PRICE + 10,
+        ));
+
+        assert_eq!(
+            Balances::<Test>::free_balance(DEFAULT_MEMBER_ACCOUNT_ID),
+            DEFAULT_BUY_NOW_PRICE + balance_pre - auction_fee
+        );
+    })
+}
+
+#[test]
+fn make_bid_ok_with_english_auction_owner_account_increased_balance_by_correct_amount() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        let video_id = Content::next_video_id();
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE);
+        setup_english_auction_scenario();
+        let balance_pre = Balances::<Test>::free_balance(DEFAULT_MEMBER_ACCOUNT_ID);
+        let auction_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_BUY_NOW_PRICE);
+
+        assert_ok!(Content::make_english_auction_bid(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            video_id,
+            DEFAULT_BUY_NOW_PRICE + 10,
+        ));
+
+        assert_eq!(
+            Balances::<Test>::free_balance(DEFAULT_MEMBER_ACCOUNT_ID),
+            DEFAULT_BUY_NOW_PRICE + balance_pre - auction_fee,
         );
     })
 }
