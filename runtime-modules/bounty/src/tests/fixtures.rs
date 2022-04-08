@@ -611,44 +611,6 @@ impl SubmitJudgmentFixture {
     }
 }
 
-pub struct SwitchOracleAsRootFixture {
-    origin: RawOrigin<u128>,
-    new_oracle: BountyActor<u64>,
-    bounty_id: u64,
-}
-
-impl SwitchOracleAsRootFixture {
-    pub fn default() -> Self {
-        Self {
-            origin: RawOrigin::Root,
-            new_oracle: BountyActor::Member(2),
-            bounty_id: 1,
-        }
-    }
-    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
-        Self { origin, ..self }
-    }
-    pub fn with_bounty_id(self, bounty_id: u64) -> Self {
-        Self { bounty_id, ..self }
-    }
-    pub fn with_new_oracle_member_id(self, bounty_actor: BountyActor<u64>) -> Self {
-        Self {
-            new_oracle: bounty_actor,
-            ..self
-        }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = Bounty::switch_oracle_as_root(
-            self.origin.clone().into(),
-            self.new_oracle.clone(),
-            self.bounty_id,
-        );
-
-        assert_eq!(actual_result, expected_result);
-    }
-}
-
 pub struct SwitchOracleFixture {
     origin: RawOrigin<u128>,
     new_oracle: BountyActor<u64>,

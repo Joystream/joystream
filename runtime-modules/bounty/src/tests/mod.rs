@@ -12,10 +12,10 @@ use fixtures::{
     get_council_budget, get_creator_state_bloat_bond_amount, get_funder_state_bloat_bond_amount,
     increase_account_balance, increase_total_balance_issuance_using_account_id, run_to_block,
     set_council_budget, AnnounceWorkEntryFixture, CreateBountyFixture, EndWorkPeriodFixture,
-    EventFixture, FundBountyFixture, SubmitJudgmentFixture, SubmitWorkFixture,
-    SwitchOracleAsRootFixture, SwitchOracleFixture, TerminateBountyFixture,
-    UnlockWorkEntrantStakeFixture, WithdrawFundingFixture, WithdrawOracleRewardFixture,
-    WithdrawStateBloatBondFixture, DEFAULT_BOUNTY_CHERRY, DEFAULT_BOUNTY_ORACLE_REWARD,
+    EventFixture, FundBountyFixture, SubmitJudgmentFixture, SubmitWorkFixture, SwitchOracleFixture,
+    TerminateBountyFixture, UnlockWorkEntrantStakeFixture, WithdrawFundingFixture,
+    WithdrawOracleRewardFixture, WithdrawStateBloatBondFixture, DEFAULT_BOUNTY_CHERRY,
+    DEFAULT_BOUNTY_ORACLE_REWARD,
 };
 use frame_support::storage::StorageMap;
 use frame_system::RawOrigin;
@@ -4454,7 +4454,7 @@ fn submit_judgment_fails_with_invalid_judgment() {
 }
 
 #[test]
-fn switch_oracle_to_council_by_council_approval_successful() {
+fn switch_oracle_to_council_by_council_successful() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -4470,12 +4470,13 @@ fn switch_oracle_to_council_by_council_approval_successful() {
 
         let bounty_id = 1u64;
 
-        SwitchOracleAsRootFixture::default()
+        SwitchOracleFixture::default()
             .with_new_oracle_member_id(BountyActor::Council)
             .call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::BountyOracleSwitchingByCouncilApproval(
+        EventFixture::assert_last_crate_event(RawEvent::BountyOracleSwitched(
             bounty_id,
+            BountyActor::Council,
             BountyActor::Member(actual_oracle_member_id),
             BountyActor::Council,
         ));
@@ -4483,7 +4484,7 @@ fn switch_oracle_to_council_by_council_approval_successful() {
 }
 
 #[test]
-fn switch_oracle_to_member_by_council_oracle_successful() {
+fn switch_oracle_to_member_by_oracle_council_successful() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -4496,12 +4497,13 @@ fn switch_oracle_to_member_by_council_oracle_successful() {
         CreateBountyFixture::default().call_and_assert(Ok(()));
         let bounty_id = 1u64;
 
-        SwitchOracleAsRootFixture::default()
+        SwitchOracleFixture::default()
             .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
             .call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::BountyOracleSwitchingByCouncilApproval(
+        EventFixture::assert_last_crate_event(RawEvent::BountyOracleSwitched(
             bounty_id,
+            BountyActor::Council,
             BountyActor::Council,
             BountyActor::Member(new_oracle_member_id),
         ));
@@ -4509,7 +4511,7 @@ fn switch_oracle_to_member_by_council_oracle_successful() {
 }
 
 #[test]
-fn switch_oracle_to_member_by_council_approval_successful() {
+fn switch_oracle_to_member_by_council_successful() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -4532,12 +4534,13 @@ fn switch_oracle_to_member_by_council_approval_successful() {
             Vec::new(),
         ));
 
-        SwitchOracleAsRootFixture::default()
+        SwitchOracleFixture::default()
             .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
             .call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::BountyOracleSwitchingByCouncilApproval(
+        EventFixture::assert_last_crate_event(RawEvent::BountyOracleSwitched(
             bounty_id,
+            BountyActor::Council,
             BountyActor::Member(current_oracle_member_id),
             BountyActor::Member(new_oracle_member_id),
         ));
@@ -4545,7 +4548,7 @@ fn switch_oracle_to_member_by_council_approval_successful() {
 }
 
 #[test]
-fn switch_oracle_to_council_by_member_oracle_successful() {
+fn switch_oracle_to_council_by_oracle_member_successful() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -4573,8 +4576,9 @@ fn switch_oracle_to_council_by_member_oracle_successful() {
             .with_new_oracle_member_id(BountyActor::Council)
             .call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::BountyOracleSwitchingByCurrentOracle(
+        EventFixture::assert_last_crate_event(RawEvent::BountyOracleSwitched(
             bounty_id,
+            BountyActor::Member(actual_oracle_member_id),
             BountyActor::Member(actual_oracle_member_id),
             BountyActor::Council,
         ));
@@ -4605,8 +4609,9 @@ fn switch_oracle_to_member_by_oracle_member_successful() {
             .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
             .call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::BountyOracleSwitchingByCurrentOracle(
+        EventFixture::assert_last_crate_event(RawEvent::BountyOracleSwitched(
             bounty_id,
+            BountyActor::Member(actual_oracle_member_id),
             BountyActor::Member(actual_oracle_member_id),
             BountyActor::Member(new_oracle_member_id),
         ));
@@ -4639,46 +4644,6 @@ fn switch_oracle_invalid_origin() {
         ));
 
         SwitchOracleFixture::default()
-            .with_origin(RawOrigin::Root)
-            .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
-            .call_and_assert(Err(DispatchError::BadOrigin));
-
-        SwitchOracleFixture::default()
-            .with_origin(RawOrigin::None)
-            .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
-            .call_and_assert(Err(DispatchError::BadOrigin));
-    });
-
-    //By Root
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        let initial_balance = 500;
-        let actual_oracle_account_id = 2;
-        let actual_oracle_member_id = 2;
-        let new_oracle_member_id = 5;
-
-        set_council_budget(initial_balance);
-
-        let create_bounty_fixture =
-            CreateBountyFixture::default().with_oracle_member_id(actual_oracle_member_id);
-
-        create_bounty_fixture.call_and_assert(Ok(()));
-        let bounty_id = 1u64;
-
-        EventFixture::assert_last_crate_event(RawEvent::BountyCreated(
-            bounty_id,
-            create_bounty_fixture.get_bounty_creation_parameters(),
-            Vec::new(),
-        ));
-
-        SwitchOracleAsRootFixture::default()
-            .with_origin(RawOrigin::Signed(actual_oracle_account_id))
-            .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
-            .call_and_assert(Err(DispatchError::BadOrigin));
-
-        SwitchOracleAsRootFixture::default()
             .with_origin(RawOrigin::None)
             .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
             .call_and_assert(Err(DispatchError::BadOrigin));
@@ -4822,139 +4787,6 @@ fn switch_oracle_fails_invalid_stage() {
         SwitchOracleFixture::default()
             .with_bounty_id(bounty_id)
             .with_origin(RawOrigin::Signed(actual_oracle_account_id))
-            .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
-            .call_and_assert(Err(
-                Error::<Test>::InvalidStageUnexpectedFailedBountyWithdrawal.into(),
-            ));
-    });
-}
-
-#[test]
-fn switch_oracle_as_root_fails_invalid_stage() {
-    //SuccessfulBountyWithdrawal
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        let initial_balance = 500;
-        let target_funding = 100;
-        let winner_reward = target_funding;
-        let entrant_stake = 37;
-
-        set_council_budget(initial_balance);
-
-        CreateBountyFixture::default()
-            .with_limit_period_target_amount(target_funding)
-            .with_entrant_stake(entrant_stake)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 1;
-
-        FundBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_amount(target_funding)
-            .with_council()
-            .with_origin(RawOrigin::Root)
-            .call_and_assert(Ok(()));
-
-        let member_id = 1;
-        let account_id = 1;
-        increase_account_balance(&account_id, initial_balance);
-
-        // Winner
-        AnnounceWorkEntryFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_staking_account_id(account_id)
-            .with_bounty_id(bounty_id)
-            .call_and_assert(Ok(()));
-
-        let entry_id = 1;
-
-        SubmitWorkFixture::default()
-            .with_origin(RawOrigin::Signed(account_id))
-            .with_member_id(member_id)
-            .with_entry_id(entry_id)
-            .call_and_assert(Ok(()));
-
-        EndWorkPeriodFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_origin(RawOrigin::Root)
-            .call_and_assert(Ok(()));
-
-        // Judgment
-        let mut judgment = BTreeMap::new();
-        judgment.insert(
-            entry_id,
-            OracleWorkEntryJudgment::Winner {
-                reward: winner_reward,
-            },
-        );
-
-        SubmitJudgmentFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_judgment(judgment)
-            .call_and_assert(Ok(()));
-        let new_oracle_member_id = 2;
-
-        SwitchOracleAsRootFixture::default()
-            .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
-            .call_and_assert(Err(
-                Error::<Test>::InvalidStageUnexpectedSuccessfulBountyWithdrawal.into(),
-            ));
-    });
-
-    //FundingExpired
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-        let initial_balance = 500;
-        let funding_period = 10;
-        set_council_budget(initial_balance);
-
-        CreateBountyFixture::default()
-            .with_funding_period(funding_period)
-            .call_and_assert(Ok(()));
-
-        run_to_block(starting_block + funding_period + 1);
-        let new_oracle_member_id = 2;
-        let bounty_id = 1;
-
-        SwitchOracleAsRootFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
-            .call_and_assert(Err(
-                Error::<Test>::InvalidStageUnexpectedFundingExpired.into()
-            ));
-    });
-
-    //FailedBountyWithdrawal
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-        let initial_balance = 500;
-        let funding_period = 10;
-        let target_funding = 500;
-        set_council_budget(initial_balance);
-
-        CreateBountyFixture::default()
-            .with_limited_funding(target_funding, funding_period)
-            .call_and_assert(Ok(()));
-
-        let bounty_id = 1;
-
-        FundBountyFixture::default()
-            .with_bounty_id(bounty_id)
-            .with_amount(250)
-            .with_council()
-            .with_origin(RawOrigin::Root)
-            .call_and_assert(Ok(()));
-
-        run_to_block(starting_block + funding_period + 1);
-        let new_oracle_member_id = 2;
-
-        SwitchOracleAsRootFixture::default()
-            .with_bounty_id(bounty_id)
             .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
             .call_and_assert(Err(
                 Error::<Test>::InvalidStageUnexpectedFailedBountyWithdrawal.into(),

@@ -177,7 +177,7 @@ impl crate::WeightInfo for () {
     fn end_working_period() -> u64 {
         0
     }
-    fn switch_oracle_to_council_by_council_approval_successful() -> u64 {
+    fn switch_oracle_to_council_by_council_successful() -> u64 {
         0
     }
     fn switch_oracle_to_council_by_oracle_member() -> u64 {
@@ -189,7 +189,7 @@ impl crate::WeightInfo for () {
     fn switch_oracle_to_member_by_oracle_council() -> u64 {
         0
     }
-    fn switch_oracle_to_member_by_council_not_oracle() -> u64 {
+    fn switch_oracle_to_member_by_council() -> u64 {
         0
     }
     fn fund_bounty_by_member() -> u64 {

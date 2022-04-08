@@ -1120,7 +1120,7 @@ benchmarks! {
         );
     }
 
-    switch_oracle_to_council_by_council_approval_successful {
+    switch_oracle_to_council_by_council_successful {
 
         let cherry: BalanceOf<T> = 100u32.into();
         let oracle_reward: BalanceOf<T> = 100u32.into();
@@ -1152,15 +1152,16 @@ benchmarks! {
 
         let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
 
-    }: switch_oracle_as_root (RawOrigin::Root, new_oracle.clone(), bounty_id)
+    }: switch_oracle (RawOrigin::Root, new_oracle.clone(), bounty_id)
     verify {
         let bounty_id: T::BountyId = 1u32.into();
 
         assert!(Bounties::<T>::contains_key(bounty_id));
         assert_eq!(Bounty::<T>::bounty_count(), 1); // Bounty counter was updated.
         assert_last_event::<T>(
-            Event::<T>::BountyOracleSwitchingByCouncilApproval(
+            Event::<T>::BountyOracleSwitched(
                 bounty_id,
+                BountyActor::Council,
                 oracle,
                 new_oracle).into());
     }
@@ -1198,20 +1199,21 @@ benchmarks! {
 
         let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
 
-    }: switch_oracle_as_root (RawOrigin::Root, new_oracle.clone(), bounty_id)
+    }: switch_oracle (RawOrigin::Root, new_oracle.clone(), bounty_id)
     verify {
         let bounty_id: T::BountyId = 1u32.into();
 
         assert!(Bounties::<T>::contains_key(bounty_id));
         assert_eq!(Bounty::<T>::bounty_count(), 1); // Bounty counter was updated.
         assert_last_event::<T>(
-            Event::<T>::BountyOracleSwitchingByCouncilApproval(
+            Event::<T>::BountyOracleSwitched(
                 bounty_id,
+                BountyActor::Council,
                 oracle,
                 new_oracle).into());
     }
 
-    switch_oracle_to_member_by_council_not_oracle {
+    switch_oracle_to_member_by_council{
 
         let cherry: BalanceOf<T> = 100u32.into();
         let oracle_reward: BalanceOf<T> = 100u32.into();
@@ -1246,15 +1248,16 @@ benchmarks! {
 
         let bounty_id: T::BountyId = Bounty::<T>::bounty_count().into();
 
-    }: switch_oracle_as_root (RawOrigin::Root, new_oracle.clone(), bounty_id)
+    }: switch_oracle (RawOrigin::Root, new_oracle.clone(), bounty_id)
     verify {
         let bounty_id: T::BountyId = 1u32.into();
 
         assert!(Bounties::<T>::contains_key(bounty_id));
         assert_eq!(Bounty::<T>::bounty_count(), 1); // Bounty counter was updated.
         assert_last_event::<T>(
-            Event::<T>::BountyOracleSwitchingByCouncilApproval(
+            Event::<T>::BountyOracleSwitched(
                 bounty_id,
+                BountyActor::Council,
                 oracle,
                 new_oracle).into());
     }
@@ -1303,8 +1306,9 @@ benchmarks! {
         assert!(Bounties::<T>::contains_key(bounty_id));
         assert_eq!(Bounty::<T>::bounty_count(), 1); // Bounty counter was updated.
         assert_last_event::<T>(
-            Event::<T>::BountyOracleSwitchingByCurrentOracle(
+            Event::<T>::BountyOracleSwitched(
                 bounty_id,
+                BountyActor::Member(current_oracle_member_id),
                 oracle,
                 new_oracle).into());
     }
@@ -1351,8 +1355,9 @@ benchmarks! {
 
         assert!(Bounties::<T>::contains_key(bounty_id));
         assert_last_event::<T>(
-            Event::<T>::BountyOracleSwitchingByCurrentOracle(
+            Event::<T>::BountyOracleSwitched(
                 bounty_id,
+                BountyActor::Member(current_oracle_member_id),
                 oracle,
                 new_oracle).into());
     }
@@ -1858,11 +1863,9 @@ mod tests {
     }
 
     #[test]
-    fn switch_oracle_to_council_by_council_approval_successful() {
+    fn switch_oracle_to_council_by_council_successful() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(
-                test_benchmark_switch_oracle_to_council_by_council_approval_successful::<Test>()
-            );
+            assert_ok!(test_benchmark_switch_oracle_to_council_by_council_successful::<Test>());
         });
     }
 
@@ -1876,9 +1879,9 @@ mod tests {
     }
 
     #[test]
-    fn switch_oracle_to_member_by_council_not_oracle() {
+    fn switch_oracle_to_member_by_council() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_switch_oracle_to_member_by_council_not_oracle::<Test>());
+            assert_ok!(test_benchmark_switch_oracle_to_member_by_council::<Test>());
         });
     }
 

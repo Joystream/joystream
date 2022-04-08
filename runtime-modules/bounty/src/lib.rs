@@ -80,11 +80,11 @@ pub trait WeightInfo {
     fn terminate_bounty_wo_oracle_reward_w_funds_funding() -> Weight;
     fn terminate_bounty_work_or_judging_period() -> Weight;
     fn end_working_period() -> Weight;
-    fn switch_oracle_to_council_by_council_approval_successful() -> Weight;
+    fn switch_oracle_to_council_by_council_successful() -> Weight;
     fn switch_oracle_to_council_by_oracle_member() -> Weight;
     fn switch_oracle_to_member_by_oracle_member() -> Weight;
     fn switch_oracle_to_member_by_oracle_council() -> Weight;
-    fn switch_oracle_to_member_by_council_not_oracle() -> Weight;
+    fn switch_oracle_to_member_by_council() -> Weight;
     fn fund_bounty_by_member() -> Weight;
     fn fund_bounty_by_council() -> Weight;
     fn withdraw_funding_by_member() -> Weight;
@@ -570,19 +570,13 @@ decl_event! {
         /// - bounty metadata
         BountyCreated(BountyId, BountyCreationParameters, Vec<u8>),
 
-        /// Bounty Oracle Switching by current oracle.
+        /// Bounty Oracle Switched by current oracle or council.
         /// Params:
         /// - bounty ID
-        /// - Previous oracle
-        /// - New oracle
-        BountyOracleSwitchingByCurrentOracle(BountyId, BountyActor<MemberId>, BountyActor<MemberId>),
-
-        /// Bounty Oracle Switching by council approval.
-        /// Params:
-        /// - bounty ID
-        /// - Previous oracle
-        /// - New oracle
-        BountyOracleSwitchingByCouncilApproval(BountyId, BountyActor<MemberId>, BountyActor<MemberId>),
+        /// - switcher
+        /// - current_oracle,
+        /// - new oracle
+        BountyOracleSwitched(BountyId, BountyActor<MemberId>, BountyActor<MemberId>, BountyActor<MemberId>),
 
         /// A bounty was terminated by council.
         /// Params:
@@ -1028,58 +1022,6 @@ decl_module! {
 
         }
 
-        ///Council switches the oracle to a new one
-        /// # <weight>
-        ///
-        /// ## weight
-        /// `O (1)`
-        /// - db:
-        ///    - `O(1)` doesn't depend on the state or parameters
-        /// # </weight>
-        ///
-        #[weight = WeightInfoBounty::<T>::switch_oracle_to_member_by_oracle_council()
-        .max(WeightInfoBounty::<T>::switch_oracle_to_member_by_council_not_oracle())
-        .max(WeightInfoBounty::<T>::switch_oracle_to_council_by_council_approval_successful())]
-        pub fn switch_oracle_as_root(
-            origin,
-            new_oracle: BountyActor<MemberId<T>>,
-            bounty_id: T::BountyId,
-        ) {
-            ensure_root(origin)?;
-
-            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
-
-            let current_oracle = bounty.creation_params.oracle.clone();
-
-            //Check if new oracle is a member
-            BountyActorManager::<T>::get_bounty_actor_manager(new_oracle.clone())?;
-
-            let current_bounty_stage = Self::get_bounty_stage(&bounty);
-
-            ensure!(
-                matches!(current_bounty_stage,
-                    BountyStage::Funding{..} |
-                    BountyStage::WorkSubmission |
-                    BountyStage::Judgment
-                ),
-                Self::unexpected_bounty_stage_error(current_bounty_stage)
-            );
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            //Mutates the bounty params replacing the current oracle
-            <Bounties<T>>::mutate(bounty_id, |bounty| {
-                bounty.creation_params.oracle  = new_oracle.clone()
-            });
-
-            Self::deposit_event(RawEvent::BountyOracleSwitchingByCouncilApproval (
-                bounty_id,
-                current_oracle,
-                new_oracle));
-        }
-
         ///Oracle switches himself to a new one
         /// # <weight>
         ///
@@ -1090,27 +1032,20 @@ decl_module! {
         /// # </weight>
         ///
         #[weight = WeightInfoBounty::<T>::switch_oracle_to_council_by_oracle_member()
-        .max(WeightInfoBounty::<T>::switch_oracle_to_member_by_oracle_member())]
+        .max(WeightInfoBounty::<T>::switch_oracle_to_member_by_oracle_member())
+        .max(WeightInfoBounty::<T>::switch_oracle_to_member_by_oracle_council())
+        .max(WeightInfoBounty::<T>::switch_oracle_to_member_by_council())
+        .max(WeightInfoBounty::<T>::switch_oracle_to_council_by_council_successful())]
         pub fn switch_oracle(
             origin,
             new_oracle: BountyActor<MemberId<T>>,
             bounty_id: T::BountyId,
         ) {
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
-
             let current_oracle = bounty.creation_params.oracle.clone();
 
-            //Checks if the function caller (origin) is current oracle
-            let actor_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
-                origin,
-                current_oracle.clone(),
-            )?;
-
-            ensure!(actor_manager != BountyActorManager::Council,
-                Error::<T>::SwitchOracleOriginIsRoot);
-
-            //Check if new oracle is a member
-            BountyActorManager::<T>::get_bounty_actor_manager(new_oracle.clone())?;
+            let switcher = Self::ensure_switch_oracle_actors(
+                origin, current_oracle.clone(), new_oracle.clone())?;
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
 
@@ -1132,8 +1067,9 @@ decl_module! {
                 bounty.creation_params.oracle  = new_oracle.clone()
             });
 
-            Self::deposit_event(RawEvent::BountyOracleSwitchingByCurrentOracle(
+            Self::deposit_event(RawEvent::BountyOracleSwitched(
                 bounty_id,
+                switcher,
                 current_oracle,
                 new_oracle));
         }
@@ -1693,6 +1629,28 @@ impl<T: Trait> Module<T> {
     ) -> Result<BountyActorManager<T>, DispatchError> {
         let creator = bounty.creation_params.creator.clone();
         BountyActorManager::<T>::get_bounty_actor_manager(creator)
+    }
+
+    fn ensure_switch_oracle_actors(
+        origin: T::Origin,
+        current_oracle: BountyActor<MemberId<T>>,
+        new_oracle: BountyActor<MemberId<T>>,
+    ) -> Result<BountyActor<MemberId<T>>, DispatchError> {
+        //Checks if the function caller (origin) is current oracle
+        let switcher_actor_manager =
+            BountyActorManager::<T>::ensure_bounty_actor_manager(origin.clone(), current_oracle);
+
+        let switcher = match switcher_actor_manager {
+            Ok(creator_manager) => creator_manager.get_bounty_actor(),
+            Err(_) => {
+                ensure_root(origin)?;
+                BountyActor::Council
+            }
+        };
+
+        //Check if new oracle is a member
+        BountyActorManager::<T>::get_bounty_actor_manager(new_oracle)?;
+        Ok(switcher)
     }
 
     fn get_terminate_bounty_actor(
