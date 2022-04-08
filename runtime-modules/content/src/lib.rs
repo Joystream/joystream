@@ -1851,6 +1851,12 @@ decl_module! {
             // Ensure top bid exists
             let top_bid = english_auction.ensure_top_bid_exists::<T>()?;
 
+            // ensure claiming member is top auction bidder
+            ensure!(
+                top_bid.bidder_id == member_id,
+                Error::<T>::MemberClaimingIsNotWinner
+            );
+
             // Ensure auction expired
             let current_block = <frame_system::Module<T>>::block_number();
             english_auction.ensure_auction_can_be_completed::<T>(current_block)?;
