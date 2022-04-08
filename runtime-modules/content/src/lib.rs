@@ -1644,6 +1644,9 @@ decl_module! {
             // == MUTATION_SAFE ==
             //
 
+            // unfallible: can_reserve already called
+            T::Currency::reserve(&participant_account_id, bid_amount)?;
+
             let (nft, event) = match open_auction.buy_now_price {
                 Some(buy_now_price) if bid_amount >= buy_now_price => {
                     // complete auction @ buy_now_price
@@ -1675,9 +1678,6 @@ decl_module! {
                                 bid.amount
                             );
                         });
-
-                    // unfallible: can_reserve already called
-                    T::Currency::reserve(&participant_account_id, bid_amount)?;
 
                     OpenAuctionBidByVideoAndMember::<T>::insert(
                         video_id,
@@ -1738,6 +1738,9 @@ decl_module! {
             // == MUTATION_SAFE ==
             //
 
+            // unfallible: can_reserve already called
+            T::Currency::reserve(&participant_account_id, bid_amount)?;
+
             let (updated_nft, event) = match eng_auction.buy_now_price {
                 Some(buy_now_price) if bid_amount >= buy_now_price => {
                     // complete auction @ buy_now_price
@@ -1766,9 +1769,6 @@ decl_module! {
                             );
                         }
                     }
-
-                    // Reserve amount for new bid
-                    T::Currency::reserve(&participant_account_id, bid_amount)?;
 
                     // update nft auction state
                     let updated_auction = eng_auction.with_bid(bid_amount, participant_id, current_block);
