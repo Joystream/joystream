@@ -426,7 +426,7 @@ fn multiout_transfer_fails_with_same_source_and_destination() {
 #[test]
 fn permissioned_transfer_ok() {
     let token_id = token!(1);
-    let (src, amount) = (account!(2), balance!(100));
+    let (_src, amount) = (account!(2), balance!(100));
     let src = account!(1);
     let (dst1, dst2) = (account!(2), account!(3));
     let commit = merkle_root![dst1, dst2];
@@ -885,5 +885,29 @@ fn permissioned_multi_out_ok_with_ex_deposit_and_source_removal_and_issuance_dec
             Token::token_info_by_id(token_id).current_total_issuance,
             src_balance - dust
         );
+    })
+}
+
+#[test]
+fn join_whitelist_ok() {
+    let token_id = token!(1);
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![acc1, acc2];
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(src, amount, 0)
+        .with_account(dst1, 0, 0)
+        .with_account(dst2, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::transfer(origin!(src), token_id, outputs);
+
+        assert_ok!(result);
     })
 }
