@@ -205,9 +205,6 @@ decl_error! {
         /// Auction whitelist has only one member
         WhitelistHasOnlyOneMember,
 
-        /// Fail to claim English auction by a non winner
-        MemberClaimingIsNotWinner,
-
         /// Extension period is greater then auction duration
         ExtensionPeriodIsGreaterThenAuctionDuration,
 
