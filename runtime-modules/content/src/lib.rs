@@ -1832,12 +1832,12 @@ decl_module! {
         /// Claim won english auction
         /// Can be called by anyone
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn claim_won_english_auction(
+        pub fn settle_english_auction(
             origin,
             video_id: T::VideoId,
         ) {
             // Authorize member under given member id
-            let _ = ensure_signed(origin)?;
+            let sender = ensure_signed(origin)?;
 
             // Ensure nft is already issued
             let video = Self::ensure_video_exists(&video_id)?;
@@ -1872,7 +1872,7 @@ decl_module! {
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(updated_nft));
 
             // Trigger event
-            Self::deposit_event(RawEvent::EnglishAuctionCompleted(top_bidder_id, video_id));
+            Self::deposit_event(RawEvent::EnglishAuctionSettled(top_bidder_id, sender, video_id));
         }
 
         /// Accept open auction bid
@@ -2465,6 +2465,7 @@ decl_event!(
         ReactionId = <T as Trait>::ReactionId,
         ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
         Hash = <T as frame_system::Trait>::Hash,
+        AccountId = <T as frame_system::Trait>::AccountId,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2541,7 +2542,7 @@ decl_event!(
         AuctionBidMade(MemberId, VideoId, CurrencyAmount, Option<MemberId>),
         AuctionBidCanceled(MemberId, VideoId),
         AuctionCanceled(ContentActor, VideoId),
-        EnglishAuctionCompleted(MemberId, VideoId),
+        EnglishAuctionSettled(MemberId, AccountId, VideoId),
         BidMadeCompletingAuction(MemberId, VideoId, Option<MemberId>),
         OpenAuctionBidAccepted(ContentActor, VideoId, MemberId, CurrencyAmount),
         OfferStarted(VideoId, ContentActor, MemberId, Option<CurrencyAmount>),
