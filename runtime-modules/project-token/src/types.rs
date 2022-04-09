@@ -1,5 +1,5 @@
 use codec::{Decode, Encode};
-use frame_support::{dispatch::DispatchError, ensure};
+use frame_support::{dispatch::{DispatchError, DispatchResult}, ensure};
 use sp_arithmetic::traits::{Saturating, Zero};
 use sp_runtime::traits::{Convert, Hash};
 use sp_std::{iter::Sum, slice::Iter};
@@ -123,7 +123,7 @@ pub enum MerkleSide {
 /// Wrapper around a merkle proof path
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct MerkleProof<Hasher: Hash> (
-    pub Vec<(Hasher::Output, MerkleSide)>
+    pub Option<Vec<(Hasher::Output, MerkleSide)>>
 );
 
 /// Output for a transfer containing beneficiary + amount due
@@ -243,14 +243,28 @@ impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, H
 }
 
 impl<Hasher: Hash> MerkleProof<Hasher> {
-    pub(crate) fn verify_for_commit<AccountId: Encode>(&self, account_id: &AccountId,  commit: Hasher::Output) -> bool {
-        let init = Hasher::hash_of(account_id);
-        let proof_result = self.0.iter().fold(init, |acc, (hash, side)| match side {
-            MerkleSide::Left => Hasher::hash_of(&(hash, acc)),
-            MerkleSide::Right => Hasher::hash_of(&(acc, hash)),
-        });
+    pub(crate) fn verify_for_commit<T, AccountId>(&self, account_id: &AccountId,  commit: Hasher::Output) -> DispatchResult
+    where
+        T: crate::Trait,
+    AccountId: Encode,
+    {
+        match &self.0 {
+            None => Err(crate::Error::<T>::MerkleProofNotProvided.into()),
+            Some(vec) => {
+                let init = Hasher::hash_of(account_id);
+                let proof_result = vec.iter().fold(init, |acc, (hash, side)| match side {
+                    MerkleSide::Left => Hasher::hash_of(&(hash, acc)),
+                    MerkleSide::Right => Hasher::hash_of(&(acc, hash)),
+                });
 
-        proof_result == commit
+                ensure!(
+                    proof_result == commit,
+                    crate::Error::<T>::MerkleProofVerificationFailure,
+                );
+
+                Ok(())
+            }
+        }
     }
 }
 

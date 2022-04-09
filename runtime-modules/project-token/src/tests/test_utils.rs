@@ -134,7 +134,7 @@ impl GenesisConfigBuilder {
 }
 
 impl<Hasher: Hash> MerkleProof<Hasher> {
-    pub fn new(v: Vec<(Hasher::Output, MerkleSide)>) -> Self {
+    pub fn new(v: Option<Vec<(Hasher::Output, MerkleSide)>>) -> Self {
         MerkleProof::<Hasher>(v)
     }
 }

@@ -30,6 +30,9 @@ decl_error! {
         /// Merkle proof verification failed
         MerkleProofVerificationFailure,
 
+        /// Merkle proof not provided
+        MerkleProofNotProvided,
+
         /// Source and Destination Location coincide
         SameSourceAndDestinationLocations,
 

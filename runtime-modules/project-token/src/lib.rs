@@ -130,10 +130,7 @@ decl_module! {
             );
 
             if let TransferPolicyOf::<T>::Permissioned(commit) = token_info.transfer_policy {
-                ensure!(
-                    proof.verify_for_commit::<_>(&account_id, commit),
-                    Error::<T>::MerkleProofVerificationFailure,
-                );
+                proof.verify_for_commit::<T,_>(&account_id, commit)?
             }
 
             // == MUTATION SAFE ==
