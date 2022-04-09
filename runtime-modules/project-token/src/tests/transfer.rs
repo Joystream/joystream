@@ -1014,7 +1014,7 @@ fn join_whitelist_ok_with_event_deposit() {
 }
 
 #[test]
-fn join_whitelist_ok_with_new_account_created() {
+fn join_whitelist_ok_in_permissionless_mode() {
     let token_id = token!(1);
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
@@ -1022,6 +1022,27 @@ fn join_whitelist_ok_with_new_account_created() {
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::join_whitelist(origin!(acc1), token_id, proof);
+
+        assert_ok!(result);
+    })
+}
+
+#[test]
+fn join_whitelist_ok_with_new_account_created() {
+    let token_id = token!(1);
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
+    let proof = merkle_proof!(0, [acc1, acc2]);
+
+    let token_data = TokenDataBuilder::new_empty()
         .build();
 
     let config = GenesisConfigBuilder::new_empty()
