@@ -1832,14 +1832,12 @@ decl_module! {
         /// Claim won english auction
         /// Can be called by anyone
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn claim_won_english_auction(
+        pub fn settle_english_auction(
             origin,
-            member_id: T::MemberId,
             video_id: T::VideoId,
         ) {
             // Authorize member under given member id
-            let member_account_id = ensure_signed(origin)?;
-            ensure_member_auth_success::<T>(&member_account_id, &member_id)?;
+            let sender = ensure_signed(origin)?;
 
             // Ensure nft is already issued
             let video = Self::ensure_video_exists(&video_id)?;
@@ -1850,6 +1848,13 @@ decl_module! {
 
             // Ensure top bid exists
             let top_bid = english_auction.ensure_top_bid_exists::<T>()?;
+            let top_bidder_id = top_bid.bidder_id;
+
+            // THIS WILL NOT FAIL UNLESS THE RUNTIME IS BROKEN
+            let top_bidder_account_result =
+                T::MemberAuthenticator::controller_account_id(top_bidder_id);
+            debug_assert!(top_bidder_account_result.is_ok());
+            let top_bidder_account_id = top_bidder_account_result.unwrap_or_default();
 
             // Ensure auction expired
             let current_block = <frame_system::Module<T>>::block_number();
@@ -1863,8 +1868,8 @@ decl_module! {
             let updated_nft = Self::complete_auction(
                 nft,
                 video.in_channel,
-                member_account_id,
-                member_id,
+                top_bidder_account_id,
+                top_bidder_id,
                 top_bid.amount
             );
 
@@ -1872,7 +1877,7 @@ decl_module! {
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(updated_nft));
 
             // Trigger event
-            Self::deposit_event(RawEvent::EnglishAuctionCompleted(member_id, video_id));
+            Self::deposit_event(RawEvent::EnglishAuctionSettled(top_bidder_id, sender, video_id));
         }
 
         /// Accept open auction bid
@@ -2465,6 +2470,7 @@ decl_event!(
         ReactionId = <T as Trait>::ReactionId,
         ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
         Hash = <T as frame_system::Trait>::Hash,
+        AccountId = <T as frame_system::Trait>::AccountId,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2541,7 +2547,7 @@ decl_event!(
         AuctionBidMade(MemberId, VideoId, CurrencyAmount, Option<MemberId>),
         AuctionBidCanceled(MemberId, VideoId),
         AuctionCanceled(ContentActor, VideoId),
-        EnglishAuctionCompleted(MemberId, VideoId),
+        EnglishAuctionSettled(MemberId, AccountId, VideoId),
         BidMadeCompletingAuction(MemberId, VideoId, Option<MemberId>),
         OpenAuctionBidAccepted(ContentActor, VideoId, MemberId, CurrencyAmount),
         OfferStarted(VideoId, ContentActor, MemberId, Option<CurrencyAmount>),
