@@ -13,7 +13,7 @@ use sp_runtime::traits::{BlakeTwo256, Convert, Hash, IdentityLookup};
 
 // crate import
 use crate::{
-    types::{MerkleSide, OutputsOf, MerkleProofOf},
+    types::{MerkleSide, OutputsOf},
     AccountDataOf, GenesisConfig, TokenDataOf, TokenIssuanceParametersOf, Trait, TransferPolicyOf,
 };
 

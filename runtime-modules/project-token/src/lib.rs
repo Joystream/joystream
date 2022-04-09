@@ -120,8 +120,29 @@ decl_module! {
         /// Postconditions:
         /// - account added to the list
         #[weight = 10_000_000] // TODO: adjust weights
-        fn join_whitelist(origin, token_id: T::TokenId, proof: MerkleProofOf<T>) -> DispatchResult {
-            todo!()
+        pub fn join_whitelist(origin, token_id: T::TokenId, proof: MerkleProofOf<T>) -> DispatchResult {
+            let account_id = ensure_signed(origin)?;
+            let token_info = Self::ensure_token_exists(token_id)?;
+
+            ensure!(
+                !AccountInfoByTokenAndAccount::<T>::contains_key(token_id, &account_id),
+                Error::<T>::AccountAlreadyExists,
+            );
+
+            if let TransferPolicyOf::<T>::Permissioned(commit) = token_info.transfer_policy {
+                ensure!(
+                    proof.verify_for_commit::<_>(&account_id, commit),
+                    Error::<T>::MerkleProofVerificationFailure,
+                );
+            }
+
+            // == MUTATION SAFE ==
+
+            AccountInfoByTokenAndAccount::<T>::insert(token_id, &account_id, AccountDataOf::<T>::default());
+
+            Self::deposit_event(RawEvent::MemberJoinedWhitelist(token_id, account_id, token_info.transfer_policy));
+
+            Ok(())
         }
     }
 }

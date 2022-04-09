@@ -243,8 +243,8 @@ impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, H
 }
 
 impl<Hasher: Hash> MerkleProof<Hasher> {
-    pub(crate) fn verify_for_commit<AccountId: Encode>(&self, account_id: AccountId,  commit: Hasher::Output) -> bool {
-        let init = Hasher::hash_of(&account_id);
+    pub(crate) fn verify_for_commit<AccountId: Encode>(&self, account_id: &AccountId,  commit: Hasher::Output) -> bool {
+        let init = Hasher::hash_of(account_id);
         let proof_result = self.0.iter().fold(init, |acc, (hash, side)| match side {
             MerkleSide::Left => Hasher::hash_of(&(hash, acc)),
             MerkleSide::Right => Hasher::hash_of(&(acc, hash)),

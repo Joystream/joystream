@@ -955,7 +955,6 @@ fn join_whitelist_fails_with_invalid_proof() {
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
         .with_account(owner, 0, 0)
-        .with_account(acc1, 0, 0)
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -1037,8 +1036,8 @@ fn join_whitelist_ok_with_new_account_created() {
     })
 }
 
- #[test]
-fn join_whitelist_ok_with_new_account_having_balance_zero() {
+#[test]
+fn join_whitelist_ok_with_new_account_having_free_balance_zero() {
     let token_id = token!(1);
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
@@ -1060,6 +1059,34 @@ fn join_whitelist_ok_with_new_account_having_balance_zero() {
 
         assert_eq!(
             Token::account_info_by_token_and_account(token_id, acc1).free_balance,
+            balance!(0)
+        );
+    })
+}
+
+#[test]
+fn join_whitelist_ok_with_new_account_having_reserved_balance_zero() {
+    let token_id = token!(1);
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![acc1, acc2];
+    let proof = merkle_proof!(0, [acc1, acc2]);
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, 0, 0)
+        .with_account(acc1, 0, 0)
+        .with_account(acc2, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
+
+        assert_eq!(
+            Token::account_info_by_token_and_account(token_id, acc1).reserved_balance,
             balance!(0)
         );
     })
