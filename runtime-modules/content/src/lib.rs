@@ -1850,12 +1850,8 @@ decl_module! {
 
             // Ensure top bid exists
             let top_bid = english_auction.ensure_top_bid_exists::<T>()?;
-
-            // ensure claiming member is top auction bidder
-            ensure!(
-                top_bid.bidder_id == member_id,
-                Error::<T>::MemberClaimingIsNotWinner
-            );
+            let top_bidder_id = top_bid.bidder_id;
+            let top_bidder_account_id = T::MemberAuthenticator::controller_account_id(top_bidder_id)?;
 
             // Ensure auction expired
             let current_block = <frame_system::Module<T>>::block_number();
@@ -1869,8 +1865,8 @@ decl_module! {
             let updated_nft = Self::complete_auction(
                 nft,
                 video.in_channel,
-                member_account_id,
-                member_id,
+                top_bidder_account_id,
+                top_bidder_id,
                 top_bid.amount
             );
 
