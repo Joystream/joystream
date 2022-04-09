@@ -1849,7 +1849,12 @@ decl_module! {
             // Ensure top bid exists
             let top_bid = english_auction.ensure_top_bid_exists::<T>()?;
             let top_bidder_id = top_bid.bidder_id;
-            let top_bidder_account_id = T::MemberAuthenticator::controller_account_id(top_bidder_id)?;
+
+            // THIS WILL NOT FAIL UNLESS THE RUNTIME IS BROKEN
+            let top_bidder_account_result =
+                T::MemberAuthenticator::controller_account_id(top_bidder_id);
+            debug_assert!(top_bidder_account_result.is_ok());
+            let top_bidder_account_id = top_bidder_account_result.unwrap_or_default();
 
             // Ensure auction expired
             let current_block = <frame_system::Module<T>>::block_number();
