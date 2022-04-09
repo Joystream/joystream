@@ -1472,7 +1472,7 @@ benchmarks! {
                 account_id).into())
     }
 
-    withdraw_funder_state_bloat_bond_amount_by_council{
+    withdraw_funding_state_bloat_bond_by_council{
         let cherry: BalanceOf<T> = 100u32.into();
         let oracle_reward: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 100u32.into();
@@ -1535,7 +1535,7 @@ benchmarks! {
             judgment
         ).unwrap();
 
-    }: withdraw_funder_state_bloat_bond_amount(RawOrigin::Root, funder.clone(), bounty_id)
+    }: withdraw_funding(RawOrigin::Root, funder.clone(), bounty_id)
     verify {
         assert!(Bounties::<T>::contains_key(bounty_id));
         assert_was_fired::<T>(
@@ -1545,7 +1545,7 @@ benchmarks! {
                 get_funder_state_bloat_bond_amount::<T>()).into());
     }
 
-    withdraw_funder_state_bloat_bond_amount_by_member{
+    withdraw_funding_state_bloat_bond_by_member{
         let cherry: BalanceOf<T> = 100u32.into();
         let oracle_reward: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 100u32.into();
@@ -1624,7 +1624,7 @@ benchmarks! {
             judgment
         ).unwrap();
 
-    }: withdraw_funder_state_bloat_bond_amount(
+    }: withdraw_funding(
         RawOrigin::Signed(account_id),
         funder.clone(),
         bounty_id)
@@ -1918,16 +1918,16 @@ mod tests {
     }
 
     #[test]
-    fn withdraw_funder_state_bloat_bond_amount_by_council() {
+    fn withdraw_funding_state_bloat_bond_by_council() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_withdraw_funder_state_bloat_bond_amount_by_council::<Test>());
+            assert_ok!(test_benchmark_withdraw_funding_state_bloat_bond_by_council::<Test>());
         });
     }
 
     #[test]
-    fn withdraw_funder_state_bloat_bond_amount_by_member() {
+    fn withdraw_funding_state_bloat_bond_by_member() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_withdraw_funder_state_bloat_bond_amount_by_member::<Test>());
+            assert_ok!(test_benchmark_withdraw_funding_state_bloat_bond_by_member::<Test>());
         });
     }
 

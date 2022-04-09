@@ -225,10 +225,10 @@ impl crate::WeightInfo for () {
     fn unlock_work_entrant_stake() -> u64 {
         0
     }
-    fn withdraw_funder_state_bloat_bond_amount_by_council() -> u64 {
+    fn withdraw_funding_state_bloat_bond_by_council() -> u64 {
         0
     }
-    fn withdraw_funder_state_bloat_bond_amount_by_member() -> u64 {
+    fn withdraw_funding_state_bloat_bond_by_member() -> u64 {
         0
     }
     fn withdraw_oracle_reward_by_oracle_council() -> u64 {

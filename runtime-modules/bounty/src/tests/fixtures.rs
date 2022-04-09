@@ -1,5 +1,4 @@
 use super::mocks::{Balances, Bounty, System, Test, TestEvent};
-use crate::sp_api_hidden_includes_decl_storage::hidden_include::StorageDoubleMap;
 use crate::{
     AssuranceContractType, BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord,
     Entry, FundingType, OracleJudgmentOf, RawEvent, Trait,
@@ -759,57 +758,6 @@ impl UnlockWorkEntrantStakeFixture {
                     old_bounty.active_work_entry_count - 1
                 );
             }
-        }
-    }
-}
-
-pub struct WithdrawStateBloatBondFixture {
-    origin: RawOrigin<u128>,
-    funder: BountyActor<u64>,
-    bounty_id: u64,
-}
-
-impl WithdrawStateBloatBondFixture {
-    pub fn default() -> Self {
-        Self {
-            origin: RawOrigin::Signed(1),
-            funder: BountyActor::Member(1),
-            bounty_id: 1,
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_member_id(self, member_id: u64) -> Self {
-        Self {
-            funder: BountyActor::Member(member_id),
-            ..self
-        }
-    }
-
-    pub fn with_council(self) -> Self {
-        Self {
-            funder: BountyActor::Council,
-            ..self
-        }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result = Bounty::withdraw_funder_state_bloat_bond_amount(
-            self.origin.clone().into(),
-            self.funder.clone(),
-            self.bounty_id.clone(),
-        );
-
-        assert_eq!(actual_result, expected_result);
-
-        if actual_result.is_ok() {
-            assert!(!<crate::BountyContributions<Test>>::contains_key(
-                &self.bounty_id,
-                &self.funder
-            ));
         }
     }
 }

@@ -7,11 +7,12 @@
 //! - WorkSubmission - interested participants can submit their work.
 //! - Judgment - working periods ended and the oracle should provide their judgment,
 //!     winner work entrants receive their rewards, losers are slashed.
-//! Oracle receives a reward for his work.
-//! - SuccessfulBountyWithdrawal - contributors' state bloat bonds can be withdrawn,
-//!     none judged work entrants can unlock their stakes.
-//! - FailedBountyWithdrawal - contributors' funds can be withdrawn along with a split cherry,
-//!     none judged work entrants can unlock their stakes.
+//!  for his work.
+//! - SuccessfulBountyWithdrawal - contributors' funder state bloat bonds can be withdrawn,
+//!     none judged work entrants can unlock their stakes, Oracle can withdraw his reward
+//! - FailedBountyWithdrawal - contributors' funds +  funder state bloat bonds can be withdrawn
+//!     along with a split cherry, none judged work entrants can unlock their stakes,
+//!     Oracle can withdraw his reward,
 //!
 //! A detailed description could be found [here](https://github.com/Joystream/joystream/issues/1998).
 //!
@@ -46,7 +47,7 @@
 //! #### SuccessfulBountyWithdrawal stage
 //! - [unlock_work_entrant_stake](./struct.Module.html#method.unlock_work_entrant_stake) -
 //! unlock stake accounts refering to none judged work entries.
-//!  - [withdraw_funder_state_bloat_bond_amount](./struct.Module.html#method.withdraw_funder_state_bloat_bond_amount) -
+//!  - [withdraw_funding](./struct.Module.html#method.withdraw_funding) -
 //! withdraw contributor's state bloat bond.
 //!
 //! #### FailedBountyWithdrawal stage
@@ -96,8 +97,8 @@ pub trait WeightInfo {
     fn submit_oracle_judgment_by_member_all_winners(i: u32) -> Weight;
     fn submit_oracle_judgment_by_member_all_rejected(i: u32, j: u32) -> Weight;
     fn unlock_work_entrant_stake() -> Weight;
-    fn withdraw_funder_state_bloat_bond_amount_by_council() -> Weight;
-    fn withdraw_funder_state_bloat_bond_amount_by_member() -> Weight;
+    fn withdraw_funding_state_bloat_bond_by_council() -> Weight;
+    fn withdraw_funding_state_bloat_bond_by_member() -> Weight;
     fn withdraw_oracle_reward_by_oracle_council() -> Weight;
     fn withdraw_oracle_reward_by_oracle_member() -> Weight;
 }
@@ -116,7 +117,7 @@ use serde::{Deserialize, Serialize};
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{Currency, ExistenceRequirement, Get, LockIdentifier};
 use frame_support::weights::Weight;
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, fail, Parameter};
 use frame_system::ensure_root;
 use sp_arithmetic::traits::{One, Saturating, Zero};
 use sp_runtime::{traits::AccountIdConversion, ModuleId};
@@ -1083,7 +1084,9 @@ decl_module! {
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoBounty::<T>::withdraw_funding_by_member()
-              .max(WeightInfoBounty::<T>::withdraw_funding_by_council())]
+              .max(WeightInfoBounty::<T>::withdraw_funding_by_council())
+              .max(WeightInfoBounty::<T>::withdraw_funding_state_bloat_bond_by_member())
+              .max(WeightInfoBounty::<T>::withdraw_funding_state_bloat_bond_by_council())]
         pub fn withdraw_funding(
             origin,
             funder: BountyActor<MemberId<T>>,
@@ -1098,11 +1101,6 @@ decl_module! {
 
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
 
-            ensure!(
-                current_bounty_stage == BountyStage::FailedBountyWithdrawal,
-                Self::unexpected_bounty_stage_error(current_bounty_stage)
-            );
-
             let funding = Self::ensure_bounty_contribution_exists(&bounty_id, &funder)?;
 
             let bounty_creator_manager = BountyActorManager::<T>::get_bounty_actor_manager(
@@ -1113,16 +1111,24 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let cherry_fraction = Self::get_cherry_fraction_for_member(&bounty, funding.amount);
-
-            let withdrawal_amount = funding
-                .total_bloat_bond_and_funding().saturating_add(cherry_fraction);
-
-            bounty_funder_manager.transfer_funds_from_bounty_account(bounty_id, withdrawal_amount);
-
-            <BountyContributions<T>>::remove(&bounty_id, &funder);
-
-            Self::deposit_event(RawEvent::BountyFundingWithdrawal(bounty_id, funder));
+            match current_bounty_stage{
+                BountyStage::FailedBountyWithdrawal => {
+                    Self::withdraw_funding_mutation(
+                        &bounty_id,
+                        &bounty,
+                        funder,
+                        &bounty_funder_manager,
+                        funding);
+                },
+                BountyStage::SuccessfulBountyWithdrawal => {
+                    Self::withdraw_funding_state_bloat_bond_mutation(
+                        &bounty_id,
+                        funder,
+                        &bounty_funder_manager,
+                        funding);
+                },
+                _ => fail!(Self::unexpected_bounty_stage_error(current_bounty_stage))
+            }
 
             if Self::can_remove_bounty(&bounty_id, &bounty) {
                 Self::remove_bounty(
@@ -1437,68 +1443,6 @@ decl_module! {
             }
         }
 
-        ///Withraws the state bloat bond to funder
-        ///If bounty is successfully, funders must call this extrinsic to withdraw the state bloat bond,
-        ///this makes the cleaning storage process more efficient.
-        /// # <weight>
-        ///
-        /// ## weight
-        /// `O (1)`
-        /// - db:
-        ///    - `O(1)` doesn't depend on the state or parameters
-        /// # </weight>
-        #[weight = WeightInfoBounty::<T>::withdraw_funder_state_bloat_bond_amount_by_council()
-        .max(WeightInfoBounty::<T>::withdraw_funder_state_bloat_bond_amount_by_member())]
-        pub fn withdraw_funder_state_bloat_bond_amount(
-            origin,
-            funder: BountyActor<MemberId<T>>,
-            bounty_id: T::BountyId,
-        ) {
-            let bounty_funder_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
-                origin,
-                funder.clone(),
-            )?;
-
-            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
-
-            let current_bounty_stage = Self::get_bounty_stage(&bounty);
-
-            ensure!(current_bounty_stage == BountyStage::SuccessfulBountyWithdrawal,
-                Self::unexpected_bounty_stage_error(current_bounty_stage)
-            );
-
-            let funding = Self::ensure_bounty_contribution_exists(&bounty_id, &funder)?;
-
-            let bounty_creator_manager = BountyActorManager::<T>::get_bounty_actor_manager(
-                bounty.creation_params.creator.clone(),
-            )?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            bounty_funder_manager.transfer_funds_from_bounty_account(
-                bounty_id,
-                funding.funder_state_bloat_bond_amount);
-
-            //Remove contribution from
-            <BountyContributions<T>>::remove(&bounty_id, &funder);
-
-            Self::deposit_event(
-                RawEvent::FunderStateBloatBondWithdrawn(
-                    bounty_id,
-                    funder,
-                    T::FunderStateBloatBondAmount::get()));
-
-            if Self::can_remove_bounty(&bounty_id, &bounty) {
-                Self::remove_bounty(
-                    &bounty_id,
-                    &bounty,
-                    &bounty_creator_manager
-                );
-            }
-        }
-
         ///Withraws the oracle reward to oracle
         ///If bounty is successfully, Failed or Cancelled oracle must call this
         ///extrinsic to withdraw the oracle reward,
@@ -1521,8 +1465,6 @@ decl_module! {
                 origin,
                 bounty.creation_params.oracle.clone(),
             )?;
-
-
 
             let oracle_reward = bounty.creation_params.oracle_reward;
             let current_bounty_stage = Self::get_bounty_stage(&bounty);
@@ -1567,6 +1509,51 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    fn withdraw_funding_mutation(
+        bounty_id: &T::BountyId,
+        bounty: &Bounty<T>,
+        funder: BountyActor<MemberId<T>>,
+        bounty_funder_manager: &BountyActorManager<T>,
+        funding: Contribution<T>,
+    ) {
+        let cherry_fraction = Self::get_cherry_fraction_for_member(&bounty, funding.amount);
+
+        let withdrawal_amount = funding
+            .total_bloat_bond_and_funding()
+            .saturating_add(cherry_fraction);
+
+        bounty_funder_manager.transfer_funds_from_bounty_account(*bounty_id, withdrawal_amount);
+
+        <BountyContributions<T>>::remove(&bounty_id, &funder);
+
+        Self::deposit_event(RawEvent::FunderStateBloatBondWithdrawn(
+            *bounty_id,
+            funder.clone(),
+            T::FunderStateBloatBondAmount::get(),
+        ));
+
+        Self::deposit_event(RawEvent::BountyFundingWithdrawal(*bounty_id, funder));
+    }
+
+    fn withdraw_funding_state_bloat_bond_mutation(
+        bounty_id: &T::BountyId,
+        funder: BountyActor<MemberId<T>>,
+        bounty_funder_manager: &BountyActorManager<T>,
+        funding: Contribution<T>,
+    ) {
+        bounty_funder_manager
+            .transfer_funds_from_bounty_account(*bounty_id, funding.funder_state_bloat_bond_amount);
+
+        //Remove contribution from
+        <BountyContributions<T>>::remove(&bounty_id, &funder);
+
+        Self::deposit_event(RawEvent::FunderStateBloatBondWithdrawn(
+            *bounty_id,
+            funder,
+            T::FunderStateBloatBondAmount::get(),
+        ));
+    }
+
     // Wrapper-function over System::block_number()
     pub(crate) fn current_block() -> T::BlockNumber {
         <frame_system::Module<T>>::block_number()
