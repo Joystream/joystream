@@ -1834,12 +1834,10 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn claim_won_english_auction(
             origin,
-            member_id: T::MemberId,
             video_id: T::VideoId,
         ) {
             // Authorize member under given member id
-            let member_account_id = ensure_signed(origin)?;
-            ensure_member_auth_success::<T>(&member_account_id, &member_id)?;
+            let _ = ensure_signed(origin)?;
 
             // Ensure nft is already issued
             let video = Self::ensure_video_exists(&video_id)?;
@@ -1874,7 +1872,7 @@ decl_module! {
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(updated_nft));
 
             // Trigger event
-            Self::deposit_event(RawEvent::EnglishAuctionCompleted(member_id, video_id));
+            Self::deposit_event(RawEvent::EnglishAuctionCompleted(top_bidder_id, video_id));
         }
 
         /// Accept open auction bid

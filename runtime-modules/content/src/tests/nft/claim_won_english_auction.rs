@@ -71,7 +71,6 @@ fn claim_won_english_auction() {
         // Claim won english auction
         assert_ok!(Content::claim_won_english_auction(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            SECOND_MEMBER_ID,
             video_id,
         ));
 
@@ -151,7 +150,6 @@ fn claim_won_english_auction_cannot_be_completed() {
         // Make an attempt to claim won english auction if it did not expire yet
         let claim_won_english_auction_result = Content::claim_won_english_auction(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            SECOND_MEMBER_ID,
             video_id,
         );
 
@@ -159,75 +157,6 @@ fn claim_won_english_auction_cannot_be_completed() {
         assert_err!(
             claim_won_english_auction_result,
             Error::<Test>::AuctionCannotBeCompleted
-        );
-    })
-}
-
-#[test]
-fn claim_won_english_auction_auth_failed() {
-    with_default_mock_builder(|| {
-        // Run to block one to see emitted events
-        run_to_block(AUCTION_START_BLOCK);
-
-        let video_id = NextVideoId::<Test>::get();
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
-
-        // Issue nft
-        assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            video_id,
-            NftIssuanceParameters::<Test>::default(),
-        ));
-
-        let auction_params = EnglishAuctionParams::<Test> {
-            starting_price: Content::min_starting_price(),
-            buy_now_price: None,
-            extension_period: Content::min_auction_extension_period(),
-            min_bid_step: Content::min_bid_step(),
-            starts_at: None,
-            duration: AUCTION_DURATION,
-            whitelist: BTreeSet::new(),
-        };
-
-        // Start nft auction
-        assert_ok!(Content::start_english_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            video_id,
-            auction_params.clone(),
-        ));
-
-        // deposit initial balance
-        let bid = Content::min_starting_price();
-
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
-
-        // Make nft auction bid
-        assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            SECOND_MEMBER_ID,
-            video_id,
-            bid,
-        ));
-
-        // Run to the block where auction expires
-        run_to_block(Content::max_auction_duration() + 1);
-
-        // Make an attempt to claim won english auction with wrong credentials
-        let claim_won_english_auction_result = Content::claim_won_english_auction(
-            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
-            SECOND_MEMBER_ID,
-            video_id,
-        );
-
-        // Failure checked
-        assert_err!(
-            claim_won_english_auction_result,
-            Error::<Test>::MemberAuthFailed
         );
     })
 }
@@ -243,7 +172,6 @@ fn claim_won_english_auction_video_does_not_exist() {
         // Make an attempt to claim won english auction which corresponding video does not exist
         let claim_won_english_auction_result = Content::claim_won_english_auction(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            SECOND_MEMBER_ID,
             video_id,
         );
 
@@ -270,7 +198,6 @@ fn claim_won_english_auction_nft_is_not_issued() {
         // Make an attempt to claim won english auction for nft which is not issued yet
         let claim_won_english_auction_result = Content::claim_won_english_auction(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            SECOND_MEMBER_ID,
             video_id,
         );
 
@@ -305,7 +232,6 @@ fn claim_won_english_auction_not_in_auction_state() {
         // Make an attempt to claim won english auction for nft which is not in auction state
         let claim_won_english_auction_result = Content::claim_won_english_auction(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            SECOND_MEMBER_ID,
             video_id,
         );
 
@@ -371,7 +297,6 @@ fn claim_won_english_auction_is_not_english_auction_type() {
         // Make an attempt to claim won english auction for nft which is not in english auction state
         let claim_won_english_auction_result = Content::claim_won_english_auction(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            SECOND_MEMBER_ID,
             video_id,
         );
 
@@ -427,7 +352,6 @@ fn claim_won_english_auction_last_bid_does_not_exist() {
         // Make an attempt to claim won english auction if last bid does not exist
         let claim_won_english_auction_result = Content::claim_won_english_auction(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            SECOND_MEMBER_ID,
             video_id,
         );
 
@@ -508,7 +432,6 @@ fn claim_won_english_auction_ok_with_nft_claimed_by_non_winner() {
         // Make an attempt to claim won english auction if last bid does not exist
         let claim_won_english_auction_result = Content::claim_won_english_auction(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            SECOND_MEMBER_ID,
             video_id,
         );
 
@@ -558,7 +481,6 @@ fn claim_won_english_auction_ok_with_nft_claimed_by_non_winner_and_winner_free_b
         // Make an attempt to claim won english auction if last bid does not exist
         assert_ok!(Content::claim_won_english_auction(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            SECOND_MEMBER_ID,
             video_id,
         ));
 
