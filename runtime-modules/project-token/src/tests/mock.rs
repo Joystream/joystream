@@ -13,7 +13,7 @@ use sp_runtime::traits::{BlakeTwo256, Convert, Hash, IdentityLookup};
 
 // crate import
 use crate::{
-    types::{MerkleSide, OutputsOf},
+    types::{MerkleSide, OutputsOf, MerkleProofOf},
     AccountDataOf, GenesisConfig, TokenDataOf, TokenIssuanceParametersOf, Trait, TransferPolicyOf,
 };
 
@@ -272,7 +272,7 @@ macro_rules! merkle_root {
 #[macro_export]
 macro_rules! merkle_proof {
     ($idx:expr,[$($vals:expr),*]) => {
-        build_merkle_path_helper(&vec![$($vals,)*], $idx as usize)
+        MerkleProofOf::<Test>::new(build_merkle_path_helper(&vec![$($vals,)*], $idx as usize))
     };
 }
 

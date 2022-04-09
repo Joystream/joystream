@@ -35,9 +35,6 @@ pub trait PalletToken<AccountId, Policy, IssuanceParams> {
         decrement: Self::Balance,
     ) -> DispatchResult;
 
-    /// Join whitelist for permissioned case: used to add accounts for token
-    fn join_whitelist(token_id: Self::TokenId, proof: Self::MerkleProof) -> DispatchResult;
-
     /// Allow creator to receive credit into his accounts
     fn claim_patronage_credit(token_id: Self::TokenId, to_account: AccountId) -> DispatchResult;
 }

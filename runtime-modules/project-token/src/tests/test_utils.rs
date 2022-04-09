@@ -2,7 +2,7 @@ use sp_arithmetic::traits::{One, Saturating, Zero};
 use sp_runtime::traits::Hash;
 
 use crate::tests::mock::*;
-use crate::types::{OfferingState, Output, Outputs, PatronageData, TransferPolicy};
+use crate::types::{OfferingState, Output, Outputs, PatronageData, TransferPolicy, MerkleProof, MerkleSide};
 use crate::GenesisConfig;
 
 pub struct TokenDataBuilder<Balance, Hash, BlockNumber> {
@@ -130,6 +130,12 @@ impl GenesisConfigBuilder {
             next_token_id: self.next_token_id,
             symbol_used: self.symbol_used,
         }
+    }
+}
+
+impl<Hasher: Hash> MerkleProof<Hasher> {
+    pub fn new(v: Vec<(Hasher::Output, MerkleSide)>) -> Self {
+        MerkleProof::<Hasher>(v)
     }
 }
 

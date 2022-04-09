@@ -111,6 +111,18 @@ decl_module! {
             ));
             Ok(())
         }
+
+        /// Join whitelist for permissioned case: used to add accounts for token
+        /// Preconditions:
+        /// - 'token_id' must be valid
+        /// - transfer policy is permissionless or transfer policy is permissioned and merkle proof is valid
+        ///
+        /// Postconditions:
+        /// - account added to the list
+        #[weight = 10_000_000] // TODO: adjust weights
+        fn join_whitelist(origin, token_id: T::TokenId, proof: MerkleProofOf<T>) -> DispatchResult {
+            todo!()
+        }
     }
 }
 
@@ -253,17 +265,6 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
 
         Self::do_deissue_token(token_id);
         Ok(())
-    }
-
-    /// Join whitelist for permissioned case: used to add accounts for token
-    /// Preconditions:
-    /// - 'token_id' must be valid
-    /// - transfer policy is permissionless or transfer policy is permissioned and merkle proof is valid
-    ///
-    /// Postconditions:
-    /// - account added to the list
-    fn join_whitelist(token_id: T::TokenId, proof: MerkleProofOf<T>) -> DispatchResult {
-        todo!()
     }
 }
 

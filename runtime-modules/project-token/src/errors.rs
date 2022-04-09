@@ -27,8 +27,8 @@ decl_error! {
         /// Existential deposit >= initial issuance
         ExistentialDepositExceedsInitialIssuance,
 
-        /// Location and current policy are not compatible
-        LocationIncompatibleWithCurrentPolicy,
+        /// Merkle proof verification failed
+        MerkleProofVerificationFailure,
 
         /// Source and Destination Location coincide
         SameSourceAndDestinationLocations,
@@ -38,5 +38,9 @@ decl_error! {
 
         /// Symbol already in use
         TokenSymbolAlreadyInUse,
+
+        /// Account Already exists
+        AccountAlreadyExists,
+
     }
 }

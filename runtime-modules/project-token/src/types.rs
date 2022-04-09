@@ -122,13 +122,9 @@ pub enum MerkleSide {
 
 /// Wrapper around a merkle proof path
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct MerkleProof<AccountId, Hasher: Hash> {
-    /// Proof path: [(hash, side)]
-    pub(crate) path: Vec<(Hasher::Output, MerkleSide)>,
-
-    /// Account for which membership is to be verified
-    pub(crate) account_id: AccountId,
-}
+pub struct MerkleProof<Hasher: Hash> (
+    pub Vec<(Hasher::Output, MerkleSide)>
+);
 
 /// Output for a transfer containing beneficiary + amount due
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -246,10 +242,10 @@ impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, H
     }
 }
 
-impl<AccountId: Encode, Hasher: Hash> MerkleProof<AccountId, Hasher> {
-    pub(crate) fn verify_for_commit(&self, commit: Hasher::Output) -> bool {
-        let init = Hasher::hash_of(&self.account_id);
-        let proof_result = self.path.iter().fold(init, |acc, (hash, side)| match side {
+impl<Hasher: Hash> MerkleProof<Hasher> {
+    pub(crate) fn verify_for_commit<AccountId: Encode>(&self, account_id: AccountId,  commit: Hasher::Output) -> bool {
+        let init = Hasher::hash_of(&account_id);
+        let proof_result = self.0.iter().fold(init, |acc, (hash, side)| match side {
             MerkleSide::Left => Hasher::hash_of(&(hash, acc)),
             MerkleSide::Right => Hasher::hash_of(&(acc, hash)),
         });
@@ -329,7 +325,7 @@ pub(crate) type DecOp<T> = DecreaseOp<<T as crate::Trait>::Balance>;
 
 /// Alias for the Merkle Proof type
 pub(crate) type MerkleProofOf<T> =
-    MerkleProof<<T as frame_system::Trait>::AccountId, <T as frame_system::Trait>::Hashing>;
+    MerkleProof<<T as frame_system::Trait>::Hashing>;
 
 /// Alias for the output type
 pub(crate) type OutputsOf<T> =

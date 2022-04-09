@@ -1,4 +1,4 @@
-use crate::types::Output;
+use crate::types::{Output, TransferPolicyOf};
 use frame_support::decl_event;
 
 decl_event! {
@@ -7,8 +7,9 @@ decl_event! {
         Balance = <T as crate::Trait>::Balance,
         TokenId = <T as crate::Trait>::TokenId,
         AccountId = <T as frame_system::Trait>::AccountId,
-    BlockNumber = <T as frame_system::Trait>::BlockNumber,
-    Output = Output<<T as frame_system::Trait>::AccountId, <T as crate::Trait>::Balance>,
+        BlockNumber = <T as frame_system::Trait>::BlockNumber,
+        Output = Output<<T as frame_system::Trait>::AccountId, <T as crate::Trait>::Balance>,
+        TransferPolicy = TransferPolicyOf<T>,
 
     {
         /// Token amount is deposited
@@ -59,5 +60,11 @@ decl_event! {
         /// - account
         PatronageCreditClaimedAtBlock(TokenId, Balance, AccountId, BlockNumber),
 
+        /// Member joined whitelist
+        /// Params:
+        /// - token identifier
+        /// - account that has just joined
+        /// - ongoing transfer policy
+        MemberJoinedWhitelist(TokenId, AccountId, TransferPolicy),
     }
 }
