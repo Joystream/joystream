@@ -73,8 +73,8 @@ type Channel @entity {
   "List of channel collaborators (members)"
   collaborators: [Membership!]
 
-  #"List of biggest video NFT owners."
-  #nftCollectors: [Membership!]!
+  "Owners of video NFTs belonging to this channel."
+  channelNftCollectors: [ChannelNftCollectors!]! @derivedFrom(field: "channel")
 }
 
 type VideoCategory @entity {

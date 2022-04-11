@@ -42,6 +42,9 @@ type CuratorGroup @entity {
 
   "Channels curated by this group"
   channels: [Channel!]! @derivedFrom(field: "ownerCuratorGroup")
+
+  "NFTs owned by this member in various channels."
+  nftCollectorInChannels: [ChannelNftCollectors!]! @derivedFrom(field: "curatorGroup")
 }
 
 type Curator @entity {
