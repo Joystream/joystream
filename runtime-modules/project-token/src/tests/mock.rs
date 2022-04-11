@@ -17,7 +17,7 @@ use sp_runtime::{DispatchError, DispatchResult, ModuleId};
 // crate import
 use crate::{
     types::{
-        InitialOfferingStateOf, MerkleSide, OfferingStateOf, OutputsOf,
+        InitialAllocationOf, MerkleSide, OfferingStateOf, OutputsOf,
         SingleDataObjectUploadParamsOf, TokenSaleOf, TokenSaleParamsOf, UploadContextOf,
         VestingScheduleParamsOf, WhitelistParamsOf,
     },
@@ -33,7 +33,7 @@ pub type TokenSaleParams = TokenSaleParamsOf<Test>;
 pub type TokenSale = TokenSaleOf<Test>;
 pub type IssuanceParams = TokenIssuanceParametersOf<Test>;
 pub type VestingScheduleParams = VestingScheduleParamsOf<Test>;
-pub type InitialIssuanceState = InitialOfferingStateOf<Test>;
+pub type InitialAllocation = InitialAllocationOf<Test>;
 pub type IssuanceState = OfferingStateOf<Test>;
 pub type TransferPolicy = TransferPolicyOf<Test>;
 pub type AccountData = AccountDataOf<Test>;
@@ -388,8 +388,8 @@ pub type Token = crate::Module<Test>;
 pub type System = frame_system::Module<Test>;
 
 pub const DEFAULT_EXISTENTIAL_DEPOSIT: u64 = 5;
-pub const DEFAULT_FREE_BALANCE: u64 = 10;
 pub const DEFAULT_ACCOUNT_ID: u64 = 1;
+pub const OTHER_ACCOUNT_ID: u64 = 2;
 pub const DEFAULT_INITIAL_ISSUANCE: u64 = 1_000_000;
 pub const DEFAULT_SALE_DURATION: u64 = 100;
 

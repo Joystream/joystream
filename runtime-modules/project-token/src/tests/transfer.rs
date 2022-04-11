@@ -250,7 +250,7 @@ fn permissionless_transfer_ok_with_ex_deposit_and_dust_removal_from_issuance() {
 
         assert_eq!(
             src_balance.saturating_sub(dust),
-            Token::token_info_by_id(token_id).current_total_issuance,
+            Token::token_info_by_id(token_id).total_supply,
         );
     })
 }
@@ -651,7 +651,7 @@ fn permissioned_transfer_ok_with_ex_deposit_and_decrease_in_issuance() {
         let _ = Token::transfer(origin!(src), token_id, outputs);
 
         assert_eq!(
-            Token::token_info_by_id(token_id).current_total_issuance,
+            Token::token_info_by_id(token_id).total_supply,
             src_balance - dust
         );
     })
@@ -882,7 +882,7 @@ fn permissioned_multi_out_ok_with_ex_deposit_and_source_removal_and_issuance_dec
         let _ = Token::transfer(origin!(src), token_id, outputs);
 
         assert_eq!(
-            Token::token_info_by_id(token_id).current_total_issuance,
+            Token::token_info_by_id(token_id).total_supply,
             src_balance - dust
         );
     })

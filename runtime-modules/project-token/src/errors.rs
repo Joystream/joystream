@@ -15,8 +15,8 @@ decl_error! {
         /// Free balance is insufficient for transferring specfied amount
         InsufficientFreeBalanceForTransfer,
 
-        /// Current total issuance cannot be decrease by specified amount
-        InsufficientIssuanceToDecreaseByAmount,
+        /// Token's total supply cannot be decreased by specified amount
+        InsufficientTotalSupplyToDecreaseByAmount,
 
         /// Requested token does not exist
         TokenDoesNotExist,
@@ -48,7 +48,10 @@ decl_error! {
         /// Specified sale starting block is in the past
         SaleStartingBlockInThePast,
 
-        /// Number of tokens available for sale exceeds number of tokens issued during issue_token
-        SaleUpperBoundQuantityExceedsInitialTokenSupply,
+        /// Token's current issuance state is not Idle
+        TokenIssuanceNotInIdleState,
+
+        // The token has no upcoming sale
+        NoUpcomingSale,
     }
 }

@@ -4,7 +4,8 @@ use crate::{traits::PalletToken, SymbolsUsed};
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::StorageMap;
 use sp_runtime::{traits::Hash, DispatchError, Permill};
-use storage::{BagId, StaticBagId};
+use sp_std::iter::FromIterator;
+use storage::{BagId, DataObjectCreationParameters, StaticBagId};
 
 use crate::tests::mock::*;
 
@@ -56,15 +57,23 @@ pub fn default_upload_context() -> UploadContext {
     }
 }
 
+pub fn default_single_data_object_upload_params() -> SingleDataObjectUploadParams {
+    SingleDataObjectUploadParams {
+        expected_data_size_fee: storage::Module::<Test>::data_object_per_mega_byte_fee(),
+        object_creation_params: DataObjectCreationParameters {
+            ipfs_content_id: Vec::from_iter(0..46),
+            size: 1_000_000,
+        },
+    }
+}
+
 pub struct IssueTokenFixture {
     params: IssuanceParams,
-    upload_context: UploadContext,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct IssueTokenFixtureStateSnapshot {
     next_token_id: u64,
-    next_data_object_id: u64,
 }
 
 impl IssueTokenFixture {
@@ -72,23 +81,15 @@ impl IssueTokenFixture {
         Self {
             params: IssuanceParams {
                 existential_deposit: DEFAULT_EXISTENTIAL_DEPOSIT,
-                initial_issuance: DEFAULT_INITIAL_ISSUANCE,
-                initial_state: InitialIssuanceState::Idle,
+                initial_allocation: InitialAllocation {
+                    address: DEFAULT_ACCOUNT_ID,
+                    amount: DEFAULT_INITIAL_ISSUANCE,
+                    vesting_schedule: None,
+                },
                 patronage_rate: 0,
                 symbol: Hashing::hash_of(b"ABC"),
                 transfer_policy: TransferPolicy::Permissionless,
             },
-            upload_context: default_upload_context(),
-        }
-    }
-
-    pub fn with_sale(self, sale_params: TokenSaleParams) -> Self {
-        Self {
-            params: IssuanceParams {
-                initial_state: InitialIssuanceState::Sale(sale_params),
-                ..self.params
-            },
-            ..self
         }
     }
 }
@@ -97,15 +98,11 @@ impl Fixture<IssueTokenFixtureStateSnapshot> for IssueTokenFixture {
     fn get_state_snapshot(&self) -> IssueTokenFixtureStateSnapshot {
         IssueTokenFixtureStateSnapshot {
             next_token_id: Token::next_token_id(),
-            next_data_object_id: storage::Module::<Test>::next_data_object_id(),
         }
     }
 
     fn execute_call(&self) -> DispatchResult {
-        <Token as PalletToken<AccountId, Policy, IssuanceParams, UploadContext>>::issue_token(
-            self.params.clone(),
-            self.upload_context.clone(),
-        )
+        Token::issue_token(self.params.clone())
     }
 
     fn on_success(
@@ -119,17 +116,207 @@ impl Fixture<IssueTokenFixtureStateSnapshot> for IssueTokenFixture {
             TokenData::try_from_params::<Test>(self.params.clone()).unwrap()
         );
         assert!(SymbolsUsed::<Test>::contains_key(self.params.symbol));
+    }
+}
 
-        // Whitelist payload
-        if let InitialIssuanceState::Sale(sale_params) = &self.params.initial_state {
-            sale_params.whitelist.as_ref().map(|params| {
-                params.payload.as_ref().map(|_| {
-                    assert_eq!(
-                        snapshot_post.next_data_object_id,
-                        snapshot_pre.next_data_object_id + 1
-                    );
-                })
-            });
+pub struct InitTokenSaleFixture {
+    token_id: TokenId,
+    source: AccountId,
+    params: TokenSaleParams,
+    payload_upload_context: UploadContext,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct InitTokenSaleFixtureStateSnapshot {
+    token_data: TokenData,
+    source_account_data: AccountData,
+    next_data_object_id: u64,
+}
+
+impl InitTokenSaleFixture {
+    pub fn default() -> Self {
+        Self {
+            token_id: 1,
+            params: default_token_sale_params(),
+            source: DEFAULT_ACCOUNT_ID,
+            payload_upload_context: default_upload_context(),
         }
+    }
+
+    pub fn with_start_block(self, bn: BlockNumber) -> Self {
+        Self {
+            params: TokenSaleParams {
+                starts_at: Some(bn),
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_upper_bound_quantity(self, quantity: Balance) -> Self {
+        Self {
+            params: TokenSaleParams {
+                upper_bound_quantity: quantity,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_source(self, source: AccountId) -> Self {
+        Self { source, ..self }
+    }
+
+    pub fn with_whitelist(self, whitelist: WhitelistParams) -> Self {
+        Self {
+            params: TokenSaleParams {
+                whitelist: Some(whitelist),
+                ..self.params
+            },
+            ..self
+        }
+    }
+}
+
+impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
+    fn get_state_snapshot(&self) -> InitTokenSaleFixtureStateSnapshot {
+        InitTokenSaleFixtureStateSnapshot {
+            token_data: Token::token_info_by_id(self.token_id),
+            next_data_object_id: storage::Module::<Test>::next_data_object_id(),
+            source_account_data: Token::account_info_by_token_and_account(
+                self.token_id,
+                self.source,
+            ),
+        }
+    }
+
+    fn execute_call(&self) -> DispatchResult {
+        Token::init_token_sale(
+            self.token_id,
+            self.source,
+            self.params.clone(),
+            self.payload_upload_context.clone(),
+        )
+    }
+
+    fn on_success(
+        &self,
+        snapshot_pre: &InitTokenSaleFixtureStateSnapshot,
+        snapshot_post: &InitTokenSaleFixtureStateSnapshot,
+    ) {
+        // Whitelist payload uploaded if present
+        self.params.whitelist.as_ref().map(|w| {
+            w.payload.as_ref().map(|_| {
+                assert_eq!(
+                    snapshot_post.next_data_object_id,
+                    snapshot_pre.next_data_object_id + 1
+                );
+            })
+        });
+
+        // Token's `last_sale` updated
+        assert_eq!(
+            snapshot_post.token_data.last_sale,
+            Some(TokenSale::try_from_params::<Test>(self.params.clone()).unwrap())
+        );
+
+        // Token state is valid
+        let sale = snapshot_post.token_data.last_sale.clone().unwrap();
+        assert_eq!(
+            IssuanceState::of::<Test>(&snapshot_post.token_data),
+            if let Some(start_block) = self.params.starts_at {
+                if System::block_number() < start_block {
+                    IssuanceState::UpcomingSale(sale)
+                } else {
+                    IssuanceState::Sale(sale)
+                }
+            } else {
+                IssuanceState::Sale(sale)
+            }
+        );
+
+        // Source balance reserved
+        assert_eq!(
+            snapshot_post.source_account_data.reserved_balance,
+            snapshot_pre
+                .source_account_data
+                .reserved_balance
+                .saturating_add(self.params.upper_bound_quantity)
+        );
+        assert_eq!(
+            snapshot_post.source_account_data.free_balance,
+            snapshot_pre
+                .source_account_data
+                .free_balance
+                .saturating_sub(self.params.upper_bound_quantity)
+        );
+    }
+}
+
+pub struct UpdateUpcomingSaleFixture {
+    token_id: TokenId,
+    new_duration: Option<BlockNumber>,
+    new_start_block: Option<BlockNumber>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct UpdateUpcomingSaleFixtureStateSnapshot {
+    token_data: TokenData,
+}
+
+impl UpdateUpcomingSaleFixture {
+    pub fn default() -> Self {
+        Self {
+            token_id: 1,
+            new_duration: Some(DEFAULT_SALE_DURATION * 2),
+            new_start_block: Some(200),
+        }
+    }
+
+    pub fn with_new_duration(self, new_duration: Option<BlockNumber>) -> Self {
+        Self {
+            new_duration,
+            ..self
+        }
+    }
+
+    pub fn with_new_start_block(self, new_start_block: Option<BlockNumber>) -> Self {
+        Self {
+            new_start_block,
+            ..self
+        }
+    }
+}
+
+impl Fixture<UpdateUpcomingSaleFixtureStateSnapshot> for UpdateUpcomingSaleFixture {
+    fn get_state_snapshot(&self) -> UpdateUpcomingSaleFixtureStateSnapshot {
+        UpdateUpcomingSaleFixtureStateSnapshot {
+            token_data: Token::token_info_by_id(self.token_id),
+        }
+    }
+
+    fn execute_call(&self) -> DispatchResult {
+        Token::update_upcoming_sale(
+            self.token_id,
+            self.new_start_block.clone(),
+            self.new_duration.clone(),
+        )
+    }
+
+    fn on_success(
+        &self,
+        snapshot_pre: &UpdateUpcomingSaleFixtureStateSnapshot,
+        snapshot_post: &UpdateUpcomingSaleFixtureStateSnapshot,
+    ) {
+        // Token's `last_sale` updated
+        let sale_pre = snapshot_pre.token_data.last_sale.clone().unwrap();
+        assert_eq!(
+            snapshot_post.token_data.last_sale.clone().unwrap(),
+            TokenSale {
+                duration: self.new_duration.unwrap_or(sale_pre.duration),
+                start_block: self.new_start_block.unwrap_or(sale_pre.start_block),
+                ..sale_pre
+            }
+        );
     }
 }

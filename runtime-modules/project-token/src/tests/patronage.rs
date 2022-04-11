@@ -1,7 +1,6 @@
 #[cfg(test)]
 use frame_support::{assert_noop, assert_ok};
 
-use crate::tests::fixtures::default_upload_context;
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
@@ -20,7 +19,7 @@ fn issue_token_ok_with_patronage_tally_count_zero() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(params, default_upload_context());
+        let _ = Token::issue_token(params);
 
         assert_eq!(
             Token::token_info_by_id(token_id).patronage_info.tally,
@@ -41,7 +40,7 @@ fn issue_token_ok_with_correct_credit_accounting() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(params, default_upload_context());
+        let _ = Token::issue_token(params);
         increase_block_number_by(blocks);
 
         assert_eq!(
@@ -152,9 +151,7 @@ fn decrease_patronage_ok_with_correct_final_rate() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams, UploadContext>>::reduce_patronage_rate_by(
-            token_id, decrement,
-        );
+        let _ = Token::reduce_patronage_rate_by(token_id, decrement);
 
         assert_eq!(
             rate.saturating_sub(decrement),
@@ -200,10 +197,7 @@ fn decreasing_patronage_rate_fails_with_decrease_amount_too_large() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams, UploadContext>>::reduce_patronage_rate_by(
-                token_id, decrease,
-            );
+        let result = Token::reduce_patronage_rate_by(token_id, decrease);
 
         assert_noop!(result, Error::<Test>::ReductionExceedingPatronageRate);
     })
@@ -216,10 +210,7 @@ fn decreasing_patronage_rate_fails_invalid_token() {
     let token_id = token!(1);
 
     build_test_externalities(config).execute_with(|| {
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams, UploadContext>>::reduce_patronage_rate_by(
-                token_id, decrease,
-            );
+        let result = Token::reduce_patronage_rate_by(token_id, decrease);
 
         assert_noop!(result, Error::<Test>::TokenDoesNotExist,);
     })
@@ -241,11 +232,7 @@ fn claim_patronage_ok() {
     build_test_externalities(config).execute_with(|| {
         increase_block_number_by(blocks);
 
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams, UploadContext>>::claim_patronage_credit(
-                token_id,
-                owner_account_id,
-            );
+        let result = Token::claim_patronage_credit(token_id, owner_account_id);
 
         assert_ok!(result);
     })
@@ -339,11 +326,7 @@ fn claim_patronage_credit_fails_with_invalid_token_id() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams, UploadContext>>::claim_patronage_credit(
-                token_id,
-                owner_account,
-            );
+        let result = Token::claim_patronage_credit(token_id, owner_account);
 
         assert_noop!(result, Error::<Test>::TokenDoesNotExist,);
     })
@@ -364,11 +347,7 @@ fn claim_patronage_credit_fails_with_invalid_owner_account_id() {
         .with_account(account_id, amount, 0)
         .build();
     build_test_externalities(config).execute_with(|| {
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams, UploadContext>>::claim_patronage_credit(
-                token_id,
-                owner_account_id,
-            );
+        let result = Token::claim_patronage_credit(token_id, owner_account_id);
 
         assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
     })

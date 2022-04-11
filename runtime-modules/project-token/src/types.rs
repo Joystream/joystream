@@ -38,8 +38,11 @@ pub struct AccountData<Balance> {
 /// Info for the token
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
 pub struct TokenData<Balance, Hash, BlockNumber, TokenSale> {
-    /// Current token issuance
-    pub(crate) current_total_issuance: Balance,
+    /// Current token's total supply (tokens_issued - tokens_burned)
+    pub(crate) total_supply: Balance,
+
+    /// Total number of tokens issued
+    pub(crate) tokens_issued: Balance,
 
     /// Existential deposit allowed for the token
     pub(crate) existential_deposit: Balance,
@@ -140,8 +143,8 @@ pub struct TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Ha
     pub upper_bound_quantity: Balance,
     /// Block at which the sale started / will start
     pub start_block: BlockNumber,
-    /// Block at which the sale will finish
-    pub end_block: BlockNumber,
+    /// Sale duration (in blocks)
+    pub duration: BlockNumber,
     /// Optional whitelist merkle root comittment
     pub whitelist_commitment: Option<Hash>,
     /// Optional vesting schedule for all tokens on sale
@@ -151,21 +154,6 @@ pub struct TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Ha
 impl<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Hash>
     TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Hash>
 {
-    fn try_extract_from_issuance_params<T: Trait>(
-        params: TokenIssuanceParametersOf<T>,
-    ) -> Result<Option<TokenSaleOf<T>>, DispatchError> {
-        if let InitialOfferingStateOf::<T>::Sale(sale_params) = params.initial_state {
-            ensure!(
-                sale_params.upper_bound_quantity <= params.initial_issuance,
-                Error::<T>::SaleUpperBoundQuantityExceedsInitialTokenSupply
-            );
-            let token_sale = Self::try_from_params::<T>(sale_params)?;
-            return Ok(Some(token_sale));
-        }
-
-        Ok(None)
-    }
-
     pub(crate) fn try_from_params<T: Trait>(
         params: TokenSaleParamsOf<T>,
     ) -> Result<TokenSaleOf<T>, DispatchError> {
@@ -179,7 +167,7 @@ impl<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Hash>
 
         Ok(TokenSale {
             start_block,
-            end_block: start_block.saturating_add(params.duration),
+            duration: params.duration,
             unit_price: params.unit_price,
             upper_bound_quantity: params.upper_bound_quantity,
             vesting_schedule: params.vesting_schedule,
@@ -188,19 +176,16 @@ impl<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Hash>
     }
 }
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum InitialOfferingState<TokenSaleParams> {
-    Idle,
-    Sale(TokenSaleParams),
-}
-
 /// The possible issuance variants: This is a stub
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum OfferingState<TokenSale> {
-    /// Initial idle state
+    /// Idle state
     Idle,
 
-    /// Initial state sale
+    /// Upcoming sale state
+    UpcomingSale(TokenSale),
+
+    /// Active sale state
     Sale(TokenSale),
 
     /// state for IBCO, it might get decorated with the JOY reserve
@@ -216,23 +201,47 @@ impl<TokenSale> OfferingState<TokenSale> {
             .as_ref()
             .map_or(OfferingStateOf::<T>::Idle, |sale| {
                 let current_block = <frame_system::Module<T>>::block_number();
-                if current_block >= sale.start_block && current_block < sale.end_block {
+                if current_block < sale.start_block {
+                    OfferingStateOf::<T>::UpcomingSale(sale.clone())
+                } else if current_block >= sale.start_block
+                    && current_block < sale.start_block.saturating_add(sale.duration)
+                {
                     OfferingStateOf::<T>::Sale(sale.clone())
                 } else {
                     OfferingStateOf::<T>::Idle
                 }
             })
     }
+
+    pub(crate) fn ensure_idle_of<T: crate::Trait>(token: &TokenDataOf<T>) -> DispatchResult {
+        match Self::of::<T>(&token) {
+            OfferingStateOf::<T>::Idle => Ok(()),
+            _ => Err(Error::<T>::TokenIssuanceNotInIdleState.into()),
+        }
+    }
+
+    pub(crate) fn ensure_upcoming_sale_of<T: crate::Trait>(
+        token: &TokenDataOf<T>,
+    ) -> Result<TokenSaleOf<T>, DispatchError> {
+        match Self::of::<T>(&token) {
+            OfferingStateOf::<T>::UpcomingSale(sale) => Ok(sale),
+            _ => Err(Error::<T>::NoUpcomingSale.into()),
+        }
+    }
+}
+
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+pub struct InitialAllocation<AddressId, Balance, VestingScheduleParams> {
+    pub(crate) address: AddressId,
+    pub(crate) amount: Balance,
+    pub(crate) vesting_schedule: Option<VestingScheduleParams>,
 }
 
 /// Builder for the token data struct
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
-pub struct TokenIssuanceParameters<Balance, Hash, InitialOfferingState> {
+pub struct TokenIssuanceParameters<Balance, Hash, InitialAllocation> {
     /// Initial issuance
-    pub(crate) initial_issuance: Balance,
-
-    /// Initial State builder: stub
-    pub(crate) initial_state: InitialOfferingState,
+    pub(crate) initial_allocation: InitialAllocation,
 
     /// Initial existential deposit
     pub(crate) existential_deposit: Balance,
@@ -291,10 +300,16 @@ impl<TokenSale> Default for OfferingState<TokenSale> {
     }
 }
 
-/// Default trait for InitialOfferingState
-impl<TokenSaleParams> Default for InitialOfferingState<TokenSaleParams> {
+/// Default trait for InitialAllocation
+impl<AddressId: Default, Balance: Zero, VestingScheduleParams> Default
+    for InitialAllocation<AddressId, Balance, VestingScheduleParams>
+{
     fn default() -> Self {
-        InitialOfferingState::Idle
+        InitialAllocation {
+            address: AddressId::default(),
+            amount: Balance::zero(),
+            vesting_schedule: None,
+        }
     }
 }
 
@@ -354,12 +369,13 @@ impl<Balance: Saturating + Copy, Hash, BlockNumber, OfferingState>
 {
     // increase total issuance
     pub(crate) fn increase_issuance_by(&mut self, amount: Balance) {
-        self.current_total_issuance = self.current_total_issuance.saturating_add(amount);
+        self.tokens_issued = self.tokens_issued.saturating_add(amount);
+        self.total_supply = self.total_supply.saturating_add(amount);
     }
 
     // decrease total issuance
-    pub(crate) fn decrease_issuance_by(&mut self, amount: Balance) {
-        self.current_total_issuance = self.current_total_issuance.saturating_sub(amount);
+    pub(crate) fn decrease_supply_by(&mut self, amount: Balance) {
+        self.total_supply = self.total_supply.saturating_sub(amount);
     }
 
     pub(crate) fn try_from_params<T: crate::Trait>(
@@ -367,15 +383,6 @@ impl<Balance: Saturating + Copy, Hash, BlockNumber, OfferingState>
     ) -> Result<TokenDataOf<T>, DispatchError> {
         let current_block = <frame_system::Module<T>>::block_number();
 
-        // Validation
-        if let InitialOfferingStateOf::<T>::Sale(sale_params) = &params.initial_state {
-            ensure!(
-                sale_params.upper_bound_quantity <= params.initial_issuance,
-                Error::<T>::SaleUpperBoundQuantityExceedsInitialTokenSupply
-            )
-        }
-
-        // Conversion
         let patronage_info =
             PatronageData::<<T as Trait>::Balance, <T as frame_system::Trait>::BlockNumber> {
                 last_tally_update_block: current_block,
@@ -383,11 +390,10 @@ impl<Balance: Saturating + Copy, Hash, BlockNumber, OfferingState>
                 rate: params.patronage_rate,
             };
 
-        let sale = TokenSaleOf::<T>::try_extract_from_issuance_params::<T>(params.clone())?;
-
         let token_data = TokenData {
-            current_total_issuance: params.initial_issuance,
-            last_sale: sale,
+            total_supply: params.initial_allocation.amount,
+            tokens_issued: params.initial_allocation.amount,
+            last_sale: None,
             existential_deposit: params.existential_deposit,
             transfer_policy: params.transfer_policy,
             patronage_info,
@@ -487,11 +493,18 @@ pub(crate) type TokenDataOf<T> = TokenData<
     TokenSaleOf<T>,
 >;
 
+/// Alias for InitialAllocation
+pub(crate) type InitialAllocationOf<T> = InitialAllocation<
+    <T as frame_system::Trait>::AccountId,
+    <T as crate::Trait>::Balance,
+    VestingScheduleParamsOf<T>,
+>;
+
 /// Alias for Token Issuance Parameters
 pub(crate) type TokenIssuanceParametersOf<T> = TokenIssuanceParameters<
     <T as crate::Trait>::Balance,
     <T as frame_system::Trait>::Hash,
-    InitialOfferingStateOf<T>,
+    InitialAllocationOf<T>,
 >;
 
 /// Alias for TransferPolicy
@@ -536,9 +549,6 @@ pub(crate) type TokenSaleOf<T> = TokenSale<
     VestingScheduleParamsOf<T>,
     <T as frame_system::Trait>::Hash,
 >;
-
-/// Alias for InitialOfferingState
-pub(crate) type InitialOfferingStateOf<T> = InitialOfferingState<TokenSaleParamsOf<T>>;
 
 /// Alias for OfferingState
 pub(crate) type OfferingStateOf<T> = OfferingState<TokenSaleOf<T>>;

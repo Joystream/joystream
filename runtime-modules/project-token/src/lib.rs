@@ -21,7 +21,7 @@ mod types;
 // crate imports
 use errors::Error;
 pub use events::{Event, RawEvent};
-use traits::{PalletToken};
+use traits::PalletToken;
 use types::*;
 
 /// Pallet Configuration Trait
@@ -146,8 +146,14 @@ decl_module! {
 }
 
 impl<T: Trait>
-    PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParametersOf<T>, UploadContextOf<T>>
-    for Module<T>
+    PalletToken<
+        T::AccountId,
+        TransferPolicyOf<T>,
+        TokenIssuanceParametersOf<T>,
+        UploadContextOf<T>,
+        T::BlockNumber,
+        TokenSaleParamsOf<T>,
+    > for Module<T>
 {
     type Balance = <T as Trait>::Balance;
 
@@ -250,10 +256,7 @@ impl<T: Trait>
     /// Postconditions:
     /// - token with specified characteristics is added to storage state
     /// - `NextTokenId` increased by 1
-    fn issue_token(
-        issuance_parameters: TokenIssuanceParametersOf<T>,
-        payload_upload_context: UploadContextOf<T>,
-    ) -> DispatchResult {
+    fn issue_token(issuance_parameters: TokenIssuanceParametersOf<T>) -> DispatchResult {
         // TODO: consider adding symbol as separate parameter
         let sym = issuance_parameters.symbol;
         ensure!(
@@ -263,25 +266,70 @@ impl<T: Trait>
 
         let token_data = TokenDataOf::<T>::try_from_params::<T>(issuance_parameters.clone())?;
 
-        if let InitialOfferingStateOf::<T>::Sale(sale_params) = &issuance_parameters.initial_state {
-            if let Some(Some(payload)) = sale_params.whitelist.as_ref().map(|p| p.payload.clone()) {
-                let upload_params = UploadParameters::<T> {
-                    bag_id: payload_upload_context.bag_id,
-                    deletion_prize_source_account_id: payload_upload_context.uploader_account,
-                    expected_data_size_fee: payload.expected_data_size_fee,
-                    object_creation_list: vec![payload.object_creation_params],
-                };
-                // Validation + first mutation (!)
-                storage::Module::<T>::upload_data_objects(upload_params)?;
-            }
-        }
-
         // == MUTATION SAFE ==
 
         let token_id = Self::next_token_id();
         TokenInfoById::<T>::insert(token_id, token_data);
         SymbolsUsed::<T>::insert(sym, ());
         NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
+        AccountInfoByTokenAndAccount::<T>::insert(
+            token_id,
+            &issuance_parameters.initial_allocation.address,
+            AccountDataOf::<T> {
+                free_balance: issuance_parameters.initial_allocation.amount,
+                reserved_balance: Self::Balance::zero(),
+            },
+        );
+
+        Ok(())
+    }
+
+    fn init_token_sale(
+        token_id: T::TokenId,
+        source: T::AccountId,
+        sale_params: TokenSaleParamsOf<T>,
+        payload_upload_context: UploadContextOf<T>,
+    ) -> DispatchResult {
+        let token_data = Self::ensure_token_exists(token_id)?;
+        let sale = TokenSaleOf::<T>::try_from_params::<T>(sale_params.clone())?;
+        // Validation + first mutation(!)
+        Self::try_init_sale(
+            token_id,
+            &token_data,
+            &source,
+            &sale_params,
+            payload_upload_context,
+        )?;
+        // == MUTATION SAFE ==
+        TokenInfoById::<T>::mutate(token_id, |t| t.last_sale = Some(sale));
+
+        Ok(())
+    }
+
+    /// Update upcoming token sale
+    /// Preconditions:
+    /// - token is in UpcomingSale state
+    ///
+    /// Postconditions:
+    /// - token's sale `duration` and `start_block` is updated according to provided parameters
+    fn update_upcoming_sale(
+        token_id: T::TokenId,
+        new_start_block: Option<T::BlockNumber>,
+        new_duration: Option<T::BlockNumber>,
+    ) -> DispatchResult {
+        let token_data = Self::ensure_token_exists(token_id)?;
+        let sale = OfferingStateOf::<T>::ensure_upcoming_sale_of::<T>(&token_data)?;
+        let updated_sale = TokenSaleOf::<T> {
+            start_block: new_start_block.unwrap_or(sale.start_block),
+            duration: new_duration.unwrap_or(sale.duration),
+            ..sale
+        };
+        ensure!(
+            updated_sale.start_block >= <frame_system::Module<T>>::block_number(),
+            Error::<T>::SaleStartingBlockInThePast
+        );
+        // == MUTATION SAFE ==
+        TokenInfoById::<T>::mutate(token_id, |t| t.last_sale = Some(updated_sale));
 
         Ok(())
     }
@@ -305,7 +353,43 @@ impl<T: Trait>
 
 /// Module implementation
 impl<T: Trait> Module<T> {
-    // Utility ensure checks
+    /// Ensure given account can reserve the specified amount of tokens.
+    /// (free_balance >= amount)
+    fn ensure_can_reserve(
+        account_data: &AccountDataOf<T>,
+        amount: <T as Trait>::Balance,
+    ) -> DispatchResult {
+        if amount.is_zero() {
+            return Ok(());
+        }
+
+        // ensure can freeze amount
+        ensure!(
+            account_data.free_balance >= amount,
+            Error::<T>::InsufficientFreeBalanceForReserving,
+        );
+
+        Ok(())
+    }
+
+    /// Reserve specified amount of tokens from the account.
+    /// Infallible!
+    ///
+    /// Postconditions:
+    /// - `who` free balance decreased by `amount`
+    /// - `who` reserved balance increased by `amount`
+    fn do_reserve(token_id: T::TokenId, who: &T::AccountId, amount: <T as Trait>::Balance) {
+        AccountInfoByTokenAndAccount::<T>::mutate(token_id, &who, |account_data| {
+            account_data.free_balance = account_data.free_balance.saturating_sub(amount);
+            account_data.reserved_balance = account_data.reserved_balance.saturating_add(amount);
+        });
+
+        Self::deposit_event(RawEvent::TokenAmountReservedFrom(
+            token_id,
+            who.clone(),
+            amount,
+        ));
+    }
 
     pub(crate) fn ensure_account_data_exists(
         token_id: T::TokenId,
@@ -391,7 +475,7 @@ impl<T: Trait> Module<T> {
             DecOp::<T>::Remove(_, dust_amount) => {
                 AccountInfoByTokenAndAccount::<T>::remove(token_id, &src);
                 TokenInfoById::<T>::mutate(token_id, |token_data| {
-                    token_data.decrease_issuance_by(dust_amount);
+                    token_data.decrease_supply_by(dust_amount);
                 });
             }
         };
@@ -399,5 +483,38 @@ impl<T: Trait> Module<T> {
 
     pub(crate) fn current_block() -> T::BlockNumber {
         <frame_system::Module<T>>::block_number()
+    }
+
+    #[inline]
+    pub(crate) fn try_init_sale(
+        token_id: T::TokenId,
+        token_data: &TokenDataOf<T>,
+        source: &T::AccountId,
+        sale_params: &TokenSaleParamsOf<T>,
+        payload_upload_context: UploadContextOf<T>,
+    ) -> DispatchResult {
+        // Ensure token offering state is Idle
+        OfferingStateOf::<T>::ensure_idle_of::<T>(token_data)?;
+
+        // Ensure sale upper_bound_quantity can be reserved from `source`
+        let account_data = Self::ensure_account_data_exists(token_id, &source)?;
+        Self::ensure_can_reserve(&account_data, sale_params.upper_bound_quantity)?;
+
+        // Optionally: Upload whitelist payload
+        if let Some(Some(payload)) = sale_params.whitelist.as_ref().map(|p| p.payload.clone()) {
+            let upload_params = UploadParameters::<T> {
+                bag_id: payload_upload_context.bag_id,
+                deletion_prize_source_account_id: payload_upload_context.uploader_account,
+                expected_data_size_fee: payload.expected_data_size_fee,
+                object_creation_list: vec![payload.object_creation_params],
+            };
+            // Validation + first mutation (!)
+            storage::Module::<T>::upload_data_objects(upload_params)?;
+        }
+
+        // == MUTATION SAFE ==
+        Self::do_reserve(token_id, source, sale_params.upper_bound_quantity);
+
+        Ok(())
     }
 }
