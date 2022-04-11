@@ -558,6 +558,13 @@ export async function convertTransactionalStatus(
     return auction
   }
 
+  if (transactionalStatus.isBuyNow) {
+    const status = new TransactionalStatusBuyNow()
+    status.price = new BN(transactionalStatus.asBuyNow.toString())
+
+    return status
+  }
+
   logger.error('Not implemented TransactionalStatus type', { contentActor: transactionalStatus.toString() })
   throw new Error('Not-implemented TransactionalStatus type used')
 }
