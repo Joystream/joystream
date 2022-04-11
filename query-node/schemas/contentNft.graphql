@@ -86,6 +86,8 @@ type OwnedNft
 
   "NFT creator's channel"
   creatorChannel: Channel!
+
+  bids: [Bid!]! @derivedFrom(field: "nft")
 }
 
 type TransactionalStatusUpdate @entity {
