@@ -32,6 +32,18 @@ export class StorageBucketsPerBagValueConstraint
   })
   implements IStorageBucketsPerBagValueConstraint {}
 
+export type IDistributionBucketsPerBagValueConstraint = {
+  min: u64
+  max_min_diff: u64
+}
+
+export class DistributionBucketsPerBagValueConstraint
+  extends JoyStructDecorated({
+    min: u64,
+    max_min_diff: u64,
+  })
+  implements IStorageBucketsPerBagValueConstraint {}
+
 export type IDataObject = {
   accepted: bool
   deletion_prize: BalanceOf
@@ -256,6 +268,7 @@ export class DynamicBagCreationPolicyDistributorFamiliesMap extends BTreeMap.wit
 export const storageTypes: RegistryTypes = {
   StorageBucketId,
   StorageBucketsPerBagValueConstraint,
+  DistributionBucketsPerBagValueConstraint,
   DataObjectId,
   DynamicBagId,
   Voucher,
