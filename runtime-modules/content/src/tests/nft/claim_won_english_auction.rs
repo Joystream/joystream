@@ -149,10 +149,8 @@ fn settle_english_auction_cannot_be_completed() {
         ));
 
         // Make an attempt to claim won english auction if it did not expire yet
-        let settle_english_auction_result = Content::settle_english_auction(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            video_id,
-        );
+        let settle_english_auction_result =
+            Content::settle_english_auction(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
 
         // Failure checked
         assert_err!(
@@ -171,10 +169,8 @@ fn settle_english_auction_video_does_not_exist() {
         let video_id = NextVideoId::<Test>::get();
 
         // Make an attempt to claim won english auction which corresponding video does not exist
-        let settle_english_auction_result = Content::settle_english_auction(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            video_id,
-        );
+        let settle_english_auction_result =
+            Content::settle_english_auction(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
 
         // Failure checked
         assert_err!(
@@ -197,10 +193,8 @@ fn settle_english_auction_nft_is_not_issued() {
         create_default_member_owned_channel_with_video();
 
         // Make an attempt to claim won english auction for nft which is not issued yet
-        let settle_english_auction_result = Content::settle_english_auction(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            video_id,
-        );
+        let settle_english_auction_result =
+            Content::settle_english_auction(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
 
         // Failure checked
         assert_err!(
@@ -231,10 +225,8 @@ fn settle_english_auction_not_in_auction_state() {
         ));
 
         // Make an attempt to claim won english auction for nft which is not in auction state
-        let settle_english_auction_result = Content::settle_english_auction(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            video_id,
-        );
+        let settle_english_auction_result =
+            Content::settle_english_auction(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
 
         // Failure checked
         assert_err!(
@@ -296,10 +288,8 @@ fn settle_english_auction_is_not_english_auction_type() {
         ));
 
         // Make an attempt to claim won english auction for nft which is not in english auction state
-        let settle_english_auction_result = Content::settle_english_auction(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            video_id,
-        );
+        let settle_english_auction_result =
+            Content::settle_english_auction(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
 
         // Failure checked
         assert_err!(
@@ -351,10 +341,8 @@ fn settle_english_auction_last_bid_does_not_exist() {
         run_to_block(Content::max_auction_duration() + 1);
 
         // Make an attempt to claim won english auction if last bid does not exist
-        let settle_english_auction_result = Content::settle_english_auction(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            video_id,
-        );
+        let settle_english_auction_result =
+            Content::settle_english_auction(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
 
         // Failure checked
         assert_err!(
@@ -431,10 +419,8 @@ fn settle_english_auction_ok_with_nft_claimed_by_non_winner() {
         run_to_block(Content::max_auction_duration() + 1);
 
         // Make an attempt to claim won english auction if last bid does not exist
-        let settle_english_auction_result = Content::settle_english_auction(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            video_id,
-        );
+        let settle_english_auction_result =
+            Content::settle_english_auction(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
 
         // Failure checked
         assert_ok!(settle_english_auction_result);

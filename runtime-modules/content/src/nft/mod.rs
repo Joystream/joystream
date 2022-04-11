@@ -5,16 +5,41 @@ pub use types::*;
 use crate::*;
 
 impl<T: Trait> Module<T> {
-    /// Ensure auction participant has sufficient balance to make bid
     pub(crate) fn ensure_has_sufficient_balance(
         participant: &T::AccountId,
         bid: CurrencyOf<T>,
+        old_bid: CurrencyOf<T>,
     ) -> DispatchResult {
         ensure!(
-            T::Currency::can_reserve(participant, bid),
+            Balances::<T>::usable_balance(participant) >= bid.saturating_sub(old_bid),
             Error::<T>::InsufficientBalance
         );
         Ok(())
+    }
+
+    /// Make bid transfer to the treasury account or get refunded if the old bid is greater than a new one.
+    pub(crate) fn make_bid_payment(
+        participant: &T::AccountId,
+        bid: CurrencyOf<T>,
+        old_bid: CurrencyOf<T>,
+    ) -> DispatchResult {
+        if bid >= old_bid {
+            // Deposit the difference to the module account.
+            let combined_bid = bid.saturating_sub(old_bid);
+            ContentTreasury::<T>::deposit(&participant, combined_bid)
+        } else {
+            // Withdraw the difference from the module account.
+            let combined_bid = old_bid.saturating_sub(bid);
+            ContentTreasury::<T>::withdraw(&participant, combined_bid)
+        }
+    }
+
+    /// Make bid transfer to the treasury account or get refunded if the old bid is greater than a new one.
+    pub(crate) fn withdraw_bid_payment(
+        participant: &T::AccountId,
+        bid: CurrencyOf<T>,
+    ) -> DispatchResult {
+        ContentTreasury::<T>::withdraw(&participant, bid)
     }
 
     /// Safety/bound checks for english auction parameters
