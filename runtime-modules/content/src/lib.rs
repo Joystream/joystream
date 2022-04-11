@@ -1666,14 +1666,6 @@ decl_module! {
                         buy_now_price,
                     );
 
-                    // remove eventual superseeded bid
-                    if maybe_old_bid.is_some() {
-                        OpenAuctionBidByVideoAndMember::<T>::remove(
-                            video_id,
-                            participant_id,
-                        )
-                    }
-
                     (
                         updated_nft,
                         RawEvent::BidMadeCompletingAuction(participant_id, video_id, None),
@@ -1743,10 +1735,10 @@ decl_module! {
             //
 
             // unreseve balance from previous bid
-            if let Some(ref bid) = eng_auction.top_bid {
-                if let Ok(old_bidder_account_id) = T::MemberAuthenticator::controller_account_id(prev_top_bidder) {
+            if let Some(bid) = eng_auction.top_bid.clone() {
+                if let Ok(ref old_bidder_account_id) = T::MemberAuthenticator::controller_account_id(bid.bidder_id) {
                     T::Currency::unreserve(
-                        &participant_account_id,
+                        old_bidder_account_id,
                         bid.amount
                     );
                 }
@@ -1767,11 +1759,10 @@ decl_module! {
                         buy_now_price,
                     );
 
-                    let prev_bidder = eng_auction.top_bid.map(|bid| bid.bidder_id);
 
                     (
                         updated_nft,
-                        RawEvent::BidMadeCompletingAuction(participant_id, video_id, prev_bidder),
+                        RawEvent::BidMadeCompletingAuction(participant_id, video_id, prev_top_bidder),
                     )
                 },
                 _ => {

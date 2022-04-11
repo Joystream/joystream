@@ -614,6 +614,78 @@ fn make_bid_fails_by_unreserving_prevous_funds() {
 }
 
 #[test]
+fn make_english_auction_bid_ok_with_previous_amount_unreserved_and_free_balance_restored() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        let video_id = Content::next_video_id();
+        let init_bid = Content::min_starting_price();
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, init_bid);
+
+        setup_english_auction_scenario();
+
+        let _ = Content::make_open_auction_bid(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            video_id,
+            init_bid,
+        );
+
+        let new_bid = init_bid.saturating_add(NEXT_BID_OFFSET);
+        increase_account_balance_helper(COLLABORATOR_MEMBER_ACCOUNT_ID, new_bid);
+
+        let _ = Content::make_open_auction_bid(
+            Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
+            COLLABORATOR_MEMBER_ID,
+            video_id,
+            new_bid,
+        );
+
+        assert_eq!(
+            Balances::<Test>::free_balance(SECOND_MEMBER_ACCOUNT_ID),
+            init_bid
+        );
+    })
+}
+
+#[test]
+fn make_english_auction_bid_ok_with_previous_amount_unreserved_and_reserved_balance_zero() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        let video_id = Content::next_video_id();
+        let init_bid = Content::min_starting_price();
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, init_bid);
+
+        setup_english_auction_scenario();
+
+        let _ = Content::make_open_auction_bid(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            video_id,
+            init_bid,
+        );
+
+        let new_bid = init_bid.saturating_add(NEXT_BID_OFFSET);
+        increase_account_balance_helper(COLLABORATOR_MEMBER_ACCOUNT_ID, new_bid);
+
+        let _ = Content::make_open_auction_bid(
+            Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
+            COLLABORATOR_MEMBER_ID,
+            video_id,
+            new_bid,
+        );
+
+        assert_eq!(
+            Balances::<Test>::reserved_balance(SECOND_MEMBER_ACCOUNT_ID),
+            0,
+        );
+    })
+}
+
+#[test]
 fn make_bid_succeeds_with_auction_completion_and_outstanding_bids() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
@@ -689,6 +761,30 @@ fn make_bid_ok_with_open_auction_completion_and_total_balance_slashed() {
         assert_eq!(
             Balances::<Test>::free_balance(&SECOND_MEMBER_ACCOUNT_ID),
             BIDDER_BALANCE - DEFAULT_BUY_NOW_PRICE,
+        );
+    })
+}
+
+#[test]
+fn make_bid_ok_with_open_auction_completion_and_no_reserve_balance_left_for_bidder() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        let video_id = Content::next_video_id();
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE);
+        setup_open_auction_scenario();
+
+        assert_ok!(Content::make_open_auction_bid(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            video_id,
+            DEFAULT_BUY_NOW_PRICE + 10,
+        ));
+
+        assert_eq!(
+            Balances::<Test>::reserved_balance(&SECOND_MEMBER_ACCOUNT_ID),
+            0,
         );
     })
 }
