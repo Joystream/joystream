@@ -236,6 +236,10 @@
         "min": "u64",
         "max_min_diff": "u64"
     },
+    "DistributionBucketsPerBagValueConstraint": {
+        "min": "u64",
+        "max_min_diff": "u64"
+    },
     "DataObjectId": "u64",
     "DynamicBagId": {
         "_enum": {
@@ -678,7 +682,6 @@
         "owner": "ChannelOwner",
         "num_videos": "u64",
         "collaborators": "BTreeSet<MemberId>",
-        "moderators": "BTreeSet<MemberId>",
         "cumulative_payout_earned": "u128",
         "privilege_level": "ChannelPrivilegeLevel",
         "paused_features": "BTreeSet<PausableChannelFeature>",
@@ -703,7 +706,8 @@
         "assets": "Option<StorageAssets>",
         "meta": "Option<Bytes>",
         "collaborators": "BTreeSet<MemberId>",
-        "moderators": "BTreeSet<MemberId>",
+        "storage_buckets": "BTreeSet<u64>",
+        "distribution_Bucket": "BTreeSet<u64>",
         "expected_dynamic_bag_deletion_prize": "u128",
         "expected_data_object_deletion_prize": "u128"
     },
@@ -716,8 +720,6 @@
     },
     "Video": {
         "in_channel": "ChannelId",
-        "enable_comments": "bool",
-        "video_post_id": "Option<VideoPostId>",
         "nft_status": "Option<OwnedNft>",
         "data_objects": "BTreeSet<DataObjectId>"
     },
@@ -733,7 +735,6 @@
     "VideoCreationParameters": {
         "assets": "Option<StorageAssets>",
         "meta": "Option<Bytes>",
-        "enable_comments": "bool",
         "auto_issue_nft": "Option<NftIssuanceParameters>",
         "expected_data_object_deletion_prize": "u128"
     },
@@ -741,27 +742,11 @@
         "assets_to_upload": "Option<StorageAssets>",
         "new_meta": "Option<Bytes>",
         "assets_to_remove": "BTreeSet<DataObjectId>",
-        "enable_comments": "Option<bool>",
         "auto_issue_nft": "Option<NftIssuanceParameters>",
         "expected_data_object_deletion_prize": "u128"
     },
     "MaxNumber": "u32",
     "IsCensored": "bool",
-    "VideoPostId": "u64",
-    "ReactionId": "u64",
-    "VideoPostType": {
-        "_enum": {
-            "Description": "Null",
-            "Comment": "VideoPostId"
-        }
-    },
-    "VideoPost": {
-        "author": "ContentActor",
-        "bloat_bond": "u128",
-        "replies_count": "VideoPostId",
-        "post_type": "VideoPostType",
-        "video_reference": "VideoId"
-    },
     "Side": {
         "_enum": [
             "Left",
@@ -772,20 +757,11 @@
         "hash": "Hash",
         "side": "Side"
     },
-    "VideoPostCreationParameters": {
-        "post_type": "VideoPostType",
-        "video_reference": "VideoId"
-    },
-    "VideoPostDeletionParameters": {
-        "witness": "Option<Hash>",
-        "rationale": "Option<Bytes>"
-    },
     "PullPayment": {
         "channel_id": "ChannelId",
         "cumulative_payout_claimed": "u128",
         "reason": "Hash"
     },
-    "ModeratorSet": "BTreeSet<MemberId>",
     "Royalty": "Perbill",
     "EnglishAuctionParams": {
         "starting_price": "u128",
@@ -805,18 +781,19 @@
     "EnglishAuction": {
         "starting_price": "u128",
         "buy_now_price": "Option<u128>",
-        "top_bid": "Option<EnglishAuctionBid>",
         "whitelist": "BTreeSet<MemberId>",
-        "extension_period": "u32",
+        "end": "u32",
         "auction_duration": "u32",
+        "extension_period": "u32",
         "min_bid_step": "u128",
-        "end": "u32"
+        "top_bid": "Option<EnglishAuctionBid>"
     },
     "OpenAuction": {
         "starting_price": "u128",
         "buy_now_price": "Option<u128>",
         "whitelist": "BTreeSet<MemberId>",
-        "bid_lock_duration": "u32"
+        "bid_lock_duration": "u32",
+        "auction_id": "OpenAuctionId"
     },
     "OpenAuctionBid": {
         "amount": "u128",
