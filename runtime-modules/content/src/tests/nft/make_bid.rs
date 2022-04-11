@@ -139,6 +139,9 @@ fn make_bid() {
 
         let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
+        let module_account_id = ContentTreasury::<Test>::module_account_id();
+        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), 0);
+
         // Make nft auction bid
         assert_ok!(Content::make_open_auction_bid(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
@@ -146,6 +149,9 @@ fn make_bid() {
             video_id,
             bid,
         ));
+
+        // Module account contains a bid.
+        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), bid);
 
         // Ensure nft status changed to given Auction
         let nft = Content::ensure_nft_exists(video_id).unwrap();
@@ -583,7 +589,7 @@ fn make_bid_succeeds_with_higher_offer_and_locking_period_not_expired() {
 }
 
 #[test]
-fn make_bid_fails_by_unreserving_prevous_funds() {
+fn make_bid_fails_by_insufficient_funds_for_the_next_bid() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
@@ -594,12 +600,7 @@ fn make_bid_fails_by_unreserving_prevous_funds() {
 
         setup_open_auction_scenario_with_bid(init_bid);
 
-        let new_bid = init_bid.saturating_add(NEXT_BID_OFFSET);
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, NEXT_BID_OFFSET);
-        assert_eq!(
-            Balances::<Test>::total_balance(&SECOND_MEMBER_ACCOUNT_ID),
-            new_bid
-        );
+        let new_bid = init_bid + NEXT_BID_OFFSET;
 
         assert_err!(
             Content::make_open_auction_bid(
@@ -807,7 +808,7 @@ fn make_bid_ok_with_english_auction_completion_and_total_balance_slashed() {
         ));
 
         assert_eq!(
-            Balances::<Test>::free_balance(&SECOND_MEMBER_ACCOUNT_ID),
+            Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID),
             BIDDER_BALANCE - DEFAULT_BUY_NOW_PRICE,
         );
     })

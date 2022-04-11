@@ -52,6 +52,9 @@ fn settle_english_auction() {
 
         let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
+        let module_account_id = ContentTreasury::<Test>::module_account_id();
+        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), 0);
+
         // Make nft auction bid
         assert_ok!(Content::make_english_auction_bid(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
@@ -59,6 +62,9 @@ fn settle_english_auction() {
             video_id,
             bid,
         ));
+
+        // Module account contains a bid.
+        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), bid);
 
         // Runtime tested state before call
 
@@ -73,6 +79,9 @@ fn settle_english_auction() {
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
         ));
+
+        // Module account is empty.
+        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), 0);
 
         // Runtime tested state after call
 

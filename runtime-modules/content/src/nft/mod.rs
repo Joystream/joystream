@@ -1,5 +1,4 @@
 mod types;
-use frame_support::traits::ReservableCurrency;
 use sp_std::borrow::ToOwned;
 pub use types::*;
 
@@ -346,7 +345,8 @@ impl<T: Trait> Module<T> {
 
         // Slash amount from sender
         if is_auction {
-            let _ = Balances::<T>::slash_reserved(&sender_account_id, amount);
+            let module_account_id = ContentTreasury::<T>::module_account_id();
+            let _ = Balances::<T>::slash(&module_account_id, amount);
         } else {
             let _ = Balances::<T>::slash(&sender_account_id, amount);
         }

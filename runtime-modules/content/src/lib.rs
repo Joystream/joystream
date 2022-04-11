@@ -1645,11 +1645,11 @@ decl_module! {
             // == MUTATION_SAFE ==
             //
 
-            // Make a new bid considering the old one (if any).
-            Self::make_bid_payment(&participant_account_id, bid_amount, old_bid_value)?;
-
             let (nft, event) = match open_auction.buy_now_price {
                 Some(buy_now_price) if bid_amount >= buy_now_price => {
+                    // Make a new bid considering the old one (if any) and the "buy-now-price".
+                    Self::make_bid_payment(&participant_account_id, buy_now_price, old_bid_value)?;
+
                     // complete auction @ buy_now_price
                     let updated_nft = Self::complete_auction(
                         nft,
@@ -1665,6 +1665,9 @@ decl_module! {
                     )
                 },
                 _ =>  {
+                    // Make a new bid considering the old one (if any).
+                    Self::make_bid_payment(&participant_account_id, bid_amount, old_bid_value)?;
+
                     OpenAuctionBidByVideoAndMember::<T>::insert(
                         video_id,
                         participant_id,
@@ -1731,11 +1734,11 @@ decl_module! {
             // == MUTATION_SAFE ==
             //
 
-            // Make a new bid considering the old one (if any).
-            Self::make_bid_payment(&participant_account_id, bid_amount, old_bid_value)?;
-
             let (updated_nft, event) = match eng_auction.buy_now_price {
                 Some(buy_now_price) if bid_amount >= buy_now_price => {
+                    // Make a new bid considering the old one (if any) and the "buy-now-price".
+                    Self::make_bid_payment(&participant_account_id, buy_now_price, old_bid_value)?;
+
                     // complete auction @ buy_now_price
                     let updated_nft = Self::complete_auction(
                         nft,
@@ -1752,6 +1755,10 @@ decl_module! {
                     )
                 },
                 _ => {
+
+                    // Make a new bid considering the old one (if any).
+                    Self::make_bid_payment(&participant_account_id, bid_amount, old_bid_value)?;
+
                     // update nft auction state
                     let updated_auction = eng_auction.with_bid(bid_amount, participant_id, current_block);
 
