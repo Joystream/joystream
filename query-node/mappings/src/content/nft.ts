@@ -258,11 +258,16 @@ async function setNewNftTransactionalStatus(
     transactionalStatus = transactionalStatusOrTransactionalStatusAuction
   }
 
-  // update transactionalStatus
-  nft.transactionalStatus = transactionalStatus
+  // FIXME: https://github.com/Joystream/hydra/issues/435
 
+  // update transactionalStatus
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  nft.transactionalStatus = transactionalStatus || null
   // update transactionStatusAuction
-  nft.transactionalStatusAuction = transactionalStatusAuction
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  nft.transactionalStatusAuction = transactionalStatusAuction || null
 
   await getAllManagers(store).videoNfts.onMainEntityUpdate(nft)
 
@@ -563,6 +568,13 @@ export async function convertTransactionalStatus(
     const auction = await createAuction(store, nft, auctionParams, auctionStart)
 
     return auction
+  }
+
+  if (transactionalStatus.isBuyNow) {
+    const status = new TransactionalStatusBuyNow()
+    status.price = new BN(transactionalStatus.asBuyNow.toString())
+
+    return status
   }
 
   logger.error('Not implemented TransactionalStatus type', { contentActor: transactionalStatus.toString() })

@@ -1,6 +1,5 @@
 import { Api } from '../../../Api'
 import { BaseQueryNodeFixture, FixtureRunner } from '../../../Fixture'
-import { JoystreamCLI } from '../../../cli/joystream'
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { IMember } from '../createMembers'
 import { PlaceBidsInAuctionFixture } from './placeBidsInAuction'
@@ -8,21 +7,12 @@ import BN from 'bn.js'
 import { assertNftOwner } from './utils'
 
 export class NftBuyNowFixture extends BaseQueryNodeFixture {
-  private cli: JoystreamCLI
   private videoId: number
   private author: IMember
   private participant: IMember
 
-  constructor(
-    api: Api,
-    query: QueryNodeApi,
-    cli: JoystreamCLI,
-    videoId: number,
-    author: IMember,
-    participant: IMember
-  ) {
+  constructor(api: Api, query: QueryNodeApi, videoId: number, author: IMember, participant: IMember) {
     super(api, query)
-    this.cli = cli
     this.videoId = videoId
     this.author = author
     this.participant = participant

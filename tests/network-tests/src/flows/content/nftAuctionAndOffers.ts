@@ -12,6 +12,7 @@ import {
   NftOpenAuctionFixture,
   AuctionCancelationsFixture,
   NftCreateVideoWithAuctionFixture,
+  NftCreateVideoWithBuyNowFixture,
   UpdateVideoForNftCreationFixture,
   NftCollectorsFixture,
   IMember,
@@ -77,7 +78,6 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
   const englishAuctionFixture = new NftEnglishAuctionFixture(
     api,
     query,
-    joystreamCli,
     nextVideo().videoId,
     author as IMember,
     auctionParticipants
@@ -85,21 +85,13 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
 
   await new FixtureRunner(englishAuctionFixture).run()
 
-  const openAuctionFixture = new NftOpenAuctionFixture(
-    api,
-    query,
-    joystreamCli,
-    nextVideo().videoId,
-    author,
-    auctionParticipants
-  )
+  const openAuctionFixture = new NftOpenAuctionFixture(api, query, nextVideo().videoId, author, auctionParticipants)
 
   await new FixtureRunner(openAuctionFixture).run()
 
   const nftBuyNowFixture = new NftBuyNowFixture(
     api,
     query,
-    joystreamCli,
     nextVideo().videoId,
     author as IMember,
     auctionParticipants[0]
@@ -110,7 +102,6 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
   const nftDirectOfferFixture = new NftDirectOfferFixture(
     api,
     query,
-    joystreamCli,
     nextVideo().videoId,
     author as IMember,
     auctionParticipants[0]
@@ -121,7 +112,6 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
   const auctionCancelationsFicture = new AuctionCancelationsFixture(
     api,
     query,
-    joystreamCli,
     nextVideo().videoId,
     author as IMember,
     auctionParticipants[0]
@@ -132,28 +122,31 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
   const createVideoWithAuctionFixture = new NftCreateVideoWithAuctionFixture(
     api,
     query,
-    joystreamCli,
     author as IMember,
     channelIds[0]
   )
 
   await new FixtureRunner(createVideoWithAuctionFixture).run()
 
-  const updateVideoForNftCreationFixture = new UpdateVideoForNftCreationFixture(
+  const createVideoWithBuyNowFixture = new NftCreateVideoWithBuyNowFixture(api, query, author as IMember, channelIds[0])
+
+  await new FixtureRunner(createVideoWithBuyNowFixture).run()
+
+  const updateVideoWithAuctionFixture = new UpdateVideoForNftCreationFixture(
     api,
     query,
     author as IMember,
     nextVideo().videoId
   )
 
-  await new FixtureRunner(updateVideoForNftCreationFixture).run()
+  await new FixtureRunner(updateVideoWithAuctionFixture).run()
 
   // content of this table depends on effects of previously run fixtures
   // keep it updated when changing this flow
   const nftCollectors = {
     [channelIds[0].toString()]: {
-      // 3 == num of videos not transfered from original owner + 1 created in createVideoWithAuctionFixture
-      [author.memberId.toString()]: 3,
+      // 4 == num of videos not transfered from original owner + 1 created in createVideoWithAuctionFixture
+      [author.memberId.toString()]: 4,
 
       // 2 == target of direct offer + buy now winner
       [auctionParticipants[0].memberId.toString()]: 2,
