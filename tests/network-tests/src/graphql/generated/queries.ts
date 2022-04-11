@@ -150,19 +150,19 @@ export type GetNftIssuedEventsByEventIdsQueryVariables = Types.Exact<{
 
 export type GetNftIssuedEventsByEventIdsQuery = { nftIssuedEvents: Array<NftIssuedEventFieldsFragment> }
 
-export type EnglishAuctionCompletedEventFieldsFragment = {
+export type EnglishAuctionSettledEventFieldsFragment = {
   winner: { id: string }
   video: { id: string }
   ownerMember?: Types.Maybe<{ id: string }>
   ownerCuratorGroup?: Types.Maybe<{ id: string }>
 }
 
-export type GetEnglishAuctionCompletedEventsByEventIdsQueryVariables = Types.Exact<{
+export type GetEnglishAuctionSettledEventsByEventIdsQueryVariables = Types.Exact<{
   eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetEnglishAuctionCompletedEventsByEventIdsQuery = {
-  englishAuctionCompletedEvents: Array<EnglishAuctionCompletedEventFieldsFragment>
+export type GetEnglishAuctionSettledEventsByEventIdsQuery = {
+  englishAuctionSettledEvents: Array<EnglishAuctionSettledEventFieldsFragment>
 }
 
 export type CouncilMemberFieldsFragment = { id: string; member: { id: string } }
@@ -2255,8 +2255,8 @@ export const NftIssuedEventFields = gql`
     }
   }
 `
-export const EnglishAuctionCompletedEventFields = gql`
-  fragment EnglishAuctionCompletedEventFields on EnglishAuctionCompletedEvent {
+export const EnglishAuctionSettledEventFields = gql`
+  fragment EnglishAuctionSettledEventFields on EnglishAuctionSettledEvent {
     winner {
       id
     }
@@ -4090,13 +4090,13 @@ export const GetNftIssuedEventsByEventIds = gql`
   }
   ${NftIssuedEventFields}
 `
-export const GetEnglishAuctionCompletedEventsByEventIds = gql`
-  query getEnglishAuctionCompletedEventsByEventIds($eventIds: [ID!]) {
-    englishAuctionCompletedEvents(where: { id_in: $eventIds }) {
-      ...EnglishAuctionCompletedEventFields
+export const GetEnglishAuctionSettledEventsByEventIds = gql`
+  query getEnglishAuctionSettledEventsByEventIds($eventIds: [ID!]) {
+    englishAuctionSettledEvents(where: { id_in: $eventIds }) {
+      ...EnglishAuctionSettledEventFields
     }
   }
-  ${EnglishAuctionCompletedEventFields}
+  ${EnglishAuctionSettledEventFields}
 `
 export const GetCurrentCouncilMembers = gql`
   query getCurrentCouncilMembers {

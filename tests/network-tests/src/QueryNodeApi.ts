@@ -323,9 +323,11 @@ import {
   NftIssuedEventFieldsFragment,
   GetNftIssuedEventsByEventIdsQuery,
   GetNftIssuedEventsByEventIdsQueryVariables,
-  EnglishAuctionCompletedEventFieldsFragment,
-  GetEnglishAuctionCompletedEventsByEventIdsQuery,
-  GetEnglishAuctionCompletedEventsByEventIds,
+  EnglishAuctionSettledEventFieldsFragment,
+  EnglishAuctionSettledEventFields,
+  GetEnglishAuctionSettledEventsByEventIdsQuery,
+  GetEnglishAuctionSettledEventsByEventIdsQueryVariables,
+  GetEnglishAuctionSettledEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1164,13 +1166,13 @@ export class QueryNodeApi {
     )
   }
 
-  public async getEnglishAuctionCompletedEvents(
+  public async getEnglishAuctionSettledEvents(
     events: EventDetails[]
-  ): Promise<EnglishAuctionCompletedEventFieldsFragment[]> {
+  ): Promise<EnglishAuctionSettledEventFieldsFragment[]> {
     const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
     return this.multipleEntitiesQuery<
-      GetEnglishAuctionCompletedEventsByEventIdsQuery,
-      GetEnglishAuctionStartedEventsByEventIdsQueryVariables
-    >(GetEnglishAuctionCompletedEventsByEventIds, { eventIds }, 'englishAuctionCompletedEvents')
+      GetEnglishAuctionSettledEventsByEventIdsQuery,
+      GetEnglishAuctionSettledEventsByEventIdsQueryVariables
+    >(GetEnglishAuctionSettledEventsByEventIds, { eventIds }, 'englishAuctionSettledEvents')
   }
 }

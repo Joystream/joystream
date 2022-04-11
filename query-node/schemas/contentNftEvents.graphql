@@ -215,7 +215,7 @@ type AuctionCanceledEvent implements Event @entity {
   ownerCuratorGroup: CuratorGroup
 }
 
-type EnglishAuctionCompletedEvent implements Event @entity {
+type EnglishAuctionSettledEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}."
