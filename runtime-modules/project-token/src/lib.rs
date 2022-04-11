@@ -6,6 +6,7 @@ use frame_support::{
     ensure,
 };
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
+use sp_runtime::Permill;
 
 // crate modules
 mod errors;
@@ -18,11 +19,10 @@ mod types;
 use errors::Error;
 pub use events::{Event, RawEvent};
 use traits::{
-    ControlledTransfer, MultiCurrencyBase, ReservableMultiCurrency, TransferLocationTrait,
+    ControlledTransfer, MultiCurrencyBase, PatronageTrait, ReservableMultiCurrency,
+    TransferLocationTrait,
 };
-use types::{
-    AccountDataOf, DecOp, SimpleLocation, TokenDataOf, TokenIssuanceParametersOf, TransferPolicyOf,
-};
+use types::{AccountDataOf, DecOp, TokenDataOf, TokenIssuanceParametersOf, TransferPolicyOf};
 
 /// Pallet Configuration Trait
 pub trait Trait: frame_system::Trait {
@@ -95,6 +95,8 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId, TokenIssuanceParametersOf<T>> for
         // == MUTATION SAFE ==
 
         // increase token issuance
+        Self::do_mint(token_id, amount);
+
         TokenInfoById::<T>::mutate(token_id, |token_data| {
             token_data.current_total_issuance =
                 token_data.current_total_issuance.saturating_add(amount)
@@ -147,10 +149,7 @@ impl<T: Trait> MultiCurrencyBase<T::AccountId, TokenIssuanceParametersOf<T>> for
         // == MUTATION SAFE ==
 
         // increase token issuance
-        TokenInfoById::<T>::mutate(token_id, |token_data| {
-            token_data.current_total_issuance =
-                token_data.current_total_issuance.saturating_add(amount)
-        });
+        Self::do_mint(token_id, amount);
 
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, &who, |account_data| {
             account_data.free_balance = account_data.free_balance.saturating_add(amount)
@@ -499,6 +498,39 @@ impl<T: Trait> ControlledTransfer<T::AccountId, TransferPolicyOf<T>, TokenIssuan
     }
 }
 
+impl<T: Trait> PatronageTrait<T::AccountId, TokenIssuanceParametersOf<T>> for Module<T> {
+    type MultiCurrency = Self;
+
+    fn reduce_patronage_rate_by(token_id: T::TokenId, decrement: Permill) -> DispatchResult {
+        TokenInfoById::<T>::try_mutate(token_id, |token_info| {
+            // ensure new rate is >= 0
+            ensure!(
+                token_info.patronage_info.rate >= decrement,
+                Error::<T>::ReductionExceedingPatronageRate,
+            );
+
+            token_info.patronage_info.rate =
+                token_info.patronage_info.rate.saturating_sub(decrement);
+
+            Ok(())
+        })
+    }
+
+    fn get_patronage_credit(token_id: T::TokenId) -> Result<T::Balance, DispatchError> {
+        Self::ensure_token_exists(token_id)
+            .map(|token_info| token_info.patronage_info.outstanding_credit)
+    }
+
+    fn claim_patronage_credit(token_id: T::TokenId) -> Result<T::Balance, DispatchError> {
+        TokenInfoById::<T>::try_mutate(token_id, |token_info| {
+            let credit = token_info.patronage_info.outstanding_credit;
+            token_info.patronage_info.outstanding_credit = T::Balance::zero();
+
+            Ok(credit)
+        })
+    }
+}
+
 /// Module implementation
 impl<T: Trait> Module<T> {
     // Utility ensure checks
@@ -607,5 +639,24 @@ impl<T: Trait> Module<T> {
                 });
             }
         };
+    }
+
+    #[inline]
+    pub(crate) fn do_mint(token_id: T::TokenId, amount: T::Balance) {
+        TokenInfoById::<T>::mutate(token_id, |token_data| {
+            token_data.current_total_issuance =
+                token_data.current_total_issuance.saturating_add(amount);
+
+            // increase patronage credit due to increase in amount
+            let credit_increase = token_data
+                .patronage_info
+                .rate
+                .saturating_reciprocal_mul_floor(amount);
+
+            token_data.patronage_info.outstanding_credit = token_data
+                .patronage_info
+                .outstanding_credit
+                .saturating_add(credit_increase);
+        });
     }
 }

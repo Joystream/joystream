@@ -58,17 +58,8 @@ decl_error! {
         /// Vfdeo in season can`t be removed (because order is important)
         VideoInSeason,
 
-        /// Curators can only censor non-curator group owned channels
-        CannotCensoreCuratorGroupOwnedChannels,
-
         /// Actor cannot authorize as lead for given extrinsic
         ActorCannotBeLead,
-
-        /// Channel censorship status did not change
-        ChannelCensorshipStatusDidNotChange,
-
-        /// Video censorship status did not change
-        VideoCensorshipStatusDidNotChange,
 
         /// Actor cannot Own channel
         ActorCannotOwnChannel,
@@ -166,9 +157,6 @@ decl_error! {
         /// Auction starts at upper bound exceeded
         StartsAtUpperBoundExceeded,
 
-        /// Auction did not started
-        AuctionDidNotStart,
-
         /// Nft is not in auction state
         NotInAuctionState,
 
@@ -265,22 +253,45 @@ decl_error! {
         /// Payment Proof verification failed
         PaymentProofVerificationFailed,
 
-        /// Channel cashout amount is too high to be claimed
-        CashoutAmountExceedsMaximumAmount,
+        /// Total reward too high
+        TotalRewardLimitExceeded,
 
-        /// Channel cashout amount is too low to be claimed
-        CashoutAmountBelowMinimumAmount,
+        /// Cashout amount too small
+        UnsufficientCashoutAmount,
 
-        /// An attempt to withdraw funds from channel account failed, because the specified amount exceeds the account's balance
-        WithdrawFromChannelAmountExceedsBalance,
+        /// Reward account is none
+        RewardAccountNotFoundInChannel,
 
-        /// Channel cashouts are currently disabled
-        ChannelCashoutsDisabled,
+        /// Curator does not have permissions to perform given moderation action
+        CuratorModerationActionNotAllowed,
 
-        /// New values for min_cashout_allowed/max_cashout_allowed are invalid: min_cashout_allowed cannot exceed max_cashout_allowed
-        MinCashoutAllowedExceedsMaxCashoutAllowed,
+        /// Curator group's permissions by level map exceeded the maximum allowed size
+        CuratorGroupMaxPermissionsByLevelMapSizeExceeded,
 
-        // Insufficient council budget to cover channel reward claim
-        InsufficientCouncilBudget,
+        /// Operation cannot be executed, because this channel feature has been paused by a curator
+        ChannelFeaturePaused,
+
+        /// Unexpected runtime state: missing channel bag during delete_channel attempt
+        ChannelBagMissing,
+
+        /// List of assets to remove provided for update_channel / update_video contains assets that don't belong to the specified entity
+        AssetsToRemoveBeyondEntityAssetsSet,
+
+        /// Invalid number of objects to delete provided for delete_video
+        InvalidVideoDataObjectsCountProvided,
+
+        /// Invalid channel transfer status for operations.
+        InvalidChannelTransferStatus,
+
+        /// Incorrect actor tries to accept the channel transfer.
+        InvalidChannelTransferAcceptor,
+
+        /// Cannot accept the channel transfer: provided commitment parameters doesn't match with
+        /// channel pending transfer parameters.
+        InvalidChannelTransferCommitmentParams,
+
+        /// Patronage reduction exceeeding patronage rate
+        ReductionExceedingPatronageRate,
+
     }
 }

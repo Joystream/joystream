@@ -128,13 +128,19 @@ pub trait PatronageTrait<AccountId, IssuanceParams> {
     fn reduce_patronage_rate_by(
         token_id: <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::TokenId,
         decrement: Permill,
-    );
+    ) -> DispatchResult;
 
     fn get_patronage_credit(
         token_id: <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::TokenId,
-    );
+    ) -> Result<
+        <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::Balance,
+        DispatchError,
+    >;
 
     fn claim_patronage_credit(
         token_id: <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::TokenId,
-    );
+    ) -> Result<
+        <Self::MultiCurrency as MultiCurrencyBase<AccountId, IssuanceParams>>::Balance,
+        DispatchError,
+    >;
 }

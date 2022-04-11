@@ -32,5 +32,9 @@ decl_error! {
 
         /// Source and Destination Location coincide
         SameSourceAndDestinationLocations,
+
+        /// Patronage reduction exceeeding patronage rate
+        ReductionExceedingPatronageRate,
+
     }
 }
