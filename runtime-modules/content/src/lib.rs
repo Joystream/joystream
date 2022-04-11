@@ -1644,8 +1644,19 @@ decl_module! {
             // == MUTATION_SAFE ==
             //
 
+            maybe_old_bid.map_or((), |bid| {
+                T::Currency::unreserve(
+                    &participant_account_id,
+                    bid.amount
+                );
+            });
+
             let (nft, event) = match open_auction.buy_now_price {
                 Some(buy_now_price) if bid_amount >= buy_now_price => {
+
+                    // unfallible: can_reserve already called
+                    T::Currency::reserve(&participant_account_id, buy_now_price)?;
+
                     // complete auction @ buy_now_price
                     let updated_nft = Self::complete_auction(
                         nft,
@@ -1655,27 +1666,12 @@ decl_module! {
                         buy_now_price,
                     );
 
-                    // remove eventual superseeded bid
-                    if maybe_old_bid.is_some() {
-                        OpenAuctionBidByVideoAndMember::<T>::remove(
-                            video_id,
-                            participant_id,
-                        )
-                    }
-
                     (
                         updated_nft,
                         RawEvent::BidMadeCompletingAuction(participant_id, video_id, None),
                     )
                 },
                 _ =>  {
-                    maybe_old_bid.map_or((), |bid| {
-                            T::Currency::unreserve(
-                                &participant_account_id,
-                                bid.amount
-                            );
-                        });
-
                     // unfallible: can_reserve already called
                     T::Currency::reserve(&participant_account_id, bid_amount)?;
 
@@ -1738,8 +1734,22 @@ decl_module! {
             // == MUTATION_SAFE ==
             //
 
+            // unreseve balance from previous bid
+            if let Some(bid) = eng_auction.top_bid.clone() {
+                if let Ok(ref old_bidder_account_id) = T::MemberAuthenticator::controller_account_id(bid.bidder_id) {
+                    T::Currency::unreserve(
+                        old_bidder_account_id,
+                        bid.amount
+                    );
+                }
+            }
+
             let (updated_nft, event) = match eng_auction.buy_now_price {
                 Some(buy_now_price) if bid_amount >= buy_now_price => {
+
+                    // unfallible: can_reserve already called
+                    T::Currency::reserve(&participant_account_id, buy_now_price)?;
+
                     // complete auction @ buy_now_price
                     let updated_nft = Self::complete_auction(
                         nft,
@@ -1749,23 +1759,13 @@ decl_module! {
                         buy_now_price,
                     );
 
-                    let prev_bidder = eng_auction.top_bid.map(|bid| bid.bidder_id);
 
                     (
                         updated_nft,
-                        RawEvent::BidMadeCompletingAuction(participant_id, video_id, prev_bidder),
+                        RawEvent::BidMadeCompletingAuction(participant_id, video_id, prev_top_bidder),
                     )
                 },
                 _ => {
-                    // unreseve balance from previous bid
-                    if let Some(ref bid) = eng_auction.top_bid {
-                        if bid.bidder_id == participant_id {
-                            T::Currency::unreserve(
-                                &participant_account_id,
-                                bid.amount
-                            );
-                        }
-                    }
 
                     // Reserve amount for new bid
                     T::Currency::reserve(&participant_account_id, bid_amount)?;
