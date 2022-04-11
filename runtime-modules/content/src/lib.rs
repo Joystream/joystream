@@ -1644,6 +1644,13 @@ decl_module! {
             // == MUTATION_SAFE ==
             //
 
+            maybe_old_bid.map_or((), |bid| {
+                T::Currency::unreserve(
+                    &participant_account_id,
+                    bid.amount
+                );
+            });
+
             let (nft, event) = match open_auction.buy_now_price {
                 Some(buy_now_price) if bid_amount >= buy_now_price => {
 
@@ -1673,13 +1680,6 @@ decl_module! {
                     )
                 },
                 _ =>  {
-                    maybe_old_bid.map_or((), |bid| {
-                            T::Currency::unreserve(
-                                &participant_account_id,
-                                bid.amount
-                            );
-                        });
-
                     // unfallible: can_reserve already called
                     T::Currency::reserve(&participant_account_id, bid_amount)?;
 
@@ -1742,9 +1742,18 @@ decl_module! {
             // == MUTATION_SAFE ==
             //
 
+            // unreseve balance from previous bid
+            if let Some(ref bid) = eng_auction.top_bid {
+                if let Ok(old_bidder_account_id) = T::MemberAuthenticator::controller_account_id(prev_top_bidder) {
+                    T::Currency::unreserve(
+                        &participant_account_id,
+                        bid.amount
+                    );
+                }
+            }
+
             let (updated_nft, event) = match eng_auction.buy_now_price {
                 Some(buy_now_price) if bid_amount >= buy_now_price => {
-
 
                     // unfallible: can_reserve already called
                     T::Currency::reserve(&participant_account_id, buy_now_price)?;
@@ -1766,15 +1775,6 @@ decl_module! {
                     )
                 },
                 _ => {
-                    // unreseve balance from previous bid
-                    if let Some(ref bid) = eng_auction.top_bid {
-                        if bid.bidder_id == participant_id {
-                            T::Currency::unreserve(
-                                &participant_account_id,
-                                bid.amount
-                            );
-                        }
-                    }
 
                     // Reserve amount for new bid
                     T::Currency::reserve(&participant_account_id, bid_amount)?;
