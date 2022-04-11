@@ -1214,6 +1214,8 @@ export async function contentNft_BuyNowPriceUpdated({ event, store }: EventConte
     video,
     contentActor: await convertContentActor(store, contentActor),
     newPrice: newPrice,
+    ownerMember: nft.ownerMember,
+    ownerCuratorGroup: nft.ownerCuratorGroup,
   })
 
   await store.save<BuyNowCanceledEvent>(announcingPeriodStartedEvent)

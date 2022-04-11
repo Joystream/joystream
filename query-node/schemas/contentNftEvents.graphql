@@ -558,6 +558,12 @@ type BuyNowPriceUpdatedEvent implements Event @entity {
 
   "New buy-now price."
   newPrice: BigInt!
+
+  "Member owning the Nft (if any) before it was bought."
+  ownerMember: Membership
+
+  "Curator group owning the Nft (if any) before it was bought."
+  ownerCuratorGroup: CuratorGroup
 }
 
 type NftSlingedBackToTheOriginalArtistEvent implements Event @entity {
