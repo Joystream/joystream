@@ -994,8 +994,8 @@ export class Api {
     )
   }
 
-  async claimWonEnglishAuction(accountFrom: string, memberId: number, videoId: number): Promise<ISubmittableResult> {
-    return await this.sender.signAndSend(this.api.tx.content.claimWonEnglishAuction(memberId, videoId), accountFrom)
+  async settleEnglishAuction(accountFrom: string, memberId: number, videoId: number): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(this.api.tx.content.settleEnglishAuction(videoId), accountFrom)
   }
 
   async pickOpenAuctionWinner(

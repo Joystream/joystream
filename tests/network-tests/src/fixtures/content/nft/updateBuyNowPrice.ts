@@ -50,6 +50,7 @@ export class NftUpdateBuyNowPriceFixture extends BaseQueryNodeFixture {
       () => query.ownedNftByVideoId(videoId.toString()),
       (ownedNft) => {
         Utils.assert(ownedNft, 'NFT not found')
+        Utils.assert(ownedNft.transactionalStatus)
         Utils.assert(
           ownedNft.transactionalStatus.__typename === 'TransactionalStatusBuyNow',
           'NFT not in Auction state'

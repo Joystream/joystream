@@ -16,7 +16,6 @@ import {
   TransactionalStatusInitiatedOfferToMember,
   TransactionalStatusIdle,
   TransactionalStatusBuyNow,
-  TransactionalStatusAuction,
   TransactionalStatusUpdate,
   ContentActor,
   ContentActorMember,
@@ -31,7 +30,7 @@ import {
   AuctionBidMadeEvent,
   AuctionBidCanceledEvent,
   AuctionCanceledEvent,
-  EnglishAuctionCompletedEvent,
+  EnglishAuctionSettledEvent,
   BidMadeCompletingAuctionEvent,
   OpenAuctionBidAcceptedEvent,
   OfferStartedEvent,
@@ -248,19 +247,35 @@ async function convertContentActor(
 async function setNewNftTransactionalStatus(
   store: DatabaseManager,
   nft: OwnedNft,
-  transactionalStatus: typeof TransactionalStatus,
+  transactionalStatusOrTransactionalStatusAuction: typeof TransactionalStatus | Auction,
   blockNumber: number
 ) {
-  // update transactionalStatus
-  nft.transactionalStatus = transactionalStatus
+  let transactionalStatus: typeof TransactionalStatus | undefined
+  let transactionalStatusAuction: Auction | undefined
+  if (transactionalStatusOrTransactionalStatusAuction instanceof Auction) {
+    transactionalStatusAuction = transactionalStatusOrTransactionalStatusAuction
+  } else {
+    transactionalStatus = transactionalStatusOrTransactionalStatusAuction
+  }
 
+  // FIXME: https://github.com/Joystream/hydra/issues/435
+
+  // update transactionalStatus
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  nft.transactionalStatus = transactionalStatus || null
+  // update transactionStatusAuction
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  nft.transactionalStatusAuction = transactionalStatusAuction || null
   // save NFT
   await store.save<OwnedNft>(nft)
 
   // create transactional status update record
   const transactionalStatusUpdate = new TransactionalStatusUpdate({
     nft,
-    transactionalStatus: nft.transactionalStatus,
+    transactionalStatusAuction,
+    transactionalStatus,
     changedAt: blockNumber,
   })
 
@@ -523,7 +538,7 @@ export async function convertTransactionalStatus(
   store: DatabaseManager,
   nft: OwnedNft,
   blockNumber: number
-): Promise<typeof TransactionalStatus> {
+): Promise<typeof TransactionalStatus | Auction> {
   if (transactionalStatus.isIdle) {
     return new TransactionalStatusIdle()
   }
@@ -547,10 +562,7 @@ export async function convertTransactionalStatus(
     const auctionStart = auctionParams.starts_at.isSome ? auctionParams.starts_at.unwrap().toNumber() : blockNumber
     const auction = await createAuction(store, nft, auctionParams, auctionStart)
 
-    const status = new TransactionalStatusAuction()
-    status.auctionId = auction.id
-
-    return status
+    return auction
   }
 
   if (transactionalStatus.isBuyNow) {
@@ -591,10 +603,7 @@ export async function contentNft_OpenAuctionStarted({ event, store }: EventConte
   const auctionStart = auctionParams.starts_at.isSome ? auctionParams.starts_at.unwrap().toNumber() : event.blockNumber
   const auction = await createAuction(store, nft, auctionParams, auctionStart)
 
-  // update NFT transactional status
-  const transactionalStatus = new TransactionalStatusAuction()
-  transactionalStatus.auctionId = auction.id
-  await setNewNftTransactionalStatus(store, nft, transactionalStatus, event.blockNumber)
+  await setNewNftTransactionalStatus(store, nft, auction, event.blockNumber)
 
   // common event processing - second
 
@@ -638,10 +647,7 @@ export async function contentNft_EnglishAuctionStarted({ event, store }: EventCo
   const auctionStart = auctionParams.starts_at.isSome ? auctionParams.starts_at.unwrap().toNumber() : event.blockNumber
   const auction = await createAuction(store, nft, auctionParams, auctionStart)
 
-  // update NFT transactional status
-  const transactionalStatus = new TransactionalStatusAuction()
-  transactionalStatus.auctionId = auction.id
-  await setNewNftTransactionalStatus(store, nft, transactionalStatus, event.blockNumber)
+  await setNewNftTransactionalStatus(store, nft, auction, event.blockNumber)
 
   // common event processing - second
 
@@ -859,11 +865,11 @@ export async function contentNft_AuctionCanceled({ event, store }: EventContext 
   await store.save<AuctionCanceledEvent>(announcingPeriodStartedEvent)
 }
 
-export async function contentNft_EnglishAuctionCompleted({ event, store }: EventContext & StoreContext): Promise<void> {
+export async function contentNft_EnglishAuctionSettled({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
   // memberId ignored here because it references member that called extrinsic - that can be anyone!
-  const [, /* memberId */ videoId] = new Content.EnglishAuctionCompletedEvent(event).params
+  const [winnerId, , videoId] = new Content.EnglishAuctionSettledEvent(event).params
 
   // specific event processing
 
@@ -877,9 +883,13 @@ export async function contentNft_EnglishAuctionCompleted({ event, store }: Event
   )
   const { winner, video } = await finishAuction(store, videoId.toNumber(), event.blockNumber)
 
+  if (winnerId.toString() !== winner.id.toString()) {
+    return inconsistentState(`English auction winner haven't placed the top bid`, { videoId, winnerId })
+  }
+
   // common event processing - second
 
-  const announcingPeriodStartedEvent = new EnglishAuctionCompletedEvent({
+  const announcingPeriodStartedEvent = new EnglishAuctionSettledEvent({
     ...genericEventFields(event),
 
     winner,
@@ -888,7 +898,7 @@ export async function contentNft_EnglishAuctionCompleted({ event, store }: Event
     ownerCuratorGroup: nft.ownerCuratorGroup,
   })
 
-  await store.save<EnglishAuctionCompletedEvent>(announcingPeriodStartedEvent)
+  await store.save<EnglishAuctionSettledEvent>(announcingPeriodStartedEvent)
 }
 
 // called when auction bid's value is higher than buy-now value

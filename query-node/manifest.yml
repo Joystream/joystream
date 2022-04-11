@@ -188,7 +188,7 @@ typegen:
     - content.AuctionBidMade
     - content.AuctionBidCanceled
     - content.AuctionCanceled
-    - content.EnglishAuctionCompleted
+    - content.EnglishAuctionSettled
     - content.BidMadeCompletingAuction
     - content.OpenAuctionBidAccepted
     - content.OfferStarted
@@ -757,8 +757,8 @@ mappings:
       handler: contentNft_AuctionBidCanceled
     - event: content.AuctionCanceled
       handler: contentNft_AuctionCanceled
-    - event: content.EnglishAuctionCompleted
-      handler: contentNft_EnglishAuctionCompleted
+    - event: content.EnglishAuctionSettled
+      handler: contentNft_EnglishAuctionSettled
     - event: content.BidMadeCompletingAuction
       handler: contentNft_BidMadeCompletingAuction
     - event: content.OpenAuctionBidAccepted

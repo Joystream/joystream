@@ -5,6 +5,7 @@ import { IMember } from '../createMembers'
 import BN from 'bn.js'
 import { assertNftOwner } from './utils'
 import { assert } from 'chai'
+import { Utils } from '../../../utils'
 
 export class NftCreateVideoWithBuyNowFixture extends BaseQueryNodeFixture {
   private author: IMember
@@ -33,6 +34,7 @@ export class NftCreateVideoWithBuyNowFixture extends BaseQueryNodeFixture {
 
     this.debug('Check NFT ownership change')
     await assertNftOwner(this.query, event.data[2].toNumber(), this.author, (ownedNft) => {
+      Utils.assert(ownedNft.transactionalStatus)
       assert.equal(ownedNft.transactionalStatus.__typename, 'TransactionalStatusBuyNow')
     })
   }

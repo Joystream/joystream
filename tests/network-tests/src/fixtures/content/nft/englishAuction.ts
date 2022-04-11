@@ -114,21 +114,21 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
     await assertAuctionAndBids(this.query, this.videoId, winner)
 
     this.debug('Complete auction')
-    const englishAuctionCompletedResult = await this.api.claimWonEnglishAuction(
+    const settleEnglishAuctionResult = await this.api.settleEnglishAuction(
       winner.account,
       winner.memberId.toNumber(),
       this.videoId
     )
-    const englishAuctionCompletedRuntimeEvent = await this.api.getEventDetails(
-      englishAuctionCompletedResult,
+    const englishAuctionSettledRuntimeEvent = await this.api.getEventDetails(
+      settleEnglishAuctionResult,
       'content',
-      'EnglishAuctionCompleted'
+      'EnglishAuctionSettled'
     )
 
-    this.debug('Check Nft ownership in EnglishAuctionCompleted event')
+    this.debug('Check Nft ownership in SettleEnglishAuction event')
     await assertNftEventContentActor(
       this.query,
-      () => this.query.getEnglishAuctionCompletedEvents([englishAuctionCompletedRuntimeEvent]),
+      () => this.query.getEnglishAuctionSettledEvents([englishAuctionSettledRuntimeEvent]),
       this.author.memberId.toString(),
       'Member'
     )
