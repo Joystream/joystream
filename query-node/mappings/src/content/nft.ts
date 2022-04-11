@@ -257,10 +257,16 @@ async function setNewNftTransactionalStatus(
     transactionalStatus = transactionalStatusOrTransactionalStatusAuction
   }
 
+  // FIXME: https://github.com/Joystream/hydra/issues/435
+
   // update transactionalStatus
-  nft.transactionalStatus = transactionalStatus
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  nft.transactionalStatus = transactionalStatus || null
   // update transactionStatusAuction
-  nft.transactionalStatusAuction = transactionalStatusAuction
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  nft.transactionalStatusAuction = transactionalStatusAuction || null
   // save NFT
   await store.save<OwnedNft>(nft)
 
