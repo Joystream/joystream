@@ -39,7 +39,7 @@ query getNftIssuedEventsByEventIds($eventIds: [ID!]) {
   }
 }
 
-fragment EnglishAuctionCompletedEventFields on EnglishAuctionCompletedEvent {
+fragment EnglishAuctionSettledEventFields on EnglishAuctionSettledEvent {
   winner {
     id
   }
@@ -54,8 +54,8 @@ fragment EnglishAuctionCompletedEventFields on EnglishAuctionCompletedEvent {
   }
 }
 
-query getEnglishAuctionCompletedEventsByEventIds($eventIds: [ID!]) {
-  englishAuctionCompletedEvents(where: { id_in: $eventIds }) {
-    ...EnglishAuctionCompletedEventFields
+query getEnglishAuctionSettledEventsByEventIds($eventIds: [ID!]) {
+  englishAuctionSettledEvents(where: { id_in: $eventIds }) {
+    ...EnglishAuctionSettledEventFields
   }
 }

@@ -30,7 +30,7 @@ import {
   AuctionBidMadeEvent,
   AuctionBidCanceledEvent,
   AuctionCanceledEvent,
-  EnglishAuctionCompletedEvent,
+  EnglishAuctionSettledEvent,
   BidMadeCompletingAuctionEvent,
   OpenAuctionBidAcceptedEvent,
   OfferStartedEvent,
@@ -851,11 +851,11 @@ export async function contentNft_AuctionCanceled({ event, store }: EventContext 
   await store.save<AuctionCanceledEvent>(announcingPeriodStartedEvent)
 }
 
-export async function contentNft_EnglishAuctionCompleted({ event, store }: EventContext & StoreContext): Promise<void> {
+export async function contentNft_EnglishAuctionSettled({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
   // memberId ignored here because it references member that called extrinsic - that can be anyone!
-  const [, /* memberId */ videoId] = new Content.EnglishAuctionCompletedEvent(event).params
+  const [winnerId, , videoId] = new Content.EnglishAuctionSettledEvent(event).params
 
   // specific event processing
 
@@ -869,9 +869,13 @@ export async function contentNft_EnglishAuctionCompleted({ event, store }: Event
   )
   const { winner, video } = await finishAuction(store, videoId.toNumber(), event.blockNumber)
 
+  if (winnerId.toString() !== winner.id.toString()) {
+    return inconsistentState(`English auction winner haven't placed the top bid`, { videoId, winnerId })
+  }
+
   // common event processing - second
 
-  const announcingPeriodStartedEvent = new EnglishAuctionCompletedEvent({
+  const announcingPeriodStartedEvent = new EnglishAuctionSettledEvent({
     ...genericEventFields(event),
 
     winner,
@@ -880,7 +884,7 @@ export async function contentNft_EnglishAuctionCompleted({ event, store }: Event
     ownerCuratorGroup: nft.ownerCuratorGroup,
   })
 
-  await store.save<EnglishAuctionCompletedEvent>(announcingPeriodStartedEvent)
+  await store.save<EnglishAuctionSettledEvent>(announcingPeriodStartedEvent)
 }
 
 // called when auction bid's value is higher than buy-now value
