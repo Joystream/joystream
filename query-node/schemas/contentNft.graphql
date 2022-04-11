@@ -89,6 +89,9 @@ type OwnedNft
 
   "NFT creator's channel"
   creatorChannel: Channel!
+
+  "NFT's last sale (if any)"
+  lastSale: LastSale
 }
 
 type TransactionalStatusUpdate @entity {
@@ -103,6 +106,18 @@ type TransactionalStatusUpdate @entity {
 
   "Block number at which change happened"
   changedAt: Int!
+}
+
+"NFT's last sale"
+union LastSale = LastSaleVariant
+
+"NFT's last sale variant"
+type LastSaleVariant @variant {
+  "Last sale price"
+  price: BigInt!
+
+  "Time at which NFT's last sale happened"
+  date: DateTime!
 }
 
 "NFT transactional state"
