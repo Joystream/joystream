@@ -6386,7 +6386,7 @@ export type CuratorGroup = BaseGraphQlObject & {
   bidmadecompletingauctioneventownerCuratorGroup?: Maybe<Array<BidMadeCompletingAuctionEvent>>
   buynowcanceledeventownerCuratorGroup?: Maybe<Array<BuyNowCanceledEvent>>
   channelnftcollectorscuratorGroup?: Maybe<Array<ChannelNftCollectors>>
-  englishauctioncompletedeventownerCuratorGroup?: Maybe<Array<EnglishAuctionCompletedEvent>>
+  englishauctionsettledeventownerCuratorGroup?: Maybe<Array<EnglishAuctionSettledEvent>>
   englishauctionstartedeventownerCuratorGroup?: Maybe<Array<EnglishAuctionStartedEvent>>
   nftboughteventownerCuratorGroup?: Maybe<Array<NftBoughtEvent>>
   nftissuedeventownerCuratorGroup?: Maybe<Array<NftIssuedEvent>>
@@ -6481,9 +6481,9 @@ export type CuratorGroupWhereInput = {
   channelnftcollectorscuratorGroup_none?: Maybe<ChannelNftCollectorsWhereInput>
   channelnftcollectorscuratorGroup_some?: Maybe<ChannelNftCollectorsWhereInput>
   channelnftcollectorscuratorGroup_every?: Maybe<ChannelNftCollectorsWhereInput>
-  englishauctioncompletedeventownerCuratorGroup_none?: Maybe<EnglishAuctionCompletedEventWhereInput>
-  englishauctioncompletedeventownerCuratorGroup_some?: Maybe<EnglishAuctionCompletedEventWhereInput>
-  englishauctioncompletedeventownerCuratorGroup_every?: Maybe<EnglishAuctionCompletedEventWhereInput>
+  englishauctionsettledeventownerCuratorGroup_none?: Maybe<EnglishAuctionSettledEventWhereInput>
+  englishauctionsettledeventownerCuratorGroup_some?: Maybe<EnglishAuctionSettledEventWhereInput>
+  englishauctionsettledeventownerCuratorGroup_every?: Maybe<EnglishAuctionSettledEventWhereInput>
   englishauctionstartedeventownerCuratorGroup_none?: Maybe<EnglishAuctionStartedEventWhereInput>
   englishauctionstartedeventownerCuratorGroup_some?: Maybe<EnglishAuctionStartedEventWhereInput>
   englishauctionstartedeventownerCuratorGroup_every?: Maybe<EnglishAuctionStartedEventWhereInput>
@@ -7540,7 +7540,7 @@ export type ElectionRoundWhereUniqueInput = {
   id: Scalars['ID']
 }
 
-export type EnglishAuctionCompletedEvent = Event &
+export type EnglishAuctionSettledEvent = Event &
   BaseGraphQlObject & {
     /** Hash of the extrinsic which caused the event to be emitted. */
     inExtrinsic?: Maybe<Scalars['String']>
@@ -7570,13 +7570,13 @@ export type EnglishAuctionCompletedEvent = Event &
     ownerCuratorGroupId?: Maybe<Scalars['String']>
   }
 
-export type EnglishAuctionCompletedEventConnection = {
+export type EnglishAuctionSettledEventConnection = {
   totalCount: Scalars['Int']
-  edges: Array<EnglishAuctionCompletedEventEdge>
+  edges: Array<EnglishAuctionSettledEventEdge>
   pageInfo: PageInfo
 }
 
-export type EnglishAuctionCompletedEventCreateInput = {
+export type EnglishAuctionSettledEventCreateInput = {
   inExtrinsic?: Maybe<Scalars['String']>
   inBlock: Scalars['Float']
   network: Network
@@ -7587,12 +7587,12 @@ export type EnglishAuctionCompletedEventCreateInput = {
   ownerCuratorGroup?: Maybe<Scalars['ID']>
 }
 
-export type EnglishAuctionCompletedEventEdge = {
-  node: EnglishAuctionCompletedEvent
+export type EnglishAuctionSettledEventEdge = {
+  node: EnglishAuctionSettledEvent
   cursor: Scalars['String']
 }
 
-export enum EnglishAuctionCompletedEventOrderByInput {
+export enum EnglishAuctionSettledEventOrderByInput {
   CreatedAtAsc = 'createdAt_ASC',
   CreatedAtDesc = 'createdAt_DESC',
   UpdatedAtAsc = 'updatedAt_ASC',
@@ -7617,7 +7617,7 @@ export enum EnglishAuctionCompletedEventOrderByInput {
   OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
 }
 
-export type EnglishAuctionCompletedEventUpdateInput = {
+export type EnglishAuctionSettledEventUpdateInput = {
   inExtrinsic?: Maybe<Scalars['String']>
   inBlock?: Maybe<Scalars['Float']>
   network?: Maybe<Network>
@@ -7628,7 +7628,7 @@ export type EnglishAuctionCompletedEventUpdateInput = {
   ownerCuratorGroup?: Maybe<Scalars['ID']>
 }
 
-export type EnglishAuctionCompletedEventWhereInput = {
+export type EnglishAuctionSettledEventWhereInput = {
   id_eq?: Maybe<Scalars['ID']>
   id_in?: Maybe<Array<Scalars['ID']>>
   createdAt_eq?: Maybe<Scalars['DateTime']>
@@ -7676,11 +7676,11 @@ export type EnglishAuctionCompletedEventWhereInput = {
   video?: Maybe<VideoWhereInput>
   ownerMember?: Maybe<MembershipWhereInput>
   ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
-  AND?: Maybe<Array<EnglishAuctionCompletedEventWhereInput>>
-  OR?: Maybe<Array<EnglishAuctionCompletedEventWhereInput>>
+  AND?: Maybe<Array<EnglishAuctionSettledEventWhereInput>>
+  OR?: Maybe<Array<EnglishAuctionSettledEventWhereInput>>
 }
 
-export type EnglishAuctionCompletedEventWhereUniqueInput = {
+export type EnglishAuctionSettledEventWhereUniqueInput = {
   id: Scalars['ID']
 }
 
@@ -7906,7 +7906,7 @@ export enum EventTypeOptions {
   CategoryMembershipOfModeratorUpdatedEvent = 'CategoryMembershipOfModeratorUpdatedEvent',
   CategoryStickyThreadUpdateEvent = 'CategoryStickyThreadUpdateEvent',
   CouncilorRewardUpdatedEvent = 'CouncilorRewardUpdatedEvent',
-  EnglishAuctionCompletedEvent = 'EnglishAuctionCompletedEvent',
+  EnglishAuctionSettledEvent = 'EnglishAuctionSettledEvent',
   EnglishAuctionStartedEvent = 'EnglishAuctionStartedEvent',
   InitialInvitationBalanceUpdatedEvent = 'InitialInvitationBalanceUpdatedEvent',
   InitialInvitationCountUpdatedEvent = 'InitialInvitationCountUpdatedEvent',
@@ -11334,8 +11334,8 @@ export type Membership = BaseGraphQlObject & {
   bountyentryworker?: Maybe<Array<BountyEntry>>
   buynowcanceledeventownerMember?: Maybe<Array<BuyNowCanceledEvent>>
   channelnftcollectorsmember?: Maybe<Array<ChannelNftCollectors>>
-  englishauctioncompletedeventwinner?: Maybe<Array<EnglishAuctionCompletedEvent>>
-  englishauctioncompletedeventownerMember?: Maybe<Array<EnglishAuctionCompletedEvent>>
+  englishauctionsettledeventwinner?: Maybe<Array<EnglishAuctionSettledEvent>>
+  englishauctionsettledeventownerMember?: Maybe<Array<EnglishAuctionSettledEvent>>
   englishauctionstartedeventownerMember?: Maybe<Array<EnglishAuctionStartedEvent>>
   forumpostauthor?: Maybe<Array<ForumPost>>
   forumpostreactionmember?: Maybe<Array<ForumPostReaction>>
@@ -12028,12 +12028,12 @@ export type MembershipWhereInput = {
   channelnftcollectorsmember_none?: Maybe<ChannelNftCollectorsWhereInput>
   channelnftcollectorsmember_some?: Maybe<ChannelNftCollectorsWhereInput>
   channelnftcollectorsmember_every?: Maybe<ChannelNftCollectorsWhereInput>
-  englishauctioncompletedeventwinner_none?: Maybe<EnglishAuctionCompletedEventWhereInput>
-  englishauctioncompletedeventwinner_some?: Maybe<EnglishAuctionCompletedEventWhereInput>
-  englishauctioncompletedeventwinner_every?: Maybe<EnglishAuctionCompletedEventWhereInput>
-  englishauctioncompletedeventownerMember_none?: Maybe<EnglishAuctionCompletedEventWhereInput>
-  englishauctioncompletedeventownerMember_some?: Maybe<EnglishAuctionCompletedEventWhereInput>
-  englishauctioncompletedeventownerMember_every?: Maybe<EnglishAuctionCompletedEventWhereInput>
+  englishauctionsettledeventwinner_none?: Maybe<EnglishAuctionSettledEventWhereInput>
+  englishauctionsettledeventwinner_some?: Maybe<EnglishAuctionSettledEventWhereInput>
+  englishauctionsettledeventwinner_every?: Maybe<EnglishAuctionSettledEventWhereInput>
+  englishauctionsettledeventownerMember_none?: Maybe<EnglishAuctionSettledEventWhereInput>
+  englishauctionsettledeventownerMember_some?: Maybe<EnglishAuctionSettledEventWhereInput>
+  englishauctionsettledeventownerMember_every?: Maybe<EnglishAuctionSettledEventWhereInput>
   englishauctionstartedeventownerMember_none?: Maybe<EnglishAuctionStartedEventWhereInput>
   englishauctionstartedeventownerMember_some?: Maybe<EnglishAuctionStartedEventWhereInput>
   englishauctionstartedeventownerMember_every?: Maybe<EnglishAuctionStartedEventWhereInput>
@@ -18067,9 +18067,9 @@ export type Query = {
   electionRounds: Array<ElectionRound>
   electionRoundByUniqueInput?: Maybe<ElectionRound>
   electionRoundsConnection: ElectionRoundConnection
-  englishAuctionCompletedEvents: Array<EnglishAuctionCompletedEvent>
-  englishAuctionCompletedEventByUniqueInput?: Maybe<EnglishAuctionCompletedEvent>
-  englishAuctionCompletedEventsConnection: EnglishAuctionCompletedEventConnection
+  englishAuctionSettledEvents: Array<EnglishAuctionSettledEvent>
+  englishAuctionSettledEventByUniqueInput?: Maybe<EnglishAuctionSettledEvent>
+  englishAuctionSettledEventsConnection: EnglishAuctionSettledEventConnection
   englishAuctionStartedEvents: Array<EnglishAuctionStartedEvent>
   englishAuctionStartedEventByUniqueInput?: Maybe<EnglishAuctionStartedEvent>
   englishAuctionStartedEventsConnection: EnglishAuctionStartedEventConnection
@@ -19561,24 +19561,24 @@ export type QueryElectionRoundsConnectionArgs = {
   orderBy?: Maybe<Array<ElectionRoundOrderByInput>>
 }
 
-export type QueryEnglishAuctionCompletedEventsArgs = {
+export type QueryEnglishAuctionSettledEventsArgs = {
   offset?: Maybe<Scalars['Int']>
   limit?: Maybe<Scalars['Int']>
-  where?: Maybe<EnglishAuctionCompletedEventWhereInput>
-  orderBy?: Maybe<Array<EnglishAuctionCompletedEventOrderByInput>>
+  where?: Maybe<EnglishAuctionSettledEventWhereInput>
+  orderBy?: Maybe<Array<EnglishAuctionSettledEventOrderByInput>>
 }
 
-export type QueryEnglishAuctionCompletedEventByUniqueInputArgs = {
-  where: EnglishAuctionCompletedEventWhereUniqueInput
+export type QueryEnglishAuctionSettledEventByUniqueInputArgs = {
+  where: EnglishAuctionSettledEventWhereUniqueInput
 }
 
-export type QueryEnglishAuctionCompletedEventsConnectionArgs = {
+export type QueryEnglishAuctionSettledEventsConnectionArgs = {
   first?: Maybe<Scalars['Int']>
   after?: Maybe<Scalars['String']>
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
-  where?: Maybe<EnglishAuctionCompletedEventWhereInput>
-  orderBy?: Maybe<Array<EnglishAuctionCompletedEventOrderByInput>>
+  where?: Maybe<EnglishAuctionSettledEventWhereInput>
+  orderBy?: Maybe<Array<EnglishAuctionSettledEventOrderByInput>>
 }
 
 export type QueryEnglishAuctionStartedEventsArgs = {
@@ -26782,7 +26782,7 @@ export type Video = BaseGraphQlObject & {
   auctioncanceledeventvideo?: Maybe<Array<AuctionCanceledEvent>>
   bidmadecompletingauctioneventvideo?: Maybe<Array<BidMadeCompletingAuctionEvent>>
   buynowcanceledeventvideo?: Maybe<Array<BuyNowCanceledEvent>>
-  englishauctioncompletedeventvideo?: Maybe<Array<EnglishAuctionCompletedEvent>>
+  englishauctionsettledeventvideo?: Maybe<Array<EnglishAuctionSettledEvent>>
   englishauctionstartedeventvideo?: Maybe<Array<EnglishAuctionStartedEvent>>
   nftboughteventvideo?: Maybe<Array<NftBoughtEvent>>
   nftissuedeventvideo?: Maybe<Array<NftIssuedEvent>>
@@ -27328,9 +27328,9 @@ export type VideoWhereInput = {
   buynowcanceledeventvideo_none?: Maybe<BuyNowCanceledEventWhereInput>
   buynowcanceledeventvideo_some?: Maybe<BuyNowCanceledEventWhereInput>
   buynowcanceledeventvideo_every?: Maybe<BuyNowCanceledEventWhereInput>
-  englishauctioncompletedeventvideo_none?: Maybe<EnglishAuctionCompletedEventWhereInput>
-  englishauctioncompletedeventvideo_some?: Maybe<EnglishAuctionCompletedEventWhereInput>
-  englishauctioncompletedeventvideo_every?: Maybe<EnglishAuctionCompletedEventWhereInput>
+  englishauctionsettledeventvideo_none?: Maybe<EnglishAuctionSettledEventWhereInput>
+  englishauctionsettledeventvideo_some?: Maybe<EnglishAuctionSettledEventWhereInput>
+  englishauctionsettledeventvideo_every?: Maybe<EnglishAuctionSettledEventWhereInput>
   englishauctionstartedeventvideo_none?: Maybe<EnglishAuctionStartedEventWhereInput>
   englishauctionstartedeventvideo_some?: Maybe<EnglishAuctionStartedEventWhereInput>
   englishauctionstartedeventvideo_every?: Maybe<EnglishAuctionStartedEventWhereInput>
