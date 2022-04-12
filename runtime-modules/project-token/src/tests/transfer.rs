@@ -691,9 +691,9 @@ fn permissioned_multi_out_transfer_fails_with_invalid_source_account() {
 #[test]
 fn permissioned_multi_out_transfer_fails_with_invalid_destination_account() {
     let token_id = token!(1);
-    let src = account!(1);
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
+    let (src, src_balance) = (account!(1), amount1 + amount2);
     let commit = merkle_root![dst1, dst2];
     let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
@@ -703,7 +703,7 @@ fn permissioned_multi_out_transfer_fails_with_invalid_destination_account() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, amount1 + amount2, 0)
+        .with_account(src, src_balance, 0)
         .with_account(dst2, 0, 0)
         .build();
 
@@ -717,9 +717,9 @@ fn permissioned_multi_out_transfer_fails_with_invalid_destination_account() {
 #[test]
 fn permissioned_multi_out_ok() {
     let token_id = token!(1);
-    let src = account!(1);
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
+    let (src, src_balance) = (account!(1), amount1 + amount2);
     let commit = merkle_root![dst1, dst2];
     let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
@@ -729,7 +729,7 @@ fn permissioned_multi_out_ok() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, amount1 + amount2, 0)
+        .with_account(src, src_balance, 0)
         .with_account(dst1, 0, 0)
         .with_account(dst2, 0, 0)
         .build();
@@ -744,21 +744,19 @@ fn permissioned_multi_out_ok() {
 #[test]
 fn permissioned_multi_out_ok_with_event_deposit() {
     let token_id = token!(1);
-    let existential_deposit = balance!(20);
-    let src = account!(1);
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
+    let (src, src_balance) = (account!(1), amount1 + amount2);
     let commit = merkle_root![dst1, dst2];
     let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
-        .with_existential_deposit(existential_deposit)
         .build();
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, amount1 + amount2, 0)
+        .with_account(src, src_balance, 0)
         .with_account(dst1, 0, 0)
         .with_account(dst2, 0, 0)
         .build();

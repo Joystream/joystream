@@ -10,7 +10,6 @@ use crate::GenesisConfig;
 
 pub struct TokenDataBuilder<Balance, Hash, BlockNumber> {
     pub(crate) current_total_issuance: Balance,
-    pub(crate) existential_deposit: Balance,
     pub(crate) issuance_state: OfferingState,
     pub(crate) transfer_policy: TransferPolicy<Hash>,
     pub(crate) patronage_info: PatronageData<Balance, BlockNumber>,
@@ -22,7 +21,6 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash, BlockNumber: One>
     pub fn build(self) -> crate::types::TokenData<Balance, Hash, BlockNumber> {
         crate::types::TokenData::<_, _, _> {
             current_total_issuance: self.current_total_issuance,
-            existential_deposit: self.existential_deposit,
             issuance_state: self.issuance_state,
             transfer_policy: self.transfer_policy,
             patronage_info: self.patronage_info,
@@ -32,13 +30,6 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash, BlockNumber: One>
     pub fn with_issuance(self, current_total_issuance: Balance) -> Self {
         Self {
             current_total_issuance,
-            ..self
-        }
-    }
-
-    pub fn with_existential_deposit(self, existential_deposit: Balance) -> Self {
-        Self {
-            existential_deposit,
             ..self
         }
     }
@@ -65,7 +56,6 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash, BlockNumber: One>
         Self {
             current_total_issuance: Balance::zero(),
             issuance_state: OfferingState::Idle,
-            existential_deposit: Balance::zero(),
             transfer_policy: TransferPolicy::<Hash>::Permissionless,
             patronage_info: PatronageData::<Balance, BlockNumber> {
                 rate: Balance::zero(),

@@ -366,10 +366,7 @@ impl<T: Trait> Module<T> {
             })
         })?;
 
-        let total = outputs.total_amount();
-
-        // Amount to decrease by accounting for existential deposit
-        src_account_info.ensure_can_decrease_liquidity_by::<T>(total)
+        src_account_info.ensure_can_decrease_liquidity_by::<T>(outputs.total_amount())
     }
 
     /// Perform balance accounting for balances
@@ -380,10 +377,8 @@ impl<T: Trait> Module<T> {
             });
         });
 
-        let total_amount = outputs.iter().map(|out| out.amount).sum();
-
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, &src, |account_data| {
-            account_data.decrease_liquidity_by(total_amount);
+            account_data.decrease_liquidity_by(outputs.total_amount());
         })
     }
 

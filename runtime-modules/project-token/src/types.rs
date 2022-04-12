@@ -27,9 +27,6 @@ pub struct TokenData<Balance, Hash, BlockNumber> {
     /// Current token issuance
     pub(crate) current_total_issuance: Balance,
 
-    /// Existential deposit allowed for the token
-    pub(crate) existential_deposit: Balance,
-
     /// Initial issuance state
     pub(crate) issuance_state: OfferingState,
 
@@ -91,9 +88,6 @@ pub struct TokenIssuanceParameters<Balance, Hash> {
 
     /// Initial State builder: stub
     pub(crate) initial_state: OfferingState,
-
-    /// Initial existential deposit
-    pub(crate) existential_deposit: Balance,
 
     /// Token Symbol
     pub(crate) symbol: Hash,
@@ -171,8 +165,7 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
         self.free_balance = self.free_balance.saturating_sub(amount);
     }
 
-    /// Verify if amount can be decrease taking account existential deposit
-    /// Returns the amount that should be removed
+    /// Dry run for `self.decrease_liquidity_by(amount)`
     pub(crate) fn ensure_can_decrease_liquidity_by<T: crate::Trait>(
         &self,
         amount: Balance,
@@ -200,6 +193,7 @@ impl<Balance: Saturating + Copy, Hash, BlockNumber> TokenData<Balance, Hash, Blo
         self.current_total_issuance = self.current_total_issuance.saturating_sub(amount);
     }
 }
+
 /// Encapsules parameters validation + TokenData construction
 impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, Hash> {
     /// Forward `self` state
@@ -217,7 +211,6 @@ impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, H
         Ok(TokenData::<Balance, Hash, BlockNumber> {
             current_total_issuance: self.initial_issuance,
             issuance_state: self.initial_state,
-            existential_deposit: self.existential_deposit,
             transfer_policy: self.transfer_policy,
             patronage_info,
         })
