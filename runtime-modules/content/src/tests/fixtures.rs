@@ -1721,6 +1721,8 @@ pub fn create_default_curator_owned_channel() {
 pub fn create_default_member_owned_channel_with_video() {
     create_default_member_owned_channel();
 
+    set_default_global_nft_limits();
+
     CreateVideoFixture::default()
         .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
         .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))

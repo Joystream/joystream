@@ -282,5 +282,8 @@ decl_error! {
 
         // Insufficient council budget to cover channel reward claim
         InsufficientCouncilBudget,
+
+        // Can't issue more NFTs: daily limit exceeded.
+        GlobalNftDailyLimitExceeded,
     }
 }

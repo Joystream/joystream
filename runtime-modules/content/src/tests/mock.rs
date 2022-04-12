@@ -816,3 +816,16 @@ impl common::council::CouncilBudgetManager<u64, u64> for CouncilBudgetManager {
         Ok(())
     }
 }
+
+pub(crate) fn set_default_global_nft_limits() {
+    let limit = LimitPerPeriod::<u64> {
+        limit: 1,
+        block_number_period: 100,
+    };
+
+    set_global_nft_limits(limit);
+}
+
+pub(crate) fn set_global_nft_limits(limit: LimitPerPeriod<u64>) {
+    <crate::GlobalDailyNftLimit<Test>>::put(limit);
+}

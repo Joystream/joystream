@@ -1,7 +1,7 @@
 #![cfg(test)]
 use crate::tests::fixtures::{
-    create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
-    increase_account_balance_helper,
+    create_data_objects_helper, create_default_member_owned_channel_with_video,
+    create_initial_storage_buckets_helper, increase_account_balance_helper, CreateVideoFixture,
 };
 use crate::tests::mock::*;
 use crate::*;
@@ -242,5 +242,91 @@ fn issue_nft_fails_with_invalid_open_auction_parameters() {
             issue_nft_result,
             Error::<Test>::StartingPriceLowerBoundExceeded
         );
+    })
+}
+
+#[test]
+fn issue_nft_failed_because_of_the_global_daily_limit() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        let video_id = NextVideoId::<Test>::get();
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+        set_global_nft_limits(Default::default());
+
+        // Issue nft
+        assert_eq!(
+            Content::issue_nft(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                video_id,
+                NftIssuanceParameters::<Test>::default(),
+            ),
+            Err(Error::<Test>::GlobalNftDailyLimitExceeded.into()),
+        );
+    })
+}
+
+#[test]
+fn issue_nft_global_daily_limit_works_as_expected() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        let video_id = NextVideoId::<Test>::get();
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+
+        let global_period_in_blocks = 10;
+        set_global_nft_limits(LimitPerPeriod::<u64> {
+            limit: 1,
+            block_number_period: global_period_in_blocks,
+        });
+
+        // Issue nft 1
+        assert_ok!(Content::issue_nft(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            NftIssuanceParameters::<Test>::default(),
+        ));
+
+        let video_id = NextVideoId::<Test>::get();
+
+        CreateVideoFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_assets(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .call_and_assert(Ok(()));
+
+        // Issue nft 2
+        assert_eq!(
+            Content::issue_nft(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                video_id,
+                NftIssuanceParameters::<Test>::default(),
+            ),
+            Err(Error::<Test>::GlobalNftDailyLimitExceeded.into()),
+        );
+
+        run_to_block(global_period_in_blocks);
+
+        // Issue nft 3
+        assert_ok!(Content::issue_nft(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            NftIssuanceParameters::<Test>::default(),
+        ));
     })
 }
