@@ -176,9 +176,9 @@ declare module '@polkadot/api/types/errors' {
        **/
       InvalidStageUnexpectedFunding: AugmentedError<ApiType>;
       /**
-       * Unexpected bounty stage for an operation: FundingExpired.
+       * Unexpected bounty stage for an operation: NoFundingContributed.
        **/
-      InvalidStageUnexpectedFundingExpired: AugmentedError<ApiType>;
+      InvalidStageUnexpectedNoFundingContributed: AugmentedError<ApiType>;
       /**
        * Unexpected bounty stage for an operation: Judgment.
        **/

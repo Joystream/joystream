@@ -3,7 +3,7 @@
 //!
 //! ### Bounty stages
 //! - Funding - a bounty is being funded.
-//! - FundingExpired - a bounty is expired. It can be only canceled.
+//! - NoFundingContributed - a bounty is expired. It can be only canceled.
 //! - WorkSubmission - interested participants can submit their work.
 //! - Judgment - working periods ended and the oracle should provide their judgment,
 //!     winner work entrants receive their rewards, losers are slashed.
@@ -24,7 +24,7 @@
 //! - [fund_bounty](./struct.Module.html#method.fund_bounty) - provide funding for a bounty
 //! - [switch_oracle](./struct.Module.html#method.switch_oracle) - switch the current oracle by another one.
 //!
-//! #### FundingExpired stage
+//! #### NoFundingContributed stage
 //! - [terminate_bounty](./struct.Module.html#method.terminate_bounty) - terminate bounty (into failed stage or remove bounty).
 //! - [switch_oracle](./struct.Module.html#method.switch_oracle) - switch the current oracle by another one.
 //!
@@ -295,7 +295,7 @@ pub enum BountyStage {
     },
 
     /// Bounty funding period expired with no contributions.
-    FundingExpired,
+    NoFundingContributed,
 
     /// A bounty has gathered necessary funds and ready to accept work submissions.
     WorkSubmission,
@@ -321,7 +321,7 @@ pub enum BountyMilestone<BlockNumber> {
     ///
     /// This state will tranlate into:
     /// - BountyStage::Funding while now <= (created_at + funding_period) and total_funding < target
-    /// - BountyStage::FundingExpired if now > (created_at + funding_period) and
+    /// - BountyStage::NoFundingContributed if now > (created_at + funding_period) and
     ///     has_contributions is false (total_funding = 0)
     /// - BountyStage::WorkSubmission if total_funding >= target and if now > (created_at + funding_period)
     Created {
@@ -348,7 +348,7 @@ pub enum BountyMilestone<BlockNumber> {
     /// This state will tranlate into
     /// - BountyStage::FailedBountyWithdrawal if bounty stage is in
     ///     Funding (with contributions and/or oracle reward),
-    ///     FundingExpired (with oracle reward), WorkSubmission or Judgment
+    ///     NoFundingContributed (with oracle reward), WorkSubmission or Judgment
     Terminated,
 
     /// A judgment was submitted for a bounty.
@@ -727,8 +727,8 @@ decl_error! {
         /// Unexpected bounty stage for an operation: Funding.
         InvalidStageUnexpectedFunding,
 
-        /// Unexpected bounty stage for an operation: FundingExpired.
-        InvalidStageUnexpectedFundingExpired,
+        /// Unexpected bounty stage for an operation: NoFundingContributed.
+        InvalidStageUnexpectedNoFundingContributed,
 
         /// Unexpected bounty stage for an operation: Cancelled.
         InvalidStageUnexpectedCancelled,
@@ -990,10 +990,10 @@ decl_module! {
             let bounty_creator_manager = Self::ensure_creator_actor_manager(&bounty)?;
 
             //If origin is council then
-            //Stage can be FundingExpired, Funding, WorkSubmission or Judgment
+            //Stage can be NoFundingContributed, Funding, WorkSubmission or Judgment
 
             ////If origin is creator (not council) then
-            //Stage can be FundingExpired, Funding
+            //Stage can be NoFundingContributed, Funding
 
             let terminate_bounty_validation = Self::ensure_terminate_bounty_stage(&bounty_id,
                 &bounty,
@@ -1028,8 +1028,8 @@ decl_module! {
                     Self::deposit_event(RawEvent::BountyTerminated(
                         bounty_id,
                         terminate_bounty_actor.get_bounty_actor(),
-                        bounty.creation_params.creator.clone(),
-                        bounty.creation_params.oracle.clone(),
+                        bounty.creation_params.creator,
+                        bounty.creation_params.oracle,
                     ));
                 },
 
@@ -1699,7 +1699,7 @@ impl<T: Trait> Module<T> {
                     matches!(
                         current_bounty_stage,
                         BountyStage::Funding { .. }
-                            | BountyStage::FundingExpired
+                            | BountyStage::NoFundingContributed
                             | BountyStage::WorkSubmission
                             | BountyStage::Judgment
                     ),
@@ -1710,7 +1710,7 @@ impl<T: Trait> Module<T> {
                 ensure!(
                     matches!(
                         current_bounty_stage,
-                        BountyStage::Funding { .. } | BountyStage::FundingExpired
+                        BountyStage::Funding { .. } | BountyStage::NoFundingContributed
                     ),
                     Self::unexpected_bounty_stage_error(current_bounty_stage)
                 );
@@ -2038,7 +2038,9 @@ impl<T: Trait> Module<T> {
     fn unexpected_bounty_stage_error(unexpected_stage: BountyStage) -> DispatchError {
         match unexpected_stage {
             BountyStage::Funding { .. } => Error::<T>::InvalidStageUnexpectedFunding.into(),
-            BountyStage::FundingExpired => Error::<T>::InvalidStageUnexpectedFundingExpired.into(),
+            BountyStage::NoFundingContributed => {
+                Error::<T>::InvalidStageUnexpectedNoFundingContributed.into()
+            }
             BountyStage::WorkSubmission => Error::<T>::InvalidStageUnexpectedWorkSubmission.into(),
             BountyStage::Judgment => Error::<T>::InvalidStageUnexpectedJudgment.into(),
             BountyStage::SuccessfulBountyWithdrawal => {

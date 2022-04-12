@@ -47,7 +47,7 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
                 has_contributions,
                 created_at,
             } => match self.funding_period_expired(created_at) && !has_contributions {
-                true => Some(BountyStage::FundingExpired),
+                true => Some(BountyStage::NoFundingContributed),
                 false => None,
             },
             _ => None,

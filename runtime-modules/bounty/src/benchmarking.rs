@@ -1656,7 +1656,7 @@ benchmarks! {
             cherry,
             oracle_reward,
             creator,
-            // same complexity with limited funding and FundingExpired stage.
+            // same complexity with limited funding and NoFundingContributed stage.
             funding_type: FundingType::Perpetual{ target: max_amount },
             entrant_stake,
             oracle: oracle.clone(),
@@ -1699,7 +1699,7 @@ benchmarks! {
             cherry,
             oracle_reward,
             creator,
-            // same complexity with limited funding and FundingExpired stage.
+            // same complexity with limited funding and NoFundingContributed stage.
             funding_type: FundingType::Perpetual{ target: max_amount },
             entrant_stake,
             oracle: oracle.clone(),

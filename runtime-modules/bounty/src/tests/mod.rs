@@ -152,7 +152,7 @@ fn validate_funding_expired_bounty_stage() {
 
         assert_eq!(
             Bounty::get_bounty_stage(&bounty),
-            BountyStage::FundingExpired
+            BountyStage::NoFundingContributed
         );
     });
 }
@@ -1454,7 +1454,7 @@ fn fund_bounty_fails_with_insufficient_balance() {
 
 #[test]
 fn fund_bounty_fails_with_invalid_stage() {
-    //FundingExpired
+    //NoFundingContributed
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -1472,7 +1472,7 @@ fn fund_bounty_fails_with_invalid_stage() {
             .with_origin(RawOrigin::Root)
             .with_council()
             .call_and_assert(Err(
-                Error::<Test>::InvalidStageUnexpectedFundingExpired.into()
+                Error::<Test>::InvalidStageUnexpectedNoFundingContributed.into(),
             ));
     });
 
@@ -1664,7 +1664,7 @@ fn fund_bounty_fails_with_expired_funding_period() {
             .with_member_id(member_id)
             .with_amount(amount)
             .call_and_assert(Err(
-                Error::<Test>::InvalidStageUnexpectedFundingExpired.into()
+                Error::<Test>::InvalidStageUnexpectedNoFundingContributed.into(),
             ));
     });
 }
@@ -1849,7 +1849,7 @@ fn end_working_period_invalid_stage_fails() {
             .with_bounty_id(bounty_id)
             .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
     });
-    //FundingExpired
+    //NoFundingContributed
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -1868,7 +1868,7 @@ fn end_working_period_invalid_stage_fails() {
         EndWorkPeriodFixture::default()
             .with_bounty_id(bounty_id)
             .call_and_assert(Err(
-                Error::<Test>::InvalidStageUnexpectedFundingExpired.into()
+                Error::<Test>::InvalidStageUnexpectedNoFundingContributed.into(),
             ));
     });
 
@@ -2372,7 +2372,7 @@ fn withdraw_funding_member_fails_with_invalid_origin() {
 
 #[test]
 fn withdraw_funding_member_fails_with_invalid_stage() {
-    //FundingExpired
+    //NoFundingContributed
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -2390,7 +2390,7 @@ fn withdraw_funding_member_fails_with_invalid_stage() {
             .with_origin(RawOrigin::Root)
             .with_council()
             .call_and_assert(Err(
-                Error::<Test>::InvalidStageUnexpectedFundingExpired.into()
+                Error::<Test>::InvalidStageUnexpectedNoFundingContributed.into(),
             ));
     });
     //Funding
@@ -2495,7 +2495,7 @@ fn withdraw_funding_member_fails_with_invalid_stage() {
 
 #[test]
 fn withdraw_funding_member_fails_with_invalid_bounty_funder() {
-    //FundingExpired
+    //NoFundingContributed
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -2959,7 +2959,7 @@ fn announce_work_entry_fails_with_invalid_stage() {
             .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
     });
 
-    //FundingExpired
+    //NoFundingContributed
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -2974,7 +2974,7 @@ fn announce_work_entry_fails_with_invalid_stage() {
         run_to_block(funding_period + 10);
 
         AnnounceWorkEntryFixture::default().call_and_assert(Err(
-            Error::<Test>::InvalidStageUnexpectedFundingExpired.into(),
+            Error::<Test>::InvalidStageUnexpectedNoFundingContributed.into(),
         ));
     });
 
@@ -3330,7 +3330,7 @@ fn submit_work_fails_with_invalid_stage() {
             .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
     });
 
-    //FundingExpired
+    //NoFundingContributed
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -3345,7 +3345,7 @@ fn submit_work_fails_with_invalid_stage() {
         run_to_block(funding_period + 10);
 
         SubmitWorkFixture::default().call_and_assert(Err(
-            Error::<Test>::InvalidStageUnexpectedFundingExpired.into(),
+            Error::<Test>::InvalidStageUnexpectedNoFundingContributed.into(),
         ));
     });
 
@@ -4239,7 +4239,7 @@ fn submit_judgment_fails_with_invalid_stage() {
             .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
     });
 
-    //FundingExpired
+    //NoFundingContributed
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -4254,7 +4254,7 @@ fn submit_judgment_fails_with_invalid_stage() {
         run_to_block(funding_period + 10);
 
         SubmitJudgmentFixture::default().call_and_assert(Err(
-            Error::<Test>::InvalidStageUnexpectedFundingExpired.into(),
+            Error::<Test>::InvalidStageUnexpectedNoFundingContributed.into(),
         ));
     });
 
@@ -4784,7 +4784,7 @@ fn switch_oracle_fails_invalid_stage() {
             ));
     });
 
-    //FundingExpired
+    //NoFundingContributed
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -4808,7 +4808,7 @@ fn switch_oracle_fails_invalid_stage() {
             .with_origin(RawOrigin::Signed(actual_oracle_account_id))
             .with_new_oracle_member_id(BountyActor::Member(new_oracle_member_id))
             .call_and_assert(Err(
-                Error::<Test>::InvalidStageUnexpectedFundingExpired.into()
+                Error::<Test>::InvalidStageUnexpectedNoFundingContributed.into(),
             ));
     });
 
@@ -5394,7 +5394,7 @@ fn unlock_work_entrant_stake_fails_invalid_stage() {
             .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
     });
 
-    //FundingExpired
+    //NoFundingContributed
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -5409,7 +5409,7 @@ fn unlock_work_entrant_stake_fails_invalid_stage() {
         run_to_block(funding_period + 10);
 
         UnlockWorkEntrantStakeFixture::default().call_and_assert(Err(
-            Error::<Test>::InvalidStageUnexpectedFundingExpired.into(),
+            Error::<Test>::InvalidStageUnexpectedNoFundingContributed.into(),
         ));
     });
 
@@ -5798,7 +5798,7 @@ fn withdraw_oracle_reward_fails_invalid_stage() {
             .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
     });
 
-    //FundingExpired
+    //NoFundingContributed
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -5815,7 +5815,7 @@ fn withdraw_oracle_reward_fails_invalid_stage() {
         WithdrawOracleRewardFixture::default()
             .with_origin(RawOrigin::Root)
             .call_and_assert(Err(
-                Error::<Test>::InvalidStageUnexpectedFundingExpired.into()
+                Error::<Test>::InvalidStageUnexpectedNoFundingContributed.into(),
             ));
     });
 
