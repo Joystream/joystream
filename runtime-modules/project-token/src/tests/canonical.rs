@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use frame_support::{assert_noop, assert_ok, Currency, StorageDoubleMap};
+use frame_support::{assert_noop, assert_ok, StorageDoubleMap};
 use sp_runtime::traits::AccountIdConversion;
 
 use crate::tests::mock::*;
@@ -12,7 +12,7 @@ use crate::{
 
 macro_rules! treasury {
     ($t: expr) => {
-        <Test as crate::Trait>::ModuleId::get().into_sub_account::<AccountId>($t)
+        <Test as crate::Trait>::ModuleId::get().into_sub_account($t)
     };
 }
 
@@ -266,7 +266,7 @@ fn join_whitelist_ok_with_bloat_bond_deposited_into_treasury() {
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
     let proof = merkle_proof!(0, [acc1, acc2]);
-    let (treasury_acc, bloat_bond) = (treasury!(token_id), balance!(100));
+    let (treasury_acc, bloat_bond): (AccountId, _) = (treasury!(token_id), balance!(BLOAT_BOND));
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -278,8 +278,32 @@ fn join_whitelist_ok_with_bloat_bond_deposited_into_treasury() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result = Token::join_whitelist(origin!(acc1), token_id, proof);
+        let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
 
         assert_eq!(Balances::free_balance(treasury_acc), bloat_bond);
+    })
+}
+
+#[test]
+fn join_whitelist_ok_with_bloat_bond_slashed_from_account_free_balance() {
+    let token_id = token!(1);
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![acc1, acc2];
+    let proof = merkle_proof!(0, [acc1, acc2]);
+    let bloat_bond = balance!(BLOAT_BOND);
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
+
+        assert_eq!(Balances::free_balance(acc1), balance!(0));
     })
 }

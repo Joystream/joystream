@@ -44,6 +44,10 @@ pub trait Trait: frame_system::Trait {
 
     /// Tresury account for the various tokens
     type ModuleId: Get<ModuleId>;
+
+    // TODO(after PR round is completed): use Self::ReserveBalance
+    /// Bloat bond value: in JOY
+    type BloatBond: Get<Self::Balance>;
 }
 
 decl_storage! {

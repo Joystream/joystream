@@ -60,8 +60,12 @@ impl_outer_event! {
     pub enum TestEvent for Test {
         token<T>,
         frame_system<T>,
+        balances<T>,
     }
 }
+
+// Trait constants
+pub const BLOAT_BOND: u64 = 100;
 
 parameter_types! {
     // constants for frame_system::Trait
@@ -72,6 +76,9 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
     // constants for crate::Trait
     pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token"); // module storage
+    pub const BloatBond: u64 = BLOAT_BOND;
+    // constants for balances::Trait
+    pub const ExistentialDeposit: u64 = 0;
 }
 
 impl frame_system::Trait for Test {
@@ -108,6 +115,18 @@ impl Trait for Test {
     type TokenId = u64;
     type BlockNumberToBalance = Block2Balance;
     type ModuleId = TokenModuleId;
+    type BloatBond = BloatBond;
+}
+
+/// Implement pallet balances trait for Test
+impl balances::Trait for Test {
+    type Balance = u64;
+    type DustRemoval = ();
+    type Event = TestEvent;
+    type ExistentialDeposit = ExistentialDeposit;
+    type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = ();
 }
 
 /// Genesis config builder
