@@ -110,6 +110,30 @@ fn join_whitelist_fails_with_no_proof_provided() {
 }
 
 #[test]
+fn join_whitelist_fails_with_insufficent_joy_balance_for_bloat_bond() {
+    let token_id = token!(1);
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![acc1, acc2];
+    let proof = merkle_proof!(0, [acc1, acc2]);
+    let bloat_bond = balance!(BLOAT_BOND);
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::join_whitelist(origin!(acc1), token_id, proof);
+
+        assert_noop!(result, Error::<Test>::InsufficientBalanceForBloatBond);
+    })
+}
+
+#[test]
 fn join_whitelist_ok() {
     let token_id = token!(1);
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
@@ -278,6 +302,8 @@ fn join_whitelist_ok_with_bloat_bond_deposited_into_treasury() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&acc1, bloat_bond);
+
         let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
 
         assert_eq!(Balances::free_balance(treasury_acc), bloat_bond);
@@ -302,6 +328,8 @@ fn join_whitelist_ok_with_bloat_bond_slashed_from_account_free_balance() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&acc1, bloat_bond);
+
         let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
 
         assert_eq!(Balances::free_balance(acc1), balance!(0));

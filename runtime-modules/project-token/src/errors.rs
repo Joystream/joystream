@@ -45,5 +45,7 @@ decl_error! {
         /// Account Already exists
         AccountAlreadyExists,
 
+        /// Insufficient Balance for Bloat bond
+        InsufficientBalanceForBloatBond,
     }
 }

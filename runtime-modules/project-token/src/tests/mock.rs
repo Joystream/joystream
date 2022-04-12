@@ -2,7 +2,7 @@
 
 use frame_support::{
     impl_outer_event, impl_outer_origin, parameter_types,
-    traits::{OnFinalize, OnInitialize},
+    traits::{Currency, OnFinalize, OnInitialize},
 };
 
 use codec::Encode;
@@ -315,4 +315,8 @@ impl Convert<BlockNumber, Balance> for Block2Balance {
     fn convert(block: BlockNumber) -> Balance {
         block as u64
     }
+}
+
+pub fn increase_account_balance(account_id: &AccountId, balance: Balance) {
+    let _ = Balances::deposit_creating(account_id, balance);
 }
