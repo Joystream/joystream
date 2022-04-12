@@ -116,6 +116,7 @@ impl Trait for Test {
     type BlockNumberToBalance = Block2Balance;
     type ModuleId = TokenModuleId;
     type BloatBond = BloatBond;
+    type ReserveCurrency = Balances;
 }
 
 /// Implement pallet balances trait for Test

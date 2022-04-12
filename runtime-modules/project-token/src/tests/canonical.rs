@@ -22,6 +22,7 @@ fn join_whitelist_fails_with_token_id_not_valid() {
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
     let proof = merkle_proof!(0, [acc1, acc2]);
+    let bloat_bond = balance!(BLOAT_BOND);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -33,6 +34,8 @@ fn join_whitelist_fails_with_token_id_not_valid() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&acc1, bloat_bond);
+
         let result = Token::join_whitelist(origin!(acc1), token_id + 1, proof);
 
         assert_noop!(result, Error::<Test>::TokenDoesNotExist,);
@@ -45,6 +48,7 @@ fn join_whitelist_fails_with_existing_account() {
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
     let proof = merkle_proof!(0, [acc1, acc2]);
+    let bloat_bond = balance!(BLOAT_BOND);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -57,6 +61,8 @@ fn join_whitelist_fails_with_existing_account() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&acc1, bloat_bond);
+
         let result = Token::join_whitelist(origin!(acc1), token_id, proof);
 
         assert_noop!(result, Error::<Test>::AccountAlreadyExists,);
@@ -69,6 +75,7 @@ fn join_whitelist_fails_with_invalid_proof() {
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
     let proof = merkle_proof!(0, [acc1, acc1]);
+    let bloat_bond = balance!(BLOAT_BOND);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -80,6 +87,8 @@ fn join_whitelist_fails_with_invalid_proof() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&acc1, bloat_bond);
+
         let result = Token::join_whitelist(origin!(acc1), token_id, proof);
 
         assert_noop!(result, Error::<Test>::MerkleProofVerificationFailure,);
@@ -92,6 +101,7 @@ fn join_whitelist_fails_with_no_proof_provided() {
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
     let proof = MerkleProofOf::<Test>::new(None);
+    let bloat_bond = balance!(BLOAT_BOND);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -103,6 +113,8 @@ fn join_whitelist_fails_with_no_proof_provided() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&acc1, bloat_bond);
+
         let result = Token::join_whitelist(origin!(acc1), token_id, proof);
 
         assert_noop!(result, Error::<Test>::MerkleProofNotProvided,);
@@ -115,7 +127,6 @@ fn join_whitelist_fails_with_insufficent_joy_balance_for_bloat_bond() {
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
     let proof = merkle_proof!(0, [acc1, acc2]);
-    let bloat_bond = balance!(BLOAT_BOND);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -139,6 +150,7 @@ fn join_whitelist_ok() {
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
     let proof = merkle_proof!(0, [acc1, acc2]);
+    let bloat_bond = balance!(BLOAT_BOND);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -150,6 +162,8 @@ fn join_whitelist_ok() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&acc1, bloat_bond);
+
         let result = Token::join_whitelist(origin!(acc1), token_id, proof);
 
         assert_ok!(result);
@@ -162,6 +176,7 @@ fn join_whitelist_ok_with_event_deposit() {
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
     let proof = merkle_proof!(0, [acc1, acc2]);
+    let bloat_bond = balance!(BLOAT_BOND);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -173,6 +188,8 @@ fn join_whitelist_ok_with_event_deposit() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&acc1, bloat_bond);
+
         let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
 
         last_event_eq!(RawEvent::MemberJoinedWhitelist(
@@ -189,6 +206,7 @@ fn join_whitelist_ok_in_permissionless_mode() {
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
     let proof = merkle_proof!(0, [acc1, acc2]);
+    let bloat_bond = balance!(BLOAT_BOND);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -200,6 +218,8 @@ fn join_whitelist_ok_in_permissionless_mode() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&acc1, bloat_bond);
+
         let result = Token::join_whitelist(origin!(acc1), token_id, proof);
 
         assert_ok!(result);
@@ -211,6 +231,7 @@ fn join_whitelist_ok_with_new_account_created() {
     let token_id = token!(1);
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let proof = merkle_proof!(0, [acc1, acc2]);
+    let bloat_bond = balance!(BLOAT_BOND);
 
     let token_data = TokenDataBuilder::new_empty().build();
 
@@ -220,6 +241,8 @@ fn join_whitelist_ok_with_new_account_created() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&acc1, bloat_bond);
+
         let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
 
         assert!(<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
@@ -234,6 +257,7 @@ fn join_whitelist_ok_with_new_account_having_free_balance_zero() {
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
     let proof = merkle_proof!(0, [acc1, acc2]);
+    let bloat_bond = balance!(BLOAT_BOND);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -242,11 +266,11 @@ fn join_whitelist_ok_with_new_account_having_free_balance_zero() {
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
         .with_account(owner, 0, 0)
-        .with_account(acc1, 0, 0)
-        .with_account(acc2, 0, 0)
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&acc1, bloat_bond);
+
         let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
 
         assert_eq!(
@@ -262,6 +286,7 @@ fn join_whitelist_ok_with_new_account_having_reserved_balance_zero() {
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
     let proof = merkle_proof!(0, [acc1, acc2]);
+    let bloat_bond = balance!(BLOAT_BOND);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -270,11 +295,11 @@ fn join_whitelist_ok_with_new_account_having_reserved_balance_zero() {
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
         .with_account(owner, 0, 0)
-        .with_account(acc1, 0, 0)
-        .with_account(acc2, 0, 0)
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&acc1, bloat_bond);
+
         let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
 
         assert_eq!(

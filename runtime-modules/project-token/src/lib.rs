@@ -4,11 +4,14 @@ use frame_support::{
     decl_module, decl_storage,
     dispatch::{fmt::Debug, marker::Copy, DispatchError, DispatchResult},
     ensure,
-    traits::Get,
+    traits::{Currency, ExistenceRequirement, Get},
 };
 use frame_system::ensure_signed;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
-use sp_runtime::{traits::Convert, ModuleId};
+use sp_runtime::{
+    traits::{AccountIdConversion, Convert},
+    ModuleId,
+};
 use sp_std::iter::Sum;
 
 // crate modules
@@ -47,7 +50,10 @@ pub trait Trait: frame_system::Trait {
 
     // TODO(after PR round is completed): use Self::ReserveBalance
     /// Bloat bond value: in JOY
-    type BloatBond: Get<Self::Balance>;
+    type BloatBond: Get<<Self::ReserveCurrency as Currency<Self::AccountId>>::Balance>;
+
+    /// the Currency interface used as a reserve (i.e. JOY)
+    type ReserveCurrency: Currency<Self::AccountId>;
 }
 
 decl_storage! {
@@ -141,6 +147,13 @@ decl_module! {
             if let TransferPolicyOf::<T>::Permissioned(commit) = token_info.transfer_policy {
                 proof.verify_for_commit::<T,_>(&account_id, commit)?
             }
+
+            let treasury: T::AccountId = T::ModuleId::get().into_sub_account(token_id);
+            let bloat_bond = T::BloatBond::get();
+
+            // No project_token or balances state corrupted in case of failure
+            let _ = T::ReserveCurrency::transfer(&account_id, &treasury, bloat_bond, ExistenceRequirement::KeepAlive)
+                .map_err(|_| Error::<T>::InsufficientBalanceForBloatBond)?;
 
             // == MUTATION SAFE ==
 
