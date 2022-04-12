@@ -3,6 +3,46 @@ use sp_std::collections::btree_map::BTreeMap;
 #[cfg(feature = "std")]
 use strum_macros::EnumIter;
 
+/// Defines limit for object for a defined period.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default)]
+pub struct LimitPerPeriod<BlockNumber> {
+    /// Limit for objects.
+    pub limit: u64,
+
+    /// Period in blocks for active limit.
+    pub block_number_period: BlockNumber,
+}
+
+/// Defines limit for object for a defined period.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default)]
+pub struct NftCounter<BlockNumber: BaseArithmetic + Copy> {
+    /// Counter for objects.
+    pub counter: u64,
+
+    /// Last updated block number for this counter.
+    pub last_updated: BlockNumber,
+}
+
+impl<BlockNumber: BaseArithmetic + Copy> NftCounter<BlockNumber> {
+    // Defines whether the counter is valid for the current block.
+    pub(crate) fn is_current_period(
+        &self,
+        current_block: BlockNumber,
+        period_length: BlockNumber,
+    ) -> bool {
+        if period_length.is_zero() {
+            return false;
+        }
+
+        let last_updated_period_number = self.last_updated / period_length;
+        let current_period_number = current_block / period_length;
+
+        last_updated_period_number == current_period_number
+    }
+}
+
 /// Specifies how a new asset will be provided on creating and updating
 /// Channels, Videos, Series and Person
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

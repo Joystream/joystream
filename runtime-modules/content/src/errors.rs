@@ -280,5 +280,11 @@ decl_error! {
 
         /// Cannot transfer the channel: channel owner has insufficient balance (budget for WGs)
         InsufficientBalanceForTransfer,
+
+        // Insufficient council budget to cover channel reward claim
+        InsufficientCouncilBudget,
+
+        // Can't issue more NFTs: daily limit exceeded.
+        GlobalNftDailyLimitExceeded,
     }
 }

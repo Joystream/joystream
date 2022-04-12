@@ -189,6 +189,12 @@ decl_storage! {
         pub OpenAuctionBidByVideoAndMember get(fn open_auction_bid_by_video_and_member):
         double_map hasher(blake2_128_concat) T::VideoId,
         hasher(blake2_128_concat) T::MemberId => OpenAuctionBid<T>;
+
+        /// Global daily NFT limit.
+        pub GlobalDailyNftLimit get(fn global_nft_daily_limit): LimitPerPeriod<T::BlockNumber>;
+
+        /// Global daily NFT counter.
+        pub GlobalDailyNftCounter get(fn global_nft_daily_counter): NftCounter<T::BlockNumber>;
     }
 }
 
@@ -796,7 +802,7 @@ decl_module! {
             // create the video struct
             let video: Video<T> = VideoRecord {
                 in_channel: channel_id,
-                nft_status,
+                nft_status: nft_status.clone(),
                 data_objects: data_objects_ids.clone(),
             };
 
@@ -810,10 +816,17 @@ decl_module! {
                 Storage::<T>::upload_data_objects(params)?;
             }
 
+            if nft_status.is_some() {
+                Self::check_nft_limits(&channel_id)?;
+            }
+
             //
             // == MUTATION SAFE ==
             //
 
+            if nft_status.is_some() {
+                Self::increment_nft_numbers(&channel_id);
+            }
 
             // add it to the onchain state
             VideoById::<T>::insert(video_id, video);
@@ -878,9 +891,17 @@ decl_module! {
                     }
                 )?;
 
+            if nft_status.is_some() {
+                Self::check_nft_limits(&channel_id)?;
+            }
+
             //
             // == MUTATION SAFE ==
             //
+
+            if nft_status.is_some() {
+                Self::increment_nft_numbers(&channel_id);
+            }
 
             // upload/delete video assets from storage with commit or rollback semantics
             let upload_parameters = UploadParameters::<T> {
@@ -1167,9 +1188,14 @@ decl_module! {
             // The content owner will be..
             let nft_status = Self::construct_owned_nft(&params, video_id)?;
 
+            // Check channel's nft limits
+            Self::check_nft_limits(&video.in_channel)?;
+
             //
             // == MUTATION SAFE ==
             //
+
+            Self::increment_nft_numbers(&video.in_channel);
 
             // Update the video
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft_status));
@@ -2470,6 +2496,47 @@ impl<T: Trait> Module<T> {
                 T::ContentWorkingGroup::set_budget(new_budget);
             }
         };
+
+        Ok(())
+    }
+
+    // Increment NFT numbers for a channel and global numbers.
+    fn increment_nft_numbers(_channel_id: &T::ChannelId) {
+        GlobalDailyNftCounter::<T>::mutate(|nft_counter| {
+            let global_daily_limit = Self::global_nft_daily_limit();
+            let current_block = frame_system::Module::<T>::block_number();
+
+            if nft_counter.is_current_period(current_block, global_daily_limit.block_number_period)
+            {
+                nft_counter.counter += 1;
+            } else {
+                nft_counter.counter = 1;
+            }
+
+            nft_counter.last_updated = current_block;
+        });
+    }
+
+    // Checks all NFT-limits
+    fn check_nft_limits(_channel_id: &T::ChannelId) -> DispatchResult {
+        // Global daily limit.
+        let global_daily_counter = Self::global_nft_daily_counter();
+        let global_daily_limit = Self::global_nft_daily_limit();
+
+        ensure!(
+            !global_daily_limit.limit.is_zero(),
+            Error::<T>::GlobalNftDailyLimitExceeded
+        );
+
+        let current_block = frame_system::Module::<T>::block_number();
+        if global_daily_counter
+            .is_current_period(current_block, global_daily_limit.block_number_period)
+        {
+            ensure!(
+                global_daily_counter.counter < global_daily_limit.limit,
+                Error::<T>::GlobalNftDailyLimitExceeded
+            );
+        }
 
         Ok(())
     }

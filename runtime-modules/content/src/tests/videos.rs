@@ -1211,6 +1211,7 @@ fn unsuccessful_video_update_with_nft_issuance_when_nft_already_issued() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel();
+        set_default_global_nft_limits();
 
         // create video with nft issued
         CreateVideoFixture::default()
