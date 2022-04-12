@@ -125,7 +125,7 @@ pub struct Output<AccountId, Balance> {
 
 /// Wrapper around Vec<Outputs>
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct Outputs<AccountId, Balance>(pub(crate) Vec<Output<AccountId, Balance>>);
+pub struct Outputs<AccountId, Balance>(pub Vec<Output<AccountId, Balance>>);
 
 /// Default trait for Merkle Side
 impl Default for MerkleSide {

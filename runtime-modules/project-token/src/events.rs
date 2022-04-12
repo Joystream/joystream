@@ -66,5 +66,13 @@ decl_event! {
         /// - account that has just joined
         /// - ongoing transfer policy
         MemberJoinedWhitelist(TokenId, AccountId, TransferPolicy),
+
+        /// Account Dusted
+        /// Params:
+        /// - token identifier
+        /// - account dusted
+        /// - account that called the extrinsic
+        /// - ongoing policy
+        AccountDustedBy(TokenId, AccountId, AccountId, TransferPolicy),
     }
 }

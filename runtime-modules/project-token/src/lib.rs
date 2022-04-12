@@ -127,6 +127,11 @@ decl_module! {
             Ok(())
         }
 
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn dust_account(origin, token_id: T::TokenId, account_id: T::AccountId) -> DispatchResult {
+            todo!()
+        }
+
         /// Join whitelist for permissioned case: used to add accounts for token
         /// Preconditions:
         /// - 'token_id' must be valid

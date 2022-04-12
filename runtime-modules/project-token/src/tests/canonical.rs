@@ -360,3 +360,187 @@ fn join_whitelist_ok_with_bloat_bond_slashed_from_account_free_balance() {
         assert_eq!(Balances::free_balance(acc1), balance!(0));
     })
 }
+
+#[test]
+fn dust_account_fails_with_invalid_token_id() {
+    let token_id = token!(1);
+    let acc = account!(2);
+    let (owner, owner_balance) = (account!(1), balance!(100));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, owner_balance, 0)
+        .with_account(acc, balance!(0), balance!(0))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::dust_account(origin!(owner), token_id + 1, acc);
+
+        assert_noop!(result, Error::<Test>::TokenDoesNotExist);
+    })
+}
+
+#[test]
+fn dust_account_fails_with_invalid_account_id() {
+    let token_id = token!(1);
+    let acc = account!(2);
+    let (owner, owner_balance) = (account!(1), balance!(100));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, owner_balance, 0)
+        .with_account(acc, balance!(0), balance!(0))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::dust_account(origin!(owner), token_id, acc + 1);
+
+        assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
+    })
+}
+
+#[test]
+fn dust_account_fails_with_permissionless_mode_and_non_empty_non_owned_account() {
+    let token_id = token!(1);
+    let (acc1, acc2) = (account!(2), account!(3));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(acc1, balance!(0), balance!(0))
+        .with_account(acc2, balance!(10), balance!(10))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::dust_account(origin!(acc1), token_id, acc2);
+
+        assert_noop!(
+            result,
+            Error::<Test>::AttemptToRemoveNonOwnedAndNonEmptyAccount
+        );
+    })
+}
+
+#[test]
+fn dust_account_fails_with_permissioned_mode_and_non_owned_account() {
+    let token_id = token!(1);
+    let (acc1, acc2) = (account!(2), account!(3));
+    let commit = merkle_root![acc1, acc2];
+    let (owner, owner_balance) = (account!(1), balance!(100));
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, owner_balance, 0)
+        .with_account(acc1, balance!(0), balance!(0))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::dust_account(origin!(acc1), token_id, acc2);
+
+        assert_noop!(
+            result,
+            Error::<Test>::AttemptToRemoveNonOwnedAccountUnderPermissionedMode
+        );
+    })
+}
+
+#[test]
+fn dust_account_ok_with_permissionless_mode_and_non_empty_owned_account() {
+    let token_id = token!(1);
+    let (acc1, acc2) = (account!(2), account!(3));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(acc1, balance!(10), balance!(10))
+        .with_account(acc2, balance!(0), balance!(0))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::dust_account(origin!(acc1), token_id, acc1);
+
+        assert_ok!(result);
+    })
+}
+
+#[test]
+fn dust_account_ok_with_permissioned_mode_and_non_empty_owned_account() {
+    let token_id = token!(1);
+    let (acc1, acc2) = (account!(2), account!(3));
+    let commit = merkle_root![acc1, acc2];
+    let (owner, owner_balance) = (account!(1), balance!(100));
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, owner_balance, 0)
+        .with_account(acc1, balance!(0), balance!(0))
+        .with_account(acc2, balance!(10), balance!(0))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::dust_account(origin!(acc1), token_id, acc1);
+
+        assert_ok!(result);
+    })
+}
+
+#[test]
+fn dust_account_ok_with_permissionless_mode_and_empty_non_owned_account() {
+    let token_id = token!(1);
+    let acc = account!(2);
+    let (owner, owner_balance) = (account!(1), balance!(100));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, owner_balance, 0)
+        .with_account(acc, balance!(0), balance!(0))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::dust_account(origin!(acc), token_id, acc);
+
+        assert_ok!(result);
+    })
+}
+
+#[test]
+fn dust_account_ok_with_event_deposit() {
+    let token_id = token!(1);
+    let (acc1, acc2) = (account!(2), account!(3));
+    let (owner, owner_balance) = (account!(1), balance!(100));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(acc1, balance!(0), balance!(0))
+        .with_account(acc2, balance!(0), balance!(0))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::dust_account(origin!(acc1), token_id, acc2);
+
+        last_event_eq!(RawEvent::AccountDustedBy(
+            token_id,
+            acc2,
+            acc1,
+            Policy::Permissionless
+        ));
+    })
+}

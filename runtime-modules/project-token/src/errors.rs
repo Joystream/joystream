@@ -47,5 +47,12 @@ decl_error! {
 
         /// Insufficient Balance for Bloat bond
         InsufficientBalanceForBloatBond,
+
+        /// Attempt to removed non owned account under permissioned mode
+        AttemptToRemoveNonOwnedAccountUnderPermissionedMode,
+
+        /// Attempt to removed non empty non owned
+        AttemptToRemoveNonOwnedAndNonEmptyAccount,
+
     }
 }
