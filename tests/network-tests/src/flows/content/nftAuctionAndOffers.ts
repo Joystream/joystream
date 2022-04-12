@@ -8,6 +8,7 @@ import {
   CreateMembersFixture,
   NftEnglishAuctionFixture,
   NftBuyNowFixture,
+  NftUpdateBuyNowPriceFixture,
   NftDirectOfferFixture,
   NftOpenAuctionFixture,
   AuctionCancelationsFixture,
@@ -29,7 +30,7 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
   const joystreamCli = await createJoystreamCli()
 
   // settings
-  const videoCount = 6 // should be equal to number of uses of `nextVideo()` below
+  const videoCount = 7 // should be equal to number of uses of `nextVideo()` below
   const videoCategoryCount = 1
   const channelCount = 1
   const channelCategoryCount = 1
@@ -99,6 +100,10 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
 
   await new FixtureRunner(nftBuyNowFixture).run()
 
+  const updateBuyNowPriceFixture = new NftUpdateBuyNowPriceFixture(api, query, nextVideo().videoId, author as IMember)
+
+  await new FixtureRunner(updateBuyNowPriceFixture).run()
+
   const nftDirectOfferFixture = new NftDirectOfferFixture(
     api,
     query,
@@ -146,7 +151,7 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
   const nftCollectors = {
     [channelIds[0].toString()]: {
       // 4 == num of videos not transfered from original owner + 1 created in createVideoWithAuctionFixture
-      [author.memberId.toString()]: 4,
+      [author.memberId.toString()]: 5,
 
       // 2 == target of direct offer + buy now winner
       [auctionParticipants[0].memberId.toString()]: 2,

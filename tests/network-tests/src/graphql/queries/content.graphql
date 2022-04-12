@@ -94,7 +94,6 @@ fragment OwnedNftFields on OwnedNft {
   transactionalStatusAuction {
     startsAtBlock
     isCompleted
-
     endedAtBlock
     startingPrice
     auctionType {
