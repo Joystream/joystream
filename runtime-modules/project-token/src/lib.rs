@@ -26,7 +26,7 @@ use errors::Error;
 pub use events::{Event, RawEvent};
 use traits::PalletToken;
 use types::{
-    AccountDataOf, DecOp, MerkleProofOf, OutputsOf, TokenDataOf, TokenIssuanceParametersOf,
+    AccountDataOf, MerkleProofOf, OutputsOf, TokenDataOf, TokenIssuanceParametersOf,
     TransferPolicyOf,
 };
 
@@ -113,11 +113,11 @@ decl_module! {
             let src = ensure_signed(origin)?;
 
             // Currency transfer preconditions
-            let decrease_operation = Self::ensure_can_transfer(token_id, &src, &outputs)?;
+            Self::ensure_can_transfer(token_id, &src, &outputs)?;
 
             // == MUTATION SAFE ==
 
-            Self::do_transfer(token_id, &src, &outputs, decrease_operation);
+            Self::do_transfer(token_id, &src, &outputs);
 
             Self::deposit_event(RawEvent::TokenAmountTransferred(
                 token_id,
@@ -349,7 +349,7 @@ impl<T: Trait> Module<T> {
         outputs: &OutputsOf<T>,
     ) -> DispatchResult {
         // ensure token validity
-        let token_info = Self::ensure_token_exists(token_id)?;
+        let _ = Self::ensure_token_exists(token_id)?;
 
         // ensure src account id validity
         let src_account_info = Self::ensure_account_data_exists(token_id, src)?;
@@ -369,36 +369,22 @@ impl<T: Trait> Module<T> {
         let total = outputs.total_amount();
 
         // Amount to decrease by accounting for existential deposit
-        src_account_info
-            .ensure_can_decrease_liquidity_by::<T>(total)
-            .map(|_| ())
+        src_account_info.ensure_can_decrease_liquidity_by::<T>(total)
     }
 
     /// Perform balance accounting for balances
-    pub(crate) fn do_transfer(
-        token_id: T::TokenId,
-        src: &T::AccountId,
-        outputs: &OutputsOf<T>,
-        decrease_op: DecOp<T>,
-    ) {
+    pub(crate) fn do_transfer(token_id: T::TokenId, src: &T::AccountId, outputs: &OutputsOf<T>) {
         outputs.iter().for_each(|out| {
             AccountInfoByTokenAndAccount::<T>::mutate(token_id, &out.beneficiary, |account_data| {
                 account_data.increase_liquidity_by(out.amount);
             });
         });
-        match decrease_op {
-            DecOp::<T>::Reduce(amount) => {
-                AccountInfoByTokenAndAccount::<T>::mutate(token_id, &src, |account_data| {
-                    account_data.decrease_liquidity_by(amount);
-                })
-            }
-            DecOp::<T>::Remove(_, dust_amount) => {
-                AccountInfoByTokenAndAccount::<T>::remove(token_id, &src);
-                TokenInfoById::<T>::mutate(token_id, |token_data| {
-                    token_data.decrease_issuance_by(dust_amount);
-                });
-            }
-        };
+
+        let total_amount = outputs.iter().map(|out| out.amount).sum();
+
+        AccountInfoByTokenAndAccount::<T>::mutate(token_id, &src, |account_data| {
+            account_data.decrease_liquidity_by(total_amount);
+        })
     }
 
     pub(crate) fn current_block() -> T::BlockNumber {

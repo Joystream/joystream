@@ -7,14 +7,6 @@ use sp_arithmetic::traits::{Saturating, Zero};
 use sp_runtime::traits::{Convert, Hash};
 use sp_std::{iter::Sum, slice::Iter};
 
-pub(crate) enum DecreaseOp<Balance> {
-    /// reduce amount by
-    Reduce(Balance),
-
-    /// Remove Account (original amonut, dust below ex deposit)
-    Remove(Balance, Balance),
-}
-
 /// Info for the account
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct AccountData<Balance> {
@@ -184,12 +176,12 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
     pub(crate) fn ensure_can_decrease_liquidity_by<T: crate::Trait>(
         &self,
         amount: Balance,
-    ) -> Result<DecreaseOp<Balance>, DispatchError> {
+    ) -> DispatchResult {
         ensure!(
             self.free_balance >= amount,
             crate::Error::<T>::InsufficientFreeBalanceForTransfer,
         );
-        Ok(self.free_balance - amount)
+        Ok(())
     }
 
     pub(crate) fn _total_balance(&self) -> Balance {
@@ -327,9 +319,6 @@ pub(crate) type TokenIssuanceParametersOf<T> =
 
 /// Alias for TransferPolicy
 pub(crate) type TransferPolicyOf<T> = TransferPolicy<<T as frame_system::Trait>::Hash>;
-
-/// Alias for decrease operation
-pub(crate) type DecOp<T> = DecreaseOp<<T as crate::Trait>::Balance>;
 
 /// Alias for the Merkle Proof type
 pub(crate) type MerkleProofOf<T> = MerkleProof<<T as frame_system::Trait>::Hashing>;

@@ -3,7 +3,8 @@ use sp_runtime::traits::Hash;
 
 use crate::tests::mock::*;
 use crate::types::{
-    MerkleProof, MerkleSide, OfferingState, Output, Outputs, PatronageData, TransferPolicy,
+    AccountData, MerkleProof, MerkleSide, OfferingState, Output, Outputs, PatronageData,
+    TransferPolicy,
 };
 use crate::GenesisConfig;
 
@@ -144,6 +145,12 @@ impl<Hasher: Hash> MerkleProof<Hasher> {
 impl<Balance, AccountId> Outputs<Balance, AccountId> {
     pub fn new(v: Vec<Output<Balance, AccountId>>) -> Self {
         Outputs::<_, _>(v)
+    }
+}
+
+impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
+    pub fn total_balance(&self) -> Balance {
+        self.free_balance.saturating_add(self.reserved_balance)
     }
 }
 

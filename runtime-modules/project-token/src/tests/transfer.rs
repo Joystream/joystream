@@ -172,7 +172,7 @@ fn permissionless_transfer_ok_with_ex_deposit_and_without_src_removal() {
 }
 
 #[test]
-fn permissionless_transfer_ok_with_ex_deposit_and_with_src_removal() {
+fn permissionless_transfer_ok_and_without_src_removal() {
     let token_id = token!(1);
     let existential_deposit = balance!(10u32);
     let (src, dst, amount) = (account!(1), account!(2), balance!(100));
@@ -191,7 +191,7 @@ fn permissionless_transfer_ok_with_ex_deposit_and_with_src_removal() {
     build_test_externalities(config).execute_with(|| {
         let _ = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
-        assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
+        assert!(<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
             token_id, src
         ));
     })
@@ -223,21 +223,17 @@ fn permissionless_transfer_ok_with_destination_receiving_funds() {
 }
 
 #[test]
-fn permissionless_transfer_ok_with_ex_deposit_and_dust_removal_from_issuance() {
+fn permissionless_transfer_ok_without_change_in_token_supply() {
     let token_id = token!(1);
-    let dust = balance!(5);
-    let (dst, amount) = (account!(2), balance!(100));
-    let (src, src_balance) = (account!(1), dust + amount);
-    let existential_deposit = balance!(10);
-
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
-        .with_existential_deposit(existential_deposit)
         .build();
+    let (src, amount) = (account!(1), balance!(100));
+    let dst = account!(2);
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, src_balance, 0)
+        .with_account(src, amount, 0)
         .with_account(dst, 0, 0)
         .build();
 
@@ -245,8 +241,8 @@ fn permissionless_transfer_ok_with_ex_deposit_and_dust_removal_from_issuance() {
         let _ = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
         assert_eq!(
-            src_balance.saturating_sub(dust),
             Token::token_info_by_id(token_id).current_total_issuance,
+            amount
         );
     })
 }
@@ -368,6 +364,34 @@ fn multiout_transfer_ok_with_event_deposit() {
             src,
             outputs.into()
         ));
+    })
+}
+
+#[test]
+fn multiout_transfer_ok_without_change_in_token_supply() {
+    let token_id = token!(1);
+    let token_info = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissionless)
+        .build();
+    let (dst1, amount1) = (account!(2), balance!(1));
+    let (dst2, amount2) = (account!(3), balance!(1));
+    let (src, src_balance) = (account!(1), amount1 + amount2);
+    let outputs = outputs![(dst1, amount1), (dst2, amount2)];
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_info)
+        .with_account(dst1, 0, 0)
+        .with_account(dst2, 0, 0)
+        .with_account(src, src_balance, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = Token::transfer(origin!(src), token_id, outputs);
+
+        assert_eq!(
+            Token::token_info_by_id(token_id).current_total_issuance,
+            balance!(src_balance),
+        );
     })
 }
 
@@ -589,56 +613,21 @@ fn permissioned_transfer_ok_without_src_removal() {
 }
 
 #[test]
-fn permissioned_transfer_ok_with_ex_deposit_and_with_src_removal() {
+fn permissioned_transfer_ok_without_change_in_token_supply() {
     let token_id = token!(1);
-    let amount = balance!(100);
-    let existential_deposit = balance!(20);
-    let dust = balance!(10);
-    let (src, src_balance) = (account!(1), amount + dust);
+    let (_src, amount) = (account!(2), balance!(100));
+    let src = account!(1);
     let (dst1, dst2) = (account!(2), account!(3));
     let commit = merkle_root![dst1, dst2];
     let outputs = outputs![(dst1, amount)];
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
-        .with_existential_deposit(existential_deposit)
         .build();
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, src_balance, 0)
-        .with_account(dst1, 0, 0)
-        .with_account(dst2, 0, 0)
-        .build();
-
-    build_test_externalities(config).execute_with(|| {
-        let _ = Token::transfer(origin!(src), token_id, outputs);
-
-        assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
-            token_id, src
-        ));
-    })
-}
-
-#[test]
-fn permissioned_transfer_ok_with_ex_deposit_and_decrease_in_issuance() {
-    let token_id = token!(1);
-    let amount = balance!(100);
-    let existential_deposit = balance!(20);
-    let dust = balance!(10);
-    let (src, src_balance) = (account!(1), amount + dust);
-    let (dst1, dst2) = (account!(2), account!(3));
-    let commit = merkle_root![dst1, dst2];
-    let outputs = outputs![(dst1, amount)];
-
-    let token_data = TokenDataBuilder::new_empty()
-        .with_transfer_policy(Policy::Permissioned(commit))
-        .with_existential_deposit(existential_deposit)
-        .build();
-
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, token_data)
-        .with_account(src, src_balance, 0)
+        .with_account(src, amount, 0)
         .with_account(dst1, 0, 0)
         .with_account(dst2, 0, 0)
         .build();
@@ -648,8 +637,40 @@ fn permissioned_transfer_ok_with_ex_deposit_and_decrease_in_issuance() {
 
         assert_eq!(
             Token::token_info_by_id(token_id).current_total_issuance,
-            src_balance - dust
+            balance!(amount),
         );
+    })
+}
+
+#[test]
+fn permissioned_transfer_ok_with_ex_deposit_and_without_src_removal() {
+    let token_id = token!(1);
+    let amount = balance!(100);
+    let existential_deposit = balance!(20);
+    let dust = balance!(10);
+    let (src, src_balance) = (account!(1), amount + dust);
+    let (dst1, dst2) = (account!(2), account!(3));
+    let commit = merkle_root![dst1, dst2];
+    let outputs = outputs![(dst1, amount)];
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .with_existential_deposit(existential_deposit)
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(src, src_balance, 0)
+        .with_account(dst1, 0, 0)
+        .with_account(dst2, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = Token::transfer(origin!(src), token_id, outputs);
+
+        assert!(<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
+            token_id, src
+        ));
     })
 }
 
@@ -788,18 +809,16 @@ fn permissioned_multi_out_ok_with_event_deposit() {
 }
 
 #[test]
-fn permissioned_multi_out_ok_with_ex_deposit_and_without_source_removal() {
+fn permissioned_multi_out_ok_and_without_source_removal() {
     let token_id = token!(1);
-    let existential_deposit = balance!(20);
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
-    let (src, src_balance) = (account!(1), amount1 + amount2 + existential_deposit);
+    let (src, src_balance) = (account!(1), amount1 + amount2);
     let commit = merkle_root![dst1, dst2];
     let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
-        .with_existential_deposit(existential_deposit)
         .build();
 
     let config = GenesisConfigBuilder::new_empty()
@@ -820,19 +839,16 @@ fn permissioned_multi_out_ok_with_ex_deposit_and_without_source_removal() {
 }
 
 #[test]
-fn permissioned_multi_out_ok_with_ex_deposit_and_source_removal() {
+fn permissioned_multi_out_ok_and_source_having_zero_total_balance() {
     let token_id = token!(1);
-    let existential_deposit = balance!(20);
-    let dust = balance!(5);
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
-    let (src, src_balance) = (account!(1), amount1 + amount2 + dust);
+    let (src, src_balance) = (account!(1), amount1 + amount2);
     let commit = merkle_root![dst1, dst2];
     let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
-        .with_existential_deposit(existential_deposit)
         .build();
 
     let config = GenesisConfigBuilder::new_empty()
@@ -845,26 +861,24 @@ fn permissioned_multi_out_ok_with_ex_deposit_and_source_removal() {
     build_test_externalities(config).execute_with(|| {
         let _ = Token::transfer(origin!(src), token_id, outputs);
 
-        assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
-            token_id, src
-        ));
+        assert_eq!(
+            Token::account_info_by_token_and_account(token_id, &src).total_balance(),
+            balance!(0),
+        );
     })
 }
 
 #[test]
-fn permissioned_multi_out_ok_with_ex_deposit_and_source_removal_and_issuance_decrease() {
+fn permissioned_multi_out_ok_and_without_change_in_token_supply() {
     let token_id = token!(1);
-    let existential_deposit = balance!(20);
-    let dust = balance!(5);
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
-    let (src, src_balance) = (account!(1), amount1 + amount2 + dust);
+    let (src, src_balance) = (account!(1), amount1 + amount2);
     let commit = merkle_root![dst1, dst2];
     let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
-        .with_existential_deposit(existential_deposit)
         .build();
 
     let config = GenesisConfigBuilder::new_empty()
@@ -879,7 +893,7 @@ fn permissioned_multi_out_ok_with_ex_deposit_and_source_removal_and_issuance_dec
 
         assert_eq!(
             Token::token_info_by_id(token_id).current_total_issuance,
-            src_balance - dust
+            balance!(src_balance),
         );
     })
 }
