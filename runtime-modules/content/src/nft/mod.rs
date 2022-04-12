@@ -5,11 +5,13 @@ pub use types::*;
 use crate::*;
 
 impl<T: Trait> Module<T> {
-    pub(crate) fn ensure_has_sufficient_balance(
+    pub(crate) fn ensure_has_sufficient_balance_for_bid(
         participant: &T::AccountId,
         bid: BalanceOf<T>,
-        old_bid: BalanceOf<T>,
+        old_bid: Option<BalanceOf<T>>,
     ) -> DispatchResult {
+        let old_bid = old_bid.unwrap_or_else(Zero::zero);
+
         ensure!(
             Balances::<T>::usable_balance(participant) >= bid.saturating_sub(old_bid),
             Error::<T>::InsufficientBalance
@@ -21,16 +23,20 @@ impl<T: Trait> Module<T> {
     pub(crate) fn make_bid_payment(
         participant: &T::AccountId,
         bid: BalanceOf<T>,
-        old_bid: BalanceOf<T>,
+        old_bid: Option<BalanceOf<T>>,
     ) -> DispatchResult {
-        if bid >= old_bid {
-            // Deposit the difference to the module account.
-            let combined_bid = bid.saturating_sub(old_bid);
-            ContentTreasury::<T>::deposit(&participant, combined_bid)
+        if let Some(old_bid) = old_bid {
+            if bid >= old_bid {
+                // Deposit the difference to the module account.
+                let combined_bid = bid.saturating_sub(old_bid);
+                ContentTreasury::<T>::deposit(&participant, combined_bid)
+            } else {
+                // Withdraw the difference from the module account.
+                let combined_bid = old_bid.saturating_sub(bid);
+                ContentTreasury::<T>::withdraw(&participant, combined_bid)
+            }
         } else {
-            // Withdraw the difference from the module account.
-            let combined_bid = old_bid.saturating_sub(bid);
-            ContentTreasury::<T>::withdraw(&participant, combined_bid)
+            ContentTreasury::<T>::deposit(&participant, bid)
         }
     }
 

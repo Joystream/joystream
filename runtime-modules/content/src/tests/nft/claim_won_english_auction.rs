@@ -437,6 +437,96 @@ fn settle_english_auction_ok_with_nft_claimed_by_non_winner() {
 }
 
 #[test]
+fn settle_english_auction_ok_with_balances_check() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(AUCTION_START_BLOCK);
+
+        let video_id = NextVideoId::<Test>::get();
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(COLLABORATOR_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        setup_english_auction_scenario();
+        let module_account_id = ContentTreasury::<Test>::module_account_id();
+
+        // Balances check
+        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), 0);
+        assert_eq!(
+            Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID),
+            INITIAL_BALANCE
+        );
+        assert_eq!(
+            Balances::<Test>::usable_balance(&COLLABORATOR_MEMBER_ACCOUNT_ID),
+            INITIAL_BALANCE
+        );
+
+        let bid = Content::min_starting_price();
+
+        // Make nft auction bid
+        assert_ok!(Content::make_english_auction_bid(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            video_id,
+            bid,
+        ));
+
+        // Balances check
+        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), bid);
+        assert_eq!(
+            Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID),
+            INITIAL_BALANCE - bid
+        );
+        assert_eq!(
+            Balances::<Test>::usable_balance(&COLLABORATOR_MEMBER_ACCOUNT_ID),
+            INITIAL_BALANCE
+        );
+
+        // Make nft auction bid
+        let next_bid = bid + Content::min_bid_step();
+        assert_ok!(Content::make_english_auction_bid(
+            Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
+            COLLABORATOR_MEMBER_ID,
+            video_id,
+            next_bid,
+        ));
+
+        // Balances check
+        assert_eq!(
+            Balances::<Test>::usable_balance(&module_account_id),
+            next_bid
+        );
+        assert_eq!(
+            Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID),
+            INITIAL_BALANCE
+        );
+        assert_eq!(
+            Balances::<Test>::usable_balance(&COLLABORATOR_MEMBER_ACCOUNT_ID),
+            INITIAL_BALANCE - next_bid
+        );
+
+        // Run to the block where auction expires
+        run_to_block(Content::max_auction_duration() + 1);
+
+        // Make an attempt to claim won english auction if last bid does not exist
+        let settle_english_auction_result =
+            Content::settle_english_auction(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
+
+        // Failure checked
+        assert_ok!(settle_english_auction_result);
+
+        // Balances check
+        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), 0);
+        assert_eq!(
+            Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID),
+            INITIAL_BALANCE
+        );
+        assert_eq!(
+            Balances::<Test>::usable_balance(&COLLABORATOR_MEMBER_ACCOUNT_ID),
+            INITIAL_BALANCE - next_bid
+        );
+    })
+}
+
+#[test]
 fn settle_english_auction_ok_with_nft_claimed_by_non_winner_and_winner_free_balance_increased() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
