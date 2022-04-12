@@ -30,6 +30,8 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
   public async execute(): Promise<void> {
     this.debug('Issue video NFT')
 
+    const winner = this.participants[this.participants.length - 1]
+
     // creator royalty
     const creatorRoyalty = 5
 
@@ -50,7 +52,7 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
       'Member'
     )
 
-    this.debug('Start NFT auction')
+    this.debug(`Start NFT auction (expected winner id ${winner.memberId})`)
     const {
       auctionParams,
       startingPrice,
@@ -81,8 +83,6 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
       this.author.memberId.toString(),
       'Member'
     )
-
-    const winner = this.participants[this.participants.length - 1]
 
     this.debug('Place bids')
     const placeBidsFixture = new PlaceBidsInAuctionFixture(
@@ -129,7 +129,7 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
     await assertNftEventContentActor(
       this.query,
       () => this.query.getEnglishAuctionSettledEvents([englishAuctionSettledRuntimeEvent]),
-      this.author.memberId.toString(),
+      winner.memberId.toString(),
       'Member'
     )
 

@@ -119,6 +119,9 @@ type Membership @entity {
 
   "NFTs owned by this member"
   ownedNfts: [OwnedNft!]! @derivedFrom(field: "ownerMember")
+
+  "NFTs owned by this member in various channels."
+  nftCollectorInChannels: [ChannelNftCollectors!]! @derivedFrom(field: "member")
 }
 
 type MembershipSystemSnapshot @entity {

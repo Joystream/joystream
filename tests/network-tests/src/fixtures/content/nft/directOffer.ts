@@ -23,7 +23,7 @@ export class NftDirectOfferFixture extends BaseQueryNodeFixture {
     this.debug('Issue video NFT')
     await this.api.issueNft(this.author.keyringPair.address, this.author.memberId.toNumber(), this.videoId)
 
-    this.debug('Offer NFT')
+    this.debug(`Offer NFT (expected new owner id ${this.participant.memberId})`)
     await this.api.offerNft(
       this.author.keyringPair.address,
       this.videoId,
