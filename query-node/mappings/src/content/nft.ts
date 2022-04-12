@@ -403,6 +403,7 @@ async function createBid(
   // prepare bid record
   const bid = new Bid({
     auction,
+    nft,
     bidder: member,
     amount: amount,
     createdAt: new Date(event.blockTimestamp),

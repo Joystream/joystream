@@ -253,6 +253,9 @@ type Bid @entity {
   "NFT's auction"
   auction: Auction!
 
+  "Bid's NFT"
+  nft: OwnedNft!
+
   "NFT's auction where this bid is the current top bid"
   auctionTopBid: Auction @derivedFrom(field: "topBid")
 
