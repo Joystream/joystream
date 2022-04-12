@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use frame_support::{assert_noop, assert_ok, StorageDoubleMap};
+use frame_support::{assert_noop, assert_ok, Currency, StorageDoubleMap};
 use sp_runtime::traits::AccountIdConversion;
 
 use crate::tests::mock::*;
