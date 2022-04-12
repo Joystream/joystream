@@ -7,6 +7,7 @@ use crate::errors::Error;
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 
+use frame_support::traits::Currency;
 use sp_runtime::traits::Hash;
 use storage::DataObjectCreationParameters;
 
@@ -124,6 +125,21 @@ fn unsuccesful_token_sale_init_with_whitelist_payload_and_invalid_size() {
 }
 
 #[test]
+fn unsuccesful_token_sale_init_with_whitelist_payload_and_insufficient_balance() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default()
+            .with_whitelist(WhitelistParams {
+                commitment: Hashing::hash_of(b"commitment"),
+                payload: Some(default_single_data_object_upload_params()),
+            })
+            .call_and_assert(Err(storage::Error::<Test>::InsufficientBalance.into()));
+    })
+}
+
+#[test]
 fn unsuccesful_token_sale_init_when_token_not_idle() {
     let config = GenesisConfigBuilder::new_empty().build();
 
@@ -180,7 +196,10 @@ fn succesful_token_sale_init_with_whitelist_payload() {
 
     build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().call_and_assert(Ok(()));
-
+        let _ = balances::Module::<Test>::deposit_creating(
+            &DEFAULT_ACCOUNT_ID,
+            <Test as storage::Trait>::DataObjectDeletionPrize::get(),
+        );
         InitTokenSaleFixture::default()
             .with_whitelist(WhitelistParams {
                 commitment: Hashing::hash_of(b"commitment"),
