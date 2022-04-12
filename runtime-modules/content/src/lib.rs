@@ -1757,7 +1757,7 @@ decl_module! {
 
             let (updated_nft, event) = match eng_auction.buy_now_price {
                 Some(buy_now_price) if bid_amount >= buy_now_price => {
-                    // Make a new bid considering the old one (if any) and the "buy-now-price".
+                    // Make a new bid considering the "buy-now-price".
                     Self::make_bid_payment(
                         &participant_account_id,
                         buy_now_price,
@@ -1781,7 +1781,7 @@ decl_module! {
                 },
                 _ => {
 
-                    // Make a new bid considering the old one (if any).
+                    // Make a new bid.
                     Self::make_bid_payment(
                         &participant_account_id,
                         bid_amount,
