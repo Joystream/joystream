@@ -10,6 +10,7 @@ use sp_arithmetic::Perbill;
 use sp_io::TestExternalities;
 use sp_runtime::testing::{Header, H256};
 use sp_runtime::traits::{BlakeTwo256, Convert, Hash, IdentityLookup};
+use sp_runtime::ModuleId;
 
 // crate import
 use crate::{
@@ -48,6 +49,13 @@ macro_rules! last_event_eq {
     };
 }
 
+#[macro_export]
+macro_rules! origin {
+    ($a: expr) => {
+        Origin::signed($a)
+    };
+}
+
 impl_outer_event! {
     pub enum TestEvent for Test {
         token<T>,
@@ -56,11 +64,14 @@ impl_outer_event! {
 }
 
 parameter_types! {
+    // constants for frame_system::Trait
     pub const BlockHashCount: u64 = 250;
     pub const MaximumBlockWeight: u32 = 1024;
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
+    // constants for crate::Trait
+    pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token"); // module storage
 }
 
 impl frame_system::Trait for Test {
@@ -96,6 +107,7 @@ impl Trait for Test {
     type Balance = u64;
     type TokenId = u64;
     type BlockNumberToBalance = Block2Balance;
+    type ModuleId = TokenModuleId;
 }
 
 /// Genesis config builder

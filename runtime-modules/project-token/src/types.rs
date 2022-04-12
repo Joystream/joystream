@@ -1,5 +1,8 @@
 use codec::{Decode, Encode};
-use frame_support::{dispatch::{DispatchError, DispatchResult}, ensure};
+use frame_support::{
+    dispatch::{DispatchError, DispatchResult},
+    ensure,
+};
 use sp_arithmetic::traits::{Saturating, Zero};
 use sp_runtime::traits::{Convert, Hash};
 use sp_std::{iter::Sum, slice::Iter};
@@ -122,9 +125,7 @@ pub enum MerkleSide {
 
 /// Wrapper around a merkle proof path
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct MerkleProof<Hasher: Hash> (
-    pub Option<Vec<(Hasher::Output, MerkleSide)>>
-);
+pub struct MerkleProof<Hasher: Hash>(pub Option<Vec<(Hasher::Output, MerkleSide)>>);
 
 /// Output for a transfer containing beneficiary + amount due
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -243,10 +244,14 @@ impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, H
 }
 
 impl<Hasher: Hash> MerkleProof<Hasher> {
-    pub(crate) fn verify_for_commit<T, AccountId>(&self, account_id: &AccountId,  commit: Hasher::Output) -> DispatchResult
+    pub(crate) fn verify_for_commit<T, AccountId>(
+        &self,
+        account_id: &AccountId,
+        commit: Hasher::Output,
+    ) -> DispatchResult
     where
         T: crate::Trait,
-    AccountId: Encode,
+        AccountId: Encode,
     {
         match &self.0 {
             None => Err(crate::Error::<T>::MerkleProofNotProvided.into()),
@@ -338,8 +343,7 @@ pub(crate) type TransferPolicyOf<T> = TransferPolicy<<T as frame_system::Trait>:
 pub(crate) type DecOp<T> = DecreaseOp<<T as crate::Trait>::Balance>;
 
 /// Alias for the Merkle Proof type
-pub(crate) type MerkleProofOf<T> =
-    MerkleProof<<T as frame_system::Trait>::Hashing>;
+pub(crate) type MerkleProofOf<T> = MerkleProof<<T as frame_system::Trait>::Hashing>;
 
 /// Alias for the output type
 pub(crate) type OutputsOf<T> =

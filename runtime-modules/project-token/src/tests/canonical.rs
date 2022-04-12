@@ -4,8 +4,16 @@ use frame_support::{assert_noop, assert_ok, StorageDoubleMap};
 
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
-use crate::types::{MerkleProofOf, Output};
-use crate::{account, balance, last_event_eq, merkle_proof, merkle_root, token, Error, RawEvent};
+use crate::types::MerkleProofOf;
+use crate::{
+    account, balance, last_event_eq, merkle_proof, merkle_root, origin, token, Error, RawEvent,
+};
+
+macro_rules! treasury {
+    ($t: expr) => {
+        Test::ModuleId::get().into_sub_account::<AccountId>($t)
+    };
+}
 
 #[test]
 fn join_whitelist_fails_with_token_id_not_valid() {

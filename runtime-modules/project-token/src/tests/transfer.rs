@@ -4,18 +4,14 @@ use frame_support::{assert_noop, assert_ok, StorageDoubleMap};
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
 use crate::types::{MerkleProofOf, Output};
-use crate::{account, balance, last_event_eq, merkle_proof, merkle_root, token, Error, RawEvent};
+use crate::{
+    account, balance, last_event_eq, merkle_proof, merkle_root, origin, token, Error, RawEvent,
+};
 
 // some helpers
 macro_rules! outputs {
     [$(($a:expr, $b: expr)),*] => {
         Outputs::new(vec![$(Output::<_, _> {beneficiary: $a, amount: $b},)*])
-    };
-}
-
-macro_rules! origin {
-    ($a: expr) => {
-        Origin::signed($a)
     };
 }
 

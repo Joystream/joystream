@@ -4,10 +4,11 @@ use frame_support::{
     decl_module, decl_storage,
     dispatch::{fmt::Debug, marker::Copy, DispatchError, DispatchResult},
     ensure,
+    traits::Get,
 };
 use frame_system::ensure_signed;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
-use sp_runtime::traits::Convert;
+use sp_runtime::{traits::Convert, ModuleId};
 use sp_std::iter::Sum;
 
 // crate modules
@@ -40,6 +41,9 @@ pub trait Trait: frame_system::Trait {
 
     /// Block number to balance converter used for interest calculation
     type BlockNumberToBalance: Convert<Self::BlockNumber, Self::Balance>;
+
+    /// Tresury account for the various tokens
+    type ModuleId: Get<ModuleId>;
 }
 
 decl_storage! {
@@ -63,6 +67,7 @@ decl_storage! {
         map
             hasher(blake2_128_concat) T::Hash => ();
     }
+
 }
 
 decl_module! {
