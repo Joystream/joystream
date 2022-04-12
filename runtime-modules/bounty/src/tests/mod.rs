@@ -2372,6 +2372,27 @@ fn withdraw_funding_member_fails_with_invalid_origin() {
 
 #[test]
 fn withdraw_funding_member_fails_with_invalid_stage() {
+    //FundingExpired
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+        let initial_balance = 500;
+        let funding_period = 10;
+        set_council_budget(initial_balance);
+
+        CreateBountyFixture::default()
+            .with_funding_period(funding_period)
+            .call_and_assert(Ok(()));
+
+        run_to_block(funding_period + 10);
+
+        WithdrawFundingFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .call_and_assert(Err(
+                Error::<Test>::InvalidStageUnexpectedFundingExpired.into()
+            ));
+    });
     //Funding
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
@@ -2478,19 +2499,26 @@ fn withdraw_funding_member_fails_with_invalid_bounty_funder() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
+        let target_funding = 500;
         let initial_balance = 500;
         let funding_period = 10;
         set_council_budget(initial_balance);
 
         CreateBountyFixture::default()
-            .with_funding_period(funding_period)
+            .with_limited_funding(target_funding, funding_period)
+            .call_and_assert(Ok(()));
+
+        let funding_amount = 200;
+        FundBountyFixture::default()
+            .with_origin(RawOrigin::Root)
+            .with_council()
+            .with_amount(funding_amount)
             .call_and_assert(Ok(()));
 
         run_to_block(funding_period + 10);
-
         WithdrawFundingFixture::default()
-            .with_origin(RawOrigin::Root)
-            .with_council()
+            .with_origin(RawOrigin::Signed(2))
+            .with_member_id(2)
             .call_and_assert(Err(Error::<Test>::NoBountyContributionFound.into()));
     });
 }

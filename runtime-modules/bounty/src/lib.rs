@@ -117,7 +117,7 @@ use serde::{Deserialize, Serialize};
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{Currency, ExistenceRequirement, Get, LockIdentifier};
 use frame_support::weights::Weight;
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, fail, Parameter};
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use frame_system::ensure_root;
 use sp_arithmetic::traits::{One, Saturating, Zero};
 use sp_runtime::{traits::AccountIdConversion, ModuleId};
@@ -349,7 +349,7 @@ pub enum BountyMilestone<BlockNumber> {
     /// - BountyStage::FailedBountyWithdrawal if bounty stage is in
     ///     Funding (with contributions and/or oracle reward),
     ///     FundingExpired (with oracle reward), WorkSubmission or Judgment
-    OraclePerpetualWorkingInterruption,
+    Terminated,
 
     /// A judgment was submitted for a bounty.
     ///
@@ -531,6 +531,20 @@ pub type OracleJudgmentOf<T> = OracleJudgment<<T as Trait>::EntryId, BalanceOf<T
 
 /// The collection of the oracle judgments for the work entries.
 pub type OracleJudgment<EntryId, Balance> = BTreeMap<EntryId, OracleWorkEntryJudgment<Balance>>;
+
+/// Represents a valid stage for doing withdrawals,
+/// is used as a safe internal representation of validation step in `withdraw_funding` extrinsic.
+enum ValidWithdrawalStage {
+    FailedBountyWithdrawal,
+    SuccessfulBountyWithdrawal,
+}
+
+/// Represents a valid stage for terminating a bounty,
+/// is used as a safe internal representation of validation step in `terminate_bounty` extrinsic.
+enum ValidTerminateBountyStage {
+    ValidTerminationRemoveBounty,
+    ValidTerminationToFailedStage,
+}
 
 decl_storage! {
     trait Store for Module<T: Trait> as Bounty {
@@ -980,44 +994,45 @@ decl_module! {
 
             ////If origin is creator (not council) then
             //Stage can be FundingExpired, Funding
-            let current_bounty_stage = Self::ensure_terminate_bounty_stage(&bounty, &terminate_bounty_actor)?;
+
+            let terminate_bounty_validation = Self::ensure_terminate_bounty_stage(&bounty_id,
+                &bounty,
+                &terminate_bounty_actor)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            match current_bounty_stage {
-                BountyStage::FundingExpired => {
-                    //ensure_terminate_bounty_stage guarantees that
+            match terminate_bounty_validation {
+                ValidTerminateBountyStage::ValidTerminationRemoveBounty => {
                     //The origin is council or creator
                     Self::return_bounty_cherry_to_creator(bounty_id, &bounty, &bounty_creator_manager);
-                    Self::terminate_bounty_removal(
-                        &bounty_id,
-                        &bounty,
-                        &bounty_creator_manager,
-                        &terminate_bounty_actor);
+                    Self::remove_bounty(&bounty_id, &bounty, &bounty_creator_manager);
                 },
-                BountyStage::Funding{ has_contributions } => {
-                    //ensure_terminate_bounty_stage guarantees that
-                    //The origin is council or creator
-                    if !has_contributions {
+                ValidTerminateBountyStage::ValidTerminationToFailedStage=> {
+                    //The origin is council and
+                    //stage is funding, funding expired, WorkSubmission or Judgment,
+
+                    //In case funding expired
+                    if !Self::contributions_exist(&bounty_id) {
+                        //funding expired | funding
+                        //oracle reward > 0 | Contributions = 0 | work entries = 0
+                        //If Contributions > 0 then cherry will not go to creator, it goes to funders by calling withdraw_funding
                         Self::return_bounty_cherry_to_creator(bounty_id, &bounty, &bounty_creator_manager);
                     }
-                    Self::terminate_bounty_removal(
-                        &bounty_id,
-                        &bounty,
-                        &bounty_creator_manager,
-                        &terminate_bounty_actor);
+
+                    <Bounties<T>>::mutate(bounty_id, |bounty| {
+                        bounty.milestone = BountyMilestone::Terminated
+                    });
+
+                    Self::deposit_event(RawEvent::BountyTerminated(
+                        bounty_id,
+                        terminate_bounty_actor.get_bounty_actor(),
+                        bounty.creation_params.creator.clone(),
+                        bounty.creation_params.oracle.clone(),
+                    ));
                 },
-                _ => {
-                    //ensure_terminate_bounty_stage guarantees that
-                    //The origin is council and
-                    //stage is WorkSubmission or Judgment
-                    Self::fire_bounty_terminated_event_and_mutate_bounty(
-                        &bounty_id,
-                        &bounty,
-                        &terminate_bounty_actor);
-                }
+
 
             }
 
@@ -1097,9 +1112,9 @@ decl_module! {
                 funder.clone(),
             )?;
 
-            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
-            let current_bounty_stage = Self::get_bounty_stage(&bounty);
+            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
+            let valid_withdrawal_stage = Self::ensure_withdraw_funding_in_valid_stage(&bounty)?;
 
             let funding = Self::ensure_bounty_contribution_exists(&bounty_id, &funder)?;
 
@@ -1111,8 +1126,8 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            match current_bounty_stage{
-                BountyStage::FailedBountyWithdrawal => {
+            match valid_withdrawal_stage{
+                ValidWithdrawalStage::FailedBountyWithdrawal => {
                     Self::withdraw_funding_mutation(
                         &bounty_id,
                         &bounty,
@@ -1120,14 +1135,13 @@ decl_module! {
                         &bounty_funder_manager,
                         funding);
                 },
-                BountyStage::SuccessfulBountyWithdrawal => {
+                ValidWithdrawalStage::SuccessfulBountyWithdrawal => {
                     Self::withdraw_funding_state_bloat_bond_mutation(
                         &bounty_id,
                         funder,
                         &bounty_funder_manager,
                         funding);
-                },
-                _ => fail!(Self::unexpected_bounty_stage_error(current_bounty_stage))
+                }
             }
 
             if Self::can_remove_bounty(&bounty_id, &bounty) {
@@ -1554,6 +1568,19 @@ impl<T: Trait> Module<T> {
         ));
     }
 
+    fn ensure_withdraw_funding_in_valid_stage(
+        bounty: &Bounty<T>,
+    ) -> Result<ValidWithdrawalStage, DispatchError> {
+        let current_bounty_stage = Self::get_bounty_stage(&bounty);
+        match current_bounty_stage {
+            BountyStage::FailedBountyWithdrawal => Ok(ValidWithdrawalStage::FailedBountyWithdrawal),
+            BountyStage::SuccessfulBountyWithdrawal => {
+                Ok(ValidWithdrawalStage::SuccessfulBountyWithdrawal)
+            }
+            _ => Err(Self::unexpected_bounty_stage_error(current_bounty_stage)),
+        }
+    }
+
     // Wrapper-function over System::block_number()
     pub(crate) fn current_block() -> T::BlockNumber {
         <frame_system::Module<T>>::block_number()
@@ -1661,9 +1688,10 @@ impl<T: Trait> Module<T> {
     }
 
     fn ensure_terminate_bounty_stage(
+        bounty_id: &T::BountyId,
         bounty: &Bounty<T>,
         terminate_bounty_actor: &BountyActorManager<T>,
-    ) -> Result<BountyStage, DispatchError> {
+    ) -> Result<ValidTerminateBountyStage, DispatchError> {
         let current_bounty_stage = Self::get_bounty_stage(&bounty);
         match terminate_bounty_actor {
             BountyActorManager::Council => {
@@ -1678,7 +1706,7 @@ impl<T: Trait> Module<T> {
                     Self::unexpected_bounty_stage_error(current_bounty_stage)
                 );
             }
-            _ => {
+            BountyActorManager::Member(_, _) => {
                 ensure!(
                     matches!(
                         current_bounty_stage,
@@ -1687,46 +1715,12 @@ impl<T: Trait> Module<T> {
                     Self::unexpected_bounty_stage_error(current_bounty_stage)
                 );
             }
-        }
+        };
 
-        Ok(current_bounty_stage)
-    }
-
-    //Checks if bounty can be removed, if not, fires a bounty terminated event,
-    //and progresses bounty to failled stage
-    fn terminate_bounty_removal(
-        bounty_id: &T::BountyId,
-        bounty: &Bounty<T>,
-        bounty_creator_manager: &BountyActorManager<T>,
-        terminate_bounty_actor: &BountyActorManager<T>,
-    ) {
-        if Self::can_remove_bounty(&bounty_id, &bounty) {
-            Self::remove_bounty(&bounty_id, &bounty, &bounty_creator_manager);
-        } else {
-            Self::fire_bounty_terminated_event_and_mutate_bounty(
-                &bounty_id,
-                &bounty,
-                &terminate_bounty_actor,
-            );
-        }
-    }
-
-    //fires a bounty terminated event and progresses bounty to failled stage
-    fn fire_bounty_terminated_event_and_mutate_bounty(
-        bounty_id: &T::BountyId,
-        bounty: &Bounty<T>,
-        terminate_bounty_actor: &BountyActorManager<T>,
-    ) {
-        <Bounties<T>>::mutate(bounty_id, |bounty| {
-            bounty.milestone = BountyMilestone::OraclePerpetualWorkingInterruption
-        });
-
-        Self::deposit_event(RawEvent::BountyTerminated(
-            *bounty_id,
-            terminate_bounty_actor.get_bounty_actor(),
-            bounty.creation_params.creator.clone(),
-            bounty.creation_params.oracle.clone(),
-        ));
+        Ok(match Self::can_remove_bounty(&bounty_id, &bounty) {
+            true => ValidTerminateBountyStage::ValidTerminationRemoveBounty,
+            false => ValidTerminateBountyStage::ValidTerminationToFailedStage,
+        })
     }
 
     // Transfer funds from the member account to the bounty account.
