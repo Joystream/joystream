@@ -177,6 +177,7 @@ macro_rules! block {
 // Modules aliases
 pub type Token = crate::Module<Test>;
 pub type System = frame_system::Module<Test>;
+pub type Balances = balances::Module<Test>;
 
 // Merkle tree Helpers
 #[derive(Debug)]
