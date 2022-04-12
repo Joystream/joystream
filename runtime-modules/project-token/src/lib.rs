@@ -347,7 +347,7 @@ impl<T: Trait> Module<T> {
         token_id: T::TokenId,
         src: &T::AccountId,
         outputs: &OutputsOf<T>,
-    ) -> Result<DecOp<T>, DispatchError> {
+    ) -> DispatchResult {
         // ensure token validity
         let token_info = Self::ensure_token_exists(token_id)?;
 
@@ -369,10 +369,9 @@ impl<T: Trait> Module<T> {
         let total = outputs.total_amount();
 
         // Amount to decrease by accounting for existential deposit
-        let decrease_op = src_account_info
-            .decrease_with_ex_deposit::<T>(total, token_info.existential_deposit)
-            .map_err(|_| Error::<T>::InsufficientFreeBalanceForTransfer)?;
-        Ok(decrease_op)
+        src_account_info
+            .ensure_can_decrease_liquidity_by::<T>(total)
+            .map(|_| ())
     }
 
     /// Perform balance accounting for balances

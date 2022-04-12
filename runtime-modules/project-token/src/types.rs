@@ -181,26 +181,15 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
 
     /// Verify if amount can be decrease taking account existential deposit
     /// Returns the amount that should be removed
-    pub(crate) fn decrease_with_ex_deposit<T: crate::Trait>(
+    pub(crate) fn ensure_can_decrease_liquidity_by<T: crate::Trait>(
         &self,
         amount: Balance,
-        existential_deposit: Balance,
     ) -> Result<DecreaseOp<Balance>, DispatchError> {
         ensure!(
             self.free_balance >= amount,
-            crate::Error::<T>::InsufficientFreeBalanceForDecreasing,
+            crate::Error::<T>::InsufficientFreeBalanceForTransfer,
         );
-
-        let new_total = self
-            .free_balance
-            .saturating_sub(amount)
-            .saturating_add(self.reserved_balance);
-
-        if new_total.is_zero() || new_total < existential_deposit {
-            Ok(DecreaseOp::<Balance>::Remove(amount, new_total))
-        } else {
-            Ok(DecreaseOp::<Balance>::Reduce(amount))
-        }
+        Ok(self.free_balance - amount)
     }
 
     pub(crate) fn _total_balance(&self) -> Balance {
