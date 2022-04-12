@@ -2,7 +2,9 @@ use sp_arithmetic::traits::{One, Saturating, Zero};
 use sp_runtime::traits::Hash;
 
 use crate::tests::mock::*;
-use crate::types::{OfferingState, Output, Outputs, PatronageData, TransferPolicy, MerkleProof, MerkleSide};
+use crate::types::{
+    MerkleProof, MerkleSide, OfferingState, Output, Outputs, PatronageData, TransferPolicy,
+};
 use crate::GenesisConfig;
 
 pub struct TokenDataBuilder<Balance, Hash, BlockNumber> {
