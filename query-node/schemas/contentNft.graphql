@@ -95,6 +95,8 @@ type OwnedNft @entity {
 
   "NFT's last sale (if any)"
   lastSale: LastSale
+
+  bids: [Bid!]! @derivedFrom(field: "nft")
 }
 
 type ChannelNftCollectors @entity {
