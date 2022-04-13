@@ -295,12 +295,7 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
     /// - token with specified characteristics is added to storage state
     /// - `NextTokenId` increased by 1
     fn issue_token(issuance_parameters: TokenIssuanceParametersOf<T>) -> DispatchResult {
-        // TODO: consider adding symbol as separate parameter
-        let sym = issuance_parameters.symbol;
-        ensure!(
-            !SymbolsUsed::<T>::contains_key(&sym),
-            Error::<T>::TokenSymbolAlreadyInUse,
-        );
+        Self::validate_issuance_parameters(&issuance_parameters)?;
 
         let now = Self::current_block();
         let token_data = issuance_parameters.build(now);
@@ -308,8 +303,8 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
         // == MUTATION SAFE ==
 
         let token_id = Self::next_token_id();
+        SymbolsUsed::<T>::insert(&token_data.symbol, ());
         TokenInfoById::<T>::insert(token_id, token_data);
-        SymbolsUsed::<T>::insert(sym, ());
         NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
 
         Ok(())
@@ -323,11 +318,11 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
     /// - token data @ `token_Id` removed from storage
     /// - all account data for `token_Id` removed
     fn deissue_token(token_id: T::TokenId) -> DispatchResult {
-        Self::ensure_token_exists(token_id).map(|_| ())?;
+        let token_info = Self::ensure_token_exists(token_id)?;
 
         // == MUTATION SAFE ==
 
-        Self::do_deissue_token(token_id);
+        Self::do_deissue_token(token_info.symbol, token_id);
         Ok(())
     }
 }
@@ -360,7 +355,8 @@ impl<T: Trait> Module<T> {
     }
 
     /// Perform token de-issuing: unfallible
-    pub(crate) fn do_deissue_token(token_id: T::TokenId) {
+    pub(crate) fn do_deissue_token(symbol: T::Hash, token_id: T::TokenId) {
+        SymbolsUsed::<T>::remove(symbol);
         TokenInfoById::<T>::remove(token_id);
         AccountInfoByTokenAndAccount::<T>::remove_prefix(token_id);
 
@@ -435,5 +431,17 @@ impl<T: Trait> Module<T> {
             }
             _ => Err(Error::<T>::AttemptToRemoveNonOwnedAndNonEmptyAccount.into()),
         }
+    }
+
+    /// Validate token issuance parameters
+    pub(crate) fn validate_issuance_parameters(
+        params: &TokenIssuanceParametersOf<T>,
+    ) -> DispatchResult {
+        ensure!(
+            !SymbolsUsed::<T>::contains_key(&params.symbol),
+            Error::<T>::TokenSymbolAlreadyInUse,
+        );
+
+        Ok(())
     }
 }

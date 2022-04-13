@@ -13,9 +13,10 @@ pub struct TokenDataBuilder<Balance, Hash, BlockNumber> {
     pub(crate) issuance_state: OfferingState,
     pub(crate) transfer_policy: TransferPolicy<Hash>,
     pub(crate) patronage_info: PatronageData<Balance, BlockNumber>,
+    pub(crate) symbol: Hash,
 }
 
-impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash, BlockNumber: One>
+impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash: Default, BlockNumber: One>
     TokenDataBuilder<Balance, Hash, BlockNumber>
 {
     pub fn build(self) -> crate::types::TokenData<Balance, Hash, BlockNumber> {
@@ -24,6 +25,7 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash, BlockNumber: One>
             issuance_state: self.issuance_state,
             transfer_policy: self.transfer_policy,
             patronage_info: self.patronage_info,
+            symbol: self.symbol,
         }
     }
 
@@ -44,9 +46,9 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash, BlockNumber: One>
     pub fn with_patronage_rate(self, rate: Balance) -> Self {
         Self {
             patronage_info: PatronageData::<_, _> {
-                tally: Balance::zero(),
+                unclaimed_patronage_tally_amount: Balance::zero(),
                 rate,
-                last_tally_update_block: BlockNumber::one(),
+                last_unclaimed_patronage_tally_block: BlockNumber::one(),
             },
             ..self
         }
@@ -59,9 +61,11 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash, BlockNumber: One>
             transfer_policy: TransferPolicy::<Hash>::Permissionless,
             patronage_info: PatronageData::<Balance, BlockNumber> {
                 rate: Balance::zero(),
-                tally: Balance::zero(),
-                last_tally_update_block: BlockNumber::one(),
+                unclaimed_patronage_tally_amount: Balance::zero(),
+                last_unclaimed_patronage_tally_block: BlockNumber::one(),
             },
+            // hash of "default"
+            symbol: Hash::default(),
         }
     }
 }

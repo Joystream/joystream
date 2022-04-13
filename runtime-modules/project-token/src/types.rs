@@ -1,8 +1,5 @@
 use codec::{Decode, Encode};
-use frame_support::{
-    dispatch::{DispatchError, DispatchResult},
-    ensure,
-};
+use frame_support::{dispatch::DispatchResult, ensure};
 use sp_arithmetic::traits::{Saturating, Zero};
 use sp_runtime::traits::{Convert, Hash};
 use sp_std::{iter::Sum, slice::Iter};
@@ -32,6 +29,9 @@ pub struct TokenData<Balance, Hash, BlockNumber> {
 
     /// Transfer policy
     pub(crate) transfer_policy: TransferPolicy<Hash>,
+
+    /// Symbol used to identify token
+    pub(crate) symbol: Hash,
 
     /// Patronage Information
     pub(crate) patronage_info: PatronageData<Balance, BlockNumber>,
@@ -204,7 +204,6 @@ impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, H
     /// Forward `self` state
     pub fn build<BlockNumber>(self, block: BlockNumber) -> TokenData<Balance, Hash, BlockNumber> {
         // validation
-
         let patronage_info = PatronageData::<Balance, BlockNumber> {
             last_unclaimed_patronage_tally_block: block,
             unclaimed_patronage_tally_amount: Balance::zero(),
@@ -214,6 +213,7 @@ impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, H
             current_total_issuance: self.initial_issuance,
             issuance_state: self.initial_state,
             transfer_policy: self.transfer_policy,
+            symbol: self.symbol,
             patronage_info,
         }
     }
