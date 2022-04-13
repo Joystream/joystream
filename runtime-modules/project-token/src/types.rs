@@ -2,7 +2,8 @@ use codec::{Decode, Encode};
 use frame_support::{dispatch::DispatchResult, ensure};
 use sp_arithmetic::traits::{Saturating, Zero};
 use sp_runtime::traits::{Convert, Hash};
-use sp_std::{iter::Sum, slice::Iter};
+use sp_std::collections::btree_map::{BTreeMap, Iter};
+use sp_std::iter::Sum;
 
 /// Info for the account
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -113,19 +114,19 @@ pub enum MerkleSide {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct MerkleProof<Hasher: Hash>(pub Option<Vec<(Hasher::Output, MerkleSide)>>);
 
-/// Output for a transfer containing beneficiary + amount due
+/// Information about a payment
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct Output<AccountId, Balance> {
-    /// Beneficiary
-    pub beneficiary: AccountId,
+pub struct Payment<Balance> {
+    /// Ignored by runtime
+    pub remark: Vec<u8>,
 
     /// Amount
     pub amount: Balance,
 }
 
-/// Wrapper around Vec<Outputs>
+/// Wrapper around BTreeMap<AccountId, Payment<Balance>>
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct Outputs<AccountId, Balance>(pub Vec<Output<AccountId, Balance>>);
+pub struct Transfers<AccountId, Balance>(pub BTreeMap<AccountId, Payment<Balance>>);
 
 /// Default trait for Merkle Side
 impl Default for MerkleSide {
@@ -282,18 +283,20 @@ impl<Balance: Zero + Copy + Saturating, BlockNumber: Copy + Saturating + Partial
     }
 }
 
-impl<AccountId, Balance: Sum + Copy> Outputs<AccountId, Balance> {
+impl<AccountId, Balance: Sum + Copy> Transfers<AccountId, Balance> {
     pub fn total_amount(&self) -> Balance {
-        self.0.iter().map(|out| out.amount).sum()
+        self.0.iter().map(|(_, payment)| payment.amount).sum()
     }
 
-    pub fn iter(&self) -> Iter<'_, Output<AccountId, Balance>> {
+    pub fn iter(&self) -> Iter<'_, AccountId, Payment<Balance>> {
         self.0.iter()
     }
 }
 
-impl<AccountId, Balance> From<Outputs<AccountId, Balance>> for Vec<Output<AccountId, Balance>> {
-    fn from(v: Outputs<AccountId, Balance>) -> Self {
+impl<AccountId, Balance> From<Transfers<AccountId, Balance>>
+    for BTreeMap<AccountId, Payment<Balance>>
+{
+    fn from(v: Transfers<AccountId, Balance>) -> Self {
         v.0
     }
 }
@@ -320,5 +323,5 @@ pub(crate) type TransferPolicyOf<T> = TransferPolicy<<T as frame_system::Trait>:
 pub(crate) type MerkleProofOf<T> = MerkleProof<<T as frame_system::Trait>::Hashing>;
 
 /// Alias for the output type
-pub(crate) type OutputsOf<T> =
-    Outputs<<T as frame_system::Trait>::AccountId, <T as crate::Trait>::Balance>;
+pub(crate) type TransfersOf<T> =
+    Transfers<<T as frame_system::Trait>::AccountId, <T as crate::Trait>::Balance>;

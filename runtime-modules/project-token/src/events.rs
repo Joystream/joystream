@@ -1,5 +1,6 @@
-use crate::types::{Output, TransferPolicyOf};
+use crate::types::{Payment, TransferPolicyOf};
 use frame_support::decl_event;
+use sp_std::collections::btree_map::BTreeMap;
 
 decl_event! {
     pub enum Event<T>
@@ -8,8 +9,8 @@ decl_event! {
         TokenId = <T as crate::Trait>::TokenId,
         AccountId = <T as frame_system::Trait>::AccountId,
         BlockNumber = <T as frame_system::Trait>::BlockNumber,
-        Output = Output<<T as frame_system::Trait>::AccountId, <T as crate::Trait>::Balance>,
         TransferPolicy = TransferPolicyOf<T>,
+        Payment = Payment<<T as crate::Trait>::Balance>,
 
     {
         /// Token amount is deposited
@@ -31,7 +32,7 @@ decl_event! {
         /// - token identifier
         /// - source account
         /// - outputs: list of pairs (destination account, amount)
-        TokenAmountTransferred(TokenId, AccountId, Vec<Output>),
+        TokenAmountTransferred(TokenId, AccountId, BTreeMap<AccountId, Payment>),
 
         /// Token amount is reserved
         /// Params:

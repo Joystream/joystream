@@ -26,8 +26,8 @@ use errors::Error;
 pub use events::{Event, RawEvent};
 use traits::PalletToken;
 use types::{
-    AccountDataOf, MerkleProofOf, OutputsOf, TokenDataOf, TokenIssuanceParametersOf,
-    TransferPolicyOf,
+    AccountDataOf, MerkleProofOf, TokenDataOf, TokenIssuanceParametersOf, TransferPolicyOf,
+    TransfersOf,
 };
 
 /// Pallet Configuration Trait
@@ -108,7 +108,7 @@ decl_module! {
         pub fn transfer(
             origin,
             token_id: T::TokenId,
-            outputs: OutputsOf<T>,
+            outputs: TransfersOf<T>,
         ) -> DispatchResult {
             let src = ensure_signed(origin)?;
 
@@ -370,34 +370,34 @@ impl<T: Trait> Module<T> {
     pub(crate) fn ensure_can_transfer(
         token_id: T::TokenId,
         src: &T::AccountId,
-        outputs: &OutputsOf<T>,
+        outputs: &TransfersOf<T>,
     ) -> DispatchResult {
         // ensure token validity
-        let _ = Self::ensure_token_exists(token_id)?;
+        let token_info = Self::ensure_token_exists(token_id)?;
 
         // ensure src account id validity
         let src_account_info = Self::ensure_account_data_exists(token_id, src)?;
 
         // ensure dst account id validity
-        outputs.iter().try_for_each(|out| {
-            // enusure destination exists and that it differs from source
-            Self::ensure_account_data_exists(token_id, &out.beneficiary).and_then(|_| {
-                ensure!(
-                    out.beneficiary != *src,
-                    Error::<T>::SameSourceAndDestinationLocations,
-                );
-                Ok(())
-            })
-        })?;
+        // outputs.iter().try_for_each(|out| {
+        //     // enusure destination exists and that it differs from source
+        //     Self::ensure_account_data_exists(token_id, &out.beneficiary).and_then(|_| {
+        //         ensure!(
+        //             out.beneficiary != *src,
+        //             Error::<T>::SameSourceAndDestinationLocations,
+        //         );
+        //         Ok(())
+        //     })
+        // })?;
 
         src_account_info.ensure_can_decrease_liquidity_by::<T>(outputs.total_amount())
     }
 
     /// Perform balance accounting for balances
-    pub(crate) fn do_transfer(token_id: T::TokenId, src: &T::AccountId, outputs: &OutputsOf<T>) {
-        outputs.iter().for_each(|out| {
-            AccountInfoByTokenAndAccount::<T>::mutate(token_id, &out.beneficiary, |account_data| {
-                account_data.increase_liquidity_by(out.amount);
+    pub(crate) fn do_transfer(token_id: T::TokenId, src: &T::AccountId, outputs: &TransfersOf<T>) {
+        outputs.iter().for_each(|(account_id, payment)| {
+            AccountInfoByTokenAndAccount::<T>::mutate(token_id, &account_id, |account_data| {
+                account_data.increase_liquidity_by(payment.amount);
             });
         });
 

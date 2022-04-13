@@ -14,7 +14,7 @@ use sp_runtime::ModuleId;
 
 // crate import
 use crate::{
-    types::{MerkleSide, OutputsOf},
+    types::{MerkleSide, TransfersOf},
     AccountDataOf, GenesisConfig, TokenDataOf, TokenIssuanceParametersOf, Trait, TransferPolicyOf,
 };
 
@@ -29,7 +29,6 @@ pub type Balance = <Test as Trait>::Balance;
 pub type Policy = TransferPolicyOf<Test>;
 pub type Hashing = <Test as frame_system::Trait>::Hashing;
 pub type HashOut = <Test as frame_system::Trait>::Hash;
-pub type Outputs = OutputsOf<Test>;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;

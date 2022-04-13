@@ -1,10 +1,11 @@
 use sp_arithmetic::traits::{One, Saturating, Zero};
 use sp_runtime::traits::Hash;
+use sp_std::collections::btree_map::BTreeMap;
 
 use crate::tests::mock::*;
 use crate::types::{
-    AccountData, MerkleProof, MerkleSide, OfferingState, Output, Outputs, PatronageData,
-    TransferPolicy,
+    AccountData, MerkleProof, MerkleSide, OfferingState, PatronageData, Payment, TransferPolicy,
+    Transfers,
 };
 use crate::GenesisConfig;
 
@@ -136,9 +137,21 @@ impl<Hasher: Hash> MerkleProof<Hasher> {
     }
 }
 
-impl<Balance, AccountId> Outputs<Balance, AccountId> {
-    pub fn new(v: Vec<Output<Balance, AccountId>>) -> Self {
-        Outputs::<_, _>(v)
+impl<Balance, AccountId: Ord> Transfers<AccountId, Balance> {
+    pub fn new(v: Vec<(AccountId, Balance)>) -> Self {
+        Transfers::<_, _>(
+            v.into_iter()
+                .map(|(acc, amount)| {
+                    (
+                        acc,
+                        Payment::<Balance> {
+                            remark: vec![],
+                            amount,
+                        },
+                    )
+                })
+                .collect::<BTreeMap<_, _>>(),
+        )
     }
 }
 
