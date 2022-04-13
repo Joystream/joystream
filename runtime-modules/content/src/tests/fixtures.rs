@@ -3733,7 +3733,7 @@ pub fn create_default_member_owned_channel_with_video_with_storage_buckets(
         &[],
     );
 
-    set_default_global_nft_limits();
+    set_default_nft_limits();
 
     CreateVideoFixture::default()
         .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)

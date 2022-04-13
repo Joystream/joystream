@@ -3,10 +3,10 @@ use sp_std::collections::btree_map::BTreeMap;
 #[cfg(feature = "std")]
 use strum_macros::EnumIter;
 
-/// Defines NFT counter ID type for global and channel NFT limits.
+/// Defines NFT limit ID type for global and channel NFT limits and counters.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy)]
-pub enum NftCounterId<ChannelId> {
+pub enum NftLimitId<ChannelId> {
     /// Global daily NFT counter ID.
     GlobalDaily,
 
@@ -20,11 +20,8 @@ pub enum NftCounterId<ChannelId> {
     ChannelWeekly(ChannelId),
 }
 
-// Alias: similar meaning.
-pub type NftLimitId<ChannelId> = NftCounterId<ChannelId>;
-
-// Default trait implemented for the NftCounterId. Required by Substrate.
-impl<ChannelId> Default for NftCounterId<ChannelId> {
+// Default trait implemented for the NftLimitId. Required by Substrate.
+impl<ChannelId> Default for NftLimitId<ChannelId> {
     fn default() -> Self {
         Self::GlobalDaily
     }
