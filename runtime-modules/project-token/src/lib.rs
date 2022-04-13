@@ -318,12 +318,12 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
     /// - token data @ `token_Id` removed from storage
     /// - all account data for `token_Id` removed
     fn deissue_token(token_id: T::TokenId) -> DispatchResult {
-        let token_info = Self::ensure_token_exists(token_id)?;
+        //        let token_info = Self::ensure_token_exists(token_id)?;
 
         // == MUTATION SAFE ==
 
-        Self::do_deissue_token(token_info.symbol, token_id);
-        Ok(())
+        //        Self::do_deissue_token(token_info.symbol, token_id);
+        todo!()
     }
 }
 
@@ -358,8 +358,6 @@ impl<T: Trait> Module<T> {
     pub(crate) fn do_deissue_token(symbol: T::Hash, token_id: T::TokenId) {
         SymbolsUsed::<T>::remove(symbol);
         TokenInfoById::<T>::remove(token_id);
-        AccountInfoByTokenAndAccount::<T>::remove_prefix(token_id);
-
         // TODO: add extra state removal as implementation progresses
     }
 

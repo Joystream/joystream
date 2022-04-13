@@ -1,14 +1,15 @@
 #![cfg(test)]
 
-use frame_support::{assert_noop, assert_ok, StorageDoubleMap};
+use frame_support::{assert_noop, assert_ok, StorageDoubleMap, StorageMap};
 use sp_runtime::traits::AccountIdConversion;
 
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
-use crate::types::{MerkleProofOf, TokenIssuanceParametersOf};
+use crate::types::MerkleProofOf;
 use crate::{
     account, balance, last_event_eq, merkle_proof, merkle_root, origin, token, Error, RawEvent,
+    TokenDataOf,
 };
 
 macro_rules! treasury {
@@ -154,7 +155,7 @@ fn join_whitelist_fails_in_permissionless_mode() {
     let bloat_bond = balance!(BLOAT_BOND);
 
     let token_data = TokenDataBuilder::new_empty()
-        .with_transfer_policy(Policy::Permissioned(commit))
+        .with_transfer_policy(Policy::Permissionless)
         .build();
 
     let config = GenesisConfigBuilder::new_empty()
@@ -235,9 +236,12 @@ fn join_whitelist_ok_with_new_account_created() {
     let token_id = token!(1);
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let proof = merkle_proof!(0, [acc1, acc2]);
+    let commit = merkle_root![acc1, acc2];
     let bloat_bond = balance!(BLOAT_BOND);
 
-    let token_data = TokenDataBuilder::new_empty().build();
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
@@ -572,6 +576,49 @@ fn dust_account_ok_with_account_removed() {
 }
 
 #[test]
+fn deissue_token_fails_with_non_existing_token_id() {
+    let token_id = token!(1);
+    let (owner, acc) = (account!(1), account!(2));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, balance!(10), balance!(0))
+        .with_account(acc, balance!(0), balance!(0))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result =
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::deissue_token(token_id + 1);
+        assert_noop!(result, Error::<Test>::TokenDoesNotExist,);
+    })
+}
+
+#[test]
+fn deissue_token_fails_with_existing_accounts() {
+    let token_id = token!(1);
+    let (owner, acc) = (account!(1), account!(2));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, balance!(10), balance!(0))
+        .with_account(acc, balance!(0), balance!(0))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result =
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::deissue_token(token_id + 1);
+        assert_noop!(
+            result,
+            Error::<Test>::CannotDeissueTokenWithOutstandingAccounts
+        );
+    })
+}
+
+#[test]
 fn deissue_token_ok() {
     let token_id = token!(1);
     let (owner, acc) = (account!(1), account!(2));
@@ -588,5 +635,63 @@ fn deissue_token_ok() {
         let result =
             <Token as PalletToken<AccountId, Policy, IssuanceParams>>::deissue_token(token_id);
         assert_ok!(result);
+    })
+}
+
+#[test]
+fn deissue_token_with_event_deposit() {
+    let token_id = token!(1);
+    let (owner, acc) = (account!(1), account!(2));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, balance!(10), balance!(0))
+        .with_account(acc, balance!(0), balance!(0))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::deissue_token(token_id);
+        last_event_eq!(RawEvent::TokenDeissued(token_id));
+    })
+}
+
+#[test]
+fn deissue_token_with_symbol_removed() {
+    let token_id = token!(1);
+    let (owner, acc) = (account!(1), account!(2));
+
+    let token_data: TokenDataOf<Test> = TokenDataBuilder::new_empty().build();
+    let symbol = token_data.symbol.clone();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, balance!(10), balance!(0))
+        .with_account(acc, balance!(0), balance!(0))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::deissue_token(token_id);
+        assert!(!<crate::SymbolsUsed<Test>>::contains_key(symbol));
+    })
+}
+
+#[test]
+fn deissue_token_with_token_info_removed() {
+    let token_id = token!(1);
+    let (owner, acc) = (account!(1), account!(2));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, balance!(10), balance!(0))
+        .with_account(acc, balance!(0), balance!(0))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::deissue_token(token_id);
+        assert!(!<crate::TokenInfoById<Test>>::contains_key(&token_id));
     })
 }

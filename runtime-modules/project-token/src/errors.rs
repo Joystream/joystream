@@ -57,5 +57,8 @@ decl_error! {
         /// Cannot join whitelist in permissionless mode
         CannotJoinWhitelistInPermissionlessMode,
 
+        /// Cannot Deissue Token with outstanding accounts
+        CannotDeissueTokenWithOutstandingAccounts,
+
     }
 }

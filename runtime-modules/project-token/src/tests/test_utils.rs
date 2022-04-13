@@ -82,9 +82,9 @@ impl GenesisConfigBuilder {
 
     // add token with given params & zero issuance
     pub fn with_token(mut self, token_id: TokenId, token_info: TokenData) -> Self {
+        self.symbol_used = vec![(token_info.symbol.clone(), ())];
         self.token_info_by_id.push((token_id, token_info));
         self.next_token_id = self.next_token_id.saturating_add(TokenId::one());
-        self.symbol_used = vec![(Hashing::hash_of(&token_id), ())];
         self
     }
 

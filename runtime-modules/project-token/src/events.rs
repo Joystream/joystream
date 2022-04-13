@@ -74,5 +74,10 @@ decl_event! {
         /// - account that called the extrinsic
         /// - ongoing policy
         AccountDustedBy(TokenId, AccountId, AccountId, TransferPolicy),
+
+        /// Token Deissued
+        /// Params:
+        /// - token id
+        TokenDeissued(TokenId),
     }
 }
