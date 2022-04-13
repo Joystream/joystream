@@ -317,6 +317,22 @@ parameter_types! {
     pub const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = 25;
     pub const BagDeletionPrize: u64 = BAG_DELETION_PRIZE;
     pub const ModuleAccountInitialBalance: u64 = 1;
+    pub const DefaultGlobalDailyNftLimit: LimitPerPeriod<u64> = LimitPerPeriod {
+        block_number_period: 100,
+        limit: 10000,
+    };  // TODO: update
+    pub const DefaultGlobalWeeklyNftLimit: LimitPerPeriod<u64> = LimitPerPeriod {
+        block_number_period: 1000,
+        limit: 50000,
+    };  // TODO: update
+    pub const DefaultChannelDailyNftLimit: LimitPerPeriod<u64> = LimitPerPeriod {
+        block_number_period: 100,
+        limit: 100,
+    };  // TODO: update
+    pub const DefaultChannelWeeklyNftLimit: LimitPerPeriod<u64> = LimitPerPeriod {
+        block_number_period: 1000,
+        limit: 500,
+    };  // TODO: update
 }
 
 impl Trait for Test {
@@ -361,6 +377,18 @@ impl Trait for Test {
 
     /// Content working group pallet integration.
     type ContentWorkingGroup = ContentWG;
+
+    /// Default global daily NFT limit.
+    type DefaultGlobalDailyNftLimit = DefaultGlobalDailyNftLimit;
+
+    /// Default global weekly NFT limit.
+    type DefaultGlobalWeeklyNftLimit = DefaultGlobalWeeklyNftLimit;
+
+    /// Default channel daily NFT limit.
+    type DefaultChannelDailyNftLimit = DefaultChannelDailyNftLimit;
+
+    /// Default channel weekly NFT limit.
+    type DefaultChannelWeeklyNftLimit = DefaultChannelWeeklyNftLimit;
 }
 
 pub const COUNCIL_BUDGET_ACCOUNT_ID: u64 = 90000000;
