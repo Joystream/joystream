@@ -152,7 +152,7 @@ impl bounty::WeightInfo for WeightInfo {
 			.saturating_add(DbWeight::get().reads(2 as Weight))
 			.saturating_add(DbWeight::get().writes(1 as Weight))
 	}
-	fn unlock_work_entrant_stake() -> Weight {
+	fn withdraw_entrant_stake() -> Weight {
 		(626_543_000 as Weight)
 			.saturating_add(DbWeight::get().reads(5 as Weight))
 			.saturating_add(DbWeight::get().writes(4 as Weight))

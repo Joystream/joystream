@@ -1416,7 +1416,7 @@ benchmarks! {
                 bounty_id,
                 oracle).into());
     }
-    unlock_work_entrant_stake{
+    withdraw_entrant_stake{
         let cherry: BalanceOf<T> = 200u32.into();
         let oracle_reward: BalanceOf<T> = 200u32.into();
         let funding_amount: BalanceOf<T> = 500u32.into();
@@ -1459,7 +1459,7 @@ benchmarks! {
 
         Bounty::<T>::terminate_bounty(RawOrigin::Root.into(), bounty_id).unwrap();
 
-    }: unlock_work_entrant_stake(
+    }: withdraw_entrant_stake(
         RawOrigin::Signed(account_id.clone()),
         member_id,
         bounty_id,
@@ -1911,9 +1911,9 @@ mod tests {
     }
 
     #[test]
-    fn unlock_work_entrant_stake() {
+    fn withdraw_entrant_stake() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_unlock_work_entrant_stake::<Test>());
+            assert_ok!(test_benchmark_withdraw_entrant_stake::<Test>());
         });
     }
 

@@ -222,7 +222,7 @@ impl crate::WeightInfo for () {
     fn submit_oracle_judgment_by_member_all_rejected(_i: u32, _j: u32) -> u64 {
         0
     }
-    fn unlock_work_entrant_stake() -> u64 {
+    fn withdraw_entrant_stake() -> u64 {
         0
     }
     fn withdraw_funding_state_bloat_bond_by_council() -> u64 {

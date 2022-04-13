@@ -704,14 +704,14 @@ impl EndWorkPeriodFixture {
     }
 }
 
-pub struct UnlockWorkEntrantStakeFixture {
+pub struct WithdrawEntrantStakeFixture {
     origin: RawOrigin<u128>,
     entry_id: u64,
     bounty_id: u64,
     member_id: u64,
 }
 
-impl UnlockWorkEntrantStakeFixture {
+impl WithdrawEntrantStakeFixture {
     pub fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(1),
@@ -739,7 +739,7 @@ impl UnlockWorkEntrantStakeFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let old_bounty = Bounty::bounties(self.bounty_id);
-        let actual_result = Bounty::unlock_work_entrant_stake(
+        let actual_result = Bounty::withdraw_entrant_stake(
             self.origin.clone().into(),
             self.member_id,
             self.bounty_id,

@@ -13,7 +13,7 @@ use fixtures::{
     increase_account_balance, increase_total_balance_issuance_using_account_id, run_to_block,
     set_council_budget, AnnounceWorkEntryFixture, CreateBountyFixture, EndWorkPeriodFixture,
     EventFixture, FundBountyFixture, SubmitJudgmentFixture, SubmitWorkFixture, SwitchOracleFixture,
-    TerminateBountyFixture, UnlockWorkEntrantStakeFixture, WithdrawFundingFixture,
+    TerminateBountyFixture, WithdrawEntrantStakeFixture, WithdrawFundingFixture,
     WithdrawOracleRewardFixture, DEFAULT_BOUNTY_CHERRY, DEFAULT_BOUNTY_ORACLE_REWARD,
 };
 use frame_support::storage::StorageMap;
@@ -4851,7 +4851,7 @@ fn switch_oracle_fails_invalid_stage() {
 }
 
 #[test]
-fn unlock_work_entrant_stake_succeeds_after_terminating_in_working_period() {
+fn withdraw_entrant_stake_succeeds_after_terminating_in_working_period() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -4940,13 +4940,13 @@ fn unlock_work_entrant_stake_succeeds_after_terminating_in_working_period() {
             Balances::usable_balance(&worker_account_id_2),
             initial_balance - worker_entrant_stake
         );
-        UnlockWorkEntrantStakeFixture::default()
+        WithdrawEntrantStakeFixture::default()
             .with_origin(RawOrigin::Signed(worker_account_id_1))
             .with_member_id(worker_member_id_1)
             .with_entry_id(entry_id_1)
             .call_and_assert(Ok(()));
 
-        UnlockWorkEntrantStakeFixture::default()
+        WithdrawEntrantStakeFixture::default()
             .with_origin(RawOrigin::Signed(worker_account_id_2))
             .with_member_id(worker_member_id_2)
             .with_entry_id(entry_id_2)
@@ -4986,7 +4986,7 @@ fn unlock_work_entrant_stake_succeeds_after_terminating_in_working_period() {
 }
 
 #[test]
-fn unlock_work_entrant_stake_succeeds_after_terminating_in_judging_period() {
+fn withdraw_entrant_stake_succeeds_after_terminating_in_judging_period() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -5080,13 +5080,13 @@ fn unlock_work_entrant_stake_succeeds_after_terminating_in_judging_period() {
             Balances::usable_balance(&worker_account_id_2),
             initial_balance - worker_entrant_stake
         );
-        UnlockWorkEntrantStakeFixture::default()
+        WithdrawEntrantStakeFixture::default()
             .with_origin(RawOrigin::Signed(worker_account_id_1))
             .with_member_id(worker_member_id_1)
             .with_entry_id(entry_id_1)
             .call_and_assert(Ok(()));
 
-        UnlockWorkEntrantStakeFixture::default()
+        WithdrawEntrantStakeFixture::default()
             .with_origin(RawOrigin::Signed(worker_account_id_2))
             .with_member_id(worker_member_id_2)
             .with_entry_id(entry_id_2)
@@ -5125,7 +5125,7 @@ fn unlock_work_entrant_stake_succeeds_after_terminating_in_judging_period() {
 }
 
 #[test]
-fn unlock_work_entrant_stake_succeeds_after_judging() {
+fn withdraw_entrant_stake_succeeds_after_judging() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -5244,7 +5244,7 @@ fn unlock_work_entrant_stake_succeeds_after_judging() {
             initial_balance - worker_entrant_stake
         );
 
-        UnlockWorkEntrantStakeFixture::default()
+        WithdrawEntrantStakeFixture::default()
             .with_origin(RawOrigin::Signed(worker_account_id_2))
             .with_member_id(worker_member_id_2)
             .with_entry_id(entry_id_2)
@@ -5269,7 +5269,7 @@ fn unlock_work_entrant_stake_succeeds_after_judging() {
 }
 
 #[test]
-fn unlock_work_entrant_stake_fails_invalid_entry_ownership() {
+fn withdraw_entrant_stake_fails_invalid_entry_ownership() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -5336,7 +5336,7 @@ fn unlock_work_entrant_stake_fails_invalid_entry_ownership() {
             .with_bounty_id(bounty_id)
             .call_and_assert(Ok(()));
 
-        UnlockWorkEntrantStakeFixture::default()
+        WithdrawEntrantStakeFixture::default()
             .with_origin(RawOrigin::Signed(worker_account_id_1))
             .with_member_id(worker_member_id_1)
             .with_entry_id(entry_id_2)
@@ -5345,20 +5345,20 @@ fn unlock_work_entrant_stake_fails_invalid_entry_ownership() {
 }
 
 #[test]
-fn unlock_work_entrant_stake_fails_invalid_origin() {
+fn withdraw_entrant_stake_fails_invalid_origin() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
         let worker_member_id_1 = 1;
         let entry_id_1 = 1;
 
-        UnlockWorkEntrantStakeFixture::default()
+        WithdrawEntrantStakeFixture::default()
             .with_origin(RawOrigin::Root)
             .with_member_id(worker_member_id_1)
             .with_entry_id(entry_id_1)
             .call_and_assert(Err(DispatchError::BadOrigin));
 
-        UnlockWorkEntrantStakeFixture::default()
+        WithdrawEntrantStakeFixture::default()
             .with_origin(RawOrigin::None)
             .with_member_id(worker_member_id_1)
             .with_entry_id(entry_id_1)
@@ -5367,19 +5367,19 @@ fn unlock_work_entrant_stake_fails_invalid_origin() {
 }
 
 #[test]
-fn unlock_work_entrant_stake_fails_invalid_bounty_id() {
+fn withdraw_entrant_stake_fails_invalid_bounty_id() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        UnlockWorkEntrantStakeFixture::default()
+        WithdrawEntrantStakeFixture::default()
             .with_bounty_id(2)
             .call_and_assert(Err(Error::<Test>::BountyDoesntExist.into()));
     });
 }
 
 #[test]
-fn unlock_work_entrant_stake_fails_invalid_stage() {
+fn withdraw_entrant_stake_fails_invalid_stage() {
     //Funding
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
@@ -5390,7 +5390,7 @@ fn unlock_work_entrant_stake_fails_invalid_stage() {
 
         CreateBountyFixture::default().call_and_assert(Ok(()));
 
-        UnlockWorkEntrantStakeFixture::default()
+        WithdrawEntrantStakeFixture::default()
             .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedFunding.into()));
     });
 
@@ -5408,7 +5408,7 @@ fn unlock_work_entrant_stake_fails_invalid_stage() {
 
         run_to_block(funding_period + 10);
 
-        UnlockWorkEntrantStakeFixture::default().call_and_assert(Err(
+        WithdrawEntrantStakeFixture::default().call_and_assert(Err(
             Error::<Test>::InvalidStageUnexpectedNoFundingContributed.into(),
         ));
     });
@@ -5433,7 +5433,7 @@ fn unlock_work_entrant_stake_fails_invalid_stage() {
             .call_and_assert(Ok(()));
 
         run_to_block(funding_period + 1);
-        UnlockWorkEntrantStakeFixture::default().call_and_assert(Err(
+        WithdrawEntrantStakeFixture::default().call_and_assert(Err(
             Error::<Test>::InvalidStageUnexpectedWorkSubmission.into(),
         ));
     });
@@ -5476,7 +5476,7 @@ fn unlock_work_entrant_stake_fails_invalid_stage() {
             .with_bounty_id(bounty_id)
             .call_and_assert(Ok(()));
 
-        UnlockWorkEntrantStakeFixture::default()
+        WithdrawEntrantStakeFixture::default()
             .call_and_assert(Err(Error::<Test>::InvalidStageUnexpectedJudgment.into()));
     });
 }

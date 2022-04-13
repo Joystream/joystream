@@ -45,13 +45,13 @@
 //! - [terminate_bounty](./struct.Module.html#method.terminate_bounty) - terminate bounty (into failed stage or remove bounty).
 //!
 //! #### SuccessfulBountyWithdrawal stage
-//! - [unlock_work_entrant_stake](./struct.Module.html#method.unlock_work_entrant_stake) -
+//! - [withdraw_entrant_stake](./struct.Module.html#method.withdraw_entrant_stake) -
 //! unlock stake accounts refering to none judged work entries.
 //!  - [withdraw_funding](./struct.Module.html#method.withdraw_funding) -
 //! withdraw contributor's state bloat bond.
 //!
 //! #### FailedBountyWithdrawal stage
-//!  - [unlock_work_entrant_stake](./struct.Module.html#method.unlock_work_entrant_stake) -
+//!  - [withdraw_entrant_stake](./struct.Module.html#method.withdraw_entrant_stake) -
 //! unlock stake accounts refering to none judged work entries.
 //! - [withdraw_funding](./struct.Module.html#method.withdraw_funding) - Contributors can withdraw
 //! funding for a failed bounty + a cherry fraction + state bloat bond.
@@ -96,7 +96,7 @@ pub trait WeightInfo {
     fn submit_oracle_judgment_by_council_all_rejected(i: u32, j: u32) -> Weight;
     fn submit_oracle_judgment_by_member_all_winners(i: u32) -> Weight;
     fn submit_oracle_judgment_by_member_all_rejected(i: u32, j: u32) -> Weight;
-    fn unlock_work_entrant_stake() -> Weight;
+    fn withdraw_entrant_stake() -> Weight;
     fn withdraw_funding_state_bloat_bond_by_council() -> Weight;
     fn withdraw_funding_state_bloat_bond_by_member() -> Weight;
     fn withdraw_oracle_reward_by_oracle_council() -> Weight;
@@ -1405,8 +1405,8 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoBounty::<T>::unlock_work_entrant_stake()]
-        pub fn unlock_work_entrant_stake(
+        #[weight = WeightInfoBounty::<T>::withdraw_entrant_stake()]
+        pub fn withdraw_entrant_stake(
             origin,
             member_id: MemberId<T>,
             bounty_id: T::BountyId,
