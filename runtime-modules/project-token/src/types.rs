@@ -188,15 +188,39 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
     }
 }
 /// Token Data implementation
-impl<Balance: Saturating + Copy, Hash, BlockNumber> TokenData<Balance, Hash, BlockNumber> {
+impl<Balance: Zero + Copy + Saturating, Hash, BlockNumber: Copy + Saturating + PartialOrd>
+    TokenData<Balance, Hash, BlockNumber>
+{
     // increase total issuance
-    pub(crate) fn increase_issuance_by(&mut self, amount: Balance) {
+    pub(crate) fn increase_issuance_by(&mut self, amount: Balance, block: BlockNumber) {
         self.current_total_issuance = self.current_total_issuance.saturating_add(amount);
+        self.reset_tally_at_block(block);
     }
 
-    // decrease total issuance
-    pub(crate) fn decrease_issuance_by(&mut self, amount: Balance) {
-        self.current_total_issuance = self.current_total_issuance.saturating_sub(amount);
+    pub fn reset_tally_at_block(&mut self, block: BlockNumber) {
+        self.patronage_info.last_unclaimed_patronage_tally_block = block;
+        self.patronage_info.unclaimed_patronage_tally_amount = Balance::zero();
+    }
+
+    pub(crate) fn unclaimed_patronage<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
+        &self,
+        block: BlockNumber,
+    ) -> Balance {
+        self.patronage_info
+            .unclaimed_patronage_percent::<BlockNumberToBalance>(block)
+            .saturating_mul(self.current_total_issuance)
+    }
+
+    pub fn set_new_patronage_rate_at_block<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
+        &mut self,
+        new_rate: Balance,
+        block: BlockNumber,
+    ) {
+        // update tally according to old rate
+        self.patronage_info.unclaimed_patronage_tally_amount =
+            self.unclaimed_patronage::<BlockNumberToBalance>(block);
+        self.patronage_info.last_unclaimed_patronage_tally_block = block;
+        self.patronage_info.rate = new_rate;
     }
 }
 
@@ -253,33 +277,13 @@ impl<Hasher: Hash> MerkleProof<Hasher> {
 impl<Balance: Zero + Copy + Saturating, BlockNumber: Copy + Saturating + PartialOrd>
     PatronageData<Balance, BlockNumber>
 {
-    pub fn unclaimed_patronage<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
+    pub fn unclaimed_patronage_percent<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
         &self,
         block: BlockNumber,
     ) -> Balance {
         let period = block.saturating_sub(self.last_unclaimed_patronage_tally_block);
         let accrued = BlockNumberToBalance::convert(period).saturating_mul(self.rate);
         accrued.saturating_add(self.unclaimed_patronage_tally_amount)
-    }
-
-    pub fn set_new_rate_at_block<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
-        &mut self,
-        new_rate: Balance,
-        block: BlockNumber,
-    ) {
-        // update tally according to old rate
-        self.unclaimed_patronage_tally_amount =
-            self.unclaimed_patronage::<BlockNumberToBalance>(block);
-        self.last_unclaimed_patronage_tally_block = block;
-        self.rate = new_rate;
-    }
-
-    pub fn reset_tally_at_block<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
-        &mut self,
-        block: BlockNumber,
-    ) {
-        self.last_unclaimed_patronage_tally_block = block;
-        self.unclaimed_patronage_tally_amount = Balance::zero();
     }
 }
 

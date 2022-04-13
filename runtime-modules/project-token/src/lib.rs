@@ -232,9 +232,7 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
         let now = Self::current_block();
         let new_rate = token_info.patronage_info.rate.saturating_sub(decrement);
         TokenInfoById::<T>::mutate(token_id, |token_info| {
-            token_info
-                .patronage_info
-                .set_new_rate_at_block::<T::BlockNumberToBalance>(new_rate, now);
+            token_info.set_new_patronage_rate_at_block::<T::BlockNumberToBalance>(new_rate, now);
         });
 
         Self::deposit_event(RawEvent::PatronageRateDecreasedTo(token_id, new_rate));
@@ -256,9 +254,7 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
         Self::ensure_account_data_exists(token_id, &to_account).map(|_| ())?;
 
         let now = Self::current_block();
-        let unclaimed_patronage = token_info
-            .patronage_info
-            .unclaimed_patronage::<T::BlockNumberToBalance>(now);
+        let unclaimed_patronage = token_info.unclaimed_patronage::<T::BlockNumberToBalance>(now);
 
         if unclaimed_patronage.is_zero() {
             return Ok(());
@@ -271,10 +267,7 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
         });
 
         TokenInfoById::<T>::mutate(token_id, |token_info| {
-            token_info
-                .patronage_info
-                .reset_tally_at_block::<T::BlockNumberToBalance>(now);
-            token_info.increase_issuance_by(unclaimed_patronage);
+            token_info.increase_issuance_by(unclaimed_patronage, now);
         });
 
         Self::deposit_event(RawEvent::PatronageCreditClaimedAtBlock(
