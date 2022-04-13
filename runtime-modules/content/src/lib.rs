@@ -2413,6 +2413,23 @@ decl_module! {
             Self::deposit_event(RawEvent::NftOwnerRemarked(actor, video_id, msg));
         }
 
+        /// Updates global or channel NFT limit.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_nft_limit(
+            origin,
+            nft_limit_id: NftLimitId<T::ChannelId>,
+            limit: LimitPerPeriod<T::BlockNumber>,
+        ) {
+            ensure_nft_limits_auth_success::<T>(origin, nft_limit_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <NftLimitsById::<T>>::insert(nft_limit_id, limit);
+
+            Self::deposit_event(RawEvent::NftLimitUpdated(nft_limit_id, limit));
+        }
     }
 }
 
@@ -2839,6 +2856,7 @@ decl_event!(
         ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
         AccountId = <T as frame_system::Trait>::AccountId,
         UpdateChannelPayoutsParameters = UpdateChannelPayoutsParameters<T>,
+        BlockNumber = <T as frame_system::Trait>::BlockNumber,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2933,5 +2951,8 @@ decl_event!(
         ChannelCollaboratorRemarked(ContentActor, ChannelId, Vec<u8>),
         ChannelModeratorRemarked(ContentActor, ChannelId, Vec<u8>),
         NftOwnerRemarked(ContentActor, VideoId, Vec<u8>),
+
+        /// Nft limits
+        NftLimitUpdated(NftLimitId<ChannelId>, LimitPerPeriod<BlockNumber>),
     }
 );

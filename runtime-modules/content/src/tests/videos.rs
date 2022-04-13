@@ -1276,6 +1276,7 @@ fn update_video_failed_with_exceeded_global_daily_nft_limits() {
     })
 }
 
+#[test]
 fn update_video_failed_with_exceeded_global_weekly_nft_limits() {
     with_default_mock_builder(|| {
         nft_test_helper_for_exceeded_limit_on_updating_video(
