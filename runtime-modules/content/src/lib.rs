@@ -54,12 +54,6 @@ use sp_runtime::{
 };
 use sp_std::{collections::btree_set::BTreeSet, vec::Vec};
 
-//TODO:
-// - consts
-// - proposals
-// - config
-// -
-
 /// Module configuration trait for Content Directory Module
 pub trait Trait:
     frame_system::Trait
@@ -235,6 +229,19 @@ decl_storage! {
             NftLimitId<T::ChannelId> => NftCounter<T::BlockNumber>;
 
     }
+    add_extra_genesis {
+        build(|_| {
+            // We set initial global NFT limits
+            NftLimitsById::<T>::insert(
+                NftLimitId::GlobalDaily,
+                T::DefaultGlobalDailyNftLimit::get()
+            );
+            NftLimitsById::<T>::insert(
+                NftLimitId::GlobalWeekly,
+                T::DefaultGlobalWeeklyNftLimit::get()
+            );
+        });
+    }
 }
 
 decl_module! {
@@ -247,6 +254,22 @@ decl_module! {
 
         /// Exports const -  max number of curators per group
         const MaxNumberOfCuratorsPerGroup: MaxNumber = T::MaxNumberOfCuratorsPerGroup::get();
+
+        /// Exports const - default global daily NFT limit.
+        const DefaultGlobalDailyNftLimit: LimitPerPeriod<T::BlockNumber> =
+            T::DefaultGlobalDailyNftLimit::get();
+
+        /// Exports const - default global weekly NFT limit.
+        const DefaultGlobalWeeklyNftLimit: LimitPerPeriod<T::BlockNumber> =
+            T::DefaultGlobalDailyNftLimit::get();
+
+        /// Exports const - default channel daily NFT limit.
+        const DefaultChannelDailyNftLimit: LimitPerPeriod<T::BlockNumber> =
+            T::DefaultGlobalDailyNftLimit::get();
+
+        /// Exports const - default channel weekly NFT limit.
+        const DefaultChannelWeeklyNftLimit: LimitPerPeriod<T::BlockNumber> =
+            T::DefaultGlobalDailyNftLimit::get();
 
         // ======
         // Next set of extrinsics can only be invoked by lead.
