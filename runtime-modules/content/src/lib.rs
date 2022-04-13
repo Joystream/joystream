@@ -2124,6 +2124,24 @@ decl_module! {
 
             Self::deposit_event(RawEvent::CouncilRewardClaimed(channel_id, reward));
         }
+
+        /// Updates global or channel NFT limit.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_nft_limit(
+            origin,
+            nft_limit_id: NftLimitId<T::ChannelId>,
+            limit: LimitPerPeriod<T::BlockNumber>,
+        ) {
+            ensure_nft_limits_auth_success::<T>(origin, nft_limit_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            <NftLimitsById::<T>>::insert(nft_limit_id, limit);
+
+            Self::deposit_event(RawEvent::NftLimitUpdated(nft_limit_id, limit));
+        }
     }
 }
 
@@ -2604,6 +2622,7 @@ decl_event!(
         >,
         TransferParameters =
             TransferParameters<<T as common::MembershipTypes>::MemberId, BalanceOf<T>>,
+        BlockNumber = <T as frame_system::Trait>::BlockNumber,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2715,5 +2734,8 @@ decl_event!(
         // Channel transfer
         UpdateChannelTransferStatus(ChannelId, ContentActor, ChannelTransferStatus),
         ChannelTransferAccepted(ChannelId, TransferParameters),
+
+        /// Nft limits
+        NftLimitUpdated(NftLimitId<ChannelId>, LimitPerPeriod<BlockNumber>),
     }
 );

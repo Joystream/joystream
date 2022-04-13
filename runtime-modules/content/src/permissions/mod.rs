@@ -5,6 +5,7 @@ pub use codec::{Codec, Decode, Encode};
 use core::fmt::Debug;
 pub use curator_group::*;
 use frame_support::{ensure, Parameter};
+use frame_system::ensure_root;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::BaseArithmetic;
@@ -549,6 +550,25 @@ pub fn ensure_no_channel_transfers<T: Trait>(channel: &Channel<T>) -> DispatchRe
         channel.transfer_status == ChannelTransferStatus::NoActiveTransfer,
         Error::<T>::InvalidChannelTransferStatus
     );
+
+    Ok(())
+}
+
+// Authenticate NFT-limits change
+pub fn ensure_nft_limits_auth_success<T: Trait>(
+    origin: T::Origin,
+    nft_limit_id: NftLimitId<T::ChannelId>,
+) -> DispatchResult {
+    match nft_limit_id {
+        NftLimitId::GlobalDaily | NftLimitId::GlobalWeekly => {
+            ensure_root(origin)?;
+        }
+        NftLimitId::ChannelDaily(..) | NftLimitId::ChannelWeekly(..) => {
+            let sender = ensure_signed(origin)?;
+
+            ensure_lead_auth_success::<T>(&sender)?;
+        }
+    };
 
     Ok(())
 }

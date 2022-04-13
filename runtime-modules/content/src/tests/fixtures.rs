@@ -1,3 +1,6 @@
+use derive_fixture::Fixture;
+use derive_new::new;
+
 use super::curators;
 use super::mock::*;
 use crate::*;
@@ -4324,5 +4327,40 @@ pub fn run_all_fixtures_with_contexts(
             .with_sender(sender)
             .with_actor(actor)
             .call_and_assert(expected_err.clone());
+    }
+}
+
+#[derive(Fixture, new)]
+pub struct UpdateNftLimitFixture {
+    #[new(value = "RawOrigin::Signed(LEAD_ACCOUNT_ID)")]
+    origin: RawOrigin<u64>,
+
+    #[new(default)]
+    nft_limit_id: NftLimitId<ChannelId>,
+
+    #[new(default)]
+    limit: LimitPerPeriod<u64>,
+}
+
+impl UpdateNftLimitFixture {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_limit = Content::nft_limit_by_id(self.nft_limit_id);
+
+        let actual_result =
+            Content::update_nft_limit(self.origin.clone().into(), self.nft_limit_id, self.limit);
+
+        assert_eq!(actual_result, expected_result);
+
+        let new_limit = Content::nft_limit_by_id(self.nft_limit_id);
+        if actual_result.is_ok() {
+            assert_eq!(self.limit, new_limit);
+
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::NftLimitUpdated(self.nft_limit_id, self.limit))
+            );
+        } else {
+            assert_eq!(old_limit, new_limit);
+        }
     }
 }
