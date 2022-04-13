@@ -58,9 +58,6 @@ use sp_std::{collections::btree_set::BTreeSet, vec::Vec};
 // - consts
 // - proposals
 // - config
-// - set extrinsics
-// - enum type for limits
-// - shared map and config for nft limit enums??
 // -
 
 /// Module configuration trait for Content Directory Module
@@ -123,6 +120,18 @@ pub trait Trait:
 
     /// Provides an access for the council budget.
     type CouncilBudgetManager: CouncilBudgetManager<Self::AccountId, BalanceOf<Self>>;
+
+    /// Default global daily NFT limit.
+    type DefaultGlobalDailyNftLimit: Get<LimitPerPeriod<Self::BlockNumber>>;
+
+    /// Default global weekly NFT limit.
+    type DefaultGlobalWeeklyNftLimit: Get<LimitPerPeriod<Self::BlockNumber>>;
+
+    /// Default channel daily NFT limit.
+    type DefaultChannelDailyNftLimit: Get<LimitPerPeriod<Self::BlockNumber>>;
+
+    /// Default channel weekly NFT limit.
+    type DefaultChannelWeeklyNftLimit: Get<LimitPerPeriod<Self::BlockNumber>>;
 }
 
 decl_storage! {
@@ -467,6 +476,9 @@ decl_module! {
             // add channel to onchain state
             ChannelById::<T>::insert(channel_id, channel.clone());
 
+            // Set default NFT daily and weekly limits.
+            Self::set_default_nft_limits(channel_id);
+
             Self::deposit_event(RawEvent::ChannelCreated(actor, channel_id, channel, params));
         }
 
@@ -622,6 +634,9 @@ decl_module! {
 
             // remove channel from on chain state
             ChannelById::<T>::remove(channel_id);
+
+            // Remove NFT limits for a channel.
+            Self::remove_nft_limits(channel_id);
 
             // deposit event
             Self::deposit_event(RawEvent::ChannelDeleted(actor, channel_id));
@@ -2801,6 +2816,23 @@ impl<T: Trait> Module<T> {
         )?;
 
         Ok(())
+    }
+
+    // Set default daily and weekly NFT limits for a channel.
+    fn set_default_nft_limits(channel_id: T::ChannelId) {
+        NftLimitsById::<T>::mutate(NftLimitId::ChannelDaily(channel_id), |nft_limit| {
+            *nft_limit = T::DefaultChannelDailyNftLimit::get();
+        });
+
+        NftLimitsById::<T>::mutate(NftLimitId::ChannelWeekly(channel_id), |nft_limit| {
+            *nft_limit = T::DefaultChannelWeeklyNftLimit::get();
+        });
+    }
+
+    // Remove daily and weekly NFT limits for a channel.
+    fn remove_nft_limits(channel_id: T::ChannelId) {
+        NftLimitsById::<T>::remove(NftLimitId::ChannelDaily(channel_id));
+        NftLimitsById::<T>::remove(NftLimitId::ChannelWeekly(channel_id));
     }
 
     // Checks generic NFT-limit.

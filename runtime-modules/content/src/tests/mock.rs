@@ -333,6 +333,22 @@ parameter_types! {
     pub const PricePerByte: u32 = 2;
     pub const VideoCommentsModuleId: ModuleId = ModuleId(*b"m0:forum"); // module : forum
     pub const BloatBondCap: u32 = 1000;
+    pub const DefaultGlobalDailyNftLimit: LimitPerPeriod<u64> = LimitPerPeriod {
+        block_number_period: 100,
+        limit: 10000,
+    };  // TODO: update
+    pub const DefaultGlobalWeeklyNftLimit: LimitPerPeriod<u64> = LimitPerPeriod {
+        block_number_period: 1000,
+        limit: 50000,
+    };  // TODO: update
+    pub const DefaultChannelDailyNftLimit: LimitPerPeriod<u64> = LimitPerPeriod {
+        block_number_period: 100,
+        limit: 100,
+    };  // TODO: update
+    pub const DefaultChannelWeeklyNftLimit: LimitPerPeriod<u64> = LimitPerPeriod {
+        block_number_period: 1000,
+        limit: 500,
+    };  // TODO: update
 }
 
 impl Trait for Test {
@@ -386,6 +402,18 @@ impl Trait for Test {
 
     /// council budget manager
     type CouncilBudgetManager = CouncilBudgetManager;
+
+    /// Default global daily NFT limit.
+    type DefaultGlobalDailyNftLimit = DefaultGlobalDailyNftLimit;
+
+    /// Default global weekly NFT limit.
+    type DefaultGlobalWeeklyNftLimit = DefaultGlobalWeeklyNftLimit;
+
+    /// Default channel daily NFT limit.
+    type DefaultChannelDailyNftLimit = DefaultChannelDailyNftLimit;
+
+    /// Default channel weekly NFT limit.
+    type DefaultChannelWeeklyNftLimit = DefaultChannelWeeklyNftLimit;
 }
 
 // #[derive (Default)]
