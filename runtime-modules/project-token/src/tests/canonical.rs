@@ -578,14 +578,10 @@ fn dust_account_ok_with_account_removed() {
 #[test]
 fn deissue_token_fails_with_non_existing_token_id() {
     let token_id = token!(1);
-    let (owner, acc) = (account!(1), account!(2));
-
     let token_data = TokenDataBuilder::new_empty().build();
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, balance!(10), balance!(0))
-        .with_account(acc, balance!(0), balance!(0))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -610,7 +606,7 @@ fn deissue_token_fails_with_existing_accounts() {
 
     build_test_externalities(config).execute_with(|| {
         let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::deissue_token(token_id + 1);
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::deissue_token(token_id);
         assert_noop!(
             result,
             Error::<Test>::CannotDeissueTokenWithOutstandingAccounts
@@ -621,14 +617,10 @@ fn deissue_token_fails_with_existing_accounts() {
 #[test]
 fn deissue_token_ok() {
     let token_id = token!(1);
-    let (owner, acc) = (account!(1), account!(2));
-
     let token_data = TokenDataBuilder::new_empty().build();
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, balance!(10), balance!(0))
-        .with_account(acc, balance!(0), balance!(0))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -641,14 +633,10 @@ fn deissue_token_ok() {
 #[test]
 fn deissue_token_with_event_deposit() {
     let token_id = token!(1);
-    let (owner, acc) = (account!(1), account!(2));
-
     let token_data = TokenDataBuilder::new_empty().build();
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, balance!(10), balance!(0))
-        .with_account(acc, balance!(0), balance!(0))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -660,15 +648,11 @@ fn deissue_token_with_event_deposit() {
 #[test]
 fn deissue_token_with_symbol_removed() {
     let token_id = token!(1);
-    let (owner, acc) = (account!(1), account!(2));
-
     let token_data: TokenDataOf<Test> = TokenDataBuilder::new_empty().build();
     let symbol = token_data.symbol.clone();
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, balance!(10), balance!(0))
-        .with_account(acc, balance!(0), balance!(0))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -680,14 +664,10 @@ fn deissue_token_with_symbol_removed() {
 #[test]
 fn deissue_token_with_token_info_removed() {
     let token_id = token!(1);
-    let (owner, acc) = (account!(1), account!(2));
-
     let token_data = TokenDataBuilder::new_empty().build();
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, balance!(10), balance!(0))
-        .with_account(acc, balance!(0), balance!(0))
         .build();
 
     build_test_externalities(config).execute_with(|| {

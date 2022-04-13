@@ -313,17 +313,22 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
     /// Remove token data from storage
     /// Preconditions:
     /// - `token_id` must exists
+    /// - no account for `token_id` exists
     ///
     /// Postconditions:
     /// - token data @ `token_Id` removed from storage
     /// - all account data for `token_Id` removed
     fn deissue_token(token_id: T::TokenId) -> DispatchResult {
-        //        let token_info = Self::ensure_token_exists(token_id)?;
+        let token_info = Self::ensure_token_exists(token_id)?;
+        Self::ensure_no_account_outstanding(token_id)?;
 
         // == MUTATION SAFE ==
 
-        //        Self::do_deissue_token(token_info.symbol, token_id);
-        todo!()
+        Self::do_deissue_token(token_info.symbol, token_id);
+
+        Self::deposit_event(RawEvent::TokenDeissued(token_id));
+
+        Ok(())
     }
 }
 
@@ -440,6 +445,16 @@ impl<T: Trait> Module<T> {
             Error::<T>::TokenSymbolAlreadyInUse,
         );
 
+        Ok(())
+    }
+
+    pub(crate) fn ensure_no_account_outstanding(token_id: T::TokenId) -> DispatchResult {
+        ensure!(
+            AccountInfoByTokenAndAccount::<T>::iter_prefix(token_id)
+                .next()
+                .is_none(),
+            Error::<T>::CannotDeissueTokenWithOutstandingAccounts,
+        );
         Ok(())
     }
 }
