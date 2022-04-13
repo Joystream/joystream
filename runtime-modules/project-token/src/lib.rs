@@ -167,8 +167,7 @@ decl_module! {
             );
 
             if let TransferPolicyOf::<T>::Permissioned(commit) = token_info.transfer_policy {
-                proof.verify_for_commit::<T,_>(&account_id, commit)?;
-                Ok(())
+                proof.verify_for_commit::<T,_>(&account_id, commit)
             } else {
                 Err(Error::<T>::CannotJoinWhitelistInPermissionlessMode.into())
             }?;
@@ -304,7 +303,7 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
         );
 
         let now = Self::current_block();
-        let token_data = issuance_parameters.try_build::<T, _>(now)?;
+        let token_data = issuance_parameters.build(now);
 
         // == MUTATION SAFE ==
 

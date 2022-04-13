@@ -202,10 +202,7 @@ impl<Balance: Saturating + Copy, Hash, BlockNumber> TokenData<Balance, Hash, Blo
 /// Encapsules parameters validation + TokenData construction
 impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, Hash> {
     /// Forward `self` state
-    pub fn try_build<T: crate::Trait, BlockNumber>(
-        self,
-        block: BlockNumber,
-    ) -> Result<TokenData<Balance, Hash, BlockNumber>, DispatchError> {
+    pub fn build<BlockNumber>(self, block: BlockNumber) -> TokenData<Balance, Hash, BlockNumber> {
         // validation
 
         let patronage_info = PatronageData::<Balance, BlockNumber> {
@@ -213,12 +210,12 @@ impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, H
             unclaimed_patronage_tally_amount: Balance::zero(),
             rate: self.patronage_rate,
         };
-        Ok(TokenData::<Balance, Hash, BlockNumber> {
+        TokenData::<Balance, Hash, BlockNumber> {
             current_total_issuance: self.initial_issuance,
             issuance_state: self.initial_state,
             transfer_policy: self.transfer_policy,
             patronage_info,
-        })
+        }
     }
 }
 
