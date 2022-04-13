@@ -183,7 +183,8 @@ async function getRequiredExistingEntites<Type extends Video | Membership>(
   store: DatabaseManager,
   entityType: EntityType<Type>,
   ids: string[],
-  errorMessage: string
+  errorMessage: string,
+  throwOnMissingEntities = true
 ): Promise<Type[]> {
   // load entities
   const entities = await store.getMany(entityType, { where: { id: In(ids) } })
@@ -192,7 +193,7 @@ async function getRequiredExistingEntites<Type extends Video | Membership>(
   const loadedEntityIds = entities.map((item) => item.id.toString())
 
   // ensure all entities exists
-  if (loadedEntityIds.length !== ids.length) {
+  if (throwOnMissingEntities && loadedEntityIds.length !== ids.length) {
     const missingIds = ids.filter((item) => !loadedEntityIds.includes(item))
 
     return inconsistentState(errorMessage, missingIds)
@@ -521,7 +522,8 @@ async function createAuction(
     store,
     Membership,
     Array.from(auctionParams.whitelist.values()).map((item) => item.toString()),
-    'Non-existing members whitelisted'
+    'Non-existing members whitelisted',
+    false // this allows nonexisting members to be whitelisted (runtime allows that)
   )
 
   // prepare auction record

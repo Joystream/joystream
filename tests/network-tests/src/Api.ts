@@ -897,7 +897,7 @@ export class Api {
     const auctionParams = this.api.createType('OpenAuctionParams', {
       starting_price: this.api.createType('u128', boundaries.startingPrice.min),
       buy_now_price: this.api.createType('Option<BlockNumber>', null),
-      whitelist: this.api.createType('BTreeSet<StorageBucketId>', whitelist),
+      whitelist: this.api.createType('BTreeSet<MemberId>', whitelist),
       bid_lock_duration: this.api.createType('BlockNumber', bidLockDuration),
     })
 
@@ -930,7 +930,7 @@ export class Api {
     const auctionParams = this.api.createType('EnglishAuctionParams', {
       starting_price: this.api.createType('u128', startingPrice),
       buy_now_price: this.api.createType('Option<Balance>', null),
-      whitelist: this.api.createType('BTreeSet<StorageBucketId>', whitelist),
+      whitelist: this.api.createType('BTreeSet<MemberId>', whitelist),
       starts_at: this.api.createType('Option<BlockNumber>', null),
       duration: auctionDuration,
       extension_period: extensionPeriod,
