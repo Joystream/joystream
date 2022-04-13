@@ -5,7 +5,8 @@ use sp_runtime::traits::AccountIdConversion;
 
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
-use crate::types::MerkleProofOf;
+use crate::traits::PalletToken;
+use crate::types::{MerkleProofOf, TokenIssuanceParametersOf};
 use crate::{
     account, balance, last_event_eq, merkle_proof, merkle_root, origin, token, Error, RawEvent,
 };
@@ -567,5 +568,25 @@ fn dust_account_ok_with_account_removed() {
         assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
             token_id, acc2
         ));
+    })
+}
+
+#[test]
+fn deissue_token_ok() {
+    let token_id = token!(1);
+    let (owner, acc) = (account!(1), account!(2));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, balance!(10), balance!(0))
+        .with_account(acc, balance!(0), balance!(0))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result =
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::deissue_token(token_id);
+        assert_ok!(result);
     })
 }
