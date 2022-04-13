@@ -5,7 +5,7 @@ use strum_macros::EnumIter;
 
 /// Defines limit for object for a defined period.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default, Copy)]
 pub struct LimitPerPeriod<BlockNumber> {
     /// Limit for objects.
     pub limit: u64,
@@ -40,6 +40,21 @@ impl<BlockNumber: BaseArithmetic + Copy> NftCounter<BlockNumber> {
         let current_period_number = current_block / period_length;
 
         last_updated_period_number == current_period_number
+    }
+
+    // Defines whether the counter is valid for the current block.
+    pub(crate) fn update_for_current_period(
+        &mut self,
+        current_block: BlockNumber,
+        period_length: BlockNumber,
+    ) {
+        if self.is_current_period(current_block, period_length) {
+            self.counter += 1;
+        } else {
+            self.counter = 1;
+        }
+
+        self.last_updated = current_block;
     }
 }
 

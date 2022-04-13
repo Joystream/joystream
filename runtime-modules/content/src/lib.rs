@@ -195,6 +195,12 @@ decl_storage! {
 
         /// Global daily NFT counter.
         pub GlobalDailyNftCounter get(fn global_nft_daily_counter): NftCounter<T::BlockNumber>;
+
+        /// Global weekly NFT limit.
+        pub GlobalWeeklyNftLimit get(fn global_nft_weekly_limit): LimitPerPeriod<T::BlockNumber>;
+
+        /// Global weekly NFT counter.
+        pub GlobalWeeklyNftCounter get(fn global_nft_weekly_counter): NftCounter<T::BlockNumber>;
     }
 }
 
@@ -825,7 +831,7 @@ decl_module! {
             //
 
             if nft_status.is_some() {
-                Self::increment_nft_numbers(&channel_id);
+                Self::increment_nft_counters(&channel_id);
             }
 
             // add it to the onchain state
@@ -900,7 +906,7 @@ decl_module! {
             //
 
             if nft_status.is_some() {
-                Self::increment_nft_numbers(&channel_id);
+                Self::increment_nft_counters(&channel_id);
             }
 
             // upload/delete video assets from storage with commit or rollback semantics
@@ -1195,7 +1201,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::increment_nft_numbers(&video.in_channel);
+            Self::increment_nft_counters(&video.in_channel);
 
             // Update the video
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft_status));
@@ -2500,20 +2506,31 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Increment NFT numbers for a channel and global numbers.
-    fn increment_nft_numbers(_channel_id: &T::ChannelId) {
+    // Increment NFT numbers for a channel and global counters.
+    fn increment_nft_counters(_channel_id: &T::ChannelId) {
+        Self::increment_global_daily_nft_counter();
+        Self::increment_global_weekly_nft_counter();
+    }
+
+    // Increment global daily NFT counter.
+    fn increment_global_daily_nft_counter() {
         GlobalDailyNftCounter::<T>::mutate(|nft_counter| {
             let global_daily_limit = Self::global_nft_daily_limit();
             let current_block = frame_system::Module::<T>::block_number();
 
-            if nft_counter.is_current_period(current_block, global_daily_limit.block_number_period)
-            {
-                nft_counter.counter += 1;
-            } else {
-                nft_counter.counter = 1;
-            }
+            nft_counter
+                .update_for_current_period(current_block, global_daily_limit.block_number_period);
+        });
+    }
 
-            nft_counter.last_updated = current_block;
+    // Increment global weekly NFT counter.
+    fn increment_global_weekly_nft_counter() {
+        GlobalWeeklyNftCounter::<T>::mutate(|nft_counter| {
+            let global_weekly_limit = Self::global_nft_weekly_limit();
+            let current_block = frame_system::Module::<T>::block_number();
+
+            nft_counter
+                .update_for_current_period(current_block, global_weekly_limit.block_number_period);
         });
     }
 
@@ -2523,19 +2540,36 @@ impl<T: Trait> Module<T> {
         let global_daily_counter = Self::global_nft_daily_counter();
         let global_daily_limit = Self::global_nft_daily_limit();
 
-        ensure!(
-            !global_daily_limit.limit.is_zero(),
-            Error::<T>::GlobalNftDailyLimitExceeded
-        );
+        Self::check_generic_nft_limit(
+            &global_daily_limit,
+            &global_daily_counter,
+            Error::<T>::GlobalNftDailyLimitExceeded,
+        )?;
+
+        // Global weekly limit.
+        let global_weekly_counter = Self::global_nft_weekly_counter();
+        let global_weekly_limit = Self::global_nft_weekly_limit();
+
+        Self::check_generic_nft_limit(
+            &global_weekly_limit,
+            &global_weekly_counter,
+            Error::<T>::GlobalNftWeeklyLimitExceeded,
+        )?;
+
+        Ok(())
+    }
+
+    // Checks generic NFT-limit.
+    fn check_generic_nft_limit(
+        nft_limit: &LimitPerPeriod<T::BlockNumber>,
+        nft_counter: &NftCounter<T::BlockNumber>,
+        error: Error<T>,
+    ) -> DispatchResult {
+        ensure!(!nft_limit.limit.is_zero(), error);
 
         let current_block = frame_system::Module::<T>::block_number();
-        if global_daily_counter
-            .is_current_period(current_block, global_daily_limit.block_number_period)
-        {
-            ensure!(
-                global_daily_counter.counter < global_daily_limit.limit,
-                Error::<T>::GlobalNftDailyLimitExceeded
-            );
+        if nft_counter.is_current_period(current_block, nft_limit.block_number_period) {
+            ensure!(nft_counter.counter < nft_limit.limit, error);
         }
 
         Ok(())
