@@ -131,7 +131,7 @@ decl_module! {
         pub fn dust_account(origin, token_id: T::TokenId, account_id: T::AccountId) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             let token_info = Self::ensure_token_exists(token_id)?;
-            let account_to_remove_info = Self::ensure_account_data_exists(token_id ,&account_id)?;
+            let account_to_remove_info = Self::ensure_account_data_exists(token_id, &account_id)?;
 
             Self::ensure_user_can_dust_account(
                 &token_info.transfer_policy,
@@ -409,6 +409,11 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure sender can remove account
+    /// Params:
+    /// - transfer_policy for the token
+    /// - sender dust_account extrinsic signer
+    /// - account_to_remove account id to be removed
+    /// - account to remove Data
     pub(crate) fn ensure_user_can_dust_account(
         transfer_policy: &TransferPolicyOf<T>,
         sender: &T::AccountId,
@@ -422,7 +427,7 @@ impl<T: Trait> Module<T> {
         ) {
             (_, _, true) => Ok(()),
             (TransferPolicyOf::<T>::Permissionless, true, _) => Ok(()),
-            (TransferPolicyOf::<T>::Permissioned(_), _, false) => {
+            (TransferPolicyOf::<T>::Permissioned(_), _, _) => {
                 Err(Error::<T>::AttemptToRemoveNonOwnedAccountUnderPermissionedMode.into())
             }
             _ => Err(Error::<T>::AttemptToRemoveNonOwnedAndNonEmptyAccount.into()),
