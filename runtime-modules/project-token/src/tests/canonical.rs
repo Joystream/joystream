@@ -439,8 +439,9 @@ fn dust_account_fails_with_permissioned_mode_and_non_owned_account() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, owner_balance, 0)
+        .with_account(owner, owner_balance, balance!(0))
         .with_account(acc1, balance!(0), balance!(0))
+        .with_account(acc2, balance!(0), balance!(0))
         .build();
 
     build_test_externalities(config).execute_with(|| {

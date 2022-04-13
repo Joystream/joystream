@@ -138,12 +138,6 @@ impl<Balance, AccountId> Outputs<Balance, AccountId> {
     }
 }
 
-impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
-    pub fn total_balance(&self) -> Balance {
-        self.free_balance.saturating_add(self.reserved_balance)
-    }
-}
-
 #[cfg(test)]
 #[ignore]
 #[test]

@@ -132,19 +132,19 @@ decl_module! {
             let sender = ensure_signed(origin)?;
             let token_info = Self::ensure_token_exists(token_id)?;
             let account_to_remove_info = Self::ensure_account_data_exists(token_id ,&account_id)?;
-            match (token_info.transfer_policy, account_to_remove_info.is_empty(), sender == account_id) {
-                (_, _, true) => Ok(()),
-                (TransferPolicyOf::<T>::Permissionless, true, _) => Ok(()),
-                (TransferPolicyOf::<T>::Permissioned(_), _, false) =>
-                    Err(Error::<T>::AttemptToRemoveNonOwnedAccountUnderPermissionedMode.into()),
-                _  => Err(Error::<T>::AttemptToRemoveNonOwnedAndNonEmptyAccount.into()),
-            }
+
+            Self::ensure_user_can_dust_account(
+                &token_info.transfer_policy,
+                &sender,
+                &account_id,
+                &account_to_remove_info,
+            )?;
 
             // == MUTATION SAFE ==
 
-            AccountInfoByTokenAndAccount::<T>::remove(token_id, account_id),
+            AccountInfoByTokenAndAccount::<T>::remove(token_id, &account_id);
 
-            Self::event_deposit(RawEvent::AccountDustedBy(token_id, account_id, sender, token_info.treansfer_policy));
+            Self::deposit_event(RawEvent::AccountDustedBy(token_id, account_id, sender, token_info.transfer_policy));
 
             Ok(())
         }
@@ -406,5 +406,26 @@ impl<T: Trait> Module<T> {
 
     pub(crate) fn current_block() -> T::BlockNumber {
         <frame_system::Module<T>>::block_number()
+    }
+
+    /// Ensure sender can remove account
+    pub(crate) fn ensure_user_can_dust_account(
+        transfer_policy: &TransferPolicyOf<T>,
+        sender: &T::AccountId,
+        account_to_remove: &T::AccountId,
+        account_to_remove_info: &AccountDataOf<T>,
+    ) -> DispatchResult {
+        match (
+            transfer_policy,
+            account_to_remove_info.is_empty(),
+            sender == account_to_remove,
+        ) {
+            (_, _, true) => Ok(()),
+            (TransferPolicyOf::<T>::Permissionless, true, _) => Ok(()),
+            (TransferPolicyOf::<T>::Permissioned(_), _, false) => {
+                Err(Error::<T>::AttemptToRemoveNonOwnedAccountUnderPermissionedMode.into())
+            }
+            _ => Err(Error::<T>::AttemptToRemoveNonOwnedAndNonEmptyAccount.into()),
+        }
     }
 }

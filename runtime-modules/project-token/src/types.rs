@@ -157,7 +157,7 @@ impl<Balance: Zero> Default for AccountData<Balance> {
 impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
     /// Check wheather account is empty
     pub(crate) fn is_empty(&self) -> bool {
-        false // TODO: establish emptyness conditions
+        self.total_balance().is_zero()
     }
 
     /// Increase liquidity for an account
@@ -182,7 +182,7 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
         Ok(())
     }
 
-    pub(crate) fn _total_balance(&self) -> Balance {
+    pub(crate) fn total_balance(&self) -> Balance {
         self.free_balance.saturating_add(self.reserved_balance)
     }
 }
