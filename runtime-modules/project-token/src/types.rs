@@ -44,10 +44,10 @@ pub struct PatronageData<Balance, BlockNumber> {
     pub(crate) rate: Balance,
 
     /// Tally count for the outstanding credit before latest patronage config change
-    pub(crate) tally: Balance,
+    pub(crate) unclaimed_patronage_tally_amount: Balance,
 
     /// Last block the patronage configuration was updated
-    pub(crate) last_tally_update_block: BlockNumber,
+    pub(crate) last_unclaimed_patronage_tally_block: BlockNumber,
 }
 
 /// The two possible transfer policies
@@ -209,8 +209,8 @@ impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, H
         // validation
 
         let patronage_info = PatronageData::<Balance, BlockNumber> {
-            last_tally_update_block: block,
-            tally: Balance::zero(),
+            last_unclaimed_patronage_tally_block: block,
+            unclaimed_patronage_tally_amount: Balance::zero(),
             rate: self.patronage_rate,
         };
         Ok(TokenData::<Balance, Hash, BlockNumber> {
@@ -255,13 +255,13 @@ impl<Hasher: Hash> MerkleProof<Hasher> {
 impl<Balance: Zero + Copy + Saturating, BlockNumber: Copy + Saturating + PartialOrd>
     PatronageData<Balance, BlockNumber>
 {
-    pub fn outstanding_credit<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
+    pub fn unclaimed_patronage<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
         &self,
         block: BlockNumber,
     ) -> Balance {
-        let period = block.saturating_sub(self.last_tally_update_block);
+        let period = block.saturating_sub(self.last_unclaimed_patronage_tally_block);
         let accrued = BlockNumberToBalance::convert(period).saturating_mul(self.rate);
-        accrued.saturating_add(self.tally)
+        accrued.saturating_add(self.unclaimed_patronage_tally_amount)
     }
 
     pub fn set_new_rate_at_block<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
@@ -270,8 +270,9 @@ impl<Balance: Zero + Copy + Saturating, BlockNumber: Copy + Saturating + Partial
         block: BlockNumber,
     ) {
         // update tally according to old rate
-        self.tally = self.outstanding_credit::<BlockNumberToBalance>(block);
-        self.last_tally_update_block = block;
+        self.unclaimed_patronage_tally_amount =
+            self.unclaimed_patronage::<BlockNumberToBalance>(block);
+        self.last_unclaimed_patronage_tally_block = block;
         self.rate = new_rate;
     }
 
@@ -279,8 +280,8 @@ impl<Balance: Zero + Copy + Saturating, BlockNumber: Copy + Saturating + Partial
         &mut self,
         block: BlockNumber,
     ) {
-        self.last_tally_update_block = block;
-        self.tally = Balance::zero();
+        self.last_unclaimed_patronage_tally_block = block;
+        self.unclaimed_patronage_tally_amount = Balance::zero();
     }
 }
 

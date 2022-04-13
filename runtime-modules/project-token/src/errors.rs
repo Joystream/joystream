@@ -54,5 +54,8 @@ decl_error! {
         /// Attempt to removed non empty non owned
         AttemptToRemoveNonOwnedAndNonEmptyAccount,
 
+        /// Cannot join whitelist in permissionless mode
+        CannotJoinWhitelistInPermissionlessMode,
+
     }
 }

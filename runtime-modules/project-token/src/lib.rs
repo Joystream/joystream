@@ -167,8 +167,11 @@ decl_module! {
             );
 
             if let TransferPolicyOf::<T>::Permissioned(commit) = token_info.transfer_policy {
-                proof.verify_for_commit::<T,_>(&account_id, commit)?
-            }
+                proof.verify_for_commit::<T,_>(&account_id, commit)?;
+                Ok(())
+            } else {
+                Err(Error::<T>::CannotJoinWhitelistInPermissionlessMode.into())
+            }?;
 
             let treasury: T::AccountId = T::ModuleId::get().into_sub_account(token_id);
             let bloat_bond = T::BloatBond::get();
@@ -254,30 +257,30 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
         Self::ensure_account_data_exists(token_id, &to_account).map(|_| ())?;
 
         let now = Self::current_block();
-        let outstanding_credit = token_info
+        let unclaimed_patronage = token_info
             .patronage_info
-            .outstanding_credit::<T::BlockNumberToBalance>(now);
+            .unclaimed_patronage::<T::BlockNumberToBalance>(now);
 
-        if outstanding_credit.is_zero() {
+        if unclaimed_patronage.is_zero() {
             return Ok(());
         }
 
         // == MUTATION SAFE ==
 
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, &to_account, |account_info| {
-            account_info.increase_liquidity_by(outstanding_credit)
+            account_info.increase_liquidity_by(unclaimed_patronage)
         });
 
         TokenInfoById::<T>::mutate(token_id, |token_info| {
             token_info
                 .patronage_info
                 .reset_tally_at_block::<T::BlockNumberToBalance>(now);
-            token_info.increase_issuance_by(outstanding_credit);
+            token_info.increase_issuance_by(unclaimed_patronage);
         });
 
         Self::deposit_event(RawEvent::PatronageCreditClaimedAtBlock(
             token_id,
-            outstanding_credit,
+            unclaimed_patronage,
             to_account,
             now,
         ));
@@ -361,6 +364,7 @@ impl<T: Trait> Module<T> {
     pub(crate) fn do_deissue_token(token_id: T::TokenId) {
         TokenInfoById::<T>::remove(token_id);
         AccountInfoByTokenAndAccount::<T>::remove_prefix(token_id);
+
         // TODO: add extra state removal as implementation progresses
     }
 

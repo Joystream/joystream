@@ -22,7 +22,9 @@ fn issue_token_ok_with_patronage_tally_count_zero() {
         let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::issue_token(params);
 
         assert_eq!(
-            Token::token_info_by_id(token_id).patronage_info.tally,
+            Token::token_info_by_id(token_id)
+                .patronage_info
+                .unclaimed_patronage_tally_amount,
             balance!(0),
         );
     })
@@ -46,7 +48,7 @@ fn issue_token_ok_with_correct_credit_accounting() {
         assert_eq!(
             Token::token_info_by_id(token_id)
                 .patronage_info
-                .outstanding_credit::<Block2Balance>(System::block_number()),
+                .unclaimed_patronage::<Block2Balance>(System::block_number()),
             balance!(200), // rate * blocks
         );
     })
@@ -93,7 +95,9 @@ fn decrease_patronage_ok_with_tally_count_updated() {
 
         assert_eq!(
             balance!(200), // blocks * rate
-            Token::token_info_by_id(token_id).patronage_info.tally,
+            Token::token_info_by_id(token_id)
+                .patronage_info
+                .unclaimed_patronage_tally_amount,
         );
     })
 }
@@ -122,7 +126,9 @@ fn decrease_patronage_ok_with_tally_count_twice_updated() {
 
         assert_eq!(
             balance!(500), // blocks * rate1 + blocks * rate2
-            Token::token_info_by_id(token_id).patronage_info.tally,
+            Token::token_info_by_id(token_id)
+                .patronage_info
+                .unclaimed_patronage_tally_amount,
         );
     })
 }
@@ -195,7 +201,7 @@ fn decrease_patronage_ok_with_last_tally_block_updated() {
             block!(1) + blocks, // starting block + blocks
             Token::token_info_by_id(token_id)
                 .patronage_info
-                .last_tally_update_block
+                .last_unclaimed_patronage_tally_block
         )
     })
 }
@@ -322,7 +328,7 @@ fn claim_patronage_ok_with_credit_accounting() {
 }
 
 #[test]
-fn claim_patronage_ok_with_outstanding_credit_reset() {
+fn claim_patronage_ok_with_unclaimed_patronage_reset() {
     let token_id = token!(1);
     let account_id = account!(1);
     let owner_account_id = account!(2);
@@ -347,7 +353,7 @@ fn claim_patronage_ok_with_outstanding_credit_reset() {
         assert_eq!(
             Token::token_info_by_id(token_id)
                 .patronage_info
-                .outstanding_credit::<Block2Balance>(System::block_number()),
+                .unclaimed_patronage::<Block2Balance>(System::block_number()),
             balance!(0),
         );
     })
