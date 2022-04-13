@@ -129,6 +129,8 @@ fragment OwnedNftFields on OwnedNft {
   creatorChannel {
     id
   }
+  lastSalePrice
+  lastSaleDate
 }
 
 fragment ChannelNftCollectorFields on ChannelNftCollectors {

@@ -5,6 +5,7 @@ import { IMember } from '../createMembers'
 import { PlaceBidsInAuctionFixture } from './placeBidsInAuction'
 import BN from 'bn.js'
 import { assertNftOwner } from './utils'
+import { Utils } from '../../../utils'
 
 export class NftBuyNowFixture extends BaseQueryNodeFixture {
   private videoId: number
@@ -33,6 +34,9 @@ export class NftBuyNowFixture extends BaseQueryNodeFixture {
     await this.api.buyNft(this.participant.account, this.videoId, this.participant.memberId.toNumber(), buyNowPrice)
 
     this.debug('Check NFT ownership change')
-    await assertNftOwner(this.query, this.videoId, this.participant)
+    await assertNftOwner(this.query, this.videoId, this.participant, (ownedNft) => {
+      Utils.assert(ownedNft.lastSalePrice, 'Last sale price not found')
+      Utils.assert(ownedNft.lastSaleDate, 'Last sale date not found')
+    })
   }
 }
