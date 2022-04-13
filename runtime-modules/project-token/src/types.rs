@@ -155,6 +155,11 @@ impl<Balance: Zero> Default for AccountData<Balance> {
 
 /// Encapsules parameters validation + TokenData construction
 impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
+    /// Check wheather account is empty
+    pub(crate) fn is_empty(&self) -> bool {
+        false // TODO: establish emptyness conditions
+    }
+
     /// Increase liquidity for an account
     pub(crate) fn increase_liquidity_by(&mut self, amount: Balance) {
         self.free_balance = self.free_balance.saturating_add(amount);

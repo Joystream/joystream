@@ -523,7 +523,6 @@ fn dust_account_ok_with_permissionless_mode_and_empty_non_owned_account() {
 fn dust_account_ok_with_event_deposit() {
     let token_id = token!(1);
     let (acc1, acc2) = (account!(2), account!(3));
-    let (owner, owner_balance) = (account!(1), balance!(100));
 
     let token_data = TokenDataBuilder::new_empty().build();
 
@@ -541,6 +540,28 @@ fn dust_account_ok_with_event_deposit() {
             acc2,
             acc1,
             Policy::Permissionless
+        ));
+    })
+}
+
+#[test]
+fn dust_account_ok_with_account_removed() {
+    let token_id = token!(1);
+    let (acc1, acc2) = (account!(2), account!(3));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(acc1, balance!(0), balance!(0))
+        .with_account(acc2, balance!(0), balance!(0))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = Token::dust_account(origin!(acc1), token_id, acc2);
+
+        assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
+            token_id, acc2
         ));
     })
 }

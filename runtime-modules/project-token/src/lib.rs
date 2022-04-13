@@ -129,7 +129,24 @@ decl_module! {
 
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn dust_account(origin, token_id: T::TokenId, account_id: T::AccountId) -> DispatchResult {
-            todo!()
+            let sender = ensure_signed(origin)?;
+            let token_info = Self::ensure_token_exists(token_id)?;
+            let account_to_remove_info = Self::ensure_account_data_exists(token_id ,&account_id)?;
+            match (token_info.transfer_policy, account_to_remove_info.is_empty(), sender == account_id) {
+                (_, _, true) => Ok(()),
+                (TransferPolicyOf::<T>::Permissionless, true, _) => Ok(()),
+                (TransferPolicyOf::<T>::Permissioned(_), _, false) =>
+                    Err(Error::<T>::AttemptToRemoveNonOwnedAccountUnderPermissionedMode.into()),
+                _  => Err(Error::<T>::AttemptToRemoveNonOwnedAndNonEmptyAccount.into()),
+            }
+
+            // == MUTATION SAFE ==
+
+            AccountInfoByTokenAndAccount::<T>::remove(token_id, account_id),
+
+            Self::event_deposit(RawEvent::AccountDustedBy(token_id, account_id, sender, token_info.treansfer_policy));
+
+            Ok(())
         }
 
         /// Join whitelist for permissioned case: used to add accounts for token
