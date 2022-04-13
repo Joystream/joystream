@@ -819,13 +819,22 @@ impl common::council::CouncilBudgetManager<u64, u64> for CouncilBudgetManager {
 
 pub(crate) fn set_default_global_nft_limits() {
     let limit = LimitPerPeriod::<u64> {
-        limit: 1,
-        block_number_period: 100,
+        limit: 1000,
+        block_number_period: 1000,
     };
 
     set_global_nft_limits(limit);
 }
 
 pub(crate) fn set_global_nft_limits(limit: LimitPerPeriod<u64>) {
+    set_global_daily_nft_limit(limit);
+    set_global_weekly_nft_limit(limit);
+}
+
+pub(crate) fn set_global_daily_nft_limit(limit: LimitPerPeriod<u64>) {
     <crate::GlobalDailyNftLimit<Test>>::put(limit);
+}
+
+pub(crate) fn set_global_weekly_nft_limit(limit: LimitPerPeriod<u64>) {
+    <crate::GlobalWeeklyNftLimit<Test>>::put(limit);
 }
