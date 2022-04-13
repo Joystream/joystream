@@ -51,7 +51,7 @@ fn permissionless_transfer_fails_with_non_existing_source() {
 }
 
 #[test]
-fn permissionless_transfer_fails_with_non_existing_destination() {
+fn permissionless_transfer_ok_with_non_existing_destination() {
     let token_id = token!(1);
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
@@ -67,7 +67,7 @@ fn permissionless_transfer_fails_with_non_existing_destination() {
     build_test_externalities(config).execute_with(|| {
         let result = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
-        assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
+        assert_ok!(result);
     })
 }
 
@@ -260,7 +260,7 @@ fn multiout_transfer_fails_with_non_existing_source() {
 }
 
 #[test]
-fn multiout_transfer_fails_with_non_existing_destination() {
+fn multiout_transfer_ok_with_non_existing_destination() {
     let token_id = token!(1);
     let token_info = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
@@ -279,7 +279,7 @@ fn multiout_transfer_fails_with_non_existing_destination() {
     build_test_externalities(config).execute_with(|| {
         let result = Token::transfer(origin!(src), token_id, outputs);
 
-        assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
+        assert_ok!(result);
     })
 }
 
@@ -436,6 +436,27 @@ fn multiout_transfer_fails_with_same_source_and_destination() {
 
     build_test_externalities(config).execute_with(|| {
         let result = Token::transfer(origin!(dst1), token_id, outputs);
+
+        assert_noop!(result, Error::<Test>::SameSourceAndDestinationLocations);
+    })
+}
+
+#[test]
+fn transfer_fails_with_same_source_and_destination() {
+    let token_id = token!(1);
+    let token_info = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissionless)
+        .build();
+    let (dst, amount) = (account!(2), balance!(1));
+    let outputs = outputs![(dst, amount)];
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_info)
+        .with_account(dst, amount, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::transfer(origin!(dst), token_id, outputs);
 
         assert_noop!(result, Error::<Test>::SameSourceAndDestinationLocations);
     })
@@ -687,7 +708,7 @@ fn permissioned_multi_out_transfer_fails_with_invalid_source_account() {
 }
 
 #[test]
-fn permissioned_multi_out_transfer_fails_with_invalid_destination_account() {
+fn permissioned_multi_out_transfer_ok_with_invalid_destination_account() {
     let token_id = token!(1);
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
