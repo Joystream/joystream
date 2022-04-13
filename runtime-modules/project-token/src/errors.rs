@@ -60,5 +60,8 @@ decl_error! {
         /// Cannot Deissue Token with outstanding accounts
         CannotDeissueTokenWithOutstandingAccounts,
 
+        /// Token issuance is not zero
+        TokenIssuanceIsNotZero,
+
     }
 }

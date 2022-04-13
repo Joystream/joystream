@@ -320,7 +320,7 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
     /// - all account data for `token_Id` removed
     fn deissue_token(token_id: T::TokenId) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
-        Self::ensure_no_account_outstanding(token_id)?;
+        Self::ensure_can_deissue_token(token_id)?;
 
         // == MUTATION SAFE ==
 
@@ -448,13 +448,18 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub(crate) fn ensure_no_account_outstanding(token_id: T::TokenId) -> DispatchResult {
+    pub(crate) fn ensure_can_deissue_token(token_id: T::TokenId) -> DispatchResult {
+        let token_info = Self::ensure_token_exists(token_id)?;
         ensure!(
             AccountInfoByTokenAndAccount::<T>::iter_prefix(token_id)
                 .next()
                 .is_none(),
             Error::<T>::CannotDeissueTokenWithOutstandingAccounts,
         );
+
+        // This is a extra, since when no account exists -> total_issuance == 0
+        debug_assert!(token_info.current_total_issuance.is_zero());
+
         Ok(())
     }
 }
