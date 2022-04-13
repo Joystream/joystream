@@ -90,7 +90,7 @@ pub trait WeightInfo {
     fn fund_bounty_by_council() -> Weight;
     fn withdraw_funding_by_member() -> Weight;
     fn withdraw_funding_by_council() -> Weight;
-    fn announce_work_entry(i: u32) -> Weight;
+    fn announce_work_entry(i: u32, j: u32) -> Weight;
     fn submit_work(i: u32) -> Weight;
     fn submit_oracle_judgment_by_council_all_winners(i: u32) -> Weight;
     fn submit_oracle_judgment_by_council_all_rejected(i: u32, j: u32) -> Weight;
@@ -649,7 +649,8 @@ decl_event! {
         /// - created entry ID
         /// - entrant member ID
         /// - staking account ID
-        WorkEntryAnnounced(BountyId, EntryId, MemberId, AccountId),
+        /// - work description
+        WorkEntryAnnounced(BountyId, EntryId, MemberId, AccountId, Vec<u8>),
 
         /// Submit work.
         /// Params:
@@ -1157,17 +1158,22 @@ decl_module! {
         /// # <weight>
         ///
         /// ## weight
-        /// `O (1)`
+        /// `O (W + M)` where:
+        /// - `W` is the work_description length.
+        /// - `M` is closed contract member list length.
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoBounty::<T>::announce_work_entry(T::ClosedContractSizeLimit::get()
-            .saturated_into())]
+        #[weight = WeightInfoBounty::<T>::announce_work_entry(
+            T::ClosedContractSizeLimit::get().saturated_into(),
+            work_description.len().saturated_into())]
         pub fn announce_work_entry(
             origin,
             member_id: MemberId<T>,
             bounty_id: T::BountyId,
             staking_account_id: T::AccountId,
+            work_description: Vec<u8>
+
         ) {
             T::Membership::ensure_member_controller_account_origin(origin, member_id)?;
 
@@ -1219,6 +1225,7 @@ decl_module! {
                 entry_id,
                 member_id,
                 staking_account_id,
+                work_description
             ));
         }
 
@@ -1305,8 +1312,9 @@ decl_module! {
         /// # <weight>
         ///
         /// ## weight
-        /// `O (N)`
-        /// - `N` is the work_data length,
+        /// `O (N x M)`
+        /// - `N` is judgment,
+        /// - `M` is action_justification (inside OracleJudgment)
         /// - db:
         ///    - `O(N)`
         /// # </weight>

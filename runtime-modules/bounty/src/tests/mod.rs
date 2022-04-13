@@ -2852,6 +2852,7 @@ fn announce_work_entry_succeeded() {
             .with_member_id(member_id)
             .with_staking_account_id(account_id)
             .with_bounty_id(bounty_id)
+            .with_work_description(b"work_ description".to_vec())
             .call_and_assert(Ok(()));
 
         assert_eq!(
@@ -2862,7 +2863,11 @@ fn announce_work_entry_succeeded() {
         let entry_id = 1;
 
         EventFixture::assert_last_crate_event(RawEvent::WorkEntryAnnounced(
-            entry_id, bounty_id, member_id, account_id,
+            entry_id,
+            bounty_id,
+            member_id,
+            account_id,
+            b"work_ description".to_vec(),
         ));
     });
 }

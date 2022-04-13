@@ -422,6 +422,7 @@ pub struct AnnounceWorkEntryFixture {
     bounty_id: u64,
     member_id: u64,
     staking_account_id: u128,
+    work_description: Vec<u8>,
 }
 
 impl AnnounceWorkEntryFixture {
@@ -431,6 +432,7 @@ impl AnnounceWorkEntryFixture {
             bounty_id: 1,
             member_id: 1,
             staking_account_id: 1,
+            work_description: Vec::new(),
         }
     }
 
@@ -453,6 +455,13 @@ impl AnnounceWorkEntryFixture {
         }
     }
 
+    pub fn with_work_description(self, work_description: Vec<u8>) -> Self {
+        Self {
+            work_description,
+            ..self
+        }
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let old_bounty = Bounty::bounties(self.bounty_id);
         let next_entry_count_value = Bounty::entry_count() + 1;
@@ -463,6 +472,7 @@ impl AnnounceWorkEntryFixture {
             self.member_id,
             self.bounty_id,
             self.staking_account_id,
+            self.work_description.clone(),
         );
 
         assert_eq!(actual_result, expected_result);

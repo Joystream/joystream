@@ -204,7 +204,7 @@ impl crate::WeightInfo for () {
     fn withdraw_funding_by_council() -> u64 {
         0
     }
-    fn announce_work_entry(_i: u32) -> u64 {
+    fn announce_work_entry(_i: u32, _j: u32) -> u64 {
         0
     }
     fn submit_work(_i: u32) -> u64 {

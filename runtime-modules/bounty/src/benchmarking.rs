@@ -132,6 +132,7 @@ fn announce_entry_and_submit_work<T: Trait + membership::Trait>(
         member_id,
         *bounty_id,
         account_id.clone(),
+        Vec::new(),
     )
     .unwrap();
 
@@ -793,14 +794,17 @@ benchmarks! {
     }
 
     announce_work_entry {
-        let i in 1 .. T::ClosedContractSizeLimit::get();
+        let i in 1 .. MAX_BYTES;
+        let j in 1 .. T::ClosedContractSizeLimit::get();
+
+        let work_description = vec![0u8].repeat(i as usize);
 
         let cherry: BalanceOf<T> = 100u32.into();
         let oracle_reward: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 100u32.into();
         let stake: BalanceOf<T> = 100u32.into();
 
-        let member_ids = (0..i)
+        let member_ids = (0..j)
             .into_iter()
             .map(|id| id.saturated_into())
             .collect::<BTreeSet<T::MemberId>>();
@@ -824,7 +828,8 @@ benchmarks! {
         RawOrigin::Signed(account_id.clone()),
         member_id,
         bounty_id,
-        account_id.clone()
+        account_id.clone(),
+        work_description.clone()
     )
     verify {
         let entry_id: T::EntryId = Bounty::<T>::entry_count().into();
@@ -835,7 +840,8 @@ benchmarks! {
                 bounty_id,
                 entry_id,
                 member_id,
-                account_id
+                account_id,
+                work_description
             ).into()
         );
     }
@@ -872,12 +878,14 @@ benchmarks! {
             BountyMilestone::BountyMaxFundingReached));
 
         let (account_id, member_id) = member_funded_account::<T>("member1", 1);
-
+        let work_description = b"work_description".to_vec();
         Bounty::<T>::announce_work_entry(
             RawOrigin::Signed(account_id.clone()).into(),
             member_id,
             bounty_id,
-            account_id.clone()
+            account_id.clone(),
+            work_description
+
         ).unwrap();
 
         let entry_id: T::EntryId = Bounty::<T>::entry_count().into();
@@ -1384,12 +1392,13 @@ benchmarks! {
         let bounty_id = create_funded_bounty::<T>(params);
 
         let (work_account_id, work_member_id) = member_funded_account::<T>("work entrants", 0);
-
+        let work_description = b"work_description".to_vec();
         Bounty::<T>::announce_work_entry(
             RawOrigin::Signed(work_account_id.clone()).into(),
             work_member_id,
             bounty_id,
             work_account_id.clone(),
+            work_description
         )
         .unwrap();
 
@@ -1435,12 +1444,13 @@ benchmarks! {
         };
 
         let bounty_id = create_funded_bounty::<T>(params);
-
+        let work_description = b"work_description".to_vec();
         Bounty::<T>::announce_work_entry(
             RawOrigin::Signed(account_id.clone()).into(),
             member_id,
             bounty_id,
             account_id.clone(),
+            work_description
         )
         .unwrap();
 
@@ -1499,11 +1509,13 @@ benchmarks! {
         let (work_account_id, work_member_id) =
             member_funded_account::<T>("work entrants", 0);
 
+        let work_description = b"work_description".to_vec();
         Bounty::<T>::announce_work_entry(
             RawOrigin::Signed(work_account_id.clone()).into(),
             work_member_id,
             bounty_id,
             work_account_id.clone(),
+            work_description
         )
         .unwrap();
 
@@ -1586,12 +1598,13 @@ benchmarks! {
 
         let (work_account_id, work_member_id) =
             member_funded_account::<T>("work entrants", 2);
-
+        let work_description = b"work_description".to_vec();
         Bounty::<T>::announce_work_entry(
             RawOrigin::Signed(work_account_id.clone()).into(),
             work_member_id,
             bounty_id,
             work_account_id.clone(),
+            work_description
         )
         .unwrap();
 
