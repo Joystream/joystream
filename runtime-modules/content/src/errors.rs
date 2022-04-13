@@ -288,5 +288,11 @@ decl_error! {
 
         // Can't issue more NFTs: global weekly limit exceeded.
         GlobalNftWeeklyLimitExceeded,
+
+        // Can't issue more NFTs: channel daily limit exceeded.
+        ChannelNftDailyLimitExceeded,
+
+        // Can't issue more NFTs: channel weekly limit exceeded.
+        ChannelNftWeeklyLimitExceeded,
     }
 }
