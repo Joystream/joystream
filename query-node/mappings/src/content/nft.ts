@@ -41,7 +41,6 @@ import {
   BuyNowCanceledEvent,
   BuyNowPriceUpdatedEvent,
   NftSlingedBackToTheOriginalArtistEvent,
-  LastSaleVariant,
 } from 'query-node/dist/model'
 import * as joystreamTypes from '@joystream/types/augment/all/types'
 import { Content } from '../../generated/types'
@@ -892,12 +891,9 @@ export async function contentNft_EnglishAuctionSettled({ event, store }: EventCo
 
   nft.ownerMember = winner
 
-  const lastSale = new LastSaleVariant()
-  lastSale.price = boughtPrice
-  lastSale.date = new Date(event.blockTimestamp)
-
-  // set last sell price
-  nft.lastSale = lastSale
+  // set last sale
+  nft.lastSalePrice = boughtPrice
+  nft.lastSaleDate = new Date(event.blockTimestamp)
 
   // save NFT
   await store.save<OwnedNft>(nft)
@@ -937,12 +933,9 @@ export async function contentNft_BidMadeCompletingAuction({
     event.blockNumber
   )
 
-  const lastSale = new LastSaleVariant()
-  lastSale.price = price
-  lastSale.date = new Date(event.blockTimestamp)
-
-  // set last sell price
-  nft.lastSale = lastSale
+  // set last sale
+  nft.lastSalePrice = price
+  nft.lastSaleDate = new Date(event.blockTimestamp)
 
   // common event processing - second
 
@@ -973,12 +966,9 @@ export async function contentNft_OpenAuctionBidAccepted({ event, store }: EventC
     winnerId: winnerId.toNumber(),
   })
 
-  const lastSale = new LastSaleVariant()
-  lastSale.price = boughtPrice
-  lastSale.date = new Date(event.blockTimestamp)
-
-  // set last sell price
-  nft.lastSale = lastSale
+  // set last sale
+  nft.lastSalePrice = boughtPrice
+  nft.lastSaleDate = new Date(event.blockTimestamp)
 
   // save NFT
   await store.save<OwnedNft>(nft)
@@ -1058,12 +1048,9 @@ export async function contentNft_OfferAccepted({ event, store }: EventContext & 
   const member = new Membership({ id: memberId.toString() })
 
   if (price) {
-    const lastSale = new LastSaleVariant()
-    lastSale.price = price
-    lastSale.date = new Date(event.blockTimestamp)
-
-    // set last sell price
-    nft.lastSale = lastSale
+    // set last sale
+    nft.lastSalePrice = price
+    nft.lastSaleDate = new Date(event.blockTimestamp)
 
     // save NFT
     await store.save<OwnedNft>(nft)
@@ -1186,12 +1173,9 @@ export async function contentNft_NftBought({ event, store }: EventContext & Stor
   // NFT bought price
   const price = (nft.transactionalStatus as TransactionalStatusBuyNow).price
 
-  const lastSale = new LastSaleVariant()
-  lastSale.price = price
-  lastSale.date = new Date(event.blockTimestamp)
-
-  // set last sell price
-  nft.lastSale = lastSale
+  // set last sale
+  nft.lastSalePrice = price
+  nft.lastSaleDate = new Date(event.blockTimestamp)
 
   // save NFT
   await store.save<OwnedNft>(nft)
