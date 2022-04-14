@@ -334,5 +334,6 @@ fn default_parameters() -> AllProposalsParameters {
         lock_blog_post_proposal: defaults::lock_blog_post_proposal(),
         unlock_blog_post_proposal: defaults::unlock_blog_post_proposal(),
         veto_proposal_proposal: defaults::veto_proposal_proposal(),
+        update_nft_limit_proposal: default::update_nft_limit_proposal(),
     }
 }

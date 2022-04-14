@@ -1055,6 +1055,7 @@ impl proposals_codex::Trait for Runtime {
     type LockBlogPostProposalParameters = LockBlogPostProposalParameters;
     type UnlockBlogPostProposalParameters = UnlockBlogPostProposalParameters;
     type VetoProposalProposalParameters = VetoProposalProposalParameters;
+    type UpdateNftLimitProposalParameters = UpdateNftLimitProposalParameters;
     type WeightInfo = weights::proposals_codex::WeightInfo;
 }
 

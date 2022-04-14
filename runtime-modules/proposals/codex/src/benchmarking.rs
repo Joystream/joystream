@@ -7,6 +7,7 @@ use crate::Module as Codex;
 use balances::Module as Balances;
 use common::working_group::WorkingGroup;
 use common::BalanceKind;
+use content::LimitPerPeriod;
 use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::sp_runtime::traits::Bounded;
 use frame_support::traits::Currency;
@@ -810,6 +811,33 @@ benchmarks! {
         );
     }
 
+    create_proposal_update_nft_limit {
+        let t in ...;
+        let d in ...;
+
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::UpdateNftLimit(
+            GlobalNftLimitType::DailyLimit,
+            LimitPerPeriod::<T::BlockNumber> {
+                limit: 100,
+                block_number_period: 1000u32.into(),
+            },
+        );
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
+    verify {
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
+    }
 }
 
 #[cfg(test)]
@@ -987,6 +1015,13 @@ mod tests {
     fn test_create_proposal_veto_proposal() {
         initial_test_ext().execute_with(|| {
             assert_ok!(test_benchmark_create_proposal_veto_proposal::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_update_nft_limit_proposal() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_create_proposal_update_nft_limit::<Test>());
         });
     }
 }
