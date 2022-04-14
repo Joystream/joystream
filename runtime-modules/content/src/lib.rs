@@ -27,14 +27,14 @@ pub use storage::{
 };
 
 pub use common::{
-    currency::GovernanceCurrency, membership::MembershipInfoProvider, working_group::WorkingGroup,
-    MembershipTypes, StorageOwnership, Url,
+    membership::MembershipInfoProvider, working_group::WorkingGroup, MembershipTypes,
+    StorageOwnership, Url,
 };
 use frame_support::{
     decl_event, decl_module, decl_storage,
     dispatch::{DispatchError, DispatchResult},
     ensure,
-    traits::{Currency, ExistenceRequirement, Get, ReservableCurrency},
+    traits::{Currency, ExistenceRequirement, Get},
     Parameter,
 };
 
@@ -59,7 +59,6 @@ pub trait Trait:
     + membership::Trait
     + balances::Trait
     + storage::Trait
-    + GovernanceCurrency
 {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -165,10 +164,10 @@ decl_storage! {
         pub MaxBidLockDuration get(fn max_bid_lock_duration) config(): T::BlockNumber;
 
         /// Min auction staring price
-        pub MinStartingPrice get(fn min_starting_price) config(): CurrencyOf<T>;
+        pub MinStartingPrice get(fn min_starting_price) config(): BalanceOf<T>;
 
         /// Max auction staring price
-        pub MaxStartingPrice get(fn max_starting_price) config(): CurrencyOf<T>;
+        pub MaxStartingPrice get(fn max_starting_price) config(): BalanceOf<T>;
 
         /// Min creator royalty percentage
         pub MinCreatorRoyalty get(fn min_creator_royalty) config(): Perbill;
@@ -177,10 +176,10 @@ decl_storage! {
         pub MaxCreatorRoyalty get(fn max_creator_royalty) config(): Perbill;
 
         /// Min auction bid step
-        pub MinBidStep get(fn min_bid_step) config(): CurrencyOf<T>;
+        pub MinBidStep get(fn min_bid_step) config(): BalanceOf<T>;
 
         /// Max auction bid step
-        pub MaxBidStep get(fn max_bid_step) config(): CurrencyOf<T>;
+        pub MaxBidStep get(fn max_bid_step) config(): BalanceOf<T>;
 
         /// Platform fee percentage
         pub PlatfromFeePercentage get(fn platform_fee_percentage) config(): Perbill;
@@ -1578,7 +1577,7 @@ decl_module! {
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
-            new_price: CurrencyOf<T>,
+            new_price: BalanceOf<T>,
         ) {
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
@@ -1613,14 +1612,19 @@ decl_module! {
             origin,
             participant_id: T::MemberId,
             video_id: T::VideoId,
-            bid_amount: CurrencyOf<T>,
+            bid_amount: BalanceOf<T>,
         ) {
             // Authorize participant under given member id
             let participant_account_id = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&participant_account_id, &participant_id)?;
 
             // Balance check
-            Self::ensure_has_sufficient_balance(&participant_account_id, bid_amount)?;
+            let maybe_old_bid = Self::ensure_open_bid_exists(video_id, participant_id).ok();
+            let old_bid_value = maybe_old_bid.as_ref().map(|bid| bid.amount);
+            Self::ensure_has_sufficient_balance_for_bid(&participant_account_id,
+                bid_amount,
+                old_bid_value
+            )?;
 
             // Ensure nft is already issued
             let video = Self::ensure_video_exists(&video_id)?;
@@ -1644,18 +1648,14 @@ decl_module! {
             // == MUTATION_SAFE ==
             //
 
-            maybe_old_bid.map_or((), |bid| {
-                T::Currency::unreserve(
-                    &participant_account_id,
-                    bid.amount
-                );
-            });
-
             let (nft, event) = match open_auction.buy_now_price {
                 Some(buy_now_price) if bid_amount >= buy_now_price => {
-
-                    // unfallible: can_reserve already called
-                    T::Currency::reserve(&participant_account_id, buy_now_price)?;
+                    // Make a new bid considering the old one (if any) and the "buy-now-price".
+                    Self::make_bid_payment(
+                        &participant_account_id,
+                        buy_now_price,
+                        old_bid_value
+                    )?;
 
                     // complete auction @ buy_now_price
                     let updated_nft = Self::complete_auction(
@@ -1672,8 +1672,12 @@ decl_module! {
                     )
                 },
                 _ =>  {
-                    // unfallible: can_reserve already called
-                    T::Currency::reserve(&participant_account_id, bid_amount)?;
+                    // Make a new bid considering the old one (if any).
+                    Self::make_bid_payment(
+                        &participant_account_id,
+                        bid_amount,
+                        old_bid_value
+                    )?;
 
                     OpenAuctionBidByVideoAndMember::<T>::insert(
                         video_id,
@@ -1699,14 +1703,11 @@ decl_module! {
             origin,
             participant_id: T::MemberId,
             video_id: T::VideoId,
-            bid_amount: CurrencyOf<T>,
+            bid_amount: BalanceOf<T>,
         ) {
             // Authorize participant under given member id
             let participant_account_id = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&participant_account_id, &participant_id)?;
-
-            // Balance check
-            Self::ensure_has_sufficient_balance(&participant_account_id, bid_amount)?;
 
             // Ensure nft is already issued
             let video = Self::ensure_video_exists(&video_id)?;
@@ -1714,6 +1715,20 @@ decl_module! {
 
             // Validate parameters & return english auction
             let eng_auction =  Self::ensure_in_english_auction_state(&nft)?;
+
+            // Balance check
+            let old_bid_value = eng_auction.top_bid.as_ref().map(|bid| {
+                if bid.bidder_id == participant_id {
+                    bid.amount
+                } else{
+                    Zero::zero()
+                }
+            });
+            Self::ensure_has_sufficient_balance_for_bid(
+                &participant_account_id,
+                bid_amount,
+                old_bid_value
+            )?;
 
             // Ensure auction is not expired
             let current_block = <frame_system::Module<T>>::block_number();
@@ -1734,21 +1749,20 @@ decl_module! {
             // == MUTATION_SAFE ==
             //
 
-            // unreseve balance from previous bid
-            if let Some(bid) = eng_auction.top_bid.clone() {
-                if let Ok(ref old_bidder_account_id) = T::MemberAuthenticator::controller_account_id(bid.bidder_id) {
-                    T::Currency::unreserve(
-                        old_bidder_account_id,
-                        bid.amount
-                    );
-                }
-            }
+            if let Some(bid) = eng_auction.top_bid.as_ref() {
+                let bidder_account_id =
+                    T::MemberAuthenticator::controller_account_id(bid.bidder_id)?;
+                Self::withdraw_bid_payment(&bidder_account_id, bid.amount)?;
+            };
 
             let (updated_nft, event) = match eng_auction.buy_now_price {
                 Some(buy_now_price) if bid_amount >= buy_now_price => {
-
-                    // unfallible: can_reserve already called
-                    T::Currency::reserve(&participant_account_id, buy_now_price)?;
+                    // Make a new bid considering the "buy-now-price".
+                    Self::make_bid_payment(
+                        &participant_account_id,
+                        buy_now_price,
+                        None
+                    )?;
 
                     // complete auction @ buy_now_price
                     let updated_nft = Self::complete_auction(
@@ -1767,8 +1781,12 @@ decl_module! {
                 },
                 _ => {
 
-                    // Reserve amount for new bid
-                    T::Currency::reserve(&participant_account_id, bid_amount)?;
+                    // Make a new bid.
+                    Self::make_bid_payment(
+                        &participant_account_id,
+                        bid_amount,
+                        None
+                    )?;
 
                     // update nft auction state
                     let updated_auction = eng_auction.with_bid(bid_amount, participant_id, current_block);
@@ -1819,8 +1837,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // unreserve amount
-            T::Currency::unreserve(&participant_account_id, old_bid.amount);
+            Self::withdraw_bid_payment(&participant_account_id, old_bid.amount)?;
 
             // remove
             OpenAuctionBidByVideoAndMember::<T>::remove(&video_id, &participant_id);
@@ -1888,7 +1905,7 @@ decl_module! {
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
             winner_id: T::MemberId,
-            commit: CurrencyOf<T>, // amount the auctioner is committed to
+            commit: BalanceOf<T>, // amount the auctioner is committed to
         ) {
             let winner_account_id = T::MemberAuthenticator::controller_account_id(winner_id)?;
             // Ensure video exists
@@ -1941,7 +1958,7 @@ decl_module! {
             video_id: T::VideoId,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             to: T::MemberId,
-            price: Option<CurrencyOf<T>>,
+            price: Option<BalanceOf<T>>,
         ) {
 
             // Ensure given video exists
@@ -2049,7 +2066,7 @@ decl_module! {
             origin,
             video_id: T::VideoId,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            price: CurrencyOf<T>,
+            price: BalanceOf<T>,
         ) {
 
             // Ensure given video exists
@@ -2087,7 +2104,7 @@ decl_module! {
             origin,
             video_id: T::VideoId,
             participant_id: T::MemberId,
-            price_commit: CurrencyOf<T>, // in order to avoid front running
+            price_commit: BalanceOf<T>, // in order to avoid front running
         ) {
 
             // Authorize participant under given member id
@@ -2460,7 +2477,7 @@ decl_event!(
         OpenAuctionId = <T as Trait>::OpenAuctionId,
         NftIssuanceParameters = NftIssuanceParameters<T>,
         Balance = BalanceOf<T>,
-        CurrencyAmount = CurrencyOf<T>,
+        CurrencyAmount = BalanceOf<T>,
         ChannelCreationParameters = ChannelCreationParameters<T>,
         ChannelUpdateParameters = ChannelUpdateParameters<T>,
         VideoCreationParameters = VideoCreationParameters<T>,
