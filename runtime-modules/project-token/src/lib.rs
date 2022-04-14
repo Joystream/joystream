@@ -140,6 +140,8 @@ decl_module! {
             // == MUTATION SAFE ==
 
             AccountInfoByTokenAndAccount::<T>::remove(token_id, &account_id);
+            TokenInfoById::<T>::mutate(token_id, |token_info| token_info.decrement_accounts_number());
+
 
             let bloat_bond = T::BloatBond::get();
             let _ = T::ReserveCurrency::deposit_creating(&account_id, bloat_bond);
@@ -185,6 +187,7 @@ decl_module! {
             let _ = T::ReserveCurrency::slash(&account_id, bloat_bond);
 
             AccountInfoByTokenAndAccount::<T>::insert(token_id, &account_id, AccountDataOf::<T>::default());
+            TokenInfoById::<T>::mutate(token_id, |token_info| token_info.increment_accounts_number());
 
             Self::deposit_event(RawEvent::MemberJoinedWhitelist(token_id, account_id, token_info.transfer_policy));
 
@@ -462,9 +465,7 @@ impl<T: Trait> Module<T> {
     pub(crate) fn ensure_can_deissue_token(token_id: T::TokenId) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
         ensure!(
-            AccountInfoByTokenAndAccount::<T>::iter_prefix(token_id)
-                .next()
-                .is_none(),
+            token_info.accounts_number.is_zero(),
             Error::<T>::CannotDeissueTokenWithOutstandingAccounts,
         );
 

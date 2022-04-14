@@ -27,6 +27,7 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash: Default, BlockNumber:
             transfer_policy: self.transfer_policy,
             patronage_info: self.patronage_info,
             symbol: self.symbol,
+            accounts_number: 0u64,
         }
     }
 
@@ -111,6 +112,7 @@ impl GenesisConfigBuilder {
             .push((id, account_id, new_account_info));
 
         self.token_info_by_id.last_mut().unwrap().1.supply = new_issuance;
+        self.token_info_by_id.last_mut().unwrap().1.accounts_number += 1u64;
         self
     }
 

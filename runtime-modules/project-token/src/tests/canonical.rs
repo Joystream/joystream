@@ -195,6 +195,33 @@ fn join_whitelist_ok() {
 }
 
 #[test]
+fn join_whitelist_ok_with_accounts_number_incremented() {
+    let token_id = token!(1);
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![acc1, acc2];
+    let proof = merkle_proof!(0, [acc1, acc2]);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&acc1, bloat_bond);
+
+        let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
+
+        // 2 accounts: owner & acc1
+        assert_eq!(Token::token_info_by_id(token_id).accounts_number, 2u64);
+    })
+}
+
+#[test]
 fn join_whitelist_ok_with_event_deposit() {
     let token_id = token!(1);
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
@@ -521,6 +548,26 @@ fn dust_account_ok_with_event_deposit() {
 }
 
 #[test]
+fn dust_account_ok_accounts_number_decremented() {
+    let token_id = token!(1);
+    let (acc1, acc2) = (account!(2), account!(3));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(acc1, balance!(0), balance!(0))
+        .with_account(acc2, balance!(0), balance!(0))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = Token::dust_account(origin!(acc1), token_id, acc2);
+
+        assert_eq!(Token::token_info_by_id(token_id).accounts_number, 1u64)
+    })
+}
+
+#[test]
 fn dust_account_ok_with_account_removed() {
     let token_id = token!(1);
     let (acc1, acc2) = (account!(2), account!(3));
@@ -746,6 +793,7 @@ fn issue_token_ok_with_event_deposit() {
                 issuance_state: params.initial_state,
                 transfer_policy: params.transfer_policy,
                 symbol: params.symbol,
+                accounts_number: 0u64,
                 patronage_info: PatronageData::<Balance, BlockNumber> {
                     last_unclaimed_patronage_tally_block: System::block_number(),
                     unclaimed_patronage_tally_amount: balance!(0),
@@ -785,6 +833,7 @@ fn issue_token_ok_with_token_info_added() {
                 issuance_state: params.initial_state,
                 transfer_policy: params.transfer_policy,
                 symbol: params.symbol,
+                accounts_number: 0u64,
                 patronage_info: PatronageData::<Balance, BlockNumber> {
                     last_unclaimed_patronage_tally_block: System::block_number(),
                     unclaimed_patronage_tally_amount: balance!(0),

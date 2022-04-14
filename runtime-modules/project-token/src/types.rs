@@ -39,6 +39,9 @@ pub struct TokenData<Balance, Hash, BlockNumber> {
 
     /// Patronage Information
     pub(crate) patronage_info: PatronageData<Balance, BlockNumber>,
+
+    /// Account counter
+    pub(crate) accounts_number: u64,
 }
 
 /// Patronage information, patronage configuration = set of values for its fields
@@ -197,6 +200,15 @@ impl<
         BlockNumber: Copy + Saturating + PartialOrd,
     > TokenData<Balance, Hash, BlockNumber>
 {
+    // increment account number
+    pub(crate) fn increment_accounts_number(&mut self) {
+        self.accounts_number = self.accounts_number.saturating_add(1u64);
+    }
+
+    // decrement account number
+    pub(crate) fn decrement_accounts_number(&mut self) {
+        self.accounts_number = self.accounts_number.saturating_sub(1u64);
+    }
     // increase total issuance
     pub(crate) fn increase_issuance_by(&mut self, amount: Balance) {
         self.supply = self.supply.saturating_add(amount);
@@ -254,6 +266,7 @@ impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, H
             transfer_policy: self.transfer_policy,
             symbol: self.symbol,
             patronage_info,
+            accounts_number: 0u64,
         }
     }
 }
