@@ -14,8 +14,8 @@ use sp_runtime::ModuleId;
 
 // crate import
 use crate::{
-    types::{MerkleSide},
-    AccountDataOf, GenesisConfig, TokenDataOf, TokenIssuanceParametersOf, Trait, TransferPolicyOf,
+    types::MerkleSide, AccountDataOf, GenesisConfig, TokenDataOf, TokenIssuanceParametersOf, Trait,
+    TransferPolicyOf,
 };
 
 // Crate aliases

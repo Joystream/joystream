@@ -1,5 +1,8 @@
 use codec::{Decode, Encode};
-use frame_support::{dispatch::DispatchResult, ensure};
+use frame_support::{
+    dispatch::{fmt::Debug, DispatchResult},
+    ensure,
+};
 use sp_arithmetic::traits::{Saturating, Zero};
 use sp_runtime::traits::{Convert, Hash};
 use sp_std::collections::btree_map::{BTreeMap, Iter};
@@ -23,7 +26,7 @@ pub struct AccountData<Balance> {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
 pub struct TokenData<Balance, Hash, BlockNumber> {
     /// Current token issuance
-    pub(crate) current_total_issuance: Balance,
+    pub(crate) supply: Balance,
 
     /// Initial issuance state
     pub(crate) issuance_state: OfferingState,
@@ -85,7 +88,7 @@ pub(crate) enum OfferingState {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
 pub struct TokenIssuanceParameters<Balance, Hash> {
     /// Initial issuance
-    pub(crate) initial_issuance: Balance,
+    pub(crate) initial_supply: Balance,
 
     /// Initial State builder: stub
     pub(crate) initial_state: OfferingState,
@@ -188,12 +191,15 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
     }
 }
 /// Token Data implementation
-impl<Balance: Zero + Copy + Saturating, Hash, BlockNumber: Copy + Saturating + PartialOrd>
-    TokenData<Balance, Hash, BlockNumber>
+impl<
+        Balance: Zero + Copy + Saturating + Debug,
+        Hash,
+        BlockNumber: Copy + Saturating + PartialOrd,
+    > TokenData<Balance, Hash, BlockNumber>
 {
     // increase total issuance
     pub(crate) fn increase_issuance_by(&mut self, amount: Balance, block: BlockNumber) {
-        self.current_total_issuance = self.current_total_issuance.saturating_add(amount);
+        self.supply = self.supply.saturating_add(amount);
         self.reset_tally_at_block(block);
     }
 
@@ -206,9 +212,11 @@ impl<Balance: Zero + Copy + Saturating, Hash, BlockNumber: Copy + Saturating + P
         &self,
         block: BlockNumber,
     ) -> Balance {
+        // period * rate * supply + tally
         self.patronage_info
             .unclaimed_patronage_percent::<BlockNumberToBalance>(block)
-            .saturating_mul(self.current_total_issuance)
+            .saturating_mul(self.supply)
+            .saturating_add(self.patronage_info.unclaimed_patronage_tally_amount)
     }
 
     pub fn set_new_patronage_rate_at_block<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
@@ -216,6 +224,10 @@ impl<Balance: Zero + Copy + Saturating, Hash, BlockNumber: Copy + Saturating + P
         new_rate: Balance,
         block: BlockNumber,
     ) {
+        println!(
+            "Tally: {:?}",
+            self.patronage_info.unclaimed_patronage_tally_amount
+        );
         // update tally according to old rate
         self.patronage_info.unclaimed_patronage_tally_amount =
             self.unclaimed_patronage::<BlockNumberToBalance>(block);
@@ -235,7 +247,7 @@ impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, H
             rate: self.patronage_rate,
         };
         TokenData::<Balance, Hash, BlockNumber> {
-            current_total_issuance: self.initial_issuance,
+            supply: self.initial_supply,
             issuance_state: self.initial_state,
             transfer_policy: self.transfer_policy,
             symbol: self.symbol,
@@ -282,8 +294,7 @@ impl<Balance: Zero + Copy + Saturating, BlockNumber: Copy + Saturating + Partial
         block: BlockNumber,
     ) -> Balance {
         let period = block.saturating_sub(self.last_unclaimed_patronage_tally_block);
-        let accrued = BlockNumberToBalance::convert(period).saturating_mul(self.rate);
-        accrued.saturating_add(self.unclaimed_patronage_tally_amount)
+        BlockNumberToBalance::convert(period).saturating_mul(self.rate)
     }
 }
 

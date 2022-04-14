@@ -10,7 +10,7 @@ use crate::types::{
 use crate::GenesisConfig;
 
 pub struct TokenDataBuilder<Balance, Hash, BlockNumber> {
-    pub(crate) current_total_issuance: Balance,
+    pub(crate) supply: Balance,
     pub(crate) issuance_state: OfferingState,
     pub(crate) transfer_policy: TransferPolicy<Hash>,
     pub(crate) patronage_info: PatronageData<Balance, BlockNumber>,
@@ -22,7 +22,7 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash: Default, BlockNumber:
 {
     pub fn build(self) -> crate::types::TokenData<Balance, Hash, BlockNumber> {
         crate::types::TokenData::<_, _, _> {
-            current_total_issuance: self.current_total_issuance,
+            supply: self.supply,
             issuance_state: self.issuance_state,
             transfer_policy: self.transfer_policy,
             patronage_info: self.patronage_info,
@@ -30,11 +30,8 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash: Default, BlockNumber:
         }
     }
 
-    pub fn with_issuance(self, current_total_issuance: Balance) -> Self {
-        Self {
-            current_total_issuance,
-            ..self
-        }
+    pub fn with_issuance(self, supply: Balance) -> Self {
+        Self { supply, ..self }
     }
 
     pub fn with_transfer_policy(self, transfer_policy: TransferPolicy<Hash>) -> Self {
@@ -57,7 +54,7 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash: Default, BlockNumber:
 
     pub fn new_empty() -> Self {
         Self {
-            current_total_issuance: Balance::zero(),
+            supply: Balance::zero(),
             issuance_state: OfferingState::Idle,
             transfer_policy: TransferPolicy::<Hash>::Permissionless,
             patronage_info: PatronageData::<Balance, BlockNumber> {
@@ -107,17 +104,13 @@ impl GenesisConfigBuilder {
             .last()
             .unwrap()
             .1
-            .current_total_issuance
+            .supply
             .saturating_add(Balance::from(free_balance.saturating_add(reserved_balance)));
 
         self.account_info_by_token_and_account
             .push((id, account_id, new_account_info));
 
-        self.token_info_by_id
-            .last_mut()
-            .unwrap()
-            .1
-            .current_total_issuance = new_issuance;
+        self.token_info_by_id.last_mut().unwrap().1.supply = new_issuance;
         self
     }
 
@@ -175,13 +168,8 @@ fn with_issuance_adds_issuance_to_token() {
 
     let builder = GenesisConfigBuilder::new_empty().with_token(1, token_params);
 
-    let issuance = builder
-        .token_info_by_id
-        .last()
-        .unwrap()
-        .1
-        .current_total_issuance;
-    assert_eq!(issuance, 5);
+    let supply = builder.token_info_by_id.last().unwrap().1.supply;
+    assert_eq!(supply, 5);
 }
 
 #[ignore]
@@ -191,11 +179,6 @@ fn adding_account_with_free_balance_also_adds_issuance() {
     let mut builder = GenesisConfigBuilder::new_empty().with_token(1, token_params);
     builder = builder.with_account(1, 5, 5);
 
-    let issuance = builder
-        .token_info_by_id
-        .last()
-        .unwrap()
-        .1
-        .current_total_issuance;
-    assert_eq!(issuance, 15);
+    let supply = builder.token_info_by_id.last().unwrap().1.supply;
+    assert_eq!(supply, 15);
 }

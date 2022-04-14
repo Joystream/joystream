@@ -7,7 +7,7 @@ use frame_support::{
     traits::{Currency, ExistenceRequirement, Get},
 };
 use frame_system::ensure_signed;
-use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
+use sp_arithmetic::traits::{AtLeast32BitUnsigned, Saturating, Zero};
 use sp_runtime::{
     traits::{AccountIdConversion, Convert},
     ModuleId,
@@ -287,20 +287,24 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
     /// Postconditions:
     /// - token with specified characteristics is added to storage state
     /// - `NextTokenId` increased by 1
-    fn issue_token(issuance_parameters: TokenIssuanceParametersOf<T>) -> DispatchResult {
-        Self::validate_issuance_parameters(&issuance_parameters)?;
+    fn issue_token(
+        owner_account_id: T::AccountId,
+        issuance_parameters: TokenIssuanceParametersOf<T>,
+    ) -> DispatchResult {
+        // let token_id = Self::next_token_id();
+        // Self::validate_issuance_parameters(&issuance_parameters)?;
 
-        let now = Self::current_block();
-        let token_data = issuance_parameters.build(now);
+        // let now = Self::current_block();
+        // let token_data = issuance_parameters.build(now);
 
-        // == MUTATION SAFE ==
+        // // == MUTATION SAFE ==
 
-        let token_id = Self::next_token_id();
-        SymbolsUsed::<T>::insert(&token_data.symbol, ());
-        TokenInfoById::<T>::insert(token_id, token_data);
-        NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
+        // SymbolsUsed::<T>::insert(&token_data.symbol, ());
+        // TokenInfoById::<T>::insert(token_id, token_data);
+        // NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
 
-        Ok(())
+        //Ok(())
+        todo!()
     }
 
     /// Remove token data from storage
@@ -451,7 +455,7 @@ impl<T: Trait> Module<T> {
         );
 
         // This is a extra, since when no account exists -> total_issuance == 0
-        debug_assert!(token_info.current_total_issuance.is_zero());
+        debug_assert!(token_info.supply.is_zero());
 
         Ok(())
     }

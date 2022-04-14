@@ -210,10 +210,7 @@ fn permissionless_transfer_ok_without_change_in_token_supply() {
     build_test_externalities(config).execute_with(|| {
         let _ = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
-        assert_eq!(
-            Token::token_info_by_id(token_id).current_total_issuance,
-            amount
-        );
+        assert_eq!(Token::token_info_by_id(token_id).supply, amount);
     })
 }
 
@@ -359,7 +356,7 @@ fn multiout_transfer_ok_without_change_in_token_supply() {
         let _ = Token::transfer(origin!(src), token_id, outputs);
 
         assert_eq!(
-            Token::token_info_by_id(token_id).current_total_issuance,
+            Token::token_info_by_id(token_id).supply,
             balance!(src_balance),
         );
     })
@@ -652,10 +649,7 @@ fn permissioned_transfer_ok_without_change_in_token_supply() {
     build_test_externalities(config).execute_with(|| {
         let _ = Token::transfer(origin!(src), token_id, outputs);
 
-        assert_eq!(
-            Token::token_info_by_id(token_id).current_total_issuance,
-            balance!(amount),
-        );
+        assert_eq!(Token::token_info_by_id(token_id).supply, balance!(amount),);
     })
 }
 
@@ -845,7 +839,7 @@ fn permissioned_multi_out_ok_and_without_change_in_token_supply() {
         let _ = Token::transfer(origin!(src), token_id, outputs);
 
         assert_eq!(
-            Token::token_info_by_id(token_id).current_total_issuance,
+            Token::token_info_by_id(token_id).supply,
             balance!(src_balance),
         );
     })

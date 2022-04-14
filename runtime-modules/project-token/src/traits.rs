@@ -21,7 +21,10 @@ pub trait PalletToken<AccountId, Policy, IssuanceParams> {
     type MerkleProof;
 
     /// Issue token with specified characteristics
-    fn issue_token(issuance_parameters: IssuanceParams) -> DispatchResult;
+    fn issue_token(
+        owner_account_id: AccountId,
+        issuance_parameters: IssuanceParams,
+    ) -> DispatchResult;
 
     /// Remove token data from storage
     fn deissue_token(token_id: Self::TokenId) -> DispatchResult;
