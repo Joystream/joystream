@@ -1109,3 +1109,119 @@ fn make_bid_with_english_auction_is_not_started() {
         assert_err!(make_bid_result, Error::<Test>::AuctionDidNotStart);
     })
 }
+
+#[test]
+fn english_auction_increased_bid_works_correctly() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        let video_id = Content::next_video_id();
+        setup_english_auction_scenario();
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE);
+
+        let initial_balance = Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID);
+
+        let bid1 = Content::min_bid_step();
+        assert_ok!(Content::make_english_auction_bid(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            video_id,
+            bid1,
+        ));
+        assert_eq!(
+            Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID),
+            initial_balance - bid1
+        );
+
+        let bid2 = Content::min_bid_step() * 2;
+        assert_ok!(Content::make_english_auction_bid(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            video_id,
+            bid2,
+        ));
+        assert_eq!(
+            Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID),
+            initial_balance - bid2
+        );
+    })
+}
+
+#[test]
+fn open_auction_completion_with_increased_bid_works_correctly() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        let video_id = Content::next_video_id();
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE);
+        setup_open_auction_scenario();
+
+        let initial_balance = Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID);
+
+        let bid1 = Content::min_bid_step();
+        assert_ok!(Content::make_open_auction_bid(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            video_id,
+            bid1,
+        ));
+        assert_eq!(
+            Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID),
+            initial_balance - bid1
+        );
+
+        let bid2 = 2 * Content::min_bid_step();
+        assert_ok!(Content::make_open_auction_bid(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            video_id,
+            bid2,
+        ));
+        assert_eq!(
+            Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID),
+            initial_balance - bid2
+        );
+    })
+}
+
+#[test]
+fn open_auction_completion_with_decreased_bid_works_correctly() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        let video_id = Content::next_video_id();
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE);
+        setup_open_auction_scenario();
+
+        let initial_balance = Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID);
+
+        let bid1 = 2 * Content::min_bid_step();
+        assert_ok!(Content::make_open_auction_bid(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            video_id,
+            bid1,
+        ));
+        assert_eq!(
+            Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID),
+            initial_balance - bid1
+        );
+
+        run_to_block(1 + Content::min_bid_lock_duration());
+
+        let bid2 = Content::min_bid_step();
+        assert_ok!(Content::make_open_auction_bid(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            video_id,
+            bid2,
+        ));
+        assert_eq!(
+            Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID),
+            initial_balance - bid2
+        );
+    })
+}

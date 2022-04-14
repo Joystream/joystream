@@ -28,19 +28,19 @@ impl<T: Trait> Module<T> {
         if let Some(old_bid) = old_bid {
             if bid >= old_bid {
                 // Deposit the difference to the module account.
-                let combined_bid = bid.saturating_sub(old_bid);
-                ContentTreasury::<T>::deposit(&participant, combined_bid)
+                let bid_diff_amount = bid.saturating_sub(old_bid);
+                ContentTreasury::<T>::deposit(&participant, bid_diff_amount)
             } else {
                 // Withdraw the difference from the module account.
-                let combined_bid = old_bid.saturating_sub(bid);
-                ContentTreasury::<T>::withdraw(&participant, combined_bid)
+                let bid_diff_amount = old_bid.saturating_sub(bid);
+                ContentTreasury::<T>::withdraw(&participant, bid_diff_amount)
             }
         } else {
             ContentTreasury::<T>::deposit(&participant, bid)
         }
     }
 
-    /// Make bid transfer to the treasury account or get refunded if the old bid is greater than a new one.
+    /// Withdraw the bid from the treasury account.
     pub(crate) fn withdraw_bid_payment(
         participant: &T::AccountId,
         bid: BalanceOf<T>,

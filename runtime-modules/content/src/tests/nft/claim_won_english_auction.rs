@@ -506,7 +506,7 @@ fn settle_english_auction_ok_with_balances_check() {
         // Run to the block where auction expires
         run_to_block(Content::max_auction_duration() + 1);
 
-        // Make an attempt to claim won english auction if last bid does not exist
+        // Settle the auciton.
         let settle_english_auction_result =
             Content::settle_english_auction(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
 
