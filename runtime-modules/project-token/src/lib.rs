@@ -7,7 +7,7 @@ use frame_support::{
     traits::{Currency, ExistenceRequirement, Get},
 };
 use frame_system::ensure_signed;
-use sp_arithmetic::traits::{AtLeast32BitUnsigned, Saturating, Zero};
+use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
     traits::{AccountIdConversion, Convert},
     ModuleId,
@@ -291,20 +291,33 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
         owner_account_id: T::AccountId,
         issuance_parameters: TokenIssuanceParametersOf<T>,
     ) -> DispatchResult {
-        // let token_id = Self::next_token_id();
-        // Self::validate_issuance_parameters(&issuance_parameters)?;
+        let token_id = Self::next_token_id();
+        Self::validate_issuance_parameters(&issuance_parameters)?;
 
-        // let now = Self::current_block();
-        // let token_data = issuance_parameters.build(now);
+        let now = Self::current_block();
+        let initial_supply = issuance_parameters.initial_supply;
+        let token_data = issuance_parameters.build(now);
 
-        // // == MUTATION SAFE ==
+        // == MUTATION SAFE ==
 
-        // SymbolsUsed::<T>::insert(&token_data.symbol, ());
-        // TokenInfoById::<T>::insert(token_id, token_data);
-        // NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
+        AccountInfoByTokenAndAccount::<T>::insert(
+            &token_id,
+            &owner_account_id,
+            AccountDataOf::<T> {
+                free_balance: initial_supply,
+                reserved_balance: T::Balance::zero(),
+            },
+        );
+        SymbolsUsed::<T>::insert(&token_data.symbol, ());
+        TokenInfoById::<T>::insert(token_id, token_data.clone());
+        NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
 
-        //Ok(())
-        todo!()
+        Self::deposit_event(RawEvent::TokenIssued(
+            token_id,
+            token_data,
+            owner_account_id,
+        ));
+        Ok(())
     }
 
     /// Remove token data from storage

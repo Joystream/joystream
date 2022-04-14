@@ -687,13 +687,33 @@ fn issue_token_ok_owner_having_already_issued_a_token() {
         .with_account(owner, 0, 0)
         .build();
 
-    let params = TokenIssuanceParametersOf::<Test>::default();
+    let params = TokenIssuanceParametersOf::<Test> {
+        symbol: Hashing::hash_of(&"CRT2".to_string()),
+        ..Default::default()
+    };
 
     build_test_externalities(config).execute_with(|| {
         let result =
             <Token as PalletToken<AccountId, Policy, IssuanceParams>>::issue_token(owner, params);
 
         assert_ok!(result);
+    })
+}
+
+#[test]
+fn issue_token_ok_with_token_id_increased() {
+    let token_id = token!(1); // chainspec value for next_token_id
+    let owner = account!(1);
+
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    let params = TokenIssuanceParametersOf::<Test>::default();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ =
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::issue_token(owner, params);
+
+        assert_eq!(Token::next_token_id(), token_id + 1);
     })
 }
 
@@ -820,7 +840,7 @@ fn issue_token_ok_with_owner_account_data_added_and_balance_equals_to_initial_su
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let result =
+        let _ =
             <Token as PalletToken<AccountId, Policy, IssuanceParams>>::issue_token(owner, params);
         assert_ok!(
             Token::ensure_account_data_exists(token_id, &owner),

@@ -224,10 +224,6 @@ impl<
         new_rate: Balance,
         block: BlockNumber,
     ) {
-        println!(
-            "Tally: {:?}",
-            self.patronage_info.unclaimed_patronage_tally_amount
-        );
         // update tally according to old rate
         self.patronage_info.unclaimed_patronage_tally_amount =
             self.unclaimed_patronage::<BlockNumberToBalance>(block);
