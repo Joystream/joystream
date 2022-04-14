@@ -4348,14 +4348,14 @@ pub struct UpdateNftLimitFixture {
 
 impl UpdateNftLimitFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let old_limit = Content::nft_limit_by_id(self.nft_limit_id);
+        let old_limit = nft_limit_by_id(self.nft_limit_id);
 
         let actual_result =
             Content::update_nft_limit(self.origin.clone().into(), self.nft_limit_id, self.limit);
 
         assert_eq!(actual_result, expected_result);
 
-        let new_limit = Content::nft_limit_by_id(self.nft_limit_id);
+        let new_limit = nft_limit_by_id(self.nft_limit_id);
         if actual_result.is_ok() {
             assert_eq!(self.limit, new_limit);
 

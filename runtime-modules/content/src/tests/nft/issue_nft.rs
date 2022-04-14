@@ -295,7 +295,7 @@ fn nft_test_helper_for_exceeded_limit(nft_limit_id: NftLimitId<u64>, expected_er
     create_initial_storage_buckets_helper();
     increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
     create_default_member_owned_channel_with_video();
-    set_nft_limit(nft_limit_id, Default::default());
+    Content::set_nft_limit(nft_limit_id, Default::default());
 
     // Issue nft
     assert_eq!(
@@ -367,7 +367,7 @@ fn test_helper_for_nft_limit_works_as_expected(
 
         let global_period_in_blocks = 10;
 
-        set_nft_limit(
+        Content::set_nft_limit(
             nft_limit_id,
             LimitPerPeriod::<u64> {
                 limit: 1,

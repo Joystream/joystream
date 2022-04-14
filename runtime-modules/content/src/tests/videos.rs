@@ -1288,7 +1288,7 @@ fn nft_test_helper_for_exceeded_limit_on_creating_video(
     create_default_member_owned_channel();
     set_default_nft_limits();
 
-    set_nft_limit(nft_limit_id, Default::default());
+    Content::set_nft_limit(nft_limit_id, Default::default());
 
     // create video with nft issued
     CreateVideoFixture::default()
@@ -1354,7 +1354,7 @@ fn nft_test_helper_for_exceeded_limit_on_updating_video(
     create_default_member_owned_channel();
     set_default_nft_limits();
 
-    set_nft_limit(nft_limit_id, Default::default());
+    Content::set_nft_limit(nft_limit_id, Default::default());
 
     // create video with nft issued
     CreateVideoFixture::default()
