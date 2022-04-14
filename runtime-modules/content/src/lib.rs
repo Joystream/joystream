@@ -792,6 +792,10 @@ decl_module! {
                     }
                 )?;
 
+            if nft_status.is_some() {
+                Self::check_nft_limits(&channel)?;
+            }
+
             // create the video struct
             let video: Video<T> = VideoRecord {
                 in_channel: channel_id,
@@ -808,10 +812,6 @@ decl_module! {
                     &sender
                 );
                 Storage::<T>::upload_data_objects(params)?;
-            }
-
-            if nft_status.is_some() {
-                Self::check_nft_limits(&channel)?;
             }
 
             //
