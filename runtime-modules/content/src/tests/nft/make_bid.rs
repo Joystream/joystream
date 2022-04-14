@@ -1149,7 +1149,7 @@ fn english_auction_increased_bid_works_correctly() {
 }
 
 #[test]
-fn open_auction_completion_with_increased_bid_works_correctly() {
+fn open_auction_increased_bid_works_correctly() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
