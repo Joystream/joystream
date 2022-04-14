@@ -62,5 +62,23 @@ decl_error! {
 
         /// Amount of tokens to purchase on sale exceeds the quantity of tokens still available on the sale
         NotEnoughTokensOnSale,
+
+        /// Insufficient Balance for Bloat bond
+        InsufficientBalanceForBloatBond,
+
+        /// Attempt to removed non owned account under permissioned mode
+        AttemptToRemoveNonOwnedAccountUnderPermissionedMode,
+
+        /// Attempt to removed non empty non owned
+        AttemptToRemoveNonOwnedAndNonEmptyAccount,
+
+        /// Cannot join whitelist in permissionless mode
+        CannotJoinWhitelistInPermissionlessMode,
+
+        /// Cannot Deissue Token with outstanding accounts
+        CannotDeissueTokenWithOutstandingAccounts,
+
+        /// Token issuance is not zero
+        TokenIssuanceIsNotZero,
     }
 }

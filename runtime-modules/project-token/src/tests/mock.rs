@@ -2,7 +2,7 @@
 
 use frame_support::{
     impl_outer_event, impl_outer_origin, parameter_types,
-    traits::{OnFinalize, OnInitialize},
+    traits::{Currency, OnFinalize, OnInitialize},
 };
 
 use codec::Encode;
@@ -17,9 +17,9 @@ use sp_runtime::{DispatchError, DispatchResult, ModuleId};
 // crate import
 use crate::{
     types::{
-        InitialAllocationOf, MerkleSide, OfferingStateOf, OutputsOf,
-        SingleDataObjectUploadParamsOf, TokenSaleOf, TokenSaleParamsOf, UploadContextOf,
-        VestingBalanceOf, VestingScheduleParamsOf, WhitelistParamsOf,
+        InitialAllocationOf, MerkleSide, OfferingStateOf, SingleDataObjectUploadParamsOf,
+        TokenSaleOf, TokenSaleParamsOf, UploadContextOf, VestingBalanceOf, VestingScheduleParamsOf,
+        WhitelistParamsOf,
     },
     AccountDataOf, GenesisConfig, TokenDataOf, TokenIssuanceParametersOf, Trait, TransferPolicyOf,
 };
@@ -43,7 +43,6 @@ pub type Balance = <Test as Trait>::Balance;
 pub type Policy = TransferPolicyOf<Test>;
 pub type Hashing = <Test as frame_system::Trait>::Hashing;
 pub type HashOut = <Test as frame_system::Trait>::Hash;
-pub type Outputs = OutputsOf<Test>;
 pub type UploadContext = UploadContextOf<Test>;
 pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
 pub type VestingBalance = VestingBalanceOf<Test>;
@@ -66,6 +65,13 @@ macro_rules! last_event_eq {
     };
 }
 
+#[macro_export]
+macro_rules! origin {
+    ($a: expr) => {
+        Origin::signed($a)
+    };
+}
+
 impl_outer_event! {
     pub enum TestEvent for Test {
         token<T>,
@@ -75,13 +81,21 @@ impl_outer_event! {
     }
 }
 
+// Trait constants
+pub const DEFAULT_BLOAT_BOND: u64 = 100;
+
 parameter_types! {
-    pub const ExistentialDeposit: u64 = 0;
+    // constants for frame_system::Trait
     pub const BlockHashCount: u64 = 250;
     pub const MaximumBlockWeight: u32 = 1024;
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
+    // constants for crate::Trait
+    pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token"); // module storage
+    pub const BloatBond: u64 = DEFAULT_BLOAT_BOND;
+    // constants for balances::Trait
+    pub const ExistentialDeposit: u64 = 0;
 }
 
 impl frame_system::Trait for Test {
@@ -180,6 +194,9 @@ impl Trait for Test {
     type TokenId = u64;
     type BlockNumberToBalance = Block2Balance;
     type DataObjectStorage = storage::Module<Self>;
+    type ModuleId = TokenModuleId;
+    type BloatBond = BloatBond;
+    type ReserveCurrency = Balances;
 }
 
 // Working group integration
@@ -387,8 +404,8 @@ macro_rules! block {
 // Modules aliases
 pub type Token = crate::Module<Test>;
 pub type System = frame_system::Module<Test>;
+pub type Balances = balances::Module<Test>;
 
-pub const DEFAULT_EXISTENTIAL_DEPOSIT: u64 = 5;
 pub const DEFAULT_ACCOUNT_ID: u64 = 1;
 pub const OTHER_ACCOUNT_ID: u64 = 2;
 pub const DEFAULT_INITIAL_ISSUANCE: u64 = 1_000_000;
@@ -520,4 +537,8 @@ impl Convert<BlockNumber, Balance> for Block2Balance {
     fn convert(block: BlockNumber) -> Balance {
         block as u64
     }
+}
+
+pub fn increase_account_balance(account_id: &AccountId, balance: Balance) {
+    let _ = Balances::deposit_creating(account_id, balance);
 }

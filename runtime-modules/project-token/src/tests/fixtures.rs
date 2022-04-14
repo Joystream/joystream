@@ -3,7 +3,6 @@
 use crate::{traits::PalletToken, types::VestingSource, SymbolsUsed};
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::StorageMap;
-use frame_support::traits::Currency;
 use sp_runtime::{traits::Hash, DispatchError, Permill};
 use sp_std::iter::FromIterator;
 use storage::{BagId, DataObjectCreationParameters, StaticBagId};
@@ -69,10 +68,6 @@ pub fn default_single_data_object_upload_params() -> SingleDataObjectUploadParam
     }
 }
 
-pub fn increase_account_balance(account: &AccountId, amount: Balance) {
-    let _ = balances::Module::<Test>::deposit_creating(account, amount);
-}
-
 pub struct IssueTokenFixture {
     params: IssuanceParams,
 }
@@ -86,7 +81,6 @@ impl IssueTokenFixture {
     pub fn default() -> Self {
         Self {
             params: IssuanceParams {
-                existential_deposit: DEFAULT_EXISTENTIAL_DEPOSIT,
                 initial_allocation: InitialAllocation {
                     address: DEFAULT_ACCOUNT_ID,
                     amount: DEFAULT_INITIAL_ISSUANCE,

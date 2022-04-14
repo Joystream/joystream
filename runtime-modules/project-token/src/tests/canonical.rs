@@ -1,643 +1,825 @@
 #![cfg(test)]
 
-use frame_support::{assert_noop, assert_ok, StorageDoubleMap, StorageMap};
-use sp_arithmetic::traits::One;
-
 use crate::tests::mock::*;
-use crate::traits::{MultiCurrencyBase, ReservableMultiCurrency};
-use crate::{last_event_eq, Error, RawEvent};
-
-// base_issue test
-#[test]
-fn issue_base_token_ok_with_default_issuance_parameters() {
-    let config = GenesisConfigBuilder::new().build();
-    let issuance_params = IssuanceParams::default();
-
-    build_test_externalities(config).execute_with(|| {
-        let token_id = Token::next_token_id();
-        assert_ok!(
-            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::issue_token(
-                issuance_params.clone(),
-            )
-        );
-        assert_eq!(
-            issuance_params.try_build::<Test>(),
-            Token::ensure_token_exists(token_id)
-        );
-        assert_eq!(token_id + 1, Token::next_token_id());
-    })
-}
-
-// #[test]
-// fn issue_base_token_fails_with_existential_deposit_exceeding_issuance() {
-//     let config = GenesisConfigBuilder::new().build();
-//     let initial_issuance = Balance::from(10u32);
-//     let issuance_params = TokenIssuanceParametersOf::<Test> {
-//         initial_issuance,
-//         existential_deposit: initial_issuance.saturating_add(One::one()),
-//         ..Default::default()
-//     };
-
-//     build_test_externalities(config).execute_with(|| {
-//         assert_noop!(
-//             <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::issue_token(
-//                 issuance_params.clone()
-//             ),
-//             Error::<Test>::ExistentialDepositExceedsInitialIssuance,
-//         );
-//     })
-// }
-
-// base_deissue tests
-#[test]
-fn base_deissue_token_fails_with_non_existing_token_id() {
-    let config = GenesisConfigBuilder::new().build();
-    build_test_externalities(config).execute_with(|| {
-        let token_id = Token::next_token_id();
-        assert_noop!(
-            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deissue_token(token_id),
-            Error::<Test>::TokenDoesNotExist,
-        );
-    })
-}
+use crate::tests::test_utils::TokenDataBuilder;
+use crate::traits::PalletToken;
+use crate::types::{MerkleProofOf, PatronageData, TokenIssuanceParametersOf};
+use crate::{
+    account, balance, last_event_eq, merkle_proof, merkle_root, origin, token, Error, RawEvent,
+    TokenDataOf,
+};
+use frame_support::{assert_noop, assert_ok, StorageDoubleMap, StorageMap};
+use sp_runtime::traits::Hash;
+use sp_std::collections::btree_map::BTreeMap;
 
 #[test]
-fn base_deissue_token_ok() {
-    let config = GenesisConfigBuilder::new()
-        .add_token_and_account_info()
+fn join_whitelist_fails_with_token_id_not_valid() {
+    let token_id = token!(1);
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![acc1, acc2];
+    let proof = merkle_proof!(0, [acc1, acc2]);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
         .build();
-    build_test_externalities(config).execute_with(|| {
-        assert_ok!(
-            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deissue_token(One::one(),)
-        );
-        assert_noop!(
-            Token::ensure_token_exists(One::one()),
-            Error::<Test>::TokenDoesNotExist
-        );
-    })
-}
 
-// balanceof tests
-#[test]
-fn balanceof_fails_with_non_existing_token_id() {
-    let config = GenesisConfigBuilder::new().build();
-    build_test_externalities(config).execute_with(|| {
-        assert_noop!(
-            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::balance(
-                One::one(),
-                One::one()
-            ),
-            Error::<Test>::AccountInformationDoesNotExist,
-        );
-    })
-}
-
-// deposit creating tests
-#[test]
-fn deposit_creating_fails_with_non_existing_token() {
-    let config = GenesisConfigBuilder::new().build();
-    let token_id = TokenId::one();
-    let account_id = AccountId::one();
-    let amount = Balance::one();
-    build_test_externalities(config).execute_with(|| {
-        assert_noop!(
-            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_creating(
-                token_id, account_id, amount
-            ),
-            Error::<Test>::TokenDoesNotExist,
-        );
-    })
-}
-
-#[test]
-fn deposit_creating_ok_with_non_existing_account() {
-    let config = GenesisConfigBuilder::new()
-        .add_token_and_account_info()
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, 0, 0)
         .build();
-    let token_id = TokenId::one();
-    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID + 1);
-    let amount = Balance::one();
+
     build_test_externalities(config).execute_with(|| {
-        let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
-        assert_ok!(
-            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_creating(
-                token_id, account_id, amount
-            )
-        );
-        assert_eq!(
-            amount,
-            Token::account_info_by_token_and_account(token_id, account_id).free_balance,
-        );
+        increase_account_balance(&acc1, bloat_bond);
 
-        let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
-        assert_eq!(issuance_pre.saturating_add(amount), issuance_post);
+        let result = Token::join_whitelist(origin!(acc1), token_id + 1, proof);
 
-        last_event_eq!(RawEvent::TokenAmountDepositedInto(
-            token_id, account_id, amount
+        assert_noop!(result, Error::<Test>::TokenDoesNotExist,);
+    })
+}
+
+#[test]
+fn join_whitelist_fails_with_existing_account() {
+    let token_id = token!(1);
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![acc1, acc2];
+    let proof = merkle_proof!(0, [acc1, acc2]);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, 0, 0)
+        .with_account(acc1, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&acc1, bloat_bond);
+
+        let result = Token::join_whitelist(origin!(acc1), token_id, proof);
+
+        assert_noop!(result, Error::<Test>::AccountAlreadyExists,);
+    })
+}
+
+#[test]
+fn join_whitelist_fails_with_invalid_proof() {
+    let token_id = token!(1);
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![acc1, acc2];
+    let proof = merkle_proof!(0, [acc1, acc1]);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&acc1, bloat_bond);
+
+        let result = Token::join_whitelist(origin!(acc1), token_id, proof);
+
+        assert_noop!(result, Error::<Test>::MerkleProofVerificationFailure,);
+    })
+}
+
+#[test]
+fn join_whitelist_fails_with_no_proof_provided() {
+    let token_id = token!(1);
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![acc1, acc2];
+    let proof = MerkleProofOf::<Test>::new(None);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&acc1, bloat_bond);
+
+        let result = Token::join_whitelist(origin!(acc1), token_id, proof);
+
+        assert_noop!(result, Error::<Test>::MerkleProofNotProvided,);
+    })
+}
+
+#[test]
+fn join_whitelist_fails_with_insufficent_joy_balance_for_bloat_bond() {
+    let token_id = token!(1);
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![acc1, acc2];
+    let proof = merkle_proof!(0, [acc1, acc2]);
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::join_whitelist(origin!(acc1), token_id, proof);
+
+        assert_noop!(result, Error::<Test>::InsufficientBalanceForBloatBond);
+    })
+}
+
+#[test]
+fn join_whitelist_fails_in_permissionless_mode() {
+    let token_id = token!(1);
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
+    let proof = merkle_proof!(0, [acc1, acc2]);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissionless)
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&acc1, bloat_bond);
+
+        let result = Token::join_whitelist(origin!(acc1), token_id, proof);
+
+        assert_noop!(
+            result,
+            Error::<Test>::CannotJoinWhitelistInPermissionlessMode,
+        );
+    })
+}
+
+#[test]
+fn join_whitelist_ok() {
+    let token_id = token!(1);
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![acc1, acc2];
+    let proof = merkle_proof!(0, [acc1, acc2]);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&acc1, bloat_bond);
+
+        let result = Token::join_whitelist(origin!(acc1), token_id, proof);
+
+        assert_ok!(result);
+    })
+}
+
+#[test]
+fn join_whitelist_ok_with_event_deposit() {
+    let token_id = token!(1);
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![acc1, acc2];
+    let proof = merkle_proof!(0, [acc1, acc2]);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&acc1, bloat_bond);
+
+        let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
+
+        last_event_eq!(RawEvent::MemberJoinedWhitelist(
+            token_id,
+            acc1,
+            Policy::Permissioned(commit)
         ));
     })
 }
 
 #[test]
-fn deposit_creating_ok_with_existing_account() {
-    let config = GenesisConfigBuilder::new()
-        .add_token_and_account_info()
+fn join_whitelist_ok_with_new_account_created() {
+    let token_id = token!(1);
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
+    let proof = merkle_proof!(0, [acc1, acc2]);
+    let commit = merkle_root![acc1, acc2];
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
         .build();
-    let token_id = TokenId::one();
-    let account_id = AccountId::one();
-    let amount = Balance::one();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, 0, 0)
+        .build();
 
     build_test_externalities(config).execute_with(|| {
-        let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
-        let free_balance_pre =
-            Token::account_info_by_token_and_account(token_id, account_id).free_balance;
-        assert_ok!(
-            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_creating(
-                token_id, account_id, amount
-            )
-        );
+        increase_account_balance(&acc1, bloat_bond);
 
-        let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
-        let free_balance_post =
-            Token::account_info_by_token_and_account(token_id, account_id).free_balance;
+        let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
 
-        assert_eq!(free_balance_pre.saturating_add(amount), free_balance_post);
-        assert_eq!(issuance_pre.saturating_add(amount), issuance_post);
-        last_event_eq!(RawEvent::TokenAmountDepositedInto(
-            token_id, account_id, amount
+        assert!(<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
+            token_id, acc1
         ));
     })
 }
 
 #[test]
-fn deposit_into_existing_ok() {
-    let config = GenesisConfigBuilder::new()
-        .add_token_and_account_info()
+fn join_whitelist_ok_with_new_account_having_free_balance_zero() {
+    let token_id = token!(1);
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![acc1, acc2];
+    let proof = merkle_proof!(0, [acc1, acc2]);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
         .build();
-    let token_id = TokenId::one();
-    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID);
-    let amount = Balance::one();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, 0, 0)
+        .build();
 
     build_test_externalities(config).execute_with(|| {
-        let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
-        let free_balance_pre =
-            Token::account_info_by_token_and_account(token_id, account_id).free_balance;
-        assert_ok!(
-            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_into_existing(
-                token_id, account_id, amount
-            )
-        );
+        increase_account_balance(&acc1, bloat_bond);
 
-        let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
-        let free_balance_post =
-            Token::account_info_by_token_and_account(token_id, account_id).free_balance;
-
-        assert_eq!(free_balance_pre.saturating_add(amount), free_balance_post);
-
-        assert_eq!(issuance_pre.saturating_add(amount), issuance_post);
-        last_event_eq!(RawEvent::TokenAmountDepositedInto(
-            token_id, account_id, amount
-        ));
-    })
-}
-
-#[test]
-fn deposit_fails_with_nonexisting_account() {
-    let config = GenesisConfigBuilder::new()
-        .add_token_and_account_info()
-        .build();
-    let token_id = TokenId::one();
-    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID + 1);
-    let amount = Balance::one();
-
-    build_test_externalities(config).execute_with(|| {
-        assert_noop!(
-            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_into_existing(
-                token_id, account_id, amount
-            ),
-            Error::<Test>::AccountInformationDoesNotExist,
-        );
-    })
-}
-
-// reserve tests
-#[test]
-fn reserve_fails_with_non_existing_token() {
-    let config = GenesisConfigBuilder::new()
-        .add_token_and_account_info()
-        .build();
-    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID + 1);
-    let amount = Balance::one();
-
-    build_test_externalities(config).execute_with(|| {
-        let token_id = Token::next_token_id();
-        assert_noop!(
-            <Token as ReservableMultiCurrency<AccountId>>::reserve(token_id, account_id, amount),
-            Error::<Test>::TokenDoesNotExist,
-        );
-    })
-}
-
-#[test]
-fn reserve_fails_with_non_existing_account() {
-    let config = GenesisConfigBuilder::new()
-        .add_token_and_account_info()
-        .build();
-    let token_id = TokenId::one();
-    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID + 1);
-    let amount = Balance::one();
-
-    build_test_externalities(config).execute_with(|| {
-        assert_noop!(
-            <Token as ReservableMultiCurrency<AccountId>>::reserve(token_id, account_id, amount),
-            Error::<Test>::AccountInformationDoesNotExist,
-        );
-    })
-}
-
-#[test]
-fn reserve_fails_with_insufficient_free_balance() {
-    let config = GenesisConfigBuilder::new()
-        .add_token_and_account_info()
-        .build();
-    let token_id = TokenId::one();
-    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID);
-    let amount = Balance::from(DEFAULT_FREE_BALANCE + 1);
-
-    build_test_externalities(config).execute_with(|| {
-        assert_noop!(
-            <Token as ReservableMultiCurrency<AccountId>>::reserve(token_id, account_id, amount),
-            Error::<Test>::InsufficientFreeBalanceForReserving,
-        );
-    })
-}
-
-#[test]
-fn reserve_ok_with_remaining_free_balance_above_ex_deposit() {
-    let config = GenesisConfigBuilder::new()
-        .add_token_and_account_info()
-        .build();
-    let token_id = TokenId::one();
-    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID);
-    let amount = Balance::one();
-
-    build_test_externalities(config).execute_with(|| {
-        let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
-        let account_data_pre = Token::account_info_by_token_and_account(token_id, account_id);
-        assert_ok!(<Token as ReservableMultiCurrency<AccountId>>::reserve(
-            token_id, account_id, amount
-        ));
-        let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
-        let account_data_post = Token::account_info_by_token_and_account(token_id, account_id);
-        assert_eq!(issuance_pre, issuance_post);
+        let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
 
         assert_eq!(
-            account_data_pre.free_balance.saturating_sub(amount),
-            account_data_post.free_balance,
+            Token::account_info_by_token_and_account(token_id, acc1).usable_balance::<Test>(),
+            balance!(0)
         );
-        assert_eq!(
-            account_data_pre.reserved_balance.saturating_add(amount),
-            account_data_post.reserved_balance,
-        );
-        last_event_eq!(RawEvent::TokenAmountReservedFrom(
-            token_id, account_id, amount
-        ));
     })
 }
 
 #[test]
-fn reserve_ok_with_remaining_free_balance_below_ex_deposit() {
-    let config = GenesisConfigBuilder::new()
-        .add_token_and_account_info()
+fn join_whitelist_ok_with_new_account_having_reserved_balance_zero() {
+    let token_id = token!(1);
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![acc1, acc2];
+    let proof = merkle_proof!(0, [acc1, acc2]);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
         .build();
-    let token_id = TokenId::one();
-    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID);
-    let amount = Balance::from(DEFAULT_FREE_BALANCE).saturating_sub(One::one());
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, 0, 0)
+        .build();
 
     build_test_externalities(config).execute_with(|| {
-        let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
-        let account_data_pre = Token::account_info_by_token_and_account(token_id, account_id);
-        assert_ok!(<Token as ReservableMultiCurrency<AccountId>>::reserve(
-            token_id, account_id, amount
-        ));
-        let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
-        let account_data_post = Token::account_info_by_token_and_account(token_id, account_id);
-        assert_eq!(issuance_pre, issuance_post);
+        increase_account_balance(&acc1, bloat_bond);
+
+        let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
 
         assert_eq!(
-            account_data_post.free_balance.saturating_add(amount),
-            account_data_pre.free_balance,
+            Token::account_info_by_token_and_account(token_id, acc1).reserved_balance,
+            balance!(0)
         );
-        assert_eq!(
-            account_data_post.reserved_balance.saturating_sub(amount),
-            account_data_pre.reserved_balance,
-        );
-        last_event_eq!(RawEvent::TokenAmountReservedFrom(
-            token_id, account_id, amount
-        ));
     })
 }
 
 #[test]
-fn reserve_ok_with_remaining_zero_free_balance() {
-    let config = GenesisConfigBuilder::new()
-        .add_token_and_account_info()
+fn join_whitelist_ok_with_bloat_bond_slashed_from_account_free_balance() {
+    let token_id = token!(1);
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![acc1, acc2];
+    let proof = merkle_proof!(0, [acc1, acc2]);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
         .build();
-    let token_id = TokenId::one();
-    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID);
-    let amount = Balance::from(DEFAULT_FREE_BALANCE);
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, 0, 0)
+        .build();
 
     build_test_externalities(config).execute_with(|| {
-        let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
-        let account_data_pre = Token::account_info_by_token_and_account(token_id, account_id);
-        assert_ok!(<Token as ReservableMultiCurrency<AccountId>>::reserve(
-            token_id, account_id, amount
-        ));
-        let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
-        let account_data_post = Token::account_info_by_token_and_account(token_id, account_id);
-        assert_eq!(issuance_pre, issuance_post);
+        increase_account_balance(&acc1, bloat_bond);
 
-        assert_eq!(
-            account_data_post.free_balance.saturating_add(amount),
-            account_data_pre.free_balance,
-        );
-        assert_eq!(
-            account_data_post.reserved_balance.saturating_sub(amount),
-            account_data_pre.reserved_balance,
-        );
-        last_event_eq!(RawEvent::TokenAmountReservedFrom(
-            token_id, account_id, amount
-        ));
+        let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
+
+        assert_eq!(Balances::free_balance(acc1), balance!(0));
     })
 }
 
-// unreserve tests
 #[test]
-fn unreserve_fails_with_non_existing_token() {
-    let config = GenesisConfigBuilder::new()
-        .add_token_and_account_info()
+fn dust_account_fails_with_invalid_token_id() {
+    let token_id = token!(1);
+    let acc = account!(2);
+    let (owner, owner_balance) = (account!(1), balance!(100));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, owner_balance, 0)
+        .with_account(acc, balance!(0), balance!(0))
         .build();
-    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID + 1);
-    let amount = Balance::one();
 
     build_test_externalities(config).execute_with(|| {
-        let token_id = Token::next_token_id();
+        let result = Token::dust_account(origin!(owner), token_id + 1, acc);
+
+        assert_noop!(result, Error::<Test>::TokenDoesNotExist);
+    })
+}
+
+#[test]
+fn dust_account_fails_with_invalid_account_id() {
+    let token_id = token!(1);
+    let acc = account!(2);
+    let (owner, owner_balance) = (account!(1), balance!(100));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, owner_balance, 0)
+        .with_account(acc, balance!(0), balance!(0))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::dust_account(origin!(owner), token_id, acc + 1);
+
+        assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
+    })
+}
+
+#[test]
+fn dust_account_fails_with_permissionless_mode_and_non_empty_non_owned_account() {
+    let token_id = token!(1);
+    let (acc1, acc2) = (account!(2), account!(3));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(acc1, balance!(0), balance!(0))
+        .with_account(acc2, balance!(10), balance!(10))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::dust_account(origin!(acc1), token_id, acc2);
+
         assert_noop!(
-            <Token as ReservableMultiCurrency<AccountId>>::unreserve(token_id, account_id, amount),
-            Error::<Test>::TokenDoesNotExist,
+            result,
+            Error::<Test>::AttemptToRemoveNonOwnedAndNonEmptyAccount
         );
     })
 }
 
 #[test]
-fn unreserve_fails_with_non_existing_account() {
-    let config = GenesisConfigBuilder::new()
-        .add_token_and_account_info()
+fn dust_account_fails_with_permissioned_mode_and_non_owned_account() {
+    let token_id = token!(1);
+    let (acc1, acc2) = (account!(2), account!(3));
+    let commit = merkle_root![acc1, acc2];
+    let (owner, owner_balance) = (account!(1), balance!(100));
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
         .build();
-    let token_id = TokenId::one();
-    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID + 1);
-    let amount = Balance::one();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, owner_balance, balance!(0))
+        .with_account(acc1, balance!(0), balance!(0))
+        .with_account(acc2, balance!(0), balance!(0))
+        .build();
 
     build_test_externalities(config).execute_with(|| {
+        let result = Token::dust_account(origin!(acc1), token_id, acc2);
+
         assert_noop!(
-            <Token as ReservableMultiCurrency<AccountId>>::unreserve(token_id, account_id, amount),
-            Error::<Test>::AccountInformationDoesNotExist,
+            result,
+            Error::<Test>::AttemptToRemoveNonOwnedAccountUnderPermissionedMode
         );
     })
 }
 
 #[test]
-fn unreserve_fails_with_insufficient_reserved_balance() {
-    let config = GenesisConfigBuilder::new()
-        .add_token_and_account_info()
+fn dust_account_ok_with_permissionless_mode_and_non_empty_owned_account() {
+    let token_id = token!(1);
+    let (acc1, acc2) = (account!(2), account!(3));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(acc1, balance!(10), balance!(10))
+        .with_account(acc2, balance!(0), balance!(0))
         .build();
-    let token_id = TokenId::one();
-    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID);
-    let amount = Balance::one();
 
     build_test_externalities(config).execute_with(|| {
-        assert_ok!(<Token as ReservableMultiCurrency<AccountId>>::reserve(
-            token_id, account_id, amount
-        ));
-        assert_noop!(
-            <Token as ReservableMultiCurrency<AccountId>>::unreserve(
-                token_id,
-                account_id,
-                amount.saturating_add(One::one())
-            ),
-            Error::<Test>::InsufficientReservedBalance,
-        );
+        let result = Token::dust_account(origin!(acc1), token_id, acc1);
+
+        assert_ok!(result);
     })
 }
 
 #[test]
-fn unreserve_ok() {
-    let config = GenesisConfigBuilder::new()
-        .add_token_and_account_info()
+fn dust_account_ok_with_permissioned_mode_and_non_empty_owned_account() {
+    let token_id = token!(1);
+    let (acc1, acc2) = (account!(2), account!(3));
+    let commit = merkle_root![acc1, acc2];
+    let (owner, owner_balance) = (account!(1), balance!(100));
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
         .build();
-    let token_id = TokenId::one();
-    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID);
-    let amount = Balance::one();
 
-    build_test_externalities(config).execute_with(|| {
-        assert_ok!(<Token as ReservableMultiCurrency<AccountId>>::reserve(
-            token_id, account_id, amount
-        ));
-        let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
-        let account_data_pre = Token::account_info_by_token_and_account(token_id, account_id);
-        assert_ok!(<Token as ReservableMultiCurrency<AccountId>>::unreserve(
-            token_id, account_id, amount
-        ));
-        let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
-        let account_data_post = Token::account_info_by_token_and_account(token_id, account_id);
-        assert_eq!(issuance_pre, issuance_post);
-
-        assert_eq!(
-            account_data_post.free_balance.saturating_sub(amount),
-            account_data_pre.free_balance,
-        );
-        assert_eq!(
-            account_data_post.reserved_balance.saturating_add(amount),
-            account_data_pre.reserved_balance,
-        );
-        last_event_eq!(RawEvent::TokenAmountUnreservedFrom(
-            token_id, account_id, amount
-        ));
-    })
-}
-
-// slash tests
-#[test]
-fn slash_fails_with_non_existing_token_id() {
-    let config = GenesisConfigBuilder::new().build();
-    let token_id = TokenId::from(2u64);
-    let account_id = AccountId::one();
-    let amount = Balance::one();
-    build_test_externalities(config).execute_with(|| {
-        assert_noop!(
-            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::slash(
-                token_id, account_id, amount
-            ),
-            Error::<Test>::TokenDoesNotExist,
-        );
-    })
-}
-
-#[test]
-fn slash_fails_with_non_existing_account() {
-    let config = GenesisConfigBuilder::new()
-        .add_token_and_account_info()
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, owner_balance, 0)
+        .with_account(acc1, balance!(0), balance!(0))
+        .with_account(acc2, balance!(10), balance!(0))
         .build();
-    let token_id = TokenId::one();
-    let account_id = AccountId::from(2u32);
-    let amount = Balance::one();
+
     build_test_externalities(config).execute_with(|| {
-        assert_noop!(
-            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::slash(
-                token_id, account_id, amount
-            ),
-            Error::<Test>::AccountInformationDoesNotExist,
-        );
+        let result = Token::dust_account(origin!(acc1), token_id, acc1);
+
+        assert_ok!(result);
     })
 }
 
 #[test]
-fn slash_fails_with_insufficient_free_balance() {
-    let config = GenesisConfigBuilder::new()
-        .add_token_and_account_info()
+fn dust_account_ok_with_permissionless_mode_and_empty_non_owned_account() {
+    let token_id = token!(1);
+    let acc = account!(2);
+    let (owner, owner_balance) = (account!(1), balance!(100));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, owner_balance, 0)
+        .with_account(acc, balance!(0), balance!(0))
         .build();
-    let token_id = TokenId::one();
-    let account_id = AccountId::one();
-    let amount = Balance::from(DEFAULT_FREE_BALANCE).saturating_add(Balance::one());
+
     build_test_externalities(config).execute_with(|| {
-        assert_noop!(
-            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::slash(
-                token_id, account_id, amount
-            ),
-            Error::<Test>::InsufficientFreeBalanceForDecreasing,
-        );
+        let result = Token::dust_account(origin!(acc), token_id, acc);
+
+        assert_ok!(result);
     })
 }
 
 #[test]
-fn slash_ok_without_account_removal() {
-    let config = GenesisConfigBuilder::new()
-        .add_token_and_account_info()
+fn dust_account_ok_with_event_deposit() {
+    let token_id = token!(1);
+    let (acc1, acc2) = (account!(2), account!(3));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(acc1, balance!(0), balance!(0))
+        .with_account(acc2, balance!(0), balance!(0))
         .build();
-    let token_id = AccountId::one();
-    let account_id = AccountId::one();
-    let amount = Balance::one();
+
     build_test_externalities(config).execute_with(|| {
-        let free_balance_pre =
-            Token::account_info_by_token_and_account(token_id, account_id).free_balance;
-        let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
-        assert_ok!(
-            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::slash(
-                token_id, account_id, amount
-            )
-        );
-        let free_balance_post =
-            Token::account_info_by_token_and_account(token_id, account_id).free_balance;
-        let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
-        assert_eq!(free_balance_pre, free_balance_post.saturating_add(amount));
-        assert_eq!(issuance_pre, issuance_post.saturating_add(amount));
-        last_event_eq!(RawEvent::TokenAmountSlashedFrom(
-            token_id, account_id, amount
+        let _ = Token::dust_account(origin!(acc1), token_id, acc2);
+
+        last_event_eq!(RawEvent::AccountDustedBy(
+            token_id,
+            acc2,
+            acc1,
+            Policy::Permissionless
         ));
     })
 }
 
 #[test]
-fn slash_ok_with_account_removal_and_zero_total_balance() {
-    let config = GenesisConfigBuilder::new()
-        .add_token_and_account_info()
+fn dust_account_ok_with_account_removed() {
+    let token_id = token!(1);
+    let (acc1, acc2) = (account!(2), account!(3));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(acc1, balance!(0), balance!(0))
+        .with_account(acc2, balance!(0), balance!(0))
         .build();
-    let token_id = TokenId::one();
-    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID);
-    let amount = Balance::from(DEFAULT_FREE_BALANCE);
 
     build_test_externalities(config).execute_with(|| {
-        let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
-        let account_data = Token::account_info_by_token_and_account(token_id, account_id);
+        let _ = Token::dust_account(origin!(acc1), token_id, acc2);
 
-        assert_ok!(
-            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::slash(
-                token_id, account_id, amount
-            )
-        );
-        let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
         assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
-            token_id, account_id
-        ));
-        let total_reduction = account_data
-            .free_balance
-            .saturating_add(account_data.reserved_balance);
-        assert_eq!(issuance_pre, issuance_post.saturating_add(total_reduction));
-        last_event_eq!(RawEvent::TokenAmountSlashedFrom(
-            token_id, account_id, amount
+            token_id, acc2
         ));
     })
 }
 
 #[test]
-fn slash_ok_with_account_removal_by_ex_deposit_underflow() {
-    let config = GenesisConfigBuilder::new()
-        .add_token_and_account_info()
+fn dust_account_ok_with_bloat_bond_refunded() {
+    let token_id = token!(1);
+    let (acc1, acc2) = (account!(2), account!(3));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(acc1, balance!(0), balance!(0))
+        .with_account(acc2, balance!(0), balance!(0))
         .build();
-    let token_id = TokenId::one();
-    let account_id = AccountId::from(DEFAULT_ACCOUNT_ID);
-    let amount = Balance::from(DEFAULT_FREE_BALANCE - DEFAULT_EXISTENTIAL_DEPOSIT + 1);
 
     build_test_externalities(config).execute_with(|| {
-        let issuance_pre = Token::token_info_by_id(token_id).current_total_issuance;
-        let account_data = Token::account_info_by_token_and_account(token_id, account_id);
+        let _ = Token::dust_account(origin!(acc1), token_id, acc2);
 
-        assert_ok!(
-            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::slash(
-                token_id, account_id, amount
-            )
-        );
-        let issuance_post = Token::token_info_by_id(token_id).current_total_issuance;
-        assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
-            token_id, account_id
-        ));
-        let total_reduction = account_data
-            .free_balance
-            .saturating_add(account_data.reserved_balance);
-        assert_eq!(issuance_pre, issuance_post.saturating_add(total_reduction));
-        last_event_eq!(RawEvent::TokenAmountSlashedFrom(
-            token_id, account_id, amount
-        ));
+        assert_eq!(Balances::free_balance(acc2), balance!(DEFAULT_BLOAT_BOND));
     })
 }
 
 #[test]
-fn slash_ok_with_account_and_token_removal() {
-    let config = GenesisConfigBuilder::new().build();
-    let account_id = AccountId::one();
-    let amount = Balance::one();
+fn deissue_token_fails_with_non_existing_token_id() {
+    let token_id = token!(1);
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .build();
 
     build_test_externalities(config).execute_with(|| {
-        let token_id = Token::next_token_id();
-        assert_ok!(
-            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::issue_token(Default::default())
+        let result = Token::deissue_token(token_id + 1);
+        assert_noop!(result, Error::<Test>::TokenDoesNotExist,);
+    })
+}
+
+#[test]
+fn deissue_token_fails_with_existing_accounts() {
+    let token_id = token!(1);
+    let (owner, acc) = (account!(1), account!(2));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, balance!(10), balance!(0))
+        .with_account(acc, balance!(0), balance!(0))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::deissue_token(token_id);
+        assert_noop!(
+            result,
+            Error::<Test>::CannotDeissueTokenWithOutstandingAccounts
         );
-        assert_ok!(
-            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::deposit_creating(
-                token_id, account_id, amount
-            )
+    })
+}
+
+#[test]
+fn deissue_token_ok() {
+    let token_id = token!(1);
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::deissue_token(token_id);
+        assert_ok!(result);
+    })
+}
+
+#[test]
+fn deissue_token_with_event_deposit() {
+    let token_id = token!(1);
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = Token::deissue_token(token_id);
+        last_event_eq!(RawEvent::TokenDeissued(token_id));
+    })
+}
+
+#[test]
+fn deissue_token_with_symbol_removed() {
+    let token_id = token!(1);
+    let token_data: TokenDataOf<Test> = TokenDataBuilder::new_empty().build();
+    let symbol = token_data.symbol.clone();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = Token::deissue_token(token_id);
+        assert!(!<crate::SymbolsUsed<Test>>::contains_key(symbol));
+    })
+}
+
+#[test]
+fn deissue_token_with_token_info_removed() {
+    let token_id = token!(1);
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = Token::deissue_token(token_id);
+        assert!(!<crate::TokenInfoById<Test>>::contains_key(&token_id));
+    })
+}
+
+#[test]
+fn issue_token_ok_owner_having_already_issued_a_token() {
+    let token_id = token!(1);
+    let owner = account!(1);
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, 0, 0)
+        .build();
+
+    let params = TokenIssuanceParametersOf::<Test> {
+        symbol: Hashing::hash_of(&"CRT2".to_string()),
+        initial_allocation: InitialAllocation {
+            address: owner,
+            amount: 0,
+            vesting_schedule: None,
+        },
+        ..Default::default()
+    };
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::issue_token(params);
+
+        assert_ok!(result);
+    })
+}
+
+#[test]
+fn issue_token_ok_with_token_id_increased() {
+    let token_id = token!(1); // chainspec value for next_token_id
+
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    let params = TokenIssuanceParametersOf::<Test>::default();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = Token::issue_token(params);
+
+        assert_eq!(Token::next_token_id(), token_id + 1);
+    })
+}
+
+#[test]
+fn issue_token_ok() {
+    let params = TokenIssuanceParametersOf::<Test>::default();
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::issue_token(params);
+        assert_ok!(result);
+    })
+}
+
+#[test]
+fn issue_token_ok_with_event_deposit() {
+    let token_id = token!(1);
+    let owner = account!(1);
+
+    let params = TokenIssuanceParametersOf::<Test> {
+        initial_allocation: InitialAllocation {
+            amount: balance!(100),
+            address: owner,
+            vesting_schedule: None,
+        },
+        symbol: Hashing::hash_of(&token_id),
+        transfer_policy: Policy::Permissionless,
+        patronage_rate: balance!(1),
+    };
+
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = Token::issue_token(params.clone());
+        last_event_eq!(RawEvent::TokenIssued(token_id, params.clone()));
+    })
+}
+
+#[test]
+fn issue_token_ok_with_token_info_added() {
+    let token_id = token!(1);
+    let owner = account!(1);
+
+    let params = TokenIssuanceParametersOf::<Test> {
+        initial_allocation: InitialAllocation {
+            amount: balance!(100),
+            address: owner,
+            vesting_schedule: None,
+        },
+        symbol: Hashing::hash_of(&token_id),
+        transfer_policy: Policy::Permissionless,
+        patronage_rate: balance!(1),
+    };
+
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = Token::issue_token(params.clone());
+
+        assert_eq!(
+            <crate::TokenInfoById<Test>>::get(token_id),
+            TokenDataOf::<Test> {
+                tokens_issued: params.initial_allocation.amount,
+                total_supply: params.initial_allocation.amount,
+                transfer_policy: params.transfer_policy,
+                symbol: params.symbol,
+                patronage_info: PatronageData::<Balance, BlockNumber> {
+                    last_unclaimed_patronage_tally_block: System::block_number(),
+                    unclaimed_patronage_tally_amount: balance!(0),
+                    rate: params.patronage_rate
+                },
+                last_sale: None,
+                sales_initialized: 0
+            }
         );
+    })
+}
+
+#[test]
+fn issue_token_ok_with_symbol_added() {
+    let token_id = token!(1);
+
+    let params = TokenIssuanceParametersOf::<Test> {
+        symbol: Hashing::hash_of(&token_id),
+        ..Default::default()
+    };
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = Token::issue_token(params.clone());
+        assert!(<crate::SymbolsUsed<Test>>::contains_key(&params.symbol));
+    })
+}
+
+#[test]
+fn issue_token_ok_with_owner_account_data_added_and_balance_equals_to_initial_supply() {
+    let token_id = token!(1);
+    let (owner, initial_supply) = (account!(1), balance!(100));
+
+    let params = TokenIssuanceParametersOf::<Test> {
+        symbol: Hashing::hash_of(&token_id),
+        initial_allocation: InitialAllocation {
+            amount: initial_supply,
+            address: owner,
+            vesting_schedule: None,
+        },
+        ..Default::default()
+    };
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = Token::issue_token(params);
         assert_ok!(
-            <Token as MultiCurrencyBase<AccountId, IssuanceParams>>::slash(
-                token_id, account_id, amount
-            )
+            Token::ensure_account_data_exists(token_id, &owner),
+            AccountData {
+                base_balance: initial_supply,
+                reserved_balance: balance!(0),
+                vesting_balances: BTreeMap::new()
+            }
         );
-        assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
-            token_id, account_id
-        ));
-        assert!(!<crate::TokenInfoById<Test>>::contains_key(token_id));
-        last_event_eq!(RawEvent::TokenAmountSlashedFrom(
-            token_id, account_id, amount
-        ));
     })
 }

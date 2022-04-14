@@ -4,11 +4,11 @@ use frame_support::{
     decl_module, decl_storage,
     dispatch::{fmt::Debug, marker::Copy, DispatchError, DispatchResult},
     ensure,
-    traits::{Currency, ExistenceRequirement},
+    traits::{Currency, ExistenceRequirement, Get},
 };
 use frame_system::ensure_signed;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
-use sp_runtime::traits::Convert;
+use sp_runtime::{traits::Convert, ModuleId};
 use sp_std::iter::Sum;
 use storage::{DataObjectStorage, UploadParameters};
 
@@ -49,6 +49,16 @@ pub trait Trait: frame_system::Trait + balances::Trait + storage::Trait {
 
     /// The storage type used
     type DataObjectStorage: storage::DataObjectStorage<Self>;
+
+    /// Tresury account for the various tokens
+    type ModuleId: Get<ModuleId>;
+
+    // TODO(after PR round is completed): use Self::ReserveBalance
+    /// Bloat bond value: in JOY
+    type BloatBond: Get<<Self::ReserveCurrency as Currency<Self::AccountId>>::Balance>;
+
+    /// the Currency interface used as a reserve (i.e. JOY)
+    type ReserveCurrency: Currency<Self::AccountId>;
 }
 
 decl_storage! {
@@ -72,6 +82,7 @@ decl_storage! {
         map
             hasher(blake2_128_concat) T::Hash => ();
     }
+
 }
 
 decl_module! {
@@ -102,22 +113,47 @@ decl_module! {
         pub fn transfer(
             origin,
             token_id: T::TokenId,
-            outputs: OutputsOf<T>,
+            outputs: TransfersOf<T>,
         ) -> DispatchResult {
             let src = ensure_signed(origin)?;
 
             // Currency transfer preconditions
-            let decrease_operation = Self::ensure_can_transfer(token_id, &src, &outputs)?;
+            Self::ensure_can_transfer(token_id, &src, &outputs)?;
 
             // == MUTATION SAFE ==
 
-            Self::do_transfer(token_id, &src, &outputs, decrease_operation);
+            Self::do_transfer(token_id, &src, &outputs);
 
             Self::deposit_event(RawEvent::TokenAmountTransferred(
                 token_id,
                 src,
                 outputs.into(),
             ));
+            Ok(())
+        }
+
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn dust_account(origin, token_id: T::TokenId, account_id: T::AccountId) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+            let token_info = Self::ensure_token_exists(token_id)?;
+            let account_to_remove_info = Self::ensure_account_data_exists(token_id, &account_id)?;
+
+            Self::ensure_user_can_dust_account(
+                &token_info.transfer_policy,
+                &sender,
+                &account_id,
+                &account_to_remove_info,
+            )?;
+
+            // == MUTATION SAFE ==
+
+            AccountInfoByTokenAndAccount::<T>::remove(token_id, &account_id);
+
+            let bloat_bond = T::BloatBond::get();
+            let _ = T::ReserveCurrency::deposit_creating(&account_id, bloat_bond);
+
+            Self::deposit_event(RawEvent::AccountDustedBy(token_id, account_id, sender, token_info.transfer_policy));
+
             Ok(())
         }
 
@@ -139,10 +175,22 @@ decl_module! {
             );
 
             if let TransferPolicyOf::<T>::Permissioned(commit) = token_info.transfer_policy {
-                proof.verify_for_commit::<T,_>(&account_id, commit)?
-            }
+                proof.verify_for_commit::<T,_>(&account_id, commit)
+            } else {
+                Err(Error::<T>::CannotJoinWhitelistInPermissionlessMode.into())
+            }?;
+
+            let bloat_bond = T::BloatBond::get();
+
+            // No project_token or balances state corrupted in case of failure
+            ensure!(
+                T::ReserveCurrency::free_balance(&account_id) >= bloat_bond,
+                Error::<T>::InsufficientBalanceForBloatBond,
+            );
 
             // == MUTATION SAFE ==
+
+            let _ = T::ReserveCurrency::slash(&account_id, bloat_bond);
 
             AccountInfoByTokenAndAccount::<T>::insert(token_id, &account_id, AccountDataOf::<T>::default());
 
@@ -266,9 +314,7 @@ impl<T: Trait>
         let now = Self::current_block();
         let new_rate = token_info.patronage_info.rate.saturating_sub(decrement);
         TokenInfoById::<T>::mutate(token_id, |token_info| {
-            token_info
-                .patronage_info
-                .set_new_rate_at_block::<T::BlockNumberToBalance>(new_rate, now);
+            token_info.set_new_patronage_rate_at_block::<T::BlockNumberToBalance>(new_rate, now);
         });
 
         Self::deposit_event(RawEvent::PatronageRateDecreasedTo(token_id, new_rate));
@@ -290,30 +336,26 @@ impl<T: Trait>
         Self::ensure_account_data_exists(token_id, &to_account).map(|_| ())?;
 
         let now = Self::current_block();
-        let outstanding_credit = token_info
-            .patronage_info
-            .outstanding_credit::<T::BlockNumberToBalance>(now);
+        let unclaimed_patronage = token_info.unclaimed_patronage::<T::BlockNumberToBalance>(now);
 
-        if outstanding_credit.is_zero() {
+        if unclaimed_patronage.is_zero() {
             return Ok(());
         }
 
         // == MUTATION SAFE ==
 
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, &to_account, |account_info| {
-            account_info.increase_liquidity_by(outstanding_credit)
+            account_info.increase_liquidity_by(unclaimed_patronage)
         });
 
         TokenInfoById::<T>::mutate(token_id, |token_info| {
-            token_info
-                .patronage_info
-                .reset_tally_at_block::<T::BlockNumberToBalance>(now);
-            token_info.increase_issuance_by(outstanding_credit);
+            token_info.increase_issuance_by(unclaimed_patronage);
+            token_info.set_unclaimed_tally_patronage_at_block(<T as Trait>::Balance::zero(), now);
         });
 
         Self::deposit_event(RawEvent::PatronageCreditClaimedAtBlock(
             token_id,
-            outstanding_credit,
+            unclaimed_patronage,
             to_account,
             now,
         ));
@@ -329,20 +371,14 @@ impl<T: Trait>
     /// - token with specified characteristics is added to storage state
     /// - `NextTokenId` increased by 1
     fn issue_token(issuance_parameters: TokenIssuanceParametersOf<T>) -> DispatchResult {
-        // TODO: consider adding symbol as separate parameter
-        let sym = issuance_parameters.symbol;
-        ensure!(
-            !SymbolsUsed::<T>::contains_key(&sym),
-            Error::<T>::TokenSymbolAlreadyInUse,
-        );
+        let token_id = Self::next_token_id();
+        Self::validate_issuance_parameters(&issuance_parameters)?;
 
         let token_data = TokenDataOf::<T>::try_from_params::<T>(issuance_parameters.clone())?;
 
         // == MUTATION SAFE ==
-
-        let token_id = Self::next_token_id();
-        TokenInfoById::<T>::insert(token_id, token_data);
-        SymbolsUsed::<T>::insert(sym, ());
+        SymbolsUsed::<T>::insert(&token_data.symbol, ());
+        TokenInfoById::<T>::insert(token_id, token_data.clone());
         NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
         AccountInfoByTokenAndAccount::<T>::mutate(
             token_id,
@@ -363,6 +399,8 @@ impl<T: Trait>
                 }
             },
         );
+
+        Self::deposit_event(RawEvent::TokenIssued(token_id, issuance_parameters));
 
         Ok(())
     }
@@ -416,16 +454,21 @@ impl<T: Trait>
     /// Remove token data from storage
     /// Preconditions:
     /// - `token_id` must exists
+    /// - no account for `token_id` exists
     ///
     /// Postconditions:
     /// - token data @ `token_Id` removed from storage
     /// - all account data for `token_Id` removed
     fn deissue_token(token_id: T::TokenId) -> DispatchResult {
-        Self::ensure_token_exists(token_id).map(|_| ())?;
+        let token_info = Self::ensure_token_exists(token_id)?;
+        Self::ensure_can_deissue_token(token_id)?;
 
         // == MUTATION SAFE ==
 
-        Self::do_deissue_token(token_id);
+        Self::do_deissue_token(token_info.symbol, token_id);
+
+        Self::deposit_event(RawEvent::TokenDeissued(token_id));
+
         Ok(())
     }
 }
@@ -493,9 +536,9 @@ impl<T: Trait> Module<T> {
     }
 
     /// Perform token de-issuing: unfallible
-    pub(crate) fn do_deissue_token(token_id: T::TokenId) {
+    pub(crate) fn do_deissue_token(symbol: T::Hash, token_id: T::TokenId) {
+        SymbolsUsed::<T>::remove(symbol);
         TokenInfoById::<T>::remove(token_id);
-        AccountInfoByTokenAndAccount::<T>::remove_prefix(token_id);
         // TODO: add extra state removal as implementation progresses
     }
 
@@ -503,8 +546,8 @@ impl<T: Trait> Module<T> {
     pub(crate) fn ensure_can_transfer(
         token_id: T::TokenId,
         src: &T::AccountId,
-        outputs: &OutputsOf<T>,
-    ) -> Result<DecOp<T>, DispatchError> {
+        outputs: &TransfersOf<T>,
+    ) -> DispatchResult {
         // ensure token validity
         let token_info = Self::ensure_token_exists(token_id)?;
 
@@ -512,51 +555,31 @@ impl<T: Trait> Module<T> {
         let src_account_info = Self::ensure_account_data_exists(token_id, src)?;
 
         // ensure dst account id validity
-        outputs.iter().try_for_each(|out| {
-            // enusure destination exists and that it differs from source
-            Self::ensure_account_data_exists(token_id, &out.beneficiary).and_then(|_| {
-                ensure!(
-                    out.beneficiary != *src,
-                    Error::<T>::SameSourceAndDestinationLocations,
-                );
-                Ok(())
-            })
+        outputs.iter().try_for_each(|(dst, _)| {
+            match (*dst == *src, &token_info.transfer_policy) {
+                (true, _) => Err(Error::<T>::SameSourceAndDestinationLocations.into()),
+                (_, TransferPolicyOf::<T>::Permissioned(_)) => {
+                    // if permissioned mode account must exist
+                    Self::ensure_account_data_exists(token_id, dst).map(|_| ())
+                }
+                _ => Ok(()),
+            }
         })?;
 
-        let total = outputs.total_amount();
-
-        // Amount to decrease by accounting for existential deposit
-        let decrease_op = src_account_info
-            .decrease_with_ex_deposit::<T>(total, token_info.existential_deposit)
-            .map_err(|_| Error::<T>::InsufficientFreeBalanceForTransfer)?;
-        Ok(decrease_op)
+        src_account_info.ensure_can_decrease_liquidity_by::<T>(outputs.total_amount())
     }
 
     /// Perform balance accounting for balances
-    pub(crate) fn do_transfer(
-        token_id: T::TokenId,
-        src: &T::AccountId,
-        outputs: &OutputsOf<T>,
-        decrease_op: DecOp<T>,
-    ) {
-        outputs.iter().for_each(|out| {
-            AccountInfoByTokenAndAccount::<T>::mutate(token_id, &out.beneficiary, |account_data| {
-                account_data.increase_liquidity_by(out.amount);
+    pub(crate) fn do_transfer(token_id: T::TokenId, src: &T::AccountId, outputs: &TransfersOf<T>) {
+        outputs.iter().for_each(|(account_id, payment)| {
+            AccountInfoByTokenAndAccount::<T>::mutate(token_id, &account_id, |account_data| {
+                account_data.increase_liquidity_by(payment.amount);
             });
         });
-        match decrease_op {
-            DecOp::<T>::Reduce(amount) => {
-                AccountInfoByTokenAndAccount::<T>::mutate(token_id, &src, |account_data| {
-                    account_data.decrease_liquidity_by::<T>(amount);
-                })
-            }
-            DecOp::<T>::Remove(_, dust_amount) => {
-                AccountInfoByTokenAndAccount::<T>::remove(token_id, &src);
-                TokenInfoById::<T>::mutate(token_id, |token_data| {
-                    token_data.decrease_supply_by(dust_amount);
-                });
-            }
-        };
+
+        AccountInfoByTokenAndAccount::<T>::mutate(token_id, &src, |account_data| {
+            account_data.decrease_liquidity_by::<T>(outputs.total_amount());
+        })
     }
 
     pub(crate) fn current_block() -> T::BlockNumber {
@@ -595,6 +618,59 @@ impl<T: Trait> Module<T> {
             &sale_params.tokens_source,
             sale_params.upper_bound_quantity,
         );
+
+        Ok(())
+    }
+
+    /// Ensure sender can remove account
+    /// Params:
+    /// - transfer_policy for the token
+    /// - sender dust_account extrinsic signer
+    /// - account_to_remove account id to be removed
+    /// - account to remove Data
+    pub(crate) fn ensure_user_can_dust_account(
+        transfer_policy: &TransferPolicyOf<T>,
+        sender: &T::AccountId,
+        account_to_remove: &T::AccountId,
+        account_to_remove_info: &AccountDataOf<T>,
+    ) -> DispatchResult {
+        match (
+            transfer_policy,
+            account_to_remove_info.is_empty(),
+            sender == account_to_remove,
+        ) {
+            (_, _, true) => Ok(()),
+            (TransferPolicyOf::<T>::Permissionless, true, _) => Ok(()),
+            (TransferPolicyOf::<T>::Permissioned(_), _, _) => {
+                Err(Error::<T>::AttemptToRemoveNonOwnedAccountUnderPermissionedMode.into())
+            }
+            _ => Err(Error::<T>::AttemptToRemoveNonOwnedAndNonEmptyAccount.into()),
+        }
+    }
+
+    /// Validate token issuance parameters
+    pub(crate) fn validate_issuance_parameters(
+        params: &TokenIssuanceParametersOf<T>,
+    ) -> DispatchResult {
+        ensure!(
+            !SymbolsUsed::<T>::contains_key(&params.symbol),
+            Error::<T>::TokenSymbolAlreadyInUse,
+        );
+
+        Ok(())
+    }
+
+    pub(crate) fn ensure_can_deissue_token(token_id: T::TokenId) -> DispatchResult {
+        let token_info = Self::ensure_token_exists(token_id)?;
+        ensure!(
+            AccountInfoByTokenAndAccount::<T>::iter_prefix(token_id)
+                .next()
+                .is_none(),
+            Error::<T>::CannotDeissueTokenWithOutstandingAccounts,
+        );
+
+        // This is a extra, since when no account exists -> total_supply == 0
+        debug_assert!(token_info.total_supply.is_zero());
 
         Ok(())
     }

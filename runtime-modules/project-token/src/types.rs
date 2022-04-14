@@ -1,27 +1,22 @@
 use codec::{Decode, Encode};
 use frame_support::{
-    dispatch::{DispatchError, DispatchResult},
+    dispatch::{fmt::Debug, DispatchError, DispatchResult},
     ensure,
 };
 use sp_arithmetic::traits::{Saturating, Unsigned, Zero};
 use sp_runtime::traits::{Convert, Hash};
 use sp_runtime::Permill;
 use sp_std::{
-    cmp::min, collections::btree_map::BTreeMap, convert::TryInto, iter::Sum, slice::Iter,
+    cmp::min,
+    collections::btree_map::{BTreeMap, Iter},
+    convert::TryInto,
+    iter::Sum,
 };
 
 use storage::{BagId, DataObjectCreationParameters};
 
 // crate imports
 use crate::{errors::Error, Trait};
-
-pub(crate) enum DecreaseOp<Balance> {
-    /// reduce amount by
-    Reduce(Balance),
-
-    /// Remove Account (original amonut, dust below ex deposit)
-    Remove(Balance, Balance),
-}
 
 /// Source of tokens subject to vesting that were acquired by an account
 /// either through purchase or during initial issuance
@@ -112,9 +107,6 @@ pub struct TokenData<Balance, Hash, BlockNumber, TokenSale> {
     /// Total number of tokens issued
     pub(crate) tokens_issued: Balance,
 
-    /// Existential deposit allowed for the token
-    pub(crate) existential_deposit: Balance,
-
     // TODO: Limit number of sales per token?
     /// Number of sales initialized, also serves as unique identifier
     /// of the current sale (`last_sale`) if any.
@@ -125,6 +117,9 @@ pub struct TokenData<Balance, Hash, BlockNumber, TokenSale> {
 
     /// Transfer policy
     pub(crate) transfer_policy: TransferPolicy<Hash>,
+
+    /// Symbol used to identify token
+    pub(crate) symbol: Hash,
 
     /// Patronage Information
     pub(crate) patronage_info: PatronageData<Balance, BlockNumber>,
@@ -137,10 +132,10 @@ pub struct PatronageData<Balance, BlockNumber> {
     pub(crate) rate: Balance,
 
     /// Tally count for the outstanding credit before latest patronage config change
-    pub(crate) tally: Balance,
+    pub(crate) unclaimed_patronage_tally_amount: Balance,
 
     /// Last block the patronage configuration was updated
-    pub(crate) last_tally_update_block: BlockNumber,
+    pub(crate) last_unclaimed_patronage_tally_block: BlockNumber,
 }
 
 /// The two possible transfer policies
@@ -363,7 +358,7 @@ impl<TokenSale> OfferingState<TokenSale> {
     }
 }
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct InitialAllocation<AddressId, Balance, VestingScheduleParams> {
     pub(crate) address: AddressId,
     pub(crate) amount: Balance,
@@ -371,13 +366,10 @@ pub struct InitialAllocation<AddressId, Balance, VestingScheduleParams> {
 }
 
 /// Builder for the token data struct
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
 pub struct TokenIssuanceParameters<Balance, Hash, InitialAllocation> {
     /// Initial issuance
     pub(crate) initial_allocation: InitialAllocation,
-
-    /// Initial existential deposit
-    pub(crate) existential_deposit: Balance,
 
     /// Token Symbol
     pub(crate) symbol: Hash,
@@ -403,19 +395,19 @@ pub enum MerkleSide {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct MerkleProof<Hasher: Hash>(pub Option<Vec<(Hasher::Output, MerkleSide)>>);
 
-/// Output for a transfer containing beneficiary + amount due
+/// Information about a payment
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct Output<AccountId, Balance> {
-    /// Beneficiary
-    pub beneficiary: AccountId,
+pub struct Payment<Balance> {
+    /// Ignored by runtime
+    pub remark: Vec<u8>,
 
     /// Amount
     pub amount: Balance,
 }
 
-/// Wrapper around Vec<Outputs>
+/// Wrapper around BTreeMap<AccountId, Payment<Balance>>
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct Outputs<AccountId, Balance>(pub(crate) Vec<Output<AccountId, Balance>>);
+pub struct Transfers<AccountId, Balance>(pub BTreeMap<AccountId, Payment<Balance>>);
 
 /// Default trait for Merkle Side
 impl Default for MerkleSide {
@@ -457,7 +449,6 @@ impl<VestingBalance, Balance: Zero> Default for AccountData<VestingBalance, Bala
     }
 }
 
-/// Encapsules parameters validation + TokenData construction
 impl<
         Balance: Clone
             + Zero
@@ -473,6 +464,13 @@ impl<
         BlockNumber: Copy + Clone + PartialOrd + Ord + Saturating + From<u32> + Unsigned,
     > AccountData<VestingBalance<Balance, VestingSchedule<BlockNumber>>, Balance>
 {
+    /// Check wheather account is empty
+    pub(crate) fn is_empty(&self) -> bool {
+        self.vesting_balances.is_empty()
+            && self.base_balance.is_zero()
+            && self.reserved_balance.is_zero()
+    }
+
     /// Calculate account's total balance at current block
     pub(crate) fn total_balance<T: Trait<Balance = Balance, BlockNumber = BlockNumber>>(
         &self,
@@ -549,36 +547,27 @@ impl<
         }
     }
 
-    /// Verify if amount can be decrease taking account existential deposit
-    /// Returns the amount that should be removed
-    /// TODO: How to handle vesting?
-    pub(crate) fn decrease_with_ex_deposit<
+    /// Dry run for `self.decrease_liquidity_by(amount)`
+    pub(crate) fn ensure_can_decrease_liquidity_by<
         T: Trait<Balance = Balance, BlockNumber = BlockNumber>,
     >(
         &self,
         amount: Balance,
-        existential_deposit: Balance,
-    ) -> Result<DecreaseOp<Balance>, DispatchError> {
-        let usable_balance = self.usable_balance::<T>();
+    ) -> DispatchResult {
         ensure!(
-            usable_balance >= amount,
-            crate::Error::<T>::InsufficientFreeBalanceForDecreasing,
+            self.usable_balance::<T>() >= amount,
+            crate::Error::<T>::InsufficientFreeBalanceForTransfer,
         );
-
-        let new_total = usable_balance
-            .saturating_sub(amount)
-            .saturating_add(self.reserved_balance);
-
-        if new_total.is_zero() || new_total < existential_deposit {
-            Ok(DecreaseOp::<Balance>::Remove(amount, new_total))
-        } else {
-            Ok(DecreaseOp::<Balance>::Reduce(amount))
-        }
+        Ok(())
     }
 }
 /// Token Data implementation
-impl<Balance: Saturating + Copy, Hash, BlockNumber, OfferingState>
-    TokenData<Balance, Hash, BlockNumber, OfferingState>
+impl<
+        Balance: Zero + Saturating + Copy,
+        Hash,
+        BlockNumber: PartialOrd + Saturating + Copy,
+        OfferingState,
+    > TokenData<Balance, Hash, BlockNumber, OfferingState>
 {
     // increase total issuance
     pub(crate) fn increase_issuance_by(&mut self, amount: Balance) {
@@ -591,6 +580,34 @@ impl<Balance: Saturating + Copy, Hash, BlockNumber, OfferingState>
         self.total_supply = self.total_supply.saturating_sub(amount);
     }
 
+    pub fn set_unclaimed_tally_patronage_at_block(&mut self, amount: Balance, block: BlockNumber) {
+        self.patronage_info.last_unclaimed_patronage_tally_block = block;
+        self.patronage_info.unclaimed_patronage_tally_amount = amount;
+    }
+
+    pub(crate) fn unclaimed_patronage<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
+        &self,
+        block: BlockNumber,
+    ) -> Balance {
+        // period * rate * supply + tally
+        self.patronage_info
+            .unclaimed_patronage_percent::<BlockNumberToBalance>(block)
+            .saturating_mul(self.total_supply)
+            .saturating_add(self.patronage_info.unclaimed_patronage_tally_amount)
+    }
+
+    pub fn set_new_patronage_rate_at_block<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
+        &mut self,
+        new_rate: Balance,
+        block: BlockNumber,
+    ) {
+        // update tally according to old rate
+        self.patronage_info.unclaimed_patronage_tally_amount =
+            self.unclaimed_patronage::<BlockNumberToBalance>(block);
+        self.patronage_info.last_unclaimed_patronage_tally_block = block;
+        self.patronage_info.rate = new_rate;
+    }
+
     pub(crate) fn try_from_params<T: crate::Trait>(
         params: TokenIssuanceParametersOf<T>,
     ) -> Result<TokenDataOf<T>, DispatchError> {
@@ -598,16 +615,16 @@ impl<Balance: Saturating + Copy, Hash, BlockNumber, OfferingState>
 
         let patronage_info =
             PatronageData::<<T as Trait>::Balance, <T as frame_system::Trait>::BlockNumber> {
-                last_tally_update_block: current_block,
-                tally: <T as Trait>::Balance::zero(),
+                last_unclaimed_patronage_tally_block: current_block,
+                unclaimed_patronage_tally_amount: <T as Trait>::Balance::zero(),
                 rate: params.patronage_rate,
             };
 
         let token_data = TokenData {
+            symbol: params.symbol,
             total_supply: params.initial_allocation.amount,
             tokens_issued: params.initial_allocation.amount,
             last_sale: None,
-            existential_deposit: params.existential_deposit,
             transfer_policy: params.transfer_policy,
             patronage_info,
             sales_initialized: 0,
@@ -650,47 +667,29 @@ impl<Hasher: Hash> MerkleProof<Hasher> {
 impl<Balance: Zero + Copy + Saturating, BlockNumber: Copy + Saturating + PartialOrd>
     PatronageData<Balance, BlockNumber>
 {
-    pub fn outstanding_credit<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
+    pub fn unclaimed_patronage_percent<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
         &self,
         block: BlockNumber,
     ) -> Balance {
-        let period = block.saturating_sub(self.last_tally_update_block);
-        let accrued = BlockNumberToBalance::convert(period).saturating_mul(self.rate);
-        accrued.saturating_add(self.tally)
-    }
-
-    pub fn set_new_rate_at_block<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
-        &mut self,
-        new_rate: Balance,
-        block: BlockNumber,
-    ) {
-        // update tally according to old rate
-        self.tally = self.outstanding_credit::<BlockNumberToBalance>(block);
-        self.last_tally_update_block = block;
-        self.rate = new_rate;
-    }
-
-    pub fn reset_tally_at_block<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
-        &mut self,
-        block: BlockNumber,
-    ) {
-        self.last_tally_update_block = block;
-        self.tally = Balance::zero();
+        let period = block.saturating_sub(self.last_unclaimed_patronage_tally_block);
+        BlockNumberToBalance::convert(period).saturating_mul(self.rate)
     }
 }
 
-impl<AccountId, Balance: Sum + Copy> Outputs<AccountId, Balance> {
+impl<AccountId, Balance: Sum + Copy> Transfers<AccountId, Balance> {
     pub fn total_amount(&self) -> Balance {
-        self.0.iter().map(|out| out.amount).sum()
+        self.0.iter().map(|(_, payment)| payment.amount).sum()
     }
 
-    pub fn iter(&self) -> Iter<'_, Output<AccountId, Balance>> {
+    pub fn iter(&self) -> Iter<'_, AccountId, Payment<Balance>> {
         self.0.iter()
     }
 }
 
-impl<AccountId, Balance> From<Outputs<AccountId, Balance>> for Vec<Output<AccountId, Balance>> {
-    fn from(v: Outputs<AccountId, Balance>) -> Self {
+impl<AccountId, Balance> From<Transfers<AccountId, Balance>>
+    for BTreeMap<AccountId, Payment<Balance>>
+{
+    fn from(v: Transfers<AccountId, Balance>) -> Self {
         v.0
     }
 }
@@ -727,15 +726,8 @@ pub(crate) type TokenIssuanceParametersOf<T> = TokenIssuanceParameters<
 /// Alias for TransferPolicy
 pub(crate) type TransferPolicyOf<T> = TransferPolicy<<T as frame_system::Trait>::Hash>;
 
-/// Alias for decrease operation
-pub(crate) type DecOp<T> = DecreaseOp<<T as crate::Trait>::Balance>;
-
 /// Alias for the Merkle Proof type
 pub(crate) type MerkleProofOf<T> = MerkleProof<<T as frame_system::Trait>::Hashing>;
-
-/// Alias for the output type
-pub(crate) type OutputsOf<T> =
-    Outputs<<T as frame_system::Trait>::AccountId, <T as crate::Trait>::Balance>;
 
 /// Alias for VestingScheduleParams
 pub(crate) type VestingScheduleParamsOf<T> =
@@ -780,3 +772,7 @@ pub(crate) type UploadContextOf<T> = UploadContext<<T as frame_system::Trait>::A
 
 /// TokenSaleId
 pub(crate) type TokenSaleId = u32;
+
+/// Alias for Transfers
+pub(crate) type TransfersOf<T> =
+    Transfers<<T as frame_system::Trait>::AccountId, <T as crate::Trait>::Balance>;

@@ -4,20 +4,20 @@ use sp_std::collections::btree_map::BTreeMap;
 
 use crate::tests::mock::*;
 use crate::types::{
-    MerkleProof, MerkleSide, Output, Outputs, PatronageData, TokenSaleId, TokenSaleOf,
-    TransferPolicyOf,
+    MerkleProof, MerkleSide, PatronageData, Payment, TokenSaleId, TokenSaleOf, TransferPolicyOf,
+    Transfers,
 };
 use crate::GenesisConfig;
 
 pub struct TokenDataBuilder {
     pub(crate) total_supply: <Test as crate::Trait>::Balance,
     pub(crate) tokens_issued: <Test as crate::Trait>::Balance,
-    pub(crate) existential_deposit: <Test as crate::Trait>::Balance,
     pub(crate) last_sale: Option<TokenSaleOf<Test>>,
     pub(crate) sales_initialized: TokenSaleId,
     pub(crate) transfer_policy: TransferPolicyOf<Test>,
     pub(crate) patronage_info:
         PatronageData<<Test as crate::Trait>::Balance, <Test as frame_system::Trait>::BlockNumber>,
+    pub(crate) symbol: <Test as frame_system::Trait>::Hash,
 }
 
 impl TokenDataBuilder {
@@ -25,11 +25,11 @@ impl TokenDataBuilder {
         crate::types::TokenDataOf::<Test> {
             total_supply: self.total_supply,
             tokens_issued: self.tokens_issued,
-            existential_deposit: self.existential_deposit,
             last_sale: self.last_sale,
             sales_initialized: self.sales_initialized,
             transfer_policy: self.transfer_policy,
             patronage_info: self.patronage_info,
+            symbol: self.symbol,
         }
     }
 
@@ -37,13 +37,6 @@ impl TokenDataBuilder {
         Self {
             total_supply: issuance,
             tokens_issued: issuance,
-            ..self
-        }
-    }
-
-    pub fn with_existential_deposit(self, existential_deposit: Balance) -> Self {
-        Self {
-            existential_deposit,
             ..self
         }
     }
@@ -58,9 +51,9 @@ impl TokenDataBuilder {
     pub fn with_patronage_rate(self, rate: Balance) -> Self {
         Self {
             patronage_info: PatronageData::<_, _> {
-                tally: Balance::zero(),
+                unclaimed_patronage_tally_amount: Balance::zero(),
                 rate,
-                last_tally_update_block: BlockNumber::one(),
+                last_unclaimed_patronage_tally_block: BlockNumber::one(),
             },
             ..self
         }
@@ -72,13 +65,14 @@ impl TokenDataBuilder {
             total_supply: Balance::zero(),
             last_sale: None,
             sales_initialized: 0,
-            existential_deposit: Balance::zero(),
             transfer_policy: TransferPolicy::Permissionless,
             patronage_info: PatronageData::<Balance, BlockNumber> {
                 rate: Balance::zero(),
-                tally: Balance::zero(),
-                last_tally_update_block: BlockNumber::one(),
+                unclaimed_patronage_tally_amount: Balance::zero(),
+                last_unclaimed_patronage_tally_block: BlockNumber::one(),
             },
+            // hash of "default"
+            symbol: <Test as frame_system::Trait>::Hash::default(),
         }
     }
 }
@@ -95,9 +89,9 @@ impl GenesisConfigBuilder {
 
     // add token with given params & zero issuance
     pub fn with_token(mut self, token_id: TokenId, token_info: TokenData) -> Self {
+        self.symbol_used = vec![(token_info.symbol.clone(), ())];
         self.token_info_by_id.push((token_id, token_info));
         self.next_token_id = self.next_token_id.saturating_add(TokenId::one());
-        self.symbol_used = vec![(Hashing::hash_of(&token_id), ())];
         self
     }
 
@@ -115,15 +109,17 @@ impl GenesisConfigBuilder {
             vesting_balances: BTreeMap::new(),
         };
 
+        let total_balance = base_balance.saturating_add(reserved_balance);
+
         self.account_info_by_token_and_account
             .push((id, account_id, new_account_info));
 
-        let minted_amount = Balance::from(base_balance.saturating_add(reserved_balance));
+        self.token_info_by_id
+            .last_mut()
+            .unwrap()
+            .1
+            .increase_issuance_by(total_balance);
 
-        let token = &mut self.token_info_by_id.last_mut().unwrap().1;
-
-        token.tokens_issued = token.tokens_issued.saturating_add(minted_amount);
-        token.total_supply = token.total_supply.saturating_add(minted_amount);
         self
     }
 
@@ -143,9 +139,21 @@ impl<Hasher: Hash> MerkleProof<Hasher> {
     }
 }
 
-impl<Balance, AccountId> Outputs<Balance, AccountId> {
-    pub fn new(v: Vec<Output<Balance, AccountId>>) -> Self {
-        Outputs::<_, _>(v)
+impl<Balance, AccountId: Ord> Transfers<AccountId, Balance> {
+    pub fn new(v: Vec<(AccountId, Balance)>) -> Self {
+        Transfers::<_, _>(
+            v.into_iter()
+                .map(|(acc, amount)| {
+                    (
+                        acc,
+                        Payment::<Balance> {
+                            remark: vec![],
+                            amount,
+                        },
+                    )
+                })
+                .collect::<BTreeMap<_, _>>(),
+        )
     }
 }
 
@@ -182,6 +190,6 @@ fn adding_account_with_free_balance_also_adds_issuance() {
     builder = builder.with_account(1, 5, 5);
 
     let token = &builder.token_info_by_id.last().unwrap().1;
-    assert_eq!(token.tokens_issued, 5);
-    assert_eq!(token.total_supply, 5);
+    assert_eq!(token.tokens_issued, 15);
+    assert_eq!(token.total_supply, 15);
 }

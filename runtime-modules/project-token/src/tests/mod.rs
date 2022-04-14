@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-//mod canonical;
+mod canonical;
 mod fixtures;
 mod mock;
 mod patronage;
