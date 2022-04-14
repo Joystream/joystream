@@ -86,13 +86,15 @@ async function getCurrentAuctionFromVideo(
   errorMessageForVideo: string,
   errorMessageForNft: string,
   errorMessageForAuction: string,
-  relations: string[] = []
+  nftRelations: string[] = [],
+  auctionRelations: string[] = []
 ): Promise<{ video: Video; auction: Auction; nft: OwnedNft }> {
   // load video
   const video = await getRequiredExistingEntity(store, Video, videoId.toString(), errorMessageForVideo, [
     'nft',
+    ...nftRelations.map((item) => `nft.${item}`),
     'nft.auctions',
-    ...relations.map((item) => `nft.auctions.${item}`),
+    ...auctionRelations.map((item) => `nft.auctions.${item}`),
   ])
 
   const nft = video.nft
@@ -320,6 +322,7 @@ async function finishAuction(
     `Non-existing video's auction was completed`,
     `Non-existing NFT's auction was completed`,
     'Non-existing auction was completed',
+    ['ownerMember', 'ownerCuratorGroup'],
     ['topBid', 'topBid.bidder', 'bids', 'bids.bidder']
   )
 
@@ -386,6 +389,7 @@ async function createBid(
     'Non-existing video got bid',
     'Non-existing NFT got bid',
     'Non-existing auction got bid canceled',
+    ['ownerMember', 'ownerCuratorGroup'],
     ['topBid', 'bids', 'bids.bidder']
   )
 
@@ -798,6 +802,7 @@ export async function contentNft_AuctionBidCanceled({ event, store }: EventConte
     'Non-existing video got bid canceled',
     'Non-existing NFT got bid canceled',
     'Non-existing auction got bid canceled',
+    ['ownerMember', 'ownerCuratorGroup'],
     ['topBid', 'bids', 'bids.bidder']
   )
 
