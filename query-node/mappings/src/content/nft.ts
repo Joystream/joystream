@@ -355,7 +355,7 @@ async function finishAuction(
   // save auction
   await store.save<Auction>(auction)
 
-  return { video, winner, boughtPrice, nft }
+  return { video, winner, boughtPrice, nft, winningBid }
 }
 
 async function createBid(
@@ -978,7 +978,7 @@ export async function contentNft_OpenAuctionBidAccepted({ event, store }: EventC
   // specific event processing
 
   // finish auction
-  const { video, boughtPrice, nft } = await finishAuction(store, videoId.toNumber(), event.blockNumber, {
+  const { video, boughtPrice, nft, winningBid } = await finishAuction(store, videoId.toNumber(), event.blockNumber, {
     bidAmount,
     winnerId: winnerId.toNumber(),
   })
@@ -1002,6 +1002,8 @@ export async function contentNft_OpenAuctionBidAccepted({ event, store }: EventC
     video,
     // prepare Nft owner (handles fields `ownerMember` and `ownerCuratorGroup`)
     ...(await convertContentActorToChannelOrNftOwner(store, contentActor)),
+    winningBid,
+    winningBidder: new Membership({ id: winnerId.toString() }),
   })
 
   await store.save<OpenAuctionBidAcceptedEvent>(announcingPeriodStartedEvent)

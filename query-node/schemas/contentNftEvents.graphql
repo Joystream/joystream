@@ -324,6 +324,12 @@ type OpenAuctionBidAcceptedEvent implements Event @entity {
 
   "Curator group owning the Nft (if any) that accepted the open auction bid."
   ownerCuratorGroup: CuratorGroup
+
+  "Accepted/winning bid"
+  winningBid: Bid
+
+  "Winning bidder"
+  winningBidder: Membership
 }
 
 type OfferStartedEvent implements Event @entity {
