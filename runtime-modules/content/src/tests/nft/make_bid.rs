@@ -1118,7 +1118,7 @@ fn english_auction_increased_bid_works_correctly() {
 
         let video_id = Content::next_video_id();
         setup_english_auction_scenario();
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE);
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, 2 * Content::min_bid_step());
 
         let initial_balance = Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID);
 
@@ -1155,7 +1155,7 @@ fn open_auction_increased_bid_works_correctly() {
         run_to_block(1);
 
         let video_id = Content::next_video_id();
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE);
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, 2 * Content::min_bid_step());
         setup_open_auction_scenario();
 
         let initial_balance = Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID);
@@ -1187,13 +1187,13 @@ fn open_auction_increased_bid_works_correctly() {
 }
 
 #[test]
-fn open_auction_completion_with_decreased_bid_works_correctly() {
+fn open_auction_decreased_bid_works_correctly() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
 
         let video_id = Content::next_video_id();
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE);
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, 2 * Content::min_bid_step());
         setup_open_auction_scenario();
 
         let initial_balance = Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID);
