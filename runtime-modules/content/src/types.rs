@@ -150,7 +150,13 @@ pub struct ChannelCategoryUpdateParameters {
 /// Type representing an owned channel which videos, playlists, and series can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance> {
+pub struct ChannelRecord<
+    MemberId: Ord,
+    CuratorGroupId,
+    AccountId,
+    Balance,
+    BlockNumber: BaseArithmetic + Copy,
+> {
     /// The owner of a channel
     pub owner: ChannelOwner<MemberId, CuratorGroupId>,
     /// The videos under this channel
@@ -165,10 +171,18 @@ pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance> {
     pub moderators: BTreeSet<MemberId>,
     /// Cumulative cashout
     pub cumulative_reward_claimed: Balance,
+    /// Channel daily NFT limit.
+    pub daily_nft_limit: LimitPerPeriod<BlockNumber>,
+    /// Channel weekly NFT limit.
+    pub weekly_nft_limit: LimitPerPeriod<BlockNumber>,
+    /// Channel daily NFT counter.
+    pub daily_nft_counter: NftCounter<BlockNumber>,
+    /// Channel weekly NFT counter.
+    pub weekly_nft_counter: NftCounter<BlockNumber>,
 }
 
-impl<MemberId: Ord, CuratorGroupId, AccountId, Balance>
-    ChannelRecord<MemberId, CuratorGroupId, AccountId, Balance>
+impl<MemberId: Ord, CuratorGroupId, AccountId, Balance, BlockNumber: BaseArithmetic + Copy>
+    ChannelRecord<MemberId, CuratorGroupId, AccountId, Balance, BlockNumber>
 {
     /// Ensure censorship status have been changed
     pub fn ensure_censorship_status_changed<T: Trait>(&self, is_censored: bool) -> DispatchResult {
@@ -178,6 +192,14 @@ impl<MemberId: Ord, CuratorGroupId, AccountId, Balance>
         );
         Ok(())
     }
+    /// Ensure censorship status have been changed
+    pub fn increment_channel_nft_counters(&mut self, current_block: BlockNumber) {
+        self.daily_nft_counter
+            .update_for_current_period(current_block, self.daily_nft_limit.block_number_period);
+
+        self.weekly_nft_counter
+            .update_for_current_period(current_block, self.daily_nft_limit.block_number_period);
+    }
 }
 
 // Channel alias type for simplification.
@@ -186,6 +208,7 @@ pub type Channel<T> = ChannelRecord<
     <T as ContentActorAuthenticator>::CuratorGroupId,
     <T as frame_system::Trait>::AccountId,
     BalanceOf<T>,
+    <T as frame_system::Trait>::BlockNumber,
 >;
 
 /// A request to buy a channel by a new ChannelOwner.

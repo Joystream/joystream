@@ -494,13 +494,14 @@ decl_module! {
                 collaborators: params.collaborators.clone(),
                 moderators: params.moderators.clone(),
                 cumulative_reward_claimed: BalanceOf::<T>::zero(),
+                daily_nft_limit: T::DefaultChannelDailyNftLimit::get(),
+                weekly_nft_limit: T::DefaultChannelWeeklyNftLimit::get(),
+                daily_nft_counter: Default::default(),
+                weekly_nft_counter: Default::default(),
             };
 
             // add channel to onchain state
             ChannelById::<T>::insert(channel_id, channel.clone());
-
-            // Set default NFT daily and weekly limits.
-            Self::set_default_nft_limits(channel_id);
 
             Self::deposit_event(RawEvent::ChannelCreated(actor, channel_id, channel, params));
         }
@@ -658,9 +659,6 @@ decl_module! {
             // remove channel from on chain state
             ChannelById::<T>::remove(channel_id);
 
-            // Remove NFT limits for a channel.
-            Self::remove_nft_limits(channel_id);
-
             // deposit event
             Self::deposit_event(RawEvent::ChannelDeleted(actor, channel_id));
 
@@ -811,16 +809,12 @@ decl_module! {
             }
 
             if nft_status.is_some() {
-                Self::check_nft_limits(&channel_id)?;
+                Self::check_nft_limits(&channel)?;
             }
 
             //
             // == MUTATION SAFE ==
             //
-
-            if nft_status.is_some() {
-                Self::increment_nft_counters(&channel_id);
-            }
 
             // add it to the onchain state
             VideoById::<T>::insert(video_id, video);
@@ -832,6 +826,9 @@ decl_module! {
 
             ChannelById::<T>::mutate(channel_id, |channel| {
                 channel.num_videos = channel.num_videos.saturating_add(1);
+                if nft_status.is_some() {
+                    Self::increment_nft_counters(channel);
+                }
             });
 
             Self::deposit_event(RawEvent::VideoCreated(actor, channel_id, video_id, params));
@@ -887,16 +884,12 @@ decl_module! {
                 )?;
 
             if nft_status.is_some() {
-                Self::check_nft_limits(&channel_id)?;
+                Self::check_nft_limits(&channel)?;
             }
 
             //
             // == MUTATION SAFE ==
             //
-
-            if nft_status.is_some() {
-                Self::increment_nft_counters(&channel_id);
-            }
 
             if let Some(upload_assets) = params.assets_to_upload.as_ref() {
                 let params = Self::construct_upload_parameters(
@@ -916,7 +909,9 @@ decl_module! {
             }
 
             if nft_status.is_some() {
-                VideoById::<T>::mutate(&video_id, |video| video.nft_status = nft_status);
+                ChannelById::<T>::mutate(channel_id, |channel| {
+                    Self::increment_nft_counters(channel);
+                });
             }
 
             Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params));
@@ -1519,13 +1514,15 @@ decl_module! {
             // The content owner will be..
             let nft_status = Self::construct_owned_nft(&params, video_id)?;
 
-            Self::check_nft_limits(&channel_id)?;
+            Self::check_nft_limits(&channel)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            Self::increment_nft_counters(&channel_id);
+            ChannelById::<T>::mutate(channel_id, |channel| {
+                Self::increment_nft_counters(channel);
+            });
 
             // Update the video
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft_status));
@@ -2795,15 +2792,14 @@ impl<T: Trait> Module<T> {
     }
 
     // Increment NFT numbers for a channel and global counters.
-    fn increment_nft_counters(channel_id: &T::ChannelId) {
-        Self::increment_nft_counter(NftLimitId::GlobalDaily);
-        Self::increment_nft_counter(NftLimitId::GlobalWeekly);
-        Self::increment_nft_counter(NftLimitId::ChannelDaily(*channel_id));
-        Self::increment_nft_counter(NftLimitId::ChannelWeekly(*channel_id));
+    fn increment_nft_counters(channel: &mut Channel<T>) {
+        Self::increment_global_nft_counter(NftLimitId::GlobalDaily);
+        Self::increment_global_nft_counter(NftLimitId::GlobalWeekly);
+        channel.increment_channel_nft_counters(frame_system::Module::<T>::block_number());
     }
 
-    // Increment NFT counter.
-    fn increment_nft_counter(nft_limit_id: NftLimitId<T::ChannelId>) {
+    // Increment global NFT counter.
+    fn increment_global_nft_counter(nft_limit_id: NftLimitId<T::ChannelId>) {
         let nft_limit = Self::nft_limit_by_id(nft_limit_id);
         let current_block = frame_system::Module::<T>::block_number();
 
@@ -2813,59 +2809,50 @@ impl<T: Trait> Module<T> {
     }
 
     // Checks all NFT-limits
-    fn check_nft_limits(channel_id: &T::ChannelId) -> DispatchResult {
+    fn check_nft_limits(channel: &Channel<T>) -> DispatchResult {
         // Global daily limit.
+        let nft_limit_id = NftLimitId::GlobalDaily;
+        let nft_limit = Self::nft_limit_by_id(nft_limit_id);
+        let nft_counter = Self::nft_counter_by_id(nft_limit_id);
         Self::check_generic_nft_limit(
-            NftLimitId::GlobalDaily,
+            &nft_limit,
+            &nft_counter,
             Error::<T>::GlobalNftDailyLimitExceeded,
         )?;
 
         // Global weekly limit.
+        let nft_limit_id = NftLimitId::GlobalWeekly;
+        let nft_limit = Self::nft_limit_by_id(nft_limit_id);
+        let nft_counter = Self::nft_counter_by_id(nft_limit_id);
         Self::check_generic_nft_limit(
-            NftLimitId::GlobalWeekly,
+            &nft_limit,
+            &nft_counter,
             Error::<T>::GlobalNftWeeklyLimitExceeded,
         )?;
 
         // Channel daily limit.
         Self::check_generic_nft_limit(
-            NftLimitId::ChannelDaily(*channel_id),
+            &channel.daily_nft_limit,
+            &channel.daily_nft_counter,
             Error::<T>::ChannelNftDailyLimitExceeded,
         )?;
 
         // Channel weekly limit.
         Self::check_generic_nft_limit(
-            NftLimitId::ChannelWeekly(*channel_id),
+            &channel.weekly_nft_limit,
+            &channel.weekly_nft_counter,
             Error::<T>::ChannelNftWeeklyLimitExceeded,
         )?;
 
         Ok(())
     }
 
-    // Set default daily and weekly NFT limits for a channel.
-    fn set_default_nft_limits(channel_id: T::ChannelId) {
-        NftLimitsById::<T>::mutate(NftLimitId::ChannelDaily(channel_id), |nft_limit| {
-            *nft_limit = T::DefaultChannelDailyNftLimit::get();
-        });
-
-        NftLimitsById::<T>::mutate(NftLimitId::ChannelWeekly(channel_id), |nft_limit| {
-            *nft_limit = T::DefaultChannelWeeklyNftLimit::get();
-        });
-    }
-
-    // Remove daily and weekly NFT limits for a channel.
-    fn remove_nft_limits(channel_id: T::ChannelId) {
-        NftLimitsById::<T>::remove(NftLimitId::ChannelDaily(channel_id));
-        NftLimitsById::<T>::remove(NftLimitId::ChannelWeekly(channel_id));
-    }
-
     // Checks generic NFT-limit.
     fn check_generic_nft_limit(
-        nft_limit_id: NftLimitId<T::ChannelId>,
+        nft_limit: &LimitPerPeriod<T::BlockNumber>,
+        nft_counter: &NftCounter<T::BlockNumber>,
         error: Error<T>,
     ) -> DispatchResult {
-        let nft_limit = Self::nft_limit_by_id(nft_limit_id);
-        let nft_counter = Self::nft_counter_by_id(nft_limit_id);
-
         ensure!(!nft_limit.limit.is_zero(), error);
 
         let current_block = frame_system::Module::<T>::block_number();

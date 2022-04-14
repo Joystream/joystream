@@ -103,46 +103,11 @@ fn default_channel_nft_limits_set_successfully() {
             .call_and_assert(Ok(()));
 
         let channel_id = 1;
+        let channel = Content::channel_by_id(channel_id);
+        assert_eq!(channel.daily_nft_limit, DefaultChannelDailyNftLimit::get());
         assert_eq!(
-            Content::nft_limit_by_id(NftLimitId::ChannelDaily(channel_id)),
-            DefaultChannelDailyNftLimit::get()
-        );
-        assert_eq!(
-            Content::nft_limit_by_id(NftLimitId::ChannelWeekly(channel_id)),
+            channel.weekly_nft_limit,
             DefaultChannelWeeklyNftLimit::get()
         );
-    })
-}
-
-#[test]
-fn channel_nft_limits_removed_successfully() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel();
-
-        let channel_id = 1;
-        // Values present.
-        assert!(crate::NftLimitsById::<Test>::contains_key(
-            &NftLimitId::ChannelDaily(channel_id)
-        ));
-        assert!(crate::NftLimitsById::<Test>::contains_key(
-            &NftLimitId::ChannelWeekly(channel_id)
-        ));
-
-        DeleteChannelFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            .call_and_assert(Ok(()));
-
-        // Values removed.
-        assert!(!crate::NftLimitsById::<Test>::contains_key(
-            &NftLimitId::ChannelDaily(channel_id)
-        ));
-        assert!(!crate::NftLimitsById::<Test>::contains_key(
-            &NftLimitId::ChannelWeekly(channel_id)
-        ));
     })
 }

@@ -126,6 +126,10 @@ impl CreateChannelFixture {
                         moderators: self.params.moderators.clone(),
                         num_videos: Zero::zero(),
                         cumulative_reward_claimed: Zero::zero(),
+                        daily_nft_limit: DefaultChannelDailyNftLimit::get(),
+                        weekly_nft_limit: DefaultChannelWeeklyNftLimit::get(),
+                        daily_nft_counter: Default::default(),
+                        weekly_nft_counter: Default::default(),
                     },
                     self.params.clone(),
                 ))
@@ -439,6 +443,10 @@ impl UpdateChannelFixture {
                             num_videos: channel_pre.num_videos,
                             moderators: channel_pre.moderators,
                             cumulative_reward_claimed: BalanceOf::<Test>::zero(),
+                            daily_nft_limit: channel_post.daily_nft_limit,
+                            weekly_nft_limit: channel_post.weekly_nft_limit,
+                            daily_nft_counter: channel_post.daily_nft_counter,
+                            weekly_nft_counter: channel_post.weekly_nft_counter,
                         },
                         self.params.clone(),
                     ))
