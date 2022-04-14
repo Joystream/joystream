@@ -230,7 +230,7 @@ benchmarks! {
 
         assert!(Bounties::<T>::contains_key(bounty_id));
         // Bounty counter was updated.
-        assert_eq!(Bounty::<T>::bounty_count(), 1); 
+        assert_eq!(Bounty::<T>::bounty_count(), 1);
         assert_last_event::<T>(
             Event::<T>::BountyCreated(bounty_id, params, metadata).into());
     }
@@ -1047,7 +1047,7 @@ benchmarks! {
         let cherry: BalanceOf<T> = 100u32.into();
         let oracle_reward: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 10000000u32.into();
-        let (oracle_account_id, oracle_member_id) = 
+        let (oracle_account_id, oracle_member_id) =
             member_funded_account::<T>("oracle", 0);
         let oracle = BountyActor::Member(oracle_member_id);
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
@@ -1086,7 +1086,7 @@ benchmarks! {
                 };
 
                 (
-                    *entry_id, 
+                    *entry_id,
                     OracleWorkEntryJudgment::Winner {
                         reward : corrected_winner_reward
                     }
@@ -1123,7 +1123,7 @@ benchmarks! {
         let cherry: BalanceOf<T> = 100u32.into();
         let oracle_reward: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 100u32.into();
-        let (oracle_account_id, oracle_member_id) = 
+        let (oracle_account_id, oracle_member_id) =
             member_funded_account::<T>("oracle", 1);
         let oracle = BountyActor::Member(oracle_member_id);
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
@@ -1211,7 +1211,7 @@ benchmarks! {
 
         assert!(Bounties::<T>::contains_key(bounty_id));
         // Bounty counter was updated.
-        assert_eq!(Bounty::<T>::bounty_count(), 1); 
+        assert_eq!(Bounty::<T>::bounty_count(), 1);
         assert_last_event::<T>(
             Event::<T>::BountyOracleSwitched(
                 bounty_id,
@@ -1260,7 +1260,7 @@ benchmarks! {
 
         assert!(Bounties::<T>::contains_key(bounty_id));
         // Bounty counter was updated.
-        assert_eq!(Bounty::<T>::bounty_count(), 1); 
+        assert_eq!(Bounty::<T>::bounty_count(), 1);
         assert_last_event::<T>(
             Event::<T>::BountyOracleSwitched(
                 bounty_id,
@@ -1310,7 +1310,7 @@ benchmarks! {
 
         assert!(Bounties::<T>::contains_key(bounty_id));
         // Bounty counter was updated.
-        assert_eq!(Bounty::<T>::bounty_count(), 1); 
+        assert_eq!(Bounty::<T>::bounty_count(), 1);
         assert_last_event::<T>(
             Event::<T>::BountyOracleSwitched(
                 bounty_id,
@@ -1424,7 +1424,7 @@ benchmarks! {
         let cherry: BalanceOf<T> = 100u32.into();
         let oracle_reward: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 100u32.into();
-        let (oracle_account_id, oracle_member_id) = 
+        let (oracle_account_id, oracle_member_id) =
             member_funded_account::<T>("oracle", 1);
         let oracle = BountyActor::Member(oracle_member_id);
         let stake: BalanceOf<T> = 100u32.into();
@@ -1442,7 +1442,7 @@ benchmarks! {
 
         let bounty_id = create_funded_bounty::<T>(params);
 
-        let (work_account_id, work_member_id) = 
+        let (work_account_id, work_member_id) =
             member_funded_account::<T>("work entrants", 0);
         let work_description = b"work_description".to_vec();
         Bounty::<T>::announce_work_entry(
@@ -1487,7 +1487,7 @@ benchmarks! {
         let oracle = BountyActor::Council;
         let stake: BalanceOf<T> = 200u32.into();
         let creator = BountyActor::Council;
-        let (account_id, member_id) = 
+        let (account_id, member_id) =
             member_funded_account::<T>("work entrant", 0);
         let params = BountyCreationParameters::<T> {
             creator,
@@ -1595,7 +1595,7 @@ benchmarks! {
 
         let judgment = vec![entry_id].iter()
             .map(|entry_id| (
-                *entry_id, 
+                *entry_id,
                 OracleWorkEntryJudgment::Winner {reward : winner_reward}))
             .collect::<BTreeMap<_, _>>();
 
@@ -1619,7 +1619,7 @@ benchmarks! {
         let cherry: BalanceOf<T> = 100u32.into();
         let oracle_reward: BalanceOf<T> = 100u32.into();
         let funding_amount: BalanceOf<T> = 100u32.into();
-        let (oracle_account_id, oracle_member_id) = 
+        let (oracle_account_id, oracle_member_id) =
         member_funded_account::<T>("oracle", 0);
         let oracle = BountyActor::Member(oracle_member_id);
         let stake: BalanceOf<T> = 100u32.into();
@@ -1688,7 +1688,7 @@ benchmarks! {
 
         let judgment = vec![entry_id].iter()
             .map(|entry_id|
-                (*entry_id, 
+                (*entry_id,
                     OracleWorkEntryJudgment::Winner {reward : winner_reward}))
             .collect::<BTreeMap<_, _>>();
 
@@ -1730,7 +1730,7 @@ benchmarks! {
             cherry,
             oracle_reward,
             creator,
-            //same complexity with limited funding 
+            //same complexity with limited funding
             //and NoFundingContributed stage.
             funding_type: FundingType::Perpetual{ target: max_amount },
             entrant_stake,
@@ -1763,7 +1763,7 @@ benchmarks! {
         let oracle_reward: BalanceOf<T> = 100u32.into();
         let max_amount: BalanceOf<T> = 1000u32.into();
         let entrant_stake: BalanceOf<T> = T::MinWorkEntrantStake::get();
-        let (oracle_account_id, oracle_member_id) = 
+        let (oracle_account_id, oracle_member_id) =
         member_funded_account::<T>("oracle", 0);
         let oracle = BountyActor::Member(oracle_member_id);
 
@@ -1777,7 +1777,7 @@ benchmarks! {
             cherry,
             oracle_reward,
             creator,
-            // same complexity with limited funding 
+            // same complexity with limited funding
             //and NoFundingContributed stage.
             funding_type: FundingType::Perpetual{ target: max_amount },
             entrant_stake,
