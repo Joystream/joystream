@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use frame_support::{assert_noop, assert_ok, StorageDoubleMap, StorageMap};
-use sp_runtime::traits::{AccountIdConversion, Hash};
+use sp_runtime::traits::Hash;
 
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
@@ -11,12 +11,6 @@ use crate::{
     account, balance, last_event_eq, merkle_proof, merkle_root, origin, token, Error, RawEvent,
     TokenDataOf,
 };
-
-macro_rules! treasury {
-    ($t: expr) => {
-        <Test as crate::Trait>::ModuleId::get().into_sub_account($t)
-    };
-}
 
 #[test]
 fn join_whitelist_fails_with_token_id_not_valid() {
@@ -313,32 +307,6 @@ fn join_whitelist_ok_with_new_account_having_reserved_balance_zero() {
             Token::account_info_by_token_and_account(token_id, acc1).reserved_balance,
             balance!(0)
         );
-    })
-}
-
-#[test]
-fn join_whitelist_ok_with_bloat_bond_deposited_into_treasury() {
-    let token_id = token!(1);
-    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
-    let commit = merkle_root![acc1, acc2];
-    let proof = merkle_proof!(0, [acc1, acc2]);
-    let (treasury_acc, bloat_bond): (AccountId, _) = (treasury!(token_id), balance!(BLOAT_BOND));
-
-    let token_data = TokenDataBuilder::new_empty()
-        .with_transfer_policy(Policy::Permissioned(commit))
-        .build();
-
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, token_data)
-        .with_account(owner, 0, 0)
-        .build();
-
-    build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&acc1, bloat_bond);
-
-        let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
-
-        assert_eq!(Balances::free_balance(treasury_acc), bloat_bond);
     })
 }
 

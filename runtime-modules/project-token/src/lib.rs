@@ -4,14 +4,11 @@ use frame_support::{
     decl_module, decl_storage,
     dispatch::{fmt::Debug, marker::Copy, DispatchError, DispatchResult},
     ensure,
-    traits::{Currency, ExistenceRequirement, Get},
+    traits::{Currency, Get},
 };
 use frame_system::ensure_signed;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
-use sp_runtime::{
-    traits::{AccountIdConversion, Convert},
-    ModuleId,
-};
+use sp_runtime::{traits::Convert, ModuleId};
 use sp_std::iter::Sum;
 
 // crate modules
@@ -172,14 +169,17 @@ decl_module! {
                 Err(Error::<T>::CannotJoinWhitelistInPermissionlessMode.into())
             }?;
 
-            let treasury: T::AccountId = T::ModuleId::get().into_sub_account(token_id);
             let bloat_bond = T::BloatBond::get();
 
             // No project_token or balances state corrupted in case of failure
-            let _ = T::ReserveCurrency::transfer(&account_id, &treasury, bloat_bond, ExistenceRequirement::KeepAlive)
-                .map_err(|_| Error::<T>::InsufficientBalanceForBloatBond)?;
+            ensure!(
+                T::ReserveCurrency::free_balance(&account_id) >= bloat_bond,
+                Error::<T>::InsufficientBalanceForBloatBond,
+            );
 
             // == MUTATION SAFE ==
+
+            let _ = T::ReserveCurrency::slash(&account_id, bloat_bond);
 
             AccountInfoByTokenAndAccount::<T>::insert(token_id, &account_id, AccountDataOf::<T>::default());
 
