@@ -429,3 +429,37 @@ fn claim_patronage_credit_fails_with_invalid_owner_account_id() {
         assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
     })
 }
+
+#[test]
+fn claim_patronage_ok_with_patronage_claimed_and_tally_set_to_zero() {
+    let token_id = token!(1);
+    let owner_account_id = account!(1);
+    let (rate, blocks) = (balance!(10), block!(10));
+
+    let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, params.build())
+        .with_account(owner_account_id, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_block_number_by(blocks);
+
+        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
+            token_id,
+            owner_account_id,
+        );
+
+        assert_eq!(
+            Token::token_info_by_id(token_id)
+                .patronage_info
+                .unclaimed_patronage_tally_amount,
+            balance!(0)
+        );
+    })
+}
+
+#[ignore]
+#[test]
+fn claim_patroage_ok_with_correct_accounting_after_change_in_supply() {}

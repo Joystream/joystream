@@ -198,14 +198,13 @@ impl<
     > TokenData<Balance, Hash, BlockNumber>
 {
     // increase total issuance
-    pub(crate) fn increase_issuance_by(&mut self, amount: Balance, block: BlockNumber) {
+    pub(crate) fn increase_issuance_by(&mut self, amount: Balance) {
         self.supply = self.supply.saturating_add(amount);
-        self.reset_tally_at_block(block);
     }
 
-    pub fn reset_tally_at_block(&mut self, block: BlockNumber) {
+    pub fn set_unclaimed_tally_patronage_at_block(&mut self, amount: Balance, block: BlockNumber) {
         self.patronage_info.last_unclaimed_patronage_tally_block = block;
-        self.patronage_info.unclaimed_patronage_tally_amount = Balance::zero();
+        self.patronage_info.unclaimed_patronage_tally_amount = amount;
     }
 
     pub(crate) fn unclaimed_patronage<BlockNumberToBalance: Convert<BlockNumber, Balance>>(

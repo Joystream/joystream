@@ -270,7 +270,8 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
         });
 
         TokenInfoById::<T>::mutate(token_id, |token_info| {
-            token_info.increase_issuance_by(unclaimed_patronage, now);
+            token_info.increase_issuance_by(unclaimed_patronage);
+            token_info.set_unclaimed_tally_patronage_at_block(T::Balance::zero(), now);
         });
 
         Self::deposit_event(RawEvent::PatronageCreditClaimedAtBlock(
