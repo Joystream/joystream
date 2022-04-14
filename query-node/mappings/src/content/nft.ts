@@ -741,7 +741,11 @@ export async function contentNft_NftIssued({ event, store }: EventContext & Stor
 export async function contentNft_AuctionBidMade({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [memberId, videoId, bidAmount] = new Content.AuctionBidMadeEvent(event).params
+  const [memberId, videoId, bidAmount, previousTopBidderId] = new Content.AuctionBidMadeEvent(event).params
+
+  const previousTopBidder = previousTopBidderId.isSome
+    ? new Membership({ id: previousTopBidderId.unwrap().toString() })
+    : undefined
 
   // specific event processing
 
@@ -773,7 +777,8 @@ export async function contentNft_AuctionBidMade({ event, store }: EventContext &
     bidAmount,
     ownerMember: nft.ownerMember,
     ownerCuratorGroup: nft.ownerCuratorGroup,
-    previousTopBid,
+    previousTopBid: previousTopBidder ? previousTopBid : undefined,
+    previousTopBidder,
   })
 
   await store.save<AuctionBidMadeEvent>(announcingPeriodStartedEvent)
@@ -923,7 +928,11 @@ export async function contentNft_BidMadeCompletingAuction({
 }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [memberId, videoId] = new Content.BidMadeCompletingAuctionEvent(event).params
+  const [memberId, videoId, previousTopBidderId] = new Content.BidMadeCompletingAuctionEvent(event).params
+
+  const previousTopBidder = previousTopBidderId.isSome
+    ? new Membership({ id: previousTopBidderId.unwrap().toString() })
+    : undefined
 
   // specific event processing
 
@@ -954,7 +963,8 @@ export async function contentNft_BidMadeCompletingAuction({
     ownerMember: nft.ownerMember,
     ownerCuratorGroup: nft.ownerCuratorGroup,
     price,
-    previousTopBid,
+    previousTopBid: previousTopBidder ? previousTopBid : undefined,
+    previousTopBidder,
   })
 
   await store.save<BidMadeCompletingAuctionEvent>(announcingPeriodStartedEvent)

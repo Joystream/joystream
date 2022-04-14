@@ -147,6 +147,9 @@ type AuctionBidMadeEvent implements Event @entity {
 
   "Bid that is being displaced by current bid in English auction"
   previousTopBid: Bid
+
+  "Previous top bidder"
+  previousTopBidder: Membership
 }
 
 type AuctionBidCanceledEvent implements Event @entity {
@@ -285,6 +288,9 @@ type BidMadeCompletingAuctionEvent implements Event @entity {
 
   "Bid that is being displaced by current bid in English auction"
   previousTopBid: Bid
+
+  "Previous top bidder"
+  previousTopBidder: Membership
 }
 
 type OpenAuctionBidAcceptedEvent implements Event @entity {
