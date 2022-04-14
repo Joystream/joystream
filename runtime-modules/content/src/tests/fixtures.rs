@@ -210,6 +210,10 @@ impl CreateChannelFixture {
                         paused_features: BTreeSet::new(),
                         data_objects: BTreeSet::from_iter(beg_obj_id..end_obj_id),
                         transfer_status: Default::default(),
+                        daily_nft_limit: DefaultChannelDailyNftLimit::get(),
+                        weekly_nft_limit: DefaultChannelWeeklyNftLimit::get(),
+                        daily_nft_counter: Default::default(),
+                        weekly_nft_counter: Default::default(),
                     },
                     self.params.clone(),
                 ))
