@@ -942,7 +942,10 @@ export async function contentNft_BidMadeCompletingAuction({
   // specific event processing
 
   // create record for winning bid
-  const { previousTopBid } = await createBid(event, store, memberId.toNumber(), videoId.toNumber())
+  const {
+    previousTopBid,
+    nft: { ownerMember, ownerCuratorGroup },
+  } = await createBid(event, store, memberId.toNumber(), videoId.toNumber())
 
   // finish auction and transfer ownership
   const { winner: member, video, boughtPrice: price, nft } = await finishAuction(
@@ -965,8 +968,8 @@ export async function contentNft_BidMadeCompletingAuction({
 
     member,
     video,
-    ownerMember: nft.ownerMember,
-    ownerCuratorGroup: nft.ownerCuratorGroup,
+    ownerMember,
+    ownerCuratorGroup,
     price,
     previousTopBid: previousTopBidder ? previousTopBid : undefined,
     previousTopBidder,
