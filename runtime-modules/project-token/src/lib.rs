@@ -141,6 +141,9 @@ decl_module! {
 
             AccountInfoByTokenAndAccount::<T>::remove(token_id, &account_id);
 
+            let bloat_bond = T::BloatBond::get();
+            let _ = T::ReserveCurrency::deposit_creating(&account_id, bloat_bond);
+
             Self::deposit_event(RawEvent::AccountDustedBy(token_id, account_id, sender, token_info.transfer_policy));
 
             Ok(())

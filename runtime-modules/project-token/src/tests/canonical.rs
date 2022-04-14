@@ -543,6 +543,26 @@ fn dust_account_ok_with_account_removed() {
 }
 
 #[test]
+fn dust_account_ok_with_bloat_bond_refunded() {
+    let token_id = token!(1);
+    let (acc1, acc2) = (account!(2), account!(3));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(acc1, balance!(0), balance!(0))
+        .with_account(acc2, balance!(0), balance!(0))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = Token::dust_account(origin!(acc1), token_id, acc2);
+
+        assert_eq!(Balances::free_balance(acc2), balance!(BLOAT_BOND));
+    })
+}
+
+#[test]
 fn deissue_token_fails_with_non_existing_token_id() {
     let token_id = token!(1);
     let token_data = TokenDataBuilder::new_empty().build();
