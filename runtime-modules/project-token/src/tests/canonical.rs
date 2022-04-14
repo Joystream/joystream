@@ -18,7 +18,7 @@ fn join_whitelist_fails_with_token_id_not_valid() {
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
     let proof = merkle_proof!(0, [acc1, acc2]);
-    let bloat_bond = balance!(BLOAT_BOND);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -44,7 +44,7 @@ fn join_whitelist_fails_with_existing_account() {
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
     let proof = merkle_proof!(0, [acc1, acc2]);
-    let bloat_bond = balance!(BLOAT_BOND);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -71,7 +71,7 @@ fn join_whitelist_fails_with_invalid_proof() {
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
     let proof = merkle_proof!(0, [acc1, acc1]);
-    let bloat_bond = balance!(BLOAT_BOND);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -97,7 +97,7 @@ fn join_whitelist_fails_with_no_proof_provided() {
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
     let proof = MerkleProofOf::<Test>::new(None);
-    let bloat_bond = balance!(BLOAT_BOND);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -145,7 +145,7 @@ fn join_whitelist_fails_in_permissionless_mode() {
     let token_id = token!(1);
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let proof = merkle_proof!(0, [acc1, acc2]);
-    let bloat_bond = balance!(BLOAT_BOND);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
@@ -174,7 +174,7 @@ fn join_whitelist_ok() {
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
     let proof = merkle_proof!(0, [acc1, acc2]);
-    let bloat_bond = balance!(BLOAT_BOND);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -200,7 +200,7 @@ fn join_whitelist_ok_with_event_deposit() {
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
     let proof = merkle_proof!(0, [acc1, acc2]);
-    let bloat_bond = balance!(BLOAT_BOND);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -230,7 +230,7 @@ fn join_whitelist_ok_with_new_account_created() {
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let proof = merkle_proof!(0, [acc1, acc2]);
     let commit = merkle_root![acc1, acc2];
-    let bloat_bond = balance!(BLOAT_BOND);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -258,7 +258,7 @@ fn join_whitelist_ok_with_new_account_having_free_balance_zero() {
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
     let proof = merkle_proof!(0, [acc1, acc2]);
-    let bloat_bond = balance!(BLOAT_BOND);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -287,7 +287,7 @@ fn join_whitelist_ok_with_new_account_having_reserved_balance_zero() {
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
     let proof = merkle_proof!(0, [acc1, acc2]);
-    let bloat_bond = balance!(BLOAT_BOND);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -316,7 +316,7 @@ fn join_whitelist_ok_with_bloat_bond_slashed_from_account_free_balance() {
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
     let proof = merkle_proof!(0, [acc1, acc2]);
-    let bloat_bond = balance!(BLOAT_BOND);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -558,7 +558,7 @@ fn dust_account_ok_with_bloat_bond_refunded() {
     build_test_externalities(config).execute_with(|| {
         let _ = Token::dust_account(origin!(acc1), token_id, acc2);
 
-        assert_eq!(Balances::free_balance(acc2), balance!(BLOAT_BOND));
+        assert_eq!(Balances::free_balance(acc2), balance!(DEFAULT_BLOAT_BOND));
     })
 }
 

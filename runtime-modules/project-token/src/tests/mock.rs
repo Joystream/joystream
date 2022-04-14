@@ -64,7 +64,7 @@ impl_outer_event! {
 }
 
 // Trait constants
-pub const BLOAT_BOND: u64 = 100;
+pub const DEFAULT_BLOAT_BOND: u64 = 100;
 
 parameter_types! {
     // constants for frame_system::Trait
@@ -75,7 +75,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
     // constants for crate::Trait
     pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token"); // module storage
-    pub const BloatBond: u64 = BLOAT_BOND;
+    pub const BloatBond: u64 = DEFAULT_BLOAT_BOND;
     // constants for balances::Trait
     pub const ExistentialDeposit: u64 = 0;
 }
