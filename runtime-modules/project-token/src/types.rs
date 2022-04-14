@@ -229,6 +229,13 @@ impl<
         self.patronage_info.last_unclaimed_patronage_tally_block = block;
         self.patronage_info.rate = new_rate;
     }
+
+    pub fn is_permissioned_transfer_policy(&self) -> bool {
+        matches!(
+            self.transfer_policy,
+            TransferPolicy::<Hash>::Permissioned(_)
+        )
+    }
 }
 
 /// Encapsules parameters validation + TokenData construction

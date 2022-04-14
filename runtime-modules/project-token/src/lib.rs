@@ -393,16 +393,13 @@ impl<T: Trait> Module<T> {
         let src_account_info = Self::ensure_account_data_exists(token_id, src)?;
 
         // ensure dst account id validity
-        outputs.iter().try_for_each(|(dst, _)| {
-            match (*dst == *src, &token_info.transfer_policy) {
-                (true, _) => Err(Error::<T>::SameSourceAndDestinationLocations.into()),
-                (_, TransferPolicyOf::<T>::Permissioned(_)) => {
-                    // if permissioned mode account must exist
-                    Self::ensure_account_data_exists(token_id, dst).map(|_| ())
-                }
-                _ => Ok(()),
-            }
-        })?;
+        if token_info.is_permissioned_transfer_policy() {
+            outputs.iter().try_for_each(|(dst, _)| {
+                Self::ensure_account_data_exists(token_id, dst).map(|_| ())
+            })
+        } else {
+            Ok(())
+        }?;
 
         src_account_info.ensure_can_decrease_liquidity_by::<T>(outputs.total_amount())
     }

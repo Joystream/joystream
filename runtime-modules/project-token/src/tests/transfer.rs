@@ -416,7 +416,7 @@ fn multiout_transfer_fails_with_source_having_insufficient_balance() {
 }
 
 #[test]
-fn multiout_transfer_fails_with_same_source_and_destination() {
+fn multiout_transfer_ok_with_same_source_and_destination() {
     let token_id = token!(1);
     let token_info = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
@@ -434,12 +434,12 @@ fn multiout_transfer_fails_with_same_source_and_destination() {
     build_test_externalities(config).execute_with(|| {
         let result = Token::transfer(origin!(dst1), token_id, outputs);
 
-        assert_noop!(result, Error::<Test>::SameSourceAndDestinationLocations);
+        assert_ok!(result);
     })
 }
 
 #[test]
-fn transfer_fails_with_same_source_and_destination() {
+fn transfer_ok_with_same_source_and_destination() {
     let token_id = token!(1);
     let token_info = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
@@ -455,7 +455,7 @@ fn transfer_fails_with_same_source_and_destination() {
     build_test_externalities(config).execute_with(|| {
         let result = Token::transfer(origin!(dst), token_id, outputs);
 
-        assert_noop!(result, Error::<Test>::SameSourceAndDestinationLocations);
+        assert_ok!(result);
     })
 }
 
