@@ -51,7 +51,16 @@ decl_error! {
         /// Token's current issuance state is not Idle
         TokenIssuanceNotInIdleState,
 
-        // The token has no upcoming sale
+        /// The token has no upcoming sale
         NoUpcomingSale,
+
+        /// The token has no active sale at the moment
+        NoActiveSale,
+
+        /// Account's JOY balance is insufficient to make the token purchase
+        InsufficientBalanceForTokenPurchase,
+
+        /// Amount of tokens to purchase on sale exceeds the quantity of tokens still available on the sale
+        NotEnoughTokensOnSale,
     }
 }

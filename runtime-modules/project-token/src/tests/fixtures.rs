@@ -1,8 +1,9 @@
 #![cfg(test)]
 
-use crate::{traits::PalletToken, SymbolsUsed};
+use crate::{traits::PalletToken, types::VestingSource, SymbolsUsed};
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::StorageMap;
+use frame_support::traits::Currency;
 use sp_runtime::{traits::Hash, DispatchError, Permill};
 use sp_std::iter::FromIterator;
 use storage::{BagId, DataObjectCreationParameters, StaticBagId};
@@ -36,10 +37,11 @@ pub trait Fixture<S: std::fmt::Debug + std::cmp::PartialEq> {
 
 pub fn default_token_sale_params() -> TokenSaleParams {
     TokenSaleParams {
+        tokens_source: DEFAULT_ACCOUNT_ID,
         duration: DEFAULT_SALE_DURATION,
         metadata: None,
         starts_at: None,
-        unit_price: 100,
+        unit_price: DEFAULT_SALE_UNIT_PRICE,
         upper_bound_quantity: DEFAULT_INITIAL_ISSUANCE,
         vesting_schedule: Some(VestingScheduleParams {
             cliff: 0,
@@ -65,6 +67,10 @@ pub fn default_single_data_object_upload_params() -> SingleDataObjectUploadParam
             size: 1_000_000,
         },
     }
+}
+
+pub fn increase_account_balance(account: &AccountId, amount: Balance) {
+    let _ = balances::Module::<Test>::deposit_creating(account, amount);
 }
 
 pub struct IssueTokenFixture {
@@ -121,7 +127,6 @@ impl Fixture<IssueTokenFixtureStateSnapshot> for IssueTokenFixture {
 
 pub struct InitTokenSaleFixture {
     token_id: TokenId,
-    source: AccountId,
     params: TokenSaleParams,
     payload_upload_context: UploadContext,
 }
@@ -138,7 +143,6 @@ impl InitTokenSaleFixture {
         Self {
             token_id: 1,
             params: default_token_sale_params(),
-            source: DEFAULT_ACCOUNT_ID,
             payload_upload_context: default_upload_context(),
         }
     }
@@ -147,6 +151,16 @@ impl InitTokenSaleFixture {
         Self {
             params: TokenSaleParams {
                 starts_at: Some(bn),
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_tokens_source(self, tokens_source: AccountId) -> Self {
+        Self {
+            params: TokenSaleParams {
+                tokens_source,
                 ..self.params
             },
             ..self
@@ -163,14 +177,20 @@ impl InitTokenSaleFixture {
         }
     }
 
-    pub fn with_source(self, source: AccountId) -> Self {
-        Self { source, ..self }
-    }
-
     pub fn with_whitelist(self, whitelist: WhitelistParams) -> Self {
         Self {
             params: TokenSaleParams {
                 whitelist: Some(whitelist),
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_vesting_schedule(self, vesting_schedule: Option<VestingScheduleParams>) -> Self {
+        Self {
+            params: TokenSaleParams {
+                vesting_schedule,
                 ..self.params
             },
             ..self
@@ -185,7 +205,7 @@ impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
             next_data_object_id: storage::Module::<Test>::next_data_object_id(),
             source_account_data: Token::account_info_by_token_and_account(
                 self.token_id,
-                self.source,
+                self.params.tokens_source,
             ),
         }
     }
@@ -193,7 +213,6 @@ impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
     fn execute_call(&self) -> DispatchResult {
         Token::init_token_sale(
             self.token_id,
-            self.source,
             self.params.clone(),
             self.payload_upload_context.clone(),
         )
@@ -220,6 +239,12 @@ impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
             Some(TokenSale::try_from_params::<Test>(self.params.clone()).unwrap())
         );
 
+        // Token's `sales_initialized` updated
+        assert_eq!(
+            snapshot_post.token_data.sales_initialized,
+            snapshot_pre.token_data.sales_initialized.saturating_add(1)
+        );
+
         // Token state is valid
         let sale = snapshot_post.token_data.last_sale.clone().unwrap();
         assert_eq!(
@@ -244,10 +269,10 @@ impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
                 .saturating_add(self.params.upper_bound_quantity)
         );
         assert_eq!(
-            snapshot_post.source_account_data.free_balance,
+            snapshot_post.source_account_data.usable_balance::<Test>(),
             snapshot_pre
                 .source_account_data
-                .free_balance
+                .usable_balance::<Test>()
                 .saturating_sub(self.params.upper_bound_quantity)
         );
     }
@@ -317,6 +342,131 @@ impl Fixture<UpdateUpcomingSaleFixtureStateSnapshot> for UpdateUpcomingSaleFixtu
                 start_block: self.new_start_block.unwrap_or(sale_pre.start_block),
                 ..sale_pre
             }
+        );
+    }
+}
+
+pub struct PurchaseTokensOnSaleFixture {
+    sender: AccountId,
+    token_id: TokenId,
+    amount: Balance,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct PurchaseTokensOnSaleFixtureStateSnapshot {
+    token_data: TokenData,
+    source_account_data: AccountData,
+    source_account_usable_joy_balance: <Test as balances::Trait>::Balance,
+    buyer_account_data: AccountData,
+    buyer_vesting_balance: Option<VestingBalance>,
+}
+
+impl PurchaseTokensOnSaleFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: OTHER_ACCOUNT_ID,
+            token_id: 1,
+            amount: DEFAULT_SALE_PURCHASE_AMOUNT,
+        }
+    }
+
+    pub fn with_amount(self, amount: Balance) -> Self {
+        Self { amount, ..self }
+    }
+}
+
+impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleFixture {
+    fn get_state_snapshot(&self) -> PurchaseTokensOnSaleFixtureStateSnapshot {
+        let token_data = Token::token_info_by_id(self.token_id);
+        let sale_source_account = token_data
+            .last_sale
+            .as_ref()
+            .map_or(AccountId::default(), |s| s.tokens_source);
+        let buyer_account_data =
+            Token::account_info_by_token_and_account(self.token_id, self.sender);
+        PurchaseTokensOnSaleFixtureStateSnapshot {
+            token_data: token_data.clone(),
+            source_account_data: Token::account_info_by_token_and_account(
+                self.token_id,
+                sale_source_account,
+            ),
+            source_account_usable_joy_balance: balances::Module::<Test>::usable_balance(
+                sale_source_account,
+            ),
+            buyer_account_data: buyer_account_data.clone(),
+            buyer_vesting_balance: buyer_account_data
+                .vesting_balances
+                .get(&VestingSource::Sale(token_data.sales_initialized))
+                .map(|v| v.clone()),
+        }
+    }
+
+    fn execute_call(&self) -> DispatchResult {
+        Token::puchase_tokens_on_sale(Origin::signed(self.sender), self.token_id, self.amount)
+    }
+
+    fn on_success(
+        &self,
+        snapshot_pre: &PurchaseTokensOnSaleFixtureStateSnapshot,
+        snapshot_post: &PurchaseTokensOnSaleFixtureStateSnapshot,
+    ) {
+        let sale_pre = snapshot_pre.token_data.last_sale.clone().unwrap();
+        // `quantity_left` decreased
+        assert_eq!(
+            snapshot_post.token_data.last_sale.clone().unwrap(),
+            TokenSale {
+                quantity_left: sale_pre.quantity_left.saturating_sub(self.amount),
+                ..sale_pre.clone()
+            }
+        );
+        // source account's reserved balance decreased
+        assert_eq!(
+            snapshot_post.source_account_data.reserved_balance,
+            snapshot_pre
+                .source_account_data
+                .reserved_balance
+                .saturating_sub(self.amount)
+        );
+        // source account's total balance decreased
+        assert_eq!(
+            snapshot_post.source_account_data.total_balance::<Test>(),
+            snapshot_pre
+                .source_account_data
+                .total_balance::<Test>()
+                .saturating_sub(self.amount)
+        );
+        // source account's JOY balance increased
+        assert_eq!(
+            snapshot_post.source_account_usable_joy_balance,
+            snapshot_pre
+                .source_account_usable_joy_balance
+                .saturating_add(self.amount * sale_pre.unit_price)
+        );
+        // buyer's vesting balance is correct
+        assert_eq!(
+            snapshot_post
+                .buyer_vesting_balance
+                .as_ref()
+                .unwrap()
+                .total_amount,
+            snapshot_pre
+                .buyer_vesting_balance
+                .as_ref()
+                .map_or(0, |vb| vb.total_amount)
+                .saturating_add(self.amount)
+        );
+        assert_eq!(
+            snapshot_post
+                .buyer_vesting_balance
+                .as_ref()
+                .unwrap()
+                .vesting_schedule,
+            sale_pre.get_vesting_schedule()
+        );
+        // buyer's available balance is unchanged
+        assert_eq!(
+            snapshot_post.buyer_account_data.usable_balance::<Test>(),
+            snapshot_pre.buyer_account_data.usable_balance::<Test>()
         );
     }
 }

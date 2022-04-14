@@ -4,6 +4,7 @@ use frame_support::{
     decl_module, decl_storage,
     dispatch::{fmt::Debug, marker::Copy, DispatchError, DispatchResult},
     ensure,
+    traits::{Currency, ExistenceRequirement},
 };
 use frame_system::ensure_signed;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
@@ -31,7 +32,14 @@ pub trait Trait: frame_system::Trait + balances::Trait + storage::Trait {
 
     // TODO: Add frame_support::pallet_prelude::TypeInfo trait
     /// the Balance type used
-    type Balance: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug + Saturating + Sum;
+    type Balance: AtLeast32BitUnsigned
+        + FullCodec
+        + Copy
+        + Default
+        + Debug
+        + Saturating
+        + Sum
+        + Into<<Self as balances::Trait>::Balance>;
 
     /// The token identifier used
     type TokenId: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug;
@@ -139,6 +147,70 @@ decl_module! {
             AccountInfoByTokenAndAccount::<T>::insert(token_id, &account_id, AccountDataOf::<T>::default());
 
             Self::deposit_event(RawEvent::MemberJoinedWhitelist(token_id, account_id, token_info.transfer_policy));
+
+            Ok(())
+        }
+
+        /// Purchase tokens on active token sale.
+        ///
+        /// Preconditions:
+        /// - `token_id` must be existing token's id
+        /// - token identified by `token_id` must have OfferingState::Sale
+        /// - `amount` cannot exceed number of tokens remaining on sale
+        /// - sender's JOY balance must be >= `amount * sale.unit_price`
+        ///
+        /// Postconditions:
+        /// - `amount * sale.unit_price` JOY tokens are transfered to `sale.tokens_source` account
+        /// - `amount` CRT tokens are unreserved from `sale.tokens_source` account and its
+        ///    liquidity is decreased by `amount` (`amount` tokens are burned from the account)
+        /// - buyer's `vesting_balance` related to the current sale is increased by `amount`
+        ///   (or created with `amount` as `vesting_balance.total_amount`)
+        /// - `token_data.last_sale.quantity_left` is decreased by `amount`
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn puchase_tokens_on_sale(origin, token_id: T::TokenId, amount: <T as Trait>::Balance) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+            let token_data = Self::ensure_token_exists(token_id)?;
+            let sale = OfferingStateOf::<T>::ensure_sale_of::<T>(&token_data)?;
+            let buyer_joy_balance = balances::Module::<T>::usable_balance(&sender);
+            let joy_amount = sale.unit_price.saturating_mul(amount.into());
+
+            ensure!(
+                buyer_joy_balance >= joy_amount,
+                Error::<T>::InsufficientBalanceForTokenPurchase
+            );
+
+            ensure!(
+                sale.quantity_left >= amount,
+                Error::<T>::NotEnoughTokensOnSale
+            );
+            // TODO: Whitelist handling
+
+            // == MUTATION SAFE ==
+
+            <balances::Module::<T> as Currency<T::AccountId>>::transfer(
+                &sender,
+                &sale.tokens_source,
+                joy_amount,
+                ExistenceRequirement::AllowDeath
+            )?;
+
+            AccountInfoByTokenAndAccount::<T>::mutate(token_id, &sale.tokens_source, |acc_data| {
+                // Unreserve + burn
+                acc_data.reserved_balance = acc_data.reserved_balance.saturating_sub(amount);
+                acc_data.decrease_liquidity_by::<T>(amount);
+            });
+
+            AccountInfoByTokenAndAccount::<T>::mutate(token_id, &sender, |acc_data| {
+                acc_data.increase_vesting_balance(
+                    VestingSource::Sale(token_data.sales_initialized),
+                    amount,
+                    sale.get_vesting_schedule()
+                );
+            });
+
+            TokenInfoById::<T>::mutate(token_id, |t| {
+                t.last_sale.as_mut().unwrap().quantity_left = sale.quantity_left.saturating_sub(amount);
+            });
 
             Ok(())
         }
@@ -272,12 +344,23 @@ impl<T: Trait>
         TokenInfoById::<T>::insert(token_id, token_data);
         SymbolsUsed::<T>::insert(sym, ());
         NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
-        AccountInfoByTokenAndAccount::<T>::insert(
+        AccountInfoByTokenAndAccount::<T>::mutate(
             token_id,
             &issuance_parameters.initial_allocation.address,
-            AccountDataOf::<T> {
-                free_balance: issuance_parameters.initial_allocation.amount,
-                reserved_balance: Self::Balance::zero(),
+            |ad| {
+                if let Some(vs) = issuance_parameters
+                    .initial_allocation
+                    .vesting_schedule
+                    .as_ref()
+                {
+                    ad.increase_vesting_balance(
+                        VestingSource::InitialIssuance,
+                        issuance_parameters.initial_allocation.amount,
+                        VestingScheduleOf::<T>::from_params(Self::current_block(), vs.clone()),
+                    )
+                } else {
+                    ad.base_balance = issuance_parameters.initial_allocation.amount;
+                }
             },
         );
 
@@ -286,22 +369,18 @@ impl<T: Trait>
 
     fn init_token_sale(
         token_id: T::TokenId,
-        source: T::AccountId,
         sale_params: TokenSaleParamsOf<T>,
         payload_upload_context: UploadContextOf<T>,
     ) -> DispatchResult {
         let token_data = Self::ensure_token_exists(token_id)?;
         let sale = TokenSaleOf::<T>::try_from_params::<T>(sale_params.clone())?;
         // Validation + first mutation(!)
-        Self::try_init_sale(
-            token_id,
-            &token_data,
-            &source,
-            &sale_params,
-            payload_upload_context,
-        )?;
+        Self::try_init_sale(token_id, &token_data, &sale_params, payload_upload_context)?;
         // == MUTATION SAFE ==
-        TokenInfoById::<T>::mutate(token_id, |t| t.last_sale = Some(sale));
+        TokenInfoById::<T>::mutate(token_id, |t| {
+            t.last_sale = Some(sale);
+            t.sales_initialized = t.sales_initialized.saturating_add(1);
+        });
 
         Ok(())
     }
@@ -365,7 +444,7 @@ impl<T: Trait> Module<T> {
 
         // ensure can freeze amount
         ensure!(
-            account_data.free_balance >= amount,
+            account_data.usable_balance::<T>() >= amount,
             Error::<T>::InsufficientFreeBalanceForReserving,
         );
 
@@ -380,7 +459,6 @@ impl<T: Trait> Module<T> {
     /// - `who` reserved balance increased by `amount`
     fn do_reserve(token_id: T::TokenId, who: &T::AccountId, amount: <T as Trait>::Balance) {
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, &who, |account_data| {
-            account_data.free_balance = account_data.free_balance.saturating_sub(amount);
             account_data.reserved_balance = account_data.reserved_balance.saturating_add(amount);
         });
 
@@ -469,7 +547,7 @@ impl<T: Trait> Module<T> {
         match decrease_op {
             DecOp::<T>::Reduce(amount) => {
                 AccountInfoByTokenAndAccount::<T>::mutate(token_id, &src, |account_data| {
-                    account_data.decrease_liquidity_by(amount);
+                    account_data.decrease_liquidity_by::<T>(amount);
                 })
             }
             DecOp::<T>::Remove(_, dust_amount) => {
@@ -489,7 +567,6 @@ impl<T: Trait> Module<T> {
     pub(crate) fn try_init_sale(
         token_id: T::TokenId,
         token_data: &TokenDataOf<T>,
-        source: &T::AccountId,
         sale_params: &TokenSaleParamsOf<T>,
         payload_upload_context: UploadContextOf<T>,
     ) -> DispatchResult {
@@ -497,7 +574,7 @@ impl<T: Trait> Module<T> {
         OfferingStateOf::<T>::ensure_idle_of::<T>(token_data)?;
 
         // Ensure sale upper_bound_quantity can be reserved from `source`
-        let account_data = Self::ensure_account_data_exists(token_id, &source)?;
+        let account_data = Self::ensure_account_data_exists(token_id, &sale_params.tokens_source)?;
         Self::ensure_can_reserve(&account_data, sale_params.upper_bound_quantity)?;
 
         // Optionally: Upload whitelist payload
@@ -513,7 +590,11 @@ impl<T: Trait> Module<T> {
         }
 
         // == MUTATION SAFE ==
-        Self::do_reserve(token_id, source, sale_params.upper_bound_quantity);
+        Self::do_reserve(
+            token_id,
+            &sale_params.tokens_source,
+            sale_params.upper_bound_quantity,
+        );
 
         Ok(())
     }

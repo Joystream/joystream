@@ -19,7 +19,7 @@ use crate::{
     types::{
         InitialAllocationOf, MerkleSide, OfferingStateOf, OutputsOf,
         SingleDataObjectUploadParamsOf, TokenSaleOf, TokenSaleParamsOf, UploadContextOf,
-        VestingScheduleParamsOf, WhitelistParamsOf,
+        VestingBalanceOf, VestingScheduleParamsOf, WhitelistParamsOf,
     },
     AccountDataOf, GenesisConfig, TokenDataOf, TokenIssuanceParametersOf, Trait, TransferPolicyOf,
 };
@@ -46,6 +46,7 @@ pub type HashOut = <Test as frame_system::Trait>::Hash;
 pub type Outputs = OutputsOf<Test>;
 pub type UploadContext = UploadContextOf<Test>;
 pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
+pub type VestingBalance = VestingBalanceOf<Test>;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
@@ -391,7 +392,9 @@ pub const DEFAULT_EXISTENTIAL_DEPOSIT: u64 = 5;
 pub const DEFAULT_ACCOUNT_ID: u64 = 1;
 pub const OTHER_ACCOUNT_ID: u64 = 2;
 pub const DEFAULT_INITIAL_ISSUANCE: u64 = 1_000_000;
+pub const DEFAULT_SALE_UNIT_PRICE: u64 = 10;
 pub const DEFAULT_SALE_DURATION: u64 = 100;
+pub const DEFAULT_SALE_PURCHASE_AMOUNT: u64 = 1000;
 
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
 pub const DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID: u64 = 100002;

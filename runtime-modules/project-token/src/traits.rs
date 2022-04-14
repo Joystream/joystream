@@ -41,7 +41,6 @@ pub trait PalletToken<
     /// Initialize new token sale
     fn init_token_sale(
         token_id: Self::TokenId,
-        source: AccountId,
         sale_params: TokenSaleParams,
         payload_upload_context: UploadContext,
     ) -> DispatchResult;

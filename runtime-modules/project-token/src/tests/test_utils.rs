@@ -1,9 +1,11 @@
 use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::Hash;
+use sp_std::collections::btree_map::BTreeMap;
 
 use crate::tests::mock::*;
 use crate::types::{
-    MerkleProof, MerkleSide, Output, Outputs, PatronageData, TokenSaleOf, TransferPolicyOf,
+    MerkleProof, MerkleSide, Output, Outputs, PatronageData, TokenSaleId, TokenSaleOf,
+    TransferPolicyOf,
 };
 use crate::GenesisConfig;
 
@@ -12,6 +14,7 @@ pub struct TokenDataBuilder {
     pub(crate) tokens_issued: <Test as crate::Trait>::Balance,
     pub(crate) existential_deposit: <Test as crate::Trait>::Balance,
     pub(crate) last_sale: Option<TokenSaleOf<Test>>,
+    pub(crate) sales_initialized: TokenSaleId,
     pub(crate) transfer_policy: TransferPolicyOf<Test>,
     pub(crate) patronage_info:
         PatronageData<<Test as crate::Trait>::Balance, <Test as frame_system::Trait>::BlockNumber>,
@@ -24,6 +27,7 @@ impl TokenDataBuilder {
             tokens_issued: self.tokens_issued,
             existential_deposit: self.existential_deposit,
             last_sale: self.last_sale,
+            sales_initialized: self.sales_initialized,
             transfer_policy: self.transfer_policy,
             patronage_info: self.patronage_info,
         }
@@ -67,6 +71,7 @@ impl TokenDataBuilder {
             tokens_issued: Balance::zero(),
             total_supply: Balance::zero(),
             last_sale: None,
+            sales_initialized: 0,
             existential_deposit: Balance::zero(),
             transfer_policy: TransferPolicy::Permissionless,
             patronage_info: PatronageData::<Balance, BlockNumber> {
@@ -100,19 +105,20 @@ impl GenesisConfigBuilder {
     pub fn with_account(
         mut self,
         account_id: AccountId,
-        free_balance: Balance,
+        base_balance: Balance,
         reserved_balance: Balance,
     ) -> Self {
         let id = self.next_token_id.saturating_sub(TokenId::one());
         let new_account_info = AccountData {
-            free_balance,
+            base_balance,
             reserved_balance,
+            vesting_balances: BTreeMap::new(),
         };
 
         self.account_info_by_token_and_account
             .push((id, account_id, new_account_info));
 
-        let minted_amount = Balance::from(free_balance.saturating_add(reserved_balance));
+        let minted_amount = Balance::from(base_balance.saturating_add(reserved_balance));
 
         let token = &mut self.token_info_by_id.last_mut().unwrap().1;
 

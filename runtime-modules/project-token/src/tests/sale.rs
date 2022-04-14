@@ -6,8 +6,7 @@ use crate::errors::Error;
 
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
-
-use frame_support::traits::Currency;
+use sp_arithmetic::Permill;
 use sp_runtime::traits::Hash;
 use storage::DataObjectCreationParameters;
 
@@ -58,7 +57,7 @@ fn unsuccesful_token_sale_init_with_invalid_source() {
     build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().call_and_assert(Ok(()));
         InitTokenSaleFixture::default()
-            .with_source(OTHER_ACCOUNT_ID)
+            .with_tokens_source(OTHER_ACCOUNT_ID)
             .call_and_assert(Err(Error::<Test>::AccountInformationDoesNotExist.into()));
     })
 }
@@ -196,7 +195,7 @@ fn succesful_token_sale_init_with_whitelist_payload() {
 
     build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().call_and_assert(Ok(()));
-        let _ = balances::Module::<Test>::deposit_creating(
+        increase_account_balance(
             &DEFAULT_ACCOUNT_ID,
             <Test as storage::Trait>::DataObjectDeletionPrize::get(),
         );
@@ -291,5 +290,159 @@ fn successful_upcoming_sale_update() {
         increase_block_number_by(50);
         let token = Token::token_info_by_id(1);
         assert_eq!(IssuanceState::of::<Test>(&token), IssuanceState::Idle);
+    })
+}
+
+/////////////////////////////////////////////////////////
+//////////////////// SALE PURCHASES /////////////////////
+/////////////////////////////////////////////////////////
+#[test]
+fn unsuccesful_sale_purchase_non_existing_token() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        PurchaseTokensOnSaleFixture::default()
+            .call_and_assert(Err(Error::<Test>::TokenDoesNotExist.into()));
+    })
+}
+
+#[test]
+fn unsuccesful_sale_purchase_when_no_sale() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        PurchaseTokensOnSaleFixture::default()
+            .call_and_assert(Err(Error::<Test>::NoActiveSale.into()));
+    })
+}
+
+#[test]
+fn unsuccesful_sale_purchase_when_sale_not_started_yet() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default()
+            .with_start_block(10)
+            .call_and_assert(Ok(()));
+        PurchaseTokensOnSaleFixture::default()
+            .call_and_assert(Err(Error::<Test>::NoActiveSale.into()));
+    })
+}
+
+#[test]
+fn unsuccesful_sale_purchase_after_sale_finished() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default().call_and_assert(Ok(()));
+        increase_block_number_by(DEFAULT_SALE_DURATION);
+        PurchaseTokensOnSaleFixture::default()
+            .call_and_assert(Err(Error::<Test>::NoActiveSale.into()));
+    })
+}
+
+#[test]
+fn unsuccesful_sale_purchase_insufficient_balance() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default().call_and_assert(Ok(()));
+        PurchaseTokensOnSaleFixture::default().call_and_assert(Err(
+            Error::<Test>::InsufficientBalanceForTokenPurchase.into(),
+        ));
+    })
+}
+
+#[test]
+fn unsuccesful_sale_purchase_amount_exceeds_quantity_left() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default().call_and_assert(Ok(()));
+        increase_account_balance(
+            &OTHER_ACCOUNT_ID,
+            DEFAULT_SALE_UNIT_PRICE * (DEFAULT_INITIAL_ISSUANCE + 1),
+        );
+        PurchaseTokensOnSaleFixture::default()
+            .with_amount(DEFAULT_INITIAL_ISSUANCE + 1)
+            .call_and_assert(Err(Error::<Test>::NotEnoughTokensOnSale.into()));
+    })
+}
+
+#[test]
+fn succesful_sale_purchase_no_vesting_schedule() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default()
+            .with_vesting_schedule(None)
+            .call_and_assert(Ok(()));
+        increase_account_balance(
+            &OTHER_ACCOUNT_ID,
+            DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
+        );
+        PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
+        increase_block_number_by(DEFAULT_SALE_DURATION);
+        let buyer_acc_info = Token::account_info_by_token_and_account(1, OTHER_ACCOUNT_ID);
+        assert_eq!(
+            buyer_acc_info.usable_balance::<Test>(),
+            DEFAULT_SALE_PURCHASE_AMOUNT
+        );
+    })
+}
+
+#[test]
+fn succesful_sale_purchase_with_vesting_schedule() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default()
+            .with_vesting_schedule(Some(VestingScheduleParams {
+                cliff: 100,
+                duration: 200,
+                initial_liquidity: Permill::from_percent(30),
+            }))
+            .call_and_assert(Ok(()));
+        increase_account_balance(
+            &OTHER_ACCOUNT_ID,
+            DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
+        );
+        PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
+
+        // At sale end block expect 0 tokens in available balance (due to 100 blocks cliff)
+        increase_block_number_by(DEFAULT_SALE_DURATION);
+        let buyer_acc_info = Token::account_info_by_token_and_account(1, OTHER_ACCOUNT_ID);
+        assert_eq!(buyer_acc_info.usable_balance::<Test>(), 0);
+
+        // After cliff expect 30% of tokens in available balance (initial_liquidity)
+        increase_block_number_by(DEFAULT_SALE_DURATION);
+        let buyer_acc_info = Token::account_info_by_token_and_account(1, OTHER_ACCOUNT_ID);
+        assert_eq!(
+            buyer_acc_info.usable_balance::<Test>(),
+            Permill::from_percent(30) * DEFAULT_SALE_PURCHASE_AMOUNT
+        );
+
+        // After 50% of duration (100 blocks), expect 30% + (50% * 70%) = 65% of tokens in available balance
+        increase_block_number_by(100);
+        let buyer_acc_info = Token::account_info_by_token_and_account(1, OTHER_ACCOUNT_ID);
+        assert_eq!(
+            buyer_acc_info.usable_balance::<Test>(),
+            Permill::from_percent(65) * DEFAULT_SALE_PURCHASE_AMOUNT
+        );
+
+        // At the end of vesting expect 100% of tokens in available balance
+        increase_block_number_by(100);
+        let buyer_acc_info = Token::account_info_by_token_and_account(1, OTHER_ACCOUNT_ID);
+        assert_eq!(
+            buyer_acc_info.usable_balance::<Test>(),
+            DEFAULT_SALE_PURCHASE_AMOUNT
+        );
     })
 }

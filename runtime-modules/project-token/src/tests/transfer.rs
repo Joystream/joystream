@@ -170,7 +170,7 @@ fn permissionless_transfer_ok_with_ex_deposit_and_without_src_removal() {
 
         assert_eq!(
             src_balance.saturating_sub(amount),
-            Token::account_info_by_token_and_account(token_id, src).free_balance
+            Token::account_info_by_token_and_account(token_id, src).usable_balance::<Test>()
         );
     })
 }
@@ -220,7 +220,7 @@ fn permissionless_transfer_ok_with_destination_receiving_funds() {
         let _ = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
         assert_eq!(
-            Token::account_info_by_token_and_account(token_id, dst).free_balance,
+            Token::account_info_by_token_and_account(token_id, dst).usable_balance::<Test>(),
             amount
         );
     })
@@ -587,7 +587,7 @@ fn permissioned_transfer_ok_without_src_removal() {
 
         assert_eq!(
             src_balance.saturating_sub(amount),
-            Token::account_info_by_token_and_account(token_id, src).free_balance
+            Token::account_info_by_token_and_account(token_id, src).usable_balance::<Test>()
         );
     })
 }
@@ -817,7 +817,7 @@ fn permissioned_multi_out_ok_with_ex_deposit_and_without_source_removal() {
         let _ = Token::transfer(origin!(src), token_id, outputs.clone());
 
         assert_eq!(
-            Token::account_info_by_token_and_account(token_id, src).free_balance,
+            Token::account_info_by_token_and_account(token_id, src).usable_balance::<Test>(),
             src_balance - amount1 - amount2,
         );
     })
@@ -1098,7 +1098,7 @@ fn join_whitelist_ok_with_new_account_having_free_balance_zero() {
         let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
 
         assert_eq!(
-            Token::account_info_by_token_and_account(token_id, acc1).free_balance,
+            Token::account_info_by_token_and_account(token_id, acc1).usable_balance::<Test>(),
             balance!(0)
         );
     })

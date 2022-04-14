@@ -3,10 +3,12 @@ use frame_support::{
     dispatch::{DispatchError, DispatchResult},
     ensure,
 };
-use sp_arithmetic::traits::{Saturating, Zero};
+use sp_arithmetic::traits::{Saturating, Unsigned, Zero};
 use sp_runtime::traits::{Convert, Hash};
 use sp_runtime::Permill;
-use sp_std::{iter::Sum, slice::Iter};
+use sp_std::{
+    cmp::min, collections::btree_map::BTreeMap, convert::TryInto, iter::Sum, slice::Iter,
+};
 
 use storage::{BagId, DataObjectCreationParameters};
 
@@ -21,17 +23,83 @@ pub(crate) enum DecreaseOp<Balance> {
     Remove(Balance, Balance),
 }
 
+/// Source of tokens subject to vesting that were acquired by an account
+/// either through purchase or during initial issuance
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
+pub enum VestingSource {
+    InitialIssuance,
+    Sale(TokenSaleId),
+}
+
+/// Represents a balance of tokens that are subject to vesting.
+/// Tokens from this balance may be "claimed" (based on the vesting schedule),
+/// number of claimed tokens (`claimed_amount`) can never exceed `total_amount`.
+/// Once all tokens are claimed, VestingBalance instance can be safely removed.
+///
+/// Currently the tokens from VestingBalance's are claimed automatically
+/// when an amount beeing spend from an account exceeds its `base_balance`.
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct VestingBalance<Balance, VestingSchedule> {
+    pub(crate) total_amount: Balance,
+    pub(crate) vesting_schedule: VestingSchedule,
+    pub(crate) claimed_amount: Balance,
+}
+
+impl<
+        Balance: Copy + Clone + Zero + From<u32> + TryInto<u32> + TryInto<u64> + Unsigned + Ord + Saturating,
+        BlockNumber: Copy + Clone + PartialOrd + Ord + Saturating + From<u32> + Unsigned,
+    > VestingBalance<Balance, VestingSchedule<BlockNumber>>
+{
+    /// Returns number of tokens the account can claim from this VestingBalance
+    /// at the current block.
+    pub(crate) fn claimable_amount<T: Trait<Balance = Balance, BlockNumber = BlockNumber>>(
+        &self,
+    ) -> Balance {
+        let current_block = <frame_system::Module<T>>::block_number();
+        let vesting = &self.vesting_schedule;
+        // Vesting not yet started
+        if vesting.start_block > current_block {
+            return Balance::zero();
+        }
+        // Vesting period is ongoing
+        if vesting.start_block.saturating_add(vesting.duration) > current_block {
+            let blocks_since_start = current_block.saturating_sub(vesting.start_block);
+            let initial_amount = vesting.initial_liquidity * self.total_amount;
+            let total_linear_amount = self.total_amount.saturating_sub(initial_amount);
+            let current_linear_permill = Permill::from_rational_approximation(
+                T::BlockNumberToBalance::convert(blocks_since_start),
+                T::BlockNumberToBalance::convert(vesting.duration),
+            );
+            let linearly_vested_amount = current_linear_permill * total_linear_amount;
+            return initial_amount
+                .saturating_add(linearly_vested_amount)
+                .saturating_sub(self.claimed_amount);
+        }
+        // Vesting period has finished
+        self.total_amount.saturating_sub(self.claimed_amount)
+    }
+}
+
 /// Info for the account
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct AccountData<Balance> {
-    /// Non-reserved part of the balance. There may still be restrictions
-    /// on this, but it is the total pool what may in principle be
-    /// transferred, reserved and used for tipping.
-    pub(crate) free_balance: Balance,
+pub struct AccountData<VestingBalance, Balance> {
+    /// Map that represents account's vesting balances indexed by source.
+    /// Account's total claimable vesting balance at current block
+    /// can be calculated by summing `v.claimable_amount()` of all
+    /// VestingBalance (v) instances in the map.
+    ///
+    /// See the comment above VestingBalance type definition for more information.
+    pub(crate) vesting_balances: BTreeMap<VestingSource, VestingBalance>,
 
-    /// This balance is a 'reserve' balance that other subsystems use
-    /// in order to set aside tokens that are still 'owned' by the
-    /// account holder, but which are not usable in any case.
+    /// Represents balance that is not subject to any vesting.
+    /// Together with total claimable vesting balance (based on `vesting_balances`)
+    /// represents account's `total_balance`.
+    pub(crate) base_balance: Balance,
+
+    /// Number of tokens that are reserved in this account for some purpose
+    /// and therefore cannot be used for any other purpose until unreserved.
+    ///
+    /// This amount is substracted from `total_balance` in order to get `usable_balance`.
     pub(crate) reserved_balance: Balance,
 }
 
@@ -46,6 +114,11 @@ pub struct TokenData<Balance, Hash, BlockNumber, TokenSale> {
 
     /// Existential deposit allowed for the token
     pub(crate) existential_deposit: Balance,
+
+    // TODO: Limit number of sales per token?
+    /// Number of sales initialized, also serves as unique identifier
+    /// of the current sale (`last_sale`) if any.
+    pub(crate) sales_initialized: TokenSaleId,
 
     /// Last token sale (upcoming / ongoing / past)
     pub(crate) last_sale: Option<TokenSale>,
@@ -92,8 +165,31 @@ pub struct VestingScheduleParams<BlockNumber> {
     pub(crate) duration: BlockNumber,
     // Number of blocks before the vesting begins
     pub(crate) cliff: BlockNumber,
-    // Initial instant liquiditiy once vesting begins
+    // Initial, instant liquiditiy once vesting begins (percentage of total amount)
     pub(crate) initial_liquidity: Permill,
+}
+
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default)]
+pub struct VestingSchedule<BlockNumber> {
+    // Block at which the vesting begins
+    pub(crate) start_block: BlockNumber,
+    // Vesting duration
+    pub(crate) duration: BlockNumber,
+    // Initial, instant liquiditiy once vesting begins (percentage of total amount)
+    pub(crate) initial_liquidity: Permill,
+}
+
+impl<BlockNumber: Saturating> VestingSchedule<BlockNumber> {
+    pub(crate) fn from_params(
+        init_block: BlockNumber,
+        params: VestingScheduleParams<BlockNumber>,
+    ) -> Self {
+        Self {
+            start_block: init_block.saturating_add(params.cliff),
+            duration: params.duration,
+            initial_liquidity: params.initial_liquidity,
+        }
+    }
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -117,8 +213,16 @@ pub struct WhitelistParams<Hash, SingleDataObjectUploadParams> {
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct TokenSaleParams<JOYBalance, Balance, BlockNumber, VestingScheduleParams, WhitelistParams>
-{
+pub struct TokenSaleParams<
+    JOYBalance,
+    Balance,
+    BlockNumber,
+    VestingScheduleParams,
+    WhitelistParams,
+    AccountId,
+> {
+    /// Account that acts as the source of the tokens on sale
+    pub tokens_source: AccountId,
     /// Token's unit price in JOY
     pub unit_price: JOYBalance,
     /// Number of tokens on sale
@@ -136,11 +240,13 @@ pub struct TokenSaleParams<JOYBalance, Balance, BlockNumber, VestingSchedulePara
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default)]
-pub struct TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Hash> {
+pub struct TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Hash, AccountId> {
     /// Token's unit price in JOY
     pub unit_price: JOYBalance,
-    /// Number of tokens on sale
-    pub upper_bound_quantity: Balance,
+    /// Number of tokens still on sale (if any)
+    pub quantity_left: Balance,
+    /// Account that acts as the source of the tokens on sale
+    pub tokens_source: AccountId,
     /// Block at which the sale started / will start
     pub start_block: BlockNumber,
     /// Sale duration (in blocks)
@@ -151,8 +257,8 @@ pub struct TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Ha
     pub vesting_schedule: Option<VestingScheduleParams>,
 }
 
-impl<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Hash>
-    TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Hash>
+impl<JOYBalance, Balance, BlockNumber: Zero + Saturating + Copy + Clone, Hash, AccountId>
+    TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams<BlockNumber>, Hash, AccountId>
 {
     pub(crate) fn try_from_params<T: Trait>(
         params: TokenSaleParamsOf<T>,
@@ -169,10 +275,28 @@ impl<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Hash>
             start_block,
             duration: params.duration,
             unit_price: params.unit_price,
-            upper_bound_quantity: params.upper_bound_quantity,
+            quantity_left: params.upper_bound_quantity,
             vesting_schedule: params.vesting_schedule,
             whitelist_commitment: params.whitelist.map(|p| p.commitment),
+            tokens_source: params.tokens_source,
         })
+    }
+
+    pub(crate) fn get_vesting_schedule(&self) -> VestingSchedule<BlockNumber> {
+        self.vesting_schedule.as_ref().map_or(
+            // Default VestingSchedule when none specified (distribute all tokens right after sale ends)
+            VestingSchedule::<BlockNumber> {
+                start_block: self.start_block.saturating_add(self.duration),
+                initial_liquidity: Permill::one(),
+                duration: BlockNumber::zero(),
+            },
+            |vs| {
+                VestingSchedule::<BlockNumber>::from_params(
+                    self.start_block.saturating_add(self.duration),
+                    vs.clone(),
+                )
+            },
+        )
     }
 }
 
@@ -226,6 +350,15 @@ impl<TokenSale> OfferingState<TokenSale> {
         match Self::of::<T>(&token) {
             OfferingStateOf::<T>::UpcomingSale(sale) => Ok(sale),
             _ => Err(Error::<T>::NoUpcomingSale.into()),
+        }
+    }
+
+    pub(crate) fn ensure_sale_of<T: crate::Trait>(
+        token: &TokenDataOf<T>,
+    ) -> Result<TokenSaleOf<T>, DispatchError> {
+        match Self::of::<T>(&token) {
+            OfferingStateOf::<T>::Sale(sale) => Ok(sale),
+            _ => Err(Error::<T>::NoActiveSale.into()),
         }
     }
 }
@@ -314,41 +447,125 @@ impl<AddressId: Default, Balance: Zero, VestingScheduleParams> Default
 }
 
 /// Default trait for AccountData
-impl<Balance: Zero> Default for AccountData<Balance> {
+impl<VestingBalance, Balance: Zero> Default for AccountData<VestingBalance, Balance> {
     fn default() -> Self {
         Self {
-            free_balance: Balance::zero(),
+            vesting_balances: BTreeMap::new(),
+            base_balance: Balance::zero(),
             reserved_balance: Balance::zero(),
         }
     }
 }
 
 /// Encapsules parameters validation + TokenData construction
-impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
-    /// Increase liquidity for an account
+impl<
+        Balance: Clone
+            + Zero
+            + From<u32>
+            + TryInto<u32>
+            + Unsigned
+            + Saturating
+            + Sum
+            + PartialOrd
+            + Ord
+            + TryInto<u64>
+            + Copy,
+        BlockNumber: Copy + Clone + PartialOrd + Ord + Saturating + From<u32> + Unsigned,
+    > AccountData<VestingBalance<Balance, VestingSchedule<BlockNumber>>, Balance>
+{
+    /// Calculate account's total balance at current block
+    pub(crate) fn total_balance<T: Trait<Balance = Balance, BlockNumber = BlockNumber>>(
+        &self,
+    ) -> Balance {
+        self.vesting_balances
+            .values()
+            .map(|l| l.claimable_amount::<T>())
+            .sum::<Balance>()
+            .saturating_add(self.base_balance)
+    }
+
+    /// Calculate account's usable (unreserved) balance at current block
+    pub(crate) fn usable_balance<T: Trait<Balance = Balance, BlockNumber = BlockNumber>>(
+        &self,
+    ) -> Balance {
+        self.total_balance::<T>()
+            .saturating_sub(self.reserved_balance)
+    }
+
+    /// Increase vesting balance of an account by source
+    pub(crate) fn increase_vesting_balance(
+        &mut self,
+        source: VestingSource,
+        amount: Balance,
+        vesting_schedule: VestingSchedule<BlockNumber>,
+    ) {
+        let existing_balance = self.vesting_balances.get(&source).map(|v| v.clone());
+        self.vesting_balances.insert(
+            source,
+            VestingBalance {
+                claimed_amount: existing_balance
+                    .as_ref()
+                    .map_or(Balance::zero(), |vb| vb.claimed_amount),
+                total_amount: existing_balance
+                    .as_ref()
+                    .map_or(Balance::zero(), |vb| vb.total_amount)
+                    .saturating_add(amount),
+                vesting_schedule,
+            },
+        );
+    }
+
+    /// Increase account's liquidity by given amount
     pub(crate) fn increase_liquidity_by(&mut self, amount: Balance) {
-        self.free_balance = self.free_balance.saturating_add(amount);
+        self.base_balance = self.base_balance.saturating_add(amount);
     }
 
     /// Decrease liquidity for an account
-    pub(crate) fn decrease_liquidity_by(&mut self, amount: Balance) {
-        self.free_balance = self.free_balance.saturating_sub(amount);
+    pub(crate) fn decrease_liquidity_by<T: Trait<Balance = Balance, BlockNumber = BlockNumber>>(
+        &mut self,
+        amount: Balance,
+    ) -> () {
+        if amount > self.base_balance {
+            let mut remaining_amount = amount.saturating_sub(self.base_balance);
+            self.base_balance = Balance::zero();
+            let new_vesting_balances = self
+                .vesting_balances
+                .iter()
+                .filter_map(|(k, vb)| {
+                    let mut new_vb = vb.clone();
+                    let amount_to_claim = min(vb.claimable_amount::<T>(), remaining_amount);
+                    new_vb.claimed_amount = vb.claimed_amount.saturating_add(amount_to_claim);
+                    remaining_amount = remaining_amount.saturating_sub(amount_to_claim);
+                    if new_vb.claimed_amount == new_vb.total_amount {
+                        None
+                    } else {
+                        Some((k.clone(), new_vb))
+                    }
+                })
+                .collect::<BTreeMap<_, _>>();
+            self.vesting_balances = new_vesting_balances;
+        } else {
+            self.base_balance = self.base_balance.saturating_sub(amount);
+        }
     }
 
     /// Verify if amount can be decrease taking account existential deposit
     /// Returns the amount that should be removed
-    pub(crate) fn decrease_with_ex_deposit<T: crate::Trait>(
+    /// TODO: How to handle vesting?
+    pub(crate) fn decrease_with_ex_deposit<
+        T: Trait<Balance = Balance, BlockNumber = BlockNumber>,
+    >(
         &self,
         amount: Balance,
         existential_deposit: Balance,
     ) -> Result<DecreaseOp<Balance>, DispatchError> {
+        let usable_balance = self.usable_balance::<T>();
         ensure!(
-            self.free_balance >= amount,
+            usable_balance >= amount,
             crate::Error::<T>::InsufficientFreeBalanceForDecreasing,
         );
 
-        let new_total = self
-            .free_balance
+        let new_total = usable_balance
             .saturating_sub(amount)
             .saturating_add(self.reserved_balance);
 
@@ -357,10 +574,6 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
         } else {
             Ok(DecreaseOp::<Balance>::Reduce(amount))
         }
-    }
-
-    pub(crate) fn _total_balance(&self) -> Balance {
-        self.free_balance.saturating_add(self.reserved_balance)
     }
 }
 /// Token Data implementation
@@ -397,6 +610,7 @@ impl<Balance: Saturating + Copy, Hash, BlockNumber, OfferingState>
             existential_deposit: params.existential_deposit,
             transfer_policy: params.transfer_policy,
             patronage_info,
+            sales_initialized: 0,
         };
 
         Ok(token_data)
@@ -482,8 +696,11 @@ impl<AccountId, Balance> From<Outputs<AccountId, Balance>> for Vec<Output<Accoun
 }
 
 // Aliases
+/// Alias for VestingBalance
+pub(crate) type VestingBalanceOf<T> = VestingBalance<<T as Trait>::Balance, VestingScheduleOf<T>>;
+
 /// Alias for Account Data
-pub(crate) type AccountDataOf<T> = AccountData<<T as crate::Trait>::Balance>;
+pub(crate) type AccountDataOf<T> = AccountData<VestingBalanceOf<T>, <T as Trait>::Balance>;
 
 /// Alias for Token Data
 pub(crate) type TokenDataOf<T> = TokenData<
@@ -524,6 +741,9 @@ pub(crate) type OutputsOf<T> =
 pub(crate) type VestingScheduleParamsOf<T> =
     VestingScheduleParams<<T as frame_system::Trait>::BlockNumber>;
 
+/// Alias for VestingSchedule
+pub(crate) type VestingScheduleOf<T> = VestingSchedule<<T as frame_system::Trait>::BlockNumber>;
+
 /// Alias for SingleDataObjectUploadParams
 pub(crate) type SingleDataObjectUploadParamsOf<T> =
     SingleDataObjectUploadParams<<T as balances::Trait>::Balance>;
@@ -539,6 +759,7 @@ pub(crate) type TokenSaleParamsOf<T> = TokenSaleParams<
     <T as frame_system::Trait>::BlockNumber,
     VestingScheduleParamsOf<T>,
     WhitelistParamsOf<T>,
+    <T as frame_system::Trait>::AccountId,
 >;
 
 /// Alias for TokenSale
@@ -548,6 +769,7 @@ pub(crate) type TokenSaleOf<T> = TokenSale<
     <T as frame_system::Trait>::BlockNumber,
     VestingScheduleParamsOf<T>,
     <T as frame_system::Trait>::Hash,
+    <T as frame_system::Trait>::AccountId,
 >;
 
 /// Alias for OfferingState
@@ -555,3 +777,6 @@ pub(crate) type OfferingStateOf<T> = OfferingState<TokenSaleOf<T>>;
 
 /// Alias for UploadContext
 pub(crate) type UploadContextOf<T> = UploadContext<<T as frame_system::Trait>::AccountId, BagId<T>>;
+
+/// TokenSaleId
+pub(crate) type TokenSaleId = u32;

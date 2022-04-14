@@ -284,7 +284,8 @@ fn claim_patronage_ok_with_credit_accounting() {
         let _ = Token::claim_patronage_credit(token_id, owner_account_id);
 
         assert_eq!(
-            Token::account_info_by_token_and_account(token_id, owner_account_id).free_balance,
+            Token::account_info_by_token_and_account(token_id, owner_account_id)
+                .usable_balance::<Test>(),
             balance!(100), // rate * blocks
         );
     })
