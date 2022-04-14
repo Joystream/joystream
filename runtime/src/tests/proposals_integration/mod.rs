@@ -1242,6 +1242,6 @@ fn update_nft_limit_proposal_succeeds() {
         run_to_block(System::block_number() + params.grace_period + 1);
 
         let nft_limit_id: NftLimitId<crate::ChannelId> = limit_type.into();
-        assert_eq!(Content::nft_limit_by_id(nft_limit_id), new_limit);
+        assert_eq!(content::GlobalDailyNftLimit::<Runtime>::get(), new_limit);
     });
 }

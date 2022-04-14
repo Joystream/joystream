@@ -864,30 +864,28 @@ pub(crate) fn set_all_nft_limits(channel_id: u64, limit: LimitPerPeriod<u64>) {
 }
 
 pub(crate) fn set_global_daily_nft_limit(limit: LimitPerPeriod<u64>) {
-    <crate::NftLimitsById<Test>>::insert(NftLimitId::GlobalDaily, limit);
+    Content::set_nft_limit(NftLimitId::GlobalDaily, limit);
 }
 
 pub(crate) fn set_global_weekly_nft_limit(limit: LimitPerPeriod<u64>) {
-    <crate::NftLimitsById<Test>>::insert(NftLimitId::GlobalWeekly, limit);
+    Content::set_nft_limit(NftLimitId::GlobalWeekly, limit);
 }
 
 pub(crate) fn set_channel_daily_nft_limit(channel_id: u64, limit: LimitPerPeriod<u64>) {
-    crate::ChannelById::<Test>::mutate(channel_id, |channel| {
-        channel.daily_nft_limit = limit;
-    });
+    Content::set_nft_limit(NftLimitId::ChannelDaily(channel_id), limit);
 }
 
 pub(crate) fn set_channel_weekly_nft_limit(channel_id: u64, limit: LimitPerPeriod<u64>) {
-    crate::ChannelById::<Test>::mutate(channel_id, |channel| {
-        channel.weekly_nft_limit = limit;
-    });
+    Content::set_nft_limit(NftLimitId::ChannelWeekly(channel_id), limit);
 }
 
-pub(crate) fn set_nft_limit(limit_id: NftLimitId<u64>, limit: LimitPerPeriod<u64>) {
+pub(crate) fn nft_limit_by_id(limit_id: NftLimitId<ChannelId>) -> LimitPerPeriod<u64> {
     match limit_id {
-        NftLimitId::GlobalDaily => set_global_daily_nft_limit(limit),
-        NftLimitId::GlobalWeekly => set_global_weekly_nft_limit(limit),
-        NftLimitId::ChannelDaily(channel_id) => set_channel_daily_nft_limit(channel_id, limit),
-        NftLimitId::ChannelWeekly(channel_id) => set_channel_weekly_nft_limit(channel_id, limit),
+        NftLimitId::GlobalDaily => crate::GlobalDailyNftLimit::<Test>::get(),
+        NftLimitId::GlobalWeekly => crate::GlobalWeeklyNftLimit::<Test>::get(),
+        NftLimitId::ChannelDaily(channel_id) => Content::channel_by_id(channel_id).daily_nft_limit,
+        NftLimitId::ChannelWeekly(channel_id) => {
+            Content::channel_by_id(channel_id).weekly_nft_limit
+        }
     }
 }

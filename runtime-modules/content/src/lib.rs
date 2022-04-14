@@ -220,26 +220,22 @@ decl_storage! {
         double_map hasher(blake2_128_concat) T::VideoId,
         hasher(blake2_128_concat) T::MemberId => OpenAuctionBid<T>;
 
-        /// Nft limits map.
-        pub NftLimitsById get(fn nft_limit_by_id): map hasher(blake2_128_concat)
-            NftLimitId<T::ChannelId> => LimitPerPeriod<T::BlockNumber>;
-
         /// Nft counters map.
         pub NftCountersById get(fn nft_counter_by_id): map hasher(blake2_128_concat)
             NftLimitId<T::ChannelId> => NftCounter<T::BlockNumber>;
 
+        /// Global daily NFT limit.
+        pub GlobalDailyNftLimit get(fn global_daily_nft_limit): LimitPerPeriod<T::BlockNumber>;
+
+        /// Global weekly NFT limit.
+        pub GlobalWeeklyNftLimit get(fn global_weekly_nft_limit): LimitPerPeriod<T::BlockNumber>;
+
     }
     add_extra_genesis {
         build(|_| {
-            // We set initial global NFT limits
-            NftLimitsById::<T>::insert(
-                NftLimitId::GlobalDaily,
-                T::DefaultGlobalDailyNftLimit::get()
-            );
-            NftLimitsById::<T>::insert(
-                NftLimitId::GlobalWeekly,
-                T::DefaultGlobalWeeklyNftLimit::get()
-            );
+            // We set initial global NFT limits.
+            GlobalDailyNftLimit::<T>::put(T::DefaultGlobalDailyNftLimit::get());
+            GlobalWeeklyNftLimit::<T>::put(T::DefaultGlobalWeeklyNftLimit::get());
         });
     }
 }
@@ -2461,7 +2457,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            <NftLimitsById::<T>>::insert(nft_limit_id, limit);
+            Self::set_nft_limit(nft_limit_id, limit);
 
             Self::deposit_event(RawEvent::NftLimitUpdated(nft_limit_id, limit));
         }
@@ -2793,14 +2789,19 @@ impl<T: Trait> Module<T> {
 
     // Increment NFT numbers for a channel and global counters.
     fn increment_nft_counters(channel: &mut Channel<T>) {
-        Self::increment_global_nft_counter(NftLimitId::GlobalDaily);
-        Self::increment_global_nft_counter(NftLimitId::GlobalWeekly);
+        Self::increment_global_nft_counter(NftLimitId::GlobalDaily, Self::global_daily_nft_limit());
+        Self::increment_global_nft_counter(
+            NftLimitId::GlobalWeekly,
+            Self::global_weekly_nft_limit(),
+        );
         channel.increment_channel_nft_counters(frame_system::Module::<T>::block_number());
     }
 
     // Increment global NFT counter.
-    fn increment_global_nft_counter(nft_limit_id: NftLimitId<T::ChannelId>) {
-        let nft_limit = Self::nft_limit_by_id(nft_limit_id);
+    fn increment_global_nft_counter(
+        nft_limit_id: NftLimitId<T::ChannelId>,
+        nft_limit: LimitPerPeriod<T::BlockNumber>,
+    ) {
         let current_block = frame_system::Module::<T>::block_number();
 
         NftCountersById::<T>::mutate(nft_limit_id, |nft_counter| {
@@ -2812,20 +2813,18 @@ impl<T: Trait> Module<T> {
     fn check_nft_limits(channel: &Channel<T>) -> DispatchResult {
         // Global daily limit.
         let nft_limit_id = NftLimitId::GlobalDaily;
-        let nft_limit = Self::nft_limit_by_id(nft_limit_id);
         let nft_counter = Self::nft_counter_by_id(nft_limit_id);
         Self::check_generic_nft_limit(
-            &nft_limit,
+            &Self::global_daily_nft_limit(),
             &nft_counter,
             Error::<T>::GlobalNftDailyLimitExceeded,
         )?;
 
         // Global weekly limit.
         let nft_limit_id = NftLimitId::GlobalWeekly;
-        let nft_limit = Self::nft_limit_by_id(nft_limit_id);
         let nft_counter = Self::nft_counter_by_id(nft_limit_id);
         Self::check_generic_nft_limit(
-            &nft_limit,
+            &Self::global_weekly_nft_limit(),
             &nft_counter,
             Error::<T>::GlobalNftWeeklyLimitExceeded,
         )?;
@@ -2861,6 +2860,27 @@ impl<T: Trait> Module<T> {
         }
 
         Ok(())
+    }
+
+    // Set global and channel NFT limit
+    pub(crate) fn set_nft_limit(
+        limit_id: NftLimitId<T::ChannelId>,
+        limit: LimitPerPeriod<T::BlockNumber>,
+    ) {
+        match limit_id {
+            NftLimitId::GlobalDaily => GlobalDailyNftLimit::<T>::put(limit),
+            NftLimitId::GlobalWeekly => GlobalWeeklyNftLimit::<T>::put(limit),
+            NftLimitId::ChannelDaily(channel_id) => {
+                ChannelById::<T>::mutate(channel_id, |channel| {
+                    channel.daily_nft_limit = limit;
+                });
+            }
+            NftLimitId::ChannelWeekly(channel_id) => {
+                ChannelById::<T>::mutate(channel_id, |channel| {
+                    channel.weekly_nft_limit = limit;
+                });
+            }
+        }
     }
 }
 
