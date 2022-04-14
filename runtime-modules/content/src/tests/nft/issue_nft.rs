@@ -417,3 +417,81 @@ fn test_helper_for_nft_limit_works_as_expected(
         ));
     })
 }
+
+#[test]
+fn nft_counters_increment_works_as_expected() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        let video_id = NextVideoId::<Test>::get();
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+
+        let channel_id = 1;
+        let daily_period_in_blocks = 10;
+        let daily_limit = LimitPerPeriod::<u64> {
+            limit: 1000,
+            block_number_period: daily_period_in_blocks,
+        };
+        let weekly_period_in_blocks = 20;
+        let weekly_limit = LimitPerPeriod::<u64> {
+            limit: 1000,
+            block_number_period: weekly_period_in_blocks,
+        };
+
+        set_global_daily_nft_limit(daily_limit);
+        set_global_weekly_nft_limit(weekly_limit);
+        set_channel_daily_nft_limit(channel_id, daily_limit);
+        set_channel_weekly_nft_limit(channel_id, weekly_limit);
+
+        // Initial check
+        let channel = Content::channel_by_id(channel_id);
+        assert_eq!(channel.daily_nft_counter.counter, 0);
+        assert_eq!(channel.weekly_nft_counter.counter, 0);
+        assert_eq!(Content::global_daily_nft_counter().counter, 0);
+        assert_eq!(Content::global_weekly_nft_counter().counter, 0);
+
+        // Issue nft 1
+        assert_ok!(Content::issue_nft(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            NftIssuanceParameters::<Test>::default(),
+        ));
+
+        let channel = Content::channel_by_id(channel_id);
+        assert_eq!(channel.daily_nft_counter.counter, 1);
+        assert_eq!(channel.weekly_nft_counter.counter, 1);
+        assert_eq!(Content::global_daily_nft_counter().counter, 1);
+        assert_eq!(Content::global_weekly_nft_counter().counter, 1);
+
+        // Issue nft 2
+        let video_id = NextVideoId::<Test>::get();
+
+        CreateVideoFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_assets(StorageAssets::<Test> {
+                expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+                object_creation_list: create_data_objects_helper(),
+            })
+            .call_and_assert(Ok(()));
+
+        run_to_block(daily_period_in_blocks);
+        assert_ok!(Content::issue_nft(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            NftIssuanceParameters::<Test>::default(),
+        ));
+
+        let channel = Content::channel_by_id(channel_id);
+        assert_eq!(channel.daily_nft_counter.counter, 1);
+        assert_eq!(channel.weekly_nft_counter.counter, 2);
+        assert_eq!(Content::global_daily_nft_counter().counter, 1);
+        assert_eq!(Content::global_weekly_nft_counter().counter, 2);
+    })
+}

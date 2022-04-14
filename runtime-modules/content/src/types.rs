@@ -198,7 +198,7 @@ impl<MemberId: Ord, CuratorGroupId, AccountId, Balance, BlockNumber: BaseArithme
             .update_for_current_period(current_block, self.daily_nft_limit.block_number_period);
 
         self.weekly_nft_counter
-            .update_for_current_period(current_block, self.daily_nft_limit.block_number_period);
+            .update_for_current_period(current_block, self.weekly_nft_limit.block_number_period);
     }
 }
 
