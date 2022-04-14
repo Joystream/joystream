@@ -937,6 +937,9 @@ export async function contentNft_BidMadeCompletingAuction({
   nft.lastSalePrice = price
   nft.lastSaleDate = new Date(event.blockTimestamp)
 
+  // save NFT
+  await store.save<OwnedNft>(nft)
+
   // common event processing - second
 
   const announcingPeriodStartedEvent = new BidMadeCompletingAuctionEvent({
