@@ -849,6 +849,10 @@ decl_module! {
             // assets ids
             let data_objects_ids = Storage::<T>::get_next_data_object_ids(storage_assets.object_creation_list.len());
 
+            if nft_status.is_some() {
+                Self::check_nft_limits(&channel)?;
+            }
+
             // create the video struct
             let video: Video<T> = VideoRecord {
                 in_channel: channel_id,
@@ -864,10 +868,6 @@ decl_module! {
                     params.expected_data_object_deletion_prize,
                 );
                 Storage::<T>::upload_data_objects(params)?;
-            }
-
-            if nft_status.is_some() {
-                Self::check_nft_limits(&channel)?;
             }
 
             //
