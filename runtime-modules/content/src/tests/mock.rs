@@ -336,19 +336,19 @@ parameter_types! {
     pub const DefaultGlobalDailyNftLimit: LimitPerPeriod<u64> = LimitPerPeriod {
         block_number_period: 100,
         limit: 10000,
-    };  // TODO: update
+    };
     pub const DefaultGlobalWeeklyNftLimit: LimitPerPeriod<u64> = LimitPerPeriod {
         block_number_period: 1000,
         limit: 50000,
-    };  // TODO: update
+    };
     pub const DefaultChannelDailyNftLimit: LimitPerPeriod<u64> = LimitPerPeriod {
         block_number_period: 100,
         limit: 100,
-    };  // TODO: update
+    };
     pub const DefaultChannelWeeklyNftLimit: LimitPerPeriod<u64> = LimitPerPeriod {
         block_number_period: 1000,
         limit: 500,
-    };  // TODO: update
+    };
 }
 
 impl Trait for Test {
