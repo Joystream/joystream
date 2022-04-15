@@ -15,6 +15,7 @@ use common::council::CouncilBudgetManager;
 use common::membership::{MemberId, MemberOriginValidator, MembershipInfoProvider};
 
 // Helper enum for the bounty management.
+#[derive(Eq, PartialEq)]
 pub(crate) enum BountyActorManager<T: Trait> {
     // Bounty was created or funded by a council.
     Council,
@@ -43,7 +44,13 @@ impl<T: Trait> BountyActorManager<T> {
             }
         }
     }
-
+    // Construct BountyActor.
+    pub(crate) fn get_bounty_actor(&self) -> BountyActor<MemberId<T>> {
+        match self {
+            BountyActorManager::Member(_, member_id) => BountyActor::Member(*member_id),
+            BountyActorManager::Council => BountyActor::Council,
+        }
+    }
     // Construct BountyActor.
     pub(crate) fn get_bounty_actor_manager(
         actor: BountyActor<MemberId<T>>,
@@ -85,24 +92,12 @@ impl<T: Trait> BountyActorManager<T> {
         T::CouncilBudgetManager::get_budget() >= amount
     }
 
-    // Validate that provided actor relates to the initial BountyActor.
-    pub(crate) fn validate_actor(&self, actor: &BountyActor<MemberId<T>>) -> DispatchResult {
-        let initial_actor = match self {
-            BountyActorManager::Council => BountyActor::Council,
-            BountyActorManager::Member(_, member_id) => BountyActor::Member(*member_id),
-        };
-
-        ensure!(initial_actor == actor.clone(), Error::<T>::NotBountyActor);
-
-        Ok(())
-    }
-
     // Transfer funds for the bounty creation.
     pub(crate) fn transfer_funds_to_bounty_account(
         &self,
         bounty_id: T::BountyId,
         required_balance: BalanceOf<T>,
-    ) -> DispatchResult {
+    ) {
         match self {
             BountyActorManager::Council => {
                 BountyActorManager::<T>::transfer_balance_from_council_budget(
@@ -115,11 +110,9 @@ impl<T: Trait> BountyActorManager<T> {
                     account_id,
                     bounty_id,
                     required_balance,
-                )?;
+                );
             }
         }
-
-        Ok(())
     }
 
     // Restore a balance for the bounty creator.
@@ -127,7 +120,7 @@ impl<T: Trait> BountyActorManager<T> {
         &self,
         bounty_id: T::BountyId,
         required_balance: BalanceOf<T>,
-    ) -> DispatchResult {
+    ) {
         match self {
             BountyActorManager::Council => {
                 BountyActorManager::<T>::transfer_balance_to_council_budget(
@@ -140,11 +133,9 @@ impl<T: Trait> BountyActorManager<T> {
                     account_id,
                     bounty_id,
                     required_balance,
-                )?;
+                );
             }
         }
-
-        Ok(())
     }
 
     // Remove some balance from the council budget and transfer it to the bounty account.
