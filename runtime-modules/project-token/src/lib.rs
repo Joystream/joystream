@@ -4,11 +4,15 @@ use frame_support::{
     decl_module, decl_storage,
     dispatch::{fmt::Debug, marker::Copy, DispatchError, DispatchResult},
     ensure,
-    traits::{Currency, Get},
+    traits::{Currency, ExistenceRequirement, Get},
 };
 use frame_system::ensure_signed;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
-use sp_runtime::{traits::Convert, ModuleId};
+use sp_runtime::{
+    traits::{AccountIdConversion, Convert},
+    ModuleId,
+};
+use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::Sum;
 
 // crate modules
@@ -24,8 +28,15 @@ pub use events::{Event, RawEvent};
 use traits::PalletToken;
 use types::{
     AccountDataOf, MerkleProofOf, TokenDataOf, TokenIssuanceParametersOf, TransferPolicyOf,
-    TransfersOf,
+    Transfers, TransfersOf, Validated,
 };
+
+// aliases
+pub type ReserveBalanceOf<T> =
+    <<T as Trait>::ReserveCurrency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
+
+type ValidatedTransfers<T> =
+    Transfers<Validated<<T as frame_system::Trait>::AccountId>, <T as Trait>::Balance>;
 
 /// Pallet Configuration Trait
 pub trait Trait: frame_system::Trait {
@@ -110,16 +121,16 @@ decl_module! {
             let src = ensure_signed(origin)?;
 
             // Currency transfer preconditions
-            Self::ensure_can_transfer(token_id, &src, &outputs)?;
+            let validated_transfers = Self::ensure_can_transfer(token_id, &src, outputs)?;
 
             // == MUTATION SAFE ==
 
-            Self::do_transfer(token_id, &src, &outputs);
+            Self::do_transfer(token_id, &src, &validated_transfers);
 
             Self::deposit_event(RawEvent::TokenAmountTransferred(
                 token_id,
                 src,
-                outputs.into(),
+                validated_transfers,
             ));
             Ok(())
         }
@@ -387,37 +398,70 @@ impl<T: Trait> Module<T> {
     pub(crate) fn ensure_can_transfer(
         token_id: T::TokenId,
         src: &T::AccountId,
-        outputs: &TransfersOf<T>,
-    ) -> DispatchResult {
+        transfers: TransfersOf<T>,
+    ) -> Result<ValidatedTransfers<T>, DispatchError> {
         // ensure token validity
         let token_info = Self::ensure_token_exists(token_id)?;
 
         // ensure src account id validity
         let src_account_info = Self::ensure_account_data_exists(token_id, src)?;
 
-        // ensure dst account id validity
-        if token_info.is_permissioned_transfer_policy() {
-            outputs.iter().try_for_each(|(dst, _)| {
-                Self::ensure_account_data_exists(token_id, dst).map(|_| ())
-            })
-        } else {
-            Ok(())
-        }?;
+        // validate destinations
+        let validated_transfers =
+            Self::validate_transfers(token_id, transfers, &token_info.transfer_policy)?;
 
-        src_account_info.ensure_can_decrease_liquidity_by::<T>(outputs.total_amount())
+        // compute bloat bond
+        let bloat_bond = Self::compute_bloat_bond(&validated_transfers);
+        ensure!(
+            T::ReserveCurrency::free_balance(src) >= bloat_bond,
+            Error::<T>::InsufficientBalanceForBloatBond
+        );
+
+        src_account_info
+            .ensure_can_decrease_liquidity_by::<T>(validated_transfers.total_amount())?;
+
+        Ok(validated_transfers)
     }
 
     /// Perform balance accounting for balances
-    pub(crate) fn do_transfer(token_id: T::TokenId, src: &T::AccountId, outputs: &TransfersOf<T>) {
-        outputs.iter().for_each(|(account_id, payment)| {
-            AccountInfoByTokenAndAccount::<T>::mutate(token_id, &account_id, |account_data| {
-                account_data.increase_liquidity_by(payment.amount);
-            });
-        });
+    pub(crate) fn do_transfer(
+        token_id: T::TokenId,
+        src: &T::AccountId,
+        validated_transfers: &ValidatedTransfers<T>,
+    ) {
+        validated_transfers.iter().for_each(
+            |(validated_account, payment)| match validated_account {
+                Validated::<_>::Existing(account_id) => AccountInfoByTokenAndAccount::<T>::mutate(
+                    token_id,
+                    &account_id,
+                    |account_data| {
+                        account_data.increase_liquidity_by(payment.amount);
+                    },
+                ),
+                Validated::<_>::NonExisting(account_id) => {
+                    AccountInfoByTokenAndAccount::<T>::insert(
+                        token_id,
+                        &account_id,
+                        AccountDataOf::<T>::new_with_liquidity(payment.amount),
+                    )
+                }
+            },
+        );
+
+        let bloat_bond = Self::compute_bloat_bond(validated_transfers);
+        if !bloat_bond.is_zero() {
+            let treasury_account_id = Self::bloat_bond_treasury_account_id(token_id);
+            let _ = T::ReserveCurrency::transfer(
+                src,
+                &treasury_account_id,
+                bloat_bond,
+                ExistenceRequirement::KeepAlive,
+            );
+        }
 
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, &src, |account_data| {
-            account_data.decrease_liquidity_by(outputs.total_amount());
-        })
+            account_data.decrease_liquidity_by(validated_transfers.total_amount());
+        });
     }
 
     pub(crate) fn current_block() -> T::BlockNumber {
@@ -473,5 +517,56 @@ impl<T: Trait> Module<T> {
         debug_assert!(token_info.supply.is_zero());
 
         Ok(())
+    }
+
+    pub(crate) fn bloat_bond_treasury_account_id(token_id: T::TokenId) -> T::AccountId {
+        T::ModuleId::get().into_sub_account(token_id)
+    }
+
+    pub(crate) fn validate_destination(
+        token_id: T::TokenId,
+        dst: T::AccountId,
+        transfer_policy: &TransferPolicyOf<T>,
+    ) -> Result<Validated<T::AccountId>, DispatchError> {
+        match (
+            transfer_policy,
+            Self::ensure_account_data_exists(token_id, &dst),
+        ) {
+            (&TransferPolicyOf::<T>::Permissionless, Err(_)) => {
+                Ok(Validated::<_>::NonExisting(dst))
+            }
+            (&TransferPolicyOf::<T>::Permissionless, Ok(_)) => Ok(Validated::<_>::Existing(dst)),
+            (&TransferPolicyOf::<T>::Permissioned(_), Ok(_)) => Ok(Validated::<_>::Existing(dst)),
+            (&TransferPolicyOf::<T>::Permissioned(_), Err(e)) => Err(e),
+        }
+    }
+
+    pub(crate) fn compute_bloat_bond(
+        validated_transfers: &ValidatedTransfers<T>,
+    ) -> ReserveBalanceOf<T> {
+        validated_transfers
+            .iter()
+            .fold(ReserveBalanceOf::<T>::zero(), |acc, (account, _)| {
+                if matches!(account, Validated::<_>::NonExisting(_)) {
+                    acc.saturating_add(T::BloatBond::get())
+                } else {
+                    ReserveBalanceOf::<T>::zero()
+                }
+            })
+    }
+
+    pub(crate) fn validate_transfers(
+        token_id: T::TokenId,
+        transfers: TransfersOf<T>,
+        transfer_policy: &TransferPolicyOf<T>,
+    ) -> Result<ValidatedTransfers<T>, DispatchError> {
+        let result = transfers
+            .into_iter()
+            .map(|(dst, payment)| {
+                Self::validate_destination(token_id, dst, transfer_policy).map(|res| (res, payment))
+            })
+            .collect::<Result<BTreeMap<_, _>, _>>()?;
+
+        Ok(Transfers::<_, _>(result))
     }
 }

@@ -5,7 +5,7 @@ use frame_support::{
 };
 use sp_arithmetic::traits::{Saturating, Zero};
 use sp_runtime::traits::{Convert, Hash};
-use sp_std::collections::btree_map::{BTreeMap, Iter};
+use sp_std::collections::btree_map::{BTreeMap, IntoIter, Iter};
 use sp_std::iter::Sum;
 
 /// Info for the account
@@ -141,6 +141,16 @@ impl Default for MerkleSide {
     }
 }
 
+/// Utility wrapper around existing/non existing accounts to be used with transfer etc..
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Ord, PartialOrd)]
+pub enum Validated<AccountId: Ord + Eq + PartialEq + PartialOrd> {
+    /// Existing account
+    Existing(AccountId),
+
+    /// Non Existing account
+    NonExisting(AccountId),
+}
+
 // implementation
 
 /// Default trait for Issuance state
@@ -162,6 +172,13 @@ impl<Balance: Zero> Default for AccountData<Balance> {
 
 /// Encapsules parameters validation + TokenData construction
 impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
+    /// Ctor
+    pub fn new_with_liquidity(init_liquidity: Balance) -> Self {
+        AccountData::<_> {
+            free_balance: init_liquidity,
+            reserved_balance: Balance::zero(),
+        }
+    }
     /// Check wheather account is empty
     pub(crate) fn is_empty(&self) -> bool {
         self.total_balance().is_zero()
@@ -241,13 +258,6 @@ impl<
         self.patronage_info.last_unclaimed_patronage_tally_block = block;
         self.patronage_info.rate = new_rate;
     }
-
-    pub fn is_permissioned_transfer_policy(&self) -> bool {
-        matches!(
-            self.transfer_policy,
-            TransferPolicy::<Hash>::Permissioned(_)
-        )
-    }
 }
 
 /// Encapsules parameters validation + TokenData construction
@@ -324,6 +334,10 @@ impl<AccountId, Balance: Sum + Copy> Transfers<AccountId, Balance> {
 
     pub fn iter(&self) -> Iter<'_, AccountId, Payment<Balance>> {
         self.0.iter()
+    }
+
+    pub fn into_iter(self) -> IntoIter<AccountId, Payment<Balance>> {
+        self.0.into_iter()
     }
 }
 
