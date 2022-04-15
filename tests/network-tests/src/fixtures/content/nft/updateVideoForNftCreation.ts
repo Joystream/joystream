@@ -8,25 +8,39 @@ import { assertNftOwner } from './utils'
 
 export class UpdateVideoForNftCreationFixture extends BaseQueryNodeFixture {
   private author: IMember
-  private videoId: number
+  private videoIds: number[]
 
-  constructor(api: Api, query: QueryNodeApi, author: IMember, videoId: number) {
+  constructor(api: Api, query: QueryNodeApi, author: IMember, videoIds: number[]) {
     super(api, query)
     this.author = author
-    this.videoId = videoId
+    this.videoIds = videoIds
   }
 
   /*
     Execute this Fixture.
   */
   public async execute(): Promise<void> {
+    // SCENARIO 1
+    this.debug('Update video for creating NFT (in Idle state)')
+    const videoUpdatedWithNftResponse = await this.api.updateVideoForNftCreation(
+      this.author.keyringPair.address,
+      this.author.memberId.toNumber(),
+      this.videoIds[0]
+    )
+
+    const videoUpdatedWithNftEvent = await this.api.getEvent(videoUpdatedWithNftResponse, 'content', 'VideoUpdated')
+
+    this.debug('Check NFT ownership')
+    await assertNftOwner(this.query, videoUpdatedWithNftEvent.data[1].toNumber(), this.author)
+
+    // SCENARIO 2
     this.debug('Update video for creating NFT in auctioned state')
     const { auctionParams } = await this.api.createEnglishAuctionParameters()
 
     const response = await this.api.updateVideoForNftCreation(
       this.author.keyringPair.address,
       this.author.memberId.toNumber(),
-      this.videoId,
+      this.videoIds[1],
       auctionParams
     )
 

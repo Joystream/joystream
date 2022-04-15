@@ -36,7 +36,7 @@ export class NftAuctionWhitelistFixture extends BaseQueryNodeFixture {
       whitelistedMemberIds
     )
 
-    const videoCreationResponse = await this.api.createVideoWithNftAuction(
+    const videoCreationResponse = await this.api.createVideoWithNft(
       this.author.keyringPair.address,
       this.author.memberId.toNumber(),
       this.channelId,

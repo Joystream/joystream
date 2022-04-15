@@ -1059,15 +1059,19 @@ export class Api {
     return await this.sender.signAndSend(this.api.tx.content.acceptIncomingOffer(videoId), accountFrom)
   }
 
-  async createVideoWithNftAuction(
+  async createVideoWithNft(
     accountFrom: string,
     ownerId: number,
     channelId: number,
-    auctionParams: OpenAuctionParams | EnglishAuctionParams
+    auctionParams?: OpenAuctionParams | EnglishAuctionParams
   ): Promise<ISubmittableResult> {
     const initTransactionalStatus = this.api.createType(
       'InitTransactionalStatus',
-      auctionParams instanceof OpenAuctionParams ? { OpenAuction: auctionParams } : { EnglishAuction: auctionParams }
+      auctionParams
+        ? auctionParams instanceof OpenAuctionParams
+          ? { OpenAuction: auctionParams }
+          : { EnglishAuction: auctionParams }
+        : { Idle: null }
     )
 
     const createParameters = this.createType('VideoCreationParameters', {
@@ -1148,11 +1152,15 @@ export class Api {
     accountFrom: string,
     ownerId: number,
     videoId: number,
-    auctionParams: OpenAuctionParams | EnglishAuctionParams
+    auctionParams?: OpenAuctionParams | EnglishAuctionParams
   ): Promise<ISubmittableResult> {
     const initTransactionalStatus = this.api.createType(
       'InitTransactionalStatus',
-      auctionParams instanceof OpenAuctionParams ? { OpenAuction: auctionParams } : { EnglishAuction: auctionParams }
+      auctionParams
+        ? auctionParams instanceof OpenAuctionParams
+          ? { OpenAuction: auctionParams }
+          : { EnglishAuction: auctionParams }
+        : { Idle: null }
     )
 
     const updateParameters = this.createType('VideoUpdateParameters', {

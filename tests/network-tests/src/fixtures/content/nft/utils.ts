@@ -32,7 +32,7 @@ export async function assertNftOwner(
   videoId: number,
   owner: IMember,
   customAsserts?: (ownedNft: OwnedNftFieldsFragment) => void
-) {
+): Promise<void> {
   await query.tryQueryWithTimeout(
     () => query.ownedNftByVideoId(videoId.toString()),
     (ownedNft) => {
