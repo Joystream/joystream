@@ -308,6 +308,13 @@ macro_rules! merkle_proof {
     };
 }
 
+#[macro_export]
+macro_rules! treasury {
+    ($t: expr) => {
+        <Test as crate::Trait>::ModuleId::get().into_sub_account::<AccountId>($t)
+    };
+}
+
 // utility types
 pub struct Block2Balance {}
 

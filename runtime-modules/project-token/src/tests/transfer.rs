@@ -1,10 +1,13 @@
 #![cfg(test)]
-use frame_support::{assert_noop, assert_ok};
+use frame_support::{assert_noop, assert_ok, StorageDoubleMap};
+use sp_runtime::traits::AccountIdConversion;
 
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
 use crate::types::TransfersOf;
-use crate::{account, balance, last_event_eq, merkle_root, origin, token, Error, RawEvent};
+use crate::{
+    account, balance, last_event_eq, merkle_root, origin, token, treasury, Error, RawEvent,
+};
 
 // some helpers
 macro_rules! outputs {
@@ -68,6 +71,77 @@ fn permissionless_transfer_ok_with_non_existing_destination() {
         let result = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
         assert_ok!(result);
+    })
+}
+
+#[test]
+fn permissionless_transfer_ok_with_new_destination_created() {
+    let token_id = token!(1);
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissionless)
+        .build();
+    let src = account!(1);
+    let (dst, amount) = (account!(2), balance!(100));
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(src, amount, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
+
+        assert!(<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
+            token_id, &dst
+        ));
+    })
+}
+
+#[test]
+fn permissionless_transfer_ok_for_new_destination_with_bloat_bond_slashed_from_src() {
+    let token_id = token!(1);
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissionless)
+        .build();
+    let src = account!(1);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+    let (dst, amount) = (account!(2), balance!(100));
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(src, amount, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&src, bloat_bond);
+
+        let _ = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
+
+        assert_eq!(Balances::usable_balance(&src), balance!(0));
+    })
+}
+
+#[test]
+fn permissionless_transfer_ok_for_new_destination_with_bloat_bond_transferred_to_treasury() {
+    let token_id = token!(1);
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissionless)
+        .build();
+    let src = account!(1);
+    let (treasury, bloat_bond) = (treasury!(token_id), balance!(DEFAULT_BLOAT_BOND));
+    let (dst, amount) = (account!(2), balance!(100));
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(src, amount, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&src, bloat_bond);
+
+        let _ = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
+
+        assert_eq!(Balances::usable_balance(&treasury), bloat_bond);
     })
 }
 
@@ -435,6 +509,82 @@ fn multiout_transfer_ok_with_same_source_and_destination() {
         let result = Token::transfer(origin!(dst1), token_id, outputs);
 
         assert_ok!(result);
+    })
+}
+
+#[test]
+fn multiout_transfer_ok_with_new_destinations_created() {
+    let token_id = token!(1);
+    let token_info = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissionless)
+        .build();
+    let (src, _bloat_bond) = (account!(1), balance!(DEFAULT_BLOAT_BOND));
+    let (dst1, amount1) = (account!(2), balance!(1));
+    let (dst2, amount2) = (account!(3), balance!(1));
+    let outputs = outputs![(dst1, amount1), (dst2, amount2)];
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_info)
+        .with_account(src, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = Token::transfer(origin!(src), token_id, outputs);
+
+        assert!([dst1, dst2]
+            .iter()
+            .all(|dst| <crate::AccountInfoByTokenAndAccount<Test>>::contains_key(token_id, dst)));
+    })
+}
+
+#[test]
+fn multiout_transfer_ok_with_bloat_bond_for_new_destinations_slashed_from_src() {
+    let token_id = token!(1);
+    let token_info = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissionless)
+        .build();
+    let (src, bloat_bond) = (account!(1), balance!(DEFAULT_BLOAT_BOND));
+    let (dst1, amount1) = (account!(2), balance!(1));
+    let (dst2, amount2) = (account!(3), balance!(1));
+    let outputs = outputs![(dst1, amount1), (dst2, amount2)];
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_info)
+        .with_account(src, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&src, 2 * bloat_bond);
+
+        let _ = Token::transfer(origin!(src), token_id, outputs);
+
+        assert_eq!(Balances::usable_balance(&src), balance!(0));
+    })
+}
+
+#[test]
+fn multiout_transfer_ok_with_bloat_bond_transferred_to_treasury() {
+    let token_id = token!(1);
+    let token_info = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissionless)
+        .build();
+    let (src, bloat_bond) = (account!(1), balance!(DEFAULT_BLOAT_BOND));
+    let treasury: AccountId = treasury!(token_id);
+    let (dst1, amount1) = (account!(2), balance!(1));
+    let (dst2, amount2) = (account!(3), balance!(1));
+    let outputs = outputs![(dst1, amount1), (dst2, amount2)];
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_info)
+        .with_account(src, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&src, 2 * bloat_bond);
+
+        let _ = Token::transfer(origin!(src), token_id, outputs);
+
+        assert_eq!(Balances::usable_balance(&treasury), 2 * bloat_bond);
     })
 }
 
