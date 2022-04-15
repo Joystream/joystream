@@ -555,7 +555,7 @@ impl<
         amount: Balance,
         vesting_schedule: VestingSchedule<BlockNumber>,
     ) {
-        let existing_balance = self.vesting_balances.get(&source).map(|v| v.clone());
+        let existing_balance = self.vesting_balances.get(&source).cloned();
         self.vesting_balances.insert(
             source,
             VestingBalance {
@@ -580,7 +580,7 @@ impl<
     pub(crate) fn decrease_liquidity_by<T: Trait<Balance = Balance, BlockNumber = BlockNumber>>(
         &mut self,
         amount: Balance,
-    ) -> () {
+    ) {
         if amount > self.base_balance {
             let mut remaining_amount = amount.saturating_sub(self.base_balance);
             self.base_balance = Balance::zero();
@@ -641,7 +641,8 @@ impl<
         self.total_supply = self.total_supply.saturating_add(amount);
     }
 
-    // decrease total issuance
+    // decrease total issuance (use when tokens are burned for any reason)
+    #[allow(dead_code)]
     pub(crate) fn decrease_supply_by(&mut self, amount: Balance) {
         self.total_supply = self.total_supply.saturating_sub(amount);
     }
@@ -682,9 +683,9 @@ impl<
             .map_or(Balance::zero(), |last_sale| last_sale.quantity_left)
     }
 
-    pub(crate) fn try_from_params<T: crate::Trait>(
+    pub(crate) fn from_params<T: crate::Trait>(
         params: TokenIssuanceParametersOf<T>,
-    ) -> Result<TokenDataOf<T>, DispatchError> {
+    ) -> TokenDataOf<T> {
         let current_block = <frame_system::Module<T>>::block_number();
 
         let patronage_info =
@@ -694,7 +695,7 @@ impl<
                 rate: params.patronage_rate,
             };
 
-        let token_data = TokenData {
+        TokenData {
             symbol: params.symbol,
             total_supply: params.initial_allocation.amount,
             tokens_issued: params.initial_allocation.amount,
@@ -702,9 +703,7 @@ impl<
             transfer_policy: params.transfer_policy,
             patronage_info,
             sales_initialized: 0,
-        };
-
-        Ok(token_data)
+        }
     }
 }
 

@@ -125,7 +125,7 @@ impl Fixture<IssueTokenFixtureStateSnapshot> for IssueTokenFixture {
         assert_eq!(snapshot_post.next_token_id, snapshot_pre.next_token_id + 1);
         assert_eq!(
             Token::token_info_by_id(snapshot_pre.next_token_id),
-            TokenData::try_from_params::<Test>(self.params.clone()).unwrap()
+            TokenData::from_params::<Test>(self.params.clone())
         );
         assert!(SymbolsUsed::<Test>::contains_key(self.params.symbol));
     }

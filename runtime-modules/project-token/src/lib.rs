@@ -249,7 +249,7 @@ decl_module! {
             if let Some(whitelist_commitment) = sale.whitelist_commitment.as_ref() {
                 ensure!(access_proof.is_some(), Error::<T>::SaleAccessProofRequired);
                 let proof = access_proof.unwrap();
-                proof.verify::<T>(&sender, whitelist_commitment.clone())?;
+                proof.verify::<T>(&sender, *whitelist_commitment)?;
                 Self::ensure_sale_participant_cap_not_exceeded(
                     token_id,
                     sale_id,
@@ -443,11 +443,11 @@ impl<T: Trait>
         let token_id = Self::next_token_id();
         Self::validate_issuance_parameters(&issuance_parameters)?;
 
-        let token_data = TokenDataOf::<T>::try_from_params::<T>(issuance_parameters.clone())?;
+        let token_data = TokenDataOf::<T>::from_params::<T>(issuance_parameters.clone());
 
         // == MUTATION SAFE ==
         SymbolsUsed::<T>::insert(&token_data.symbol, ());
-        TokenInfoById::<T>::insert(token_id, token_data.clone());
+        TokenInfoById::<T>::insert(token_id, token_data);
         NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
         AccountInfoByTokenAndAccount::<T>::mutate(
             token_id,
