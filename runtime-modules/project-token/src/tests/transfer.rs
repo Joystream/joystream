@@ -27,7 +27,7 @@ fn permissionless_transfer_fails_with_non_existing_token() {
     build_test_externalities(config).execute_with(|| {
         let result = Token::transfer(origin, token_id, out);
 
-        assert_noop!(result, Error::<Test>::TokenDoesNotExist,);
+        assert_noop!(result, Error::<Test>::TokenDoesNotExist);
     })
 }
 

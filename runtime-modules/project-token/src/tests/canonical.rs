@@ -1,15 +1,14 @@
 #![cfg(test)]
-
 use frame_support::{assert_noop, assert_ok, StorageDoubleMap, StorageMap};
-use sp_runtime::traits::Hash;
+use sp_runtime::traits::{AccountIdConversion, Hash};
 
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
 use crate::types::{MerkleProofOf, OfferingState, PatronageData, TokenIssuanceParametersOf};
 use crate::{
-    account, balance, last_event_eq, merkle_proof, merkle_root, origin, token, Error, RawEvent,
-    TokenDataOf,
+    account, balance, last_event_eq, merkle_proof, merkle_root, origin, token, treasury, Error,
+    RawEvent, TokenDataOf,
 };
 
 #[test]
@@ -195,6 +194,59 @@ fn join_whitelist_ok() {
 }
 
 #[test]
+fn join_whitelist_ok_with_bloat_bond_slashed_from_caller() {
+    let token_id = token!(1);
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![acc1, acc2];
+    let proof = merkle_proof!(0, [acc1, acc2]);
+    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&acc1, bloat_bond);
+
+        let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
+
+        assert_eq!(Balances::usable_balance(&acc1), balance!(0));
+    })
+}
+
+#[test]
+fn join_whitelist_ok_with_bloat_bond_transferred_to_treasury() {
+    let token_id = token!(1);
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![acc1, acc2];
+    let proof = merkle_proof!(0, [acc1, acc2]);
+    let (treasury, bloat_bond): (AccountId, _) =
+        (treasury!(token_id), balance!(DEFAULT_BLOAT_BOND));
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&acc1, bloat_bond);
+
+        let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
+
+        assert_eq!(Balances::usable_balance(&treasury), bloat_bond);
+    })
+}
+
+#[test]
 fn join_whitelist_ok_with_accounts_number_incremented() {
     let token_id = token!(1);
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
@@ -280,7 +332,7 @@ fn join_whitelist_ok_with_new_account_created() {
 }
 
 #[test]
-fn join_whitelist_ok_with_new_account_having_free_balance_zero() {
+fn join_whitelist_ok_with_new_account_having_usable_balance_zero() {
     let token_id = token!(1);
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
@@ -338,7 +390,7 @@ fn join_whitelist_ok_with_new_account_having_reserved_balance_zero() {
 }
 
 #[test]
-fn join_whitelist_ok_with_bloat_bond_slashed_from_account_free_balance() {
+fn join_whitelist_ok_with_bloat_bond_slashed_from_account_usable_balance() {
     let token_id = token!(1);
     let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![acc1, acc2];
@@ -359,7 +411,7 @@ fn join_whitelist_ok_with_bloat_bond_slashed_from_account_free_balance() {
 
         let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
 
-        assert_eq!(Balances::free_balance(acc1), balance!(0));
+        assert_eq!(Balances::usable_balance(acc1), balance!(0));
     })
 }
 
@@ -605,7 +657,7 @@ fn dust_account_ok_with_bloat_bond_refunded() {
     build_test_externalities(config).execute_with(|| {
         let _ = Token::dust_account(origin!(acc1), token_id, acc2);
 
-        assert_eq!(Balances::free_balance(acc2), balance!(DEFAULT_BLOAT_BOND));
+        assert_eq!(Balances::usable_balance(acc2), balance!(DEFAULT_BLOAT_BOND));
     })
 }
 
