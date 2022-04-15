@@ -12,7 +12,7 @@ import {
   NftDirectOfferFixture,
   NftOpenAuctionFixture,
   AuctionCancelationsFixture,
-  NftCreateVideoWithAuctionFixture,
+  CreateVideoWithNftFixture,
   NftCreateVideoWithBuyNowFixture,
   UpdateVideoForNftCreationFixture,
   NftCollectorsFixture,
@@ -31,7 +31,7 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
   const joystreamCli = await createJoystreamCli()
 
   // settings
-  const videoCount = 7 // should be equal to number of uses of `nextVideo()` below
+  const videoCount = 8 // should be equal to number of uses of `nextVideo()` below
   const videoCategoryCount = 1
   const channelCount = 1
   const channelCategoryCount = 1
@@ -125,12 +125,7 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
 
   await new FixtureRunner(auctionCancelationsFicture).run()
 
-  const createVideoWithAuctionFixture = new NftCreateVideoWithAuctionFixture(
-    api,
-    query,
-    author as IMember,
-    channelIds[0]
-  )
+  const createVideoWithAuctionFixture = new CreateVideoWithNftFixture(api, query, author as IMember, channelIds[0])
 
   await new FixtureRunner(createVideoWithAuctionFixture).run()
 
@@ -138,12 +133,10 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
 
   await new FixtureRunner(createVideoWithBuyNowFixture).run()
 
-  const updateVideoWithAuctionFixture = new UpdateVideoForNftCreationFixture(
-    api,
-    query,
-    author as IMember,
-    nextVideo().videoId
-  )
+  const updateVideoWithAuctionFixture = new UpdateVideoForNftCreationFixture(api, query, author as IMember, [
+    nextVideo().videoId,
+    nextVideo().videoId,
+  ])
 
   await new FixtureRunner(updateVideoWithAuctionFixture).run()
 
@@ -164,7 +157,7 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
       // 4 == num of videos not transfered from original owner
       //      + 1 created in createVideoWithAuctionFixture
       //      + 1 created in auctionWhitelistFixture
-      [author.memberId.toString()]: 6,
+      [author.memberId.toString()]: 8,
 
       // 2 == target of direct offer + buy now winner
       [auctionParticipants[0].memberId.toString()]: 2,
