@@ -146,7 +146,7 @@ export async function content_VideoUpdated(ctx: EventContext & StoreContext): Pr
   // load video
   const video = await store.get(Video, {
     where: { id: videoId.toString() },
-    relations: [...videoRelationsForCounters, 'license'],
+    relations: [...videoRelationsForCounters, 'license', 'channel.ownerMember', 'channel.ownerCuratorGroup'],
   })
 
   // ensure video exists
