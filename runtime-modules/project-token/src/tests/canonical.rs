@@ -662,6 +662,30 @@ fn dust_account_ok_with_bloat_bond_refunded() {
 }
 
 #[test]
+fn dust_account_ok_with_bloat_bond_slashed_from_treasury() {
+    let token_id = token!(1);
+    let (acc1, acc2) = (account!(2), account!(3));
+    let (treasury, bloat_bond): (AccountId, _) =
+        (treasury!(token_id), balance!(DEFAULT_BLOAT_BOND));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(acc1, balance!(0), balance!(0))
+        .with_account(acc2, balance!(0), balance!(0))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&treasury, bloat_bond);
+
+        let _ = Token::dust_account(origin!(acc1), token_id, acc2);
+
+        assert_eq!(Balances::usable_balance(&treasury), balance!(0));
+    })
+}
+
+#[test]
 fn deissue_token_fails_with_non_existing_token_id() {
     let token_id = token!(1);
     let token_data = TokenDataBuilder::new_empty().build();
