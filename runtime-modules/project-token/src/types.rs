@@ -142,8 +142,8 @@ impl Default for MerkleSide {
 }
 
 /// Utility wrapper around existing/non existing accounts to be used with transfer etc..
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Ord, PartialOrd)]
-pub enum Validated<AccountId: Ord + Eq + PartialEq + PartialOrd> {
+#[derive(Encode, Decode, PartialEq, Eq, Debug, PartialOrd, Ord, Clone)]
+pub enum Validated<AccountId: Ord + Eq + Clone> {
     /// Existing account
     Existing(AccountId),
 

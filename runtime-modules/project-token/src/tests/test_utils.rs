@@ -132,8 +132,8 @@ impl<Hasher: Hash> MerkleProof<Hasher> {
     }
 }
 
-impl<Balance, AccountId: Ord> Transfers<AccountId, Balance> {
-    pub fn new(v: Vec<(AccountId, Balance)>) -> Self {
+impl<Balance, Account: Ord> Transfers<Account, Balance> {
+    pub fn new(v: Vec<(Account, Balance)>) -> Self {
         Transfers::<_, _>(
             v.into_iter()
                 .map(|(acc, amount)| {
