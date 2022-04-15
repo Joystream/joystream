@@ -57,6 +57,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + storage::Trait {
     /// Bloat bond value: in JOY
     type BloatBond: Get<<Self::ReserveCurrency as Currency<Self::AccountId>>::Balance>;
 
+    /// Maximum number of vesting balances per account per token
+    type MaxVestingBalancesPerAccountPerToken: Get<u8>;
+
     /// the Currency interface used as a reserve (i.e. JOY)
     type ReserveCurrency: Currency<Self::AccountId>;
 }
@@ -175,7 +178,7 @@ decl_module! {
             );
 
             if let TransferPolicyOf::<T>::Permissioned(commit) = token_info.transfer_policy {
-                proof.verify_for_commit::<T,_>(&account_id, commit)
+                proof.verify::<T,_>(&account_id, commit)
             } else {
                 Err(Error::<T>::CannotJoinWhitelistInPermissionlessMode.into())
             }?;
@@ -206,6 +209,11 @@ decl_module! {
         /// - token identified by `token_id` must have OfferingState::Sale
         /// - `amount` cannot exceed number of tokens remaining on sale
         /// - sender's JOY balance must be >= `amount * sale.unit_price`
+        /// - there are no tokens still reserved from the previous sale
+        /// - if sale has a whitelist:
+        ///   - `access_proof` must be a valid merkle proof for sender's whitelist inclusion
+        ///   - (total number of tokens already purchased by the account + `amount`) must not exceed
+        ///     `access_proof.participant.cap`
         ///
         /// Postconditions:
         /// - `amount * sale.unit_price` JOY tokens are transfered to `sale.tokens_source` account
@@ -215,10 +223,16 @@ decl_module! {
         ///   (or created with `amount` as `vesting_balance.total_amount`)
         /// - `token_data.last_sale.quantity_left` is decreased by `amount`
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn puchase_tokens_on_sale(origin, token_id: T::TokenId, amount: <T as Trait>::Balance) -> DispatchResult {
+        pub fn purchase_tokens_on_sale(
+            origin,
+            token_id: T::TokenId,
+            amount: <T as Trait>::Balance,
+            access_proof: Option<SaleAccessProofOf<T>>
+        ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             let token_data = Self::ensure_token_exists(token_id)?;
             let sale = OfferingStateOf::<T>::ensure_sale_of::<T>(&token_data)?;
+            let sale_id = token_data.sales_initialized;
             let buyer_joy_balance = balances::Module::<T>::usable_balance(&sender);
             let joy_amount = sale.unit_price.saturating_mul(amount.into());
 
@@ -231,7 +245,23 @@ decl_module! {
                 sale.quantity_left >= amount,
                 Error::<T>::NotEnoughTokensOnSale
             );
-            // TODO: Whitelist handling
+
+            if let Some(whitelist_commitment) = sale.whitelist_commitment.as_ref() {
+                ensure!(access_proof.is_some(), Error::<T>::SaleAccessProofRequired);
+                let proof = access_proof.unwrap();
+                proof.verify::<T>(&sender, whitelist_commitment.clone())?;
+                Self::ensure_sale_participant_cap_not_exceeded(
+                    token_id,
+                    sale_id,
+                    &proof.participant,
+                    amount
+                )?;
+            }
+
+            // Ensure vesting balance can be increased
+            // (MaxVestingBalancesPerAccountPerToken not exceeded)
+            let acc_data = AccountInfoByTokenAndAccount::<T>::get(token_id, &sender);
+            acc_data.ensure_vesting_balance_can_be_increased::<T>(VestingSource::Sale(sale_id))?;
 
             // == MUTATION SAFE ==
 
@@ -250,7 +280,7 @@ decl_module! {
 
             AccountInfoByTokenAndAccount::<T>::mutate(token_id, &sender, |acc_data| {
                 acc_data.increase_vesting_balance(
-                    VestingSource::Sale(token_data.sales_initialized),
+                    VestingSource::Sale(sale_id),
                     amount,
                     sale.get_vesting_schedule()
                 );
@@ -258,6 +288,45 @@ decl_module! {
 
             TokenInfoById::<T>::mutate(token_id, |t| {
                 t.last_sale.as_mut().unwrap().quantity_left = sale.quantity_left.saturating_sub(amount);
+            });
+
+            Ok(())
+        }
+
+        /// Allows anyone to unreserve tokens that were not sold during a token sale
+        /// that has already finished
+        ///
+        /// Preconditions:
+        /// - `token_id` must exists
+        /// - `token_id` must identify a token with a finished sale (Idle offering state, last_sale.is_some)
+        /// - `token_data.last_sale.quantity_left` must be > 0
+        ///
+        /// Postconditions:
+        /// - `token_data.last_sale.quantity_left` is unreserved from
+        ///   `token_data.last_sale.tokens_source` account
+        /// - `token_data.last_sale.quantity_left` is set to 0
+        #[weight = 10_000_000] // TODO: adjust weight
+        fn unreserve_unsold_tokens(origin, token_id: T::TokenId) -> DispatchResult {
+            ensure_signed(origin)?;
+            let token_info = Self::ensure_token_exists(token_id)?;
+            OfferingStateOf::<T>::ensure_idle_of::<T>(&token_info)?;
+            let amount_to_unreserve = token_info.last_sale_remaining_tokens();
+            ensure!(
+                !amount_to_unreserve.is_zero(),
+                Error::<T>::NoTokensToUnreserve
+            );
+
+            // == MUTATION SAFE ==
+            AccountInfoByTokenAndAccount::<T>::mutate(
+                token_id,
+                &token_info.last_sale.unwrap().tokens_source,
+                |ad| {
+                    ad.reserved_balance = ad.reserved_balance.saturating_sub(amount_to_unreserve);
+                    ad.base_balance = ad.base_balance.saturating_add(amount_to_unreserve);
+                },
+            );
+            TokenInfoById::<T>::mutate(token_id, |token_info| {
+                token_info.last_sale.as_mut().unwrap().quantity_left = <T as Trait>::Balance::zero();
             });
 
             Ok(())
@@ -596,6 +665,12 @@ impl<T: Trait> Module<T> {
         // Ensure token offering state is Idle
         OfferingStateOf::<T>::ensure_idle_of::<T>(token_data)?;
 
+        // Ensure no reserved tokens remaining from the previous sale
+        ensure!(
+            token_data.last_sale_remaining_tokens().is_zero(),
+            Error::<T>::RemainingReservedTokensFromPreviousSale
+        );
+
         // Ensure sale upper_bound_quantity can be reserved from `source`
         let account_data = Self::ensure_account_data_exists(token_id, &sale_params.tokens_source)?;
         Self::ensure_can_reserve(&account_data, sale_params.upper_bound_quantity)?;
@@ -672,6 +747,28 @@ impl<T: Trait> Module<T> {
         // This is a extra, since when no account exists -> total_supply == 0
         debug_assert!(token_info.total_supply.is_zero());
 
+        Ok(())
+    }
+
+    pub(crate) fn ensure_sale_participant_cap_not_exceeded(
+        token_id: T::TokenId,
+        sale_id: TokenSaleId,
+        participant: &WhitelistedSaleParticipantOf<T>,
+        purchase_amount: <T as Trait>::Balance,
+    ) -> DispatchResult {
+        if participant.cap.is_none() {
+            return Ok(());
+        }
+        let opt_acc_data = Self::ensure_account_data_exists(token_id, &participant.address).ok();
+        let tokens_purchased = opt_acc_data.map_or(<T as Trait>::Balance::zero(), |ad| {
+            ad.vesting_balances
+                .get(&VestingSource::Sale(sale_id))
+                .map_or(<T as Trait>::Balance::zero(), |vb| vb.total_amount)
+        });
+        ensure!(
+            tokens_purchased.saturating_add(purchase_amount) <= participant.cap.unwrap(),
+            Error::<T>::SaleParticipantCapExceeded
+        );
         Ok(())
     }
 }

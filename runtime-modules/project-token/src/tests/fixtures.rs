@@ -1,13 +1,12 @@
 #![cfg(test)]
 
+use crate::tests::mock::*;
 use crate::{traits::PalletToken, types::VestingSource, SymbolsUsed};
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::StorageMap;
 use sp_runtime::{traits::Hash, DispatchError, Permill};
 use sp_std::iter::FromIterator;
 use storage::{BagId, DataObjectCreationParameters, StaticBagId};
-
-use crate::tests::mock::*;
 
 pub trait Fixture<S: std::fmt::Debug + std::cmp::PartialEq> {
     fn get_state_snapshot(&self) -> S;
@@ -66,6 +65,19 @@ pub fn default_single_data_object_upload_params() -> SingleDataObjectUploadParam
             size: 1_000_000,
         },
     }
+}
+
+pub fn default_sale_whitelisted_participants() -> [WhitelistedSaleParticipant; 2] {
+    [
+        WhitelistedSaleParticipant {
+            address: DEFAULT_ACCOUNT_ID,
+            cap: None,
+        },
+        WhitelistedSaleParticipant {
+            address: OTHER_ACCOUNT_ID,
+            cap: None,
+        },
+    ]
 }
 
 pub struct IssueTokenFixture {
@@ -179,6 +191,16 @@ impl InitTokenSaleFixture {
             },
             ..self
         }
+    }
+
+    pub fn with_whitelisted_participants(
+        self,
+        participants: &[WhitelistedSaleParticipant],
+    ) -> Self {
+        self.with_whitelist(WhitelistParams {
+            commitment: generate_merkle_root_helper(participants).pop().unwrap(),
+            payload: None,
+        })
     }
 
     pub fn with_vesting_schedule(self, vesting_schedule: Option<VestingScheduleParams>) -> Self {
@@ -344,6 +366,7 @@ pub struct PurchaseTokensOnSaleFixture {
     sender: AccountId,
     token_id: TokenId,
     amount: Balance,
+    access_proof: Option<SaleAccessProof>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -361,11 +384,19 @@ impl PurchaseTokensOnSaleFixture {
             sender: OTHER_ACCOUNT_ID,
             token_id: 1,
             amount: DEFAULT_SALE_PURCHASE_AMOUNT,
+            access_proof: None,
         }
     }
 
     pub fn with_amount(self, amount: Balance) -> Self {
         Self { amount, ..self }
+    }
+
+    pub fn with_access_proof(self, access_proof: SaleAccessProof) -> Self {
+        Self {
+            access_proof: Some(access_proof),
+            ..self
+        }
     }
 }
 
@@ -396,7 +427,12 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
     }
 
     fn execute_call(&self) -> DispatchResult {
-        Token::puchase_tokens_on_sale(Origin::signed(self.sender), self.token_id, self.amount)
+        Token::purchase_tokens_on_sale(
+            Origin::signed(self.sender),
+            self.token_id,
+            self.amount,
+            self.access_proof.clone(),
+        )
     }
 
     fn on_success(
@@ -462,5 +498,68 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
             snapshot_post.buyer_account_data.usable_balance::<Test>(),
             snapshot_pre.buyer_account_data.usable_balance::<Test>()
         );
+    }
+}
+
+pub struct UnreserveUnsoldTokensFixture {
+    origin: Origin,
+    token_id: TokenId,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct UnreserveUnsoldTokensFixtureStateSnapshot {
+    token_data: TokenData,
+    source_account_data: AccountData,
+}
+
+impl UnreserveUnsoldTokensFixture {
+    pub fn default() -> Self {
+        Self {
+            token_id: 1,
+            origin: Origin::signed(DEFAULT_ACCOUNT_ID),
+        }
+    }
+}
+
+impl Fixture<UnreserveUnsoldTokensFixtureStateSnapshot> for UnreserveUnsoldTokensFixture {
+    fn get_state_snapshot(&self) -> UnreserveUnsoldTokensFixtureStateSnapshot {
+        let token_data = Token::token_info_by_id(self.token_id);
+        let sale_source_acc = token_data
+            .last_sale
+            .as_ref()
+            .map_or(AccountId::default(), |s| s.tokens_source);
+        UnreserveUnsoldTokensFixtureStateSnapshot {
+            token_data: Token::token_info_by_id(self.token_id),
+            source_account_data: Token::account_info_by_token_and_account(
+                self.token_id,
+                &sale_source_acc,
+            ),
+        }
+    }
+
+    fn execute_call(&self) -> DispatchResult {
+        Token::unreserve_unsold_tokens(self.origin.clone(), self.token_id)
+    }
+
+    fn on_success(
+        &self,
+        snapshot_pre: &UnreserveUnsoldTokensFixtureStateSnapshot,
+        snapshot_post: &UnreserveUnsoldTokensFixtureStateSnapshot,
+    ) {
+        assert_eq!(snapshot_post.token_data.last_sale_remaining_tokens(), 0);
+        assert_eq!(
+            snapshot_post.source_account_data.reserved_balance,
+            snapshot_pre
+                .source_account_data
+                .reserved_balance
+                .saturating_sub(snapshot_pre.token_data.last_sale_remaining_tokens())
+        );
+        assert_eq!(
+            snapshot_post.source_account_data.base_balance,
+            snapshot_pre
+                .source_account_data
+                .base_balance
+                .saturating_add(snapshot_pre.token_data.last_sale_remaining_tokens()),
+        )
     }
 }

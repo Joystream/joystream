@@ -68,6 +68,13 @@ fn permissionless_transfer_ok_with_non_existing_destination() {
         let result = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
         assert_ok!(result);
+        assert_ok!(Token::ensure_account_data_exists(token_id, &dst));
+        assert_eq!(
+            Token::ensure_account_data_exists(token_id, &dst)
+                .unwrap()
+                .base_balance,
+            amount
+        );
     })
 }
 

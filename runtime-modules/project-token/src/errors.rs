@@ -80,5 +80,25 @@ decl_error! {
 
         /// Token issuance is not zero
         TokenIssuanceIsNotZero,
+
+        /// Only whitelisted participants are allowed to access the sale, therefore access proof is required
+        SaleAccessProofRequired,
+
+        /// Participant in sale access proof provided during `purchase_tokens_on_sale`
+        /// does not match the sender account
+        SaleAccessProofParticipantIsNotSender,
+
+        /// Whitelisted sale participant's cap was exceeded by the purchase
+        SaleParticipantCapExceeded,
+
+        /// Cannot add another vesting balance. Maximum number of vesting balances for this account-token
+        /// pair was reached.
+        MaxVestingBalancesPerAccountPerTokenReached,
+
+        /// Some tokens reverved during previous, finished sale are still reserved. Unreserve them first.
+        RemainingReservedTokensFromPreviousSale,
+
+        /// There are no remaining tokes to unreserve from previous token sale.
+        NoTokensToUnreserve,
     }
 }

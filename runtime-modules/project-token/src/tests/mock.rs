@@ -17,9 +17,9 @@ use sp_runtime::{DispatchError, DispatchResult, ModuleId};
 // crate import
 use crate::{
     types::{
-        InitialAllocationOf, MerkleSide, OfferingStateOf, SingleDataObjectUploadParamsOf,
-        TokenSaleOf, TokenSaleParamsOf, UploadContextOf, VestingBalanceOf, VestingScheduleParamsOf,
-        WhitelistParamsOf,
+        InitialAllocationOf, MerkleSide, OfferingStateOf, SaleAccessProofOf,
+        SingleDataObjectUploadParamsOf, TokenSaleOf, TokenSaleParamsOf, UploadContextOf,
+        VestingBalanceOf, VestingScheduleParamsOf, WhitelistParamsOf, WhitelistedSaleParticipantOf,
     },
     AccountDataOf, GenesisConfig, TokenDataOf, TokenIssuanceParametersOf, Trait, TransferPolicyOf,
 };
@@ -46,6 +46,8 @@ pub type HashOut = <Test as frame_system::Trait>::Hash;
 pub type UploadContext = UploadContextOf<Test>;
 pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
 pub type VestingBalance = VestingBalanceOf<Test>;
+pub type SaleAccessProof = SaleAccessProofOf<Test>;
+pub type WhitelistedSaleParticipant = WhitelistedSaleParticipantOf<Test>;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
@@ -94,6 +96,7 @@ parameter_types! {
     // constants for crate::Trait
     pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token"); // module storage
     pub const BloatBond: u64 = DEFAULT_BLOAT_BOND;
+    pub const MaxVestingBalancesPerAccountPerToken: u8 = 3;
     // constants for balances::Trait
     pub const ExistentialDeposit: u64 = 0;
 }
@@ -197,6 +200,7 @@ impl Trait for Test {
     type ModuleId = TokenModuleId;
     type BloatBond = BloatBond;
     type ReserveCurrency = Balances;
+    type MaxVestingBalancesPerAccountPerToken = MaxVestingBalancesPerAccountPerToken;
 }
 
 // Working group integration

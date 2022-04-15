@@ -2,6 +2,7 @@ use codec::{Decode, Encode};
 use frame_support::{
     dispatch::{fmt::Debug, DispatchError, DispatchResult},
     ensure,
+    traits::Get,
 };
 use sp_arithmetic::traits::{Saturating, Unsigned, Zero};
 use sp_runtime::traits::{Convert, Hash};
@@ -205,6 +206,49 @@ pub struct WhitelistParams<Hash, SingleDataObjectUploadParams> {
     pub commitment: Hash,
     /// Optional payload data to upload to storage
     pub payload: Option<SingleDataObjectUploadParams>,
+}
+
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct WhitelistedSaleParticipant<AccountId, Balance> {
+    // Participant's address
+    pub address: AccountId,
+    // Cap on number of tokens participant can purchase on given sale
+    pub cap: Option<Balance>,
+}
+
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct SaleAccessProof<WhitelistedSaleParticipant, MerkleProof> {
+    // Sale whitelisted participant's data to verify
+    pub participant: WhitelistedSaleParticipant,
+    // Merkle proof to verify against sale's whitelist commitment
+    pub proof: MerkleProof,
+}
+
+impl<AccountId, Balance, Hasher>
+    SaleAccessProof<WhitelistedSaleParticipant<AccountId, Balance>, MerkleProof<Hasher>>
+where
+    Hasher: Hash,
+    AccountId: Clone + Encode + PartialEq,
+    Balance: Clone + Encode,
+{
+    pub(crate) fn verify<T: Trait>(
+        &self,
+        sender: &AccountId,
+        commit: Hasher::Output,
+    ) -> DispatchResult {
+        self.proof
+            .verify::<T, WhitelistedSaleParticipant<AccountId, Balance>>(
+                &self.participant,
+                commit,
+            )?;
+
+        ensure!(
+            self.participant.address == sender.clone(),
+            Error::<T>::SaleAccessProofParticipantIsNotSender
+        );
+
+        Ok(())
+    }
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -490,6 +534,20 @@ impl<
             .saturating_sub(self.reserved_balance)
     }
 
+    pub(crate) fn ensure_vesting_balance_can_be_increased<
+        T: Trait<Balance = Balance, BlockNumber = BlockNumber>,
+    >(
+        &self,
+        source: VestingSource,
+    ) -> DispatchResult {
+        if self.vesting_balances.get(&source).is_none()
+            && self.vesting_balances.len() >= T::MaxVestingBalancesPerAccountPerToken::get().into()
+        {
+            return Err(Error::<T>::MaxVestingBalancesPerAccountPerTokenReached.into());
+        }
+        Ok(())
+    }
+
     /// Increase vesting balance of an account by source
     pub(crate) fn increase_vesting_balance(
         &mut self,
@@ -563,11 +621,19 @@ impl<
 }
 /// Token Data implementation
 impl<
+        JOYBalance,
         Balance: Zero + Saturating + Copy,
         Hash,
         BlockNumber: PartialOrd + Saturating + Copy,
-        OfferingState,
-    > TokenData<Balance, Hash, BlockNumber, OfferingState>
+        VestingScheduleParams,
+        AccountId,
+    >
+    TokenData<
+        Balance,
+        Hash,
+        BlockNumber,
+        TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Hash, AccountId>,
+    >
 {
     // increase total issuance
     pub(crate) fn increase_issuance_by(&mut self, amount: Balance) {
@@ -608,6 +674,14 @@ impl<
         self.patronage_info.rate = new_rate;
     }
 
+    // Returns number of tokens that remain unpurchased & reserved in the the sale's
+    // `tokens_source` account (if any)
+    pub(crate) fn last_sale_remaining_tokens(&self) -> Balance {
+        self.last_sale
+            .as_ref()
+            .map_or(Balance::zero(), |last_sale| last_sale.quantity_left)
+    }
+
     pub(crate) fn try_from_params<T: crate::Trait>(
         params: TokenIssuanceParametersOf<T>,
     ) -> Result<TokenDataOf<T>, DispatchError> {
@@ -635,19 +709,15 @@ impl<
 }
 
 impl<Hasher: Hash> MerkleProof<Hasher> {
-    pub(crate) fn verify_for_commit<T, AccountId>(
-        &self,
-        account_id: &AccountId,
-        commit: Hasher::Output,
-    ) -> DispatchResult
+    pub(crate) fn verify<T, S>(&self, data: &S, commit: Hasher::Output) -> DispatchResult
     where
         T: crate::Trait,
-        AccountId: Encode,
+        S: Encode,
     {
         match &self.0 {
             None => Err(crate::Error::<T>::MerkleProofNotProvided.into()),
             Some(vec) => {
-                let init = Hasher::hash_of(account_id);
+                let init = Hasher::hash_of(data);
                 let proof_result = vec.iter().fold(init, |acc, (hash, side)| match side {
                     MerkleSide::Left => Hasher::hash_of(&(hash, acc)),
                     MerkleSide::Right => Hasher::hash_of(&(acc, hash)),
@@ -776,3 +846,11 @@ pub(crate) type TokenSaleId = u32;
 /// Alias for Transfers
 pub(crate) type TransfersOf<T> =
     Transfers<<T as frame_system::Trait>::AccountId, <T as crate::Trait>::Balance>;
+
+/// Alias for WhitelistedSaleParticipant
+pub(crate) type WhitelistedSaleParticipantOf<T> =
+    WhitelistedSaleParticipant<<T as frame_system::Trait>::AccountId, <T as Trait>::Balance>;
+
+/// Alias for SaleAccessProof
+pub(crate) type SaleAccessProofOf<T> =
+    SaleAccessProof<WhitelistedSaleParticipantOf<T>, MerkleProofOf<T>>;
