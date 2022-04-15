@@ -70,6 +70,8 @@ export type OwnedNftFieldsFragment = {
   id: string
   metadata: string
   creatorRoyalty?: Types.Maybe<number>
+  lastSalePrice?: Types.Maybe<any>
+  lastSaleDate?: Types.Maybe<any>
   video: { id: string }
   ownerMember?: Types.Maybe<{ id: string }>
   transactionalStatus?: Types.Maybe<
@@ -2235,6 +2237,8 @@ export const OwnedNftFields = gql`
     creatorChannel {
       id
     }
+    lastSalePrice
+    lastSaleDate
   }
 `
 export const ChannelNftCollectorFields = gql`

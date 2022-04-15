@@ -136,6 +136,8 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
     this.debug('Check NFT ownership change')
     await assertNftOwner(this.query, this.videoId, winner, (ownedNft) => {
       Utils.assert(ownedNft.creatorRoyalty, 'Royalty not found')
+      Utils.assert(ownedNft.lastSalePrice, 'Last sale price not found')
+      Utils.assert(ownedNft.lastSaleDate, 'Last sale date not found')
       assert.equal(ownedNft.creatorRoyalty, creatorRoyalty)
     })
   }
