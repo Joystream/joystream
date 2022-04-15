@@ -16,6 +16,7 @@ import {
   NftCreateVideoWithBuyNowFixture,
   UpdateVideoForNftCreationFixture,
   NftCollectorsFixture,
+  NftAuctionWhitelistFixture,
   IMember,
 } from '../../fixtures/content'
 import BN from 'bn.js'
@@ -146,12 +147,24 @@ export default async function nftAuctionAndOffers({ api, query, env }: FlowProps
 
   await new FixtureRunner(updateVideoWithAuctionFixture).run()
 
+  const auctionWhitelistFixture = new NftAuctionWhitelistFixture(
+    api,
+    query,
+    author as IMember,
+    channelIds[0],
+    auctionParticipants
+  )
+
+  await new FixtureRunner(auctionWhitelistFixture).run()
+
   // content of this table depends on effects of previously run fixtures
   // keep it updated when changing this flow
   const nftCollectors = {
     [channelIds[0].toString()]: {
-      // 4 == num of videos not transfered from original owner + 1 created in createVideoWithAuctionFixture
-      [author.memberId.toString()]: 5,
+      // 4 == num of videos not transfered from original owner
+      //      + 1 created in createVideoWithAuctionFixture
+      //      + 1 created in auctionWhitelistFixture
+      [author.memberId.toString()]: 6,
 
       // 2 == target of direct offer + buy now winner
       [auctionParticipants[0].memberId.toString()]: 2,
