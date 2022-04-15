@@ -54,6 +54,27 @@ fn permissionless_transfer_fails_with_non_existing_source() {
 }
 
 #[test]
+fn permissionless_transfer_fails_with_src_having_insufficient_fund_for_bloat_bond() {
+    let token_id = token!(1);
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissionless)
+        .build();
+    let src = account!(1);
+    let (dst, amount) = (account!(2), balance!(100));
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(src, amount, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
+
+        assert_noop!(result, Error::<Test>::InsufficientBalanceForBloatBond,);
+    })
+}
+
+#[test]
 fn permissionless_transfer_ok_with_non_existing_destination() {
     let token_id = token!(1);
     let token_data = TokenDataBuilder::new_empty()
@@ -351,6 +372,29 @@ fn multiout_transfer_ok_with_non_existing_destination() {
         let result = Token::transfer(origin!(src), token_id, outputs);
 
         assert_ok!(result);
+    })
+}
+
+#[test]
+fn multiout_transfer_ok_with_src_having_insufficient_funds_for_bloat_bond() {
+    let token_id = token!(1);
+    let token_info = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissionless)
+        .build();
+    let (src, _bloat_bond) = (account!(1), balance!(DEFAULT_BLOAT_BOND));
+    let (dst1, amount1) = (account!(2), balance!(1));
+    let (dst2, amount2) = (account!(3), balance!(1));
+    let outputs = outputs![(dst1, amount1), (dst2, amount2)];
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_info)
+        .with_account(src, 0, 0)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::transfer(origin!(src), token_id, outputs);
+
+        assert_noop!(result, Error::<Test>::InsufficientBalanceForBloatBond);
     })
 }
 

@@ -314,6 +314,10 @@ impl<Balance: Zero + Copy + Saturating, BlockNumber: Copy + Saturating + Partial
 }
 
 impl<AccountId, Balance: Sum + Copy> Transfers<AccountId, Balance> {
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
     pub fn total_amount(&self) -> Balance {
         self.0.iter().map(|(_, payment)| payment.amount).sum()
     }
