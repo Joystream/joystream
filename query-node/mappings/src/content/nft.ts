@@ -86,13 +86,15 @@ async function getCurrentAuctionFromVideo(
   errorMessageForVideo: string,
   errorMessageForNft: string,
   errorMessageForAuction: string,
-  relations: string[] = []
+  nftRelations: string[] = [],
+  auctionRelations: string[] = []
 ): Promise<{ video: Video; auction: Auction; nft: OwnedNft }> {
   // load video
   const video = await getRequiredExistingEntity(store, Video, videoId.toString(), errorMessageForVideo, [
     'nft',
+    ...nftRelations.map((item) => `nft.${item}`),
     'nft.auctions',
-    ...relations.map((item) => `nft.auctions.${item}`),
+    ...auctionRelations.map((item) => `nft.auctions.${item}`),
   ])
 
   const nft = video.nft
@@ -321,6 +323,7 @@ async function finishAuction(
     `Non-existing video's auction was completed`,
     `Non-existing NFT's auction was completed`,
     'Non-existing auction was completed',
+    ['ownerMember', 'ownerCuratorGroup'],
     ['topBid', 'topBid.bidder', 'bids', 'bids.bidder']
   )
 
@@ -356,7 +359,7 @@ async function finishAuction(
   // save auction
   await store.save<Auction>(auction)
 
-  return { video, winner, boughtPrice, nft }
+  return { video, winner, boughtPrice, nft, winningBid }
 }
 
 async function createBid(
@@ -387,6 +390,7 @@ async function createBid(
     'Non-existing video got bid',
     'Non-existing NFT got bid',
     'Non-existing auction got bid canceled',
+    ['ownerMember', 'ownerCuratorGroup'],
     ['topBid', 'bids', 'bids.bidder']
   )
 
@@ -743,7 +747,11 @@ export async function contentNft_NftIssued({ event, store }: EventContext & Stor
 export async function contentNft_AuctionBidMade({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [memberId, videoId, bidAmount] = new Content.AuctionBidMadeEvent(event).params
+  const [memberId, videoId, bidAmount, previousTopBidderId] = new Content.AuctionBidMadeEvent(event).params
+
+  const previousTopBidder = previousTopBidderId.isSome
+    ? new Membership({ id: previousTopBidderId.unwrap().toString() })
+    : undefined
 
   // specific event processing
 
@@ -775,7 +783,8 @@ export async function contentNft_AuctionBidMade({ event, store }: EventContext &
     bidAmount,
     ownerMember: nft.ownerMember,
     ownerCuratorGroup: nft.ownerCuratorGroup,
-    previousTopBid,
+    previousTopBid: previousTopBidder ? previousTopBid : undefined,
+    previousTopBidder,
   })
 
   await store.save<AuctionBidMadeEvent>(announcingPeriodStartedEvent)
@@ -795,6 +804,7 @@ export async function contentNft_AuctionBidCanceled({ event, store }: EventConte
     'Non-existing video got bid canceled',
     'Non-existing NFT got bid canceled',
     'Non-existing auction got bid canceled',
+    ['ownerMember', 'ownerCuratorGroup'],
     ['topBid', 'bids', 'bids.bidder']
   )
 
@@ -925,12 +935,19 @@ export async function contentNft_BidMadeCompletingAuction({
 }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [memberId, videoId] = new Content.BidMadeCompletingAuctionEvent(event).params
+  const [memberId, videoId, previousTopBidderId] = new Content.BidMadeCompletingAuctionEvent(event).params
+
+  const previousTopBidder = previousTopBidderId.isSome
+    ? new Membership({ id: previousTopBidderId.unwrap().toString() })
+    : undefined
 
   // specific event processing
 
   // create record for winning bid
-  const { previousTopBid } = await createBid(event, store, memberId.toNumber(), videoId.toNumber())
+  const {
+    previousTopBid,
+    nft: { ownerMember, ownerCuratorGroup },
+  } = await createBid(event, store, memberId.toNumber(), videoId.toNumber())
 
   // finish auction and transfer ownership
   const { winner: member, video, boughtPrice: price, nft } = await finishAuction(
@@ -953,10 +970,11 @@ export async function contentNft_BidMadeCompletingAuction({
 
     member,
     video,
-    ownerMember: nft.ownerMember,
-    ownerCuratorGroup: nft.ownerCuratorGroup,
+    ownerMember,
+    ownerCuratorGroup,
     price,
-    previousTopBid,
+    previousTopBid: previousTopBidder ? previousTopBid : undefined,
+    previousTopBidder,
   })
 
   await store.save<BidMadeCompletingAuctionEvent>(announcingPeriodStartedEvent)
@@ -970,7 +988,7 @@ export async function contentNft_OpenAuctionBidAccepted({ event, store }: EventC
   // specific event processing
 
   // finish auction
-  const { video, boughtPrice, nft } = await finishAuction(store, videoId.toNumber(), event.blockNumber, {
+  const { video, boughtPrice, nft, winningBid } = await finishAuction(store, videoId.toNumber(), event.blockNumber, {
     bidAmount,
     winnerId: winnerId.toNumber(),
   })
@@ -994,6 +1012,8 @@ export async function contentNft_OpenAuctionBidAccepted({ event, store }: EventC
     video,
     // prepare Nft owner (handles fields `ownerMember` and `ownerCuratorGroup`)
     ...(await convertContentActorToChannelOrNftOwner(store, contentActor)),
+    winningBid,
+    winningBidder: new Membership({ id: winnerId.toString() }),
   })
 
   await store.save<OpenAuctionBidAcceptedEvent>(announcingPeriodStartedEvent)
