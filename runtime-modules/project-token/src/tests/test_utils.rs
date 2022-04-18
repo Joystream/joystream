@@ -11,7 +11,7 @@ use crate::GenesisConfig;
 
 pub struct TokenDataBuilder<Balance, Hash, BlockNumber> {
     pub(crate) supply: Balance,
-    pub(crate) issuance_state: OfferingState,
+    pub(crate) offering_state: OfferingState,
     pub(crate) transfer_policy: TransferPolicy<Hash>,
     pub(crate) patronage_info: PatronageData<Balance, BlockNumber>,
     pub(crate) symbol: Hash,
@@ -23,7 +23,7 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash: Default, BlockNumber:
     pub fn build(self) -> crate::types::TokenData<Balance, Hash, BlockNumber> {
         crate::types::TokenData::<_, _, _> {
             supply: self.supply,
-            issuance_state: self.issuance_state,
+            offering_state: self.offering_state,
             transfer_policy: self.transfer_policy,
             patronage_info: self.patronage_info,
             symbol: self.symbol,
@@ -60,7 +60,7 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash: Default, BlockNumber:
     pub fn new_empty() -> Self {
         Self {
             supply: Balance::zero(),
-            issuance_state: OfferingState::Idle,
+            offering_state: OfferingState::Idle,
             transfer_policy: TransferPolicy::<Hash>::Permissionless,
             patronage_info: PatronageData::<Balance, BlockNumber> {
                 rate: Balance::zero(),

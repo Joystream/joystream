@@ -29,7 +29,7 @@ pub struct TokenData<Balance, Hash, BlockNumber> {
     pub(crate) supply: Balance,
 
     /// Initial issuance state
-    pub(crate) issuance_state: OfferingState,
+    pub(crate) offering_state: OfferingState,
 
     /// Transfer policy
     pub(crate) transfer_policy: TransferPolicy<Hash>,
@@ -92,9 +92,6 @@ pub(crate) enum OfferingState {
 pub struct TokenIssuanceParameters<Balance, Hash> {
     /// Initial issuance
     pub(crate) initial_supply: Balance,
-
-    /// Initial State builder: stub
-    pub(crate) initial_state: OfferingState,
 
     /// Token Symbol
     pub(crate) symbol: Hash,
@@ -272,7 +269,7 @@ impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, H
         };
         TokenData::<Balance, Hash, BlockNumber> {
             supply: self.initial_supply,
-            issuance_state: self.initial_state,
+            offering_state: OfferingState::Idle,
             transfer_policy: self.transfer_policy,
             symbol: self.symbol,
             patronage_info,

@@ -875,7 +875,6 @@ fn issue_token_ok_with_event_deposit() {
 
     let params = TokenIssuanceParametersOf::<Test> {
         initial_supply: balance!(100),
-        initial_state: OfferingState::Idle,
         symbol: Hashing::hash_of(&token_id),
         transfer_policy: Policy::Permissionless,
         patronage_rate: balance!(1),
@@ -892,7 +891,7 @@ fn issue_token_ok_with_event_deposit() {
             token_id,
             TokenDataOf::<Test> {
                 supply: params.initial_supply,
-                issuance_state: params.initial_state,
+                offering_state: OfferingState::Idle,
                 transfer_policy: params.transfer_policy,
                 symbol: params.symbol,
                 accounts_number: 0u64,
@@ -914,7 +913,6 @@ fn issue_token_ok_with_token_info_added() {
 
     let params = TokenIssuanceParametersOf::<Test> {
         initial_supply: balance!(100),
-        initial_state: OfferingState::Idle,
         symbol: Hashing::hash_of(&token_id),
         transfer_policy: Policy::Permissionless,
         patronage_rate: balance!(1),
@@ -932,7 +930,7 @@ fn issue_token_ok_with_token_info_added() {
             <crate::TokenInfoById<Test>>::get(token_id),
             TokenDataOf::<Test> {
                 supply: params.initial_supply,
-                issuance_state: params.initial_state,
+                offering_state: OfferingState::Idle,
                 transfer_policy: params.transfer_policy,
                 symbol: params.symbol,
                 accounts_number: 0u64,
