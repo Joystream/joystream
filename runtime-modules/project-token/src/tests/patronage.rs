@@ -320,11 +320,10 @@ fn claim_patronage_ok_with_event_deposit() {
             token_id, owner,
         );
 
-        last_event_eq!(RawEvent::PatronageCreditClaimedAtBlock(
+        last_event_eq!(RawEvent::PatronageCreditClaimed(
             token_id,
             rate * blocks * supply,
             owner,
-            block!(1) + blocks, // starting block + blocks
         ));
     })
 }

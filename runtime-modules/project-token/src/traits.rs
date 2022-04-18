@@ -1,15 +1,5 @@
 use frame_support::dispatch::DispatchResult;
 
-/// Account wrapper that encapsulates the validation for the transfer location
-/// by means of the visitor pattern
-pub trait TransferLocationTrait<AccountId, Policy> {
-    /// encapsulates eventual merkle tree validation given policy
-    fn is_valid_location_for_policy(&self, policy: &Policy) -> bool;
-
-    /// the wrapped account
-    fn location_account(&self) -> AccountId;
-}
-
 pub trait PalletToken<AccountId, Policy, IssuanceParams> {
     /// Balance type used
     type Balance;

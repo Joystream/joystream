@@ -7,45 +7,16 @@ decl_event! {
         Balance = <T as crate::Trait>::Balance,
         TokenId = <T as crate::Trait>::TokenId,
         AccountId = <T as frame_system::Trait>::AccountId,
-        BlockNumber = <T as frame_system::Trait>::BlockNumber,
         TransferPolicy = TransferPolicyOf<T>,
         TokenData = TokenDataOf<T>,
         ValidatedTransfers = Transfers<Validated<<T as frame_system::Trait>::AccountId>, <T as crate::Trait>::Balance>,
     {
-        /// Token amount is deposited
-        /// Params:
-        /// - token identifier
-        /// - recipient account
-        /// - amount deposited
-        TokenAmountDepositedInto(TokenId, AccountId, Balance),
-
-        /// Token amount is slashed
-        /// Params:
-        /// - token identifier
-        /// - slashed account
-        /// - amount slashed
-        TokenAmountSlashedFrom(TokenId, AccountId, Balance),
-
         /// Token amount is transferred from src to dst
         /// Params:
         /// - token identifier
         /// - source account
         /// - outputs: list of pairs (destination account, amount)
         TokenAmountTransferred(TokenId, AccountId, ValidatedTransfers),
-
-        /// Token amount is reserved
-        /// Params:
-        /// - token identifier
-        /// - account tokens are reserved from
-        /// - amount reserved
-        TokenAmountReservedFrom(TokenId, AccountId, Balance),
-
-        /// Token amount is unreserved
-        /// Params:
-        /// - token identifier
-        /// - account tokens are unreserved from
-        /// - amount reserved
-        TokenAmountUnreservedFrom(TokenId, AccountId, Balance),
 
         /// Patronage rate decreased
         /// Params:
@@ -58,7 +29,7 @@ decl_event! {
         /// - token identifier
         /// - credit amount
         /// - account
-        PatronageCreditClaimedAtBlock(TokenId, Balance, AccountId, BlockNumber),
+        PatronageCreditClaimed(TokenId, Balance, AccountId),
 
         /// Member joined whitelist
         /// Params:

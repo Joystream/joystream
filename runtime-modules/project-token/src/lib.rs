@@ -89,7 +89,6 @@ decl_storage! {
 }
 
 decl_module! {
-    /// _MultiCurrency_ substrate module.
     pub struct Module<T: Trait> for enum Call
     where
         origin: T::Origin
@@ -101,16 +100,20 @@ decl_module! {
         /// Predefined errors.
         type Error = Error<T>;
 
-        /// Transfer `amount` from `src` account to `dst` according to provided policy
+        /// Allow to transfer from `src` to the various `outputs` beneficiaries in the
+        /// specified amounts.
         /// Preconditions:
         /// - `token_id` must exists
-        /// - `dst` underlying account must be valid for `token_id`
-        /// - `src` must be valid for `token_id`
-        /// - `dst` is compatible con `token_id` transfer policy
-        ///
+        /// - `src` must be valid for `token_id`, and must have enough JOYs to cover
+        ///    the total bloat bond required in case of destinations not existing.
+        ///    Also `src` must have enough token funds to cover all the transfer
+        /// - `outputs` must designated  existing destination for "Permissioned" transfers.
+        //
         /// Postconditions:
-        /// - `src` free balance decreased by `amount` or removed if final balance < existential deposit
-        /// - `dst` free balance increased by `amount`
+        /// - `src` free balance decreased by `amount` or removed if final
+        ///    balance < existential deposit. Also `src` JOY balance is decreased by the
+        ///    total bloat bond deposited in case destination have been added to storage
+        /// - `outputs.beneficiary` "free balance"" increased by `amount`
         /// - `token_id` issuance eventually decreased by dust amount in case of src removalp
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn transfer(
@@ -288,11 +291,10 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
             token_info.set_unclaimed_tally_patronage_at_block(T::Balance::zero(), now);
         });
 
-        Self::deposit_event(RawEvent::PatronageCreditClaimedAtBlock(
+        Self::deposit_event(RawEvent::PatronageCreditClaimed(
             token_id,
             unclaimed_patronage,
             to_account,
-            now,
         ));
 
         Ok(())
@@ -300,11 +302,13 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
 
     /// Issue token with specified characteristics
     /// Preconditions:
-    /// -
+    /// - `token_id` must NOT exists
+    /// - `symbol` specified in the parameters must NOT exists
     ///
     /// Postconditions:
     /// - token with specified characteristics is added to storage state
     /// - `NextTokenId` increased by 1
+    /// - `Symbols`
     fn issue_token(
         owner_account_id: T::AccountId,
         issuance_parameters: TokenIssuanceParametersOf<T>,
@@ -345,7 +349,6 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
     ///
     /// Postconditions:
     /// - token data @ `token_Id` removed from storage
-    /// - all account data for `token_Id` removed
     fn deissue_token(token_id: T::TokenId) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
         Self::ensure_can_deissue_token(token_id)?;
