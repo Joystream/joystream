@@ -138,6 +138,18 @@ decl_module! {
             Ok(())
         }
 
+        /// Allow any user to remove an account
+        /// Preconditions:
+        /// - `token_id` must be valid
+        /// - `account_id` must be valid for `token_id`
+        /// - `origin` signer must be either:
+        ///    - `account_id` in that case the deletion succeedes even with non empty account
+        ///    - different from `account_id` in that case deletion succeedes only
+        ///      for `Permissionless` mode and empty account
+        /// Postconditions:
+        /// - Account information for `account_id` removed from storage
+        /// - `token_id` supply decreased if necessary
+        /// - bloat bond refunded
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn dust_account(origin, token_id: T::TokenId, account_id: T::AccountId) -> DispatchResult {
             let sender = ensure_signed(origin)?;
@@ -168,10 +180,12 @@ decl_module! {
         /// Join whitelist for permissioned case: used to add accounts for token
         /// Preconditions:
         /// - 'token_id' must be valid
-        /// - transfer policy is permissionless or transfer policy is permissioned and merkle proof is valid
+        /// - `origin` signer must not already exists
+        /// - transfer policy is `Permissioned` and merkle proof must be valid
         ///
         /// Postconditions:
-        /// - account added to the list
+        /// - `origin` signer account created and added to pallet storage
+        /// - `bloat_bond` subtracted from caller JOY usable balance
         #[weight = 10_000_000] // TODO: adjust weights
         pub fn join_whitelist(origin, token_id: T::TokenId, proof: MerkleProofOf<T>) -> DispatchResult {
             let account_id = ensure_signed(origin)?;
