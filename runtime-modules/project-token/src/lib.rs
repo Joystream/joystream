@@ -81,9 +81,12 @@ decl_storage! {
         pub NextTokenId get(fn next_token_id) config(): T::TokenId;
 
         /// Set for the tokens symbols
-        pub SymbolsUsed get (fn symbol_used) config():
+        pub SymbolsUsed get(fn symbol_used) config():
         map
             hasher(blake2_128_concat) T::Hash => ();
+
+        /// Bloat Bond value used during account creation
+        pub BloatBond get(fn bloat_bond) config(): ReserveBalanceOf<T>;
     }
 
 }

@@ -80,6 +80,7 @@ impl GenesisConfigBuilder {
             account_info_by_token_and_account: vec![],
             next_token_id: TokenId::one(),
             symbol_used: vec![],
+            bloat_bond: ReserveBalance::zero(),
         }
     }
 
@@ -89,6 +90,10 @@ impl GenesisConfigBuilder {
         self.token_info_by_id.push((token_id, token_info));
         self.next_token_id = self.next_token_id.saturating_add(TokenId::one());
         self
+    }
+
+    pub fn with_bloat_bond(self, bloat_bond: ReserveBalance) -> Self {
+        Self { bloat_bond, ..self }
     }
 
     // add account & updates token issuance
@@ -118,6 +123,7 @@ impl GenesisConfigBuilder {
             token_info_by_id: self.token_info_by_id,
             next_token_id: self.next_token_id,
             symbol_used: self.symbol_used,
+            bloat_bond: self.bloat_bond,
         }
     }
 }

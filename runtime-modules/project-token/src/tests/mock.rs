@@ -135,6 +135,7 @@ pub struct GenesisConfigBuilder {
     pub(crate) account_info_by_token_and_account: Vec<(TokenId, AccountId, AccountData)>,
     pub(crate) token_info_by_id: Vec<(TokenId, TokenData)>,
     pub(crate) next_token_id: TokenId,
+    pub(crate) bloat_bond: ReserveBalance,
     pub(crate) symbol_used: Vec<(HashOut, ())>,
 }
 
