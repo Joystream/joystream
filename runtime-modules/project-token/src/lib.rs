@@ -322,7 +322,7 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
     /// Postconditions:
     /// - token with specified characteristics is added to storage state
     /// - `NextTokenId` increased by 1
-    /// - `Symbols`
+    /// - symbol is added to `Symbols`
     fn issue_token(
         owner_account_id: T::AccountId,
         issuance_parameters: TokenIssuanceParametersOf<T>,
@@ -363,6 +363,7 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
     ///
     /// Postconditions:
     /// - token data @ `token_Id` removed from storage
+    /// - `symbol` for `token_id` removed
     fn deissue_token(token_id: T::TokenId) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
         Self::ensure_can_deissue_token(token_id)?;
