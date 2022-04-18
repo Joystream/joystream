@@ -103,35 +103,6 @@ fn decrease_patronage_ok() {
 }
 
 #[test]
-fn decrease_patronage_ok_with_tally_count_updated() {
-    let token_id = token!(1);
-    let decrement = balance!(10);
-    let (rate, blocks) = (balance!(20), block!(10));
-    let (owner, supply) = (account!(1), balance!(100));
-
-    let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params.build())
-        .with_account(owner, supply, balance!(0))
-        .build();
-
-    build_test_externalities(config).execute_with(|| {
-        increase_block_number_by(blocks);
-
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_by(
-            token_id, decrement,
-        );
-
-        assert_eq!(
-            rate * blocks * supply,
-            Token::token_info_by_id(token_id)
-                .patronage_info
-                .unclaimed_patronage_tally_amount,
-        );
-    })
-}
-
-#[test]
 fn decrease_patronage_ok_with_tally_count_twice_updated() {
     let token_id = token!(1);
     let decrement = balance!(1);
@@ -408,7 +379,7 @@ fn claim_patronage_credit_fails_with_invalid_token_id() {
 fn claim_patronage_credit_fails_with_invalid_owner_account_id() {
     let rate = balance!(50);
     let token_id = token!(1);
-    let account_id = account!(1);
+    let invalid_owner_account_id = account!(1);
     let owner_account_id = account!(2);
     let amount = balance!(100);
 
@@ -416,13 +387,13 @@ fn claim_patronage_credit_fails_with_invalid_owner_account_id() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
-        .with_account(account_id, amount, 0)
+        .with_account(owner_account_id, amount, 0)
         .build();
     build_test_externalities(config).execute_with(|| {
         let result =
             <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
                 token_id,
-                owner_account_id,
+                invalid_owner_account_id,
             );
 
         assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);

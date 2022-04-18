@@ -787,6 +787,32 @@ fn deissue_token_with_token_info_removed() {
 }
 
 #[test]
+fn issue_token_fails_with_existing_symbol() {
+    let token_id = token!(1);
+    let owner = account!(1);
+    let sym = Hashing::hash_of(&"CRT".to_string());
+
+    let token_data = TokenDataBuilder::new_empty().with_symbol(sym).build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(owner, 0, 0)
+        .build();
+
+    let params = TokenIssuanceParametersOf::<Test> {
+        symbol: sym,
+        ..Default::default()
+    };
+
+    build_test_externalities(config).execute_with(|| {
+        let result =
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::issue_token(owner, params);
+
+        assert_noop!(result, Error::<Test>::TokenSymbolAlreadyInUse);
+    })
+}
+
+#[test]
 fn issue_token_ok_owner_having_already_issued_a_token() {
     let token_id = token!(1);
     let owner = account!(1);

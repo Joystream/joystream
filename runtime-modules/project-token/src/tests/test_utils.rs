@@ -31,6 +31,10 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash: Default, BlockNumber:
         }
     }
 
+    pub fn with_symbol(self, symbol: Hash) -> Self {
+        Self { symbol, ..self }
+    }
+
     pub fn with_issuance(self, supply: Balance) -> Self {
         Self { supply, ..self }
     }
@@ -100,18 +104,15 @@ impl GenesisConfigBuilder {
             reserved_balance,
         };
 
-        let new_issuance = self
-            .token_info_by_id
-            .last()
+        self.token_info_by_id
+            .last_mut()
             .unwrap()
             .1
-            .supply
-            .saturating_add(Balance::from(free_balance.saturating_add(reserved_balance)));
+            .increase_issuance_by(Balance::from(free_balance.saturating_add(reserved_balance)));
 
         self.account_info_by_token_and_account
             .push((id, account_id, new_account_info));
 
-        self.token_info_by_id.last_mut().unwrap().1.supply = new_issuance;
         self.token_info_by_id.last_mut().unwrap().1.accounts_number += 1u64;
         self
     }
