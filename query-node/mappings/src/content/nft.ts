@@ -17,11 +17,6 @@ import {
   TransactionalStatusIdle,
   TransactionalStatusBuyNow,
   TransactionalStatusUpdate,
-  ContentActor,
-  ContentActorMember,
-  ContentActorCurator,
-  ContentActorLead,
-  Curator,
 
   // events
   OpenAuctionStartedEvent,
@@ -49,7 +44,7 @@ import { FindConditions, In } from 'typeorm'
 import BN from 'bn.js'
 import { PERBILL_ONE_PERCENT } from '../temporaryConstants'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
-import { convertContentActorToChannelOrNftOwner } from './utils'
+import { convertContentActorToChannelOrNftOwner, convertContentActor } from './utils'
 
 async function getExistingEntity<Type extends Video | Membership>(
   store: DatabaseManager,
@@ -205,50 +200,6 @@ async function getRequiredExistingEntites<Type extends Video | Membership>(
   entities.sort((a, b) => ids.indexOf(a.id.toString()) - ids.indexOf(b.id.toString()))
 
   return entities
-}
-
-async function convertContentActor(
-  store: DatabaseManager,
-  contentActor: joystreamTypes.ContentActor
-): Promise<typeof ContentActor> {
-  if (contentActor.isMember) {
-    const memberId = contentActor.asMember.toNumber()
-    const member = await store.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
-
-    // ensure member exists
-    if (!member) {
-      return inconsistentState(`Actor is non-existing member`, memberId)
-    }
-
-    const result = new ContentActorMember()
-    result.member = member
-
-    return result
-  }
-
-  if (contentActor.isCurator) {
-    const curatorId = contentActor.asCurator[1].toNumber()
-    const curator = await store.get(Curator, {
-      where: { id: curatorId.toString() } as FindConditions<Curator>,
-    })
-
-    // ensure curator group exists
-    if (!curator) {
-      return inconsistentState('Actor is non-existing curator group', curatorId)
-    }
-
-    const result = new ContentActorCurator()
-    result.curator = curator
-
-    return result
-  }
-
-  if (contentActor.isLead) {
-    return new ContentActorLead()
-  }
-
-  logger.error('Not implemented ContentActor type', { contentActor: contentActor.toString() })
-  throw new Error('Not-implemented ContentActor type used')
 }
 
 async function setNewNftTransactionalStatus(

@@ -4,9 +4,15 @@ eslint-disable @typescript-eslint/naming-convention
 import { EventContext, StoreContext } from '@joystream/hydra-common'
 import { In } from 'typeorm'
 import { Content } from '../../generated/types'
-import { deserializeMetadata, inconsistentState, logger } from '../common'
-import { processVideoMetadata, videoRelationsForCountersBare, videoRelationsForCounters } from './utils'
-import { Channel, Video, VideoCategory } from 'query-node/dist/model'
+import { deserializeMetadata, genericEventFields, inconsistentState, logger } from '../common'
+import {
+  processVideoMetadata,
+  videoRelationsForCountersBare,
+  videoRelationsForCounters,
+  convertContentActorToChannelOrNftOwner,
+  convertContentActor,
+} from './utils'
+import { Channel, NftIssuedEvent, Video, VideoCategory } from 'query-node/dist/model'
 import { VideoMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import _ from 'lodash'
@@ -95,7 +101,7 @@ export async function content_VideoCategoryDeleted({ store, event }: EventContex
 export async function content_VideoCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
   // read event data
-  const [, channelId, videoId, videoCreationParameters] = new Content.VideoCreatedEvent(event).params
+  const [actor, channelId, videoId, videoCreationParameters] = new Content.VideoCreatedEvent(event).params
 
   // load channel
   const channel = await store.get(Channel, {
@@ -128,8 +134,20 @@ export async function content_VideoCreated(ctx: EventContext & StoreContext): Pr
 
   if (videoCreationParameters.auto_issue_nft.isSome) {
     const issuanceParameters = videoCreationParameters.auto_issue_nft.unwrap()
+    const nft = await createNft(store, video, issuanceParameters, event.blockNumber)
 
-    await createNft(store, video, issuanceParameters, event.blockNumber)
+    const nftIssuedEvent = new NftIssuedEvent({
+      ...genericEventFields(event),
+
+      contentActor: await convertContentActor(store, actor),
+      video,
+      royalty: nft.creatorRoyalty,
+      metadata: nft.metadata,
+      // prepare Nft owner (handles fields `ownerMember` and `ownerCuratorGroup`)
+      ...(await convertContentActorToChannelOrNftOwner(store, actor)),
+    })
+
+    await store.save<NftIssuedEvent>(nftIssuedEvent)
   }
 
   await getAllManagers(store).videos.onMainEntityCreation(video)
@@ -141,7 +159,7 @@ export async function content_VideoCreated(ctx: EventContext & StoreContext): Pr
 export async function content_VideoUpdated(ctx: EventContext & StoreContext): Promise<void> {
   const { event, store } = ctx
   // read event data
-  const [, videoId, videoUpdateParameters] = new Content.VideoUpdatedEvent(event).params
+  const [actor, videoId, videoUpdateParameters] = new Content.VideoUpdatedEvent(event).params
 
   // load video
   const video = await store.get(Video, {
@@ -170,6 +188,19 @@ export async function content_VideoUpdated(ctx: EventContext & StoreContext): Pr
 
     // update the video
     video.nft = nft
+
+    const nftIssuedEvent = new NftIssuedEvent({
+      ...genericEventFields(event),
+
+      contentActor: await convertContentActor(store, actor),
+      video,
+      royalty: nft.creatorRoyalty,
+      metadata: nft.metadata,
+      // prepare Nft owner (handles fields `ownerMember` and `ownerCuratorGroup`)
+      ...(await convertContentActorToChannelOrNftOwner(store, actor)),
+    })
+
+    await store.save<NftIssuedEvent>(nftIssuedEvent)
   }
 
   // set last update time
