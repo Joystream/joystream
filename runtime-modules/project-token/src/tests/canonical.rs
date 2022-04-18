@@ -7,8 +7,8 @@ use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
 use crate::types::{MerkleProofOf, OfferingState, PatronageData, TokenIssuanceParametersOf};
 use crate::{
-    account, balance, last_event_eq, merkle_proof, merkle_root, origin, token, treasury, Error,
-    RawEvent, TokenDataOf,
+    account, balance, joy, last_event_eq, merkle_proof, merkle_root, origin, token, treasury,
+    Error, RawEvent, TokenDataOf,
 };
 
 #[test]
@@ -25,7 +25,7 @@ fn join_whitelist_fails_with_token_id_not_valid() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, 0, 0)
+        .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -51,8 +51,8 @@ fn join_whitelist_fails_with_existing_account() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, 0, 0)
-        .with_account(acc1, 0, 0)
+        .with_account(owner, AccountData::new_empty())
+        .with_account(acc1, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -78,7 +78,7 @@ fn join_whitelist_fails_with_invalid_proof() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, 0, 0)
+        .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -104,7 +104,7 @@ fn join_whitelist_fails_with_no_proof_provided() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, 0, 0)
+        .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -129,7 +129,7 @@ fn join_whitelist_fails_with_insufficent_joy_balance_for_bloat_bond() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, 0, 0)
+        .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -152,7 +152,7 @@ fn join_whitelist_fails_in_permissionless_mode() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, 0, 0)
+        .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -181,7 +181,7 @@ fn join_whitelist_ok() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, 0, 0)
+        .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -207,7 +207,7 @@ fn join_whitelist_ok_with_bloat_bond_slashed_from_caller() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, 0, 0)
+        .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -234,7 +234,7 @@ fn join_whitelist_ok_with_bloat_bond_transferred_to_treasury() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, 0, 0)
+        .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -260,7 +260,7 @@ fn join_whitelist_ok_with_accounts_number_incremented() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, 0, 0)
+        .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -287,7 +287,7 @@ fn join_whitelist_ok_with_event_deposit() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, 0, 0)
+        .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -317,7 +317,7 @@ fn join_whitelist_ok_with_new_account_created() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, 0, 0)
+        .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -345,7 +345,7 @@ fn join_whitelist_ok_with_new_account_having_usable_balance_zero() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, 0, 0)
+        .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -374,7 +374,7 @@ fn join_whitelist_ok_with_new_account_having_reserved_balance_zero() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, 0, 0)
+        .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -383,7 +383,7 @@ fn join_whitelist_ok_with_new_account_having_reserved_balance_zero() {
         let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
 
         assert_eq!(
-            Token::account_info_by_token_and_account(token_id, acc1).reserved_balance,
+            Token::account_info_by_token_and_account(token_id, acc1).stacked_balance,
             balance!(0)
         );
     })
@@ -403,7 +403,7 @@ fn join_whitelist_ok_with_bloat_bond_slashed_from_account_usable_balance() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, 0, 0)
+        .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -425,8 +425,8 @@ fn dust_account_fails_with_invalid_token_id() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, owner_balance, 0)
-        .with_account(acc, balance!(0), balance!(0))
+        .with_account(owner, AccountData::new_with_liquidity(owner_balance))
+        .with_account(acc, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -446,8 +446,8 @@ fn dust_account_fails_with_invalid_account_id() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, owner_balance, 0)
-        .with_account(acc, balance!(0), balance!(0))
+        .with_account(owner, AccountData::new_with_liquidity(owner_balance))
+        .with_account(acc, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -466,8 +466,11 @@ fn dust_account_fails_with_permissionless_mode_and_non_empty_non_owned_account()
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(acc1, balance!(0), balance!(0))
-        .with_account(acc2, balance!(10), balance!(10))
+        .with_account(acc1, AccountData::new_empty())
+        .with_account(
+            acc2,
+            AccountData::new_with_liquidity(balance!(10)).with_stacked(balance!(10)),
+        )
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -493,9 +496,9 @@ fn dust_account_fails_with_permissioned_mode_and_non_owned_account() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, owner_balance, balance!(0))
-        .with_account(acc1, balance!(0), balance!(0))
-        .with_account(acc2, balance!(0), balance!(0))
+        .with_account(owner, AccountData::new_with_liquidity(owner_balance))
+        .with_account(acc1, AccountData::new_empty())
+        .with_account(acc2, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -517,8 +520,12 @@ fn dust_account_ok_with_permissionless_mode_and_non_empty_owned_account() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(acc1, balance!(10), balance!(10))
-        .with_account(acc2, balance!(0), balance!(0))
+        .with_account(
+            acc1,
+            AccountData::new_with_liquidity_and_bond(balance!(10), joy!(10))
+                .with_stacked(balance!(5)),
+        )
+        .with_account(acc2, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -531,8 +538,8 @@ fn dust_account_ok_with_permissionless_mode_and_non_empty_owned_account() {
 #[test]
 fn dust_account_ok_with_permissioned_mode_and_non_empty_owned_account() {
     let token_id = token!(1);
-    let (acc1, acc2) = (account!(2), account!(3));
-    let commit = merkle_root![acc1, acc2];
+    let (account, account_balance) = (account!(2), balance!(100));
+    let commit = merkle_root![account];
     let (owner, owner_balance) = (account!(1), balance!(100));
 
     let token_data = TokenDataBuilder::new_empty()
@@ -541,13 +548,12 @@ fn dust_account_ok_with_permissioned_mode_and_non_empty_owned_account() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, owner_balance, 0)
-        .with_account(acc1, balance!(0), balance!(0))
-        .with_account(acc2, balance!(10), balance!(0))
+        .with_account(owner, AccountData::new_with_liquidity(owner_balance))
+        .with_account(account, AccountData::new_with_liquidity(account_balance))
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result = Token::dust_account(origin!(acc1), token_id, acc1);
+        let result = Token::dust_account(origin!(account), token_id, account);
 
         assert_ok!(result);
     })
@@ -563,8 +569,8 @@ fn dust_account_ok_with_permissionless_mode_and_empty_non_owned_account() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, owner_balance, 0)
-        .with_account(acc, balance!(0), balance!(0))
+        .with_account(owner, AccountData::new_with_liquidity(owner_balance))
+        .with_account(acc, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -583,8 +589,8 @@ fn dust_account_ok_with_event_deposit() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(acc1, balance!(0), balance!(0))
-        .with_account(acc2, balance!(0), balance!(0))
+        .with_account(acc1, AccountData::new_empty())
+        .with_account(acc2, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -608,8 +614,8 @@ fn dust_account_ok_accounts_number_decremented() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(acc1, balance!(0), balance!(0))
-        .with_account(acc2, balance!(0), balance!(0))
+        .with_account(acc1, AccountData::new_empty())
+        .with_account(acc2, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -628,8 +634,8 @@ fn dust_account_ok_with_account_removed() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(acc1, balance!(0), balance!(0))
-        .with_account(acc2, balance!(0), balance!(0))
+        .with_account(acc1, AccountData::new_empty())
+        .with_account(acc2, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -650,8 +656,8 @@ fn dust_account_ok_with_bloat_bond_refunded() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(acc1, balance!(0), balance!(0))
-        .with_account(acc2, balance!(0), balance!(0))
+        .with_account(acc1, AccountData::new_empty())
+        .with_account(acc2, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -672,8 +678,8 @@ fn dust_account_ok_with_bloat_bond_slashed_from_treasury() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(acc1, balance!(0), balance!(0))
-        .with_account(acc2, balance!(0), balance!(0))
+        .with_account(acc1, AccountData::new_empty())
+        .with_account(acc2, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -710,8 +716,8 @@ fn deissue_token_fails_with_existing_accounts() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, balance!(10), balance!(0))
-        .with_account(acc, balance!(0), balance!(0))
+        .with_account(owner, AccountData::new_with_liquidity(balance!(10)))
+        .with_account(acc, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -796,7 +802,7 @@ fn issue_token_fails_with_existing_symbol() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, 0, 0)
+        .with_account(owner, AccountData::new_empty())
         .build();
 
     let params = TokenIssuanceParametersOf::<Test> {
@@ -821,7 +827,7 @@ fn issue_token_ok_owner_having_already_issued_a_token() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(owner, 0, 0)
+        .with_account(owner, AccountData::new_empty())
         .build();
 
     let params = TokenIssuanceParametersOf::<Test> {
@@ -981,10 +987,7 @@ fn issue_token_ok_with_owner_account_data_added_and_balance_equals_to_initial_su
             <Token as PalletToken<AccountId, Policy, IssuanceParams>>::issue_token(owner, params);
         assert_ok!(
             Token::ensure_account_data_exists(token_id, &owner),
-            AccountData {
-                free_balance: initial_supply,
-                reserved_balance: balance!(0),
-            }
+            AccountData::new_with_liquidity(initial_supply)
         );
     })
 }

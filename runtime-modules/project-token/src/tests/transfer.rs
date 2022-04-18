@@ -43,7 +43,7 @@ fn transfer_fails_with_non_existing_source() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(dst, amount, 0)
+        .with_account(dst, AccountData::new_with_liquidity(amount))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -64,7 +64,7 @@ fn permissionless_transfer_fails_with_src_having_insufficient_fund_for_bloat_bon
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, amount, 0)
+        .with_account(src, AccountData::new_with_liquidity(amount))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -85,7 +85,7 @@ fn permissionless_transfer_ok_with_non_existing_destination() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, amount, 0)
+        .with_account(src, AccountData::new_with_liquidity(amount))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -108,7 +108,7 @@ fn permissionless_transfer_ok_with_new_destination_created() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, amount, 0)
+        .with_account(src, AccountData::new_with_liquidity(amount))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -132,7 +132,7 @@ fn permissionless_transfer_ok_for_new_destination_with_bloat_bond_slashed_from_s
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, amount, 0)
+        .with_account(src, AccountData::new_with_liquidity(amount))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -156,7 +156,7 @@ fn permissionless_transfer_ok_for_new_destination_with_bloat_bond_transferred_to
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, amount, 0)
+        .with_account(src, AccountData::new_with_liquidity(amount))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -179,8 +179,8 @@ fn permissionless_transfer_fails_with_source_not_having_sufficient_free_balance(
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, src_balance, 0)
-        .with_account(dst, 0, 0)
+        .with_account(src, AccountData::new_with_liquidity(src_balance))
+        .with_account(dst, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -201,8 +201,8 @@ fn permissionless_transfer_ok() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, amount, 0)
-        .with_account(dst, 0, 0)
+        .with_account(src, AccountData::new_with_liquidity(amount))
+        .with_account(dst, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -224,8 +224,8 @@ fn permissionless_transfer_ok_with_event_deposit() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, amount, 0)
-        .with_account(dst, 0, 0)
+        .with_account(src, AccountData::new_with_liquidity(amount))
+        .with_account(dst, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -250,8 +250,8 @@ fn permissionless_transfer_ok_and_src_left_with_zero_balance() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, amount, 0)
-        .with_account(dst, 0, 0)
+        .with_account(src, AccountData::new_with_liquidity(amount))
+        .with_account(dst, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -275,8 +275,8 @@ fn permissionless_transfer_ok_with_destination_receiving_funds() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, amount, 0)
-        .with_account(dst, 0, 0)
+        .with_account(src, AccountData::new_with_liquidity(amount))
+        .with_account(dst, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -300,8 +300,8 @@ fn permissionless_transfer_ok_without_change_in_token_supply() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, amount, 0)
-        .with_account(dst, 0, 0)
+        .with_account(src, AccountData::new_with_liquidity(amount))
+        .with_account(dst, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -319,16 +319,16 @@ fn multiout_transfer_ok_with_non_existing_destination() {
     let token_info = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
         .build();
-    let src = account!(1);
     let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
+    let (src, src_balance) = (account!(1), amount1 + amount2);
     let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_info)
-        .with_account(dst1, 0, 0)
-        .with_account(src, amount1 + amount2, 0)
+        .with_account(dst1, AccountData::new_empty())
+        .with_account(src, AccountData::new_with_liquidity(src_balance))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -353,7 +353,7 @@ fn multiout_transfer_ok_with_src_having_insufficient_funds_for_bloat_bond() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_info)
-        .with_account(src, 0, 0)
+        .with_account(src, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -369,16 +369,16 @@ fn multiout_transfer_ok() {
     let token_info = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
         .build();
-    let src = account!(1);
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
+    let (src, src_balance) = (account!(1), amount1 + amount2);
     let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_info)
-        .with_account(dst1, 0, 0)
-        .with_account(dst2, 0, 0)
-        .with_account(src, amount1 + amount2, 0)
+        .with_account(dst1, AccountData::new_empty())
+        .with_account(dst2, AccountData::new_empty())
+        .with_account(src, AccountData::new_with_liquidity(src_balance))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -394,16 +394,16 @@ fn multiout_transfer_ok_with_event_deposit() {
     let token_info = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
         .build();
-    let src = account!(1);
     let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
+    let (src, src_balance) = (account!(1), amount1 + amount2);
     let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_info)
-        .with_account(dst1, 0, 0)
-        .with_account(src, amount1 + amount2, 0)
+        .with_account(dst1, AccountData::new_empty())
+        .with_account(src, AccountData::new_with_liquidity(src_balance))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -435,9 +435,9 @@ fn multiout_transfer_ok_without_change_in_token_supply() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_info)
-        .with_account(dst1, 0, 0)
-        .with_account(dst2, 0, 0)
-        .with_account(src, src_balance, 0)
+        .with_account(dst1, AccountData::new_empty())
+        .with_account(dst2, AccountData::new_empty())
+        .with_account(src, AccountData::new_with_liquidity(src_balance))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -463,9 +463,9 @@ fn multiout_transfer_ok_and_source_left_with_zero_balance() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_info)
-        .with_account(dst1, 0, 0)
-        .with_account(dst2, 0, 0)
-        .with_account(src, src_balance, 0)
+        .with_account(dst1, AccountData::new_empty())
+        .with_account(dst2, AccountData::new_empty())
+        .with_account(src, AccountData::new_with_liquidity(src_balance))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -491,9 +491,9 @@ fn multiout_transfer_fails_with_source_having_insufficient_balance() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_info)
-        .with_account(dst1, 0, 0)
-        .with_account(dst2, 0, 0)
-        .with_account(src, src_balance, 0)
+        .with_account(dst1, AccountData::new_empty())
+        .with_account(dst2, AccountData::new_empty())
+        .with_account(src, AccountData::new_with_liquidity(src_balance))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -515,8 +515,8 @@ fn multiout_transfer_ok_with_same_source_and_destination() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_info)
-        .with_account(dst1, amount1 + amount2, 0)
-        .with_account(dst2, 0, 0)
+        .with_account(dst1, AccountData::new_with_liquidity(amount1 + amount2))
+        .with_account(dst2, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -539,7 +539,7 @@ fn multiout_transfer_ok_with_new_destinations_created() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_info)
-        .with_account(src, 0, 0)
+        .with_account(src, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -567,7 +567,7 @@ fn multiout_transfer_ok_with_bloat_bond_for_new_destinations_slashed_from_src() 
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_info)
-        .with_account(src, src_balance, 0)
+        .with_account(src, AccountData::new_with_liquidity(src_balance))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -594,7 +594,7 @@ fn multiout_transfer_ok_with_bloat_bond_transferred_to_treasury() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_info)
-        .with_account(src, src_balance, 0)
+        .with_account(src, AccountData::new_with_liquidity(src_balance))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -617,7 +617,7 @@ fn transfer_ok_with_same_source_and_destination() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_info)
-        .with_account(dst, amount, 0)
+        .with_account(dst, AccountData::new_with_liquidity(amount))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -642,9 +642,9 @@ fn permissioned_transfer_ok() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, amount, 0)
-        .with_account(dst1, 0, 0)
-        .with_account(dst2, 0, 0)
+        .with_account(src, AccountData::new_with_liquidity(amount))
+        .with_account(dst1, AccountData::new_empty())
+        .with_account(dst2, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -669,9 +669,9 @@ fn permissioned_transfer_ok_with_event_deposit() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, amount, 0)
-        .with_account(dst1, 0, 0)
-        .with_account(dst2, 0, 0)
+        .with_account(src, AccountData::new_with_liquidity(amount))
+        .with_account(dst1, AccountData::new_empty())
+        .with_account(dst2, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -700,8 +700,8 @@ fn permissioned_transfer_fails_with_invalid_destination() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, amount, 0)
-        .with_account(dst2, 0, 0)
+        .with_account(src, AccountData::new_with_liquidity(amount))
+        .with_account(dst2, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -726,9 +726,9 @@ fn permissioned_transfer_fails_with_insufficient_balance() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, src_balance, 0)
-        .with_account(dst1, 0, 0)
-        .with_account(dst2, 0, 0)
+        .with_account(src, AccountData::new_with_liquidity(src_balance))
+        .with_account(dst1, AccountData::new_empty())
+        .with_account(dst2, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -753,9 +753,9 @@ fn permissioned_transfer_ok_with_src_left_with_zero_balance() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, src_balance, 0)
-        .with_account(dst1, 0, 0)
-        .with_account(dst2, 0, 0)
+        .with_account(src, AccountData::new_with_liquidity(src_balance))
+        .with_account(dst1, AccountData::new_empty())
+        .with_account(dst2, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -783,9 +783,9 @@ fn permissioned_transfer_ok_without_change_in_token_supply() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, amount, 0)
-        .with_account(dst1, 0, 0)
-        .with_account(dst2, 0, 0)
+        .with_account(src, AccountData::new_with_liquidity(amount))
+        .with_account(dst1, AccountData::new_empty())
+        .with_account(dst2, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -810,8 +810,8 @@ fn permissioned_multi_out_transfer_ok_with_invalid_destination_account() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, src_balance, 0)
-        .with_account(dst2, 0, 0)
+        .with_account(src, AccountData::new_with_liquidity(src_balance))
+        .with_account(dst2, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -836,9 +836,9 @@ fn permissioned_multi_out_ok() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, src_balance, 0)
-        .with_account(dst1, 0, 0)
-        .with_account(dst2, 0, 0)
+        .with_account(src, AccountData::new_with_liquidity(src_balance))
+        .with_account(dst1, AccountData::new_empty())
+        .with_account(dst2, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -863,9 +863,9 @@ fn permissioned_multi_out_ok_with_event_deposit() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, src_balance, 0)
-        .with_account(dst1, 0, 0)
-        .with_account(dst2, 0, 0)
+        .with_account(src, AccountData::new_with_liquidity(src_balance))
+        .with_account(dst1, AccountData::new_empty())
+        .with_account(dst2, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -897,9 +897,9 @@ fn permissioned_multi_out_ok_and_source_left_with_zero_balance() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, src_balance, 0)
-        .with_account(dst1, 0, 0)
-        .with_account(dst2, 0, 0)
+        .with_account(src, AccountData::new_with_liquidity(src_balance))
+        .with_account(dst1, AccountData::new_empty())
+        .with_account(dst2, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -927,9 +927,9 @@ fn permissioned_multi_out_ok_and_without_change_in_token_supply() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(src, src_balance, 0)
-        .with_account(dst1, 0, 0)
-        .with_account(dst2, 0, 0)
+        .with_account(src, AccountData::new_with_liquidity(src_balance))
+        .with_account(dst1, AccountData::new_empty())
+        .with_account(dst2, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {

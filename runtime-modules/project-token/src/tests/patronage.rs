@@ -112,7 +112,7 @@ fn decrease_patronage_ok_with_tally_count_twice_updated() {
     let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
-        .with_account(owner, supply, balance!(0))
+        .with_account(owner, AccountData::new_with_liquidity(supply))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -248,14 +248,14 @@ fn decreasing_patronage_rate_fails_invalid_token() {
 #[test]
 fn claim_patronage_ok() {
     let token_id = token!(1);
-    let owner_account_id = account!(1);
+    let owner = account!(1);
     let (rate, blocks) = (balance!(10), block!(10));
 
     let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
-        .with_account(owner_account_id, 0, 0)
+        .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -263,8 +263,7 @@ fn claim_patronage_ok() {
 
         let result =
             <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
-                token_id,
-                owner_account_id,
+                token_id, owner,
             );
 
         assert_ok!(result);
@@ -281,7 +280,7 @@ fn claim_patronage_ok_with_event_deposit() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
-        .with_account(owner, supply, 0)
+        .with_account(owner, AccountData::new_with_liquidity(supply))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -302,26 +301,25 @@ fn claim_patronage_ok_with_event_deposit() {
 #[test]
 fn claim_patronage_ok_with_credit_accounting() {
     let token_id = token!(1);
-    let (owner_account_id, supply) = (account!(2), balance!(100));
+    let (owner, supply) = (account!(2), balance!(100));
     let (rate, blocks) = (balance!(10), block!(10));
 
     let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
-        .with_account(owner_account_id, supply, 0)
+        .with_account(owner, AccountData::new_with_liquidity(supply))
         .build();
 
     build_test_externalities(config).execute_with(|| {
         increase_block_number_by(blocks);
 
         let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
-            token_id,
-            owner_account_id,
+            token_id, owner,
         );
 
         assert_eq!(
-            Token::account_info_by_token_and_account(token_id, owner_account_id).free_balance,
+            Token::account_info_by_token_and_account(token_id, owner).free_balance,
             rate * blocks * supply + supply, // initial + patronage claimed
         );
     })
@@ -331,23 +329,22 @@ fn claim_patronage_ok_with_credit_accounting() {
 fn claim_patronage_ok_with_unclaimed_patronage_reset() {
     let token_id = token!(1);
     let account_id = account!(1);
-    let owner_account_id = account!(2);
+    let owner = account!(2);
     let (rate, blocks) = (balance!(10), block!(10));
 
     let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
-        .with_account(account_id, 0, 0)
-        .with_account(owner_account_id, 0, 0)
+        .with_account(account_id, AccountData::new_empty())
+        .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
         increase_block_number_by(blocks);
 
         let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
-            token_id,
-            owner_account_id,
+            token_id, owner,
         );
 
         assert_eq!(
@@ -376,24 +373,24 @@ fn claim_patronage_credit_fails_with_invalid_token_id() {
 }
 
 #[test]
-fn claim_patronage_credit_fails_with_invalid_owner_account_id() {
+fn claim_patronage_credit_fails_with_invalid_owner() {
     let rate = balance!(50);
     let token_id = token!(1);
-    let invalid_owner_account_id = account!(1);
-    let owner_account_id = account!(2);
+    let invalid_owner = account!(1);
+    let owner = account!(2);
     let amount = balance!(100);
 
     let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
-        .with_account(owner_account_id, amount, 0)
+        .with_account(owner, AccountData::new_with_liquidity(amount))
         .build();
     build_test_externalities(config).execute_with(|| {
         let result =
             <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
                 token_id,
-                invalid_owner_account_id,
+                invalid_owner,
             );
 
         assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
@@ -403,22 +400,21 @@ fn claim_patronage_credit_fails_with_invalid_owner_account_id() {
 #[test]
 fn claim_patronage_ok_with_patronage_claimed_and_tally_set_to_zero() {
     let token_id = token!(1);
-    let owner_account_id = account!(1);
+    let owner = account!(1);
     let (rate, blocks) = (balance!(10), block!(10));
 
     let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
-        .with_account(owner_account_id, 0, 0)
+        .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
         increase_block_number_by(blocks);
 
         let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
-            token_id,
-            owner_account_id,
+            token_id, owner,
         );
 
         assert_eq!(

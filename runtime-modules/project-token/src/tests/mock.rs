@@ -14,8 +14,8 @@ use sp_runtime::ModuleId;
 
 // crate import
 use crate::{
-    types::MerkleSide, AccountDataOf, GenesisConfig, TokenDataOf, TokenIssuanceParametersOf, Trait,
-    TransferPolicyOf,
+    types::MerkleSide, AccountDataOf, GenesisConfig, ReserveBalanceOf, TokenDataOf,
+    TokenIssuanceParametersOf, Trait, TransferPolicyOf,
 };
 
 // Crate aliases
@@ -26,6 +26,7 @@ pub type AccountData = AccountDataOf<Test>;
 pub type AccountId = <Test as frame_system::Trait>::AccountId;
 pub type BlockNumber = <Test as frame_system::Trait>::BlockNumber;
 pub type Balance = <Test as Trait>::Balance;
+pub type ReserveBalance = ReserveBalanceOf<Test>;
 pub type Policy = TransferPolicyOf<Test>;
 pub type Hashing = <Test as frame_system::Trait>::Hashing;
 pub type HashOut = <Test as frame_system::Trait>::Hash;
@@ -183,6 +184,13 @@ macro_rules! token {
 macro_rules! balance {
     ($bal:expr) => {
         Balance::from($bal as u32)
+    };
+}
+
+#[macro_export]
+macro_rules! joy {
+    ($bal:expr) => {
+        ReserveBalance::from($bal as u32)
     };
 }
 

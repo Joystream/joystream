@@ -339,10 +339,10 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
         AccountInfoByTokenAndAccount::<T>::insert(
             &token_id,
             &owner_account_id,
-            AccountDataOf::<T> {
-                free_balance: initial_supply,
-                reserved_balance: T::Balance::zero(),
-            },
+            AccountDataOf::<T>::new_with_liquidity_and_bond(
+                initial_supply,
+                ReserveBalanceOf::<T>::zero(),
+            ),
         );
         SymbolsUsed::<T>::insert(&token_data.symbol, ());
         TokenInfoById::<T>::insert(token_id, token_data.clone());
@@ -460,7 +460,11 @@ impl<T: Trait> Module<T> {
                     AccountInfoByTokenAndAccount::<T>::insert(
                         token_id,
                         &account_id,
-                        AccountDataOf::<T>::new_with_liquidity(payment.amount),
+                        // TODO : add on-chain value for bloat bond
+                        AccountDataOf::<T>::new_with_liquidity_and_bond(
+                            payment.amount,
+                            ReserveBalanceOf::<T>::zero(),
+                        ),
                     )
                 }
             },

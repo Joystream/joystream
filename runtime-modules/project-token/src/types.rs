@@ -10,7 +10,7 @@ use sp_std::iter::Sum;
 
 /// Info for the account
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct AccountData<Balance> {
+pub struct AccountData<Balance, ReserveBalance> {
     /// Non-reserved part of the balance. There may still be restrictions
     /// on this, but it is the total pool what may in principle be
     /// transferred, reserved and used for tipping.
@@ -19,7 +19,11 @@ pub struct AccountData<Balance> {
     /// This balance is a 'reserve' balance that other subsystems use
     /// in order to set aside tokens that are still 'owned' by the
     /// account holder, but which are not usable in any case.
-    pub(crate) reserved_balance: Balance,
+    pub(crate) stacked_balance: Balance,
+
+    /// Bloat bond (in 'JOY's) deposited into treasury upon creation of this
+    /// account, returned when this account is removed
+    pub(crate) bloat_bond: ReserveBalance,
 }
 
 /// Info for the token
@@ -158,24 +162,32 @@ impl Default for OfferingState {
 }
 
 /// Default trait for AccountData
-impl<Balance: Zero> Default for AccountData<Balance> {
+impl<Balance: Zero, ReserveBalance: Zero> Default for AccountData<Balance, ReserveBalance> {
     fn default() -> Self {
         Self {
             free_balance: Balance::zero(),
-            reserved_balance: Balance::zero(),
+            stacked_balance: Balance::zero(),
+            bloat_bond: ReserveBalance::zero(),
         }
     }
 }
 
 /// Encapsules parameters validation + TokenData construction
-impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
+impl<Balance: Zero + Copy + PartialOrd + Saturating, ReserveBalance>
+    AccountData<Balance, ReserveBalance>
+{
     /// Ctor
-    pub fn new_with_liquidity(init_liquidity: Balance) -> Self {
-        AccountData::<_> {
+    pub fn new_with_liquidity_and_bond(
+        init_liquidity: Balance,
+        bloat_bond: ReserveBalance,
+    ) -> Self {
+        AccountData::<_, _> {
             free_balance: init_liquidity,
-            reserved_balance: Balance::zero(),
+            stacked_balance: Balance::zero(),
+            bloat_bond,
         }
     }
+
     /// Check wheather account is empty
     pub(crate) fn is_empty(&self) -> bool {
         self.total_balance().is_zero()
@@ -204,7 +216,7 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating> AccountData<Balance> {
     }
 
     pub(crate) fn total_balance(&self) -> Balance {
-        self.free_balance.saturating_add(self.reserved_balance)
+        self.free_balance.saturating_add(self.stacked_balance)
     }
 }
 /// Token Data implementation
@@ -348,7 +360,8 @@ impl<AccountId, Balance> From<Transfers<AccountId, Balance>>
 
 // Aliases
 /// Alias for Account Data
-pub(crate) type AccountDataOf<T> = AccountData<<T as crate::Trait>::Balance>;
+pub(crate) type AccountDataOf<T> =
+    AccountData<<T as crate::Trait>::Balance, crate::ReserveBalanceOf<T>>;
 
 /// Alias for Token Data
 pub(crate) type TokenDataOf<T> = TokenData<
