@@ -94,33 +94,6 @@ fn join_whitelist_fails_with_invalid_proof() {
 }
 
 #[test]
-fn join_whitelist_fails_with_no_proof_provided() {
-    let token_id = token!(1);
-    let (owner, user_account, other_user_account) = (account!(1), account!(2), account!(3));
-    let commit = merkle_root![user_account, other_user_account];
-    let proof = MerkleProofOf::<Test>::new(None);
-    let bloat_bond = joy!(100);
-
-    let token_data = TokenDataBuilder::new_empty()
-        .with_transfer_policy(Policy::Permissioned(commit))
-        .build();
-
-    let config = GenesisConfigBuilder::new_empty()
-        .with_bloat_bond(bloat_bond)
-        .with_token(token_id, token_data)
-        .with_account(owner, AccountData::new_empty())
-        .build();
-
-    build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&user_account, bloat_bond + ExistentialDeposit::get());
-
-        let result = Token::join_whitelist(origin!(user_account), token_id, proof);
-
-        assert_noop!(result, Error::<Test>::MerkleProofNotProvided,);
-    })
-}
-
-#[test]
 fn join_whitelist_fails_with_insufficent_joy_balance_for_bloat_bond() {
     let token_id = token!(1);
     let (owner, user_account, other_user_account) = (account!(1), account!(2), account!(3));

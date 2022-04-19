@@ -310,7 +310,7 @@ macro_rules! merkle_root {
 #[macro_export]
 macro_rules! merkle_proof {
     ($idx:expr,[$($vals:expr),*]) => {
-        MerkleProofOf::<Test>::new(Some(build_merkle_path_helper(&vec![$($vals,)*], $idx as usize)))
+        MerkleProofOf::<Test>::new(build_merkle_path_helper(&vec![$($vals,)*], $idx as usize))
     };
 }
 

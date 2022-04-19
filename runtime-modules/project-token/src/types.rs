@@ -119,7 +119,7 @@ pub enum MerkleSide {
 
 /// Wrapper around a merkle proof path
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct MerkleProof<Hasher: Hash>(pub Option<Vec<(Hasher::Output, MerkleSide)>>);
+pub struct MerkleProof<Hasher: Hash>(pub Vec<(Hasher::Output, MerkleSide)>);
 
 /// Information about a payment
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -300,23 +300,18 @@ impl<Hasher: Hash> MerkleProof<Hasher> {
         T: crate::Trait,
         AccountId: Encode,
     {
-        match &self.0 {
-            None => Err(crate::Error::<T>::MerkleProofNotProvided.into()),
-            Some(vec) => {
-                let init = Hasher::hash_of(account_id);
-                let proof_result = vec.iter().fold(init, |acc, (hash, side)| match side {
-                    MerkleSide::Left => Hasher::hash_of(&(hash, acc)),
-                    MerkleSide::Right => Hasher::hash_of(&(acc, hash)),
-                });
+        let init = Hasher::hash_of(account_id);
+        let proof_result = self.0.iter().fold(init, |acc, (hash, side)| match side {
+            MerkleSide::Left => Hasher::hash_of(&(hash, acc)),
+            MerkleSide::Right => Hasher::hash_of(&(acc, hash)),
+        });
 
-                ensure!(
-                    proof_result == commit,
-                    crate::Error::<T>::MerkleProofVerificationFailure,
-                );
+        ensure!(
+            proof_result == commit,
+            crate::Error::<T>::MerkleProofVerificationFailure,
+        );
 
-                Ok(())
-            }
-        }
+        Ok(())
     }
 }
 
