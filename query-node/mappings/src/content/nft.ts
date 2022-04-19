@@ -394,15 +394,17 @@ async function createBid(
     ['topBid', 'bids', 'bids.bidder']
   )
 
+  const memberPreviousUncanceledBids = await store.getMany(Bid, {
+    where: { bidder: { id: memberId.toString() }, nft: { id: videoId.toString() }, isCanceled: false },
+  })
+
   // cancel any previous bids done by same member
   const cancelledBidsIds: string[] = []
-  for (const bid of auction.bids || []) {
-    if (!bid.isCanceled && bid.bidder.id.toString() === memberId.toString()) {
-      bid.isCanceled = true
-      cancelledBidsIds.push(bid.id)
+  for (const bid of memberPreviousUncanceledBids || []) {
+    bid.isCanceled = true
+    cancelledBidsIds.push(bid.id)
 
-      await store.save<Bid>(bid)
-    }
+    await store.save<Bid>(bid)
   }
 
   const amount = bidAmount ? new BN(bidAmount.toString()) : (auction.buyNowPrice as BN)
@@ -798,7 +800,7 @@ export async function contentNft_AuctionBidCanceled({ event, store }: EventConte
   // specific event processing
 
   const bid = await store.get(Bid, {
-    where: { bidder: { id: memberId }, nft: { id: videoId } },
+    where: { bidder: { id: memberId.toString() }, nft: { id: videoId.toString() }, isCanceled: false },
     relations: [
       'nft',
       'nft.video',
