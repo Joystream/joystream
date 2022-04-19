@@ -14,10 +14,10 @@ use crate::{
 #[test]
 fn join_whitelist_fails_with_token_id_not_valid() {
     let token_id = token!(1);
-    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
-    let commit = merkle_root![acc1, acc2];
-    let proof = merkle_proof!(0, [acc1, acc2]);
-    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+    let (owner, user_account, other_user_account) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![user_account, other_user_account];
+    let proof = merkle_proof!(0, [user_account, other_user_account]);
+    let bloat_bond = joy!(100);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -26,12 +26,13 @@ fn join_whitelist_fails_with_token_id_not_valid() {
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
         .with_account(owner, AccountData::new_empty())
+        .with_bloat_bond(bloat_bond)
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&acc1, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond);
 
-        let result = Token::join_whitelist(origin!(acc1), token_id + 1, proof);
+        let result = Token::join_whitelist(origin!(user_account), token_id + 1, proof);
 
         assert_noop!(result, Error::<Test>::TokenDoesNotExist,);
     })
@@ -40,10 +41,10 @@ fn join_whitelist_fails_with_token_id_not_valid() {
 #[test]
 fn join_whitelist_fails_with_existing_account() {
     let token_id = token!(1);
-    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
-    let commit = merkle_root![acc1, acc2];
-    let proof = merkle_proof!(0, [acc1, acc2]);
-    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+    let (owner, user_account, other_user_account) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![user_account, other_user_account];
+    let proof = merkle_proof!(0, [user_account, other_user_account]);
+    let bloat_bond = joy!(100);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -52,13 +53,14 @@ fn join_whitelist_fails_with_existing_account() {
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
         .with_account(owner, AccountData::new_empty())
-        .with_account(acc1, AccountData::new_empty())
+        .with_account(user_account, AccountData::new_empty())
+        .with_bloat_bond(bloat_bond)
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&acc1, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond);
 
-        let result = Token::join_whitelist(origin!(acc1), token_id, proof);
+        let result = Token::join_whitelist(origin!(user_account), token_id, proof);
 
         assert_noop!(result, Error::<Test>::AccountAlreadyExists,);
     })
@@ -67,24 +69,25 @@ fn join_whitelist_fails_with_existing_account() {
 #[test]
 fn join_whitelist_fails_with_invalid_proof() {
     let token_id = token!(1);
-    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
-    let commit = merkle_root![acc1, acc2];
-    let proof = merkle_proof!(0, [acc1, acc1]);
-    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+    let (owner, user_account, other_user_account) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![user_account, other_user_account];
+    let proof = merkle_proof!(0, [user_account, user_account]);
+    let bloat_bond = joy!(100);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
         .build();
 
     let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
         .with_token(token_id, token_data)
         .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&acc1, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond);
 
-        let result = Token::join_whitelist(origin!(acc1), token_id, proof);
+        let result = Token::join_whitelist(origin!(user_account), token_id, proof);
 
         assert_noop!(result, Error::<Test>::MerkleProofVerificationFailure,);
     })
@@ -93,24 +96,25 @@ fn join_whitelist_fails_with_invalid_proof() {
 #[test]
 fn join_whitelist_fails_with_no_proof_provided() {
     let token_id = token!(1);
-    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
-    let commit = merkle_root![acc1, acc2];
+    let (owner, user_account, other_user_account) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![user_account, other_user_account];
     let proof = MerkleProofOf::<Test>::new(None);
-    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+    let bloat_bond = joy!(100);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
         .build();
 
     let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
         .with_token(token_id, token_data)
         .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&acc1, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond);
 
-        let result = Token::join_whitelist(origin!(acc1), token_id, proof);
+        let result = Token::join_whitelist(origin!(user_account), token_id, proof);
 
         assert_noop!(result, Error::<Test>::MerkleProofNotProvided,);
     })
@@ -119,21 +123,22 @@ fn join_whitelist_fails_with_no_proof_provided() {
 #[test]
 fn join_whitelist_fails_with_insufficent_joy_balance_for_bloat_bond() {
     let token_id = token!(1);
-    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
-    let commit = merkle_root![acc1, acc2];
-    let proof = merkle_proof!(0, [acc1, acc2]);
+    let (owner, user_account, other_user_account) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![user_account, other_user_account];
+    let proof = merkle_proof!(0, [user_account, other_user_account]);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
         .build();
 
     let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(joy!(100))
         .with_token(token_id, token_data)
         .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result = Token::join_whitelist(origin!(acc1), token_id, proof);
+        let result = Token::join_whitelist(origin!(user_account), token_id, proof);
 
         assert_noop!(result, Error::<Test>::InsufficientBalanceForBloatBond);
     })
@@ -142,23 +147,24 @@ fn join_whitelist_fails_with_insufficent_joy_balance_for_bloat_bond() {
 #[test]
 fn join_whitelist_fails_in_permissionless_mode() {
     let token_id = token!(1);
-    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
-    let proof = merkle_proof!(0, [acc1, acc2]);
-    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+    let (owner, user_account, other_user_account) = (account!(1), account!(2), account!(3));
+    let proof = merkle_proof!(0, [user_account, other_user_account]);
+    let bloat_bond = joy!(100);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
         .build();
 
     let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
         .with_token(token_id, token_data)
         .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&acc1, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond);
 
-        let result = Token::join_whitelist(origin!(acc1), token_id, proof);
+        let result = Token::join_whitelist(origin!(user_account), token_id, proof);
 
         assert_noop!(
             result,
@@ -170,24 +176,25 @@ fn join_whitelist_fails_in_permissionless_mode() {
 #[test]
 fn join_whitelist_ok() {
     let token_id = token!(1);
-    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
-    let commit = merkle_root![acc1, acc2];
-    let proof = merkle_proof!(0, [acc1, acc2]);
-    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+    let (owner, user_account, other_user_account) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![user_account, other_user_account];
+    let proof = merkle_proof!(0, [user_account, other_user_account]);
+    let bloat_bond = joy!(100);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
         .build();
 
     let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
         .with_token(token_id, token_data)
         .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&acc1, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond);
 
-        let result = Token::join_whitelist(origin!(acc1), token_id, proof);
+        let result = Token::join_whitelist(origin!(user_account), token_id, proof);
 
         assert_ok!(result);
     })
@@ -196,51 +203,52 @@ fn join_whitelist_ok() {
 #[test]
 fn join_whitelist_ok_with_bloat_bond_slashed_from_caller() {
     let token_id = token!(1);
-    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
-    let commit = merkle_root![acc1, acc2];
-    let proof = merkle_proof!(0, [acc1, acc2]);
-    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+    let (owner, user_account, other_user_account) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![user_account, other_user_account];
+    let proof = merkle_proof!(0, [user_account, other_user_account]);
+    let bloat_bond = joy!(100);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
         .build();
 
     let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
         .with_token(token_id, token_data)
         .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&acc1, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond);
 
-        let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
+        let _ = Token::join_whitelist(origin!(user_account), token_id, proof);
 
-        assert_eq!(Balances::usable_balance(&acc1), balance!(0));
+        assert_eq!(Balances::usable_balance(&user_account), balance!(0));
     })
 }
 
 #[test]
 fn join_whitelist_ok_with_bloat_bond_transferred_to_treasury() {
     let token_id = token!(1);
-    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
-    let commit = merkle_root![acc1, acc2];
-    let proof = merkle_proof!(0, [acc1, acc2]);
-    let (treasury, bloat_bond): (AccountId, _) =
-        (treasury!(token_id), balance!(DEFAULT_BLOAT_BOND));
+    let (owner, user_account, other_user_account) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![user_account, other_user_account];
+    let proof = merkle_proof!(0, [user_account, other_user_account]);
+    let (treasury, bloat_bond): (AccountId, _) = (treasury!(token_id), joy!(100));
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
         .build();
 
     let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
         .with_token(token_id, token_data)
         .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&acc1, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond);
 
-        let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
+        let _ = Token::join_whitelist(origin!(user_account), token_id, proof);
 
         assert_eq!(Balances::usable_balance(&treasury), bloat_bond);
     })
@@ -249,26 +257,27 @@ fn join_whitelist_ok_with_bloat_bond_transferred_to_treasury() {
 #[test]
 fn join_whitelist_ok_with_accounts_number_incremented() {
     let token_id = token!(1);
-    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
-    let commit = merkle_root![acc1, acc2];
-    let proof = merkle_proof!(0, [acc1, acc2]);
-    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+    let (owner, user_account, other_user_account) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![user_account, other_user_account];
+    let proof = merkle_proof!(0, [user_account, other_user_account]);
+    let bloat_bond = joy!(100);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
         .build();
 
     let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
         .with_token(token_id, token_data)
         .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&acc1, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond);
 
-        let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
+        let _ = Token::join_whitelist(origin!(user_account), token_id, proof);
 
-        // 2 accounts: owner & acc1
+        // 2 accounts: owner & user_account
         assert_eq!(Token::token_info_by_id(token_id).accounts_number, 2u64);
     })
 }
@@ -276,85 +285,90 @@ fn join_whitelist_ok_with_accounts_number_incremented() {
 #[test]
 fn join_whitelist_ok_with_event_deposit() {
     let token_id = token!(1);
-    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
-    let commit = merkle_root![acc1, acc2];
-    let proof = merkle_proof!(0, [acc1, acc2]);
-    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+    let (owner, user_account, other_user_account) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![user_account, other_user_account];
+    let proof = merkle_proof!(0, [user_account, other_user_account]);
+    let bloat_bond = joy!(100);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
         .build();
 
     let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
         .with_token(token_id, token_data)
         .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&acc1, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond);
 
-        let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
+        let _ = Token::join_whitelist(origin!(user_account), token_id, proof);
 
         last_event_eq!(RawEvent::MemberJoinedWhitelist(
             token_id,
-            acc1,
+            user_account,
             Policy::Permissioned(commit)
         ));
     })
 }
 
 #[test]
-fn join_whitelist_ok_with_new_account_created() {
+fn join_whitelist_ok_with_new_account_correctly_created() {
     let token_id = token!(1);
-    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
-    let proof = merkle_proof!(0, [acc1, acc2]);
-    let commit = merkle_root![acc1, acc2];
-    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+    let (owner, user_account, other_user_account) = (account!(1), account!(2), account!(3));
+    let proof = merkle_proof!(0, [user_account, other_user_account]);
+    let commit = merkle_root![user_account, other_user_account];
+    let bloat_bond = joy!(100);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
         .build();
 
     let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
         .with_token(token_id, token_data)
         .with_account(owner, AccountData::new_empty())
+        .with_bloat_bond(bloat_bond)
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&acc1, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond);
 
-        let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
+        let _ = Token::join_whitelist(origin!(user_account), token_id, proof);
 
-        assert!(<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
-            token_id, acc1
-        ));
+        assert_ok!(
+            Token::ensure_account_data_exists(token_id, &user_account),
+            AccountData::new_with_liquidity_and_bond(balance!(0), bloat_bond)
+        );
     })
 }
 
 #[test]
 fn join_whitelist_ok_with_new_account_having_usable_balance_zero() {
     let token_id = token!(1);
-    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
-    let commit = merkle_root![acc1, acc2];
-    let proof = merkle_proof!(0, [acc1, acc2]);
-    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+    let (owner, user_account, other_user_account) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![user_account, other_user_account];
+    let proof = merkle_proof!(0, [user_account, other_user_account]);
+    let bloat_bond = joy!(100);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
         .build();
 
     let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
         .with_token(token_id, token_data)
         .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&acc1, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond);
 
-        let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
+        let _ = Token::join_whitelist(origin!(user_account), token_id, proof);
 
         assert_eq!(
-            Token::account_info_by_token_and_account(token_id, acc1).free_balance,
+            Token::account_info_by_token_and_account(token_id, user_account).free_balance,
             balance!(0)
         );
     })
@@ -363,55 +377,30 @@ fn join_whitelist_ok_with_new_account_having_usable_balance_zero() {
 #[test]
 fn join_whitelist_ok_with_new_account_having_reserved_balance_zero() {
     let token_id = token!(1);
-    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
-    let commit = merkle_root![acc1, acc2];
-    let proof = merkle_proof!(0, [acc1, acc2]);
-    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+    let (owner, user_account, other_user_account) = (account!(1), account!(2), account!(3));
+    let commit = merkle_root![user_account, other_user_account];
+    let proof = merkle_proof!(0, [user_account, other_user_account]);
+    let bloat_bond = joy!(100);
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
         .build();
 
     let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
         .with_token(token_id, token_data)
         .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&acc1, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond);
 
-        let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
+        let _ = Token::join_whitelist(origin!(user_account), token_id, proof);
 
         assert_eq!(
-            Token::account_info_by_token_and_account(token_id, acc1).stacked_balance,
+            Token::account_info_by_token_and_account(token_id, user_account).stacked_balance,
             balance!(0)
         );
-    })
-}
-
-#[test]
-fn join_whitelist_ok_with_bloat_bond_slashed_from_account_usable_balance() {
-    let token_id = token!(1);
-    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
-    let commit = merkle_root![acc1, acc2];
-    let proof = merkle_proof!(0, [acc1, acc2]);
-    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
-
-    let token_data = TokenDataBuilder::new_empty()
-        .with_transfer_policy(Policy::Permissioned(commit))
-        .build();
-
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, token_data)
-        .with_account(owner, AccountData::new_empty())
-        .build();
-
-    build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&acc1, bloat_bond);
-
-        let _ = Token::join_whitelist(origin!(acc1), token_id, proof);
-
-        assert_eq!(Balances::usable_balance(acc1), balance!(0));
     })
 }
 
@@ -460,21 +449,21 @@ fn dust_account_fails_with_invalid_account_id() {
 #[test]
 fn dust_account_fails_with_permissionless_mode_and_non_empty_non_owned_account() {
     let token_id = token!(1);
-    let (acc1, acc2) = (account!(2), account!(3));
+    let (user_account, other_user_account) = (account!(2), account!(3));
 
     let token_data = TokenDataBuilder::new_empty().build();
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(acc1, AccountData::new_empty())
+        .with_account(user_account, AccountData::new_empty())
         .with_account(
-            acc2,
+            other_user_account,
             AccountData::new_with_liquidity(balance!(10)).with_stacked(balance!(10)),
         )
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result = Token::dust_account(origin!(acc1), token_id, acc2);
+        let result = Token::dust_account(origin!(user_account), token_id, other_user_account);
 
         assert_noop!(
             result,
@@ -486,8 +475,8 @@ fn dust_account_fails_with_permissionless_mode_and_non_empty_non_owned_account()
 #[test]
 fn dust_account_fails_with_permissioned_mode_and_non_owned_account() {
     let token_id = token!(1);
-    let (acc1, acc2) = (account!(2), account!(3));
-    let commit = merkle_root![acc1, acc2];
+    let (user_account, other_user_account) = (account!(2), account!(3));
+    let commit = merkle_root![user_account, other_user_account];
     let (owner, owner_balance) = (account!(1), balance!(100));
 
     let token_data = TokenDataBuilder::new_empty()
@@ -497,12 +486,12 @@ fn dust_account_fails_with_permissioned_mode_and_non_owned_account() {
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
         .with_account(owner, AccountData::new_with_liquidity(owner_balance))
-        .with_account(acc1, AccountData::new_empty())
-        .with_account(acc2, AccountData::new_empty())
+        .with_account(user_account, AccountData::new_empty())
+        .with_account(other_user_account, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result = Token::dust_account(origin!(acc1), token_id, acc2);
+        let result = Token::dust_account(origin!(user_account), token_id, other_user_account);
 
         assert_noop!(
             result,
@@ -514,22 +503,22 @@ fn dust_account_fails_with_permissioned_mode_and_non_owned_account() {
 #[test]
 fn dust_account_ok_with_permissionless_mode_and_non_empty_owned_account() {
     let token_id = token!(1);
-    let (acc1, acc2) = (account!(2), account!(3));
+    let (user_account, other_user_account) = (account!(2), account!(3));
 
     let token_data = TokenDataBuilder::new_empty().build();
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
         .with_account(
-            acc1,
+            user_account,
             AccountData::new_with_liquidity_and_bond(balance!(10), joy!(10))
                 .with_stacked(balance!(5)),
         )
-        .with_account(acc2, AccountData::new_empty())
+        .with_account(other_user_account, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result = Token::dust_account(origin!(acc1), token_id, acc1);
+        let result = Token::dust_account(origin!(user_account), token_id, user_account);
 
         assert_ok!(result);
     })
@@ -583,23 +572,23 @@ fn dust_account_ok_with_permissionless_mode_and_empty_non_owned_account() {
 #[test]
 fn dust_account_ok_with_event_deposit() {
     let token_id = token!(1);
-    let (acc1, acc2) = (account!(2), account!(3));
+    let (user_account, other_user_account) = (account!(2), account!(3));
 
     let token_data = TokenDataBuilder::new_empty().build();
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(acc1, AccountData::new_empty())
-        .with_account(acc2, AccountData::new_empty())
+        .with_account(user_account, AccountData::new_empty())
+        .with_account(other_user_account, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::dust_account(origin!(acc1), token_id, acc2);
+        let _ = Token::dust_account(origin!(user_account), token_id, other_user_account);
 
         last_event_eq!(RawEvent::AccountDustedBy(
             token_id,
-            acc2,
-            acc1,
+            other_user_account,
+            user_account,
             Policy::Permissionless
         ));
     })
@@ -608,18 +597,18 @@ fn dust_account_ok_with_event_deposit() {
 #[test]
 fn dust_account_ok_accounts_number_decremented() {
     let token_id = token!(1);
-    let (acc1, acc2) = (account!(2), account!(3));
+    let (user_account, other_user_account) = (account!(2), account!(3));
 
     let token_data = TokenDataBuilder::new_empty().build();
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(acc1, AccountData::new_empty())
-        .with_account(acc2, AccountData::new_empty())
+        .with_account(user_account, AccountData::new_empty())
+        .with_account(other_user_account, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::dust_account(origin!(acc1), token_id, acc2);
+        let _ = Token::dust_account(origin!(user_account), token_id, other_user_account);
 
         assert_eq!(Token::token_info_by_id(token_id).accounts_number, 1u64)
     })
@@ -628,66 +617,79 @@ fn dust_account_ok_accounts_number_decremented() {
 #[test]
 fn dust_account_ok_with_account_removed() {
     let token_id = token!(1);
-    let (acc1, acc2) = (account!(2), account!(3));
+    let (user_account, other_user_account) = (account!(2), account!(3));
 
     let token_data = TokenDataBuilder::new_empty().build();
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(acc1, AccountData::new_empty())
-        .with_account(acc2, AccountData::new_empty())
+        .with_account(user_account, AccountData::new_empty())
+        .with_account(other_user_account, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::dust_account(origin!(acc1), token_id, acc2);
+        let _ = Token::dust_account(origin!(user_account), token_id, other_user_account);
 
         assert!(!<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
-            token_id, acc2
+            token_id,
+            other_user_account
         ));
     })
 }
 
 #[test]
-fn dust_account_ok_with_bloat_bond_refunded() {
+fn dust_account_ok_with_correct_bloat_bond_refunded() {
     let token_id = token!(1);
-    let (acc1, acc2) = (account!(2), account!(3));
+    let (user_account, other_user_account) = (account!(2), account!(3));
+    let (bloat_bond, updated_bloat_bond) = (joy!(100), joy!(150));
 
     let token_data = TokenDataBuilder::new_empty().build();
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
-        .with_account(acc1, AccountData::new_empty())
-        .with_account(acc2, AccountData::new_empty())
+        .with_bloat_bond(updated_bloat_bond)
+        .with_account(
+            user_account,
+            AccountData::new_with_liquidity_and_bond(balance!(0), bloat_bond),
+        )
+        .with_account(
+            other_user_account,
+            AccountData::new_with_liquidity_and_bond(balance!(0), updated_bloat_bond),
+        )
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::dust_account(origin!(acc1), token_id, acc2);
+        let _ = Token::dust_account(origin!(user_account), token_id, other_user_account);
 
-        assert_eq!(Balances::usable_balance(acc2), balance!(DEFAULT_BLOAT_BOND));
+        assert_eq!(Balances::usable_balance(other_user_account), bloat_bond);
     })
 }
 
 #[test]
 fn dust_account_ok_with_bloat_bond_slashed_from_treasury() {
     let token_id = token!(1);
-    let (acc1, acc2) = (account!(2), account!(3));
-    let (treasury, bloat_bond): (AccountId, _) =
-        (treasury!(token_id), balance!(DEFAULT_BLOAT_BOND));
+    let (user_account, other_user_account) = (account!(2), account!(3));
+    let treasury: AccountId = treasury!(token_id);
+    let (bloat_bond, updated_bloat_bond) = (joy!(100), joy!(150));
 
     let token_data = TokenDataBuilder::new_empty().build();
 
     let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(updated_bloat_bond)
         .with_token(token_id, token_data)
-        .with_account(acc1, AccountData::new_empty())
-        .with_account(acc2, AccountData::new_empty())
+        .with_account(user_account, AccountData::new_empty())
+        .with_account(
+            other_user_account,
+            AccountData::new_with_liquidity_and_bond(balance!(0), bloat_bond),
+        )
         .build();
 
     build_test_externalities(config).execute_with(|| {
         increase_account_balance(&treasury, bloat_bond);
 
-        let _ = Token::dust_account(origin!(acc1), token_id, acc2);
+        let _ = Token::dust_account(origin!(user_account), token_id, other_user_account);
 
-        assert_eq!(Balances::usable_balance(&treasury), balance!(0));
+        assert_eq!(Balances::usable_balance(&treasury), joy!(0));
     })
 }
 

@@ -1,12 +1,12 @@
 #![cfg(test)]
-use frame_support::{assert_noop, assert_ok, StorageDoubleMap};
+use frame_support::{assert_noop, assert_ok};
 use sp_runtime::traits::AccountIdConversion;
 
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
 use crate::types::{Transfers, Validated};
 use crate::{
-    account, balance, last_event_eq, merkle_root, origin, token, treasury, Error, RawEvent,
+    account, balance, joy, last_event_eq, merkle_root, origin, token, treasury, Error, RawEvent,
 };
 
 // some helpers
@@ -105,18 +105,23 @@ fn permissionless_transfer_ok_with_new_destination_created() {
         .build();
     let src = account!(1);
     let (dst, amount) = (account!(2), balance!(100));
+    let bloat_bond = joy!(100);
 
     let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
         .with_token(token_id, token_data)
         .with_account(src, AccountData::new_with_liquidity(amount))
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&src, bloat_bond);
+
         let _ = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
-        assert!(<crate::AccountInfoByTokenAndAccount<Test>>::contains_key(
-            token_id, &dst
-        ));
+        assert_ok!(
+            Token::ensure_account_data_exists(token_id, &dst),
+            AccountData::new_with_liquidity_and_bond(amount, bloat_bond)
+        );
     })
 }
 
@@ -127,7 +132,7 @@ fn permissionless_transfer_ok_for_new_destination_with_bloat_bond_slashed_from_s
         .with_transfer_policy(Policy::Permissionless)
         .build();
     let src = account!(1);
-    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+    let bloat_bond = joy!(100);
     let (dst, amount) = (account!(2), balance!(100));
 
     let config = GenesisConfigBuilder::new_empty()
@@ -319,7 +324,7 @@ fn multiout_transfer_ok_with_non_existing_destination() {
     let token_info = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
         .build();
-    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+    let bloat_bond = joy!(100);
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
     let (src, src_balance) = (account!(1), amount1 + amount2);
@@ -394,7 +399,7 @@ fn multiout_transfer_ok_with_event_deposit() {
     let token_info = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
         .build();
-    let bloat_bond = balance!(DEFAULT_BLOAT_BOND);
+    let bloat_bond = joy!(100);
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
     let (src, src_balance) = (account!(1), amount1 + amount2);
@@ -532,14 +537,15 @@ fn multiout_transfer_ok_with_new_destinations_created() {
     let token_info = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
         .build();
-    let (src, bloat_bond) = (account!(1), balance!(DEFAULT_BLOAT_BOND));
-    let (dst1, amount1) = (account!(2), balance!(1));
-    let (dst2, amount2) = (account!(3), balance!(1));
+    let (dst1, amount1) = (account!(2), balance!(100));
+    let (dst2, amount2) = (account!(3), balance!(100));
+    let (src, src_balance, bloat_bond) = (account!(1), amount1 + amount2, joy!(100));
     let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
         .with_token(token_id, token_info)
-        .with_account(src, AccountData::new_empty())
+        .with_account(src, AccountData::new_with_liquidity(src_balance))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -547,9 +553,15 @@ fn multiout_transfer_ok_with_new_destinations_created() {
 
         let _ = Token::transfer(origin!(src), token_id, outputs);
 
-        assert!([dst1, dst2]
-            .iter()
-            .all(|dst| <crate::AccountInfoByTokenAndAccount<Test>>::contains_key(token_id, dst)));
+        assert_ok!(
+            Token::ensure_account_data_exists(token_id, &dst1),
+            AccountData::new_with_liquidity_and_bond(amount1, bloat_bond)
+        );
+
+        assert_ok!(
+            Token::ensure_account_data_exists(token_id, &dst2),
+            AccountData::new_with_liquidity_and_bond(amount2, bloat_bond)
+        );
     })
 }
 
@@ -561,8 +573,7 @@ fn multiout_transfer_ok_with_bloat_bond_for_new_destinations_slashed_from_src() 
         .build();
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
-    let (src, bloat_bond, src_balance) =
-        (account!(1), balance!(DEFAULT_BLOAT_BOND), amount1 + amount2);
+    let (src, bloat_bond, src_balance) = (account!(1), joy!(100), amount1 + amount2);
     let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let config = GenesisConfigBuilder::new_empty()
