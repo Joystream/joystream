@@ -94,7 +94,7 @@ impl GenesisConfigBuilder {
 
     // add token and owner: useful for tests
     pub fn with_token_and_owner(
-        mut self,
+        self,
         token_id: TokenId,
         token_info: TokenData,
         owner: AccountId,
