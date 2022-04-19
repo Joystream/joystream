@@ -1,13 +1,10 @@
 #![cfg(test)]
 use frame_support::{assert_noop, assert_ok};
-use sp_runtime::traits::AccountIdConversion;
 
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
 use crate::types::{Transfers, Validated};
-use crate::{
-    account, balance, joy, last_event_eq, merkle_root, origin, token, treasury, Error, RawEvent,
-};
+use crate::{account, balance, joy, last_event_eq, merkle_root, origin, token, Error, RawEvent};
 
 // some helpers
 macro_rules! outputs {
@@ -158,7 +155,7 @@ fn permissionless_transfer_ok_for_new_destination_with_bloat_bond_transferred_to
         .with_transfer_policy(Policy::Permissionless)
         .build();
     let src = account!(1);
-    let (treasury, bloat_bond) = (treasury!(token_id), balance!(DEFAULT_BLOAT_BOND));
+    let (treasury, bloat_bond) = (Token::bloat_bond_treasury_account_id(), joy!(100));
     let (dst, amount) = (account!(2), balance!(100));
 
     let config = GenesisConfigBuilder::new_empty()
@@ -172,7 +169,10 @@ fn permissionless_transfer_ok_for_new_destination_with_bloat_bond_transferred_to
 
         let _ = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
-        assert_eq!(Balances::usable_balance(&treasury), bloat_bond);
+        assert_eq!(
+            Balances::usable_balance(&treasury),
+            bloat_bond + ExistentialDeposit::get()
+        );
     })
 }
 
@@ -610,7 +610,7 @@ fn multiout_transfer_ok_with_bloat_bond_for_new_destinations_slashed_from_src() 
 #[test]
 fn multiout_transfer_ok_with_bloat_bond_transferred_to_treasury() {
     let token_id = token!(1);
-    let treasury: AccountId = treasury!(token_id);
+    let treasury = Token::bloat_bond_treasury_account_id();
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
     let (src, src_balance, bloat_bond) = (account!(1), amount1 + amount2, joy!(100));
@@ -629,9 +629,14 @@ fn multiout_transfer_ok_with_bloat_bond_transferred_to_treasury() {
     build_test_externalities(config).execute_with(|| {
         increase_account_balance(&src, ExistentialDeposit::get() + 2 * bloat_bond);
 
-        let _ = Token::transfer(origin!(src), token_id, outputs);
+        let result = Token::transfer(origin!(src), token_id, outputs);
 
-        assert_eq!(Balances::usable_balance(&treasury), 2 * bloat_bond);
+        assert_ok!(result);
+
+        assert_eq!(
+            Balances::usable_balance(&treasury),
+            ExistentialDeposit::get() + 2 * bloat_bond
+        );
     })
 }
 

@@ -65,8 +65,6 @@ impl_outer_event! {
 }
 
 // Trait constants
-pub const DEFAULT_BLOAT_BOND: u64 = 100;
-
 parameter_types! {
     // constants for frame_system::Trait
     pub const BlockHashCount: u64 = 250;

@@ -1,14 +1,14 @@
 #![cfg(test)]
 use frame_support::{assert_noop, assert_ok, StorageDoubleMap, StorageMap};
-use sp_runtime::traits::{AccountIdConversion, Hash};
+use sp_runtime::traits::Hash;
 
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
 use crate::types::{MerkleProofOf, OfferingState, PatronageData, TokenIssuanceParametersOf};
 use crate::{
-    account, balance, joy, last_event_eq, merkle_proof, merkle_root, origin, token, treasury,
-    Error, RawEvent, TokenDataOf,
+    account, balance, joy, last_event_eq, merkle_proof, merkle_root, origin, token, Error,
+    RawEvent, TokenDataOf,
 };
 
 #[test]
@@ -236,7 +236,7 @@ fn join_whitelist_ok_with_bloat_bond_transferred_to_treasury() {
     let (owner, user_account, other_user_account) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![user_account, other_user_account];
     let proof = merkle_proof!(0, [user_account, other_user_account]);
-    let (treasury, bloat_bond): (AccountId, _) = (treasury!(token_id), joy!(100));
+    let (treasury, bloat_bond) = (Token::bloat_bond_treasury_account_id(), joy!(100));
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -253,7 +253,10 @@ fn join_whitelist_ok_with_bloat_bond_transferred_to_treasury() {
 
         let _ = Token::join_whitelist(origin!(user_account), token_id, proof);
 
-        assert_eq!(Balances::usable_balance(&treasury), bloat_bond);
+        assert_eq!(
+            Balances::usable_balance(&treasury),
+            ExistentialDeposit::get() + bloat_bond
+        );
     })
 }
 
@@ -643,7 +646,7 @@ fn dust_account_ok_with_account_removed() {
 #[test]
 fn dust_account_ok_with_correct_bloat_bond_refunded() {
     let token_id = token!(1);
-    let treasury: AccountId = treasury!(token_id);
+    let treasury = Token::bloat_bond_treasury_account_id();
     let (user_account, other_user_account) = (account!(2), account!(3));
     let (bloat_bond, updated_bloat_bond) = (joy!(100), joy!(150));
 
@@ -677,7 +680,7 @@ fn dust_account_ok_with_correct_bloat_bond_refunded() {
 #[test]
 fn dust_account_ok_with_unregistered_member_doing_the_dusting() {
     let token_id = token!(1);
-    let treasury: AccountId = treasury!(token_id);
+    let treasury = Token::bloat_bond_treasury_account_id();
     let (user_account, other_user_account) = (account!(2), account!(3));
     let bloat_bond = joy!(100);
 
@@ -705,7 +708,7 @@ fn dust_account_ok_with_unregistered_member_doing_the_dusting() {
 fn dust_account_ok_with_bloat_bond_slashed_from_treasury() {
     let token_id = token!(1);
     let (user_account, other_user_account) = (account!(2), account!(3));
-    let treasury: AccountId = treasury!(token_id);
+    let treasury = Token::bloat_bond_treasury_account_id();
     let (bloat_bond, updated_bloat_bond) = (joy!(100), joy!(150));
 
     let token_data = TokenDataBuilder::new_empty().build();
@@ -721,7 +724,7 @@ fn dust_account_ok_with_bloat_bond_slashed_from_treasury() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&treasury, bloat_bond + ExistentialDeposit::get());
+        increase_account_balance(&treasury, bloat_bond);
 
         let _ = Token::dust_account(origin!(user_account), token_id, other_user_account);
 

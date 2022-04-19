@@ -71,7 +71,7 @@ decl_storage! {
         pub AccountInfoByTokenAndAccount get(fn account_info_by_token_and_account) config():
         double_map
             hasher(blake2_128_concat) T::TokenId,
-            hasher(blake2_128_concat) T::AccountId => AccountDataOf<T>;
+        hasher(blake2_128_concat) T::AccountId => AccountDataOf<T>;
 
         /// map TokenId => TokenData to retrieve token information
         pub TokenInfoById get(fn token_info_by_id) config():
@@ -90,6 +90,22 @@ decl_storage! {
         pub BloatBond get(fn bloat_bond) config(): ReserveBalanceOf<T>;
     }
 
+    add_extra_genesis {
+        build(|_| {
+            // We deposit some initial balance to the pallet's module account on the genesis block
+            // to protect the account from being deleted ("dusted") on early stages of pallet's work
+            // by the "garbage collector" of the balances pallet.
+            // It should be equal to at least `ExistentialDeposit` from the balances pallet setting.
+            // Original issues:
+            // - https://github.com/Joystream/joystream/issues/3497
+            // - https://github.com/Joystream/joystream/issues/3510
+
+            let module_account_id = crate::Module::<T>::bloat_bond_treasury_account_id();
+            let deposit = T::ReserveExistentialDeposit::get();
+
+            let _ = T::ReserveCurrency::deposit_creating(&module_account_id, deposit);
+        });
+    }
 }
 
 decl_module! {
@@ -175,7 +191,7 @@ decl_module! {
             TokenInfoById::<T>::mutate(token_id, |token_info| token_info.decrement_accounts_number());
 
             let bloat_bond = account_to_remove_info.bloat_bond;
-            let treasury = Self::bloat_bond_treasury_account_id(token_id);
+            let treasury = Self::bloat_bond_treasury_account_id();
             let _ = T::ReserveCurrency::transfer(&treasury, &account_id, bloat_bond, ExistenceRequirement::KeepAlive);
 
             Self::deposit_event(RawEvent::AccountDustedBy(token_id, account_id, sender, token_info.transfer_policy));
@@ -211,11 +227,11 @@ decl_module! {
             let bloat_bond = Self::bloat_bond();
 
             // No project_token or balances state corrupted in case of failure
-            Self::ensure_can_transfer_reserve(&account_id, bloat_bond)?;
+            let treasury = Self::bloat_bond_treasury_account_id();
+            Self::ensure_can_transfer_reserve(&account_id, &treasury, bloat_bond)?;
 
             // == MUTATION SAFE ==
 
-            let treasury = Self::bloat_bond_treasury_account_id(token_id);
             let _ = T::ReserveCurrency::transfer(&account_id, &treasury, bloat_bond, ExistenceRequirement::KeepAlive);
 
             AccountInfoByTokenAndAccount::<T>::insert(
@@ -440,7 +456,8 @@ impl<T: Trait> Module<T> {
 
         // compute bloat bond
         let cumulative_bloat_bond = Self::compute_bloat_bond(&validated_transfers);
-        Self::ensure_can_transfer_reserve(src, cumulative_bloat_bond)?;
+        let treasury = Self::bloat_bond_treasury_account_id();
+        Self::ensure_can_transfer_reserve(src, &treasury, cumulative_bloat_bond)?;
 
         src_account_info
             .ensure_can_decrease_liquidity_by::<T>(validated_transfers.total_amount())?;
@@ -478,7 +495,7 @@ impl<T: Trait> Module<T> {
 
         let cumulative_bloat_bond = Self::compute_bloat_bond(validated_transfers);
         if !cumulative_bloat_bond.is_zero() {
-            let treasury_account_id = Self::bloat_bond_treasury_account_id(token_id);
+            let treasury_account_id = Self::bloat_bond_treasury_account_id();
             let _ = T::ReserveCurrency::transfer(
                 src,
                 &treasury_account_id,
@@ -547,8 +564,9 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub(crate) fn bloat_bond_treasury_account_id(token_id: T::TokenId) -> T::AccountId {
-        T::ModuleId::get().into_sub_account(token_id)
+    /// Returns the module account for the bloat bond treasury
+    pub fn bloat_bond_treasury_account_id() -> T::AccountId {
+        T::ModuleId::get().into_sub_account(Vec::<u8>::new())
     }
 
     pub(crate) fn validate_destination(
@@ -600,23 +618,29 @@ impl<T: Trait> Module<T> {
     }
 
     pub(crate) fn ensure_can_transfer_reserve(
-        from: &T::AccountId,
+        src: &T::AccountId,
+        dst: &T::AccountId,
         amount: ReserveBalanceOf<T>,
     ) -> DispatchResult {
         if !amount.is_zero() {
+            let src_free = T::ReserveCurrency::free_balance(src);
+            let dst_free = T::ReserveCurrency::free_balance(dst);
+
             ensure!(
-                T::ReserveCurrency::can_slash(
-                    from,
-                    amount.saturating_add(T::ReserveExistentialDeposit::get())
-                ),
+                src_free >= amount.saturating_add(T::ReserveExistentialDeposit::get()),
+                Error::<T>::InsufficientBalanceForBloatBond,
+            );
+
+            ensure!(
+                dst_free.saturating_add(amount) >= T::ReserveExistentialDeposit::get(),
                 Error::<T>::InsufficientBalanceForBloatBond,
             );
 
             T::ReserveCurrency::ensure_can_withdraw(
-                from,
+                src,
                 amount,
                 WithdrawReason::Transfer.into(),
-                T::ReserveCurrency::free_balance(from),
+                src_free,
             )?;
         }
         Ok(())
