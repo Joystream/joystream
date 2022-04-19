@@ -92,6 +92,18 @@ impl GenesisConfigBuilder {
         self
     }
 
+    // add token and owner: useful for tests
+    pub fn with_token_and_owner(
+        mut self,
+        token_id: TokenId,
+        token_info: TokenData,
+        owner: AccountId,
+        initial_supply: Balance,
+    ) -> Self {
+        self.with_token(token_id, token_info)
+            .with_account(owner, AccountData::new_with_liquidity(initial_supply))
+    }
+
     pub fn with_bloat_bond(self, bloat_bond: ReserveBalance) -> Self {
         Self { bloat_bond, ..self }
     }
