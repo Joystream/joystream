@@ -290,6 +290,8 @@ decl_module! {
                 t.last_sale.as_mut().unwrap().quantity_left = sale.quantity_left.saturating_sub(amount);
             });
 
+            Self::deposit_event(RawEvent::TokensPurchasedOnSale(token_id, sale_id, amount, sender));
+
             Ok(())
         }
 
@@ -328,6 +330,8 @@ decl_module! {
             TokenInfoById::<T>::mutate(token_id, |token_info| {
                 token_info.last_sale.as_mut().unwrap().quantity_left = <T as Trait>::Balance::zero();
             });
+
+            Self::deposit_event(RawEvent::UnsoldTokensUnreserved(token_id, token_info.sales_initialized, amount_to_unreserve));
 
             Ok(())
         }

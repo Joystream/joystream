@@ -1,4 +1,4 @@
-use crate::types::{Payment, TokenIssuanceParametersOf, TransferPolicyOf};
+use crate::types::{Payment, TokenIssuanceParametersOf, TokenSaleId, TransferPolicyOf};
 use frame_support::decl_event;
 use sp_std::collections::btree_map::BTreeMap;
 
@@ -86,5 +86,20 @@ decl_event! {
         /// - token id
         /// - token issuance parameters
         TokenIssued(TokenId, TokenIssuanceParameters),
+
+        /// Tokens Purchased On Sale
+        /// Params:
+        /// - token id
+        /// - token sale id
+        /// - amount of tokens purchased
+        /// - address of the buyer
+        TokensPurchasedOnSale(TokenId, TokenSaleId, Balance, AccountId),
+
+        /// Unsold Tokens Unreserved
+        /// Params:
+        /// - token id
+        /// - token sale id
+        /// - amount of tokens unreserved
+        UnsoldTokensUnreserved(TokenId, TokenSaleId, Balance),
     }
 }

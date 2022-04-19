@@ -1,6 +1,7 @@
 #![cfg(test)]
 
 use crate::tests::mock::*;
+use crate::{last_event_eq, RawEvent};
 use crate::{traits::PalletToken, types::VestingSource, SymbolsUsed};
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::StorageMap;
@@ -440,6 +441,13 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
         snapshot_pre: &PurchaseTokensOnSaleFixtureStateSnapshot,
         snapshot_post: &PurchaseTokensOnSaleFixtureStateSnapshot,
     ) {
+        // event emitted
+        last_event_eq!(RawEvent::TokensPurchasedOnSale(
+            self.token_id,
+            snapshot_pre.token_data.sales_initialized,
+            self.amount,
+            self.sender
+        ));
         let sale_pre = snapshot_pre.token_data.last_sale.clone().unwrap();
         // `quantity_left` decreased
         assert_eq!(
@@ -546,20 +554,26 @@ impl Fixture<UnreserveUnsoldTokensFixtureStateSnapshot> for UnreserveUnsoldToken
         snapshot_pre: &UnreserveUnsoldTokensFixtureStateSnapshot,
         snapshot_post: &UnreserveUnsoldTokensFixtureStateSnapshot,
     ) {
+        let unreserved_amount = snapshot_pre.token_data.last_sale_remaining_tokens();
+        last_event_eq!(RawEvent::UnsoldTokensUnreserved(
+            self.token_id,
+            snapshot_pre.token_data.sales_initialized,
+            unreserved_amount
+        ));
         assert_eq!(snapshot_post.token_data.last_sale_remaining_tokens(), 0);
         assert_eq!(
             snapshot_post.source_account_data.reserved_balance,
             snapshot_pre
                 .source_account_data
                 .reserved_balance
-                .saturating_sub(snapshot_pre.token_data.last_sale_remaining_tokens())
+                .saturating_sub(unreserved_amount)
         );
         assert_eq!(
             snapshot_post.source_account_data.base_balance,
             snapshot_pre
                 .source_account_data
                 .base_balance
-                .saturating_add(snapshot_pre.token_data.last_sale_remaining_tokens()),
+                .saturating_add(unreserved_amount),
         )
     }
 }
