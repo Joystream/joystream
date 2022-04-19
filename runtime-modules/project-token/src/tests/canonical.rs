@@ -30,7 +30,7 @@ fn join_whitelist_fails_with_token_id_not_valid() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&user_account, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond + ExistentialDeposit::get());
 
         let result = Token::join_whitelist(origin!(user_account), token_id + 1, proof);
 
@@ -58,7 +58,7 @@ fn join_whitelist_fails_with_existing_account() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&user_account, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond + ExistentialDeposit::get());
 
         let result = Token::join_whitelist(origin!(user_account), token_id, proof);
 
@@ -85,7 +85,7 @@ fn join_whitelist_fails_with_invalid_proof() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&user_account, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond + ExistentialDeposit::get());
 
         let result = Token::join_whitelist(origin!(user_account), token_id, proof);
 
@@ -112,7 +112,7 @@ fn join_whitelist_fails_with_no_proof_provided() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&user_account, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond + ExistentialDeposit::get());
 
         let result = Token::join_whitelist(origin!(user_account), token_id, proof);
 
@@ -162,7 +162,7 @@ fn join_whitelist_fails_in_permissionless_mode() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&user_account, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond + ExistentialDeposit::get());
 
         let result = Token::join_whitelist(origin!(user_account), token_id, proof);
 
@@ -192,7 +192,7 @@ fn join_whitelist_ok() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&user_account, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond + ExistentialDeposit::get());
 
         let result = Token::join_whitelist(origin!(user_account), token_id, proof);
 
@@ -219,11 +219,14 @@ fn join_whitelist_ok_with_bloat_bond_slashed_from_caller() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&user_account, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond + ExistentialDeposit::get());
 
         let _ = Token::join_whitelist(origin!(user_account), token_id, proof);
 
-        assert_eq!(Balances::usable_balance(&user_account), balance!(0));
+        assert_eq!(
+            Balances::usable_balance(&user_account),
+            ExistentialDeposit::get()
+        );
     })
 }
 
@@ -246,7 +249,7 @@ fn join_whitelist_ok_with_bloat_bond_transferred_to_treasury() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&user_account, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond + ExistentialDeposit::get());
 
         let _ = Token::join_whitelist(origin!(user_account), token_id, proof);
 
@@ -273,7 +276,7 @@ fn join_whitelist_ok_with_accounts_number_incremented() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&user_account, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond + ExistentialDeposit::get());
 
         let _ = Token::join_whitelist(origin!(user_account), token_id, proof);
 
@@ -301,7 +304,7 @@ fn join_whitelist_ok_with_event_deposit() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&user_account, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond + ExistentialDeposit::get());
 
         let _ = Token::join_whitelist(origin!(user_account), token_id, proof);
 
@@ -333,7 +336,7 @@ fn join_whitelist_ok_with_new_account_correctly_created() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&user_account, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond + ExistentialDeposit::get());
 
         let _ = Token::join_whitelist(origin!(user_account), token_id, proof);
 
@@ -363,7 +366,7 @@ fn join_whitelist_ok_with_new_account_having_usable_balance_zero() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&user_account, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond + ExistentialDeposit::get());
 
         let _ = Token::join_whitelist(origin!(user_account), token_id, proof);
 
@@ -393,7 +396,7 @@ fn join_whitelist_ok_with_new_account_having_reserved_balance_zero() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&user_account, bloat_bond);
+        increase_account_balance(&user_account, bloat_bond + ExistentialDeposit::get());
 
         let _ = Token::join_whitelist(origin!(user_account), token_id, proof);
 
@@ -718,11 +721,14 @@ fn dust_account_ok_with_bloat_bond_slashed_from_treasury() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&treasury, bloat_bond);
+        increase_account_balance(&treasury, bloat_bond + ExistentialDeposit::get());
 
         let _ = Token::dust_account(origin!(user_account), token_id, other_user_account);
 
-        assert_eq!(Balances::usable_balance(&treasury), joy!(0));
+        assert_eq!(
+            Balances::usable_balance(&treasury),
+            ExistentialDeposit::get()
+        );
     })
 }
 

@@ -76,7 +76,6 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
     // constants for crate::Trait
     pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token"); // module storage
-    pub const BloatBond: u64 = DEFAULT_BLOAT_BOND;
     // constants for balances::Trait
     pub const ExistentialDeposit: u64 = 10;
 }
@@ -115,7 +114,7 @@ impl Trait for Test {
     type TokenId = u64;
     type BlockNumberToBalance = Block2Balance;
     type ModuleId = TokenModuleId;
-    type BloatBond = BloatBond;
+    type ReserveExistentialDeposit = ExistentialDeposit;
     type ReserveCurrency = Balances;
 }
 

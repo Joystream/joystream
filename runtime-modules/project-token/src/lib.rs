@@ -56,9 +56,10 @@ pub trait Trait: frame_system::Trait {
     /// Tresury account for the various tokens
     type ModuleId: Get<ModuleId>;
 
-    // TODO(after PR round is completed): use Self::ReserveBalance
-    /// Bloat bond value: in JOY
-    type BloatBond: Get<<Self::ReserveCurrency as Currency<Self::AccountId>>::Balance>;
+    /// Existential Deposit for the JOY pallet
+    type ReserveExistentialDeposit: Get<
+        <Self::ReserveCurrency as Currency<Self::AccountId>>::Balance,
+    >;
 
     /// the Currency interface used as a reserve (i.e. JOY)
     type ReserveCurrency: Currency<Self::AccountId>;
@@ -211,7 +212,10 @@ decl_module! {
 
             // No project_token or balances state corrupted in case of failure
             ensure!(
-                T::ReserveCurrency::can_slash(&account_id, bloat_bond),
+                T::ReserveCurrency::can_slash(
+                    &account_id,
+                    bloat_bond.saturating_add(T::ReserveExistentialDeposit::get())
+                ),
                 Error::<T>::InsufficientBalanceForBloatBond,
             );
 
@@ -442,10 +446,15 @@ impl<T: Trait> Module<T> {
 
         // compute bloat bond
         let cumulative_bloat_bond = Self::compute_bloat_bond(&validated_transfers);
-        ensure!(
-            T::ReserveCurrency::can_slash(src, cumulative_bloat_bond),
-            Error::<T>::InsufficientBalanceForBloatBond
-        );
+        if !cumulative_bloat_bond.is_zero() {
+            ensure!(
+                T::ReserveCurrency::can_slash(
+                    &src,
+                    cumulative_bloat_bond.saturating_add(T::ReserveExistentialDeposit::get())
+                ),
+                Error::<T>::InsufficientBalanceForBloatBond,
+            );
+        }
 
         src_account_info
             .ensure_can_decrease_liquidity_by::<T>(validated_transfers.total_amount())?;

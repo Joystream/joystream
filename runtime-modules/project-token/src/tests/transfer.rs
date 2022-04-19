@@ -90,7 +90,7 @@ fn permissionless_transfer_ok_with_non_existing_destination() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&src, amount);
+        increase_account_balance(&src, ExistentialDeposit::get() + amount);
 
         let result = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
@@ -115,7 +115,7 @@ fn permissionless_transfer_ok_with_new_destination_created() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&src, bloat_bond);
+        increase_account_balance(&src, ExistentialDeposit::get() + bloat_bond);
 
         let _ = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
@@ -143,11 +143,11 @@ fn permissionless_transfer_ok_for_new_destination_with_bloat_bond_slashed_from_s
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&src, bloat_bond);
+        increase_account_balance(&src, ExistentialDeposit::get() + bloat_bond);
 
         let _ = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
-        assert_eq!(Balances::usable_balance(&src), balance!(0));
+        assert_eq!(Balances::usable_balance(&src), ExistentialDeposit::get());
     })
 }
 
@@ -168,7 +168,7 @@ fn permissionless_transfer_ok_for_new_destination_with_bloat_bond_transferred_to
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&src, bloat_bond);
+        increase_account_balance(&src, ExistentialDeposit::get() + bloat_bond);
 
         let _ = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
@@ -192,6 +192,8 @@ fn permissionless_transfer_fails_with_source_not_having_sufficient_free_balance(
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&src, ExistentialDeposit::get());
+
         let result = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
         assert_noop!(result, Error::<Test>::InsufficientFreeBalanceForTransfer);
@@ -214,6 +216,8 @@ fn permissionless_transfer_ok() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&src, ExistentialDeposit::get());
+
         let result = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
         assert_ok!(result);
@@ -237,6 +241,8 @@ fn permissionless_transfer_ok_with_event_deposit() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&src, ExistentialDeposit::get());
+
         let _ = Token::transfer(origin!(src), token_id, outputs.clone());
 
         last_event_eq!(RawEvent::TokenAmountTransferred(
@@ -263,6 +269,8 @@ fn permissionless_transfer_ok_and_src_left_with_zero_balance() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&src, ExistentialDeposit::get());
+
         let _ = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
         assert_ok!(
@@ -288,6 +296,8 @@ fn permissionless_transfer_ok_with_destination_receiving_funds() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&src, ExistentialDeposit::get());
+
         let _ = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
         assert_eq!(
@@ -340,7 +350,7 @@ fn multiout_transfer_ok_with_non_existing_destination() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&src, bloat_bond);
+        increase_account_balance(&src, ExistentialDeposit::get() + bloat_bond);
 
         let result = Token::transfer(origin!(src), token_id, outputs);
 
@@ -416,7 +426,7 @@ fn multiout_transfer_ok_with_event_deposit() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&src, bloat_bond);
+        increase_account_balance(&src, ExistentialDeposit::get() + bloat_bond);
 
         let _ = Token::transfer(origin!(src), token_id, outputs.clone());
 
@@ -506,6 +516,8 @@ fn multiout_transfer_fails_with_source_having_insufficient_balance() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&src, ExistentialDeposit::get());
+
         let result = Token::transfer(origin!(src), token_id, outputs);
 
         assert_noop!(result, Error::<Test>::InsufficientFreeBalanceForTransfer);
@@ -553,7 +565,7 @@ fn multiout_transfer_ok_with_new_destinations_created() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&src, 2 * bloat_bond);
+        increase_account_balance(&src, ExistentialDeposit::get() + 2 * bloat_bond);
 
         let _ = Token::transfer(origin!(src), token_id, outputs);
 
@@ -587,11 +599,11 @@ fn multiout_transfer_ok_with_bloat_bond_for_new_destinations_slashed_from_src() 
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&src, 2 * bloat_bond);
+        increase_account_balance(&src, ExistentialDeposit::get() + 2 * bloat_bond);
 
         let _ = Token::transfer(origin!(src), token_id, outputs);
 
-        assert_eq!(Balances::usable_balance(&src), balance!(0));
+        assert_eq!(Balances::usable_balance(&src), ExistentialDeposit::get());
     })
 }
 
@@ -615,7 +627,7 @@ fn multiout_transfer_ok_with_bloat_bond_transferred_to_treasury() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&src, 2 * bloat_bond);
+        increase_account_balance(&src, ExistentialDeposit::get() + 2 * bloat_bond);
 
         let _ = Token::transfer(origin!(src), token_id, outputs);
 
@@ -638,6 +650,8 @@ fn transfer_ok_with_same_source_and_destination() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&dst, ExistentialDeposit::get());
+
         let result = Token::transfer(origin!(dst), token_id, outputs);
 
         assert_ok!(result);
@@ -665,6 +679,8 @@ fn permissioned_transfer_ok() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&src, ExistentialDeposit::get());
+
         let result = Token::transfer(origin!(src), token_id, outputs);
 
         assert_ok!(result);
@@ -692,6 +708,8 @@ fn permissioned_transfer_ok_with_event_deposit() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&src, ExistentialDeposit::get());
+
         let _ = Token::transfer(origin!(src), token_id, outputs.clone());
 
         last_event_eq!(RawEvent::TokenAmountTransferred(
@@ -749,6 +767,8 @@ fn permissioned_transfer_fails_with_insufficient_balance() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&src, ExistentialDeposit::get());
+
         let result = Token::transfer(origin!(src), token_id, outputs);
 
         assert_noop!(result, Error::<Test>::InsufficientFreeBalanceForTransfer);
@@ -776,6 +796,8 @@ fn permissioned_transfer_ok_with_src_left_with_zero_balance() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&src, ExistentialDeposit::get());
+
         let _ = Token::transfer(origin!(src), token_id, outputs);
 
         assert_ok!(
