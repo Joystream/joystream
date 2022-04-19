@@ -154,7 +154,7 @@ pub enum Validated<AccountId: Ord + Eq + Clone> {
 
 // implementation
 
-/// Default trait for Issuance state
+/// Default trait for Offering state
 impl Default for OfferingState {
     fn default() -> Self {
         OfferingState::Idle
