@@ -5,17 +5,17 @@ use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
 use crate::types::TokenIssuanceParametersOf;
-use crate::{account, balance, block, last_event_eq, token, Error, RawEvent};
+use crate::{account, balance, block, last_event_eq, origin, token, Error, RawEvent};
 
 #[test]
 fn issue_token_ok_with_patronage_tally_count_zero() {
     let patronage_rate = balance!(50);
     let token_id = token!(1);
-    let (owner, initial_supply) = (account!(1), balance!(10));
+    let (owner, init_supply) = (account!(1), balance!(10));
 
     let params = TokenIssuanceParametersOf::<Test> {
         patronage_rate,
-        initial_supply,
+        initial_supply: init_supply,
         ..Default::default()
     };
     let config = GenesisConfigBuilder::new_empty().build();
@@ -37,11 +37,11 @@ fn issue_token_ok_with_patronage_tally_count_zero() {
 fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
     let token_id = token!(1);
     let (rate, blocks) = (balance!(20), block!(10));
-    let (owner, initial_supply) = (account!(1), balance!(10));
+    let (owner, init_supply) = (account!(1), balance!(10));
 
     let params = TokenIssuanceParametersOf::<Test> {
         patronage_rate: rate,
-        initial_supply,
+        initial_supply: init_supply,
         ..Default::default()
     };
     let config = GenesisConfigBuilder::new_empty().build();
@@ -54,7 +54,7 @@ fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
         assert_eq!(
             Token::token_info_by_id(token_id)
                 .unclaimed_patronage::<Block2Balance>(System::block_number()),
-            rate * blocks * initial_supply,
+            rate * blocks * init_supply,
         );
     })
 }
@@ -63,11 +63,11 @@ fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
 fn issue_token_ok_with_correct_patronage_accounting_and_zero_supply() {
     let token_id = token!(1);
     let (rate, blocks) = (balance!(20), block!(10));
-    let (owner, initial_supply) = (account!(1), balance!(0));
+    let (owner, init_supply) = (account!(1), balance!(0));
 
     let params = TokenIssuanceParametersOf::<Test> {
         patronage_rate: rate,
-        initial_supply,
+        initial_supply: init_supply,
         ..Default::default()
     };
     let config = GenesisConfigBuilder::new_empty().build();
@@ -83,13 +83,16 @@ fn issue_token_ok_with_correct_patronage_accounting_and_zero_supply() {
 
 #[test]
 fn decrease_patronage_ok() {
-    let patronage_rate = balance!(50);
-    let token_id = token!(1);
+    let rate = balance!(50);
+    let (token_id, init_supply) = (token!(1), balance!(100));
+    let owner = account!(1);
     let decrement = balance!(20);
 
-    let params = TokenDataBuilder::new_empty().with_patronage_rate(patronage_rate);
+    let token_info = TokenDataBuilder::new_empty()
+        .with_patronage_rate(rate)
+        .build();
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params.build())
+        .with_token_and_owner(token_id, token_info, owner, init_supply)
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -106,13 +109,14 @@ fn decrease_patronage_ok() {
 fn decrease_patronage_ok_with_tally_count_twice_updated() {
     let token_id = token!(1);
     let decrement = balance!(1);
-    let (owner, supply) = (account!(1), balance!(100));
+    let (owner, init_supply) = (account!(1), balance!(100));
     let (rate, blocks) = (balance!(3), block!(10));
 
-    let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
+    let token_info = TokenDataBuilder::new_empty()
+        .with_patronage_rate(rate)
+        .build();
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params.build())
-        .with_account(owner, AccountData::new_with_liquidity(supply))
+        .with_token_and_owner(token_id, token_info, owner, init_supply)
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -127,7 +131,7 @@ fn decrease_patronage_ok_with_tally_count_twice_updated() {
         );
 
         assert_eq!(
-            supply * (blocks * rate) + supply * (blocks * (rate - decrement)),
+            init_supply * (blocks * rate) + init_supply * (blocks * (rate - decrement)),
             Token::token_info_by_id(token_id)
                 .patronage_info
                 .unclaimed_patronage_tally_amount,
@@ -211,12 +215,15 @@ fn decrease_patronage_ok_with_last_tally_block_updated() {
 #[test]
 fn decreasing_patronage_rate_fails_with_decrease_amount_too_large() {
     let rate = balance!(50);
-    let token_id = token!(1);
+    let (token_id, init_supply) = (token!(1), balance!(100));
+    let owner = account!(1);
     let decrease = balance!(70);
 
-    let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
+    let token_info = TokenDataBuilder::new_empty()
+        .with_patronage_rate(rate)
+        .build();
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params.build())
+        .with_token_and_owner(token_id, token_info, owner, init_supply)
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -274,13 +281,13 @@ fn claim_patronage_ok() {
 fn claim_patronage_ok_with_event_deposit() {
     let token_id = token!(1);
     let (rate, blocks) = (balance!(10), block!(10));
-    let (owner, supply) = (account!(1), balance!(100));
+    let (owner, init_supply) = (account!(1), balance!(100));
 
     let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
-        .with_account(owner, AccountData::new_with_liquidity(supply))
+        .with_account(owner, AccountData::new_with_liquidity(init_supply))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -292,7 +299,7 @@ fn claim_patronage_ok_with_event_deposit() {
 
         last_event_eq!(RawEvent::PatronageCreditClaimed(
             token_id,
-            rate * blocks * supply,
+            rate * blocks * init_supply,
             owner,
         ));
     })
@@ -301,14 +308,15 @@ fn claim_patronage_ok_with_event_deposit() {
 #[test]
 fn claim_patronage_ok_with_credit_accounting() {
     let token_id = token!(1);
-    let (owner, supply) = (account!(2), balance!(100));
+    let (owner, init_supply) = (account!(2), balance!(100));
     let (rate, blocks) = (balance!(10), block!(10));
 
-    let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
+    let token_info = TokenDataBuilder::new_empty()
+        .with_patronage_rate(rate)
+        .build();
 
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params.build())
-        .with_account(owner, AccountData::new_with_liquidity(supply))
+        .with_token_and_owner(token_id, token_info, owner, init_supply)
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -320,24 +328,25 @@ fn claim_patronage_ok_with_credit_accounting() {
 
         assert_eq!(
             Token::account_info_by_token_and_account(token_id, owner).free_balance,
-            rate * blocks * supply + supply, // initial + patronage claimed
+            rate * blocks * init_supply + init_supply, // initial + patronage claimed
         );
     })
 }
 
 #[test]
 fn claim_patronage_ok_with_unclaimed_patronage_reset() {
-    let token_id = token!(1);
+    let (token_id, init_supply) = (token!(1), balance!(100));
     let account_id = account!(1);
     let owner = account!(2);
     let (rate, blocks) = (balance!(10), block!(10));
 
-    let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
+    let token_info = TokenDataBuilder::new_empty()
+        .with_patronage_rate(rate)
+        .build();
 
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params.build())
+        .with_token_and_owner(token_id, token_info, owner, init_supply)
         .with_account(account_id, AccountData::new_empty())
-        .with_account(owner, AccountData::new_empty())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -375,16 +384,16 @@ fn claim_patronage_credit_fails_with_invalid_token_id() {
 #[test]
 fn claim_patronage_credit_fails_with_invalid_owner() {
     let rate = balance!(50);
-    let token_id = token!(1);
+    let (token_id, init_supply) = (token!(1), balance!(100));
     let invalid_owner = account!(1);
     let owner = account!(2);
-    let amount = balance!(100);
 
-    let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
+    let token_info = TokenDataBuilder::new_empty()
+        .with_patronage_rate(rate)
+        .build();
 
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params.build())
-        .with_account(owner, AccountData::new_with_liquidity(amount))
+        .with_token_and_owner(token_id, token_info, owner, init_supply)
         .build();
     build_test_externalities(config).execute_with(|| {
         let result =
@@ -399,15 +408,16 @@ fn claim_patronage_credit_fails_with_invalid_owner() {
 
 #[test]
 fn claim_patronage_ok_with_patronage_claimed_and_tally_set_to_zero() {
-    let token_id = token!(1);
+    let (token_id, init_supply) = (token!(1), balance!(100));
     let owner = account!(1);
     let (rate, blocks) = (balance!(10), block!(10));
 
-    let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
+    let token_info = TokenDataBuilder::new_empty()
+        .with_patronage_rate(rate)
+        .build();
 
     let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params.build())
-        .with_account(owner, AccountData::new_empty())
+        .with_token_and_owner(token_id, token_info, owner, init_supply)
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -426,6 +436,64 @@ fn claim_patronage_ok_with_patronage_claimed_and_tally_set_to_zero() {
     })
 }
 
-#[ignore]
 #[test]
-fn claim_patroage_ok_with_correct_accounting_after_change_in_supply() {}
+fn claim_patroage_ok_with_tally_block_update_after_account_removed() {
+    let (token_id, init_supply) = (token!(1), balance!(100));
+    let (owner, user_account) = (account!(1), account!(2));
+    let (rate, blocks) = (balance!(10), block!(10));
+    let amount_burned = balance!(100);
+
+    let token_info = TokenDataBuilder::new_empty()
+        .with_patronage_rate(rate)
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token_and_owner(token_id, token_info, owner, init_supply)
+        .with_account(user_account, AccountData::new_with_liquidity(amount_burned))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_block_number_by(blocks);
+
+        let _ = Token::dust_account(origin!(user_account), token_id, user_account);
+
+        assert_eq!(
+            Token::token_info_by_id(token_id)
+                .patronage_info
+                .last_unclaimed_patronage_tally_block,
+            block!(1) + blocks
+        );
+    })
+}
+
+#[test]
+fn claim_patroage_ok_with_tally_amount_update_after_account_removed() {
+    let (token_id, owner_balance) = (token!(1), balance!(100));
+    let (owner, user_account) = (account!(1), account!(2));
+    let (rate, blocks) = (balance!(10), block!(10));
+    let amount_burned = balance!(100);
+
+    let token_info = TokenDataBuilder::new_empty()
+        .with_patronage_rate(rate)
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token_and_owner(token_id, token_info, owner, owner_balance)
+        .with_account(user_account, AccountData::new_with_liquidity(amount_burned))
+        .build();
+
+    let init_supply = amount_burned + owner_balance;
+
+    build_test_externalities(config).execute_with(|| {
+        increase_block_number_by(blocks);
+
+        let _ = Token::dust_account(origin!(user_account), token_id, user_account);
+
+        assert_eq!(
+            Token::token_info_by_id(token_id)
+                .patronage_info
+                .unclaimed_patronage_tally_amount,
+            blocks * rate * init_supply,
+        );
+    })
+}

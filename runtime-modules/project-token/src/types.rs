@@ -235,9 +235,15 @@ impl<
     pub(crate) fn decrement_accounts_number(&mut self) {
         self.accounts_number = self.accounts_number.saturating_sub(1u64);
     }
+
     // increase total issuance
     pub(crate) fn increase_issuance_by(&mut self, amount: Balance) {
         self.supply = self.supply.saturating_add(amount);
+    }
+
+    // increase total issuance
+    pub(crate) fn decrease_issuance_by(&mut self, amount: Balance) {
+        self.supply = self.supply.saturating_sub(amount);
     }
 
     pub fn set_unclaimed_tally_patronage_at_block(&mut self, amount: Balance, block: BlockNumber) {

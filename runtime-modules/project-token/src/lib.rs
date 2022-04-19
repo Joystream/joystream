@@ -183,12 +183,21 @@ decl_module! {
                 &account_to_remove_info,
             )?;
 
-            // TODO: ensure can transfer check
 
             // == MUTATION SAFE ==
 
+            let now = Self::current_block();
+            let unclaimed_patronage = token_info.unclaimed_patronage::<T::BlockNumberToBalance>(now);
+
             AccountInfoByTokenAndAccount::<T>::remove(token_id, &account_id);
-            TokenInfoById::<T>::mutate(token_id, |token_info| token_info.decrement_accounts_number());
+            TokenInfoById::<T>::mutate(token_id, |token_info| {
+                token_info.decrement_accounts_number();
+                token_info.decrease_issuance_by(account_to_remove_info.total_balance());
+
+                if !unclaimed_patronage.is_zero() {
+                    token_info.set_unclaimed_tally_patronage_at_block(unclaimed_patronage, now);
+                }
+            });
 
             let bloat_bond = account_to_remove_info.bloat_bond;
             let treasury = Self::bloat_bond_treasury_account_id();
