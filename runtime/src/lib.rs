@@ -1054,9 +1054,9 @@ impl pallet_constitution::Trait for Runtime {
 parameter_types! {
     pub const BountyModuleId: ModuleId = ModuleId(*b"m:bounty"); // module : bounty
     pub const ClosedContractSizeLimit: u32 = 50;
-    pub const MinCherryLimit: Balance = 10;
-    pub const MinFundingLimit: Balance = 10;
     pub const MinWorkEntrantStake: Balance = 100;
+    pub const FunderStateBloatBondAmount: Balance = 10;
+    pub const CreatorStateBloatBondAmount: Balance = 10;
 }
 
 impl bounty::Trait for Runtime {
@@ -1069,9 +1069,9 @@ impl bounty::Trait for Runtime {
     type StakingHandler = staking_handler::StakingManager<Self, BountyLockId>;
     type EntryId = u64;
     type ClosedContractSizeLimit = ClosedContractSizeLimit;
-    type MinCherryLimit = MinCherryLimit;
-    type MinFundingLimit = MinFundingLimit;
     type MinWorkEntrantStake = MinWorkEntrantStake;
+    type FunderStateBloatBondAmount = FunderStateBloatBondAmount;
+    type CreatorStateBloatBondAmount = CreatorStateBloatBondAmount;
 }
 
 parameter_types! {

@@ -46,7 +46,6 @@ impl_outer_event! {
         referendum_mod Instance1 <T>,
     }
 }
-
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
@@ -58,9 +57,9 @@ parameter_types! {
     pub const BountyModuleId: ModuleId = ModuleId(*b"m:bounty"); // module : bounty
     pub const BountyLockId: [u8; 8] = [12; 8];
     pub const ClosedContractSizeLimit: u32 = 3;
-    pub const MinCherryLimit: u64 = 10;
-    pub const MinFundingLimit: u64 = 50;
     pub const MinWorkEntrantStake: u64 = 10;
+    pub const CreatorStateBloatBondAmount: u64 = 10;
+    pub const FunderStateBloatBondAmount: u64 = 10;
 }
 
 impl frame_system::Trait for Test {
@@ -101,9 +100,9 @@ impl Trait for Test {
     type StakingHandler = StakingManager<Test, BountyLockId>;
     type EntryId = u64;
     type ClosedContractSizeLimit = ClosedContractSizeLimit;
-    type MinCherryLimit = MinCherryLimit;
-    type MinFundingLimit = MinFundingLimit;
     type MinWorkEntrantStake = MinWorkEntrantStake;
+    type CreatorStateBloatBondAmount = CreatorStateBloatBondAmount;
+    type FunderStateBloatBondAmount = FunderStateBloatBondAmount;
 }
 
 pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u128 = 10000;
@@ -112,10 +111,10 @@ impl common::StakingAccountValidator<Test> for () {
         *account_id != STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER
     }
 }
-
+pub const MAX_MEMBERS: u32 = 150;
 impl common::membership::MembershipInfoProvider<Test> for () {
     fn controller_account_id(member_id: u64) -> Result<u128, DispatchError> {
-        if member_id < 10 {
+        if member_id < MAX_MEMBERS.into() {
             return Ok(member_id as u128); // similar account_id
         }
 
@@ -154,13 +153,43 @@ impl crate::WeightInfo for () {
     fn create_bounty_by_member(_i: u32, _j: u32) -> u64 {
         0
     }
-    fn cancel_bounty_by_member() -> u64 {
+    fn terminate_bounty_w_oracle_reward_funding_expired() -> u64 {
         0
     }
-    fn cancel_bounty_by_council() -> u64 {
+    fn terminate_bounty_wo_oracle_reward_funding_expired() -> u64 {
         0
     }
-    fn veto_bounty() -> u64 {
+    fn terminate_bounty_w_oracle_reward_wo_funds_funding() -> u64 {
+        0
+    }
+    fn terminate_bounty_wo_oracle_reward_wo_funds_funding() -> u64 {
+        0
+    }
+    fn terminate_bounty_w_oracle_reward_w_funds_funding() -> u64 {
+        0
+    }
+    fn terminate_bounty_wo_oracle_reward_w_funds_funding() -> u64 {
+        0
+    }
+    fn terminate_bounty_work_or_judging_period() -> u64 {
+        0
+    }
+    fn end_working_period() -> u64 {
+        0
+    }
+    fn switch_oracle_to_council_by_council_successful() -> u64 {
+        0
+    }
+    fn switch_oracle_to_council_by_oracle_member() -> u64 {
+        0
+    }
+    fn switch_oracle_to_member_by_oracle_member() -> u64 {
+        0
+    }
+    fn switch_oracle_to_member_by_oracle_council() -> u64 {
+        0
+    }
+    fn switch_oracle_to_member_by_council() -> u64 {
         0
     }
     fn fund_bounty_by_member() -> u64 {
@@ -175,40 +204,49 @@ impl crate::WeightInfo for () {
     fn withdraw_funding_by_council() -> u64 {
         0
     }
-    fn announce_work_entry(_i: u32) -> u64 {
-        0
-    }
-    fn withdraw_work_entry() -> u64 {
+    fn announce_work_entry(_i: u32, _j: u32) -> u64 {
         0
     }
     fn submit_work(_i: u32) -> u64 {
         0
     }
-    fn submit_oracle_judgment_by_council_all_winners(_i: u32) -> u64 {
+    fn submit_oracle_judgment_by_council_all_winners(_i: u32, _j: u32) -> u64 {
         0
     }
-    fn submit_oracle_judgment_by_council_all_rejected(_i: u32) -> u64 {
+    fn submit_oracle_judgment_by_council_all_rejected(_i: u32, _j: u32, _k: u32) -> u64 {
         0
     }
-    fn submit_oracle_judgment_by_member_all_winners(_i: u32) -> u64 {
+    fn submit_oracle_judgment_by_member_all_winners(_i: u32, _j: u32) -> u64 {
         0
     }
-    fn submit_oracle_judgment_by_member_all_rejected(_i: u32) -> u64 {
+    fn submit_oracle_judgment_by_member_all_rejected(_i: u32, _j: u32, _k: u32) -> u64 {
         0
     }
-    fn withdraw_work_entrant_funds() -> u64 {
+    fn withdraw_entrant_stake() -> u64 {
         0
     }
-    fn contributor_remark() -> u64 {
+    fn withdraw_funding_state_bloat_bond_by_council() -> u64 {
         0
     }
-    fn oracle_remark() -> u64 {
+    fn withdraw_funding_state_bloat_bond_by_member() -> u64 {
         0
     }
-    fn entrant_remark() -> u64 {
+    fn withdraw_oracle_reward_by_oracle_council() -> u64 {
         0
     }
-    fn creator_remark() -> u64 {
+    fn withdraw_oracle_reward_by_oracle_member() -> u64 {
+        0
+    }
+    fn contributor_remark(_i: u32) -> u64 {
+        0
+    }
+    fn oracle_remark(_i: u32) -> u64 {
+        0
+    }
+    fn entrant_remark(_i: u32) -> u64 {
+        0
+    }
+    fn creator_remark(_i: u32) -> u64 {
         0
     }
 }
