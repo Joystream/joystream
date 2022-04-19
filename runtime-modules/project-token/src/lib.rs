@@ -4,7 +4,7 @@ use frame_support::{
     decl_module, decl_storage,
     dispatch::{fmt::Debug, marker::Copy, DispatchError, DispatchResult},
     ensure,
-    traits::{Currency, ExistenceRequirement, Get},
+    traits::{Currency, ExistenceRequirement, Get, WithdrawReason},
 };
 use frame_system::ensure_signed;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
@@ -211,13 +211,7 @@ decl_module! {
             let bloat_bond = Self::bloat_bond();
 
             // No project_token or balances state corrupted in case of failure
-            ensure!(
-                T::ReserveCurrency::can_slash(
-                    &account_id,
-                    bloat_bond.saturating_add(T::ReserveExistentialDeposit::get())
-                ),
-                Error::<T>::InsufficientBalanceForBloatBond,
-            );
+            Self::ensure_can_transfer_reserve(&account_id, bloat_bond)?;
 
             // == MUTATION SAFE ==
 
@@ -446,15 +440,7 @@ impl<T: Trait> Module<T> {
 
         // compute bloat bond
         let cumulative_bloat_bond = Self::compute_bloat_bond(&validated_transfers);
-        if !cumulative_bloat_bond.is_zero() {
-            ensure!(
-                T::ReserveCurrency::can_slash(
-                    &src,
-                    cumulative_bloat_bond.saturating_add(T::ReserveExistentialDeposit::get())
-                ),
-                Error::<T>::InsufficientBalanceForBloatBond,
-            );
-        }
+        Self::ensure_can_transfer_reserve(src, cumulative_bloat_bond)?;
 
         src_account_info
             .ensure_can_decrease_liquidity_by::<T>(validated_transfers.total_amount())?;
@@ -611,5 +597,28 @@ impl<T: Trait> Module<T> {
             .collect::<Result<BTreeMap<_, _>, _>>()?;
 
         Ok(Transfers::<_, _>(result))
+    }
+
+    pub(crate) fn ensure_can_transfer_reserve(
+        from: &T::AccountId,
+        amount: ReserveBalanceOf<T>,
+    ) -> DispatchResult {
+        if !amount.is_zero() {
+            ensure!(
+                T::ReserveCurrency::can_slash(
+                    from,
+                    amount.saturating_add(T::ReserveExistentialDeposit::get())
+                ),
+                Error::<T>::InsufficientBalanceForBloatBond,
+            );
+
+            T::ReserveCurrency::ensure_can_withdraw(
+                from,
+                amount,
+                WithdrawReason::Transfer.into(),
+                T::ReserveCurrency::free_balance(from),
+            )?;
+        }
+        Ok(())
     }
 }
