@@ -78,7 +78,7 @@ parameter_types! {
     pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token"); // module storage
     pub const BloatBond: u64 = DEFAULT_BLOAT_BOND;
     // constants for balances::Trait
-    pub const ExistentialDeposit: u64 = 0;
+    pub const ExistentialDeposit: u64 = 10;
 }
 
 impl frame_system::Trait for Test {
