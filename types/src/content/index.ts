@@ -3,6 +3,8 @@ import { bool, u8, u32, u64, Null, Bytes } from '@polkadot/types/primitive'
 import { JoyStructDecorated, JoyEnum, ChannelId, MemberId, Balance, Hash, BlockNumber } from '../common'
 import { DataObjectId, DataObjectCreationParameters } from '../storage'
 
+export class DistributionBucketId extends u64 {}
+export class StorageBucketId extends u64 {}
 export class OpenAuctionId extends u64 {}
 export class CuratorId extends u64 {}
 export class CuratorGroupId extends u64 {}
@@ -11,8 +13,6 @@ export class VideoId extends u64 {}
 export class VideoCategoryId extends u64 {}
 export class MaxNumber extends u32 {}
 export class IsCensored extends bool {}
-export class VideoPostId extends u64 {}
-export class ReactionId extends u64 {}
 export class ChannelPrivilegeLevel extends u8 {}
 
 // NFT types
@@ -33,12 +33,12 @@ export class EnglishAuctionBid extends JoyStructDecorated({
 export class EnglishAuction extends JoyStructDecorated({
   starting_price: Balance,
   buy_now_price: Option.with(Balance),
-  top_bid: Option.with(EnglishAuctionBid),
   whitelist: BTreeSet.with(MemberId),
-  extension_period: BlockNumber,
-  auction_duration: BlockNumber,
-  min_bid_step: Balance,
   end: BlockNumber,
+  auction_duration: BlockNumber,
+  extension_period: BlockNumber,
+  min_bid_step: Balance,
+  top_bid: Option.with(EnglishAuctionBid),
 }) {}
 
 export class OpenAuction extends JoyStructDecorated({
@@ -46,6 +46,7 @@ export class OpenAuction extends JoyStructDecorated({
   buy_now_price: Option.with(Balance),
   whitelist: BTreeSet.with(MemberId),
   bid_lock_duration: BlockNumber,
+  auction_id: OpenAuctionId,
 }) {}
 
 export class TransactionalStatus extends JoyEnum({
@@ -128,14 +129,11 @@ export class ChannelActionPermission extends JoyEnum({
   UpdateChannelMetadata: Null,
   ManageNonVideoChannelAssets: Null,
   ManageChannelCollaborators: Null,
-  ManageChannelModerators: Null,
   UpdateVideoMetadata: Null,
-  UpdateVideoCommentsStatus: Null,
   AddVideo: Null,
   ManageVideoAssets: Null,
   DeleteChannel: Null,
   DeleteVideo: Null,
-  ManageVideoDescriptionPost: Null,
   ManageVideoNfts: Null,
   AgentRemark: Null,
   TransferChannel: Null,
@@ -206,7 +204,6 @@ export class Channel extends JoyStructDecorated({
   owner: ChannelOwner,
   num_videos: u64,
   collaborators: BTreeMap.with(MemberId, ChannelAgentPermissions),
-  moderators: BTreeSet.with(MemberId),
   cumulative_payout_earned: Balance,
   privilege_level: ChannelPrivilegeLevel,
   paused_features: BTreeSet.with(PausableChannelFeature),
@@ -218,7 +215,8 @@ export class ChannelCreationParameters extends JoyStructDecorated({
   assets: Option.with(StorageAssets),
   meta: Option.with(Bytes),
   collaborators: BTreeMap.with(MemberId, ChannelAgentPermissions),
-  moderators: BTreeSet.with(MemberId),
+  storage_buckets: BTreeSet.with(StorageBucketId),
+  distribution_Bucket: BTreeSet.with(DistributionBucketId),
   expected_dynamic_bag_deletion_prize: Balance,
   expected_data_object_deletion_prize: Balance,
 }) {}
@@ -263,8 +261,6 @@ export class VideoCategoryUpdateParameters extends JoyStructDecorated({
 
 export class Video extends JoyStructDecorated({
   in_channel: ChannelId,
-  enable_comments: bool,
-  video_post_id: Option.with(VideoPostId),
   nft_status: Option.with(OwnedNft),
   data_objects: BTreeSet.with(DataObjectId),
 }) {}
@@ -272,7 +268,6 @@ export class Video extends JoyStructDecorated({
 export class VideoCreationParameters extends JoyStructDecorated({
   assets: Option.with(StorageAssets),
   meta: Option.with(Bytes),
-  enable_comments: bool,
   auto_issue_nft: Option.with(NftIssuanceParameters),
   expected_data_object_deletion_prize: Balance,
 }) {}
@@ -281,37 +276,9 @@ export class VideoUpdateParameters extends JoyStructDecorated({
   assets_to_upload: Option.with(StorageAssets),
   new_meta: Option.with(Bytes),
   assets_to_remove: BTreeSet.with(DataObjectId),
-  enable_comments: Option.with(bool),
   auto_issue_nft: Option.with(NftIssuanceParameters),
   expected_data_object_deletion_prize: Balance,
 }) {}
-
-// Video posts
-
-export class VideoPostType extends JoyEnum({
-  Description: Null,
-  Comment: VideoPostId,
-}) {}
-
-export class VideoPost extends JoyStructDecorated({
-  author: ContentActor,
-  bloat_bond: Balance,
-  replies_count: VideoPostId,
-  post_type: VideoPostType,
-  video_reference: VideoId,
-}) {}
-
-export class VideoPostCreationParameters extends JoyStructDecorated({
-  post_type: VideoPostType,
-  video_reference: VideoId,
-}) {}
-
-export class VideoPostDeletionParameters extends JoyStructDecorated({
-  witness: Option.with(Hash),
-  rationale: Option.with(Bytes),
-}) {}
-
-export class ModeratorSet extends BTreeSet.with(MemberId) {}
 
 // Channel payouts
 
@@ -356,16 +323,9 @@ export const contentTypes = {
   MaxNumber,
   IsCensored,
   // Added in Olympia:
-  VideoPostId,
-  ReactionId,
-  VideoPostType,
-  VideoPost,
   Side,
   ProofElement,
-  VideoPostCreationParameters,
-  VideoPostDeletionParameters,
   PullPayment,
-  ModeratorSet,
   // Nft
   Royalty,
   EnglishAuctionParams,

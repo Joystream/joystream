@@ -1,7 +1,7 @@
 // Auto-generated via `yarn polkadot-types-from-defs`, do not edit
 /* eslint-disable */
 
-import type { BTreeMap, BTreeSet, Bytes, Enum, GenericAccountId, Option, Struct, Text, Vec, bool, u128, u16, u32, u64, u8 } from '@polkadot/types';
+import type { BTreeMap, BTreeSet, Bytes, Enum, GenericAccountId, Option, Struct, Text, Vec, bool, u128, u32, u64, u8 } from '@polkadot/types';
 import type { ITuple } from '@polkadot/types/types';
 import type { AccountId, Balance, Hash, Perbill } from '@polkadot/types/interfaces/runtime';
 import type { AccountInfoWithRefCount } from '@polkadot/types/interfaces/system';
@@ -213,7 +213,6 @@ export interface Channel extends Struct {
   readonly owner: ChannelOwner;
   readonly num_videos: u64;
   readonly collaborators: BTreeMap<MemberId, ChannelAgentPermissions>;
-  readonly moderators: BTreeSet<MemberId>;
   readonly cumulative_payout_earned: u128;
   readonly privilege_level: ChannelPrivilegeLevel;
   readonly paused_features: BTreeSet<PausableChannelFeature>;
@@ -226,14 +225,11 @@ export interface ChannelActionPermission extends Enum {
   readonly isUpdateChannelMetadata: boolean;
   readonly isManageNonVideoChannelAssets: boolean;
   readonly isManageChannelCollaborators: boolean;
-  readonly isManageChannelModerators: boolean;
   readonly isUpdateVideoMetadata: boolean;
-  readonly isUpdateVideoCommentsStatus: boolean;
   readonly isAddVideo: boolean;
   readonly isManageVideoAssets: boolean;
   readonly isDeleteChannel: boolean;
   readonly isDeleteVideo: boolean;
-  readonly isManageVideoDescriptionPost: boolean;
   readonly isManageVideoNfts: boolean;
   readonly isAgentRemark: boolean;
   readonly isTransferChannel: boolean;
@@ -265,7 +261,8 @@ export interface ChannelCreationParameters extends Struct {
   readonly assets: Option<StorageAssets>;
   readonly meta: Option<Bytes>;
   readonly collaborators: BTreeMap<MemberId, ChannelAgentPermissions>;
-  readonly moderators: BTreeSet<MemberId>;
+  readonly storage_buckets: BTreeSet<u64>;
+  readonly distribution_Bucket: BTreeSet<u64>;
   readonly expected_dynamic_bag_deletion_prize: u128;
   readonly expected_data_object_deletion_prize: u128;
 }
@@ -462,8 +459,8 @@ export interface DistributionBucketIndexSet extends BTreeSet<DistributionBucketI
 
 /** @name DistributionBucketsPerBagValueConstraint */
 export interface DistributionBucketsPerBagValueConstraint extends Struct {
-  readonly min: u16;
-  readonly max_min_diff: u16;
+  readonly min: u64;
+  readonly max_min_diff: u64;
 }
 
 /** @name Dynamic */
@@ -521,12 +518,12 @@ export interface DynBagCreationParameters extends Struct {
 export interface EnglishAuction extends Struct {
   readonly starting_price: u128;
   readonly buy_now_price: Option<u128>;
-  readonly top_bid: Option<EnglishAuctionBid>;
   readonly whitelist: BTreeSet<MemberId>;
-  readonly extension_period: u32;
-  readonly auction_duration: u32;
-  readonly min_bid_step: u128;
   readonly end: u32;
+  readonly auction_duration: u32;
+  readonly extension_period: u32;
+  readonly min_bid_step: u128;
+  readonly top_bid: Option<EnglishAuctionBid>;
 }
 
 /** @name EnglishAuctionBid */
@@ -635,10 +632,10 @@ export interface InitTransactionalStatus extends Enum {
   readonly asOpenAuction: OpenAuctionParams;
 }
 
-/** @name InputValidationLengthConstraint */
-export interface InputValidationLengthConstraint extends Struct {
-  readonly min: u16;
-  readonly max_min_diff: u16;
+/** @name InputValidationLengthConstraintU64 */
+export interface InputValidationLengthConstraintU64 extends Struct {
+  readonly min: u64;
+  readonly max_min_diff: u64;
 }
 
 /** @name InviteMembershipParameters */
@@ -677,9 +674,6 @@ export interface ModerationPermissionsByLevel extends BTreeMap<ChannelPrivilegeL
 /** @name ModeratorId */
 export interface ModeratorId extends u64 {}
 
-/** @name ModeratorSet */
-export interface ModeratorSet extends BTreeSet<MemberId> {}
-
 /** @name NftIssuanceParameters */
 export interface NftIssuanceParameters extends Struct {
   readonly royalty: Option<Royalty>;
@@ -704,6 +698,7 @@ export interface OpenAuction extends Struct {
   readonly buy_now_price: Option<u128>;
   readonly whitelist: BTreeSet<MemberId>;
   readonly bid_lock_duration: u32;
+  readonly auction_id: OpenAuctionId;
 }
 
 /** @name OpenAuctionBid */
@@ -1001,9 +996,6 @@ export interface PullPayment extends Struct {
   readonly reason: Hash;
 }
 
-/** @name ReactionId */
-export interface ReactionId extends u64 {}
-
 /** @name ReferendumStage */
 export interface ReferendumStage extends Enum {
   readonly isInactive: boolean;
@@ -1214,8 +1206,6 @@ export interface Url extends Text {}
 /** @name Video */
 export interface Video extends Struct {
   readonly in_channel: ChannelId;
-  readonly enable_comments: bool;
-  readonly video_post_id: Option<VideoPostId>;
   readonly nft_status: Option<OwnedNft>;
   readonly data_objects: BTreeSet<DataObjectId>;
 }
@@ -1240,7 +1230,6 @@ export interface VideoCategoryUpdateParameters extends Struct {
 export interface VideoCreationParameters extends Struct {
   readonly assets: Option<StorageAssets>;
   readonly meta: Option<Bytes>;
-  readonly enable_comments: bool;
   readonly auto_issue_nft: Option<NftIssuanceParameters>;
   readonly expected_data_object_deletion_prize: u128;
 }
@@ -1248,43 +1237,11 @@ export interface VideoCreationParameters extends Struct {
 /** @name VideoId */
 export interface VideoId extends u64 {}
 
-/** @name VideoPost */
-export interface VideoPost extends Struct {
-  readonly author: ContentActor;
-  readonly bloat_bond: u128;
-  readonly replies_count: VideoPostId;
-  readonly post_type: VideoPostType;
-  readonly video_reference: VideoId;
-}
-
-/** @name VideoPostCreationParameters */
-export interface VideoPostCreationParameters extends Struct {
-  readonly post_type: VideoPostType;
-  readonly video_reference: VideoId;
-}
-
-/** @name VideoPostDeletionParameters */
-export interface VideoPostDeletionParameters extends Struct {
-  readonly witness: Option<Hash>;
-  readonly rationale: Option<Bytes>;
-}
-
-/** @name VideoPostId */
-export interface VideoPostId extends u64 {}
-
-/** @name VideoPostType */
-export interface VideoPostType extends Enum {
-  readonly isDescription: boolean;
-  readonly isComment: boolean;
-  readonly asComment: VideoPostId;
-}
-
 /** @name VideoUpdateParameters */
 export interface VideoUpdateParameters extends Struct {
   readonly assets_to_upload: Option<StorageAssets>;
   readonly new_meta: Option<Bytes>;
   readonly assets_to_remove: BTreeSet<DataObjectId>;
-  readonly enable_comments: Option<bool>;
   readonly auto_issue_nft: Option<NftIssuanceParameters>;
   readonly expected_data_object_deletion_prize: u128;
 }

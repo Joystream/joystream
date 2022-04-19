@@ -26,6 +26,7 @@ pub use storage::{
 };
 
 pub use common::{
+    council::CouncilBudgetManager,
     currency::GovernanceCurrency,
     membership::MembershipInfoProvider,
     working_group::{WorkingGroup, WorkingGroupBudgetHandler},
@@ -108,6 +109,9 @@ pub trait Trait:
 
     /// Content working group pallet integration.
     type ContentWorkingGroup: common::working_group::WorkingGroupBudgetHandler<Self>;
+
+    /// Provides an access for the council budget.
+    type CouncilBudgetManager: CouncilBudgetManager<BalanceOf<Self>>;
 }
 
 decl_storage! {
@@ -2060,6 +2064,37 @@ decl_module! {
                 RawEvent::ChannelTransferAccepted(channel_id, commitment_params)
             );
         }
+
+        /// Claims an accumulated channel reward for a council.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn claim_council_reward(
+            origin,
+            channel_id: T::ChannelId,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            ensure_actor_authorized_to_claim_council_reward::<T>(origin, &channel.owner)?;
+
+            ensure_no_channel_transfers::<T>(&channel)?;
+
+            let channel_account_id = ContentTreasury::<T>::account_for_channel(channel_id);
+            let reward: BalanceOf<T> = Balances::<T>::usable_balance(&channel_account_id);
+
+            ensure!(!reward.is_zero(), Error::<T>::ZeroReward);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let _ = Balances::<T>::slash(&channel_account_id, reward);
+
+            let budget = T::CouncilBudgetManager::get_budget();
+            let new_budget = budget.saturating_add(reward);
+
+            T::CouncilBudgetManager::set_budget(new_budget);
+
+            Self::deposit_event(RawEvent::CouncilRewardClaimed(channel_id, reward));
+        }
     }
 }
 
@@ -2557,7 +2592,7 @@ decl_event!(
         ChannelRewardUpdated(Balance, ChannelId),
         MaxRewardUpdated(Balance),
         MinCashoutUpdated(Balance),
-
+        CouncilRewardClaimed(ChannelId, Balance),
         // Nft auction
         EnglishAuctionStarted(ContentActor, VideoId, EnglishAuctionParams),
         OpenAuctionStarted(ContentActor, VideoId, OpenAuctionParams, OpenAuctionId),

@@ -2028,6 +2028,54 @@ impl AcceptChannelTransferFixture {
     }
 }
 
+pub struct ClaimCouncilRewardFixture {
+    origin: RawOrigin<u64>,
+    channel_id: u64,
+    expected_reward: BalanceOf<Test>,
+}
+
+impl ClaimCouncilRewardFixture {
+    pub fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            channel_id: ChannelId::one(),
+            expected_reward: Default::default(),
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_expected_reward(self, expected_reward: BalanceOf<Test>) -> Self {
+        Self {
+            expected_reward,
+            ..self
+        }
+    }
+
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result =
+            Content::claim_council_reward(self.origin.clone().into(), self.channel_id);
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::CouncilRewardClaimed(
+                    self.channel_id,
+                    self.expected_reward
+                ))
+            );
+        }
+    }
+}
+
 pub struct IssueNftFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,

@@ -20,7 +20,7 @@ type ReferendumInstance = referendum::Instance1;
 const SEED: u32 = 0;
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
-    ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
+    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
 // Method to generate a distintic valid handle
@@ -122,11 +122,17 @@ fn member_account<T: common::membership::MembershipTypes + balances::Trait + mem
     (account_id, member_id)
 }
 
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+struct CouncilCandidate<T: Trait> {
+    pub account_id: T::AccountId,
+    pub member_id: T::MemberId,
+}
+
 fn elect_council<
     T: Trait + membership::Trait + council::Trait + referendum::Trait<ReferendumInstance>,
 >(
     start_id: u32,
-) -> (Vec<(T::AccountId, T::MemberId)>, u32) {
+) -> (Vec<CouncilCandidate<T>>, u32) {
     let council_size = <T as council::Trait>::CouncilSize::get();
     let number_of_extra_candidates = <T as council::Trait>::MinNumberOfExtraCandidates::get();
 
@@ -147,7 +153,10 @@ fn elect_council<
         )
         .unwrap();
 
-        candidates.push((account_id, member_id));
+        candidates.push(CouncilCandidate {
+            account_id,
+            member_id,
+        });
     }
 
     for i in last_id..last_id + council_size as usize {
@@ -165,7 +174,7 @@ fn elect_council<
             &voters[i].0,
             &[0u8],
             &0,
-            &candidates[i].1,
+            &candidates[i].member_id,
         );
         Referendum::<T, ReferendumInstance>::vote(
             RawOrigin::Signed(voters[i].0.clone()).into(),
@@ -184,7 +193,7 @@ fn elect_council<
         Referendum::<T, ReferendumInstance>::reveal_vote(
             RawOrigin::Signed(voters[i].0.clone()).into(),
             vec![0u8],
-            candidates[i].1.clone(),
+            candidates[i].member_id,
         )
         .unwrap();
     }
@@ -200,7 +209,7 @@ fn elect_council<
             .iter()
             .map(|m| *m.member_id())
             .collect::<Vec<_>>(),
-        council.iter().map(|c| c.1).collect::<Vec<_>>()
+        council.iter().map(|c| c.member_id).collect::<Vec<_>>()
     );
 
     (
@@ -369,7 +378,7 @@ benchmarks! {
     verify {
         assert_eq!(
             ProposalsDiscussion::<T>::thread_by_id(thread_id).mode,
-            mode.clone(),
+            mode,
             "Thread not correctly updated"
         );
 

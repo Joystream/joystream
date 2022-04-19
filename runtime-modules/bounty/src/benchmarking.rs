@@ -53,7 +53,7 @@ fn assert_was_fired<T: Trait>(generic_event: <T as Trait>::Event) {
 }
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
-    ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
+    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
 // Method to generate a distintic valid handle
@@ -133,7 +133,7 @@ fn announce_entry_and_submit_work<T: Trait + membership::Trait>(
     let work_data = b"work_data".to_vec();
 
     Bounty::<T>::submit_work(
-        RawOrigin::Signed(account_id.clone()).into(),
+        RawOrigin::Signed(account_id).into(),
         member_id,
         *bounty_id,
         entry_id,
@@ -152,7 +152,7 @@ fn create_max_funded_bounty<T: Trait>(params: BountyCreationParameters<T>) -> T:
         } => max_funding_amount,
     };
 
-    create_funded_bounty::<T>(params.clone(), funding_amount)
+    create_funded_bounty::<T>(params, funding_amount)
 }
 
 fn create_min_funded_bounty<T: Trait>(params: BountyCreationParameters<T>) -> T::BountyId {
@@ -163,7 +163,7 @@ fn create_min_funded_bounty<T: Trait>(params: BountyCreationParameters<T>) -> T:
         } => min_funding_amount,
     };
 
-    create_funded_bounty::<T>(params.clone(), funding_amount)
+    create_funded_bounty::<T>(params, funding_amount)
 }
 
 fn create_funded_bounty<T: Trait>(
@@ -639,7 +639,7 @@ benchmarks! {
 
         let bounty_id = create_min_funded_bounty::<T>(params);
 
-        run_to_block::<T>((funding_period + One::one()).into());
+        run_to_block::<T>(funding_period + One::one());
 
         let bounty = Bounty::<T>::bounties(bounty_id);
         assert!(matches!(bounty.milestone, BountyMilestone::Created { has_contributions: true, ..}));
@@ -693,7 +693,7 @@ benchmarks! {
             .map(|i| { announce_entry_and_submit_work::<T>(&bounty_id, i)})
             .collect::<Vec<_>>();
 
-        let winner_reward: BalanceOf<T> = (funding_amount / i.into()).into();
+        let winner_reward: BalanceOf<T> = funding_amount / i.into();
         let correction = funding_amount - winner_reward * i.into(); // for total sum = 100%
         let judgment = entry_ids
             .iter()
@@ -708,7 +708,7 @@ benchmarks! {
             })
             .collect::<BTreeMap<_, _>>();
 
-        run_to_block::<T>((work_period + One::one()).into());
+        run_to_block::<T>(work_period + One::one());
 
     }: submit_oracle_judgment(
         RawOrigin::Root,
@@ -766,7 +766,7 @@ benchmarks! {
             .map(|entry_id| (*entry_id, OracleWorkEntryJudgment::Rejected))
             .collect::<BTreeMap<_, _>>();
 
-        run_to_block::<T>((work_period + One::one()).into());
+        run_to_block::<T>(work_period + One::one());
 
     }: submit_oracle_judgment(
         RawOrigin::Root,
@@ -813,7 +813,7 @@ benchmarks! {
             .map(|i| { announce_entry_and_submit_work::<T>(&bounty_id, i)})
             .collect::<Vec<_>>();
 
-        let winner_reward: BalanceOf<T> = (funding_amount / i.into()).into();
+        let winner_reward: BalanceOf<T> = funding_amount / i.into();
         let correction = funding_amount - winner_reward * i.into(); // for total sum = 100%
         let judgment = entry_ids
             .iter()
@@ -828,7 +828,7 @@ benchmarks! {
             })
             .collect::<BTreeMap<_, _>>();
 
-        run_to_block::<T>((work_period + One::one()).into());
+        run_to_block::<T>(work_period + One::one());
 
     }: submit_oracle_judgment(
         RawOrigin::Signed(oracle_account_id),
@@ -888,7 +888,7 @@ benchmarks! {
             .map(|entry_id| (*entry_id, OracleWorkEntryJudgment::Rejected))
             .collect::<BTreeMap<_, _>>();
 
-        run_to_block::<T>((work_period + One::one()).into());
+        run_to_block::<T>(work_period + One::one());
 
     }: submit_oracle_judgment(
         RawOrigin::Signed(oracle_account_id),
@@ -918,7 +918,7 @@ benchmarks! {
         let params = BountyCreationParameters::<T> {
             work_period,
             judging_period: One::one(),
-            creator: creator.clone(),
+            creator,
             cherry,
             funding_type: FundingType::Perpetual{ target: funding_amount },
             oracle: oracle.clone(),
@@ -955,13 +955,13 @@ benchmarks! {
             .map(|entry_id| (*entry_id, OracleWorkEntryJudgment::Winner {reward : winner_reward}))
             .collect::<BTreeMap<_, _>>();
 
-        run_to_block::<T>((work_period + One::one()).into());
+        run_to_block::<T>(work_period + One::one());
 
         Bounty::<T>::submit_oracle_judgment(
             RawOrigin::Signed(oracle_account_id).into(),
-            oracle.clone(),
+            oracle,
             bounty_id,
-            judgment.clone(),
+            judgment,
             Vec::new(),
         ).unwrap();
 
@@ -1104,7 +1104,7 @@ benchmarks! {
             cherry,
             entrant_stake,
             funding_type: FundingType::Perpetual{ target: funding_amount },
-            oracle: oracle.clone(),
+            oracle,
             ..Default::default()
         };
 

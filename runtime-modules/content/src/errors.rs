@@ -217,7 +217,6 @@ decl_error! {
         /// Partecipant is not a member
         ReplyDoesNotExist,
 
-
         /// Insufficient balance
         UnsufficientBalance,
 
@@ -272,6 +271,12 @@ decl_error! {
 
         // Insufficient permissions to perform given action as a channel agent
         ChannelAgentInsufficientPermissions,
+
+        /// Incorrect channel owner for an operation.
+        InvalidChannelOwner,
+
+        /// Cannot claim zero reward.
+        ZeroReward,
 
         /// Cannot transfer the channel: channel owner has insufficient balance (budget for WGs)
         InsufficientBalanceForTransfer,
