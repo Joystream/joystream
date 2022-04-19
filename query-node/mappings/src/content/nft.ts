@@ -17,11 +17,6 @@ import {
   TransactionalStatusIdle,
   TransactionalStatusBuyNow,
   TransactionalStatusUpdate,
-  ContentActor,
-  ContentActorMember,
-  ContentActorCurator,
-  ContentActorLead,
-  Curator,
 
   // events
   OpenAuctionStartedEvent,
@@ -48,7 +43,7 @@ import { FindConditions, In } from 'typeorm'
 import BN from 'bn.js'
 import { PERBILL_ONE_PERCENT } from '../temporaryConstants'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
-import { convertContentActorToChannelOrNftOwner } from './utils'
+import { convertContentActorToChannelOrNftOwner, convertContentActor } from './utils'
 
 async function getExistingEntity<Type extends Video | Membership>(
   store: DatabaseManager,
@@ -205,50 +200,6 @@ async function getRequiredExistingEntites<Type extends Video | Membership>(
   entities.sort((a, b) => ids.indexOf(a.id.toString()) - ids.indexOf(b.id.toString()))
 
   return entities
-}
-
-async function convertContentActor(
-  store: DatabaseManager,
-  contentActor: joystreamTypes.ContentActor
-): Promise<typeof ContentActor> {
-  if (contentActor.isMember) {
-    const memberId = contentActor.asMember.toNumber()
-    const member = await store.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
-
-    // ensure member exists
-    if (!member) {
-      return inconsistentState(`Actor is non-existing member`, memberId)
-    }
-
-    const result = new ContentActorMember()
-    result.member = member
-
-    return result
-  }
-
-  if (contentActor.isCurator) {
-    const curatorId = contentActor.asCurator[1].toNumber()
-    const curator = await store.get(Curator, {
-      where: { id: curatorId.toString() } as FindConditions<Curator>,
-    })
-
-    // ensure curator group exists
-    if (!curator) {
-      return inconsistentState('Actor is non-existing curator group', curatorId)
-    }
-
-    const result = new ContentActorCurator()
-    result.curator = curator
-
-    return result
-  }
-
-  if (contentActor.isLead) {
-    return new ContentActorLead()
-  }
-
-  logger.error('Not implemented ContentActor type', { contentActor: contentActor.toString() })
-  throw new Error('Not-implemented ContentActor type used')
 }
 
 async function setNewNftTransactionalStatus(
@@ -625,7 +576,7 @@ export async function contentNft_OpenAuctionStarted({ event, store }: EventConte
 
   // common event processing - second
 
-  const announcingPeriodStartedEvent = new OpenAuctionStartedEvent({
+  const openAuctionStartedEvent = new OpenAuctionStartedEvent({
     ...genericEventFields(event),
 
     actor: await convertContentActor(store, contentActor),
@@ -635,7 +586,7 @@ export async function contentNft_OpenAuctionStarted({ event, store }: EventConte
     ...(await convertContentActorToChannelOrNftOwner(store, contentActor)),
   })
 
-  await store.save<OpenAuctionStartedEvent>(announcingPeriodStartedEvent)
+  await store.save<OpenAuctionStartedEvent>(openAuctionStartedEvent)
 }
 
 export async function contentNft_EnglishAuctionStarted({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -669,7 +620,7 @@ export async function contentNft_EnglishAuctionStarted({ event, store }: EventCo
 
   // common event processing - second
 
-  const announcingPeriodStartedEvent = new EnglishAuctionStartedEvent({
+  const englishAuctionStartedEvent = new EnglishAuctionStartedEvent({
     ...genericEventFields(event),
 
     actor: await convertContentActor(store, contentActor),
@@ -679,7 +630,7 @@ export async function contentNft_EnglishAuctionStarted({ event, store }: EventCo
     ...(await convertContentActorToChannelOrNftOwner(store, contentActor)),
   })
 
-  await store.save<EnglishAuctionStartedEvent>(announcingPeriodStartedEvent)
+  await store.save<EnglishAuctionStartedEvent>(englishAuctionStartedEvent)
 }
 
 // create auction type variant from raw runtime auction type
@@ -732,7 +683,7 @@ export async function contentNft_NftIssued({ event, store }: EventContext & Stor
 
   // common event processing - second
 
-  const announcingPeriodStartedEvent = new NftIssuedEvent({
+  const nftIssuedEvent = new NftIssuedEvent({
     ...genericEventFields(event),
 
     contentActor: await convertContentActor(store, actor),
@@ -743,7 +694,7 @@ export async function contentNft_NftIssued({ event, store }: EventContext & Stor
     ...(await convertContentActorToChannelOrNftOwner(store, actor)),
   })
 
-  await store.save<NftIssuedEvent>(announcingPeriodStartedEvent)
+  await store.save<NftIssuedEvent>(nftIssuedEvent)
 }
 
 export async function contentNft_AuctionBidMade({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -777,7 +728,7 @@ export async function contentNft_AuctionBidMade({ event, store }: EventContext &
 
   // common event processing - second
 
-  const announcingPeriodStartedEvent = new AuctionBidMadeEvent({
+  const auctionBidMadeEvent = new AuctionBidMadeEvent({
     ...genericEventFields(event),
 
     member,
@@ -789,7 +740,7 @@ export async function contentNft_AuctionBidMade({ event, store }: EventContext &
     previousTopBidder,
   })
 
-  await store.save<AuctionBidMadeEvent>(announcingPeriodStartedEvent)
+  await store.save<AuctionBidMadeEvent>(auctionBidMadeEvent)
 }
 
 export async function contentNft_AuctionBidCanceled({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -839,7 +790,7 @@ export async function contentNft_AuctionBidCanceled({ event, store }: EventConte
 
   // common event processing - second
 
-  const announcingPeriodStartedEvent = new AuctionBidCanceledEvent({
+  const auctionBidCanceledEvent = new AuctionBidCanceledEvent({
     ...genericEventFields(event),
 
     member: new Membership({ id: memberId.toString() }),
@@ -848,7 +799,7 @@ export async function contentNft_AuctionBidCanceled({ event, store }: EventConte
     ownerCuratorGroup,
   })
 
-  await store.save<AuctionBidCanceledEvent>(announcingPeriodStartedEvent)
+  await store.save<AuctionBidCanceledEvent>(auctionBidCanceledEvent)
 }
 
 export async function contentNft_AuctionCanceled({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -883,7 +834,7 @@ export async function contentNft_AuctionCanceled({ event, store }: EventContext 
 
   // common event processing - second
 
-  const announcingPeriodStartedEvent = new AuctionCanceledEvent({
+  const auctionCanceledEvent = new AuctionCanceledEvent({
     ...genericEventFields(event),
 
     contentActor: await convertContentActor(store, contentActor),
@@ -892,7 +843,7 @@ export async function contentNft_AuctionCanceled({ event, store }: EventContext 
     ...(await convertContentActorToChannelOrNftOwner(store, contentActor)),
   })
 
-  await store.save<AuctionCanceledEvent>(announcingPeriodStartedEvent)
+  await store.save<AuctionCanceledEvent>(auctionCanceledEvent)
 }
 
 export async function contentNft_EnglishAuctionSettled({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -921,7 +872,7 @@ export async function contentNft_EnglishAuctionSettled({ event, store }: EventCo
 
   // common event processing - second
 
-  const announcingPeriodStartedEvent = new EnglishAuctionSettledEvent({
+  const englishAuctionSettledEvent = new EnglishAuctionSettledEvent({
     ...genericEventFields(event),
 
     winner,
@@ -930,7 +881,7 @@ export async function contentNft_EnglishAuctionSettled({ event, store }: EventCo
     ownerCuratorGroup: nft.ownerCuratorGroup,
   })
 
-  await store.save<EnglishAuctionSettledEvent>(announcingPeriodStartedEvent)
+  await store.save<EnglishAuctionSettledEvent>(englishAuctionSettledEvent)
 }
 
 // called when auction bid's value is higher than buy-now value
@@ -970,7 +921,7 @@ export async function contentNft_BidMadeCompletingAuction({
 
   // common event processing - second
 
-  const announcingPeriodStartedEvent = new BidMadeCompletingAuctionEvent({
+  const bidMadeCompletingAuctionEvent = new BidMadeCompletingAuctionEvent({
     ...genericEventFields(event),
 
     member,
@@ -982,7 +933,7 @@ export async function contentNft_BidMadeCompletingAuction({
     previousTopBidder,
   })
 
-  await store.save<BidMadeCompletingAuctionEvent>(announcingPeriodStartedEvent)
+  await store.save<BidMadeCompletingAuctionEvent>(bidMadeCompletingAuctionEvent)
 }
 
 export async function contentNft_OpenAuctionBidAccepted({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -1007,7 +958,7 @@ export async function contentNft_OpenAuctionBidAccepted({ event, store }: EventC
 
   // common event processing - second
 
-  const announcingPeriodStartedEvent = new OpenAuctionBidAcceptedEvent({
+  const openAuctionBidAcceptedEvent = new OpenAuctionBidAcceptedEvent({
     ...genericEventFields(event),
 
     contentActor: await convertContentActor(store, contentActor),
@@ -1018,7 +969,7 @@ export async function contentNft_OpenAuctionBidAccepted({ event, store }: EventC
     winningBidder: new Membership({ id: winnerId.toString() }),
   })
 
-  await store.save<OpenAuctionBidAcceptedEvent>(announcingPeriodStartedEvent)
+  await store.save<OpenAuctionBidAcceptedEvent>(openAuctionBidAcceptedEvent)
 }
 
 export async function contentNft_OfferStarted({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -1045,7 +996,7 @@ export async function contentNft_OfferStarted({ event, store }: EventContext & S
 
   // common event processing - second
 
-  const announcingPeriodStartedEvent = new OfferStartedEvent({
+  const offerStartedEvent = new OfferStartedEvent({
     ...genericEventFields(event),
 
     video,
@@ -1056,7 +1007,7 @@ export async function contentNft_OfferStarted({ event, store }: EventContext & S
     ...(await convertContentActorToChannelOrNftOwner(store, contentActor)),
   })
 
-  await store.save<OfferStartedEvent>(announcingPeriodStartedEvent)
+  await store.save<OfferStartedEvent>(offerStartedEvent)
 }
 
 export async function contentNft_OfferAccepted({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -1101,7 +1052,7 @@ export async function contentNft_OfferAccepted({ event, store }: EventContext & 
 
   // common event processing - second
 
-  const announcingPeriodStartedEvent = new OfferAcceptedEvent({
+  const offerAcceptedEvent = new OfferAcceptedEvent({
     ...genericEventFields(event),
 
     video,
@@ -1110,7 +1061,7 @@ export async function contentNft_OfferAccepted({ event, store }: EventContext & 
     price,
   })
 
-  await store.save<OfferAcceptedEvent>(announcingPeriodStartedEvent)
+  await store.save<OfferAcceptedEvent>(offerAcceptedEvent)
 }
 
 export async function contentNft_OfferCanceled({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -1138,7 +1089,7 @@ export async function contentNft_OfferCanceled({ event, store }: EventContext & 
 
   // common event processing - second
 
-  const announcingPeriodStartedEvent = new OfferCanceledEvent({
+  const offerCanceledEvent = new OfferCanceledEvent({
     ...genericEventFields(event),
 
     video,
@@ -1147,7 +1098,7 @@ export async function contentNft_OfferCanceled({ event, store }: EventContext & 
     ...(await convertContentActorToChannelOrNftOwner(store, contentActor)),
   })
 
-  await store.save<OfferCanceledEvent>(announcingPeriodStartedEvent)
+  await store.save<OfferCanceledEvent>(offerCanceledEvent)
 }
 
 export async function contentNft_NftSellOrderMade({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -1173,7 +1124,7 @@ export async function contentNft_NftSellOrderMade({ event, store }: EventContext
 
   // common event processing - second
 
-  const announcingPeriodStartedEvent = new NftSellOrderMadeEvent({
+  const nftSellOrderMadeEvent = new NftSellOrderMadeEvent({
     ...genericEventFields(event),
 
     video,
@@ -1183,7 +1134,7 @@ export async function contentNft_NftSellOrderMade({ event, store }: EventContext
     ...(await convertContentActorToChannelOrNftOwner(store, contentActor)),
   })
 
-  await store.save<NftSellOrderMadeEvent>(announcingPeriodStartedEvent)
+  await store.save<NftSellOrderMadeEvent>(nftSellOrderMadeEvent)
 }
 
 export async function contentNft_NftBought({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -1225,7 +1176,7 @@ export async function contentNft_NftBought({ event, store }: EventContext & Stor
 
   // common event processing - second
 
-  const announcingPeriodStartedEvent = new NftBoughtEvent({
+  const nftBoughtEvent = new NftBoughtEvent({
     ...genericEventFields(event),
 
     video,
@@ -1235,7 +1186,7 @@ export async function contentNft_NftBought({ event, store }: EventContext & Stor
     price,
   })
 
-  await store.save<NftBoughtEvent>(announcingPeriodStartedEvent)
+  await store.save<NftBoughtEvent>(nftBoughtEvent)
 }
 
 export async function contentNft_BuyNowCanceled({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -1262,7 +1213,7 @@ export async function contentNft_BuyNowCanceled({ event, store }: EventContext &
 
   // common event processing - second
 
-  const announcingPeriodStartedEvent = new BuyNowCanceledEvent({
+  const buyNowCanceledEvent = new BuyNowCanceledEvent({
     ...genericEventFields(event),
 
     video,
@@ -1271,7 +1222,7 @@ export async function contentNft_BuyNowCanceled({ event, store }: EventContext &
     ...(await convertContentActorToChannelOrNftOwner(store, contentActor)),
   })
 
-  await store.save<BuyNowCanceledEvent>(announcingPeriodStartedEvent)
+  await store.save<BuyNowCanceledEvent>(buyNowCanceledEvent)
 }
 
 export async function contentNft_BuyNowPriceUpdated({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -1296,7 +1247,7 @@ export async function contentNft_BuyNowPriceUpdated({ event, store }: EventConte
 
   // common event processing - second
 
-  const announcingPeriodStartedEvent = new BuyNowPriceUpdatedEvent({
+  const buyNowPriceUpdatedEvent = new BuyNowPriceUpdatedEvent({
     ...genericEventFields(event),
 
     video,
@@ -1306,7 +1257,7 @@ export async function contentNft_BuyNowPriceUpdated({ event, store }: EventConte
     ownerCuratorGroup: nft.ownerCuratorGroup,
   })
 
-  await store.save<BuyNowCanceledEvent>(announcingPeriodStartedEvent)
+  await store.save<BuyNowCanceledEvent>(buyNowPriceUpdatedEvent)
 }
 
 export async function contentNft_NftSlingedBackToTheOriginalArtist({
