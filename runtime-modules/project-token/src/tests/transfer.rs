@@ -64,13 +64,14 @@ fn permissionless_transfer_fails_with_src_having_insufficient_fund_for_bloat_bon
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
+        .with_bloat_bond(joy!(100))
         .with_account(src, AccountData::new_with_liquidity(amount))
         .build();
 
     build_test_externalities(config).execute_with(|| {
         let result = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
-        assert_noop!(result, Error::<Test>::InsufficientBalanceForBloatBond,);
+        assert_noop!(result, Error::<Test>::InsufficientBalanceForBloatBond);
     })
 }
 
@@ -137,6 +138,7 @@ fn permissionless_transfer_ok_for_new_destination_with_bloat_bond_slashed_from_s
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
+        .with_bloat_bond(bloat_bond)
         .with_account(src, AccountData::new_with_liquidity(amount))
         .build();
 
@@ -161,6 +163,7 @@ fn permissionless_transfer_ok_for_new_destination_with_bloat_bond_transferred_to
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
+        .with_bloat_bond(bloat_bond)
         .with_account(src, AccountData::new_with_liquidity(amount))
         .build();
 
@@ -351,14 +354,15 @@ fn multiout_transfer_ok_with_src_having_insufficient_funds_for_bloat_bond() {
     let token_info = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
         .build();
-    let (src, _bloat_bond) = (account!(1), balance!(DEFAULT_BLOAT_BOND));
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
+    let (src, src_balance, bloat_bond) = (account!(1), amount1 + amount2, joy!(100));
     let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_info)
-        .with_account(src, AccountData::new_empty())
+        .with_bloat_bond(bloat_bond)
+        .with_account(src, AccountData::new_with_liquidity(src_balance))
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -578,6 +582,7 @@ fn multiout_transfer_ok_with_bloat_bond_for_new_destinations_slashed_from_src() 
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_info)
+        .with_bloat_bond(bloat_bond)
         .with_account(src, AccountData::new_with_liquidity(src_balance))
         .build();
 
@@ -593,18 +598,19 @@ fn multiout_transfer_ok_with_bloat_bond_for_new_destinations_slashed_from_src() 
 #[test]
 fn multiout_transfer_ok_with_bloat_bond_transferred_to_treasury() {
     let token_id = token!(1);
-    let token_info = TokenDataBuilder::new_empty()
-        .with_transfer_policy(Policy::Permissionless)
-        .build();
     let treasury: AccountId = treasury!(token_id);
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
-    let (src, bloat_bond, src_balance) =
-        (account!(1), balance!(DEFAULT_BLOAT_BOND), amount1 + amount2);
+    let (src, src_balance, bloat_bond) = (account!(1), amount1 + amount2, joy!(100));
     let outputs = outputs![(dst1, amount1), (dst2, amount2)];
+
+    let token_info = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissionless)
+        .build();
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_info)
+        .with_bloat_bond(bloat_bond)
         .with_account(src, AccountData::new_with_liquidity(src_balance))
         .build();
 

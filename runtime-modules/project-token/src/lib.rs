@@ -166,14 +166,16 @@ decl_module! {
                 &account_to_remove_info,
             )?;
 
+            // TODO: ensure can transfer check
+
             // == MUTATION SAFE ==
 
             AccountInfoByTokenAndAccount::<T>::remove(token_id, &account_id);
             TokenInfoById::<T>::mutate(token_id, |token_info| token_info.decrement_accounts_number());
 
-
-            let bloat_bond = T::BloatBond::get();
-            let _ = T::ReserveCurrency::deposit_creating(&account_id, bloat_bond);
+            let bloat_bond = account_to_remove_info.bloat_bond;
+            let treasury = Self::bloat_bond_treasury_account_id(token_id);
+            let _ = T::ReserveCurrency::transfer(&treasury, &account_id, bloat_bond, ExistenceRequirement::KeepAlive);
 
             Self::deposit_event(RawEvent::AccountDustedBy(token_id, account_id, sender, token_info.transfer_policy));
 
@@ -205,7 +207,7 @@ decl_module! {
                 Err(Error::<T>::CannotJoinWhitelistInPermissionlessMode.into())
             }?;
 
-            let bloat_bond = T::BloatBond::get();
+            let bloat_bond = Self::bloat_bond();
 
             // No project_token or balances state corrupted in case of failure
             ensure!(
@@ -215,9 +217,16 @@ decl_module! {
 
             // == MUTATION SAFE ==
 
-            let _ = T::ReserveCurrency::slash(&account_id, bloat_bond);
+            let treasury = Self::bloat_bond_treasury_account_id(token_id);
+            let _ = T::ReserveCurrency::transfer(&account_id, &treasury, bloat_bond, ExistenceRequirement::KeepAlive);
 
-            AccountInfoByTokenAndAccount::<T>::insert(token_id, &account_id, AccountDataOf::<T>::default());
+            AccountInfoByTokenAndAccount::<T>::insert(
+                token_id,
+                &account_id,
+                AccountDataOf::<T>::new_with_liquidity_and_bond(
+                    T::Balance::zero(),
+                    bloat_bond,
+                ));
             TokenInfoById::<T>::mutate(token_id, |token_info| token_info.increment_accounts_number());
 
             Self::deposit_event(RawEvent::MemberJoinedWhitelist(token_id, account_id, token_info.transfer_policy));
@@ -432,9 +441,9 @@ impl<T: Trait> Module<T> {
             Self::validate_transfers(token_id, transfers, &token_info.transfer_policy)?;
 
         // compute bloat bond
-        let bloat_bond = Self::compute_bloat_bond(&validated_transfers);
+        let cumulative_bloat_bond = Self::compute_bloat_bond(&validated_transfers);
         ensure!(
-            T::ReserveCurrency::free_balance(src) >= bloat_bond,
+            T::ReserveCurrency::free_balance(src) >= cumulative_bloat_bond,
             Error::<T>::InsufficientBalanceForBloatBond
         );
 
@@ -463,23 +472,22 @@ impl<T: Trait> Module<T> {
                     AccountInfoByTokenAndAccount::<T>::insert(
                         token_id,
                         &account_id,
-                        // TODO : add on-chain value for bloat bond
                         AccountDataOf::<T>::new_with_liquidity_and_bond(
                             payment.amount,
-                            ReserveBalanceOf::<T>::zero(),
+                            Self::bloat_bond(),
                         ),
                     )
                 }
             },
         );
 
-        let bloat_bond = Self::compute_bloat_bond(validated_transfers);
-        if !bloat_bond.is_zero() {
+        let cumulative_bloat_bond = Self::compute_bloat_bond(validated_transfers);
+        if !cumulative_bloat_bond.is_zero() {
             let treasury_account_id = Self::bloat_bond_treasury_account_id(token_id);
             let _ = T::ReserveCurrency::transfer(
                 src,
                 &treasury_account_id,
-                bloat_bond,
+                cumulative_bloat_bond,
                 ExistenceRequirement::KeepAlive,
             );
         }
@@ -569,11 +577,12 @@ impl<T: Trait> Module<T> {
     pub(crate) fn compute_bloat_bond(
         validated_transfers: &ValidatedTransfers<T>,
     ) -> ReserveBalanceOf<T> {
+        let bloat_bond = Self::bloat_bond();
         validated_transfers
             .iter()
             .fold(ReserveBalanceOf::<T>::zero(), |acc, (account, _)| {
                 if matches!(account, Validated::<_>::NonExisting(_)) {
-                    acc.saturating_add(T::BloatBond::get())
+                    acc.saturating_add(bloat_bond)
                 } else {
                     ReserveBalanceOf::<T>::zero()
                 }

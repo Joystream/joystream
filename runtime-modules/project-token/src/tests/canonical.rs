@@ -640,6 +640,7 @@ fn dust_account_ok_with_account_removed() {
 #[test]
 fn dust_account_ok_with_correct_bloat_bond_refunded() {
     let token_id = token!(1);
+    let treasury: AccountId = treasury!(token_id);
     let (user_account, other_user_account) = (account!(2), account!(3));
     let (bloat_bond, updated_bloat_bond) = (joy!(100), joy!(150));
 
@@ -659,9 +660,41 @@ fn dust_account_ok_with_correct_bloat_bond_refunded() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&treasury, updated_bloat_bond + bloat_bond);
+
         let _ = Token::dust_account(origin!(user_account), token_id, other_user_account);
 
-        assert_eq!(Balances::usable_balance(other_user_account), bloat_bond);
+        assert_eq!(
+            Balances::usable_balance(other_user_account),
+            updated_bloat_bond
+        );
+    })
+}
+
+#[test]
+fn dust_account_ok_with_unregistered_member_doing_the_dusting() {
+    let token_id = token!(1);
+    let treasury: AccountId = treasury!(token_id);
+    let (user_account, other_user_account) = (account!(2), account!(3));
+    let bloat_bond = joy!(100);
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_bloat_bond(bloat_bond)
+        .with_account(
+            other_user_account,
+            AccountData::new_with_liquidity_and_bond(balance!(0), bloat_bond),
+        )
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&treasury, bloat_bond);
+
+        let result = Token::dust_account(origin!(user_account), token_id, other_user_account);
+
+        assert_ok!(result);
     })
 }
 
