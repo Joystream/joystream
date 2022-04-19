@@ -1,6 +1,5 @@
 import { Api } from '../../../Api'
 import { BaseQueryNodeFixture, FixtureRunner } from '../../../Fixture'
-import { JoystreamCLI } from '../../../cli/joystream'
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { IMember } from '../createMembers'
 import { BuyMembershipHappyCaseFixture } from '../../membership'
@@ -12,21 +11,12 @@ import BN from 'bn.js'
 const sufficientTopupAmount = new BN(1000000) // some very big number to cover fees of all transactions
 
 export class NftOpenAuctionFixture extends BaseQueryNodeFixture {
-  private cli: JoystreamCLI
   private videoId: number
   private author: IMember
   private participants: IMember[]
 
-  constructor(
-    api: Api,
-    query: QueryNodeApi,
-    cli: JoystreamCLI,
-    videoId: number,
-    author: IMember,
-    participants: IMember[]
-  ) {
+  constructor(api: Api, query: QueryNodeApi, videoId: number, author: IMember, participants: IMember[]) {
     super(api, query)
-    this.cli = cli
     this.videoId = videoId
     this.author = author
     this.participants = participants
@@ -39,7 +29,12 @@ export class NftOpenAuctionFixture extends BaseQueryNodeFixture {
     this.debug('Issue video NFT')
     await this.api.issueNft(this.author.keyringPair.address, this.author.memberId.toNumber(), this.videoId)
 
-    this.debug('Start first NFT auction')
+    const firstAuctionWinner = this.participants[this.participants.length - 1]
+    // prepare second auction participants, does not include first auction winner
+    const secondAuctionParticipants = this.participants.slice(0, -1)
+    const secondAuctionWinner = secondAuctionParticipants[secondAuctionParticipants.length - 1]
+
+    this.debug(`Start first NFT auction (expected winner id ${firstAuctionWinner.memberId})`)
     const { auctionParams, startingPrice, minimalBidStep } = await this.api.createOpenAuctionParameters()
     await this.api.startOpenAuction(
       this.author.keyringPair.address,
@@ -47,8 +42,6 @@ export class NftOpenAuctionFixture extends BaseQueryNodeFixture {
       this.videoId,
       auctionParams
     )
-
-    const firstAuctionWinner = this.participants[this.participants.length - 1]
 
     this.debug('Place bids')
     const placeBidsFixture = new PlaceBidsInAuctionFixture(
@@ -81,7 +74,7 @@ export class NftOpenAuctionFixture extends BaseQueryNodeFixture {
     this.debug('Check NFT ownership change after first auction')
     await assertNftOwner(this.query, this.videoId, firstAuctionWinner)
 
-    this.debug('Start second NFT auction')
+    this.debug(`Start second NFT auction (expected winner id ${secondAuctionWinner.memberId})`)
     await this.api.startOpenAuction(
       firstAuctionWinner.keyringPair.address,
       firstAuctionWinner.memberId.toNumber(),
@@ -89,16 +82,11 @@ export class NftOpenAuctionFixture extends BaseQueryNodeFixture {
       auctionParams
     )
 
-    // prepare second auction participants, does not include first auction winner
-    this.participants.pop()
-
-    const secondAuctionWinner = this.participants[this.participants.length - 1]
-
     this.debug('Place bids on second auction')
     const secondAuctionMemberSetFixture = new PlaceBidsInAuctionFixture(
       this.api,
       this.query,
-      this.participants,
+      secondAuctionParticipants,
       startingPrice,
       minimalBidStep,
       this.videoId,
@@ -110,7 +98,7 @@ export class NftOpenAuctionFixture extends BaseQueryNodeFixture {
     await assertAuctionAndBids(this.query, this.videoId, secondAuctionWinner)
 
     // equals to amount last bidder offered
-    const targetPriceSecond = placeBidsFixture.calcBidAmount(this.participants.length - 1)
+    const targetPriceSecond = placeBidsFixture.calcBidAmount(secondAuctionParticipants.length - 1)
 
     this.debug('Complete second auction')
     await this.api.pickOpenAuctionWinner(

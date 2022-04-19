@@ -75,6 +75,9 @@ type Channel @entity {
 
   "List of members blocked from from participating on any video of the channel."
   bannedMembers: [Membership!]
+
+  "Owners of video NFTs belonging to this channel."
+  channelNftCollectors: [ChannelNftCollectors!]! @derivedFrom(field: "channel")
 }
 
 type VideoCategory @entity {
@@ -96,7 +99,7 @@ type Video @entity {
   "Runtime identifier"
   id: ID!
 
-  "Reference to member's channel"
+  "Reference to videos's channel"
   channel: Channel!
 
   "Reference to a video category"

@@ -107,8 +107,6 @@ export default async function commentsAndReactions({ api, query }: FlowProps): P
 
   const createdCommentsIds = await createCommentsFixture.getCreatedCommentsIds()
 
-  console.log(createdCommentsIds)
-
   // Create comment reactions
   const commentReactions: ReactCommentParams[] = [
     // comment reactions:

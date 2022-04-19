@@ -109,33 +109,42 @@ export type OwnedNftFieldsFragment = {
   id: string
   metadata: string
   creatorRoyalty?: Types.Maybe<number>
+  lastSalePrice?: Types.Maybe<any>
+  lastSaleDate?: Types.Maybe<any>
   video: { id: string }
   ownerMember?: Types.Maybe<{ id: string }>
-  transactionalStatus:
-    | { __typename: 'TransactionalStatusIdle' }
+  transactionalStatus?: Types.Maybe<
+    | { __typename: 'TransactionalStatusIdle'; dummy?: Types.Maybe<number> }
     | { __typename: 'TransactionalStatusInitiatedOfferToMember' }
-    | {
-        __typename: 'TransactionalStatusAuction'
-        auction?: Types.Maybe<{
-          startsAtBlock: number
-          isCompleted: boolean
-          endedAtBlock?: Types.Maybe<number>
-          startingPrice: any
-          auctionType:
-            | {
-                __typename: 'AuctionTypeEnglish'
-                extensionPeriod: number
-                duration: number
-                plannedEndAtBlock: number
-                minimalBidStep: number
-              }
-            | { __typename: 'AuctionTypeOpen'; bidLockDuration: number }
-          bids: Array<{ id: string; amount: any; createdInBlock: number; bidder: { id: string; handle: string } }>
-          topBid?: Types.Maybe<{ id: string; amount: any; bidder: { id: string } }>
-        }>
-      }
-    | { __typename: 'TransactionalStatusBuyNow' }
+    | { __typename: 'TransactionalStatusBuyNow'; price: number }
+  >
+  transactionalStatusAuction?: Types.Maybe<{
+    startsAtBlock: number
+    isCompleted: boolean
+    endedAtBlock?: Types.Maybe<number>
+    startingPrice: any
+    auctionType:
+      | {
+          __typename: 'AuctionTypeEnglish'
+          extensionPeriod: number
+          duration: number
+          plannedEndAtBlock: number
+          minimalBidStep: number
+        }
+      | { __typename: 'AuctionTypeOpen'; bidLockDuration: number }
+    bids: Array<{ id: string; amount: any; createdInBlock: number; bidder: { id: string; handle: string } }>
+    topBid?: Types.Maybe<{ id: string; amount: any; bidder: { id: string } }>
+  }>
   creatorChannel: { id: string }
+}
+
+export type ChannelNftCollectorFieldsFragment = {
+  id: string
+  amount: number
+  lastIncreaseAt: any
+  channel: { id: string }
+  member?: Types.Maybe<{ id: string }>
+  curatorGroup?: Types.Maybe<{ id: string }>
 }
 
 export type GetChannelByIdQueryVariables = Types.Exact<{
@@ -222,6 +231,10 @@ export type GetVideosByIdsQueryVariables = Types.Exact<{
 }>
 
 export type GetVideosByIdsQuery = { videos: Array<VideoFieldsFragment> }
+
+export type GetChannelNftCollectorsQueryVariables = Types.Exact<{ [key: string]: never }>
+
+export type GetChannelNftCollectorsQuery = { channelNftCollectors: Array<ChannelNftCollectorFieldsFragment> }
 
 export type CommentCreatedEventFieldsFragment = {
   id: string
@@ -365,6 +378,50 @@ export type GetVideoReactionsPreferenceEventsByEventIdsQueryVariables = Types.Ex
 
 export type GetVideoReactionsPreferenceEventsByEventIdsQuery = {
   videoReactionsPreferenceEvents: Array<VideoReactionsPreferenceEventFieldsFragment>
+}
+
+export type EnglishAuctionStartedEventFieldsFragment = {
+  video: { id: string }
+  auction: { id: string }
+  ownerMember?: Types.Maybe<{ id: string }>
+  ownerCuratorGroup?: Types.Maybe<{ id: string }>
+}
+
+export type GetEnglishAuctionStartedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetEnglishAuctionStartedEventsByEventIdsQuery = {
+  englishAuctionStartedEvents: Array<EnglishAuctionStartedEventFieldsFragment>
+}
+
+export type NftIssuedEventFieldsFragment = {
+  royalty?: Types.Maybe<number>
+  metadata: string
+  video: { id: string }
+  ownerMember?: Types.Maybe<{ id: string }>
+  ownerCuratorGroup?: Types.Maybe<{ id: string }>
+}
+
+export type GetNftIssuedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetNftIssuedEventsByEventIdsQuery = { nftIssuedEvents: Array<NftIssuedEventFieldsFragment> }
+
+export type EnglishAuctionSettledEventFieldsFragment = {
+  winner: { id: string }
+  video: { id: string }
+  ownerMember?: Types.Maybe<{ id: string }>
+  ownerCuratorGroup?: Types.Maybe<{ id: string }>
+}
+
+export type GetEnglishAuctionSettledEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetEnglishAuctionSettledEventsByEventIdsQuery = {
+  englishAuctionSettledEvents: Array<EnglishAuctionSettledEventFieldsFragment>
 }
 
 export type CouncilMemberFieldsFragment = { id: string; member: { id: string } }
@@ -2467,40 +2524,44 @@ export const OwnedNftFields = gql`
     metadata
     transactionalStatus {
       __typename
-      ... on TransactionalStatusAuction {
-        auction {
-          startsAtBlock
-          isCompleted
-          endedAtBlock
-          startingPrice
-          auctionType {
-            __typename
-            ... on AuctionTypeOpen {
-              bidLockDuration
-            }
-            ... on AuctionTypeEnglish {
-              extensionPeriod
-              duration
-              plannedEndAtBlock
-              minimalBidStep
-            }
-          }
-          bids {
-            id
-            bidder {
-              id
-              handle
-            }
-            amount
-            createdInBlock
-          }
-          topBid {
-            id
-            amount
-            bidder {
-              id
-            }
-          }
+      ... on TransactionalStatusIdle {
+        dummy
+      }
+      ... on TransactionalStatusBuyNow {
+        price
+      }
+    }
+    transactionalStatusAuction {
+      startsAtBlock
+      isCompleted
+      endedAtBlock
+      startingPrice
+      auctionType {
+        __typename
+        ... on AuctionTypeOpen {
+          bidLockDuration
+        }
+        ... on AuctionTypeEnglish {
+          extensionPeriod
+          duration
+          plannedEndAtBlock
+          minimalBidStep
+        }
+      }
+      bids {
+        id
+        bidder {
+          id
+          handle
+        }
+        amount
+        createdInBlock
+      }
+      topBid {
+        id
+        amount
+        bidder {
+          id
         }
       }
     }
@@ -2508,6 +2569,24 @@ export const OwnedNftFields = gql`
     creatorChannel {
       id
     }
+    lastSalePrice
+    lastSaleDate
+  }
+`
+export const ChannelNftCollectorFields = gql`
+  fragment ChannelNftCollectorFields on ChannelNftCollectors {
+    id
+    channel {
+      id
+    }
+    member {
+      id
+    }
+    curatorGroup {
+      id
+    }
+    amount
+    lastIncreaseAt
   }
 `
 export const CommentCreatedEventFields = gql`
@@ -2632,6 +2711,53 @@ export const VideoReactionsPreferenceEventFields = gql`
       id
     }
     reactionsStatus
+  }
+`
+export const EnglishAuctionStartedEventFields = gql`
+  fragment EnglishAuctionStartedEventFields on EnglishAuctionStartedEvent {
+    video {
+      id
+    }
+    auction {
+      id
+    }
+    ownerMember {
+      id
+    }
+    ownerCuratorGroup {
+      id
+    }
+  }
+`
+export const NftIssuedEventFields = gql`
+  fragment NftIssuedEventFields on NftIssuedEvent {
+    video {
+      id
+    }
+    royalty
+    metadata
+    ownerMember {
+      id
+    }
+    ownerCuratorGroup {
+      id
+    }
+  }
+`
+export const EnglishAuctionSettledEventFields = gql`
+  fragment EnglishAuctionSettledEventFields on EnglishAuctionSettledEvent {
+    winner {
+      id
+    }
+    video {
+      id
+    }
+    ownerMember {
+      id
+    }
+    ownerCuratorGroup {
+      id
+    }
   }
 `
 export const CouncilMemberFields = gql`
@@ -4517,6 +4643,14 @@ export const GetVideosByIds = gql`
   }
   ${VideoFields}
 `
+export const GetChannelNftCollectors = gql`
+  query getChannelNftCollectors {
+    channelNftCollectors {
+      ...ChannelNftCollectorFields
+    }
+  }
+  ${ChannelNftCollectorFields}
+`
 export const GetCommentCreatedEventsByEventIds = gql`
   query getCommentCreatedEventsByEventIds($eventIds: [ID!]) {
     commentCreatedEvents(where: { id_in: $eventIds }) {
@@ -4580,6 +4714,30 @@ export const GetVideoReactionsPreferenceEventsByEventIds = gql`
     }
   }
   ${VideoReactionsPreferenceEventFields}
+`
+export const GetEnglishAuctionStartedEventsByEventIds = gql`
+  query getEnglishAuctionStartedEventsByEventIds($eventIds: [ID!]) {
+    englishAuctionStartedEvents(where: { id_in: $eventIds }) {
+      ...EnglishAuctionStartedEventFields
+    }
+  }
+  ${EnglishAuctionStartedEventFields}
+`
+export const GetNftIssuedEventsByEventIds = gql`
+  query getNftIssuedEventsByEventIds($eventIds: [ID!]) {
+    nftIssuedEvents(where: { id_in: $eventIds }) {
+      ...NftIssuedEventFields
+    }
+  }
+  ${NftIssuedEventFields}
+`
+export const GetEnglishAuctionSettledEventsByEventIds = gql`
+  query getEnglishAuctionSettledEventsByEventIds($eventIds: [ID!]) {
+    englishAuctionSettledEvents(where: { id_in: $eventIds }) {
+      ...EnglishAuctionSettledEventFields
+    }
+  }
+  ${EnglishAuctionSettledEventFields}
 `
 export const GetCurrentCouncilMembers = gql`
   query getCurrentCouncilMembers {

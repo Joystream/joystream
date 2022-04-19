@@ -171,41 +171,44 @@ fragment OwnedNftFields on OwnedNft {
   metadata
   transactionalStatus {
     __typename
-    ... on TransactionalStatusAuction {
-      auction {
-        startsAtBlock
-        isCompleted
-
-        endedAtBlock
-        startingPrice
-        auctionType {
-          __typename
-          ... on AuctionTypeOpen {
-            bidLockDuration
-          }
-          ... on AuctionTypeEnglish {
-            extensionPeriod
-            duration
-            plannedEndAtBlock
-            minimalBidStep
-          }
-        }
-        bids {
-          id
-          bidder {
-            id
-            handle
-          }
-          amount
-          createdInBlock
-        }
-        topBid {
-          id
-          amount
-          bidder {
-            id
-          }
-        }
+    ... on TransactionalStatusIdle {
+      dummy
+    }
+    ... on TransactionalStatusBuyNow {
+      price
+    }
+  }
+  transactionalStatusAuction {
+    startsAtBlock
+    isCompleted
+    endedAtBlock
+    startingPrice
+    auctionType {
+      __typename
+      ... on AuctionTypeOpen {
+        bidLockDuration
+      }
+      ... on AuctionTypeEnglish {
+        extensionPeriod
+        duration
+        plannedEndAtBlock
+        minimalBidStep
+      }
+    }
+    bids {
+      id
+      bidder {
+        id
+        handle
+      }
+      amount
+      createdInBlock
+    }
+    topBid {
+      id
+      amount
+      bidder {
+        id
       }
     }
   }
@@ -213,6 +216,23 @@ fragment OwnedNftFields on OwnedNft {
   creatorChannel {
     id
   }
+  lastSalePrice
+  lastSaleDate
+}
+
+fragment ChannelNftCollectorFields on ChannelNftCollectors {
+  id
+  channel {
+    id
+  }
+  member {
+    id
+  }
+  curatorGroup {
+    id
+  }
+  amount
+  lastIncreaseAt
 }
 
 query getChannelById($id: ID!) {
@@ -297,5 +317,11 @@ query getVideoById($commentId: ID!) {
 query getVideosByIds($ids: [ID!]) {
   videos(where: { id_in: $ids }) {
     ...VideoFields
+  }
+}
+
+query getChannelNftCollectors {
+  channelNftCollectors {
+    ...ChannelNftCollectorFields
   }
 }

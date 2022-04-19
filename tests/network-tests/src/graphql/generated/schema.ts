@@ -679,6 +679,8 @@ export type Auction = BaseGraphQlObject & {
   whitelistedMembers: Array<Membership>
   englishauctionstartedeventauction?: Maybe<Array<EnglishAuctionStartedEvent>>
   openauctionstartedeventauction?: Maybe<Array<OpenAuctionStartedEvent>>
+  ownednfttransactionalStatusAuction?: Maybe<Array<OwnedNft>>
+  transactionalstatusupdatetransactionalStatusAuction?: Maybe<Array<TransactionalStatusUpdate>>
 }
 
 export type AuctionBidCanceledEvent = Event &
@@ -705,6 +707,10 @@ export type AuctionBidCanceledEvent = Event &
     memberId: Scalars['String']
     video: Video
     videoId: Scalars['String']
+    ownerMember?: Maybe<Membership>
+    ownerMemberId?: Maybe<Scalars['String']>
+    ownerCuratorGroup?: Maybe<CuratorGroup>
+    ownerCuratorGroupId?: Maybe<Scalars['String']>
   }
 
 export type AuctionBidCanceledEventConnection = {
@@ -720,6 +726,8 @@ export type AuctionBidCanceledEventCreateInput = {
   indexInBlock: Scalars['Float']
   member: Scalars['ID']
   video: Scalars['ID']
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
 }
 
 export type AuctionBidCanceledEventEdge = {
@@ -746,6 +754,10 @@ export enum AuctionBidCanceledEventOrderByInput {
   MemberDesc = 'member_DESC',
   VideoAsc = 'video_ASC',
   VideoDesc = 'video_DESC',
+  OwnerMemberAsc = 'ownerMember_ASC',
+  OwnerMemberDesc = 'ownerMember_DESC',
+  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
+  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
 }
 
 export type AuctionBidCanceledEventUpdateInput = {
@@ -755,6 +767,8 @@ export type AuctionBidCanceledEventUpdateInput = {
   indexInBlock?: Maybe<Scalars['Float']>
   member?: Maybe<Scalars['ID']>
   video?: Maybe<Scalars['ID']>
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
 }
 
 export type AuctionBidCanceledEventWhereInput = {
@@ -803,6 +817,8 @@ export type AuctionBidCanceledEventWhereInput = {
   indexInBlock_in?: Maybe<Array<Scalars['Int']>>
   member?: Maybe<MembershipWhereInput>
   video?: Maybe<VideoWhereInput>
+  ownerMember?: Maybe<MembershipWhereInput>
+  ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
   AND?: Maybe<Array<AuctionBidCanceledEventWhereInput>>
   OR?: Maybe<Array<AuctionBidCanceledEventWhereInput>>
 }
@@ -837,6 +853,14 @@ export type AuctionBidMadeEvent = Event &
     videoId: Scalars['String']
     /** Bid made. */
     bidAmount: Scalars['BigInt']
+    ownerMember?: Maybe<Membership>
+    ownerMemberId?: Maybe<Scalars['String']>
+    ownerCuratorGroup?: Maybe<CuratorGroup>
+    ownerCuratorGroupId?: Maybe<Scalars['String']>
+    previousTopBid?: Maybe<Bid>
+    previousTopBidId?: Maybe<Scalars['String']>
+    previousTopBidder?: Maybe<Membership>
+    previousTopBidderId?: Maybe<Scalars['String']>
   }
 
 export type AuctionBidMadeEventConnection = {
@@ -853,6 +877,10 @@ export type AuctionBidMadeEventCreateInput = {
   member: Scalars['ID']
   video: Scalars['ID']
   bidAmount: Scalars['String']
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
+  previousTopBid?: Maybe<Scalars['ID']>
+  previousTopBidder?: Maybe<Scalars['ID']>
 }
 
 export type AuctionBidMadeEventEdge = {
@@ -881,6 +909,14 @@ export enum AuctionBidMadeEventOrderByInput {
   VideoDesc = 'video_DESC',
   BidAmountAsc = 'bidAmount_ASC',
   BidAmountDesc = 'bidAmount_DESC',
+  OwnerMemberAsc = 'ownerMember_ASC',
+  OwnerMemberDesc = 'ownerMember_DESC',
+  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
+  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
+  PreviousTopBidAsc = 'previousTopBid_ASC',
+  PreviousTopBidDesc = 'previousTopBid_DESC',
+  PreviousTopBidderAsc = 'previousTopBidder_ASC',
+  PreviousTopBidderDesc = 'previousTopBidder_DESC',
 }
 
 export type AuctionBidMadeEventUpdateInput = {
@@ -891,6 +927,10 @@ export type AuctionBidMadeEventUpdateInput = {
   member?: Maybe<Scalars['ID']>
   video?: Maybe<Scalars['ID']>
   bidAmount?: Maybe<Scalars['String']>
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
+  previousTopBid?: Maybe<Scalars['ID']>
+  previousTopBidder?: Maybe<Scalars['ID']>
 }
 
 export type AuctionBidMadeEventWhereInput = {
@@ -945,6 +985,10 @@ export type AuctionBidMadeEventWhereInput = {
   bidAmount_in?: Maybe<Array<Scalars['BigInt']>>
   member?: Maybe<MembershipWhereInput>
   video?: Maybe<VideoWhereInput>
+  ownerMember?: Maybe<MembershipWhereInput>
+  ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
+  previousTopBid?: Maybe<BidWhereInput>
+  previousTopBidder?: Maybe<MembershipWhereInput>
   AND?: Maybe<Array<AuctionBidMadeEventWhereInput>>
   OR?: Maybe<Array<AuctionBidMadeEventWhereInput>>
 }
@@ -977,6 +1021,10 @@ export type AuctionCanceledEvent = Event &
     contentActor: ContentActor
     video: Video
     videoId: Scalars['String']
+    ownerMember?: Maybe<Membership>
+    ownerMemberId?: Maybe<Scalars['String']>
+    ownerCuratorGroup?: Maybe<CuratorGroup>
+    ownerCuratorGroupId?: Maybe<Scalars['String']>
   }
 
 export type AuctionCanceledEventConnection = {
@@ -992,6 +1040,8 @@ export type AuctionCanceledEventCreateInput = {
   indexInBlock: Scalars['Float']
   contentActor: Scalars['JSONObject']
   video: Scalars['ID']
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
 }
 
 export type AuctionCanceledEventEdge = {
@@ -1016,6 +1066,10 @@ export enum AuctionCanceledEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   VideoAsc = 'video_ASC',
   VideoDesc = 'video_DESC',
+  OwnerMemberAsc = 'ownerMember_ASC',
+  OwnerMemberDesc = 'ownerMember_DESC',
+  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
+  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
 }
 
 export type AuctionCanceledEventUpdateInput = {
@@ -1025,6 +1079,8 @@ export type AuctionCanceledEventUpdateInput = {
   indexInBlock?: Maybe<Scalars['Float']>
   contentActor?: Maybe<Scalars['JSONObject']>
   video?: Maybe<Scalars['ID']>
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
 }
 
 export type AuctionCanceledEventWhereInput = {
@@ -1073,6 +1129,8 @@ export type AuctionCanceledEventWhereInput = {
   indexInBlock_in?: Maybe<Array<Scalars['Int']>>
   contentActor_json?: Maybe<Scalars['JSONObject']>
   video?: Maybe<VideoWhereInput>
+  ownerMember?: Maybe<MembershipWhereInput>
+  ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
   AND?: Maybe<Array<AuctionCanceledEventWhereInput>>
   OR?: Maybe<Array<AuctionCanceledEventWhereInput>>
 }
@@ -1237,6 +1295,12 @@ export type AuctionWhereInput = {
   openauctionstartedeventauction_none?: Maybe<OpenAuctionStartedEventWhereInput>
   openauctionstartedeventauction_some?: Maybe<OpenAuctionStartedEventWhereInput>
   openauctionstartedeventauction_every?: Maybe<OpenAuctionStartedEventWhereInput>
+  ownednfttransactionalStatusAuction_none?: Maybe<OwnedNftWhereInput>
+  ownednfttransactionalStatusAuction_some?: Maybe<OwnedNftWhereInput>
+  ownednfttransactionalStatusAuction_every?: Maybe<OwnedNftWhereInput>
+  transactionalstatusupdatetransactionalStatusAuction_none?: Maybe<TransactionalStatusUpdateWhereInput>
+  transactionalstatusupdatetransactionalStatusAuction_some?: Maybe<TransactionalStatusUpdateWhereInput>
+  transactionalstatusupdatetransactionalStatusAuction_every?: Maybe<TransactionalStatusUpdateWhereInput>
   AND?: Maybe<Array<AuctionWhereInput>>
   OR?: Maybe<Array<AuctionWhereInput>>
 }
@@ -1326,6 +1390,8 @@ export type Bid = BaseGraphQlObject & {
   version: Scalars['Int']
   auction: Auction
   auctionId: Scalars['String']
+  nft: OwnedNft
+  nftId: Scalars['String']
   auctionTopBid?: Maybe<Auction>
   bidder: Membership
   bidderId: Scalars['String']
@@ -1337,6 +1403,9 @@ export type Bid = BaseGraphQlObject & {
   createdInBlock: Scalars['Int']
   /** Index of event in block where bid was made. */
   indexInBlock: Scalars['Int']
+  auctionbidmadeeventpreviousTopBid?: Maybe<Array<AuctionBidMadeEvent>>
+  bidmadecompletingauctioneventpreviousTopBid?: Maybe<Array<BidMadeCompletingAuctionEvent>>
+  openauctionbidacceptedeventwinningBid?: Maybe<Array<OpenAuctionBidAcceptedEvent>>
 }
 
 export type BidConnection = {
@@ -1347,6 +1416,7 @@ export type BidConnection = {
 
 export type BidCreateInput = {
   auction: Scalars['ID']
+  nft: Scalars['ID']
   bidder: Scalars['ID']
   amount: Scalars['String']
   isCanceled: Scalars['Boolean']
@@ -1383,6 +1453,16 @@ export type BidMadeCompletingAuctionEvent = Event &
     memberId: Scalars['String']
     video: Video
     videoId: Scalars['String']
+    ownerMember?: Maybe<Membership>
+    ownerMemberId?: Maybe<Scalars['String']>
+    ownerCuratorGroup?: Maybe<CuratorGroup>
+    ownerCuratorGroupId?: Maybe<Scalars['String']>
+    /** Price for which the NFT was bought */
+    price: Scalars['BigInt']
+    previousTopBid?: Maybe<Bid>
+    previousTopBidId?: Maybe<Scalars['String']>
+    previousTopBidder?: Maybe<Membership>
+    previousTopBidderId?: Maybe<Scalars['String']>
   }
 
 export type BidMadeCompletingAuctionEventConnection = {
@@ -1398,6 +1478,11 @@ export type BidMadeCompletingAuctionEventCreateInput = {
   indexInBlock: Scalars['Float']
   member: Scalars['ID']
   video: Scalars['ID']
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
+  price: Scalars['String']
+  previousTopBid?: Maybe<Scalars['ID']>
+  previousTopBidder?: Maybe<Scalars['ID']>
 }
 
 export type BidMadeCompletingAuctionEventEdge = {
@@ -1424,6 +1509,16 @@ export enum BidMadeCompletingAuctionEventOrderByInput {
   MemberDesc = 'member_DESC',
   VideoAsc = 'video_ASC',
   VideoDesc = 'video_DESC',
+  OwnerMemberAsc = 'ownerMember_ASC',
+  OwnerMemberDesc = 'ownerMember_DESC',
+  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
+  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
+  PriceAsc = 'price_ASC',
+  PriceDesc = 'price_DESC',
+  PreviousTopBidAsc = 'previousTopBid_ASC',
+  PreviousTopBidDesc = 'previousTopBid_DESC',
+  PreviousTopBidderAsc = 'previousTopBidder_ASC',
+  PreviousTopBidderDesc = 'previousTopBidder_DESC',
 }
 
 export type BidMadeCompletingAuctionEventUpdateInput = {
@@ -1433,6 +1528,11 @@ export type BidMadeCompletingAuctionEventUpdateInput = {
   indexInBlock?: Maybe<Scalars['Float']>
   member?: Maybe<Scalars['ID']>
   video?: Maybe<Scalars['ID']>
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
+  price?: Maybe<Scalars['String']>
+  previousTopBid?: Maybe<Scalars['ID']>
+  previousTopBidder?: Maybe<Scalars['ID']>
 }
 
 export type BidMadeCompletingAuctionEventWhereInput = {
@@ -1479,8 +1579,18 @@ export type BidMadeCompletingAuctionEventWhereInput = {
   indexInBlock_lt?: Maybe<Scalars['Int']>
   indexInBlock_lte?: Maybe<Scalars['Int']>
   indexInBlock_in?: Maybe<Array<Scalars['Int']>>
+  price_eq?: Maybe<Scalars['BigInt']>
+  price_gt?: Maybe<Scalars['BigInt']>
+  price_gte?: Maybe<Scalars['BigInt']>
+  price_lt?: Maybe<Scalars['BigInt']>
+  price_lte?: Maybe<Scalars['BigInt']>
+  price_in?: Maybe<Array<Scalars['BigInt']>>
   member?: Maybe<MembershipWhereInput>
   video?: Maybe<VideoWhereInput>
+  ownerMember?: Maybe<MembershipWhereInput>
+  ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
+  previousTopBid?: Maybe<BidWhereInput>
+  previousTopBidder?: Maybe<MembershipWhereInput>
   AND?: Maybe<Array<BidMadeCompletingAuctionEventWhereInput>>
   OR?: Maybe<Array<BidMadeCompletingAuctionEventWhereInput>>
 }
@@ -1498,6 +1608,8 @@ export enum BidOrderByInput {
   DeletedAtDesc = 'deletedAt_DESC',
   AuctionAsc = 'auction_ASC',
   AuctionDesc = 'auction_DESC',
+  NftAsc = 'nft_ASC',
+  NftDesc = 'nft_DESC',
   BidderAsc = 'bidder_ASC',
   BidderDesc = 'bidder_DESC',
   AmountAsc = 'amount_ASC',
@@ -1512,6 +1624,7 @@ export enum BidOrderByInput {
 
 export type BidUpdateInput = {
   auction?: Maybe<Scalars['ID']>
+  nft?: Maybe<Scalars['ID']>
   bidder?: Maybe<Scalars['ID']>
   amount?: Maybe<Scalars['String']>
   isCanceled?: Maybe<Scalars['Boolean']>
@@ -1565,8 +1678,18 @@ export type BidWhereInput = {
   indexInBlock_lte?: Maybe<Scalars['Int']>
   indexInBlock_in?: Maybe<Array<Scalars['Int']>>
   auction?: Maybe<AuctionWhereInput>
+  nft?: Maybe<OwnedNftWhereInput>
   auctionTopBid?: Maybe<AuctionWhereInput>
   bidder?: Maybe<MembershipWhereInput>
+  auctionbidmadeeventpreviousTopBid_none?: Maybe<AuctionBidMadeEventWhereInput>
+  auctionbidmadeeventpreviousTopBid_some?: Maybe<AuctionBidMadeEventWhereInput>
+  auctionbidmadeeventpreviousTopBid_every?: Maybe<AuctionBidMadeEventWhereInput>
+  bidmadecompletingauctioneventpreviousTopBid_none?: Maybe<BidMadeCompletingAuctionEventWhereInput>
+  bidmadecompletingauctioneventpreviousTopBid_some?: Maybe<BidMadeCompletingAuctionEventWhereInput>
+  bidmadecompletingauctioneventpreviousTopBid_every?: Maybe<BidMadeCompletingAuctionEventWhereInput>
+  openauctionbidacceptedeventwinningBid_none?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
+  openauctionbidacceptedeventwinningBid_some?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
+  openauctionbidacceptedeventwinningBid_every?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
   AND?: Maybe<Array<BidWhereInput>>
   OR?: Maybe<Array<BidWhereInput>>
 }
@@ -4135,6 +4258,10 @@ export type BuyNowCanceledEvent = Event &
     videoId: Scalars['String']
     /** Content actor acting as NFT owner. */
     contentActor: ContentActor
+    ownerMember?: Maybe<Membership>
+    ownerMemberId?: Maybe<Scalars['String']>
+    ownerCuratorGroup?: Maybe<CuratorGroup>
+    ownerCuratorGroupId?: Maybe<Scalars['String']>
   }
 
 export type BuyNowCanceledEventConnection = {
@@ -4150,6 +4277,8 @@ export type BuyNowCanceledEventCreateInput = {
   indexInBlock: Scalars['Float']
   video: Scalars['ID']
   contentActor: Scalars['JSONObject']
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
 }
 
 export type BuyNowCanceledEventEdge = {
@@ -4174,6 +4303,10 @@ export enum BuyNowCanceledEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   VideoAsc = 'video_ASC',
   VideoDesc = 'video_DESC',
+  OwnerMemberAsc = 'ownerMember_ASC',
+  OwnerMemberDesc = 'ownerMember_DESC',
+  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
+  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
 }
 
 export type BuyNowCanceledEventUpdateInput = {
@@ -4183,6 +4316,8 @@ export type BuyNowCanceledEventUpdateInput = {
   indexInBlock?: Maybe<Scalars['Float']>
   video?: Maybe<Scalars['ID']>
   contentActor?: Maybe<Scalars['JSONObject']>
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
 }
 
 export type BuyNowCanceledEventWhereInput = {
@@ -4231,11 +4366,167 @@ export type BuyNowCanceledEventWhereInput = {
   indexInBlock_in?: Maybe<Array<Scalars['Int']>>
   contentActor_json?: Maybe<Scalars['JSONObject']>
   video?: Maybe<VideoWhereInput>
+  ownerMember?: Maybe<MembershipWhereInput>
+  ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
   AND?: Maybe<Array<BuyNowCanceledEventWhereInput>>
   OR?: Maybe<Array<BuyNowCanceledEventWhereInput>>
 }
 
 export type BuyNowCanceledEventWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
+export type BuyNowPriceUpdatedEvent = Event &
+  BaseGraphQlObject & {
+    /** Hash of the extrinsic which caused the event to be emitted. */
+    inExtrinsic?: Maybe<Scalars['String']>
+    /** Blocknumber of the block in which the event was emitted. */
+    inBlock: Scalars['Int']
+    /** Network the block was produced in. */
+    network: Network
+    /** Index of event in block from which it was emitted. */
+    indexInBlock: Scalars['Int']
+    /** Filtering options for interface implementers */
+    type?: Maybe<EventTypeOptions>
+    id: Scalars['ID']
+    createdAt: Scalars['DateTime']
+    createdById: Scalars['String']
+    updatedAt?: Maybe<Scalars['DateTime']>
+    updatedById?: Maybe<Scalars['String']>
+    deletedAt?: Maybe<Scalars['DateTime']>
+    deletedById?: Maybe<Scalars['String']>
+    version: Scalars['Int']
+    video: Video
+    videoId: Scalars['String']
+    /** Content actor acting as NFT owner. */
+    contentActor: ContentActor
+    /** New buy-now price. */
+    newPrice: Scalars['BigInt']
+    ownerMember?: Maybe<Membership>
+    ownerMemberId?: Maybe<Scalars['String']>
+    ownerCuratorGroup?: Maybe<CuratorGroup>
+    ownerCuratorGroupId?: Maybe<Scalars['String']>
+  }
+
+export type BuyNowPriceUpdatedEventConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<BuyNowPriceUpdatedEventEdge>
+  pageInfo: PageInfo
+}
+
+export type BuyNowPriceUpdatedEventCreateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock: Scalars['Float']
+  network: Network
+  indexInBlock: Scalars['Float']
+  video: Scalars['ID']
+  contentActor: Scalars['JSONObject']
+  newPrice: Scalars['String']
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
+}
+
+export type BuyNowPriceUpdatedEventEdge = {
+  node: BuyNowPriceUpdatedEvent
+  cursor: Scalars['String']
+}
+
+export enum BuyNowPriceUpdatedEventOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  InExtrinsicAsc = 'inExtrinsic_ASC',
+  InExtrinsicDesc = 'inExtrinsic_DESC',
+  InBlockAsc = 'inBlock_ASC',
+  InBlockDesc = 'inBlock_DESC',
+  NetworkAsc = 'network_ASC',
+  NetworkDesc = 'network_DESC',
+  IndexInBlockAsc = 'indexInBlock_ASC',
+  IndexInBlockDesc = 'indexInBlock_DESC',
+  VideoAsc = 'video_ASC',
+  VideoDesc = 'video_DESC',
+  NewPriceAsc = 'newPrice_ASC',
+  NewPriceDesc = 'newPrice_DESC',
+  OwnerMemberAsc = 'ownerMember_ASC',
+  OwnerMemberDesc = 'ownerMember_DESC',
+  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
+  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
+}
+
+export type BuyNowPriceUpdatedEventUpdateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock?: Maybe<Scalars['Float']>
+  network?: Maybe<Network>
+  indexInBlock?: Maybe<Scalars['Float']>
+  video?: Maybe<Scalars['ID']>
+  contentActor?: Maybe<Scalars['JSONObject']>
+  newPrice?: Maybe<Scalars['String']>
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
+}
+
+export type BuyNowPriceUpdatedEventWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  inExtrinsic_eq?: Maybe<Scalars['String']>
+  inExtrinsic_contains?: Maybe<Scalars['String']>
+  inExtrinsic_startsWith?: Maybe<Scalars['String']>
+  inExtrinsic_endsWith?: Maybe<Scalars['String']>
+  inExtrinsic_in?: Maybe<Array<Scalars['String']>>
+  inBlock_eq?: Maybe<Scalars['Int']>
+  inBlock_gt?: Maybe<Scalars['Int']>
+  inBlock_gte?: Maybe<Scalars['Int']>
+  inBlock_lt?: Maybe<Scalars['Int']>
+  inBlock_lte?: Maybe<Scalars['Int']>
+  inBlock_in?: Maybe<Array<Scalars['Int']>>
+  network_eq?: Maybe<Network>
+  network_in?: Maybe<Array<Network>>
+  indexInBlock_eq?: Maybe<Scalars['Int']>
+  indexInBlock_gt?: Maybe<Scalars['Int']>
+  indexInBlock_gte?: Maybe<Scalars['Int']>
+  indexInBlock_lt?: Maybe<Scalars['Int']>
+  indexInBlock_lte?: Maybe<Scalars['Int']>
+  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
+  contentActor_json?: Maybe<Scalars['JSONObject']>
+  newPrice_eq?: Maybe<Scalars['BigInt']>
+  newPrice_gt?: Maybe<Scalars['BigInt']>
+  newPrice_gte?: Maybe<Scalars['BigInt']>
+  newPrice_lt?: Maybe<Scalars['BigInt']>
+  newPrice_lte?: Maybe<Scalars['BigInt']>
+  newPrice_in?: Maybe<Array<Scalars['BigInt']>>
+  video?: Maybe<VideoWhereInput>
+  ownerMember?: Maybe<MembershipWhereInput>
+  ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
+  AND?: Maybe<Array<BuyNowPriceUpdatedEventWhereInput>>
+  OR?: Maybe<Array<BuyNowPriceUpdatedEventWhereInput>>
+}
+
+export type BuyNowPriceUpdatedEventWhereUniqueInput = {
   id: Scalars['ID']
 }
 
@@ -5805,6 +6096,7 @@ export type Channel = BaseGraphQlObject & {
   createdInBlock: Scalars['Int']
   collaborators: Array<Membership>
   bannedMembers: Array<Membership>
+  channelNftCollectors: Array<ChannelNftCollectors>
   memberbannedfromchanneleventchannel?: Maybe<Array<MemberBannedFromChannelEvent>>
   ownednftcreatorChannel?: Maybe<Array<OwnedNft>>
 }
@@ -5954,6 +6246,120 @@ export type ChannelEdge = {
   cursor: Scalars['String']
 }
 
+export type ChannelNftCollectors = BaseGraphQlObject & {
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['String']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['String']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['String']>
+  version: Scalars['Int']
+  channel: Channel
+  channelId: Scalars['String']
+  member?: Maybe<Membership>
+  memberId?: Maybe<Scalars['String']>
+  curatorGroup?: Maybe<CuratorGroup>
+  curatorGroupId?: Maybe<Scalars['String']>
+  /** Amount of NFTs owned in the channel */
+  amount: Scalars['Int']
+  /** Time of last NFT amount increase */
+  lastIncreaseAt: Scalars['DateTime']
+}
+
+export type ChannelNftCollectorsConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<ChannelNftCollectorsEdge>
+  pageInfo: PageInfo
+}
+
+export type ChannelNftCollectorsCreateInput = {
+  channel: Scalars['ID']
+  member?: Maybe<Scalars['ID']>
+  curatorGroup?: Maybe<Scalars['ID']>
+  amount: Scalars['Float']
+  lastIncreaseAt: Scalars['DateTime']
+}
+
+export type ChannelNftCollectorsEdge = {
+  node: ChannelNftCollectors
+  cursor: Scalars['String']
+}
+
+export enum ChannelNftCollectorsOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  ChannelAsc = 'channel_ASC',
+  ChannelDesc = 'channel_DESC',
+  MemberAsc = 'member_ASC',
+  MemberDesc = 'member_DESC',
+  CuratorGroupAsc = 'curatorGroup_ASC',
+  CuratorGroupDesc = 'curatorGroup_DESC',
+  AmountAsc = 'amount_ASC',
+  AmountDesc = 'amount_DESC',
+  LastIncreaseAtAsc = 'lastIncreaseAt_ASC',
+  LastIncreaseAtDesc = 'lastIncreaseAt_DESC',
+}
+
+export type ChannelNftCollectorsUpdateInput = {
+  channel?: Maybe<Scalars['ID']>
+  member?: Maybe<Scalars['ID']>
+  curatorGroup?: Maybe<Scalars['ID']>
+  amount?: Maybe<Scalars['Float']>
+  lastIncreaseAt?: Maybe<Scalars['DateTime']>
+}
+
+export type ChannelNftCollectorsWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  amount_eq?: Maybe<Scalars['Int']>
+  amount_gt?: Maybe<Scalars['Int']>
+  amount_gte?: Maybe<Scalars['Int']>
+  amount_lt?: Maybe<Scalars['Int']>
+  amount_lte?: Maybe<Scalars['Int']>
+  amount_in?: Maybe<Array<Scalars['Int']>>
+  lastIncreaseAt_eq?: Maybe<Scalars['DateTime']>
+  lastIncreaseAt_lt?: Maybe<Scalars['DateTime']>
+  lastIncreaseAt_lte?: Maybe<Scalars['DateTime']>
+  lastIncreaseAt_gt?: Maybe<Scalars['DateTime']>
+  lastIncreaseAt_gte?: Maybe<Scalars['DateTime']>
+  channel?: Maybe<ChannelWhereInput>
+  member?: Maybe<MembershipWhereInput>
+  curatorGroup?: Maybe<CuratorGroupWhereInput>
+  AND?: Maybe<Array<ChannelNftCollectorsWhereInput>>
+  OR?: Maybe<Array<ChannelNftCollectorsWhereInput>>
+}
+
+export type ChannelNftCollectorsWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
 export enum ChannelOrderByInput {
   CreatedAtAsc = 'createdAt_ASC',
   CreatedAtDesc = 'createdAt_DESC',
@@ -6076,6 +6482,9 @@ export type ChannelWhereInput = {
   bannedMembers_none?: Maybe<MembershipWhereInput>
   bannedMembers_some?: Maybe<MembershipWhereInput>
   bannedMembers_every?: Maybe<MembershipWhereInput>
+  channelNftCollectors_none?: Maybe<ChannelNftCollectorsWhereInput>
+  channelNftCollectors_some?: Maybe<ChannelNftCollectorsWhereInput>
+  channelNftCollectors_every?: Maybe<ChannelNftCollectorsWhereInput>
   memberbannedfromchanneleventchannel_none?: Maybe<MemberBannedFromChannelEventWhereInput>
   memberbannedfromchanneleventchannel_some?: Maybe<MemberBannedFromChannelEventWhereInput>
   memberbannedfromchanneleventchannel_every?: Maybe<MemberBannedFromChannelEventWhereInput>
@@ -7919,6 +8328,24 @@ export type CuratorGroup = BaseGraphQlObject & {
   isActive: Scalars['Boolean']
   curators: Array<Curator>
   channels: Array<Channel>
+  nftCollectorInChannels: Array<ChannelNftCollectors>
+  auctionbidcanceledeventownerCuratorGroup?: Maybe<Array<AuctionBidCanceledEvent>>
+  auctionbidmadeeventownerCuratorGroup?: Maybe<Array<AuctionBidMadeEvent>>
+  auctioncanceledeventownerCuratorGroup?: Maybe<Array<AuctionCanceledEvent>>
+  bidmadecompletingauctioneventownerCuratorGroup?: Maybe<Array<BidMadeCompletingAuctionEvent>>
+  buynowcanceledeventownerCuratorGroup?: Maybe<Array<BuyNowCanceledEvent>>
+  buynowpriceupdatedeventownerCuratorGroup?: Maybe<Array<BuyNowPriceUpdatedEvent>>
+  englishauctionsettledeventownerCuratorGroup?: Maybe<Array<EnglishAuctionSettledEvent>>
+  englishauctionstartedeventownerCuratorGroup?: Maybe<Array<EnglishAuctionStartedEvent>>
+  nftboughteventownerCuratorGroup?: Maybe<Array<NftBoughtEvent>>
+  nftissuedeventownerCuratorGroup?: Maybe<Array<NftIssuedEvent>>
+  nftsellordermadeeventownerCuratorGroup?: Maybe<Array<NftSellOrderMadeEvent>>
+  nftslingedbacktotheoriginalartisteventownerCuratorGroup?: Maybe<Array<NftSlingedBackToTheOriginalArtistEvent>>
+  offeracceptedeventownerCuratorGroup?: Maybe<Array<OfferAcceptedEvent>>
+  offercanceledeventownerCuratorGroup?: Maybe<Array<OfferCanceledEvent>>
+  offerstartedeventownerCuratorGroup?: Maybe<Array<OfferStartedEvent>>
+  openauctionbidacceptedeventownerCuratorGroup?: Maybe<Array<OpenAuctionBidAcceptedEvent>>
+  openauctionstartedeventownerCuratorGroup?: Maybe<Array<OpenAuctionStartedEvent>>
   ownednftownerCuratorGroup?: Maybe<Array<OwnedNft>>
 }
 
@@ -7985,6 +8412,60 @@ export type CuratorGroupWhereInput = {
   channels_none?: Maybe<ChannelWhereInput>
   channels_some?: Maybe<ChannelWhereInput>
   channels_every?: Maybe<ChannelWhereInput>
+  nftCollectorInChannels_none?: Maybe<ChannelNftCollectorsWhereInput>
+  nftCollectorInChannels_some?: Maybe<ChannelNftCollectorsWhereInput>
+  nftCollectorInChannels_every?: Maybe<ChannelNftCollectorsWhereInput>
+  auctionbidcanceledeventownerCuratorGroup_none?: Maybe<AuctionBidCanceledEventWhereInput>
+  auctionbidcanceledeventownerCuratorGroup_some?: Maybe<AuctionBidCanceledEventWhereInput>
+  auctionbidcanceledeventownerCuratorGroup_every?: Maybe<AuctionBidCanceledEventWhereInput>
+  auctionbidmadeeventownerCuratorGroup_none?: Maybe<AuctionBidMadeEventWhereInput>
+  auctionbidmadeeventownerCuratorGroup_some?: Maybe<AuctionBidMadeEventWhereInput>
+  auctionbidmadeeventownerCuratorGroup_every?: Maybe<AuctionBidMadeEventWhereInput>
+  auctioncanceledeventownerCuratorGroup_none?: Maybe<AuctionCanceledEventWhereInput>
+  auctioncanceledeventownerCuratorGroup_some?: Maybe<AuctionCanceledEventWhereInput>
+  auctioncanceledeventownerCuratorGroup_every?: Maybe<AuctionCanceledEventWhereInput>
+  bidmadecompletingauctioneventownerCuratorGroup_none?: Maybe<BidMadeCompletingAuctionEventWhereInput>
+  bidmadecompletingauctioneventownerCuratorGroup_some?: Maybe<BidMadeCompletingAuctionEventWhereInput>
+  bidmadecompletingauctioneventownerCuratorGroup_every?: Maybe<BidMadeCompletingAuctionEventWhereInput>
+  buynowcanceledeventownerCuratorGroup_none?: Maybe<BuyNowCanceledEventWhereInput>
+  buynowcanceledeventownerCuratorGroup_some?: Maybe<BuyNowCanceledEventWhereInput>
+  buynowcanceledeventownerCuratorGroup_every?: Maybe<BuyNowCanceledEventWhereInput>
+  buynowpriceupdatedeventownerCuratorGroup_none?: Maybe<BuyNowPriceUpdatedEventWhereInput>
+  buynowpriceupdatedeventownerCuratorGroup_some?: Maybe<BuyNowPriceUpdatedEventWhereInput>
+  buynowpriceupdatedeventownerCuratorGroup_every?: Maybe<BuyNowPriceUpdatedEventWhereInput>
+  englishauctionsettledeventownerCuratorGroup_none?: Maybe<EnglishAuctionSettledEventWhereInput>
+  englishauctionsettledeventownerCuratorGroup_some?: Maybe<EnglishAuctionSettledEventWhereInput>
+  englishauctionsettledeventownerCuratorGroup_every?: Maybe<EnglishAuctionSettledEventWhereInput>
+  englishauctionstartedeventownerCuratorGroup_none?: Maybe<EnglishAuctionStartedEventWhereInput>
+  englishauctionstartedeventownerCuratorGroup_some?: Maybe<EnglishAuctionStartedEventWhereInput>
+  englishauctionstartedeventownerCuratorGroup_every?: Maybe<EnglishAuctionStartedEventWhereInput>
+  nftboughteventownerCuratorGroup_none?: Maybe<NftBoughtEventWhereInput>
+  nftboughteventownerCuratorGroup_some?: Maybe<NftBoughtEventWhereInput>
+  nftboughteventownerCuratorGroup_every?: Maybe<NftBoughtEventWhereInput>
+  nftissuedeventownerCuratorGroup_none?: Maybe<NftIssuedEventWhereInput>
+  nftissuedeventownerCuratorGroup_some?: Maybe<NftIssuedEventWhereInput>
+  nftissuedeventownerCuratorGroup_every?: Maybe<NftIssuedEventWhereInput>
+  nftsellordermadeeventownerCuratorGroup_none?: Maybe<NftSellOrderMadeEventWhereInput>
+  nftsellordermadeeventownerCuratorGroup_some?: Maybe<NftSellOrderMadeEventWhereInput>
+  nftsellordermadeeventownerCuratorGroup_every?: Maybe<NftSellOrderMadeEventWhereInput>
+  nftslingedbacktotheoriginalartisteventownerCuratorGroup_none?: Maybe<NftSlingedBackToTheOriginalArtistEventWhereInput>
+  nftslingedbacktotheoriginalartisteventownerCuratorGroup_some?: Maybe<NftSlingedBackToTheOriginalArtistEventWhereInput>
+  nftslingedbacktotheoriginalartisteventownerCuratorGroup_every?: Maybe<NftSlingedBackToTheOriginalArtistEventWhereInput>
+  offeracceptedeventownerCuratorGroup_none?: Maybe<OfferAcceptedEventWhereInput>
+  offeracceptedeventownerCuratorGroup_some?: Maybe<OfferAcceptedEventWhereInput>
+  offeracceptedeventownerCuratorGroup_every?: Maybe<OfferAcceptedEventWhereInput>
+  offercanceledeventownerCuratorGroup_none?: Maybe<OfferCanceledEventWhereInput>
+  offercanceledeventownerCuratorGroup_some?: Maybe<OfferCanceledEventWhereInput>
+  offercanceledeventownerCuratorGroup_every?: Maybe<OfferCanceledEventWhereInput>
+  offerstartedeventownerCuratorGroup_none?: Maybe<OfferStartedEventWhereInput>
+  offerstartedeventownerCuratorGroup_some?: Maybe<OfferStartedEventWhereInput>
+  offerstartedeventownerCuratorGroup_every?: Maybe<OfferStartedEventWhereInput>
+  openauctionbidacceptedeventownerCuratorGroup_none?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
+  openauctionbidacceptedeventownerCuratorGroup_some?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
+  openauctionbidacceptedeventownerCuratorGroup_every?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
+  openauctionstartedeventownerCuratorGroup_none?: Maybe<OpenAuctionStartedEventWhereInput>
+  openauctionstartedeventownerCuratorGroup_some?: Maybe<OpenAuctionStartedEventWhereInput>
+  openauctionstartedeventownerCuratorGroup_every?: Maybe<OpenAuctionStartedEventWhereInput>
   ownednftownerCuratorGroup_none?: Maybe<OwnedNftWhereInput>
   ownednftownerCuratorGroup_some?: Maybe<OwnedNftWhereInput>
   ownednftownerCuratorGroup_every?: Maybe<OwnedNftWhereInput>
@@ -9011,7 +9492,7 @@ export type ElectionRoundWhereUniqueInput = {
   id: Scalars['ID']
 }
 
-export type EnglishAuctionCompletedEvent = Event &
+export type EnglishAuctionSettledEvent = Event &
   BaseGraphQlObject & {
     /** Hash of the extrinsic which caused the event to be emitted. */
     inExtrinsic?: Maybe<Scalars['String']>
@@ -9035,29 +9516,35 @@ export type EnglishAuctionCompletedEvent = Event &
     winnerId: Scalars['String']
     video: Video
     videoId: Scalars['String']
+    ownerMember?: Maybe<Membership>
+    ownerMemberId?: Maybe<Scalars['String']>
+    ownerCuratorGroup?: Maybe<CuratorGroup>
+    ownerCuratorGroupId?: Maybe<Scalars['String']>
   }
 
-export type EnglishAuctionCompletedEventConnection = {
+export type EnglishAuctionSettledEventConnection = {
   totalCount: Scalars['Int']
-  edges: Array<EnglishAuctionCompletedEventEdge>
+  edges: Array<EnglishAuctionSettledEventEdge>
   pageInfo: PageInfo
 }
 
-export type EnglishAuctionCompletedEventCreateInput = {
+export type EnglishAuctionSettledEventCreateInput = {
   inExtrinsic?: Maybe<Scalars['String']>
   inBlock: Scalars['Float']
   network: Network
   indexInBlock: Scalars['Float']
   winner: Scalars['ID']
   video: Scalars['ID']
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
 }
 
-export type EnglishAuctionCompletedEventEdge = {
-  node: EnglishAuctionCompletedEvent
+export type EnglishAuctionSettledEventEdge = {
+  node: EnglishAuctionSettledEvent
   cursor: Scalars['String']
 }
 
-export enum EnglishAuctionCompletedEventOrderByInput {
+export enum EnglishAuctionSettledEventOrderByInput {
   CreatedAtAsc = 'createdAt_ASC',
   CreatedAtDesc = 'createdAt_DESC',
   UpdatedAtAsc = 'updatedAt_ASC',
@@ -9076,18 +9563,24 @@ export enum EnglishAuctionCompletedEventOrderByInput {
   WinnerDesc = 'winner_DESC',
   VideoAsc = 'video_ASC',
   VideoDesc = 'video_DESC',
+  OwnerMemberAsc = 'ownerMember_ASC',
+  OwnerMemberDesc = 'ownerMember_DESC',
+  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
+  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
 }
 
-export type EnglishAuctionCompletedEventUpdateInput = {
+export type EnglishAuctionSettledEventUpdateInput = {
   inExtrinsic?: Maybe<Scalars['String']>
   inBlock?: Maybe<Scalars['Float']>
   network?: Maybe<Network>
   indexInBlock?: Maybe<Scalars['Float']>
   winner?: Maybe<Scalars['ID']>
   video?: Maybe<Scalars['ID']>
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
 }
 
-export type EnglishAuctionCompletedEventWhereInput = {
+export type EnglishAuctionSettledEventWhereInput = {
   id_eq?: Maybe<Scalars['ID']>
   id_in?: Maybe<Array<Scalars['ID']>>
   createdAt_eq?: Maybe<Scalars['DateTime']>
@@ -9133,11 +9626,13 @@ export type EnglishAuctionCompletedEventWhereInput = {
   indexInBlock_in?: Maybe<Array<Scalars['Int']>>
   winner?: Maybe<MembershipWhereInput>
   video?: Maybe<VideoWhereInput>
-  AND?: Maybe<Array<EnglishAuctionCompletedEventWhereInput>>
-  OR?: Maybe<Array<EnglishAuctionCompletedEventWhereInput>>
+  ownerMember?: Maybe<MembershipWhereInput>
+  ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
+  AND?: Maybe<Array<EnglishAuctionSettledEventWhereInput>>
+  OR?: Maybe<Array<EnglishAuctionSettledEventWhereInput>>
 }
 
-export type EnglishAuctionCompletedEventWhereUniqueInput = {
+export type EnglishAuctionSettledEventWhereUniqueInput = {
   id: Scalars['ID']
 }
 
@@ -9167,6 +9662,10 @@ export type EnglishAuctionStartedEvent = Event &
     videoId: Scalars['String']
     auction: Auction
     auctionId: Scalars['String']
+    ownerMember?: Maybe<Membership>
+    ownerMemberId?: Maybe<Scalars['String']>
+    ownerCuratorGroup?: Maybe<CuratorGroup>
+    ownerCuratorGroupId?: Maybe<Scalars['String']>
   }
 
 export type EnglishAuctionStartedEventConnection = {
@@ -9183,6 +9682,8 @@ export type EnglishAuctionStartedEventCreateInput = {
   actor: Scalars['JSONObject']
   video: Scalars['ID']
   auction: Scalars['ID']
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
 }
 
 export type EnglishAuctionStartedEventEdge = {
@@ -9209,6 +9710,10 @@ export enum EnglishAuctionStartedEventOrderByInput {
   VideoDesc = 'video_DESC',
   AuctionAsc = 'auction_ASC',
   AuctionDesc = 'auction_DESC',
+  OwnerMemberAsc = 'ownerMember_ASC',
+  OwnerMemberDesc = 'ownerMember_DESC',
+  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
+  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
 }
 
 export type EnglishAuctionStartedEventUpdateInput = {
@@ -9219,6 +9724,8 @@ export type EnglishAuctionStartedEventUpdateInput = {
   actor?: Maybe<Scalars['JSONObject']>
   video?: Maybe<Scalars['ID']>
   auction?: Maybe<Scalars['ID']>
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
 }
 
 export type EnglishAuctionStartedEventWhereInput = {
@@ -9268,6 +9775,8 @@ export type EnglishAuctionStartedEventWhereInput = {
   actor_json?: Maybe<Scalars['JSONObject']>
   video?: Maybe<VideoWhereInput>
   auction?: Maybe<AuctionWhereInput>
+  ownerMember?: Maybe<MembershipWhereInput>
+  ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
   AND?: Maybe<Array<EnglishAuctionStartedEventWhereInput>>
   OR?: Maybe<Array<EnglishAuctionStartedEventWhereInput>>
 }
@@ -9340,6 +9849,7 @@ export enum EventTypeOptions {
   BudgetSpendingEvent = 'BudgetSpendingEvent',
   BudgetUpdatedEvent = 'BudgetUpdatedEvent',
   BuyNowCanceledEvent = 'BuyNowCanceledEvent',
+  BuyNowPriceUpdatedEvent = 'BuyNowPriceUpdatedEvent',
   CandidacyNoteSetEvent = 'CandidacyNoteSetEvent',
   CandidacyStakeReleaseEvent = 'CandidacyStakeReleaseEvent',
   CandidacyWithdrawEvent = 'CandidacyWithdrawEvent',
@@ -9356,7 +9866,7 @@ export enum EventTypeOptions {
   CommentSectionPreferenceEvent = 'CommentSectionPreferenceEvent',
   CommentTextUpdatedEvent = 'CommentTextUpdatedEvent',
   CouncilorRewardUpdatedEvent = 'CouncilorRewardUpdatedEvent',
-  EnglishAuctionCompletedEvent = 'EnglishAuctionCompletedEvent',
+  EnglishAuctionSettledEvent = 'EnglishAuctionSettledEvent',
   EnglishAuctionStartedEvent = 'EnglishAuctionStartedEvent',
   InitialInvitationBalanceUpdatedEvent = 'InitialInvitationBalanceUpdatedEvent',
   InitialInvitationCountUpdatedEvent = 'InitialInvitationCountUpdatedEvent',
@@ -12477,21 +12987,32 @@ export type Membership = BaseGraphQlObject & {
   councilMembers: Array<CouncilMember>
   whitelistedInAuctions: Array<Auction>
   ownedNfts: Array<OwnedNft>
+  nftCollectorInChannels: Array<ChannelNftCollectors>
   auctioninitialOwner?: Maybe<Array<Auction>>
   auctionwinningMember?: Maybe<Array<Auction>>
   auctionbidcanceledeventmember?: Maybe<Array<AuctionBidCanceledEvent>>
+  auctionbidcanceledeventownerMember?: Maybe<Array<AuctionBidCanceledEvent>>
   auctionbidmadeeventmember?: Maybe<Array<AuctionBidMadeEvent>>
+  auctionbidmadeeventownerMember?: Maybe<Array<AuctionBidMadeEvent>>
+  auctionbidmadeeventpreviousTopBidder?: Maybe<Array<AuctionBidMadeEvent>>
+  auctioncanceledeventownerMember?: Maybe<Array<AuctionCanceledEvent>>
   bidbidder?: Maybe<Array<Bid>>
   bidmadecompletingauctioneventmember?: Maybe<Array<BidMadeCompletingAuctionEvent>>
+  bidmadecompletingauctioneventownerMember?: Maybe<Array<BidMadeCompletingAuctionEvent>>
+  bidmadecompletingauctioneventpreviousTopBidder?: Maybe<Array<BidMadeCompletingAuctionEvent>>
   bountycreator?: Maybe<Array<Bounty>>
   bountyoracle?: Maybe<Array<Bounty>>
   bountycontributioncontributor?: Maybe<Array<BountyContribution>>
   bountyentryworker?: Maybe<Array<BountyEntry>>
+  buynowcanceledeventownerMember?: Maybe<Array<BuyNowCanceledEvent>>
+  buynowpriceupdatedeventownerMember?: Maybe<Array<BuyNowPriceUpdatedEvent>>
   commentauthor?: Maybe<Array<Comment>>
   commentdeletedbymoderatoreventactor?: Maybe<Array<CommentDeletedByModeratorEvent>>
   commentreactedeventreactingMember?: Maybe<Array<CommentReactedEvent>>
   commentreactionmember?: Maybe<Array<CommentReaction>>
-  englishauctioncompletedeventwinner?: Maybe<Array<EnglishAuctionCompletedEvent>>
+  englishauctionsettledeventwinner?: Maybe<Array<EnglishAuctionSettledEvent>>
+  englishauctionsettledeventownerMember?: Maybe<Array<EnglishAuctionSettledEvent>>
+  englishauctionstartedeventownerMember?: Maybe<Array<EnglishAuctionStartedEvent>>
   forumpostauthor?: Maybe<Array<ForumPost>>
   forumpostreactionmember?: Maybe<Array<ForumPostReaction>>
   forumthreadauthor?: Maybe<Array<ForumThread>>
@@ -12506,8 +13027,17 @@ export type Membership = BaseGraphQlObject & {
   membershipboughteventnewMember?: Maybe<Array<MembershipBoughtEvent>>
   membershipboughteventreferrer?: Maybe<Array<MembershipBoughtEvent>>
   nftboughteventmember?: Maybe<Array<NftBoughtEvent>>
-  nftissuedeventnewOwner?: Maybe<Array<NftIssuedEvent>>
+  nftboughteventownerMember?: Maybe<Array<NftBoughtEvent>>
+  nftissuedeventownerMember?: Maybe<Array<NftIssuedEvent>>
+  nftsellordermadeeventownerMember?: Maybe<Array<NftSellOrderMadeEvent>>
+  nftslingedbacktotheoriginalartisteventownerMember?: Maybe<Array<NftSlingedBackToTheOriginalArtistEvent>>
+  offeracceptedeventownerMember?: Maybe<Array<OfferAcceptedEvent>>
+  offercanceledeventownerMember?: Maybe<Array<OfferCanceledEvent>>
   offerstartedeventmember?: Maybe<Array<OfferStartedEvent>>
+  offerstartedeventownerMember?: Maybe<Array<OfferStartedEvent>>
+  openauctionbidacceptedeventownerMember?: Maybe<Array<OpenAuctionBidAcceptedEvent>>
+  openauctionbidacceptedeventwinningBidder?: Maybe<Array<OpenAuctionBidAcceptedEvent>>
+  openauctionstartedeventownerMember?: Maybe<Array<OpenAuctionStartedEvent>>
   postdeletedeventactor?: Maybe<Array<PostDeletedEvent>>
   postreactedeventreactingMember?: Maybe<Array<PostReactedEvent>>
   proposalcreator?: Maybe<Array<Proposal>>
@@ -13133,6 +13663,9 @@ export type MembershipWhereInput = {
   ownedNfts_none?: Maybe<OwnedNftWhereInput>
   ownedNfts_some?: Maybe<OwnedNftWhereInput>
   ownedNfts_every?: Maybe<OwnedNftWhereInput>
+  nftCollectorInChannels_none?: Maybe<ChannelNftCollectorsWhereInput>
+  nftCollectorInChannels_some?: Maybe<ChannelNftCollectorsWhereInput>
+  nftCollectorInChannels_every?: Maybe<ChannelNftCollectorsWhereInput>
   auctioninitialOwner_none?: Maybe<AuctionWhereInput>
   auctioninitialOwner_some?: Maybe<AuctionWhereInput>
   auctioninitialOwner_every?: Maybe<AuctionWhereInput>
@@ -13142,15 +13675,33 @@ export type MembershipWhereInput = {
   auctionbidcanceledeventmember_none?: Maybe<AuctionBidCanceledEventWhereInput>
   auctionbidcanceledeventmember_some?: Maybe<AuctionBidCanceledEventWhereInput>
   auctionbidcanceledeventmember_every?: Maybe<AuctionBidCanceledEventWhereInput>
+  auctionbidcanceledeventownerMember_none?: Maybe<AuctionBidCanceledEventWhereInput>
+  auctionbidcanceledeventownerMember_some?: Maybe<AuctionBidCanceledEventWhereInput>
+  auctionbidcanceledeventownerMember_every?: Maybe<AuctionBidCanceledEventWhereInput>
   auctionbidmadeeventmember_none?: Maybe<AuctionBidMadeEventWhereInput>
   auctionbidmadeeventmember_some?: Maybe<AuctionBidMadeEventWhereInput>
   auctionbidmadeeventmember_every?: Maybe<AuctionBidMadeEventWhereInput>
+  auctionbidmadeeventownerMember_none?: Maybe<AuctionBidMadeEventWhereInput>
+  auctionbidmadeeventownerMember_some?: Maybe<AuctionBidMadeEventWhereInput>
+  auctionbidmadeeventownerMember_every?: Maybe<AuctionBidMadeEventWhereInput>
+  auctionbidmadeeventpreviousTopBidder_none?: Maybe<AuctionBidMadeEventWhereInput>
+  auctionbidmadeeventpreviousTopBidder_some?: Maybe<AuctionBidMadeEventWhereInput>
+  auctionbidmadeeventpreviousTopBidder_every?: Maybe<AuctionBidMadeEventWhereInput>
+  auctioncanceledeventownerMember_none?: Maybe<AuctionCanceledEventWhereInput>
+  auctioncanceledeventownerMember_some?: Maybe<AuctionCanceledEventWhereInput>
+  auctioncanceledeventownerMember_every?: Maybe<AuctionCanceledEventWhereInput>
   bidbidder_none?: Maybe<BidWhereInput>
   bidbidder_some?: Maybe<BidWhereInput>
   bidbidder_every?: Maybe<BidWhereInput>
   bidmadecompletingauctioneventmember_none?: Maybe<BidMadeCompletingAuctionEventWhereInput>
   bidmadecompletingauctioneventmember_some?: Maybe<BidMadeCompletingAuctionEventWhereInput>
   bidmadecompletingauctioneventmember_every?: Maybe<BidMadeCompletingAuctionEventWhereInput>
+  bidmadecompletingauctioneventownerMember_none?: Maybe<BidMadeCompletingAuctionEventWhereInput>
+  bidmadecompletingauctioneventownerMember_some?: Maybe<BidMadeCompletingAuctionEventWhereInput>
+  bidmadecompletingauctioneventownerMember_every?: Maybe<BidMadeCompletingAuctionEventWhereInput>
+  bidmadecompletingauctioneventpreviousTopBidder_none?: Maybe<BidMadeCompletingAuctionEventWhereInput>
+  bidmadecompletingauctioneventpreviousTopBidder_some?: Maybe<BidMadeCompletingAuctionEventWhereInput>
+  bidmadecompletingauctioneventpreviousTopBidder_every?: Maybe<BidMadeCompletingAuctionEventWhereInput>
   bountycreator_none?: Maybe<BountyWhereInput>
   bountycreator_some?: Maybe<BountyWhereInput>
   bountycreator_every?: Maybe<BountyWhereInput>
@@ -13163,6 +13714,12 @@ export type MembershipWhereInput = {
   bountyentryworker_none?: Maybe<BountyEntryWhereInput>
   bountyentryworker_some?: Maybe<BountyEntryWhereInput>
   bountyentryworker_every?: Maybe<BountyEntryWhereInput>
+  buynowcanceledeventownerMember_none?: Maybe<BuyNowCanceledEventWhereInput>
+  buynowcanceledeventownerMember_some?: Maybe<BuyNowCanceledEventWhereInput>
+  buynowcanceledeventownerMember_every?: Maybe<BuyNowCanceledEventWhereInput>
+  buynowpriceupdatedeventownerMember_none?: Maybe<BuyNowPriceUpdatedEventWhereInput>
+  buynowpriceupdatedeventownerMember_some?: Maybe<BuyNowPriceUpdatedEventWhereInput>
+  buynowpriceupdatedeventownerMember_every?: Maybe<BuyNowPriceUpdatedEventWhereInput>
   commentauthor_none?: Maybe<CommentWhereInput>
   commentauthor_some?: Maybe<CommentWhereInput>
   commentauthor_every?: Maybe<CommentWhereInput>
@@ -13175,9 +13732,15 @@ export type MembershipWhereInput = {
   commentreactionmember_none?: Maybe<CommentReactionWhereInput>
   commentreactionmember_some?: Maybe<CommentReactionWhereInput>
   commentreactionmember_every?: Maybe<CommentReactionWhereInput>
-  englishauctioncompletedeventwinner_none?: Maybe<EnglishAuctionCompletedEventWhereInput>
-  englishauctioncompletedeventwinner_some?: Maybe<EnglishAuctionCompletedEventWhereInput>
-  englishauctioncompletedeventwinner_every?: Maybe<EnglishAuctionCompletedEventWhereInput>
+  englishauctionsettledeventwinner_none?: Maybe<EnglishAuctionSettledEventWhereInput>
+  englishauctionsettledeventwinner_some?: Maybe<EnglishAuctionSettledEventWhereInput>
+  englishauctionsettledeventwinner_every?: Maybe<EnglishAuctionSettledEventWhereInput>
+  englishauctionsettledeventownerMember_none?: Maybe<EnglishAuctionSettledEventWhereInput>
+  englishauctionsettledeventownerMember_some?: Maybe<EnglishAuctionSettledEventWhereInput>
+  englishauctionsettledeventownerMember_every?: Maybe<EnglishAuctionSettledEventWhereInput>
+  englishauctionstartedeventownerMember_none?: Maybe<EnglishAuctionStartedEventWhereInput>
+  englishauctionstartedeventownerMember_some?: Maybe<EnglishAuctionStartedEventWhereInput>
+  englishauctionstartedeventownerMember_every?: Maybe<EnglishAuctionStartedEventWhereInput>
   forumpostauthor_none?: Maybe<ForumPostWhereInput>
   forumpostauthor_some?: Maybe<ForumPostWhereInput>
   forumpostauthor_every?: Maybe<ForumPostWhereInput>
@@ -13220,12 +13783,39 @@ export type MembershipWhereInput = {
   nftboughteventmember_none?: Maybe<NftBoughtEventWhereInput>
   nftboughteventmember_some?: Maybe<NftBoughtEventWhereInput>
   nftboughteventmember_every?: Maybe<NftBoughtEventWhereInput>
-  nftissuedeventnewOwner_none?: Maybe<NftIssuedEventWhereInput>
-  nftissuedeventnewOwner_some?: Maybe<NftIssuedEventWhereInput>
-  nftissuedeventnewOwner_every?: Maybe<NftIssuedEventWhereInput>
+  nftboughteventownerMember_none?: Maybe<NftBoughtEventWhereInput>
+  nftboughteventownerMember_some?: Maybe<NftBoughtEventWhereInput>
+  nftboughteventownerMember_every?: Maybe<NftBoughtEventWhereInput>
+  nftissuedeventownerMember_none?: Maybe<NftIssuedEventWhereInput>
+  nftissuedeventownerMember_some?: Maybe<NftIssuedEventWhereInput>
+  nftissuedeventownerMember_every?: Maybe<NftIssuedEventWhereInput>
+  nftsellordermadeeventownerMember_none?: Maybe<NftSellOrderMadeEventWhereInput>
+  nftsellordermadeeventownerMember_some?: Maybe<NftSellOrderMadeEventWhereInput>
+  nftsellordermadeeventownerMember_every?: Maybe<NftSellOrderMadeEventWhereInput>
+  nftslingedbacktotheoriginalartisteventownerMember_none?: Maybe<NftSlingedBackToTheOriginalArtistEventWhereInput>
+  nftslingedbacktotheoriginalartisteventownerMember_some?: Maybe<NftSlingedBackToTheOriginalArtistEventWhereInput>
+  nftslingedbacktotheoriginalartisteventownerMember_every?: Maybe<NftSlingedBackToTheOriginalArtistEventWhereInput>
+  offeracceptedeventownerMember_none?: Maybe<OfferAcceptedEventWhereInput>
+  offeracceptedeventownerMember_some?: Maybe<OfferAcceptedEventWhereInput>
+  offeracceptedeventownerMember_every?: Maybe<OfferAcceptedEventWhereInput>
+  offercanceledeventownerMember_none?: Maybe<OfferCanceledEventWhereInput>
+  offercanceledeventownerMember_some?: Maybe<OfferCanceledEventWhereInput>
+  offercanceledeventownerMember_every?: Maybe<OfferCanceledEventWhereInput>
   offerstartedeventmember_none?: Maybe<OfferStartedEventWhereInput>
   offerstartedeventmember_some?: Maybe<OfferStartedEventWhereInput>
   offerstartedeventmember_every?: Maybe<OfferStartedEventWhereInput>
+  offerstartedeventownerMember_none?: Maybe<OfferStartedEventWhereInput>
+  offerstartedeventownerMember_some?: Maybe<OfferStartedEventWhereInput>
+  offerstartedeventownerMember_every?: Maybe<OfferStartedEventWhereInput>
+  openauctionbidacceptedeventownerMember_none?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
+  openauctionbidacceptedeventownerMember_some?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
+  openauctionbidacceptedeventownerMember_every?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
+  openauctionbidacceptedeventwinningBidder_none?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
+  openauctionbidacceptedeventwinningBidder_some?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
+  openauctionbidacceptedeventwinningBidder_every?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
+  openauctionstartedeventownerMember_none?: Maybe<OpenAuctionStartedEventWhereInput>
+  openauctionstartedeventownerMember_some?: Maybe<OpenAuctionStartedEventWhereInput>
+  openauctionstartedeventownerMember_every?: Maybe<OpenAuctionStartedEventWhereInput>
   postdeletedeventactor_none?: Maybe<PostDeletedEventWhereInput>
   postdeletedeventactor_some?: Maybe<PostDeletedEventWhereInput>
   postdeletedeventactor_every?: Maybe<PostDeletedEventWhereInput>
@@ -13985,6 +14575,12 @@ export type NftBoughtEvent = Event &
     videoId: Scalars['String']
     member: Membership
     memberId: Scalars['String']
+    ownerMember?: Maybe<Membership>
+    ownerMemberId?: Maybe<Scalars['String']>
+    ownerCuratorGroup?: Maybe<CuratorGroup>
+    ownerCuratorGroupId?: Maybe<Scalars['String']>
+    /** Price for which NFT was bought */
+    price: Scalars['BigInt']
   }
 
 export type NftBoughtEventConnection = {
@@ -14000,6 +14596,9 @@ export type NftBoughtEventCreateInput = {
   indexInBlock: Scalars['Float']
   video: Scalars['ID']
   member: Scalars['ID']
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
+  price: Scalars['String']
 }
 
 export type NftBoughtEventEdge = {
@@ -14026,6 +14625,12 @@ export enum NftBoughtEventOrderByInput {
   VideoDesc = 'video_DESC',
   MemberAsc = 'member_ASC',
   MemberDesc = 'member_DESC',
+  OwnerMemberAsc = 'ownerMember_ASC',
+  OwnerMemberDesc = 'ownerMember_DESC',
+  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
+  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
+  PriceAsc = 'price_ASC',
+  PriceDesc = 'price_DESC',
 }
 
 export type NftBoughtEventUpdateInput = {
@@ -14035,6 +14640,9 @@ export type NftBoughtEventUpdateInput = {
   indexInBlock?: Maybe<Scalars['Float']>
   video?: Maybe<Scalars['ID']>
   member?: Maybe<Scalars['ID']>
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
+  price?: Maybe<Scalars['String']>
 }
 
 export type NftBoughtEventWhereInput = {
@@ -14081,8 +14689,16 @@ export type NftBoughtEventWhereInput = {
   indexInBlock_lt?: Maybe<Scalars['Int']>
   indexInBlock_lte?: Maybe<Scalars['Int']>
   indexInBlock_in?: Maybe<Array<Scalars['Int']>>
+  price_eq?: Maybe<Scalars['BigInt']>
+  price_gt?: Maybe<Scalars['BigInt']>
+  price_gte?: Maybe<Scalars['BigInt']>
+  price_lt?: Maybe<Scalars['BigInt']>
+  price_lte?: Maybe<Scalars['BigInt']>
+  price_in?: Maybe<Array<Scalars['BigInt']>>
   video?: Maybe<VideoWhereInput>
   member?: Maybe<MembershipWhereInput>
+  ownerMember?: Maybe<MembershipWhereInput>
+  ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
   AND?: Maybe<Array<NftBoughtEventWhereInput>>
   OR?: Maybe<Array<NftBoughtEventWhereInput>>
 }
@@ -14119,8 +14735,10 @@ export type NftIssuedEvent = Event &
     royalty?: Maybe<Scalars['Float']>
     /** NFT's metadata. */
     metadata: Scalars['String']
-    newOwner?: Maybe<Membership>
-    newOwnerId?: Maybe<Scalars['String']>
+    ownerMember?: Maybe<Membership>
+    ownerMemberId?: Maybe<Scalars['String']>
+    ownerCuratorGroup?: Maybe<CuratorGroup>
+    ownerCuratorGroupId?: Maybe<Scalars['String']>
   }
 
 export type NftIssuedEventConnection = {
@@ -14138,7 +14756,8 @@ export type NftIssuedEventCreateInput = {
   video: Scalars['ID']
   royalty?: Maybe<Scalars['Float']>
   metadata: Scalars['String']
-  newOwner?: Maybe<Scalars['ID']>
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
 }
 
 export type NftIssuedEventEdge = {
@@ -14167,8 +14786,10 @@ export enum NftIssuedEventOrderByInput {
   RoyaltyDesc = 'royalty_DESC',
   MetadataAsc = 'metadata_ASC',
   MetadataDesc = 'metadata_DESC',
-  NewOwnerAsc = 'newOwner_ASC',
-  NewOwnerDesc = 'newOwner_DESC',
+  OwnerMemberAsc = 'ownerMember_ASC',
+  OwnerMemberDesc = 'ownerMember_DESC',
+  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
+  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
 }
 
 export type NftIssuedEventUpdateInput = {
@@ -14180,7 +14801,8 @@ export type NftIssuedEventUpdateInput = {
   video?: Maybe<Scalars['ID']>
   royalty?: Maybe<Scalars['Float']>
   metadata?: Maybe<Scalars['String']>
-  newOwner?: Maybe<Scalars['ID']>
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
 }
 
 export type NftIssuedEventWhereInput = {
@@ -14240,7 +14862,8 @@ export type NftIssuedEventWhereInput = {
   metadata_endsWith?: Maybe<Scalars['String']>
   metadata_in?: Maybe<Array<Scalars['String']>>
   video?: Maybe<VideoWhereInput>
-  newOwner?: Maybe<MembershipWhereInput>
+  ownerMember?: Maybe<MembershipWhereInput>
+  ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
   AND?: Maybe<Array<NftIssuedEventWhereInput>>
   OR?: Maybe<Array<NftIssuedEventWhereInput>>
 }
@@ -14270,6 +14893,10 @@ export type NftSellOrderMadeEvent = BaseGraphQlObject & {
   videoId: Scalars['String']
   /** Content actor acting as NFT owner. */
   contentActor: ContentActor
+  ownerMember?: Maybe<Membership>
+  ownerMemberId?: Maybe<Scalars['String']>
+  ownerCuratorGroup?: Maybe<CuratorGroup>
+  ownerCuratorGroupId?: Maybe<Scalars['String']>
   /** Offer's price. */
   price: Scalars['BigInt']
 }
@@ -14287,6 +14914,8 @@ export type NftSellOrderMadeEventCreateInput = {
   indexInBlock: Scalars['Float']
   video: Scalars['ID']
   contentActor: Scalars['JSONObject']
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
   price: Scalars['String']
 }
 
@@ -14312,6 +14941,10 @@ export enum NftSellOrderMadeEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   VideoAsc = 'video_ASC',
   VideoDesc = 'video_DESC',
+  OwnerMemberAsc = 'ownerMember_ASC',
+  OwnerMemberDesc = 'ownerMember_DESC',
+  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
+  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
   PriceAsc = 'price_ASC',
   PriceDesc = 'price_DESC',
 }
@@ -14323,6 +14956,8 @@ export type NftSellOrderMadeEventUpdateInput = {
   indexInBlock?: Maybe<Scalars['Float']>
   video?: Maybe<Scalars['ID']>
   contentActor?: Maybe<Scalars['JSONObject']>
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
   price?: Maybe<Scalars['String']>
 }
 
@@ -14378,6 +15013,8 @@ export type NftSellOrderMadeEventWhereInput = {
   price_lte?: Maybe<Scalars['BigInt']>
   price_in?: Maybe<Array<Scalars['BigInt']>>
   video?: Maybe<VideoWhereInput>
+  ownerMember?: Maybe<MembershipWhereInput>
+  ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
   AND?: Maybe<Array<NftSellOrderMadeEventWhereInput>>
   OR?: Maybe<Array<NftSellOrderMadeEventWhereInput>>
 }
@@ -14408,8 +15045,12 @@ export type NftSlingedBackToTheOriginalArtistEvent = Event &
     version: Scalars['Int']
     video: Video
     videoId: Scalars['String']
-    /** Content actor who slinged back the NFT. */
+    /** Content actor who slung back the NFT. */
     contentActor: ContentActor
+    ownerMember?: Maybe<Membership>
+    ownerMemberId?: Maybe<Scalars['String']>
+    ownerCuratorGroup?: Maybe<CuratorGroup>
+    ownerCuratorGroupId?: Maybe<Scalars['String']>
   }
 
 export type NftSlingedBackToTheOriginalArtistEventConnection = {
@@ -14425,6 +15066,8 @@ export type NftSlingedBackToTheOriginalArtistEventCreateInput = {
   indexInBlock: Scalars['Float']
   video: Scalars['ID']
   contentActor: Scalars['JSONObject']
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
 }
 
 export type NftSlingedBackToTheOriginalArtistEventEdge = {
@@ -14449,6 +15092,10 @@ export enum NftSlingedBackToTheOriginalArtistEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   VideoAsc = 'video_ASC',
   VideoDesc = 'video_DESC',
+  OwnerMemberAsc = 'ownerMember_ASC',
+  OwnerMemberDesc = 'ownerMember_DESC',
+  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
+  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
 }
 
 export type NftSlingedBackToTheOriginalArtistEventUpdateInput = {
@@ -14458,6 +15105,8 @@ export type NftSlingedBackToTheOriginalArtistEventUpdateInput = {
   indexInBlock?: Maybe<Scalars['Float']>
   video?: Maybe<Scalars['ID']>
   contentActor?: Maybe<Scalars['JSONObject']>
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
 }
 
 export type NftSlingedBackToTheOriginalArtistEventWhereInput = {
@@ -14506,6 +15155,8 @@ export type NftSlingedBackToTheOriginalArtistEventWhereInput = {
   indexInBlock_in?: Maybe<Array<Scalars['Int']>>
   contentActor_json?: Maybe<Scalars['JSONObject']>
   video?: Maybe<VideoWhereInput>
+  ownerMember?: Maybe<MembershipWhereInput>
+  ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
   AND?: Maybe<Array<NftSlingedBackToTheOriginalArtistEventWhereInput>>
   OR?: Maybe<Array<NftSlingedBackToTheOriginalArtistEventWhereInput>>
 }
@@ -14759,6 +15410,12 @@ export type OfferAcceptedEvent = Event &
     version: Scalars['Int']
     video: Video
     videoId: Scalars['String']
+    ownerMember?: Maybe<Membership>
+    ownerMemberId?: Maybe<Scalars['String']>
+    ownerCuratorGroup?: Maybe<CuratorGroup>
+    ownerCuratorGroupId?: Maybe<Scalars['String']>
+    /** Price for which the NFT was bought */
+    price?: Maybe<Scalars['BigInt']>
   }
 
 export type OfferAcceptedEventConnection = {
@@ -14773,6 +15430,9 @@ export type OfferAcceptedEventCreateInput = {
   network: Network
   indexInBlock: Scalars['Float']
   video: Scalars['ID']
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
+  price?: Maybe<Scalars['String']>
 }
 
 export type OfferAcceptedEventEdge = {
@@ -14797,6 +15457,12 @@ export enum OfferAcceptedEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   VideoAsc = 'video_ASC',
   VideoDesc = 'video_DESC',
+  OwnerMemberAsc = 'ownerMember_ASC',
+  OwnerMemberDesc = 'ownerMember_DESC',
+  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
+  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
+  PriceAsc = 'price_ASC',
+  PriceDesc = 'price_DESC',
 }
 
 export type OfferAcceptedEventUpdateInput = {
@@ -14805,6 +15471,9 @@ export type OfferAcceptedEventUpdateInput = {
   network?: Maybe<Network>
   indexInBlock?: Maybe<Scalars['Float']>
   video?: Maybe<Scalars['ID']>
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
+  price?: Maybe<Scalars['String']>
 }
 
 export type OfferAcceptedEventWhereInput = {
@@ -14851,7 +15520,15 @@ export type OfferAcceptedEventWhereInput = {
   indexInBlock_lt?: Maybe<Scalars['Int']>
   indexInBlock_lte?: Maybe<Scalars['Int']>
   indexInBlock_in?: Maybe<Array<Scalars['Int']>>
+  price_eq?: Maybe<Scalars['BigInt']>
+  price_gt?: Maybe<Scalars['BigInt']>
+  price_gte?: Maybe<Scalars['BigInt']>
+  price_lt?: Maybe<Scalars['BigInt']>
+  price_lte?: Maybe<Scalars['BigInt']>
+  price_in?: Maybe<Array<Scalars['BigInt']>>
   video?: Maybe<VideoWhereInput>
+  ownerMember?: Maybe<MembershipWhereInput>
+  ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
   AND?: Maybe<Array<OfferAcceptedEventWhereInput>>
   OR?: Maybe<Array<OfferAcceptedEventWhereInput>>
 }
@@ -14884,6 +15561,10 @@ export type OfferCanceledEvent = Event &
     videoId: Scalars['String']
     /** Content actor acting as NFT owner. */
     contentActor: ContentActor
+    ownerMember?: Maybe<Membership>
+    ownerMemberId?: Maybe<Scalars['String']>
+    ownerCuratorGroup?: Maybe<CuratorGroup>
+    ownerCuratorGroupId?: Maybe<Scalars['String']>
   }
 
 export type OfferCanceledEventConnection = {
@@ -14899,6 +15580,8 @@ export type OfferCanceledEventCreateInput = {
   indexInBlock: Scalars['Float']
   video: Scalars['ID']
   contentActor: Scalars['JSONObject']
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
 }
 
 export type OfferCanceledEventEdge = {
@@ -14923,6 +15606,10 @@ export enum OfferCanceledEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   VideoAsc = 'video_ASC',
   VideoDesc = 'video_DESC',
+  OwnerMemberAsc = 'ownerMember_ASC',
+  OwnerMemberDesc = 'ownerMember_DESC',
+  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
+  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
 }
 
 export type OfferCanceledEventUpdateInput = {
@@ -14932,6 +15619,8 @@ export type OfferCanceledEventUpdateInput = {
   indexInBlock?: Maybe<Scalars['Float']>
   video?: Maybe<Scalars['ID']>
   contentActor?: Maybe<Scalars['JSONObject']>
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
 }
 
 export type OfferCanceledEventWhereInput = {
@@ -14980,6 +15669,8 @@ export type OfferCanceledEventWhereInput = {
   indexInBlock_in?: Maybe<Array<Scalars['Int']>>
   contentActor_json?: Maybe<Scalars['JSONObject']>
   video?: Maybe<VideoWhereInput>
+  ownerMember?: Maybe<MembershipWhereInput>
+  ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
   AND?: Maybe<Array<OfferCanceledEventWhereInput>>
   OR?: Maybe<Array<OfferCanceledEventWhereInput>>
 }
@@ -15016,6 +15707,10 @@ export type OfferStartedEvent = Event &
     memberId: Scalars['String']
     /** Offer's price. */
     price?: Maybe<Scalars['BigInt']>
+    ownerMember?: Maybe<Membership>
+    ownerMemberId?: Maybe<Scalars['String']>
+    ownerCuratorGroup?: Maybe<CuratorGroup>
+    ownerCuratorGroupId?: Maybe<Scalars['String']>
   }
 
 export type OfferStartedEventConnection = {
@@ -15033,6 +15728,8 @@ export type OfferStartedEventCreateInput = {
   contentActor: Scalars['JSONObject']
   member: Scalars['ID']
   price?: Maybe<Scalars['String']>
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
 }
 
 export type OfferStartedEventEdge = {
@@ -15061,6 +15758,10 @@ export enum OfferStartedEventOrderByInput {
   MemberDesc = 'member_DESC',
   PriceAsc = 'price_ASC',
   PriceDesc = 'price_DESC',
+  OwnerMemberAsc = 'ownerMember_ASC',
+  OwnerMemberDesc = 'ownerMember_DESC',
+  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
+  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
 }
 
 export type OfferStartedEventUpdateInput = {
@@ -15072,6 +15773,8 @@ export type OfferStartedEventUpdateInput = {
   contentActor?: Maybe<Scalars['JSONObject']>
   member?: Maybe<Scalars['ID']>
   price?: Maybe<Scalars['String']>
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
 }
 
 export type OfferStartedEventWhereInput = {
@@ -15127,6 +15830,8 @@ export type OfferStartedEventWhereInput = {
   price_in?: Maybe<Array<Scalars['BigInt']>>
   video?: Maybe<VideoWhereInput>
   member?: Maybe<MembershipWhereInput>
+  ownerMember?: Maybe<MembershipWhereInput>
+  ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
   AND?: Maybe<Array<OfferStartedEventWhereInput>>
   OR?: Maybe<Array<OfferStartedEventWhereInput>>
 }
@@ -15155,10 +15860,18 @@ export type OpenAuctionBidAcceptedEvent = Event &
     deletedAt?: Maybe<Scalars['DateTime']>
     deletedById?: Maybe<Scalars['String']>
     version: Scalars['Int']
-    /** Content actor canceling the event. */
+    /** Content actor that accepted the bid. */
     contentActor: ContentActor
     video: Video
     videoId: Scalars['String']
+    ownerMember?: Maybe<Membership>
+    ownerMemberId?: Maybe<Scalars['String']>
+    ownerCuratorGroup?: Maybe<CuratorGroup>
+    ownerCuratorGroupId?: Maybe<Scalars['String']>
+    winningBid?: Maybe<Bid>
+    winningBidId?: Maybe<Scalars['String']>
+    winningBidder?: Maybe<Membership>
+    winningBidderId?: Maybe<Scalars['String']>
   }
 
 export type OpenAuctionBidAcceptedEventConnection = {
@@ -15174,6 +15887,10 @@ export type OpenAuctionBidAcceptedEventCreateInput = {
   indexInBlock: Scalars['Float']
   contentActor: Scalars['JSONObject']
   video: Scalars['ID']
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
+  winningBid?: Maybe<Scalars['ID']>
+  winningBidder?: Maybe<Scalars['ID']>
 }
 
 export type OpenAuctionBidAcceptedEventEdge = {
@@ -15198,6 +15915,14 @@ export enum OpenAuctionBidAcceptedEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   VideoAsc = 'video_ASC',
   VideoDesc = 'video_DESC',
+  OwnerMemberAsc = 'ownerMember_ASC',
+  OwnerMemberDesc = 'ownerMember_DESC',
+  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
+  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
+  WinningBidAsc = 'winningBid_ASC',
+  WinningBidDesc = 'winningBid_DESC',
+  WinningBidderAsc = 'winningBidder_ASC',
+  WinningBidderDesc = 'winningBidder_DESC',
 }
 
 export type OpenAuctionBidAcceptedEventUpdateInput = {
@@ -15207,6 +15932,10 @@ export type OpenAuctionBidAcceptedEventUpdateInput = {
   indexInBlock?: Maybe<Scalars['Float']>
   contentActor?: Maybe<Scalars['JSONObject']>
   video?: Maybe<Scalars['ID']>
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
+  winningBid?: Maybe<Scalars['ID']>
+  winningBidder?: Maybe<Scalars['ID']>
 }
 
 export type OpenAuctionBidAcceptedEventWhereInput = {
@@ -15255,6 +15984,10 @@ export type OpenAuctionBidAcceptedEventWhereInput = {
   indexInBlock_in?: Maybe<Array<Scalars['Int']>>
   contentActor_json?: Maybe<Scalars['JSONObject']>
   video?: Maybe<VideoWhereInput>
+  ownerMember?: Maybe<MembershipWhereInput>
+  ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
+  winningBid?: Maybe<BidWhereInput>
+  winningBidder?: Maybe<MembershipWhereInput>
   AND?: Maybe<Array<OpenAuctionBidAcceptedEventWhereInput>>
   OR?: Maybe<Array<OpenAuctionBidAcceptedEventWhereInput>>
 }
@@ -15289,6 +16022,10 @@ export type OpenAuctionStartedEvent = Event &
     videoId: Scalars['String']
     auction: Auction
     auctionId: Scalars['String']
+    ownerMember?: Maybe<Membership>
+    ownerMemberId?: Maybe<Scalars['String']>
+    ownerCuratorGroup?: Maybe<CuratorGroup>
+    ownerCuratorGroupId?: Maybe<Scalars['String']>
   }
 
 export type OpenAuctionStartedEventConnection = {
@@ -15305,6 +16042,8 @@ export type OpenAuctionStartedEventCreateInput = {
   actor: Scalars['JSONObject']
   video: Scalars['ID']
   auction: Scalars['ID']
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
 }
 
 export type OpenAuctionStartedEventEdge = {
@@ -15331,6 +16070,10 @@ export enum OpenAuctionStartedEventOrderByInput {
   VideoDesc = 'video_DESC',
   AuctionAsc = 'auction_ASC',
   AuctionDesc = 'auction_DESC',
+  OwnerMemberAsc = 'ownerMember_ASC',
+  OwnerMemberDesc = 'ownerMember_DESC',
+  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
+  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
 }
 
 export type OpenAuctionStartedEventUpdateInput = {
@@ -15341,6 +16084,8 @@ export type OpenAuctionStartedEventUpdateInput = {
   actor?: Maybe<Scalars['JSONObject']>
   video?: Maybe<Scalars['ID']>
   auction?: Maybe<Scalars['ID']>
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
 }
 
 export type OpenAuctionStartedEventWhereInput = {
@@ -15390,6 +16135,8 @@ export type OpenAuctionStartedEventWhereInput = {
   actor_json?: Maybe<Scalars['JSONObject']>
   video?: Maybe<VideoWhereInput>
   auction?: Maybe<AuctionWhereInput>
+  ownerMember?: Maybe<MembershipWhereInput>
+  ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
   AND?: Maybe<Array<OpenAuctionStartedEventWhereInput>>
   OR?: Maybe<Array<OpenAuctionStartedEventWhereInput>>
 }
@@ -15956,8 +16703,10 @@ export type OwnedNft = BaseGraphQlObject & {
   ownerMemberId?: Maybe<Scalars['String']>
   /** NFT's metadata */
   metadata: Scalars['String']
-  /** NFT transactional status */
-  transactionalStatus: TransactionalStatus
+  /** NFT's non-auction transactional status (if any) */
+  transactionalStatus?: Maybe<TransactionalStatus>
+  transactionalStatusAuction?: Maybe<Auction>
+  transactionalStatusAuctionId?: Maybe<Scalars['String']>
   transactionalStatusUpdates: Array<TransactionalStatusUpdate>
   /** Creator royalty */
   creatorRoyalty?: Maybe<Scalars['Float']>
@@ -15967,6 +16716,11 @@ export type OwnedNft = BaseGraphQlObject & {
   isOwnedByChannel: Scalars['Boolean']
   creatorChannel: Channel
   creatorChannelId: Scalars['String']
+  /** NFT's last sale price (if any) */
+  lastSalePrice?: Maybe<Scalars['BigInt']>
+  /** NFT's last sale date (if any) */
+  lastSaleDate?: Maybe<Scalars['DateTime']>
+  bids: Array<Bid>
 }
 
 export type OwnedNftConnection = {
@@ -15979,10 +16733,13 @@ export type OwnedNftCreateInput = {
   ownerMember?: Maybe<Scalars['ID']>
   metadata: Scalars['String']
   transactionalStatus: Scalars['JSONObject']
+  transactionalStatusAuction?: Maybe<Scalars['ID']>
   creatorRoyalty?: Maybe<Scalars['Float']>
   ownerCuratorGroup?: Maybe<Scalars['ID']>
   isOwnedByChannel: Scalars['Boolean']
   creatorChannel: Scalars['ID']
+  lastSalePrice?: Maybe<Scalars['String']>
+  lastSaleDate?: Maybe<Scalars['DateTime']>
 }
 
 export type OwnedNftEdge = {
@@ -16001,6 +16758,8 @@ export enum OwnedNftOrderByInput {
   OwnerMemberDesc = 'ownerMember_DESC',
   MetadataAsc = 'metadata_ASC',
   MetadataDesc = 'metadata_DESC',
+  TransactionalStatusAuctionAsc = 'transactionalStatusAuction_ASC',
+  TransactionalStatusAuctionDesc = 'transactionalStatusAuction_DESC',
   CreatorRoyaltyAsc = 'creatorRoyalty_ASC',
   CreatorRoyaltyDesc = 'creatorRoyalty_DESC',
   OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
@@ -16009,16 +16768,23 @@ export enum OwnedNftOrderByInput {
   IsOwnedByChannelDesc = 'isOwnedByChannel_DESC',
   CreatorChannelAsc = 'creatorChannel_ASC',
   CreatorChannelDesc = 'creatorChannel_DESC',
+  LastSalePriceAsc = 'lastSalePrice_ASC',
+  LastSalePriceDesc = 'lastSalePrice_DESC',
+  LastSaleDateAsc = 'lastSaleDate_ASC',
+  LastSaleDateDesc = 'lastSaleDate_DESC',
 }
 
 export type OwnedNftUpdateInput = {
   ownerMember?: Maybe<Scalars['ID']>
   metadata?: Maybe<Scalars['String']>
   transactionalStatus?: Maybe<Scalars['JSONObject']>
+  transactionalStatusAuction?: Maybe<Scalars['ID']>
   creatorRoyalty?: Maybe<Scalars['Float']>
   ownerCuratorGroup?: Maybe<Scalars['ID']>
   isOwnedByChannel?: Maybe<Scalars['Boolean']>
   creatorChannel?: Maybe<Scalars['ID']>
+  lastSalePrice?: Maybe<Scalars['String']>
+  lastSaleDate?: Maybe<Scalars['DateTime']>
 }
 
 export type OwnedNftWhereInput = {
@@ -16060,16 +16826,31 @@ export type OwnedNftWhereInput = {
   creatorRoyalty_in?: Maybe<Array<Scalars['Float']>>
   isOwnedByChannel_eq?: Maybe<Scalars['Boolean']>
   isOwnedByChannel_in?: Maybe<Array<Scalars['Boolean']>>
+  lastSalePrice_eq?: Maybe<Scalars['BigInt']>
+  lastSalePrice_gt?: Maybe<Scalars['BigInt']>
+  lastSalePrice_gte?: Maybe<Scalars['BigInt']>
+  lastSalePrice_lt?: Maybe<Scalars['BigInt']>
+  lastSalePrice_lte?: Maybe<Scalars['BigInt']>
+  lastSalePrice_in?: Maybe<Array<Scalars['BigInt']>>
+  lastSaleDate_eq?: Maybe<Scalars['DateTime']>
+  lastSaleDate_lt?: Maybe<Scalars['DateTime']>
+  lastSaleDate_lte?: Maybe<Scalars['DateTime']>
+  lastSaleDate_gt?: Maybe<Scalars['DateTime']>
+  lastSaleDate_gte?: Maybe<Scalars['DateTime']>
   video?: Maybe<VideoWhereInput>
   auctions_none?: Maybe<AuctionWhereInput>
   auctions_some?: Maybe<AuctionWhereInput>
   auctions_every?: Maybe<AuctionWhereInput>
   ownerMember?: Maybe<MembershipWhereInput>
+  transactionalStatusAuction?: Maybe<AuctionWhereInput>
   transactionalStatusUpdates_none?: Maybe<TransactionalStatusUpdateWhereInput>
   transactionalStatusUpdates_some?: Maybe<TransactionalStatusUpdateWhereInput>
   transactionalStatusUpdates_every?: Maybe<TransactionalStatusUpdateWhereInput>
   ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
   creatorChannel?: Maybe<ChannelWhereInput>
+  bids_none?: Maybe<BidWhereInput>
+  bids_some?: Maybe<BidWhereInput>
+  bids_every?: Maybe<BidWhereInput>
   AND?: Maybe<Array<OwnedNftWhereInput>>
   OR?: Maybe<Array<OwnedNftWhereInput>>
 }
@@ -18971,6 +19752,9 @@ export type Query = {
   buyNowCanceledEvents: Array<BuyNowCanceledEvent>
   buyNowCanceledEventByUniqueInput?: Maybe<BuyNowCanceledEvent>
   buyNowCanceledEventsConnection: BuyNowCanceledEventConnection
+  buyNowPriceUpdatedEvents: Array<BuyNowPriceUpdatedEvent>
+  buyNowPriceUpdatedEventByUniqueInput?: Maybe<BuyNowPriceUpdatedEvent>
+  buyNowPriceUpdatedEventsConnection: BuyNowPriceUpdatedEventConnection
   candidacyNoteMetadata: Array<CandidacyNoteMetadata>
   candidacyNoteMetadataByUniqueInput?: Maybe<CandidacyNoteMetadata>
   candidacyNoteMetadataConnection: CandidacyNoteMetadataConnection
@@ -19007,6 +19791,9 @@ export type Query = {
   channelCategories: Array<ChannelCategory>
   channelCategoryByUniqueInput?: Maybe<ChannelCategory>
   channelCategoriesConnection: ChannelCategoryConnection
+  channelNftCollectors: Array<ChannelNftCollectors>
+  channelNftCollectorsByUniqueInput?: Maybe<ChannelNftCollectors>
+  channelNftCollectorsConnection: ChannelNftCollectorsConnection
   channels: Array<Channel>
   channelByUniqueInput?: Maybe<Channel>
   channelsConnection: ChannelConnection
@@ -19079,9 +19866,9 @@ export type Query = {
   electionRounds: Array<ElectionRound>
   electionRoundByUniqueInput?: Maybe<ElectionRound>
   electionRoundsConnection: ElectionRoundConnection
-  englishAuctionCompletedEvents: Array<EnglishAuctionCompletedEvent>
-  englishAuctionCompletedEventByUniqueInput?: Maybe<EnglishAuctionCompletedEvent>
-  englishAuctionCompletedEventsConnection: EnglishAuctionCompletedEventConnection
+  englishAuctionSettledEvents: Array<EnglishAuctionSettledEvent>
+  englishAuctionSettledEventByUniqueInput?: Maybe<EnglishAuctionSettledEvent>
+  englishAuctionSettledEventsConnection: EnglishAuctionSettledEventConnection
   englishAuctionStartedEvents: Array<EnglishAuctionStartedEvent>
   englishAuctionStartedEventByUniqueInput?: Maybe<EnglishAuctionStartedEvent>
   englishAuctionStartedEventsConnection: EnglishAuctionStartedEventConnection
@@ -20097,6 +20884,26 @@ export type QueryBuyNowCanceledEventsConnectionArgs = {
   orderBy?: Maybe<Array<BuyNowCanceledEventOrderByInput>>
 }
 
+export type QueryBuyNowPriceUpdatedEventsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<BuyNowPriceUpdatedEventWhereInput>
+  orderBy?: Maybe<Array<BuyNowPriceUpdatedEventOrderByInput>>
+}
+
+export type QueryBuyNowPriceUpdatedEventByUniqueInputArgs = {
+  where: BuyNowPriceUpdatedEventWhereUniqueInput
+}
+
+export type QueryBuyNowPriceUpdatedEventsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<BuyNowPriceUpdatedEventWhereInput>
+  orderBy?: Maybe<Array<BuyNowPriceUpdatedEventOrderByInput>>
+}
+
 export type QueryCandidacyNoteMetadataArgs = {
   offset?: Maybe<Scalars['Int']>
   limit?: Maybe<Scalars['Int']>
@@ -20335,6 +21142,26 @@ export type QueryChannelCategoriesConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<ChannelCategoryWhereInput>
   orderBy?: Maybe<Array<ChannelCategoryOrderByInput>>
+}
+
+export type QueryChannelNftCollectorsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<ChannelNftCollectorsWhereInput>
+  orderBy?: Maybe<Array<ChannelNftCollectorsOrderByInput>>
+}
+
+export type QueryChannelNftCollectorsByUniqueInputArgs = {
+  where: ChannelNftCollectorsWhereUniqueInput
+}
+
+export type QueryChannelNftCollectorsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<ChannelNftCollectorsWhereInput>
+  orderBy?: Maybe<Array<ChannelNftCollectorsOrderByInput>>
 }
 
 export type QueryChannelsArgs = {
@@ -20817,24 +21644,24 @@ export type QueryElectionRoundsConnectionArgs = {
   orderBy?: Maybe<Array<ElectionRoundOrderByInput>>
 }
 
-export type QueryEnglishAuctionCompletedEventsArgs = {
+export type QueryEnglishAuctionSettledEventsArgs = {
   offset?: Maybe<Scalars['Int']>
   limit?: Maybe<Scalars['Int']>
-  where?: Maybe<EnglishAuctionCompletedEventWhereInput>
-  orderBy?: Maybe<Array<EnglishAuctionCompletedEventOrderByInput>>
+  where?: Maybe<EnglishAuctionSettledEventWhereInput>
+  orderBy?: Maybe<Array<EnglishAuctionSettledEventOrderByInput>>
 }
 
-export type QueryEnglishAuctionCompletedEventByUniqueInputArgs = {
-  where: EnglishAuctionCompletedEventWhereUniqueInput
+export type QueryEnglishAuctionSettledEventByUniqueInputArgs = {
+  where: EnglishAuctionSettledEventWhereUniqueInput
 }
 
-export type QueryEnglishAuctionCompletedEventsConnectionArgs = {
+export type QueryEnglishAuctionSettledEventsConnectionArgs = {
   first?: Maybe<Scalars['Int']>
   after?: Maybe<Scalars['String']>
   last?: Maybe<Scalars['Int']>
   before?: Maybe<Scalars['String']>
-  where?: Maybe<EnglishAuctionCompletedEventWhereInput>
-  orderBy?: Maybe<Array<EnglishAuctionCompletedEventOrderByInput>>
+  where?: Maybe<EnglishAuctionSettledEventWhereInput>
+  orderBy?: Maybe<Array<EnglishAuctionSettledEventOrderByInput>>
 }
 
 export type QueryEnglishAuctionStartedEventsArgs = {
@@ -27742,15 +28569,7 @@ export type ThreadStatusRemoved = {
 export type TransactionalStatus =
   | TransactionalStatusIdle
   | TransactionalStatusInitiatedOfferToMember
-  | TransactionalStatusAuction
   | TransactionalStatusBuyNow
-
-export type TransactionalStatusAuction = {
-  /** Type needs to have at least one non-relation entity. This value is not used. */
-  dummy?: Maybe<Scalars['Int']>
-  /** Auction */
-  auction?: Maybe<Auction>
-}
 
 export type TransactionalStatusBuyNow = {
   price: Scalars['Float']
@@ -27779,8 +28598,10 @@ export type TransactionalStatusUpdate = BaseGraphQlObject & {
   version: Scalars['Int']
   nft: OwnedNft
   nftId: Scalars['String']
-  /** NFT transactional status */
-  transactionalStatus: TransactionalStatus
+  /** NFT's non-auction transactional status (if any) */
+  transactionalStatus?: Maybe<TransactionalStatus>
+  transactionalStatusAuction?: Maybe<Auction>
+  transactionalStatusAuctionId?: Maybe<Scalars['String']>
   /** Block number at which change happened */
   changedAt: Scalars['Int']
 }
@@ -27794,6 +28615,7 @@ export type TransactionalStatusUpdateConnection = {
 export type TransactionalStatusUpdateCreateInput = {
   nft: Scalars['ID']
   transactionalStatus: Scalars['JSONObject']
+  transactionalStatusAuction?: Maybe<Scalars['ID']>
   changedAt: Scalars['Float']
 }
 
@@ -27811,6 +28633,8 @@ export enum TransactionalStatusUpdateOrderByInput {
   DeletedAtDesc = 'deletedAt_DESC',
   NftAsc = 'nft_ASC',
   NftDesc = 'nft_DESC',
+  TransactionalStatusAuctionAsc = 'transactionalStatusAuction_ASC',
+  TransactionalStatusAuctionDesc = 'transactionalStatusAuction_DESC',
   ChangedAtAsc = 'changedAt_ASC',
   ChangedAtDesc = 'changedAt_DESC',
 }
@@ -27818,6 +28642,7 @@ export enum TransactionalStatusUpdateOrderByInput {
 export type TransactionalStatusUpdateUpdateInput = {
   nft?: Maybe<Scalars['ID']>
   transactionalStatus?: Maybe<Scalars['JSONObject']>
+  transactionalStatusAuction?: Maybe<Scalars['ID']>
   changedAt?: Maybe<Scalars['Float']>
 }
 
@@ -27854,6 +28679,7 @@ export type TransactionalStatusUpdateWhereInput = {
   changedAt_lte?: Maybe<Scalars['Int']>
   changedAt_in?: Maybe<Array<Scalars['Int']>>
   nft?: Maybe<OwnedNftWhereInput>
+  transactionalStatusAuction?: Maybe<AuctionWhereInput>
   AND?: Maybe<Array<TransactionalStatusUpdateWhereInput>>
   OR?: Maybe<Array<TransactionalStatusUpdateWhereInput>>
 }
@@ -28078,9 +28904,10 @@ export type Video = BaseGraphQlObject & {
   auctioncanceledeventvideo?: Maybe<Array<AuctionCanceledEvent>>
   bidmadecompletingauctioneventvideo?: Maybe<Array<BidMadeCompletingAuctionEvent>>
   buynowcanceledeventvideo?: Maybe<Array<BuyNowCanceledEvent>>
+  buynowpriceupdatedeventvideo?: Maybe<Array<BuyNowPriceUpdatedEvent>>
   commentreactionvideo?: Maybe<Array<CommentReaction>>
   commentsectionpreferenceeventvideo?: Maybe<Array<CommentSectionPreferenceEvent>>
-  englishauctioncompletedeventvideo?: Maybe<Array<EnglishAuctionCompletedEvent>>
+  englishauctionsettledeventvideo?: Maybe<Array<EnglishAuctionSettledEvent>>
   englishauctionstartedeventvideo?: Maybe<Array<EnglishAuctionStartedEvent>>
   nftboughteventvideo?: Maybe<Array<NftBoughtEvent>>
   nftissuedeventvideo?: Maybe<Array<NftIssuedEvent>>
@@ -29038,15 +29865,18 @@ export type VideoWhereInput = {
   buynowcanceledeventvideo_none?: Maybe<BuyNowCanceledEventWhereInput>
   buynowcanceledeventvideo_some?: Maybe<BuyNowCanceledEventWhereInput>
   buynowcanceledeventvideo_every?: Maybe<BuyNowCanceledEventWhereInput>
+  buynowpriceupdatedeventvideo_none?: Maybe<BuyNowPriceUpdatedEventWhereInput>
+  buynowpriceupdatedeventvideo_some?: Maybe<BuyNowPriceUpdatedEventWhereInput>
+  buynowpriceupdatedeventvideo_every?: Maybe<BuyNowPriceUpdatedEventWhereInput>
   commentreactionvideo_none?: Maybe<CommentReactionWhereInput>
   commentreactionvideo_some?: Maybe<CommentReactionWhereInput>
   commentreactionvideo_every?: Maybe<CommentReactionWhereInput>
   commentsectionpreferenceeventvideo_none?: Maybe<CommentSectionPreferenceEventWhereInput>
   commentsectionpreferenceeventvideo_some?: Maybe<CommentSectionPreferenceEventWhereInput>
   commentsectionpreferenceeventvideo_every?: Maybe<CommentSectionPreferenceEventWhereInput>
-  englishauctioncompletedeventvideo_none?: Maybe<EnglishAuctionCompletedEventWhereInput>
-  englishauctioncompletedeventvideo_some?: Maybe<EnglishAuctionCompletedEventWhereInput>
-  englishauctioncompletedeventvideo_every?: Maybe<EnglishAuctionCompletedEventWhereInput>
+  englishauctionsettledeventvideo_none?: Maybe<EnglishAuctionSettledEventWhereInput>
+  englishauctionsettledeventvideo_some?: Maybe<EnglishAuctionSettledEventWhereInput>
+  englishauctionsettledeventvideo_every?: Maybe<EnglishAuctionSettledEventWhereInput>
   englishauctionstartedeventvideo_none?: Maybe<EnglishAuctionStartedEventWhereInput>
   englishauctionstartedeventvideo_some?: Maybe<EnglishAuctionStartedEventWhereInput>
   englishauctionstartedeventvideo_every?: Maybe<EnglishAuctionStartedEventWhereInput>

@@ -471,10 +471,6 @@ impl pallet_finality_tracker::Trait for Runtime {
     type ReportLatency = ReportLatency;
 }
 
-impl common::currency::GovernanceCurrency for Runtime {
-    type Currency = pallet_balances::Module<Self>;
-}
-
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
     pub const MaxModerators: u64 = 5;    // TODO: update

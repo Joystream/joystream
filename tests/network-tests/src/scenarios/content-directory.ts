@@ -8,5 +8,5 @@ scenario('Content directory', async ({ job }) => {
   const leadSetupJob = job('Set content working group leads', leadOpening(true, ['contentWorkingGroup']))
   const videoCountersJob = job('check active video counters', activeVideoCounters).requires(leadSetupJob)
   job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
-  job('video comments and reactions', commentsAndReactions).after(leadSetupJob)
+  job('video comments and reactions', commentsAndReactions).after(videoCountersJob)
 })

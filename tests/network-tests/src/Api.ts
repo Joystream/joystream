@@ -897,7 +897,7 @@ export class Api {
     const auctionParams = this.api.createType('OpenAuctionParams', {
       starting_price: this.api.createType('u128', boundaries.startingPrice.min),
       buy_now_price: this.api.createType('Option<BlockNumber>', null),
-      whitelist: this.api.createType('BTreeSet<StorageBucketId>', whitelist),
+      whitelist: this.api.createType('BTreeSet<MemberId>', whitelist),
       bid_lock_duration: this.api.createType('BlockNumber', bidLockDuration),
     })
 
@@ -930,7 +930,7 @@ export class Api {
     const auctionParams = this.api.createType('EnglishAuctionParams', {
       starting_price: this.api.createType('u128', startingPrice),
       buy_now_price: this.api.createType('Option<Balance>', null),
-      whitelist: this.api.createType('BTreeSet<StorageBucketId>', whitelist),
+      whitelist: this.api.createType('BTreeSet<MemberId>', whitelist),
       starts_at: this.api.createType('Option<BlockNumber>', null),
       duration: auctionDuration,
       extension_period: extensionPeriod,
@@ -994,8 +994,8 @@ export class Api {
     )
   }
 
-  async claimWonEnglishAuction(accountFrom: string, memberId: number, videoId: number): Promise<ISubmittableResult> {
-    return await this.sender.signAndSend(this.api.tx.content.claimWonEnglishAuction(memberId, videoId), accountFrom)
+  async settleEnglishAuction(accountFrom: string, memberId: number, videoId: number): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(this.api.tx.content.settleEnglishAuction(videoId), accountFrom)
   }
 
   async pickOpenAuctionWinner(
@@ -1030,6 +1030,18 @@ export class Api {
     return await this.sender.signAndSend(this.api.tx.content.buyNft(videoId, participantId, price), accountFrom)
   }
 
+  async updateBuyNowPrice(
+    accountFrom: string,
+    ownerId: number,
+    videoId: number,
+    price: BN
+  ): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(
+      this.api.tx.content.updateBuyNowPrice({ Member: ownerId }, videoId, price),
+      accountFrom
+    )
+  }
+
   async offerNft(
     accountFrom: string,
     videoId: number,
@@ -1047,15 +1059,19 @@ export class Api {
     return await this.sender.signAndSend(this.api.tx.content.acceptIncomingOffer(videoId), accountFrom)
   }
 
-  async createVideoWithNftAuction(
+  async createVideoWithNft(
     accountFrom: string,
     ownerId: number,
-    channeld: number,
-    auctionParams: OpenAuctionParams | EnglishAuctionParams
+    channelId: number,
+    auctionParams?: OpenAuctionParams | EnglishAuctionParams
   ): Promise<ISubmittableResult> {
     const initTransactionalStatus = this.api.createType(
       'InitTransactionalStatus',
-      auctionParams instanceof OpenAuctionParams ? { OpenAuction: auctionParams } : { EnglishAuction: auctionParams }
+      auctionParams
+        ? auctionParams instanceof OpenAuctionParams
+          ? { OpenAuction: auctionParams }
+          : { EnglishAuction: auctionParams }
+        : { Idle: null }
     )
 
     const createParameters = this.createType('VideoCreationParameters', {
@@ -1071,12 +1087,38 @@ export class Api {
     })
 
     return await this.sender.signAndSend(
-      this.api.tx.content.createVideo({ Member: ownerId }, channeld, createParameters),
+      this.api.tx.content.createVideo({ Member: ownerId }, channelId, createParameters),
       accountFrom
     )
   }
 
-  async updateVideoForNftCreation(
+  async createVideoWithNftBuyNow(
+    accountFrom: string,
+    ownerId: number,
+    channelId: number,
+    price: BN
+  ): Promise<ISubmittableResult> {
+    const createParameters = this.createType('VideoCreationParameters', {
+      assets: null,
+      meta: null,
+      enable_comments: false,
+      auto_issue_nft: this.api.createType('NftIssuanceParameters', {
+        royalty: null,
+        nft_metadata: this.api.createType('NftMetadata', '').toU8a(),
+        non_channel_owner: ownerId,
+        init_transactional_status: this.api.createType('InitTransactionalStatus', {
+          BuyNow: this.api.createType('Balance', price.toString()),
+        }),
+      }),
+    })
+
+    return await this.sender.signAndSend(
+      this.api.tx.content.createVideo({ Member: ownerId }, channelId, createParameters),
+      accountFrom
+    )
+  }
+
+  async updateVideoWithNftAuction(
     accountFrom: string,
     ownerId: number,
     videoId: number,
@@ -1085,6 +1127,40 @@ export class Api {
     const initTransactionalStatus = this.api.createType(
       'InitTransactionalStatus',
       auctionParams instanceof OpenAuctionParams ? { OpenAuction: auctionParams } : { EnglishAuction: auctionParams }
+    )
+
+    const updateParameters = this.createType('VideoCreationParameters', {
+      assets_to_upload: null,
+      new_meta: null,
+      assets_to_remove: this.api.createType('BTreeSet<DataObjectId>', []),
+      enable_comments: null,
+      auto_issue_nft: this.api.createType('NftIssuanceParameters', {
+        royalty: null,
+        nft_metadata: this.api.createType('NftMetadata', '').toU8a(),
+        non_channel_owner: ownerId,
+        init_transactional_status: this.api.createType('InitTransactionalStatus', { Auction: auctionParams }),
+      }),
+    })
+
+    return await this.sender.signAndSend(
+      this.api.tx.content.updateVideo({ Member: ownerId }, videoId, updateParameters),
+      accountFrom
+    )
+  }
+
+  async updateVideoForNftCreation(
+    accountFrom: string,
+    ownerId: number,
+    videoId: number,
+    auctionParams?: OpenAuctionParams | EnglishAuctionParams
+  ): Promise<ISubmittableResult> {
+    const initTransactionalStatus = this.api.createType(
+      'InitTransactionalStatus',
+      auctionParams
+        ? auctionParams instanceof OpenAuctionParams
+          ? { OpenAuction: auctionParams }
+          : { EnglishAuction: auctionParams }
+        : { Idle: null }
     )
 
     const updateParameters = this.createType('VideoUpdateParameters', {

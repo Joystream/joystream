@@ -1,34 +1,24 @@
 import { assert } from 'chai'
 import { Api } from '../../../Api'
 import { BaseQueryNodeFixture, FixtureRunner } from '../../../Fixture'
-import { JoystreamCLI } from '../../../cli/joystream'
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { IMember } from '../createMembers'
 import { BuyMembershipHappyCaseFixture } from '../../membership'
 import { PlaceBidsInAuctionFixture } from './placeBidsInAuction'
 import { Utils } from '../../../utils'
-import { assertNftOwner, assertAuctionAndBids } from './utils'
+import { assertNftOwner, assertAuctionAndBids, assertNftEventContentActor } from './utils'
 import BN from 'bn.js'
 
 // settings
 const sufficientTopupAmount = new BN(1000000) // some very big number to cover fees of all transactions
 
 export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
-  private cli: JoystreamCLI
   private videoId: number
   private author: IMember
   private participants: IMember[]
 
-  constructor(
-    api: Api,
-    query: QueryNodeApi,
-    cli: JoystreamCLI,
-    videoId: number,
-    author: IMember,
-    participants: IMember[]
-  ) {
+  constructor(api: Api, query: QueryNodeApi, videoId: number, author: IMember, participants: IMember[]) {
     super(api, query)
-    this.cli = cli
     this.videoId = videoId
     this.author = author
     this.participants = participants
@@ -40,18 +30,29 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
   public async execute(): Promise<void> {
     this.debug('Issue video NFT')
 
+    const winner = this.participants[this.participants.length - 1]
+
     // creator royalty
     const creatorRoyalty = 5
 
-    await this.api.issueNft(
+    const nftIssuedResult = await this.api.issueNft(
       this.author.keyringPair.address,
       this.author.memberId.toNumber(),
       this.videoId,
       undefined,
       creatorRoyalty
     )
+    const nftIssuedRuntimeEvent = await this.api.getEventDetails(nftIssuedResult, 'content', 'NftIssued')
 
-    this.debug('Start NFT auction')
+    this.debug('Check Nft ownership in NftIssued event')
+    await assertNftEventContentActor(
+      this.query,
+      () => this.query.getNftIssuedEvents([nftIssuedRuntimeEvent]),
+      this.author.memberId.toString(),
+      'Member'
+    )
+
+    this.debug(`Start NFT auction (expected winner id ${winner.memberId})`)
     const {
       auctionParams,
       startingPrice,
@@ -60,7 +61,7 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
       extensionPeriod,
     } = await this.api.createEnglishAuctionParameters()
 
-    await this.api.startEnglishAuction(
+    const auctionStartedResult = await this.api.startEnglishAuction(
       this.author.keyringPair.address,
       this.author.memberId.toNumber(),
       this.videoId,
@@ -69,7 +70,19 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
     // remember auction start block
     const startBlockNumber = await this.api.getBestBlock()
 
-    const winner = this.participants[this.participants.length - 1]
+    const auctionStartedRuntimeEvent = await this.api.getEventDetails(
+      auctionStartedResult,
+      'content',
+      'EnglishAuctionStarted'
+    )
+
+    this.debug('Check Nft ownership in EnglishAuctionStarted event')
+    assertNftEventContentActor(
+      this.query,
+      () => this.query.getEnglishAuctionStartedEvents([auctionStartedRuntimeEvent]),
+      this.author.memberId.toString(),
+      'Member'
+    )
 
     this.debug('Place bids')
     const placeBidsFixture = new PlaceBidsInAuctionFixture(
@@ -101,11 +114,30 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
     await assertAuctionAndBids(this.query, this.videoId, winner)
 
     this.debug('Complete auction')
-    await this.api.claimWonEnglishAuction(winner.account, winner.memberId.toNumber(), this.videoId)
+    const settleEnglishAuctionResult = await this.api.settleEnglishAuction(
+      winner.account,
+      winner.memberId.toNumber(),
+      this.videoId
+    )
+    const englishAuctionSettledRuntimeEvent = await this.api.getEventDetails(
+      settleEnglishAuctionResult,
+      'content',
+      'EnglishAuctionSettled'
+    )
+
+    this.debug('Check Nft ownership in SettleEnglishAuction event')
+    await assertNftEventContentActor(
+      this.query,
+      () => this.query.getEnglishAuctionSettledEvents([englishAuctionSettledRuntimeEvent]),
+      winner.memberId.toString(),
+      'Member'
+    )
 
     this.debug('Check NFT ownership change')
     await assertNftOwner(this.query, this.videoId, winner, (ownedNft) => {
       Utils.assert(ownedNft.creatorRoyalty, 'Royalty not found')
+      Utils.assert(ownedNft.lastSalePrice, 'Last sale price not found')
+      Utils.assert(ownedNft.lastSaleDate, 'Last sale date not found')
       assert.equal(ownedNft.creatorRoyalty, creatorRoyalty)
     })
   }
