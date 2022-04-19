@@ -3,11 +3,8 @@ use frame_support::decl_error;
 
 decl_error! {
     pub enum Error for Module<T: crate::Trait> {
-        /// Free balance is insufficient for slashing specified amount
-        InsufficientFreeBalanceForDecreasing,
-
-        /// Free balance is insufficient for transferring specfied amount
-        InsufficientFreeBalanceForTransfer,
+        /// Free balance is insufficient
+        InsufficientFreeBalance,
 
         /// Requested token does not exist
         TokenDoesNotExist,

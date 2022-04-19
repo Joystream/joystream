@@ -130,8 +130,8 @@ decl_module! {
         /// - `outputs` must designated  existing destination for "Permissioned" transfers.
         //
         /// Postconditions:
-        /// - `src` free balance decreased by `amount` or removed if final
-        ///    balance < existential deposit. Also `src` JOY balance is decreased by the
+        /// - `src` free balance decreased by `amount`.
+        ///    Also `src` JOY balance is decreased by the
         ///    total bloat bond deposited in case destination have been added to storage
         /// - `outputs.beneficiary` "free balance"" increased by `amount`
         /// - `token_id` issuance eventually decreased by dust amount in case of src removalp

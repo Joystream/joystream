@@ -196,7 +196,7 @@ fn permissionless_transfer_fails_with_source_not_having_sufficient_free_balance(
 
         let result = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
-        assert_noop!(result, Error::<Test>::InsufficientFreeBalanceForTransfer);
+        assert_noop!(result, Error::<Test>::InsufficientFreeBalance);
     })
 }
 
@@ -520,7 +520,7 @@ fn multiout_transfer_fails_with_source_having_insufficient_balance() {
 
         let result = Token::transfer(origin!(src), token_id, outputs);
 
-        assert_noop!(result, Error::<Test>::InsufficientFreeBalanceForTransfer);
+        assert_noop!(result, Error::<Test>::InsufficientFreeBalance);
     })
 }
 
@@ -776,7 +776,7 @@ fn permissioned_transfer_fails_with_insufficient_balance() {
 
         let result = Token::transfer(origin!(src), token_id, outputs);
 
-        assert_noop!(result, Error::<Test>::InsufficientFreeBalanceForTransfer);
+        assert_noop!(result, Error::<Test>::InsufficientFreeBalance);
     })
 }
 

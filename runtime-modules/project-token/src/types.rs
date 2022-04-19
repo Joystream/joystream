@@ -210,7 +210,7 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, ReserveBalance>
     ) -> DispatchResult {
         ensure!(
             self.free_balance >= amount,
-            crate::Error::<T>::InsufficientFreeBalanceForTransfer,
+            crate::Error::<T>::InsufficientFreeBalance,
         );
         Ok(())
     }
