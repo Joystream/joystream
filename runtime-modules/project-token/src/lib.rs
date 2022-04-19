@@ -211,7 +211,7 @@ decl_module! {
 
             // No project_token or balances state corrupted in case of failure
             ensure!(
-                T::ReserveCurrency::free_balance(&account_id) >= bloat_bond,
+                T::ReserveCurrency::can_slash(&account_id, bloat_bond),
                 Error::<T>::InsufficientBalanceForBloatBond,
             );
 
@@ -443,7 +443,7 @@ impl<T: Trait> Module<T> {
         // compute bloat bond
         let cumulative_bloat_bond = Self::compute_bloat_bond(&validated_transfers);
         ensure!(
-            T::ReserveCurrency::free_balance(src) >= cumulative_bloat_bond,
+            T::ReserveCurrency::can_slash(src, cumulative_bloat_bond),
             Error::<T>::InsufficientBalanceForBloatBond
         );
 
