@@ -1,13 +1,13 @@
 #![cfg(test)]
 use frame_support::{assert_noop, assert_ok, StorageDoubleMap, StorageMap};
-use sp_runtime::traits::Hash;
+use sp_runtime::{traits::Hash, Permill};
 
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
 use crate::types::{MerkleProofOf, OfferingState, PatronageData, TokenIssuanceParametersOf};
 use crate::{
-    account, balance, joy, last_event_eq, merkle_proof, merkle_root, origin, token, Error,
+    account, balance, joy, last_event_eq, merkle_proof, merkle_root, origin, percent, token, Error,
     RawEvent, TokenDataOf,
 };
 
@@ -815,7 +815,7 @@ fn issue_token_ok_with_event_deposit() {
         initial_supply: balance!(100),
         symbol: Hashing::hash_of(&token_id),
         transfer_policy: Policy::Permissionless,
-        patronage_rate: balance!(1),
+        patronage_rate: percent!(1),
     };
 
     let config = GenesisConfigBuilder::new_empty().build();
@@ -853,7 +853,7 @@ fn issue_token_ok_with_token_info_added() {
         initial_supply: balance!(100),
         symbol: Hashing::hash_of(&token_id),
         transfer_policy: Policy::Permissionless,
-        patronage_rate: balance!(1),
+        patronage_rate: percent!(1),
     };
 
     let config = GenesisConfigBuilder::new_empty().build();

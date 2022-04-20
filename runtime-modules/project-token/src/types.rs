@@ -3,8 +3,9 @@ use frame_support::{
     dispatch::{fmt::Debug, DispatchResult},
     ensure,
 };
-use sp_arithmetic::traits::{Saturating, Zero};
+use sp_arithmetic::traits::{AtLeast32BitUnsigned, Saturating, Zero};
 use sp_runtime::traits::{Convert, Hash};
+use sp_runtime::Permill;
 use sp_std::collections::btree_map::{BTreeMap, IntoIter, Iter};
 use sp_std::iter::Sum;
 
@@ -52,7 +53,7 @@ pub struct TokenData<Balance, Hash, BlockNumber> {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
 pub struct PatronageData<Balance, BlockNumber> {
     /// Patronage rate
-    pub(crate) rate: Balance,
+    pub(crate) rate: Permill,
 
     /// Tally count for the outstanding credit before latest patronage config change
     pub(crate) unclaimed_patronage_tally_amount: Balance,
@@ -104,7 +105,7 @@ pub struct TokenIssuanceParameters<Balance, Hash> {
     pub(crate) transfer_policy: TransferPolicy<Hash>,
 
     /// Initial Patronage rate
-    pub(crate) patronage_rate: Balance,
+    pub(crate) patronage_rate: Permill,
 }
 
 /// Utility enum used in merkle proof verification
@@ -223,7 +224,7 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, ReserveBalance>
 impl<
         Balance: Zero + Copy + Saturating + Debug,
         Hash,
-        BlockNumber: Copy + Saturating + PartialOrd,
+        BlockNumber: Copy + Saturating + PartialOrd + AtLeast32BitUnsigned,
     > TokenData<Balance, Hash, BlockNumber>
 {
     // increment account number
@@ -251,25 +252,31 @@ impl<
         self.patronage_info.unclaimed_patronage_tally_amount = amount;
     }
 
-    pub(crate) fn unclaimed_patronage<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
+    /// Computes: period * rate * supply + tally
+    pub(crate) fn unclaimed_patronage_at_block<
+        BlockNumberToBalance: Convert<BlockNumber, Balance>,
+    >(
         &self,
         block: BlockNumber,
     ) -> Balance {
-        // period * rate * supply + tally
-        self.patronage_info
-            .unclaimed_patronage_percent::<BlockNumberToBalance>(block)
+        let blocks = block.saturating_sub(self.patronage_info.last_unclaimed_patronage_tally_block);
+        let unclaimed_patronage_percent: BlockNumber = self.patronage_info.rate.mul_floor(blocks);
+        let unclaimed_patronage_percent_bal: Balance =
+            BlockNumberToBalance::convert(unclaimed_patronage_percent);
+
+        unclaimed_patronage_percent_bal
             .saturating_mul(self.supply)
             .saturating_add(self.patronage_info.unclaimed_patronage_tally_amount)
     }
 
     pub fn set_new_patronage_rate_at_block<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
         &mut self,
-        new_rate: Balance,
+        new_rate: Permill,
         block: BlockNumber,
     ) {
         // update tally according to old rate
         self.patronage_info.unclaimed_patronage_tally_amount =
-            self.unclaimed_patronage::<BlockNumberToBalance>(block);
+            self.unclaimed_patronage_at_block::<BlockNumberToBalance>(block);
         self.patronage_info.last_unclaimed_patronage_tally_block = block;
         self.patronage_info.rate = new_rate;
     }
@@ -318,18 +325,6 @@ impl<Hasher: Hash> MerkleProof<Hasher> {
         );
 
         Ok(())
-    }
-}
-
-impl<Balance: Zero + Copy + Saturating, BlockNumber: Copy + Saturating + PartialOrd>
-    PatronageData<Balance, BlockNumber>
-{
-    pub fn unclaimed_patronage_percent<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
-        &self,
-        block: BlockNumber,
-    ) -> Balance {
-        let period = block.saturating_sub(self.last_unclaimed_patronage_tally_block);
-        BlockNumberToBalance::convert(period).saturating_mul(self.rate)
     }
 }
 

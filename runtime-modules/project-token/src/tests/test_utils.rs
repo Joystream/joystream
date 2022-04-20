@@ -1,5 +1,6 @@
 use sp_arithmetic::traits::{One, Saturating, Zero};
 use sp_runtime::traits::Hash;
+use sp_runtime::Permill;
 use sp_std::collections::btree_map::BTreeMap;
 
 use crate::tests::mock::*;
@@ -46,7 +47,7 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash: Default, BlockNumber:
         }
     }
 
-    pub fn with_patronage_rate(self, rate: Balance) -> Self {
+    pub fn with_patronage_rate(self, rate: Permill) -> Self {
         Self {
             patronage_info: PatronageData::<_, _> {
                 unclaimed_patronage_tally_amount: Balance::zero(),
@@ -63,7 +64,7 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash: Default, BlockNumber:
             offering_state: OfferingState::Idle,
             transfer_policy: TransferPolicy::<Hash>::Permissionless,
             patronage_info: PatronageData::<Balance, BlockNumber> {
-                rate: Balance::zero(),
+                rate: Permill::from_percent(0),
                 unclaimed_patronage_tally_amount: Balance::zero(),
                 last_unclaimed_patronage_tally_block: BlockNumber::one(),
             },

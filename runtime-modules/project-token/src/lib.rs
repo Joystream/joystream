@@ -10,7 +10,7 @@ use frame_system::ensure_signed;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
     traits::{AccountIdConversion, Convert},
-    ModuleId,
+    ModuleId, Permill,
 };
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::Sum;
@@ -187,7 +187,7 @@ decl_module! {
             // == MUTATION SAFE ==
 
             let now = Self::current_block();
-            let unclaimed_patronage = token_info.unclaimed_patronage::<T::BlockNumberToBalance>(now);
+            let unclaimed_patronage = token_info.unclaimed_patronage_at_block::<T::BlockNumberToBalance>(now);
 
             AccountInfoByTokenAndAccount::<T>::remove(token_id, &account_id);
             TokenInfoById::<T>::mutate(token_id, |token_info| {
@@ -287,7 +287,7 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
     ///
     /// Postconditions:
     /// - patronage rate for `token_id` reduced by `decrement`
-    fn reduce_patronage_rate_by(token_id: T::TokenId, decrement: T::Balance) -> DispatchResult {
+    fn reduce_patronage_rate_by(token_id: T::TokenId, decrement: Permill) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
 
         // ensure new rate is >= 0
@@ -323,7 +323,8 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
         Self::ensure_account_data_exists(token_id, &to_account).map(|_| ())?;
 
         let now = Self::current_block();
-        let unclaimed_patronage = token_info.unclaimed_patronage::<T::BlockNumberToBalance>(now);
+        let unclaimed_patronage =
+            token_info.unclaimed_patronage_at_block::<T::BlockNumberToBalance>(now);
 
         if unclaimed_patronage.is_zero() {
             return Ok(());

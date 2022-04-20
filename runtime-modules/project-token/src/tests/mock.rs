@@ -186,6 +186,13 @@ macro_rules! balance {
 }
 
 #[macro_export]
+macro_rules! percent {
+    ($r:expr) => {
+        Permill::from_percent($r as u32)
+    };
+}
+
+#[macro_export]
 macro_rules! joy {
     ($bal:expr) => {
         ReserveBalance::from($bal as u32)
