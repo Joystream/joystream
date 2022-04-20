@@ -2,11 +2,13 @@ use codec::{Decode, Encode};
 use frame_support::{
     dispatch::{fmt::Debug, DispatchResult},
     ensure,
+    traits::Get,
 };
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, Saturating, Zero};
 use sp_runtime::traits::{Convert, Hash};
 use sp_runtime::Permill;
 use sp_std::collections::btree_map::{BTreeMap, IntoIter, Iter};
+use sp_std::convert::From;
 use sp_std::iter::Sum;
 
 /// Info for the account
@@ -53,7 +55,7 @@ pub struct TokenData<Balance, Hash, BlockNumber> {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
 pub struct PatronageData<Balance, BlockNumber> {
     /// Patronage rate
-    pub(crate) rate: Permill,
+    pub(crate) rate: BlockRate,
 
     /// Tally count for the outstanding credit before latest patronage config change
     pub(crate) unclaimed_patronage_tally_amount: Balance,
@@ -105,7 +107,7 @@ pub struct TokenIssuanceParameters<Balance, Hash> {
     pub(crate) transfer_policy: TransferPolicy<Hash>,
 
     /// Initial Patronage rate
-    pub(crate) patronage_rate: Permill,
+    pub(crate) patronage_rate: YearlyRate,
 }
 
 /// Utility enum used in merkle proof verification
@@ -117,6 +119,14 @@ pub enum MerkleSide {
     /// This element appended to the left of the subtree hash
     Left,
 }
+
+/// Yearly rate used for patronage info initialization
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy, Default)]
+pub struct YearlyRate(pub Permill);
+
+/// Block rate used for patronage accounting
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy, PartialOrd, Default)]
+pub struct BlockRate(Permill);
 
 /// Wrapper around a merkle proof path
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -260,7 +270,7 @@ impl<
         block: BlockNumber,
     ) -> Balance {
         let blocks = block.saturating_sub(self.patronage_info.last_unclaimed_patronage_tally_block);
-        let unclaimed_patronage_percent: BlockNumber = self.patronage_info.rate.mul_floor(blocks);
+        let unclaimed_patronage_percent: BlockNumber = self.patronage_info.rate.for_period(blocks);
         let unclaimed_patronage_percent_bal: Balance =
             BlockNumberToBalance::convert(unclaimed_patronage_percent);
 
@@ -271,7 +281,7 @@ impl<
 
     pub fn set_new_patronage_rate_at_block<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
         &mut self,
-        new_rate: Permill,
+        new_rate: BlockRate,
         block: BlockNumber,
     ) {
         // update tally according to old rate
@@ -285,12 +295,15 @@ impl<
 /// Encapsules parameters validation + TokenData construction
 impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, Hash> {
     /// Forward `self` state
-    pub fn build<BlockNumber>(self, block: BlockNumber) -> TokenData<Balance, Hash, BlockNumber> {
+    pub fn build<BlockNumber, T: crate::Trait>(
+        self,
+        block: BlockNumber,
+    ) -> TokenData<Balance, Hash, BlockNumber> {
         // validation
         let patronage_info = PatronageData::<Balance, BlockNumber> {
             last_unclaimed_patronage_tally_block: block,
             unclaimed_patronage_tally_amount: Balance::zero(),
-            rate: self.patronage_rate,
+            rate: BlockRate::from_yearly_rate(self.patronage_rate, T::BlocksPerYear::get()),
         };
         TokenData::<Balance, Hash, BlockNumber> {
             supply: self.initial_supply,
@@ -351,6 +364,30 @@ impl<AccountId, Balance> From<Transfers<AccountId, Balance>>
 {
     fn from(v: Transfers<AccountId, Balance>) -> Self {
         v.0
+    }
+}
+
+/// Block Rate bare minimum impementation
+impl BlockRate {
+    pub fn from_yearly_rate(r: YearlyRate, blocks_per_year: u32) -> Self {
+        BlockRate(Permill::from_parts(blocks_per_year).saturating_mul(r.0))
+    }
+
+    pub fn to_yearly_rate(self, blocks_per_year: u32) -> YearlyRate {
+        YearlyRate(Permill::from_parts(
+            self.0.deconstruct().saturating_mul(blocks_per_year),
+        ))
+    }
+
+    pub fn for_period<BlockNumber>(self, blocks: BlockNumber) -> BlockNumber
+    where
+        BlockNumber: AtLeast32BitUnsigned + Clone,
+    {
+        self.0.mul_floor(blocks)
+    }
+
+    pub fn saturating_sub(self, other: Self) -> Self {
+        BlockRate(self.0.saturating_sub(other.0))
     }
 }
 

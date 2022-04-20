@@ -1,5 +1,4 @@
 use frame_support::dispatch::DispatchResult;
-use sp_runtime::Permill;
 
 pub trait PalletToken<AccountId, Policy, IssuanceParams> {
     /// Balance type used
@@ -10,6 +9,9 @@ pub trait PalletToken<AccountId, Policy, IssuanceParams> {
 
     /// Merkle Proof Type used
     type MerkleProof;
+
+    /// Yearly rate used for expressing patronage rate
+    type YearlyRate;
 
     /// Issue token with specified characteristics
     fn issue_token(
@@ -24,7 +26,10 @@ pub trait PalletToken<AccountId, Policy, IssuanceParams> {
     fn change_to_permissionless(token_id: Self::TokenId) -> DispatchResult;
 
     /// Reduce patronage rate by amount
-    fn reduce_patronage_rate_by(token_id: Self::TokenId, decrement: Permill) -> DispatchResult;
+    fn reduce_patronage_rate_by(
+        token_id: Self::TokenId,
+        decrement: Self::YearlyRate,
+    ) -> DispatchResult;
 
     /// Allow creator to receive credit into his accounts
     fn claim_patronage_credit(token_id: Self::TokenId, to_account: AccountId) -> DispatchResult;

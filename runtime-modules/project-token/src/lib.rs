@@ -10,7 +10,7 @@ use frame_system::ensure_signed;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
     traits::{AccountIdConversion, Convert},
-    ModuleId, Permill,
+    ModuleId,
 };
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::Sum;
@@ -27,8 +27,8 @@ use errors::Error;
 pub use events::{Event, RawEvent};
 use traits::PalletToken;
 use types::{
-    AccountDataOf, MerkleProofOf, TokenDataOf, TokenIssuanceParametersOf, TransferPolicyOf,
-    Transfers, TransfersOf, Validated,
+    AccountDataOf, BlockRate, MerkleProofOf, TokenDataOf, TokenIssuanceParametersOf,
+    TransferPolicyOf, Transfers, TransfersOf, Validated, YearlyRate,
 };
 
 // aliases
@@ -63,6 +63,9 @@ pub trait Trait: frame_system::Trait {
 
     /// the Currency interface used as a reserve (i.e. JOY)
     type ReserveCurrency: Currency<Self::AccountId>;
+
+    /// Number of blocks produced in a year
+    type BlocksPerYear: Get<u32>;
 }
 
 decl_storage! {
@@ -268,6 +271,8 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
 
     type MerkleProof = MerkleProofOf<T>;
 
+    type YearlyRate = YearlyRate;
+
     /// Change to permissionless
     /// Preconditions:
     /// - Token `token_id` must exist
@@ -287,24 +292,32 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
     ///
     /// Postconditions:
     /// - patronage rate for `token_id` reduced by `decrement`
-    fn reduce_patronage_rate_by(token_id: T::TokenId, decrement: Permill) -> DispatchResult {
+    fn reduce_patronage_rate_by(token_id: T::TokenId, decrement: YearlyRate) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
+        let block_rate_decrement = BlockRate::from_yearly_rate(decrement, T::BlocksPerYear::get());
 
         // ensure new rate is >= 0
         ensure!(
-            token_info.patronage_info.rate >= decrement,
+            token_info.patronage_info.rate >= block_rate_decrement,
             Error::<T>::ReductionExceedingPatronageRate,
         );
 
         // == MUTATION SAFE ==
 
         let now = Self::current_block();
-        let new_rate = token_info.patronage_info.rate.saturating_sub(decrement);
+        let new_rate = token_info
+            .patronage_info
+            .rate
+            .saturating_sub(block_rate_decrement);
         TokenInfoById::<T>::mutate(token_id, |token_info| {
             token_info.set_new_patronage_rate_at_block::<T::BlockNumberToBalance>(new_rate, now);
         });
 
-        Self::deposit_event(RawEvent::PatronageRateDecreasedTo(token_id, new_rate));
+        let new_yearly_rate = new_rate.to_yearly_rate(T::BlocksPerYear::get());
+        Self::deposit_event(RawEvent::PatronageRateDecreasedTo(
+            token_id,
+            new_yearly_rate,
+        ));
 
         Ok(())
     }
@@ -368,7 +381,7 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
 
         let now = Self::current_block();
         let initial_supply = issuance_parameters.initial_supply;
-        let token_data = issuance_parameters.build(now);
+        let token_data = issuance_parameters.build::<_, T>(now);
 
         // == MUTATION SAFE ==
 

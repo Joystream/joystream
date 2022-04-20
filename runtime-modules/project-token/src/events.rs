@@ -1,6 +1,5 @@
-use crate::types::{TokenDataOf, TransferPolicyOf, Transfers, Validated};
+use crate::types::{TokenDataOf, TransferPolicyOf, Transfers, Validated, YearlyRate};
 use frame_support::decl_event;
-use sp_runtime::Permill;
 
 decl_event! {
     pub enum Event<T>
@@ -23,7 +22,7 @@ decl_event! {
         /// Params:
         /// - token identifier
         /// - new patronage rate
-        PatronageRateDecreasedTo(TokenId, Permill),
+        PatronageRateDecreasedTo(TokenId, YearlyRate),
 
         /// Patronage credit claimed by creator
         /// Params:
