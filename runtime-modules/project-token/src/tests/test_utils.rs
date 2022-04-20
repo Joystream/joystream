@@ -36,7 +36,7 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash: Default, BlockNumber:
         Self { symbol, ..self }
     }
 
-    pub fn with_issuance(self, supply: Balance) -> Self {
+    pub fn with_supply(self, supply: Balance) -> Self {
         Self { supply, ..self }
     }
 
@@ -85,7 +85,7 @@ impl GenesisConfigBuilder {
         }
     }
 
-    // add token with given params & zero issuance
+    // add token with given params & zero supply
     pub fn with_token(mut self, token_id: TokenId, token_info: TokenData) -> Self {
         self.symbol_used = vec![(token_info.symbol.clone(), ())];
         self.token_info_by_id.push((token_id, token_info));
@@ -109,7 +109,7 @@ impl GenesisConfigBuilder {
         Self { bloat_bond, ..self }
     }
 
-    // add account & updates token issuance
+    // add account & updates token supply
     pub fn with_account(
         mut self,
         account_id: AccountId,
@@ -121,7 +121,7 @@ impl GenesisConfigBuilder {
             .last_mut()
             .unwrap()
             .1
-            .increase_issuance_by(Balance::from(account_data.total_balance()));
+            .increase_supply_by(Balance::from(account_data.total_balance()));
 
         self.account_info_by_token_and_account
             .push((id, account_id, account_data));
@@ -190,7 +190,6 @@ impl<Balance, Account: Ord> Transfers<Account, Balance> {
 }
 
 #[cfg(test)]
-#[ignore]
 #[test]
 fn with_token_assigns_correct_token_id() {
     let token_id: TokenId = 1;
@@ -202,10 +201,9 @@ fn with_token_assigns_correct_token_id() {
     assert_eq!(id, token_id);
 }
 
-#[ignore]
 #[test]
-fn with_issuance_adds_issuance_to_token() {
-    let token_params = TokenDataBuilder::new_empty().with_issuance(5).build();
+fn with_supply_adds_supply_to_token() {
+    let token_params = TokenDataBuilder::new_empty().with_supply(5).build();
 
     let builder = GenesisConfigBuilder::new_empty().with_token(1, token_params);
 
@@ -213,10 +211,9 @@ fn with_issuance_adds_issuance_to_token() {
     assert_eq!(supply, 5);
 }
 
-#[ignore]
 #[test]
-fn adding_account_with_free_balance_also_adds_issuance() {
-    let token_params = TokenDataBuilder::new_empty().with_issuance(5).build();
+fn adding_account_with_free_balance_also_adds_supply() {
+    let token_params = TokenDataBuilder::new_empty().with_supply(5).build();
     let mut builder = GenesisConfigBuilder::new_empty().with_token(1, token_params);
     builder = builder.with_account(
         1,

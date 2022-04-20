@@ -32,10 +32,10 @@ pub struct AccountData<Balance, ReserveBalance> {
 /// Info for the token
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
 pub struct TokenData<Balance, Hash, BlockNumber> {
-    /// Current token issuance
+    /// Current token supply
     pub(crate) supply: Balance,
 
-    /// Initial issuance state
+    /// Initial offering state
     pub(crate) offering_state: OfferingState,
 
     /// Transfer policy
@@ -80,7 +80,7 @@ impl<Hash> Default for TransferPolicy<Hash> {
     }
 }
 
-/// The possible issuance variants: This is a stub
+/// The possible offering variants: This is a stub
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub(crate) enum OfferingState {
     /// Initial idle state
@@ -97,7 +97,7 @@ pub(crate) enum OfferingState {
 /// Builder for the token data struct
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
 pub struct TokenIssuanceParameters<Balance, Hash> {
-    /// Initial issuance
+    /// Initial supply
     pub(crate) initial_supply: Balance,
 
     /// Token Symbol
@@ -247,13 +247,13 @@ impl<
         self.accounts_number = self.accounts_number.saturating_sub(1u64);
     }
 
-    // increase total issuance
-    pub(crate) fn increase_issuance_by(&mut self, amount: Balance) {
+    // increase total supply
+    pub(crate) fn increase_supply_by(&mut self, amount: Balance) {
         self.supply = self.supply.saturating_add(amount);
     }
 
-    // increase total issuance
-    pub(crate) fn decrease_issuance_by(&mut self, amount: Balance) {
+    // increase total supply
+    pub(crate) fn decrease_supply_by(&mut self, amount: Balance) {
         self.supply = self.supply.saturating_sub(amount);
     }
 

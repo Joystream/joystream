@@ -195,7 +195,7 @@ decl_module! {
             AccountInfoByTokenAndAccount::<T>::remove(token_id, &account_id);
             TokenInfoById::<T>::mutate(token_id, |token_info| {
                 token_info.decrement_accounts_number();
-                token_info.decrease_issuance_by(account_to_remove_info.total_balance());
+                token_info.decrease_supply_by(account_to_remove_info.total_balance());
 
                 if !unclaimed_patronage.is_zero() {
                     token_info.set_unclaimed_tally_patronage_at_block(unclaimed_patronage, now);
@@ -350,7 +350,7 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
         });
 
         TokenInfoById::<T>::mutate(token_id, |token_info| {
-            token_info.increase_issuance_by(unclaimed_patronage);
+            token_info.increase_supply_by(unclaimed_patronage);
             token_info.set_unclaimed_tally_patronage_at_block(T::Balance::zero(), now);
         });
 
