@@ -1,16 +1,18 @@
 #[cfg(test)]
 use frame_support::{assert_noop, assert_ok};
-use sp_runtime::{traits::Saturating, Permill};
+use sp_runtime::Permill;
 
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
-use crate::types::TokenIssuanceParametersOf;
-use crate::{account, balance, block, last_event_eq, origin, percent, token, Error, RawEvent};
+use crate::types::{BlockRate, TokenIssuanceParametersOf, YearlyRate};
+use crate::{
+    account, balance, block, last_event_eq, origin, rate, token, yearly_rate, Error, RawEvent,
+};
 
 #[test]
 fn issue_token_ok_with_patronage_tally_count_zero() {
-    let patronage_rate = percent!(50);
+    let patronage_rate = yearly_rate!(50);
     let token_id = token!(1);
     let (owner, init_supply) = (account!(1), balance!(10));
 
@@ -37,7 +39,7 @@ fn issue_token_ok_with_patronage_tally_count_zero() {
 #[test]
 fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
     let token_id = token!(1);
-    let (patronage_rate, blocks) = (percent!(20), block!(10));
+    let (patronage_rate, blocks) = (yearly_rate!(20), block!(10));
     let (owner, init_supply) = (account!(1), balance!(10));
 
     let params = TokenIssuanceParametersOf::<Test> {
@@ -55,7 +57,7 @@ fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
         assert_eq!(
             Token::token_info_by_id(token_id)
                 .unclaimed_patronage_at_block::<Block2Balance>(System::block_number()),
-            patronage_rate * blocks * init_supply,
+            patronage_rate.0 * blocks * init_supply,
         );
     })
 }
@@ -63,7 +65,7 @@ fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
 #[test]
 fn issue_token_ok_with_correct_patronage_accounting_and_zero_supply() {
     let token_id = token!(1);
-    let (patronage_rate, blocks) = (percent!(20), block!(10));
+    let (patronage_rate, blocks) = (yearly_rate!(20), block!(10));
     let (owner, initial_supply) = (account!(1), balance!(0));
 
     let params = TokenIssuanceParametersOf::<Test> {
@@ -84,10 +86,10 @@ fn issue_token_ok_with_correct_patronage_accounting_and_zero_supply() {
 
 #[test]
 fn decrease_patronage_ok() {
-    let rate = percent!(50);
+    let rate = rate!(50);
     let (token_id, init_supply) = (token!(1), balance!(100));
     let owner = account!(1);
-    let decrement = percent!(20);
+    let decrement = yearly_rate!(20);
 
     let token_info = TokenDataBuilder::new_empty()
         .with_patronage_rate(rate)
@@ -109,19 +111,20 @@ fn decrease_patronage_ok() {
 #[test]
 fn decrease_patronage_ok_with_tally_count_twice_updated() {
     let token_id = token!(1);
-    let decrement = percent!(1);
+    let decrement = yearly_rate!(10);
     let (owner, init_supply) = (account!(1), balance!(100));
-    let (rate, blocks) = (percent!(3), block!(10));
+    let (init_rate, blocks) = (yearly_rate!(30), block!(10));
 
     let token_info = TokenDataBuilder::new_empty()
-        .with_patronage_rate(rate)
+        .with_patronage_rate(BlockRate::from_yearly_rate(init_rate, BlocksPerYear::get()))
         .build();
     let config = GenesisConfigBuilder::new_empty()
         .with_token_and_owner(token_id, token_info, owner, init_supply)
         .build();
 
-    let expected_tally_amount =
-        (rate.saturating_add(rate).saturating_sub(decrement)) * blocks * init_supply;
+    let expected_tally_amount = BlockRate::from_yearly_rate(yearly_rate!(50), BlocksPerYear::get())
+        .for_period(blocks)
+        * init_supply;
 
     build_test_externalities(config).execute_with(|| {
         increase_block_number_by(blocks);
@@ -145,11 +148,12 @@ fn decrease_patronage_ok_with_tally_count_twice_updated() {
 
 #[test]
 fn decrease_patronage_ok_with_event_deposit() {
-    let rate = percent!(50);
+    let init_rate = yearly_rate!(50);
     let token_id = token!(1);
-    let decrement = percent!(20);
+    let decrement = yearly_rate!(20);
 
-    let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
+    let params = TokenDataBuilder::new_empty()
+        .with_patronage_rate(BlockRate::from_yearly_rate(init_rate, BlocksPerYear::get()));
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
         .build();
@@ -161,18 +165,19 @@ fn decrease_patronage_ok_with_event_deposit() {
 
         last_event_eq!(RawEvent::PatronageRateDecreasedTo(
             token_id,
-            Token::token_info_by_id(token_id).patronage_info.rate
+            yearly_rate!(30),
         ));
     })
 }
 
 #[test]
 fn decrease_patronage_ok_with_correct_final_rate() {
-    let rate = percent!(50);
+    let init_rate = yearly_rate!(50);
     let token_id = token!(1);
-    let decrement = percent!(20);
+    let decrement = yearly_rate!(20);
 
-    let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
+    let params = TokenDataBuilder::new_empty()
+        .with_patronage_rate(BlockRate::from_yearly_rate(init_rate, BlocksPerYear::get()));
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
         .build();
@@ -183,8 +188,11 @@ fn decrease_patronage_ok_with_correct_final_rate() {
         );
 
         assert_eq!(
-            rate.saturating_sub(decrement),
-            Token::token_info_by_id(token_id).patronage_info.rate
+            yearly_rate!(30),
+            Token::token_info_by_id(token_id)
+                .patronage_info
+                .rate
+                .to_yearly_rate(BlocksPerYear::get())
         )
     })
 }
@@ -192,10 +200,11 @@ fn decrease_patronage_ok_with_correct_final_rate() {
 #[test]
 fn decrease_patronage_ok_with_last_tally_block_updated() {
     let token_id = token!(1);
-    let decrement = percent!(10);
-    let (rate, blocks) = (percent!(20), block!(10));
+    let decrement = yearly_rate!(10);
+    let (init_rate, blocks) = (yearly_rate!(20), block!(10));
 
-    let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
+    let params = TokenDataBuilder::new_empty()
+        .with_patronage_rate(BlockRate::from_yearly_rate(init_rate, BlocksPerYear::get()));
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
         .build();
@@ -218,13 +227,13 @@ fn decrease_patronage_ok_with_last_tally_block_updated() {
 
 #[test]
 fn decreasing_patronage_rate_fails_with_decrease_amount_too_large() {
-    let rate = percent!(50);
+    let init_rate = yearly_rate!(50);
     let (token_id, init_supply) = (token!(1), balance!(100));
     let owner = account!(1);
-    let decrease = percent!(70);
+    let decrease = yearly_rate!(70);
 
     let token_info = TokenDataBuilder::new_empty()
-        .with_patronage_rate(rate)
+        .with_patronage_rate(BlockRate::from_yearly_rate(init_rate, BlocksPerYear::get()))
         .build();
     let config = GenesisConfigBuilder::new_empty()
         .with_token_and_owner(token_id, token_info, owner, init_supply)
@@ -243,7 +252,7 @@ fn decreasing_patronage_rate_fails_with_decrease_amount_too_large() {
 #[test]
 fn decreasing_patronage_rate_fails_invalid_token() {
     let config = GenesisConfigBuilder::new_empty().build();
-    let decrease = percent!(20);
+    let decrease = yearly_rate!(20);
     let token_id = token!(1);
 
     build_test_externalities(config).execute_with(|| {
@@ -260,7 +269,7 @@ fn decreasing_patronage_rate_fails_invalid_token() {
 fn claim_patronage_ok() {
     let token_id = token!(1);
     let owner = account!(1);
-    let (rate, blocks) = (percent!(10), block!(10));
+    let (rate, blocks) = (rate!(10), block!(10));
 
     let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
 
@@ -284,7 +293,7 @@ fn claim_patronage_ok() {
 #[test]
 fn claim_patronage_ok_with_event_deposit() {
     let token_id = token!(1);
-    let (rate, blocks) = (percent!(10), block!(10));
+    let (rate, blocks) = (rate!(10), block!(10));
     let (owner, init_supply) = (account!(1), balance!(100));
 
     let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
@@ -303,7 +312,7 @@ fn claim_patronage_ok_with_event_deposit() {
 
         last_event_eq!(RawEvent::PatronageCreditClaimed(
             token_id,
-            rate * blocks * init_supply,
+            rate.0 * blocks * init_supply,
             owner,
         ));
     })
@@ -313,7 +322,7 @@ fn claim_patronage_ok_with_event_deposit() {
 fn claim_patronage_ok_with_credit_accounting() {
     let token_id = token!(1);
     let (owner, init_supply) = (account!(2), balance!(100));
-    let (rate, blocks) = (percent!(10), block!(10));
+    let (rate, blocks) = (rate!(10), block!(10));
 
     let token_info = TokenDataBuilder::new_empty()
         .with_patronage_rate(rate)
@@ -332,7 +341,7 @@ fn claim_patronage_ok_with_credit_accounting() {
 
         assert_eq!(
             Token::account_info_by_token_and_account(token_id, owner).free_balance,
-            rate * blocks * init_supply + init_supply, // initial balance + patronage claimed
+            rate.0 * blocks * init_supply + init_supply, // initial balance + patronage claimed
         );
     })
 }
@@ -342,7 +351,7 @@ fn claim_patronage_ok_with_unclaimed_patronage_reset() {
     let (token_id, init_supply) = (token!(1), balance!(100));
     let account_id = account!(1);
     let owner = account!(2);
-    let (rate, blocks) = (percent!(10), block!(10));
+    let (rate, blocks) = (rate!(10), block!(10));
 
     let token_info = TokenDataBuilder::new_empty()
         .with_patronage_rate(rate)
@@ -387,7 +396,7 @@ fn claim_patronage_credit_fails_with_invalid_token_id() {
 
 #[test]
 fn claim_patronage_credit_fails_with_invalid_owner() {
-    let rate = percent!(50);
+    let rate = rate!(50);
     let (token_id, init_supply) = (token!(1), balance!(100));
     let invalid_owner = account!(1);
     let owner = account!(2);
@@ -414,7 +423,7 @@ fn claim_patronage_credit_fails_with_invalid_owner() {
 fn claim_patronage_ok_with_tally_amount_set_to_zero() {
     let (token_id, init_supply) = (token!(1), balance!(100));
     let owner = account!(1);
-    let (rate, blocks) = (percent!(10), block!(10));
+    let (rate, blocks) = (rate!(10), block!(10));
 
     let token_info = TokenDataBuilder::new_empty()
         .with_patronage_rate(rate)
@@ -444,7 +453,7 @@ fn claim_patronage_ok_with_tally_amount_set_to_zero() {
 fn claim_patroage_ok_with_tally_block_update_after_account_removed() {
     let (token_id, init_supply) = (token!(1), balance!(100));
     let (owner, user_account) = (account!(1), account!(2));
-    let (rate, blocks) = (percent!(10), block!(10));
+    let (rate, blocks) = (rate!(10), block!(10));
     let amount_burned = balance!(100);
 
     let token_info = TokenDataBuilder::new_empty()
@@ -474,7 +483,7 @@ fn claim_patroage_ok_with_tally_block_update_after_account_removed() {
 fn claim_patroage_ok_with_tally_amount_update_after_account_removed() {
     let (token_id, owner_balance) = (token!(1), balance!(100));
     let (owner, user_account) = (account!(1), account!(2));
-    let (rate, blocks) = (percent!(10), block!(10));
+    let (rate, blocks) = (rate!(10), block!(10));
     let amount_burned = balance!(100);
 
     let token_info = TokenDataBuilder::new_empty()
@@ -497,7 +506,7 @@ fn claim_patroage_ok_with_tally_amount_update_after_account_removed() {
             Token::token_info_by_id(token_id)
                 .patronage_info
                 .unclaimed_patronage_tally_amount,
-            rate.mul_floor(blocks) * init_supply,
+            rate.0 * blocks * init_supply,
         );
     })
 }

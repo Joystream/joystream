@@ -126,7 +126,7 @@ pub struct YearlyRate(pub Permill);
 
 /// Block rate used for patronage accounting
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy, PartialOrd, Default)]
-pub struct BlockRate(Permill);
+pub struct BlockRate(pub Permill);
 
 /// Wrapper around a merkle proof path
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -300,10 +300,15 @@ impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, H
         block: BlockNumber,
     ) -> TokenData<Balance, Hash, BlockNumber> {
         // validation
+        let rate = if self.patronage_rate.0.is_zero() {
+            BlockRate(Permill::zero())
+        } else {
+            BlockRate::from_yearly_rate(self.patronage_rate, T::BlocksPerYear::get())
+        };
         let patronage_info = PatronageData::<Balance, BlockNumber> {
             last_unclaimed_patronage_tally_block: block,
             unclaimed_patronage_tally_amount: Balance::zero(),
-            rate: BlockRate::from_yearly_rate(self.patronage_rate, T::BlocksPerYear::get()),
+            rate,
         };
         TokenData::<Balance, Hash, BlockNumber> {
             supply: self.initial_supply,
@@ -370,12 +375,16 @@ impl<AccountId, Balance> From<Transfers<AccountId, Balance>>
 /// Block Rate bare minimum impementation
 impl BlockRate {
     pub fn from_yearly_rate(r: YearlyRate, blocks_per_year: u32) -> Self {
-        BlockRate(Permill::from_parts(blocks_per_year).saturating_mul(r.0))
+        BlockRate(Permill::from_rational_approximation(
+            blocks_per_year,
+            r.0.saturating_reciprocal_mul(blocks_per_year),
+        ))
     }
 
     pub fn to_yearly_rate(self, blocks_per_year: u32) -> YearlyRate {
-        YearlyRate(Permill::from_parts(
-            self.0.deconstruct().saturating_mul(blocks_per_year),
+        YearlyRate(Permill::from_rational_approximation(
+            self.0.mul_floor(blocks_per_year),
+            blocks_per_year,
         ))
     }
 

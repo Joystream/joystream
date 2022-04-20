@@ -5,10 +5,12 @@ use sp_runtime::{traits::Hash, Permill};
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
-use crate::types::{MerkleProofOf, OfferingState, PatronageData, TokenIssuanceParametersOf};
+use crate::types::{
+    BlockRate, MerkleProofOf, OfferingState, PatronageData, TokenIssuanceParametersOf, YearlyRate,
+};
 use crate::{
-    account, balance, joy, last_event_eq, merkle_proof, merkle_root, origin, percent, token, Error,
-    RawEvent, TokenDataOf,
+    account, balance, joy, last_event_eq, merkle_proof, merkle_root, origin, token, yearly_rate,
+    Error, RawEvent, TokenDataOf,
 };
 
 #[test]
@@ -815,16 +817,25 @@ fn issue_token_ok_with_event_deposit() {
         initial_supply: balance!(100),
         symbol: Hashing::hash_of(&token_id),
         transfer_policy: Policy::Permissionless,
-        patronage_rate: percent!(1),
+        patronage_rate: YearlyRate(Permill::from_percent(1)),
     };
 
     let config = GenesisConfigBuilder::new_empty().build();
+
+    let rate = BlockRate(Permill::from_rational_approximation(
+        BlocksPerYear::get(),
+        params
+            .patronage_rate
+            .0
+            .saturating_reciprocal_mul(BlocksPerYear::get()),
+    ));
 
     build_test_externalities(config).execute_with(|| {
         let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::issue_token(
             owner,
             params.clone(),
         );
+
         last_event_eq!(RawEvent::TokenIssued(
             token_id,
             TokenDataOf::<Test> {
@@ -836,7 +847,7 @@ fn issue_token_ok_with_event_deposit() {
                 patronage_info: PatronageData::<Balance, BlockNumber> {
                     last_unclaimed_patronage_tally_block: System::block_number(),
                     unclaimed_patronage_tally_amount: balance!(0),
-                    rate: params.patronage_rate
+                    rate,
                 }
             },
             owner,
@@ -853,8 +864,16 @@ fn issue_token_ok_with_token_info_added() {
         initial_supply: balance!(100),
         symbol: Hashing::hash_of(&token_id),
         transfer_policy: Policy::Permissionless,
-        patronage_rate: percent!(1),
+        patronage_rate: yearly_rate!(10),
     };
+
+    let rate = BlockRate(Permill::from_rational_approximation(
+        BlocksPerYear::get(),
+        params
+            .patronage_rate
+            .0
+            .saturating_reciprocal_mul(BlocksPerYear::get()),
+    ));
 
     let config = GenesisConfigBuilder::new_empty().build();
 
@@ -875,7 +894,7 @@ fn issue_token_ok_with_token_info_added() {
                 patronage_info: PatronageData::<Balance, BlockNumber> {
                     last_unclaimed_patronage_tally_block: System::block_number(),
                     unclaimed_patronage_tally_amount: balance!(0),
-                    rate: params.patronage_rate
+                    rate,
                 }
             }
         );

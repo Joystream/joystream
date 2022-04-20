@@ -73,7 +73,8 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
     // constants for crate::Trait
-    pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token"); // module storage
+    pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token");
+    pub const BlocksPerYear: u32 = 1000; // made up, to make test faster
     // constants for balances::Trait
     pub const ExistentialDeposit: u64 = 10;
 }
@@ -114,6 +115,7 @@ impl Trait for Test {
     type ModuleId = TokenModuleId;
     type ReserveExistentialDeposit = ExistentialDeposit;
     type ReserveCurrency = Balances;
+    type BlocksPerYear = BlocksPerYear;
 }
 
 /// Implement pallet balances trait for Test
@@ -186,9 +188,16 @@ macro_rules! balance {
 }
 
 #[macro_export]
-macro_rules! percent {
+macro_rules! rate {
     ($r:expr) => {
-        Permill::from_percent($r as u32)
+        BlockRate(Permill::from_percent($r as u32))
+    };
+}
+
+#[macro_export]
+macro_rules! yearly_rate {
+    ($r:expr) => {
+        YearlyRate(Permill::from_percent($r as u32))
     };
 }
 

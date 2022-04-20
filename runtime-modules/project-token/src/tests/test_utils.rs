@@ -5,8 +5,8 @@ use sp_std::collections::btree_map::BTreeMap;
 
 use crate::tests::mock::*;
 use crate::types::{
-    AccountData, AccountDataOf, MerkleProof, MerkleSide, OfferingState, PatronageData, Payment,
-    TransferPolicy, Transfers,
+    AccountData, AccountDataOf, BlockRate, MerkleProof, MerkleSide, OfferingState, PatronageData,
+    Payment, TransferPolicy, Transfers,
 };
 use crate::{balance, joy, GenesisConfig};
 
@@ -47,7 +47,7 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash: Default, BlockNumber:
         }
     }
 
-    pub fn with_patronage_rate(self, rate: Permill) -> Self {
+    pub fn with_patronage_rate(self, rate: BlockRate) -> Self {
         Self {
             patronage_info: PatronageData::<_, _> {
                 unclaimed_patronage_tally_amount: Balance::zero(),
@@ -64,7 +64,7 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash: Default, BlockNumber:
             offering_state: OfferingState::Idle,
             transfer_policy: TransferPolicy::<Hash>::Permissionless,
             patronage_info: PatronageData::<Balance, BlockNumber> {
-                rate: Permill::from_percent(0),
+                rate: BlockRate(Permill::zero()),
                 unclaimed_patronage_tally_amount: Balance::zero(),
                 last_unclaimed_patronage_tally_block: BlockNumber::one(),
             },
@@ -225,4 +225,25 @@ fn adding_account_with_free_balance_also_adds_issuance() {
 
     let supply = builder.token_info_by_id.last().unwrap().1.supply;
     assert_eq!(supply, 15);
+}
+
+#[test]
+fn permill_yearly_and_block_rate_behavior() {
+    pub const BLOCKS_PER_YEAR: u32 = 5259600;
+    //    let block_rate = Permill::from_parts(BLOCKS_PER_YEAR);
+    pub const PERCENTAGE: u32 = 37;
+    let yearly_rate = Permill::from_percent(PERCENTAGE);
+
+    let block_rate = Permill::from_rational_approximation(
+        BLOCKS_PER_YEAR,
+        yearly_rate.saturating_reciprocal_mul(BLOCKS_PER_YEAR),
+    );
+
+    assert_eq!(
+        Permill::from_rational_approximation(
+            block_rate.mul_floor(BLOCKS_PER_YEAR),
+            BLOCKS_PER_YEAR
+        ),
+        yearly_rate,
+    );
 }
