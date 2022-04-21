@@ -332,6 +332,10 @@ import {
   GetEnglishAuctionSettledEventsByEventIdsQuery,
   GetEnglishAuctionSettledEventsByEventIdsQueryVariables,
   GetEnglishAuctionSettledEventsByEventIds,
+  BidFieldsFragment,
+  GetBidsByMemberIdQuery,
+  GetBidsByMemberIdQueryVariables,
+  GetBidsByMemberId,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1138,6 +1142,14 @@ export class QueryNodeApi {
       GetOwnedNftByVideoId,
       { videoId },
       'ownedNfts'
+    )
+  }
+
+  public async bidsByMemberId(videoId: string, memberId: string): Promise<BidFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetBidsByMemberIdQuery, GetBidsByMemberIdQueryVariables>(
+      GetBidsByMemberId,
+      { videoId, memberId },
+      'bids'
     )
   }
 
