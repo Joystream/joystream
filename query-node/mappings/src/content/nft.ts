@@ -858,7 +858,11 @@ export async function contentNft_EnglishAuctionSettled({ event, store }: EventCo
   // specific event processing
 
   // finish auction
-  const { winner, video, boughtPrice, nft } = await finishAuction(store, videoId.toNumber(), event.blockNumber)
+  const { winner, video, boughtPrice, nft, winningBid } = await finishAuction(
+    store,
+    videoId.toNumber(),
+    event.blockNumber
+  )
 
   if (winnerId.toString() !== winner.id.toString()) {
     return inconsistentState(`English auction winner haven't placed the top bid`, { videoId, winnerId })
@@ -880,6 +884,7 @@ export async function contentNft_EnglishAuctionSettled({ event, store }: EventCo
 
     winner,
     video,
+    winningBid,
     ownerMember: nft.ownerMember,
     ownerCuratorGroup: nft.ownerCuratorGroup,
   })
@@ -909,7 +914,7 @@ export async function contentNft_BidMadeCompletingAuction({
   } = await createBid(event, store, memberId.toNumber(), videoId.toNumber())
 
   // finish auction and transfer ownership
-  const { winner: member, video, boughtPrice: price, nft } = await finishAuction(
+  const { winner: member, video, boughtPrice: price, nft, winningBid } = await finishAuction(
     store,
     videoId.toNumber(),
     event.blockNumber
@@ -932,6 +937,7 @@ export async function contentNft_BidMadeCompletingAuction({
     ownerMember,
     ownerCuratorGroup,
     price,
+    winningBid,
     previousTopBid: previousTopBidder ? previousTopBid : undefined,
     previousTopBidder,
   })
