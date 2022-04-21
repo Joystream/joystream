@@ -3,9 +3,14 @@ eslint-disable @typescript-eslint/naming-convention
 */
 import { EventContext, StoreContext } from '@joystream/hydra-common'
 import { Content } from '../../generated/types'
-import { convertContentActorToChannelOrNftOwner, processChannelMetadata, unsetAssetRelations } from './utils'
+import {
+  convertContentActor,
+  convertContentActorToChannelOrNftOwner,
+  processChannelMetadata,
+  unsetAssetRelations,
+} from './utils'
 import { Channel, ChannelCategory, StorageDataObject, Membership } from 'query-node/dist/model'
-import { deserializeMetadata, inconsistentState, logger } from '../common'
+import { deserializeMetadata, inconsistentState, invalidMetadata, logger } from '../common'
 import {
   ChannelCategoryMetadata,
   ChannelMetadata,
@@ -15,7 +20,7 @@ import {
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import { In } from 'typeorm'
 import {
-  processDeleteCommentModeratorMessage,
+  processModerateCommentMessage,
   processPinOrUnpinCommentMessage,
   processBanOrUnbanMemberFromChannelMessage,
   processCommentSectionPreferenceMessage,
@@ -254,20 +259,21 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
 
   const decodedMessage = ChannelOwnerRemarked.decode(message.toU8a(true))
   const messageType = decodedMessage.channelOwnerRemarked
+  const contentActor = await convertContentActor(ctx.store, owner)
 
   if (!messageType) {
-    throw new Error(`Invalid message type; message not found`)
+    invalidMetadata('Unsupported message type in channel_owner_remark action')
   }
 
   if (messageType === 'pinOrUnpinComment') {
-    await processPinOrUnpinCommentMessage(ctx, owner.asMember, channelId, decodedMessage.pinOrUnpinComment!)
+    await processPinOrUnpinCommentMessage(ctx, contentActor, channelId, decodedMessage.pinOrUnpinComment!)
     return
   }
 
   if (messageType === 'banOrUnbanMemberFromChannel') {
     await processBanOrUnbanMemberFromChannelMessage(
       ctx,
-      owner.asMember,
+      contentActor,
       channelId,
       decodedMessage.banOrUnbanMemberFromChannel!
     )
@@ -275,22 +281,17 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
   }
 
   if (messageType === 'commentSectionPreference') {
-    await processCommentSectionPreferenceMessage(
-      ctx,
-      owner.asMember,
-      channelId,
-      decodedMessage.commentSectionPreference!
-    )
+    await processCommentSectionPreferenceMessage(ctx, contentActor, channelId, decodedMessage.commentSectionPreference!)
     return
   }
 
   if (messageType === 'videoReactionsPreference') {
-    await processVideoReactionsPreferenceMessage(
-      ctx,
-      owner.asMember,
-      channelId,
-      decodedMessage.videoReactionsPreference!
-    )
+    await processVideoReactionsPreferenceMessage(ctx, contentActor, channelId, decodedMessage.videoReactionsPreference!)
+    return
+  }
+
+  if (messageType === 'moderateComment') {
+    await processModerateCommentMessage(ctx, contentActor, channelId, decodedMessage.moderateComment!)
   }
 }
 
@@ -299,17 +300,13 @@ export async function content_ChannelModeratorRemarked(ctx: EventContext & Store
 
   const decodedMessage = ChannelModeratorRemarked.decode(message.toU8a(true))
   const messageType = decodedMessage.channelModeratorRemarked
+  const contentActor = await convertContentActor(ctx.store, moderator)
 
   if (!messageType) {
-    throw new Error(`Invalid message type; message not found`)
+    invalidMetadata('Unsupported message type in channel_moderator_remark action')
   }
 
-  if (messageType === 'deleteCommentModerator') {
-    await processDeleteCommentModeratorMessage(
-      ctx,
-      moderator.asMember,
-      channelId,
-      decodedMessage.deleteCommentModerator!
-    )
+  if (messageType === 'moderateComment') {
+    await processModerateCommentMessage(ctx, contentActor, channelId, decodedMessage.moderateComment!)
   }
 }
