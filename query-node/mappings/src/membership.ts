@@ -529,7 +529,7 @@ export async function members_MemberRemarked(ctx: EventContext & StoreContext): 
   }
 
   if (messageType === 'editComment') {
-    processEditCommentMessage(ctx, memberId, decodedMessage.editComment!)
+    await processEditCommentMessage(ctx, memberId, decodedMessage.editComment!)
     return
   }
 
