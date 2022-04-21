@@ -322,20 +322,10 @@ import {
   GetMemberVerificationStatusUpdatedEventsByEventIdsQuery,
   GetMemberVerificationStatusUpdatedEventsByEventIdsQueryVariables,
   GetMemberVerificationStatusUpdatedEventsByEventIds,
-  VideoCommentFieldsFragment,
-  GetRootCommentsByVideoIdQuery,
-  GetRootCommentsByVideoIdQueryVariables,
-  GetRepliesByParentCommentIdQuery,
-  GetRepliesByParentCommentIdQueryVariables,
-  GetCommentByIdQuery,
-  GetCommentByIdQueryVariables,
-  GetRootCommentsByVideoId,
-  GetRepliesByParentCommentId,
   CommentCreatedEventFieldsFragment,
   GetCommentCreatedEventsByEventIdsQuery,
   GetCommentCreatedEventsByEventIdsQueryVariables,
   GetCommentCreatedEventsByEventIds,
-  GetCommentById,
   GetCommentsByIds,
   GetCommentsByIdsQuery,
   GetCommentsByIdsQueryVariables,
@@ -396,6 +386,7 @@ import {
   GetCommentModeratedEventsByEventIdsQuery,
   GetCommentModeratedEventsByEventIdsQueryVariables,
   GetCommentModeratedEventsByEventIds,
+  CommentFieldsFragment,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1233,22 +1224,6 @@ export class QueryNodeApi {
     >(GetMemberVerificationStatusUpdatedEventsByEventIds, { eventIds }, 'memberVerificationStatusUpdatedEvents')
   }
 
-  public async rootCommentsByVideoId(videoId: string): Promise<VideoCommentFieldsFragment[]> {
-    return this.multipleEntitiesQuery<GetRootCommentsByVideoIdQuery, GetRootCommentsByVideoIdQueryVariables>(
-      GetRootCommentsByVideoId,
-      { videoId },
-      'comments'
-    )
-  }
-
-  public async repliesByParentCommentId(commentId: string): Promise<VideoCommentFieldsFragment[]> {
-    return this.multipleEntitiesQuery<GetRepliesByParentCommentIdQuery, GetRepliesByParentCommentIdQueryVariables>(
-      GetRepliesByParentCommentId,
-      { commentId },
-      'comments'
-    )
-  }
-
   public async getVideosByIds(ids: VideoId[]): Promise<VideoFieldsFragment[]> {
     return this.multipleEntitiesQuery<GetVideosByIdsQuery, GetVideosByIdsQueryVariables>(
       GetVideosByIds,
@@ -1257,19 +1232,11 @@ export class QueryNodeApi {
     )
   }
 
-  public async getCommentsByIds(ids: string[]): Promise<VideoCommentFieldsFragment[]> {
+  public async getCommentsByIds(ids: string[]): Promise<CommentFieldsFragment[]> {
     return this.multipleEntitiesQuery<GetCommentsByIdsQuery, GetCommentsByIdsQueryVariables>(
       GetCommentsByIds,
       { ids: ids.map((id) => id.toString()) },
       'comments'
-    )
-  }
-
-  public async getCommentById(commentId: string): Promise<Maybe<VideoCommentFieldsFragment>> {
-    return this.uniqueEntityQuery<GetCommentByIdQuery, GetCommentByIdQueryVariables>(
-      GetCommentById,
-      { commentId },
-      'commentByUniqueInput'
     )
   }
 

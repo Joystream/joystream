@@ -65,6 +65,8 @@ export type ChannelFieldsFragment = {
 
 export type ChannelCategoryFieldsFragment = { id: string; activeVideosCounter: number }
 
+export type VideoCategoryFieldsFragment = { id: string; activeVideosCounter: number }
+
 export type VideoFieldsFragment = {
   id: string
   commentsCount: number
@@ -75,7 +77,7 @@ export type VideoFieldsFragment = {
   pinnedComment?: Types.Maybe<{ id: string }>
 }
 
-export type VideoCommentFieldsFragment = {
+export type CommentFieldsFragment = {
   id: string
   text: string
   status: Types.CommentStatus
@@ -83,11 +85,6 @@ export type VideoCommentFieldsFragment = {
   author: { id: string }
   video: { id: string }
   reactions: Array<{ id: string; member: { id: string } }>
-}
-
-export type CommentReactionAndCountFieldsFragment = {
-  reactions: Array<{ id: string; member: { id: string } }>
-  reactionsCountByReactionId: Array<{ reactionId: number; count: number }>
 }
 
 export type VideoReactionFieldsFragment = {
@@ -103,8 +100,6 @@ export type CommentReactionFieldsFragment = {
   member: { id: string }
   comment: { id: string }
 }
-
-export type VideoCategoryFieldsFragment = { id: string; activeVideosCounter: number }
 
 export type OwnedNftFieldsFragment = {
   id: string
@@ -178,37 +173,6 @@ export type GetOwnedNftByVideoIdQueryVariables = Types.Exact<{
 
 export type GetOwnedNftByVideoIdQuery = { ownedNfts: Array<OwnedNftFieldsFragment> }
 
-export type GetRootCommentsByVideoIdQueryVariables = Types.Exact<{
-  videoId: Types.Scalars['ID']
-}>
-
-export type GetRootCommentsByVideoIdQuery = { comments: Array<VideoCommentFieldsFragment> }
-
-export type GetRepliesByParentCommentIdQueryVariables = Types.Exact<{
-  commentId: Types.Scalars['ID']
-}>
-
-export type GetRepliesByParentCommentIdQuery = { comments: Array<VideoCommentFieldsFragment> }
-
-export type GetCommentsByIdsQueryVariables = Types.Exact<{
-  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
-}>
-
-export type GetCommentsByIdsQuery = { comments: Array<VideoCommentFieldsFragment> }
-
-export type GetCommentByIdQueryVariables = Types.Exact<{
-  commentId: Types.Scalars['ID']
-}>
-
-export type GetCommentByIdQuery = { commentByUniqueInput?: Types.Maybe<VideoCommentFieldsFragment> }
-
-export type GetReactionsByCommentIdQueryVariables = Types.Exact<{
-  commentId: Types.Scalars['ID']
-  memberId?: Types.Maybe<Types.Scalars['ID']>
-}>
-
-export type GetReactionsByCommentIdQuery = { commentByUniqueInput?: Types.Maybe<CommentReactionAndCountFieldsFragment> }
-
 export type GetVideoReactionsByIdsQueryVariables = Types.Exact<{
   ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
@@ -221,11 +185,11 @@ export type GetCommentReactionsByIdsQueryVariables = Types.Exact<{
 
 export type GetCommentReactionsByIdsQuery = { commentReactions: Array<CommentReactionFieldsFragment> }
 
-export type GetVideoByIdQueryVariables = Types.Exact<{
-  commentId: Types.Scalars['ID']
+export type GetCommentsByIdsQueryVariables = Types.Exact<{
+  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
 }>
 
-export type GetVideoByIdQuery = { videoByUniqueInput?: Types.Maybe<VideoFieldsFragment> }
+export type GetCommentsByIdsQuery = { comments: Array<CommentFieldsFragment> }
 
 export type GetVideosByIdsQueryVariables = Types.Exact<{
   ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
@@ -2460,6 +2424,12 @@ export const ChannelCategoryFields = gql`
     activeVideosCounter
   }
 `
+export const VideoCategoryFields = gql`
+  fragment VideoCategoryFields on VideoCategory {
+    id
+    activeVideosCounter
+  }
+`
 export const VideoFields = gql`
   fragment VideoFields on Video {
     id
@@ -2488,8 +2458,8 @@ export const VideoFields = gql`
     }
   }
 `
-export const VideoCommentFields = gql`
-  fragment VideoCommentFields on Comment {
+export const CommentFields = gql`
+  fragment CommentFields on Comment {
     id
     author {
       id
@@ -2505,20 +2475,6 @@ export const VideoCommentFields = gql`
       member {
         id
       }
-    }
-  }
-`
-export const CommentReactionAndCountFields = gql`
-  fragment CommentReactionAndCountFields on Comment {
-    reactions {
-      id
-      member {
-        id
-      }
-    }
-    reactionsCountByReactionId {
-      reactionId
-      count
     }
   }
 `
@@ -2544,12 +2500,6 @@ export const CommentReactionFields = gql`
     comment {
       id
     }
-  }
-`
-export const VideoCategoryFields = gql`
-  fragment VideoCategoryFields on VideoCategory {
-    id
-    activeVideosCounter
   }
 `
 export const OwnedNftFields = gql`
@@ -4641,46 +4591,6 @@ export const GetOwnedNftByVideoId = gql`
   }
   ${OwnedNftFields}
 `
-export const GetRootCommentsByVideoId = gql`
-  query getRootCommentsByVideoId($videoId: ID!) {
-    comments(where: { video: { id_eq: $videoId }, parentComment: null }) {
-      ...VideoCommentFields
-    }
-  }
-  ${VideoCommentFields}
-`
-export const GetRepliesByParentCommentId = gql`
-  query getRepliesByParentCommentId($commentId: ID!) {
-    comments(where: { parentComment: { id_eq: $commentId } }) {
-      ...VideoCommentFields
-    }
-  }
-  ${VideoCommentFields}
-`
-export const GetCommentsByIds = gql`
-  query getCommentsByIds($ids: [ID!]) {
-    comments(where: { id_in: $ids }) {
-      ...VideoCommentFields
-    }
-  }
-  ${VideoCommentFields}
-`
-export const GetCommentById = gql`
-  query getCommentById($commentId: ID!) {
-    commentByUniqueInput(where: { id: $commentId }) {
-      ...VideoCommentFields
-    }
-  }
-  ${VideoCommentFields}
-`
-export const GetReactionsByCommentId = gql`
-  query getReactionsByCommentId($commentId: ID!, $memberId: ID) {
-    commentByUniqueInput(where: { id: $commentId }) {
-      ...CommentReactionAndCountFields
-    }
-  }
-  ${CommentReactionAndCountFields}
-`
 export const GetVideoReactionsByIds = gql`
   query getVideoReactionsByIds($ids: [ID!]) {
     videoReactions(where: { id_in: $ids }) {
@@ -4697,13 +4607,13 @@ export const GetCommentReactionsByIds = gql`
   }
   ${CommentReactionFields}
 `
-export const GetVideoById = gql`
-  query getVideoById($commentId: ID!) {
-    videoByUniqueInput(where: { id: $commentId }) {
-      ...VideoFields
+export const GetCommentsByIds = gql`
+  query getCommentsByIds($ids: [ID!]) {
+    comments(where: { id_in: $ids }) {
+      ...CommentFields
     }
   }
-  ${VideoFields}
+  ${CommentFields}
 `
 export const GetVideosByIds = gql`
   query getVideosByIds($ids: [ID!]) {

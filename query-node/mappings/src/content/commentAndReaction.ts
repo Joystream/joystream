@@ -72,39 +72,36 @@ async function getComment(store: DatabaseManager, commentId: string, relations?:
 
 function ensureMemberIsNotBannedFromChannel(channel: Channel, memberId: string, errorMessage: string) {
   if (channel.bannedMembers.includes(new Membership({ id: memberId }))) {
-    return inconsistentState(
-      `${errorMessage}; member is banned from participating on content of channelId: `,
-      channel.id
-    )
+    inconsistentState(`${errorMessage}; member is banned from participating on content of channelId: `, channel.id)
   }
 }
 
 function ensureReactionFeatureIsEnabled(video: Video) {
   if (!video.isReactionFeatureEnabled) {
-    return inconsistentState('Cannot add reaction; reaction feature is disabled on video: ', video.id)
+    inconsistentState('Cannot add reaction; reaction feature is disabled on video: ', video.id)
   }
 }
 
 function ensureCommentSectionIsEnabled(video: Video, errorMessage: string) {
   if (!video.isCommentSectionEnabled) {
-    return inconsistentState(`${errorMessage}; comment section is disabled on video: `, video.id)
+    inconsistentState(`${errorMessage}; comment section is disabled on video: `, video.id)
   }
 }
 
 function ensureCommentAuthor(comment: Comment, authorId: string, errorMessage: string) {
   if (comment.author.id !== authorId) {
-    return inconsistentState(errorMessage, comment.id)
+    inconsistentState(errorMessage, comment.id)
   }
 }
 
 function ensureCommentIsNotDeleted(comment: Comment) {
   if (comment.status !== CommentStatus.VISIBLE) {
-    return inconsistentState('Comment has been deleted', comment.id)
+    inconsistentState('Comment has been deleted', comment.id)
   }
 }
 function ensureChannelOwnsTheVideo(video: Video, channelId: string, errorMessage: string) {
   if (video.channel.id !== channelId) {
-    return inconsistentState(`${errorMessage}; video does not belong to the channelId: `, channelId)
+    inconsistentState(`${errorMessage}; video does not belong to the channelId: `, channelId)
   }
 }
 

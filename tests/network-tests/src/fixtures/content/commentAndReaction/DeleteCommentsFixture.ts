@@ -5,7 +5,7 @@ import { ISubmittableResult } from '@polkadot/types/types/'
 import { assert } from 'chai'
 import { Api } from '../../../Api'
 import { StandardizedFixture } from '../../../Fixture'
-import { CommentDeletedEventFieldsFragment, VideoCommentFieldsFragment } from '../../../graphql/generated/queries'
+import { CommentDeletedEventFieldsFragment, CommentFieldsFragment } from '../../../graphql/generated/queries'
 import { CommentStatus } from '../../../graphql/generated/schema'
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { EventDetails, EventType } from '../../../types'
@@ -58,7 +58,7 @@ export class DeleteCommentsFixture extends StandardizedFixture {
   }
 
   protected assertQueriedCommentsAreValid(
-    qComments: VideoCommentFieldsFragment[],
+    qComments: CommentFieldsFragment[],
     qEvents: CommentDeletedEventFieldsFragment[]
   ): void {
     qEvents.map((qEvent, i) => {

@@ -72,6 +72,11 @@ fragment ChannelCategoryFields on ChannelCategory {
   activeVideosCounter
 }
 
+fragment VideoCategoryFields on VideoCategory {
+  id
+  activeVideosCounter
+}
+
 fragment VideoFields on Video {
   id
   commentsCount
@@ -99,7 +104,7 @@ fragment VideoFields on Video {
   }
 }
 
-fragment VideoCommentFields on Comment {
+fragment CommentFields on Comment {
   id
   author {
     id
@@ -118,19 +123,6 @@ fragment VideoCommentFields on Comment {
     member {
       id
     }
-  }
-}
-
-fragment CommentReactionAndCountFields on Comment {
-  reactions {
-    id
-    member {
-      id
-    }
-  }
-  reactionsCountByReactionId {
-    reactionId
-    count
   }
 }
 
@@ -154,11 +146,6 @@ fragment CommentReactionFields on CommentReaction {
   comment {
     id
   }
-}
-
-fragment VideoCategoryFields on VideoCategory {
-  id
-  activeVideosCounter
 }
 
 fragment OwnedNftFields on OwnedNft {
@@ -266,37 +253,6 @@ query getOwnedNftByVideoId($videoId: ID!) {
   }
 }
 
-query getRootCommentsByVideoId($videoId: ID!) {
-  comments(where: { video: { id_eq: $videoId }, parentComment: null }) {
-    ...VideoCommentFields
-  }
-}
-
-query getRepliesByParentCommentId($commentId: ID!) {
-  comments(where: { parentComment: { id_eq: $commentId } }) {
-    ...VideoCommentFields
-  }
-}
-query getCommentsByIds($ids: [ID!]) {
-  comments(where: { id_in: $ids }) {
-    ...VideoCommentFields
-  }
-}
-
-query getCommentById($commentId: ID!) {
-  commentByUniqueInput(where: { id: $commentId }) {
-    ...VideoCommentFields
-  }
-}
-
-# TODO: fetch member specific reactions
-
-query getReactionsByCommentId($commentId: ID!, $memberId: ID) {
-  commentByUniqueInput(where: { id: $commentId }) {
-    ...CommentReactionAndCountFields
-  }
-}
-
 query getVideoReactionsByIds($ids: [ID!]) {
   videoReactions(where: { id_in: $ids }) {
     ...VideoReactionFields
@@ -309,9 +265,9 @@ query getCommentReactionsByIds($ids: [ID!]) {
   }
 }
 
-query getVideoById($commentId: ID!) {
-  videoByUniqueInput(where: { id: $commentId }) {
-    ...VideoFields
+query getCommentsByIds($ids: [ID!]) {
+  comments(where: { id_in: $ids }) {
+    ...CommentFields
   }
 }
 
