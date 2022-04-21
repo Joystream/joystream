@@ -382,6 +382,9 @@ async function createBid(
     const newTopBid = findTopBid(bidsList)
     if (newTopBid) {
       newTopBid.auctionTopBid = auction
+      if (cancelledBidsIds.includes(newTopBid.id)) {
+        newTopBid.isCanceled = true
+      }
       await store.save<Bid>(newTopBid)
     }
   }
