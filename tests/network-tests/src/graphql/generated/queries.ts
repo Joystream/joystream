@@ -79,6 +79,7 @@ export type VideoCommentFieldsFragment = {
   id: string
   text: string
   status: Types.CommentStatus
+  isEdited: boolean
   author: { id: string }
   video: { id: string }
   reactions: Array<{ id: string; member: { id: string } }>
@@ -257,6 +258,28 @@ export type CommentDeletedEventFieldsFragment = {
   comment: { id: string; status: Types.CommentStatus }
 }
 
+export type CommentTextUpdatedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  newText: string
+  comment: { id: string; status: Types.CommentStatus }
+}
+
+export type CommentModeratedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  rationale: string
+  comment: { id: string; status: Types.CommentStatus }
+}
+
 export type CommentPinnedEventFieldsFragment = {
   id: string
   createdAt: any
@@ -337,6 +360,22 @@ export type GetCommentDeletedEventsByEventIdsQueryVariables = Types.Exact<{
 }>
 
 export type GetCommentDeletedEventsByEventIdsQuery = { commentDeletedEvents: Array<CommentDeletedEventFieldsFragment> }
+
+export type GetCommentModeratedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetCommentModeratedEventsByEventIdsQuery = {
+  commentModeratedEvents: Array<CommentModeratedEventFieldsFragment>
+}
+
+export type GetCommentEditedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetCommentEditedEventsByEventIdsQuery = {
+  commentTextUpdatedEvents: Array<CommentTextUpdatedEventFieldsFragment>
+}
 
 export type GetCommentPinnedEventsByEventIdsQueryVariables = Types.Exact<{
   eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
@@ -2460,6 +2499,7 @@ export const VideoCommentFields = gql`
     }
     text
     status
+    isEdited
     reactions {
       id
       member {
@@ -2615,6 +2655,36 @@ export const CommentDeletedEventFields = gql`
       id
       status
     }
+  }
+`
+export const CommentTextUpdatedEventFields = gql`
+  fragment CommentTextUpdatedEventFields on CommentTextUpdatedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    comment {
+      id
+      status
+    }
+    newText
+  }
+`
+export const CommentModeratedEventFields = gql`
+  fragment CommentModeratedEventFields on CommentModeratedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    comment {
+      id
+      status
+    }
+    rationale
   }
 `
 export const CommentPinnedEventFields = gql`
@@ -4666,6 +4736,22 @@ export const GetCommentDeletedEventsByEventIds = gql`
     }
   }
   ${CommentDeletedEventFields}
+`
+export const GetCommentModeratedEventsByEventIds = gql`
+  query getCommentModeratedEventsByEventIds($eventIds: [ID!]) {
+    commentModeratedEvents(where: { id_in: $eventIds }) {
+      ...CommentModeratedEventFields
+    }
+  }
+  ${CommentModeratedEventFields}
+`
+export const GetCommentEditedEventsByEventIds = gql`
+  query getCommentEditedEventsByEventIds($eventIds: [ID!]) {
+    commentTextUpdatedEvents(where: { id_in: $eventIds }) {
+      ...CommentTextUpdatedEventFields
+    }
+  }
+  ${CommentTextUpdatedEventFields}
 `
 export const GetCommentPinnedEventsByEventIds = gql`
   query getCommentPinnedEventsByEventIds($eventIds: [ID!]) {

@@ -6520,15 +6520,21 @@ export type Comment = BaseGraphQlObject & {
   reactionsCountByReactionId: Array<CommentReactionsCountByReactionId>
   parentComment?: Maybe<Comment>
   parentCommentId?: Maybe<Scalars['String']>
-  /** How many comments has replied to this comment (if any) */
+  /** How many comments has replied to this comment */
   repliesCount: Scalars['Int']
+  /** Total number of reactions to this comment */
+  reactionsCount: Scalars['Int']
+  /** Whether comment has been edited or not */
+  isEdited: Scalars['Boolean']
   edits: Array<CommentTextUpdatedEvent>
   deletedInEvent?: Maybe<CommentDeletedEvent>
   deletedInEventId?: Maybe<Scalars['String']>
+  moderatedInEvent?: Maybe<CommentModeratedEvent>
+  moderatedInEventId?: Maybe<Scalars['String']>
   commentparentComment?: Maybe<Array<Comment>>
   commentcreatedeventcomment?: Maybe<Array<CommentCreatedEvent>>
-  commentdeletedbymoderatoreventcomment?: Maybe<Array<CommentDeletedByModeratorEvent>>
   commentdeletedeventcomment?: Maybe<Array<CommentDeletedEvent>>
+  commentmoderatedeventcomment?: Maybe<Array<CommentModeratedEvent>>
   commentpinnedeventcomment?: Maybe<Array<CommentPinnedEvent>>
   commentreactedeventcomment?: Maybe<Array<CommentReactedEvent>>
   videopinnedComment?: Maybe<Array<Video>>
@@ -6681,148 +6687,10 @@ export type CommentCreateInput = {
   status: CommentStatus
   parentComment?: Maybe<Scalars['ID']>
   repliesCount: Scalars['Float']
+  reactionsCount: Scalars['Float']
+  isEdited: Scalars['Boolean']
   deletedInEvent?: Maybe<Scalars['ID']>
-}
-
-export type CommentDeletedByModeratorEvent = Event &
-  BaseGraphQlObject & {
-    /** Hash of the extrinsic which caused the event to be emitted */
-    inExtrinsic?: Maybe<Scalars['String']>
-    /** Blocknumber of the block in which the event was emitted. */
-    inBlock: Scalars['Int']
-    /** Network the block was produced in */
-    network: Network
-    /** Index of event in block from which it was emitted. */
-    indexInBlock: Scalars['Int']
-    /** Filtering options for interface implementers */
-    type?: Maybe<EventTypeOptions>
-    id: Scalars['ID']
-    createdAt: Scalars['DateTime']
-    createdById: Scalars['String']
-    updatedAt?: Maybe<Scalars['DateTime']>
-    updatedById?: Maybe<Scalars['String']>
-    deletedAt?: Maybe<Scalars['DateTime']>
-    deletedById?: Maybe<Scalars['String']>
-    version: Scalars['Int']
-    comment: Comment
-    commentId: Scalars['String']
-    actor: Membership
-    actorId: Scalars['String']
-    /** Comment deletion rationale */
-    rationale: Scalars['String']
-  }
-
-export type CommentDeletedByModeratorEventConnection = {
-  totalCount: Scalars['Int']
-  edges: Array<CommentDeletedByModeratorEventEdge>
-  pageInfo: PageInfo
-}
-
-export type CommentDeletedByModeratorEventCreateInput = {
-  inExtrinsic?: Maybe<Scalars['String']>
-  inBlock: Scalars['Float']
-  network: Network
-  indexInBlock: Scalars['Float']
-  comment: Scalars['ID']
-  actor: Scalars['ID']
-  rationale: Scalars['String']
-}
-
-export type CommentDeletedByModeratorEventEdge = {
-  node: CommentDeletedByModeratorEvent
-  cursor: Scalars['String']
-}
-
-export enum CommentDeletedByModeratorEventOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  InExtrinsicAsc = 'inExtrinsic_ASC',
-  InExtrinsicDesc = 'inExtrinsic_DESC',
-  InBlockAsc = 'inBlock_ASC',
-  InBlockDesc = 'inBlock_DESC',
-  NetworkAsc = 'network_ASC',
-  NetworkDesc = 'network_DESC',
-  IndexInBlockAsc = 'indexInBlock_ASC',
-  IndexInBlockDesc = 'indexInBlock_DESC',
-  CommentAsc = 'comment_ASC',
-  CommentDesc = 'comment_DESC',
-  ActorAsc = 'actor_ASC',
-  ActorDesc = 'actor_DESC',
-  RationaleAsc = 'rationale_ASC',
-  RationaleDesc = 'rationale_DESC',
-}
-
-export type CommentDeletedByModeratorEventUpdateInput = {
-  inExtrinsic?: Maybe<Scalars['String']>
-  inBlock?: Maybe<Scalars['Float']>
-  network?: Maybe<Network>
-  indexInBlock?: Maybe<Scalars['Float']>
-  comment?: Maybe<Scalars['ID']>
-  actor?: Maybe<Scalars['ID']>
-  rationale?: Maybe<Scalars['String']>
-}
-
-export type CommentDeletedByModeratorEventWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  inExtrinsic_eq?: Maybe<Scalars['String']>
-  inExtrinsic_contains?: Maybe<Scalars['String']>
-  inExtrinsic_startsWith?: Maybe<Scalars['String']>
-  inExtrinsic_endsWith?: Maybe<Scalars['String']>
-  inExtrinsic_in?: Maybe<Array<Scalars['String']>>
-  inBlock_eq?: Maybe<Scalars['Int']>
-  inBlock_gt?: Maybe<Scalars['Int']>
-  inBlock_gte?: Maybe<Scalars['Int']>
-  inBlock_lt?: Maybe<Scalars['Int']>
-  inBlock_lte?: Maybe<Scalars['Int']>
-  inBlock_in?: Maybe<Array<Scalars['Int']>>
-  network_eq?: Maybe<Network>
-  network_in?: Maybe<Array<Network>>
-  indexInBlock_eq?: Maybe<Scalars['Int']>
-  indexInBlock_gt?: Maybe<Scalars['Int']>
-  indexInBlock_gte?: Maybe<Scalars['Int']>
-  indexInBlock_lt?: Maybe<Scalars['Int']>
-  indexInBlock_lte?: Maybe<Scalars['Int']>
-  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
-  rationale_eq?: Maybe<Scalars['String']>
-  rationale_contains?: Maybe<Scalars['String']>
-  rationale_startsWith?: Maybe<Scalars['String']>
-  rationale_endsWith?: Maybe<Scalars['String']>
-  rationale_in?: Maybe<Array<Scalars['String']>>
-  comment?: Maybe<CommentWhereInput>
-  actor?: Maybe<MembershipWhereInput>
-  AND?: Maybe<Array<CommentDeletedByModeratorEventWhereInput>>
-  OR?: Maybe<Array<CommentDeletedByModeratorEventWhereInput>>
-}
-
-export type CommentDeletedByModeratorEventWhereUniqueInput = {
-  id: Scalars['ID']
+  moderatedInEvent?: Maybe<Scalars['ID']>
 }
 
 export type CommentDeletedEvent = Event &
@@ -6957,6 +6825,149 @@ export type CommentEdge = {
   cursor: Scalars['String']
 }
 
+export type CommentModeratedEvent = Event &
+  BaseGraphQlObject & {
+    /** Hash of the extrinsic which caused the event to be emitted */
+    inExtrinsic?: Maybe<Scalars['String']>
+    /** Blocknumber of the block in which the event was emitted. */
+    inBlock: Scalars['Int']
+    /** Network the block was produced in */
+    network: Network
+    /** Index of event in block from which it was emitted. */
+    indexInBlock: Scalars['Int']
+    /** Filtering options for interface implementers */
+    type?: Maybe<EventTypeOptions>
+    id: Scalars['ID']
+    createdAt: Scalars['DateTime']
+    createdById: Scalars['String']
+    updatedAt?: Maybe<Scalars['DateTime']>
+    updatedById?: Maybe<Scalars['String']>
+    deletedAt?: Maybe<Scalars['DateTime']>
+    deletedById?: Maybe<Scalars['String']>
+    version: Scalars['Int']
+    comment: Comment
+    commentId: Scalars['String']
+    /** The actor responsible for the removal of comment */
+    actor: ContentActor
+    /** Comment deletion rationale */
+    rationale: Scalars['String']
+    commentmoderatedInEvent?: Maybe<Array<Comment>>
+  }
+
+export type CommentModeratedEventConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<CommentModeratedEventEdge>
+  pageInfo: PageInfo
+}
+
+export type CommentModeratedEventCreateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock: Scalars['Float']
+  network: Network
+  indexInBlock: Scalars['Float']
+  comment: Scalars['ID']
+  actor: Scalars['JSONObject']
+  rationale: Scalars['String']
+}
+
+export type CommentModeratedEventEdge = {
+  node: CommentModeratedEvent
+  cursor: Scalars['String']
+}
+
+export enum CommentModeratedEventOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  InExtrinsicAsc = 'inExtrinsic_ASC',
+  InExtrinsicDesc = 'inExtrinsic_DESC',
+  InBlockAsc = 'inBlock_ASC',
+  InBlockDesc = 'inBlock_DESC',
+  NetworkAsc = 'network_ASC',
+  NetworkDesc = 'network_DESC',
+  IndexInBlockAsc = 'indexInBlock_ASC',
+  IndexInBlockDesc = 'indexInBlock_DESC',
+  CommentAsc = 'comment_ASC',
+  CommentDesc = 'comment_DESC',
+  RationaleAsc = 'rationale_ASC',
+  RationaleDesc = 'rationale_DESC',
+}
+
+export type CommentModeratedEventUpdateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock?: Maybe<Scalars['Float']>
+  network?: Maybe<Network>
+  indexInBlock?: Maybe<Scalars['Float']>
+  comment?: Maybe<Scalars['ID']>
+  actor?: Maybe<Scalars['JSONObject']>
+  rationale?: Maybe<Scalars['String']>
+}
+
+export type CommentModeratedEventWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  inExtrinsic_eq?: Maybe<Scalars['String']>
+  inExtrinsic_contains?: Maybe<Scalars['String']>
+  inExtrinsic_startsWith?: Maybe<Scalars['String']>
+  inExtrinsic_endsWith?: Maybe<Scalars['String']>
+  inExtrinsic_in?: Maybe<Array<Scalars['String']>>
+  inBlock_eq?: Maybe<Scalars['Int']>
+  inBlock_gt?: Maybe<Scalars['Int']>
+  inBlock_gte?: Maybe<Scalars['Int']>
+  inBlock_lt?: Maybe<Scalars['Int']>
+  inBlock_lte?: Maybe<Scalars['Int']>
+  inBlock_in?: Maybe<Array<Scalars['Int']>>
+  network_eq?: Maybe<Network>
+  network_in?: Maybe<Array<Network>>
+  indexInBlock_eq?: Maybe<Scalars['Int']>
+  indexInBlock_gt?: Maybe<Scalars['Int']>
+  indexInBlock_gte?: Maybe<Scalars['Int']>
+  indexInBlock_lt?: Maybe<Scalars['Int']>
+  indexInBlock_lte?: Maybe<Scalars['Int']>
+  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
+  actor_json?: Maybe<Scalars['JSONObject']>
+  rationale_eq?: Maybe<Scalars['String']>
+  rationale_contains?: Maybe<Scalars['String']>
+  rationale_startsWith?: Maybe<Scalars['String']>
+  rationale_endsWith?: Maybe<Scalars['String']>
+  rationale_in?: Maybe<Array<Scalars['String']>>
+  comment?: Maybe<CommentWhereInput>
+  commentmoderatedInEvent_none?: Maybe<CommentWhereInput>
+  commentmoderatedInEvent_some?: Maybe<CommentWhereInput>
+  commentmoderatedInEvent_every?: Maybe<CommentWhereInput>
+  AND?: Maybe<Array<CommentModeratedEventWhereInput>>
+  OR?: Maybe<Array<CommentModeratedEventWhereInput>>
+}
+
+export type CommentModeratedEventWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
 export enum CommentOrderByInput {
   CreatedAtAsc = 'createdAt_ASC',
   CreatedAtDesc = 'createdAt_DESC',
@@ -6976,8 +6987,14 @@ export enum CommentOrderByInput {
   ParentCommentDesc = 'parentComment_DESC',
   RepliesCountAsc = 'repliesCount_ASC',
   RepliesCountDesc = 'repliesCount_DESC',
+  ReactionsCountAsc = 'reactionsCount_ASC',
+  ReactionsCountDesc = 'reactionsCount_DESC',
+  IsEditedAsc = 'isEdited_ASC',
+  IsEditedDesc = 'isEdited_DESC',
   DeletedInEventAsc = 'deletedInEvent_ASC',
   DeletedInEventDesc = 'deletedInEvent_DESC',
+  ModeratedInEventAsc = 'moderatedInEvent_ASC',
+  ModeratedInEventDesc = 'moderatedInEvent_DESC',
 }
 
 export type CommentPinnedEvent = Event &
@@ -7265,6 +7282,7 @@ export type CommentReaction = BaseGraphQlObject & {
   /** The Reaction id */
   reactionId: Scalars['Int']
   member: Membership
+  /** ID of the member that reacted */
   memberId: Scalars['String']
   comment: Comment
   commentId: Scalars['String']
@@ -7281,6 +7299,7 @@ export type CommentReactionConnection = {
 export type CommentReactionCreateInput = {
   reactionId: Scalars['Float']
   member: Scalars['ID']
+  memberId: Scalars['String']
   comment: Scalars['ID']
   video: Scalars['ID']
 }
@@ -7301,6 +7320,8 @@ export enum CommentReactionOrderByInput {
   ReactionIdDesc = 'reactionId_DESC',
   MemberAsc = 'member_ASC',
   MemberDesc = 'member_DESC',
+  MemberIdAsc = 'memberId_ASC',
+  MemberIdDesc = 'memberId_DESC',
   CommentAsc = 'comment_ASC',
   CommentDesc = 'comment_DESC',
   VideoAsc = 'video_ASC',
@@ -7411,6 +7432,7 @@ export type CommentReactionsCountByReactionIdWhereUniqueInput = {
 export type CommentReactionUpdateInput = {
   reactionId?: Maybe<Scalars['Float']>
   member?: Maybe<Scalars['ID']>
+  memberId?: Maybe<Scalars['String']>
   comment?: Maybe<Scalars['ID']>
   video?: Maybe<Scalars['ID']>
 }
@@ -7446,6 +7468,11 @@ export type CommentReactionWhereInput = {
   reactionId_lt?: Maybe<Scalars['Int']>
   reactionId_lte?: Maybe<Scalars['Int']>
   reactionId_in?: Maybe<Array<Scalars['Int']>>
+  memberId_eq?: Maybe<Scalars['String']>
+  memberId_contains?: Maybe<Scalars['String']>
+  memberId_startsWith?: Maybe<Scalars['String']>
+  memberId_endsWith?: Maybe<Scalars['String']>
+  memberId_in?: Maybe<Array<Scalars['String']>>
   member?: Maybe<MembershipWhereInput>
   comment?: Maybe<CommentWhereInput>
   video?: Maybe<VideoWhereInput>
@@ -7744,7 +7771,10 @@ export type CommentUpdateInput = {
   status?: Maybe<CommentStatus>
   parentComment?: Maybe<Scalars['ID']>
   repliesCount?: Maybe<Scalars['Float']>
+  reactionsCount?: Maybe<Scalars['Float']>
+  isEdited?: Maybe<Scalars['Boolean']>
   deletedInEvent?: Maybe<Scalars['ID']>
+  moderatedInEvent?: Maybe<Scalars['ID']>
 }
 
 export type CommentWhereInput = {
@@ -7785,6 +7815,14 @@ export type CommentWhereInput = {
   repliesCount_lt?: Maybe<Scalars['Int']>
   repliesCount_lte?: Maybe<Scalars['Int']>
   repliesCount_in?: Maybe<Array<Scalars['Int']>>
+  reactionsCount_eq?: Maybe<Scalars['Int']>
+  reactionsCount_gt?: Maybe<Scalars['Int']>
+  reactionsCount_gte?: Maybe<Scalars['Int']>
+  reactionsCount_lt?: Maybe<Scalars['Int']>
+  reactionsCount_lte?: Maybe<Scalars['Int']>
+  reactionsCount_in?: Maybe<Array<Scalars['Int']>>
+  isEdited_eq?: Maybe<Scalars['Boolean']>
+  isEdited_in?: Maybe<Array<Scalars['Boolean']>>
   author?: Maybe<MembershipWhereInput>
   video?: Maybe<VideoWhereInput>
   reactions_none?: Maybe<CommentReactionWhereInput>
@@ -7798,18 +7836,19 @@ export type CommentWhereInput = {
   edits_some?: Maybe<CommentTextUpdatedEventWhereInput>
   edits_every?: Maybe<CommentTextUpdatedEventWhereInput>
   deletedInEvent?: Maybe<CommentDeletedEventWhereInput>
+  moderatedInEvent?: Maybe<CommentModeratedEventWhereInput>
   commentparentComment_none?: Maybe<CommentWhereInput>
   commentparentComment_some?: Maybe<CommentWhereInput>
   commentparentComment_every?: Maybe<CommentWhereInput>
   commentcreatedeventcomment_none?: Maybe<CommentCreatedEventWhereInput>
   commentcreatedeventcomment_some?: Maybe<CommentCreatedEventWhereInput>
   commentcreatedeventcomment_every?: Maybe<CommentCreatedEventWhereInput>
-  commentdeletedbymoderatoreventcomment_none?: Maybe<CommentDeletedByModeratorEventWhereInput>
-  commentdeletedbymoderatoreventcomment_some?: Maybe<CommentDeletedByModeratorEventWhereInput>
-  commentdeletedbymoderatoreventcomment_every?: Maybe<CommentDeletedByModeratorEventWhereInput>
   commentdeletedeventcomment_none?: Maybe<CommentDeletedEventWhereInput>
   commentdeletedeventcomment_some?: Maybe<CommentDeletedEventWhereInput>
   commentdeletedeventcomment_every?: Maybe<CommentDeletedEventWhereInput>
+  commentmoderatedeventcomment_none?: Maybe<CommentModeratedEventWhereInput>
+  commentmoderatedeventcomment_some?: Maybe<CommentModeratedEventWhereInput>
+  commentmoderatedeventcomment_every?: Maybe<CommentModeratedEventWhereInput>
   commentpinnedeventcomment_none?: Maybe<CommentPinnedEventWhereInput>
   commentpinnedeventcomment_some?: Maybe<CommentPinnedEventWhereInput>
   commentpinnedeventcomment_every?: Maybe<CommentPinnedEventWhereInput>
@@ -9859,8 +9898,8 @@ export enum EventTypeOptions {
   CategoryMembershipOfModeratorUpdatedEvent = 'CategoryMembershipOfModeratorUpdatedEvent',
   CategoryStickyThreadUpdateEvent = 'CategoryStickyThreadUpdateEvent',
   CommentCreatedEvent = 'CommentCreatedEvent',
-  CommentDeletedByModeratorEvent = 'CommentDeletedByModeratorEvent',
   CommentDeletedEvent = 'CommentDeletedEvent',
+  CommentModeratedEvent = 'CommentModeratedEvent',
   CommentPinnedEvent = 'CommentPinnedEvent',
   CommentReactedEvent = 'CommentReactedEvent',
   CommentSectionPreferenceEvent = 'CommentSectionPreferenceEvent',
@@ -9881,6 +9920,7 @@ export enum EventTypeOptions {
   MemberVerificationStatusUpdatedEvent = 'MemberVerificationStatusUpdatedEvent',
   MembershipBoughtEvent = 'MembershipBoughtEvent',
   MembershipPriceUpdatedEvent = 'MembershipPriceUpdatedEvent',
+  MetaprotocolTransactionStatusEvent = 'MetaprotocolTransactionStatusEvent',
   NewCandidateEvent = 'NewCandidateEvent',
   NewCouncilElectedEvent = 'NewCouncilElectedEvent',
   NewCouncilNotElectedEvent = 'NewCouncilNotElectedEvent',
@@ -13007,7 +13047,6 @@ export type Membership = BaseGraphQlObject & {
   buynowcanceledeventownerMember?: Maybe<Array<BuyNowCanceledEvent>>
   buynowpriceupdatedeventownerMember?: Maybe<Array<BuyNowPriceUpdatedEvent>>
   commentauthor?: Maybe<Array<Comment>>
-  commentdeletedbymoderatoreventactor?: Maybe<Array<CommentDeletedByModeratorEvent>>
   commentreactedeventreactingMember?: Maybe<Array<CommentReactedEvent>>
   commentreactionmember?: Maybe<Array<CommentReaction>>
   englishauctionsettledeventwinner?: Maybe<Array<EnglishAuctionSettledEvent>>
@@ -13723,9 +13762,6 @@ export type MembershipWhereInput = {
   commentauthor_none?: Maybe<CommentWhereInput>
   commentauthor_some?: Maybe<CommentWhereInput>
   commentauthor_every?: Maybe<CommentWhereInput>
-  commentdeletedbymoderatoreventactor_none?: Maybe<CommentDeletedByModeratorEventWhereInput>
-  commentdeletedbymoderatoreventactor_some?: Maybe<CommentDeletedByModeratorEventWhereInput>
-  commentdeletedbymoderatoreventactor_every?: Maybe<CommentDeletedByModeratorEventWhereInput>
   commentreactedeventreactingMember_none?: Maybe<CommentReactedEventWhereInput>
   commentreactedeventreactingMember_some?: Maybe<CommentReactedEventWhereInput>
   commentreactedeventreactingMember_every?: Maybe<CommentReactedEventWhereInput>
@@ -14003,6 +14039,146 @@ export type MemberVerificationStatusUpdatedEventWhereInput = {
 
 export type MemberVerificationStatusUpdatedEventWhereUniqueInput = {
   id: Scalars['ID']
+}
+
+export type MetaprotocolTransactionErrored = {
+  message: Scalars['String']
+}
+
+export type MetaprotocolTransactionPending = {
+  /** Type needs to have at least one non-relation entity. This value is not used. */
+  dummy?: Maybe<Scalars['Int']>
+}
+
+export type MetaprotocolTransactionStatus =
+  | MetaprotocolTransactionPending
+  | MetaprotocolTransactionSuccessful
+  | MetaprotocolTransactionErrored
+
+export type MetaprotocolTransactionStatusEvent = Event &
+  BaseGraphQlObject & {
+    /** Hash of the extrinsic which caused the event to be emitted */
+    inExtrinsic?: Maybe<Scalars['String']>
+    /** Blocknumber of the block in which the event was emitted. */
+    inBlock: Scalars['Int']
+    /** Network the block was produced in */
+    network: Network
+    /** Index of event in block from which it was emitted. */
+    indexInBlock: Scalars['Int']
+    /** Filtering options for interface implementers */
+    type?: Maybe<EventTypeOptions>
+    id: Scalars['ID']
+    createdAt: Scalars['DateTime']
+    createdById: Scalars['String']
+    updatedAt?: Maybe<Scalars['DateTime']>
+    updatedById?: Maybe<Scalars['String']>
+    deletedAt?: Maybe<Scalars['DateTime']>
+    deletedById?: Maybe<Scalars['String']>
+    version: Scalars['Int']
+    /** The status of metaprotocol action */
+    status: MetaprotocolTransactionStatus
+  }
+
+export type MetaprotocolTransactionStatusEventConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<MetaprotocolTransactionStatusEventEdge>
+  pageInfo: PageInfo
+}
+
+export type MetaprotocolTransactionStatusEventCreateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock: Scalars['Float']
+  network: Network
+  indexInBlock: Scalars['Float']
+  status: Scalars['JSONObject']
+}
+
+export type MetaprotocolTransactionStatusEventEdge = {
+  node: MetaprotocolTransactionStatusEvent
+  cursor: Scalars['String']
+}
+
+export enum MetaprotocolTransactionStatusEventOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  InExtrinsicAsc = 'inExtrinsic_ASC',
+  InExtrinsicDesc = 'inExtrinsic_DESC',
+  InBlockAsc = 'inBlock_ASC',
+  InBlockDesc = 'inBlock_DESC',
+  NetworkAsc = 'network_ASC',
+  NetworkDesc = 'network_DESC',
+  IndexInBlockAsc = 'indexInBlock_ASC',
+  IndexInBlockDesc = 'indexInBlock_DESC',
+}
+
+export type MetaprotocolTransactionStatusEventUpdateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock?: Maybe<Scalars['Float']>
+  network?: Maybe<Network>
+  indexInBlock?: Maybe<Scalars['Float']>
+  status?: Maybe<Scalars['JSONObject']>
+}
+
+export type MetaprotocolTransactionStatusEventWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  inExtrinsic_eq?: Maybe<Scalars['String']>
+  inExtrinsic_contains?: Maybe<Scalars['String']>
+  inExtrinsic_startsWith?: Maybe<Scalars['String']>
+  inExtrinsic_endsWith?: Maybe<Scalars['String']>
+  inExtrinsic_in?: Maybe<Array<Scalars['String']>>
+  inBlock_eq?: Maybe<Scalars['Int']>
+  inBlock_gt?: Maybe<Scalars['Int']>
+  inBlock_gte?: Maybe<Scalars['Int']>
+  inBlock_lt?: Maybe<Scalars['Int']>
+  inBlock_lte?: Maybe<Scalars['Int']>
+  inBlock_in?: Maybe<Array<Scalars['Int']>>
+  network_eq?: Maybe<Network>
+  network_in?: Maybe<Array<Network>>
+  indexInBlock_eq?: Maybe<Scalars['Int']>
+  indexInBlock_gt?: Maybe<Scalars['Int']>
+  indexInBlock_gte?: Maybe<Scalars['Int']>
+  indexInBlock_lt?: Maybe<Scalars['Int']>
+  indexInBlock_lte?: Maybe<Scalars['Int']>
+  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
+  status_json?: Maybe<Scalars['JSONObject']>
+  AND?: Maybe<Array<MetaprotocolTransactionStatusEventWhereInput>>
+  OR?: Maybe<Array<MetaprotocolTransactionStatusEventWhereInput>>
+}
+
+export type MetaprotocolTransactionStatusEventWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
+export type MetaprotocolTransactionSuccessful = {
+  /** Type needs to have at least one non-relation entity. This value is not used. */
+  dummy?: Maybe<Scalars['Int']>
 }
 
 export enum Network {
@@ -19800,12 +19976,12 @@ export type Query = {
   commentCreatedEvents: Array<CommentCreatedEvent>
   commentCreatedEventByUniqueInput?: Maybe<CommentCreatedEvent>
   commentCreatedEventsConnection: CommentCreatedEventConnection
-  commentDeletedByModeratorEvents: Array<CommentDeletedByModeratorEvent>
-  commentDeletedByModeratorEventByUniqueInput?: Maybe<CommentDeletedByModeratorEvent>
-  commentDeletedByModeratorEventsConnection: CommentDeletedByModeratorEventConnection
   commentDeletedEvents: Array<CommentDeletedEvent>
   commentDeletedEventByUniqueInput?: Maybe<CommentDeletedEvent>
   commentDeletedEventsConnection: CommentDeletedEventConnection
+  commentModeratedEvents: Array<CommentModeratedEvent>
+  commentModeratedEventByUniqueInput?: Maybe<CommentModeratedEvent>
+  commentModeratedEventsConnection: CommentModeratedEventConnection
   commentPinnedEvents: Array<CommentPinnedEvent>
   commentPinnedEventByUniqueInput?: Maybe<CommentPinnedEvent>
   commentPinnedEventsConnection: CommentPinnedEventConnection
@@ -19957,6 +20133,9 @@ export type Query = {
   memberships: Array<Membership>
   membershipByUniqueInput?: Maybe<Membership>
   membershipsConnection: MembershipConnection
+  metaprotocolTransactionStatusEvents: Array<MetaprotocolTransactionStatusEvent>
+  metaprotocolTransactionStatusEventByUniqueInput?: Maybe<MetaprotocolTransactionStatusEvent>
+  metaprotocolTransactionStatusEventsConnection: MetaprotocolTransactionStatusEventConnection
   newCandidateEvents: Array<NewCandidateEvent>
   newCandidateEventByUniqueInput?: Maybe<NewCandidateEvent>
   newCandidateEventsConnection: NewCandidateEventConnection
@@ -20196,6 +20375,9 @@ export type Query = {
   videoReactions: Array<VideoReaction>
   videoReactionByUniqueInput?: Maybe<VideoReaction>
   videoReactionsConnection: VideoReactionConnection
+  videoReactionsCountByReactionTypes: Array<VideoReactionsCountByReactionType>
+  videoReactionsCountByReactionTypeByUniqueInput?: Maybe<VideoReactionsCountByReactionType>
+  videoReactionsCountByReactionTypesConnection: VideoReactionsCountByReactionTypeConnection
   videoReactionsPreferenceEvents: Array<VideoReactionsPreferenceEvent>
   videoReactionsPreferenceEventByUniqueInput?: Maybe<VideoReactionsPreferenceEvent>
   videoReactionsPreferenceEventsConnection: VideoReactionsPreferenceEventConnection
@@ -21204,26 +21386,6 @@ export type QueryCommentCreatedEventsConnectionArgs = {
   orderBy?: Maybe<Array<CommentCreatedEventOrderByInput>>
 }
 
-export type QueryCommentDeletedByModeratorEventsArgs = {
-  offset?: Maybe<Scalars['Int']>
-  limit?: Maybe<Scalars['Int']>
-  where?: Maybe<CommentDeletedByModeratorEventWhereInput>
-  orderBy?: Maybe<Array<CommentDeletedByModeratorEventOrderByInput>>
-}
-
-export type QueryCommentDeletedByModeratorEventByUniqueInputArgs = {
-  where: CommentDeletedByModeratorEventWhereUniqueInput
-}
-
-export type QueryCommentDeletedByModeratorEventsConnectionArgs = {
-  first?: Maybe<Scalars['Int']>
-  after?: Maybe<Scalars['String']>
-  last?: Maybe<Scalars['Int']>
-  before?: Maybe<Scalars['String']>
-  where?: Maybe<CommentDeletedByModeratorEventWhereInput>
-  orderBy?: Maybe<Array<CommentDeletedByModeratorEventOrderByInput>>
-}
-
 export type QueryCommentDeletedEventsArgs = {
   offset?: Maybe<Scalars['Int']>
   limit?: Maybe<Scalars['Int']>
@@ -21242,6 +21404,26 @@ export type QueryCommentDeletedEventsConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<CommentDeletedEventWhereInput>
   orderBy?: Maybe<Array<CommentDeletedEventOrderByInput>>
+}
+
+export type QueryCommentModeratedEventsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<CommentModeratedEventWhereInput>
+  orderBy?: Maybe<Array<CommentModeratedEventOrderByInput>>
+}
+
+export type QueryCommentModeratedEventByUniqueInputArgs = {
+  where: CommentModeratedEventWhereUniqueInput
+}
+
+export type QueryCommentModeratedEventsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<CommentModeratedEventWhereInput>
+  orderBy?: Maybe<Array<CommentModeratedEventOrderByInput>>
 }
 
 export type QueryCommentPinnedEventsArgs = {
@@ -22249,6 +22431,26 @@ export type QueryMembershipsConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<MembershipWhereInput>
   orderBy?: Maybe<Array<MembershipOrderByInput>>
+}
+
+export type QueryMetaprotocolTransactionStatusEventsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<MetaprotocolTransactionStatusEventWhereInput>
+  orderBy?: Maybe<Array<MetaprotocolTransactionStatusEventOrderByInput>>
+}
+
+export type QueryMetaprotocolTransactionStatusEventByUniqueInputArgs = {
+  where: MetaprotocolTransactionStatusEventWhereUniqueInput
+}
+
+export type QueryMetaprotocolTransactionStatusEventsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<MetaprotocolTransactionStatusEventWhereInput>
+  orderBy?: Maybe<Array<MetaprotocolTransactionStatusEventOrderByInput>>
 }
 
 export type QueryNewCandidateEventsArgs = {
@@ -23846,6 +24048,26 @@ export type QueryVideoReactionsConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<VideoReactionWhereInput>
   orderBy?: Maybe<Array<VideoReactionOrderByInput>>
+}
+
+export type QueryVideoReactionsCountByReactionTypesArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<VideoReactionsCountByReactionTypeWhereInput>
+  orderBy?: Maybe<Array<VideoReactionsCountByReactionTypeOrderByInput>>
+}
+
+export type QueryVideoReactionsCountByReactionTypeByUniqueInputArgs = {
+  where: VideoReactionsCountByReactionTypeWhereUniqueInput
+}
+
+export type QueryVideoReactionsCountByReactionTypesConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<VideoReactionsCountByReactionTypeWhereInput>
+  orderBy?: Maybe<Array<VideoReactionsCountByReactionTypeOrderByInput>>
 }
 
 export type QueryVideoReactionsPreferenceEventsArgs = {
@@ -28897,6 +29119,7 @@ export type Video = BaseGraphQlObject & {
   /** Is reactions feature enabled on video (true if enabled i.e. video can be reacted) */
   isReactionFeatureEnabled: Scalars['Boolean']
   reactions: Array<VideoReaction>
+  reactionsCountByReactionId: Array<VideoReactionsCountByReactionType>
   /** Reactions count */
   reactionsCount: Scalars['Int']
   auctionbidcanceledeventvideo?: Maybe<Array<AuctionBidCanceledEvent>>
@@ -29514,6 +29737,7 @@ export type VideoReaction = BaseGraphQlObject & {
   /** The Reaction */
   reaction: VideoReactionOptions
   member: Membership
+  /** ID of the member that reacted */
   memberId: Scalars['String']
   video: Video
   videoId: Scalars['String']
@@ -29528,6 +29752,7 @@ export type VideoReactionConnection = {
 export type VideoReactionCreateInput = {
   reaction: VideoReactionOptions
   member: Scalars['ID']
+  memberId: Scalars['String']
   video: Scalars['ID']
 }
 
@@ -29537,7 +29762,6 @@ export type VideoReactionEdge = {
 }
 
 export enum VideoReactionOptions {
-  Cancel = 'CANCEL',
   Like = 'LIKE',
   Unlike = 'UNLIKE',
 }
@@ -29553,8 +29777,107 @@ export enum VideoReactionOrderByInput {
   ReactionDesc = 'reaction_DESC',
   MemberAsc = 'member_ASC',
   MemberDesc = 'member_DESC',
+  MemberIdAsc = 'memberId_ASC',
+  MemberIdDesc = 'memberId_DESC',
   VideoAsc = 'video_ASC',
   VideoDesc = 'video_DESC',
+}
+
+export type VideoReactionsCountByReactionType = BaseGraphQlObject & {
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['String']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['String']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['String']>
+  version: Scalars['Int']
+  /** The reaction option */
+  reaction: VideoReactionOptions
+  /** No of times the video has been reacted with given reaction */
+  count: Scalars['Int']
+  video: Video
+  videoId: Scalars['String']
+}
+
+export type VideoReactionsCountByReactionTypeConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<VideoReactionsCountByReactionTypeEdge>
+  pageInfo: PageInfo
+}
+
+export type VideoReactionsCountByReactionTypeCreateInput = {
+  reaction: VideoReactionOptions
+  count: Scalars['Float']
+  video: Scalars['ID']
+}
+
+export type VideoReactionsCountByReactionTypeEdge = {
+  node: VideoReactionsCountByReactionType
+  cursor: Scalars['String']
+}
+
+export enum VideoReactionsCountByReactionTypeOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  ReactionAsc = 'reaction_ASC',
+  ReactionDesc = 'reaction_DESC',
+  CountAsc = 'count_ASC',
+  CountDesc = 'count_DESC',
+  VideoAsc = 'video_ASC',
+  VideoDesc = 'video_DESC',
+}
+
+export type VideoReactionsCountByReactionTypeUpdateInput = {
+  reaction?: Maybe<VideoReactionOptions>
+  count?: Maybe<Scalars['Float']>
+  video?: Maybe<Scalars['ID']>
+}
+
+export type VideoReactionsCountByReactionTypeWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  reaction_eq?: Maybe<VideoReactionOptions>
+  reaction_in?: Maybe<Array<VideoReactionOptions>>
+  count_eq?: Maybe<Scalars['Int']>
+  count_gt?: Maybe<Scalars['Int']>
+  count_gte?: Maybe<Scalars['Int']>
+  count_lt?: Maybe<Scalars['Int']>
+  count_lte?: Maybe<Scalars['Int']>
+  count_in?: Maybe<Array<Scalars['Int']>>
+  video?: Maybe<VideoWhereInput>
+  AND?: Maybe<Array<VideoReactionsCountByReactionTypeWhereInput>>
+  OR?: Maybe<Array<VideoReactionsCountByReactionTypeWhereInput>>
+}
+
+export type VideoReactionsCountByReactionTypeWhereUniqueInput = {
+  id: Scalars['ID']
 }
 
 export type VideoReactionsPreferenceEvent = Event &
@@ -29691,6 +30014,7 @@ export type VideoReactionsPreferenceEventWhereUniqueInput = {
 export type VideoReactionUpdateInput = {
   reaction?: Maybe<VideoReactionOptions>
   member?: Maybe<Scalars['ID']>
+  memberId?: Maybe<Scalars['String']>
   video?: Maybe<Scalars['ID']>
 }
 
@@ -29721,6 +30045,11 @@ export type VideoReactionWhereInput = {
   deletedById_in?: Maybe<Array<Scalars['ID']>>
   reaction_eq?: Maybe<VideoReactionOptions>
   reaction_in?: Maybe<Array<VideoReactionOptions>>
+  memberId_eq?: Maybe<Scalars['String']>
+  memberId_contains?: Maybe<Scalars['String']>
+  memberId_startsWith?: Maybe<Scalars['String']>
+  memberId_endsWith?: Maybe<Scalars['String']>
+  memberId_in?: Maybe<Array<Scalars['String']>>
   member?: Maybe<MembershipWhereInput>
   video?: Maybe<VideoWhereInput>
   AND?: Maybe<Array<VideoReactionWhereInput>>
@@ -29850,6 +30179,9 @@ export type VideoWhereInput = {
   reactions_none?: Maybe<VideoReactionWhereInput>
   reactions_some?: Maybe<VideoReactionWhereInput>
   reactions_every?: Maybe<VideoReactionWhereInput>
+  reactionsCountByReactionId_none?: Maybe<VideoReactionsCountByReactionTypeWhereInput>
+  reactionsCountByReactionId_some?: Maybe<VideoReactionsCountByReactionTypeWhereInput>
+  reactionsCountByReactionId_every?: Maybe<VideoReactionsCountByReactionTypeWhereInput>
   auctionbidcanceledeventvideo_none?: Maybe<AuctionBidCanceledEventWhereInput>
   auctionbidcanceledeventvideo_some?: Maybe<AuctionBidCanceledEventWhereInput>
   auctionbidcanceledeventvideo_every?: Maybe<AuctionBidCanceledEventWhereInput>
