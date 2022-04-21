@@ -111,6 +111,7 @@ fragment VideoCommentFields on Comment {
 
   text
   status
+  isEdited
 
   reactions {
     id

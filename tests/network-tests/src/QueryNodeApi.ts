@@ -375,6 +375,11 @@ import {
   GetCommentPinnedEventsByEventIdsQuery,
   GetCommentPinnedEventsByEventIdsQueryVariables,
   GetCommentPinnedEventsByEventIds,
+  CommentTextUpdatedEventFieldsFragment,
+  GetCommentEditedEventsByEventIdsQuery,
+  GetCommentEditedEventsByEventIdsQueryVariables,
+  GetCommentEditedEventsByEventIds,
+  CommentModeratedEventFieldsFragment,
   EnglishAuctionStartedEventFieldsFragment,
   GetEnglishAuctionStartedEventsByEventIdsQuery,
   GetEnglishAuctionStartedEventsByEventIdsQueryVariables,
@@ -388,6 +393,9 @@ import {
   GetEnglishAuctionSettledEventsByEventIdsQuery,
   GetEnglishAuctionSettledEventsByEventIdsQueryVariables,
   GetEnglishAuctionSettledEventsByEventIds,
+  GetCommentModeratedEventsByEventIdsQuery,
+  GetCommentModeratedEventsByEventIdsQueryVariables,
+  GetCommentModeratedEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1273,12 +1281,28 @@ export class QueryNodeApi {
     >(GetCommentCreatedEventsByEventIds, { eventIds }, 'commentCreatedEvents')
   }
 
+  public async getCommentEditedEvents(events: EventDetails[]): Promise<CommentTextUpdatedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCommentEditedEventsByEventIdsQuery,
+      GetCommentEditedEventsByEventIdsQueryVariables
+    >(GetCommentEditedEventsByEventIds, { eventIds }, 'commentTextUpdatedEvents')
+  }
+
   public async getCommentDeletedEvents(events: EventDetails[]): Promise<CommentDeletedEventFieldsFragment[]> {
     const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
     return this.multipleEntitiesQuery<
       GetCommentDeletedEventsByEventIdsQuery,
       GetCommentDeletedEventsByEventIdsQueryVariables
     >(GetCommentDeletedEventsByEventIds, { eventIds }, 'commentDeletedEvents')
+  }
+
+  public async getCommentModeratedEvents(events: EventDetails[]): Promise<CommentModeratedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCommentModeratedEventsByEventIdsQuery,
+      GetCommentModeratedEventsByEventIdsQueryVariables
+    >(GetCommentModeratedEventsByEventIds, { eventIds }, 'commentModeratedEvents')
   }
 
   public async getVideoReactedEvents(events: EventDetails[]): Promise<VideoReactedEventFieldsFragment[]> {
