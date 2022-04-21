@@ -241,6 +241,9 @@ type EnglishAuctionSettledEvent implements Event @entity {
   "Member claiming the auctioned NFT."
   winner: Membership!
 
+  "winning bid"
+  winningBid: Bid!
+
   "Auctioned video."
   video: Video!
 
@@ -285,6 +288,9 @@ type BidMadeCompletingAuctionEvent implements Event @entity {
 
   "Price for which the NFT was bought"
   price: BigInt!
+
+  "winning bid"
+  winningBid: Bid!
 
   "Bid that is being displaced by current bid in English auction"
   previousTopBid: Bid
