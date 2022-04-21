@@ -859,6 +859,8 @@ export type AuctionBidMadeEvent = Event &
     ownerCuratorGroupId?: Maybe<Scalars['String']>
     previousTopBid?: Maybe<Bid>
     previousTopBidId?: Maybe<Scalars['String']>
+    previousTopBidder?: Maybe<Membership>
+    previousTopBidderId?: Maybe<Scalars['String']>
   }
 
 export type AuctionBidMadeEventConnection = {
@@ -878,6 +880,7 @@ export type AuctionBidMadeEventCreateInput = {
   ownerMember?: Maybe<Scalars['ID']>
   ownerCuratorGroup?: Maybe<Scalars['ID']>
   previousTopBid?: Maybe<Scalars['ID']>
+  previousTopBidder?: Maybe<Scalars['ID']>
 }
 
 export type AuctionBidMadeEventEdge = {
@@ -912,6 +915,8 @@ export enum AuctionBidMadeEventOrderByInput {
   OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
   PreviousTopBidAsc = 'previousTopBid_ASC',
   PreviousTopBidDesc = 'previousTopBid_DESC',
+  PreviousTopBidderAsc = 'previousTopBidder_ASC',
+  PreviousTopBidderDesc = 'previousTopBidder_DESC',
 }
 
 export type AuctionBidMadeEventUpdateInput = {
@@ -925,6 +930,7 @@ export type AuctionBidMadeEventUpdateInput = {
   ownerMember?: Maybe<Scalars['ID']>
   ownerCuratorGroup?: Maybe<Scalars['ID']>
   previousTopBid?: Maybe<Scalars['ID']>
+  previousTopBidder?: Maybe<Scalars['ID']>
 }
 
 export type AuctionBidMadeEventWhereInput = {
@@ -982,6 +988,7 @@ export type AuctionBidMadeEventWhereInput = {
   ownerMember?: Maybe<MembershipWhereInput>
   ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
   previousTopBid?: Maybe<BidWhereInput>
+  previousTopBidder?: Maybe<MembershipWhereInput>
   AND?: Maybe<Array<AuctionBidMadeEventWhereInput>>
   OR?: Maybe<Array<AuctionBidMadeEventWhereInput>>
 }
@@ -1398,6 +1405,7 @@ export type Bid = BaseGraphQlObject & {
   indexInBlock: Scalars['Int']
   auctionbidmadeeventpreviousTopBid?: Maybe<Array<AuctionBidMadeEvent>>
   bidmadecompletingauctioneventpreviousTopBid?: Maybe<Array<BidMadeCompletingAuctionEvent>>
+  openauctionbidacceptedeventwinningBid?: Maybe<Array<OpenAuctionBidAcceptedEvent>>
 }
 
 export type BidConnection = {
@@ -1453,6 +1461,8 @@ export type BidMadeCompletingAuctionEvent = Event &
     price: Scalars['BigInt']
     previousTopBid?: Maybe<Bid>
     previousTopBidId?: Maybe<Scalars['String']>
+    previousTopBidder?: Maybe<Membership>
+    previousTopBidderId?: Maybe<Scalars['String']>
   }
 
 export type BidMadeCompletingAuctionEventConnection = {
@@ -1472,6 +1482,7 @@ export type BidMadeCompletingAuctionEventCreateInput = {
   ownerCuratorGroup?: Maybe<Scalars['ID']>
   price: Scalars['String']
   previousTopBid?: Maybe<Scalars['ID']>
+  previousTopBidder?: Maybe<Scalars['ID']>
 }
 
 export type BidMadeCompletingAuctionEventEdge = {
@@ -1506,6 +1517,8 @@ export enum BidMadeCompletingAuctionEventOrderByInput {
   PriceDesc = 'price_DESC',
   PreviousTopBidAsc = 'previousTopBid_ASC',
   PreviousTopBidDesc = 'previousTopBid_DESC',
+  PreviousTopBidderAsc = 'previousTopBidder_ASC',
+  PreviousTopBidderDesc = 'previousTopBidder_DESC',
 }
 
 export type BidMadeCompletingAuctionEventUpdateInput = {
@@ -1519,6 +1532,7 @@ export type BidMadeCompletingAuctionEventUpdateInput = {
   ownerCuratorGroup?: Maybe<Scalars['ID']>
   price?: Maybe<Scalars['String']>
   previousTopBid?: Maybe<Scalars['ID']>
+  previousTopBidder?: Maybe<Scalars['ID']>
 }
 
 export type BidMadeCompletingAuctionEventWhereInput = {
@@ -1576,6 +1590,7 @@ export type BidMadeCompletingAuctionEventWhereInput = {
   ownerMember?: Maybe<MembershipWhereInput>
   ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
   previousTopBid?: Maybe<BidWhereInput>
+  previousTopBidder?: Maybe<MembershipWhereInput>
   AND?: Maybe<Array<BidMadeCompletingAuctionEventWhereInput>>
   OR?: Maybe<Array<BidMadeCompletingAuctionEventWhereInput>>
 }
@@ -1672,6 +1687,9 @@ export type BidWhereInput = {
   bidmadecompletingauctioneventpreviousTopBid_none?: Maybe<BidMadeCompletingAuctionEventWhereInput>
   bidmadecompletingauctioneventpreviousTopBid_some?: Maybe<BidMadeCompletingAuctionEventWhereInput>
   bidmadecompletingauctioneventpreviousTopBid_every?: Maybe<BidMadeCompletingAuctionEventWhereInput>
+  openauctionbidacceptedeventwinningBid_none?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
+  openauctionbidacceptedeventwinningBid_some?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
+  openauctionbidacceptedeventwinningBid_every?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
   AND?: Maybe<Array<BidWhereInput>>
   OR?: Maybe<Array<BidWhereInput>>
 }
@@ -11491,10 +11509,12 @@ export type Membership = BaseGraphQlObject & {
   auctionbidcanceledeventownerMember?: Maybe<Array<AuctionBidCanceledEvent>>
   auctionbidmadeeventmember?: Maybe<Array<AuctionBidMadeEvent>>
   auctionbidmadeeventownerMember?: Maybe<Array<AuctionBidMadeEvent>>
+  auctionbidmadeeventpreviousTopBidder?: Maybe<Array<AuctionBidMadeEvent>>
   auctioncanceledeventownerMember?: Maybe<Array<AuctionCanceledEvent>>
   bidbidder?: Maybe<Array<Bid>>
   bidmadecompletingauctioneventmember?: Maybe<Array<BidMadeCompletingAuctionEvent>>
   bidmadecompletingauctioneventownerMember?: Maybe<Array<BidMadeCompletingAuctionEvent>>
+  bidmadecompletingauctioneventpreviousTopBidder?: Maybe<Array<BidMadeCompletingAuctionEvent>>
   bountycreator?: Maybe<Array<Bounty>>
   bountyoracle?: Maybe<Array<Bounty>>
   bountycontributioncontributor?: Maybe<Array<BountyContribution>>
@@ -11526,6 +11546,7 @@ export type Membership = BaseGraphQlObject & {
   offerstartedeventmember?: Maybe<Array<OfferStartedEvent>>
   offerstartedeventownerMember?: Maybe<Array<OfferStartedEvent>>
   openauctionbidacceptedeventownerMember?: Maybe<Array<OpenAuctionBidAcceptedEvent>>
+  openauctionbidacceptedeventwinningBidder?: Maybe<Array<OpenAuctionBidAcceptedEvent>>
   openauctionstartedeventownerMember?: Maybe<Array<OpenAuctionStartedEvent>>
   postdeletedeventactor?: Maybe<Array<PostDeletedEvent>>
   postreactedeventreactingMember?: Maybe<Array<PostReactedEvent>>
@@ -12168,6 +12189,9 @@ export type MembershipWhereInput = {
   auctionbidmadeeventownerMember_none?: Maybe<AuctionBidMadeEventWhereInput>
   auctionbidmadeeventownerMember_some?: Maybe<AuctionBidMadeEventWhereInput>
   auctionbidmadeeventownerMember_every?: Maybe<AuctionBidMadeEventWhereInput>
+  auctionbidmadeeventpreviousTopBidder_none?: Maybe<AuctionBidMadeEventWhereInput>
+  auctionbidmadeeventpreviousTopBidder_some?: Maybe<AuctionBidMadeEventWhereInput>
+  auctionbidmadeeventpreviousTopBidder_every?: Maybe<AuctionBidMadeEventWhereInput>
   auctioncanceledeventownerMember_none?: Maybe<AuctionCanceledEventWhereInput>
   auctioncanceledeventownerMember_some?: Maybe<AuctionCanceledEventWhereInput>
   auctioncanceledeventownerMember_every?: Maybe<AuctionCanceledEventWhereInput>
@@ -12180,6 +12204,9 @@ export type MembershipWhereInput = {
   bidmadecompletingauctioneventownerMember_none?: Maybe<BidMadeCompletingAuctionEventWhereInput>
   bidmadecompletingauctioneventownerMember_some?: Maybe<BidMadeCompletingAuctionEventWhereInput>
   bidmadecompletingauctioneventownerMember_every?: Maybe<BidMadeCompletingAuctionEventWhereInput>
+  bidmadecompletingauctioneventpreviousTopBidder_none?: Maybe<BidMadeCompletingAuctionEventWhereInput>
+  bidmadecompletingauctioneventpreviousTopBidder_some?: Maybe<BidMadeCompletingAuctionEventWhereInput>
+  bidmadecompletingauctioneventpreviousTopBidder_every?: Maybe<BidMadeCompletingAuctionEventWhereInput>
   bountycreator_none?: Maybe<BountyWhereInput>
   bountycreator_some?: Maybe<BountyWhereInput>
   bountycreator_every?: Maybe<BountyWhereInput>
@@ -12273,6 +12300,9 @@ export type MembershipWhereInput = {
   openauctionbidacceptedeventownerMember_none?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
   openauctionbidacceptedeventownerMember_some?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
   openauctionbidacceptedeventownerMember_every?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
+  openauctionbidacceptedeventwinningBidder_none?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
+  openauctionbidacceptedeventwinningBidder_some?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
+  openauctionbidacceptedeventwinningBidder_every?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
   openauctionstartedeventownerMember_none?: Maybe<OpenAuctionStartedEventWhereInput>
   openauctionstartedeventownerMember_some?: Maybe<OpenAuctionStartedEventWhereInput>
   openauctionstartedeventownerMember_every?: Maybe<OpenAuctionStartedEventWhereInput>
@@ -14322,6 +14352,10 @@ export type OpenAuctionBidAcceptedEvent = Event &
     ownerMemberId?: Maybe<Scalars['String']>
     ownerCuratorGroup?: Maybe<CuratorGroup>
     ownerCuratorGroupId?: Maybe<Scalars['String']>
+    winningBid?: Maybe<Bid>
+    winningBidId?: Maybe<Scalars['String']>
+    winningBidder?: Maybe<Membership>
+    winningBidderId?: Maybe<Scalars['String']>
   }
 
 export type OpenAuctionBidAcceptedEventConnection = {
@@ -14339,6 +14373,8 @@ export type OpenAuctionBidAcceptedEventCreateInput = {
   video: Scalars['ID']
   ownerMember?: Maybe<Scalars['ID']>
   ownerCuratorGroup?: Maybe<Scalars['ID']>
+  winningBid?: Maybe<Scalars['ID']>
+  winningBidder?: Maybe<Scalars['ID']>
 }
 
 export type OpenAuctionBidAcceptedEventEdge = {
@@ -14367,6 +14403,10 @@ export enum OpenAuctionBidAcceptedEventOrderByInput {
   OwnerMemberDesc = 'ownerMember_DESC',
   OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
   OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
+  WinningBidAsc = 'winningBid_ASC',
+  WinningBidDesc = 'winningBid_DESC',
+  WinningBidderAsc = 'winningBidder_ASC',
+  WinningBidderDesc = 'winningBidder_DESC',
 }
 
 export type OpenAuctionBidAcceptedEventUpdateInput = {
@@ -14378,6 +14418,8 @@ export type OpenAuctionBidAcceptedEventUpdateInput = {
   video?: Maybe<Scalars['ID']>
   ownerMember?: Maybe<Scalars['ID']>
   ownerCuratorGroup?: Maybe<Scalars['ID']>
+  winningBid?: Maybe<Scalars['ID']>
+  winningBidder?: Maybe<Scalars['ID']>
 }
 
 export type OpenAuctionBidAcceptedEventWhereInput = {
@@ -14428,6 +14470,8 @@ export type OpenAuctionBidAcceptedEventWhereInput = {
   video?: Maybe<VideoWhereInput>
   ownerMember?: Maybe<MembershipWhereInput>
   ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
+  winningBid?: Maybe<BidWhereInput>
+  winningBidder?: Maybe<MembershipWhereInput>
   AND?: Maybe<Array<OpenAuctionBidAcceptedEventWhereInput>>
   OR?: Maybe<Array<OpenAuctionBidAcceptedEventWhereInput>>
 }

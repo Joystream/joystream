@@ -66,6 +66,20 @@ export type ChannelCategoryFieldsFragment = { id: string; activeVideosCounter: n
 
 export type VideoCategoryFieldsFragment = { id: string; activeVideosCounter: number }
 
+export type BidFieldsFragment = {
+  id: string
+  isCanceled: boolean
+  amount: any
+  createdInBlock: number
+  bidder: { id: string; handle: string }
+  auction: {
+    auctionType:
+      | { __typename: 'AuctionTypeEnglish'; extensionPeriod: number }
+      | { __typename: 'AuctionTypeOpen'; bidLockDuration: number }
+  }
+  nft: { id: string }
+}
+
 export type OwnedNftFieldsFragment = {
   id: string
   metadata: string
@@ -93,7 +107,7 @@ export type OwnedNftFieldsFragment = {
           minimalBidStep: number
         }
       | { __typename: 'AuctionTypeOpen'; bidLockDuration: number }
-    bids: Array<{ id: string; amount: any; createdInBlock: number; bidder: { id: string; handle: string } }>
+    bids: Array<BidFieldsFragment>
     topBid?: Types.Maybe<{ id: string; amount: any; bidder: { id: string } }>
   }>
   creatorChannel: { id: string }
@@ -131,6 +145,13 @@ export type GetOwnedNftByVideoIdQueryVariables = Types.Exact<{
 }>
 
 export type GetOwnedNftByVideoIdQuery = { ownedNfts: Array<OwnedNftFieldsFragment> }
+
+export type GetBidsByMemberIdQueryVariables = Types.Exact<{
+  videoId: Types.Scalars['ID']
+  memberId: Types.Scalars['ID']
+}>
+
+export type GetBidsByMemberIdQuery = { bids: Array<BidFieldsFragment> }
 
 export type GetChannelNftCollectorsQueryVariables = Types.Exact<{ [key: string]: never }>
 
@@ -2180,6 +2201,32 @@ export const VideoCategoryFields = gql`
     activeVideosCounter
   }
 `
+export const BidFields = gql`
+  fragment BidFields on Bid {
+    id
+    bidder {
+      id
+      handle
+    }
+    auction {
+      auctionType {
+        __typename
+        ... on AuctionTypeOpen {
+          bidLockDuration
+        }
+        ... on AuctionTypeEnglish {
+          extensionPeriod
+        }
+      }
+    }
+    nft {
+      id
+    }
+    isCanceled
+    amount
+    createdInBlock
+  }
+`
 export const OwnedNftFields = gql`
   fragment OwnedNftFields on OwnedNft {
     id
@@ -2217,13 +2264,7 @@ export const OwnedNftFields = gql`
         }
       }
       bids {
-        id
-        bidder {
-          id
-          handle
-        }
-        amount
-        createdInBlock
+        ...BidFields
       }
       topBid {
         id
@@ -2240,6 +2281,7 @@ export const OwnedNftFields = gql`
     lastSalePrice
     lastSaleDate
   }
+  ${BidFields}
 `
 export const ChannelNftCollectorFields = gql`
   fragment ChannelNftCollectorFields on ChannelNftCollectors {
@@ -4106,6 +4148,14 @@ export const GetOwnedNftByVideoId = gql`
     }
   }
   ${OwnedNftFields}
+`
+export const GetBidsByMemberId = gql`
+  query getBidsByMemberId($videoId: ID!, $memberId: ID!) {
+    bids(where: { nft: { id_eq: $videoId }, bidder: { id_eq: $memberId } }) {
+      ...BidFields
+    }
+  }
+  ${BidFields}
 `
 export const GetChannelNftCollectors = gql`
   query getChannelNftCollectors {
