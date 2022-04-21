@@ -77,29 +77,24 @@ fragment VideoCategoryFields on VideoCategory {
   activeVideosCounter
 }
 
-fragment VideoFields on Video {
+fragment VideoReactionFields on VideoReaction {
   id
-  commentsCount
-  reactionsCount
-  comments {
+  reaction
+  member {
     id
-    author {
-      id
-    }
-    video {
-      id
-    }
-    text
   }
-  reactions {
+  video {
     id
-    member {
-      id
-    }
-    reaction
   }
-  isCommentSectionEnabled
-  pinnedComment {
+}
+
+fragment CommentReactionFields on CommentReaction {
+  id
+  reactionId
+  member {
+    id
+  }
+  comment {
     id
   }
 }
@@ -119,31 +114,22 @@ fragment CommentFields on Comment {
   isEdited
 
   reactions {
-    id
-    member {
-      id
-    }
+    ...CommentReactionFields
   }
 }
 
-fragment VideoReactionFields on VideoReaction {
+fragment VideoFields on Video {
   id
-  reaction
-  member {
-    id
+  commentsCount
+  reactionsCount
+  comments {
+    ...CommentFields
   }
-  video {
-    id
+  reactions {
+    ...VideoReactionFields
   }
-}
-
-fragment CommentReactionFields on CommentReaction {
-  id
-  reactionId
-  member {
-    id
-  }
-  comment {
+  isCommentSectionEnabled
+  pinnedComment {
     id
   }
 }
@@ -250,18 +236,6 @@ query getVideoCategoryById($id: ID!) {
 query getOwnedNftByVideoId($videoId: ID!) {
   ownedNfts(where: { video: { id_eq: $videoId } }) {
     ...OwnedNftFields
-  }
-}
-
-query getVideoReactionsByIds($ids: [ID!]) {
-  videoReactions(where: { id_in: $ids }) {
-    ...VideoReactionFields
-  }
-}
-
-query getCommentReactionsByIds($ids: [ID!]) {
-  commentReactions(where: { id_in: $ids }) {
-    ...CommentReactionFields
   }
 }
 

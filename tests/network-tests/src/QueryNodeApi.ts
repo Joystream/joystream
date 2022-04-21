@@ -334,9 +334,6 @@ import {
   GetCommentDeletedEventsByEventIdsQueryVariables,
   GetCommentDeletedEventsByEventIds,
   VideoReactionFieldsFragment,
-  GetVideoReactionsByIds,
-  GetVideoReactionsByIdsQuery,
-  GetVideoReactionsByIdsQueryVariables,
   VideoReactedEventFieldsFragment,
   GetVideoReactedEventsByEventIds,
   GetVideoReactedEventsByEventIdsQuery,
@@ -346,9 +343,6 @@ import {
   GetCommentReactedEventsByEventIdsQuery,
   GetCommentReactedEventsByEventIdsQueryVariables,
   CommentReactionFieldsFragment,
-  GetCommentReactionsByIds,
-  GetCommentReactionsByIdsQuery,
-  GetCommentReactionsByIdsQueryVariables,
   MemberBannedFromChannelEventFieldsFragment,
   GetMemberBannedFromChannelEventsByEventIdsQuery,
   GetMemberBannedFromChannelEventsByEventIdsQueryVariables,
@@ -1224,10 +1218,10 @@ export class QueryNodeApi {
     >(GetMemberVerificationStatusUpdatedEventsByEventIds, { eventIds }, 'memberVerificationStatusUpdatedEvents')
   }
 
-  public async getVideosByIds(ids: VideoId[]): Promise<VideoFieldsFragment[]> {
+  public async getVideosByIds(ids: string[]): Promise<VideoFieldsFragment[]> {
     return this.multipleEntitiesQuery<GetVideosByIdsQuery, GetVideosByIdsQueryVariables>(
       GetVideosByIds,
-      { ids: ids.map((id) => id.toString()) },
+      { ids },
       'videos'
     )
   }
@@ -1286,22 +1280,6 @@ export class QueryNodeApi {
       GetCommentReactedEventsByEventIdsQuery,
       GetCommentReactedEventsByEventIdsQueryVariables
     >(GetCommentReactedEventsByEventIds, { eventIds }, 'commentReactedEvents')
-  }
-
-  public async getVideoReactionsByIds(ids: string[]): Promise<VideoReactionFieldsFragment[]> {
-    return this.multipleEntitiesQuery<GetVideoReactionsByIdsQuery, GetVideoReactionsByIdsQueryVariables>(
-      GetVideoReactionsByIds,
-      { ids: ids.map((id) => id.toString()) },
-      'videoReactions'
-    )
-  }
-
-  public async getCommentReactionsByIds(ids: string[]): Promise<CommentReactionFieldsFragment[]> {
-    return this.multipleEntitiesQuery<GetCommentReactionsByIdsQuery, GetCommentReactionsByIdsQueryVariables>(
-      GetCommentReactionsByIds,
-      { ids: ids.map((id) => id.toString()) },
-      'commentReactions'
-    )
   }
 
   public async getCommentPinnedEvents(events: EventDetails[]): Promise<CommentPinnedEventFieldsFragment[]> {

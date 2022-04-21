@@ -67,26 +67,6 @@ export type ChannelCategoryFieldsFragment = { id: string; activeVideosCounter: n
 
 export type VideoCategoryFieldsFragment = { id: string; activeVideosCounter: number }
 
-export type VideoFieldsFragment = {
-  id: string
-  commentsCount: number
-  reactionsCount: number
-  isCommentSectionEnabled: boolean
-  comments: Array<{ id: string; text: string; author: { id: string }; video: { id: string } }>
-  reactions: Array<{ id: string; reaction: Types.VideoReactionOptions; member: { id: string } }>
-  pinnedComment?: Types.Maybe<{ id: string }>
-}
-
-export type CommentFieldsFragment = {
-  id: string
-  text: string
-  status: Types.CommentStatus
-  isEdited: boolean
-  author: { id: string }
-  video: { id: string }
-  reactions: Array<{ id: string; member: { id: string } }>
-}
-
 export type VideoReactionFieldsFragment = {
   id: string
   reaction: Types.VideoReactionOptions
@@ -99,6 +79,26 @@ export type CommentReactionFieldsFragment = {
   reactionId: number
   member: { id: string }
   comment: { id: string }
+}
+
+export type CommentFieldsFragment = {
+  id: string
+  text: string
+  status: Types.CommentStatus
+  isEdited: boolean
+  author: { id: string }
+  video: { id: string }
+  reactions: Array<CommentReactionFieldsFragment>
+}
+
+export type VideoFieldsFragment = {
+  id: string
+  commentsCount: number
+  reactionsCount: number
+  isCommentSectionEnabled: boolean
+  comments: Array<CommentFieldsFragment>
+  reactions: Array<VideoReactionFieldsFragment>
+  pinnedComment?: Types.Maybe<{ id: string }>
 }
 
 export type OwnedNftFieldsFragment = {
@@ -172,18 +172,6 @@ export type GetOwnedNftByVideoIdQueryVariables = Types.Exact<{
 }>
 
 export type GetOwnedNftByVideoIdQuery = { ownedNfts: Array<OwnedNftFieldsFragment> }
-
-export type GetVideoReactionsByIdsQueryVariables = Types.Exact<{
-  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
-}>
-
-export type GetVideoReactionsByIdsQuery = { videoReactions: Array<VideoReactionFieldsFragment> }
-
-export type GetCommentReactionsByIdsQueryVariables = Types.Exact<{
-  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
-}>
-
-export type GetCommentReactionsByIdsQuery = { commentReactions: Array<CommentReactionFieldsFragment> }
 
 export type GetCommentsByIdsQueryVariables = Types.Exact<{
   ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
@@ -2430,30 +2418,14 @@ export const VideoCategoryFields = gql`
     activeVideosCounter
   }
 `
-export const VideoFields = gql`
-  fragment VideoFields on Video {
+export const CommentReactionFields = gql`
+  fragment CommentReactionFields on CommentReaction {
     id
-    commentsCount
-    reactionsCount
-    comments {
+    reactionId
+    member {
       id
-      author {
-        id
-      }
-      video {
-        id
-      }
-      text
     }
-    reactions {
-      id
-      member {
-        id
-      }
-      reaction
-    }
-    isCommentSectionEnabled
-    pinnedComment {
+    comment {
       id
     }
   }
@@ -2471,12 +2443,10 @@ export const CommentFields = gql`
     status
     isEdited
     reactions {
-      id
-      member {
-        id
-      }
+      ...CommentReactionFields
     }
   }
+  ${CommentReactionFields}
 `
 export const VideoReactionFields = gql`
   fragment VideoReactionFields on VideoReaction {
@@ -2490,17 +2460,24 @@ export const VideoReactionFields = gql`
     }
   }
 `
-export const CommentReactionFields = gql`
-  fragment CommentReactionFields on CommentReaction {
+export const VideoFields = gql`
+  fragment VideoFields on Video {
     id
-    reactionId
-    member {
-      id
+    commentsCount
+    reactionsCount
+    comments {
+      ...CommentFields
     }
-    comment {
+    reactions {
+      ...VideoReactionFields
+    }
+    isCommentSectionEnabled
+    pinnedComment {
       id
     }
   }
+  ${CommentFields}
+  ${VideoReactionFields}
 `
 export const OwnedNftFields = gql`
   fragment OwnedNftFields on OwnedNft {
@@ -4590,22 +4567,6 @@ export const GetOwnedNftByVideoId = gql`
     }
   }
   ${OwnedNftFields}
-`
-export const GetVideoReactionsByIds = gql`
-  query getVideoReactionsByIds($ids: [ID!]) {
-    videoReactions(where: { id_in: $ids }) {
-      ...VideoReactionFields
-    }
-  }
-  ${VideoReactionFields}
-`
-export const GetCommentReactionsByIds = gql`
-  query getCommentReactionsByIds($ids: [ID!]) {
-    commentReactions(where: { id_in: $ids }) {
-      ...CommentReactionFields
-    }
-  }
-  ${CommentReactionFields}
 `
 export const GetCommentsByIds = gql`
   query getCommentsByIds($ids: [ID!]) {
