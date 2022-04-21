@@ -50,7 +50,6 @@ export class DeleteCommentsFixture extends StandardizedFixture {
     return this.deleteCommentParams.map((params) => {
       const msg: IMemberRemarked = {
         deleteComment: {
-          videoId: params.msg.videoId,
           commentId: params.msg.commentId,
         },
       }
@@ -66,7 +65,6 @@ export class DeleteCommentsFixture extends StandardizedFixture {
       const qComment = qComments.find((comment) => comment.id === qEvent.comment.id.toString())
       const commentParams = this.deleteCommentParams[i]
       Utils.assert(qComment, 'Query node: Comment not found')
-      assert.equal(qComment.video.id, commentParams.msg.videoId.toString())
       assert.equal(qComment.author.id, commentParams.asMember.toString())
       assert.equal(qComment.status, CommentStatus.Deleted)
     })
