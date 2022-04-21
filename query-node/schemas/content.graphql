@@ -327,8 +327,14 @@ type Comment @entity {
   "A (parent) comment that this comment replies to (if any)"
   parentComment: Comment
 
-  "How many comments has replied to this comment (if any)"
+  "How many comments has replied to this comment"
   repliesCount: Int!
+
+  "Total number of reactions to this comment"
+  reactionsCount: Int!
+
+  "Whether comment has been edited or not"
+  isEdited: Boolean!
 
   "List of all text update events (edits)"
   edits: [CommentTextUpdatedEvent!] @derivedFrom(field: "comment")
