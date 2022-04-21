@@ -140,7 +140,7 @@ type CommentDeletedEvent implements Event @entity {
   # No actor context required, since commenter would delete the comment
 }
 
-type CommentDeletedByModeratorEvent implements Event @entity {
+type CommentModeratedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}"
@@ -164,7 +164,7 @@ type CommentDeletedByModeratorEvent implements Event @entity {
   comment: Comment!
 
   "The actor responsible for the removal of comment"
-  actor: Membership!
+  actor: ContentActor!
 
   "Comment deletion rationale"
   rationale: String!

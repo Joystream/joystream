@@ -244,13 +244,13 @@ type VideoReactionsCountByReactionType @entity {
 }
 
 enum VideoReactionOptions {
-  CANCEL
+  "Reacting again with the same option will cancel the previous reaction"
   LIKE
   UNLIKE
 }
 
 type VideoReaction @entity {
-  "METAPROTOCOL-{network}-{blockNumber}-{indexInBlock}"
+  "{memberId}-{videoId}"
   id: ID!
 
   "The Reaction"
@@ -259,12 +259,15 @@ type VideoReaction @entity {
   "The member that reacted"
   member: Membership!
 
+  "ID of the member that reacted"
+  memberId: String!
+
   "The video that has been reacted to"
   video: Video!
 }
 
 type CommentReaction @entity {
-  "METAPROTOCOL-{network}-{blockNumber}-{indexInBlock}"
+  "{memberId}-{commentId}-{reactionId}"
   id: ID!
 
   "The Reaction id"
@@ -272,6 +275,9 @@ type CommentReaction @entity {
 
   "The member that reacted"
   member: Membership!
+
+  "ID of the member that reacted"
+  memberId: String!
 
   "The comment that has been reacted to"
   comment: Comment!
@@ -289,7 +295,7 @@ enum CommentStatus {
 }
 
 type CommentReactionsCountByReactionId @entity {
-  "METAPROTOCOL-{network}-{blockNumber}-{indexInBlock}"
+  "{commentId}-{reactionId}"
   id: ID!
 
   "The reaction id"
@@ -339,6 +345,9 @@ type Comment @entity {
   "List of all text update events (edits)"
   edits: [CommentTextUpdatedEvent!] @derivedFrom(field: "comment")
 
-  "The event the post was deleted in (if any)"
+  "The event the comment was deleted in (if any)"
   deletedInEvent: CommentDeletedEvent
+
+  "The event the comment was moderated in (if any)"
+  moderatedInEvent: CommentModeratedEvent
 }
