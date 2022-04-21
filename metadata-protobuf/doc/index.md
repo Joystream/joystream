@@ -31,9 +31,9 @@
     - [CommentSectionPreference](#.CommentSectionPreference)
     - [CreateComment](#.CreateComment)
     - [DeleteComment](#.DeleteComment)
-    - [DeleteCommentModerator](#.DeleteCommentModerator)
     - [EditComment](#.EditComment)
     - [MemberRemarked](#.MemberRemarked)
+    - [ModerateComment](#.ModerateComment)
     - [PinOrUnpinComment](#.PinOrUnpinComment)
     - [ReactComment](#.ReactComment)
     - [ReactVideo](#.ReactVideo)
@@ -363,7 +363,7 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| delete_comment_moderator | [DeleteCommentModerator](#DeleteCommentModerator) | optional |  |
+| moderate_comment | [ModerateComment](#ModerateComment) | optional |  |
 
 
 
@@ -382,6 +382,7 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 | ban_or_unban_member_from_channel | [BanOrUnbanMemberFromChannel](#BanOrUnbanMemberFromChannel) | optional |  |
 | video_reactions_preference | [VideoReactionsPreference](#VideoReactionsPreference) | optional |  |
 | comment_section_preference | [CommentSectionPreference](#CommentSectionPreference) | optional |  |
+| moderate_comment | [ModerateComment](#ModerateComment) | optional |  |
 
 
 
@@ -429,25 +430,7 @@ delete comment by author
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| video_id | [uint64](#uint64) | required | ID of the video |
 | comment_id | [string](#string) | required | ID of the comment which will be deleted |
-
-
-
-
-
-
-<a name=".DeleteCommentModerator"></a>
-
-### DeleteCommentModerator
-delete comment by moderator; it will use Content::ModeratorRemarked extrinsic
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| video_id | [uint64](#uint64) | required | ID of the video |
-| comment_id | [string](#string) | required | ID of comment that will be deleted by moderator |
-| rationale | [string](#string) | required | why moderator wants to delete this comment |
 
 
 
@@ -462,7 +445,6 @@ edit comment by author
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| video_id | [uint64](#uint64) | required | ID of the video |
 | comment_id | [string](#string) | required | ID of the comment whose text is being edited |
 | new_body | [string](#string) | required | New comment body |
 
@@ -490,6 +472,22 @@ edit comment by author
 
 
 
+<a name=".ModerateComment"></a>
+
+### ModerateComment
+delete comment by moderator or channel owner;
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| comment_id | [string](#string) | required | ID of comment that will be deleted by moderator |
+| rationale | [string](#string) | required | why moderator wants to delete this comment |
+
+
+
+
+
+
 <a name=".PinOrUnpinComment"></a>
 
 ### PinOrUnpinComment
@@ -500,7 +498,7 @@ pin comment on a video by channel owner
 | ----- | ---- | ----- | ----------- |
 | video_id | [uint64](#uint64) | required | ID of the video |
 | comment_id | [string](#string) | required | ID of the comment which will be pinned |
-| option | [PinOrUnpinComment.Option](#PinOrUnpinComment.Option) | required | Selected option to ban or unban member from the channel |
+| option | [PinOrUnpinComment.Option](#PinOrUnpinComment.Option) | required | Selected option to pin or unpin comment from channel |
 
 
 
@@ -597,12 +595,12 @@ Enable or disable reactions on a single video
 
 ### ReactVideo.Reaction
 The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufjs
+Reacting again with the same message option will cancel the previous reaction
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| CANCEL | 0 | This means cancelling any previous reaction |
-| LIKE | 1 |  |
-| UNLIKE | 2 |  |
+| LIKE | 0 |  |
+| UNLIKE | 1 |  |
 
 
 
@@ -1074,6 +1072,7 @@ Publication status before joystream
 | expected_ending_timestamp | [uint32](#uint32) | optional | Expected time when the opening will close (Unix timestamp) |
 | application_details | [string](#string) | optional | Md-formatted text explaining the application process |
 | application_form_questions | [OpeningMetadata.ApplicationFormQuestion](#OpeningMetadata.ApplicationFormQuestion) | repeated | List of questions that should be answered during application |
+| title | [string](#string) | optional |  |
 
 
 

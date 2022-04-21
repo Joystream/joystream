@@ -6,10 +6,10 @@ message ReactVideo {
     required uint64 video_id = 1;
 
     // The enum must be wrapped inside "message", otherwide it breaks protobufjs
+    // Reacting again with the same message option will cancel the previous reaction
     enum Reaction {
-        CANCEL = 0; // This means cancelling any previous reaction
-        LIKE = 1;
-        UNLIKE = 2;
+        LIKE = 0;
+        UNLIKE = 1;
     }
 
     // Selected reaction
@@ -39,9 +39,6 @@ message CreateComment {
 
 // edit comment by author
 message EditComment {
-    // ID of the video
-    required uint64 video_id = 1;
-
     // ID of the comment whose text is being edited
     required string comment_id = 3;
 
@@ -51,9 +48,6 @@ message EditComment {
 
 // delete comment by author 
 message DeleteComment {
-    // ID of the video
-    required uint64 video_id = 1;
-
     // ID of the comment which will be deleted
     required string comment_id = 2;
 }
@@ -71,16 +65,13 @@ message PinOrUnpinComment {
         UNPIN = 1; // Unpin comment from video (nothing happens if comment is already unpinned)
     }
 
-    // Selected option to ban or unban member from the channel
+    // Selected option to pin or unpin comment from channel
     required Option option = 3;
 }
 
 
-// delete comment by moderator; it will use Content::ModeratorRemarked extrinsic
-message DeleteCommentModerator {
-    // ID of the video
-    required uint64 video_id = 1;
-
+// delete comment by moderator or channel owner;
+message ModerateComment {
     // ID of comment that will be deleted by moderator
     required string comment_id = 2;
 
@@ -147,7 +138,7 @@ message ChannelModeratorRemarked {
     // channel_moderator_remark extrinsic would emit event containing 
     // any one of the following serialized messages
     oneof channel_moderator_remarked {
-        DeleteCommentModerator delete_comment_moderator = 1;
+        ModerateComment moderate_comment = 1;
     }
 }
 
@@ -159,5 +150,6 @@ message ChannelOwnerRemarked {
         BanOrUnbanMemberFromChannel ban_or_unban_member_from_channel = 2;
         VideoReactionsPreference video_reactions_preference = 3;
         CommentSectionPreference comment_section_preference = 4;
+        ModerateComment moderate_comment = 5;
     }
 }
