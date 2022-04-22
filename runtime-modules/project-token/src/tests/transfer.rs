@@ -680,6 +680,31 @@ fn permissioned_transfer_fails_with_invalid_destination() {
 }
 
 #[test]
+fn permissioned_multi_out_transfer_fails_with_invalid_destination() {
+    let token_id = token!(1);
+    let (dst1, amount1) = (account!(2), balance!(100));
+    let (dst2, amount2) = (account!(3), balance!(100));
+    let (src, src_balance) = (account!(1), amount1 + amount2);
+    let commit = merkle_root![dst1, dst2];
+    let outputs = outputs![(dst1, amount1), (dst2, amount2)];
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token_and_owner(token_id, token_data, src, src_balance)
+        .with_account(dst2, AccountData::new_empty())
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::transfer(origin!(src), token_id, outputs);
+
+        assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
+    })
+}
+
+#[test]
 fn permissioned_multi_out_transfer_fails_with_insufficient_balance() {
     let token_id = token!(1);
     let (dst1, amount1) = (account!(2), balance!(100));
