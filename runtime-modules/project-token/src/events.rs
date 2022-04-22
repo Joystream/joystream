@@ -95,11 +95,11 @@ decl_event! {
         /// - address of the buyer
         TokensPurchasedOnSale(TokenId, TokenSaleId, Balance, AccountId),
 
-        /// Unsold Tokens Unreserved
+        /// Unsold Tokens Recovered
         /// Params:
         /// - token id
         /// - token sale id
-        /// - amount of tokens unreserved
-        UnsoldTokensUnreserved(TokenId, TokenSaleId, Balance),
+        /// - amount of tokens recovered
+        UnsoldTokensRecovered(TokenId, TokenSaleId, Balance),
     }
 }

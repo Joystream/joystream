@@ -15,9 +15,11 @@ use storage::{DataObjectStorage, UploadParameters};
 // crate modules
 mod errors;
 mod events;
-mod tests;
 mod traits;
 mod types;
+
+// #[cfg(test)]
+mod tests;
 
 // crate imports
 use errors::Error;
@@ -229,6 +231,7 @@ decl_module! {
             amount: <T as Trait>::Balance,
             access_proof: Option<SaleAccessProofOf<T>>
         ) -> DispatchResult {
+            let current_block = Self::current_block();
             let sender = ensure_signed(origin)?;
             let token_data = Self::ensure_token_exists(token_id)?;
             let sale = OfferingStateOf::<T>::ensure_sale_of::<T>(&token_data)?;
@@ -258,10 +261,13 @@ decl_module! {
                 )?;
             }
 
-            // Ensure vesting balance can be increased
-            // (MaxVestingBalancesPerAccountPerToken not exceeded)
+            // Ensure vesting schedule can added if doesn't already exist
+            // (MaxVestingSchedulesPerAccountPerToken not exceeded)
             let acc_data = AccountInfoByTokenAndAccount::<T>::get(token_id, &sender);
-            acc_data.ensure_vesting_balance_can_be_increased::<T>(VestingSource::Sale(sale_id))?;
+            let vesting_cleanup_key = acc_data.ensure_can_add_or_update_vesting_schedule::<T>(
+                current_block,
+                VestingSource::Sale(sale_id)
+            )?;
 
             // == MUTATION SAFE ==
 
@@ -272,17 +278,11 @@ decl_module! {
                 ExistenceRequirement::AllowDeath
             )?;
 
-            AccountInfoByTokenAndAccount::<T>::mutate(token_id, &sale.tokens_source, |acc_data| {
-                // Unreserve + burn
-                acc_data.reserved_balance = acc_data.reserved_balance.saturating_sub(amount);
-                acc_data.decrease_liquidity_by::<T>(amount);
-            });
-
             AccountInfoByTokenAndAccount::<T>::mutate(token_id, &sender, |acc_data| {
-                acc_data.increase_vesting_balance(
+                acc_data.add_or_update_vesting_schedule(
                     VestingSource::Sale(sale_id),
-                    amount,
-                    sale.get_vesting_schedule()
+                    sale.get_vesting_schedule(amount),
+                    vesting_cleanup_key
                 );
             });
 
@@ -308,14 +308,14 @@ decl_module! {
         ///   `token_data.last_sale.tokens_source` account
         /// - `token_data.last_sale.quantity_left` is set to 0
         #[weight = 10_000_000] // TODO: adjust weight
-        fn unreserve_unsold_tokens(origin, token_id: T::TokenId) -> DispatchResult {
+        fn recover_unsold_tokens(origin, token_id: T::TokenId) -> DispatchResult {
             ensure_signed(origin)?;
             let token_info = Self::ensure_token_exists(token_id)?;
             OfferingStateOf::<T>::ensure_idle_of::<T>(&token_info)?;
-            let amount_to_unreserve = token_info.last_sale_remaining_tokens();
+            let amount_to_recover = token_info.last_sale_remaining_tokens();
             ensure!(
-                !amount_to_unreserve.is_zero(),
-                Error::<T>::NoTokensToUnreserve
+                !amount_to_recover.is_zero(),
+                Error::<T>::NoTokensToRecover
             );
 
             // == MUTATION SAFE ==
@@ -323,15 +323,14 @@ decl_module! {
                 token_id,
                 &token_info.last_sale.unwrap().tokens_source,
                 |ad| {
-                    ad.reserved_balance = ad.reserved_balance.saturating_sub(amount_to_unreserve);
-                    ad.base_balance = ad.base_balance.saturating_add(amount_to_unreserve);
+                    ad.increase_amount_by(amount_to_recover);
                 },
             );
             TokenInfoById::<T>::mutate(token_id, |token_info| {
                 token_info.last_sale.as_mut().unwrap().quantity_left = <T as Trait>::Balance::zero();
             });
 
-            Self::deposit_event(RawEvent::UnsoldTokensUnreserved(token_id, token_info.sales_initialized, amount_to_unreserve));
+            Self::deposit_event(RawEvent::UnsoldTokensRecovered(token_id, token_info.sales_initialized, amount_to_recover));
 
             Ok(())
         }
@@ -418,7 +417,7 @@ impl<T: Trait>
         // == MUTATION SAFE ==
 
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, &to_account, |account_info| {
-            account_info.increase_liquidity_by(unclaimed_patronage)
+            account_info.increase_amount_by(unclaimed_patronage)
         });
 
         TokenInfoById::<T>::mutate(token_id, |token_info| {
@@ -457,18 +456,21 @@ impl<T: Trait>
             token_id,
             &issuance_parameters.initial_allocation.address,
             |ad| {
-                if let Some(vs) = issuance_parameters
+                if let Some(vsp) = issuance_parameters
                     .initial_allocation
                     .vesting_schedule
                     .as_ref()
                 {
-                    ad.increase_vesting_balance(
+                    ad.vesting_schedules.insert(
                         VestingSource::InitialIssuance,
-                        issuance_parameters.initial_allocation.amount,
-                        VestingScheduleOf::<T>::from_params(Self::current_block(), vs.clone()),
-                    )
+                        VestingScheduleOf::<T>::from_params(
+                            Self::current_block(),
+                            issuance_parameters.initial_allocation.amount,
+                            vsp.clone(),
+                        ),
+                    );
                 } else {
-                    ad.base_balance = issuance_parameters.initial_allocation.amount;
+                    ad.amount = issuance_parameters.initial_allocation.amount;
                 }
             },
         );
@@ -548,43 +550,6 @@ impl<T: Trait>
 
 /// Module implementation
 impl<T: Trait> Module<T> {
-    /// Ensure given account can reserve the specified amount of tokens.
-    /// (free_balance >= amount)
-    fn ensure_can_reserve(
-        account_data: &AccountDataOf<T>,
-        amount: <T as Trait>::Balance,
-    ) -> DispatchResult {
-        if amount.is_zero() {
-            return Ok(());
-        }
-
-        // ensure can freeze amount
-        ensure!(
-            account_data.usable_balance::<T>() >= amount,
-            Error::<T>::InsufficientFreeBalanceForReserving,
-        );
-
-        Ok(())
-    }
-
-    /// Reserve specified amount of tokens from the account.
-    /// Infallible!
-    ///
-    /// Postconditions:
-    /// - `who` free balance decreased by `amount`
-    /// - `who` reserved balance increased by `amount`
-    fn do_reserve(token_id: T::TokenId, who: &T::AccountId, amount: <T as Trait>::Balance) {
-        AccountInfoByTokenAndAccount::<T>::mutate(token_id, &who, |account_data| {
-            account_data.reserved_balance = account_data.reserved_balance.saturating_add(amount);
-        });
-
-        Self::deposit_event(RawEvent::TokenAmountReservedFrom(
-            token_id,
-            who.clone(),
-            amount,
-        ));
-    }
-
     pub(crate) fn ensure_account_data_exists(
         token_id: T::TokenId,
         account_id: &T::AccountId,
@@ -621,6 +586,7 @@ impl<T: Trait> Module<T> {
         src: &T::AccountId,
         outputs: &TransfersOf<T>,
     ) -> DispatchResult {
+        let current_block = Self::current_block();
         // ensure token validity
         let token_info = Self::ensure_token_exists(token_id)?;
 
@@ -639,19 +605,19 @@ impl<T: Trait> Module<T> {
             }
         })?;
 
-        src_account_info.ensure_can_decrease_liquidity_by::<T>(outputs.total_amount())
+        src_account_info.ensure_can_transfer::<T>(current_block, outputs.total_amount())
     }
 
     /// Perform balance accounting for balances
     pub(crate) fn do_transfer(token_id: T::TokenId, src: &T::AccountId, outputs: &TransfersOf<T>) {
         outputs.iter().for_each(|(account_id, payment)| {
             AccountInfoByTokenAndAccount::<T>::mutate(token_id, &account_id, |account_data| {
-                account_data.increase_liquidity_by(payment.amount);
+                account_data.increase_amount_by(payment.amount);
             });
         });
 
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, &src, |account_data| {
-            account_data.decrease_liquidity_by::<T>(outputs.total_amount());
+            account_data.decrease_amount_by(outputs.total_amount());
         })
     }
 
@@ -666,18 +632,22 @@ impl<T: Trait> Module<T> {
         sale_params: &TokenSaleParamsOf<T>,
         payload_upload_context: UploadContextOf<T>,
     ) -> DispatchResult {
+        let current_block = Self::current_block();
+
         // Ensure token offering state is Idle
         OfferingStateOf::<T>::ensure_idle_of::<T>(token_data)?;
 
-        // Ensure no reserved tokens remaining from the previous sale
+        // Ensure no unrecovered tokens remaining from the previous sale
         ensure!(
             token_data.last_sale_remaining_tokens().is_zero(),
-            Error::<T>::RemainingReservedTokensFromPreviousSale
+            Error::<T>::RemainingUnrecoveredTokensFromPreviousSale
         );
 
         // Ensure sale upper_bound_quantity can be reserved from `source`
         let account_data = Self::ensure_account_data_exists(token_id, &sale_params.tokens_source)?;
-        Self::ensure_can_reserve(&account_data, sale_params.upper_bound_quantity)?;
+
+        // Ensure source account has enough transferrable tokens
+        account_data.ensure_can_transfer::<T>(current_block, sale_params.upper_bound_quantity)?;
 
         // Optionally: Upload whitelist payload
         if let Some(Some(payload)) = sale_params.whitelist.as_ref().map(|p| p.payload.clone()) {
@@ -692,11 +662,12 @@ impl<T: Trait> Module<T> {
         }
 
         // == MUTATION SAFE ==
-        Self::do_reserve(
-            token_id,
-            &sale_params.tokens_source,
-            sale_params.upper_bound_quantity,
-        );
+
+        // Decrease source account's tokens number by sale_params.upper_bound_quantity
+        // (unsold tokens can be later recovered with `recover_unsold_tokens`)
+        AccountInfoByTokenAndAccount::<T>::mutate(token_id, &sale_params.tokens_source, |ad| {
+            ad.decrease_amount_by(sale_params.upper_bound_quantity);
+        });
 
         Ok(())
     }
@@ -765,9 +736,9 @@ impl<T: Trait> Module<T> {
         }
         let opt_acc_data = Self::ensure_account_data_exists(token_id, &participant.address).ok();
         let tokens_purchased = opt_acc_data.map_or(<T as Trait>::Balance::zero(), |ad| {
-            ad.vesting_balances
+            ad.vesting_schedules
                 .get(&VestingSource::Sale(sale_id))
-                .map_or(<T as Trait>::Balance::zero(), |vb| vb.total_amount)
+                .map_or(<T as Trait>::Balance::zero(), |vs| vs.total_amount())
         });
         ensure!(
             tokens_purchased.saturating_add(purchase_amount) <= participant.cap.unwrap(),

@@ -43,9 +43,9 @@ pub fn default_token_sale_params() -> TokenSaleParams {
         unit_price: DEFAULT_SALE_UNIT_PRICE,
         upper_bound_quantity: DEFAULT_INITIAL_ISSUANCE,
         vesting_schedule: Some(VestingScheduleParams {
-            cliff: 0,
+            blocks_before_cliff: 0,
             duration: 100,
-            initial_liquidity: Permill::from_percent(0),
+            cliff_amount_percentage: Permill::from_percent(0),
         }),
         whitelist: None,
     }
@@ -277,19 +277,12 @@ impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
             }
         );
 
-        // Source balance reserved
+        // Source tokens amount decreased
         assert_eq!(
-            snapshot_post.source_account_data.reserved_balance,
+            snapshot_post.source_account_data.amount,
             snapshot_pre
                 .source_account_data
-                .reserved_balance
-                .saturating_add(self.params.upper_bound_quantity)
-        );
-        assert_eq!(
-            snapshot_post.source_account_data.usable_balance::<Test>(),
-            snapshot_pre
-                .source_account_data
-                .usable_balance::<Test>()
+                .amount
                 .saturating_sub(self.params.upper_bound_quantity)
         );
     }
@@ -376,7 +369,7 @@ pub struct PurchaseTokensOnSaleFixtureStateSnapshot {
     source_account_data: AccountData,
     source_account_usable_joy_balance: <Test as balances::Trait>::Balance,
     buyer_account_data: AccountData,
-    buyer_vesting_balance: Option<VestingBalance>,
+    buyer_vesting_schedule: Option<VestingSchedule>,
 }
 
 impl PurchaseTokensOnSaleFixture {
@@ -420,8 +413,8 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
                 sale_source_account,
             ),
             buyer_account_data: buyer_account_data.clone(),
-            buyer_vesting_balance: buyer_account_data
-                .vesting_balances
+            buyer_vesting_schedule: buyer_account_data
+                .vesting_schedules
                 .get(&VestingSource::Sale(token_data.sales_initialized))
                 .map(|v| v.clone()),
         }
@@ -457,22 +450,6 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
                 ..sale_pre.clone()
             }
         );
-        // source account's reserved balance decreased
-        assert_eq!(
-            snapshot_post.source_account_data.reserved_balance,
-            snapshot_pre
-                .source_account_data
-                .reserved_balance
-                .saturating_sub(self.amount)
-        );
-        // source account's total balance decreased
-        assert_eq!(
-            snapshot_post.source_account_data.total_balance::<Test>(),
-            snapshot_pre
-                .source_account_data
-                .total_balance::<Test>()
-                .saturating_sub(self.amount)
-        );
         // source account's JOY balance increased
         assert_eq!(
             snapshot_post.source_account_usable_joy_balance,
@@ -480,47 +457,53 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
                 .source_account_usable_joy_balance
                 .saturating_add(self.amount * sale_pre.unit_price)
         );
-        // buyer's vesting balance is correct
+        // buyer's vesting schedule is correct
+        let purchase_vesting_schedule = sale_pre.get_vesting_schedule(self.amount);
         assert_eq!(
             snapshot_post
-                .buyer_vesting_balance
+                .buyer_vesting_schedule
                 .as_ref()
                 .unwrap()
-                .total_amount,
+                .clone(),
+            VestingSchedule {
+                cliff_amount: snapshot_pre
+                    .buyer_vesting_schedule
+                    .as_ref()
+                    .map_or(0, |vs| vs.cliff_amount)
+                    .saturating_add(purchase_vesting_schedule.cliff_amount),
+                duration: purchase_vesting_schedule.duration,
+                post_cliff_total_amount: snapshot_pre
+                    .buyer_vesting_schedule
+                    .as_ref()
+                    .map_or(0, |vs| vs.post_cliff_total_amount)
+                    .saturating_add(purchase_vesting_schedule.post_cliff_total_amount),
+                start_block: purchase_vesting_schedule.start_block
+            }
+        );
+        // buyer's transferrable balance is unchanged
+        assert_eq!(
+            snapshot_post
+                .buyer_account_data
+                .transferrable::<Test>(System::block_number()),
             snapshot_pre
-                .buyer_vesting_balance
-                .as_ref()
-                .map_or(0, |vb| vb.total_amount)
-                .saturating_add(self.amount)
-        );
-        assert_eq!(
-            snapshot_post
-                .buyer_vesting_balance
-                .as_ref()
-                .unwrap()
-                .vesting_schedule,
-            sale_pre.get_vesting_schedule()
-        );
-        // buyer's available balance is unchanged
-        assert_eq!(
-            snapshot_post.buyer_account_data.usable_balance::<Test>(),
-            snapshot_pre.buyer_account_data.usable_balance::<Test>()
+                .buyer_account_data
+                .transferrable::<Test>(System::block_number())
         );
     }
 }
 
-pub struct UnreserveUnsoldTokensFixture {
+pub struct RecoverUnsoldTokensFixture {
     origin: Origin,
     token_id: TokenId,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct UnreserveUnsoldTokensFixtureStateSnapshot {
+pub struct RecoverUnsoldTokensFixtureStateSnapshot {
     token_data: TokenData,
     source_account_data: AccountData,
 }
 
-impl UnreserveUnsoldTokensFixture {
+impl RecoverUnsoldTokensFixture {
     pub fn default() -> Self {
         Self {
             token_id: 1,
@@ -529,14 +512,14 @@ impl UnreserveUnsoldTokensFixture {
     }
 }
 
-impl Fixture<UnreserveUnsoldTokensFixtureStateSnapshot> for UnreserveUnsoldTokensFixture {
-    fn get_state_snapshot(&self) -> UnreserveUnsoldTokensFixtureStateSnapshot {
+impl Fixture<RecoverUnsoldTokensFixtureStateSnapshot> for RecoverUnsoldTokensFixture {
+    fn get_state_snapshot(&self) -> RecoverUnsoldTokensFixtureStateSnapshot {
         let token_data = Token::token_info_by_id(self.token_id);
         let sale_source_acc = token_data
             .last_sale
             .as_ref()
             .map_or(AccountId::default(), |s| s.tokens_source);
-        UnreserveUnsoldTokensFixtureStateSnapshot {
+        RecoverUnsoldTokensFixtureStateSnapshot {
             token_data: Token::token_info_by_id(self.token_id),
             source_account_data: Token::account_info_by_token_and_account(
                 self.token_id,
@@ -546,34 +529,37 @@ impl Fixture<UnreserveUnsoldTokensFixtureStateSnapshot> for UnreserveUnsoldToken
     }
 
     fn execute_call(&self) -> DispatchResult {
-        Token::unreserve_unsold_tokens(self.origin.clone(), self.token_id)
+        Token::recover_unsold_tokens(self.origin.clone(), self.token_id)
     }
 
     fn on_success(
         &self,
-        snapshot_pre: &UnreserveUnsoldTokensFixtureStateSnapshot,
-        snapshot_post: &UnreserveUnsoldTokensFixtureStateSnapshot,
+        snapshot_pre: &RecoverUnsoldTokensFixtureStateSnapshot,
+        snapshot_post: &RecoverUnsoldTokensFixtureStateSnapshot,
     ) {
-        let unreserved_amount = snapshot_pre.token_data.last_sale_remaining_tokens();
-        last_event_eq!(RawEvent::UnsoldTokensUnreserved(
+        let recovered_amount = snapshot_pre.token_data.last_sale_remaining_tokens();
+        last_event_eq!(RawEvent::UnsoldTokensRecovered(
             self.token_id,
             snapshot_pre.token_data.sales_initialized,
-            unreserved_amount
+            recovered_amount
         ));
         assert_eq!(snapshot_post.token_data.last_sale_remaining_tokens(), 0);
+        // `acc.amount` and `acc.transferrable` increased by `recovered_amount`
         assert_eq!(
-            snapshot_post.source_account_data.reserved_balance,
+            snapshot_post
+                .source_account_data
+                .transferrable::<Test>(System::block_number()),
             snapshot_pre
                 .source_account_data
-                .reserved_balance
-                .saturating_sub(unreserved_amount)
+                .transferrable::<Test>(System::block_number())
+                .saturating_add(recovered_amount)
         );
         assert_eq!(
-            snapshot_post.source_account_data.base_balance,
+            snapshot_post.source_account_data.amount,
             snapshot_pre
                 .source_account_data
-                .base_balance
-                .saturating_add(unreserved_amount),
+                .amount
+                .saturating_add(recovered_amount),
         )
     }
 }

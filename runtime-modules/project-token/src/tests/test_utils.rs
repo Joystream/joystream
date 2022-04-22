@@ -96,20 +96,13 @@ impl GenesisConfigBuilder {
     }
 
     // add account & updates token issuance
-    pub fn with_account(
-        mut self,
-        account_id: AccountId,
-        base_balance: Balance,
-        reserved_balance: Balance,
-    ) -> Self {
+    pub fn with_account(mut self, account_id: AccountId, amount: Balance) -> Self {
         let id = self.next_token_id.saturating_sub(TokenId::one());
         let new_account_info = AccountData {
-            base_balance,
-            reserved_balance,
-            vesting_balances: BTreeMap::new(),
+            amount,
+            vesting_schedules: BTreeMap::new(),
+            split_staking_status: None,
         };
-
-        let total_balance = base_balance.saturating_add(reserved_balance);
 
         self.account_info_by_token_and_account
             .push((id, account_id, new_account_info));
@@ -118,7 +111,7 @@ impl GenesisConfigBuilder {
             .last_mut()
             .unwrap()
             .1
-            .increase_issuance_by(total_balance);
+            .increase_issuance_by(amount);
 
         self
     }
@@ -184,12 +177,12 @@ fn with_issuance_adds_issuance_to_token() {
 
 #[ignore]
 #[test]
-fn adding_account_with_free_balance_also_adds_issuance() {
+fn adding_account_with_tokens_also_adds_issuance() {
     let token_params = TokenDataBuilder::new_empty().with_issuance(5).build();
     let mut builder = GenesisConfigBuilder::new_empty().with_token(1, token_params);
-    builder = builder.with_account(1, 5, 5);
+    builder = builder.with_account(1, 5);
 
     let token = &builder.token_info_by_id.last().unwrap().1;
-    assert_eq!(token.tokens_issued, 15);
-    assert_eq!(token.total_supply, 15);
+    assert_eq!(token.tokens_issued, 5);
+    assert_eq!(token.total_supply, 5);
 }

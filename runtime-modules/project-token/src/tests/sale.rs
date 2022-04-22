@@ -46,9 +46,7 @@ fn unsuccesful_token_sale_init_with_upper_bound_quantity_exceeding_source_balanc
         IssueTokenFixture::default().call_and_assert(Ok(()));
         InitTokenSaleFixture::default()
             .with_upper_bound_quantity(DEFAULT_INITIAL_ISSUANCE + 1)
-            .call_and_assert(Err(
-                Error::<Test>::InsufficientFreeBalanceForReserving.into()
-            ));
+            .call_and_assert(Err(Error::<Test>::InsufficientTransferrableBalance.into()));
     })
 }
 
@@ -166,7 +164,7 @@ fn unsuccesful_token_sale_init_when_remaining_reserved_toknes_from_previous_sale
         PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
         increase_block_number_by(DEFAULT_SALE_DURATION);
         InitTokenSaleFixture::default().call_and_assert(Err(
-            Error::<Test>::RemainingReservedTokensFromPreviousSale.into(),
+            Error::<Test>::RemainingUnrecoveredTokensFromPreviousSale.into(),
         ));
     })
 }
@@ -401,18 +399,22 @@ fn unsuccesful_sale_purchase_vesting_balances_limit_reached() {
 
     build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().call_and_assert(Ok(()));
+        let max_vesting_schedules =
+            <Test as crate::Trait>::MaxVestingBalancesPerAccountPerToken::get();
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
             DEFAULT_SALE_PURCHASE_AMOUNT
                 .saturating_mul(DEFAULT_SALE_UNIT_PRICE)
-                .saturating_mul(
-                    (<Test as crate::Trait>::MaxVestingBalancesPerAccountPerToken::get() + 1)
-                        .into(),
-                ),
+                .saturating_mul((max_vesting_schedules + 1).into()),
         );
         for _ in 0..<Test as crate::Trait>::MaxVestingBalancesPerAccountPerToken::get() {
             InitTokenSaleFixture::default()
                 .with_upper_bound_quantity(DEFAULT_SALE_PURCHASE_AMOUNT)
+                .with_vesting_schedule(Some(VestingScheduleParams {
+                    blocks_before_cliff: DEFAULT_SALE_DURATION * (max_vesting_schedules + 1) as u64,
+                    duration: 100,
+                    cliff_amount_percentage: Permill::from_percent(0),
+                }))
                 .call_and_assert(Ok(()));
             PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
             increase_block_number_by(DEFAULT_SALE_DURATION);
@@ -421,7 +423,7 @@ fn unsuccesful_sale_purchase_vesting_balances_limit_reached() {
             .with_upper_bound_quantity(DEFAULT_SALE_PURCHASE_AMOUNT)
             .call_and_assert(Ok(()));
         PurchaseTokensOnSaleFixture::default().call_and_assert(Err(
-            Error::<Test>::MaxVestingBalancesPerAccountPerTokenReached.into(),
+            Error::<Test>::MaxVestingSchedulesPerAccountPerTokenReached.into(),
         ));
     })
 }
@@ -556,7 +558,7 @@ fn succesful_sale_purchase_no_vesting_schedule() {
         increase_block_number_by(DEFAULT_SALE_DURATION);
         let buyer_acc_info = Token::account_info_by_token_and_account(1, OTHER_ACCOUNT_ID);
         assert_eq!(
-            buyer_acc_info.usable_balance::<Test>(),
+            buyer_acc_info.transferrable::<Test>(System::block_number()),
             DEFAULT_SALE_PURCHASE_AMOUNT
         );
     })
@@ -570,9 +572,9 @@ fn succesful_sale_purchase_with_vesting_schedule() {
         IssueTokenFixture::default().call_and_assert(Ok(()));
         InitTokenSaleFixture::default()
             .with_vesting_schedule(Some(VestingScheduleParams {
-                cliff: 100,
+                blocks_before_cliff: 100,
                 duration: 200,
-                initial_liquidity: Permill::from_percent(30),
+                cliff_amount_percentage: Permill::from_percent(30),
             }))
             .call_and_assert(Ok(()));
         increase_account_balance(
@@ -581,16 +583,19 @@ fn succesful_sale_purchase_with_vesting_schedule() {
         );
         PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
 
-        // At sale end block expect 0 tokens in available balance (due to 100 blocks cliff)
-        increase_block_number_by(DEFAULT_SALE_DURATION);
-        let buyer_acc_info = Token::account_info_by_token_and_account(1, OTHER_ACCOUNT_ID);
-        assert_eq!(buyer_acc_info.usable_balance::<Test>(), 0);
-
-        // After cliff expect 30% of tokens in available balance (initial_liquidity)
+        // At sale end block expect 0 tokens in available balance (due to 100 blocks remaining until cliff)
         increase_block_number_by(DEFAULT_SALE_DURATION);
         let buyer_acc_info = Token::account_info_by_token_and_account(1, OTHER_ACCOUNT_ID);
         assert_eq!(
-            buyer_acc_info.usable_balance::<Test>(),
+            buyer_acc_info.transferrable::<Test>(System::block_number()),
+            0
+        );
+
+        // After cliff expect 30% of tokens in available balance (cliff_amount_percentage)
+        increase_block_number_by(100);
+        let buyer_acc_info = Token::account_info_by_token_and_account(1, OTHER_ACCOUNT_ID);
+        assert_eq!(
+            buyer_acc_info.transferrable::<Test>(System::block_number()),
             Permill::from_percent(30) * DEFAULT_SALE_PURCHASE_AMOUNT
         );
 
@@ -598,7 +603,7 @@ fn succesful_sale_purchase_with_vesting_schedule() {
         increase_block_number_by(100);
         let buyer_acc_info = Token::account_info_by_token_and_account(1, OTHER_ACCOUNT_ID);
         assert_eq!(
-            buyer_acc_info.usable_balance::<Test>(),
+            buyer_acc_info.transferrable::<Test>(System::block_number()),
             Permill::from_percent(65) * DEFAULT_SALE_PURCHASE_AMOUNT
         );
 
@@ -606,7 +611,7 @@ fn succesful_sale_purchase_with_vesting_schedule() {
         increase_block_number_by(100);
         let buyer_acc_info = Token::account_info_by_token_and_account(1, OTHER_ACCOUNT_ID);
         assert_eq!(
-            buyer_acc_info.usable_balance::<Test>(),
+            buyer_acc_info.transferrable::<Test>(System::block_number()),
             DEFAULT_SALE_PURCHASE_AMOUNT
         );
     })
@@ -653,7 +658,7 @@ fn unsuccesful_unreserve_unsold_tokens_non_existing_token() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        UnreserveUnsoldTokensFixture::default()
+        RecoverUnsoldTokensFixture::default()
             .call_and_assert(Err(Error::<Test>::TokenDoesNotExist.into()));
     })
 }
@@ -664,8 +669,8 @@ fn unsuccesful_unreserve_unsold_tokens_no_sale() {
 
     build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().call_and_assert(Ok(()));
-        UnreserveUnsoldTokensFixture::default()
-            .call_and_assert(Err(Error::<Test>::NoTokensToUnreserve.into()));
+        RecoverUnsoldTokensFixture::default()
+            .call_and_assert(Err(Error::<Test>::NoTokensToRecover.into()));
     })
 }
 
@@ -676,7 +681,7 @@ fn unsuccesful_unreserve_unsold_tokens_during_active_sale() {
     build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().call_and_assert(Ok(()));
         InitTokenSaleFixture::default().call_and_assert(Ok(()));
-        UnreserveUnsoldTokensFixture::default()
+        RecoverUnsoldTokensFixture::default()
             .call_and_assert(Err(Error::<Test>::TokenIssuanceNotInIdleState.into()));
     })
 }
@@ -696,8 +701,8 @@ fn unsuccesful_unreserve_unsold_tokens_when_no_tokens_left() {
         );
         PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
         increase_block_number_by(DEFAULT_SALE_DURATION);
-        UnreserveUnsoldTokensFixture::default()
-            .call_and_assert(Err(Error::<Test>::NoTokensToUnreserve.into()));
+        RecoverUnsoldTokensFixture::default()
+            .call_and_assert(Err(Error::<Test>::NoTokensToRecover.into()));
     })
 }
 
@@ -714,6 +719,6 @@ fn succesful_unreserve_unsold_tokens() {
         );
         PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
         increase_block_number_by(DEFAULT_SALE_DURATION);
-        UnreserveUnsoldTokensFixture::default().call_and_assert(Ok(()));
+        RecoverUnsoldTokensFixture::default().call_and_assert(Ok(()));
     })
 }

@@ -118,7 +118,7 @@ fn decrease_patronage_ok_with_tally_count_updated() {
     let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
-        .with_account(owner, supply, balance!(0))
+        .with_account(owner, supply)
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -145,7 +145,7 @@ fn decrease_patronage_ok_with_tally_count_twice_updated() {
     let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
-        .with_account(owner, supply, balance!(0))
+        .with_account(owner, supply)
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -272,7 +272,7 @@ fn claim_patronage_ok() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
-        .with_account(owner_account_id, 0, 0)
+        .with_account(owner_account_id, 0)
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -294,7 +294,7 @@ fn claim_patronage_ok_with_event_deposit() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
-        .with_account(owner, supply, 0)
+        .with_account(owner, supply)
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -321,7 +321,7 @@ fn claim_patronage_ok_with_credit_accounting() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
-        .with_account(owner_account_id, supply, 0)
+        .with_account(owner_account_id, supply)
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -331,7 +331,7 @@ fn claim_patronage_ok_with_credit_accounting() {
 
         assert_eq!(
             Token::account_info_by_token_and_account(token_id, owner_account_id)
-                .usable_balance::<Test>(),
+                .transferrable::<Test>(System::block_number()),
             rate * blocks * supply + supply, // initial + patronage claimed
         );
     })
@@ -348,8 +348,8 @@ fn claim_patronage_ok_with_unclaimed_patronage_reset() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
-        .with_account(account_id, 0, 0)
-        .with_account(owner_account_id, 0, 0)
+        .with_account(account_id, 0)
+        .with_account(owner_account_id, 0)
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -390,7 +390,7 @@ fn claim_patronage_credit_fails_with_invalid_owner_account_id() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
-        .with_account(account_id, amount, 0)
+        .with_account(account_id, amount)
         .build();
     build_test_externalities(config).execute_with(|| {
         let result = Token::claim_patronage_credit(token_id, owner_account_id);
@@ -409,7 +409,7 @@ fn claim_patronage_ok_with_patronage_claimed_and_tally_set_to_zero() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
-        .with_account(owner_account_id, 0, 0)
+        .with_account(owner_account_id, 0)
         .build();
 
     build_test_externalities(config).execute_with(|| {

@@ -12,8 +12,8 @@ decl_error! {
         /// Free balance is insufficient for slashing specified amount
         InsufficientFreeBalanceForDecreasing,
 
-        /// Free balance is insufficient for transferring specfied amount
-        InsufficientFreeBalanceForTransfer,
+        /// Account's transferrable balance is insufficient to perform the transfer or initialize token sale
+        InsufficientTransferrableBalance,
 
         /// Token's total supply cannot be decreased by specified amount
         InsufficientTotalSupplyToDecreaseByAmount,
@@ -91,14 +91,14 @@ decl_error! {
         /// Whitelisted sale participant's cap was exceeded by the purchase
         SaleParticipantCapExceeded,
 
-        /// Cannot add another vesting balance. Maximum number of vesting balances for this account-token
-        /// pair was reached.
-        MaxVestingBalancesPerAccountPerTokenReached,
+        /// Cannot add another vesting schedule to an account.
+        /// Maximum number of vesting schedules for this account-token pair was reached.
+        MaxVestingSchedulesPerAccountPerTokenReached,
 
-        /// Some tokens reverved during previous, finished sale are still reserved. Unreserve them first.
-        RemainingReservedTokensFromPreviousSale,
+        /// Some unsold tokens from previous, finished sale are still unrecovered. Recover them first.
+        RemainingUnrecoveredTokensFromPreviousSale,
 
-        /// There are no remaining tokes to unreserve from previous token sale.
-        NoTokensToUnreserve,
+        /// There are no remaining tokes to recover from the previous token sale.
+        NoTokensToRecover,
     }
 }

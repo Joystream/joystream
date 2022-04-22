@@ -19,7 +19,8 @@ use crate::{
     types::{
         InitialAllocationOf, MerkleSide, OfferingStateOf, SaleAccessProofOf,
         SingleDataObjectUploadParamsOf, TokenSaleOf, TokenSaleParamsOf, UploadContextOf,
-        VestingBalanceOf, VestingScheduleParamsOf, WhitelistParamsOf, WhitelistedSaleParticipantOf,
+        VestingScheduleOf, VestingScheduleParamsOf, WhitelistParamsOf,
+        WhitelistedSaleParticipantOf,
     },
     AccountDataOf, GenesisConfig, TokenDataOf, TokenIssuanceParametersOf, Trait, TransferPolicyOf,
 };
@@ -45,7 +46,7 @@ pub type Hashing = <Test as frame_system::Trait>::Hashing;
 pub type HashOut = <Test as frame_system::Trait>::Hash;
 pub type UploadContext = UploadContextOf<Test>;
 pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
-pub type VestingBalance = VestingBalanceOf<Test>;
+pub type VestingSchedule = VestingScheduleOf<Test>;
 pub type SaleAccessProof = SaleAccessProofOf<Test>;
 pub type WhitelistedSaleParticipant = WhitelistedSaleParticipantOf<Test>;
 
