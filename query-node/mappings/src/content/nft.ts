@@ -282,16 +282,8 @@ async function finishAuction(
     ? findOpenAuctionWinningBid(auction.bids || [], openAuctionWinner.bidAmount, openAuctionWinner.winnerId, videoId)
     : (auction.topBid as Bid)
 
-  // load winner member
-  const winnerMemberId = winningBid.bidder.id
-  // load bid amount for which NFT is bought
-  const boughtPrice = winningBid.amount
-  const winner = await getRequiredExistingEntity(
-    store,
-    Membership,
-    winnerMemberId.toString(),
-    'Non-existing auction winner'
-  )
+  // load all bidders of auction
+  const bidders = (auction.bids || []).map((bid) => bid.bidder)
 
   // update NFT's transactional status
   const { nft } = await resetNftTransactionalStatusFromVideo(
@@ -299,18 +291,18 @@ async function finishAuction(
     videoId.toString(),
     `Non-existing NFT's auction completed`,
     blockNumber,
-    winner
+    winningBid.bidder
   )
 
   // update auction
   auction.isCompleted = true
-  auction.winningMember = winner
+  auction.winningMember = winningBid.bidder
   auction.endedAtBlock = blockNumber
 
   // save auction
   await store.save<Auction>(auction)
 
-  return { video, winner, boughtPrice, nft, winningBid }
+  return { video, nft, winningBid, bidders }
 }
 
 async function createBid(
@@ -858,20 +850,16 @@ export async function contentNft_EnglishAuctionSettled({ event, store }: EventCo
   // specific event processing
 
   // finish auction
-  const { winner, video, boughtPrice, nft, winningBid } = await finishAuction(
-    store,
-    videoId.toNumber(),
-    event.blockNumber
-  )
+  const { video, nft, winningBid, bidders } = await finishAuction(store, videoId.toNumber(), event.blockNumber)
 
-  if (winnerId.toString() !== winner.id.toString()) {
+  if (winnerId.toString() !== winningBid.bidder.id) {
     return inconsistentState(`English auction winner haven't placed the top bid`, { videoId, winnerId })
   }
 
-  nft.ownerMember = winner
+  nft.ownerMember = winningBid.bidder
 
   // set last sale
-  nft.lastSalePrice = boughtPrice
+  nft.lastSalePrice = winningBid.amount
   nft.lastSaleDate = new Date(event.blockTimestamp)
 
   // save NFT
@@ -882,9 +870,9 @@ export async function contentNft_EnglishAuctionSettled({ event, store }: EventCo
   const englishAuctionSettledEvent = new EnglishAuctionSettledEvent({
     ...genericEventFields(event),
 
-    winner,
+    winner: winningBid.bidder,
     video,
-    winningBid,
+    bidders,
     ownerMember: nft.ownerMember,
     ownerCuratorGroup: nft.ownerCuratorGroup,
   })
@@ -914,14 +902,10 @@ export async function contentNft_BidMadeCompletingAuction({
   } = await createBid(event, store, memberId.toNumber(), videoId.toNumber())
 
   // finish auction and transfer ownership
-  const { winner: member, video, boughtPrice: price, nft, winningBid } = await finishAuction(
-    store,
-    videoId.toNumber(),
-    event.blockNumber
-  )
+  const { video, winningBid, nft } = await finishAuction(store, videoId.toNumber(), event.blockNumber)
 
   // set last sale
-  nft.lastSalePrice = price
+  nft.lastSalePrice = winningBid.amount
   nft.lastSaleDate = new Date(event.blockTimestamp)
 
   // save NFT
@@ -932,12 +916,12 @@ export async function contentNft_BidMadeCompletingAuction({
   const bidMadeCompletingAuctionEvent = new BidMadeCompletingAuctionEvent({
     ...genericEventFields(event),
 
-    member,
+    member: winningBid.bidder,
     video,
     ownerMember,
     ownerCuratorGroup,
-    price,
     winningBid,
+    price: winningBid.amount,
     previousTopBid: previousTopBidder ? previousTopBid : undefined,
     previousTopBidder,
   })
@@ -953,13 +937,13 @@ export async function contentNft_OpenAuctionBidAccepted({ event, store }: EventC
   // specific event processing
 
   // finish auction
-  const { video, boughtPrice, nft, winningBid } = await finishAuction(store, videoId.toNumber(), event.blockNumber, {
+  const { video, nft, winningBid, bidders } = await finishAuction(store, videoId.toNumber(), event.blockNumber, {
     bidAmount,
     winnerId: winnerId.toNumber(),
   })
 
   // set last sale
-  nft.lastSalePrice = boughtPrice
+  nft.lastSalePrice = winningBid.amount
   nft.lastSaleDate = new Date(event.blockTimestamp)
 
   // save NFT
@@ -975,6 +959,7 @@ export async function contentNft_OpenAuctionBidAccepted({ event, store }: EventC
     // prepare Nft owner (handles fields `ownerMember` and `ownerCuratorGroup`)
     ...(await convertContentActorToChannelOrNftOwner(store, contentActor)),
     winningBid,
+    bidders,
     winningBidder: new Membership({ id: winnerId.toString() }),
   })
 
