@@ -283,34 +283,34 @@ impl<T: Trait> Module<T> {
     /// Buy nft
     pub(crate) fn buy_now(
         in_channel: T::ChannelId,
-        mut nft: Nft<T>,
-        owner_account_id: T::AccountId,
+        nft: Nft<T>,
+        old_owner_account_id: Option<T::AccountId>,
         new_owner_account_id: T::AccountId,
         new_owner: T::MemberId,
     ) -> Nft<T> {
         if let TransactionalStatus::<T>::BuyNow(price) = &nft.transactional_status {
-            Self::complete_payment(
-                in_channel,
-                nft.creator_royalty,
-                *price,
-                new_owner_account_id,
-                Some(owner_account_id),
-                false,
-            );
-
-            nft.owner = NftOwner::Member(new_owner);
+            if old_owner_account_id.is_some() {
+                Self::complete_payment(
+                    in_channel,
+                    nft.creator_royalty,
+                    price.to_owned(),
+                    new_owner_account_id,
+                    old_owner_account_id,
+                    false,
+                );
+            } else {
+                let _ = T::Currency::slash(&new_owner_account_id, price.to_owned());
+            }
         }
 
-        Nft::<T> {
-            transactional_status: TransactionalStatus::<T>::Idle,
-            ..nft
-        }
+        nft.with_transactional_status(TransactionalStatus::<T>::Idle)
+            .with_member_owner(new_owner)
     }
 
     /// Completes nft offer
     pub(crate) fn complete_nft_offer(
         in_channel: T::ChannelId,
-        mut nft: Nft<T>,
+        nft: Nft<T>,
         owner_account_id: T::AccountId,
         new_owner_account_id: T::AccountId,
     ) -> Nft<T> {
@@ -327,14 +327,10 @@ impl<T: Trait> Module<T> {
                     false,
                 );
             }
-
-            nft.owner = NftOwner::Member(*to);
         }
 
-        Nft::<T> {
-            transactional_status: TransactionalStatus::<T>::Idle,
-            ..nft
-        }
+        nft.with_transactional_status(TransactionalStatus::<T>::Idle)
+            .with_member_owner(*to)
     }
 
     /// Complete payment, either auction related or buy now/offer

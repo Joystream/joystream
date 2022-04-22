@@ -2120,15 +2120,20 @@ decl_module! {
             // Ensure given participant can buy nft now
             Self::ensure_can_buy_now(&nft, &participant_account_id, price_commit)?;
 
-            let channel = Self::channel_by_id(&video.in_channel);
-            let owner_account_id =  Self::ensure_reward_account(&channel)?;
+            let old_nft_owner_account_id = Self::ensure_owner_account_id(video.in_channel, &nft).ok();
 
             //
             // == MUTATION SAFE ==
             //
 
             // Buy nft
-            let nft = Self::buy_now(video.in_channel, nft, owner_account_id, participant_account_id, participant_id);
+            let nft = Self::buy_now(
+                video.in_channel,
+                nft,
+                old_nft_owner_account_id,
+                participant_account_id,
+                participant_id
+            );
 
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
 
