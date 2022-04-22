@@ -837,7 +837,7 @@ fn issue_token_ok_with_event_deposit() {
                 offering_state: OfferingState::Idle,
                 transfer_policy: params.transfer_policy,
                 symbol: params.symbol,
-                accounts_number: 0u64,
+                accounts_number: 1u64, // owner account
                 patronage_info: PatronageData::<Balance, BlockNumber> {
                     last_unclaimed_patronage_tally_block: System::block_number(),
                     unclaimed_patronage_tally_amount: balance!(0),
@@ -878,7 +878,7 @@ fn issue_token_ok_with_token_info_added() {
                 offering_state: OfferingState::Idle,
                 transfer_policy: params.transfer_policy,
                 symbol: params.symbol,
-                accounts_number: 0u64,
+                accounts_number: 1u64, // owner account
                 patronage_info: PatronageData::<Balance, BlockNumber> {
                     last_unclaimed_patronage_tally_block: System::block_number(),
                     unclaimed_patronage_tally_amount: balance!(0),

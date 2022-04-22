@@ -387,10 +387,7 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
         AccountInfoByTokenAndAccount::<T>::insert(
             &token_id,
             &owner_account_id,
-            AccountDataOf::<T>::new_with_liquidity_and_bond(
-                initial_supply,
-                ReserveBalanceOf::<T>::zero(),
-            ),
+            AccountDataOf::<T>::new_with_liquidity_and_bond(initial_supply, BloatBond::<T>::get()),
         );
         SymbolsUsed::<T>::insert(&token_data.symbol, ());
         TokenInfoById::<T>::insert(token_id, token_data.clone());
