@@ -83,6 +83,7 @@ fn permissionless_transfer_ok_with_non_existing_destination() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token_and_owner(token_id, token_data, src, amount)
+        .with_bloat_bond(bloat_bond)
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -327,7 +328,7 @@ fn multiout_transfer_ok_with_non_existing_destination() {
 }
 
 #[test]
-fn multiout_transfer_ok_with_src_having_insufficient_funds_for_bloat_bond() {
+fn multiout_transfer_fails_with_src_having_insufficient_funds_for_bloat_bond() {
     let token_id = token!(1);
     let token_info = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
@@ -654,7 +655,7 @@ fn permissioned_transfer_ok_with_event_deposit() {
 }
 
 #[test]
-fn permissioned_multi_out_transfer_fails_with_invalid_destination() {
+fn permissioned_transfer_fails_with_invalid_destination() {
     let token_id = token!(1);
     let amount = balance!(100);
     let src = account!(1);
@@ -681,11 +682,11 @@ fn permissioned_multi_out_transfer_fails_with_invalid_destination() {
 #[test]
 fn permissioned_multi_out_transfer_fails_with_insufficient_balance() {
     let token_id = token!(1);
-    let amount = balance!(100);
-    let (src, src_balance) = (account!(1), amount - 1);
-    let (dst1, dst2) = (account!(2), account!(3));
+    let (dst1, amount1) = (account!(2), balance!(100));
+    let (dst2, amount2) = (account!(3), balance!(100));
+    let (src, src_balance) = (account!(1), amount1 + amount2 - 1);
     let commit = merkle_root![dst1, dst2];
-    let outputs = outputs![(dst1, amount)];
+    let outputs = outputs![(dst1, amount1), (dst2, amount2)];
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))

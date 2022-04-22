@@ -252,7 +252,7 @@ impl<
         self.supply = self.supply.saturating_add(amount);
     }
 
-    // increase total supply
+    // decrease total supply
     pub(crate) fn decrease_supply_by(&mut self, amount: Balance) {
         self.supply = self.supply.saturating_sub(amount);
     }
