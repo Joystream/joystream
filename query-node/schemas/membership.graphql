@@ -122,6 +122,12 @@ type Membership @entity {
 
   "NFTs owned by this member in various channels."
   nftCollectorInChannels: [ChannelNftCollectors!]! @derivedFrom(field: "member")
+
+  "English auction bids made by the member."
+  memberEnglishAuctionBids: [EnglishAuctionSettledEvent!] @derivedFrom(field: "bidders")
+
+  "Open auction bids made by the member."
+  memberOpenAuctionBids: [OpenAuctionBidAcceptedEvent!] @derivedFrom(field: "bidders")
 }
 
 type MembershipSystemSnapshot @entity {
