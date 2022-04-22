@@ -137,7 +137,6 @@ decl_module! {
         ///    Also `src` JOY balance is decreased by the
         ///    total bloat bond deposited in case destination have been added to storage
         /// - `outputs.beneficiary` "free balance"" increased by `amount`
-        /// - `token_id` issuance eventually decreased by dust amount in case of src removalp
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn transfer(
             origin,
