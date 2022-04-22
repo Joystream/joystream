@@ -31,7 +31,6 @@ jobs:
           echo "::add-mask::$ENCRYPTION_KEY"
           echo ::set-output name=gitRepo::$(echo $jsonInput | jq -r '.gitRepo.value')
           echo ::set-output name=branchName::$(echo $jsonInput | jq -r '.branchName.value')
-          echo ::set-output name=keyName::$(echo $jsonInput | jq -r '.keyName.value')
           echo ::set-output name=numberOfValidators::$(echo $jsonInput | jq -r '.numberOfValidators.value')
           echo ::set-output name=validatorInstanceType::$(echo $jsonInput | jq -r '.validatorInstanceType.value')
           echo ::set-output name=buildInstanceType::$(echo $jsonInput | jq -r '.buildInstanceType.value')
@@ -90,7 +89,7 @@ jobs:
           template: devops/aws/cloudformation/infrastructure.yml
           no-fail-on-empty-changeset: '1'
           parameter-overrides: >-
-            KeyName=${{ steps.myoutputs.outputs.keyName }},
+            KeyName=joystream-github-action-key-new,
             ValidatorEC2InstanceType=${{ steps.myoutputs.outputs.validatorInstanceType }},
             RPCEC2InstanceType=${{ steps.myoutputs.outputs.rpcInstanceType }},
             BuildEC2InstanceType=${{ steps.myoutputs.outputs.buildInstanceType }},
