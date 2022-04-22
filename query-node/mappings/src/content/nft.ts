@@ -873,6 +873,7 @@ export async function contentNft_EnglishAuctionSettled({ event, store }: EventCo
     winner: winningBid.bidder,
     video,
     bidders,
+    winningBid,
     ownerMember: nft.ownerMember,
     ownerCuratorGroup: nft.ownerCuratorGroup,
   })
