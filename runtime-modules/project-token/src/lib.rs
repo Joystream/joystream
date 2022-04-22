@@ -663,7 +663,7 @@ impl<T: Trait> Module<T> {
                 src,
                 amount,
                 WithdrawReason::Transfer.into(),
-                src_free,
+                src_free.saturating_sub(amount),
             )?;
         }
         Ok(())
