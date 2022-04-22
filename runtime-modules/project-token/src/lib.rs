@@ -245,14 +245,13 @@ decl_module! {
 
             let _ = T::ReserveCurrency::transfer(&account_id, &treasury, bloat_bond, ExistenceRequirement::KeepAlive);
 
-            AccountInfoByTokenAndAccount::<T>::insert(
+            Self::do_insert_new_account_for_token(
                 token_id,
                 &account_id,
                 AccountDataOf::<T>::new_with_liquidity_and_bond(
                     T::Balance::zero(),
                     bloat_bond,
                 ));
-            TokenInfoById::<T>::mutate(token_id, |token_info| token_info.increment_accounts_number());
 
             Self::deposit_event(RawEvent::MemberJoinedWhitelist(token_id, account_id, token_info.transfer_policy));
 
@@ -384,18 +383,19 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
 
         // == MUTATION SAFE ==
 
-        AccountInfoByTokenAndAccount::<T>::insert(
-            &token_id,
+        SymbolsUsed::<T>::insert(&token_data.symbol, ());
+        TokenInfoById::<T>::insert(token_id, token_data.clone());
+        // AFTER token is added to storage add account
+        Self::do_insert_new_account_for_token(
+            token_id,
             &owner_account_id,
             AccountDataOf::<T>::new_with_liquidity_and_bond(initial_supply, BloatBond::<T>::get()),
         );
-        SymbolsUsed::<T>::insert(&token_data.symbol, ());
-        TokenInfoById::<T>::insert(token_id, token_data.clone());
         NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
 
         Self::deposit_event(RawEvent::TokenIssued(
             token_id,
-            token_data,
+            Self::token_info_by_id(token_id),
             owner_account_id,
         ));
         Ok(())
@@ -500,14 +500,14 @@ impl<T: Trait> Module<T> {
                     },
                 ),
                 Validated::<_>::NonExisting(account_id) => {
-                    AccountInfoByTokenAndAccount::<T>::insert(
+                    Self::do_insert_new_account_for_token(
                         token_id,
                         &account_id,
                         AccountDataOf::<T>::new_with_liquidity_and_bond(
                             payment.amount,
                             Self::bloat_bond(),
                         ),
-                    )
+                    );
                 }
             },
         );
@@ -663,5 +663,17 @@ impl<T: Trait> Module<T> {
             )?;
         }
         Ok(())
+    }
+
+    pub(crate) fn do_insert_new_account_for_token(
+        token_id: T::TokenId,
+        account_id: &T::AccountId,
+        info: AccountDataOf<T>,
+    ) {
+        AccountInfoByTokenAndAccount::<T>::insert(token_id, account_id, info);
+
+        TokenInfoById::<T>::mutate(token_id, |token_info| {
+            token_info.increment_accounts_number();
+        });
     }
 }

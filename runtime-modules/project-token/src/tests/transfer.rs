@@ -123,6 +123,35 @@ fn permissionless_transfer_ok_with_new_destination_created() {
 }
 
 #[test]
+fn transfer_ok_with_new_destinations_created_and_account_number_incremented() {
+    let token_id = token!(1);
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissionless)
+        .build();
+    let (dst1, amount1) = (account!(2), balance!(100));
+    let (dst2, amount2) = (account!(3), balance!(100));
+    let (src, src_balance) = (account!(1), amount1 + amount2);
+    let bloat_bond = joy!(100);
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .with_token_and_owner(token_id, token_data, src, src_balance)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&src, ExistentialDeposit::get() + 2 * bloat_bond);
+
+        let _ = Token::transfer(
+            origin!(src),
+            token_id,
+            outputs![(dst1, amount1), (dst2, amount2)],
+        );
+
+        assert_eq!(Token::token_info_by_id(token_id).accounts_number, 3u64);
+    })
+}
+
+#[test]
 fn permissionless_transfer_ok_for_new_destination_with_bloat_bond_slashed_from_src() {
     let token_id = token!(1);
     let token_data = TokenDataBuilder::new_empty()
