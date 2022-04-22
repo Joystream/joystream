@@ -199,4 +199,11 @@ impl proposals_codex::WeightInfo for WeightInfo {
             .saturating_add(DbWeight::get().reads(7 as Weight))
             .saturating_add(DbWeight::get().writes(9 as Weight))
     }
+    fn create_proposal_update_nft_limit(t: u32, d: u32) -> Weight {
+        (652_251_000 as Weight)
+            .saturating_add((180_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((224_000 as Weight).saturating_mul(d as Weight))
+            .saturating_add(DbWeight::get().reads(7 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
+    }
 }

@@ -490,3 +490,22 @@ pub fn ensure_authorized_to_update_max_reward<T: Trait>(sender: &T::AccountId) -
 pub fn ensure_authorized_to_update_min_cashout<T: Trait>(sender: &T::AccountId) -> DispatchResult {
     ensure_lead_auth_success::<T>(sender)
 }
+
+// Authenticate NFT-limits change
+pub fn ensure_nft_limits_auth_success<T: Trait>(
+    origin: T::Origin,
+    nft_limit_id: NftLimitId<T::ChannelId>,
+) -> DispatchResult {
+    match nft_limit_id {
+        NftLimitId::GlobalDaily | NftLimitId::GlobalWeekly => {
+            ensure_root(origin)?;
+        }
+        NftLimitId::ChannelDaily(..) | NftLimitId::ChannelWeekly(..) => {
+            let sender = ensure_signed(origin)?;
+
+            ensure_lead_auth_success::<T>(&sender)?;
+        }
+    };
+
+    Ok(())
+}
