@@ -1,6 +1,6 @@
 use sp_arithmetic::traits::{One, Saturating, Zero};
 use sp_runtime::traits::Hash;
-use sp_runtime::Permill;
+use sp_runtime::{Perbill, Percent};
 use sp_std::collections::btree_map::BTreeMap;
 
 use crate::tests::mock::*;
@@ -64,7 +64,7 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash: Default, BlockNumber:
             offering_state: OfferingState::Idle,
             transfer_policy: TransferPolicy::<Hash>::Permissionless,
             patronage_info: PatronageData::<Balance, BlockNumber> {
-                rate: BlockRate(Permill::zero()),
+                rate: BlockRate(Perbill::zero()),
                 unclaimed_patronage_tally_amount: Balance::zero(),
                 last_unclaimed_patronage_tally_block: BlockNumber::one(),
             },
@@ -226,21 +226,18 @@ fn adding_account_with_free_balance_also_adds_supply() {
 
 #[test]
 fn permill_yearly_and_block_rate_behavior() {
-    pub const BLOCKS_PER_YEAR: u32 = 5259600;
+    // yearly percentage parts = 100 => per block parts = blocks_per_year x 100
+    pub const BLOCKS_PER_YEAR: u32 = 5259492;
     //    let block_rate = Permill::from_parts(BLOCKS_PER_YEAR);
-    pub const PERCENTAGE: u32 = 37;
-    let yearly_rate = Permill::from_percent(PERCENTAGE);
+    pub const PERCENTAGE: u8 = 16;
+    let yearly_rate = Percent::from_percent(PERCENTAGE);
 
-    let block_rate = Permill::from_rational_approximation(
-        BLOCKS_PER_YEAR,
-        yearly_rate.saturating_reciprocal_mul(BLOCKS_PER_YEAR),
-    );
+    let block_rate =
+        Perbill::from_parts((yearly_rate.deconstruct() as u32).saturating_mul(BLOCKS_PER_YEAR));
 
+    use sp_std::ops::Div;
     assert_eq!(
-        Permill::from_rational_approximation(
-            block_rate.mul_floor(BLOCKS_PER_YEAR),
-            BLOCKS_PER_YEAR
-        ),
+        Percent::from_parts(block_rate.deconstruct().div(BLOCKS_PER_YEAR) as u8),
         yearly_rate,
     );
 }

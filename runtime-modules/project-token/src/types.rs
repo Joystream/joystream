@@ -6,7 +6,7 @@ use frame_support::{
 };
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, Saturating, Zero};
 use sp_runtime::traits::{Convert, Hash};
-use sp_runtime::Permill;
+use sp_runtime::{Perbill, Percent};
 use sp_std::collections::btree_map::{BTreeMap, IntoIter, Iter};
 use sp_std::convert::From;
 use sp_std::iter::Sum;
@@ -122,11 +122,11 @@ pub enum MerkleSide {
 
 /// Yearly rate used for patronage info initialization
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy, Default)]
-pub struct YearlyRate(pub Permill);
+pub struct YearlyRate(pub Percent);
 
 /// Block rate used for patronage accounting
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy, PartialOrd, Default)]
-pub struct BlockRate(pub Permill);
+pub struct BlockRate(pub Perbill);
 
 /// Wrapper around a merkle proof path
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -301,7 +301,7 @@ impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, H
     ) -> TokenData<Balance, Hash, BlockNumber> {
         // validation
         let rate = if self.patronage_rate.0.is_zero() {
-            BlockRate(Permill::zero())
+            BlockRate(Perbill::zero())
         } else {
             BlockRate::from_yearly_rate(self.patronage_rate, T::BlocksPerYear::get())
         };
@@ -375,16 +375,15 @@ impl<AccountId, Balance> From<Transfers<AccountId, Balance>>
 /// Block Rate bare minimum impementation
 impl BlockRate {
     pub fn from_yearly_rate(r: YearlyRate, blocks_per_year: u32) -> Self {
-        BlockRate(Permill::from_rational_approximation(
-            blocks_per_year,
-            r.0.saturating_reciprocal_mul(blocks_per_year),
+        BlockRate(Perbill::from_parts(
+            (r.0.deconstruct() as u32).saturating_mul(blocks_per_year),
         ))
     }
 
     pub fn to_yearly_rate(self, blocks_per_year: u32) -> YearlyRate {
-        YearlyRate(Permill::from_rational_approximation(
-            self.0.mul_floor(blocks_per_year),
-            blocks_per_year,
+        use sp_std::ops::Div;
+        YearlyRate(Percent::from_parts(
+            self.0.deconstruct().div(blocks_per_year) as u8,
         ))
     }
 

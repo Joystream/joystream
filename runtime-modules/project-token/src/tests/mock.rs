@@ -74,7 +74,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
     // constants for crate::Trait
     pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token");
-    pub const BlocksPerYear: u32 = 1000; // made up, to make test faster
+    pub const BlocksPerYear: u32 = 5259492; // blocks every 6s
     // constants for balances::Trait
     pub const ExistentialDeposit: u64 = 10;
 }
@@ -190,14 +190,14 @@ macro_rules! balance {
 #[macro_export]
 macro_rules! rate {
     ($r:expr) => {
-        BlockRate(Permill::from_percent($r as u32))
+        BlockRate(Perbill::from_percent($r as u32))
     };
 }
 
 #[macro_export]
 macro_rules! yearly_rate {
     ($r:expr) => {
-        YearlyRate(Permill::from_percent($r as u32))
+        YearlyRate(Percent::from_percent($r as u8))
     };
 }
 

@@ -1,6 +1,6 @@
 #[cfg(test)]
 use frame_support::{assert_noop, assert_ok};
-use sp_runtime::Permill;
+use sp_runtime::{Perbill, Percent};
 
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
@@ -48,6 +48,7 @@ fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
         ..Default::default()
     };
     let config = GenesisConfigBuilder::new_empty().build();
+    let rate = BlockRate::from_yearly_rate(patronage_rate, BlocksPerYear::get());
 
     build_test_externalities(config).execute_with(|| {
         let _ =
@@ -57,7 +58,7 @@ fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
         assert_eq!(
             Token::token_info_by_id(token_id)
                 .unclaimed_patronage_at_block::<Block2Balance>(System::block_number()),
-            patronage_rate.0 * blocks * init_supply,
+            rate.0 * blocks * init_supply,
         );
     })
 }
