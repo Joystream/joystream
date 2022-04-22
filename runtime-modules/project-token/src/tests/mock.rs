@@ -159,9 +159,10 @@ pub fn increase_block_number_by(n: u64) {
     let init_block = System::block_number();
     (0..=n).for_each(|offset| {
         <Token as OnFinalize<u64>>::on_finalize(System::block_number());
+        <System as OnFinalize<u64>>::on_finalize(System::block_number());
         System::set_block_number(init_block.saturating_add(offset));
-        <Token as OnInitialize<u64>>::on_initialize(System::block_number());
         <System as OnInitialize<u64>>::on_initialize(System::block_number());
+        <Token as OnInitialize<u64>>::on_initialize(System::block_number());
     })
 }
 

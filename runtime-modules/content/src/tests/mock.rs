@@ -495,11 +495,12 @@ pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests
 pub fn run_to_block(n: u64) {
+    // System module initializes first and finalizes last
     while System::block_number() < n {
         <Content as OnFinalize<u64>>::on_finalize(System::block_number());
         System::set_block_number(System::block_number() + 1);
-        <Content as OnInitialize<u64>>::on_initialize(System::block_number());
         <System as OnInitialize<u64>>::on_initialize(System::block_number());
+        <Content as OnInitialize<u64>>::on_initialize(System::block_number());
     }
 }
 
