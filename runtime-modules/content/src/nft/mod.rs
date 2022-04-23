@@ -299,7 +299,7 @@ impl<T: Trait> Module<T> {
                     false,
                 );
             } else {
-                let _ = T::Currency::slash(&new_owner_account_id, price.to_owned());
+                let _ = Balances::<T>::slash(&new_owner_account_id, price.to_owned());
             }
         }
 
@@ -310,27 +310,34 @@ impl<T: Trait> Module<T> {
     /// Completes nft offer
     pub(crate) fn complete_nft_offer(
         in_channel: T::ChannelId,
-        nft: Nft<T>,
-        owner_account_id: T::AccountId,
+        mut nft: Nft<T>,
+        owner_account_id: Option<T::AccountId>,
         new_owner_account_id: T::AccountId,
     ) -> Nft<T> {
         if let TransactionalStatus::<T>::InitiatedOfferToMember(to, price) =
             &nft.transactional_status
         {
             if let Some(price) = price {
-                Self::complete_payment(
-                    in_channel,
-                    nft.creator_royalty,
-                    *price,
-                    new_owner_account_id,
-                    Some(owner_account_id),
-                    false,
-                );
+                if owner_account_id.is_some() {
+                    Self::complete_payment(
+                        in_channel,
+                        nft.creator_royalty,
+                        *price,
+                        new_owner_account_id,
+                        owner_account_id,
+                        false,
+                    );
+                } else {
+                    let _ = Balances::<T>::slash(&new_owner_account_id, *price);
+                }
             }
+            nft.owner = NftOwner::Member(*to);
         }
 
-        nft.with_transactional_status(TransactionalStatus::<T>::Idle)
-            .with_member_owner(*to)
+        Nft::<T> {
+            transactional_status: TransactionalStatus::<T>::Idle,
+            ..nft
+        }
     }
 
     /// Complete payment, either auction related or buy now/offer

@@ -2045,14 +2045,14 @@ decl_module! {
             // Ensure new pending offer is available to proceed
             Self::ensure_new_pending_offer_available_to_proceed(&nft, &receiver_account_id)?;
 
-            let owner_account_id = Self::ensure_owner_account_id(video.in_channel, &nft)?;
+            let nft_owner_account = Self::ensure_owner_account_id(video.in_channel, &nft).ok();
 
             //
             // == MUTATION SAFE ==
             //
 
             // Complete nft offer
-            let nft = Self::complete_nft_offer(video.in_channel, nft, owner_account_id, receiver_account_id);
+            let nft = Self::complete_nft_offer(video.in_channel, nft, nft_owner_account, receiver_account_id);
 
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
 
