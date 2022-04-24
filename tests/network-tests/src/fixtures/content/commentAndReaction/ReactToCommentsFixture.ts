@@ -3,9 +3,10 @@ import { MemberId } from '@joystream/types/common'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { assert } from 'chai'
+import _ from 'lodash'
 import { Api } from '../../../Api'
 import { StandardizedFixture } from '../../../Fixture'
-import { CommentReactedEventFieldsFragment, CommentReactionFieldsFragment } from '../../../graphql/generated/queries'
+import { CommentFieldsFragment, CommentReactedEventFieldsFragment } from '../../../graphql/generated/queries'
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { EventDetails, EventType } from '../../../types'
 import { Utils } from '../../../utils'
@@ -49,20 +50,24 @@ export class ReactToCommentsFixture extends StandardizedFixture {
     })
   }
 
-  protected assertQueriedCommentReactionsAreValid(
-    qCommentReactions: CommentReactionFieldsFragment[],
-    qEvents: CommentReactedEventFieldsFragment[]
-  ): void {
-    qEvents.map((qEvent, i) => {
-      const qCommentReaction = qCommentReactions.find(
-        (videoReaction) => videoReaction.id === qEvent.comment.id.toString()
-      )
-      const reactVideoParams = this.reactCommentParams[i]
-      Utils.assert(qCommentReaction, 'Query node: Video reaction not found')
-      assert.equal(qCommentReaction.comment.id, reactVideoParams.msg.commentId.toString())
-      assert.equal(qCommentReaction.member.id, reactVideoParams.asMember.toString())
-      assert.equal(qCommentReaction.reactionId, reactVideoParams.msg.reactionId)
+  protected assertQueriedCommentsAreValid(qComments: CommentFieldsFragment[]): void {
+    // remove 'even' instances of same reaction since they entail unreacting
+    this.reactCommentParams = this.reactCommentParams.filter((param) => {
+      return this.reactCommentParams.filter((elem) => _.isEqual(elem, param)).length % 2 === 1
     })
+    // Check against lastest reaction per user per comment
+    _.uniqBy(this.reactCommentParams.reverse(), (p) => `${p.asMember}:${p.msg.commentId}:${p.msg.reactionId}`).map(
+      (param) => {
+        const expectedReaction = param.msg.reactionId
+        const qComment = qComments.find((c) => c.id === param.msg.commentId)
+        Utils.assert(qComment, 'Query node: Comment not found')
+
+        const qReaction = qComment.reactions.find(
+          (r) => r.member.id === param.asMember.toString() && r.reactionId === expectedReaction
+        )
+        Utils.assert(qReaction, `Query node: Expected comment reaction by member ${param.asMember} not found!`)
+      }
+    )
   }
 
   protected assertQueryNodeEventIsValid(qEvent: CommentReactedEventFieldsFragment, i: number): void {
@@ -80,8 +85,8 @@ export class ReactToCommentsFixture extends StandardizedFixture {
       (qEvents) => this.assertQueryNodeEventsAreValid(qEvents)
     )
 
-    // Query the video reactions
-    const qCommentReactions = await this.query.getCommentReactionsByIds(qEvents.map((e) => e.id))
-    this.assertQueriedCommentReactionsAreValid(qCommentReactions, qEvents)
+    // Query the comments
+    const qCommentReactions = await this.query.getCommentsByIds(qEvents.map((e) => e.comment.id))
+    this.assertQueriedCommentsAreValid(qCommentReactions)
   }
 }

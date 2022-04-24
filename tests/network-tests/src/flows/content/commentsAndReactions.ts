@@ -106,7 +106,7 @@ export default async function commentsAndReactions({ api, query }: FlowProps): P
 
   // check that comments on videos are working
   const createCommentsFixture = new CreateCommentsFixture(api, query, comments)
-  await new FixtureRunner(createCommentsFixture).run()
+  await new FixtureRunner(createCommentsFixture).runWithQueryNodeChecks()
 
   const createdCommentsIds = await createCommentsFixture.getCreatedCommentsIds()
 
@@ -125,7 +125,7 @@ export default async function commentsAndReactions({ api, query }: FlowProps): P
 
   // check that comment replies are working
   const createRepliesFixture = new CreateCommentsFixture(api, query, replies)
-  await new FixtureRunner(createRepliesFixture).run()
+  await new FixtureRunner(createRepliesFixture).runWithQueryNodeChecks()
 
   const createdRepliesIds = await createRepliesFixture.getCreatedCommentsIds()
 
@@ -168,7 +168,7 @@ export default async function commentsAndReactions({ api, query }: FlowProps): P
 
   // check that reactions on videos are working
   const reactToCommentsFixture = new ReactToCommentsFixture(api, query, commentReactions)
-  await new FixtureRunner(reactToCommentsFixture).run()
+  await new FixtureRunner(reactToCommentsFixture).runWithQueryNodeChecks()
 
   // Create video reactions
   const videoReactions: ReactVideoParams[] = [
@@ -211,7 +211,7 @@ export default async function commentsAndReactions({ api, query }: FlowProps): P
 
   // check that reactions on videos are working
   const reactToVideosFixture = new ReactToVideosFixture(api, query, videoReactions)
-  await new FixtureRunner(reactToVideosFixture).run()
+  await new FixtureRunner(reactToVideosFixture).runWithQueryNodeChecks()
 
   // Edit Comment
   const editComments: EditCommentParams[] = [
@@ -225,7 +225,7 @@ export default async function commentsAndReactions({ api, query }: FlowProps): P
   ]
 
   const editCommentsFixture = new EditCommentsFixture(api, query, editComments)
-  await new FixtureRunner(editCommentsFixture).run()
+  await new FixtureRunner(editCommentsFixture).runWithQueryNodeChecks()
 
   // Delete comments
   const deleteComments: DeleteCommentParams[] = [
@@ -247,7 +247,7 @@ export default async function commentsAndReactions({ api, query }: FlowProps): P
   ]
 
   const deleteCommentsFixture = new DeleteCommentsFixture(api, query, deleteComments)
-  await new FixtureRunner(deleteCommentsFixture).run()
+  await new FixtureRunner(deleteCommentsFixture).runWithQueryNodeChecks()
 
   // Moderate comments
   const moderateComments: ModerateCommentParams[] = [
@@ -262,7 +262,7 @@ export default async function commentsAndReactions({ api, query }: FlowProps): P
   ]
 
   const moderateCommentsFixture = new ModerateCommentsFixture(api, query, moderateComments)
-  await new FixtureRunner(moderateCommentsFixture).run()
+  await new FixtureRunner(moderateCommentsFixture).runWithQueryNodeChecks()
 
   debug('Done')
 }

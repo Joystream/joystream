@@ -1,6 +1,5 @@
 import { IMemberRemarked, IReactVideo, MemberRemarked, ReactVideo } from '@joystream/metadata-protobuf'
 import { MemberId } from '@joystream/types/common'
-import { VideoId } from '@joystream/types/content'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { assert } from 'chai'
@@ -53,28 +52,24 @@ export class ReactToVideosFixture extends StandardizedFixture {
   }
 
   protected getExpectedReaction(reaction: ReactVideo.Reaction): VideoReactionOptions {
-    if (reaction === ReactVideo.Reaction.LIKE) {
-      return VideoReactionOptions.Like
-    }
-
-    if (reaction === ReactVideo.Reaction.UNLIKE) {
-      return VideoReactionOptions.Unlike
-    }
-    return VideoReactionOptions.Like
+    return reaction === ReactVideo.Reaction.LIKE ? VideoReactionOptions.Like : VideoReactionOptions.Unlike
   }
 
-  protected assertQueriedVideoReactionsAreValid(qVideos: VideoFieldsFragment[]): void {
+  protected assertQueriedVideosAreValid(qVideos: VideoFieldsFragment[]): void {
+    // remove 'even' instances of same reaction since they entails unreacting
+    this.reactVideoParams = this.reactVideoParams.filter((param) => {
+      return this.reactVideoParams.filter((elem) => _.isEqual(elem, param)).length % 2 === 1
+    })
     // Check against latest reaction per user per video
-    _.uniqBy([...this.reactVideoParams].reverse(), (p) => `${p.msg.videoId.toString()}:${p.asMember.toString()}`).map(
-      (param) => {
-        const qVideo = qVideos.find((v) => v.id === param.msg.videoId.toString())
-        Utils.assert(qVideo, 'Query node: Video not found')
+    _.uniqBy(this.reactVideoParams.reverse(), (p) => `${p.asMember}:${p.msg.videoId}`).map((param) => {
+      const expectedReaction = this.getExpectedReaction(param.msg.reaction)
+      const qVideo = qVideos.find((v) => v.id === param.msg.videoId.toString())
+      Utils.assert(qVideo, 'Query node: Video not found')
 
-        const qReaction = qVideo.reactions.find((r) => r.member.id === param.asMember.toString())
-        Utils.assert(qReaction, `Query node: Expected video reaction by member ${param.asMember.toString()} not found!`)
-        assert.equal(qReaction.reaction, this.getExpectedReaction(param.msg.reaction))
-      }
-    )
+      const qReaction = qVideo.reactions.find((r) => r.member.id === param.asMember.toString())
+      Utils.assert(qReaction, `Query node: Expected video reaction by member ${param.asMember} not found!`)
+      assert.equal(qReaction.reaction, expectedReaction)
+    })
   }
 
   protected assertQueryNodeEventIsValid(qEvent: VideoReactedEventFieldsFragment, i: number): void {
@@ -93,7 +88,7 @@ export class ReactToVideosFixture extends StandardizedFixture {
     )
 
     // Query the videos that have been reacted
-    const qVideos = await this.query.getVideosByIds(qEvents.map((e) => (e.video.id as unknown) as VideoId))
-    this.assertQueriedVideoReactionsAreValid(qVideos)
+    const qVideos = await this.query.getVideosByIds(qEvents.map((e) => e.video.id))
+    this.assertQueriedVideosAreValid(qVideos)
   }
 }
