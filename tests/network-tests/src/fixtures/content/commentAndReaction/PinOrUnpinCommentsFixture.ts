@@ -5,7 +5,6 @@ import {
   PinOrUnpinComment,
 } from '@joystream/metadata-protobuf'
 import { MemberId } from '@joystream/types/common'
-import { VideoId } from '@joystream/types/content'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { assert } from 'chai'
@@ -84,7 +83,7 @@ export class PinCommentsFixture extends StandardizedFixture {
     )
 
     // Query the pinned comments
-    const qVideos = await this.query.getVideosByIds(qEvents.map((e) => (e.comment.video.id as unknown) as VideoId))
+    const qVideos = await this.query.getVideosByIds(qEvents.map((e) => e.comment.video.id))
     this.assertQueriedPinnedCommentsAreValid(qVideos)
   }
 }

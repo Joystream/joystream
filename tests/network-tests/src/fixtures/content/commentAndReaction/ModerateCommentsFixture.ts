@@ -1,5 +1,5 @@
 import { IChannelOwnerRemarked, IModerateComment, ChannelOwnerRemarked } from '@joystream/metadata-protobuf'
-import { ChannelId, MemberId } from '@joystream/types/common'
+import { MemberId } from '@joystream/types/common'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { assert } from 'chai'

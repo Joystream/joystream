@@ -5,7 +5,6 @@ import {
   ICommentSectionPreference,
 } from '@joystream/metadata-protobuf'
 import { MemberId } from '@joystream/types/common'
-import { VideoId } from '@joystream/types/content'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { assert } from 'chai'
@@ -62,11 +61,7 @@ export class EnableOrDisableCommentSectionFixture extends StandardizedFixture {
       const qVideo = qVideos.find((c) => c.id === action.msg.videoId.toString())
       Utils.assert(qVideo, 'Query node: Video not found')
 
-      assert.equal(
-        qVideo.isCommentSectionEnabled,
-        // eslint-disable-next-line no-unneeded-ternary
-        action.msg.option === CommentSectionPreference.Option.ENABLE ? true : false
-      )
+      assert.equal(qVideo.isCommentSectionEnabled, action.msg.option === CommentSectionPreference.Option.ENABLE)
     })
   }
 
@@ -84,7 +79,7 @@ export class EnableOrDisableCommentSectionFixture extends StandardizedFixture {
     )
 
     // Query the videos
-    const qVideos = await this.query.getVideosByIds(qEvents.map((e) => (e.video.id as unknown) as VideoId))
+    const qVideos = await this.query.getVideosByIds(qEvents.map((e) => e.video.id))
     this.assertQueriedCommentSectionPreferencesAreValid(qVideos)
   }
 }

@@ -5,14 +5,13 @@ import {
   VideoReactionsPreference,
 } from '@joystream/metadata-protobuf'
 import { MemberId } from '@joystream/types/common'
-import { VideoId } from '@joystream/types/content'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { assert } from 'chai'
 import _ from 'lodash'
 import { Api } from '../../../Api'
 import { StandardizedFixture } from '../../../Fixture'
-import { CommentSectionPreferenceEventFieldsFragment, VideoFieldsFragment } from '../../../graphql/generated/queries'
+import { VideoFieldsFragment, VideoReactionsPreferenceEventFieldsFragment } from '../../../graphql/generated/queries'
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { EventDetails, EventType } from '../../../types'
 import { Utils } from '../../../utils'
@@ -56,21 +55,17 @@ export class EnableOrDisableCommentSectionFixture extends StandardizedFixture {
     })
   }
 
-  protected assertQueriedCommentSectionPreferencesAreValid(qVideos: VideoFieldsFragment[]): void {
+  protected assertQueriedVideoReactionsPreferencesAreValid(qVideos: VideoFieldsFragment[]): void {
     // Check against the latest video reactions preference ,i.e. enable/disable for each video
     _.uniqBy([...this.videoReactionsPreferenceParams].reverse(), (p) => `${p.msg.videoId.toString()}`).map((action) => {
       const qVideo = qVideos.find((c) => c.id === action.msg.videoId.toString())
       Utils.assert(qVideo, 'Query node: Video not found')
 
-      assert.equal(
-        qVideo.isCommentSectionEnabled,
-        // eslint-disable-next-line no-unneeded-ternary
-        action.msg.option === VideoReactionsPreference.Option.ENABLE ? true : false
-      )
+      assert.equal(qVideo.isCommentSectionEnabled, action.msg.option === VideoReactionsPreference.Option.ENABLE)
     })
   }
 
-  protected assertQueryNodeEventIsValid(qEvent: CommentSectionPreferenceEventFieldsFragment, i: number): void {
+  protected assertQueryNodeEventIsValid(qEvent: VideoReactionsPreferenceEventFieldsFragment, i: number): void {
     const params = this.videoReactionsPreferenceParams[i]
     assert.equal(qEvent.video.id, params.msg.videoId.toString())
   }
@@ -79,12 +74,12 @@ export class EnableOrDisableCommentSectionFixture extends StandardizedFixture {
     await super.runQueryNodeChecks()
     // Query the events
     const qEvents = await this.query.tryQueryWithTimeout(
-      () => this.query.getCommentSectionPreferenceEvents(this.events),
+      () => this.query.getVideoReactionsPreferenceEvents(this.events),
       (qEvents) => this.assertQueryNodeEventsAreValid(qEvents)
     )
 
     // Query the videos
-    const qVideos = await this.query.getVideosByIds(qEvents.map((e) => (e.video.id as unknown) as VideoId))
-    this.assertQueriedCommentSectionPreferencesAreValid(qVideos)
+    const qVideos = await this.query.getVideosByIds(qEvents.map((e) => e.video.id))
+    this.assertQueriedVideoReactionsPreferencesAreValid(qVideos)
   }
 }

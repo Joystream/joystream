@@ -385,6 +385,10 @@ import {
   GetBidsByMemberIdQuery,
   GetBidsByMemberIdQueryVariables,
   GetBidsByMemberId,
+  VideoReactionsPreferenceEventFieldsFragment,
+  GetVideoReactionsPreferenceEventsByEventIdsQuery,
+  GetVideoReactionsPreferenceEventsByEventIdsQueryVariables,
+  GetVideoReactionsPreferenceEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1320,6 +1324,16 @@ export class QueryNodeApi {
       GetCommentSectionPreferenceEventsByEventIdsQuery,
       GetCommentSectionPreferenceEventsByEventIdsQueryVariables
     >(GetCommentSectionPreferenceEventsByEventIds, { eventIds }, 'commentSectionPreferenceEvents')
+  }
+
+  public async getVideoReactionsPreferenceEvents(
+    events: EventDetails[]
+  ): Promise<VideoReactionsPreferenceEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetVideoReactionsPreferenceEventsByEventIdsQuery,
+      GetVideoReactionsPreferenceEventsByEventIdsQueryVariables
+    >(GetVideoReactionsPreferenceEventsByEventIds, { eventIds }, 'videoReactionsPreferenceEvents')
   }
 
   public async getEnglishAuctionStartedEvents(
