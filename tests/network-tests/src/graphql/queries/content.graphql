@@ -134,6 +134,32 @@ fragment VideoFields on Video {
   }
 }
 
+fragment BidFields on Bid {
+  id
+  bidder {
+    id
+    handle
+  }
+  auction {
+    auctionType {
+      __typename
+      ... on AuctionTypeOpen {
+        bidLockDuration
+      }
+
+      ... on AuctionTypeEnglish {
+        extensionPeriod
+      }
+    }
+  }
+  nft {
+    id
+  }
+  isCanceled
+  amount
+  createdInBlock
+}
+
 fragment OwnedNftFields on OwnedNft {
   id
   video {
@@ -170,13 +196,7 @@ fragment OwnedNftFields on OwnedNft {
       }
     }
     bids {
-      id
-      bidder {
-        id
-        handle
-      }
-      amount
-      createdInBlock
+      ...BidFields
     }
     topBid {
       id
@@ -248,6 +268,12 @@ query getCommentsByIds($ids: [ID!]) {
 query getVideosByIds($ids: [ID!]) {
   videos(where: { id_in: $ids }) {
     ...VideoFields
+  }
+}
+
+query getBidsByMemberId($videoId: ID!, $memberId: ID!) {
+  bids(where: { nft: { id_eq: $videoId }, bidder: { id_eq: $memberId } }) {
+    ...BidFields
   }
 }
 

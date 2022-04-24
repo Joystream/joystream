@@ -27,6 +27,23 @@ export async function assertAuctionAndBids(query: QueryNodeApi, videoId: number,
   )
 }
 
+export async function ensureMemberOpenAuctionBidsAreCancelled(
+  query: QueryNodeApi,
+  videoId: number,
+  member: IMember
+): Promise<void> {
+  await query.tryQueryWithTimeout(
+    () => query.bidsByMemberId(videoId.toString(), member.memberId.toString()),
+    (bids) => {
+      bids.forEach((bid) => {
+        if (bid.auction.auctionType.__typename === 'AuctionTypeOpen') {
+          assert.equal(bid.isCanceled, true, `Some bid by member ${member} on nft ${videoId} are uncancelled`)
+        }
+      })
+    }
+  )
+}
+
 export async function assertNftOwner(
   query: QueryNodeApi,
   videoId: number,
