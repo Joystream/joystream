@@ -2,7 +2,14 @@ import { DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
 import { Bytes } from '@polkadot/types'
 import { Codec } from '@polkadot/types/types'
 import { WorkingGroup as WGType, WorkerId } from '@joystream/types/augment/all'
-import { Worker, Event, Network, WorkingGroup as WGEntity } from 'query-node/dist/model'
+import {
+  Worker,
+  Event,
+  Network,
+  WorkingGroup as WGEntity,
+  MetaprotocolTransactionStatusEvent,
+  MetaprotocolTransactionStatus,
+} from 'query-node/dist/model'
 import { BaseModel } from '@joystream/warthog'
 import { metaToObject } from '@joystream/metadata-protobuf/utils'
 import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
@@ -270,4 +277,16 @@ export function toNumber(value: BN, maxValue = Number.MAX_SAFE_INTEGER): number 
     )
     return maxValue
   }
+}
+
+export async function updateMetaprotocolTransactionStatus(
+  store: DatabaseManager,
+  txStatusEventId: string,
+  newStatus: typeof MetaprotocolTransactionStatus
+): Promise<void> {
+  const metaprotocolTxStatusEvent = await getById(store, MetaprotocolTransactionStatusEvent, txStatusEventId)
+  metaprotocolTxStatusEvent.status = newStatus
+
+  // save metaprotocol tx status event
+  await store.save<MetaprotocolTransactionStatusEvent>(metaprotocolTxStatusEvent)
 }

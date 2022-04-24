@@ -5,7 +5,15 @@ import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@jo
 import { Members } from '../generated/types'
 import { MemberId, BuyMembershipParameters, InviteMembershipParameters } from '@joystream/types/augment/all'
 import { MembershipMetadata, MemberRemarked } from '@joystream/metadata-protobuf'
-import { bytesToString, deserializeMetadata, genericEventFields, getWorker, toNumber } from './common'
+import {
+  bytesToString,
+  deserializeMetadata,
+  genericEventFields,
+  getWorker,
+  inconsistentState,
+  toNumber,
+  updateMetaprotocolTransactionStatus,
+} from './common'
 import {
   Membership,
   MembershipEntryMethod,
@@ -29,6 +37,10 @@ import {
   MembershipEntryInvited,
   AvatarUri,
   WorkingGroup,
+  MetaprotocolTransactionStatusEvent,
+  MetaprotocolTransactionPending,
+  MetaprotocolTransactionErrored,
+  MetaprotocolTransactionSuccessful,
 } from 'query-node/dist/model'
 import {
   processReactVideoMessage,
@@ -37,6 +49,7 @@ import {
   processEditCommentMessage,
   processDeleteCommentMessage,
 } from './content'
+import { BaseModel } from '@joystream/warthog'
 
 async function getMemberById(store: DatabaseManager, id: MemberId): Promise<Membership> {
   const member = await store.get(Membership, { where: { id: id.toString() }, relations: ['metadata'] })
@@ -504,36 +517,69 @@ export async function members_LeaderInvitationQuotaUpdated({
 }
 
 export async function members_MemberRemarked(ctx: EventContext & StoreContext): Promise<void> {
-  const [memberId, message] = new Members.MemberRemarkedEvent(ctx.event).params
+  const { event, store } = ctx
+  const [memberId, message] = new Members.MemberRemarkedEvent(event).params
 
-  const decodedMessage = MemberRemarked.decode(message.toU8a(true))
-  const messageType = decodedMessage.memberRemarked
+  // unique identifier for metaprotocol tx
+  const { id: metaprotocolTxIdentifier } = genericEventFields(event) as BaseModel
 
-  if (!messageType) {
-    throw new Error(`Invalid message type; message not found`)
-  }
+  const metaprotocolTxStatusEvent = new MetaprotocolTransactionStatusEvent({
+    ...genericEventFields(event),
+    status: new MetaprotocolTransactionPending(),
+  })
 
-  if (messageType === 'reactVideo') {
-    await processReactVideoMessage(ctx, memberId, decodedMessage.reactVideo!)
-    return
-  }
+  // save metaprotocol tx status event
+  await store.save<MetaprotocolTransactionStatusEvent>(metaprotocolTxStatusEvent)
 
-  if (messageType === 'reactComment') {
-    await processReactCommentMessage(ctx, memberId, decodedMessage.reactComment!)
-    return
-  }
+  try {
+    const decodedMessage = MemberRemarked.decode(message.toU8a(true))
+    const messageType = decodedMessage.memberRemarked
 
-  if (messageType === 'createComment') {
-    await processCreateCommentMessage(ctx, memberId, decodedMessage.createComment!)
-    return
-  }
+    if (!messageType) {
+      inconsistentState('Unsupported message type in member_remark action')
+    }
 
-  if (messageType === 'editComment') {
-    await processEditCommentMessage(ctx, memberId, decodedMessage.editComment!)
-    return
-  }
+    if (messageType === 'reactVideo') {
+      await processReactVideoMessage(ctx, memberId, decodedMessage.reactVideo!)
+      const statusSuccessful = new MetaprotocolTransactionSuccessful()
+      await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
+      return
+    }
 
-  if (messageType === 'deleteComment') {
-    await processDeleteCommentMessage(ctx, memberId, decodedMessage.deleteComment!)
+    if (messageType === 'reactComment') {
+      await processReactCommentMessage(ctx, memberId, decodedMessage.reactComment!)
+      const statusSuccessful = new MetaprotocolTransactionSuccessful()
+      await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
+      return
+    }
+
+    if (messageType === 'createComment') {
+      await processCreateCommentMessage(ctx, memberId, decodedMessage.createComment!)
+      const statusSuccessful = new MetaprotocolTransactionSuccessful()
+      await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
+      return
+    }
+
+    if (messageType === 'editComment') {
+      await processEditCommentMessage(ctx, memberId, decodedMessage.editComment!)
+      const statusSuccessful = new MetaprotocolTransactionSuccessful()
+      await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
+    }
+
+    if (messageType === 'deleteComment') {
+      await processDeleteCommentMessage(ctx, memberId, decodedMessage.deleteComment!)
+      const statusSuccessful = new MetaprotocolTransactionSuccessful()
+      await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
+    }
+  } catch (e) {
+    const statusErrored = new MetaprotocolTransactionErrored()
+
+    if (typeof e === 'string') {
+      statusErrored.message = e
+    } else if (e instanceof Error) {
+      statusErrored.message = e.message
+    }
+
+    await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusErrored)
   }
 }

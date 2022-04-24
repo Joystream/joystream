@@ -9,8 +9,24 @@ import {
   processChannelMetadata,
   unsetAssetRelations,
 } from './utils'
-import { Channel, ChannelCategory, StorageDataObject, Membership } from 'query-node/dist/model'
-import { deserializeMetadata, inconsistentState, invalidMetadata, logger } from '../common'
+import {
+  Channel,
+  ChannelCategory,
+  StorageDataObject,
+  Membership,
+  MetaprotocolTransactionStatusEvent,
+  MetaprotocolTransactionPending,
+  MetaprotocolTransactionErrored,
+  MetaprotocolTransactionSuccessful,
+} from 'query-node/dist/model'
+import {
+  deserializeMetadata,
+  genericEventFields,
+  inconsistentState,
+  invalidMetadata,
+  logger,
+  updateMetaprotocolTransactionStatus,
+} from '../common'
 import {
   ChannelCategoryMetadata,
   ChannelMetadata,
@@ -27,6 +43,7 @@ import {
   processVideoReactionsPreferenceMessage,
 } from './commentAndReaction'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
+import { BaseModel } from '@joystream/warthog'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
@@ -255,58 +272,128 @@ export async function content_ChannelDeleted({ store, event }: EventContext & St
 }
 
 export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreContext): Promise<void> {
+  const { event, store } = ctx
   const [owner, channelId, message] = new Content.ChannelOwnerRemarkedEvent(ctx.event).params
 
-  const decodedMessage = ChannelOwnerRemarked.decode(message.toU8a(true))
-  const messageType = decodedMessage.channelOwnerRemarked
-  const contentActor = await convertContentActor(ctx.store, owner)
+  // unique identifier for metaprotocol tx
+  const { id: metaprotocolTxIdentifier } = genericEventFields(event) as BaseModel
 
-  if (!messageType) {
-    invalidMetadata('Unsupported message type in channel_owner_remark action')
-  }
+  const metaprotocolTxStatusEvent = new MetaprotocolTransactionStatusEvent({
+    ...genericEventFields(event),
+    status: new MetaprotocolTransactionPending(),
+  })
 
-  if (messageType === 'pinOrUnpinComment') {
-    await processPinOrUnpinCommentMessage(ctx, contentActor, channelId, decodedMessage.pinOrUnpinComment!)
-    return
-  }
+  // save metaprotocol tx status event
+  await store.save<MetaprotocolTransactionStatusEvent>(metaprotocolTxStatusEvent)
 
-  if (messageType === 'banOrUnbanMemberFromChannel') {
-    await processBanOrUnbanMemberFromChannelMessage(
-      ctx,
-      contentActor,
-      channelId,
-      decodedMessage.banOrUnbanMemberFromChannel!
-    )
-    return
-  }
+  try {
+    const decodedMessage = ChannelOwnerRemarked.decode(message.toU8a(true))
+    const messageType = decodedMessage.channelOwnerRemarked
+    const contentActor = await convertContentActor(ctx.store, owner)
 
-  if (messageType === 'commentSectionPreference') {
-    await processCommentSectionPreferenceMessage(ctx, contentActor, channelId, decodedMessage.commentSectionPreference!)
-    return
-  }
+    if (!messageType) {
+      invalidMetadata('Unsupported message type in channel_owner_remark action')
+    }
 
-  if (messageType === 'videoReactionsPreference') {
-    await processVideoReactionsPreferenceMessage(ctx, contentActor, channelId, decodedMessage.videoReactionsPreference!)
-    return
-  }
+    if (messageType === 'pinOrUnpinComment') {
+      await processPinOrUnpinCommentMessage(ctx, contentActor, channelId, decodedMessage.pinOrUnpinComment!)
+      const statusSuccessful = new MetaprotocolTransactionSuccessful()
+      await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
+      return
+    }
 
-  if (messageType === 'moderateComment') {
-    await processModerateCommentMessage(ctx, contentActor, channelId, decodedMessage.moderateComment!)
+    if (messageType === 'banOrUnbanMemberFromChannel') {
+      await processBanOrUnbanMemberFromChannelMessage(
+        ctx,
+        contentActor,
+        channelId,
+        decodedMessage.banOrUnbanMemberFromChannel!
+      )
+      const statusSuccessful = new MetaprotocolTransactionSuccessful()
+      await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
+      return
+    }
+
+    if (messageType === 'commentSectionPreference') {
+      await processCommentSectionPreferenceMessage(
+        ctx,
+        contentActor,
+        channelId,
+        decodedMessage.commentSectionPreference!
+      )
+      const statusSuccessful = new MetaprotocolTransactionSuccessful()
+      await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
+      return
+    }
+
+    if (messageType === 'videoReactionsPreference') {
+      await processVideoReactionsPreferenceMessage(
+        ctx,
+        contentActor,
+        channelId,
+        decodedMessage.videoReactionsPreference!
+      )
+      const statusSuccessful = new MetaprotocolTransactionSuccessful()
+      await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
+      return
+    }
+
+    if (messageType === 'moderateComment') {
+      await processModerateCommentMessage(ctx, contentActor, channelId, decodedMessage.moderateComment!)
+      const statusSuccessful = new MetaprotocolTransactionSuccessful()
+      await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
+    }
+  } catch (e) {
+    const statusErrored = new MetaprotocolTransactionErrored()
+
+    if (typeof e === 'string') {
+      statusErrored.message = e
+    } else if (e instanceof Error) {
+      statusErrored.message = e.message
+    }
+
+    await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusErrored)
   }
 }
 
 export async function content_ChannelModeratorRemarked(ctx: EventContext & StoreContext): Promise<void> {
+  const { event, store } = ctx
   const [moderator, channelId, message] = new Content.ChannelModeratorRemarkedEvent(ctx.event).params
 
-  const decodedMessage = ChannelModeratorRemarked.decode(message.toU8a(true))
-  const messageType = decodedMessage.channelModeratorRemarked
-  const contentActor = await convertContentActor(ctx.store, moderator)
+  // unique identifier for metaprotocol tx
+  const { id: metaprotocolTxIdentifier } = genericEventFields(event) as BaseModel
 
-  if (!messageType) {
-    invalidMetadata('Unsupported message type in channel_moderator_remark action')
-  }
+  const metaprotocolTxStatusEvent = new MetaprotocolTransactionStatusEvent({
+    ...genericEventFields(event),
+    status: new MetaprotocolTransactionPending(),
+  })
 
-  if (messageType === 'moderateComment') {
-    await processModerateCommentMessage(ctx, contentActor, channelId, decodedMessage.moderateComment!)
+  // save metaprotocol tx status event
+  await store.save<MetaprotocolTransactionStatusEvent>(metaprotocolTxStatusEvent)
+
+  try {
+    const decodedMessage = ChannelModeratorRemarked.decode(message.toU8a(true))
+    const messageType = decodedMessage.channelModeratorRemarked
+    const contentActor = await convertContentActor(ctx.store, moderator)
+
+    if (!messageType) {
+      invalidMetadata('Unsupported message type in channel_moderator_remark action')
+    }
+
+    if (messageType === 'moderateComment') {
+      await processModerateCommentMessage(ctx, contentActor, channelId, decodedMessage.moderateComment!)
+      const statusSuccessful = new MetaprotocolTransactionSuccessful()
+      await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
+    }
+  } catch (e) {
+    const statusErrored = new MetaprotocolTransactionErrored()
+
+    if (typeof e === 'string') {
+      statusErrored.message = e
+    } else if (e instanceof Error) {
+      statusErrored.message = e.message
+    }
+
+    await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusErrored)
   }
 }
