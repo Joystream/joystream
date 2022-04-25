@@ -292,7 +292,7 @@ impl<T: Trait> Module<T> {
             if old_owner_account_id.is_some() {
                 Self::complete_payment(
                     in_channel,
-                    nft.creator_royalty,
+                    nft.creator_royalty.clone(),
                     price.to_owned(),
                     new_owner_account_id,
                     old_owner_account_id,
@@ -321,7 +321,7 @@ impl<T: Trait> Module<T> {
                 if owner_account_id.is_some() {
                     Self::complete_payment(
                         in_channel,
-                        nft.creator_royalty,
+                        nft.creator_royalty.clone(),
                         *price,
                         new_owner_account_id,
                         owner_account_id,
@@ -342,16 +342,14 @@ impl<T: Trait> Module<T> {
 
     /// Complete payment, either auction related or buy now/offer
     pub(crate) fn complete_payment(
-        in_channel: T::ChannelId,
-        creator_royalty: Option<Royalty>,
+        _in_channel: T::ChannelId,
+        creator_royalty: Option<Royalty<T::AccountId>>,
         amount: BalanceOf<T>,
         sender_account_id: T::AccountId,
         receiver_account_id: Option<T::AccountId>,
         // for auction related payments
         is_auction: bool,
     ) {
-        let auction_fee = Self::platform_fee_percentage() * amount;
-
         // Slash amount from sender
         if is_auction {
             let module_account_id = ContentTreasury::<T>::module_account_id();
@@ -360,32 +358,36 @@ impl<T: Trait> Module<T> {
             let _ = Balances::<T>::slash(&sender_account_id, amount);
         }
 
-        if let Some(creator_royalty) = creator_royalty {
-            let royalty = creator_royalty * amount;
+        let platform_fee = Self::platform_fee_percentage() * amount;
+        if let Some((royalty, reward_account)) = creator_royalty {
+            let royalty_fee = royalty.mul_floor(amount);
 
-            // Deposit amount, exluding royalty and platform fee into receiver account
+            // amount has been burned at this point
+            //  NET_PROFIT into the receiver account
             match receiver_account_id {
-                Some(receiver_account_id) if amount > royalty + auction_fee => {
+                // if royalty + platform_percentage < 100% :
+                // NET_PROFIT = amount - royalty_fee - platform_fee
+                Some(receiver_account_id) if amount > royalty_fee + platform_fee => {
                     let _ = Balances::<T>::deposit_creating(
                         &receiver_account_id,
-                        amount - royalty - auction_fee,
+                        amount - royalty_fee - platform_fee,
                     );
                 }
+                // else NET_PROFIT = amount - platform_fee
                 Some(receiver_account_id) => {
-                    let _ =
-                        Balances::<T>::deposit_creating(&receiver_account_id, amount - auction_fee);
+                    let _ = Balances::<T>::deposit_creating(
+                        &receiver_account_id,
+                        amount - platform_fee,
+                    );
                 }
                 _ => (),
             };
 
-            // Should always be Some(_) at this stage, because of previously made check.
-            if let Some(creator_account_id) = Self::channel_by_id(in_channel).reward_account {
-                // Deposit royalty into creator account
-                let _ = Balances::<T>::deposit_creating(&creator_account_id, royalty);
-            }
+            // deposit royalty to specified account
+            let _ = Balances::<T>::deposit_creating(&reward_account, royalty_fee);
         } else if let Some(receiver_account_id) = receiver_account_id {
             // Deposit amount, exluding auction fee into receiver account
-            let _ = Balances::<T>::deposit_creating(&receiver_account_id, amount - auction_fee);
+            let _ = Balances::<T>::deposit_creating(&receiver_account_id, amount - platform_fee);
         }
     }
 
@@ -400,7 +402,7 @@ impl<T: Trait> Module<T> {
 
         Self::complete_payment(
             in_channel,
-            nft.creator_royalty,
+            nft.creator_royalty.clone(),
             amount,
             src_account_id,
             dest_account_id,

@@ -2342,13 +2342,13 @@ impl<T: Trait> Module<T> {
         };
 
         // Enure royalty bounds satisfied, if provided
-        if let Some(royalty) = issuance_params.royalty.as_ref() {
-            Self::ensure_royalty_bounds_satisfied(*royalty)?;
+        if let Some((ref royalty, _)) = issuance_params.royalty {
+            Self::ensure_royalty_bounds_satisfied(royalty.to_owned())?;
         }
 
         Ok(Nft::<T>::new(
             nft_owner,
-            issuance_params.royalty,
+            issuance_params.royalty.clone(),
             transactional_status,
         ))
     }

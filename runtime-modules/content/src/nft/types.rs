@@ -4,7 +4,7 @@ use super::*;
 pub type NftMetadata = Vec<u8>;
 
 /// Owner royalty
-pub type Royalty = Perbill;
+pub type Royalty<AccountId> = (Perbill, AccountId);
 
 /// Nft transactional status
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -28,20 +28,20 @@ impl<MemberId, Balance, EnglishAuction, OpenAuction> Default
 /// Owned Nft representation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct OwnedNft<TransactionalStatus, MemberId, AuctionId> {
+pub struct OwnedNft<TransactionalStatus, MemberId, AuctionId, AccountId> {
     pub owner: NftOwner<MemberId>,
     pub transactional_status: TransactionalStatus,
-    pub creator_royalty: Option<Royalty>,
+    pub creator_royalty: Option<Royalty<AccountId>>,
     pub open_auctions_nonce: AuctionId,
 }
 
-impl<TransactionalStatus, MemberId, AuctionId: BaseArithmetic>
-    OwnedNft<TransactionalStatus, MemberId, AuctionId>
+impl<TransactionalStatus, MemberId, AuctionId: BaseArithmetic, AccountId>
+    OwnedNft<TransactionalStatus, MemberId, AuctionId, AccountId>
 {
     /// Create new Nft
     pub fn new(
         owner: NftOwner<MemberId>,
-        creator_royalty: Option<Royalty>,
+        creator_royalty: Option<Royalty<AccountId>>,
         transactional_status: TransactionalStatus,
     ) -> Self {
         Self {
@@ -93,9 +93,9 @@ impl<MemberId> Default for NftOwner<MemberId> {
 /// Parameters used to issue a nft
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct NftIssuanceParametersRecord<MemberId, InitTransactionalStatus> {
+pub struct NftIssuanceParametersRecord<MemberId, InitTransactionalStatus, AccountId> {
     /// Roayalty used for the author
-    pub royalty: Option<Royalty>,
+    pub royalty: Option<Royalty<AccountId>>,
     /// Metadata
     pub nft_metadata: NftMetadata,
     /// member id Nft will be issued to
@@ -107,6 +107,7 @@ pub struct NftIssuanceParametersRecord<MemberId, InitTransactionalStatus> {
 pub type NftIssuanceParameters<T> = NftIssuanceParametersRecord<
     <T as common::MembershipTypes>::MemberId,
     InitTransactionalStatus<T>,
+    <T as frame_system::Trait>::AccountId,
 >;
 
 /// Initial Transactional status for the Nft: See InitialTransactionalStatusRecord above
@@ -496,6 +497,7 @@ pub type Nft<T> = OwnedNft<
     TransactionalStatus<T>,
     <T as common::MembershipTypes>::MemberId,
     <T as Trait>::OpenAuctionId,
+    <T as frame_system::Trait>::AccountId,
 >;
 
 pub type TransactionalStatus<T> = TransactionalStatusRecord<
