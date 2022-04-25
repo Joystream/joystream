@@ -2290,7 +2290,7 @@ impl<T: Trait> Module<T> {
     /// Convert InitTransactionalStatus to TransactionalStatus after checking requirements on the Auction variant
     fn ensure_valid_init_transactional_status(
         init_status: &InitTransactionalStatus<T>,
-        video_id: T::VideoId,
+        _video_id: T::VideoId,
     ) -> Result<TransactionalStatus<T>, DispatchError> {
         match init_status {
             InitTransactionalStatus::<T>::Idle => Ok(TransactionalStatus::<T>::Idle),
@@ -2310,10 +2310,8 @@ impl<T: Trait> Module<T> {
             InitTransactionalStatus::<T>::OpenAuction(ref params) => {
                 Self::validate_open_auction_params(params)?;
                 let current_block = <frame_system::Module<T>>::block_number();
-                let new_nonce = Self::ensure_nft_exists(video_id)
-                    .map(|nft| nft.open_auctions_nonce.saturating_add(One::one()))?;
                 Ok(TransactionalStatus::<T>::OpenAuction(
-                    OpenAuction::<T>::new(params.clone(), new_nonce, current_block),
+                    OpenAuction::<T>::new(params.clone(), T::OpenAuctionId::zero(), current_block),
                 ))
             }
         }
