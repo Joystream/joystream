@@ -79,6 +79,11 @@ impl CreateChannelFixture {
         }
     }
 
+    pub fn call(self) {
+        let origin = Origin::signed(self.sender);
+        assert_ok!(Content::create_channel(origin, self.actor, self.params));
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
         let balance_pre = Balances::<Test>::usable_balance(self.sender);
@@ -210,6 +215,16 @@ impl CreateVideoFixture {
             },
             ..self
         }
+    }
+
+    pub fn call(self) {
+        let origin = Origin::signed(self.sender.clone());
+        assert_ok!(Content::create_video(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.params.clone(),
+        ));
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -1433,7 +1448,7 @@ pub fn create_default_member_owned_channel() {
         .with_reward_account(DEFAULT_MEMBER_ACCOUNT_ID)
         .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
         .with_moderators(vec![DEFAULT_MODERATOR_ID].into_iter().collect())
-        .call_and_assert(Ok(()));
+        .call();
 }
 
 pub fn create_default_curator_owned_channel() {
@@ -1448,7 +1463,7 @@ pub fn create_default_curator_owned_channel() {
         .with_reward_account(DEFAULT_CURATOR_ACCOUNT_ID)
         .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
         .with_moderators(vec![DEFAULT_MODERATOR_ID].into_iter().collect())
-        .call_and_assert(Ok(()));
+        .call();
 }
 
 pub fn create_default_member_owned_channel_with_video() {
@@ -1462,7 +1477,7 @@ pub fn create_default_member_owned_channel_with_video() {
             object_creation_list: create_data_objects_helper(),
         })
         .with_channel_id(NextChannelId::<Test>::get() - 1)
-        .call_and_assert(Ok(()));
+        .call();
 }
 
 pub fn create_default_curator_owned_channel_with_video() {
@@ -1477,7 +1492,7 @@ pub fn create_default_curator_owned_channel_with_video() {
             object_creation_list: create_data_objects_helper(),
         })
         .with_channel_id(NextChannelId::<Test>::get() - 1)
-        .call_and_assert(Ok(()));
+        .call();
 }
 
 pub fn create_default_member_owned_channel_with_video_and_post() {

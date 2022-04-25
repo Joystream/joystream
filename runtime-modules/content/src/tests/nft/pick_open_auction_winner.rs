@@ -1,7 +1,8 @@
 #![cfg(test)]
+use crate::tests::curators;
 use crate::tests::fixtures::{
     create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
-    increase_account_balance_helper,
+    increase_account_balance_helper, CreateChannelFixture, CreateVideoFixture,
 };
 use crate::tests::mock::*;
 use crate::*;
@@ -535,5 +536,72 @@ fn pick_open_auction_winner_fails_with_invalid_bid_commit() {
             ),
             Error::<Test>::InvalidBidAmountSpecified,
         );
+    })
+}
+
+#[test]
+fn auction_proceeds_are_burned_in_case_of_curator_owned_channel_is_auctioneer() {
+    with_default_mock_builder(|| {
+        let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+        let video_id = Content::next_video_id();
+        let curator_actor = ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID);
+        CreateChannelFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(curator_actor)
+            .call();
+        CreateVideoFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call();
+
+        assert_ok!(Content::issue_nft(
+            Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID),
+            curator_actor,
+            video_id,
+            NftIssuanceParameters::<Test>::default(),
+        ));
+
+        let bid_lock_duration = Content::min_bid_lock_duration();
+
+        let auction_params = OpenAuctionParams::<Test> {
+            starting_price: Content::min_starting_price(),
+            buy_now_price: None,
+            bid_lock_duration,
+            starts_at: None,
+            whitelist: BTreeSet::new(),
+        };
+
+        // Start nft auction
+        assert_ok!(Content::start_open_auction(
+            Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID),
+            curator_actor,
+            video_id,
+            auction_params.clone(),
+        ));
+
+        // deposit initial balance
+        let bid = Content::min_starting_price();
+
+        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+
+        // Make nft auction bid
+        assert_ok!(Content::make_open_auction_bid(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            video_id,
+            bid,
+        ));
+
+        let issuance_pre = Balances::<Test>::total_issuance();
+        // Pick open auction winner
+        assert_ok!(Content::pick_open_auction_winner(
+            Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID),
+            curator_actor,
+            video_id,
+            SECOND_MEMBER_ID,
+            bid,
+        ));
+
+        assert_eq!(Balances::<Test>::total_issuance(), issuance_pre - bid);
     })
 }
