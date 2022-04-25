@@ -294,6 +294,7 @@ impl_runtime_apis! {
             use crate::JoystreamUtility;
             use crate::Staking;
             use crate::Storage;
+            use crate::ProjectToken;
 
 
             // Trying to add benchmarks directly to the Session Pallet caused cyclic dependency issues.
@@ -388,6 +389,7 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, blog, Blog);
             add_benchmark!(params, batches, joystream_utility, JoystreamUtility);
             add_benchmark!(params, batches, storage, Storage);
+            add_benchmark!(params, batches, project_token, ProjectToken);
 
             if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
             Ok(batches)

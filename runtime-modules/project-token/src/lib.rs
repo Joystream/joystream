@@ -1,5 +1,11 @@
+// Compiler demand.
+#![recursion_limit = "256"]
+// Ensure we're `no_std` when compiling for Wasm.
+#![cfg_attr(not(feature = "std"), no_std)]
+
 use codec::FullCodec;
 use core::default::Default;
+use frame_support::weights::Weight;
 use frame_support::{
     decl_module, decl_storage,
     dispatch::{fmt::Debug, marker::Copy, DispatchError, DispatchResult},
@@ -8,24 +14,65 @@ use frame_support::{
 };
 use frame_system::ensure_signed;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
-use sp_runtime::{traits::Convert, ModuleId};
-use sp_std::iter::Sum;
+use sp_runtime::{traits::Convert, ModuleId, SaturatedConversion};
+use sp_std::{iter::Sum, vec};
 use storage::{DataObjectStorage, UploadParameters};
 
 // crate modules
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
 mod errors;
 mod events;
+#[cfg(test)]
+mod tests;
 mod traits;
 mod types;
-
-// #[cfg(test)]
-mod tests;
+#[cfg(any(test, feature = "runtime-benchmarks"))]
+mod utils;
 
 // crate imports
 use errors::Error;
 pub use events::{Event, RawEvent};
 use traits::PalletToken;
 use types::*;
+
+pub trait WeightInfo {
+    fn transfer(o: u32) -> Weight;
+    fn dust_account() -> Weight;
+    fn join_whitelist(h: u32) -> Weight;
+    fn purchase_tokens_on_sale_with_proof(h: u32) -> Weight;
+    fn purchase_tokens_on_sale_without_proof() -> Weight;
+    fn recover_unsold_tokens() -> Weight;
+}
+
+// Default implementation.
+impl WeightInfo for () {
+    fn transfer(_o: u32) -> Weight {
+        0
+    }
+
+    fn dust_account() -> Weight {
+        0
+    }
+
+    fn join_whitelist(_h: u32) -> Weight {
+        0
+    }
+
+    fn purchase_tokens_on_sale_with_proof(_h: u32) -> Weight {
+        0
+    }
+
+    fn purchase_tokens_on_sale_without_proof() -> Weight {
+        0
+    }
+
+    fn recover_unsold_tokens() -> Weight {
+        0
+    }
+}
+
+type WeightInfoToken<T> = <T as Trait>::WeightInfo;
 
 /// Pallet Configuration Trait
 pub trait Trait: frame_system::Trait + balances::Trait + storage::Trait {
@@ -60,10 +107,13 @@ pub trait Trait: frame_system::Trait + balances::Trait + storage::Trait {
     type BloatBond: Get<<Self::ReserveCurrency as Currency<Self::AccountId>>::Balance>;
 
     /// Maximum number of vesting balances per account per token
-    type MaxVestingBalancesPerAccountPerToken: Get<u8>;
+    type MaxVestingSchedulesPerAccountPerToken: Get<u8>;
 
     /// the Currency interface used as a reserve (i.e. JOY)
     type ReserveCurrency: Currency<Self::AccountId>;
+
+    /// Weight information for extrinsics in this pallet.
+    type WeightInfo: WeightInfo;
 }
 
 decl_storage! {
@@ -114,7 +164,16 @@ decl_module! {
         /// - `src` free balance decreased by `amount` or removed if final balance < existential deposit
         /// - `dst` free balance increased by `amount`
         /// - `token_id` issuance eventually decreased by dust amount in case of src removalp
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (T)` where:
+        /// - `T` is the length of `outputs`
+        /// - DB:
+        ///   - `O(T)` - from the the generated weights
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::transfer(outputs.0.len().saturated_into())]
         pub fn transfer(
             origin,
             token_id: T::TokenId,
@@ -137,7 +196,14 @@ decl_module! {
             Ok(())
         }
 
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///   - `O(1)` - doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::dust_account()]
         pub fn dust_account(origin, token_id: T::TokenId, account_id: T::AccountId) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             let token_info = Self::ensure_token_exists(token_id)?;
@@ -169,7 +235,18 @@ decl_module! {
         ///
         /// Postconditions:
         /// - account added to the list
-        #[weight = 10_000_000] // TODO: adjust weights
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (H)` where:
+        /// - `H` is the length of `proof.0`
+        /// - DB:
+        ///   - `O(1)` - doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::join_whitelist(
+            proof.0.as_ref().map_or(0u32, |p| p.len().saturated_into())
+        )]
         pub fn join_whitelist(origin, token_id: T::TokenId, proof: MerkleProofOf<T>) -> DispatchResult {
             let account_id = ensure_signed(origin)?;
             let token_info = Self::ensure_token_exists(token_id)?;
@@ -224,7 +301,16 @@ decl_module! {
         /// - buyer's `vesting_balance` related to the current sale is increased by `amount`
         ///   (or created with `amount` as `vesting_balance.total_amount`)
         /// - `token_data.last_sale.quantity_left` is decreased by `amount`
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (H)` where:
+        /// - `H` is the length of `access_proof.proof.0` (if provided)
+        /// - DB:
+        ///   - `O(1)` - doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = Module::<T>::calculate_weight_for_purchase_tokens_on_sale(&access_proof)]
         pub fn purchase_tokens_on_sale(
             origin,
             token_id: T::TokenId,
@@ -307,7 +393,15 @@ decl_module! {
         /// - `token_data.last_sale.quantity_left` is unreserved from
         ///   `token_data.last_sale.tokens_source` account
         /// - `token_data.last_sale.quantity_left` is set to 0
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///   - `O(1)` - doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::recover_unsold_tokens()]
         fn recover_unsold_tokens(origin, token_id: T::TokenId) -> DispatchResult {
             ensure_signed(origin)?;
             let token_info = Self::ensure_token_exists(token_id)?;
@@ -745,5 +839,21 @@ impl<T: Trait> Module<T> {
             Error::<T>::SaleParticipantCapExceeded
         );
         Ok(())
+    }
+
+    pub(crate) fn calculate_weight_for_purchase_tokens_on_sale(
+        access_proof: &Option<SaleAccessProofOf<T>>,
+    ) -> Weight {
+        if let Some(access_proof) = access_proof {
+            WeightInfoToken::<T>::purchase_tokens_on_sale_with_proof(
+                access_proof
+                    .proof
+                    .0
+                    .as_ref()
+                    .map_or(0u32, |p| p.len().saturated_into()),
+            )
+        } else {
+            WeightInfoToken::<T>::purchase_tokens_on_sale_without_proof()
+        }
     }
 }

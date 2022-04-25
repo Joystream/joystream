@@ -34,6 +34,7 @@ pub mod forum;
 pub mod joystream_utility;
 pub mod membership;
 pub mod pallet_constitution;
+pub mod project_token;
 pub mod proposals_codex;
 pub mod proposals_discussion;
 pub mod proposals_engine;

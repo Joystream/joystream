@@ -199,7 +199,9 @@ impl InitTokenSaleFixture {
         participants: &[WhitelistedSaleParticipant],
     ) -> Self {
         self.with_whitelist(WhitelistParams {
-            commitment: generate_merkle_root_helper(participants).pop().unwrap(),
+            commitment: generate_merkle_root_helper::<Test, _>(participants)
+                .pop()
+                .unwrap(),
             payload: None,
         })
     }

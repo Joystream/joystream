@@ -12,6 +12,7 @@ use sp_std::{
     collections::btree_map::{BTreeMap, Iter},
     convert::TryInto,
     iter::Sum,
+    vec::Vec,
 };
 
 use storage::{BagId, DataObjectCreationParameters};
@@ -32,10 +33,10 @@ pub enum VestingSource {
 pub struct StakingStatus<Balance> {
     // Id of the split
     // TODO: SplitId
-    split_id: u32,
+    pub(crate) split_id: u32,
 
     // The amount staked for the split
-    amount: Balance,
+    pub(crate) amount: Balance,
 }
 
 impl<Balance: Copy> StakingStatus<Balance> {
@@ -565,8 +566,8 @@ where
         source: VestingSource,
     ) -> Result<Option<VestingSource>, DispatchError> {
         let new_entry_required = !self.vesting_schedules.contains_key(&source);
-        let cleanup_required =
-            self.vesting_schedules.len() == T::MaxVestingBalancesPerAccountPerToken::get() as usize;
+        let cleanup_required = self.vesting_schedules.len()
+            == T::MaxVestingSchedulesPerAccountPerToken::get() as usize;
         let cleanup_candidate = self
             .vesting_schedules
             .iter()

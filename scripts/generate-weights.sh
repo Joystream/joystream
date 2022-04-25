@@ -69,3 +69,4 @@ benchmark bounty
 benchmark blog
 benchmark joystream_utility
 #benchmark storage
+benchmark project_token

@@ -2367,6 +2367,7 @@ dependencies = [
  "pallet-membership",
  "pallet-offences",
  "pallet-offences-benchmarking",
+ "pallet-project-token",
  "pallet-proposals-codex",
  "pallet-proposals-discussion",
  "pallet-proposals-engine",
@@ -3997,6 +3998,7 @@ dependencies = [
 name = "pallet-project-token"
 version = "0.1.0"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",

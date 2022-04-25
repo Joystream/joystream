@@ -400,14 +400,14 @@ fn unsuccesful_sale_purchase_vesting_balances_limit_reached() {
     build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().call_and_assert(Ok(()));
         let max_vesting_schedules =
-            <Test as crate::Trait>::MaxVestingBalancesPerAccountPerToken::get();
+            <Test as crate::Trait>::MaxVestingSchedulesPerAccountPerToken::get();
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
             DEFAULT_SALE_PURCHASE_AMOUNT
                 .saturating_mul(DEFAULT_SALE_UNIT_PRICE)
                 .saturating_mul((max_vesting_schedules + 1).into()),
         );
-        for _ in 0..<Test as crate::Trait>::MaxVestingBalancesPerAccountPerToken::get() {
+        for _ in 0..<Test as crate::Trait>::MaxVestingSchedulesPerAccountPerToken::get() {
             InitTokenSaleFixture::default()
                 .with_upper_bound_quantity(DEFAULT_SALE_PURCHASE_AMOUNT)
                 .with_vesting_schedule(Some(VestingScheduleParams {
