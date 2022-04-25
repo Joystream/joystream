@@ -3,6 +3,8 @@ use super::mock::*;
 use crate::*;
 use frame_support::assert_ok;
 use frame_support::traits::Currency;
+use sp_io::init_tracing;
+use sp_runtime::Perbill;
 use sp_std::cmp::min;
 use sp_std::iter::{IntoIterator, Iterator};
 
@@ -182,6 +184,45 @@ impl CreateVideoFixture {
                 auto_issue_nft: None,
             },
             channel_id: ChannelId::one(), // channel index starts at 1
+        }
+    }
+
+    pub fn with_nft_in_sale(self, nft_price: Balance) -> Self {
+        Self {
+            params: VideoCreationParameters::<Test> {
+                auto_issue_nft: Some(NftIssuanceParameters::<Test> {
+                    init_transactional_status: InitTransactionalStatus::<Test>::BuyNow(nft_price),
+                    ..Default::default()
+                }),
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_nft_royalty(self, royalty_pct: Perbill, royalty_reward_account: AccountId) -> Self {
+        Self {
+            params: VideoCreationParameters::<Test> {
+                auto_issue_nft: Some(NftIssuanceParameters::<Test> {
+                    royalty: Some((royalty_pct, royalty_reward_account)),
+                    ..self.params.auto_issue_nft.unwrap()
+                }),
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_nft_owner(self, non_channel_owner: MemberId) -> Self {
+        Self {
+            params: VideoCreationParameters::<Test> {
+                auto_issue_nft: Some(NftIssuanceParameters::<Test> {
+                    non_channel_owner: Some(non_channel_owner),
+                    ..self.params.auto_issue_nft.unwrap()
+                }),
+                ..self.params
+            },
+            ..self
         }
     }
 

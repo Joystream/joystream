@@ -548,3 +548,141 @@ fn buy_now_ok_with_nft_owner_curator_group_owned_channel_and_non_set_account_and
         )
     })
 }
+
+#[test]
+pub fn platform_fee_is_burned_if_nft_owned_by_member_channel_and_royalty_is_specified() {
+    let royalty_reward_account = DEFAULT_MEMBER_ACCOUNT_ID;
+    let (nft_price, royalty) = (100u64, Perbill::from_percent(10));
+    let (nft_buyer_id, nft_buyer_account) = (SECOND_MEMBER_ID, SECOND_MEMBER_ACCOUNT_ID);
+    let video_id = 1u64;
+
+    with_default_mock_builder(|| {
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, nft_price);
+        CreateChannelFixture::default().call();
+        CreateVideoFixture::default()
+            .with_nft_in_sale_and_royalty(royalty, royalty_reward_account, nft_price)
+            .call();
+
+        assert_ok!(Content::buy_nft(
+            Origin::signed(nft_buyer_account),
+            video_id,
+            nft_buyer_account,
+            nft_price,
+        ));
+
+        assert_eq!(
+            Balances::total_issuance(),
+            nft_price - Content::platform_fee_percentage().mul_floor(nft_price)
+        );
+    })
+}
+
+#[test]
+pub fn platform_fee_is_burned_if_nft_owned_by_member_channel_and_royalty_is_specified() {
+    let royalty_reward_account = DEFAULT_MEMBER_ACCOUNT_ID;
+    let (nft_price, royalty) = (100u64, Perbill::from_percent(10));
+    let (nft_buyer_id, nft_buyer_account) = (SECOND_MEMBER_ID, SECOND_MEMBER_ACCOUNT_ID);
+    let video_id = 1u64;
+
+    with_default_mock_builder(|| {
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, nft_price);
+        CreateChannelFixture::default().call();
+        CreateVideoFixture::default()
+            .with_nft_in_sale(nft_price)
+            .with_nft_royalty(royalty, royalty_reward_account)
+            .call();
+
+        assert_ok!(Content::buy_nft(
+            Origin::signed(nft_buyer_account),
+            video_id,
+            nft_buyer_account,
+            nft_price,
+        ));
+
+        assert_eq!(
+            Balances::total_issuance(),
+            nft_price - Content::platform_fee_percentage().mul_floor(nft_price)
+        );
+    })
+}
+
+pub fn proper_amount_is_burned_if_nft_owned_by_curator_channel_with_no_reward_account_and_royalty_is_specified(
+) {
+    let royalty_reward_account = DEFAULT_MEMBER_ACCOUNT_ID;
+    let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+    let (curator_actor, curator_account) = (
+        ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID),
+        DEFAULT_CURATOR_ACCOUNT_ID,
+    );
+    let (nft_price, royalty) = (100u64, Perbill::from_percent(10));
+    let (nft_buyer_id, nft_buyer_account) = (SECOND_MEMBER_ID, SECOND_MEMBER_ACCOUNT_ID);
+    let video_id = 1u64;
+
+    with_default_mock_builder(|| {
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, nft_price);
+        CreateChannelFixture::default()
+            .with_sender(curator_account)
+            .with_actor(curator_actor)
+            .call();
+        CreateVideoFixture::default()
+            .with_sender(curator_account)
+            .with_actor(curator_actor)
+            .with_nft_in_sale(nft_price)
+            .with_nft_royalty(royalty, royalty_reward_account)
+            .with_nft_owner(DEFAULT_CURATOR_ID)
+            .call();
+
+        assert_ok!(Content::buy_nft(
+            Origin::signed(nft_buyer_account),
+            video_id,
+            nft_buyer_account,
+            nft_price,
+        ));
+
+        assert_eq!(
+            Balances::total_issuance(),
+            nft_price
+                - Content::platform_fee_percentage().mul_floor(nft_price)
+                - royalty.mul_floor(nft_price)
+        );
+    })
+}
+
+pub fn proper_amount_is_burned_if_nft_owned_by_curator_channel_with_no_reward_account_and_no_royalty_is_specified(
+) {
+    let royalty_reward_account = DEFAULT_MEMBER_ACCOUNT_ID;
+    let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+    let (curator_actor, curator_account) = (
+        ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID),
+        DEFAULT_CURATOR_ACCOUNT_ID,
+    );
+    let (nft_price, royalty) = (100u64, Perbill::from_percent(10));
+    let (nft_buyer_id, nft_buyer_account) = (SECOND_MEMBER_ID, SECOND_MEMBER_ACCOUNT_ID);
+    let video_id = 1u64;
+
+    with_default_mock_builder(|| {
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, nft_price);
+        CreateChannelFixture::default()
+            .with_sender(curator_account)
+            .with_actor(curator_actor)
+            .call();
+        CreateVideoFixture::default()
+            .with_sender(curator_account)
+            .with_actor(curator_actor)
+            .with_nft_in_sale(nft_price)
+            .with_nft_owner(DEFAULT_CURATOR_ID)
+            .call();
+
+        assert_ok!(Content::buy_nft(
+            Origin::signed(nft_buyer_account),
+            video_id,
+            nft_buyer_account,
+            nft_price,
+        ));
+
+        assert_eq!(
+            Balances::total_issuance(),
+            nft_price - Content::platform_fee_percentage().mul_floor(nft_price)
+        );
+    })
+}
