@@ -283,20 +283,26 @@ impl<T: Trait> Module<T> {
 
     /// Buy nft
     pub(crate) fn buy_now(
-        in_channel: T::ChannelId,
         nft: Nft<T>,
+        creator_reward_account: Option<T::AccountId>,
         old_owner_account_id: Option<T::AccountId>,
         new_owner_account_id: T::AccountId,
         new_owner: T::MemberId,
     ) -> Nft<T> {
         if let TransactionalStatus::<T>::BuyNow(price) = &nft.transactional_status {
+            let royalty_payment = if let (Some(royalty), Some(reward_account)) =
+                (nft.creator_royalty, creator_reward_account)
+            {
+                Some((royalty, reward_account))
+            } else {
+                None
+            };
+
             Self::complete_payment(
-                in_channel,
-                nft.creator_royalty.clone(),
+                royalty_payment,
                 price.to_owned(),
                 new_owner_account_id,
                 old_owner_account_id,
-                false,
             );
         }
 
@@ -306,22 +312,27 @@ impl<T: Trait> Module<T> {
 
     /// Completes nft offer
     pub(crate) fn complete_nft_offer(
-        in_channel: T::ChannelId,
         mut nft: Nft<T>,
+        creator_reward_account: Option<T::AccountId>,
         owner_account_id: Option<T::AccountId>,
         new_owner_account_id: T::AccountId,
     ) -> Nft<T> {
         if let TransactionalStatus::<T>::InitiatedOfferToMember(to, price) =
             &nft.transactional_status
         {
+            let royalty_payment =         let royalty_payment = if let (Some(royalty), Some(reward_account)) = (nft.creator_royalty, creator_reward_account)
+        {
+            Some((royalty, reward_account))
+        } else {
+            None
+        };
+
             if let Some(price) = price {
                 Self::complete_payment(
-                    in_channel,
-                    nft.creator_royalty.clone(),
+                    royalty_payment,
                     *price,
                     new_owner_account_id,
                     owner_account_id,
-                    false,
                 );
             }
             nft.owner = NftOwner::Member(*to);
@@ -335,19 +346,16 @@ impl<T: Trait> Module<T> {
 
     /// Complete payment, either auction related or buy now/offer
     pub(crate) fn complete_payment(
-        _in_channel: T::ChannelId,
-        creator_royalty: Option<Royalty<T::AccountId>>,
+        royalty_payment: Option<(Royalty, T::AccountId)>,
         amount: BalanceOf<T>,
         sender_account_id: T::AccountId,
         receiver_account_id: Option<T::AccountId>,
-        // for auction related payments
-        _is_auction: bool,
     ) {
         let _ = Balances::<T>::slash(&sender_account_id, amount);
 
         let platform_fee = Self::platform_fee_percentage().mul_floor(amount);
         let amount_after_platform_fee = amount.saturating_sub(platform_fee);
-        let royalty_fee = creator_royalty
+        let royalty_fee = royalty_payment
             .as_ref()
             .map_or(T::Balance::zero(), |(r, _)| r.mul_floor(amount));
 
@@ -361,7 +369,7 @@ impl<T: Trait> Module<T> {
             }
         }
 
-        if let Some((_, ref royalty_reward_account)) = creator_royalty {
+        if let Some((_, ref royalty_reward_account)) = royalty_payment {
             if !royalty_fee.is_zero() {
                 let _ = Balances::<T>::deposit_creating(royalty_reward_account, royalty_fee);
             }
@@ -371,27 +379,31 @@ impl<T: Trait> Module<T> {
     pub(crate) fn complete_auction(
         nft: Nft<T>,
         in_channel: T::ChannelId,
+        creator_reward_account: T::AccountId,
         winner_id: T::MemberId,
         amount: BalanceOf<T>,
     ) -> Nft<T> {
         let account_deposit_into = Self::ensure_owner_account_id(in_channel, &nft).ok();
         let account_withdraw_from = ContentTreasury::<T>::module_account_id();
+        let royalty_payment = if let (Some(royalty), Some(reward_account)) =
+            (nft.creator_royalty, creator_reward_account)
+        {
+            Some((royalty, reward_account))
+        } else {
+            None
+        };
 
         Self::complete_payment(
-            in_channel,
-            nft.creator_royalty.clone(),
+            royalty_payment,
             amount,
             account_withdraw_from,
             account_deposit_into,
-            true,
         );
 
         nft.with_transactional_status(TransactionalStatus::<T>::Idle)
             .with_member_owner(winner_id)
     }
 
-    // fetches the desginated nft owner account, preconditions:
-    // 1. Self::ensure_channel_exist(channel_id).is_ok()
     pub(crate) fn ensure_owner_account_id(
         channel_id: T::ChannelId,
         nft: &Nft<T>,

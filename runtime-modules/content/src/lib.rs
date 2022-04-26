@@ -1645,6 +1645,8 @@ decl_module! {
             let maybe_old_bid = Self::ensure_open_bid_exists(video_id, participant_id).ok();
             open_auction.ensure_can_make_bid::<T>(current_block, bid_amount, &maybe_old_bid)?;
 
+            let creator_reward_account = Content::ensure_owner
+
             //
             // == MUTATION_SAFE ==
             //
@@ -1661,6 +1663,7 @@ decl_module! {
                     // complete auction @ buy_now_price
                     let updated_nft = Self::complete_auction(
                         nft,
+                        creator_reward_account,
                         video.in_channel,
                         participant_id,
                         buy_now_price,

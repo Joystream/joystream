@@ -4,7 +4,7 @@ use super::*;
 pub type NftMetadata = Vec<u8>;
 
 /// Owner royalty
-pub type Royalty<AccountId> = (Perbill, AccountId);
+pub type Royalty = Perbill;
 
 /// Nft transactional status
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -28,20 +28,20 @@ impl<MemberId, Balance, EnglishAuction, OpenAuction> Default
 /// Owned Nft representation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct OwnedNft<TransactionalStatus, MemberId, AuctionId, AccountId> {
+pub struct OwnedNft<TransactionalStatus, MemberId, AuctionId> {
     pub owner: NftOwner<MemberId>,
     pub transactional_status: TransactionalStatus,
-    pub creator_royalty: Option<Royalty<AccountId>>,
+    pub creator_royalty: Option<Royalty>,
     pub open_auctions_nonce: AuctionId,
 }
 
-impl<TransactionalStatus, MemberId, AuctionId: BaseArithmetic, AccountId>
-    OwnedNft<TransactionalStatus, MemberId, AuctionId, AccountId>
+impl<TransactionalStatus, MemberId, AuctionId: BaseArithmetic>
+    OwnedNft<TransactionalStatus, MemberId, AuctionId>
 {
     /// Create new Nft
     pub fn new(
         owner: NftOwner<MemberId>,
-        creator_royalty: Option<Royalty<AccountId>>,
+        creator_royalty: Option<Royalty>,
         transactional_status: TransactionalStatus,
     ) -> Self {
         Self {
@@ -93,9 +93,9 @@ impl<MemberId> Default for NftOwner<MemberId> {
 /// Parameters used to issue a nft
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct NftIssuanceParametersRecord<MemberId, InitTransactionalStatus, AccountId> {
+pub struct NftIssuanceParametersRecord<MemberId, InitTransactionalStatus> {
     /// Royalty used for the author
-    pub royalty: Option<Royalty<AccountId>>,
+    pub royalty: Option<Royalty>,
     /// Metadata
     pub nft_metadata: NftMetadata,
     /// member id Nft will be issued to
