@@ -711,7 +711,7 @@ decl_module! {
                 .map_or(
                     Ok(None),
                     |issuance_params| {
-                        Some(Self::construct_owned_nft(issuance_params,video_id)).transpose()
+                        Some(Self::construct_owned_nft(issuance_params)).transpose()
                     }
                 )?;
 
@@ -798,7 +798,7 @@ decl_module! {
                     Ok(None),
                     |issuance_params| {
                         ensure!(video.nft_status.is_none(), Error::<T>::NftAlreadyExists);
-                        Some(Self::construct_owned_nft(issuance_params, video_id)).transpose()
+                        Some(Self::construct_owned_nft(issuance_params)).transpose()
                     }
                 )?;
 
@@ -1343,7 +1343,7 @@ decl_module! {
             ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
 
             // The content owner will be..
-            let nft_status = Self::construct_owned_nft(&params, video_id)?;
+            let nft_status = Self::construct_owned_nft(&params)?;
 
             //
             // == MUTATION SAFE ==
@@ -2291,7 +2291,6 @@ impl<T: Trait> Module<T> {
     /// Convert InitTransactionalStatus to TransactionalStatus after checking requirements on the Auction variant
     fn ensure_valid_init_transactional_status(
         init_status: &InitTransactionalStatus<T>,
-        _video_id: T::VideoId,
     ) -> Result<TransactionalStatus<T>, DispatchError> {
         match init_status {
             InitTransactionalStatus::<T>::Idle => Ok(TransactionalStatus::<T>::Idle),
@@ -2321,11 +2320,9 @@ impl<T: Trait> Module<T> {
     /// Construct the Nft that is intended to be issued
     pub fn construct_owned_nft(
         issuance_params: &NftIssuanceParameters<T>,
-        video_id: T::VideoId,
     ) -> Result<Nft<T>, DispatchError> {
         let transactional_status = Self::ensure_valid_init_transactional_status(
             &issuance_params.init_transactional_status,
-            video_id,
         )?;
         // The content owner will be..
         let nft_owner = if let Some(to) = issuance_params.non_channel_owner {
