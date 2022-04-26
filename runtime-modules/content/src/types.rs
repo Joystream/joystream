@@ -60,47 +60,47 @@ pub struct ChannelCategoryUpdateParameters {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord)]
 pub enum ChannelActionPermission {
-    // Allows updating channel metadata through `update_channel` tx
+    /// Allows updating channel metadata through `update_channel` tx
     UpdateChannelMetadata,
-    // Allows adding/setting/unsetting/removing channel assets through `update_channel` tx
+    /// Allows adding/setting/unsetting/removing channel assets through `update_channel` tx
     ManageNonVideoChannelAssets,
-    // Allows adding/updating/removing channel collaborators through `update_channel`, provided that:
-    // - all affected collaborators currently have permissions that are a subset of sender agent permissions
-    // - all affected collaborators will have permissions that are a subset of sender agent permissions AFTER the update
+    /// Allows adding/updating/removing channel collaborators through `update_channel`, provided that:
+    /// - all affected collaborators currently have permissions that are a subset of sender agent permissions
+    /// - all affected collaborators will have permissions that are a subset of sender agent permissions AFTER the update
     ManageChannelCollaborators,
-    // Allows updating video metadata through `update_video` tx
+    /// Allows updating video metadata through `update_video` tx
     UpdateVideoMetadata,
-    // Allows adding a new video through `create_video` tx:
-    // - allows including new assets, even without `ManageVideoAssets` permissions
-    // - does not allow issuing an nft through optional `auto_issue_nft` parameter
-    //   (unless `ManageVideoNfts` permissions are also granted)
+    /// Allows adding a new video through `create_video` tx:
+    /// - allows including new assets, even without `ManageVideoAssets` permissions
+    /// - does not allow issuing an nft through optional `auto_issue_nft` parameter
+    ///   (unless `ManageVideoNfts` permissions are also granted)
     AddVideo,
-    // Allows adding/setting/unsetting/removing video assets through `update_video` tx
+    /// Allows adding/setting/unsetting/removing video assets through `update_video` tx
     ManageVideoAssets,
-    // Allows deleting the channel through `delete_channel` tx
-    // (provided it has no assets, otherwise ManageNonVideoChannelAssets needs to be additionally granted)
+    /// Allows deleting the channel through `delete_channel` tx
+    /// (provided it has no assets, otherwise ManageNonVideoChannelAssets needs to be additionally granted)
     DeleteChannel,
-    // Allows deleting a video through `delete_video` tx
-    // (provided it has no assets, otherwise ManageVideoAssets needs to be additionally granted)
+    /// Allows deleting a video through `delete_video` tx
+    /// (provided it has no assets, otherwise ManageVideoAssets needs to be additionally granted)
     DeleteVideo,
-    // Allows managing video nfts owned by the channel, this includes actions such as:
-    // - issuing nft through `issue_nft` / `create_video` / `update_video`
-    // - starting nft auctions: `start_open_auction`, `start_english_auction`
-    // - canceling nft auctions: `cancel_english_auction`, `cancel_open_auction`
-    // - `offer_nft`
-    // - `cancel_offer`,
-    // - `sell_nft`
-    // - `cancel_buy_now`,
-    // - `update_buy_now_price`,
-    // - `pick_open_auction_winner`
-    // - `nft_owner_remark`
-    // - `destroy_nft`
+    /// Allows managing video nfts owned by the channel, this includes actions such as:
+    /// - issuing nft through `issue_nft` / `create_video` / `update_video`
+    /// - starting nft auctions: `start_open_auction`, `start_english_auction`
+    /// - canceling nft auctions: `cancel_english_auction`, `cancel_open_auction`
+    /// - `offer_nft`
+    /// - `cancel_offer`,
+    /// - `sell_nft`
+    /// - `cancel_buy_now`,
+    /// - `update_buy_now_price`,
+    /// - `pick_open_auction_winner`
+    /// - `nft_owner_remark`
+    /// - `destroy_nft`
     ManageVideoNfts,
-    // Allows executing `channel_agent_remark` for given channel
+    /// Allows executing `channel_agent_remark` for given channel
     AgentRemark,
-    // Allows updating channel transfer status through `update_channel_transfer_status` tx
+    /// Allows updating channel transfer status through `update_channel_transfer_status` tx
     TransferChannel,
-    // Allows claiming channel reward through `claim_channel_reward` tx
+    /// Allows claiming channel reward through `claim_channel_reward` tx
     // TODO: or `claim_and_withdraw_channel_reward` tx (provided `WithdrawFromChannelBalance` permission is also granted)
     ClaimChannelReward,
     // TODO: Allows withdrawing channel balance through `withdraw_from_channel_balance` tx
@@ -124,13 +124,13 @@ pub struct ChannelRecord<
     pub owner: ChannelOwner<MemberId, CuratorGroupId>,
     /// The videos under this channel
     pub num_videos: u64,
-    /// collaborator set
+    /// Map from collaborator's MemberId to collaborator's ChannelAgentPermissions
     pub collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
     /// Cumulative cashout
     pub cumulative_payout_earned: Balance,
     /// Privilege level (curators will have different moderation permissions w.r.t. this channel depending on this value)
     pub privilege_level: ChannelPrivilegeLevel,
-    // List of channel features that have been paused by a curator
+    /// List of channel features that have been paused by a curator
     pub paused_features: BTreeSet<PausableChannelFeature>,
     /// Transfer status of the channel. Requires to be explicitly accepted.
     pub transfer_status: ChannelTransferStatus<MemberId, CuratorGroupId, Balance>,
@@ -272,7 +272,7 @@ pub struct ChannelCreationParametersRecord<
     pub assets: Option<StorageAssets>,
     /// Metadata about the channel.
     pub meta: Option<Vec<u8>>,
-    /// initial collaborator set
+    /// Map from collaborator's MemberId to collaborator's ChannelAgentPermissions
     pub collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
     /// Storage buckets to assign to a bag.
     pub storage_buckets: BTreeSet<StorageBucketId>,
@@ -302,7 +302,7 @@ pub struct ChannelUpdateParametersRecord<StorageAssets, DataObjectId: Ord, Membe
     pub new_meta: Option<Vec<u8>>,
     /// assets to be removed from channel
     pub assets_to_remove: BTreeSet<DataObjectId>,
-    /// collaborator set
+    /// Optional, updated map of collaborator_member_id => collaborator_channel_agent_permissions
     pub collaborators: Option<BTreeMap<MemberId, ChannelAgentPermissions>>,
     /// Commitment for the data object deletion prize for the storage pallet.
     pub expected_data_object_deletion_prize: Balance,

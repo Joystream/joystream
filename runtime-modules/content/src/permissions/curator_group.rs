@@ -77,7 +77,7 @@ where
     T: common::membership::MembershipTypes,
     T::ActorId: Ord,
 {
-    /// Curators set, associated with a iven curator group
+    /// Map from CuratorId to curator's ChannelAgentPermissions
     curators: BTreeMap<T::CuratorId, ChannelAgentPermissions>,
 
     /// When `false`, curator in a given group is forbidden to act

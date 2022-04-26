@@ -188,9 +188,10 @@ pub fn ensure_actor_authorized_to_perform_channel_update<T: Trait>(
         &required_permissions,
     )?;
 
-    if params.collaborators.is_some() && opt_agent_permissions.is_some() {
-        let agent_permissions = opt_agent_permissions.as_ref().unwrap();
-        let new_collaborators_set = params.collaborators.as_ref().unwrap();
+    if let (Some(agent_permissions), Some(new_collaborators_set)) = (
+        opt_agent_permissions.as_ref(),
+        params.collaborators.as_ref(),
+    ) {
         let updated_collaborators = channel.collaborators.iter().filter_map(|(k, v)| {
             let new_v = new_collaborators_set.get(k);
             if new_v != Some(v) {
