@@ -975,7 +975,7 @@ export interface RewardPaymentType extends Enum {
 }
 
 /** @name Royalty */
-export interface Royalty extends ITuple<[Perbill, GenericAccountId]> {}
+export interface Royalty extends Perbill {}
 
 /** @name SetLeadParams */
 export interface SetLeadParams extends ITuple<[MemberId, AccountId]> {}
