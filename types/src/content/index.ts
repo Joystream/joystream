@@ -20,7 +20,7 @@ export class CurrencyAmount extends CurrencyOf {}
 
 // NFT types
 
-export class Royalty extends UInt.with(32, 'Perbill') {}
+export class Royalty extends Tuple.with([UInt.with(32, 'Perbill'), AccountId]) {}
 
 export class OpenAuctionBid extends JoyStructDecorated({
   amount: Balance,

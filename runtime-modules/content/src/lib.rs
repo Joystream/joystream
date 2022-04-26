@@ -50,7 +50,8 @@ use sp_runtime::{
     traits::{AccountIdConversion, Hash, MaybeSerializeDeserialize, Member},
     ModuleId,
 };
-use sp_std::{collections::btree_set::BTreeSet, vec::Vec};
+use sp_std::{borrow::ToOwned, collections::btree_set::BTreeSet, vec::Vec};
+
 /// Module configuration trait for Content Directory Module
 pub trait Trait:
     frame_system::Trait
@@ -1651,7 +1652,7 @@ decl_module! {
             let (nft, event) = match open_auction.buy_now_price {
                 Some(buy_now_price) if bid_amount >= buy_now_price => {
                     // Make a new bid considering the old one (if any) and the "buy-now-price".
-                    Self::make_bid_payment(
+                    Self::transfer_bid_to_treasury(
                         &participant_account_id,
                         buy_now_price,
                         old_bid_value
@@ -1661,7 +1662,6 @@ decl_module! {
                     let updated_nft = Self::complete_auction(
                         nft,
                         video.in_channel,
-                        participant_account_id,
                         participant_id,
                         buy_now_price,
                     );
@@ -1673,7 +1673,7 @@ decl_module! {
                 },
                 _ =>  {
                     // Make a new bid considering the old one (if any).
-                    Self::make_bid_payment(
+                    Self::transfer_bid_to_treasury(
                         &participant_account_id,
                         bid_amount,
                         old_bid_value
@@ -1758,7 +1758,7 @@ decl_module! {
             let (updated_nft, event) = match eng_auction.buy_now_price {
                 Some(buy_now_price) if bid_amount >= buy_now_price => {
                     // Make a new bid considering the "buy-now-price".
-                    Self::make_bid_payment(
+                    Self::transfer_bid_to_treasury(
                         &participant_account_id,
                         buy_now_price,
                         None
@@ -1768,7 +1768,6 @@ decl_module! {
                     let updated_nft = Self::complete_auction(
                         nft,
                         video.in_channel,
-                        participant_account_id,
                         participant_id,
                         buy_now_price,
                     );
@@ -1782,7 +1781,7 @@ decl_module! {
                 _ => {
 
                     // Make a new bid.
-                    Self::make_bid_payment(
+                    Self::transfer_bid_to_treasury(
                         &participant_account_id,
                         bid_amount,
                         None
@@ -1867,11 +1866,8 @@ decl_module! {
             let top_bid = english_auction.ensure_top_bid_exists::<T>()?;
             let top_bidder_id = top_bid.bidder_id;
 
-            // THIS WILL NOT FAIL UNLESS THE RUNTIME IS BROKEN
-            let top_bidder_account_result =
-                T::MemberAuthenticator::controller_account_id(top_bidder_id);
-            debug_assert!(top_bidder_account_result.is_ok());
-            let top_bidder_account_id = top_bidder_account_result.unwrap_or_default();
+            // THIS WILL NOT FAIL UNLESS RUNTIME IS BROKEN
+            debug_assert!(T::MemberAuthenticator::controller_account_id(top_bidder_id).is_ok());
 
             // Ensure auction expired
             let current_block = <frame_system::Module<T>>::block_number();
@@ -1885,7 +1881,6 @@ decl_module! {
             let updated_nft = Self::complete_auction(
                 nft,
                 video.in_channel,
-                top_bidder_account_id,
                 top_bidder_id,
                 top_bid.amount
             );
@@ -1907,7 +1902,8 @@ decl_module! {
             winner_id: T::MemberId,
             commit: BalanceOf<T>, // amount the auctioner is committed to
         ) {
-            let winner_account_id = T::MemberAuthenticator::controller_account_id(winner_id)?;
+            T::MemberAuthenticator::controller_account_id(winner_id).map(|_| ())?;
+
             // Ensure video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
@@ -1936,7 +1932,6 @@ decl_module! {
             let updated_nft = Self::complete_auction(
                 nft,
                 video.in_channel,
-                winner_account_id,
                 winner_id,
                 bid.amount,
             );

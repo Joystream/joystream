@@ -21,7 +21,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Make bid transfer to the treasury account or get refunded if the old bid is greater than a new one.
-    pub(crate) fn make_bid_payment(
+    pub(crate) fn transfer_bid_to_treasury(
         participant: &T::AccountId,
         bid: BalanceOf<T>,
         old_bid: Option<BalanceOf<T>>,
@@ -341,14 +341,9 @@ impl<T: Trait> Module<T> {
         sender_account_id: T::AccountId,
         receiver_account_id: Option<T::AccountId>,
         // for auction related payments
-        is_auction: bool,
+        _is_auction: bool,
     ) {
-        if is_auction {
-            let module_account_id = ContentTreasury::<T>::module_account_id();
-            let _ = Balances::<T>::slash(&module_account_id, amount);
-        } else {
-            let _ = Balances::<T>::slash(&sender_account_id, amount);
-        }
+        let _ = Balances::<T>::slash(&sender_account_id, amount);
 
         let platform_fee = Self::platform_fee_percentage().mul_floor(amount);
         let amount_after_platform_fee = amount.saturating_sub(platform_fee);
@@ -376,18 +371,18 @@ impl<T: Trait> Module<T> {
     pub(crate) fn complete_auction(
         nft: Nft<T>,
         in_channel: T::ChannelId,
-        src_account_id: T::AccountId,
         winner_id: T::MemberId,
         amount: BalanceOf<T>,
     ) -> Nft<T> {
-        let dest_account_id = Self::ensure_owner_account_id(in_channel, &nft).ok();
+        let account_deposit_into = Self::ensure_owner_account_id(in_channel, &nft).ok();
+        let account_withdraw_from = ContentTreasury::<T>::module_account_id();
 
         Self::complete_payment(
             in_channel,
             nft.creator_royalty.clone(),
             amount,
-            src_account_id,
-            dest_account_id,
+            account_withdraw_from,
+            account_deposit_into,
             true,
         );
 
