@@ -3,7 +3,6 @@ use super::mock::*;
 use crate::*;
 use frame_support::assert_ok;
 use frame_support::traits::Currency;
-use sp_io::init_tracing;
 use sp_runtime::Perbill;
 use sp_std::cmp::min;
 use sp_std::iter::{IntoIterator, Iterator};
@@ -205,19 +204,6 @@ impl CreateVideoFixture {
             params: VideoCreationParameters::<Test> {
                 auto_issue_nft: Some(NftIssuanceParameters::<Test> {
                     royalty: Some((Perbill::from_percent(royalty_pct), royalty_reward_account)),
-                    ..self.params.auto_issue_nft.unwrap()
-                }),
-                ..self.params
-            },
-            ..self
-        }
-    }
-
-    pub fn with_nft_owner(self, non_channel_owner: MemberId) -> Self {
-        Self {
-            params: VideoCreationParameters::<Test> {
-                auto_issue_nft: Some(NftIssuanceParameters::<Test> {
-                    non_channel_owner: Some(non_channel_owner),
                     ..self.params.auto_issue_nft.unwrap()
                 }),
                 ..self.params
