@@ -1,4 +1,5 @@
 mod types;
+use sp_runtime::traits::CheckedSub;
 use sp_std::borrow::ToOwned;
 pub use types::*;
 
@@ -289,18 +290,14 @@ impl<T: Trait> Module<T> {
         new_owner: T::MemberId,
     ) -> Nft<T> {
         if let TransactionalStatus::<T>::BuyNow(price) = &nft.transactional_status {
-            if old_owner_account_id.is_some() {
-                Self::complete_payment(
-                    in_channel,
-                    nft.creator_royalty.clone(),
-                    price.to_owned(),
-                    new_owner_account_id,
-                    old_owner_account_id,
-                    false,
-                );
-            } else {
-                let _ = Balances::<T>::slash(&new_owner_account_id, price.to_owned());
-            }
+            Self::complete_payment(
+                in_channel,
+                nft.creator_royalty.clone(),
+                price.to_owned(),
+                new_owner_account_id,
+                old_owner_account_id,
+                false,
+            );
         }
 
         nft.with_transactional_status(TransactionalStatus::<T>::Idle)
@@ -318,18 +315,14 @@ impl<T: Trait> Module<T> {
             &nft.transactional_status
         {
             if let Some(price) = price {
-                if owner_account_id.is_some() {
-                    Self::complete_payment(
-                        in_channel,
-                        nft.creator_royalty.clone(),
-                        *price,
-                        new_owner_account_id,
-                        owner_account_id,
-                        false,
-                    );
-                } else {
-                    let _ = Balances::<T>::slash(&new_owner_account_id, *price);
-                }
+                Self::complete_payment(
+                    in_channel,
+                    nft.creator_royalty.clone(),
+                    *price,
+                    new_owner_account_id,
+                    owner_account_id,
+                    false,
+                );
             }
             nft.owner = NftOwner::Member(*to);
         }
@@ -350,7 +343,6 @@ impl<T: Trait> Module<T> {
         // for auction related payments
         is_auction: bool,
     ) {
-        // Slash amount from sender
         if is_auction {
             let module_account_id = ContentTreasury::<T>::module_account_id();
             let _ = Balances::<T>::slash(&module_account_id, amount);
@@ -358,36 +350,26 @@ impl<T: Trait> Module<T> {
             let _ = Balances::<T>::slash(&sender_account_id, amount);
         }
 
-        let platform_fee = Self::platform_fee_percentage() * amount;
-        if let Some((royalty, reward_account)) = creator_royalty {
-            let royalty_fee = royalty.mul_floor(amount);
+        let platform_fee = Self::platform_fee_percentage().mul_floor(amount);
+        let amount_after_platform_fee = amount.saturating_sub(platform_fee);
+        let royalty_fee = creator_royalty
+            .as_ref()
+            .map_or(T::Balance::zero(), |(r, _)| r.mul_floor(amount));
 
-            // amount has been burned at this point
-            //  NET_PROFIT into the receiver account
-            match receiver_account_id {
-                // if royalty + platform_percentage < 100% :
-                // NET_PROFIT = amount - royalty_fee - platform_fee
-                Some(receiver_account_id) if amount > royalty_fee + platform_fee => {
-                    let _ = Balances::<T>::deposit_creating(
-                        &receiver_account_id,
-                        amount - royalty_fee - platform_fee,
-                    );
-                }
-                // else NET_PROFIT = amount - platform_fee
-                Some(receiver_account_id) => {
-                    let _ = Balances::<T>::deposit_creating(
-                        &receiver_account_id,
-                        amount - platform_fee,
-                    );
-                }
-                _ => (),
-            };
+        let amount_for_receiver = amount_after_platform_fee
+            .checked_sub(&royalty_fee)
+            .unwrap_or(amount_after_platform_fee);
 
-            // deposit royalty to specified account
-            let _ = Balances::<T>::deposit_creating(&reward_account, royalty_fee);
-        } else if let Some(receiver_account_id) = receiver_account_id {
-            // Deposit amount, exluding auction fee into receiver account
-            let _ = Balances::<T>::deposit_creating(&receiver_account_id, amount - platform_fee);
+        if let Some(ref receiver_account) = receiver_account_id {
+            if !amount_for_receiver.is_zero() {
+                let _ = Balances::<T>::deposit_creating(receiver_account, amount_for_receiver);
+            }
+        }
+
+        if let Some((_, ref royalty_reward_account)) = creator_royalty {
+            if !royalty_fee.is_zero() {
+                let _ = Balances::<T>::deposit_creating(royalty_reward_account, royalty_fee);
+            }
         }
     }
 
