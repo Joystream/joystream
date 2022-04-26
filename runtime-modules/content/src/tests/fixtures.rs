@@ -176,7 +176,7 @@ impl CreateVideoFixture {
     pub fn default() -> Self {
         Self {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
-            actor: ContentActor::Member(DEFAULT_MEMBER_ACCOUNT_ID),
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             params: VideoCreationParameters::<Test> {
                 assets: None,
                 meta: None,
@@ -187,7 +187,7 @@ impl CreateVideoFixture {
         }
     }
 
-    pub fn with_nft_in_sale(self, nft_price: Balance) -> Self {
+    pub fn with_nft_in_sale(self, nft_price: u64) -> Self {
         Self {
             params: VideoCreationParameters::<Test> {
                 auto_issue_nft: Some(NftIssuanceParameters::<Test> {
@@ -200,11 +200,11 @@ impl CreateVideoFixture {
         }
     }
 
-    pub fn with_nft_royalty(self, royalty_pct: Perbill, royalty_reward_account: AccountId) -> Self {
+    pub fn with_nft_royalty(self, royalty_pct: u32, royalty_reward_account: AccountId) -> Self {
         Self {
             params: VideoCreationParameters::<Test> {
                 auto_issue_nft: Some(NftIssuanceParameters::<Test> {
-                    royalty: Some((royalty_pct, royalty_reward_account)),
+                    royalty: Some((Perbill::from_percent(royalty_pct), royalty_reward_account)),
                     ..self.params.auto_issue_nft.unwrap()
                 }),
                 ..self.params
