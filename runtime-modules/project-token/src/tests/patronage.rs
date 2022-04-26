@@ -171,6 +171,30 @@ fn decrease_patronage_ok_with_event_deposit() {
 }
 
 #[test]
+fn decrease_patronage_ok_with_new_patronage_rate_correctly_approximated() {
+    let init_rate = yearly_rate!(50);
+    let token_id = token!(1);
+    let decrement = yearly_rate!(20);
+    let expected = BlockRate(Perquintill::from_parts(57039729300));
+
+    let params = TokenDataBuilder::new_empty()
+        .with_patronage_rate(BlockRate::from_yearly_rate(init_rate, BlocksPerYear::get()));
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, params.build())
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_by(
+            token_id, decrement,
+        );
+
+        let approx = Token::token_info_by_id(token_id).patronage_info.rate;
+        let abs_diff = approx.0.deconstruct() & (u64::MAX - expected.0.deconstruct());
+        assert!(abs_diff < 1_000u64); // accuracy up to 1e-15 decimal points
+    })
+}
+
+#[test]
 fn decrease_patronage_ok_with_last_tally_block_updated() {
     let token_id = token!(1);
     let decrement = yearly_rate!(10);
