@@ -260,7 +260,7 @@ services:
       - "127.0.0.1:6379:6379"
 
   faucet:
-    image: joystream/faucet:olympia
+    image: joystream/faucet:rhodes
     restart: on-failure
     container_name: faucet
     env_file:
@@ -270,6 +270,8 @@ services:
       - PORT=3002
       - INVITING_MEMBER_ID=${INVITING_MEMBER_ID}
       - PROVIDER=${JOYSTREAM_NODE_WS}
+      - SENDGRID_API_KEY=
+      - ALERT_EMAIL=
     ports:
       - "3002:3002"
 
