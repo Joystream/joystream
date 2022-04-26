@@ -88,8 +88,9 @@ decl_error! {
         /// does not match the sender account
         SaleAccessProofParticipantIsNotSender,
 
-        /// Whitelisted sale participant's cap was exceeded by the purchase
-        SaleParticipantCapExceeded,
+        /// Sale participant's cap (either cap_per_member or whitelisted participant's specific cap)
+        /// was exceeded with the purchase
+        SalePurchaseCapExceeded,
 
         /// Cannot add another vesting schedule to an account.
         /// Maximum number of vesting schedules for this account-token pair was reached.

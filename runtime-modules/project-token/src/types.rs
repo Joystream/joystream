@@ -254,13 +254,56 @@ where
     }
 }
 
+/// Input parameters describing the sale accessibility (public/private)
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum SaleAccessibilityParams<Balance, WhitelistParams> {
+    /// Public sale with optional purchase cap per member
+    PublicSale(Option<Balance>),
+    /// Private sale (only accessible for whitelisted participants) with whitelist parameters
+    PrivateSale(WhitelistParams),
+}
+
+/// Existing sale's accessibility (public/private)
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum SaleAccessibility<Balance, Hash> {
+    /// Public sale with optional purchase cap per member
+    PublicSale(Option<Balance>),
+    /// Private sale (only accessible for whitelisted participants) with a whitelist commitment
+    PrivateSale(Hash),
+}
+
+impl<Balance, Hash, SingleDataObjectUploadParams>
+    From<SaleAccessibilityParams<Balance, WhitelistParams<Hash, SingleDataObjectUploadParams>>>
+    for SaleAccessibility<Balance, Hash>
+{
+    fn from(
+        params: SaleAccessibilityParams<
+            Balance,
+            WhitelistParams<Hash, SingleDataObjectUploadParams>,
+        >,
+    ) -> Self {
+        match params {
+            SaleAccessibilityParams::PublicSale(cap_per_member) => Self::PublicSale(cap_per_member),
+            SaleAccessibilityParams::PrivateSale(whitelist_params) => {
+                Self::PrivateSale(whitelist_params.commitment)
+            }
+        }
+    }
+}
+
+impl<Balance, Hash> Default for SaleAccessibility<Balance, Hash> {
+    fn default() -> Self {
+        Self::PublicSale(None)
+    }
+}
+
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct TokenSaleParams<
     JOYBalance,
     Balance,
     BlockNumber,
     VestingScheduleParams,
-    WhitelistParams,
+    SaleAccessibilityParams,
     AccountId,
 > {
     /// Account that acts as the source of the tokens on sale
@@ -273,8 +316,8 @@ pub struct TokenSaleParams<
     pub starts_at: Option<BlockNumber>,
     /// Sale duration in blocks
     pub duration: BlockNumber,
-    /// Optional whitelist parameters (merkle tree data)
-    pub whitelist: Option<WhitelistParams>,
+    /// Sale accessibility parameters (public/private + optional purchase caps)
+    pub accessibility: SaleAccessibilityParams,
     /// Optional vesting schedule for all tokens on sale
     pub vesting_schedule: Option<VestingScheduleParams>,
     /// Optional sale metadata
@@ -282,7 +325,14 @@ pub struct TokenSaleParams<
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default)]
-pub struct TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Hash, AccountId> {
+pub struct TokenSale<
+    JOYBalance,
+    Balance,
+    BlockNumber,
+    VestingScheduleParams,
+    SaleAccessibility,
+    AccountId,
+> {
     /// Token's unit price in JOY
     pub unit_price: JOYBalance,
     /// Number of tokens still on sale (if any)
@@ -293,10 +343,10 @@ pub struct TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Ha
     pub start_block: BlockNumber,
     /// Sale duration (in blocks)
     pub duration: BlockNumber,
-    /// Optional whitelist merkle root comittment
-    pub whitelist_commitment: Option<Hash>,
     /// Optional vesting schedule for all tokens on sale
     pub vesting_schedule: Option<VestingScheduleParams>,
+    /// Sale accessibility (public/private + optional purchase caps)
+    pub accessibility: SaleAccessibility,
 }
 
 impl<JOYBalance, Balance, BlockNumber, Hash, AccountId>
@@ -322,8 +372,8 @@ where
             unit_price: params.unit_price,
             quantity_left: params.upper_bound_quantity,
             vesting_schedule: params.vesting_schedule,
-            whitelist_commitment: params.whitelist.map(|p| p.commitment),
             tokens_source: params.tokens_source,
+            accessibility: params.accessibility.into(),
         })
     }
 
@@ -642,12 +692,20 @@ impl<
         BlockNumber: PartialOrd + Saturating + Copy,
         VestingScheduleParams,
         AccountId,
+        SaleAccessibility,
     >
     TokenData<
         Balance,
         Hash,
         BlockNumber,
-        TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Hash, AccountId>,
+        TokenSale<
+            JOYBalance,
+            Balance,
+            BlockNumber,
+            VestingScheduleParams,
+            SaleAccessibility,
+            AccountId,
+        >,
     >
 {
     // increase total issuance
@@ -831,13 +889,21 @@ pub(crate) type SingleDataObjectUploadParamsOf<T> =
 pub(crate) type WhitelistParamsOf<T> =
     WhitelistParams<<T as frame_system::Trait>::Hash, SingleDataObjectUploadParamsOf<T>>;
 
+/// Alias for SaleAccessibilityParams
+pub(crate) type SaleAccessibilityParamsOf<T> =
+    SaleAccessibilityParams<<T as Trait>::Balance, WhitelistParamsOf<T>>;
+
+/// Alias for SaleAccessibility
+pub(crate) type SaleAccessibilityOf<T> =
+    SaleAccessibility<<T as Trait>::Balance, <T as frame_system::Trait>::Hash>;
+
 /// Alias for TokenSaleParams
 pub(crate) type TokenSaleParamsOf<T> = TokenSaleParams<
     <T as balances::Trait>::Balance,
     <T as crate::Trait>::Balance,
     <T as frame_system::Trait>::BlockNumber,
     VestingScheduleParamsOf<T>,
-    WhitelistParamsOf<T>,
+    SaleAccessibilityParamsOf<T>,
     <T as frame_system::Trait>::AccountId,
 >;
 
@@ -847,7 +913,7 @@ pub(crate) type TokenSaleOf<T> = TokenSale<
     <T as crate::Trait>::Balance,
     <T as frame_system::Trait>::BlockNumber,
     VestingScheduleParamsOf<T>,
-    <T as frame_system::Trait>::Hash,
+    SaleAccessibilityOf<T>,
     <T as frame_system::Trait>::AccountId,
 >;
 

@@ -2,7 +2,7 @@
 
 use crate::tests::mock::*;
 use crate::{last_event_eq, RawEvent};
-use crate::{traits::PalletToken, types::VestingSource, SymbolsUsed};
+use crate::{traits::PalletToken, types::VestingSource, SaleAccessibilityParams, SymbolsUsed};
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::StorageMap;
 use sp_runtime::{traits::Hash, DispatchError, Permill};
@@ -47,7 +47,7 @@ pub fn default_token_sale_params() -> TokenSaleParams {
             duration: 100,
             cliff_amount_percentage: Permill::from_percent(0),
         }),
-        whitelist: None,
+        accessibility: SaleAccessibilityParams::PublicSale(None),
     }
 }
 
@@ -187,7 +187,7 @@ impl InitTokenSaleFixture {
     pub fn with_whitelist(self, whitelist: WhitelistParams) -> Self {
         Self {
             params: TokenSaleParams {
-                whitelist: Some(whitelist),
+                accessibility: SaleAccessibilityParams::PrivateSale(whitelist),
                 ..self.params
             },
             ..self
@@ -208,6 +208,16 @@ impl InitTokenSaleFixture {
         Self {
             params: TokenSaleParams {
                 vesting_schedule,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_cap_per_member(self, cap_per_member: Balance) -> Self {
+        Self {
+            params: TokenSaleParams {
+                accessibility: SaleAccessibilityParams::PublicSale(Some(cap_per_member)),
                 ..self.params
             },
             ..self
@@ -241,14 +251,16 @@ impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
         snapshot_post: &InitTokenSaleFixtureStateSnapshot,
     ) {
         // Whitelist payload uploaded if present
-        self.params.whitelist.as_ref().map(|w| {
-            w.payload.as_ref().map(|_| {
+        if let SaleAccessibilityParams::PrivateSale(whitelist_params) =
+            self.params.accessibility.clone()
+        {
+            whitelist_params.payload.as_ref().map(|_| {
                 assert_eq!(
                     snapshot_post.next_data_object_id,
                     snapshot_pre.next_data_object_id + 1
                 );
-            })
-        });
+            });
+        }
 
         // Token's `last_sale` updated
         assert_eq!(

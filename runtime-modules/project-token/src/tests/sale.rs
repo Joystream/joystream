@@ -429,7 +429,7 @@ fn unsuccesful_sale_purchase_vesting_balances_limit_reached() {
 }
 
 #[test]
-fn unsuccesful_permissioned_sale_purchase_without_access_proof() {
+fn unsuccesful_private_sale_purchase_without_access_proof() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
@@ -447,7 +447,7 @@ fn unsuccesful_permissioned_sale_purchase_without_access_proof() {
 }
 
 #[test]
-fn unsuccesful_permissioned_sale_purchase_with_invalid_access_proof() {
+fn unsuccesful_private_sale_purchase_with_invalid_access_proof() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
@@ -476,7 +476,7 @@ fn unsuccesful_permissioned_sale_purchase_with_invalid_access_proof() {
 }
 
 #[test]
-fn unsuccesful_permissioned_sale_purchase_with_invalid_access_proof_participant() {
+fn unsuccesful_private_sale_purchase_with_invalid_access_proof_participant() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
@@ -501,7 +501,7 @@ fn unsuccesful_permissioned_sale_purchase_with_invalid_access_proof_participant(
 }
 
 #[test]
-fn unsuccesful_permissioned_sale_purchase_with_cap_exceeded() {
+fn unsuccesful_private_sale_purchase_with_cap_exceeded() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
@@ -521,7 +521,7 @@ fn unsuccesful_permissioned_sale_purchase_with_cap_exceeded() {
             .call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT * 2,
+            DEFAULT_SALE_UNIT_PRICE * (DEFAULT_SALE_PURCHASE_AMOUNT + 1),
         );
         // Make succesful purchase
         PurchaseTokensOnSaleFixture::default()
@@ -537,7 +537,29 @@ fn unsuccesful_permissioned_sale_purchase_with_cap_exceeded() {
                 proof: merkle_proof!(1, [whitelisted[0].clone(), whitelisted[1].clone()]),
             })
             .with_amount(1)
-            .call_and_assert(Err(Error::<Test>::SaleParticipantCapExceeded.into()));
+            .call_and_assert(Err(Error::<Test>::SalePurchaseCapExceeded.into()));
+    })
+}
+
+#[test]
+fn unsuccesful_public_sale_purchase_with_cap_exceeded() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default()
+            .with_cap_per_member(DEFAULT_SALE_PURCHASE_AMOUNT)
+            .call_and_assert(Ok(()));
+        increase_account_balance(
+            &OTHER_ACCOUNT_ID,
+            DEFAULT_SALE_UNIT_PRICE * (DEFAULT_SALE_PURCHASE_AMOUNT + 1),
+        );
+        // Make succesful purchase
+        PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
+        // Try making another one (that would exceed the cap)
+        PurchaseTokensOnSaleFixture::default()
+            .with_amount(1)
+            .call_and_assert(Err(Error::<Test>::SalePurchaseCapExceeded.into()));
     })
 }
 
@@ -618,7 +640,7 @@ fn succesful_sale_purchase_with_vesting_schedule() {
 }
 
 #[test]
-fn succesful_permissioned_sale_purchase() {
+fn succesful_private_sale_purchase() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {

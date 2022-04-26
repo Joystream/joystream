@@ -212,10 +212,13 @@ decl_module! {
         /// - `amount` cannot exceed number of tokens remaining on sale
         /// - sender's JOY balance must be >= `amount * sale.unit_price`
         /// - there are no tokens still reserved from the previous sale
-        /// - if sale has a whitelist:
+        /// - if sale.accessibility is Private:
         ///   - `access_proof` must be a valid merkle proof for sender's whitelist inclusion
         ///   - (total number of tokens already purchased by the account + `amount`) must not exceed
-        ///     `access_proof.participant.cap`
+        ///     sale participant's cap (`access_proof.participant.cap`)
+        /// - if sale.accessibility is Public:
+        ///   - `(total number of tokens already purchased by the account + `amount`) must not exceed
+        ///     sale's purchase cap per member
         ///
         /// Postconditions:
         /// - `amount * sale.unit_price` JOY tokens are transfered to `sale.tokens_source` account
@@ -249,15 +252,15 @@ decl_module! {
                 Error::<T>::NotEnoughTokensOnSale
             );
 
-            if let Some(whitelist_commitment) = sale.whitelist_commitment.as_ref() {
-                ensure!(access_proof.is_some(), Error::<T>::SaleAccessProofRequired);
-                let proof = access_proof.unwrap();
-                proof.verify::<T>(&sender, *whitelist_commitment)?;
-                Self::ensure_sale_participant_cap_not_exceeded(
+            let purchase_cap = Self::verify_sale_participant(&sale, &access_proof, &sender)?;
+
+            if let Some(cap) = purchase_cap {
+                Self::ensure_purchase_cap_not_exceeded(
                     token_id,
                     sale_id,
-                    &proof.participant,
-                    amount
+                    &sender,
+                    amount,
+                    cap
                 )?;
             }
 
@@ -650,15 +653,19 @@ impl<T: Trait> Module<T> {
         account_data.ensure_can_transfer::<T>(current_block, sale_params.upper_bound_quantity)?;
 
         // Optionally: Upload whitelist payload
-        if let Some(Some(payload)) = sale_params.whitelist.as_ref().map(|p| p.payload.clone()) {
-            let upload_params = UploadParameters::<T> {
-                bag_id: payload_upload_context.bag_id,
-                deletion_prize_source_account_id: payload_upload_context.uploader_account,
-                expected_data_size_fee: payload.expected_data_size_fee,
-                object_creation_list: vec![payload.object_creation_params],
-            };
-            // Validation + first mutation (!)
-            storage::Module::<T>::upload_data_objects(upload_params)?;
+        if let SaleAccessibilityParams::PrivateSale(whitelist_params) =
+            sale_params.accessibility.clone()
+        {
+            if let Some(payload) = whitelist_params.payload {
+                let upload_params = UploadParameters::<T> {
+                    bag_id: payload_upload_context.bag_id,
+                    deletion_prize_source_account_id: payload_upload_context.uploader_account,
+                    expected_data_size_fee: payload.expected_data_size_fee,
+                    object_creation_list: vec![payload.object_creation_params],
+                };
+                // Validation + first mutation (!)
+                storage::Module::<T>::upload_data_objects(upload_params)?;
+            }
         }
 
         // == MUTATION SAFE ==
@@ -725,25 +732,41 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub(crate) fn ensure_sale_participant_cap_not_exceeded(
+    pub(crate) fn ensure_purchase_cap_not_exceeded(
         token_id: T::TokenId,
         sale_id: TokenSaleId,
-        participant: &WhitelistedSaleParticipantOf<T>,
+        buyer: &T::AccountId,
         purchase_amount: <T as Trait>::Balance,
+        cap: <T as Trait>::Balance,
     ) -> DispatchResult {
-        if participant.cap.is_none() {
-            return Ok(());
-        }
-        let opt_acc_data = Self::ensure_account_data_exists(token_id, &participant.address).ok();
+        let opt_acc_data = Self::ensure_account_data_exists(token_id, &buyer).ok();
         let tokens_purchased = opt_acc_data.map_or(<T as Trait>::Balance::zero(), |ad| {
             ad.vesting_schedules
                 .get(&VestingSource::Sale(sale_id))
                 .map_or(<T as Trait>::Balance::zero(), |vs| vs.total_amount())
         });
         ensure!(
-            tokens_purchased.saturating_add(purchase_amount) <= participant.cap.unwrap(),
-            Error::<T>::SaleParticipantCapExceeded
+            tokens_purchased.saturating_add(purchase_amount) <= cap,
+            Error::<T>::SalePurchaseCapExceeded
         );
         Ok(())
+    }
+
+    pub(crate) fn verify_sale_participant(
+        sale: &TokenSaleOf<T>,
+        access_proof: &Option<SaleAccessProofOf<T>>,
+        sender: &T::AccountId,
+    ) -> Result<Option<<T as Trait>::Balance>, DispatchError> {
+        match sale.accessibility {
+            SaleAccessibility::PublicSale(cap_per_member) => Ok(cap_per_member),
+            SaleAccessibility::PrivateSale(whitelist_commitment) => {
+                if let Some(proof) = access_proof {
+                    proof.verify::<T>(&sender, whitelist_commitment)?;
+                    Ok(proof.participant.cap)
+                } else {
+                    Err(Error::<T>::SaleAccessProofRequired.into())
+                }
+            }
+        }
     }
 }
