@@ -169,7 +169,7 @@ impl CreateVideoFixture {
     pub fn default() -> Self {
         Self {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
-            actor: ContentActor::Member(DEFAULT_MEMBER_ACCOUNT_ID),
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             params: VideoCreationParameters::<Test> {
                 assets: None,
                 meta: None,
