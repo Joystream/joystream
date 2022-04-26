@@ -199,11 +199,11 @@ impl CreateVideoFixture {
         }
     }
 
-    pub fn with_nft_royalty(self, royalty_pct: u32, royalty_reward_account: AccountId) -> Self {
+    pub fn with_nft_royalty(self, royalty_pct: u32) -> Self {
         Self {
             params: VideoCreationParameters::<Test> {
                 auto_issue_nft: Some(NftIssuanceParameters::<Test> {
-                    royalty: Some((Perbill::from_percent(royalty_pct), royalty_reward_account)),
+                    royalty: Some(Perbill::from_percent(royalty_pct)),
                     ..self.params.auto_issue_nft.unwrap()
                 }),
                 ..self.params

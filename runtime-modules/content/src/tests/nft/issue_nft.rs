@@ -216,7 +216,7 @@ fn issue_nft_royalty_bounds_violated() {
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test> {
-                royalty: Some((Perbill::one(), DEFAULT_MEMBER_ACCOUNT_ID)),
+                royalty: Some(Perbill::one()),
                 ..NftIssuanceParameters::<Test>::default()
             },
         );
@@ -230,7 +230,7 @@ fn issue_nft_royalty_bounds_violated() {
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test> {
-                royalty: Some((Perbill::from_perthousand(1), DEFAULT_MEMBER_ACCOUNT_ID)),
+                royalty: Some(Perbill::from_perthousand(1)),
                 ..NftIssuanceParameters::<Test>::default()
             },
         );

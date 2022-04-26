@@ -25,10 +25,7 @@ fn setup_nft_on_sale_scenario() {
         ContentActor::Member(DEFAULT_MEMBER_ID),
         video_id,
         NftIssuanceParameters::<Test> {
-            royalty: Some((
-                Perbill::from_percent(DEFAULT_ROYALTY),
-                DEFAULT_MEMBER_ACCOUNT_ID
-            )),
+            royalty: Some(Perbill::from_percent(DEFAULT_ROYALTY),),
             ..Default::default()
         }
     ));
@@ -553,7 +550,7 @@ fn buy_now_ok_with_nft_owner_curator_group_owned_channel_and_non_set_account_and
 }
 
 #[test]
-pub fn proper_amount_is_burned_if_nft_owned_by_curator_channel_with_no_reward_account_and_royalty_is_specified(
+pub fn proceeds_are_burned_if_nft_owned_by_curator_channel_with_no_reward_account_and_royalty_specified(
 ) {
     with_default_mock_builder(|| {
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, 100u64);
@@ -566,35 +563,7 @@ pub fn proper_amount_is_burned_if_nft_owned_by_curator_channel_with_no_reward_ac
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
             .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
             .with_nft_in_sale(100u64)
-            .with_nft_royalty(1, DEFAULT_CURATOR_ACCOUNT_ID)
-            .call();
-
-        assert_ok!(Content::buy_nft(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            1u64,
-            SECOND_MEMBER_ID,
-            100u64,
-        ));
-
-        // royalty fee left
-        assert_eq!(Balances::<Test>::total_issuance(), 1u64,);
-    })
-}
-
-#[test]
-pub fn proper_amount_is_burned_if_nft_owned_by_curator_channel_with_no_reward_account_and_no_royalty_is_specified(
-) {
-    with_default_mock_builder(|| {
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, 100u64);
-        let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
-        CreateChannelFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .call();
-        CreateVideoFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .with_nft_in_sale(100u64)
+            .with_nft_royalty(1)
             .call();
 
         assert_ok!(Content::buy_nft(
@@ -617,7 +586,7 @@ pub fn nft_channel_member_owner_is_correctly_credited_after_sale() {
             .call();
         CreateVideoFixture::default()
             .with_nft_in_sale(100u64)
-            .with_nft_royalty(1, DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_nft_royalty(1)
             .call();
 
         assert_ok!(Content::buy_nft(
