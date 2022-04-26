@@ -469,14 +469,16 @@ impl<T: Trait> Module<T> {
         // payment is none if there is no royalty
         if let Some(royalty) = creator_royalty {
             // payment is none if creator channel has been deleted
-            if let Ok(channel) = Self::ensure_channel_exists(channel_id) {
+            if let Ok(channel) = Self::ensure_channel_exists(&channel_id) {
                 // use reward account if specified
                 if let Some(creator_reward_account) = channel.reward_account {
                     Some((royalty, creator_reward_account))
                 } else {
                     // otherwise resort to controller account for member owned channels
                     if let ChannelOwner::Member(member_id) = channel.owner {
-                        T::MemberAuthenticator::controller_account_id(member_id).ok()
+                        T::MemberAuthenticator::controller_account_id(member_id)
+                            .ok()
+                            .map(|reward_account| (royalty, reward_account))
                     } else {
                         // no royalty paid for curator owned channel with unspecified reward account
                         None
