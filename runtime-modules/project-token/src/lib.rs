@@ -45,7 +45,15 @@ pub trait Trait: frame_system::Trait {
 
     // TODO: Add frame_support::pallet_prelude::TypeInfo trait
     /// the Balance type used
-    type Balance: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug + Saturating + Sum;
+    type Balance: AtLeast32BitUnsigned
+        + FullCodec
+        + Copy
+        + Default
+        + Debug
+        + Saturating
+        + Sum
+        + From<u64>
+        + Into<u64>;
 
     /// The token identifier used
     type TokenId: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug;
@@ -189,7 +197,7 @@ decl_module! {
             // == MUTATION SAFE ==
 
             let now = Self::current_block();
-            let unclaimed_patronage = token_info.unclaimed_patronage_at_block::<T::BlockNumberToBalance>(now);
+            let unclaimed_patronage = token_info.unclaimed_patronage_at_block(now);
 
             AccountInfoByTokenAndAccount::<T>::remove(token_id, &account_id);
             TokenInfoById::<T>::mutate(token_id, |token_info| {
@@ -308,10 +316,10 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
             .rate
             .saturating_sub(block_rate_decrement);
         TokenInfoById::<T>::mutate(token_id, |token_info| {
-            token_info.set_new_patronage_rate_at_block::<T::BlockNumberToBalance>(new_rate, now);
+            token_info.set_new_patronage_rate_at_block(new_rate, now);
         });
 
-        let new_yearly_rate = new_rate.to_yearly_rate(T::BlocksPerYear::get());
+        let new_yearly_rate = new_rate.to_yearly_rate_representation(T::BlocksPerYear::get());
         Self::deposit_event(RawEvent::PatronageRateDecreasedTo(
             token_id,
             new_yearly_rate,
@@ -334,8 +342,7 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
         Self::ensure_account_data_exists(token_id, &to_account).map(|_| ())?;
 
         let now = Self::current_block();
-        let unclaimed_patronage =
-            token_info.unclaimed_patronage_at_block::<T::BlockNumberToBalance>(now);
+        let unclaimed_patronage = token_info.unclaimed_patronage_at_block(now);
 
         if unclaimed_patronage.is_zero() {
             return Ok(());

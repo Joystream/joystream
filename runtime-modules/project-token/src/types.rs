@@ -6,7 +6,7 @@ use frame_support::{
 };
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, Saturating, Zero};
 use sp_runtime::traits::{Convert, Hash};
-use sp_runtime::{Perbill, Percent};
+use sp_runtime::{Permill, Perquintill, SaturatedConversion};
 use sp_std::collections::btree_map::{BTreeMap, IntoIter, Iter};
 use sp_std::convert::From;
 use sp_std::iter::Sum;
@@ -122,11 +122,11 @@ pub enum MerkleSide {
 
 /// Yearly rate used for patronage info initialization
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy, Default)]
-pub struct YearlyRate(pub Percent);
+pub struct YearlyRate(pub Permill);
 
 /// Block rate used for patronage accounting
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy, PartialOrd, Default)]
-pub struct BlockRate(pub Perbill);
+pub struct BlockRate(pub Perquintill);
 
 /// Wrapper around a merkle proof path
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -232,7 +232,7 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, ReserveBalance>
 }
 /// Token Data implementation
 impl<
-        Balance: Zero + Copy + Saturating + Debug,
+        Balance: Zero + Copy + Saturating + Debug + From<u64> + Into<u64>,
         Hash,
         BlockNumber: Copy + Saturating + PartialOrd + AtLeast32BitUnsigned,
     > TokenData<Balance, Hash, BlockNumber>
@@ -263,30 +263,19 @@ impl<
     }
 
     /// Computes: period * rate * supply + tally
-    pub(crate) fn unclaimed_patronage_at_block<
-        BlockNumberToBalance: Convert<BlockNumber, Balance>,
-    >(
-        &self,
-        block: BlockNumber,
-    ) -> Balance {
+    pub(crate) fn unclaimed_patronage_at_block(&self, block: BlockNumber) -> Balance {
         let blocks = block.saturating_sub(self.patronage_info.last_unclaimed_patronage_tally_block);
-        let unclaimed_patronage_percent: BlockNumber = self.patronage_info.rate.for_period(blocks);
-        let unclaimed_patronage_percent_bal: Balance =
-            BlockNumberToBalance::convert(unclaimed_patronage_percent);
-
-        unclaimed_patronage_percent_bal
-            .saturating_mul(self.supply)
-            .saturating_add(self.patronage_info.unclaimed_patronage_tally_amount)
+        let unclaimed_patronage_percent = self.patronage_info.rate.for_period(blocks);
+        let tmp: Balance = unclaimed_patronage_percent
+            .mul_floor::<u64>(self.supply.saturated_into())
+            .into();
+        tmp.saturating_add(self.patronage_info.unclaimed_patronage_tally_amount)
     }
 
-    pub fn set_new_patronage_rate_at_block<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
-        &mut self,
-        new_rate: BlockRate,
-        block: BlockNumber,
-    ) {
+    pub fn set_new_patronage_rate_at_block(&mut self, new_rate: BlockRate, block: BlockNumber) {
         // update tally according to old rate
         self.patronage_info.unclaimed_patronage_tally_amount =
-            self.unclaimed_patronage_at_block::<BlockNumberToBalance>(block);
+            self.unclaimed_patronage_at_block(block);
         self.patronage_info.last_unclaimed_patronage_tally_block = block;
         self.patronage_info.rate = new_rate;
     }
@@ -301,7 +290,7 @@ impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, H
     ) -> TokenData<Balance, Hash, BlockNumber> {
         // validation
         let rate = if self.patronage_rate.0.is_zero() {
-            BlockRate(Perbill::zero())
+            BlockRate(Perquintill::zero())
         } else {
             BlockRate::from_yearly_rate(self.patronage_rate, T::BlocksPerYear::get())
         };
@@ -375,23 +364,21 @@ impl<AccountId, Balance> From<Transfers<AccountId, Balance>>
 /// Block Rate bare minimum impementation
 impl BlockRate {
     pub fn from_yearly_rate(r: YearlyRate, blocks_per_year: u32) -> Self {
-        BlockRate(Perbill::from_parts(
-            (r.0.deconstruct() as u32).saturating_mul(blocks_per_year),
+        BlockRate(Perquintill::from_rational_approximation(
+            1u64,
+            r.0.saturating_reciprocal_mul(blocks_per_year as u64),
         ))
     }
 
-    pub fn to_yearly_rate(self, blocks_per_year: u32) -> YearlyRate {
-        use sp_std::ops::Div;
-        YearlyRate(Percent::from_parts(
-            self.0.deconstruct().div(blocks_per_year) as u8,
-        ))
+    pub fn to_yearly_rate_representation(self, blocks_per_year: u32) -> Perquintill {
+        self.for_period(blocks_per_year)
     }
 
-    pub fn for_period<BlockNumber>(self, blocks: BlockNumber) -> BlockNumber
+    pub fn for_period<BlockNumber>(self, blocks: BlockNumber) -> Perquintill
     where
         BlockNumber: AtLeast32BitUnsigned + Clone,
     {
-        self.0.mul_floor(blocks)
+        Perquintill::from_parts(self.0.deconstruct().saturating_mul(blocks.saturated_into()))
     }
 
     pub fn saturating_sub(self, other: Self) -> Self {
