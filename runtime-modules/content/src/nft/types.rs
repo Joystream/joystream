@@ -107,7 +107,6 @@ pub struct NftIssuanceParametersRecord<MemberId, InitTransactionalStatus> {
 pub type NftIssuanceParameters<T> = NftIssuanceParametersRecord<
     <T as common::MembershipTypes>::MemberId,
     InitTransactionalStatus<T>,
-    <T as frame_system::Trait>::AccountId,
 >;
 
 /// Initial Transactional status for the Nft: See InitialTransactionalStatusRecord above
@@ -497,7 +496,6 @@ pub type Nft<T> = OwnedNft<
     TransactionalStatus<T>,
     <T as common::MembershipTypes>::MemberId,
     <T as Trait>::OpenAuctionId,
-    <T as frame_system::Trait>::AccountId,
 >;
 
 pub type TransactionalStatus<T> = TransactionalStatusRecord<

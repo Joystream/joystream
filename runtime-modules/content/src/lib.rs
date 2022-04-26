@@ -1645,8 +1645,6 @@ decl_module! {
             let maybe_old_bid = Self::ensure_open_bid_exists(video_id, participant_id).ok();
             open_auction.ensure_can_make_bid::<T>(current_block, bid_amount, &maybe_old_bid)?;
 
-            let creator_reward_account = Content::ensure_owner
-
             //
             // == MUTATION_SAFE ==
             //
@@ -1663,7 +1661,6 @@ decl_module! {
                     // complete auction @ buy_now_price
                     let updated_nft = Self::complete_auction(
                         nft,
-                        creator_reward_account,
                         video.in_channel,
                         participant_id,
                         buy_now_price,
@@ -2045,13 +2042,12 @@ decl_module! {
 
             // account_id where the nft offer price is deposited
             let nft_owner_account = Self::ensure_owner_account_id(video.in_channel, &nft).ok();
-
             //
             // == MUTATION SAFE ==
             //
 
             // Complete nft offer
-            let nft = Self::complete_nft_offer(video.in_channel, nft, nft_owner_account, receiver_account_id);
+            let nft = Self::complete_nft_offer(nft, video.in_channel, nft_owner_account, receiver_account_id);
 
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
 
@@ -2128,8 +2124,8 @@ decl_module! {
 
             // Buy nft
             let nft = Self::buy_now(
-                video.in_channel,
                 nft,
+                video.in_channel,
                 old_nft_owner_account_id,
                 participant_account_id,
                 participant_id
@@ -2340,13 +2336,13 @@ impl<T: Trait> Module<T> {
         };
 
         // Enure royalty bounds satisfied, if provided
-        if let Some((ref royalty, _)) = issuance_params.royalty {
+        if let Some(ref royalty) = issuance_params.royalty {
             Self::ensure_royalty_bounds_satisfied(royalty.to_owned())?;
         }
 
         Ok(Nft::<T>::new(
             nft_owner,
-            issuance_params.royalty.clone(),
+            issuance_params.royalty,
             transactional_status,
         ))
     }
