@@ -772,7 +772,7 @@
         "reason": "Hash"
     },
     "ModeratorSet": "BTreeSet<MemberId>",
-    "Royalty": "Perbill",
+    "Royalty": "(Perbill,GenericAccountId)",
     "EnglishAuctionParams": {
         "starting_price": "u128",
         "buy_now_price": "Option<u128>",
