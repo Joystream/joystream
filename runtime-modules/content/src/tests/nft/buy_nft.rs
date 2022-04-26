@@ -609,35 +609,12 @@ pub fn proper_amount_is_burned_if_nft_owned_by_curator_channel_with_no_reward_ac
 }
 
 #[test]
-pub fn nft_member_owner_is_correctly_credited_after_sale() {
-    with_default_mock_builder(|| {
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, 100u64);
-        CreateChannelFixture::default().call();
-        CreateVideoFixture::default()
-            .with_nft_in_sale(100u64)
-            .with_nft_royalty(1, DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_nft_owner(DEFAULT_CURATOR_ID)
-            .call();
-
-        assert_ok!(Content::buy_nft(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            1u64,
-            SECOND_MEMBER_ID,
-            100u64,
-        ));
-
-        assert_eq!(
-            Balances::<Test>::usable_balance(DEFAULT_CURATOR_ACCOUNT_ID),
-            98u64
-        );
-    })
-}
-
-#[test]
 pub fn nft_channel_member_owner_is_correctly_credited_after_sale() {
     with_default_mock_builder(|| {
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, 100u64);
-        CreateChannelFixture::default().call();
+        CreateChannelFixture::default()
+            .with_reward_account(DEFAULT_MEMBER_ACCOUNT_ID)
+            .call();
         CreateVideoFixture::default()
             .with_nft_in_sale(100u64)
             .with_nft_royalty(1, DEFAULT_MEMBER_ACCOUNT_ID)
