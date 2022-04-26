@@ -2040,6 +2040,7 @@ decl_module! {
             // Ensure new pending offer is available to proceed
             Self::ensure_new_pending_offer_available_to_proceed(&nft, &receiver_account_id)?;
 
+            // account_id where the nft offer price is deposited
             let nft_owner_account = Self::ensure_owner_account_id(video.in_channel, &nft).ok();
 
             //
@@ -2115,6 +2116,7 @@ decl_module! {
             // Ensure given participant can buy nft now
             Self::ensure_can_buy_now(&nft, &participant_account_id, price_commit)?;
 
+            // seller account
             let old_nft_owner_account_id = Self::ensure_owner_account_id(video.in_channel, &nft).ok();
 
             //
