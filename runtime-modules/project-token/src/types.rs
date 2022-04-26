@@ -316,7 +316,7 @@ impl<Balance: Zero + Copy + PartialOrd, Hash> TokenIssuanceParameters<Balance, H
             transfer_policy: self.transfer_policy,
             symbol: self.symbol,
             patronage_info,
-            accounts_number: 0u64, // since it is issued together with the owner
+            accounts_number: 0u64,
         }
     }
 }
