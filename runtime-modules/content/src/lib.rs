@@ -1659,9 +1659,11 @@ decl_module! {
                     )?;
 
                     // complete auction @ buy_now_price
+                    let royalty_payment = Self::build_royalty_payment(&video, nft.creator_royalty);
                     let updated_nft = Self::complete_auction(
                         nft,
                         video.in_channel,
+                        royalty_payment,
                         participant_id,
                         buy_now_price,
                     );
@@ -1765,9 +1767,11 @@ decl_module! {
                     )?;
 
                     // complete auction @ buy_now_price
+                    let royalty_payment = Self::build_royalty_payment(&video, nft.creator_royalty);
                     let updated_nft = Self::complete_auction(
                         nft,
                         video.in_channel,
+                        royalty_payment,
                         participant_id,
                         buy_now_price,
                     );
@@ -1875,9 +1879,11 @@ decl_module! {
             //
 
             // Complete auction
+            let royalty_payment = Self::build_royalty_payment(&video, nft.creator_royalty);
             let updated_nft = Self::complete_auction(
                 nft,
                 video.in_channel,
+                royalty_payment,
                 top_bidder_id,
                 top_bid.amount
             );
@@ -1926,9 +1932,11 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            let royalty_payment = Self::build_royalty_payment(&video, nft.creator_royalty);
             let updated_nft = Self::complete_auction(
                 nft,
                 video.in_channel,
+                royalty_payment,
                 winner_id,
                 bid.amount,
             );
@@ -2044,7 +2052,8 @@ decl_module! {
             //
 
             // Complete nft offer
-            let nft = Self::complete_nft_offer(nft, video.in_channel, nft_owner_account, receiver_account_id);
+            let royalty_payment = Self::build_royalty_payment(&video, nft.creator_royalty);
+            let nft = Self::complete_nft_offer(nft, royalty_payment, nft_owner_account, receiver_account_id);
 
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
 
@@ -2120,9 +2129,10 @@ decl_module! {
             //
 
             // Buy nft
+            let royalty_payment = Self::build_royalty_payment(&video, nft.creator_royalty);
             let nft = Self::buy_now(
                 nft,
-                video.in_channel,
+                royalty_payment,
                 old_nft_owner_account_id,
                 participant_account_id,
                 participant_id

@@ -284,15 +284,12 @@ impl<T: Trait> Module<T> {
     /// Buy nft
     pub(crate) fn buy_now(
         nft: Nft<T>,
-        creator_channel_id: T::ChannelId,
+        royalty_payment: Option<(Royalty, T::AccountId)>,
         old_owner_account_id: Option<T::AccountId>,
         new_owner_account_id: T::AccountId,
         new_owner: T::MemberId,
     ) -> Nft<T> {
         if let TransactionalStatus::<T>::BuyNow(price) = &nft.transactional_status {
-            let royalty_payment =
-                Self::build_royalty_payment_for_channel(creator_channel_id, nft.creator_royalty);
-
             Self::complete_payment(
                 royalty_payment,
                 price.to_owned(),
@@ -308,16 +305,13 @@ impl<T: Trait> Module<T> {
     /// Completes nft offer
     pub(crate) fn complete_nft_offer(
         mut nft: Nft<T>,
-        creator_channel_id: T::ChannelId,
+        royalty_payment: Option<(Royalty, T::AccountId)>,
         owner_account_id: Option<T::AccountId>,
         new_owner_account_id: T::AccountId,
     ) -> Nft<T> {
         if let TransactionalStatus::<T>::InitiatedOfferToMember(to, price) =
             &nft.transactional_status
         {
-            let royalty_payment =
-                Self::build_royalty_payment_for_channel(creator_channel_id, nft.creator_royalty);
-
             if let Some(price) = price {
                 Self::complete_payment(
                     royalty_payment,
@@ -370,13 +364,12 @@ impl<T: Trait> Module<T> {
     pub(crate) fn complete_auction(
         nft: Nft<T>,
         in_channel: T::ChannelId,
+        royalty_payment: Option<(Royalty, T::AccountId)>,
         winner_id: T::MemberId,
         amount: BalanceOf<T>,
     ) -> Nft<T> {
         let account_deposit_into = Self::ensure_owner_account_id(in_channel, &nft).ok();
         let account_withdraw_from = ContentTreasury::<T>::module_account_id();
-        let royalty_payment =
-            Self::build_royalty_payment_for_channel(in_channel, nft.creator_royalty);
 
         Self::complete_payment(
             royalty_payment,
@@ -462,30 +455,26 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub(crate) fn build_royalty_payment_for_channel(
-        channel_id: T::ChannelId,
+    pub(crate) fn build_royalty_payment(
+        video: &Video<T>,
         creator_royalty: Option<Royalty>,
     ) -> Option<(Royalty, T::AccountId)> {
         // payment is none if there is no royalty
         if let Some(royalty) = creator_royalty {
-            // payment is none if creator channel has been deleted
-            if let Ok(channel) = Self::ensure_channel_exists(&channel_id) {
-                // use reward account if specified
-                if let Some(creator_reward_account) = channel.reward_account {
-                    Some((royalty, creator_reward_account))
-                } else {
-                    // otherwise resort to controller account for member owned channels
-                    if let ChannelOwner::Member(member_id) = channel.owner {
-                        T::MemberAuthenticator::controller_account_id(member_id)
-                            .ok()
-                            .map(|reward_account| (royalty, reward_account))
-                    } else {
-                        // no royalty paid for curator owned channel with unspecified reward account
-                        None
-                    }
-                }
+            let channel = Self::channel_by_id(&video.in_channel);
+            // use reward account if specified
+            if let Some(creator_reward_account) = channel.reward_account {
+                Some((royalty, creator_reward_account))
             } else {
-                None
+                // otherwise resort to controller account for member owned channels
+                if let ChannelOwner::Member(member_id) = channel.owner {
+                    T::MemberAuthenticator::controller_account_id(member_id)
+                        .ok()
+                        .map(|reward_account| (royalty, reward_account))
+                } else {
+                    // no royalty paid for curator owned channel with unspecified reward account
+                    None
+                }
             }
         } else {
             None
