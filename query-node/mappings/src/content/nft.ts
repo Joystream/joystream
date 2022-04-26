@@ -44,6 +44,7 @@ import BN from 'bn.js'
 import { PERBILL_ONE_PERCENT } from '../temporaryConstants'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
 import { convertContentActorToChannelOrNftOwner, convertContentActor } from './utils'
+import _ from 'lodash'
 
 async function getExistingEntity<Type extends Video | Membership>(
   store: DatabaseManager,
@@ -282,8 +283,8 @@ async function finishAuction(
     ? findOpenAuctionWinningBid(auction.bids || [], openAuctionWinner.bidAmount, openAuctionWinner.winnerId, videoId)
     : (auction.topBid as Bid)
 
-  // load all bidders of auction
-  const bidders = (auction.bids || []).map((bid) => bid.bidder)
+  // load all unique bidders of auction
+  const bidders = (_.uniqBy(auction.bids, (b) => b.bidder.id) || []).map((bid) => bid.bidder)
 
   // update NFT's transactional status
   const { nft } = await resetNftTransactionalStatusFromVideo(
