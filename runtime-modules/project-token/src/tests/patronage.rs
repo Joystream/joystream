@@ -1,6 +1,6 @@
 #[cfg(test)]
 use frame_support::{assert_noop, assert_ok};
-use sp_runtime::{Perbill, Percent};
+use sp_runtime::{Permill, Perquintill};
 
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
@@ -56,8 +56,7 @@ fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
         increase_block_number_by(blocks);
 
         assert_eq!(
-            Token::token_info_by_id(token_id)
-                .unclaimed_patronage_at_block::<Block2Balance>(System::block_number()),
+            Token::token_info_by_id(token_id).unclaimed_patronage_at_block(System::block_number()),
             rate.0 * blocks * init_supply,
         );
     })
@@ -159,42 +158,15 @@ fn decrease_patronage_ok_with_event_deposit() {
         .with_token(token_id, params.build())
         .build();
 
-    build_test_externalities(config).execute_with(|| {
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_by(
-            token_id, decrement,
-        );
-
-        last_event_eq!(RawEvent::PatronageRateDecreasedTo(
-            token_id,
-            yearly_rate!(30),
-        ));
-    })
-}
-
-#[test]
-fn decrease_patronage_ok_with_correct_final_rate() {
-    let init_rate = yearly_rate!(50);
-    let token_id = token!(1);
-    let decrement = yearly_rate!(20);
-
-    let params = TokenDataBuilder::new_empty()
-        .with_patronage_rate(BlockRate::from_yearly_rate(init_rate, BlocksPerYear::get()));
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, params.build())
-        .build();
+    let final_rate = BlockRate::from_yearly_rate(yearly_rate!(30), BlocksPerYear::get())
+        .to_yearly_rate_representation(BlocksPerYear::get());
 
     build_test_externalities(config).execute_with(|| {
         let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_by(
             token_id, decrement,
         );
 
-        assert_eq!(
-            yearly_rate!(30),
-            Token::token_info_by_id(token_id)
-                .patronage_info
-                .rate
-                .to_yearly_rate(BlocksPerYear::get())
-        )
+        last_event_eq!(RawEvent::PatronageRateDecreasedTo(token_id, final_rate));
     })
 }
 
@@ -371,8 +343,7 @@ fn claim_patronage_ok_with_unclaimed_patronage_reset() {
         );
 
         assert_eq!(
-            Token::token_info_by_id(token_id)
-                .unclaimed_patronage_at_block::<Block2Balance>(System::block_number()),
+            Token::token_info_by_id(token_id).unclaimed_patronage_at_block(System::block_number()),
             balance!(0),
         );
     })

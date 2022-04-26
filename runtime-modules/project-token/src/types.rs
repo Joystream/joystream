@@ -5,7 +5,7 @@ use frame_support::{
     traits::Get,
 };
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, Saturating, Zero};
-use sp_runtime::traits::{Convert, Hash};
+use sp_runtime::traits::Hash;
 use sp_runtime::{Permill, Perquintill, SaturatedConversion};
 use sp_std::collections::btree_map::{BTreeMap, IntoIter, Iter};
 use sp_std::convert::From;

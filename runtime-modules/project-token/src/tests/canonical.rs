@@ -1,6 +1,6 @@
 #![cfg(test)]
 use frame_support::{assert_noop, assert_ok, StorageDoubleMap, StorageMap};
-use sp_runtime::{traits::Hash, Percent};
+use sp_runtime::{traits::Hash, Permill};
 
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;

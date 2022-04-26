@@ -191,14 +191,14 @@ macro_rules! balance {
 #[macro_export]
 macro_rules! rate {
     ($r:expr) => {
-        BlockRate(Perbill::from_percent($r as u32))
+        BlockRate(Perquintill::from_percent($r))
     };
 }
 
 #[macro_export]
 macro_rules! yearly_rate {
     ($r:expr) => {
-        YearlyRate(Percent::from_percent($r as u8))
+        YearlyRate(Permill::from_percent($r))
     };
 }
 

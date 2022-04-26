@@ -1,6 +1,6 @@
 use sp_arithmetic::traits::{One, Saturating, Zero};
 use sp_runtime::traits::Hash;
-use sp_runtime::{Perbill, Percent, Permill, Perquintill};
+use sp_runtime::Perquintill;
 use sp_std::collections::btree_map::BTreeMap;
 
 use crate::tests::mock::*;
@@ -64,7 +64,7 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash: Default, BlockNumber:
             offering_state: OfferingState::Idle,
             transfer_policy: TransferPolicy::<Hash>::Permissionless,
             patronage_info: PatronageData::<Balance, BlockNumber> {
-                rate: BlockRate(Perbill::zero()),
+                rate: BlockRate(Perquintill::zero()),
                 unclaimed_patronage_tally_amount: Balance::zero(),
                 last_unclaimed_patronage_tally_block: BlockNumber::one(),
             },
@@ -222,37 +222,4 @@ fn adding_account_with_free_balance_also_adds_supply() {
 
     let supply = builder.token_info_by_id.last().unwrap().1.supply;
     assert_eq!(supply, 15);
-}
-
-#[test]
-fn perquintill_to_permill_conversion_test() {
-    let test = |x: Perquintill| -> Permill {
-        let parts = (x.deconstruct() >> 40) as u32;
-        Permill::from_parts(parts)
-    };
-
-    assert_eq!(
-        Permill::from_percent(15),
-        test(Perquintill::from_percent(15))
-    );
-    assert_eq!(
-        Permill::from_perthousand(15),
-        test(Perquintill::from_perthousand(15))
-    );
-
-    // edge cases
-    assert_eq!(Permill::from_percent(0), test(Perquintill::from_percent(0)));
-    assert_eq!(
-        Permill::from_perthousand(0),
-        test(Perquintill::from_perthousand(0))
-    );
-
-    assert_eq!(
-        Permill::from_percent(100),
-        test(Perquintill::from_percent(100))
-    );
-    assert_eq!(
-        Permill::from_perthousand(1000),
-        test(Perquintill::from_perthousand(1000))
-    );
 }
