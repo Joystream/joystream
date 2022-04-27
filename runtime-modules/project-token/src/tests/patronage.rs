@@ -290,6 +290,31 @@ fn claim_patronage_ok() {
 }
 
 #[test]
+fn claim_patronage_ok_with_supply_greater_than_u64_max() {
+    let token_id = token!(1);
+    let owner = account!(1);
+    let (rate, blocks) = (rate!(10), block!(10));
+    let supply = balance!(u64::MAX as u128 + 1u128);
+
+    let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token_and_owner(token_id, params.build(), owner, supply)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_block_number_by(blocks);
+
+        let result =
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
+                token_id, owner,
+            );
+
+        assert_ok!(result);
+    })
+}
+
+#[test]
 fn claim_patronage_ok_with_event_deposit() {
     let token_id = token!(1);
     let (rate, blocks) = (rate!(10), block!(10));

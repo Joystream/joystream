@@ -9,7 +9,7 @@ use frame_support::{
 use frame_system::ensure_signed;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
-    traits::{AccountIdConversion, Convert},
+    traits::{AccountIdConversion, Convert, UniqueSaturatedInto},
     ModuleId,
 };
 use sp_std::collections::btree_map::BTreeMap;
@@ -53,7 +53,7 @@ pub trait Trait: frame_system::Trait {
         + Saturating
         + Sum
         + From<u64>
-        + Into<u64>;
+        + UniqueSaturatedInto<u64>;
 
     /// The token identifier used
     type TokenId: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug;

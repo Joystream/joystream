@@ -76,7 +76,7 @@ parameter_types! {
     pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token");
     pub const BlocksPerYear: u32 = 52594921; // blocks every 6s
     // constants for balances::Trait
-    pub const ExistentialDeposit: u64 = 10;
+    pub const ExistentialDeposit: u128 = 10;
 }
 
 impl frame_system::Trait for Test {
@@ -100,7 +100,7 @@ impl frame_system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type AccountData = balances::AccountData<u64>;
+    type AccountData = balances::AccountData<u128>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type PalletInfo = ();
@@ -109,7 +109,7 @@ impl frame_system::Trait for Test {
 
 impl Trait for Test {
     type Event = TestEvent;
-    type Balance = u64;
+    type Balance = u128;
     type TokenId = u64;
     type BlockNumberToBalance = Block2Balance;
     type ModuleId = TokenModuleId;
@@ -120,7 +120,7 @@ impl Trait for Test {
 
 /// Implement pallet balances trait for Test
 impl balances::Trait for Test {
-    type Balance = u64;
+    type Balance = u128;
     type DustRemoval = ();
     type Event = TestEvent;
     type ExistentialDeposit = ExistentialDeposit;
@@ -170,21 +170,21 @@ pub fn increase_block_number_by(n: u64) {
 #[macro_export]
 macro_rules! account {
     ($acc:expr) => {
-        AccountId::from($acc as u32)
+        AccountId::from($acc as u64)
     };
 }
 
 #[macro_export]
 macro_rules! token {
     ($id:expr) => {
-        TokenId::from($id as u32)
+        TokenId::from($id as u64)
     };
 }
 
 #[macro_export]
 macro_rules! balance {
     ($bal:expr) => {
-        Balance::from($bal as u32)
+        Balance::from($bal as u128)
     };
 }
 
@@ -205,7 +205,7 @@ macro_rules! yearly_rate {
 #[macro_export]
 macro_rules! joy {
     ($bal:expr) => {
-        ReserveBalance::from($bal as u32)
+        ReserveBalance::from($bal as u128)
     };
 }
 
@@ -350,7 +350,7 @@ pub struct Block2Balance {}
 
 impl Convert<BlockNumber, Balance> for Block2Balance {
     fn convert(block: BlockNumber) -> Balance {
-        block as u64
+        block as u128
     }
 }
 

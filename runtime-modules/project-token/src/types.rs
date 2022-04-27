@@ -4,7 +4,9 @@ use frame_support::{
     ensure,
     traits::Get,
 };
-use sp_arithmetic::traits::{AtLeast32BitUnsigned, Saturating, Zero};
+use sp_arithmetic::traits::{
+    AtLeast32BitUnsigned, Saturating, UniqueSaturatedInto, Unsigned, Zero,
+};
 use sp_runtime::traits::Hash;
 use sp_runtime::{Permill, Perquintill, SaturatedConversion};
 use sp_std::collections::btree_map::{BTreeMap, IntoIter, Iter};
@@ -232,7 +234,7 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, ReserveBalance>
 }
 /// Token Data implementation
 impl<
-        Balance: Zero + Copy + Saturating + Debug + From<u64> + Into<u64>,
+        Balance: Zero + Copy + Saturating + Debug + From<u64> + UniqueSaturatedInto<u64> + Unsigned,
         Hash,
         BlockNumber: Copy + Saturating + PartialOrd + AtLeast32BitUnsigned,
     > TokenData<Balance, Hash, BlockNumber>
