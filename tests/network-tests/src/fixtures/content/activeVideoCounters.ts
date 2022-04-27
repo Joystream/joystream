@@ -95,6 +95,14 @@ export class ActiveVideoCountersFixture extends BaseQueryNodeFixture {
     // end
     */
 
+    const oneDeletedItemCount = 1
+    this.debug('Delete video')
+    await this.cli.deleteVideo(this.videosData[0].videoId)
+
+    // check that deletion works
+    this.debug('Checking channels active video counter decreased')
+    await this.assertCounterMatch('channel', this.channelIds[0], videoCount - oneDeletedItemCount)
+
     this.debug('Done')
   }
 
