@@ -489,7 +489,7 @@ fn claim_patroage_ok_with_tally_amount_update_after_account_removed() {
     let (token_id, owner_balance) = (token!(1), balance!(100));
     let (owner, user_account) = (account!(1), account!(2));
     let (rate, blocks) = (rate!(10), block!(10));
-    let amount_burned = balance!(100);
+    let amount_to_burn = balance!(100);
 
     let token_info = TokenDataBuilder::new_empty()
         .with_patronage_rate(rate)
@@ -497,10 +497,14 @@ fn claim_patroage_ok_with_tally_amount_update_after_account_removed() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token_and_owner(token_id, token_info, owner, owner_balance)
-        .with_account(user_account, AccountData::new_with_liquidity(amount_burned))
+        .with_account(
+            user_account,
+            AccountData::new_with_liquidity(amount_to_burn),
+        )
         .build();
 
-    let init_supply = amount_burned + owner_balance;
+    // 10%(rate) * 10(blocks) * 200(init_supply + amount_to_burn)
+    let expected_tally = balance!(200);
 
     build_test_externalities(config).execute_with(|| {
         increase_block_number_by(blocks);
@@ -511,7 +515,7 @@ fn claim_patroage_ok_with_tally_amount_update_after_account_removed() {
             Token::token_info_by_id(token_id)
                 .patronage_info
                 .unclaimed_patronage_tally_amount,
-            rate.0 * blocks * init_supply,
+            expected_tally,
         );
     })
 }
