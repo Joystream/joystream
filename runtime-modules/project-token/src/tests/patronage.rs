@@ -7,8 +7,8 @@ use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
 use crate::types::{BlockRate, TokenIssuanceParametersOf, YearlyRate};
 use crate::{
-    account, balance, block, last_event_eq, origin, rate, simmetric_diff, token, yearly_rate,
-    Error, RawEvent,
+    abs_diff, account, balance, block, last_event_eq, origin, rate, token, yearly_rate, Error,
+    RawEvent,
 };
 
 #[test]
@@ -193,8 +193,8 @@ fn decrease_patronage_ok_with_new_patronage_rate_correctly_approximated() {
         );
 
         let approx = Token::token_info_by_id(token_id).patronage_info.rate;
-        let simm_diff = simmetric_diff!(approx.0.deconstruct(), expected.0.deconstruct());
-        assert!(simm_diff < 1_000u64); // accuracy: 1e-13 %
+        let abs_diff = abs_diff!(approx.0.deconstruct(), expected.0.deconstruct());
+        assert!(abs_diff < 10u64);
     })
 }
 
