@@ -544,7 +544,7 @@ fn dust_account_ok_with_account_removed() {
 }
 
 #[test]
-fn dust_account_ok_with_correct_bloat_bond_refunded() {
+fn dust_account_ok_by_user_with_correct_bloat_bond_refunded() {
     let (token_id, init_supply) = (token!(1), balance!(100));
     let treasury = Token::bloat_bond_treasury_account_id();
     let (owner, user_account, other_user_account) = (account!(1), account!(2), account!(3));
@@ -750,6 +750,59 @@ fn issue_token_fails_with_existing_symbol() {
             <Token as PalletToken<AccountId, Policy, IssuanceParams>>::issue_token(owner, params);
 
         assert_noop!(result, Error::<Test>::TokenSymbolAlreadyInUse);
+    })
+}
+
+#[test]
+fn issue_token_fails_with_insufficient_balance_for_bloat_bond() {
+    let token_id = token!(1);
+    let owner = account!(1);
+    let bloat_bond = joy!(100);
+
+    let params = TokenIssuanceParametersOf::<Test> {
+        symbol: Hashing::hash_of(&token_id),
+        ..Default::default()
+    };
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::issue_token(
+            owner,
+            params.clone(),
+        );
+        assert_noop!(result, Error::<Test>::InsufficientBalanceForBloatBond);
+    })
+}
+
+#[test]
+fn issue_token_ok_with_bloat_bond_transferred() {
+    let token_id = token!(1);
+    let owner = account!(1);
+    let (treasury, bloat_bond) = (Token::bloat_bond_treasury_account_id(), joy!(100));
+
+    let params = TokenIssuanceParametersOf::<Test> {
+        symbol: Hashing::hash_of(&token_id),
+        ..Default::default()
+    };
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&owner, bloat_bond + ExistentialDeposit::get());
+
+        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::issue_token(
+            owner,
+            params.clone(),
+        );
+
+        assert_eq!(
+            Balances::usable_balance(treasury),
+            bloat_bond + ExistentialDeposit::get()
+        );
+        assert_eq!(Balances::usable_balance(owner), ExistentialDeposit::get());
     })
 }
 

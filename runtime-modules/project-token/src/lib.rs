@@ -193,7 +193,6 @@ decl_module! {
                 &account_to_remove_info,
             )?;
 
-
             // == MUTATION SAFE ==
 
             let now = Self::current_block();
@@ -388,6 +387,7 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
         let initial_supply = issuance_parameters.initial_supply;
         let token_data = issuance_parameters.build::<_, T>(now);
 
+        let bloat_bond = Self::bloat_bond();
         let treasury = Self::bloat_bond_treasury_account_id();
         Self::ensure_can_transfer_reserve(&owner_account_id, &treasury, bloat_bond)?;
 
