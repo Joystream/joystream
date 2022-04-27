@@ -147,6 +147,7 @@ fn decrease_patronage_ok_with_tally_count_updated() {
     })
 }
 
+// for correct final rate approximation see next test
 #[test]
 fn decrease_patronage_ok_with_event_deposit() {
     let init_rate = yearly_rate!(50);
@@ -159,14 +160,15 @@ fn decrease_patronage_ok_with_event_deposit() {
         .with_token(token_id, params.build())
         .build();
 
-    let final_rate = BlockRate::from_yearly_rate(yearly_rate!(30), BlocksPerYear::get())
-        .to_yearly_rate_representation(BlocksPerYear::get());
-
     build_test_externalities(config).execute_with(|| {
         let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_by(
             token_id, decrement,
         );
 
+        let final_rate = Token::token_info_by_id(token_id)
+            .patronage_info
+            .rate
+            .to_yearly_rate_representation(BlocksPerYear::get());
         last_event_eq!(RawEvent::PatronageRateDecreasedTo(token_id, final_rate));
     })
 }
