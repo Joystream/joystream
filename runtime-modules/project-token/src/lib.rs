@@ -17,7 +17,6 @@ use sp_runtime::{
 };
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::Sum;
-use storage::{DataObjectStorage, UploadParameters};
 
 // crate modules
 mod errors;
@@ -282,13 +281,10 @@ decl_module! {
         /// - `amount` cannot exceed number of tokens remaining on sale
         /// - sender's JOY balance must be >= `amount * sale.unit_price`
         /// - there are no tokens still reserved from the previous sale
-        /// - if sale.accessibility is Private:
-        ///   - `access_proof` must be a valid merkle proof for sender's whitelist inclusion
-        ///   - (total number of tokens already purchased by the account + `amount`) must not exceed
-        ///     sale participant's cap (`access_proof.participant.cap`)
-        /// - if sale.accessibility is Public:
-        ///   - `(total number of tokens already purchased by the account + `amount`) must not exceed
-        ///     sale's purchase cap per member
+        /// - `(total number of tokens already purchased by the member + `amount`) must not exceed
+        ///   sale's purchase cap per member
+        /// - if Permissioned token:
+        ///   - AccountInfoByTokenAndAccount(token_id, &sender) must exist
         ///
         /// Postconditions:
         /// - `amount * sale.unit_price` JOY tokens are transfered to `sale.tokens_source` account
@@ -301,8 +297,7 @@ decl_module! {
         pub fn purchase_tokens_on_sale(
             origin,
             token_id: T::TokenId,
-            amount: <T as Trait>::Balance,
-            access_proof: Option<SaleAccessProofOf<T>>
+            amount: <T as Trait>::Balance
         ) -> DispatchResult {
             let current_block = Self::current_block();
             let sender = ensure_signed(origin)?;
@@ -312,19 +307,20 @@ decl_module! {
             let buyer_joy_balance = balances::Module::<T>::usable_balance(&sender);
             let joy_amount = sale.unit_price.saturating_mul(amount.into());
 
+            // Ensure buyer's JOY balance is sufficient for the purchase
             ensure!(
                 buyer_joy_balance >= joy_amount,
                 Error::<T>::InsufficientBalanceForTokenPurchase
             );
 
+            // Ensure enough tokens are available on sale
             ensure!(
                 sale.quantity_left >= amount,
                 Error::<T>::NotEnoughTokensOnSale
             );
 
-            let purchase_cap = Self::verify_sale_participant(&sale, &access_proof, &sender)?;
-
-            if let Some(cap) = purchase_cap {
+            // Ensure participant's cap is not exceeded
+            if let Some(cap) = sale.cap_per_member {
                 Self::ensure_purchase_cap_not_exceeded(
                     token_id,
                     sale_id,
@@ -332,6 +328,11 @@ decl_module! {
                     amount,
                     cap
                 )?;
+            }
+
+            // Ensure account exists if Permissioned token
+            if let TransferPolicy::Permissioned(_) = token_data.transfer_policy {
+                Self::ensure_account_data_exists(token_id, &sender)?;
             }
 
             // Ensure vesting schedule can added if doesn't already exist
@@ -415,7 +416,6 @@ impl<T: Trait>
         T::AccountId,
         TransferPolicyOf<T>,
         TokenIssuanceParametersOf<T>,
-        UploadContextOf<T>,
         T::BlockNumber,
         TokenSaleParamsOf<T>,
     > for Module<T>
@@ -574,15 +574,11 @@ impl<T: Trait>
         Ok(())
     }
 
-    fn init_token_sale(
-        token_id: T::TokenId,
-        sale_params: TokenSaleParamsOf<T>,
-        payload_upload_context: UploadContextOf<T>,
-    ) -> DispatchResult {
+    fn init_token_sale(token_id: T::TokenId, sale_params: TokenSaleParamsOf<T>) -> DispatchResult {
         let token_data = Self::ensure_token_exists(token_id)?;
         let sale = TokenSaleOf::<T>::try_from_params::<T>(sale_params.clone())?;
         // Validation + first mutation(!)
-        Self::try_init_sale(token_id, &token_data, &sale_params, payload_upload_context)?;
+        Self::try_init_sale(token_id, &token_data, &sale_params)?;
         // == MUTATION SAFE ==
         TokenInfoById::<T>::mutate(token_id, |t| {
             t.last_sale = Some(sale);
@@ -753,7 +749,6 @@ impl<T: Trait> Module<T> {
         token_id: T::TokenId,
         token_data: &TokenDataOf<T>,
         sale_params: &TokenSaleParamsOf<T>,
-        payload_upload_context: UploadContextOf<T>,
     ) -> DispatchResult {
         let current_block = Self::current_block();
 
@@ -771,22 +766,6 @@ impl<T: Trait> Module<T> {
 
         // Ensure source account has enough transferrable tokens
         account_data.ensure_can_transfer::<T>(current_block, sale_params.upper_bound_quantity)?;
-
-        // Optionally: Upload whitelist payload
-        if let SaleAccessibilityParams::PrivateSale(whitelist_params) =
-            sale_params.accessibility.clone()
-        {
-            if let Some(payload) = whitelist_params.payload {
-                let upload_params = UploadParameters::<T> {
-                    bag_id: payload_upload_context.bag_id,
-                    deletion_prize_source_account_id: payload_upload_context.uploader_account,
-                    expected_data_size_fee: payload.expected_data_size_fee,
-                    object_creation_list: vec![payload.object_creation_params],
-                };
-                // Validation + first mutation (!)
-                storage::Module::<T>::upload_data_objects(upload_params)?;
-            }
-        }
 
         // == MUTATION SAFE ==
 
@@ -868,24 +847,6 @@ impl<T: Trait> Module<T> {
             Error::<T>::SalePurchaseCapExceeded
         );
         Ok(())
-    }
-
-    pub(crate) fn verify_sale_participant(
-        sale: &TokenSaleOf<T>,
-        access_proof: &Option<SaleAccessProofOf<T>>,
-        sender: &T::AccountId,
-    ) -> Result<Option<<T as Trait>::Balance>, DispatchError> {
-        match sale.accessibility {
-            SaleAccessibility::PublicSale(cap_per_member) => Ok(cap_per_member),
-            SaleAccessibility::PrivateSale(whitelist_commitment) => {
-                if let Some(proof) = access_proof {
-                    proof.verify::<T>(&sender, whitelist_commitment)?;
-                    Ok(proof.participant.cap)
-                } else {
-                    Err(Error::<T>::SaleAccessProofRequired.into())
-                }
-            }
-        }
     }
 
     /// Returns the module account for the bloat bond treasury

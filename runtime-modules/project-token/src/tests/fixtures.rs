@@ -2,7 +2,7 @@
 
 use crate::tests::mock::*;
 use crate::{last_event_eq, yearly_rate, RawEvent, YearlyRate};
-use crate::{traits::PalletToken, types::VestingSource, SaleAccessibilityParams, SymbolsUsed};
+use crate::{traits::PalletToken, types::VestingSource, SymbolsUsed};
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::StorageMap;
 use sp_arithmetic::Percent;
@@ -48,7 +48,7 @@ pub fn default_token_sale_params() -> TokenSaleParams {
             duration: 100,
             cliff_amount_percentage: Permill::from_percent(0),
         }),
-        accessibility: SaleAccessibilityParams::PublicSale(None),
+        cap_per_member: None,
     }
 }
 
@@ -67,19 +67,6 @@ pub fn default_single_data_object_upload_params() -> SingleDataObjectUploadParam
             size: 1_000_000,
         },
     }
-}
-
-pub fn default_sale_whitelisted_participants() -> [WhitelistedSaleParticipant; 2] {
-    [
-        WhitelistedSaleParticipant {
-            address: DEFAULT_ACCOUNT_ID,
-            cap: None,
-        },
-        WhitelistedSaleParticipant {
-            address: OTHER_ACCOUNT_ID,
-            cap: None,
-        },
-    ]
 }
 
 pub struct IssueTokenFixture {
@@ -104,6 +91,16 @@ impl IssueTokenFixture {
                 symbol: Hashing::hash_of(b"ABC"),
                 transfer_policy: TransferPolicy::Permissionless,
             },
+        }
+    }
+
+    pub fn with_transfer_policy(self, transfer_policy: TransferPolicy) -> Self {
+        Self {
+            params: IssuanceParams {
+                transfer_policy,
+                ..self.params
+            },
+            ..self
         }
     }
 }
@@ -139,7 +136,6 @@ impl Fixture<IssueTokenFixtureStateSnapshot> for IssueTokenFixture {
 pub struct InitTokenSaleFixture {
     token_id: TokenId,
     params: TokenSaleParams,
-    payload_upload_context: UploadContext,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -154,7 +150,6 @@ impl InitTokenSaleFixture {
         Self {
             token_id: 1,
             params: default_token_sale_params(),
-            payload_upload_context: default_upload_context(),
         }
     }
 
@@ -188,26 +183,6 @@ impl InitTokenSaleFixture {
         }
     }
 
-    pub fn with_whitelist(self, whitelist: WhitelistParams) -> Self {
-        Self {
-            params: TokenSaleParams {
-                accessibility: SaleAccessibilityParams::PrivateSale(whitelist),
-                ..self.params
-            },
-            ..self
-        }
-    }
-
-    pub fn with_whitelisted_participants(
-        self,
-        participants: &[WhitelistedSaleParticipant],
-    ) -> Self {
-        self.with_whitelist(WhitelistParams {
-            commitment: generate_merkle_root_helper(participants).pop().unwrap(),
-            payload: None,
-        })
-    }
-
     pub fn with_vesting_schedule(self, vesting_schedule: Option<VestingScheduleParams>) -> Self {
         Self {
             params: TokenSaleParams {
@@ -221,7 +196,7 @@ impl InitTokenSaleFixture {
     pub fn with_cap_per_member(self, cap_per_member: Balance) -> Self {
         Self {
             params: TokenSaleParams {
-                accessibility: SaleAccessibilityParams::PublicSale(Some(cap_per_member)),
+                cap_per_member: Some(cap_per_member),
                 ..self.params
             },
             ..self
@@ -242,11 +217,7 @@ impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
     }
 
     fn execute_call(&self) -> DispatchResult {
-        Token::init_token_sale(
-            self.token_id,
-            self.params.clone(),
-            self.payload_upload_context.clone(),
-        )
+        Token::init_token_sale(self.token_id, self.params.clone())
     }
 
     fn on_success(
@@ -254,18 +225,6 @@ impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
         snapshot_pre: &InitTokenSaleFixtureStateSnapshot,
         snapshot_post: &InitTokenSaleFixtureStateSnapshot,
     ) {
-        // Whitelist payload uploaded if present
-        if let SaleAccessibilityParams::PrivateSale(whitelist_params) =
-            self.params.accessibility.clone()
-        {
-            whitelist_params.payload.as_ref().map(|_| {
-                assert_eq!(
-                    snapshot_post.next_data_object_id,
-                    snapshot_pre.next_data_object_id + 1
-                );
-            });
-        }
-
         // Token's `last_sale` updated
         assert_eq!(
             snapshot_post.token_data.last_sale,
@@ -376,7 +335,6 @@ pub struct PurchaseTokensOnSaleFixture {
     sender: AccountId,
     token_id: TokenId,
     amount: Balance,
-    access_proof: Option<SaleAccessProof>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -394,19 +352,11 @@ impl PurchaseTokensOnSaleFixture {
             sender: OTHER_ACCOUNT_ID,
             token_id: 1,
             amount: DEFAULT_SALE_PURCHASE_AMOUNT,
-            access_proof: None,
         }
     }
 
     pub fn with_amount(self, amount: Balance) -> Self {
         Self { amount, ..self }
-    }
-
-    pub fn with_access_proof(self, access_proof: SaleAccessProof) -> Self {
-        Self {
-            access_proof: Some(access_proof),
-            ..self
-        }
     }
 }
 
@@ -437,12 +387,7 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
     }
 
     fn execute_call(&self) -> DispatchResult {
-        Token::purchase_tokens_on_sale(
-            Origin::signed(self.sender),
-            self.token_id,
-            self.amount,
-            self.access_proof.clone(),
-        )
+        Token::purchase_tokens_on_sale(Origin::signed(self.sender), self.token_id, self.amount)
     }
 
     fn on_success(

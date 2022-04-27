@@ -23,6 +23,7 @@ use crate::{
 // Crate aliases
 pub type TokenId = <Test as Trait>::TokenId;
 pub type TokenData = TokenDataOf<Test>;
+pub type UploadContext = UploadContextOf<Test>;
 pub type SingleDataObjectUploadParams = SingleDataObjectUploadParamsOf<Test>;
 pub type WhitelistParams = WhitelistParamsOf<Test>;
 pub type TokenSaleParams = TokenSaleParamsOf<Test>;
@@ -40,11 +41,8 @@ pub type ReserveBalance = ReserveBalanceOf<Test>;
 pub type Policy = TransferPolicyOf<Test>;
 pub type Hashing = <Test as frame_system::Trait>::Hashing;
 pub type HashOut = <Test as frame_system::Trait>::Hash;
-pub type UploadContext = UploadContextOf<Test>;
 pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
 pub type VestingSchedule = VestingScheduleOf<Test>;
-pub type SaleAccessProof = SaleAccessProofOf<Test>;
-pub type WhitelistedSaleParticipant = WhitelistedSaleParticipantOf<Test>;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;

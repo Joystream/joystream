@@ -1,14 +1,6 @@
 use frame_support::dispatch::DispatchResult;
 
-pub trait PalletToken<
-    AccountId,
-    Policy,
-    IssuanceParams,
-    UploadContext,
-    BlockNumber,
-    TokenSaleParams,
->
-{
+pub trait PalletToken<AccountId, Policy, IssuanceParams, BlockNumber, TokenSaleParams> {
     /// Balance type used
     type Balance;
 
@@ -32,11 +24,7 @@ pub trait PalletToken<
     ) -> DispatchResult;
 
     /// Initialize new token sale
-    fn init_token_sale(
-        token_id: Self::TokenId,
-        sale_params: TokenSaleParams,
-        payload_upload_context: UploadContext,
-    ) -> DispatchResult;
+    fn init_token_sale(token_id: Self::TokenId, sale_params: TokenSaleParams) -> DispatchResult;
 
     /// Remove token data from storage
     fn deissue_token(token_id: Self::TokenId) -> DispatchResult;
