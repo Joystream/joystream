@@ -268,10 +268,9 @@ impl<
     pub(crate) fn unclaimed_patronage_at_block(&self, block: BlockNumber) -> Balance {
         let blocks = block.saturating_sub(self.patronage_info.last_unclaimed_patronage_tally_block);
         let unclaimed_patronage_percent = self.patronage_info.rate.for_period(blocks);
-        let tmp: Balance = unclaimed_patronage_percent
-            .mul_floor::<u64>(self.supply.saturated_into())
-            .into();
-        tmp.saturating_add(self.patronage_info.unclaimed_patronage_tally_amount)
+        unclaimed_patronage_percent
+            .mul_floor(self.supply)
+            .saturating_add(self.patronage_info.unclaimed_patronage_tally_amount)
     }
 
     pub fn set_new_patronage_rate_at_block(&mut self, new_rate: BlockRate, block: BlockNumber) {
