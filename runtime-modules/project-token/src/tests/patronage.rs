@@ -312,7 +312,6 @@ fn claim_patronage_ok_with_event_deposit() {
             token_id, owner,
         );
 
-        assert!(rate.0 * blocks * init_supply > 0);
         last_event_eq!(RawEvent::PatronageCreditClaimed(
             token_id,
             expected_credit,
