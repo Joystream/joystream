@@ -388,7 +388,17 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
         let initial_supply = issuance_parameters.initial_supply;
         let token_data = issuance_parameters.build::<_, T>(now);
 
+        let treasury = Self::bloat_bond_treasury_account_id();
+        Self::ensure_can_transfer_reserve(&owner_account_id, &treasury, bloat_bond)?;
+
         // == MUTATION SAFE ==
+
+        let _ = T::ReserveCurrency::transfer(
+            &owner_account_id,
+            &treasury,
+            bloat_bond,
+            ExistenceRequirement::KeepAlive,
+        );
 
         SymbolsUsed::<T>::insert(&token_data.symbol, ());
         TokenInfoById::<T>::insert(token_id, token_data.clone());
