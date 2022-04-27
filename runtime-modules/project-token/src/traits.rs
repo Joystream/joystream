@@ -1,15 +1,5 @@
 use frame_support::dispatch::DispatchResult;
 
-/// Account wrapper that encapsulates the validation for the transfer location
-/// by means of the visitor pattern
-pub trait TransferLocationTrait<AccountId, Policy> {
-    /// encapsulates eventual merkle tree validation given policy
-    fn is_valid_location_for_policy(&self, policy: &Policy) -> bool;
-
-    /// the wrapped account
-    fn location_account(&self) -> AccountId;
-}
-
 pub trait PalletToken<
     AccountId,
     Policy,
@@ -27,6 +17,9 @@ pub trait PalletToken<
 
     /// Merkle Proof Type used
     type MerkleProof;
+
+    /// Yearly rate used for expressing patronage rate
+    type YearlyRate;
 
     /// Issue token with specified characteristics
     fn issue_token(issuance_parameters: IssuanceParams) -> DispatchResult;
@@ -54,7 +47,7 @@ pub trait PalletToken<
     /// Reduce patronage rate by amount
     fn reduce_patronage_rate_by(
         token_id: Self::TokenId,
-        decrement: Self::Balance,
+        decrement: Self::YearlyRate,
     ) -> DispatchResult;
 
     /// Allow creator to receive credit into his accounts

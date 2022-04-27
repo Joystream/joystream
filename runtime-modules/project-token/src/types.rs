@@ -4,12 +4,15 @@ use frame_support::{
     ensure,
     traits::Get,
 };
-use sp_arithmetic::traits::{Saturating, Unsigned, Zero};
-use sp_runtime::traits::{Convert, Hash};
+use sp_arithmetic::traits::{AtLeast32BitUnsigned, Saturating, Unsigned, Zero};
 use sp_runtime::Permill;
+use sp_runtime::{
+    traits::{Convert, Hash},
+    Perbill, Percent,
+};
 use sp_std::{
     cmp::max,
-    collections::btree_map::{BTreeMap, Iter},
+    collections::btree_map::{BTreeMap, IntoIter, Iter},
     convert::TryInto,
     iter::Sum,
 };
@@ -47,7 +50,7 @@ impl<Balance: Copy> StakingStatus<Balance> {
 
 /// Info for the account
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct AccountData<VestingSchedule, Balance, StakingStatus> {
+pub struct AccountData<VestingSchedule, Balance, StakingStatus, ReserveBalance> {
     /// Map that represents account's vesting schedules indexed by source.
     /// Account's total unvested (locked) balance at current block (b)
     /// can be calculated by summing `v.locks()` of all
@@ -60,6 +63,10 @@ pub struct AccountData<VestingSchedule, Balance, StakingStatus> {
 
     /// Account's current split staking status
     pub(crate) split_staking_status: Option<StakingStatus>,
+
+    /// Bloat bond (in 'JOY's) deposited into treasury upon creation of this
+    /// account, returned when this account is removed
+    pub(crate) bloat_bond: ReserveBalance,
 }
 
 /// Info for the token
@@ -87,13 +94,16 @@ pub struct TokenData<Balance, Hash, BlockNumber, TokenSale> {
 
     /// Patronage Information
     pub(crate) patronage_info: PatronageData<Balance, BlockNumber>,
+
+    /// Account counter
+    pub(crate) accounts_number: u64,
 }
 
 /// Patronage information, patronage configuration = set of values for its fields
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
 pub struct PatronageData<Balance, BlockNumber> {
     /// Patronage rate
-    pub(crate) rate: Balance,
+    pub(crate) rate: BlockRate,
 
     /// Tally count for the outstanding credit before latest patronage config change
     pub(crate) unclaimed_patronage_tally_amount: Balance,
@@ -400,7 +410,7 @@ where
     }
 }
 
-/// The possible issuance variants: This is a stub
+/// Represents token's offering state
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum OfferingState<TokenSale> {
     /// Idle state
@@ -417,7 +427,6 @@ pub enum OfferingState<TokenSale> {
     BondingCurve,
 }
 
-/// Encapsules validation + IssuanceState construction
 impl<TokenSale> OfferingState<TokenSale> {
     pub(crate) fn of<T: crate::Trait>(token: &TokenDataOf<T>) -> OfferingStateOf<T> {
         token
@@ -470,9 +479,9 @@ pub struct InitialAllocation<AddressId, Balance, VestingScheduleParams> {
     pub(crate) vesting_schedule: Option<VestingScheduleParams>,
 }
 
-/// Builder for the token data struct
+/// Input parameters for token issuance
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
-pub struct TokenIssuanceParameters<Balance, Hash, InitialAllocation> {
+pub struct TokenIssuanceParameters<Hash, InitialAllocation> {
     /// Initial issuance
     pub(crate) initial_allocation: InitialAllocation,
 
@@ -483,7 +492,7 @@ pub struct TokenIssuanceParameters<Balance, Hash, InitialAllocation> {
     pub(crate) transfer_policy: TransferPolicy<Hash>,
 
     /// Initial Patronage rate
-    pub(crate) patronage_rate: Balance,
+    pub(crate) patronage_rate: YearlyRate,
 }
 
 /// Utility enum used in merkle proof verification
@@ -496,9 +505,17 @@ pub enum MerkleSide {
     Left,
 }
 
+/// Yearly rate used for patronage info initialization
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy, Default)]
+pub struct YearlyRate(pub Percent);
+
+/// Block rate used for patronage accounting
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy, PartialOrd, Default)]
+pub struct BlockRate(pub Perbill);
+
 /// Wrapper around a merkle proof path
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct MerkleProof<Hasher: Hash>(pub Option<Vec<(Hasher::Output, MerkleSide)>>);
+pub struct MerkleProof<Hasher: Hash>(pub Vec<(Hasher::Output, MerkleSide)>);
 
 /// Information about a payment
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -519,6 +536,16 @@ impl Default for MerkleSide {
     fn default() -> Self {
         MerkleSide::Right
     }
+}
+
+/// Utility wrapper around existing/non existing accounts to be used with transfer etc..
+#[derive(Encode, Decode, PartialEq, Eq, Debug, PartialOrd, Ord, Clone)]
+pub enum Validated<AccountId: Ord + Eq + Clone> {
+    /// Existing account
+    Existing(AccountId),
+
+    /// Non Existing account
+    NonExisting(AccountId),
 }
 
 // implementation
@@ -544,20 +571,26 @@ impl<AddressId: Default, Balance: Zero, VestingScheduleParams> Default
 }
 
 /// Default trait for AccountData
-impl<VestingSchedule, Balance: Zero, StakingStatus> Default
-    for AccountData<VestingSchedule, Balance, StakingStatus>
+impl<VestingSchedule, Balance: Zero, StakingStatus, ReserveBalance: Zero> Default
+    for AccountData<VestingSchedule, Balance, StakingStatus, ReserveBalance>
 {
     fn default() -> Self {
         Self {
             vesting_schedules: BTreeMap::new(),
             split_staking_status: None,
             amount: Balance::zero(),
+            bloat_bond: ReserveBalance::zero(),
         }
     }
 }
 
-impl<Balance, BlockNumber>
-    AccountData<VestingSchedule<BlockNumber, Balance>, Balance, StakingStatus<Balance>>
+impl<Balance, BlockNumber, ReserveBalance>
+    AccountData<
+        VestingSchedule<BlockNumber, Balance>,
+        Balance,
+        StakingStatus<Balance>,
+        ReserveBalance,
+    >
 where
     Balance: Clone
         + Zero
@@ -571,7 +604,17 @@ where
         + TryInto<u64>
         + Copy,
     BlockNumber: Copy + Clone + PartialOrd + Ord + Saturating + From<u32> + Unsigned,
+    ReserveBalance: Zero,
 {
+    /// Ctor
+    pub fn new_with_amount_and_bond(amount: Balance, bloat_bond: ReserveBalance) -> Self {
+        Self {
+            amount,
+            bloat_bond,
+            ..Self::default()
+        }
+    }
+
     /// Check whether an account is empty
     pub(crate) fn is_empty(&self) -> bool {
         self.amount.is_zero()
@@ -687,9 +730,9 @@ where
 /// Token Data implementation
 impl<
         JOYBalance,
-        Balance: Zero + Saturating + Copy,
+        Balance,
         Hash,
-        BlockNumber: PartialOrd + Saturating + Copy,
+        BlockNumber,
         VestingScheduleParams,
         AccountId,
         SaleAccessibility,
@@ -707,17 +750,29 @@ impl<
             AccountId,
         >,
     >
+where
+    Balance: Zero + Saturating + Copy,
+    BlockNumber: PartialOrd + Saturating + Copy + AtLeast32BitUnsigned,
 {
     // increase total issuance
-    pub(crate) fn increase_issuance_by(&mut self, amount: Balance) {
+    pub(crate) fn increase_supply_by(&mut self, amount: Balance) {
         self.tokens_issued = self.tokens_issued.saturating_add(amount);
         self.total_supply = self.total_supply.saturating_add(amount);
     }
 
     // decrease total issuance (use when tokens are burned for any reason)
-    #[allow(dead_code)]
     pub(crate) fn decrease_supply_by(&mut self, amount: Balance) {
         self.total_supply = self.total_supply.saturating_sub(amount);
+    }
+
+    // increment account number
+    pub(crate) fn increment_accounts_number(&mut self) {
+        self.accounts_number = self.accounts_number.saturating_add(1u64);
+    }
+
+    // decrement account number
+    pub(crate) fn decrement_accounts_number(&mut self) {
+        self.accounts_number = self.accounts_number.saturating_sub(1u64);
     }
 
     pub fn set_unclaimed_tally_patronage_at_block(&mut self, amount: Balance, block: BlockNumber) {
@@ -725,25 +780,31 @@ impl<
         self.patronage_info.unclaimed_patronage_tally_amount = amount;
     }
 
-    pub(crate) fn unclaimed_patronage<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
+    /// Computes: period * rate * supply + tally
+    pub(crate) fn unclaimed_patronage_at_block<
+        BlockNumberToBalance: Convert<BlockNumber, Balance>,
+    >(
         &self,
         block: BlockNumber,
     ) -> Balance {
-        // period * rate * supply + tally
-        self.patronage_info
-            .unclaimed_patronage_percent::<BlockNumberToBalance>(block)
+        let blocks = block.saturating_sub(self.patronage_info.last_unclaimed_patronage_tally_block);
+        let unclaimed_patronage_percent: BlockNumber = self.patronage_info.rate.for_period(blocks);
+        let unclaimed_patronage_percent_bal: Balance =
+            BlockNumberToBalance::convert(unclaimed_patronage_percent);
+
+        unclaimed_patronage_percent_bal
             .saturating_mul(self.total_supply)
             .saturating_add(self.patronage_info.unclaimed_patronage_tally_amount)
     }
 
     pub fn set_new_patronage_rate_at_block<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
         &mut self,
-        new_rate: Balance,
+        new_rate: BlockRate,
         block: BlockNumber,
     ) {
         // update tally according to old rate
         self.patronage_info.unclaimed_patronage_tally_amount =
-            self.unclaimed_patronage::<BlockNumberToBalance>(block);
+            self.unclaimed_patronage_at_block::<BlockNumberToBalance>(block);
         self.patronage_info.last_unclaimed_patronage_tally_block = block;
         self.patronage_info.rate = new_rate;
     }
@@ -765,7 +826,7 @@ impl<
             PatronageData::<<T as Trait>::Balance, <T as frame_system::Trait>::BlockNumber> {
                 last_unclaimed_patronage_tally_block: current_block,
                 unclaimed_patronage_tally_amount: <T as Trait>::Balance::zero(),
-                rate: params.patronage_rate,
+                rate: BlockRate::from_yearly_rate(params.patronage_rate, T::BlocksPerYear::get()),
             };
 
         TokenData {
@@ -776,6 +837,7 @@ impl<
             transfer_policy: params.transfer_policy,
             patronage_info,
             sales_initialized: 0,
+            accounts_number: 0,
         }
     }
 }
@@ -786,45 +848,36 @@ impl<Hasher: Hash> MerkleProof<Hasher> {
         T: crate::Trait,
         S: Encode,
     {
-        match &self.0 {
-            None => Err(crate::Error::<T>::MerkleProofNotProvided.into()),
-            Some(vec) => {
-                let init = Hasher::hash_of(data);
-                let proof_result = vec.iter().fold(init, |acc, (hash, side)| match side {
-                    MerkleSide::Left => Hasher::hash_of(&(hash, acc)),
-                    MerkleSide::Right => Hasher::hash_of(&(acc, hash)),
-                });
+        let init = Hasher::hash_of(data);
+        let proof_result = self.0.iter().fold(init, |acc, (hash, side)| match side {
+            MerkleSide::Left => Hasher::hash_of(&(hash, acc)),
+            MerkleSide::Right => Hasher::hash_of(&(acc, hash)),
+        });
 
-                ensure!(
-                    proof_result == commit,
-                    crate::Error::<T>::MerkleProofVerificationFailure,
-                );
+        ensure!(
+            proof_result == commit,
+            crate::Error::<T>::MerkleProofVerificationFailure,
+        );
 
-                Ok(())
-            }
-        }
-    }
-}
-
-impl<Balance: Zero + Copy + Saturating, BlockNumber: Copy + Saturating + PartialOrd>
-    PatronageData<Balance, BlockNumber>
-{
-    pub fn unclaimed_patronage_percent<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
-        &self,
-        block: BlockNumber,
-    ) -> Balance {
-        let period = block.saturating_sub(self.last_unclaimed_patronage_tally_block);
-        BlockNumberToBalance::convert(period).saturating_mul(self.rate)
+        Ok(())
     }
 }
 
 impl<AccountId, Balance: Sum + Copy> Transfers<AccountId, Balance> {
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
     pub fn total_amount(&self) -> Balance {
         self.0.iter().map(|(_, payment)| payment.amount).sum()
     }
 
     pub fn iter(&self) -> Iter<'_, AccountId, Payment<Balance>> {
         self.0.iter()
+    }
+
+    pub fn into_iter(self) -> IntoIter<AccountId, Payment<Balance>> {
+        self.0.into_iter()
     }
 }
 
@@ -836,14 +889,45 @@ impl<AccountId, Balance> From<Transfers<AccountId, Balance>>
     }
 }
 
+/// Block Rate bare minimum impementation
+impl BlockRate {
+    pub fn from_yearly_rate(r: YearlyRate, blocks_per_year: u32) -> Self {
+        BlockRate(Perbill::from_parts(
+            (r.0.deconstruct() as u32).saturating_mul(blocks_per_year),
+        ))
+    }
+
+    pub fn to_yearly_rate(self, blocks_per_year: u32) -> YearlyRate {
+        use sp_std::ops::Div;
+        YearlyRate(Percent::from_parts(
+            self.0.deconstruct().div(blocks_per_year) as u8,
+        ))
+    }
+
+    pub fn for_period<BlockNumber>(self, blocks: BlockNumber) -> BlockNumber
+    where
+        BlockNumber: AtLeast32BitUnsigned + Clone,
+    {
+        self.0.mul_floor(blocks)
+    }
+
+    pub fn saturating_sub(self, other: Self) -> Self {
+        BlockRate(self.0.saturating_sub(other.0))
+    }
+}
+
 // Aliases
 
 /// Alias for Staking Status
 pub(crate) type StakingStatusOf<T> = StakingStatus<<T as Trait>::Balance>;
 
 /// Alias for Account Data
-pub(crate) type AccountDataOf<T> =
-    AccountData<VestingScheduleOf<T>, <T as Trait>::Balance, StakingStatusOf<T>>;
+pub(crate) type AccountDataOf<T> = AccountData<
+    VestingScheduleOf<T>,
+    <T as Trait>::Balance,
+    StakingStatusOf<T>,
+    crate::ReserveBalanceOf<T>,
+>;
 
 /// Alias for Token Data
 pub(crate) type TokenDataOf<T> = TokenData<
@@ -861,11 +945,8 @@ pub(crate) type InitialAllocationOf<T> = InitialAllocation<
 >;
 
 /// Alias for Token Issuance Parameters
-pub(crate) type TokenIssuanceParametersOf<T> = TokenIssuanceParameters<
-    <T as crate::Trait>::Balance,
-    <T as frame_system::Trait>::Hash,
-    InitialAllocationOf<T>,
->;
+pub(crate) type TokenIssuanceParametersOf<T> =
+    TokenIssuanceParameters<<T as frame_system::Trait>::Hash, InitialAllocationOf<T>>;
 
 /// Alias for TransferPolicy
 pub(crate) type TransferPolicyOf<T> = TransferPolicy<<T as frame_system::Trait>::Hash>;

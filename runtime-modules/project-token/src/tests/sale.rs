@@ -463,13 +463,7 @@ fn unsuccesful_private_sale_purchase_with_invalid_access_proof() {
         PurchaseTokensOnSaleFixture::default()
             .with_access_proof(SaleAccessProof {
                 participant: whitelisted[1].clone(),
-                proof: MerkleProofOf::<Test>::new(None),
-            })
-            .call_and_assert(Err(Error::<Test>::MerkleProofNotProvided.into()));
-        PurchaseTokensOnSaleFixture::default()
-            .with_access_proof(SaleAccessProof {
-                participant: whitelisted[1].clone(),
-                proof: MerkleProofOf::<Test>::new(Some(Vec::new())),
+                proof: MerkleProofOf::<Test>::new(Vec::new()),
             })
             .call_and_assert(Err(Error::<Test>::MerkleProofVerificationFailure.into()));
     })

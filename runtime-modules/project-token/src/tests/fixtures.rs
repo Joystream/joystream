@@ -1,10 +1,11 @@
 #![cfg(test)]
 
 use crate::tests::mock::*;
-use crate::{last_event_eq, RawEvent};
+use crate::{last_event_eq, yearly_rate, RawEvent, YearlyRate};
 use crate::{traits::PalletToken, types::VestingSource, SaleAccessibilityParams, SymbolsUsed};
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::StorageMap;
+use sp_arithmetic::Percent;
 use sp_runtime::{traits::Hash, DispatchError, Permill};
 use sp_std::iter::FromIterator;
 use storage::{BagId, DataObjectCreationParameters, StaticBagId};
@@ -99,7 +100,7 @@ impl IssueTokenFixture {
                     amount: DEFAULT_INITIAL_ISSUANCE,
                     vesting_schedule: None,
                 },
-                patronage_rate: 0,
+                patronage_rate: yearly_rate!(0),
                 symbol: Hashing::hash_of(b"ABC"),
                 transfer_policy: TransferPolicy::Permissionless,
             },
@@ -126,7 +127,10 @@ impl Fixture<IssueTokenFixtureStateSnapshot> for IssueTokenFixture {
         assert_eq!(snapshot_post.next_token_id, snapshot_pre.next_token_id + 1);
         assert_eq!(
             Token::token_info_by_id(snapshot_pre.next_token_id),
-            TokenData::from_params::<Test>(self.params.clone())
+            TokenData {
+                accounts_number: 1,
+                ..TokenData::from_params::<Test>(self.params.clone())
+            }
         );
         assert!(SymbolsUsed::<Test>::contains_key(self.params.symbol));
     }

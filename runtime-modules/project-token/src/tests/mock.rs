@@ -16,13 +16,8 @@ use sp_runtime::{DispatchError, DispatchResult, ModuleId};
 
 // crate import
 use crate::{
-    types::{
-        InitialAllocationOf, MerkleSide, OfferingStateOf, SaleAccessProofOf,
-        SingleDataObjectUploadParamsOf, TokenSaleOf, TokenSaleParamsOf, UploadContextOf,
-        VestingScheduleOf, VestingScheduleParamsOf, WhitelistParamsOf,
-        WhitelistedSaleParticipantOf,
-    },
-    AccountDataOf, GenesisConfig, TokenDataOf, TokenIssuanceParametersOf, Trait, TransferPolicyOf,
+    types::*, AccountDataOf, GenesisConfig, ReserveBalanceOf, TokenDataOf,
+    TokenIssuanceParametersOf, Trait, TransferPolicyOf,
 };
 
 // Crate aliases
@@ -41,6 +36,7 @@ pub type AccountData = AccountDataOf<Test>;
 pub type AccountId = <Test as frame_system::Trait>::AccountId;
 pub type BlockNumber = <Test as frame_system::Trait>::BlockNumber;
 pub type Balance = <Test as Trait>::Balance;
+pub type ReserveBalance = ReserveBalanceOf<Test>;
 pub type Policy = TransferPolicyOf<Test>;
 pub type Hashing = <Test as frame_system::Trait>::Hashing;
 pub type HashOut = <Test as frame_system::Trait>::Hash;
@@ -85,8 +81,6 @@ impl_outer_event! {
 }
 
 // Trait constants
-pub const DEFAULT_BLOAT_BOND: u64 = 100;
-
 parameter_types! {
     // constants for frame_system::Trait
     pub const BlockHashCount: u64 = 250;
@@ -95,11 +89,11 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
     // constants for crate::Trait
-    pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token"); // module storage
-    pub const BloatBond: u64 = DEFAULT_BLOAT_BOND;
+    pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token");
     pub const MaxVestingBalancesPerAccountPerToken: u8 = 3;
+    pub const BlocksPerYear: u32 = 5259492; // blocks every 6s
     // constants for balances::Trait
-    pub const ExistentialDeposit: u64 = 0;
+    pub const ExistentialDeposit: u64 = 10;
 }
 
 impl frame_system::Trait for Test {
@@ -172,7 +166,10 @@ impl storage::Trait for Test {
 parameter_types! {
     pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
     pub const MaxDistributionBucketFamilyNumber: u64 = 4;
-    pub const DataObjectDeletionPrize: u64 = 5;
+    // FIXME: Currently this must be >= ExistentialDeposit (see: https://github.com/Joystream/joystream/issues/3510)
+    // When trying to deposit an amount < ExistentialDeposit into storage module account, we'd get:
+    // Err(DispatchError::Module { index: 0, error: 4, message: Some("ExistentialDeposit") })
+    pub const DataObjectDeletionPrize: u64 = 15;
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
     pub const BlacklistSizeLimit: u64 = 1;
     pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 1;
@@ -199,9 +196,10 @@ impl Trait for Test {
     type BlockNumberToBalance = Block2Balance;
     type DataObjectStorage = storage::Module<Self>;
     type ModuleId = TokenModuleId;
-    type BloatBond = BloatBond;
+    type ReserveExistentialDeposit = ExistentialDeposit;
     type ReserveCurrency = Balances;
     type MaxVestingBalancesPerAccountPerToken = MaxVestingBalancesPerAccountPerToken;
+    type BlocksPerYear = BlocksPerYear;
 }
 
 // Working group integration
@@ -347,6 +345,7 @@ pub struct GenesisConfigBuilder {
     pub(crate) account_info_by_token_and_account: Vec<(TokenId, AccountId, AccountData)>,
     pub(crate) token_info_by_id: Vec<(TokenId, TokenData)>,
     pub(crate) next_token_id: TokenId,
+    pub(crate) bloat_bond: ReserveBalance,
     pub(crate) symbol_used: Vec<(HashOut, ())>,
 }
 
@@ -371,9 +370,10 @@ pub fn increase_block_number_by(n: u64) {
     let init_block = System::block_number();
     (0..=n).for_each(|offset| {
         <Token as OnFinalize<u64>>::on_finalize(System::block_number());
+        <System as OnFinalize<u64>>::on_finalize(System::block_number());
         System::set_block_number(init_block.saturating_add(offset));
-        <Token as OnInitialize<u64>>::on_initialize(System::block_number());
         <System as OnInitialize<u64>>::on_initialize(System::block_number());
+        <Token as OnInitialize<u64>>::on_initialize(System::block_number());
     })
 }
 
@@ -396,6 +396,27 @@ macro_rules! token {
 macro_rules! balance {
     ($bal:expr) => {
         Balance::from($bal as u32)
+    };
+}
+
+#[macro_export]
+macro_rules! rate {
+    ($r:expr) => {
+        BlockRate(Perbill::from_percent($r as u32))
+    };
+}
+
+#[macro_export]
+macro_rules! yearly_rate {
+    ($r:expr) => {
+        YearlyRate(Percent::from_percent($r as u8))
+    };
+}
+
+#[macro_export]
+macro_rules! joy {
+    ($bal:expr) => {
+        ReserveBalance::from($bal as u32)
     };
 }
 
@@ -531,7 +552,14 @@ macro_rules! merkle_root {
 #[macro_export]
 macro_rules! merkle_proof {
     ($idx:expr,[$($vals:expr),*]) => {
-        MerkleProofOf::<Test>::new(Some(build_merkle_path_helper(&vec![$($vals,)*], $idx as usize)))
+        MerkleProofOf::<Test>::new(build_merkle_path_helper(&vec![$($vals,)*], $idx as usize))
+    };
+}
+
+#[macro_export]
+macro_rules! treasury {
+    ($t: expr) => {
+        <Test as crate::Trait>::ModuleId::get().into_sub_account::<AccountId>($t)
     };
 }
 

@@ -1,13 +1,14 @@
 use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::Hash;
+use sp_runtime::{Perbill, Percent};
 use sp_std::collections::btree_map::BTreeMap;
 
 use crate::tests::mock::*;
 use crate::types::{
-    MerkleProof, MerkleSide, PatronageData, Payment, TokenSaleId, TokenSaleOf, TransferPolicyOf,
-    Transfers,
+    AccountData, AccountDataOf, BlockRate, MerkleProof, MerkleSide, PatronageData, Payment,
+    TokenSaleId, TokenSaleOf, TransferPolicy, TransferPolicyOf, Transfers,
 };
-use crate::GenesisConfig;
+use crate::{balance, GenesisConfig};
 
 pub struct TokenDataBuilder {
     pub(crate) total_supply: <Test as crate::Trait>::Balance,
@@ -30,13 +31,18 @@ impl TokenDataBuilder {
             transfer_policy: self.transfer_policy,
             patronage_info: self.patronage_info,
             symbol: self.symbol,
+            accounts_number: 0u64,
         }
     }
 
-    pub fn with_issuance(self, issuance: Balance) -> Self {
+    pub fn with_symbol(self, symbol: <Test as frame_system::Trait>::Hash) -> Self {
+        Self { symbol, ..self }
+    }
+
+    pub fn with_supply(self, supply: Balance) -> Self {
         Self {
-            total_supply: issuance,
-            tokens_issued: issuance,
+            total_supply: supply,
+            tokens_issued: supply,
             ..self
         }
     }
@@ -48,7 +54,7 @@ impl TokenDataBuilder {
         }
     }
 
-    pub fn with_patronage_rate(self, rate: Balance) -> Self {
+    pub fn with_patronage_rate(self, rate: BlockRate) -> Self {
         Self {
             patronage_info: PatronageData::<_, _> {
                 unclaimed_patronage_tally_amount: Balance::zero(),
@@ -67,7 +73,7 @@ impl TokenDataBuilder {
             sales_initialized: 0,
             transfer_policy: TransferPolicy::Permissionless,
             patronage_info: PatronageData::<Balance, BlockNumber> {
-                rate: Balance::zero(),
+                rate: BlockRate(Perbill::zero()),
                 unclaimed_patronage_tally_amount: Balance::zero(),
                 last_unclaimed_patronage_tally_block: BlockNumber::one(),
             },
@@ -84,10 +90,11 @@ impl GenesisConfigBuilder {
             account_info_by_token_and_account: vec![],
             next_token_id: TokenId::one(),
             symbol_used: vec![],
+            bloat_bond: ReserveBalance::zero(),
         }
     }
 
-    // add token with given params & zero issuance
+    // add token with given params & zero supply
     pub fn with_token(mut self, token_id: TokenId, token_info: TokenData) -> Self {
         self.symbol_used = vec![(token_info.symbol.clone(), ())];
         self.token_info_by_id.push((token_id, token_info));
@@ -95,24 +102,40 @@ impl GenesisConfigBuilder {
         self
     }
 
-    // add account & updates token issuance
-    pub fn with_account(mut self, account_id: AccountId, amount: Balance) -> Self {
-        let id = self.next_token_id.saturating_sub(TokenId::one());
-        let new_account_info = AccountData {
-            amount,
-            vesting_schedules: BTreeMap::new(),
-            split_staking_status: None,
-        };
+    // add token and owner: useful for tests
+    pub fn with_token_and_owner(
+        self,
+        token_id: TokenId,
+        token_info: TokenData,
+        owner: AccountId,
+        initial_supply: Balance,
+    ) -> Self {
+        self.with_token(token_id, token_info)
+            .with_account(owner, AccountData::new_with_amount(initial_supply))
+    }
 
-        self.account_info_by_token_and_account
-            .push((id, account_id, new_account_info));
+    pub fn with_bloat_bond(self, bloat_bond: ReserveBalance) -> Self {
+        Self { bloat_bond, ..self }
+    }
+
+    // add account & updates token supply
+    pub fn with_account(
+        mut self,
+        account_id: AccountId,
+        account_data: AccountDataOf<Test>,
+    ) -> Self {
+        let id = self.next_token_id.saturating_sub(TokenId::one());
 
         self.token_info_by_id
             .last_mut()
             .unwrap()
             .1
-            .increase_issuance_by(amount);
+            .increase_supply_by(Balance::from(account_data.amount));
 
+        self.account_info_by_token_and_account
+            .push((id, account_id, account_data));
+
+        self.token_info_by_id.last_mut().unwrap().1.accounts_number += 1u64;
         self
     }
 
@@ -122,18 +145,30 @@ impl GenesisConfigBuilder {
             token_info_by_id: self.token_info_by_id,
             next_token_id: self.next_token_id,
             symbol_used: self.symbol_used,
+            bloat_bond: self.bloat_bond,
+        }
+    }
+}
+
+impl<VestingSchedule, Balance: Zero, StakingStatus, ReserveBalance: Zero>
+    AccountData<VestingSchedule, Balance, StakingStatus, ReserveBalance>
+{
+    pub fn new_with_amount(amount: Balance) -> Self {
+        Self {
+            amount,
+            ..Self::default()
         }
     }
 }
 
 impl<Hasher: Hash> MerkleProof<Hasher> {
-    pub fn new(v: Option<Vec<(Hasher::Output, MerkleSide)>>) -> Self {
+    pub fn new(v: Vec<(Hasher::Output, MerkleSide)>) -> Self {
         MerkleProof::<Hasher>(v)
     }
 }
 
-impl<Balance, AccountId: Ord> Transfers<AccountId, Balance> {
-    pub fn new(v: Vec<(AccountId, Balance)>) -> Self {
+impl<Balance, Account: Ord> Transfers<Account, Balance> {
+    pub fn new(v: Vec<(Account, Balance)>) -> Self {
         Transfers::<_, _>(
             v.into_iter()
                 .map(|(acc, amount)| {
@@ -151,7 +186,6 @@ impl<Balance, AccountId: Ord> Transfers<AccountId, Balance> {
 }
 
 #[cfg(test)]
-#[ignore]
 #[test]
 fn with_token_assigns_correct_token_id() {
     let token_id: TokenId = 1;
@@ -163,10 +197,9 @@ fn with_token_assigns_correct_token_id() {
     assert_eq!(id, token_id);
 }
 
-#[ignore]
 #[test]
-fn with_issuance_adds_issuance_to_token() {
-    let token_params = TokenDataBuilder::new_empty().with_issuance(5).build();
+fn with_supply_adds_supply_to_token() {
+    let token_params = TokenDataBuilder::new_empty().with_supply(5).build();
 
     let builder = GenesisConfigBuilder::new_empty().with_token(1, token_params);
 
@@ -175,14 +208,31 @@ fn with_issuance_adds_issuance_to_token() {
     assert_eq!(token.total_supply, 5);
 }
 
-#[ignore]
 #[test]
-fn adding_account_with_tokens_also_adds_issuance() {
-    let token_params = TokenDataBuilder::new_empty().with_issuance(5).build();
+fn adding_account_with_tokens_also_adds_supply() {
+    let token_params = TokenDataBuilder::new_empty().with_supply(5).build();
     let mut builder = GenesisConfigBuilder::new_empty().with_token(1, token_params);
-    builder = builder.with_account(1, 5);
+    builder = builder.with_account(1, AccountData::new_with_amount(balance!(5)));
 
     let token = &builder.token_info_by_id.last().unwrap().1;
-    assert_eq!(token.tokens_issued, 5);
-    assert_eq!(token.total_supply, 5);
+    assert_eq!(token.tokens_issued, 10);
+    assert_eq!(token.total_supply, 10);
+}
+
+#[test]
+fn permill_yearly_and_block_rate_behavior() {
+    // yearly percentage parts = 100 => per block parts = blocks_per_year x 100
+    pub const BLOCKS_PER_YEAR: u32 = 5259492;
+    //    let block_rate = Permill::from_parts(BLOCKS_PER_YEAR);
+    pub const PERCENTAGE: u8 = 16;
+    let yearly_rate = Percent::from_percent(PERCENTAGE);
+
+    let block_rate =
+        Perbill::from_parts((yearly_rate.deconstruct() as u32).saturating_mul(BLOCKS_PER_YEAR));
+
+    use sp_std::ops::Div;
+    assert_eq!(
+        Percent::from_parts(block_rate.deconstruct().div(BLOCKS_PER_YEAR) as u8),
+        yearly_rate,
+    );
 }

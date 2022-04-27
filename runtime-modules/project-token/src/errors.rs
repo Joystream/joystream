@@ -3,20 +3,8 @@ use frame_support::decl_error;
 
 decl_error! {
     pub enum Error for Module<T: crate::Trait> {
-        /// Free balance is insufficient for freezing specified amount
-        InsufficientFreeBalanceForReserving,
-
-        /// Reserved balance is insufficient for unfreezing specified amount
-        InsufficientReservedBalance,
-
-        /// Free balance is insufficient for slashing specified amount
-        InsufficientFreeBalanceForDecreasing,
-
         /// Account's transferrable balance is insufficient to perform the transfer or initialize token sale
         InsufficientTransferrableBalance,
-
-        /// Token's total supply cannot be decreased by specified amount
-        InsufficientTotalSupplyToDecreaseByAmount,
 
         /// Requested token does not exist
         TokenDoesNotExist,
@@ -24,14 +12,8 @@ decl_error! {
         /// Requested account data does not exist
         AccountInformationDoesNotExist,
 
-        /// Existential deposit >= initial issuance
-        ExistentialDepositExceedsInitialIssuance,
-
         /// Merkle proof verification failed
         MerkleProofVerificationFailure,
-
-        /// Merkle proof not provided
-        MerkleProofNotProvided,
 
         /// Source and Destination Location coincide
         SameSourceAndDestinationLocations,
@@ -77,9 +59,6 @@ decl_error! {
 
         /// Cannot Deissue Token with outstanding accounts
         CannotDeissueTokenWithOutstandingAccounts,
-
-        /// Token issuance is not zero
-        TokenIssuanceIsNotZero,
 
         /// Only whitelisted participants are allowed to access the sale, therefore access proof is required
         SaleAccessProofRequired,
