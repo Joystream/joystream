@@ -30,7 +30,9 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
   public async execute(): Promise<void> {
     this.debug('Issue video NFT')
 
-    const winner = this.participants[this.participants.length - 1]
+    // participants[0] places multiple bids
+    const auctionParticipants = [this.participants[0], ...this.participants]
+    const winner = auctionParticipants[auctionParticipants.length - 1]
 
     // creator royalty
     const creatorRoyalty = 5
@@ -88,7 +90,7 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
     const placeBidsFixture = new PlaceBidsInAuctionFixture(
       this.api,
       this.query,
-      this.participants,
+      auctionParticipants,
       startingPrice,
       minimalBidStep,
       this.videoId,
