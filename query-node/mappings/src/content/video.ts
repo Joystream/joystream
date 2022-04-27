@@ -5,7 +5,7 @@ import { EventContext, StoreContext } from '@joystream/hydra-common'
 import { In } from 'typeorm'
 import { Content } from '../../generated/types'
 import { deserializeMetadata, inconsistentState, logger } from '../common'
-import { processVideoMetadata, videoRelationsForCountersBare, videoRelationsForCounters } from './utils'
+import { processVideoMetadata, videoRelationsForCounters } from './utils'
 import { Channel, Video, VideoCategory } from 'query-node/dist/model'
 import { VideoMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
@@ -183,7 +183,7 @@ export async function content_VideoDeleted({ store, event }: EventContext & Stor
   // load video
   const video = await store.get(Video, {
     where: { id: videoId.toString() },
-    relations: [...videoRelationsForCountersBare],
+    relations: [...videoRelationsForCounters],
   })
 
   // ensure video exists
