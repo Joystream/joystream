@@ -338,6 +338,13 @@ macro_rules! treasury {
     };
 }
 
+#[macro_export]
+macro_rules! simmetric_diff {
+    ($x: expr, $y: expr) => {
+        $x.max($y).saturating_sub($x.min($y))
+    };
+}
+
 // utility types
 pub struct Block2Balance {}
 

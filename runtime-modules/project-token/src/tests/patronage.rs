@@ -7,7 +7,8 @@ use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
 use crate::types::{BlockRate, TokenIssuanceParametersOf, YearlyRate};
 use crate::{
-    account, balance, block, last_event_eq, origin, rate, token, yearly_rate, Error, RawEvent,
+    account, balance, block, last_event_eq, origin, rate, simmetric_diff, token, yearly_rate,
+    Error, RawEvent,
 };
 
 #[test]
@@ -40,7 +41,7 @@ fn issue_token_ok_with_patronage_tally_count_zero() {
 fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
     let token_id = token!(1);
     let (patronage_rate, blocks) = (yearly_rate!(20), block!(10));
-    let (owner, init_supply) = (account!(1), balance!(10));
+    let (owner, init_supply) = (account!(1), balance!(1_000_000_000));
 
     let params = TokenIssuanceParametersOf::<Test> {
         patronage_rate,
@@ -48,7 +49,8 @@ fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
         ..Default::default()
     };
     let config = GenesisConfigBuilder::new_empty().build();
-    let rate = BlockRate::from_yearly_rate(patronage_rate, BlocksPerYear::get());
+    // hard coded reference value: (.2/52594921) * 1billion * 10 ~= 38
+    let expected = balance!(38);
 
     build_test_externalities(config).execute_with(|| {
         let _ =
@@ -57,7 +59,7 @@ fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
 
         assert_eq!(
             Token::token_info_by_id(token_id).unclaimed_patronage_at_block(System::block_number()),
-            rate.0 * blocks * init_supply,
+            expected,
         );
     })
 }
@@ -109,11 +111,13 @@ fn decrease_patronage_ok() {
 }
 
 #[test]
-fn decrease_patronage_ok_with_tally_count_twice_updated() {
+fn decrease_patronage_ok_with_tally_count_updated() {
     let token_id = token!(1);
     let decrement = yearly_rate!(10);
-    let (owner, init_supply) = (account!(1), balance!(100));
+    let (owner, init_supply) = (account!(1), balance!(1_000_000_000));
     let (init_rate, blocks) = (yearly_rate!(30), block!(10));
+    // hard coded reference value: (50/5259492100) * 10 * 1000000000 =~ 95
+    let expected = balance!(95);
 
     let token_info = TokenDataBuilder::new_empty()
         .with_patronage_rate(BlockRate::from_yearly_rate(init_rate, BlocksPerYear::get()))
@@ -122,26 +126,23 @@ fn decrease_patronage_ok_with_tally_count_twice_updated() {
         .with_token_and_owner(token_id, token_info, owner, init_supply)
         .build();
 
-    let expected_tally_amount = BlockRate::from_yearly_rate(yearly_rate!(50), BlocksPerYear::get())
-        .for_period(blocks)
-        * init_supply;
-
     build_test_externalities(config).execute_with(|| {
         increase_block_number_by(blocks);
         let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_by(
             token_id, decrement,
         );
-        increase_block_number_by(blocks);
 
+        increase_block_number_by(blocks);
         let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_by(
             token_id, decrement,
         );
 
+        // initially zero: now updated
         assert_eq!(
-            expected_tally_amount,
             Token::token_info_by_id(token_id)
                 .patronage_info
                 .unclaimed_patronage_tally_amount,
+            expected,
         );
     })
 }
@@ -175,7 +176,8 @@ fn decrease_patronage_ok_with_new_patronage_rate_correctly_approximated() {
     let init_rate = yearly_rate!(50);
     let token_id = token!(1);
     let decrement = yearly_rate!(20);
-    let expected = BlockRate(Perquintill::from_parts(57039729300));
+    // hard coded reference value: (.3/52594921) * 1quintillion
+    let expected = BlockRate(Perquintill::from_parts(5703972822));
 
     let params = TokenDataBuilder::new_empty()
         .with_patronage_rate(BlockRate::from_yearly_rate(init_rate, BlocksPerYear::get()));
@@ -189,8 +191,8 @@ fn decrease_patronage_ok_with_new_patronage_rate_correctly_approximated() {
         );
 
         let approx = Token::token_info_by_id(token_id).patronage_info.rate;
-        let abs_diff = approx.0.deconstruct() & (u64::MAX - expected.0.deconstruct());
-        assert!(abs_diff < 1_000u64); // accuracy up to 1e-15 decimal points
+        let simm_diff = simmetric_diff!(approx.0.deconstruct(), expected.0.deconstruct());
+        assert!(simm_diff < 1_000u64); // accuracy: 1e-13 %
     })
 }
 
@@ -307,6 +309,7 @@ fn claim_patronage_ok_with_event_deposit() {
             token_id, owner,
         );
 
+        assert!(rate.0 * blocks * init_supply > 0);
         last_event_eq!(RawEvent::PatronageCreditClaimed(
             token_id,
             rate.0 * blocks * init_supply,
@@ -320,6 +323,9 @@ fn claim_patronage_ok_with_credit_accounting() {
     let token_id = token!(1);
     let (owner, init_supply) = (account!(2), balance!(100));
     let (rate, blocks) = (rate!(10), block!(10));
+
+    // (rate * blocks)% * init_supply = 100
+    let expected_patronage_credit = balance!(100);
 
     let token_info = TokenDataBuilder::new_empty()
         .with_patronage_rate(rate)
@@ -338,7 +344,7 @@ fn claim_patronage_ok_with_credit_accounting() {
 
         assert_eq!(
             Token::account_info_by_token_and_account(token_id, owner).free_balance,
-            rate.0 * blocks * init_supply + init_supply, // initial balance + patronage claimed
+            expected_patronage_credit + init_supply,
         );
     })
 }
