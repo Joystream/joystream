@@ -297,6 +297,9 @@ fn claim_patronage_ok_with_event_deposit() {
 
     let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
 
+    // 10%(rate) * 10(blocks) * 100(supply)
+    let expected_credit = balance!(100);
+
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
         .with_account(owner, AccountData::new_with_liquidity(init_supply))
@@ -312,7 +315,7 @@ fn claim_patronage_ok_with_event_deposit() {
         assert!(rate.0 * blocks * init_supply > 0);
         last_event_eq!(RawEvent::PatronageCreditClaimed(
             token_id,
-            rate.0 * blocks * init_supply,
+            expected_credit,
             owner,
         ));
     })
