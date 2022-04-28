@@ -2,6 +2,7 @@
 use frame_support::{assert_noop, assert_ok, StorageDoubleMap, StorageMap};
 use sp_runtime::{traits::Hash, Percent};
 
+use crate::tests::fixtures::default_upload_context;
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
@@ -741,7 +742,7 @@ fn issue_token_fails_with_existing_symbol() {
     };
 
     build_test_externalities(config).execute_with(|| {
-        let result = Token::issue_token(params);
+        let result = Token::issue_token(params, default_upload_context());
 
         assert_noop!(result, Error::<Test>::TokenSymbolAlreadyInUse);
     })
@@ -769,7 +770,7 @@ fn issue_token_ok_owner_having_already_issued_a_token() {
     };
 
     build_test_externalities(config).execute_with(|| {
-        let result = Token::issue_token(params);
+        let result = Token::issue_token(params, default_upload_context());
 
         assert_ok!(result);
     })
@@ -784,7 +785,7 @@ fn issue_token_ok_with_token_id_increased() {
     let params = TokenIssuanceParametersOf::<Test>::default();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(params);
+        let _ = Token::issue_token(params, default_upload_context());
 
         assert_eq!(Token::next_token_id(), token_id + 1);
     })
@@ -796,7 +797,7 @@ fn issue_token_ok() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let result = Token::issue_token(params);
+        let result = Token::issue_token(params, default_upload_context());
         assert_ok!(result);
     })
 }
@@ -813,14 +814,14 @@ fn issue_token_ok_with_event_deposit() {
             vesting_schedule: None,
         },
         symbol: Hashing::hash_of(&token_id),
-        transfer_policy: Policy::Permissionless,
+        transfer_policy: TransferPolicyParams::Permissionless,
         patronage_rate: yearly_rate!(1),
     };
 
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(params.clone());
+        let _ = Token::issue_token(params.clone(), default_upload_context());
         last_event_eq!(RawEvent::TokenIssued(token_id, params.clone()));
     })
 }
@@ -837,7 +838,7 @@ fn issue_token_ok_with_token_info_added() {
             vesting_schedule: None,
         },
         symbol: Hashing::hash_of(&token_id),
-        transfer_policy: Policy::Permissionless,
+        transfer_policy: TransferPolicyParams::Permissionless,
         patronage_rate: yearly_rate!(10),
     };
 
@@ -846,14 +847,14 @@ fn issue_token_ok_with_token_info_added() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(params.clone());
+        let _ = Token::issue_token(params.clone(), default_upload_context());
 
         assert_eq!(
             <crate::TokenInfoById<Test>>::get(token_id),
             TokenDataOf::<Test> {
                 tokens_issued: params.initial_allocation.amount,
                 total_supply: params.initial_allocation.amount,
-                transfer_policy: params.transfer_policy,
+                transfer_policy: params.transfer_policy.into(),
                 symbol: params.symbol,
                 accounts_number: 1u64, // owner account
                 patronage_info: PatronageData::<Balance, BlockNumber> {
@@ -879,7 +880,7 @@ fn issue_token_ok_with_symbol_added() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(params.clone());
+        let _ = Token::issue_token(params.clone(), default_upload_context());
         assert!(<crate::SymbolsUsed<Test>>::contains_key(&params.symbol));
     })
 }
@@ -901,7 +902,7 @@ fn issue_token_ok_with_owner_account_data_added_and_balance_equals_to_initial_su
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(params);
+        let _ = Token::issue_token(params, default_upload_context());
         assert_ok!(
             Token::ensure_account_data_exists(token_id, &owner),
             AccountData::new_with_amount(initial_supply)

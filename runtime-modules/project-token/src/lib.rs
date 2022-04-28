@@ -17,6 +17,7 @@ use sp_runtime::{
 };
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::Sum;
+use storage::UploadParameters;
 
 // crate modules
 mod errors;
@@ -426,6 +427,7 @@ impl<T: Trait>
         TokenIssuanceParametersOf<T>,
         T::BlockNumber,
         TokenSaleParamsOf<T>,
+        UploadContextOf<T>,
     > for Module<T>
 {
     type Balance = <T as Trait>::Balance;
@@ -535,11 +537,28 @@ impl<T: Trait>
     /// - token with specified characteristics is added to storage state
     /// - `NextTokenId` increased by 1
     /// - symbol is added to `Symbols`
-    fn issue_token(issuance_parameters: TokenIssuanceParametersOf<T>) -> DispatchResult {
+    fn issue_token(
+        issuance_parameters: TokenIssuanceParametersOf<T>,
+        upload_context: UploadContextOf<T>,
+    ) -> DispatchResult {
         let token_id = Self::next_token_id();
         Self::validate_issuance_parameters(&issuance_parameters)?;
 
         let token_data = TokenDataOf::<T>::from_params::<T>(issuance_parameters.clone());
+
+        // TODO: Not clear what the storage interface will be yet, so this is just a mock code now
+        if let TransferPolicyParams::Permissioned(whitelist_params) =
+            &issuance_parameters.transfer_policy
+        {
+            if let Some(payload) = whitelist_params.payload.as_ref() {
+                let _ = UploadParameters::<T> {
+                    bag_id: upload_context.bag_id,
+                    deletion_prize_source_account_id: upload_context.uploader_account,
+                    expected_data_size_fee: payload.expected_data_size_fee,
+                    object_creation_list: vec![payload.object_creation_params.clone()],
+                };
+            }
+        }
 
         // == MUTATION SAFE ==
         SymbolsUsed::<T>::insert(&token_data.symbol, ());

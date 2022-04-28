@@ -60,6 +60,7 @@ pub fn default_upload_context() -> UploadContext {
     }
 }
 
+#[allow(dead_code)]
 pub fn default_single_data_object_upload_params() -> SingleDataObjectUploadParams {
     SingleDataObjectUploadParams {
         expected_data_size_fee: storage::Module::<Test>::data_object_per_mega_byte_fee(),
@@ -72,6 +73,7 @@ pub fn default_single_data_object_upload_params() -> SingleDataObjectUploadParam
 
 pub struct IssueTokenFixture {
     params: IssuanceParams,
+    upload_context: UploadContext,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -90,12 +92,13 @@ impl IssueTokenFixture {
                 },
                 patronage_rate: yearly_rate!(0),
                 symbol: Hashing::hash_of(b"ABC"),
-                transfer_policy: TransferPolicy::Permissionless,
+                transfer_policy: TransferPolicyParams::Permissionless,
             },
+            upload_context: default_upload_context(),
         }
     }
 
-    pub fn with_transfer_policy(self, transfer_policy: TransferPolicy) -> Self {
+    pub fn with_transfer_policy(self, transfer_policy: TransferPolicyParams) -> Self {
         Self {
             params: IssuanceParams {
                 transfer_policy,
@@ -114,7 +117,7 @@ impl Fixture<IssueTokenFixtureStateSnapshot> for IssueTokenFixture {
     }
 
     fn execute_call(&self) -> DispatchResult {
-        Token::issue_token(self.params.clone())
+        Token::issue_token(self.params.clone(), self.upload_context.clone())
     }
 
     fn on_success(

@@ -112,6 +112,22 @@ pub struct PatronageData<Balance, BlockNumber> {
     pub(crate) last_unclaimed_patronage_tally_block: BlockNumber,
 }
 
+/// Input parameters describing token transfer policy
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum TransferPolicyParams<WhitelistParams> {
+    /// Permissionless
+    Permissionless,
+
+    /// Permissioned transfer with whitelist
+    Permissioned(WhitelistParams),
+}
+
+impl<WhitelistParams> Default for TransferPolicyParams<WhitelistParams> {
+    fn default() -> Self {
+        Self::Permissionless
+    }
+}
+
 /// The two possible transfer policies
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum TransferPolicy<Hash> {
@@ -120,6 +136,23 @@ pub enum TransferPolicy<Hash> {
 
     /// Permissioned transfer with whitelist commitment
     Permissioned(Hash),
+}
+
+// TransferPolicyParams => TransferPolicy conversion
+impl<Hash, SingleDataObjectUploadParams>
+    From<TransferPolicyParams<WhitelistParams<Hash, SingleDataObjectUploadParams>>>
+    for TransferPolicy<Hash>
+{
+    fn from(
+        params: TransferPolicyParams<WhitelistParams<Hash, SingleDataObjectUploadParams>>,
+    ) -> Self {
+        match params {
+            TransferPolicyParams::Permissioned(whitelist_params) => {
+                Self::Permissioned(whitelist_params.commitment)
+            }
+            TransferPolicyParams::Permissionless => Self::Permissionless,
+        }
+    }
 }
 
 impl<Hash> Default for TransferPolicy<Hash> {
@@ -381,7 +414,7 @@ pub struct InitialAllocation<AddressId, Balance, VestingScheduleParams> {
 
 /// Input parameters for token issuance
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
-pub struct TokenIssuanceParameters<Hash, InitialAllocation> {
+pub struct TokenIssuanceParameters<Hash, InitialAllocation, TransferPolicyParams> {
     /// Initial issuance
     pub(crate) initial_allocation: InitialAllocation,
 
@@ -389,7 +422,7 @@ pub struct TokenIssuanceParameters<Hash, InitialAllocation> {
     pub(crate) symbol: Hash,
 
     /// Initial transfer policy:
-    pub(crate) transfer_policy: TransferPolicy<Hash>,
+    pub(crate) transfer_policy: TransferPolicyParams,
 
     /// Initial Patronage rate
     pub(crate) patronage_rate: YearlyRate,
@@ -727,7 +760,7 @@ where
             total_supply: params.initial_allocation.amount,
             tokens_issued: params.initial_allocation.amount,
             last_sale: None,
-            transfer_policy: params.transfer_policy,
+            transfer_policy: params.transfer_policy.into(),
             patronage_info,
             sales_initialized: 0,
             accounts_number: 0,
@@ -843,8 +876,14 @@ pub(crate) type InitialAllocationOf<T> = InitialAllocation<
 >;
 
 /// Alias for Token Issuance Parameters
-pub(crate) type TokenIssuanceParametersOf<T> =
-    TokenIssuanceParameters<<T as frame_system::Trait>::Hash, InitialAllocationOf<T>>;
+pub(crate) type TokenIssuanceParametersOf<T> = TokenIssuanceParameters<
+    <T as frame_system::Trait>::Hash,
+    InitialAllocationOf<T>,
+    TransferPolicyParamsOf<T>,
+>;
+
+/// Alias for TransferPolicyParams
+pub(crate) type TransferPolicyParamsOf<T> = TransferPolicyParams<WhitelistParamsOf<T>>;
 
 /// Alias for TransferPolicy
 pub(crate) type TransferPolicyOf<T> = TransferPolicy<<T as frame_system::Trait>::Hash>;

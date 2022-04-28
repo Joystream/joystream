@@ -1,6 +1,14 @@
 use frame_support::dispatch::DispatchResult;
 
-pub trait PalletToken<AccountId, Policy, IssuanceParams, BlockNumber, TokenSaleParams> {
+pub trait PalletToken<
+    AccountId,
+    Policy,
+    IssuanceParams,
+    BlockNumber,
+    TokenSaleParams,
+    UploadContext,
+>
+{
     /// Balance type used
     type Balance;
 
@@ -14,7 +22,10 @@ pub trait PalletToken<AccountId, Policy, IssuanceParams, BlockNumber, TokenSaleP
     type YearlyRate;
 
     /// Issue token with specified characteristics
-    fn issue_token(issuance_parameters: IssuanceParams) -> DispatchResult;
+    fn issue_token(
+        issuance_parameters: IssuanceParams,
+        upload_context: UploadContext,
+    ) -> DispatchResult;
 
     /// Update existing, upcoming token sale
     fn update_upcoming_sale(

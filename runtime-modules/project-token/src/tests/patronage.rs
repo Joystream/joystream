@@ -2,6 +2,7 @@
 use frame_support::{assert_noop, assert_ok};
 use sp_runtime::{Perbill, Percent};
 
+use crate::tests::fixtures::default_upload_context;
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
@@ -28,7 +29,7 @@ fn issue_token_ok_with_patronage_tally_count_zero() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(params);
+        let _ = Token::issue_token(params, default_upload_context());
 
         assert_eq!(
             Token::token_info_by_id(token_id)
@@ -58,7 +59,7 @@ fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
     let rate = BlockRate::from_yearly_rate(patronage_rate, BlocksPerYear::get());
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(params);
+        let _ = Token::issue_token(params, default_upload_context());
         increase_block_number_by(blocks);
 
         assert_eq!(
@@ -87,7 +88,7 @@ fn issue_token_ok_with_correct_patronage_accounting_and_zero_supply() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(params);
+        let _ = Token::issue_token(params, default_upload_context());
         increase_block_number_by(blocks);
 
         assert_eq!(Token::token_info_by_id(token_id).total_supply, balance!(0),);

@@ -396,7 +396,10 @@ fn unsuccesful_sale_purchase_with_permissioned_token_and_non_existing_account() 
     build_test_externalities(config).execute_with(|| {
         let commitment = merkle_root![DEFAULT_ACCOUNT_ID, OTHER_ACCOUNT_ID];
         IssueTokenFixture::default()
-            .with_transfer_policy(TransferPolicy::Permissioned(commitment))
+            .with_transfer_policy(TransferPolicyParams::Permissioned(WhitelistParams {
+                commitment,
+                payload: None,
+            }))
             .call_and_assert(Ok(()));
         InitTokenSaleFixture::default().call_and_assert(Ok(()));
         increase_account_balance(
@@ -508,7 +511,10 @@ fn succesful_sale_purchase_existing_account_permissioned_token() {
         let commitment = merkle_root![DEFAULT_ACCOUNT_ID, OTHER_ACCOUNT_ID];
         let proof = merkle_proof!(1, [DEFAULT_ACCOUNT_ID, OTHER_ACCOUNT_ID]);
         IssueTokenFixture::default()
-            .with_transfer_policy(TransferPolicy::Permissioned(commitment))
+            .with_transfer_policy(TransferPolicyParams::Permissioned(WhitelistParams {
+                commitment,
+                payload: None,
+            }))
             .call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
