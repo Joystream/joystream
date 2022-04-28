@@ -25,7 +25,7 @@ pub trait PalletToken<AccountId, Policy, IssuanceParams> {
     /// Change to permissionless
     fn change_to_permissionless(token_id: Self::TokenId) -> DispatchResult;
 
-    /// Reduce patronage rate by amount
+    /// Reduce patronage rate to a specified target
     fn reduce_patronage_rate_to(
         token_id: Self::TokenId,
         target_rate: Self::YearlyRate,
