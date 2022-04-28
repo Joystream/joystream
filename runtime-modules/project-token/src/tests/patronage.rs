@@ -485,7 +485,7 @@ fn claim_patronage_ok_with_tally_amount_set_to_zero() {
 }
 
 #[test]
-fn claim_patroage_ok_with_tally_block_update_after_account_removed() {
+fn dust_account_ok_with_tally_block_update_after_account_removed() {
     let (token_id, init_supply) = (token!(1), balance!(100));
     let (owner, user_account) = (account!(1), account!(2));
     let (rate, blocks) = (rate!(10), block!(10));
@@ -515,7 +515,7 @@ fn claim_patroage_ok_with_tally_block_update_after_account_removed() {
 }
 
 #[test]
-fn claim_patroage_ok_with_tally_amount_update_after_account_removed() {
+fn dust_account_ok_with_tally_amount_update_after_account_removed() {
     let (token_id, owner_balance) = (token!(1), balance!(100));
     let (owner, user_account) = (account!(1), account!(2));
     let (rate, blocks) = (rate!(10), block!(10));
