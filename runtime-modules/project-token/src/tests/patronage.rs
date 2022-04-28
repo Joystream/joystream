@@ -296,7 +296,9 @@ fn claim_patronage_ok_with_supply_greater_than_u64_max() {
     let token_id = token!(1);
     let owner = account!(1);
     let (rate, blocks) = (rate!(10), block!(10));
-    let supply = balance!(u64::MAX as u128 + 1u128);
+    let supply = balance!(1_000_000_000_000_000_000_000_000_000_000u128);
+    // rate * blocks = 100% , expected  = 100 % supply + supply
+    let expected_amount = balance!(2_000_000_000_000_000_000_000_000_000_000u128);
 
     let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
 
@@ -307,12 +309,14 @@ fn claim_patronage_ok_with_supply_greater_than_u64_max() {
     build_test_externalities(config).execute_with(|| {
         increase_block_number_by(blocks);
 
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
-                token_id, owner,
-            );
+        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
+            token_id, owner,
+        );
 
-        assert_ok!(result);
+        assert_eq!(
+            Token::account_info_by_token_and_account(token_id, owner).free_balance,
+            expected_amount
+        );
     })
 }
 
