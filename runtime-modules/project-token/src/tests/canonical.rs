@@ -974,7 +974,7 @@ fn issue_token_ok_with_correct_patronage_rate_approximated() {
         patronage_rate: YearlyRate(Permill::from_perthousand(105)), // 10.5%
     };
 
-    // rate = floor(10.5% / blocks * 1e10) per quintill = 19963924238 per quintill
+    // rate = floor(.105 / blocks_per_year * 1e18) per quintill = 19963924238 per quintill
     let expected = BlockRate(Perquintill::from_parts(19963924238));
 
     let config = GenesisConfigBuilder::new_empty().build();
