@@ -125,14 +125,17 @@ type Membership @entity {
   "NFTs owned by this member in various channels."
   nftCollectorInChannels: [ChannelNftCollectors!]! @derivedFrom(field: "member")
 
+  # Required for EnglishAuctionSettledEvent->members Many-to-Many relationship
   "English auction bids made by the member."
-  memberEnglishAuctionBids: [EnglishAuctionSettledEvent!] @derivedFrom(field: "bidders")
+  memberEnglishAuctionSettledEvents: [EnglishAuctionSettledEvent!] @derivedFrom(field: "bidders")
 
+  # Required for OpenAuctionBidAcceptedEvent->members Many-to-Many relationship
   "Open auction bids made by the member."
-  memberOpenAuctionBids: [OpenAuctionBidAcceptedEvent!] @derivedFrom(field: "bidders")
+  memberOpenAuctionAcceptedBidEvents: [OpenAuctionBidAcceptedEvent!] @derivedFrom(field: "bidders")
 
+  # Required for BidMadeCompletingAuctionEvent->members Many-to-Many relationship
   "Auction bids made by the member in BidMadeCompletingAuctionEvent/s."
-  memberAuctionBids: [BidMadeCompletingAuctionEvent!] @derivedFrom(field: "bidders")
+  memberBidMadeCompletingAuctionEvents: [BidMadeCompletingAuctionEvent!] @derivedFrom(field: "bidders")
 }
 
 type MembershipSystemSnapshot @entity {
