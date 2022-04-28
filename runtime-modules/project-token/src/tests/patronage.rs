@@ -103,7 +103,7 @@ fn decrease_patronage_ok() {
 
     build_test_externalities(config).execute_with(|| {
         let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_by(
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_to(
                 token_id, decrement,
             );
 
@@ -112,40 +112,64 @@ fn decrease_patronage_ok() {
 }
 
 #[test]
-fn decrease_patronage_ok_with_tally_count_twice_updated() {
-    let token_id = token!(1);
-    let decrement = yearly_rate!(10);
-    let (owner, init_supply) = (account!(1), balance!(1_000_000_000));
-    let (init_rate, blocks) = (yearly_rate!(30), block!(10));
-
-    // K = 1/blocks_per_years => floor((30% + 20%) * 10 * K * 1bill) = floor(K * 5bill) = 950
-    let expected = balance!(950);
+fn decrease_patronage_ok_with_tally_count_correctly_updated() {
+    let rate = rate!(1);
+    let (token_id, init_supply) = (token!(1), balance!(100));
+    let owner = account!(1);
+    let blocks = block!(10);
+    let target_rate = yearly_rate!(20);
 
     let token_info = TokenDataBuilder::new_empty()
-        .with_patronage_rate(BlockRate::from_yearly_rate(init_rate, BlocksPerYear::get()))
+        .with_patronage_rate(rate)
+        .build();
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token_and_owner(token_id, token_info, owner, init_supply)
+        .build();
+
+    // 10% * 100 = 10
+    let expected = balance!(10);
+
+    build_test_externalities(config).execute_with(|| {
+        increase_block_number_by(blocks);
+        let result =
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_to(
+                token_id,
+                target_rate,
+            );
+
+        assert_ok!(result);
+        assert_eq!(
+            Token::token_info_by_id(token_id)
+                .patronage_info
+                .unclaimed_patronage_tally_amount,
+            expected
+        );
+    })
+}
+
+#[test]
+fn decrease_patronage_ok_noop_with_current_patronage_rate_specified_as_target() {
+    let rate = BlockRate::from_yearly_rate(yearly_rate!(10), BlocksPerYear::get());
+    let (token_id, init_supply) = (token!(1), balance!(100));
+    let owner = account!(1);
+    let target_rate = yearly_rate!(10);
+
+    let token_info = TokenDataBuilder::new_empty()
+        .with_patronage_rate(rate)
         .build();
     let config = GenesisConfigBuilder::new_empty()
         .with_token_and_owner(token_id, token_info, owner, init_supply)
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_block_number_by(blocks);
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_by(
-            token_id, decrement,
-        );
+        let result =
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_to(
+                token_id,
+                target_rate,
+            );
 
-        increase_block_number_by(blocks);
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_by(
-            token_id, decrement,
-        );
-
-        // initially zero: now updated
-        assert_eq!(
-            Token::token_info_by_id(token_id)
-                .patronage_info
-                .unclaimed_patronage_tally_amount,
-            expected,
-        );
+        assert_ok!(result);
+        assert_eq!(Token::token_info_by_id(token_id).patronage_info.rate, rate);
     })
 }
 
@@ -163,7 +187,7 @@ fn decrease_patronage_ok_with_event_deposit() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_by(
+        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_to(
             token_id, decrement,
         );
 
@@ -179,9 +203,9 @@ fn decrease_patronage_ok_with_event_deposit() {
 fn decrease_patronage_ok_with_new_patronage_rate_correctly_approximated() {
     let init_rate = yearly_rate!(50);
     let token_id = token!(1);
-    let decrement = yearly_rate!(20);
+    let target_rate = yearly_rate!(30);
 
-    // K = 1/blocks_per_years => (50% - 20%) * K ~= 57039783537.8 * 1e-18
+    // K = 1/blocks_per_years => 30% * K ~= 57039783537.8 * 1e-18
     let expected = BlockRate(Perquintill::from_parts(57039783537));
 
     let params = TokenDataBuilder::new_empty()
@@ -191,8 +215,9 @@ fn decrease_patronage_ok_with_new_patronage_rate_correctly_approximated() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_by(
-            token_id, decrement,
+        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_to(
+            token_id,
+            target_rate,
         );
 
         assert_approx_eq!(
@@ -210,11 +235,12 @@ fn decrease_patronage_ok_with_new_patronage_rate_correctly_approximated() {
 #[test]
 fn decrease_patronage_ok_with_last_tally_block_updated() {
     let token_id = token!(1);
-    let decrement = yearly_rate!(10);
+    let target_rate = yearly_rate!(10);
     let (init_rate, blocks) = (yearly_rate!(20), block!(10));
 
     let params = TokenDataBuilder::new_empty()
         .with_patronage_rate(BlockRate::from_yearly_rate(init_rate, BlocksPerYear::get()));
+
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
         .build();
@@ -222,8 +248,9 @@ fn decrease_patronage_ok_with_last_tally_block_updated() {
     build_test_externalities(config).execute_with(|| {
         increase_block_number_by(blocks);
 
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_by(
-            token_id, decrement,
+        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_to(
+            token_id,
+            target_rate,
         );
 
         assert_eq!(
@@ -240,7 +267,7 @@ fn decreasing_patronage_rate_fails_with_decrease_amount_too_large() {
     let init_rate = yearly_rate!(50);
     let (token_id, init_supply) = (token!(1), balance!(100));
     let owner = account!(1);
-    let decrease = yearly_rate!(70);
+    let target_rate = yearly_rate!(70);
 
     let token_info = TokenDataBuilder::new_empty()
         .with_patronage_rate(BlockRate::from_yearly_rate(init_rate, BlocksPerYear::get()))
@@ -251,11 +278,15 @@ fn decreasing_patronage_rate_fails_with_decrease_amount_too_large() {
 
     build_test_externalities(config).execute_with(|| {
         let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_by(
-                token_id, decrease,
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_to(
+                token_id,
+                target_rate,
             );
 
-        assert_noop!(result, Error::<Test>::ReductionExceedingPatronageRate);
+        assert_noop!(
+            result,
+            Error::<Test>::TargetPatronageRateIsHigherThanCurrentRate
+        );
     })
 }
 
@@ -267,7 +298,7 @@ fn decreasing_patronage_rate_fails_invalid_token() {
 
     build_test_externalities(config).execute_with(|| {
         let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_by(
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_to(
                 token_id, decrease,
             );
 

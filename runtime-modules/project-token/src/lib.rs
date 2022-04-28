@@ -301,28 +301,30 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
     ///
     /// Postconditions:
     /// - patronage rate for `token_id` reduced by `decrement`
-    fn reduce_patronage_rate_by(token_id: T::TokenId, decrement: YearlyRate) -> DispatchResult {
+    /// - no-op if `target_rate` is equal to the current patronage rate
+    fn reduce_patronage_rate_to(token_id: T::TokenId, target_rate: YearlyRate) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
-        let block_rate_decrement = BlockRate::from_yearly_rate(decrement, T::BlocksPerYear::get());
+        let target_rate_per_block =
+            BlockRate::from_yearly_rate(target_rate, T::BlocksPerYear::get());
 
-        // ensure new rate is >= 0
+        if token_info.patronage_info.rate == target_rate_per_block {
+            return Ok(());
+        }
+
         ensure!(
-            token_info.patronage_info.rate >= block_rate_decrement,
-            Error::<T>::ReductionExceedingPatronageRate,
+            token_info.patronage_info.rate > target_rate_per_block,
+            Error::<T>::TargetPatronageRateIsHigherThanCurrentRate,
         );
 
         // == MUTATION SAFE ==
 
         let now = Self::current_block();
-        let new_rate = token_info
-            .patronage_info
-            .rate
-            .saturating_sub(block_rate_decrement);
         TokenInfoById::<T>::mutate(token_id, |token_info| {
-            token_info.set_new_patronage_rate_at_block(new_rate, now);
+            token_info.set_new_patronage_rate_at_block(target_rate_per_block, now);
         });
 
-        let new_yearly_rate = new_rate.to_yearly_rate_representation(T::BlocksPerYear::get());
+        let new_yearly_rate =
+            target_rate_per_block.to_yearly_rate_representation(T::BlocksPerYear::get());
         Self::deposit_event(RawEvent::PatronageRateDecreasedTo(
             token_id,
             new_yearly_rate,
