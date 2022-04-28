@@ -903,7 +903,7 @@ export async function contentNft_BidMadeCompletingAuction({
   } = await createBid(event, store, memberId.toNumber(), videoId.toNumber())
 
   // finish auction and transfer ownership
-  const { video, winningBid, nft } = await finishAuction(store, videoId.toNumber(), event.blockNumber)
+  const { video, winningBid, nft, bidders } = await finishAuction(store, videoId.toNumber(), event.blockNumber)
 
   // set last sale
   nft.lastSalePrice = winningBid.amount
@@ -925,6 +925,7 @@ export async function contentNft_BidMadeCompletingAuction({
     price: winningBid.amount,
     previousTopBid: previousTopBidder ? previousTopBid : undefined,
     previousTopBidder,
+    bidders,
   })
 
   await store.save<BidMadeCompletingAuctionEvent>(bidMadeCompletingAuctionEvent)
