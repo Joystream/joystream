@@ -332,13 +332,6 @@ macro_rules! merkle_proof {
 }
 
 #[macro_export]
-macro_rules! treasury {
-    ($t: expr) => {
-        <Test as crate::Trait>::ModuleId::get().into_sub_account::<AccountId>($t)
-    };
-}
-
-#[macro_export]
 macro_rules! abs_diff {
     ($x: expr, $y: expr) => {
         $x.max($y).saturating_sub($x.min($y))
