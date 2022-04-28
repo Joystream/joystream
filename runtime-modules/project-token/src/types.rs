@@ -8,7 +8,7 @@ use sp_arithmetic::traits::{
     AtLeast32BitUnsigned, Saturating, UniqueSaturatedInto, Unsigned, Zero,
 };
 use sp_runtime::traits::Hash;
-use sp_runtime::{Permill, Perquintill, SaturatedConversion};
+use sp_runtime::{PerThing, Permill, Perquintill, SaturatedConversion};
 use sp_std::collections::btree_map::{BTreeMap, IntoIter, Iter};
 use sp_std::convert::From;
 use sp_std::iter::Sum;
@@ -365,9 +365,10 @@ impl<AccountId, Balance> From<Transfers<AccountId, Balance>>
 /// Block Rate bare minimum impementation
 impl BlockRate {
     pub fn from_yearly_rate(r: YearlyRate, blocks_per_year: u32) -> Self {
+        let max_accuracy: u64 = <Permill as PerThing>::ACCURACY.into();
         BlockRate(Perquintill::from_rational_approximation(
-            1u64,
-            r.0.saturating_reciprocal_mul(blocks_per_year as u64),
+            r.0.deconstruct().into(),
+            max_accuracy.saturating_mul(blocks_per_year.into()),
         ))
     }
 

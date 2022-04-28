@@ -7,8 +7,8 @@ use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
 use crate::types::{BlockRate, TokenIssuanceParametersOf, YearlyRate};
 use crate::{
-    abs_diff, account, balance, block, last_event_eq, origin, rate, token, yearly_rate, Error,
-    RawEvent,
+    account, assert_approx_eq, balance, block, last_event_eq, origin, rate, token, yearly_rate,
+    Error, RawEvent,
 };
 
 #[test]
@@ -49,8 +49,9 @@ fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
         ..Default::default()
     };
     let config = GenesisConfigBuilder::new_empty().build();
-    // hard coded reference value: floor((.2/52594921) * 1billion * 10) = 38
-    let expected = balance!(38);
+
+    // K = 1/blocks_per_years => floor(20% * 10 * K * 1bill) = floor(K * 2bill) = 38
+    let expected = balance!(380);
 
     build_test_externalities(config).execute_with(|| {
         let _ =
@@ -111,13 +112,14 @@ fn decrease_patronage_ok() {
 }
 
 #[test]
-fn decrease_patronage_ok_with_tally_count_updated() {
+fn decrease_patronage_ok_with_tally_count_twice_updated() {
     let token_id = token!(1);
     let decrement = yearly_rate!(10);
     let (owner, init_supply) = (account!(1), balance!(1_000_000_000));
     let (init_rate, blocks) = (yearly_rate!(30), block!(10));
-    // hard coded reference value: floor((50/5259492100) * 10 * 1000000000) = 95
-    let expected = balance!(95);
+
+    // K = 1/blocks_per_years => floor((30% + 20%) * 10 * K * 1bill) = floor(K * 5bill) = 950
+    let expected = balance!(950);
 
     let token_info = TokenDataBuilder::new_empty()
         .with_patronage_rate(BlockRate::from_yearly_rate(init_rate, BlocksPerYear::get()))
@@ -178,8 +180,9 @@ fn decrease_patronage_ok_with_new_patronage_rate_correctly_approximated() {
     let init_rate = yearly_rate!(50);
     let token_id = token!(1);
     let decrement = yearly_rate!(20);
-    // hard coded reference value: (.3/52594921) * 1quintillion
-    let expected = BlockRate(Perquintill::from_parts(5703972822));
+
+    // K = 1/blocks_per_years => (50% - 20%) * K ~= 57039783537.8 * 1e-18
+    let expected = BlockRate(Perquintill::from_parts(57039783537));
 
     let params = TokenDataBuilder::new_empty()
         .with_patronage_rate(BlockRate::from_yearly_rate(init_rate, BlocksPerYear::get()));
@@ -192,9 +195,15 @@ fn decrease_patronage_ok_with_new_patronage_rate_correctly_approximated() {
             token_id, decrement,
         );
 
-        let approx = Token::token_info_by_id(token_id).patronage_info.rate;
-        let abs_diff = abs_diff!(approx.0.deconstruct(), expected.0.deconstruct());
-        assert!(abs_diff < 10u64);
+        assert_approx_eq!(
+            Token::token_info_by_id(token_id)
+                .patronage_info
+                .rate
+                .0
+                .deconstruct(),
+            expected.0.deconstruct(),
+            3u64
+        );
     })
 }
 

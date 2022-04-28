@@ -1,6 +1,6 @@
 #![cfg(test)]
 use frame_support::{assert_noop, assert_ok, StorageDoubleMap, StorageMap};
-use sp_runtime::{traits::Hash, Permill};
+use sp_runtime::{traits::Hash, Permill, Perquintill};
 
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
@@ -9,8 +9,8 @@ use crate::types::{
     BlockRate, MerkleProofOf, OfferingState, PatronageData, TokenIssuanceParametersOf, YearlyRate,
 };
 use crate::{
-    account, balance, joy, last_event_eq, merkle_proof, merkle_root, origin, token, yearly_rate,
-    Error, RawEvent, TokenDataOf,
+    account, assert_approx_eq, balance, joy, last_event_eq, merkle_proof, merkle_root, origin,
+    token, yearly_rate, Error, RawEvent, TokenDataOf,
 };
 
 #[test]
@@ -959,6 +959,37 @@ fn issue_token_ok_with_token_info_added() {
                 }
             }
         );
+    })
+}
+
+#[test]
+fn issue_token_ok_with_correct_patronage_rate_approximated() {
+    let token_id = token!(1);
+    let owner = account!(1);
+
+    let params = TokenIssuanceParametersOf::<Test> {
+        initial_supply: balance!(100),
+        symbol: Hashing::hash_of(&token_id),
+        transfer_policy: Policy::Permissionless,
+        patronage_rate: YearlyRate(Permill::from_perthousand(105)), // 10.5%
+    };
+
+    // rate = floor(10.5% / blocks * 1e10) per quintill = 19963924238 per quintill
+    let expected = BlockRate(Perquintill::from_parts(19963924238));
+
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::issue_token(
+            owner,
+            params.clone(),
+        );
+
+        let actual = <crate::TokenInfoById<Test>>::get(token_id)
+            .patronage_info
+            .rate;
+
+        assert_approx_eq!(actual.0.deconstruct(), expected.0.deconstruct(), 1u64);
     })
 }
 

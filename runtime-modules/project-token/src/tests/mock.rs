@@ -332,9 +332,11 @@ macro_rules! merkle_proof {
 }
 
 #[macro_export]
-macro_rules! abs_diff {
-    ($x: expr, $y: expr) => {
-        $x.max($y).saturating_sub($x.min($y))
+#[cfg(feature = "std")]
+macro_rules! assert_approx_eq {
+    ($x: expr, $y: expr, $eps: expr) => {
+        let abs_diff = $x.max($y).saturating_sub($x.min($y));
+        assert!(abs_diff < $eps)
     };
 }
 
