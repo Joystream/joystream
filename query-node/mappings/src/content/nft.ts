@@ -355,7 +355,7 @@ async function createBid(
   const previousTopBid = auction.topBid
 
   // prepare bid record
-  const bid = new Bid({
+  const newBid = new Bid({
     auction,
     nft,
     bidder: member,
@@ -366,23 +366,32 @@ async function createBid(
     isCanceled: false,
   })
 
-  // if the auction has no top bid or the new bid is higher, use the new bid
-  if (!auction.topBid || auction.topBid.amount.lt(bid.amount)) {
-    bid.auctionTopBid = auction
+  // check if the auction's top bid needs to be updated, this can happen in those cases:
+  // 1. auction doesn't have the top bid at the moment, new bid should be new top bid
+  // 2. new bid is higher than the current top bid
+  // 3. new bid canceled previous top bid (user changed their bid to a lower one), so we need to find a new one
+
+  if (!auction.topBid || newBid.amount.gt(auction.topBid.amount)) {
+    // handle cases 1 and 2
+    newBid.auctionTopBid = auction
   } else if (cancelledBidsIds.includes(auction.topBid.id)) {
-    // current top bid got cancelled, need to update it
-    const bidsList = [...(auction.bids || []), bid]
-    const newTopBid = findTopBid(bidsList)
+    // handle case 3
+    const allAuctionBids = [...(auction.bids || []), newBid]
+    // filter canceled bids - auction.bids will be stale in memory
+    const notCanceledAuctionBids = allAuctionBids.filter((auctionBid) => !cancelledBidsIds.includes(auctionBid.id))
+    const newTopBid = findTopBid(notCanceledAuctionBids)
     if (newTopBid) {
-      newTopBid.auctionTopBid = auction
-      if (cancelledBidsIds.includes(newTopBid.id)) {
-        newTopBid.isCanceled = true
+      if (newTopBid.id !== newBid.id) {
+        // only save newTopBid if it's not the newBid, otherwise store.save(newBid) below will overwrite it
+        newTopBid.auctionTopBid = auction
+        await store.save<Bid>(newTopBid)
+      } else {
+        newBid.auctionTopBid = auction
       }
-      await store.save<Bid>(newTopBid)
     }
   }
 
-  await store.save<Bid>(bid)
+  await store.save<Bid>(newBid)
 
   return { auction, member, video, nft, previousTopBid }
 }
@@ -746,7 +755,7 @@ export async function contentNft_AuctionBidCanceled({ event, store }: EventConte
 
   // specific event processing
 
-  const bid = await store.get(Bid, {
+  const canceledBid = await store.get(Bid, {
     where: { bidder: { id: memberId.toString() }, nft: { id: videoId.toString() }, isCanceled: false },
     relations: [
       'nft',
@@ -761,24 +770,29 @@ export async function contentNft_AuctionBidCanceled({ event, store }: EventConte
   })
 
   // ensure bid exists
-  if (!bid) {
+  if (!canceledBid) {
     return inconsistentState('Non-existing bid got canceled')
   }
 
   // load auction and video
   const {
     auction,
-    nft: { video, ownerMember, ownerCuratorGroup, transactionalStatusAuction },
-  } = bid
+    nft: { video, ownerMember, ownerCuratorGroup },
+  } = canceledBid
 
-  bid.isCanceled = true
+  canceledBid.isCanceled = true
 
   // save bid
-  await store.save<Bid>(bid)
+  await store.save<Bid>(canceledBid)
 
-  if (transactionalStatusAuction && auction.topBid && bid.id.toString() === auction.topBid.id.toString()) {
+  if (auction.topBid && canceledBid.id.toString() === auction.topBid.id.toString()) {
+    // create list of all auction bids, but exclude bid that just got canceled
+    // we saved the bid but the auction bids are stale in memory and the bid that just got canceled is not updated in auction.bids
+    // if we don't filter it, the canceled bid may get set as the top bid again
+    const allAuctionBids = [...(auction.bids || [])]
+    const notCanceledAuctionBids = allAuctionBids.filter((auctionBid) => auctionBid.id !== canceledBid.id)
     // find new top bid
-    auction.topBid = findTopBid(auction.bids || [])
+    auction.topBid = findTopBid(notCanceledAuctionBids)
 
     // save auction
     await store.save<Auction>(auction)
