@@ -179,6 +179,6 @@ jobs:
           mkdir -p ${HOME}/.local/share/joystream-cli
           yarn joystream-cli api:setUri ws://localhost:9944
           # Olympia release TESTING runtime profile
-          export RUNTIME=d7fd5888aacb3616be7ddfc7aab5d96603537c74
+          export RUNTIME_TAG=d7fd5888aacb3616be7ddfc7aab5d96603537c74
           export TARGET_RUNTIME_TAG=latest
           tests/network-tests/run-migration-tests.sh
