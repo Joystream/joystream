@@ -1,6 +1,6 @@
 use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::Hash;
-use sp_runtime::{Perbill, Percent};
+use sp_runtime::Perquintill;
 use sp_std::collections::btree_map::BTreeMap;
 
 use crate::tests::mock::*;
@@ -73,7 +73,7 @@ impl TokenDataBuilder {
             sales_initialized: 0,
             transfer_policy: TransferPolicy::Permissionless,
             patronage_info: PatronageData::<Balance, BlockNumber> {
-                rate: BlockRate(Perbill::zero()),
+                rate: BlockRate(Perquintill::zero()),
                 unclaimed_patronage_tally_amount: Balance::zero(),
                 last_unclaimed_patronage_tally_block: BlockNumber::one(),
             },
@@ -217,22 +217,4 @@ fn adding_account_with_tokens_also_adds_supply() {
     let token = &builder.token_info_by_id.last().unwrap().1;
     assert_eq!(token.tokens_issued, 10);
     assert_eq!(token.total_supply, 10);
-}
-
-#[test]
-fn permill_yearly_and_block_rate_behavior() {
-    // yearly percentage parts = 100 => per block parts = blocks_per_year x 100
-    pub const BLOCKS_PER_YEAR: u32 = 5259492;
-    //    let block_rate = Permill::from_parts(BLOCKS_PER_YEAR);
-    pub const PERCENTAGE: u8 = 16;
-    let yearly_rate = Percent::from_percent(PERCENTAGE);
-
-    let block_rate =
-        Perbill::from_parts((yearly_rate.deconstruct() as u32).saturating_mul(BLOCKS_PER_YEAR));
-
-    use sp_std::ops::Div;
-    assert_eq!(
-        Percent::from_parts(block_rate.deconstruct().div(BLOCKS_PER_YEAR) as u8),
-        yearly_rate,
-    );
 }

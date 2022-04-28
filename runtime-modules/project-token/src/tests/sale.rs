@@ -277,6 +277,10 @@ fn unsuccesful_sale_purchase_insufficient_joy_balance_new_account() {
 
     build_test_externalities(config).execute_with(|| {
         increase_account_balance(
+            &DEFAULT_ACCOUNT_ID,
+            <Test as crate::Trait>::JoyExistentialDeposit::get() + bloat_bond,
+        );
+        increase_account_balance(
             &OTHER_ACCOUNT_ID,
             <Test as crate::Trait>::JoyExistentialDeposit::get()
                 + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT
@@ -420,6 +424,10 @@ fn succesful_sale_purchases_non_existing_account_no_vesting_schedule() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(
+            &DEFAULT_ACCOUNT_ID,
+            <Test as crate::Trait>::JoyExistentialDeposit::get() + bloat_bond,
+        );
         IssueTokenFixture::default().call_and_assert(Ok(()));
         InitTokenSaleFixture::default()
             .with_vesting_schedule(None)
@@ -449,6 +457,10 @@ fn succesful_sale_purchases_non_existing_account_vesting_schedule() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(
+            &DEFAULT_ACCOUNT_ID,
+            <Test as crate::Trait>::JoyExistentialDeposit::get() + bloat_bond,
+        );
         IssueTokenFixture::default().call_and_assert(Ok(()));
         InitTokenSaleFixture::default()
             .with_vesting_schedule(Some(VestingScheduleParams {
@@ -510,6 +522,10 @@ fn succesful_sale_purchase_existing_account_permissioned_token() {
     build_test_externalities(config).execute_with(|| {
         let commitment = merkle_root![DEFAULT_ACCOUNT_ID, OTHER_ACCOUNT_ID];
         let proof = merkle_proof!(1, [DEFAULT_ACCOUNT_ID, OTHER_ACCOUNT_ID]);
+        increase_account_balance(
+            &DEFAULT_ACCOUNT_ID,
+            <Test as crate::Trait>::JoyExistentialDeposit::get() + bloat_bond,
+        );
         IssueTokenFixture::default()
             .with_transfer_policy(TransferPolicyParams::Permissioned(WhitelistParams {
                 commitment,

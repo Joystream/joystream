@@ -12,7 +12,7 @@ use frame_support::{
 use frame_system::ensure_signed;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
-    traits::{AccountIdConversion, Convert},
+    traits::{AccountIdConversion, Convert, UniqueSaturatedInto},
     ModuleId,
 };
 use sp_std::collections::btree_map::BTreeMap;
@@ -48,7 +48,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + storage::Trait {
         + Debug
         + Saturating
         + Sum
-        + Into<<Self as balances::Trait>::Balance>;
+        + From<u64>
+        + UniqueSaturatedInto<u64>
+        + Into<JoyBalanceOf<Self>>;
 
     /// The token identifier used
     type TokenId: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug;
@@ -189,11 +191,10 @@ decl_module! {
                 &account_to_remove_info,
             )?;
 
-
             // == MUTATION SAFE ==
 
             let now = Self::current_block();
-            let unclaimed_patronage = token_info.unclaimed_patronage_at_block::<T::BlockNumberToBalance>(now);
+            let unclaimed_patronage = token_info.unclaimed_patronage_at_block(now);
 
             AccountInfoByTokenAndAccount::<T>::remove(token_id, &account_id);
             TokenInfoById::<T>::mutate(token_id, |token_info| {
@@ -444,7 +445,11 @@ impl<T: Trait>
     /// Postconditions
     /// - transfer policy of `token_id` changed to permissionless
     fn change_to_permissionless(token_id: T::TokenId) -> DispatchResult {
-        TokenInfoById::<T>::try_mutate(token_id, |token_info| {
+        Self::ensure_token_exists(token_id).map(|_| ())?;
+
+        // == MUTATION SAFE ==
+
+        TokenInfoById::<T>::mutate(token_id, |token_info| {
             token_info.transfer_policy = TransferPolicyOf::<T>::Permissionless;
             Ok(())
         })
@@ -457,28 +462,30 @@ impl<T: Trait>
     ///
     /// Postconditions:
     /// - patronage rate for `token_id` reduced by `decrement`
-    fn reduce_patronage_rate_by(token_id: T::TokenId, decrement: YearlyRate) -> DispatchResult {
+    /// - no-op if `target_rate` is equal to the current patronage rate
+    fn reduce_patronage_rate_to(token_id: T::TokenId, target_rate: YearlyRate) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
-        let block_rate_decrement = BlockRate::from_yearly_rate(decrement, T::BlocksPerYear::get());
+        let target_rate_per_block =
+            BlockRate::from_yearly_rate(target_rate, T::BlocksPerYear::get());
 
-        // ensure new rate is >= 0
+        if token_info.patronage_info.rate == target_rate_per_block {
+            return Ok(());
+        }
+
         ensure!(
-            token_info.patronage_info.rate >= block_rate_decrement,
-            Error::<T>::ReductionExceedingPatronageRate,
+            token_info.patronage_info.rate > target_rate_per_block,
+            Error::<T>::TargetPatronageRateIsHigherThanCurrentRate,
         );
 
         // == MUTATION SAFE ==
 
         let now = Self::current_block();
-        let new_rate = token_info
-            .patronage_info
-            .rate
-            .saturating_sub(block_rate_decrement);
         TokenInfoById::<T>::mutate(token_id, |token_info| {
-            token_info.set_new_patronage_rate_at_block::<T::BlockNumberToBalance>(new_rate, now);
+            token_info.set_new_patronage_rate_at_block(target_rate_per_block, now);
         });
 
-        let new_yearly_rate = new_rate.to_yearly_rate(T::BlocksPerYear::get());
+        let new_yearly_rate =
+            target_rate_per_block.to_yearly_rate_representation(T::BlocksPerYear::get());
         Self::deposit_event(RawEvent::PatronageRateDecreasedTo(
             token_id,
             new_yearly_rate,
@@ -501,8 +508,7 @@ impl<T: Trait>
         Self::ensure_account_data_exists(token_id, &to_account).map(|_| ())?;
 
         let now = Self::current_block();
-        let unclaimed_patronage =
-            token_info.unclaimed_patronage_at_block::<T::BlockNumberToBalance>(now);
+        let unclaimed_patronage = token_info.unclaimed_patronage_at_block(now);
 
         if unclaimed_patronage.is_zero() {
             return Ok(());
@@ -532,11 +538,13 @@ impl<T: Trait>
     /// Preconditions:
     /// - `token_id` must NOT exists
     /// - `symbol` specified in the parameters must NOT exists
+    /// - `owner_account_id` free balance in JOYs >= `bloat_bond`
     ///
     /// Postconditions:
     /// - token with specified characteristics is added to storage state
     /// - `NextTokenId` increased by 1
     /// - symbol is added to `Symbols`
+    /// - ``bloat_bond` JOYs transferred from `owner_account_id` to treasury account
     fn issue_token(
         issuance_parameters: TokenIssuanceParametersOf<T>,
         upload_context: UploadContextOf<T>,
@@ -560,10 +568,15 @@ impl<T: Trait>
             }
         }
 
+        let bloat_bond = Self::bloat_bond();
+        Self::ensure_can_transfer_joy(&issuance_parameters.initial_allocation.address, bloat_bond)?;
+
         // == MUTATION SAFE ==
         SymbolsUsed::<T>::insert(&token_data.symbol, ());
         TokenInfoById::<T>::insert(token_id, token_data);
         NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
+
+        Self::deposit_to_treasury(&issuance_parameters.initial_allocation.address, bloat_bond);
 
         let account_data = AccountData {
             bloat_bond: BloatBond::<T>::get(),

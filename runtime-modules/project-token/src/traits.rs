@@ -43,10 +43,10 @@ pub trait PalletToken<
     /// Change to permissionless
     fn change_to_permissionless(token_id: Self::TokenId) -> DispatchResult;
 
-    /// Reduce patronage rate by amount
-    fn reduce_patronage_rate_by(
+    /// Reduce patronage rate to a specified target
+    fn reduce_patronage_rate_to(
         token_id: Self::TokenId,
-        decrement: Self::YearlyRate,
+        target_rate: Self::YearlyRate,
     ) -> DispatchResult;
 
     /// Allow creator to receive credit into his accounts

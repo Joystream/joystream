@@ -6,7 +6,6 @@ use crate::{last_event_eq, yearly_rate, AccountInfoByTokenAndAccount, RawEvent, 
 use crate::{traits::PalletToken, types::VestingSource, SymbolsUsed};
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::{StorageDoubleMap, StorageMap};
-use sp_arithmetic::Percent;
 use sp_runtime::{traits::Hash, DispatchError, Permill};
 use sp_std::iter::FromIterator;
 use storage::{BagId, DataObjectCreationParameters, StaticBagId};

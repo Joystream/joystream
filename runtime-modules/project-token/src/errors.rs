@@ -15,11 +15,8 @@ decl_error! {
         /// Merkle proof verification failed
         MerkleProofVerificationFailure,
 
-        /// Source and Destination Location coincide
-        SameSourceAndDestinationLocations,
-
-        /// Patronage reduction exceeeding patronage rate
-        ReductionExceedingPatronageRate,
+        /// Target Rate is higher than current patronage rate
+        TargetPatronageRateIsHigherThanCurrentRate,
 
         /// Symbol already in use
         TokenSymbolAlreadyInUse,

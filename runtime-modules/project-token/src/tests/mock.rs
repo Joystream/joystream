@@ -89,9 +89,9 @@ parameter_types! {
     // constants for crate::Trait
     pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token");
     pub const MaxVestingBalancesPerAccountPerToken: u8 = 3;
-    pub const BlocksPerYear: u32 = 5259492; // blocks every 6s
+    pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
     // constants for balances::Trait
-    pub const ExistentialDeposit: u64 = 10;
+    pub const ExistentialDeposit: u128 = 10;
 }
 
 impl frame_system::Trait for Test {
@@ -115,21 +115,11 @@ impl frame_system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type AccountData = balances::AccountData<u64>;
+    type AccountData = balances::AccountData<u128>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type PalletInfo = ();
     type SystemWeightInfo = ();
-}
-
-impl balances::Trait for Test {
-    type Balance = u64;
-    type DustRemoval = ();
-    type Event = TestEvent;
-    type ExistentialDeposit = ExistentialDeposit;
-    type AccountStore = System;
-    type WeightInfo = ();
-    type MaxLocks = ();
 }
 
 impl storage::Trait for Test {
@@ -189,7 +179,7 @@ impl common::MembershipTypes for Test {
 
 impl Trait for Test {
     type Event = TestEvent;
-    type Balance = u64;
+    type Balance = u128;
     type TokenId = u64;
     type BlockNumberToBalance = Block2Balance;
     type DataObjectStorage = storage::Module<Self>;
@@ -203,30 +193,30 @@ impl Trait for Test {
 pub struct StorageWG;
 pub struct DistributionWG;
 
-impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for StorageWG {
-    fn get_budget() -> u64 {
+impl common::working_group::WorkingGroupBudgetHandler<u64, u128> for StorageWG {
+    fn get_budget() -> u128 {
         unimplemented!()
     }
 
-    fn set_budget(_new_value: u64) {
+    fn set_budget(_new_value: u128) {
         unimplemented!()
     }
 
-    fn try_withdraw(_account_id: &u64, _amount: u64) -> DispatchResult {
+    fn try_withdraw(_account_id: &u64, _amount: u128) -> DispatchResult {
         unimplemented!()
     }
 }
 
-impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for DistributionWG {
-    fn get_budget() -> u64 {
+impl common::working_group::WorkingGroupBudgetHandler<u64, u128> for DistributionWG {
+    fn get_budget() -> u128 {
         unimplemented!()
     }
 
-    fn set_budget(_new_value: u64) {
+    fn set_budget(_new_value: u128) {
         unimplemented!()
     }
 
-    fn try_withdraw(_account_id: &u64, _amount: u64) -> DispatchResult {
+    fn try_withdraw(_account_id: &u64, _amount: u128) -> DispatchResult {
         unimplemented!()
     }
 }
@@ -337,6 +327,17 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
     }
 }
 
+/// Implement pallet balances trait for Test
+impl balances::Trait for Test {
+    type Balance = u128;
+    type DustRemoval = ();
+    type Event = TestEvent;
+    type ExistentialDeposit = ExistentialDeposit;
+    type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = ();
+}
+
 /// Genesis config builder
 pub struct GenesisConfigBuilder {
     pub(crate) account_info_by_token_and_account: Vec<(TokenId, AccountId, AccountData)>,
@@ -378,42 +379,42 @@ pub fn increase_block_number_by(n: u64) {
 #[macro_export]
 macro_rules! account {
     ($acc:expr) => {
-        AccountId::from($acc as u32)
+        AccountId::from($acc as u64)
     };
 }
 
 #[macro_export]
 macro_rules! token {
     ($id:expr) => {
-        TokenId::from($id as u32)
+        TokenId::from($id as u64)
     };
 }
 
 #[macro_export]
 macro_rules! balance {
     ($bal:expr) => {
-        Balance::from($bal as u32)
+        Balance::from($bal as u128)
     };
 }
 
 #[macro_export]
 macro_rules! rate {
     ($r:expr) => {
-        BlockRate(Perbill::from_percent($r as u32))
+        BlockRate(Perquintill::from_percent($r))
     };
 }
 
 #[macro_export]
 macro_rules! yearly_rate {
     ($r:expr) => {
-        YearlyRate(Percent::from_percent($r as u8))
+        YearlyRate(Permill::from_percent($r))
     };
 }
 
 #[macro_export]
 macro_rules! joy {
     ($bal:expr) => {
-        JoyBalance::from($bal as u32)
+        JoyBalance::from($bal as u128)
     };
 }
 
@@ -431,10 +432,10 @@ pub type Balances = balances::Module<Test>;
 
 pub const DEFAULT_ACCOUNT_ID: u64 = 1;
 pub const OTHER_ACCOUNT_ID: u64 = 2;
-pub const DEFAULT_INITIAL_ISSUANCE: u64 = 1_000_000;
-pub const DEFAULT_SALE_UNIT_PRICE: u64 = 10;
+pub const DEFAULT_INITIAL_ISSUANCE: u128 = 1_000_000;
+pub const DEFAULT_SALE_UNIT_PRICE: u128 = 10;
 pub const DEFAULT_SALE_DURATION: u64 = 100;
-pub const DEFAULT_SALE_PURCHASE_AMOUNT: u64 = 1000;
+pub const DEFAULT_SALE_PURCHASE_AMOUNT: u128 = 1000;
 
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
 pub const DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID: u64 = 100002;
@@ -554,9 +555,11 @@ macro_rules! merkle_proof {
 }
 
 #[macro_export]
-macro_rules! treasury {
-    ($t: expr) => {
-        <Test as crate::Trait>::ModuleId::get().into_sub_account::<AccountId>($t)
+#[cfg(feature = "std")]
+macro_rules! assert_approx_eq {
+    ($x: expr, $y: expr, $eps: expr) => {
+        let abs_diff = $x.max($y).saturating_sub($x.min($y));
+        assert!(abs_diff < $eps)
     };
 }
 
@@ -565,7 +568,7 @@ pub struct Block2Balance {}
 
 impl Convert<BlockNumber, Balance> for Block2Balance {
     fn convert(block: BlockNumber) -> Balance {
-        block as u64
+        block as u128
     }
 }
 

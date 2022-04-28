@@ -1,6 +1,6 @@
 #![cfg(test)]
 use frame_support::{assert_noop, assert_ok, StorageDoubleMap, StorageMap};
-use sp_runtime::{traits::Hash, Percent};
+use sp_runtime::{traits::Hash, Permill, Perquintill};
 
 use crate::tests::fixtures::default_upload_context;
 use crate::tests::mock::*;
@@ -10,8 +10,8 @@ use crate::types::{
     BlockRate, MerkleProofOf, PatronageData, TokenIssuanceParametersOf, YearlyRate,
 };
 use crate::{
-    account, balance, joy, last_event_eq, merkle_proof, merkle_root, origin, token, yearly_rate,
-    Error, RawEvent, TokenDataOf,
+    account, assert_approx_eq, balance, joy, last_event_eq, merkle_proof, merkle_root, origin,
+    token, yearly_rate, Error, RawEvent, TokenDataOf,
 };
 
 #[test]
@@ -543,7 +543,30 @@ fn dust_account_ok_with_account_removed() {
 }
 
 #[test]
-fn dust_account_ok_with_correct_bloat_bond_refunded() {
+fn dust_account_ok_with_nonempty_owned_account_removed_and_supply_decreased() {
+    let (owner_balance, user_balance) = (balance!(100), balance!(100));
+    let (owner, user_account) = (account!(1), account!(2));
+    let token_id = token!(1);
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token_and_owner(token_id, token_data, owner, owner_balance)
+        .with_account(user_account, AccountData::new_with_amount(user_balance))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = Token::dust_account(origin!(user_account), token_id, user_account);
+
+        assert_eq!(
+            Token::token_info_by_id(token_id).total_supply,
+            balance!(100)
+        );
+    })
+}
+
+#[test]
+fn dust_account_ok_by_user_with_correct_bloat_bond_refunded() {
     let (token_id, init_supply) = (token!(1), balance!(100));
     let treasury = Token::bloat_bond_treasury_account_id();
     let (owner, user_account, other_user_account) = (account!(1), account!(2), account!(3));
@@ -749,6 +772,61 @@ fn issue_token_fails_with_existing_symbol() {
 }
 
 #[test]
+fn issue_token_fails_with_insufficient_balance_for_bloat_bond() {
+    let token_id = token!(1);
+    let owner = account!(1);
+    let bloat_bond = joy!(100);
+
+    let params = TokenIssuanceParametersOf::<Test> {
+        initial_allocation: InitialAllocation {
+            address: owner,
+            ..Default::default()
+        },
+        symbol: Hashing::hash_of(&token_id),
+        ..Default::default()
+    };
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::issue_token(params.clone(), default_upload_context());
+        assert_noop!(result, Error::<Test>::InsufficientJoyBalance);
+    })
+}
+
+#[test]
+fn issue_token_ok_with_bloat_bond_transferred() {
+    let token_id = token!(1);
+    let owner = account!(1);
+    let (treasury, bloat_bond) = (Token::bloat_bond_treasury_account_id(), joy!(100));
+
+    let params = TokenIssuanceParametersOf::<Test> {
+        initial_allocation: InitialAllocation {
+            address: owner,
+            ..Default::default()
+        },
+        symbol: Hashing::hash_of(&token_id),
+        ..Default::default()
+    };
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&owner, bloat_bond + ExistentialDeposit::get());
+
+        let _ = Token::issue_token(params.clone(), default_upload_context());
+
+        assert_eq!(
+            Balances::usable_balance(treasury),
+            bloat_bond + ExistentialDeposit::get()
+        );
+        assert_eq!(Balances::usable_balance(owner), ExistentialDeposit::get());
+    })
+}
+
+#[test]
 fn issue_token_ok_owner_having_already_issued_a_token() {
     let (token_id, init_supply) = (token!(1), balance!(100));
     let owner = account!(1);
@@ -866,6 +944,38 @@ fn issue_token_ok_with_token_info_added() {
                 sales_initialized: 0
             }
         );
+    })
+}
+
+#[test]
+fn issue_token_ok_with_correct_patronage_rate_approximated() {
+    let token_id = token!(1);
+    let owner = account!(1);
+
+    let params = TokenIssuanceParametersOf::<Test> {
+        initial_allocation: InitialAllocation {
+            address: owner,
+            amount: balance!(100),
+            ..Default::default()
+        },
+        symbol: Hashing::hash_of(&token_id),
+        transfer_policy: TransferPolicyParams::Permissionless,
+        patronage_rate: YearlyRate(Permill::from_perthousand(105)), // 10.5%
+    };
+
+    // rate = floor(.105 / blocks_per_year * 1e18) per quintill = 19963924238 per quintill
+    let expected = BlockRate(Perquintill::from_parts(19963924238));
+
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = Token::issue_token(params.clone(), default_upload_context());
+
+        let actual = <crate::TokenInfoById<Test>>::get(token_id)
+            .patronage_info
+            .rate;
+
+        assert_approx_eq!(actual.0.deconstruct(), expected.0.deconstruct(), 1u64);
     })
 }
 
