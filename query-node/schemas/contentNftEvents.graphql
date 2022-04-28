@@ -300,6 +300,9 @@ type BidMadeCompletingAuctionEvent implements Event @entity {
 
   "Previous top bidder"
   previousTopBidder: Membership
+
+  "Members who bid on this auction"
+  bidders: [Membership!]
 }
 
 type OpenAuctionBidAcceptedEvent implements Event @entity {
