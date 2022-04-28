@@ -263,7 +263,7 @@ fn decrease_patronage_ok_with_last_tally_block_updated() {
 }
 
 #[test]
-fn decreasing_patronage_rate_fails_with_decrease_amount_too_large() {
+fn decreasing_patronage_rate_fails_with_target_rate_exceeding_current_rate() {
     let init_rate = yearly_rate!(50);
     let (token_id, init_supply) = (token!(1), balance!(100));
     let owner = account!(1);
