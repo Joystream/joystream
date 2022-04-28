@@ -16,8 +16,8 @@ use sp_runtime::{DispatchError, DispatchResult, ModuleId};
 
 // crate import
 use crate::{
-    types::*, AccountDataOf, GenesisConfig, ReserveBalanceOf, TokenDataOf,
-    TokenIssuanceParametersOf, Trait, TransferPolicyOf,
+    types::*, AccountDataOf, GenesisConfig, TokenDataOf, TokenIssuanceParametersOf, Trait,
+    TransferPolicyOf,
 };
 
 // Crate aliases
@@ -36,8 +36,8 @@ pub type TransferPolicy = TransferPolicyOf<Test>;
 pub type AccountData = AccountDataOf<Test>;
 pub type AccountId = <Test as frame_system::Trait>::AccountId;
 pub type BlockNumber = <Test as frame_system::Trait>::BlockNumber;
-pub type Balance = <Test as Trait>::Balance;
-pub type ReserveBalance = ReserveBalanceOf<Test>;
+pub type Balance = TokenBalanceOf<Test>;
+pub type JOYBalance = JOYBalanceOf<Test>;
 pub type Policy = TransferPolicyOf<Test>;
 pub type Hashing = <Test as frame_system::Trait>::Hashing;
 pub type HashOut = <Test as frame_system::Trait>::Hash;
@@ -194,8 +194,7 @@ impl Trait for Test {
     type BlockNumberToBalance = Block2Balance;
     type DataObjectStorage = storage::Module<Self>;
     type ModuleId = TokenModuleId;
-    type ReserveExistentialDeposit = ExistentialDeposit;
-    type ReserveCurrency = Balances;
+    type JOYExistentialDeposit = ExistentialDeposit;
     type MaxVestingBalancesPerAccountPerToken = MaxVestingBalancesPerAccountPerToken;
     type BlocksPerYear = BlocksPerYear;
 }
@@ -343,7 +342,7 @@ pub struct GenesisConfigBuilder {
     pub(crate) account_info_by_token_and_account: Vec<(TokenId, AccountId, AccountData)>,
     pub(crate) token_info_by_id: Vec<(TokenId, TokenData)>,
     pub(crate) next_token_id: TokenId,
-    pub(crate) bloat_bond: ReserveBalance,
+    pub(crate) bloat_bond: JOYBalance,
     pub(crate) symbol_used: Vec<(HashOut, ())>,
 }
 
@@ -414,7 +413,7 @@ macro_rules! yearly_rate {
 #[macro_export]
 macro_rules! joy {
     ($bal:expr) => {
-        ReserveBalance::from($bal as u32)
+        JOYBalance::from($bal as u32)
     };
 }
 

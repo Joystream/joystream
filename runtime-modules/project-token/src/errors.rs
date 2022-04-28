@@ -45,8 +45,8 @@ decl_error! {
         /// Amount of tokens to purchase on sale exceeds the quantity of tokens still available on the sale
         NotEnoughTokensOnSale,
 
-        /// Insufficient Balance for Bloat bond
-        InsufficientBalanceForBloatBond,
+        /// Insufficient JOY Balance to cover the transaction costs
+        InsufficientJOYBalance,
 
         /// Attempt to removed non owned account under permissioned mode
         AttemptToRemoveNonOwnedAccountUnderPermissionedMode,

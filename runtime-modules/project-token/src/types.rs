@@ -50,7 +50,7 @@ impl<Balance: Copy> StakingStatus<Balance> {
 
 /// Info for the account
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct AccountData<VestingSchedule, Balance, StakingStatus, ReserveBalance> {
+pub struct AccountData<VestingSchedule, Balance, StakingStatus, JOYBalance> {
     /// Map that represents account's vesting schedules indexed by source.
     /// Account's total unvested (locked) balance at current block (b)
     /// can be calculated by summing `v.locks()` of all
@@ -66,7 +66,7 @@ pub struct AccountData<VestingSchedule, Balance, StakingStatus, ReserveBalance> 
 
     /// Bloat bond (in 'JOY's) deposited into treasury upon creation of this
     /// account, returned when this account is removed
-    pub(crate) bloat_bond: ReserveBalance,
+    pub(crate) bloat_bond: JOYBalance,
 }
 
 /// Info for the token
@@ -471,26 +471,21 @@ impl<AddressId: Default, Balance: Zero, VestingScheduleParams> Default
 }
 
 /// Default trait for AccountData
-impl<VestingSchedule, Balance: Zero, StakingStatus, ReserveBalance: Zero> Default
-    for AccountData<VestingSchedule, Balance, StakingStatus, ReserveBalance>
+impl<VestingSchedule, Balance: Zero, StakingStatus, JOYBalance: Zero> Default
+    for AccountData<VestingSchedule, Balance, StakingStatus, JOYBalance>
 {
     fn default() -> Self {
         Self {
             vesting_schedules: BTreeMap::new(),
             split_staking_status: None,
             amount: Balance::zero(),
-            bloat_bond: ReserveBalance::zero(),
+            bloat_bond: JOYBalance::zero(),
         }
     }
 }
 
-impl<Balance, BlockNumber, ReserveBalance>
-    AccountData<
-        VestingSchedule<BlockNumber, Balance>,
-        Balance,
-        StakingStatus<Balance>,
-        ReserveBalance,
-    >
+impl<Balance, BlockNumber, JOYBalance>
+    AccountData<VestingSchedule<BlockNumber, Balance>, Balance, StakingStatus<Balance>, JOYBalance>
 where
     Balance: Clone
         + Zero
@@ -504,14 +499,27 @@ where
         + TryInto<u64>
         + Copy,
     BlockNumber: Copy + Clone + PartialOrd + Ord + Saturating + From<u32> + Unsigned,
-    ReserveBalance: Zero,
+    JOYBalance: Zero,
 {
     /// Ctor
-    pub fn new_with_amount_and_bond(amount: Balance, bloat_bond: ReserveBalance) -> Self {
+    pub fn new_with_amount_and_bond(amount: Balance, bloat_bond: JOYBalance) -> Self {
         Self {
             amount,
             bloat_bond,
             ..Self::default()
+        }
+    }
+
+    pub fn new_with_vesting_and_bond(
+        source: VestingSource,
+        schedule: VestingSchedule<BlockNumber, Balance>,
+        bloat_bond: JOYBalance,
+    ) -> Self {
+        Self {
+            amount: schedule.total_amount(),
+            vesting_schedules: [(source, schedule)].iter().cloned().collect(),
+            bloat_bond,
+            split_staking_status: None,
         }
     }
 
@@ -803,20 +811,25 @@ impl BlockRate {
 
 // Aliases
 
+/// Creator token balance
+pub(crate) type TokenBalanceOf<T> = <T as Trait>::Balance;
+
+/// JOY balance
+pub(crate) type JOYBalanceOf<T> = <T as balances::Trait>::Balance;
+
+/// JOY balances module
+pub(crate) type JOY<T> = balances::Module<T>;
+
 /// Alias for Staking Status
 pub(crate) type StakingStatusOf<T> = StakingStatus<<T as Trait>::Balance>;
 
 /// Alias for Account Data
-pub(crate) type AccountDataOf<T> = AccountData<
-    VestingScheduleOf<T>,
-    <T as Trait>::Balance,
-    StakingStatusOf<T>,
-    crate::ReserveBalanceOf<T>,
->;
+pub(crate) type AccountDataOf<T> =
+    AccountData<VestingScheduleOf<T>, TokenBalanceOf<T>, StakingStatusOf<T>, JOYBalanceOf<T>>;
 
 /// Alias for Token Data
 pub(crate) type TokenDataOf<T> = TokenData<
-    <T as crate::Trait>::Balance,
+    TokenBalanceOf<T>,
     <T as frame_system::Trait>::Hash,
     <T as frame_system::Trait>::BlockNumber,
     TokenSaleOf<T>,
@@ -825,7 +838,7 @@ pub(crate) type TokenDataOf<T> = TokenData<
 /// Alias for InitialAllocation
 pub(crate) type InitialAllocationOf<T> = InitialAllocation<
     <T as frame_system::Trait>::AccountId,
-    <T as crate::Trait>::Balance,
+    TokenBalanceOf<T>,
     VestingScheduleParamsOf<T>,
 >;
 
@@ -845,11 +858,10 @@ pub(crate) type VestingScheduleParamsOf<T> =
 
 /// Alias for VestingSchedule
 pub(crate) type VestingScheduleOf<T> =
-    VestingSchedule<<T as frame_system::Trait>::BlockNumber, <T as Trait>::Balance>;
+    VestingSchedule<<T as frame_system::Trait>::BlockNumber, TokenBalanceOf<T>>;
 
 /// Alias for SingleDataObjectUploadParams
-pub(crate) type SingleDataObjectUploadParamsOf<T> =
-    SingleDataObjectUploadParams<<T as balances::Trait>::Balance>;
+pub(crate) type SingleDataObjectUploadParamsOf<T> = SingleDataObjectUploadParams<JOYBalanceOf<T>>;
 
 /// Alias for WhitelistParams
 pub(crate) type WhitelistParamsOf<T> =
@@ -857,8 +869,8 @@ pub(crate) type WhitelistParamsOf<T> =
 
 /// Alias for TokenSaleParams
 pub(crate) type TokenSaleParamsOf<T> = TokenSaleParams<
-    <T as balances::Trait>::Balance,
-    <T as crate::Trait>::Balance,
+    JOYBalanceOf<T>,
+    TokenBalanceOf<T>,
     <T as frame_system::Trait>::BlockNumber,
     VestingScheduleParamsOf<T>,
     <T as frame_system::Trait>::AccountId,
@@ -866,8 +878,8 @@ pub(crate) type TokenSaleParamsOf<T> = TokenSaleParams<
 
 /// Alias for TokenSale
 pub(crate) type TokenSaleOf<T> = TokenSale<
-    <T as balances::Trait>::Balance,
-    <T as crate::Trait>::Balance,
+    JOYBalanceOf<T>,
+    TokenBalanceOf<T>,
     <T as frame_system::Trait>::BlockNumber,
     VestingScheduleParamsOf<T>,
     <T as frame_system::Trait>::AccountId,
@@ -884,4 +896,8 @@ pub(crate) type TokenSaleId = u32;
 
 /// Alias for Transfers
 pub(crate) type TransfersOf<T> =
-    Transfers<<T as frame_system::Trait>::AccountId, <T as crate::Trait>::Balance>;
+    Transfers<<T as frame_system::Trait>::AccountId, TokenBalanceOf<T>>;
+
+/// Validated transfers
+pub(crate) type ValidatedTransfers<T> =
+    Transfers<Validated<<T as frame_system::Trait>::AccountId>, TokenBalanceOf<T>>;

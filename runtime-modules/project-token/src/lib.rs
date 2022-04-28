@@ -7,7 +7,7 @@ use frame_support::{
     decl_module, decl_storage,
     dispatch::{fmt::Debug, marker::Copy, DispatchError, DispatchResult},
     ensure,
-    traits::{Currency, ExistenceRequirement, Get, WithdrawReason},
+    traits::{Currency, ExistenceRequirement, Get},
 };
 use frame_system::ensure_signed;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
@@ -32,13 +32,6 @@ use errors::Error;
 pub use events::{Event, RawEvent};
 use traits::PalletToken;
 use types::*;
-
-// aliases
-pub type ReserveBalanceOf<T> =
-    <<T as Trait>::ReserveCurrency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
-
-type ValidatedTransfers<T> =
-    Transfers<Validated<<T as frame_system::Trait>::AccountId>, <T as Trait>::Balance>;
 
 /// Pallet Configuration Trait
 pub trait Trait: frame_system::Trait + balances::Trait + storage::Trait {
@@ -69,15 +62,10 @@ pub trait Trait: frame_system::Trait + balances::Trait + storage::Trait {
     type ModuleId: Get<ModuleId>;
 
     /// Existential Deposit for the JOY pallet
-    type ReserveExistentialDeposit: Get<
-        <Self::ReserveCurrency as Currency<Self::AccountId>>::Balance,
-    >;
+    type JOYExistentialDeposit: Get<JOYBalanceOf<Self>>;
 
     /// Maximum number of vesting balances per account per token
     type MaxVestingBalancesPerAccountPerToken: Get<u8>;
-
-    /// the Currency interface used as a reserve (i.e. JOY)
-    type ReserveCurrency: Currency<Self::AccountId>;
 
     /// Number of blocks produced in a year
     type BlocksPerYear: Get<u32>;
@@ -105,7 +93,7 @@ decl_storage! {
             hasher(blake2_128_concat) T::Hash => ();
 
         /// Bloat Bond value used during account creation
-        pub BloatBond get(fn bloat_bond) config(): ReserveBalanceOf<T>;
+        pub BloatBond get(fn bloat_bond) config(): JOYBalanceOf<T>;
     }
 
     add_extra_genesis {
@@ -119,9 +107,9 @@ decl_storage! {
             // - https://github.com/Joystream/joystream/issues/3510
 
             let module_account_id = crate::Module::<T>::bloat_bond_treasury_account_id();
-            let deposit = T::ReserveExistentialDeposit::get();
+            let deposit = T::JOYExistentialDeposit::get();
 
-            let _ = T::ReserveCurrency::deposit_creating(&module_account_id, deposit);
+            let _ = JOY::<T>::deposit_creating(&module_account_id, deposit);
         });
     }
 }
@@ -217,8 +205,7 @@ decl_module! {
             });
 
             let bloat_bond = account_to_remove_info.bloat_bond;
-            let treasury = Self::bloat_bond_treasury_account_id();
-            let _ = T::ReserveCurrency::transfer(&treasury, &account_id, bloat_bond, ExistenceRequirement::KeepAlive);
+            Self::withdraw_from_treasury(&account_id, bloat_bond);
 
             Self::deposit_event(RawEvent::AccountDustedBy(token_id, account_id, sender, token_info.transfer_policy));
 
@@ -253,12 +240,11 @@ decl_module! {
             let bloat_bond = Self::bloat_bond();
 
             // No project_token or balances state corrupted in case of failure
-            let treasury = Self::bloat_bond_treasury_account_id();
-            Self::ensure_can_transfer_reserve(&account_id, &treasury, bloat_bond)?;
+            Self::ensure_can_transfer_joy(&account_id, bloat_bond)?;
 
             // == MUTATION SAFE ==
 
-            let _ = T::ReserveCurrency::transfer(&account_id, &treasury, bloat_bond, ExistenceRequirement::KeepAlive);
+            Self::deposit_to_treasury(&account_id, bloat_bond);
 
             Self::do_insert_new_account_for_token(
                 token_id,
@@ -279,7 +265,11 @@ decl_module! {
         /// - `token_id` must be existing token's id
         /// - token identified by `token_id` must have OfferingState::Sale
         /// - `amount` cannot exceed number of tokens remaining on sale
-        /// - sender's JOY balance must be >= `amount * sale.unit_price`
+        /// - sender's available JOY balance must be:
+        ///   - >= `joy_existential_deposit + amount * sale.unit_price`
+        ///     if AccountData already exist
+        ///   - >= `joy_existential_deposit + amount * sale.unit_price + bloat_bond`
+        ///     if AccountData does not exist
         /// - there are no tokens still reserved from the previous sale
         /// - `(total number of tokens already purchased by the member + `amount`) must not exceed
         ///   sale's purchase cap per member
@@ -287,9 +277,9 @@ decl_module! {
         ///   - AccountInfoByTokenAndAccount(token_id, &sender) must exist
         ///
         /// Postconditions:
-        /// - `amount * sale.unit_price` JOY tokens are transfered to `sale.tokens_source` account
-        /// - `amount` CRT tokens are unreserved from `sale.tokens_source` account and its
-        ///    liquidity is decreased by `amount` (`amount` tokens are burned from the account)
+        /// - `amount * sale.unit_price` JOY tokens are transfered from `sender`
+        ///   to `sale.tokens_source` account
+        /// - if new account created: `bloat_bond` transferred from `sender` to treasury
         /// - buyer's `vesting_balance` related to the current sale is increased by `amount`
         ///   (or created with `amount` as `vesting_balance.total_amount`)
         /// - `token_data.last_sale.quantity_left` is decreased by `amount`
@@ -304,14 +294,19 @@ decl_module! {
             let token_data = Self::ensure_token_exists(token_id)?;
             let sale = OfferingStateOf::<T>::ensure_sale_of::<T>(&token_data)?;
             let sale_id = token_data.sales_initialized;
-            let buyer_joy_balance = balances::Module::<T>::usable_balance(&sender);
             let joy_amount = sale.unit_price.saturating_mul(amount.into());
+            let account_exists = AccountInfoByTokenAndAccount::<T>::contains_key(token_id, &sender);
+            let bloat_bond = Self::bloat_bond();
+
+            let required_joy_balance = if account_exists {
+                joy_amount
+            } else {
+                joy_amount.saturating_add(bloat_bond)
+            };
 
             // Ensure buyer's JOY balance is sufficient for the purchase
-            ensure!(
-                buyer_joy_balance >= joy_amount,
-                Error::<T>::InsufficientBalanceForTokenPurchase
-            );
+            // and bloat bond (if required)
+            Self::ensure_can_transfer_joy(&sender, required_joy_balance)?;
 
             // Ensure enough tokens are available on sale
             ensure!(
@@ -345,20 +340,33 @@ decl_module! {
 
             // == MUTATION SAFE ==
 
-            <balances::Module::<T> as Currency<T::AccountId>>::transfer(
+            <JOY::<T> as Currency<T::AccountId>>::transfer(
                 &sender,
                 &sale.tokens_source,
                 joy_amount,
-                ExistenceRequirement::AllowDeath
+                ExistenceRequirement::KeepAlive
             )?;
 
-            AccountInfoByTokenAndAccount::<T>::mutate(token_id, &sender, |acc_data| {
-                acc_data.add_or_update_vesting_schedule(
-                    VestingSource::Sale(sale_id),
-                    sale.get_vesting_schedule(amount),
-                    vesting_cleanup_key
+            if account_exists {
+                AccountInfoByTokenAndAccount::<T>::mutate(token_id, &sender, |acc_data| {
+                    acc_data.add_or_update_vesting_schedule(
+                        VestingSource::Sale(sale_id),
+                        sale.get_vesting_schedule(amount),
+                        vesting_cleanup_key
+                    );
+                });
+            } else {
+                Self::deposit_to_treasury(&sender, bloat_bond);
+                Self::do_insert_new_account_for_token(
+                    token_id,
+                    &sender,
+                    AccountData::new_with_vesting_and_bond(
+                        VestingSource::Sale(sale_id),
+                        sale.get_vesting_schedule(amount),
+                        bloat_bond,
+                    )
                 );
-            });
+            }
 
             TokenInfoById::<T>::mutate(token_id, |t| {
                 t.last_sale.as_mut().unwrap().quantity_left = sale.quantity_left.saturating_sub(amount);
@@ -688,8 +696,7 @@ impl<T: Trait> Module<T> {
 
         // compute bloat bond
         let cumulative_bloat_bond = Self::compute_bloat_bond(&validated_transfers);
-        let treasury = Self::bloat_bond_treasury_account_id();
-        Self::ensure_can_transfer_reserve(src, &treasury, cumulative_bloat_bond)?;
+        Self::ensure_can_transfer_joy(src, cumulative_bloat_bond)?;
 
         src_account_info
             .ensure_can_transfer::<T>(Self::current_block(), validated_transfers.total_amount())?;
@@ -727,13 +734,7 @@ impl<T: Trait> Module<T> {
 
         let cumulative_bloat_bond = Self::compute_bloat_bond(validated_transfers);
         if !cumulative_bloat_bond.is_zero() {
-            let treasury_account_id = Self::bloat_bond_treasury_account_id();
-            let _ = T::ReserveCurrency::transfer(
-                src,
-                &treasury_account_id,
-                cumulative_bloat_bond,
-                ExistenceRequirement::KeepAlive,
-            );
+            Self::deposit_to_treasury(src, cumulative_bloat_bond);
         }
 
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, &src, |account_data| {
@@ -874,15 +875,15 @@ impl<T: Trait> Module<T> {
 
     pub(crate) fn compute_bloat_bond(
         validated_transfers: &ValidatedTransfers<T>,
-    ) -> ReserveBalanceOf<T> {
+    ) -> JOYBalanceOf<T> {
         let bloat_bond = Self::bloat_bond();
         validated_transfers
             .iter()
-            .fold(ReserveBalanceOf::<T>::zero(), |acc, (account, _)| {
+            .fold(JOYBalanceOf::<T>::zero(), |acc, (account, _)| {
                 if matches!(account, Validated::<_>::NonExisting(_)) {
                     acc.saturating_add(bloat_bond)
                 } else {
-                    ReserveBalanceOf::<T>::zero()
+                    JOYBalanceOf::<T>::zero()
                 }
             })
     }
@@ -902,33 +903,38 @@ impl<T: Trait> Module<T> {
         Ok(Transfers::<_, _>(result))
     }
 
-    pub(crate) fn ensure_can_transfer_reserve(
+    pub(crate) fn ensure_can_transfer_joy(
         src: &T::AccountId,
-        dst: &T::AccountId,
-        amount: ReserveBalanceOf<T>,
+        amount: JOYBalanceOf<T>,
     ) -> DispatchResult {
         if !amount.is_zero() {
-            let src_free = T::ReserveCurrency::free_balance(src);
-            let dst_free = T::ReserveCurrency::free_balance(dst);
-
             ensure!(
-                src_free >= amount.saturating_add(T::ReserveExistentialDeposit::get()),
-                Error::<T>::InsufficientBalanceForBloatBond,
+                JOY::<T>::usable_balance(src)
+                    >= T::JOYExistentialDeposit::get().saturating_add(amount),
+                Error::<T>::InsufficientJOYBalance
             );
-
-            ensure!(
-                dst_free.saturating_add(amount) >= T::ReserveExistentialDeposit::get(),
-                Error::<T>::InsufficientBalanceForBloatBond,
-            );
-
-            T::ReserveCurrency::ensure_can_withdraw(
-                src,
-                amount,
-                WithdrawReason::Transfer.into(),
-                src_free.saturating_sub(amount),
-            )?;
         }
         Ok(())
+    }
+
+    pub(crate) fn deposit_to_treasury(src: &T::AccountId, amount: JOYBalanceOf<T>) {
+        let treasury_account_id = Self::bloat_bond_treasury_account_id();
+        let _ = <JOY<T> as Currency<T::AccountId>>::transfer(
+            src,
+            &treasury_account_id,
+            amount,
+            ExistenceRequirement::KeepAlive,
+        );
+    }
+
+    pub(crate) fn withdraw_from_treasury(dst: &T::AccountId, amount: JOYBalanceOf<T>) {
+        let treasury_account_id = Self::bloat_bond_treasury_account_id();
+        let _ = <JOY<T> as Currency<T::AccountId>>::transfer(
+            &treasury_account_id,
+            dst,
+            amount,
+            ExistenceRequirement::KeepAlive,
+        );
     }
 
     pub(crate) fn do_insert_new_account_for_token(

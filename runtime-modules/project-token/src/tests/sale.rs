@@ -1,9 +1,11 @@
 #![cfg(test)]
 
 use crate::errors::Error;
+use crate::joy;
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::types::MerkleProofOf;
+use crate::types::JOY;
 use crate::{merkle_proof, merkle_root};
 use frame_support::assert_ok;
 use sp_arithmetic::Permill;
@@ -79,7 +81,8 @@ fn unsuccesful_token_sale_init_when_remaining_reserved_toknes_from_previous_sale
         InitTokenSaleFixture::default().call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
+            <Test as crate::Trait>::JOYExistentialDeposit::get()
+                + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
         );
         PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
         increase_block_number_by(DEFAULT_SALE_DURATION);
@@ -216,8 +219,7 @@ fn successful_upcoming_sale_update() {
 /////////////////////////////////////////////////////////
 //////////////////// SALE PURCHASES /////////////////////
 /////////////////////////////////////////////////////////
-///
-/// TODO: Permissioned token sale
+
 #[test]
 fn unsuccesful_sale_purchase_non_existing_token() {
     let config = GenesisConfigBuilder::new_empty().build();
@@ -267,15 +269,46 @@ fn unsuccesful_sale_purchase_after_sale_finished() {
 }
 
 #[test]
-fn unsuccesful_sale_purchase_insufficient_balance() {
-    let config = GenesisConfigBuilder::new_empty().build();
+fn unsuccesful_sale_purchase_insufficient_joy_balance_new_account() {
+    let bloat_bond = joy!(100);
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(
+            &OTHER_ACCOUNT_ID,
+            <Test as crate::Trait>::JOYExistentialDeposit::get()
+                + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT
+                + bloat_bond
+                - 1,
+        );
         IssueTokenFixture::default().call_and_assert(Ok(()));
         InitTokenSaleFixture::default().call_and_assert(Ok(()));
-        PurchaseTokensOnSaleFixture::default().call_and_assert(Err(
-            Error::<Test>::InsufficientBalanceForTokenPurchase.into(),
-        ));
+        PurchaseTokensOnSaleFixture::default()
+            .call_and_assert(Err(Error::<Test>::InsufficientJOYBalance.into()));
+    })
+}
+
+#[test]
+fn unsuccesful_sale_purchase_insufficient_joy_balance_existing_account() {
+    let bloat_bond = joy!(100);
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(
+            &DEFAULT_ACCOUNT_ID,
+            <Test as crate::Trait>::JOYExistentialDeposit::get()
+                + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT
+                - 1,
+        );
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default().call_and_assert(Ok(()));
+        PurchaseTokensOnSaleFixture::default()
+            .with_sender(DEFAULT_ACCOUNT_ID)
+            .call_and_assert(Err(Error::<Test>::InsufficientJOYBalance.into()));
     })
 }
 
@@ -288,7 +321,8 @@ fn unsuccesful_sale_purchase_amount_exceeds_quantity_left() {
         InitTokenSaleFixture::default().call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            DEFAULT_SALE_UNIT_PRICE * (DEFAULT_INITIAL_ISSUANCE + 1),
+            <Test as crate::Trait>::JOYExistentialDeposit::get()
+                + DEFAULT_SALE_UNIT_PRICE * (DEFAULT_INITIAL_ISSUANCE + 1),
         );
         PurchaseTokensOnSaleFixture::default()
             .with_amount(DEFAULT_INITIAL_ISSUANCE + 1)
@@ -306,9 +340,10 @@ fn unsuccesful_sale_purchase_vesting_balances_limit_reached() {
             <Test as crate::Trait>::MaxVestingBalancesPerAccountPerToken::get();
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            DEFAULT_SALE_PURCHASE_AMOUNT
-                .saturating_mul(DEFAULT_SALE_UNIT_PRICE)
-                .saturating_mul((max_vesting_schedules + 1).into()),
+            <Test as crate::Trait>::JOYExistentialDeposit::get()
+                + DEFAULT_SALE_PURCHASE_AMOUNT
+                    .saturating_mul(DEFAULT_SALE_UNIT_PRICE)
+                    .saturating_mul((max_vesting_schedules + 1).into()),
         );
         for _ in 0..<Test as crate::Trait>::MaxVestingBalancesPerAccountPerToken::get() {
             InitTokenSaleFixture::default()
@@ -342,7 +377,8 @@ fn unsuccesful_sale_purchase_with_cap_exceeded() {
             .call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            DEFAULT_SALE_UNIT_PRICE * (DEFAULT_SALE_PURCHASE_AMOUNT + 1),
+            <Test as crate::Trait>::JOYExistentialDeposit::get()
+                + DEFAULT_SALE_UNIT_PRICE * (DEFAULT_SALE_PURCHASE_AMOUNT + 1),
         );
         // Make succesful purchase
         PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
@@ -365,7 +401,8 @@ fn unsuccesful_sale_purchase_with_permissioned_token_and_non_existing_account() 
         InitTokenSaleFixture::default().call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
+            <Test as crate::Trait>::JOYExistentialDeposit::get()
+                + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
         );
         PurchaseTokensOnSaleFixture::default()
             .call_and_assert(Err(Error::<Test>::AccountInformationDoesNotExist.into()));
@@ -373,8 +410,11 @@ fn unsuccesful_sale_purchase_with_permissioned_token_and_non_existing_account() 
 }
 
 #[test]
-fn succesful_sale_purchase_no_vesting_schedule() {
-    let config = GenesisConfigBuilder::new_empty().build();
+fn succesful_sale_purchases_non_existing_account_no_vesting_schedule() {
+    let bloat_bond = joy!(100);
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .build();
 
     build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().call_and_assert(Ok(()));
@@ -383,21 +423,27 @@ fn succesful_sale_purchase_no_vesting_schedule() {
             .call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
+            <Test as crate::Trait>::JOYExistentialDeposit::get()
+                + (DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT * 2)
+                + bloat_bond,
         );
+        PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
         PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
         increase_block_number_by(DEFAULT_SALE_DURATION);
         let buyer_acc_info = Token::account_info_by_token_and_account(1, OTHER_ACCOUNT_ID);
         assert_eq!(
             buyer_acc_info.transferrable::<Test>(System::block_number()),
-            DEFAULT_SALE_PURCHASE_AMOUNT
+            DEFAULT_SALE_PURCHASE_AMOUNT * 2
         );
     })
 }
 
 #[test]
-fn succesful_sale_purchase_with_vesting_schedule() {
-    let config = GenesisConfigBuilder::new_empty().build();
+fn succesful_sale_purchases_non_existing_account_vesting_schedule() {
+    let bloat_bond = joy!(100);
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .build();
 
     build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().call_and_assert(Ok(()));
@@ -410,8 +456,11 @@ fn succesful_sale_purchase_with_vesting_schedule() {
             .call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
+            <Test as crate::Trait>::JOYExistentialDeposit::get()
+                + (DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT * 2)
+                + bloat_bond,
         );
+        PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
         PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
 
         // At sale end block expect 0 tokens in available balance (due to 100 blocks remaining until cliff)
@@ -427,7 +476,7 @@ fn succesful_sale_purchase_with_vesting_schedule() {
         let buyer_acc_info = Token::account_info_by_token_and_account(1, OTHER_ACCOUNT_ID);
         assert_eq!(
             buyer_acc_info.transferrable::<Test>(System::block_number()),
-            Permill::from_percent(30) * DEFAULT_SALE_PURCHASE_AMOUNT
+            Permill::from_percent(30) * DEFAULT_SALE_PURCHASE_AMOUNT * 2
         );
 
         // After 50% of duration (100 blocks), expect 30% + (50% * 70%) = 65% of tokens in available balance
@@ -435,7 +484,7 @@ fn succesful_sale_purchase_with_vesting_schedule() {
         let buyer_acc_info = Token::account_info_by_token_and_account(1, OTHER_ACCOUNT_ID);
         assert_eq!(
             buyer_acc_info.transferrable::<Test>(System::block_number()),
-            Permill::from_percent(65) * DEFAULT_SALE_PURCHASE_AMOUNT
+            Permill::from_percent(65) * DEFAULT_SALE_PURCHASE_AMOUNT * 2
         );
 
         // At the end of vesting expect 100% of tokens in available balance
@@ -443,14 +492,17 @@ fn succesful_sale_purchase_with_vesting_schedule() {
         let buyer_acc_info = Token::account_info_by_token_and_account(1, OTHER_ACCOUNT_ID);
         assert_eq!(
             buyer_acc_info.transferrable::<Test>(System::block_number()),
-            DEFAULT_SALE_PURCHASE_AMOUNT
+            DEFAULT_SALE_PURCHASE_AMOUNT * 2
         );
     })
 }
 
 #[test]
-fn succesful_sale_purchase_permissioned_token() {
-    let config = GenesisConfigBuilder::new_empty().build();
+fn succesful_sale_purchase_existing_account_permissioned_token() {
+    let bloat_bond = joy!(100);
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .build();
 
     build_test_externalities(config).execute_with(|| {
         let commitment = merkle_root![DEFAULT_ACCOUNT_ID, OTHER_ACCOUNT_ID];
@@ -458,11 +510,19 @@ fn succesful_sale_purchase_permissioned_token() {
         IssueTokenFixture::default()
             .with_transfer_policy(TransferPolicy::Permissioned(commitment))
             .call_and_assert(Ok(()));
+        increase_account_balance(
+            &OTHER_ACCOUNT_ID,
+            <Test as crate::Trait>::JOYExistentialDeposit::get() + bloat_bond,
+        );
         assert_ok!(Token::join_whitelist(
             Origin::signed(OTHER_ACCOUNT_ID),
             Token::next_token_id() - 1,
             proof
         ));
+        assert_eq!(
+            JOY::<Test>::usable_balance(&OTHER_ACCOUNT_ID),
+            <Test as crate::Trait>::JOYExistentialDeposit::get()
+        );
         InitTokenSaleFixture::default().call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
@@ -519,7 +579,8 @@ fn unsuccesful_unreserve_unsold_tokens_when_no_tokens_left() {
             .call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
+            <Test as crate::Trait>::JOYExistentialDeposit::get()
+                + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
         );
         PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
         increase_block_number_by(DEFAULT_SALE_DURATION);
@@ -537,7 +598,8 @@ fn succesful_unreserve_unsold_tokens() {
         InitTokenSaleFixture::default().call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
+            <Test as crate::Trait>::JOYExistentialDeposit::get()
+                + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
         );
         PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
         increase_block_number_by(DEFAULT_SALE_DURATION);

@@ -1,10 +1,11 @@
 #![cfg(test)]
 
 use crate::tests::mock::*;
-use crate::{last_event_eq, yearly_rate, RawEvent, YearlyRate};
+use crate::types::JOY;
+use crate::{last_event_eq, yearly_rate, AccountInfoByTokenAndAccount, RawEvent, YearlyRate};
 use crate::{traits::PalletToken, types::VestingSource, SymbolsUsed};
 use frame_support::dispatch::DispatchResult;
-use frame_support::storage::StorageMap;
+use frame_support::storage::{StorageDoubleMap, StorageMap};
 use sp_arithmetic::Percent;
 use sp_runtime::{traits::Hash, DispatchError, Permill};
 use sp_std::iter::FromIterator;
@@ -344,6 +345,9 @@ pub struct PurchaseTokensOnSaleFixtureStateSnapshot {
     source_account_usable_joy_balance: <Test as balances::Trait>::Balance,
     buyer_account_data: AccountData,
     buyer_vesting_schedule: Option<VestingSchedule>,
+    buyer_account_exists: bool,
+    buyer_usable_joy_balance: JOYBalance,
+    treasury_usable_joy_balance: JOYBalance,
 }
 
 impl PurchaseTokensOnSaleFixture {
@@ -357,6 +361,10 @@ impl PurchaseTokensOnSaleFixture {
 
     pub fn with_amount(self, amount: Balance) -> Self {
         Self { amount, ..self }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
     }
 }
 
@@ -379,10 +387,18 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
                 sale_source_account,
             ),
             buyer_account_data: buyer_account_data.clone(),
+            buyer_account_exists: AccountInfoByTokenAndAccount::<Test>::contains_key(
+                self.token_id,
+                &self.sender,
+            ),
             buyer_vesting_schedule: buyer_account_data
                 .vesting_schedules
                 .get(&VestingSource::Sale(token_data.sales_initialized))
                 .map(|v| v.clone()),
+            buyer_usable_joy_balance: JOY::<Test>::usable_balance(self.sender),
+            treasury_usable_joy_balance: JOY::<Test>::usable_balance(
+                Token::bloat_bond_treasury_account_id(),
+            ),
         }
     }
 
@@ -450,6 +466,37 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
                 .buyer_account_data
                 .transferrable::<Test>(System::block_number())
         );
+        // new account case
+        if !snapshot_pre.buyer_account_exists {
+            // buyer's joy balance is decreased by bloat_bond + tokens price
+            assert_eq!(
+                snapshot_post.buyer_usable_joy_balance,
+                snapshot_pre
+                    .buyer_usable_joy_balance
+                    .saturating_sub(Token::bloat_bond())
+                    .saturating_sub(self.amount * sale_pre.unit_price)
+            );
+            // treasury account balance is increased by bloat_bond
+            assert_eq!(
+                snapshot_post.treasury_usable_joy_balance,
+                snapshot_pre
+                    .treasury_usable_joy_balance
+                    .saturating_add(Token::bloat_bond())
+            );
+            // token_data.accounts_number increased
+            assert_eq!(
+                snapshot_post.token_data.accounts_number,
+                snapshot_pre.token_data.accounts_number + 1
+            );
+        } else {
+            // buyer's joy balance is decreased by tokens price
+            assert_eq!(
+                snapshot_post.buyer_usable_joy_balance,
+                snapshot_pre
+                    .buyer_usable_joy_balance
+                    .saturating_sub(self.amount * sale_pre.unit_price)
+            );
+        }
     }
 }
 
