@@ -49,7 +49,7 @@ fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
         ..Default::default()
     };
     let config = GenesisConfigBuilder::new_empty().build();
-    // hard coded reference value: (.2/52594921) * 1billion * 10 ~= 38
+    // hard coded reference value: floor((.2/52594921) * 1billion * 10) = 38
     let expected = balance!(38);
 
     build_test_externalities(config).execute_with(|| {
@@ -116,7 +116,7 @@ fn decrease_patronage_ok_with_tally_count_updated() {
     let decrement = yearly_rate!(10);
     let (owner, init_supply) = (account!(1), balance!(1_000_000_000));
     let (init_rate, blocks) = (yearly_rate!(30), block!(10));
-    // hard coded reference value: (50/5259492100) * 10 * 1000000000 =~ 95
+    // hard coded reference value: floor((50/5259492100) * 10 * 1000000000) = 95
     let expected = balance!(95);
 
     let token_info = TokenDataBuilder::new_empty()
