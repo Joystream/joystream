@@ -4016,6 +4016,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-project-token"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "parity-scale-codec",
+ "serde",
+ "sp-arithmetic",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-proposals-codex"
 version = "5.0.0"
 dependencies = [
