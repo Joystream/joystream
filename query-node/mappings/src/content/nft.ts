@@ -746,7 +746,7 @@ export async function contentNft_AuctionBidCanceled({ event, store }: EventConte
 
   // specific event processing
 
-  const bid = await store.get(Bid, {
+  const canceledBid = await store.get(Bid, {
     where: { bidder: { id: memberId.toString() }, nft: { id: videoId.toString() }, isCanceled: false },
     relations: [
       'nft',
@@ -761,7 +761,7 @@ export async function contentNft_AuctionBidCanceled({ event, store }: EventConte
   })
 
   // ensure bid exists
-  if (!bid) {
+  if (!canceledBid) {
     return inconsistentState('Non-existing bid got canceled')
   }
 
@@ -769,18 +769,18 @@ export async function contentNft_AuctionBidCanceled({ event, store }: EventConte
   const {
     auction,
     nft: { video, ownerMember, ownerCuratorGroup, transactionalStatusAuction },
-  } = bid
+  } = canceledBid
 
-  bid.isCanceled = true
+  canceledBid.isCanceled = true
 
   // save bid
-  await store.save<Bid>(bid)
+  await store.save<Bid>(canceledBid)
 
-  if (transactionalStatusAuction && auction.topBid && bid.id.toString() === auction.topBid.id.toString()) {
+  if (transactionalStatusAuction && auction.topBid && canceledBid.id.toString() === auction.topBid.id.toString()) {
     // create list of all auction bids, but exclude bid that just got canceled
     // we saved the bid but the auction bids are stale in memory and the bid that just got canceled is not updated in auction.bids
     // if we don't filter it, the canceled bid may get set as the top bid again
-    const bids = (auction.bids || []).filter((b) => b.id !== bid.id)
+    const bids = (auction.bids || []).filter((auctionBid) => auctionBid.id !== canceledBid.id)
     // find new top bid
     auction.topBid = findTopBid(bids)
 
