@@ -146,3 +146,39 @@ jobs:
         run: |
           export RUNTIME=latest
           tests/network-tests/test-setup-new-chain.sh
+
+  runtime_upgrade_from_olympia:
+    # if: ${{ false }}
+    name: Integration Tests (Runtime Upgrade)
+    needs: build_images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '14.x'
+      - name: Get artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ needs.build_images.outputs.use_artifact }}
+      - name: Install artifacts
+        run: |
+          docker load --input joystream-node-docker-image.tar.gz
+          docker images
+      - name: Install packages and dependencies
+        run: |
+          yarn install --frozen-lockfile
+          yarn workspace @joystream/types build
+          yarn workspace @joystream/metadata-protobuf build
+          yarn workspace @joystream/cli build
+      - name: Ensure tests are runnable
+        run: yarn workspace network-tests build
+      - name: Execute network tests
+        run: |
+          export HOME=${PWD}
+          mkdir -p ${HOME}/.local/share/joystream-cli
+          yarn joystream-cli api:setUri ws://localhost:9944
+          # Olympia release TESTING runtime profile
+          export RUNTIME=d7fd5888aacb3616be7ddfc7aab5d96603537c74
+          export TARGET_RUNTIME_TAG=latest
+          tests/network-tests/run-migration-tests.sh

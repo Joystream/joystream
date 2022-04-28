@@ -78,7 +78,7 @@ function main {
         sleep 120
         # verify assertion using typsecript
         echo "***** POST MIGRATION TYPESCRIPT *****"
-        yarn workspace network-tests node-ts-strict src/scenarios/post-migration.ts
+        yarn workspace network-tests node-ts-strict src/scenarios/postRuntimeUpdate.ts
     fi
 }
 
