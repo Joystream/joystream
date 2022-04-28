@@ -74,7 +74,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
     // constants for crate::Trait
     pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token");
-    pub const BlocksPerYear: u32 = 52594921; // blocks every 6s
+    pub const BlocksPerYear: u32 = 5259487; // floor(seconds in a year / 6s) , 1 block every 6s
     // constants for balances::Trait
     pub const ExistentialDeposit: u128 = 10;
 }
