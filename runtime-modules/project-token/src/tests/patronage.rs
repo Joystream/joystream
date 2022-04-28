@@ -301,6 +301,37 @@ fn claim_patronage_ok() {
 }
 
 #[test]
+fn claim_patronage_ok_with_patronage_rate_for_period_capped_at_100pct() {
+    // Simulate condition where patronage_rate.for_period(blocks) > 100%
+    let token_id = token!(1);
+    let owner = account!(1);
+    let supply = balance!(100);
+    let rate = rate!(55);
+    let blocks = block!(2); // patronage rate for period = 110% > 100%
+
+    let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
+    // rate for period = 110% but effective rate is capped at 100% -> 100% supply + supply
+    let expected = balance!(100) + supply;
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token_and_owner(token_id, params.build(), owner, supply)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_block_number_by(blocks);
+
+        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
+            token_id, owner,
+        );
+
+        assert_eq!(
+            expected,
+            Token::account_info_by_token_and_account(token_id, owner).free_balance
+        );
+    })
+}
+
+#[test]
 fn claim_patronage_ok_with_supply_greater_than_u64_max() {
     let token_id = token!(1);
     let owner = account!(1);
