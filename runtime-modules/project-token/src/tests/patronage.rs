@@ -50,7 +50,7 @@ fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
     };
     let config = GenesisConfigBuilder::new_empty().build();
 
-    // K = 1/blocks_per_years => floor(20% * 10 * K * 1bill) = floor(K * 2bill) = 38
+    // K = 1/blocks_per_years => floor(20% * 10 * K * 1bill) = floor(K * 2bill) = 380
     let expected = balance!(380);
 
     build_test_externalities(config).execute_with(|| {
