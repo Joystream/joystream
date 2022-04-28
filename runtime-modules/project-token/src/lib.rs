@@ -409,7 +409,7 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
         );
 
         SymbolsUsed::<T>::insert(&token_data.symbol, ());
-        TokenInfoById::<T>::insert(token_id, token_data.clone());
+        TokenInfoById::<T>::insert(token_id, token_data);
         // AFTER token is added to storage add account
         Self::do_insert_new_account_for_token(
             token_id,
