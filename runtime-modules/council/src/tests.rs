@@ -181,9 +181,6 @@ fn council_vote_for_winner_stakes_longer() {
         Mocks::release_vote_stake(voter_for_winner.origin.clone(), Err(()));
         Mocks::release_vote_stake(voter_for_looser.origin.clone(), Ok(()));
 
-        // try to release vote stake
-        Mocks::release_vote_stake(voter_for_winner.origin.clone(), Err(()));
-
         // run second election round
         Mocks::run_full_council_cycle(
             council_settings.cycle_duration,
