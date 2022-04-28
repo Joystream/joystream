@@ -777,8 +777,12 @@ export async function contentNft_AuctionBidCanceled({ event, store }: EventConte
   await store.save<Bid>(bid)
 
   if (transactionalStatusAuction && auction.topBid && bid.id.toString() === auction.topBid.id.toString()) {
+    // create list of all auction bids, but exclude bid that just got canceled
+    // we saved the bid but the auction bids are stale in memory and the bid that just got canceled is not updated in auction.bids
+    // if we don't filter it, the canceled bid may get set as the top bid again
+    const bids = (auction.bids || []).filter((b) => b.id !== bid.id)
     // find new top bid
-    auction.topBid = findTopBid(auction.bids || [])
+    auction.topBid = findTopBid(bids)
 
     // save auction
     await store.save<Auction>(auction)
