@@ -112,7 +112,7 @@ fn join_whitelist_fails_with_insufficent_joy_balance_for_bloat_bond() {
     build_test_externalities(config).execute_with(|| {
         let result = Token::join_whitelist(origin!(user_account), token_id, proof);
 
-        assert_noop!(result, Error::<Test>::InsufficientJOYBalance);
+        assert_noop!(result, Error::<Test>::InsufficientJoyBalance);
     })
 }
 

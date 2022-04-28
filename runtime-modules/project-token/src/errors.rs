@@ -46,7 +46,7 @@ decl_error! {
         NotEnoughTokensOnSale,
 
         /// Insufficient JOY Balance to cover the transaction costs
-        InsufficientJOYBalance,
+        InsufficientJoyBalance,
 
         /// Attempt to removed non owned account under permissioned mode
         AttemptToRemoveNonOwnedAccountUnderPermissionedMode,

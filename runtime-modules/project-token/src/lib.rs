@@ -63,7 +63,7 @@ pub trait Trait: frame_system::Trait + balances::Trait + storage::Trait {
     type ModuleId: Get<ModuleId>;
 
     /// Existential Deposit for the JOY pallet
-    type JOYExistentialDeposit: Get<JOYBalanceOf<Self>>;
+    type JoyExistentialDeposit: Get<JoyBalanceOf<Self>>;
 
     /// Maximum number of vesting balances per account per token
     type MaxVestingBalancesPerAccountPerToken: Get<u8>;
@@ -94,7 +94,7 @@ decl_storage! {
             hasher(blake2_128_concat) T::Hash => ();
 
         /// Bloat Bond value used during account creation
-        pub BloatBond get(fn bloat_bond) config(): JOYBalanceOf<T>;
+        pub BloatBond get(fn bloat_bond) config(): JoyBalanceOf<T>;
     }
 
     add_extra_genesis {
@@ -108,9 +108,9 @@ decl_storage! {
             // - https://github.com/Joystream/joystream/issues/3510
 
             let module_account_id = crate::Module::<T>::bloat_bond_treasury_account_id();
-            let deposit = T::JOYExistentialDeposit::get();
+            let deposit = T::JoyExistentialDeposit::get();
 
-            let _ = JOY::<T>::deposit_creating(&module_account_id, deposit);
+            let _ = Joy::<T>::deposit_creating(&module_account_id, deposit);
         });
     }
 }
@@ -341,7 +341,7 @@ decl_module! {
 
             // == MUTATION SAFE ==
 
-            <JOY::<T> as Currency<T::AccountId>>::transfer(
+            <Joy::<T> as Currency<T::AccountId>>::transfer(
                 &sender,
                 &sale.tokens_source,
                 joy_amount,
@@ -894,15 +894,15 @@ impl<T: Trait> Module<T> {
 
     pub(crate) fn compute_bloat_bond(
         validated_transfers: &ValidatedTransfers<T>,
-    ) -> JOYBalanceOf<T> {
+    ) -> JoyBalanceOf<T> {
         let bloat_bond = Self::bloat_bond();
         validated_transfers
             .iter()
-            .fold(JOYBalanceOf::<T>::zero(), |acc, (account, _)| {
+            .fold(JoyBalanceOf::<T>::zero(), |acc, (account, _)| {
                 if matches!(account, Validated::<_>::NonExisting(_)) {
                     acc.saturating_add(bloat_bond)
                 } else {
-                    JOYBalanceOf::<T>::zero()
+                    JoyBalanceOf::<T>::zero()
                 }
             })
     }
@@ -924,21 +924,21 @@ impl<T: Trait> Module<T> {
 
     pub(crate) fn ensure_can_transfer_joy(
         src: &T::AccountId,
-        amount: JOYBalanceOf<T>,
+        amount: JoyBalanceOf<T>,
     ) -> DispatchResult {
         if !amount.is_zero() {
             ensure!(
-                JOY::<T>::usable_balance(src)
-                    >= T::JOYExistentialDeposit::get().saturating_add(amount),
-                Error::<T>::InsufficientJOYBalance
+                Joy::<T>::usable_balance(src)
+                    >= T::JoyExistentialDeposit::get().saturating_add(amount),
+                Error::<T>::InsufficientJoyBalance
             );
         }
         Ok(())
     }
 
-    pub(crate) fn deposit_to_treasury(src: &T::AccountId, amount: JOYBalanceOf<T>) {
+    pub(crate) fn deposit_to_treasury(src: &T::AccountId, amount: JoyBalanceOf<T>) {
         let treasury_account_id = Self::bloat_bond_treasury_account_id();
-        let _ = <JOY<T> as Currency<T::AccountId>>::transfer(
+        let _ = <Joy<T> as Currency<T::AccountId>>::transfer(
             src,
             &treasury_account_id,
             amount,
@@ -946,9 +946,9 @@ impl<T: Trait> Module<T> {
         );
     }
 
-    pub(crate) fn withdraw_from_treasury(dst: &T::AccountId, amount: JOYBalanceOf<T>) {
+    pub(crate) fn withdraw_from_treasury(dst: &T::AccountId, amount: JoyBalanceOf<T>) {
         let treasury_account_id = Self::bloat_bond_treasury_account_id();
-        let _ = <JOY<T> as Currency<T::AccountId>>::transfer(
+        let _ = <Joy<T> as Currency<T::AccountId>>::transfer(
             &treasury_account_id,
             dst,
             amount,

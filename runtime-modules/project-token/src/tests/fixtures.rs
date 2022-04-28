@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::tests::mock::*;
-use crate::types::JOY;
+use crate::types::Joy;
 use crate::{last_event_eq, yearly_rate, AccountInfoByTokenAndAccount, RawEvent, YearlyRate};
 use crate::{traits::PalletToken, types::VestingSource, SymbolsUsed};
 use frame_support::dispatch::DispatchResult;
@@ -349,8 +349,8 @@ pub struct PurchaseTokensOnSaleFixtureStateSnapshot {
     buyer_account_data: AccountData,
     buyer_vesting_schedule: Option<VestingSchedule>,
     buyer_account_exists: bool,
-    buyer_usable_joy_balance: JOYBalance,
-    treasury_usable_joy_balance: JOYBalance,
+    buyer_usable_joy_balance: JoyBalance,
+    treasury_usable_joy_balance: JoyBalance,
 }
 
 impl PurchaseTokensOnSaleFixture {
@@ -398,8 +398,8 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
                 .vesting_schedules
                 .get(&VestingSource::Sale(token_data.sales_initialized))
                 .map(|v| v.clone()),
-            buyer_usable_joy_balance: JOY::<Test>::usable_balance(self.sender),
-            treasury_usable_joy_balance: JOY::<Test>::usable_balance(
+            buyer_usable_joy_balance: Joy::<Test>::usable_balance(self.sender),
+            treasury_usable_joy_balance: Joy::<Test>::usable_balance(
                 Token::bloat_bond_treasury_account_id(),
             ),
         }

@@ -4,8 +4,8 @@ use crate::errors::Error;
 use crate::joy;
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
+use crate::types::Joy;
 use crate::types::MerkleProofOf;
-use crate::types::JOY;
 use crate::{merkle_proof, merkle_root};
 use frame_support::assert_ok;
 use sp_arithmetic::Permill;
@@ -81,7 +81,7 @@ fn unsuccesful_token_sale_init_when_remaining_reserved_toknes_from_previous_sale
         InitTokenSaleFixture::default().call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            <Test as crate::Trait>::JOYExistentialDeposit::get()
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
                 + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
         );
         PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
@@ -278,7 +278,7 @@ fn unsuccesful_sale_purchase_insufficient_joy_balance_new_account() {
     build_test_externalities(config).execute_with(|| {
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            <Test as crate::Trait>::JOYExistentialDeposit::get()
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
                 + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT
                 + bloat_bond
                 - 1,
@@ -286,7 +286,7 @@ fn unsuccesful_sale_purchase_insufficient_joy_balance_new_account() {
         IssueTokenFixture::default().call_and_assert(Ok(()));
         InitTokenSaleFixture::default().call_and_assert(Ok(()));
         PurchaseTokensOnSaleFixture::default()
-            .call_and_assert(Err(Error::<Test>::InsufficientJOYBalance.into()));
+            .call_and_assert(Err(Error::<Test>::InsufficientJoyBalance.into()));
     })
 }
 
@@ -300,7 +300,7 @@ fn unsuccesful_sale_purchase_insufficient_joy_balance_existing_account() {
     build_test_externalities(config).execute_with(|| {
         increase_account_balance(
             &DEFAULT_ACCOUNT_ID,
-            <Test as crate::Trait>::JOYExistentialDeposit::get()
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
                 + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT
                 - 1,
         );
@@ -308,7 +308,7 @@ fn unsuccesful_sale_purchase_insufficient_joy_balance_existing_account() {
         InitTokenSaleFixture::default().call_and_assert(Ok(()));
         PurchaseTokensOnSaleFixture::default()
             .with_sender(DEFAULT_ACCOUNT_ID)
-            .call_and_assert(Err(Error::<Test>::InsufficientJOYBalance.into()));
+            .call_and_assert(Err(Error::<Test>::InsufficientJoyBalance.into()));
     })
 }
 
@@ -321,7 +321,7 @@ fn unsuccesful_sale_purchase_amount_exceeds_quantity_left() {
         InitTokenSaleFixture::default().call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            <Test as crate::Trait>::JOYExistentialDeposit::get()
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
                 + DEFAULT_SALE_UNIT_PRICE * (DEFAULT_INITIAL_ISSUANCE + 1),
         );
         PurchaseTokensOnSaleFixture::default()
@@ -340,7 +340,7 @@ fn unsuccesful_sale_purchase_vesting_balances_limit_reached() {
             <Test as crate::Trait>::MaxVestingBalancesPerAccountPerToken::get();
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            <Test as crate::Trait>::JOYExistentialDeposit::get()
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
                 + DEFAULT_SALE_PURCHASE_AMOUNT
                     .saturating_mul(DEFAULT_SALE_UNIT_PRICE)
                     .saturating_mul((max_vesting_schedules + 1).into()),
@@ -377,7 +377,7 @@ fn unsuccesful_sale_purchase_with_cap_exceeded() {
             .call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            <Test as crate::Trait>::JOYExistentialDeposit::get()
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
                 + DEFAULT_SALE_UNIT_PRICE * (DEFAULT_SALE_PURCHASE_AMOUNT + 1),
         );
         // Make succesful purchase
@@ -404,7 +404,7 @@ fn unsuccesful_sale_purchase_with_permissioned_token_and_non_existing_account() 
         InitTokenSaleFixture::default().call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            <Test as crate::Trait>::JOYExistentialDeposit::get()
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
                 + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
         );
         PurchaseTokensOnSaleFixture::default()
@@ -426,7 +426,7 @@ fn succesful_sale_purchases_non_existing_account_no_vesting_schedule() {
             .call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            <Test as crate::Trait>::JOYExistentialDeposit::get()
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
                 + (DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT * 2)
                 + bloat_bond,
         );
@@ -459,7 +459,7 @@ fn succesful_sale_purchases_non_existing_account_vesting_schedule() {
             .call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            <Test as crate::Trait>::JOYExistentialDeposit::get()
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
                 + (DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT * 2)
                 + bloat_bond,
         );
@@ -518,7 +518,7 @@ fn succesful_sale_purchase_existing_account_permissioned_token() {
             .call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            <Test as crate::Trait>::JOYExistentialDeposit::get() + bloat_bond,
+            <Test as crate::Trait>::JoyExistentialDeposit::get() + bloat_bond,
         );
         assert_ok!(Token::join_whitelist(
             Origin::signed(OTHER_ACCOUNT_ID),
@@ -526,8 +526,8 @@ fn succesful_sale_purchase_existing_account_permissioned_token() {
             proof
         ));
         assert_eq!(
-            JOY::<Test>::usable_balance(&OTHER_ACCOUNT_ID),
-            <Test as crate::Trait>::JOYExistentialDeposit::get()
+            Joy::<Test>::usable_balance(&OTHER_ACCOUNT_ID),
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
         );
         InitTokenSaleFixture::default().call_and_assert(Ok(()));
         increase_account_balance(
@@ -585,7 +585,7 @@ fn unsuccesful_unreserve_unsold_tokens_when_no_tokens_left() {
             .call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            <Test as crate::Trait>::JOYExistentialDeposit::get()
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
                 + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
         );
         PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
@@ -604,7 +604,7 @@ fn succesful_unreserve_unsold_tokens() {
         InitTokenSaleFixture::default().call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            <Test as crate::Trait>::JOYExistentialDeposit::get()
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
                 + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
         );
         PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));

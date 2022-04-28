@@ -37,7 +37,7 @@ pub type AccountData = AccountDataOf<Test>;
 pub type AccountId = <Test as frame_system::Trait>::AccountId;
 pub type BlockNumber = <Test as frame_system::Trait>::BlockNumber;
 pub type Balance = TokenBalanceOf<Test>;
-pub type JOYBalance = JOYBalanceOf<Test>;
+pub type JoyBalance = JoyBalanceOf<Test>;
 pub type Policy = TransferPolicyOf<Test>;
 pub type Hashing = <Test as frame_system::Trait>::Hashing;
 pub type HashOut = <Test as frame_system::Trait>::Hash;
@@ -194,7 +194,7 @@ impl Trait for Test {
     type BlockNumberToBalance = Block2Balance;
     type DataObjectStorage = storage::Module<Self>;
     type ModuleId = TokenModuleId;
-    type JOYExistentialDeposit = ExistentialDeposit;
+    type JoyExistentialDeposit = ExistentialDeposit;
     type MaxVestingBalancesPerAccountPerToken = MaxVestingBalancesPerAccountPerToken;
     type BlocksPerYear = BlocksPerYear;
 }
@@ -342,7 +342,7 @@ pub struct GenesisConfigBuilder {
     pub(crate) account_info_by_token_and_account: Vec<(TokenId, AccountId, AccountData)>,
     pub(crate) token_info_by_id: Vec<(TokenId, TokenData)>,
     pub(crate) next_token_id: TokenId,
-    pub(crate) bloat_bond: JOYBalance,
+    pub(crate) bloat_bond: JoyBalance,
     pub(crate) symbol_used: Vec<(HashOut, ())>,
 }
 
@@ -413,7 +413,7 @@ macro_rules! yearly_rate {
 #[macro_export]
 macro_rules! joy {
     ($bal:expr) => {
-        JOYBalance::from($bal as u32)
+        JoyBalance::from($bal as u32)
     };
 }
 

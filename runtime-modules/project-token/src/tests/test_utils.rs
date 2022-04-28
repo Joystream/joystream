@@ -90,7 +90,7 @@ impl GenesisConfigBuilder {
             account_info_by_token_and_account: vec![],
             next_token_id: TokenId::one(),
             symbol_used: vec![],
-            bloat_bond: JOYBalance::zero(),
+            bloat_bond: JoyBalance::zero(),
         }
     }
 
@@ -114,7 +114,7 @@ impl GenesisConfigBuilder {
             .with_account(owner, AccountData::new_with_amount(initial_supply))
     }
 
-    pub fn with_bloat_bond(self, bloat_bond: JOYBalance) -> Self {
+    pub fn with_bloat_bond(self, bloat_bond: JoyBalance) -> Self {
         Self { bloat_bond, ..self }
     }
 

@@ -50,7 +50,7 @@ impl<Balance: Copy> StakingStatus<Balance> {
 
 /// Info for the account
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct AccountData<VestingSchedule, Balance, StakingStatus, JOYBalance> {
+pub struct AccountData<VestingSchedule, Balance, StakingStatus, JoyBalance> {
     /// Map that represents account's vesting schedules indexed by source.
     /// Account's total unvested (locked) balance at current block (b)
     /// can be calculated by summing `v.locks()` of all
@@ -66,7 +66,7 @@ pub struct AccountData<VestingSchedule, Balance, StakingStatus, JOYBalance> {
 
     /// Bloat bond (in 'JOY's) deposited into treasury upon creation of this
     /// account, returned when this account is removed
-    pub(crate) bloat_bond: JOYBalance,
+    pub(crate) bloat_bond: JoyBalance,
 }
 
 /// Info for the token
@@ -235,9 +235,9 @@ where
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct SingleDataObjectUploadParams<JOYBalance> {
+pub struct SingleDataObjectUploadParams<JoyBalance> {
     pub object_creation_params: DataObjectCreationParameters,
-    pub expected_data_size_fee: JOYBalance,
+    pub expected_data_size_fee: JoyBalance,
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -255,11 +255,11 @@ pub struct WhitelistParams<Hash, SingleDataObjectUploadParams> {
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct TokenSaleParams<JOYBalance, Balance, BlockNumber, VestingScheduleParams, AccountId> {
+pub struct TokenSaleParams<JoyBalance, Balance, BlockNumber, VestingScheduleParams, AccountId> {
     /// Account that acts as the source of the tokens on sale
     pub tokens_source: AccountId,
     /// Token's unit price in JOY
-    pub unit_price: JOYBalance,
+    pub unit_price: JoyBalance,
     /// Number of tokens on sale
     pub upper_bound_quantity: Balance,
     /// Optional block in the future when the sale should start (by default: starts immediately)
@@ -275,9 +275,9 @@ pub struct TokenSaleParams<JOYBalance, Balance, BlockNumber, VestingSchedulePara
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default)]
-pub struct TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams, AccountId> {
+pub struct TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams, AccountId> {
     /// Token's unit price in JOY
-    pub unit_price: JOYBalance,
+    pub unit_price: JoyBalance,
     /// Number of tokens still on sale (if any)
     pub quantity_left: Balance,
     /// Account that acts as the source of the tokens on sale
@@ -292,8 +292,8 @@ pub struct TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Ac
     pub cap_per_member: Option<Balance>,
 }
 
-impl<JOYBalance, Balance, BlockNumber, AccountId>
-    TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams<BlockNumber>, AccountId>
+impl<JoyBalance, Balance, BlockNumber, AccountId>
+    TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams<BlockNumber>, AccountId>
 where
     BlockNumber: Saturating + Zero + Copy + Clone + PartialOrd,
     Balance: Saturating + Clone + Copy + From<u32> + Unsigned + TryInto<u32> + TryInto<u64> + Ord,
@@ -504,21 +504,21 @@ impl<AddressId: Default, Balance: Zero, VestingScheduleParams> Default
 }
 
 /// Default trait for AccountData
-impl<VestingSchedule, Balance: Zero, StakingStatus, JOYBalance: Zero> Default
-    for AccountData<VestingSchedule, Balance, StakingStatus, JOYBalance>
+impl<VestingSchedule, Balance: Zero, StakingStatus, JoyBalance: Zero> Default
+    for AccountData<VestingSchedule, Balance, StakingStatus, JoyBalance>
 {
     fn default() -> Self {
         Self {
             vesting_schedules: BTreeMap::new(),
             split_staking_status: None,
             amount: Balance::zero(),
-            bloat_bond: JOYBalance::zero(),
+            bloat_bond: JoyBalance::zero(),
         }
     }
 }
 
-impl<Balance, BlockNumber, JOYBalance>
-    AccountData<VestingSchedule<BlockNumber, Balance>, Balance, StakingStatus<Balance>, JOYBalance>
+impl<Balance, BlockNumber, JoyBalance>
+    AccountData<VestingSchedule<BlockNumber, Balance>, Balance, StakingStatus<Balance>, JoyBalance>
 where
     Balance: Clone
         + Zero
@@ -532,10 +532,10 @@ where
         + TryInto<u64>
         + Copy,
     BlockNumber: Copy + Clone + PartialOrd + Ord + Saturating + From<u32> + Unsigned,
-    JOYBalance: Zero,
+    JoyBalance: Zero,
 {
     /// Ctor
-    pub fn new_with_amount_and_bond(amount: Balance, bloat_bond: JOYBalance) -> Self {
+    pub fn new_with_amount_and_bond(amount: Balance, bloat_bond: JoyBalance) -> Self {
         Self {
             amount,
             bloat_bond,
@@ -546,7 +546,7 @@ where
     pub fn new_with_vesting_and_bond(
         source: VestingSource,
         schedule: VestingSchedule<BlockNumber, Balance>,
-        bloat_bond: JOYBalance,
+        bloat_bond: JoyBalance,
     ) -> Self {
         Self {
             amount: schedule.total_amount(),
@@ -669,12 +669,12 @@ where
     }
 }
 /// Token Data implementation
-impl<JOYBalance, Balance, Hash, BlockNumber, VestingScheduleParams, AccountId>
+impl<JoyBalance, Balance, Hash, BlockNumber, VestingScheduleParams, AccountId>
     TokenData<
         Balance,
         Hash,
         BlockNumber,
-        TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams, AccountId>,
+        TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams, AccountId>,
     >
 where
     Balance: Zero + Saturating + Copy,
@@ -848,17 +848,17 @@ impl BlockRate {
 pub(crate) type TokenBalanceOf<T> = <T as Trait>::Balance;
 
 /// JOY balance
-pub(crate) type JOYBalanceOf<T> = <T as balances::Trait>::Balance;
+pub(crate) type JoyBalanceOf<T> = <T as balances::Trait>::Balance;
 
 /// JOY balances module
-pub(crate) type JOY<T> = balances::Module<T>;
+pub(crate) type Joy<T> = balances::Module<T>;
 
 /// Alias for Staking Status
 pub(crate) type StakingStatusOf<T> = StakingStatus<<T as Trait>::Balance>;
 
 /// Alias for Account Data
 pub(crate) type AccountDataOf<T> =
-    AccountData<VestingScheduleOf<T>, TokenBalanceOf<T>, StakingStatusOf<T>, JOYBalanceOf<T>>;
+    AccountData<VestingScheduleOf<T>, TokenBalanceOf<T>, StakingStatusOf<T>, JoyBalanceOf<T>>;
 
 /// Alias for Token Data
 pub(crate) type TokenDataOf<T> = TokenData<
@@ -900,7 +900,7 @@ pub(crate) type VestingScheduleOf<T> =
     VestingSchedule<<T as frame_system::Trait>::BlockNumber, TokenBalanceOf<T>>;
 
 /// Alias for SingleDataObjectUploadParams
-pub(crate) type SingleDataObjectUploadParamsOf<T> = SingleDataObjectUploadParams<JOYBalanceOf<T>>;
+pub(crate) type SingleDataObjectUploadParamsOf<T> = SingleDataObjectUploadParams<JoyBalanceOf<T>>;
 
 /// Alias for WhitelistParams
 pub(crate) type WhitelistParamsOf<T> =
@@ -908,7 +908,7 @@ pub(crate) type WhitelistParamsOf<T> =
 
 /// Alias for TokenSaleParams
 pub(crate) type TokenSaleParamsOf<T> = TokenSaleParams<
-    JOYBalanceOf<T>,
+    JoyBalanceOf<T>,
     TokenBalanceOf<T>,
     <T as frame_system::Trait>::BlockNumber,
     VestingScheduleParamsOf<T>,
@@ -917,7 +917,7 @@ pub(crate) type TokenSaleParamsOf<T> = TokenSaleParams<
 
 /// Alias for TokenSale
 pub(crate) type TokenSaleOf<T> = TokenSale<
-    JOYBalanceOf<T>,
+    JoyBalanceOf<T>,
     TokenBalanceOf<T>,
     <T as frame_system::Trait>::BlockNumber,
     VestingScheduleParamsOf<T>,

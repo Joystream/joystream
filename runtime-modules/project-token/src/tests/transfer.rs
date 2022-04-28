@@ -67,7 +67,7 @@ fn permissionless_transfer_fails_with_src_having_insufficient_fund_for_bloat_bon
     build_test_externalities(config).execute_with(|| {
         let result = Token::transfer(origin!(src), token_id, outputs![(dst, amount)]);
 
-        assert_noop!(result, Error::<Test>::InsufficientJOYBalance);
+        assert_noop!(result, Error::<Test>::InsufficientJoyBalance);
     })
 }
 
@@ -376,7 +376,7 @@ fn multiout_transfer_fails_with_src_having_insufficient_funds_for_bloat_bond() {
     build_test_externalities(config).execute_with(|| {
         let result = Token::transfer(origin!(src), token_id, outputs);
 
-        assert_noop!(result, Error::<Test>::InsufficientJOYBalance);
+        assert_noop!(result, Error::<Test>::InsufficientJoyBalance);
     })
 }
 
