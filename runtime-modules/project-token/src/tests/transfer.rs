@@ -3,7 +3,8 @@ use frame_support::{assert_noop, assert_ok};
 
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
-use crate::types::{Transfers, Validated};
+use crate::traits::PalletToken;
+use crate::types::{TransferPolicyOf, Transfers, Validated};
 use crate::{account, balance, joy, last_event_eq, merkle_root, origin, token, Error, RawEvent};
 
 // some helpers
@@ -818,6 +819,76 @@ fn permissioned_multi_out_transfer_ok_with_event_deposit() {
                 (Validated::<_>::Existing(dst1), amount1),
                 (Validated::<_>::Existing(dst2), amount2)
             ],
+        ));
+    })
+}
+
+#[test]
+fn change_to_permissionless_fails_with_invalid_token_id() {
+    let token_id = token!(1);
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result =
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::change_to_permissionless(
+                token_id,
+            );
+
+        assert_noop!(result, Error::<Test>::TokenDoesNotExist);
+    })
+}
+
+#[test]
+fn change_to_permissionless_ok_from_permissioned_state() {
+    let token_id = token!(1);
+    let (dst1, amount1) = (account!(2), balance!(1));
+    let (dst2, amount2) = (account!(3), balance!(1));
+    let (src, src_balance) = (account!(1), amount1 + amount2);
+    let commit = merkle_root![dst1, dst2];
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token_and_owner(token_id, token_data, src, src_balance)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result =
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::change_to_permissionless(
+                token_id,
+            );
+
+        assert_ok!(result);
+        assert!(matches!(
+            Token::token_info_by_id(token_id).transfer_policy,
+            TransferPolicyOf::<Test>::Permissionless
+        ));
+    })
+}
+
+#[test]
+fn change_to_permissionless_ok_from_permissionless_state() {
+    let token_id = token!(1);
+    let (src, src_balance) = (account!(1), balance!(100));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token_and_owner(token_id, token_data, src, src_balance)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result =
+            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::change_to_permissionless(
+                token_id,
+            );
+
+        assert_ok!(result);
+        assert!(matches!(
+            Token::token_info_by_id(token_id).transfer_policy,
+            TransferPolicyOf::<Test>::Permissionless
         ));
     })
 }

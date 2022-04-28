@@ -284,7 +284,11 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
     /// Postconditions
     /// - transfer policy of `token_id` changed to permissionless
     fn change_to_permissionless(token_id: T::TokenId) -> DispatchResult {
-        TokenInfoById::<T>::try_mutate(token_id, |token_info| {
+        Self::ensure_token_exists(token_id).map(|_| ())?;
+
+        // == MUTATION SAFE ==
+
+        TokenInfoById::<T>::mutate(token_id, |token_info| {
             token_info.transfer_policy = TransferPolicyOf::<T>::Permissionless;
             Ok(())
         })
