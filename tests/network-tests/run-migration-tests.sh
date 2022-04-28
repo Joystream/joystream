@@ -74,6 +74,8 @@ function main {
     echo "***** STARTING NODE WITH FORKED STATE *****"
     CONTAINER_ID=$(start_node)
 
+    trap cleanup EXIT
+
     if ( $POST_MIGRATION_ASYNC_ASSERTIONS ); then
         sleep 120
         # verify assertion using typsecript
@@ -83,5 +85,4 @@ function main {
 }
 
 # main entrypoint
-main || :
-cleanup
+main
