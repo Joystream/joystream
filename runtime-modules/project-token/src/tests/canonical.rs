@@ -544,6 +544,26 @@ fn dust_account_ok_with_account_removed() {
 }
 
 #[test]
+fn dust_account_ok_with_nonempty_owned_account_removed_and_supply_decreased() {
+    let (owner_balance, user_balance) = (balance!(100), balance!(100));
+    let (owner, user_account) = (account!(1), account!(2));
+    let token_id = token!(1);
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token_and_owner(token_id, token_data, owner, owner_balance)
+        .with_account(user_account, AccountData::new_with_liquidity(user_balance))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let _ = Token::dust_account(origin!(user_account), token_id, user_account);
+
+        assert_eq!(Token::token_info_by_id(token_id).supply, balance!(100));
+    })
+}
+
+#[test]
 fn dust_account_ok_by_user_with_correct_bloat_bond_refunded() {
     let (token_id, init_supply) = (token!(1), balance!(100));
     let treasury = Token::bloat_bond_treasury_account_id();
