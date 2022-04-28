@@ -371,11 +371,13 @@ impl<T: Trait> PalletToken<T::AccountId, TransferPolicyOf<T>, TokenIssuanceParam
     /// Preconditions:
     /// - `token_id` must NOT exists
     /// - `symbol` specified in the parameters must NOT exists
+    /// - `owner_account_id` free balance in JOYs >= `bloat_bond`
     ///
     /// Postconditions:
     /// - token with specified characteristics is added to storage state
     /// - `NextTokenId` increased by 1
     /// - symbol is added to `Symbols`
+    /// - ``bloat_bond` JOYs transferred from `owner_account_id` to treasury account
     fn issue_token(
         owner_account_id: T::AccountId,
         issuance_parameters: TokenIssuanceParametersOf<T>,
