@@ -557,8 +557,12 @@ impl<T: Trait>
         let whitelist_payload = issuance_parameters.get_whitelist_payload();
 
         // TODO: Not clear what the storage interface will be yet, so this is just a mock code now
-        let upload_params = whitelist_payload.as_ref().map_or(Ok(None), |payload| {
-            Self::ensure_can_upload_data_object(payload, &upload_context).map(|r| Some(r))
+        let upload_params = whitelist_payload.as_ref().map_or::<Result<
+            Option<UploadParameters<T>>,
+            DispatchError,
+        >, _>(Ok(None), |payload| {
+            let params = Self::ensure_can_upload_data_object(payload, &upload_context)?;
+            Ok(Some(params))
         })?;
 
         let total_bloat_bond = issuance_parameters.get_initial_allocation_bloat_bond(bloat_bond);
@@ -976,6 +980,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    #[allow(clippy::unnecessary_wraps)]
     pub(crate) fn ensure_can_upload_data_object(
         payload: &SingleDataObjectUploadParamsOf<T>,
         upload_context: &UploadContextOf<T>,
