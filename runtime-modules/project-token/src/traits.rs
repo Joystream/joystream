@@ -1,22 +1,12 @@
 use frame_support::dispatch::DispatchResult;
 
-/// Account wrapper that encapsulates the validation for the transfer location
-/// by means of the visitor pattern
-pub trait TransferLocationTrait<AccountId, Policy> {
-    /// encapsulates eventual merkle tree validation given policy
-    fn is_valid_location_for_policy(&self, policy: &Policy) -> bool;
-
-    /// the wrapped account
-    fn location_account(&self) -> AccountId;
-}
-
 pub trait PalletToken<
     AccountId,
     Policy,
     IssuanceParams,
-    UploadContext,
     BlockNumber,
     TokenSaleParams,
+    UploadContext,
 >
 {
     /// Balance type used
@@ -28,8 +18,14 @@ pub trait PalletToken<
     /// Merkle Proof Type used
     type MerkleProof;
 
+    /// Yearly rate used for expressing patronage rate
+    type YearlyRate;
+
     /// Issue token with specified characteristics
-    fn issue_token(issuance_parameters: IssuanceParams) -> DispatchResult;
+    fn issue_token(
+        issuance_parameters: IssuanceParams,
+        upload_context: UploadContext,
+    ) -> DispatchResult;
 
     /// Update existing, upcoming token sale
     fn update_upcoming_sale(
@@ -39,11 +35,7 @@ pub trait PalletToken<
     ) -> DispatchResult;
 
     /// Initialize new token sale
-    fn init_token_sale(
-        token_id: Self::TokenId,
-        sale_params: TokenSaleParams,
-        payload_upload_context: UploadContext,
-    ) -> DispatchResult;
+    fn init_token_sale(token_id: Self::TokenId, sale_params: TokenSaleParams) -> DispatchResult;
 
     /// Remove token data from storage
     fn deissue_token(token_id: Self::TokenId) -> DispatchResult;
@@ -51,10 +43,10 @@ pub trait PalletToken<
     /// Change to permissionless
     fn change_to_permissionless(token_id: Self::TokenId) -> DispatchResult;
 
-    /// Reduce patronage rate by amount
-    fn reduce_patronage_rate_by(
+    /// Reduce patronage rate to a specified target
+    fn reduce_patronage_rate_to(
         token_id: Self::TokenId,
-        decrement: Self::Balance,
+        target_rate: Self::YearlyRate,
     ) -> DispatchResult;
 
     /// Allow creator to receive credit into his accounts

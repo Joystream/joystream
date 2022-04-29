@@ -100,4 +100,7 @@ parameter_types! {
 
     pub UpdateChannelPayoutsProposalParameters: ProposalParameters<BlockNumber, Balance> =
         update_channel_payouts_proposal();
+
+    pub UpdateNftLimitProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        update_nft_limit_proposal();
 }

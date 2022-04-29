@@ -16,17 +16,14 @@ use sp_runtime::{DispatchError, DispatchResult, ModuleId};
 // crate import
 pub(crate) use crate::utils::{build_merkle_path_helper, generate_merkle_root_helper};
 use crate::{
-    types::{
-        InitialAllocationOf, OfferingStateOf, SaleAccessProofOf, SingleDataObjectUploadParamsOf,
-        TokenSaleOf, TokenSaleParamsOf, UploadContextOf, VestingScheduleOf,
-        VestingScheduleParamsOf, WhitelistParamsOf, WhitelistedSaleParticipantOf,
-    },
-    AccountDataOf, GenesisConfig, TokenDataOf, TokenIssuanceParametersOf, Trait, TransferPolicyOf,
+    types::*, AccountDataOf, GenesisConfig, TokenDataOf, TokenIssuanceParametersOf, Trait,
+    TransferPolicyOf,
 };
 
 // Crate aliases
 pub type TokenId = <Test as Trait>::TokenId;
 pub type TokenData = TokenDataOf<Test>;
+pub type UploadContext = UploadContextOf<Test>;
 pub type SingleDataObjectUploadParams = SingleDataObjectUploadParamsOf<Test>;
 pub type WhitelistParams = WhitelistParamsOf<Test>;
 pub type TokenSaleParams = TokenSaleParamsOf<Test>;
@@ -35,19 +32,17 @@ pub type IssuanceParams = TokenIssuanceParametersOf<Test>;
 pub type VestingScheduleParams = VestingScheduleParamsOf<Test>;
 pub type InitialAllocation = InitialAllocationOf<Test>;
 pub type IssuanceState = OfferingStateOf<Test>;
-pub type TransferPolicy = TransferPolicyOf<Test>;
+pub type TransferPolicyParams = TransferPolicyParamsOf<Test>;
 pub type AccountData = AccountDataOf<Test>;
 pub type AccountId = <Test as frame_system::Trait>::AccountId;
 pub type BlockNumber = <Test as frame_system::Trait>::BlockNumber;
-pub type Balance = <Test as Trait>::Balance;
+pub type Balance = TokenBalanceOf<Test>;
+pub type JoyBalance = JoyBalanceOf<Test>;
 pub type Policy = TransferPolicyOf<Test>;
 pub type Hashing = <Test as frame_system::Trait>::Hashing;
 pub type HashOut = <Test as frame_system::Trait>::Hash;
-pub type UploadContext = UploadContextOf<Test>;
 pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
 pub type VestingSchedule = VestingScheduleOf<Test>;
-pub type SaleAccessProof = SaleAccessProofOf<Test>;
-pub type WhitelistedSaleParticipant = WhitelistedSaleParticipantOf<Test>;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
@@ -84,8 +79,6 @@ impl_outer_event! {
 }
 
 // Trait constants
-pub const DEFAULT_BLOAT_BOND: u64 = 100;
-
 parameter_types! {
     // constants for frame_system::Trait
     pub const BlockHashCount: u64 = 250;
@@ -94,11 +87,11 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
     // constants for crate::Trait
-    pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token"); // module storage
-    pub const BloatBond: u64 = DEFAULT_BLOAT_BOND;
+    pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token");
     pub const MaxVestingSchedulesPerAccountPerToken: u8 = 3;
+    pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
     // constants for balances::Trait
-    pub const ExistentialDeposit: u64 = 0;
+    pub const ExistentialDeposit: u128 = 10;
 }
 
 impl frame_system::Trait for Test {
@@ -122,21 +115,11 @@ impl frame_system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type AccountData = balances::AccountData<u64>;
+    type AccountData = balances::AccountData<u128>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type PalletInfo = ();
     type SystemWeightInfo = ();
-}
-
-impl balances::Trait for Test {
-    type Balance = u64;
-    type DustRemoval = ();
-    type Event = TestEvent;
-    type ExistentialDeposit = ExistentialDeposit;
-    type AccountStore = System;
-    type WeightInfo = ();
-    type MaxLocks = ();
 }
 
 impl storage::Trait for Test {
@@ -171,7 +154,10 @@ impl storage::Trait for Test {
 parameter_types! {
     pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
     pub const MaxDistributionBucketFamilyNumber: u64 = 4;
-    pub const DataObjectDeletionPrize: u64 = 5;
+    // FIXME: Currently this must be >= ExistentialDeposit (see: https://github.com/Joystream/joystream/issues/3510)
+    // When trying to deposit an amount < ExistentialDeposit into storage module account, we'd get:
+    // Err(DispatchError::Module { index: 0, error: 4, message: Some("ExistentialDeposit") })
+    pub const DataObjectDeletionPrize: u64 = 15;
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
     pub const BlacklistSizeLimit: u64 = 1;
     pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 1;
@@ -193,14 +179,14 @@ impl common::MembershipTypes for Test {
 
 impl Trait for Test {
     type Event = TestEvent;
-    type Balance = u64;
+    type Balance = u128;
     type TokenId = u64;
     type BlockNumberToBalance = Block2Balance;
     type DataObjectStorage = storage::Module<Self>;
     type ModuleId = TokenModuleId;
-    type BloatBond = BloatBond;
-    type ReserveCurrency = Balances;
+    type JoyExistentialDeposit = ExistentialDeposit;
     type MaxVestingSchedulesPerAccountPerToken = MaxVestingSchedulesPerAccountPerToken;
+    type BlocksPerYear = BlocksPerYear;
     type WeightInfo = ();
 }
 
@@ -208,30 +194,30 @@ impl Trait for Test {
 pub struct StorageWG;
 pub struct DistributionWG;
 
-impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for StorageWG {
-    fn get_budget() -> u64 {
+impl common::working_group::WorkingGroupBudgetHandler<u64, u128> for StorageWG {
+    fn get_budget() -> u128 {
         unimplemented!()
     }
 
-    fn set_budget(_new_value: u64) {
+    fn set_budget(_new_value: u128) {
         unimplemented!()
     }
 
-    fn try_withdraw(_account_id: &u64, _amount: u64) -> DispatchResult {
+    fn try_withdraw(_account_id: &u64, _amount: u128) -> DispatchResult {
         unimplemented!()
     }
 }
 
-impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for DistributionWG {
-    fn get_budget() -> u64 {
+impl common::working_group::WorkingGroupBudgetHandler<u64, u128> for DistributionWG {
+    fn get_budget() -> u128 {
         unimplemented!()
     }
 
-    fn set_budget(_new_value: u64) {
+    fn set_budget(_new_value: u128) {
         unimplemented!()
     }
 
-    fn try_withdraw(_account_id: &u64, _amount: u64) -> DispatchResult {
+    fn try_withdraw(_account_id: &u64, _amount: u128) -> DispatchResult {
         unimplemented!()
     }
 }
@@ -342,11 +328,23 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
     }
 }
 
+/// Implement pallet balances trait for Test
+impl balances::Trait for Test {
+    type Balance = u128;
+    type DustRemoval = ();
+    type Event = TestEvent;
+    type ExistentialDeposit = ExistentialDeposit;
+    type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = ();
+}
+
 /// Genesis config builder
 pub struct GenesisConfigBuilder {
     pub(crate) account_info_by_token_and_account: Vec<(TokenId, AccountId, AccountData)>,
     pub(crate) token_info_by_id: Vec<(TokenId, TokenData)>,
     pub(crate) next_token_id: TokenId,
+    pub(crate) bloat_bond: JoyBalance,
     pub(crate) symbol_used: Vec<(HashOut, ())>,
 }
 
@@ -371,9 +369,10 @@ pub fn increase_block_number_by(n: u64) {
     let init_block = System::block_number();
     (0..=n).for_each(|offset| {
         <Token as OnFinalize<u64>>::on_finalize(System::block_number());
+        <System as OnFinalize<u64>>::on_finalize(System::block_number());
         System::set_block_number(init_block.saturating_add(offset));
-        <Token as OnInitialize<u64>>::on_initialize(System::block_number());
         <System as OnInitialize<u64>>::on_initialize(System::block_number());
+        <Token as OnInitialize<u64>>::on_initialize(System::block_number());
     })
 }
 
@@ -381,21 +380,42 @@ pub fn increase_block_number_by(n: u64) {
 #[macro_export]
 macro_rules! account {
     ($acc:expr) => {
-        AccountId::from($acc as u32)
+        AccountId::from($acc as u64)
     };
 }
 
 #[macro_export]
 macro_rules! token {
     ($id:expr) => {
-        TokenId::from($id as u32)
+        TokenId::from($id as u64)
     };
 }
 
 #[macro_export]
 macro_rules! balance {
     ($bal:expr) => {
-        Balance::from($bal as u32)
+        Balance::from($bal as u128)
+    };
+}
+
+#[macro_export]
+macro_rules! rate {
+    ($r:expr) => {
+        BlockRate(Perquintill::from_percent($r))
+    };
+}
+
+#[macro_export]
+macro_rules! yearly_rate {
+    ($r:expr) => {
+        YearlyRate(Permill::from_percent($r))
+    };
+}
+
+#[macro_export]
+macro_rules! joy {
+    ($bal:expr) => {
+        JoyBalance::from($bal as u128)
     };
 }
 
@@ -413,10 +433,10 @@ pub type Balances = balances::Module<Test>;
 
 pub const DEFAULT_ACCOUNT_ID: u64 = 1;
 pub const OTHER_ACCOUNT_ID: u64 = 2;
-pub const DEFAULT_INITIAL_ISSUANCE: u64 = 1_000_000;
-pub const DEFAULT_SALE_UNIT_PRICE: u64 = 10;
+pub const DEFAULT_INITIAL_ISSUANCE: u128 = 1_000_000;
+pub const DEFAULT_SALE_UNIT_PRICE: u128 = 10;
 pub const DEFAULT_SALE_DURATION: u64 = 100;
-pub const DEFAULT_SALE_PURCHASE_AMOUNT: u64 = 1000;
+pub const DEFAULT_SALE_PURCHASE_AMOUNT: u128 = 1000;
 
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
 pub const DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID: u64 = 100002;
@@ -435,7 +455,16 @@ macro_rules! merkle_root {
 #[macro_export]
 macro_rules! merkle_proof {
     ($idx:expr,[$($vals:expr),*]) => {
-        MerkleProofOf::<Test>::new(Some(build_merkle_path_helper::<Test, _>(&vec![$($vals,)*], $idx as usize)))
+        MerkleProofOf::<Test>::new(build_merkle_path_helper::<Test, _>(&vec![$($vals,)*], $idx as usize))
+    };
+}
+
+#[macro_export]
+#[cfg(feature = "std")]
+macro_rules! assert_approx_eq {
+    ($x: expr, $y: expr, $eps: expr) => {
+        let abs_diff = $x.max($y).saturating_sub($x.min($y));
+        assert!(abs_diff < $eps)
     };
 }
 
@@ -444,7 +473,7 @@ pub struct Block2Balance {}
 
 impl Convert<BlockNumber, Balance> for Block2Balance {
     fn convert(block: BlockNumber) -> Balance {
-        block as u64
+        block as u128
     }
 }
 

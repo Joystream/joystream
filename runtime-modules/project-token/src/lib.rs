@@ -14,9 +14,13 @@ use frame_support::{
 };
 use frame_system::ensure_signed;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
-use sp_runtime::{traits::Convert, ModuleId, SaturatedConversion};
+use sp_runtime::{
+    traits::{AccountIdConversion, Convert, SaturatedConversion, UniqueSaturatedInto},
+    ModuleId,
+};
+use sp_std::collections::btree_map::BTreeMap;
 use sp_std::{iter::Sum, vec};
-use storage::{DataObjectStorage, UploadParameters};
+use storage::UploadParameters;
 
 // crate modules
 #[cfg(feature = "runtime-benchmarks")]
@@ -88,7 +92,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + storage::Trait {
         + Debug
         + Saturating
         + Sum
-        + Into<<Self as balances::Trait>::Balance>;
+        + From<u64>
+        + UniqueSaturatedInto<u64>
+        + Into<JoyBalanceOf<Self>>;
 
     /// The token identifier used
     type TokenId: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug;
@@ -102,18 +108,17 @@ pub trait Trait: frame_system::Trait + balances::Trait + storage::Trait {
     /// Tresury account for the various tokens
     type ModuleId: Get<ModuleId>;
 
-    // TODO(after PR round is completed): use Self::ReserveBalance
-    /// Bloat bond value: in JOY
-    type BloatBond: Get<<Self::ReserveCurrency as Currency<Self::AccountId>>::Balance>;
+    /// Existential Deposit for the JOY pallet
+    type JoyExistentialDeposit: Get<JoyBalanceOf<Self>>;
 
     /// Maximum number of vesting balances per account per token
     type MaxVestingSchedulesPerAccountPerToken: Get<u8>;
 
-    /// the Currency interface used as a reserve (i.e. JOY)
-    type ReserveCurrency: Currency<Self::AccountId>;
-
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
+
+    /// Number of blocks produced in a year
+    type BlocksPerYear: Get<u32>;
 }
 
 decl_storage! {
@@ -133,15 +138,33 @@ decl_storage! {
         pub NextTokenId get(fn next_token_id) config(): T::TokenId;
 
         /// Set for the tokens symbols
-        pub SymbolsUsed get (fn symbol_used) config():
+        pub SymbolsUsed get(fn symbol_used) config():
         map
             hasher(blake2_128_concat) T::Hash => ();
+
+        /// Bloat Bond value used during account creation
+        pub BloatBond get(fn bloat_bond) config(): JoyBalanceOf<T>;
     }
 
+    add_extra_genesis {
+        build(|_| {
+            // We deposit some initial balance to the pallet's module account on the genesis block
+            // to protect the account from being deleted ("dusted") on early stages of pallet's work
+            // by the "garbage collector" of the balances pallet.
+            // It should be equal to at least `ExistentialDeposit` from the balances pallet setting.
+            // Original issues:
+            // - https://github.com/Joystream/joystream/issues/3497
+            // - https://github.com/Joystream/joystream/issues/3510
+
+            let module_account_id = crate::Module::<T>::bloat_bond_treasury_account_id();
+            let deposit = T::JoyExistentialDeposit::get();
+
+            let _ = Joy::<T>::deposit_creating(&module_account_id, deposit);
+        });
+    }
 }
 
 decl_module! {
-    /// _MultiCurrency_ substrate module.
     pub struct Module<T: Trait> for enum Call
     where
         origin: T::Origin
@@ -153,17 +176,20 @@ decl_module! {
         /// Predefined errors.
         type Error = Error<T>;
 
-        /// Transfer `amount` from `src` account to `dst` according to provided policy
+        /// Allow to transfer from `src` to the various `outputs` beneficiaries in the
+        /// specified amounts.
         /// Preconditions:
         /// - `token_id` must exists
-        /// - `dst` underlying account must be valid for `token_id`
-        /// - `src` must be valid for `token_id`
-        /// - `dst` is compatible con `token_id` transfer policy
-        ///
+        /// - `src` must be valid for `token_id`, and must have enough JOYs to cover
+        ///    the total bloat bond required in case of destinations not existing.
+        ///    Also `src` must have enough token funds to cover all the transfer
+        /// - `outputs` must designated  existing destination for "Permissioned" transfers.
+        //
         /// Postconditions:
-        /// - `src` free balance decreased by `amount` or removed if final balance < existential deposit
-        /// - `dst` free balance increased by `amount`
-        /// - `token_id` issuance eventually decreased by dust amount in case of src removalp
+        /// - `src` free balance decreased by `amount`.
+        ///    Also `src` JOY balance is decreased by the
+        ///    total bloat bond deposited in case destination have been added to storage
+        /// - `outputs.beneficiary` "free balance"" increased by `amount`
         ///
         /// <weight>
         ///
@@ -182,20 +208,33 @@ decl_module! {
             let src = ensure_signed(origin)?;
 
             // Currency transfer preconditions
-            Self::ensure_can_transfer(token_id, &src, &outputs)?;
+            let validated_transfers = Self::ensure_can_transfer(token_id, &src, outputs)?;
 
             // == MUTATION SAFE ==
 
-            Self::do_transfer(token_id, &src, &outputs);
+            Self::do_transfer(token_id, &src, &validated_transfers);
 
             Self::deposit_event(RawEvent::TokenAmountTransferred(
                 token_id,
                 src,
-                outputs.into(),
+                validated_transfers,
             ));
             Ok(())
         }
 
+        /// Allow any user to remove an account
+        /// Preconditions:
+        /// - `token_id` must be valid
+        /// - `account_id` must be valid for `token_id`
+        /// - `origin` signer must be either:
+        ///    - `account_id` in that case the deletion succeedes even with non empty account
+        ///    - different from `account_id` in that case deletion succeedes only
+        ///      for `Permissionless` mode and empty account
+        /// Postconditions:
+        /// - Account information for `account_id` removed from storage
+        /// - `token_id` supply decreased if necessary
+        /// - bloat bond refunded
+        ///
         /// <weight>
         ///
         /// ## Weight
@@ -218,10 +257,21 @@ decl_module! {
 
             // == MUTATION SAFE ==
 
-            AccountInfoByTokenAndAccount::<T>::remove(token_id, &account_id);
+            let now = Self::current_block();
+            let unclaimed_patronage = token_info.unclaimed_patronage_at_block(now);
 
-            let bloat_bond = T::BloatBond::get();
-            let _ = T::ReserveCurrency::deposit_creating(&account_id, bloat_bond);
+            AccountInfoByTokenAndAccount::<T>::remove(token_id, &account_id);
+            TokenInfoById::<T>::mutate(token_id, |token_info| {
+                token_info.decrement_accounts_number();
+                token_info.decrease_supply_by(account_to_remove_info.amount);
+
+                if !unclaimed_patronage.is_zero() {
+                    token_info.set_unclaimed_tally_patronage_at_block(unclaimed_patronage, now);
+                }
+            });
+
+            let bloat_bond = account_to_remove_info.bloat_bond;
+            Self::withdraw_from_treasury(&account_id, bloat_bond);
 
             Self::deposit_event(RawEvent::AccountDustedBy(token_id, account_id, sender, token_info.transfer_policy));
 
@@ -231,10 +281,12 @@ decl_module! {
         /// Join whitelist for permissioned case: used to add accounts for token
         /// Preconditions:
         /// - 'token_id' must be valid
-        /// - transfer policy is permissionless or transfer policy is permissioned and merkle proof is valid
+        /// - `origin` signer must not already exists
+        /// - transfer policy is `Permissioned` and merkle proof must be valid
         ///
         /// Postconditions:
-        /// - account added to the list
+        /// - `origin` signer account created and added to pallet storage
+        /// - `bloat_bond` subtracted from caller JOY usable balance
         ///
         /// <weight>
         ///
@@ -245,7 +297,7 @@ decl_module! {
         ///   - `O(1)` - doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoToken::<T>::join_whitelist(
-            proof.0.as_ref().map_or(0u32, |p| p.len().saturated_into())
+            proof.0.len().saturated_into()
         )]
         pub fn join_whitelist(origin, token_id: T::TokenId, proof: MerkleProofOf<T>) -> DispatchResult {
             let account_id = ensure_signed(origin)?;
@@ -262,19 +314,22 @@ decl_module! {
                 Err(Error::<T>::CannotJoinWhitelistInPermissionlessMode.into())
             }?;
 
-            let bloat_bond = T::BloatBond::get();
+            let bloat_bond = Self::bloat_bond();
 
             // No project_token or balances state corrupted in case of failure
-            ensure!(
-                T::ReserveCurrency::free_balance(&account_id) >= bloat_bond,
-                Error::<T>::InsufficientBalanceForBloatBond,
-            );
+            Self::ensure_can_transfer_joy(&account_id, bloat_bond)?;
 
             // == MUTATION SAFE ==
 
-            let _ = T::ReserveCurrency::slash(&account_id, bloat_bond);
+            Self::deposit_to_treasury(&account_id, bloat_bond);
 
-            AccountInfoByTokenAndAccount::<T>::insert(token_id, &account_id, AccountDataOf::<T>::default());
+            Self::do_insert_new_account_for_token(
+                token_id,
+                &account_id,
+                AccountDataOf::<T>::new_with_amount_and_bond(
+                    <T as Trait>::Balance::zero(),
+                    bloat_bond,
+                ));
 
             Self::deposit_event(RawEvent::MemberJoinedWhitelist(token_id, account_id, token_info.transfer_policy));
 
@@ -287,17 +342,21 @@ decl_module! {
         /// - `token_id` must be existing token's id
         /// - token identified by `token_id` must have OfferingState::Sale
         /// - `amount` cannot exceed number of tokens remaining on sale
-        /// - sender's JOY balance must be >= `amount * sale.unit_price`
+        /// - sender's available JOY balance must be:
+        ///   - >= `joy_existential_deposit + amount * sale.unit_price`
+        ///     if AccountData already exist
+        ///   - >= `joy_existential_deposit + amount * sale.unit_price + bloat_bond`
+        ///     if AccountData does not exist
         /// - there are no tokens still reserved from the previous sale
-        /// - if sale has a whitelist:
-        ///   - `access_proof` must be a valid merkle proof for sender's whitelist inclusion
-        ///   - (total number of tokens already purchased by the account + `amount`) must not exceed
-        ///     `access_proof.participant.cap`
+        /// - `(total number of tokens already purchased by the member + `amount`) must not exceed
+        ///   sale's purchase cap per member
+        /// - if Permissioned token:
+        ///   - AccountInfoByTokenAndAccount(token_id, &sender) must exist
         ///
         /// Postconditions:
-        /// - `amount * sale.unit_price` JOY tokens are transfered to `sale.tokens_source` account
-        /// - `amount` CRT tokens are unreserved from `sale.tokens_source` account and its
-        ///    liquidity is decreased by `amount` (`amount` tokens are burned from the account)
+        /// - `amount * sale.unit_price` JOY tokens are transfered from `sender`
+        ///   to `sale.tokens_source` account
+        /// - if new account created: `bloat_bond` transferred from `sender` to treasury
         /// - buyer's `vesting_balance` related to the current sale is increased by `amount`
         ///   (or created with `amount` as `vesting_balance.total_amount`)
         /// - `token_data.last_sale.quantity_left` is decreased by `amount`
@@ -314,37 +373,47 @@ decl_module! {
         pub fn purchase_tokens_on_sale(
             origin,
             token_id: T::TokenId,
-            amount: <T as Trait>::Balance,
-            access_proof: Option<SaleAccessProofOf<T>>
+            amount: <T as Trait>::Balance
         ) -> DispatchResult {
             let current_block = Self::current_block();
             let sender = ensure_signed(origin)?;
             let token_data = Self::ensure_token_exists(token_id)?;
             let sale = OfferingStateOf::<T>::ensure_sale_of::<T>(&token_data)?;
             let sale_id = token_data.sales_initialized;
-            let buyer_joy_balance = balances::Module::<T>::usable_balance(&sender);
             let joy_amount = sale.unit_price.saturating_mul(amount.into());
+            let account_exists = AccountInfoByTokenAndAccount::<T>::contains_key(token_id, &sender);
+            let bloat_bond = Self::bloat_bond();
 
-            ensure!(
-                buyer_joy_balance >= joy_amount,
-                Error::<T>::InsufficientBalanceForTokenPurchase
-            );
+            let required_joy_balance = if account_exists {
+                joy_amount
+            } else {
+                joy_amount.saturating_add(bloat_bond)
+            };
 
+            // Ensure buyer's JOY balance is sufficient for the purchase
+            // and bloat bond (if required)
+            Self::ensure_can_transfer_joy(&sender, required_joy_balance)?;
+
+            // Ensure enough tokens are available on sale
             ensure!(
                 sale.quantity_left >= amount,
                 Error::<T>::NotEnoughTokensOnSale
             );
 
-            if let Some(whitelist_commitment) = sale.whitelist_commitment.as_ref() {
-                ensure!(access_proof.is_some(), Error::<T>::SaleAccessProofRequired);
-                let proof = access_proof.unwrap();
-                proof.verify::<T>(&sender, *whitelist_commitment)?;
-                Self::ensure_sale_participant_cap_not_exceeded(
+            // Ensure participant's cap is not exceeded
+            if let Some(cap) = sale.cap_per_member {
+                Self::ensure_purchase_cap_not_exceeded(
                     token_id,
                     sale_id,
-                    &proof.participant,
-                    amount
+                    &sender,
+                    amount,
+                    cap
                 )?;
+            }
+
+            // Ensure account exists if Permissioned token
+            if let TransferPolicy::Permissioned(_) = token_data.transfer_policy {
+                Self::ensure_account_data_exists(token_id, &sender)?;
             }
 
             // Ensure vesting schedule can added if doesn't already exist
@@ -357,20 +426,33 @@ decl_module! {
 
             // == MUTATION SAFE ==
 
-            <balances::Module::<T> as Currency<T::AccountId>>::transfer(
+            <Joy::<T> as Currency<T::AccountId>>::transfer(
                 &sender,
                 &sale.tokens_source,
                 joy_amount,
-                ExistenceRequirement::AllowDeath
+                ExistenceRequirement::KeepAlive
             )?;
 
-            AccountInfoByTokenAndAccount::<T>::mutate(token_id, &sender, |acc_data| {
-                acc_data.add_or_update_vesting_schedule(
-                    VestingSource::Sale(sale_id),
-                    sale.get_vesting_schedule(amount),
-                    vesting_cleanup_key
+            if account_exists {
+                AccountInfoByTokenAndAccount::<T>::mutate(token_id, &sender, |acc_data| {
+                    acc_data.add_or_update_vesting_schedule(
+                        VestingSource::Sale(sale_id),
+                        sale.get_vesting_schedule(amount),
+                        vesting_cleanup_key
+                    );
+                });
+            } else {
+                Self::deposit_to_treasury(&sender, bloat_bond);
+                Self::do_insert_new_account_for_token(
+                    token_id,
+                    &sender,
+                    AccountData::new_with_vesting_and_bond(
+                        VestingSource::Sale(sale_id),
+                        sale.get_vesting_schedule(amount),
+                        bloat_bond,
+                    )
                 );
-            });
+            }
 
             TokenInfoById::<T>::mutate(token_id, |t| {
                 t.last_sale.as_mut().unwrap().quantity_left = sale.quantity_left.saturating_sub(amount);
@@ -436,9 +518,9 @@ impl<T: Trait>
         T::AccountId,
         TransferPolicyOf<T>,
         TokenIssuanceParametersOf<T>,
-        UploadContextOf<T>,
         T::BlockNumber,
         TokenSaleParamsOf<T>,
+        UploadContextOf<T>,
     > for Module<T>
 {
     type Balance = <T as Trait>::Balance;
@@ -447,13 +529,19 @@ impl<T: Trait>
 
     type MerkleProof = MerkleProofOf<T>;
 
+    type YearlyRate = YearlyRate;
+
     /// Change to permissionless
     /// Preconditions:
     /// - Token `token_id` must exist
     /// Postconditions
     /// - transfer policy of `token_id` changed to permissionless
     fn change_to_permissionless(token_id: T::TokenId) -> DispatchResult {
-        TokenInfoById::<T>::try_mutate(token_id, |token_info| {
+        Self::ensure_token_exists(token_id).map(|_| ())?;
+
+        // == MUTATION SAFE ==
+
+        TokenInfoById::<T>::mutate(token_id, |token_info| {
             token_info.transfer_policy = TransferPolicyOf::<T>::Permissionless;
             Ok(())
         })
@@ -466,24 +554,34 @@ impl<T: Trait>
     ///
     /// Postconditions:
     /// - patronage rate for `token_id` reduced by `decrement`
-    fn reduce_patronage_rate_by(token_id: T::TokenId, decrement: Self::Balance) -> DispatchResult {
+    /// - no-op if `target_rate` is equal to the current patronage rate
+    fn reduce_patronage_rate_to(token_id: T::TokenId, target_rate: YearlyRate) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
+        let target_rate_per_block =
+            BlockRate::from_yearly_rate(target_rate, T::BlocksPerYear::get());
 
-        // ensure new rate is >= 0
+        if token_info.patronage_info.rate == target_rate_per_block {
+            return Ok(());
+        }
+
         ensure!(
-            token_info.patronage_info.rate >= decrement,
-            Error::<T>::ReductionExceedingPatronageRate,
+            token_info.patronage_info.rate > target_rate_per_block,
+            Error::<T>::TargetPatronageRateIsHigherThanCurrentRate,
         );
 
         // == MUTATION SAFE ==
 
         let now = Self::current_block();
-        let new_rate = token_info.patronage_info.rate.saturating_sub(decrement);
         TokenInfoById::<T>::mutate(token_id, |token_info| {
-            token_info.set_new_patronage_rate_at_block::<T::BlockNumberToBalance>(new_rate, now);
+            token_info.set_new_patronage_rate_at_block(target_rate_per_block, now);
         });
 
-        Self::deposit_event(RawEvent::PatronageRateDecreasedTo(token_id, new_rate));
+        let new_yearly_rate =
+            target_rate_per_block.to_yearly_rate_representation(T::BlocksPerYear::get());
+        Self::deposit_event(RawEvent::PatronageRateDecreasedTo(
+            token_id,
+            new_yearly_rate,
+        ));
 
         Ok(())
     }
@@ -502,7 +600,7 @@ impl<T: Trait>
         Self::ensure_account_data_exists(token_id, &to_account).map(|_| ())?;
 
         let now = Self::current_block();
-        let unclaimed_patronage = token_info.unclaimed_patronage::<T::BlockNumberToBalance>(now);
+        let unclaimed_patronage = token_info.unclaimed_patronage_at_block(now);
 
         if unclaimed_patronage.is_zero() {
             return Ok(());
@@ -515,15 +613,14 @@ impl<T: Trait>
         });
 
         TokenInfoById::<T>::mutate(token_id, |token_info| {
-            token_info.increase_issuance_by(unclaimed_patronage);
+            token_info.increase_supply_by(unclaimed_patronage);
             token_info.set_unclaimed_tally_patronage_at_block(<T as Trait>::Balance::zero(), now);
         });
 
-        Self::deposit_event(RawEvent::PatronageCreditClaimedAtBlock(
+        Self::deposit_event(RawEvent::PatronageCreditClaimed(
             token_id,
             unclaimed_patronage,
             to_account,
-            now,
         ));
 
         Ok(())
@@ -531,42 +628,77 @@ impl<T: Trait>
 
     /// Issue token with specified characteristics
     /// Preconditions:
-    /// -
+    /// - `token_id` must NOT exists
+    /// - `symbol` specified in the parameters must NOT exists
+    /// - `owner_account_id` free balance in JOYs >= `bloat_bond`
     ///
     /// Postconditions:
     /// - token with specified characteristics is added to storage state
     /// - `NextTokenId` increased by 1
-    fn issue_token(issuance_parameters: TokenIssuanceParametersOf<T>) -> DispatchResult {
+    /// - symbol is added to `Symbols`
+    /// - ``bloat_bond` JOYs transferred from `owner_account_id` to treasury account
+    fn issue_token(
+        issuance_parameters: TokenIssuanceParametersOf<T>,
+        upload_context: UploadContextOf<T>,
+    ) -> DispatchResult {
         let token_id = Self::next_token_id();
         Self::validate_issuance_parameters(&issuance_parameters)?;
 
         let token_data = TokenDataOf::<T>::from_params::<T>(issuance_parameters.clone());
 
+        // TODO: Not clear what the storage interface will be yet, so this is just a mock code now
+        if let TransferPolicyParams::Permissioned(whitelist_params) =
+            &issuance_parameters.transfer_policy
+        {
+            if let Some(payload) = whitelist_params.payload.as_ref() {
+                let _ = UploadParameters::<T> {
+                    bag_id: upload_context.bag_id,
+                    deletion_prize_source_account_id: upload_context.uploader_account,
+                    expected_data_size_fee: payload.expected_data_size_fee,
+                    object_creation_list: vec![payload.object_creation_params.clone()],
+                };
+            }
+        }
+
+        let bloat_bond = Self::bloat_bond();
+        Self::ensure_can_transfer_joy(&issuance_parameters.initial_allocation.address, bloat_bond)?;
+
         // == MUTATION SAFE ==
         SymbolsUsed::<T>::insert(&token_data.symbol, ());
         TokenInfoById::<T>::insert(token_id, token_data);
         NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
-        AccountInfoByTokenAndAccount::<T>::mutate(
+
+        Self::deposit_to_treasury(&issuance_parameters.initial_allocation.address, bloat_bond);
+
+        let account_data = AccountData {
+            bloat_bond: BloatBond::<T>::get(),
+            amount: issuance_parameters.initial_allocation.amount,
+            vesting_schedules: if let Some(vsp) = issuance_parameters
+                .initial_allocation
+                .vesting_schedule
+                .as_ref()
+            {
+                [(
+                    VestingSource::InitialIssuance,
+                    VestingScheduleOf::<T>::from_params(
+                        Self::current_block(),
+                        issuance_parameters.initial_allocation.amount,
+                        vsp.clone(),
+                    ),
+                )]
+                .iter()
+                .cloned()
+                .collect()
+            } else {
+                BTreeMap::new()
+            },
+            split_staking_status: None,
+        };
+
+        Self::do_insert_new_account_for_token(
             token_id,
             &issuance_parameters.initial_allocation.address,
-            |ad| {
-                if let Some(vsp) = issuance_parameters
-                    .initial_allocation
-                    .vesting_schedule
-                    .as_ref()
-                {
-                    ad.vesting_schedules.insert(
-                        VestingSource::InitialIssuance,
-                        VestingScheduleOf::<T>::from_params(
-                            Self::current_block(),
-                            issuance_parameters.initial_allocation.amount,
-                            vsp.clone(),
-                        ),
-                    );
-                } else {
-                    ad.amount = issuance_parameters.initial_allocation.amount;
-                }
-            },
+            account_data,
         );
 
         Self::deposit_event(RawEvent::TokenIssued(token_id, issuance_parameters));
@@ -574,15 +706,11 @@ impl<T: Trait>
         Ok(())
     }
 
-    fn init_token_sale(
-        token_id: T::TokenId,
-        sale_params: TokenSaleParamsOf<T>,
-        payload_upload_context: UploadContextOf<T>,
-    ) -> DispatchResult {
+    fn init_token_sale(token_id: T::TokenId, sale_params: TokenSaleParamsOf<T>) -> DispatchResult {
         let token_data = Self::ensure_token_exists(token_id)?;
         let sale = TokenSaleOf::<T>::try_from_params::<T>(sale_params.clone())?;
         // Validation + first mutation(!)
-        Self::try_init_sale(token_id, &token_data, &sale_params, payload_upload_context)?;
+        Self::try_init_sale(token_id, &token_data, &sale_params)?;
         // == MUTATION SAFE ==
         TokenInfoById::<T>::mutate(token_id, |t| {
             t.last_sale = Some(sale);
@@ -627,7 +755,7 @@ impl<T: Trait>
     ///
     /// Postconditions:
     /// - token data @ `token_Id` removed from storage
-    /// - all account data for `token_Id` removed
+    /// - `symbol` for `token_id` removed
     fn deissue_token(token_id: T::TokenId) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
         Self::ensure_can_deissue_token(token_id)?;
@@ -678,53 +806,74 @@ impl<T: Trait> Module<T> {
     pub(crate) fn ensure_can_transfer(
         token_id: T::TokenId,
         src: &T::AccountId,
-        outputs: &TransfersOf<T>,
-    ) -> DispatchResult {
-        let current_block = Self::current_block();
+        transfers: TransfersOf<T>,
+    ) -> Result<ValidatedTransfers<T>, DispatchError> {
         // ensure token validity
         let token_info = Self::ensure_token_exists(token_id)?;
 
         // ensure src account id validity
         let src_account_info = Self::ensure_account_data_exists(token_id, src)?;
 
-        // ensure dst account id validity
-        outputs.iter().try_for_each(|(dst, _)| {
-            match (*dst == *src, &token_info.transfer_policy) {
-                (true, _) => Err(Error::<T>::SameSourceAndDestinationLocations.into()),
-                (_, TransferPolicyOf::<T>::Permissioned(_)) => {
-                    // if permissioned mode account must exist
-                    Self::ensure_account_data_exists(token_id, dst).map(|_| ())
-                }
-                _ => Ok(()),
-            }
-        })?;
+        // validate destinations
+        let validated_transfers =
+            Self::validate_transfers(token_id, transfers, &token_info.transfer_policy)?;
 
-        src_account_info.ensure_can_transfer::<T>(current_block, outputs.total_amount())
+        // compute bloat bond
+        let cumulative_bloat_bond = Self::compute_bloat_bond(&validated_transfers);
+        Self::ensure_can_transfer_joy(src, cumulative_bloat_bond)?;
+
+        src_account_info
+            .ensure_can_transfer::<T>(Self::current_block(), validated_transfers.total_amount())?;
+
+        Ok(validated_transfers)
     }
 
     /// Perform balance accounting for balances
-    pub(crate) fn do_transfer(token_id: T::TokenId, src: &T::AccountId, outputs: &TransfersOf<T>) {
-        outputs.iter().for_each(|(account_id, payment)| {
-            AccountInfoByTokenAndAccount::<T>::mutate(token_id, &account_id, |account_data| {
-                account_data.increase_amount_by(payment.amount);
-            });
-        });
+    pub(crate) fn do_transfer(
+        token_id: T::TokenId,
+        src: &T::AccountId,
+        validated_transfers: &ValidatedTransfers<T>,
+    ) {
+        validated_transfers.iter().for_each(
+            |(validated_account, payment)| match validated_account {
+                Validated::<_>::Existing(account_id) => AccountInfoByTokenAndAccount::<T>::mutate(
+                    token_id,
+                    &account_id,
+                    |account_data| {
+                        account_data.increase_amount_by(payment.amount);
+                    },
+                ),
+                Validated::<_>::NonExisting(account_id) => {
+                    Self::do_insert_new_account_for_token(
+                        token_id,
+                        &account_id,
+                        AccountDataOf::<T>::new_with_amount_and_bond(
+                            payment.amount,
+                            Self::bloat_bond(),
+                        ),
+                    );
+                }
+            },
+        );
+
+        let cumulative_bloat_bond = Self::compute_bloat_bond(validated_transfers);
+        if !cumulative_bloat_bond.is_zero() {
+            Self::deposit_to_treasury(src, cumulative_bloat_bond);
+        }
 
         AccountInfoByTokenAndAccount::<T>::mutate(token_id, &src, |account_data| {
-            account_data.decrease_amount_by(outputs.total_amount());
-        })
+            account_data.decrease_amount_by(validated_transfers.total_amount());
+        });
     }
 
     pub(crate) fn current_block() -> T::BlockNumber {
         <frame_system::Module<T>>::block_number()
     }
 
-    #[inline]
     pub(crate) fn try_init_sale(
         token_id: T::TokenId,
         token_data: &TokenDataOf<T>,
         sale_params: &TokenSaleParamsOf<T>,
-        payload_upload_context: UploadContextOf<T>,
     ) -> DispatchResult {
         let current_block = Self::current_block();
 
@@ -742,18 +891,6 @@ impl<T: Trait> Module<T> {
 
         // Ensure source account has enough transferrable tokens
         account_data.ensure_can_transfer::<T>(current_block, sale_params.upper_bound_quantity)?;
-
-        // Optionally: Upload whitelist payload
-        if let Some(Some(payload)) = sale_params.whitelist.as_ref().map(|p| p.payload.clone()) {
-            let upload_params = UploadParameters::<T> {
-                bag_id: payload_upload_context.bag_id,
-                deletion_prize_source_account_id: payload_upload_context.uploader_account,
-                expected_data_size_fee: payload.expected_data_size_fee,
-                object_creation_list: vec![payload.object_creation_params],
-            };
-            // Validation + first mutation (!)
-            storage::Module::<T>::upload_data_objects(upload_params)?;
-        }
 
         // == MUTATION SAFE ==
 
@@ -807,9 +944,7 @@ impl<T: Trait> Module<T> {
     pub(crate) fn ensure_can_deissue_token(token_id: T::TokenId) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
         ensure!(
-            AccountInfoByTokenAndAccount::<T>::iter_prefix(token_id)
-                .next()
-                .is_none(),
+            token_info.accounts_number.is_zero(),
             Error::<T>::CannotDeissueTokenWithOutstandingAccounts,
         );
 
@@ -819,24 +954,22 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub(crate) fn ensure_sale_participant_cap_not_exceeded(
+    pub(crate) fn ensure_purchase_cap_not_exceeded(
         token_id: T::TokenId,
         sale_id: TokenSaleId,
-        participant: &WhitelistedSaleParticipantOf<T>,
+        buyer: &T::AccountId,
         purchase_amount: <T as Trait>::Balance,
+        cap: <T as Trait>::Balance,
     ) -> DispatchResult {
-        if participant.cap.is_none() {
-            return Ok(());
-        }
-        let opt_acc_data = Self::ensure_account_data_exists(token_id, &participant.address).ok();
+        let opt_acc_data = Self::ensure_account_data_exists(token_id, &buyer).ok();
         let tokens_purchased = opt_acc_data.map_or(<T as Trait>::Balance::zero(), |ad| {
             ad.vesting_schedules
                 .get(&VestingSource::Sale(sale_id))
                 .map_or(<T as Trait>::Balance::zero(), |vs| vs.total_amount())
         });
         ensure!(
-            tokens_purchased.saturating_add(purchase_amount) <= participant.cap.unwrap(),
-            Error::<T>::SaleParticipantCapExceeded
+            tokens_purchased.saturating_add(purchase_amount) <= cap,
+            Error::<T>::SalePurchaseCapExceeded
         );
         Ok(())
     }
@@ -855,5 +988,104 @@ impl<T: Trait> Module<T> {
         } else {
             WeightInfoToken::<T>::purchase_tokens_on_sale_without_proof()
         }
+    }
+
+    /// Returns the module account for the bloat bond treasury
+    pub fn bloat_bond_treasury_account_id() -> T::AccountId {
+        <T as Trait>::ModuleId::get().into_sub_account(Vec::<u8>::new())
+    }
+
+    pub(crate) fn validate_destination(
+        token_id: T::TokenId,
+        dst: T::AccountId,
+        transfer_policy: &TransferPolicyOf<T>,
+    ) -> Result<Validated<T::AccountId>, DispatchError> {
+        match (
+            transfer_policy,
+            Self::ensure_account_data_exists(token_id, &dst),
+        ) {
+            (&TransferPolicyOf::<T>::Permissionless, Err(_)) => {
+                Ok(Validated::<_>::NonExisting(dst))
+            }
+            (&TransferPolicyOf::<T>::Permissionless, Ok(_)) => Ok(Validated::<_>::Existing(dst)),
+            (&TransferPolicyOf::<T>::Permissioned(_), Ok(_)) => Ok(Validated::<_>::Existing(dst)),
+            (&TransferPolicyOf::<T>::Permissioned(_), Err(e)) => Err(e),
+        }
+    }
+
+    pub(crate) fn compute_bloat_bond(
+        validated_transfers: &ValidatedTransfers<T>,
+    ) -> JoyBalanceOf<T> {
+        let bloat_bond = Self::bloat_bond();
+        validated_transfers
+            .iter()
+            .fold(JoyBalanceOf::<T>::zero(), |acc, (account, _)| {
+                if matches!(account, Validated::<_>::NonExisting(_)) {
+                    acc.saturating_add(bloat_bond)
+                } else {
+                    JoyBalanceOf::<T>::zero()
+                }
+            })
+    }
+
+    pub(crate) fn validate_transfers(
+        token_id: T::TokenId,
+        transfers: TransfersOf<T>,
+        transfer_policy: &TransferPolicyOf<T>,
+    ) -> Result<ValidatedTransfers<T>, DispatchError> {
+        let result = transfers
+            .into_iter()
+            .map(|(dst, payment)| {
+                Self::validate_destination(token_id, dst, transfer_policy).map(|res| (res, payment))
+            })
+            .collect::<Result<BTreeMap<_, _>, _>>()?;
+
+        Ok(Transfers::<_, _>(result))
+    }
+
+    pub(crate) fn ensure_can_transfer_joy(
+        src: &T::AccountId,
+        amount: JoyBalanceOf<T>,
+    ) -> DispatchResult {
+        if !amount.is_zero() {
+            ensure!(
+                Joy::<T>::usable_balance(src)
+                    >= T::JoyExistentialDeposit::get().saturating_add(amount),
+                Error::<T>::InsufficientJoyBalance
+            );
+        }
+        Ok(())
+    }
+
+    pub(crate) fn deposit_to_treasury(src: &T::AccountId, amount: JoyBalanceOf<T>) {
+        let treasury_account_id = Self::bloat_bond_treasury_account_id();
+        let _ = <Joy<T> as Currency<T::AccountId>>::transfer(
+            src,
+            &treasury_account_id,
+            amount,
+            ExistenceRequirement::KeepAlive,
+        );
+    }
+
+    pub(crate) fn withdraw_from_treasury(dst: &T::AccountId, amount: JoyBalanceOf<T>) {
+        let treasury_account_id = Self::bloat_bond_treasury_account_id();
+        let _ = <Joy<T> as Currency<T::AccountId>>::transfer(
+            &treasury_account_id,
+            dst,
+            amount,
+            ExistenceRequirement::KeepAlive,
+        );
+    }
+
+    pub(crate) fn do_insert_new_account_for_token(
+        token_id: T::TokenId,
+        account_id: &T::AccountId,
+        info: AccountDataOf<T>,
+    ) {
+        AccountInfoByTokenAndAccount::<T>::insert(token_id, account_id, info);
+
+        TokenInfoById::<T>::mutate(token_id, |token_info| {
+            token_info.increment_accounts_number();
+        });
     }
 }

@@ -1,10 +1,11 @@
 #![cfg(test)]
 
 use crate::tests::mock::*;
-use crate::{last_event_eq, RawEvent};
+use crate::types::Joy;
+use crate::{last_event_eq, yearly_rate, AccountInfoByTokenAndAccount, RawEvent, YearlyRate};
 use crate::{traits::PalletToken, types::VestingSource, SymbolsUsed};
 use frame_support::dispatch::DispatchResult;
-use frame_support::storage::StorageMap;
+use frame_support::storage::{StorageDoubleMap, StorageMap};
 use sp_runtime::{traits::Hash, DispatchError, Permill};
 use sp_std::iter::FromIterator;
 use storage::{BagId, DataObjectCreationParameters, StaticBagId};
@@ -47,7 +48,7 @@ pub fn default_token_sale_params() -> TokenSaleParams {
             duration: 100,
             cliff_amount_percentage: Permill::from_percent(0),
         }),
-        whitelist: None,
+        cap_per_member: None,
     }
 }
 
@@ -58,6 +59,7 @@ pub fn default_upload_context() -> UploadContext {
     }
 }
 
+#[allow(dead_code)]
 pub fn default_single_data_object_upload_params() -> SingleDataObjectUploadParams {
     SingleDataObjectUploadParams {
         expected_data_size_fee: storage::Module::<Test>::data_object_per_mega_byte_fee(),
@@ -68,21 +70,9 @@ pub fn default_single_data_object_upload_params() -> SingleDataObjectUploadParam
     }
 }
 
-pub fn default_sale_whitelisted_participants() -> [WhitelistedSaleParticipant; 2] {
-    [
-        WhitelistedSaleParticipant {
-            address: DEFAULT_ACCOUNT_ID,
-            cap: None,
-        },
-        WhitelistedSaleParticipant {
-            address: OTHER_ACCOUNT_ID,
-            cap: None,
-        },
-    ]
-}
-
 pub struct IssueTokenFixture {
     params: IssuanceParams,
+    upload_context: UploadContext,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -99,10 +89,21 @@ impl IssueTokenFixture {
                     amount: DEFAULT_INITIAL_ISSUANCE,
                     vesting_schedule: None,
                 },
-                patronage_rate: 0,
+                patronage_rate: yearly_rate!(0),
                 symbol: Hashing::hash_of(b"ABC"),
-                transfer_policy: TransferPolicy::Permissionless,
+                transfer_policy: TransferPolicyParams::Permissionless,
             },
+            upload_context: default_upload_context(),
+        }
+    }
+
+    pub fn with_transfer_policy(self, transfer_policy: TransferPolicyParams) -> Self {
+        Self {
+            params: IssuanceParams {
+                transfer_policy,
+                ..self.params
+            },
+            ..self
         }
     }
 }
@@ -115,7 +116,7 @@ impl Fixture<IssueTokenFixtureStateSnapshot> for IssueTokenFixture {
     }
 
     fn execute_call(&self) -> DispatchResult {
-        Token::issue_token(self.params.clone())
+        Token::issue_token(self.params.clone(), self.upload_context.clone())
     }
 
     fn on_success(
@@ -126,7 +127,10 @@ impl Fixture<IssueTokenFixtureStateSnapshot> for IssueTokenFixture {
         assert_eq!(snapshot_post.next_token_id, snapshot_pre.next_token_id + 1);
         assert_eq!(
             Token::token_info_by_id(snapshot_pre.next_token_id),
-            TokenData::from_params::<Test>(self.params.clone())
+            TokenData {
+                accounts_number: 1,
+                ..TokenData::from_params::<Test>(self.params.clone())
+            }
         );
         assert!(SymbolsUsed::<Test>::contains_key(self.params.symbol));
     }
@@ -135,7 +139,6 @@ impl Fixture<IssueTokenFixtureStateSnapshot> for IssueTokenFixture {
 pub struct InitTokenSaleFixture {
     token_id: TokenId,
     params: TokenSaleParams,
-    payload_upload_context: UploadContext,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -150,7 +153,6 @@ impl InitTokenSaleFixture {
         Self {
             token_id: 1,
             params: default_token_sale_params(),
-            payload_upload_context: default_upload_context(),
         }
     }
 
@@ -184,32 +186,20 @@ impl InitTokenSaleFixture {
         }
     }
 
-    pub fn with_whitelist(self, whitelist: WhitelistParams) -> Self {
+    pub fn with_vesting_schedule(self, vesting_schedule: Option<VestingScheduleParams>) -> Self {
         Self {
             params: TokenSaleParams {
-                whitelist: Some(whitelist),
+                vesting_schedule,
                 ..self.params
             },
             ..self
         }
     }
 
-    pub fn with_whitelisted_participants(
-        self,
-        participants: &[WhitelistedSaleParticipant],
-    ) -> Self {
-        self.with_whitelist(WhitelistParams {
-            commitment: generate_merkle_root_helper::<Test, _>(participants)
-                .pop()
-                .unwrap(),
-            payload: None,
-        })
-    }
-
-    pub fn with_vesting_schedule(self, vesting_schedule: Option<VestingScheduleParams>) -> Self {
+    pub fn with_cap_per_member(self, cap_per_member: Balance) -> Self {
         Self {
             params: TokenSaleParams {
-                vesting_schedule,
+                cap_per_member: Some(cap_per_member),
                 ..self.params
             },
             ..self
@@ -230,11 +220,7 @@ impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
     }
 
     fn execute_call(&self) -> DispatchResult {
-        Token::init_token_sale(
-            self.token_id,
-            self.params.clone(),
-            self.payload_upload_context.clone(),
-        )
+        Token::init_token_sale(self.token_id, self.params.clone())
     }
 
     fn on_success(
@@ -242,16 +228,6 @@ impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
         snapshot_pre: &InitTokenSaleFixtureStateSnapshot,
         snapshot_post: &InitTokenSaleFixtureStateSnapshot,
     ) {
-        // Whitelist payload uploaded if present
-        self.params.whitelist.as_ref().map(|w| {
-            w.payload.as_ref().map(|_| {
-                assert_eq!(
-                    snapshot_post.next_data_object_id,
-                    snapshot_pre.next_data_object_id + 1
-                );
-            })
-        });
-
         // Token's `last_sale` updated
         assert_eq!(
             snapshot_post.token_data.last_sale,
@@ -362,7 +338,6 @@ pub struct PurchaseTokensOnSaleFixture {
     sender: AccountId,
     token_id: TokenId,
     amount: Balance,
-    access_proof: Option<SaleAccessProof>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -372,6 +347,9 @@ pub struct PurchaseTokensOnSaleFixtureStateSnapshot {
     source_account_usable_joy_balance: <Test as balances::Trait>::Balance,
     buyer_account_data: AccountData,
     buyer_vesting_schedule: Option<VestingSchedule>,
+    buyer_account_exists: bool,
+    buyer_usable_joy_balance: JoyBalance,
+    treasury_usable_joy_balance: JoyBalance,
 }
 
 impl PurchaseTokensOnSaleFixture {
@@ -380,7 +358,6 @@ impl PurchaseTokensOnSaleFixture {
             sender: OTHER_ACCOUNT_ID,
             token_id: 1,
             amount: DEFAULT_SALE_PURCHASE_AMOUNT,
-            access_proof: None,
         }
     }
 
@@ -388,11 +365,8 @@ impl PurchaseTokensOnSaleFixture {
         Self { amount, ..self }
     }
 
-    pub fn with_access_proof(self, access_proof: SaleAccessProof) -> Self {
-        Self {
-            access_proof: Some(access_proof),
-            ..self
-        }
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
     }
 }
 
@@ -415,20 +389,23 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
                 sale_source_account,
             ),
             buyer_account_data: buyer_account_data.clone(),
+            buyer_account_exists: AccountInfoByTokenAndAccount::<Test>::contains_key(
+                self.token_id,
+                &self.sender,
+            ),
             buyer_vesting_schedule: buyer_account_data
                 .vesting_schedules
                 .get(&VestingSource::Sale(token_data.sales_initialized))
                 .map(|v| v.clone()),
+            buyer_usable_joy_balance: Joy::<Test>::usable_balance(self.sender),
+            treasury_usable_joy_balance: Joy::<Test>::usable_balance(
+                Token::bloat_bond_treasury_account_id(),
+            ),
         }
     }
 
     fn execute_call(&self) -> DispatchResult {
-        Token::purchase_tokens_on_sale(
-            Origin::signed(self.sender),
-            self.token_id,
-            self.amount,
-            self.access_proof.clone(),
-        )
+        Token::purchase_tokens_on_sale(Origin::signed(self.sender), self.token_id, self.amount)
     }
 
     fn on_success(
@@ -491,6 +468,37 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
                 .buyer_account_data
                 .transferrable::<Test>(System::block_number())
         );
+        // new account case
+        if !snapshot_pre.buyer_account_exists {
+            // buyer's joy balance is decreased by bloat_bond + tokens price
+            assert_eq!(
+                snapshot_post.buyer_usable_joy_balance,
+                snapshot_pre
+                    .buyer_usable_joy_balance
+                    .saturating_sub(Token::bloat_bond())
+                    .saturating_sub(self.amount * sale_pre.unit_price)
+            );
+            // treasury account balance is increased by bloat_bond
+            assert_eq!(
+                snapshot_post.treasury_usable_joy_balance,
+                snapshot_pre
+                    .treasury_usable_joy_balance
+                    .saturating_add(Token::bloat_bond())
+            );
+            // token_data.accounts_number increased
+            assert_eq!(
+                snapshot_post.token_data.accounts_number,
+                snapshot_pre.token_data.accounts_number + 1
+            );
+        } else {
+            // buyer's joy balance is decreased by tokens price
+            assert_eq!(
+                snapshot_post.buyer_usable_joy_balance,
+                snapshot_pre
+                    .buyer_usable_joy_balance
+                    .saturating_sub(self.amount * sale_pre.unit_price)
+            );
+        }
     }
 }
 

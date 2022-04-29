@@ -4,12 +4,14 @@ use frame_support::{
     ensure,
     traits::Get,
 };
-use sp_arithmetic::traits::{Saturating, Unsigned, Zero};
-use sp_runtime::traits::{Convert, Hash};
-use sp_runtime::Permill;
+use sp_arithmetic::traits::{AtLeast32BitUnsigned, Saturating, Unsigned, Zero};
+use sp_runtime::{
+    traits::{Convert, Hash, UniqueSaturatedInto},
+    PerThing, Permill, Perquintill, SaturatedConversion,
+};
 use sp_std::{
     cmp::max,
-    collections::btree_map::{BTreeMap, Iter},
+    collections::btree_map::{BTreeMap, IntoIter, Iter},
     convert::TryInto,
     iter::Sum,
     vec::Vec,
@@ -48,7 +50,7 @@ impl<Balance: Copy> StakingStatus<Balance> {
 
 /// Info for the account
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct AccountData<VestingSchedule, Balance, StakingStatus> {
+pub struct AccountData<VestingSchedule, Balance, StakingStatus, JoyBalance> {
     /// Map that represents account's vesting schedules indexed by source.
     /// Account's total unvested (locked) balance at current block (b)
     /// can be calculated by summing `v.locks()` of all
@@ -61,6 +63,10 @@ pub struct AccountData<VestingSchedule, Balance, StakingStatus> {
 
     /// Account's current split staking status
     pub(crate) split_staking_status: Option<StakingStatus>,
+
+    /// Bloat bond (in 'JOY's) deposited into treasury upon creation of this
+    /// account, returned when this account is removed
+    pub(crate) bloat_bond: JoyBalance,
 }
 
 /// Info for the token
@@ -88,19 +94,38 @@ pub struct TokenData<Balance, Hash, BlockNumber, TokenSale> {
 
     /// Patronage Information
     pub(crate) patronage_info: PatronageData<Balance, BlockNumber>,
+
+    /// Account counter
+    pub(crate) accounts_number: u64,
 }
 
 /// Patronage information, patronage configuration = set of values for its fields
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
 pub struct PatronageData<Balance, BlockNumber> {
     /// Patronage rate
-    pub(crate) rate: Balance,
+    pub(crate) rate: BlockRate,
 
     /// Tally count for the outstanding credit before latest patronage config change
     pub(crate) unclaimed_patronage_tally_amount: Balance,
 
     /// Last block the patronage configuration was updated
     pub(crate) last_unclaimed_patronage_tally_block: BlockNumber,
+}
+
+/// Input parameters describing token transfer policy
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum TransferPolicyParams<WhitelistParams> {
+    /// Permissionless
+    Permissionless,
+
+    /// Permissioned transfer with whitelist
+    Permissioned(WhitelistParams),
+}
+
+impl<WhitelistParams> Default for TransferPolicyParams<WhitelistParams> {
+    fn default() -> Self {
+        Self::Permissionless
+    }
 }
 
 /// The two possible transfer policies
@@ -111,6 +136,23 @@ pub enum TransferPolicy<Hash> {
 
     /// Permissioned transfer with whitelist commitment
     Permissioned(Hash),
+}
+
+// TransferPolicyParams => TransferPolicy conversion
+impl<Hash, SingleDataObjectUploadParams>
+    From<TransferPolicyParams<WhitelistParams<Hash, SingleDataObjectUploadParams>>>
+    for TransferPolicy<Hash>
+{
+    fn from(
+        params: TransferPolicyParams<WhitelistParams<Hash, SingleDataObjectUploadParams>>,
+    ) -> Self {
+        match params {
+            TransferPolicyParams::Permissioned(whitelist_params) => {
+                Self::Permissioned(whitelist_params.commitment)
+            }
+            TransferPolicyParams::Permissionless => Self::Permissionless,
+        }
+    }
 }
 
 impl<Hash> Default for TransferPolicy<Hash> {
@@ -193,9 +235,9 @@ where
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct SingleDataObjectUploadParams<JOYBalance> {
+pub struct SingleDataObjectUploadParams<JoyBalance> {
     pub object_creation_params: DataObjectCreationParameters,
-    pub expected_data_size_fee: JOYBalance,
+    pub expected_data_size_fee: JoyBalance,
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -213,79 +255,29 @@ pub struct WhitelistParams<Hash, SingleDataObjectUploadParams> {
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct WhitelistedSaleParticipant<AccountId, Balance> {
-    // Participant's address
-    pub address: AccountId,
-    // Cap on number of tokens participant can purchase on given sale
-    pub cap: Option<Balance>,
-}
-
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct SaleAccessProof<WhitelistedSaleParticipant, MerkleProof> {
-    // Sale whitelisted participant's data to verify
-    pub participant: WhitelistedSaleParticipant,
-    // Merkle proof to verify against sale's whitelist commitment
-    pub proof: MerkleProof,
-}
-
-impl<AccountId, Balance, Hasher>
-    SaleAccessProof<WhitelistedSaleParticipant<AccountId, Balance>, MerkleProof<Hasher>>
-where
-    Hasher: Hash,
-    AccountId: Clone + Encode + PartialEq,
-    Balance: Clone + Encode,
-{
-    pub(crate) fn verify<T: Trait>(
-        &self,
-        sender: &AccountId,
-        commit: Hasher::Output,
-    ) -> DispatchResult {
-        self.proof
-            .verify::<T, WhitelistedSaleParticipant<AccountId, Balance>>(
-                &self.participant,
-                commit,
-            )?;
-
-        ensure!(
-            self.participant.address == sender.clone(),
-            Error::<T>::SaleAccessProofParticipantIsNotSender
-        );
-
-        Ok(())
-    }
-}
-
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct TokenSaleParams<
-    JOYBalance,
-    Balance,
-    BlockNumber,
-    VestingScheduleParams,
-    WhitelistParams,
-    AccountId,
-> {
+pub struct TokenSaleParams<JoyBalance, Balance, BlockNumber, VestingScheduleParams, AccountId> {
     /// Account that acts as the source of the tokens on sale
     pub tokens_source: AccountId,
     /// Token's unit price in JOY
-    pub unit_price: JOYBalance,
+    pub unit_price: JoyBalance,
     /// Number of tokens on sale
     pub upper_bound_quantity: Balance,
     /// Optional block in the future when the sale should start (by default: starts immediately)
     pub starts_at: Option<BlockNumber>,
     /// Sale duration in blocks
     pub duration: BlockNumber,
-    /// Optional whitelist parameters (merkle tree data)
-    pub whitelist: Option<WhitelistParams>,
     /// Optional vesting schedule for all tokens on sale
     pub vesting_schedule: Option<VestingScheduleParams>,
+    /// Optional total sale purchase amount cap per member
+    pub cap_per_member: Option<Balance>,
     /// Optional sale metadata
     pub metadata: Option<Vec<u8>>,
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default)]
-pub struct TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Hash, AccountId> {
+pub struct TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams, AccountId> {
     /// Token's unit price in JOY
-    pub unit_price: JOYBalance,
+    pub unit_price: JoyBalance,
     /// Number of tokens still on sale (if any)
     pub quantity_left: Balance,
     /// Account that acts as the source of the tokens on sale
@@ -294,14 +286,14 @@ pub struct TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Ha
     pub start_block: BlockNumber,
     /// Sale duration (in blocks)
     pub duration: BlockNumber,
-    /// Optional whitelist merkle root comittment
-    pub whitelist_commitment: Option<Hash>,
     /// Optional vesting schedule for all tokens on sale
     pub vesting_schedule: Option<VestingScheduleParams>,
+    /// Optional total sale purchase amount cap per member
+    pub cap_per_member: Option<Balance>,
 }
 
-impl<JOYBalance, Balance, BlockNumber, Hash, AccountId>
-    TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams<BlockNumber>, Hash, AccountId>
+impl<JoyBalance, Balance, BlockNumber, AccountId>
+    TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams<BlockNumber>, AccountId>
 where
     BlockNumber: Saturating + Zero + Copy + Clone + PartialOrd,
     Balance: Saturating + Clone + Copy + From<u32> + Unsigned + TryInto<u32> + TryInto<u64> + Ord,
@@ -323,8 +315,8 @@ where
             unit_price: params.unit_price,
             quantity_left: params.upper_bound_quantity,
             vesting_schedule: params.vesting_schedule,
-            whitelist_commitment: params.whitelist.map(|p| p.commitment),
             tokens_source: params.tokens_source,
+            cap_per_member: params.cap_per_member,
         })
     }
 
@@ -351,7 +343,7 @@ where
     }
 }
 
-/// The possible issuance variants: This is a stub
+/// Represents token's offering state
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum OfferingState<TokenSale> {
     /// Idle state
@@ -368,7 +360,6 @@ pub enum OfferingState<TokenSale> {
     BondingCurve,
 }
 
-/// Encapsules validation + IssuanceState construction
 impl<TokenSale> OfferingState<TokenSale> {
     pub(crate) fn of<T: crate::Trait>(token: &TokenDataOf<T>) -> OfferingStateOf<T> {
         token
@@ -421,9 +412,9 @@ pub struct InitialAllocation<AddressId, Balance, VestingScheduleParams> {
     pub(crate) vesting_schedule: Option<VestingScheduleParams>,
 }
 
-/// Builder for the token data struct
+/// Input parameters for token issuance
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
-pub struct TokenIssuanceParameters<Balance, Hash, InitialAllocation> {
+pub struct TokenIssuanceParameters<Hash, InitialAllocation, TransferPolicyParams> {
     /// Initial issuance
     pub(crate) initial_allocation: InitialAllocation,
 
@@ -431,10 +422,10 @@ pub struct TokenIssuanceParameters<Balance, Hash, InitialAllocation> {
     pub(crate) symbol: Hash,
 
     /// Initial transfer policy:
-    pub(crate) transfer_policy: TransferPolicy<Hash>,
+    pub(crate) transfer_policy: TransferPolicyParams,
 
     /// Initial Patronage rate
-    pub(crate) patronage_rate: Balance,
+    pub(crate) patronage_rate: YearlyRate,
 }
 
 /// Utility enum used in merkle proof verification
@@ -447,9 +438,17 @@ pub enum MerkleSide {
     Left,
 }
 
+/// Yearly rate used for patronage info initialization
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy, Default)]
+pub struct YearlyRate(pub Permill);
+
+/// Block rate used for patronage accounting
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy, PartialOrd, Default)]
+pub struct BlockRate(pub Perquintill);
+
 /// Wrapper around a merkle proof path
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct MerkleProof<Hasher: Hash>(pub Option<Vec<(Hasher::Output, MerkleSide)>>);
+pub struct MerkleProof<Hasher: Hash>(pub Vec<(Hasher::Output, MerkleSide)>);
 
 /// Information about a payment
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -470,6 +469,16 @@ impl Default for MerkleSide {
     fn default() -> Self {
         MerkleSide::Right
     }
+}
+
+/// Utility wrapper around existing/non existing accounts to be used with transfer etc..
+#[derive(Encode, Decode, PartialEq, Eq, Debug, PartialOrd, Ord, Clone)]
+pub enum Validated<AccountId: Ord + Eq + Clone> {
+    /// Existing account
+    Existing(AccountId),
+
+    /// Non Existing account
+    NonExisting(AccountId),
 }
 
 // implementation
@@ -495,20 +504,21 @@ impl<AddressId: Default, Balance: Zero, VestingScheduleParams> Default
 }
 
 /// Default trait for AccountData
-impl<VestingSchedule, Balance: Zero, StakingStatus> Default
-    for AccountData<VestingSchedule, Balance, StakingStatus>
+impl<VestingSchedule, Balance: Zero, StakingStatus, JoyBalance: Zero> Default
+    for AccountData<VestingSchedule, Balance, StakingStatus, JoyBalance>
 {
     fn default() -> Self {
         Self {
             vesting_schedules: BTreeMap::new(),
             split_staking_status: None,
             amount: Balance::zero(),
+            bloat_bond: JoyBalance::zero(),
         }
     }
 }
 
-impl<Balance, BlockNumber>
-    AccountData<VestingSchedule<BlockNumber, Balance>, Balance, StakingStatus<Balance>>
+impl<Balance, BlockNumber, JoyBalance>
+    AccountData<VestingSchedule<BlockNumber, Balance>, Balance, StakingStatus<Balance>, JoyBalance>
 where
     Balance: Clone
         + Zero
@@ -522,7 +532,30 @@ where
         + TryInto<u64>
         + Copy,
     BlockNumber: Copy + Clone + PartialOrd + Ord + Saturating + From<u32> + Unsigned,
+    JoyBalance: Zero,
 {
+    /// Ctor
+    pub fn new_with_amount_and_bond(amount: Balance, bloat_bond: JoyBalance) -> Self {
+        Self {
+            amount,
+            bloat_bond,
+            ..Self::default()
+        }
+    }
+
+    pub fn new_with_vesting_and_bond(
+        source: VestingSource,
+        schedule: VestingSchedule<BlockNumber, Balance>,
+        bloat_bond: JoyBalance,
+    ) -> Self {
+        Self {
+            amount: schedule.total_amount(),
+            vesting_schedules: [(source, schedule)].iter().cloned().collect(),
+            bloat_bond,
+            split_staking_status: None,
+        }
+    }
+
     /// Check whether an account is empty
     pub(crate) fn is_empty(&self) -> bool {
         self.amount.is_zero()
@@ -636,31 +669,36 @@ where
     }
 }
 /// Token Data implementation
-impl<
-        JOYBalance,
-        Balance: Zero + Saturating + Copy,
-        Hash,
-        BlockNumber: PartialOrd + Saturating + Copy,
-        VestingScheduleParams,
-        AccountId,
-    >
+impl<JoyBalance, Balance, Hash, BlockNumber, VestingScheduleParams, AccountId>
     TokenData<
         Balance,
         Hash,
         BlockNumber,
-        TokenSale<JOYBalance, Balance, BlockNumber, VestingScheduleParams, Hash, AccountId>,
+        TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams, AccountId>,
     >
+where
+    Balance: Zero + Copy + Saturating + Debug + From<u64> + UniqueSaturatedInto<u64> + Unsigned,
+    BlockNumber: PartialOrd + Saturating + Copy + AtLeast32BitUnsigned,
 {
     // increase total issuance
-    pub(crate) fn increase_issuance_by(&mut self, amount: Balance) {
+    pub(crate) fn increase_supply_by(&mut self, amount: Balance) {
         self.tokens_issued = self.tokens_issued.saturating_add(amount);
         self.total_supply = self.total_supply.saturating_add(amount);
     }
 
     // decrease total issuance (use when tokens are burned for any reason)
-    #[allow(dead_code)]
     pub(crate) fn decrease_supply_by(&mut self, amount: Balance) {
         self.total_supply = self.total_supply.saturating_sub(amount);
+    }
+
+    // increment account number
+    pub(crate) fn increment_accounts_number(&mut self) {
+        self.accounts_number = self.accounts_number.saturating_add(1u64);
+    }
+
+    // decrement account number
+    pub(crate) fn decrement_accounts_number(&mut self) {
+        self.accounts_number = self.accounts_number.saturating_sub(1u64);
     }
 
     pub fn set_unclaimed_tally_patronage_at_block(&mut self, amount: Balance, block: BlockNumber) {
@@ -668,25 +706,19 @@ impl<
         self.patronage_info.unclaimed_patronage_tally_amount = amount;
     }
 
-    pub(crate) fn unclaimed_patronage<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
-        &self,
-        block: BlockNumber,
-    ) -> Balance {
-        // period * rate * supply + tally
-        self.patronage_info
-            .unclaimed_patronage_percent::<BlockNumberToBalance>(block)
-            .saturating_mul(self.total_supply)
+    /// Computes: period * rate * supply + tally
+    pub(crate) fn unclaimed_patronage_at_block(&self, block: BlockNumber) -> Balance {
+        let blocks = block.saturating_sub(self.patronage_info.last_unclaimed_patronage_tally_block);
+        let unclaimed_patronage_percent = self.patronage_info.rate.for_period(blocks);
+        unclaimed_patronage_percent
+            .mul_floor(self.total_supply)
             .saturating_add(self.patronage_info.unclaimed_patronage_tally_amount)
     }
 
-    pub fn set_new_patronage_rate_at_block<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
-        &mut self,
-        new_rate: Balance,
-        block: BlockNumber,
-    ) {
+    pub fn set_new_patronage_rate_at_block(&mut self, new_rate: BlockRate, block: BlockNumber) {
         // update tally according to old rate
         self.patronage_info.unclaimed_patronage_tally_amount =
-            self.unclaimed_patronage::<BlockNumberToBalance>(block);
+            self.unclaimed_patronage_at_block(block);
         self.patronage_info.last_unclaimed_patronage_tally_block = block;
         self.patronage_info.rate = new_rate;
     }
@@ -708,7 +740,7 @@ impl<
             PatronageData::<<T as Trait>::Balance, <T as frame_system::Trait>::BlockNumber> {
                 last_unclaimed_patronage_tally_block: current_block,
                 unclaimed_patronage_tally_amount: <T as Trait>::Balance::zero(),
-                rate: params.patronage_rate,
+                rate: BlockRate::from_yearly_rate(params.patronage_rate, T::BlocksPerYear::get()),
             };
 
         TokenData {
@@ -716,9 +748,10 @@ impl<
             total_supply: params.initial_allocation.amount,
             tokens_issued: params.initial_allocation.amount,
             last_sale: None,
-            transfer_policy: params.transfer_policy,
+            transfer_policy: params.transfer_policy.into(),
             patronage_info,
             sales_initialized: 0,
+            accounts_number: 0,
         }
     }
 }
@@ -729,45 +762,36 @@ impl<Hasher: Hash> MerkleProof<Hasher> {
         T: crate::Trait,
         S: Encode,
     {
-        match &self.0 {
-            None => Err(crate::Error::<T>::MerkleProofNotProvided.into()),
-            Some(vec) => {
-                let init = Hasher::hash_of(data);
-                let proof_result = vec.iter().fold(init, |acc, (hash, side)| match side {
-                    MerkleSide::Left => Hasher::hash_of(&(hash, acc)),
-                    MerkleSide::Right => Hasher::hash_of(&(acc, hash)),
-                });
+        let init = Hasher::hash_of(data);
+        let proof_result = self.0.iter().fold(init, |acc, (hash, side)| match side {
+            MerkleSide::Left => Hasher::hash_of(&(hash, acc)),
+            MerkleSide::Right => Hasher::hash_of(&(acc, hash)),
+        });
 
-                ensure!(
-                    proof_result == commit,
-                    crate::Error::<T>::MerkleProofVerificationFailure,
-                );
+        ensure!(
+            proof_result == commit,
+            crate::Error::<T>::MerkleProofVerificationFailure,
+        );
 
-                Ok(())
-            }
-        }
-    }
-}
-
-impl<Balance: Zero + Copy + Saturating, BlockNumber: Copy + Saturating + PartialOrd>
-    PatronageData<Balance, BlockNumber>
-{
-    pub fn unclaimed_patronage_percent<BlockNumberToBalance: Convert<BlockNumber, Balance>>(
-        &self,
-        block: BlockNumber,
-    ) -> Balance {
-        let period = block.saturating_sub(self.last_unclaimed_patronage_tally_block);
-        BlockNumberToBalance::convert(period).saturating_mul(self.rate)
+        Ok(())
     }
 }
 
 impl<AccountId, Balance: Sum + Copy> Transfers<AccountId, Balance> {
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
     pub fn total_amount(&self) -> Balance {
         self.0.iter().map(|(_, payment)| payment.amount).sum()
     }
 
     pub fn iter(&self) -> Iter<'_, AccountId, Payment<Balance>> {
         self.0.iter()
+    }
+
+    pub fn into_iter(self) -> IntoIter<AccountId, Payment<Balance>> {
+        self.0.into_iter()
     }
 }
 
@@ -779,18 +803,53 @@ impl<AccountId, Balance> From<Transfers<AccountId, Balance>>
     }
 }
 
+/// Block Rate bare minimum impementation
+impl BlockRate {
+    pub fn from_yearly_rate(r: YearlyRate, blocks_per_year: u32) -> Self {
+        let max_accuracy: u64 = <Permill as PerThing>::ACCURACY.into();
+        BlockRate(Perquintill::from_rational_approximation(
+            r.0.deconstruct().into(),
+            max_accuracy.saturating_mul(blocks_per_year.into()),
+        ))
+    }
+
+    pub fn to_yearly_rate_representation(self, blocks_per_year: u32) -> Perquintill {
+        self.for_period(blocks_per_year)
+    }
+
+    pub fn for_period<BlockNumber>(self, blocks: BlockNumber) -> Perquintill
+    where
+        BlockNumber: AtLeast32BitUnsigned + Clone,
+    {
+        Perquintill::from_parts(self.0.deconstruct().saturating_mul(blocks.saturated_into()))
+    }
+
+    pub fn saturating_sub(self, other: Self) -> Self {
+        BlockRate(self.0.saturating_sub(other.0))
+    }
+}
+
 // Aliases
+
+/// Creator token balance
+pub(crate) type TokenBalanceOf<T> = <T as Trait>::Balance;
+
+/// JOY balance
+pub(crate) type JoyBalanceOf<T> = <T as balances::Trait>::Balance;
+
+/// JOY balances module
+pub(crate) type Joy<T> = balances::Module<T>;
 
 /// Alias for Staking Status
 pub(crate) type StakingStatusOf<T> = StakingStatus<<T as Trait>::Balance>;
 
 /// Alias for Account Data
 pub(crate) type AccountDataOf<T> =
-    AccountData<VestingScheduleOf<T>, <T as Trait>::Balance, StakingStatusOf<T>>;
+    AccountData<VestingScheduleOf<T>, TokenBalanceOf<T>, StakingStatusOf<T>, JoyBalanceOf<T>>;
 
 /// Alias for Token Data
 pub(crate) type TokenDataOf<T> = TokenData<
-    <T as crate::Trait>::Balance,
+    TokenBalanceOf<T>,
     <T as frame_system::Trait>::Hash,
     <T as frame_system::Trait>::BlockNumber,
     TokenSaleOf<T>,
@@ -799,16 +858,19 @@ pub(crate) type TokenDataOf<T> = TokenData<
 /// Alias for InitialAllocation
 pub(crate) type InitialAllocationOf<T> = InitialAllocation<
     <T as frame_system::Trait>::AccountId,
-    <T as crate::Trait>::Balance,
+    TokenBalanceOf<T>,
     VestingScheduleParamsOf<T>,
 >;
 
 /// Alias for Token Issuance Parameters
 pub(crate) type TokenIssuanceParametersOf<T> = TokenIssuanceParameters<
-    <T as crate::Trait>::Balance,
     <T as frame_system::Trait>::Hash,
     InitialAllocationOf<T>,
+    TransferPolicyParamsOf<T>,
 >;
+
+/// Alias for TransferPolicyParams
+pub(crate) type TransferPolicyParamsOf<T> = TransferPolicyParams<WhitelistParamsOf<T>>;
 
 /// Alias for TransferPolicy
 pub(crate) type TransferPolicyOf<T> = TransferPolicy<<T as frame_system::Trait>::Hash>;
@@ -822,11 +884,10 @@ pub(crate) type VestingScheduleParamsOf<T> =
 
 /// Alias for VestingSchedule
 pub(crate) type VestingScheduleOf<T> =
-    VestingSchedule<<T as frame_system::Trait>::BlockNumber, <T as Trait>::Balance>;
+    VestingSchedule<<T as frame_system::Trait>::BlockNumber, TokenBalanceOf<T>>;
 
 /// Alias for SingleDataObjectUploadParams
-pub(crate) type SingleDataObjectUploadParamsOf<T> =
-    SingleDataObjectUploadParams<<T as balances::Trait>::Balance>;
+pub(crate) type SingleDataObjectUploadParamsOf<T> = SingleDataObjectUploadParams<JoyBalanceOf<T>>;
 
 /// Alias for WhitelistParams
 pub(crate) type WhitelistParamsOf<T> =
@@ -834,21 +895,19 @@ pub(crate) type WhitelistParamsOf<T> =
 
 /// Alias for TokenSaleParams
 pub(crate) type TokenSaleParamsOf<T> = TokenSaleParams<
-    <T as balances::Trait>::Balance,
-    <T as crate::Trait>::Balance,
+    JoyBalanceOf<T>,
+    TokenBalanceOf<T>,
     <T as frame_system::Trait>::BlockNumber,
     VestingScheduleParamsOf<T>,
-    WhitelistParamsOf<T>,
     <T as frame_system::Trait>::AccountId,
 >;
 
 /// Alias for TokenSale
 pub(crate) type TokenSaleOf<T> = TokenSale<
-    <T as balances::Trait>::Balance,
-    <T as crate::Trait>::Balance,
+    JoyBalanceOf<T>,
+    TokenBalanceOf<T>,
     <T as frame_system::Trait>::BlockNumber,
     VestingScheduleParamsOf<T>,
-    <T as frame_system::Trait>::Hash,
     <T as frame_system::Trait>::AccountId,
 >;
 
@@ -863,12 +922,8 @@ pub(crate) type TokenSaleId = u32;
 
 /// Alias for Transfers
 pub(crate) type TransfersOf<T> =
-    Transfers<<T as frame_system::Trait>::AccountId, <T as crate::Trait>::Balance>;
+    Transfers<<T as frame_system::Trait>::AccountId, TokenBalanceOf<T>>;
 
-/// Alias for WhitelistedSaleParticipant
-pub(crate) type WhitelistedSaleParticipantOf<T> =
-    WhitelistedSaleParticipant<<T as frame_system::Trait>::AccountId, <T as Trait>::Balance>;
-
-/// Alias for SaleAccessProof
-pub(crate) type SaleAccessProofOf<T> =
-    SaleAccessProof<WhitelistedSaleParticipantOf<T>, MerkleProofOf<T>>;
+/// Validated transfers
+pub(crate) type ValidatedTransfers<T> =
+    Transfers<Validated<<T as frame_system::Trait>::AccountId>, TokenBalanceOf<T>>;

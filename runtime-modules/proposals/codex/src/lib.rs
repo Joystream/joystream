@@ -62,8 +62,8 @@ use proposals_engine::{
     BalanceOf, ProposalCreationParameters, ProposalObserver, ProposalParameters,
 };
 pub use types::{
-    CreateOpeningParameters, FillOpeningParameters, GeneralProposalParams, ProposalDetails,
-    ProposalDetailsOf, ProposalEncoder, TerminateRoleParameters,
+    CreateOpeningParameters, FillOpeningParameters, GeneralProposalParams, GlobalNftLimitType,
+    ProposalDetails, ProposalDetailsOf, ProposalEncoder, TerminateRoleParameters,
 };
 
 // Max allowed value for 'Funding Request' proposal
@@ -102,6 +102,7 @@ pub trait WeightInfo {
     fn create_proposal_unlock_blog_post(t: u32, d: u32) -> Weight;
     fn create_proposal_veto_proposal(t: u32, d: u32) -> Weight;
     fn create_proposal_update_channel_payouts(t: u32, d: u32, i: u32) -> Weight;
+    fn create_proposal_update_nft_limit(t: u32, d: u32) -> Weight;
 }
 
 type WeightInfoCodex<T> = <T as Trait>::WeightInfo;
@@ -250,6 +251,11 @@ pub trait Trait:
 
     /// `Update Channel Payouts` proposal parameters
     type UpdateChannelPayoutsProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    /// `Update Nft limit` proposal parameters
+    type UpdateNftLimitProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 }
@@ -457,6 +463,9 @@ decl_module! {
 
         const UpdateChannelPayoutsProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateChannelPayoutsProposalParameters::get();
+
+        const UpdateNftLimitProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateNftLimitProposalParameters::get();
 
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
@@ -668,6 +677,9 @@ impl<T: Trait> Module<T> {
                     );
                 }
             }
+            ProposalDetails::UpdateNftLimit(..) => {
+                // Note: No checks for this proposal for now
+            }
         }
 
         Ok(())
@@ -736,6 +748,7 @@ impl<T: Trait> Module<T> {
             ProposalDetails::UpdateChannelPayouts(..) => {
                 T::UpdateChannelPayoutsProposalParameters::get()
             }
+            ProposalDetails::UpdateNftLimit(..) => T::UpdateNftLimitProposalParameters::get(),
         }
     }
 
@@ -911,6 +924,13 @@ impl<T: Trait> Module<T> {
                         .payload
                         .as_ref()
                         .map_or(0, |p| p.object_creation_params.ipfs_content_id.len() as u32),
+                )
+                .saturated_into()
+            }
+            ProposalDetails::UpdateNftLimit(..) => {
+                WeightInfoCodex::<T>::create_proposal_update_nft_limit(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
                 )
                 .saturated_into()
             }

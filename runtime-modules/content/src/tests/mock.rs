@@ -333,6 +333,22 @@ parameter_types! {
     pub const PricePerByte: u32 = 2;
     pub const VideoCommentsModuleId: ModuleId = ModuleId(*b"m0:forum"); // module : forum
     pub const BloatBondCap: u32 = 1000;
+    pub const DefaultGlobalDailyNftLimit: LimitPerPeriod<u64> = LimitPerPeriod {
+        block_number_period: 100,
+        limit: 10000,
+    };
+    pub const DefaultGlobalWeeklyNftLimit: LimitPerPeriod<u64> = LimitPerPeriod {
+        block_number_period: 1000,
+        limit: 50000,
+    };
+    pub const DefaultChannelDailyNftLimit: LimitPerPeriod<u64> = LimitPerPeriod {
+        block_number_period: 100,
+        limit: 100,
+    };
+    pub const DefaultChannelWeeklyNftLimit: LimitPerPeriod<u64> = LimitPerPeriod {
+        block_number_period: 1000,
+        limit: 500,
+    };
 }
 
 impl Trait for Test {
@@ -386,6 +402,18 @@ impl Trait for Test {
 
     /// council budget manager
     type CouncilBudgetManager = CouncilBudgetManager;
+
+    /// Default global daily NFT limit.
+    type DefaultGlobalDailyNftLimit = DefaultGlobalDailyNftLimit;
+
+    /// Default global weekly NFT limit.
+    type DefaultGlobalWeeklyNftLimit = DefaultGlobalWeeklyNftLimit;
+
+    /// Default channel daily NFT limit.
+    type DefaultChannelDailyNftLimit = DefaultChannelDailyNftLimit;
+
+    /// Default channel weekly NFT limit.
+    type DefaultChannelWeeklyNftLimit = DefaultChannelWeeklyNftLimit;
 }
 
 // #[derive (Default)]
@@ -495,11 +523,12 @@ pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests
 pub fn run_to_block(n: u64) {
+    // System module initializes first and finalizes last
     while System::block_number() < n {
         <Content as OnFinalize<u64>>::on_finalize(System::block_number());
         System::set_block_number(System::block_number() + 1);
-        <Content as OnInitialize<u64>>::on_initialize(System::block_number());
         <System as OnInitialize<u64>>::on_initialize(System::block_number());
+        <Content as OnInitialize<u64>>::on_initialize(System::block_number());
     }
 }
 
@@ -814,5 +843,50 @@ impl common::council::CouncilBudgetManager<u64, u64> for CouncilBudgetManager {
         Self::set_budget(new_budget);
 
         Ok(())
+    }
+}
+
+pub(crate) fn set_default_nft_limits() {
+    let limit = LimitPerPeriod::<u64> {
+        limit: 1000,
+        block_number_period: 1000,
+    };
+
+    let channel_id = 1;
+
+    set_all_nft_limits(channel_id, limit);
+}
+
+pub(crate) fn set_all_nft_limits(channel_id: u64, limit: LimitPerPeriod<u64>) {
+    set_global_daily_nft_limit(limit);
+    set_global_weekly_nft_limit(limit);
+    set_channel_daily_nft_limit(channel_id, limit);
+    set_channel_weekly_nft_limit(channel_id, limit);
+}
+
+pub(crate) fn set_global_daily_nft_limit(limit: LimitPerPeriod<u64>) {
+    Content::set_nft_limit(NftLimitId::GlobalDaily, limit);
+}
+
+pub(crate) fn set_global_weekly_nft_limit(limit: LimitPerPeriod<u64>) {
+    Content::set_nft_limit(NftLimitId::GlobalWeekly, limit);
+}
+
+pub(crate) fn set_channel_daily_nft_limit(channel_id: u64, limit: LimitPerPeriod<u64>) {
+    Content::set_nft_limit(NftLimitId::ChannelDaily(channel_id), limit);
+}
+
+pub(crate) fn set_channel_weekly_nft_limit(channel_id: u64, limit: LimitPerPeriod<u64>) {
+    Content::set_nft_limit(NftLimitId::ChannelWeekly(channel_id), limit);
+}
+
+pub(crate) fn nft_limit_by_id(limit_id: NftLimitId<ChannelId>) -> LimitPerPeriod<u64> {
+    match limit_id {
+        NftLimitId::GlobalDaily => crate::GlobalDailyNftLimit::<Test>::get(),
+        NftLimitId::GlobalWeekly => crate::GlobalWeeklyNftLimit::<Test>::get(),
+        NftLimitId::ChannelDaily(channel_id) => Content::channel_by_id(channel_id).daily_nft_limit,
+        NftLimitId::ChannelWeekly(channel_id) => {
+            Content::channel_by_id(channel_id).weekly_nft_limit
+        }
     }
 }

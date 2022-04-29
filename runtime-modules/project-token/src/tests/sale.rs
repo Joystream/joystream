@@ -1,16 +1,14 @@
 #![cfg(test)]
 
-use std::iter::FromIterator;
-
 use crate::errors::Error;
-
-use crate::merkle_proof;
+use crate::joy;
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
+use crate::types::Joy;
 use crate::types::MerkleProofOf;
+use crate::{merkle_proof, merkle_root};
+use frame_support::assert_ok;
 use sp_arithmetic::Permill;
-use sp_runtime::traits::Hash;
-use storage::DataObjectCreationParameters;
 
 /////////////////////////////////////////////////////////
 ////////////////// SALE INITIALIZATION //////////////////
@@ -63,82 +61,6 @@ fn unsuccesful_token_sale_init_with_invalid_source() {
 }
 
 #[test]
-fn unsuccesful_token_sale_init_with_whitelist_payload_and_unexpected_data_object_size_fee() {
-    let config = GenesisConfigBuilder::new_empty().build();
-
-    build_test_externalities(config).execute_with(|| {
-        IssueTokenFixture::default().call_and_assert(Ok(()));
-        InitTokenSaleFixture::default()
-            .with_whitelist(WhitelistParams {
-                commitment: Hashing::hash_of(b"commitment"),
-                payload: Some(SingleDataObjectUploadParams {
-                    expected_data_size_fee: storage::Module::<Test>::data_object_per_mega_byte_fee(
-                    ) + 1,
-                    ..default_single_data_object_upload_params()
-                }),
-            })
-            .call_and_assert(Err(storage::Error::<Test>::DataSizeFeeChanged.into()));
-    })
-}
-
-#[test]
-fn unsuccesful_token_sale_init_with_whitelist_payload_and_invalid_content_id() {
-    let config = GenesisConfigBuilder::new_empty().build();
-
-    build_test_externalities(config).execute_with(|| {
-        IssueTokenFixture::default().call_and_assert(Ok(()));
-        InitTokenSaleFixture::default()
-            .with_whitelist(WhitelistParams {
-                commitment: Hashing::hash_of(b"commitment"),
-                payload: Some(SingleDataObjectUploadParams {
-                    object_creation_params: DataObjectCreationParameters {
-                        ipfs_content_id: Vec::new(),
-                        size: 1_000_000,
-                    },
-                    ..default_single_data_object_upload_params()
-                }),
-            })
-            .call_and_assert(Err(storage::Error::<Test>::EmptyContentId.into()));
-    })
-}
-
-#[test]
-fn unsuccesful_token_sale_init_with_whitelist_payload_and_invalid_size() {
-    let config = GenesisConfigBuilder::new_empty().build();
-
-    build_test_externalities(config).execute_with(|| {
-        IssueTokenFixture::default().call_and_assert(Ok(()));
-        InitTokenSaleFixture::default()
-            .with_whitelist(WhitelistParams {
-                commitment: Hashing::hash_of(b"commitment"),
-                payload: Some(SingleDataObjectUploadParams {
-                    object_creation_params: DataObjectCreationParameters {
-                        ipfs_content_id: Vec::from_iter(0..46),
-                        size: 1_000_000_000_000,
-                    },
-                    ..default_single_data_object_upload_params()
-                }),
-            })
-            .call_and_assert(Err(storage::Error::<Test>::MaxDataObjectSizeExceeded.into()));
-    })
-}
-
-#[test]
-fn unsuccesful_token_sale_init_with_whitelist_payload_and_insufficient_balance() {
-    let config = GenesisConfigBuilder::new_empty().build();
-
-    build_test_externalities(config).execute_with(|| {
-        IssueTokenFixture::default().call_and_assert(Ok(()));
-        InitTokenSaleFixture::default()
-            .with_whitelist(WhitelistParams {
-                commitment: Hashing::hash_of(b"commitment"),
-                payload: Some(default_single_data_object_upload_params()),
-            })
-            .call_and_assert(Err(storage::Error::<Test>::InsufficientBalance.into()));
-    })
-}
-
-#[test]
 fn unsuccesful_token_sale_init_when_token_not_idle() {
     let config = GenesisConfigBuilder::new_empty().build();
 
@@ -159,7 +81,8 @@ fn unsuccesful_token_sale_init_when_remaining_reserved_toknes_from_previous_sale
         InitTokenSaleFixture::default().call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
+                + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
         );
         PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
         increase_block_number_by(DEFAULT_SALE_DURATION);
@@ -205,25 +128,6 @@ fn succesful_token_sale_init_with_custom_start_block() {
         increase_block_number_by(DEFAULT_SALE_DURATION);
         let token = Token::token_info_by_id(1);
         assert_eq!(IssuanceState::of::<Test>(&token), IssuanceState::Idle);
-    })
-}
-
-#[test]
-fn succesful_token_sale_init_with_whitelist_payload() {
-    let config = GenesisConfigBuilder::new_empty().build();
-
-    build_test_externalities(config).execute_with(|| {
-        IssueTokenFixture::default().call_and_assert(Ok(()));
-        increase_account_balance(
-            &DEFAULT_ACCOUNT_ID,
-            <Test as storage::Trait>::DataObjectDeletionPrize::get(),
-        );
-        InitTokenSaleFixture::default()
-            .with_whitelist(WhitelistParams {
-                commitment: Hashing::hash_of(b"commitment"),
-                payload: Some(default_single_data_object_upload_params()),
-            })
-            .call_and_assert(Ok(()));
     })
 }
 
@@ -315,6 +219,7 @@ fn successful_upcoming_sale_update() {
 /////////////////////////////////////////////////////////
 //////////////////// SALE PURCHASES /////////////////////
 /////////////////////////////////////////////////////////
+
 #[test]
 fn unsuccesful_sale_purchase_non_existing_token() {
     let config = GenesisConfigBuilder::new_empty().build();
@@ -364,15 +269,50 @@ fn unsuccesful_sale_purchase_after_sale_finished() {
 }
 
 #[test]
-fn unsuccesful_sale_purchase_insufficient_balance() {
-    let config = GenesisConfigBuilder::new_empty().build();
+fn unsuccesful_sale_purchase_insufficient_joy_balance_new_account() {
+    let bloat_bond = joy!(100);
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(
+            &DEFAULT_ACCOUNT_ID,
+            <Test as crate::Trait>::JoyExistentialDeposit::get() + bloat_bond,
+        );
+        increase_account_balance(
+            &OTHER_ACCOUNT_ID,
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
+                + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT
+                + bloat_bond
+                - 1,
+        );
         IssueTokenFixture::default().call_and_assert(Ok(()));
         InitTokenSaleFixture::default().call_and_assert(Ok(()));
-        PurchaseTokensOnSaleFixture::default().call_and_assert(Err(
-            Error::<Test>::InsufficientBalanceForTokenPurchase.into(),
-        ));
+        PurchaseTokensOnSaleFixture::default()
+            .call_and_assert(Err(Error::<Test>::InsufficientJoyBalance.into()));
+    })
+}
+
+#[test]
+fn unsuccesful_sale_purchase_insufficient_joy_balance_existing_account() {
+    let bloat_bond = joy!(100);
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(
+            &DEFAULT_ACCOUNT_ID,
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
+                + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT
+                - 1,
+        );
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default().call_and_assert(Ok(()));
+        PurchaseTokensOnSaleFixture::default()
+            .with_sender(DEFAULT_ACCOUNT_ID)
+            .call_and_assert(Err(Error::<Test>::InsufficientJoyBalance.into()));
     })
 }
 
@@ -385,7 +325,8 @@ fn unsuccesful_sale_purchase_amount_exceeds_quantity_left() {
         InitTokenSaleFixture::default().call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            DEFAULT_SALE_UNIT_PRICE * (DEFAULT_INITIAL_ISSUANCE + 1),
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
+                + DEFAULT_SALE_UNIT_PRICE * (DEFAULT_INITIAL_ISSUANCE + 1),
         );
         PurchaseTokensOnSaleFixture::default()
             .with_amount(DEFAULT_INITIAL_ISSUANCE + 1)
@@ -403,9 +344,10 @@ fn unsuccesful_sale_purchase_vesting_balances_limit_reached() {
             <Test as crate::Trait>::MaxVestingSchedulesPerAccountPerToken::get();
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            DEFAULT_SALE_PURCHASE_AMOUNT
-                .saturating_mul(DEFAULT_SALE_UNIT_PRICE)
-                .saturating_mul((max_vesting_schedules + 1).into()),
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
+                + DEFAULT_SALE_PURCHASE_AMOUNT
+                    .saturating_mul(DEFAULT_SALE_UNIT_PRICE)
+                    .saturating_mul((max_vesting_schedules + 1).into()),
         );
         for _ in 0..<Test as crate::Trait>::MaxVestingSchedulesPerAccountPerToken::get() {
             InitTokenSaleFixture::default()
@@ -429,146 +371,96 @@ fn unsuccesful_sale_purchase_vesting_balances_limit_reached() {
 }
 
 #[test]
-fn unsuccesful_permissioned_sale_purchase_without_access_proof() {
+fn unsuccesful_sale_purchase_with_cap_exceeded() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().call_and_assert(Ok(()));
         InitTokenSaleFixture::default()
-            .with_whitelisted_participants(&default_sale_whitelisted_participants())
+            .with_cap_per_member(DEFAULT_SALE_PURCHASE_AMOUNT)
             .call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
-        );
-        PurchaseTokensOnSaleFixture::default()
-            .call_and_assert(Err(Error::<Test>::SaleAccessProofRequired.into()));
-    })
-}
-
-#[test]
-fn unsuccesful_permissioned_sale_purchase_with_invalid_access_proof() {
-    let config = GenesisConfigBuilder::new_empty().build();
-
-    build_test_externalities(config).execute_with(|| {
-        let whitelisted = default_sale_whitelisted_participants();
-        IssueTokenFixture::default().call_and_assert(Ok(()));
-        InitTokenSaleFixture::default()
-            .with_whitelisted_participants(&whitelisted)
-            .call_and_assert(Ok(()));
-        increase_account_balance(
-            &OTHER_ACCOUNT_ID,
-            DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
-        );
-        PurchaseTokensOnSaleFixture::default()
-            .with_access_proof(SaleAccessProof {
-                participant: whitelisted[1].clone(),
-                proof: MerkleProofOf::<Test>::new(None),
-            })
-            .call_and_assert(Err(Error::<Test>::MerkleProofNotProvided.into()));
-        PurchaseTokensOnSaleFixture::default()
-            .with_access_proof(SaleAccessProof {
-                participant: whitelisted[1].clone(),
-                proof: MerkleProofOf::<Test>::new(Some(Vec::new())),
-            })
-            .call_and_assert(Err(Error::<Test>::MerkleProofVerificationFailure.into()));
-    })
-}
-
-#[test]
-fn unsuccesful_permissioned_sale_purchase_with_invalid_access_proof_participant() {
-    let config = GenesisConfigBuilder::new_empty().build();
-
-    build_test_externalities(config).execute_with(|| {
-        let whitelisted = default_sale_whitelisted_participants();
-        IssueTokenFixture::default().call_and_assert(Ok(()));
-        InitTokenSaleFixture::default()
-            .with_whitelisted_participants(&whitelisted)
-            .call_and_assert(Ok(()));
-        increase_account_balance(
-            &OTHER_ACCOUNT_ID,
-            DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
-        );
-        PurchaseTokensOnSaleFixture::default()
-            .with_access_proof(SaleAccessProof {
-                participant: whitelisted[0].clone(),
-                proof: merkle_proof!(0, [whitelisted[0].clone(), whitelisted[1].clone()]),
-            })
-            .call_and_assert(Err(
-                Error::<Test>::SaleAccessProofParticipantIsNotSender.into()
-            ));
-    })
-}
-
-#[test]
-fn unsuccesful_permissioned_sale_purchase_with_cap_exceeded() {
-    let config = GenesisConfigBuilder::new_empty().build();
-
-    build_test_externalities(config).execute_with(|| {
-        let whitelisted = [
-            WhitelistedSaleParticipant {
-                address: DEFAULT_ACCOUNT_ID,
-                cap: None,
-            },
-            WhitelistedSaleParticipant {
-                address: OTHER_ACCOUNT_ID,
-                cap: Some(DEFAULT_SALE_PURCHASE_AMOUNT),
-            },
-        ];
-        IssueTokenFixture::default().call_and_assert(Ok(()));
-        InitTokenSaleFixture::default()
-            .with_whitelisted_participants(&whitelisted)
-            .call_and_assert(Ok(()));
-        increase_account_balance(
-            &OTHER_ACCOUNT_ID,
-            DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT * 2,
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
+                + DEFAULT_SALE_UNIT_PRICE * (DEFAULT_SALE_PURCHASE_AMOUNT + 1),
         );
         // Make succesful purchase
-        PurchaseTokensOnSaleFixture::default()
-            .with_access_proof(SaleAccessProof {
-                participant: whitelisted[1].clone(),
-                proof: merkle_proof!(1, [whitelisted[0].clone(), whitelisted[1].clone()]),
-            })
-            .call_and_assert(Ok(()));
+        PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
         // Try making another one (that would exceed the cap)
         PurchaseTokensOnSaleFixture::default()
-            .with_access_proof(SaleAccessProof {
-                participant: whitelisted[1].clone(),
-                proof: merkle_proof!(1, [whitelisted[0].clone(), whitelisted[1].clone()]),
-            })
             .with_amount(1)
-            .call_and_assert(Err(Error::<Test>::SaleParticipantCapExceeded.into()));
+            .call_and_assert(Err(Error::<Test>::SalePurchaseCapExceeded.into()));
     })
 }
 
 #[test]
-fn succesful_sale_purchase_no_vesting_schedule() {
+fn unsuccesful_sale_purchase_with_permissioned_token_and_non_existing_account() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
+        let commitment = merkle_root![DEFAULT_ACCOUNT_ID, OTHER_ACCOUNT_ID];
+        IssueTokenFixture::default()
+            .with_transfer_policy(TransferPolicyParams::Permissioned(WhitelistParams {
+                commitment,
+                payload: None,
+            }))
+            .call_and_assert(Ok(()));
+        InitTokenSaleFixture::default().call_and_assert(Ok(()));
+        increase_account_balance(
+            &OTHER_ACCOUNT_ID,
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
+                + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
+        );
+        PurchaseTokensOnSaleFixture::default()
+            .call_and_assert(Err(Error::<Test>::AccountInformationDoesNotExist.into()));
+    })
+}
+
+#[test]
+fn succesful_sale_purchases_non_existing_account_no_vesting_schedule() {
+    let bloat_bond = joy!(100);
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(
+            &DEFAULT_ACCOUNT_ID,
+            <Test as crate::Trait>::JoyExistentialDeposit::get() + bloat_bond,
+        );
         IssueTokenFixture::default().call_and_assert(Ok(()));
         InitTokenSaleFixture::default()
             .with_vesting_schedule(None)
             .call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
+                + (DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT * 2)
+                + bloat_bond,
         );
+        PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
         PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
         increase_block_number_by(DEFAULT_SALE_DURATION);
         let buyer_acc_info = Token::account_info_by_token_and_account(1, OTHER_ACCOUNT_ID);
         assert_eq!(
             buyer_acc_info.transferrable::<Test>(System::block_number()),
-            DEFAULT_SALE_PURCHASE_AMOUNT
+            DEFAULT_SALE_PURCHASE_AMOUNT * 2
         );
     })
 }
 
 #[test]
-fn succesful_sale_purchase_with_vesting_schedule() {
-    let config = GenesisConfigBuilder::new_empty().build();
+fn succesful_sale_purchases_non_existing_account_vesting_schedule() {
+    let bloat_bond = joy!(100);
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .build();
 
     build_test_externalities(config).execute_with(|| {
+        increase_account_balance(
+            &DEFAULT_ACCOUNT_ID,
+            <Test as crate::Trait>::JoyExistentialDeposit::get() + bloat_bond,
+        );
         IssueTokenFixture::default().call_and_assert(Ok(()));
         InitTokenSaleFixture::default()
             .with_vesting_schedule(Some(VestingScheduleParams {
@@ -579,8 +471,11 @@ fn succesful_sale_purchase_with_vesting_schedule() {
             .call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
+                + (DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT * 2)
+                + bloat_bond,
         );
+        PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
         PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
 
         // At sale end block expect 0 tokens in available balance (due to 100 blocks remaining until cliff)
@@ -596,7 +491,7 @@ fn succesful_sale_purchase_with_vesting_schedule() {
         let buyer_acc_info = Token::account_info_by_token_and_account(1, OTHER_ACCOUNT_ID);
         assert_eq!(
             buyer_acc_info.transferrable::<Test>(System::block_number()),
-            Permill::from_percent(30) * DEFAULT_SALE_PURCHASE_AMOUNT
+            Permill::from_percent(30) * DEFAULT_SALE_PURCHASE_AMOUNT * 2
         );
 
         // After 50% of duration (100 blocks), expect 30% + (50% * 70%) = 65% of tokens in available balance
@@ -604,7 +499,7 @@ fn succesful_sale_purchase_with_vesting_schedule() {
         let buyer_acc_info = Token::account_info_by_token_and_account(1, OTHER_ACCOUNT_ID);
         assert_eq!(
             buyer_acc_info.transferrable::<Test>(System::block_number()),
-            Permill::from_percent(65) * DEFAULT_SALE_PURCHASE_AMOUNT
+            Permill::from_percent(65) * DEFAULT_SALE_PURCHASE_AMOUNT * 2
         );
 
         // At the end of vesting expect 100% of tokens in available balance
@@ -612,41 +507,50 @@ fn succesful_sale_purchase_with_vesting_schedule() {
         let buyer_acc_info = Token::account_info_by_token_and_account(1, OTHER_ACCOUNT_ID);
         assert_eq!(
             buyer_acc_info.transferrable::<Test>(System::block_number()),
-            DEFAULT_SALE_PURCHASE_AMOUNT
+            DEFAULT_SALE_PURCHASE_AMOUNT * 2
         );
     })
 }
 
 #[test]
-fn succesful_permissioned_sale_purchase() {
-    let config = GenesisConfigBuilder::new_empty().build();
+fn succesful_sale_purchase_existing_account_permissioned_token() {
+    let bloat_bond = joy!(100);
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .build();
 
     build_test_externalities(config).execute_with(|| {
-        let whitelisted = [
-            WhitelistedSaleParticipant {
-                address: DEFAULT_ACCOUNT_ID,
-                cap: None,
-            },
-            WhitelistedSaleParticipant {
-                address: OTHER_ACCOUNT_ID,
-                cap: None,
-            },
-        ];
-        IssueTokenFixture::default().call_and_assert(Ok(()));
-        InitTokenSaleFixture::default()
-            .with_whitelisted_participants(&whitelisted)
+        let commitment = merkle_root![DEFAULT_ACCOUNT_ID, OTHER_ACCOUNT_ID];
+        let proof = merkle_proof!(1, [DEFAULT_ACCOUNT_ID, OTHER_ACCOUNT_ID]);
+        increase_account_balance(
+            &DEFAULT_ACCOUNT_ID,
+            <Test as crate::Trait>::JoyExistentialDeposit::get() + bloat_bond,
+        );
+        IssueTokenFixture::default()
+            .with_transfer_policy(TransferPolicyParams::Permissioned(WhitelistParams {
+                commitment,
+                payload: None,
+            }))
             .call_and_assert(Ok(()));
+        increase_account_balance(
+            &OTHER_ACCOUNT_ID,
+            <Test as crate::Trait>::JoyExistentialDeposit::get() + bloat_bond,
+        );
+        assert_ok!(Token::join_whitelist(
+            Origin::signed(OTHER_ACCOUNT_ID),
+            Token::next_token_id() - 1,
+            proof
+        ));
+        assert_eq!(
+            Joy::<Test>::usable_balance(&OTHER_ACCOUNT_ID),
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
+        );
+        InitTokenSaleFixture::default().call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
             DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
         );
-        // Make succesful purchase
-        PurchaseTokensOnSaleFixture::default()
-            .with_access_proof(SaleAccessProof {
-                participant: whitelisted[1].clone(),
-                proof: merkle_proof!(1, [whitelisted[0].clone(), whitelisted[1].clone()]),
-            })
-            .call_and_assert(Ok(()));
+        PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
     })
 }
 
@@ -697,7 +601,8 @@ fn unsuccesful_unreserve_unsold_tokens_when_no_tokens_left() {
             .call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
+                + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
         );
         PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
         increase_block_number_by(DEFAULT_SALE_DURATION);
@@ -715,7 +620,8 @@ fn succesful_unreserve_unsold_tokens() {
         InitTokenSaleFixture::default().call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
-            DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
+                + DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT,
         );
         PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
         increase_block_number_by(DEFAULT_SALE_DURATION);
