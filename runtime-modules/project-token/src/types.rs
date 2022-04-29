@@ -240,8 +240,8 @@ pub struct SingleDataObjectUploadParams<JoyBalance> {
     pub expected_data_size_fee: JoyBalance,
 }
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct UploadContext<AccountId, BagId> {
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default)]
+pub struct UploadContext<AccountId: Default, BagId: Default> {
     pub uploader_account: AccountId,
     pub bag_id: BagId,
 }

@@ -19,7 +19,7 @@ use sp_runtime::{
     ModuleId,
 };
 use sp_std::collections::btree_map::BTreeMap;
-use sp_std::{iter::Sum, vec};
+use sp_std::{iter::Sum, vec, vec::Vec};
 use storage::UploadParameters;
 
 // crate modules
@@ -44,8 +44,7 @@ pub trait WeightInfo {
     fn transfer(o: u32) -> Weight;
     fn dust_account() -> Weight;
     fn join_whitelist(h: u32) -> Weight;
-    fn purchase_tokens_on_sale_with_proof(h: u32) -> Weight;
-    fn purchase_tokens_on_sale_without_proof() -> Weight;
+    fn purchase_tokens_on_sale() -> Weight;
     fn recover_unsold_tokens() -> Weight;
 }
 
@@ -63,11 +62,7 @@ impl WeightInfo for () {
         0
     }
 
-    fn purchase_tokens_on_sale_with_proof(_h: u32) -> Weight {
-        0
-    }
-
-    fn purchase_tokens_on_sale_without_proof() -> Weight {
+    fn purchase_tokens_on_sale() -> Weight {
         0
     }
 
@@ -364,12 +359,11 @@ decl_module! {
         /// <weight>
         ///
         /// ## Weight
-        /// `O (H)` where:
-        /// - `H` is the length of `access_proof.proof.0` (if provided)
+        /// `O (1)`
         /// - DB:
         ///   - `O(1)` - doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T>::calculate_weight_for_purchase_tokens_on_sale(&access_proof)]
+        #[weight = WeightInfoToken::<T>::purchase_tokens_on_sale()]
         pub fn purchase_tokens_on_sale(
             origin,
             token_id: T::TokenId,
@@ -972,22 +966,6 @@ impl<T: Trait> Module<T> {
             Error::<T>::SalePurchaseCapExceeded
         );
         Ok(())
-    }
-
-    pub(crate) fn calculate_weight_for_purchase_tokens_on_sale(
-        access_proof: &Option<SaleAccessProofOf<T>>,
-    ) -> Weight {
-        if let Some(access_proof) = access_proof {
-            WeightInfoToken::<T>::purchase_tokens_on_sale_with_proof(
-                access_proof
-                    .proof
-                    .0
-                    .as_ref()
-                    .map_or(0u32, |p| p.len().saturated_into()),
-            )
-        } else {
-            WeightInfoToken::<T>::purchase_tokens_on_sale_without_proof()
-        }
     }
 
     /// Returns the module account for the bloat bond treasury

@@ -528,8 +528,8 @@ impl content::Trait for Runtime {
 
 parameter_types! {
     pub const ProjectTokenModuleId: ModuleId = ModuleId(*b"mo:token"); // module: token
-    pub const BloatBond: u32 = 1000; // TODO: adjust
     pub const MaxVestingSchedulesPerAccountPerToken: u8 = 5; // TODO: adjust
+    pub const BlocksPerYear: u32 = 5259600; // 365,25 * 24 * 60 * 60 / 6
 }
 
 impl project_token::Trait for Runtime {
@@ -539,9 +539,9 @@ impl project_token::Trait for Runtime {
     type BlockNumberToBalance = BlockNumberToBalance;
     type DataObjectStorage = Storage;
     type ModuleId = ProjectTokenModuleId;
-    type BloatBond = BloatBond;
-    type ReserveCurrency = Balances;
     type MaxVestingSchedulesPerAccountPerToken = MaxVestingSchedulesPerAccountPerToken;
+    type JoyExistentialDeposit = ExistentialDeposit;
+    type BlocksPerYear = BlocksPerYear;
     type WeightInfo = weights::project_token::WeightInfo;
 }
 

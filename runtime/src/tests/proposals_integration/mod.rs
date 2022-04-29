@@ -9,7 +9,7 @@ use crate::tests::{
 };
 use crate::{BlogInstance, MembershipWorkingGroupInstance, ProposalCancellationFee, Runtime};
 use codec::Encode;
-use content::{LimitPerPeriod, NftLimitId};
+use content::LimitPerPeriod;
 use proposals_codex::{GeneralProposalParameters, GlobalNftLimitType, ProposalDetails};
 use proposals_engine::{
     ApprovedProposalDecision, Proposal, ProposalCreationParameters, ProposalParameters,
