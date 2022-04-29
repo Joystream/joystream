@@ -23,6 +23,7 @@ pub trait PalletToken<
 
     /// Issue token with specified characteristics
     fn issue_token(
+        issuer: AccountId,
         issuance_parameters: IssuanceParams,
         upload_context: UploadContext,
     ) -> DispatchResult;

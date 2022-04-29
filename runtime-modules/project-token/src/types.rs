@@ -404,18 +404,17 @@ impl<TokenSale> OfferingState<TokenSale> {
     }
 }
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct InitialAllocation<AddressId, Balance, VestingScheduleParams> {
-    pub(crate) address: AddressId,
+#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub struct TokenAllocation<Balance, VestingScheduleParams> {
     pub(crate) amount: Balance,
     pub(crate) vesting_schedule: Option<VestingScheduleParams>,
 }
 
 /// Input parameters for token issuance
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
-pub struct TokenIssuanceParameters<Hash, InitialAllocation, TransferPolicyParams> {
-    /// Initial issuance
-    pub(crate) initial_allocation: InitialAllocation,
+pub struct TokenIssuanceParameters<Hash, TokenAllocation, TransferPolicyParams, AddressId: Ord> {
+    /// Initial allocation of the token
+    pub(crate) initial_allocation: BTreeMap<AddressId, TokenAllocation>,
 
     /// Token Symbol
     pub(crate) symbol: Hash,
@@ -425,6 +424,36 @@ pub struct TokenIssuanceParameters<Hash, InitialAllocation, TransferPolicyParams
 
     /// Initial Patronage rate
     pub(crate) patronage_rate: YearlyRate,
+}
+
+impl<Hash, AddressId, Balance, VestingScheduleParams, SingleDataObjectUploadParams>
+    TokenIssuanceParameters<
+        Hash,
+        TokenAllocation<Balance, VestingScheduleParams>,
+        TransferPolicyParams<WhitelistParams<Hash, SingleDataObjectUploadParams>>,
+        AddressId,
+    >
+where
+    AddressId: Ord,
+    Balance: Sum + Copy,
+    SingleDataObjectUploadParams: Clone,
+{
+    pub(crate) fn get_initial_allocation_bloat_bond<JoyBalance: From<u32> + Saturating>(
+        &self,
+        bloat_bond: JoyBalance,
+    ) -> JoyBalance {
+        let accounts_len = self.initial_allocation.len() as u32;
+        bloat_bond.saturating_mul(accounts_len.into())
+    }
+
+    pub(crate) fn get_whitelist_payload(&self) -> Option<SingleDataObjectUploadParams> {
+        match &self.transfer_policy {
+            TransferPolicyParams::Permissioned(whitelist_params) => {
+                whitelist_params.payload.clone()
+            }
+            _ => None,
+        }
+    }
 }
 
 /// Utility enum used in merkle proof verification
@@ -490,12 +519,11 @@ impl<TokenSale> Default for OfferingState<TokenSale> {
 }
 
 /// Default trait for InitialAllocation
-impl<AddressId: Default, Balance: Zero, VestingScheduleParams> Default
-    for InitialAllocation<AddressId, Balance, VestingScheduleParams>
+impl<Balance: Zero, VestingScheduleParams> Default
+    for TokenAllocation<Balance, VestingScheduleParams>
 {
     fn default() -> Self {
-        InitialAllocation {
-            address: AddressId::default(),
+        TokenAllocation {
             amount: Balance::zero(),
             vesting_schedule: None,
         }
@@ -742,10 +770,16 @@ where
                 rate: BlockRate::from_yearly_rate(params.patronage_rate, T::BlocksPerYear::get()),
             };
 
+        let total_supply = params
+            .initial_allocation
+            .iter()
+            .map(|(_, v)| v.amount)
+            .sum();
+
         TokenData {
             symbol: params.symbol,
-            total_supply: params.initial_allocation.amount,
-            tokens_issued: params.initial_allocation.amount,
+            total_supply,
+            tokens_issued: total_supply,
             last_sale: None,
             transfer_policy: params.transfer_policy.into(),
             patronage_info,
@@ -855,17 +889,15 @@ pub(crate) type TokenDataOf<T> = TokenData<
 >;
 
 /// Alias for InitialAllocation
-pub(crate) type InitialAllocationOf<T> = InitialAllocation<
-    <T as frame_system::Trait>::AccountId,
-    TokenBalanceOf<T>,
-    VestingScheduleParamsOf<T>,
->;
+pub(crate) type TokenAllocationOf<T> =
+    TokenAllocation<TokenBalanceOf<T>, VestingScheduleParamsOf<T>>;
 
 /// Alias for Token Issuance Parameters
 pub(crate) type TokenIssuanceParametersOf<T> = TokenIssuanceParameters<
     <T as frame_system::Trait>::Hash,
-    InitialAllocationOf<T>,
+    TokenAllocationOf<T>,
     TransferPolicyParamsOf<T>,
+    <T as frame_system::Trait>::AccountId,
 >;
 
 /// Alias for TransferPolicyParams

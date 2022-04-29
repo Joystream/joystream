@@ -546,68 +546,41 @@ impl<T: Trait>
     /// - symbol is added to `Symbols`
     /// - ``bloat_bond` JOYs transferred from `owner_account_id` to treasury account
     fn issue_token(
+        issuer: T::AccountId,
         issuance_parameters: TokenIssuanceParametersOf<T>,
         upload_context: UploadContextOf<T>,
     ) -> DispatchResult {
         let token_id = Self::next_token_id();
+        let bloat_bond = Self::bloat_bond();
         Self::validate_issuance_parameters(&issuance_parameters)?;
-
         let token_data = TokenDataOf::<T>::from_params::<T>(issuance_parameters.clone());
+        let whitelist_payload = issuance_parameters.get_whitelist_payload();
 
         // TODO: Not clear what the storage interface will be yet, so this is just a mock code now
-        if let TransferPolicyParams::Permissioned(whitelist_params) =
-            &issuance_parameters.transfer_policy
-        {
-            if let Some(payload) = whitelist_params.payload.as_ref() {
-                let _ = UploadParameters::<T> {
-                    bag_id: upload_context.bag_id,
-                    deletion_prize_source_account_id: upload_context.uploader_account,
-                    expected_data_size_fee: payload.expected_data_size_fee,
-                    object_creation_list: vec![payload.object_creation_params.clone()],
-                };
-            }
-        }
+        let upload_params = whitelist_payload.as_ref().map_or(Ok(None), |payload| {
+            Self::ensure_can_upload_data_object(payload, &upload_context).map(|r| Some(r))
+        })?;
 
-        let bloat_bond = Self::bloat_bond();
-        Self::ensure_can_transfer_joy(&issuance_parameters.initial_allocation.address, bloat_bond)?;
+        let total_bloat_bond = issuance_parameters.get_initial_allocation_bloat_bond(bloat_bond);
+        Self::ensure_can_transfer_joy(&issuer, total_bloat_bond)?;
 
         // == MUTATION SAFE ==
         SymbolsUsed::<T>::insert(&token_data.symbol, ());
         TokenInfoById::<T>::insert(token_id, token_data);
         NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
 
-        Self::deposit_to_treasury(&issuance_parameters.initial_allocation.address, bloat_bond);
+        Self::deposit_to_treasury(&issuer, total_bloat_bond);
 
-        let account_data = AccountData {
-            bloat_bond: BloatBond::<T>::get(),
-            amount: issuance_parameters.initial_allocation.amount,
-            vesting_schedules: if let Some(vsp) = issuance_parameters
-                .initial_allocation
-                .vesting_schedule
-                .as_ref()
-            {
-                [(
-                    VestingSource::InitialIssuance,
-                    VestingScheduleOf::<T>::from_params(
-                        Self::current_block(),
-                        issuance_parameters.initial_allocation.amount,
-                        vsp.clone(),
-                    ),
-                )]
-                .iter()
-                .cloned()
-                .collect()
-            } else {
-                BTreeMap::new()
-            },
-            split_staking_status: None,
-        };
-
-        Self::do_insert_new_account_for_token(
+        Self::perform_initial_allocation(
             token_id,
-            &issuance_parameters.initial_allocation.address,
-            account_data,
+            &issuance_parameters.initial_allocation,
+            bloat_bond,
         );
+
+        // TODO: Not clear what the storage interface will be yet, so this is just a mock code now
+        if let Some(params) = upload_params.as_ref() {
+            Self::upload_data_object(params);
+        }
 
         Self::deposit_event(RawEvent::TokenIssued(token_id, issuance_parameters));
 
@@ -979,5 +952,44 @@ impl<T: Trait> Module<T> {
         TokenInfoById::<T>::mutate(token_id, |token_info| {
             token_info.increment_accounts_number();
         });
+    }
+
+    pub(crate) fn perform_initial_allocation(
+        token_id: T::TokenId,
+        targets: &BTreeMap<T::AccountId, TokenAllocationOf<T>>,
+        bloat_bond: JoyBalanceOf<T>,
+    ) {
+        let current_block = Self::current_block();
+
+        for (destination, allocation) in targets {
+            let account_data = if let Some(vsp) = allocation.vesting_schedule.as_ref() {
+                AccountDataOf::<T>::new_with_vesting_and_bond(
+                    VestingSource::InitialIssuance,
+                    VestingSchedule::from_params(current_block, allocation.amount, vsp.clone()),
+                    bloat_bond,
+                )
+            } else {
+                AccountDataOf::<T>::new_with_amount_and_bond(allocation.amount, bloat_bond)
+            };
+
+            Self::do_insert_new_account_for_token(token_id, &destination, account_data);
+        }
+    }
+
+    pub(crate) fn ensure_can_upload_data_object(
+        payload: &SingleDataObjectUploadParamsOf<T>,
+        upload_context: &UploadContextOf<T>,
+    ) -> Result<UploadParameters<T>, DispatchError> {
+        // TODO: TBD
+        Ok(UploadParameters::<T> {
+            bag_id: upload_context.bag_id.clone(),
+            deletion_prize_source_account_id: upload_context.uploader_account.clone(),
+            expected_data_size_fee: payload.expected_data_size_fee,
+            object_creation_list: vec![payload.object_creation_params.clone()],
+        })
+    }
+
+    pub(crate) fn upload_data_object(_params: &UploadParameters<T>) {
+        // TODO: TBD
     }
 }

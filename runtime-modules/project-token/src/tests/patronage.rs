@@ -19,17 +19,13 @@ fn issue_token_ok_with_patronage_tally_count_zero() {
 
     let params = TokenIssuanceParametersOf::<Test> {
         patronage_rate,
-        initial_allocation: InitialAllocation {
-            address: owner,
-            amount: init_supply,
-            vesting_schedule: None,
-        },
         ..Default::default()
-    };
+    }
+    .with_allocation(&owner, init_supply, None);
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(params, default_upload_context());
+        let _ = Token::issue_token(owner, params, default_upload_context());
 
         assert_eq!(
             Token::token_info_by_id(token_id)
@@ -48,20 +44,16 @@ fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
 
     let params = TokenIssuanceParametersOf::<Test> {
         patronage_rate,
-        initial_allocation: InitialAllocation {
-            address: owner,
-            amount: init_supply,
-            vesting_schedule: None,
-        },
         ..Default::default()
-    };
+    }
+    .with_allocation(&owner, init_supply, None);
     let config = GenesisConfigBuilder::new_empty().build();
 
     // K = 1/blocks_per_years => floor(20% * 10 * K * 1bill) = floor(K * 2bill) = 380
     let expected = balance!(380);
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(params, default_upload_context());
+        let _ = Token::issue_token(owner, params, default_upload_context());
         increase_block_number_by(blocks);
 
         assert_eq!(
@@ -79,17 +71,13 @@ fn issue_token_ok_with_correct_patronage_accounting_and_zero_supply() {
 
     let params = TokenIssuanceParametersOf::<Test> {
         patronage_rate,
-        initial_allocation: InitialAllocation {
-            address: owner,
-            amount: initial_supply,
-            vesting_schedule: None,
-        },
         ..Default::default()
-    };
+    }
+    .with_allocation(&owner, initial_supply, None);
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(params, default_upload_context());
+        let _ = Token::issue_token(owner, params, default_upload_context());
         increase_block_number_by(blocks);
 
         assert_eq!(Token::token_info_by_id(token_id).total_supply, balance!(0),);
