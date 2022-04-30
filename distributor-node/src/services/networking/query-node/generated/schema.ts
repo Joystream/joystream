@@ -1772,6 +1772,7 @@ export type Bounty = BaseGraphQlObject & {
   removedInEvent?: Maybe<BountyRemovedEvent>
   judgment?: Maybe<OracleJudgmentSubmittedEvent>
   bountycreatorcherrywithdrawaleventbounty?: Maybe<Array<BountyCreatorCherryWithdrawalEvent>>
+  worksubmittedeventbounty?: Maybe<Array<WorkSubmittedEvent>>
 }
 
 export type BountyCanceledEvent = Event &
@@ -2441,11 +2442,6 @@ export type BountyEntryStatus =
   | BountyEntryStatusWinner
   | BountyEntryStatusPassed
   | BountyEntryStatusRejected
-  | BountyEntryStatusCashedOut
-
-export type BountyEntryStatusCashedOut = {
-  reward?: Maybe<Scalars['Float']>
-}
 
 export type BountyEntryStatusPassed = {
   dummy?: Maybe<Scalars['Int']>
@@ -3314,6 +3310,9 @@ export type BountyWhereInput = {
   bountycreatorcherrywithdrawaleventbounty_none?: Maybe<BountyCreatorCherryWithdrawalEventWhereInput>
   bountycreatorcherrywithdrawaleventbounty_some?: Maybe<BountyCreatorCherryWithdrawalEventWhereInput>
   bountycreatorcherrywithdrawaleventbounty_every?: Maybe<BountyCreatorCherryWithdrawalEventWhereInput>
+  worksubmittedeventbounty_none?: Maybe<WorkSubmittedEventWhereInput>
+  worksubmittedeventbounty_some?: Maybe<WorkSubmittedEventWhereInput>
+  worksubmittedeventbounty_every?: Maybe<WorkSubmittedEventWhereInput>
   AND?: Maybe<Array<BountyWhereInput>>
   OR?: Maybe<Array<BountyWhereInput>>
 }
@@ -29379,6 +29378,8 @@ export type WorkSubmittedEvent = Event &
     deletedAt?: Maybe<Scalars['DateTime']>
     deletedById?: Maybe<Scalars['String']>
     version: Scalars['Int']
+    bounty: Bounty
+    bountyId: Scalars['String']
     entry: BountyEntry
     entryId: Scalars['String']
     /** Title of the work */
@@ -29398,6 +29399,7 @@ export type WorkSubmittedEventCreateInput = {
   inBlock: Scalars['Float']
   network: Network
   indexInBlock: Scalars['Float']
+  bounty: Scalars['ID']
   entry: Scalars['ID']
   title?: Maybe<Scalars['String']>
   description?: Maybe<Scalars['String']>
@@ -29423,6 +29425,8 @@ export enum WorkSubmittedEventOrderByInput {
   NetworkDesc = 'network_DESC',
   IndexInBlockAsc = 'indexInBlock_ASC',
   IndexInBlockDesc = 'indexInBlock_DESC',
+  BountyAsc = 'bounty_ASC',
+  BountyDesc = 'bounty_DESC',
   EntryAsc = 'entry_ASC',
   EntryDesc = 'entry_DESC',
   TitleAsc = 'title_ASC',
@@ -29436,6 +29440,7 @@ export type WorkSubmittedEventUpdateInput = {
   inBlock?: Maybe<Scalars['Float']>
   network?: Maybe<Network>
   indexInBlock?: Maybe<Scalars['Float']>
+  bounty?: Maybe<Scalars['ID']>
   entry?: Maybe<Scalars['ID']>
   title?: Maybe<Scalars['String']>
   description?: Maybe<Scalars['String']>
@@ -29495,6 +29500,7 @@ export type WorkSubmittedEventWhereInput = {
   description_startsWith?: Maybe<Scalars['String']>
   description_endsWith?: Maybe<Scalars['String']>
   description_in?: Maybe<Array<Scalars['String']>>
+  bounty?: Maybe<BountyWhereInput>
   entry?: Maybe<BountyEntryWhereInput>
   AND?: Maybe<Array<WorkSubmittedEventWhereInput>>
   OR?: Maybe<Array<WorkSubmittedEventWhereInput>>
