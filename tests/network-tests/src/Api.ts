@@ -629,11 +629,11 @@ export class Api {
   }
 
   public async getMaxNftStartingPrice(): Promise<BN> {
-    return await this.api.query.content.maxStartingPrice
+    return await this.api.query.content.maxStartingPrice.toNumber()
   }
 
   public async getMaxNftBidStep(): Promise<BN> {
-    return await this.api.query.content.maxBidStep
+    return await this.api.query.content.maxBidStep.toNumber()
   }
 
   // Create a mock channel, throws on failure

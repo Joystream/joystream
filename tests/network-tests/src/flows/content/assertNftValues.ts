@@ -12,8 +12,8 @@ export default async function assertNftValues({ api }: FlowProps): Promise<void>
   let maxNftStartingPrice = await api.getMaxNftStartingPrice()
   let maxNftBidStep = await api.getMaxNftBidStep()
 
-  assert.equal(maxNftStartingPrice, BN(1000000000000))
-  assert.equal(maxNftBidStep, BN(1000000000000))
+  assert.equal(maxNftStartingPrice, BN.new(1000000000000))
+  assert.equal(maxNftBidStep, BN.new(1000000000000))
 
   debug('Done')
 }
