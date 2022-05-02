@@ -8,8 +8,8 @@ export default async function assertNftValues({ api }: FlowProps): Promise<void>
 
   debug('Check that post migration NFT value are set')
 
-  let maxNftStartingPrice = await api.getMaxNftStartingPrice()
-  let maxNftBidStep = await api.getMaxNftBidStep()
+  const maxNftStartingPrice = await api.getMaxNftStartingPrice()
+  const maxNftBidStep = await api.getMaxNftBidStep()
 
   assert.equal(maxNftStartingPrice, 1000000000000)
   assert.equal(maxNftBidStep, 1000000000000)
