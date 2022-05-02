@@ -1,3 +1,4 @@
+import { assert } from 'chai'
 import { FlowProps } from '../../Flow'
 import { extendDebug } from '../../Debugger'
 import BN from 'bn.js'
