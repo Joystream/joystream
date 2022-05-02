@@ -628,12 +628,12 @@ export class Api {
     return (await this.api.query.content.videoCategoryById.entries<VideoCategoryId>()).length
   }
 
-  public async getMaxNftStartingPrice(): Promise<BN> {
-    return await this.api.query.content.maxStartingPrice.toNumber()
+  public async getMaxNftStartingPrice(): Promise<number> {
+    return (await this.api.query.content.maxStartingPrice()).toNumber()
   }
 
-  public async getMaxNftBidStep(): Promise<BN> {
-    return await this.api.query.content.maxBidStep.toNumber()
+  public async getMaxNftBidStep(): Promise<number> {
+    return (await this.api.query.content.maxBidStep()).toNumber()
   }
 
   // Create a mock channel, throws on failure
