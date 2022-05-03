@@ -31,6 +31,8 @@ export type DataObjectInfoFragment = {
     | { __typename: 'DataObjectTypeChannelCoverPhoto'; channel?: Types.Maybe<{ id: string }> }
     | { __typename: 'DataObjectTypeVideoMedia'; video?: Types.Maybe<{ id: string }> }
     | { __typename: 'DataObjectTypeVideoThumbnail'; video?: Types.Maybe<{ id: string }> }
+    | { __typename: 'DataObjectTypePlaylistThumbnail' }
+    | { __typename: 'DataObjectTypeVideoSubtitle' }
     | { __typename: 'DataObjectTypeUnknown' }
 }
 
