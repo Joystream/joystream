@@ -6,7 +6,7 @@ import { flags } from '@oclif/command'
 import { CreateInterface, createType } from '@joystream/types'
 import { VideoUpdateParameters } from '@joystream/types/content'
 import { VideoInputSchema } from '../../schemas/ContentDirectory'
-import { VideoMetadata } from '@joystream/metadata-protobuf'
+import { ContentMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
 import { DataObjectInfoFragment } from '../../graphql/generated/queries'
 import BN from 'bn.js'
 import { formatBalance } from '@polkadot/util'
@@ -93,7 +93,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
     )
     const videoUpdateParameters: CreateInterface<VideoUpdateParameters> = {
       assets_to_upload: assetsToUpload,
-      new_meta: metadataToBytes(VideoMetadata, meta),
+      new_meta: metadataToBytes(ContentMetadata, { videoMetadata: meta }),
       assets_to_remove: createType('BTreeSet<DataObjectId>', assetsToRemove),
       enable_comments: enableComments,
     }
