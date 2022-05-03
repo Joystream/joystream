@@ -27,6 +27,16 @@ export function getVideoDefaults(index: number, cliExamplesFolderPath: string) {
   }
 }
 
+export function getPlaylistDefaults(cliExamplesFolderPath: string, videoIds: Long[]) {
+  return {
+    title: 'Example Joystream Playlist',
+    description: 'This is an playlist of awesome videos!',
+    thumbnailPhotoPath: cliExamplesFolderPath + '/avatar-photo-1.png',
+    isPublic: true,
+    videoIds,
+  }
+}
+
 export function getVideoCategoryDefaults(index: number) {
   return {
     name: 'Active video counters Testing video category',
