@@ -1,7 +1,19 @@
 syntax = "proto2";
 
 message PlaylistMetadata {
-    optional string title = 1;
-    // Videos in the playlist
-    repeated uint64 videos = 2;
+    // Title of the playlist
+    required string title = 2;
+
+    // Description of the playlist
+    required string description = 3;
+
+    // IDs of the videos to include in playlist (in given order)
+    repeated uint64 video_ids = 4;
+    
+    // index into external [assets array](#.Assets)
+    optional uint32 thumbnail_photo = 5;
+
+    // Playlist status, whether it is public or private. If the 
+    // field is omitted the default playlist status would be public???
+    optional bool is_public = 6;
 }

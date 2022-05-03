@@ -1,5 +1,7 @@
 syntax = "proto2";
 
+import "proto/Playlist.proto";
+
 // Publication status before joystream
 message PublishedBeforeJoystream {
     // Was video published before joystream platform
@@ -85,4 +87,11 @@ message VideoMetadata {
 message VideoCategoryMetadata {
     // Category name
     optional string name = 1;
+}
+
+message ContentMetadata {
+    oneof content_metadata {
+        VideoMetadata video_metadata = 1;
+        PlaylistMetadata playlist_metadata = 2;
+    }
 }

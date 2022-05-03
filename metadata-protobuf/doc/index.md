@@ -3,6 +3,10 @@
 
 ## Table of Contents
 
+- [proto/Bounty.proto](#proto/Bounty.proto)
+    - [BountyMetadata](#.BountyMetadata)
+    - [BountyWorkData](#.BountyWorkData)
+  
 - [proto/Channel.proto](#proto/Channel.proto)
     - [ChannelCategoryMetadata](#.ChannelCategoryMetadata)
     - [ChannelMetadata](#.ChannelMetadata)
@@ -26,6 +30,9 @@
 - [proto/Playlist.proto](#proto/Playlist.proto)
     - [PlaylistMetadata](#.PlaylistMetadata)
   
+- [proto/ProposalsDiscussion.proto](#proto/ProposalsDiscussion.proto)
+    - [ProposalsDiscussionPostMetadata](#.ProposalsDiscussionPostMetadata)
+  
 - [proto/Series.proto](#proto/Series.proto)
     - [SeasonMetadata](#.SeasonMetadata)
     - [SeriesMetadata](#.SeriesMetadata)
@@ -41,6 +48,7 @@
     - [GeographicalArea.Continent](#.GeographicalArea.Continent)
   
 - [proto/Video.proto](#proto/Video.proto)
+    - [ContentMetadata](#.ContentMetadata)
     - [License](#.License)
     - [MediaType](#.MediaType)
     - [PublishedBeforeJoystream](#.PublishedBeforeJoystream)
@@ -61,6 +69,56 @@
     - [OpeningMetadata.ApplicationFormQuestion.InputType](#.OpeningMetadata.ApplicationFormQuestion.InputType)
   
 - [Scalar Value Types](#scalar-value-types)
+
+
+
+<a name="proto/Bounty.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## proto/Bounty.proto
+
+
+
+<a name=".BountyMetadata"></a>
+
+### BountyMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) | optional | Bounty title |
+| description | [string](#string) | optional | Bounty description |
+| discussionThread | [uint64](#uint64) | optional | Id of the forum thread used to discuss the bounty |
+| banner_image_uri | [string](#string) | optional | Image uri of the bounty&#39;s banner |
+
+
+
+
+
+
+<a name=".BountyWorkData"></a>
+
+### BountyWorkData
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) | optional | Title of the work |
+| description | [string](#string) | optional | Description which contains the work itself as a URL, a BLOB, or just text |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
 
 
 
@@ -236,7 +294,8 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) | optional | Member&#39;s real name |
-| avatar | [uint32](#uint32) | optional | Member&#39;s avatar - index into external [assets array](#.Assets) |
+| avatar_object | [uint32](#uint32) | optional | Member&#39;s avatar - index into external [assets array](#.Assets) |
+| avatar_uri | [string](#string) | optional | Url to member&#39;s avatar |
 | about | [string](#string) | optional | Member&#39;s md-formatted about text |
 
 
@@ -304,8 +363,43 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| title | [string](#string) | optional |  |
-| videos | [uint64](#uint64) | repeated | Videos in the playlist |
+| title | [string](#string) | required | Title of the playlist |
+| description | [string](#string) | required | Description of the playlist |
+| video_ids | [uint64](#uint64) | repeated | IDs of the videos to include in playlist (in given order) |
+| thumbnail_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
+| is_public | [bool](#bool) | optional | Playlist status, whether it is public or private. If the field is omitted the default playlist status would be public??? |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="proto/ProposalsDiscussion.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## proto/ProposalsDiscussion.proto
+
+
+
+<a name=".ProposalsDiscussionPostMetadata"></a>
+
+### ProposalsDiscussionPostMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| text | [string](#string) | optional | Post text content (md-formatted) |
+| repliesTo | [uint32](#uint32) | optional | Id of the post that given post replies to (if any) |
 
 
 
@@ -515,6 +609,22 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 
 
 
+<a name=".ContentMetadata"></a>
+
+### ContentMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_metadata | [VideoMetadata](#VideoMetadata) | optional |  |
+| playlist_metadata | [PlaylistMetadata](#PlaylistMetadata) | optional |  |
+
+
+
+
+
+
 <a name=".License"></a>
 
 ### License
@@ -670,6 +780,7 @@ Publication status before joystream
 | expected_ending_timestamp | [uint32](#uint32) | optional | Expected time when the opening will close (Unix timestamp) |
 | application_details | [string](#string) | optional | Md-formatted text explaining the application process |
 | application_form_questions | [OpeningMetadata.ApplicationFormQuestion](#OpeningMetadata.ApplicationFormQuestion) | repeated | List of questions that should be answered during application |
+| title | [string](#string) | optional |  |
 
 
 
