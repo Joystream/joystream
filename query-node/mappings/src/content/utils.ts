@@ -6,6 +6,7 @@ import {
   ILicense,
   IMediaType,
   IChannelMetadata,
+  IPlaylistMetadata,
 } from '@joystream/metadata-protobuf'
 import { integrateMeta, isSet, isValidLanguageCode } from '@joystream/metadata-protobuf/utils'
 import { invalidMetadata, inconsistentState, logger, deterministicEntityId } from '../common'
@@ -33,12 +34,16 @@ import {
   ContentActorMember,
   ContentActor as ContentActorVariant,
   Curator,
+  Playlist,
+  DataObjectTypePlaylistThumbnail,
 } from 'query-node/dist/model'
 // Joystream types
 import { ContentActor, StorageAssets } from '@joystream/types/augment'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import BN from 'bn.js'
 import { getMostRecentlyCreatedDataObjects } from '../storage/utils'
+import { VideoId } from '@joystream/types/content'
+import _ from 'lodash'
 
 const ASSET_TYPES = {
   channel: [
@@ -61,6 +66,13 @@ const ASSET_TYPES = {
     },
     {
       DataObjectTypeConstructor: DataObjectTypeVideoThumbnail,
+      metaFieldName: 'thumbnailPhoto',
+      schemaFieldName: 'thumbnailPhoto',
+    },
+  ],
+  playlist: [
+    {
+      DataObjectTypeConstructor: DataObjectTypePlaylistThumbnail,
       metaFieldName: 'thumbnailPhoto',
       schemaFieldName: 'thumbnailPhoto',
     },
@@ -119,6 +131,34 @@ async function processVideoAssets(
           dataObjectType.videoId = video.id
           asset.type = dataObjectType
           video[schemaFieldName] = asset
+          await store.save<StorageDataObject>(asset)
+        }
+      }
+    })
+  )
+}
+
+async function processPlaylistAssets(
+  { event, store }: EventContext & StoreContext,
+  assets: StorageDataObject[],
+  playlist: Playlist,
+  meta: DecodedMetadataObject<IPlaylistMetadata>
+) {
+  await Promise.all(
+    ASSET_TYPES.playlist.map(async ({ metaFieldName, schemaFieldName, DataObjectTypeConstructor }) => {
+      const newAssetIndex = meta[metaFieldName]
+      const currentAsset = playlist[schemaFieldName]
+      if (isSet(newAssetIndex)) {
+        const asset = findAssetByIndex(assets, newAssetIndex)
+        if (asset) {
+          if (currentAsset) {
+            currentAsset.unsetAt = new Date(event.blockTimestamp)
+            await store.save<StorageDataObject>(currentAsset)
+          }
+          const dataObjectType = new DataObjectTypeConstructor()
+          dataObjectType.playlistId = playlist.id
+          asset.type = dataObjectType
+          playlist[schemaFieldName] = asset
           await store.save<StorageDataObject>(asset)
         }
       }
@@ -194,6 +234,28 @@ export async function processVideoMetadata(
   }
 
   return video
+}
+
+export async function processPlaylistMetadata(
+  ctx: EventContext & StoreContext,
+  playlist: Playlist,
+  meta: DecodedMetadataObject<IPlaylistMetadata>,
+  assetsParams?: StorageAssets
+): Promise<Playlist> {
+  const { store } = ctx
+  const assets = assetsParams ? await processNewAssets(ctx, assetsParams) : []
+
+  integrateMeta(playlist, meta, ['title', 'description', 'isPublic'])
+
+  await processPlaylistAssets(ctx, assets, playlist, meta)
+
+  if (meta.videoIds) {
+    playlist.videos = await processPlaylistVideos(store, (meta.videoIds as unknown) as VideoId[])
+    playlist.publicUncensoredVideosCount = _.sumBy(playlist.videos, ({ isCensored }) => Number(!isCensored))
+    playlist.publicUncensoredVideosDuration = _.sumBy(playlist.videos, ({ duration }) => duration || 0)
+  }
+
+  return playlist
 }
 
 function findAssetByIndex(assets: StorageDataObject[], index: number, name?: string): StorageDataObject | null {
@@ -574,4 +636,17 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
 
   // remove data object
   await store.remove<StorageDataObject>(dataObject)
+}
+
+export async function processPlaylistVideos(store: DatabaseManager, videoIds: VideoId[]): Promise<Video[]> {
+  const playlistVideos = (
+    await Promise.all(videoIds.map((videoId) => store.get(Video, { where: { id: videoId } })))
+  ).filter((video, i) => {
+    if (!video) {
+      invalidMetadata('Non-existing video requested to be the part of playlist', videoIds[i])
+    }
+    return video !== undefined
+  }) as Video[]
+
+  return playlistVideos
 }
