@@ -168,6 +168,21 @@ fragment ChannelNftCollectorFields on ChannelNftCollectors {
   lastIncreaseAt
 }
 
+fragment PlaylistFields on Playlist {
+  id
+  channel {
+    ...ChannelFields
+  }
+  title
+  description
+  videos {
+    id
+  }
+  publicUncensoredVideosCount
+  publicUncensoredVideosDuration
+  isPublic
+}
+
 query getChannelById($id: ID!) {
   channelByUniqueInput(where: { id: $id }) {
     ...ChannelFields
@@ -201,5 +216,11 @@ query getBidsByMemberId($videoId: ID!, $memberId: ID!) {
 query getChannelNftCollectors {
   channelNftCollectors {
     ...ChannelNftCollectorFields
+  }
+}
+
+query getPlaylistById($id: ID!) {
+  playlistByUniqueInput(where: { id: $id }) {
+    ...PlaylistFields
   }
 }
