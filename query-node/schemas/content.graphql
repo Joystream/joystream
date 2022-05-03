@@ -75,6 +75,11 @@ type Channel @entity {
 
   "Owners of video NFTs belonging to this channel."
   channelNftCollectors: [ChannelNftCollectors!]! @derivedFrom(field: "channel")
+
+  ##########################
+
+  "List of channel's playlists"
+  channelPlaylists: [Playlist!] @derivedFrom(field: "channel")
 }
 
 type VideoCategory @entity {
@@ -152,6 +157,9 @@ type Video @entity {
 
   "Is video featured or not"
   isFeatured: Boolean!
+
+  "List of playlists this video is part of."
+  videoInPlaylists: [Playlist!] @derivedFrom(field: "videos")
 }
 
 type VideoMediaMetadata @entity {
@@ -198,4 +206,34 @@ type License @entity {
 
   "Custom license content"
   custom_text: String
+}
+
+type Playlist @entity {
+  "METAPROTOCOL-{network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Playlist associated channel"
+  channel: Channel!
+
+  "Title of the playlist"
+  title: String!
+
+  "Description of the playlist"
+  description: String!
+
+  # Many-to-many relationship between playlists and videos
+  "List of videos in the playlist"
+  videos: [Video!]!
+
+  "Number of public uncensored videos in the playlist"
+  publicUncensoredVideosCount: Int
+
+  "Total duration of public uncensored videos in the playlist"
+  publicUncensoredVideosDuration: Int
+
+  "Whether the Playlist is supposed to be publicly displayed"
+  isPublic: Boolean
+
+  "Playlist thumbnail asset (If not provided, the thumbnail of the first video will be used)"
+  thumbnailPhoto: StorageDataObject
 }

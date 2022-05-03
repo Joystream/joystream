@@ -190,6 +190,11 @@ type DataObjectTypeVideoThumbnail @variant {
   video: Video!
 }
 
+type DataObjectTypePlaylistThumbnail @variant {
+  "Related playlist entity"
+  playlist: Playlist!
+}
+
 type DataObjectTypeUnknown @variant {
   _phantom: Int
 }
@@ -199,6 +204,7 @@ union DataObjectType =
   | DataObjectTypeChannelCoverPhoto
   | DataObjectTypeVideoMedia
   | DataObjectTypeVideoThumbnail
+  | DataObjectTypePlaylistThumbnail
   | DataObjectTypeUnknown
 
 type StorageDataObject @entity {
@@ -229,6 +235,9 @@ type StorageDataObject @entity {
 
   "Video that has this data object associated as thumbnail photo."
   videoThumbnail: Video @derivedFrom(field: "thumbnailPhoto")
+
+  "Video that has this data object associated as thumbnail photo."
+  playlistThumbnail: Playlist @derivedFrom(field: "thumbnailPhoto")
 
   "Video that has this data object associated as media."
   videoMedia: Video @derivedFrom(field: "media")
