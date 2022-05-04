@@ -217,15 +217,6 @@ decl_error! {
         /// Partecipant is not a member
         ReplyDoesNotExist,
 
-        /// cannot edit video post
-        CannotEditDescription,
-
-        /// failed witness verification
-        WitnessVerificationFailed,
-
-        /// witness not provided
-        WitnessNotProvided,
-
         /// Insufficient balance
         UnsufficientBalance,
 
@@ -277,6 +268,9 @@ decl_error! {
         /// Cannot accept the channel transfer: provided commitment parameters doesn't match with
         /// channel pending transfer parameters.
         InvalidChannelTransferCommitmentParams,
+
+        // Insufficient permissions to perform given action as a channel agent
+        ChannelAgentInsufficientPermissions,
 
         /// Incorrect channel owner for an operation.
         InvalidChannelOwner,

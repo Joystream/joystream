@@ -14,35 +14,18 @@ import {
 } from '@polkadot/types'
 import { Balance } from '@polkadot/types/interfaces'
 import { RegistryTypes } from '@polkadot/types/types'
-import { JoyEnum, JoyStructDecorated, WorkingGroup, BalanceOf, MemberId } from './common'
+import {
+  JoyEnum,
+  JoyStructDecorated,
+  WorkingGroup,
+  BalanceOf,
+  MemberId,
+  InputValidationLengthConstraintU64,
+} from './common'
 import { WorkerId } from './working-group'
 
 export class DataObjectId extends u64 {}
 export class StorageBucketId extends u64 {}
-
-export type IStorageBucketsPerBagValueConstraint = {
-  min: u64
-  max_min_diff: u64
-}
-
-export class StorageBucketsPerBagValueConstraint
-  extends JoyStructDecorated({
-    min: u64,
-    max_min_diff: u64,
-  })
-  implements IStorageBucketsPerBagValueConstraint {}
-
-export type IDistributionBucketsPerBagValueConstraint = {
-  min: u64
-  max_min_diff: u64
-}
-
-export class DistributionBucketsPerBagValueConstraint
-  extends JoyStructDecorated({
-    min: u64,
-    max_min_diff: u64,
-  })
-  implements IStorageBucketsPerBagValueConstraint {}
 
 export type IDataObject = {
   accepted: bool
@@ -212,6 +195,10 @@ export type IUploadParameters = {
   objectCreationList: Vec<DataObjectCreationParameters>
   deletionPrizeSourceAccountId: AccountId
   expectedDataSizeFee: BalanceOf
+  expectedDynamicBagDeletionPrize: BalanceOf
+  expectedDataObjectDeletionPrize: BalanceOf
+  storageBuckets: BTreeSet<StorageBucketId>
+  distributionBuckets: BTreeSet<DistributionBucketId>
 }
 
 export class UploadParameters
@@ -222,6 +209,8 @@ export class UploadParameters
     expectedDataSizeFee: BalanceOf,
     expectedDynamicBagDeletionPrize: BalanceOf,
     expectedDataObjectDeletionPrize: BalanceOf,
+    storageBuckets: BTreeSet.with(StorageBucketId),
+    distributionBuckets: BTreeSet.with(DistributionBucketId),
   })
   implements IUploadParameters {}
 
@@ -265,10 +254,12 @@ export class DistributionBucketFamily
 
 export class DynamicBagCreationPolicyDistributorFamiliesMap extends BTreeMap.with(DistributionBucketFamilyId, u32) {}
 
+export class StorageBucketsPerBagValueConstraint extends InputValidationLengthConstraintU64 {}
+
+export class DistributionBucketsPerBagValueConstraint extends InputValidationLengthConstraintU64 {}
+
 export const storageTypes: RegistryTypes = {
   StorageBucketId,
-  StorageBucketsPerBagValueConstraint,
-  DistributionBucketsPerBagValueConstraint,
   DataObjectId,
   DynamicBagId,
   Voucher,
@@ -296,6 +287,8 @@ export const storageTypes: RegistryTypes = {
   DistributionBucketFamilyId,
   DistributionBucket,
   DistributionBucketFamily,
+  StorageBucketsPerBagValueConstraint,
+  DistributionBucketsPerBagValueConstraint,
   // Utility types:
   DataObjectIdMap,
   DistributionBucketIndexSet,

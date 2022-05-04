@@ -7,9 +7,9 @@
     },
     "ThreadId": "u64",
     "PostId": "u64",
-    "InputValidationLengthConstraint": {
-        "min": "u16",
-        "max_min_diff": "u16"
+    "InputValidationLengthConstraintU64": {
+        "min": "u64",
+        "max_min_diff": "u64"
     },
     "WorkingGroup": {
         "_enum": [
@@ -232,14 +232,6 @@
         ]
     },
     "StorageBucketId": "u64",
-    "StorageBucketsPerBagValueConstraint": {
-        "min": "u64",
-        "max_min_diff": "u64"
-    },
-    "DistributionBucketsPerBagValueConstraint": {
-        "min": "u64",
-        "max_min_diff": "u64"
-    },
     "DataObjectId": "u64",
     "DynamicBagId": {
         "_enum": {
@@ -324,7 +316,9 @@
         "deletionPrizeSourceAccountId": "GenericAccountId",
         "expectedDataSizeFee": "u128",
         "expectedDynamicBagDeletionPrize": "u128",
-        "expectedDataObjectDeletionPrize": "u128"
+        "expectedDataObjectDeletionPrize": "u128",
+        "storageBuckets": "BTreeSet<StorageBucketId>",
+        "distributionBuckets": "BTreeSet<DistributionBucketId>"
     },
     "StorageBucketIdSet": "BTreeSet<StorageBucketId>",
     "DataObjectIdSet": "BTreeSet<DataObjectId>",
@@ -358,6 +352,14 @@
     },
     "DistributionBucketFamily": {
         "next_distribution_bucket_index": "DistributionBucketIndex"
+    },
+    "StorageBucketsPerBagValueConstraint": {
+        "min": "u64",
+        "max_min_diff": "u64"
+    },
+    "DistributionBucketsPerBagValueConstraint": {
+        "min": "u64",
+        "max_min_diff": "u64"
     },
     "DataObjectIdMap": "BTreeMap<DataObjectId,DataObject>",
     "DistributionBucketIndexSet": "BTreeSet<DistributionBucketIndex>",
@@ -663,7 +665,7 @@
     "CuratorId": "u64",
     "CuratorGroupId": "u64",
     "CuratorGroup": {
-        "curators": "BTreeSet<CuratorId>",
+        "curators": "BTreeMap<CuratorId,ChannelAgentPermissions>",
         "active": "bool",
         "permissions_by_level": "ModerationPermissionsByLevel"
     },
@@ -681,7 +683,7 @@
     "Channel": {
         "owner": "ChannelOwner",
         "num_videos": "u64",
-        "collaborators": "BTreeSet<MemberId>",
+        "collaborators": "BTreeMap<MemberId,ChannelAgentPermissions>",
         "cumulative_payout_earned": "u128",
         "privilege_level": "ChannelPrivilegeLevel",
         "paused_features": "BTreeSet<PausableChannelFeature>",
@@ -705,7 +707,7 @@
     "ChannelCreationParameters": {
         "assets": "Option<StorageAssets>",
         "meta": "Option<Bytes>",
-        "collaborators": "BTreeSet<MemberId>",
+        "collaborators": "BTreeMap<MemberId,ChannelAgentPermissions>",
         "storage_buckets": "BTreeSet<u64>",
         "distribution_Bucket": "BTreeSet<u64>",
         "expected_dynamic_bag_deletion_prize": "u128",
@@ -715,7 +717,7 @@
         "assets_to_upload": "Option<StorageAssets>",
         "new_meta": "Option<Bytes>",
         "assets_to_remove": "BTreeSet<DataObjectId>",
-        "collaborators": "Option<BTreeSet<MemberId>>",
+        "collaborators": "Option<BTreeMap<MemberId,ChannelAgentPermissions>>",
         "expected_data_object_deletion_prize": "u128"
     },
     "Video": {
@@ -881,5 +883,23 @@
             "PendingTransfer": "ChannelTransferStatus_PendingTransfer"
         }
     },
+    "ChannelActionPermission": {
+        "_enum": [
+            "UpdateChannelMetadata",
+            "ManageNonVideoChannelAssets",
+            "ManageChannelCollaborators",
+            "UpdateVideoMetadata",
+            "AddVideo",
+            "ManageVideoAssets",
+            "DeleteChannel",
+            "DeleteVideo",
+            "ManageVideoNfts",
+            "AgentRemark",
+            "TransferChannel",
+            "ClaimChannelReward",
+            "WithdrawFromChannelBalance"
+        ]
+    },
+    "ChannelAgentPermissions": "BTreeSet<ChannelActionPermission>",
     "AccountInfo": "AccountInfoWithRefCount"
 }

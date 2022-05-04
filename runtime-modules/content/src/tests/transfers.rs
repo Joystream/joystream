@@ -91,7 +91,10 @@ fn update_channel_transfer_status_fails_with_non_channel_owner() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel();
-        let curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
+        let curator_group_id = add_curator_to_new_group(
+            DEFAULT_CURATOR_ID,
+            &[ChannelActionPermission::TransferChannel],
+        );
 
         UpdateChannelTransferStatusFixture::default()
             .with_origin(RawOrigin::Signed(DEFAULT_CURATOR_ACCOUNT_ID))
@@ -199,7 +202,7 @@ fn accept_transfer_status_fails_with_non_channel_owner() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel();
-        let curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
+        add_curator_to_new_group(DEFAULT_CURATOR_ID, &[]);
 
         UpdateChannelTransferStatusFixture::default()
             .with_transfer_status(ChannelTransferStatus::PendingTransfer(PendingTransfer {
@@ -210,8 +213,7 @@ fn accept_transfer_status_fails_with_non_channel_owner() {
 
         AcceptChannelTransferFixture::default()
             .with_origin(RawOrigin::Signed(DEFAULT_CURATOR_ACCOUNT_ID))
-            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
+            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()))
     })
 }
 
@@ -247,15 +249,13 @@ fn accept_transfer_status_fails_with_invalid_balance_for_curator_groups() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         let curator_group_id = Content::next_curator_group_id();
-        create_default_curator_owned_channel(BAG_DELETION_PRIZE);
-
-        let content_actor = ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID);
+        create_default_curator_owned_channel(BAG_DELETION_PRIZE, &[]);
 
         let price = INITIAL_BALANCE + 1; // higher than initial balance
         UpdateChannelTransferStatusFixture::default()
-            .with_origin(RawOrigin::Signed(DEFAULT_CURATOR_ACCOUNT_ID))
+            .with_origin(RawOrigin::Signed(LEAD_ACCOUNT_ID))
             .with_new_channel_owner(ChannelOwner::CuratorGroup(curator_group_id))
-            .with_actor(content_actor)
+            .with_actor(ContentActor::Lead)
             .with_price(price)
             .call_and_assert(Ok(()));
 
@@ -263,8 +263,7 @@ fn accept_transfer_status_fails_with_invalid_balance_for_curator_groups() {
 
         AcceptChannelTransferFixture::default()
             .with_price(price)
-            .with_origin(RawOrigin::Signed(DEFAULT_CURATOR_ACCOUNT_ID))
-            .with_actor(content_actor)
+            .with_origin(RawOrigin::Signed(LEAD_ACCOUNT_ID))
             .call_and_assert(Err(Error::<Test>::InsufficientBalanceForTransfer.into()));
     })
 }
@@ -290,7 +289,6 @@ fn accept_transfer_status_succeeds_for_members_with_price() {
 
         AcceptChannelTransferFixture::default()
             .with_origin(RawOrigin::Signed(SECOND_MEMBER_ACCOUNT_ID))
-            .with_actor(ContentActor::Member(SECOND_MEMBER_ID))
             .with_price(price)
             .call_and_assert(Ok(()));
 
@@ -313,16 +311,13 @@ fn accept_transfer_status_succeeds_for_curators_to_members_with_price() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        let curator_group_id = Content::next_curator_group_id();
-        create_default_curator_owned_channel(BAG_DELETION_PRIZE);
-
-        let content_actor = ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID);
+        create_default_curator_owned_channel(BAG_DELETION_PRIZE, &[]);
 
         let price = 100;
         UpdateChannelTransferStatusFixture::default()
-            .with_origin(RawOrigin::Signed(DEFAULT_CURATOR_ACCOUNT_ID))
+            .with_origin(RawOrigin::Signed(LEAD_ACCOUNT_ID))
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
-            .with_actor(content_actor)
+            .with_actor(ContentActor::Lead)
             .with_price(price)
             .call_and_assert(Ok(()));
 
@@ -331,7 +326,6 @@ fn accept_transfer_status_succeeds_for_curators_to_members_with_price() {
 
         AcceptChannelTransferFixture::default()
             .with_origin(RawOrigin::Signed(SECOND_MEMBER_ACCOUNT_ID))
-            .with_actor(ContentActor::Member(SECOND_MEMBER_ID))
             .with_price(price)
             .call_and_assert(Ok(()));
 
@@ -355,12 +349,11 @@ fn accept_transfer_status_succeeds_for_members_to_curators_with_price() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel();
 
-        let curator_group_id = super::curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
-        let content_actor = ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID);
+        let curator_group_id = Content::next_curator_group_id();
 
         let price = 100;
         UpdateChannelTransferStatusFixture::default()
-            .with_new_channel_owner(actor_to_channel_owner::<Test>(&content_actor).unwrap())
+            .with_new_channel_owner(ChannelOwner::CuratorGroup(curator_group_id))
             .with_price(price)
             .call_and_assert(Ok(()));
 
@@ -368,8 +361,7 @@ fn accept_transfer_status_succeeds_for_members_to_curators_with_price() {
         <Test as Trait>::ContentWorkingGroup::set_budget(INITIAL_BALANCE);
 
         AcceptChannelTransferFixture::default()
-            .with_origin(RawOrigin::Signed(DEFAULT_CURATOR_ACCOUNT_ID))
-            .with_actor(content_actor)
+            .with_origin(RawOrigin::Signed(LEAD_ACCOUNT_ID))
             .with_price(price)
             .call_and_assert(Ok(()));
 

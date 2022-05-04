@@ -81,7 +81,7 @@ impl CreateCuratorGroupFixture {
 
 pub struct CreateChannelFixture {
     sender: AccountId,
-    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_owner: ChannelOwner<MemberId, CuratorGroupId>,
     params: ChannelCreationParameters<Test>,
 }
 
@@ -89,11 +89,11 @@ impl CreateChannelFixture {
     pub fn default() -> Self {
         Self {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
-            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_owner: ChannelOwner::Member(DEFAULT_MEMBER_ID),
             params: ChannelCreationParameters::<Test> {
                 assets: None,
                 meta: None,
-                collaborators: BTreeSet::new(),
+                collaborators: BTreeMap::new(),
                 storage_buckets: BTreeSet::new(),
                 distribution_buckets: BTreeSet::new(),
                 expected_dynamic_bag_deletion_prize: Default::default(),
@@ -115,8 +115,11 @@ impl CreateChannelFixture {
         Self { sender, ..self }
     }
 
-    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
-        Self { actor, ..self }
+    pub fn with_channel_owner(self, channel_owner: ChannelOwner<MemberId, CuratorGroupId>) -> Self {
+        Self {
+            channel_owner,
+            ..self
+        }
     }
 
     pub fn with_assets(self, assets: StorageAssets<Test>) -> Self {
@@ -129,7 +132,10 @@ impl CreateChannelFixture {
         }
     }
 
-    pub fn with_collaborators(self, collaborators: BTreeSet<MemberId>) -> Self {
+    pub fn with_collaborators(
+        self,
+        collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
+    ) -> Self {
         Self {
             params: ChannelCreationParameters::<Test> {
                 collaborators: collaborators,
@@ -167,7 +173,7 @@ impl CreateChannelFixture {
         let channel_bag_id = Content::bag_id_for_channel(&channel_id);
         let beg_obj_id = storage::NextDataObjectId::<Test>::get();
         let actual_result =
-            Content::create_channel(origin, self.actor.clone(), self.params.clone());
+            Content::create_channel(origin, self.channel_owner.clone(), self.params.clone());
         let end_obj_id = storage::NextDataObjectId::<Test>::get();
 
         assert_eq!(actual_result, expected_result);
@@ -188,14 +194,12 @@ impl CreateChannelFixture {
             assert_ok!(Storage::<Test>::ensure_bag_exists(&channel_bag_id));
 
             // event correctly deposited
-            let owner = actor_to_channel_owner::<Test>(&self.actor).unwrap();
             assert_eq!(
                 System::events().last().unwrap().event,
                 MetaEvent::content(RawEvent::ChannelCreated(
-                    self.actor.clone(),
                     channel_id,
                     Channel::<Test> {
-                        owner: owner,
+                        owner: self.channel_owner.clone(),
                         collaborators: self.params.collaborators.clone(),
                         num_videos: Zero::zero(),
                         cumulative_payout_earned: Zero::zero(),
@@ -285,6 +289,16 @@ impl CreateVideoFixture {
         Self {
             params: VideoCreationParameters::<Test> {
                 auto_issue_nft: Some(params),
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_opt_assets(self, assets: Option<StorageAssets<Test>>) -> Self {
+        Self {
+            params: VideoCreationParameters::<Test> {
+                assets,
                 ..self.params
             },
             ..self
@@ -397,6 +411,16 @@ impl UpdateChannelFixture {
         }
     }
 
+    pub fn with_new_meta(self, new_meta: Option<Vec<u8>>) -> Self {
+        Self {
+            params: ChannelUpdateParameters::<Test> {
+                new_meta,
+                ..self.params.clone()
+            },
+            ..self
+        }
+    }
+
     pub fn with_data_object_deletion_prize(self, expected_data_object_deletion_prize: u64) -> Self {
         Self {
             params: ChannelUpdateParameters::<Test> {
@@ -439,7 +463,10 @@ impl UpdateChannelFixture {
         }
     }
 
-    pub fn with_collaborators(self, collaborators: BTreeSet<MemberId>) -> Self {
+    pub fn with_collaborators(
+        self,
+        collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
+    ) -> Self {
         Self {
             params: ChannelUpdateParameters::<Test> {
                 collaborators: Some(collaborators),
@@ -631,6 +658,16 @@ impl UpdateVideoFixture {
         }
     }
 
+    pub fn with_new_meta(self, new_meta: Option<Vec<u8>>) -> Self {
+        Self {
+            params: VideoUpdateParameters::<Test> {
+                new_meta,
+                ..self.params.clone()
+            },
+            ..self
+        }
+    }
+
     pub fn with_data_object_deletion_prize(self, expected_data_object_deletion_prize: u64) -> Self {
         Self {
             params: VideoUpdateParameters::<Test> {
@@ -682,6 +719,7 @@ impl UpdateVideoFixture {
             ..self
         }
     }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
         let balance_pre = Balances::<Test>::usable_balance(self.sender);
@@ -1778,6 +1816,13 @@ impl UpdateChannelTransferStatusFixture {
         }
     }
 
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self {
+            origin: RawOrigin::Signed(sender),
+            ..self
+        }
+    }
+
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         Self { origin, ..self }
     }
@@ -1909,7 +1954,6 @@ impl UpdateChannelTransferStatusFixture {
 pub struct AcceptChannelTransferFixture {
     origin: RawOrigin<u64>,
     channel_id: u64,
-    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     params: TransferParameters<MemberId, BalanceOf<Test>>,
 }
 
@@ -1918,17 +1962,12 @@ impl AcceptChannelTransferFixture {
         Self {
             origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
             channel_id: ChannelId::one(),
-            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             params: TransferParameters::default(),
         }
     }
 
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         Self { origin, ..self }
-    }
-
-    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
-        Self { actor, ..self }
     }
 
     pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
@@ -1956,7 +1995,6 @@ impl AcceptChannelTransferFixture {
         let actual_result = Content::accept_channel_transfer(
             self.origin.clone().into(),
             self.channel_id,
-            self.actor.clone(),
             self.params.clone(),
         );
 
@@ -1981,7 +2019,6 @@ impl AcceptChannelTransferFixture {
                 System::events().last().unwrap().event,
                 MetaEvent::content(RawEvent::ChannelTransferAccepted(
                     self.channel_id,
-                    self.actor.clone(),
                     self.params.clone()
                 ))
             );
@@ -2039,6 +2076,1388 @@ impl ClaimCouncilRewardFixture {
     }
 }
 
+pub struct IssueNftFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: VideoId,
+    params: NftIssuanceParameters<Test>,
+}
+
+impl IssueNftFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id: VideoId::one(),
+            params: NftIssuanceParameters::<Test>::default(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_params(self, params: NftIssuanceParameters<Test>) -> Self {
+        Self { params, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let video_pre = Content::video_by_id(self.video_id);
+
+        let actual_result = Content::issue_nft(
+            Origin::signed(self.sender.clone()),
+            self.actor.clone(),
+            self.video_id,
+            self.params.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let video_post = Content::video_by_id(self.video_id);
+
+        let expected_nft_status = match self.params.init_transactional_status.clone() {
+            InitTransactionalStatus::<Test>::Idle => TransactionalStatus::<Test>::Idle,
+            InitTransactionalStatus::<Test>::InitiatedOfferToMember(member, balance) => {
+                TransactionalStatus::<Test>::InitiatedOfferToMember(member, balance)
+            }
+            InitTransactionalStatus::<Test>::BuyNow(balance) => {
+                TransactionalStatus::<Test>::BuyNow(balance)
+            }
+            InitTransactionalStatus::<Test>::EnglishAuction(params) => {
+                TransactionalStatus::<Test>::EnglishAuction(EnglishAuction::<Test>::new(params))
+            }
+            // FIXME: Impossible currently!
+            InitTransactionalStatus::<Test>::OpenAuction(params) => {
+                TransactionalStatus::<Test>::OpenAuction(OpenAuction::<Test>::new(
+                    params,
+                    One::one(),
+                ))
+            }
+        };
+
+        if actual_result.is_ok() {
+            assert!(video_post.nft_status.is_some());
+            let nft_status = video_post.nft_status.unwrap();
+            assert_eq!(
+                nft_status.owner,
+                self.params
+                    .non_channel_owner
+                    .map_or(NftOwner::ChannelOwner, |m_id| NftOwner::Member(m_id))
+            );
+            assert_eq!(nft_status.transactional_status, expected_nft_status);
+            assert_eq!(nft_status.creator_royalty, self.params.royalty);
+            assert_eq!(
+                nft_status.open_auctions_nonce,
+                <Test as Trait>::OpenAuctionId::zero()
+            );
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::NftIssued(
+                    self.actor.clone(),
+                    self.video_id,
+                    self.params.clone()
+                ))
+            );
+        } else {
+            assert_eq!(video_post, video_pre);
+        }
+    }
+}
+
+pub struct StartOpenAuctionFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: VideoId,
+    params: OpenAuctionParams<Test>,
+}
+
+impl StartOpenAuctionFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id: VideoId::one(),
+            params: OpenAuctionParams::<Test> {
+                starting_price: Content::min_starting_price(),
+                buy_now_price: None,
+                bid_lock_duration: Content::min_bid_lock_duration(),
+                whitelist: BTreeSet::new(),
+            },
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_params(self, params: OpenAuctionParams<Test>) -> Self {
+        Self { params, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let video_pre = Content::video_by_id(self.video_id);
+
+        let actual_result = Content::start_open_auction(
+            Origin::signed(self.sender.clone()),
+            self.actor.clone(),
+            self.video_id,
+            self.params.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let video_post = Content::video_by_id(self.video_id);
+
+        if actual_result.is_ok() {
+            assert!(video_pre.nft_status.is_some());
+            assert!(video_post.nft_status.is_some());
+            let pre_nft_status = video_pre.nft_status.unwrap();
+            let nft_status = video_post.nft_status.unwrap();
+            assert_eq!(
+                nft_status,
+                Nft::<Test> {
+                    transactional_status: TransactionalStatus::<Test>::OpenAuction(OpenAuction::<
+                        Test,
+                    >::new(
+                        self.params.clone(),
+                        pre_nft_status.open_auctions_nonce.saturating_add(1)
+                    )),
+                    open_auctions_nonce: pre_nft_status.open_auctions_nonce.saturating_add(1),
+                    ..pre_nft_status
+                }
+            );
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::OpenAuctionStarted(
+                    self.actor.clone(),
+                    self.video_id,
+                    self.params.clone(),
+                    pre_nft_status.open_auctions_nonce.saturating_add(1)
+                ))
+            );
+        } else {
+            assert_eq!(video_post, video_pre);
+        }
+    }
+}
+
+pub struct StartEnglishAuctionFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: VideoId,
+    params: EnglishAuctionParams<Test>,
+}
+
+impl StartEnglishAuctionFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id: VideoId::one(),
+            params: EnglishAuctionParams::<Test> {
+                starting_price: Content::min_starting_price(),
+                buy_now_price: None,
+                extension_period: Content::min_auction_extension_period(),
+                auction_duration: Content::min_auction_duration(),
+                min_bid_step: Content::min_bid_step(),
+                end: 10,
+                whitelist: BTreeSet::new(),
+            },
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_params(self, params: EnglishAuctionParams<Test>) -> Self {
+        Self { params, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let video_pre = Content::video_by_id(self.video_id);
+
+        let actual_result = Content::start_english_auction(
+            Origin::signed(self.sender.clone()),
+            self.actor.clone(),
+            self.video_id,
+            self.params.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let video_post = Content::video_by_id(self.video_id);
+
+        if actual_result.is_ok() {
+            assert!(video_pre.nft_status.is_some());
+            assert!(video_post.nft_status.is_some());
+            let pre_nft_status = video_pre.nft_status.unwrap();
+            let nft_status = video_post.nft_status.unwrap();
+            assert_eq!(
+                nft_status,
+                Nft::<Test> {
+                    transactional_status: TransactionalStatus::<Test>::EnglishAuction(
+                        EnglishAuction::<Test>::new(self.params.clone(),)
+                    ),
+                    ..pre_nft_status
+                }
+            );
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::EnglishAuctionStarted(
+                    self.actor.clone(),
+                    self.video_id,
+                    self.params.clone(),
+                ))
+            );
+        } else {
+            assert_eq!(video_post, video_pre);
+        }
+    }
+}
+
+pub struct OfferNftFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: VideoId,
+    to: MemberId,
+    price: Option<BalanceOf<Test>>,
+}
+
+impl OfferNftFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id: VideoId::one(),
+            to: SECOND_MEMBER_ID,
+            price: None,
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_to(self, to: MemberId) -> Self {
+        Self { to, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_price(self, price: Option<BalanceOf<Test>>) -> Self {
+        Self { price, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let video_pre = Content::video_by_id(self.video_id);
+
+        let actual_result = Content::offer_nft(
+            Origin::signed(self.sender.clone()),
+            self.video_id,
+            self.actor.clone(),
+            self.to,
+            self.price,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let video_post = Content::video_by_id(self.video_id);
+
+        if actual_result.is_ok() {
+            assert!(video_pre.nft_status.is_some());
+            assert!(video_post.nft_status.is_some());
+            let pre_nft_status = video_pre.nft_status.unwrap();
+            let nft_status = video_post.nft_status.unwrap();
+            assert_eq!(
+                nft_status,
+                Nft::<Test> {
+                    transactional_status: TransactionalStatus::<Test>::InitiatedOfferToMember(
+                        self.to, self.price
+                    ),
+                    ..pre_nft_status
+                }
+            );
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::OfferStarted(
+                    self.video_id,
+                    self.actor.clone(),
+                    self.to,
+                    self.price
+                ))
+            );
+        } else {
+            assert_eq!(video_post, video_pre);
+        }
+    }
+}
+
+pub struct MakeOpenAuctionBidFixture {
+    sender: AccountId,
+    member_id: MemberId,
+    video_id: VideoId,
+    bid: BalanceOf<Test>,
+}
+
+impl MakeOpenAuctionBidFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: SECOND_MEMBER_ACCOUNT_ID,
+            member_id: SECOND_MEMBER_ID,
+            video_id: VideoId::one(),
+            bid: Content::min_starting_price().saturating_add(Content::min_bid_step()),
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_member(self, member_id: MemberId) -> Self {
+        Self { member_id, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_bid(self, bid: BalanceOf<Test>) -> Self {
+        Self { bid, ..self }
+    }
+
+    pub fn create_auction_state_snapshot(&self) -> NftAuctionStateSnapshot {
+        let video = Content::video_by_id(self.video_id);
+        let winner_account =
+            MemberInfoProvider::controller_account_id(self.member_id).map_or(None, |a| Some(a));
+        let channel_account = ContentTreasury::<Test>::account_for_channel(video.in_channel);
+        let owner_account = video.nft_status.as_ref().map(|s| match s.owner {
+            NftOwner::Member(member_id) => {
+                MemberInfoProvider::controller_account_id(member_id).unwrap()
+            }
+            NftOwner::ChannelOwner => {
+                ContentTreasury::<Test>::account_for_channel(video.in_channel)
+            }
+        });
+
+        NftAuctionStateSnapshot {
+            video: Content::video_by_id(self.video_id),
+            winner_reserved_balance: winner_account.map(|a| Balances::<Test>::reserved_balance(a)),
+            winner_total_balance: winner_account.map(|a| Balances::<Test>::total_balance(&a)),
+            owner_balance: owner_account.map(|a| Balances::<Test>::usable_balance(a)),
+            channel_balance: Balances::<Test>::usable_balance(channel_account),
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let snapshot_pre = Self::create_auction_state_snapshot(&self);
+        let bid_pre = Content::open_auction_bid_by_video_and_member(self.video_id, self.member_id);
+
+        let actual_result = Content::make_open_auction_bid(
+            Origin::signed(self.sender.clone()),
+            self.member_id,
+            self.video_id,
+            self.bid,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let snapshot_post = Self::create_auction_state_snapshot(&self);
+        let bid_post = Content::open_auction_bid_by_video_and_member(self.video_id, self.member_id);
+
+        if actual_result.is_ok() {
+            assert!(snapshot_pre.video.nft_status.is_some());
+            let nft_status_pre = snapshot_pre.video.nft_status.clone().unwrap();
+            match nft_status_pre.transactional_status {
+                TransactionalStatus::<Test>::OpenAuction(params) => {
+                    if params.buy_now_price.is_none() || self.bid < params.buy_now_price.unwrap() {
+                        assert_eq!(snapshot_post.video, snapshot_pre.video);
+                        assert_eq!(bid_post.amount, self.bid);
+                        assert_eq!(bid_post.auction_id, nft_status_pre.open_auctions_nonce);
+                        assert_eq!(
+                            System::events().last().unwrap().event,
+                            MetaEvent::content(RawEvent::AuctionBidMade(
+                                self.member_id,
+                                self.video_id,
+                                self.bid,
+                            ))
+                        );
+                    } else {
+                        assert_auction_completed_successfuly(
+                            self.video_id,
+                            self.member_id,
+                            self.bid,
+                            snapshot_pre,
+                            snapshot_post,
+                            true,
+                        );
+                        assert_eq!(
+                            System::events().last().unwrap().event,
+                            MetaEvent::content(RawEvent::BidMadeCompletingAuction(
+                                self.member_id,
+                                self.video_id,
+                            ))
+                        );
+                    }
+                }
+                _ => assert!(false),
+            }
+        } else {
+            assert_eq!(bid_post, bid_pre);
+            assert_eq!(snapshot_post, snapshot_pre);
+        }
+    }
+}
+
+pub struct PickOpenAuctionWinnerFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: VideoId,
+    winner_id: MemberId,
+    commitment: BalanceOf<Test>,
+}
+
+impl PickOpenAuctionWinnerFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: SECOND_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id: VideoId::one(),
+            winner_id: SECOND_MEMBER_ID,
+            commitment: Content::min_starting_price().saturating_add(Content::min_bid_step()),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_winner_id(self, winner_id: MemberId) -> Self {
+        Self { winner_id, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_commitment(self, commitment: BalanceOf<Test>) -> Self {
+        Self { commitment, ..self }
+    }
+
+    pub fn create_auction_state_snapshot(&self) -> NftAuctionStateSnapshot {
+        let video = Content::video_by_id(self.video_id);
+        let winner_account =
+            MemberInfoProvider::controller_account_id(self.winner_id).map_or(None, |a| Some(a));
+        let channel_account = ContentTreasury::<Test>::account_for_channel(video.in_channel);
+
+        NftAuctionStateSnapshot {
+            video: Content::video_by_id(self.video_id),
+            winner_reserved_balance: winner_account.map(|a| Balances::<Test>::reserved_balance(a)),
+            winner_total_balance: winner_account.map(|a| Balances::<Test>::total_balance(&a)),
+            owner_balance: Some(Balances::<Test>::usable_balance(self.sender)),
+            channel_balance: Balances::<Test>::usable_balance(channel_account),
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let snapshot_pre = Self::create_auction_state_snapshot(self);
+
+        let actual_result = Content::pick_open_auction_winner(
+            Origin::signed(self.sender.clone()),
+            self.actor.clone(),
+            self.video_id,
+            self.winner_id,
+            self.commitment,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let snapshot_post = Self::create_auction_state_snapshot(self);
+
+        if actual_result.is_ok() {
+            assert_auction_completed_successfuly(
+                self.video_id,
+                self.winner_id,
+                self.commitment,
+                snapshot_pre,
+                snapshot_post,
+                false,
+            );
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::OpenAuctionBidAccepted(
+                    self.actor.clone(),
+                    self.video_id,
+                    self.commitment,
+                ))
+            );
+        } else {
+            assert_eq!(snapshot_post, snapshot_pre);
+        }
+    }
+}
+
+pub struct NftOwnerRemarkFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: VideoId,
+    msg: Vec<u8>,
+}
+
+impl NftOwnerRemarkFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: SECOND_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id: VideoId::one(),
+            msg: b"remark".to_vec(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_msg(self, msg: Vec<u8>) -> Self {
+        Self { msg, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Content::nft_owner_remark(
+            Origin::signed(self.sender.clone()),
+            self.actor.clone(),
+            self.video_id,
+            self.msg.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::NftOwnerRemarked(
+                    self.actor.clone(),
+                    self.video_id,
+                    self.msg.clone(),
+                ))
+            );
+        }
+    }
+}
+
+pub struct DestroyNftFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: VideoId,
+}
+
+impl DestroyNftFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: SECOND_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id: VideoId::one(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let video_pre = Content::video_by_id(self.video_id);
+
+        let actual_result = Content::destroy_nft(
+            Origin::signed(self.sender.clone()),
+            self.actor.clone(),
+            self.video_id,
+        );
+
+        let video_post = Content::video_by_id(self.video_id);
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert!(video_post.nft_status.is_none());
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::NftDestroyed(self.actor.clone(), self.video_id))
+            );
+        } else {
+            assert_eq!(video_post, video_pre);
+        }
+    }
+}
+
+pub struct ChannelAgentRemarkFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: VideoId,
+    msg: Vec<u8>,
+}
+
+impl ChannelAgentRemarkFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: SECOND_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+            msg: b"remark".to_vec(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_msg(self, msg: Vec<u8>) -> Self {
+        Self { msg, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = Content::channel_agent_remark(
+            Origin::signed(self.sender.clone()),
+            self.actor.clone(),
+            self.channel_id,
+            self.msg.clone(),
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::ChannelAgentRemarked(
+                    self.actor.clone(),
+                    self.channel_id,
+                    self.msg.clone(),
+                ))
+            );
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct NftAuctionStateSnapshot {
+    video: Video<Test>,
+    owner_balance: Option<BalanceOf<Test>>,
+    channel_balance: BalanceOf<Test>,
+    winner_reserved_balance: Option<BalanceOf<Test>>,
+    winner_total_balance: Option<BalanceOf<Test>>,
+}
+
+fn assert_auction_completed_successfuly(
+    video_id: VideoId,
+    winner_id: MemberId,
+    amount: BalanceOf<Test>,
+    snapshot_pre: NftAuctionStateSnapshot,
+    snapshot_post: NftAuctionStateSnapshot,
+    was_new_bid: bool,
+) {
+    assert!(!OpenAuctionBidByVideoAndMember::<Test>::contains_key(
+        video_id, winner_id
+    ));
+    assert!(snapshot_pre.video.nft_status.is_some());
+    assert!(snapshot_post.video.nft_status.is_some());
+    assert!(snapshot_pre.owner_balance.is_some());
+    assert!(snapshot_post.owner_balance.is_some());
+    assert!(snapshot_pre.winner_total_balance.is_some());
+    assert!(snapshot_post.winner_total_balance.is_some());
+    assert!(snapshot_pre.winner_reserved_balance.is_some());
+    assert!(snapshot_post.winner_reserved_balance.is_some());
+    let pre_nft_status = snapshot_pre.video.nft_status.unwrap();
+    let post_nft_status = snapshot_post.video.nft_status.unwrap();
+    assert_eq!(
+        post_nft_status,
+        Nft::<Test> {
+            owner: NftOwner::Member(winner_id),
+            transactional_status: TransactionalStatus::<Test>::Idle,
+            ..pre_nft_status
+        }
+    );
+    let royalty = pre_nft_status.creator_royalty.map_or(0, |r| r * amount);
+    let auction_fee = Content::platform_fee_percentage() * amount;
+    let raw_gain = if amount > royalty + auction_fee {
+        amount - royalty - auction_fee
+    } else {
+        amount - auction_fee
+    };
+    match pre_nft_status.owner {
+        NftOwner::Member(_) => {
+            assert_eq!(
+                snapshot_post.owner_balance.unwrap(),
+                snapshot_pre.owner_balance.unwrap().saturating_add(raw_gain)
+            );
+            assert_eq!(
+                snapshot_post.channel_balance,
+                snapshot_pre.channel_balance.saturating_add(royalty)
+            );
+        }
+        NftOwner::ChannelOwner => {
+            assert_eq!(
+                snapshot_post.channel_balance,
+                snapshot_pre
+                    .channel_balance
+                    .saturating_add(raw_gain)
+                    .saturating_add(royalty)
+            );
+        }
+    }
+    if !was_new_bid {
+        assert_eq!(
+            snapshot_post.winner_reserved_balance.unwrap(),
+            snapshot_pre
+                .winner_reserved_balance
+                .unwrap()
+                .saturating_sub(amount)
+        );
+    }
+
+    assert_eq!(
+        snapshot_post.winner_total_balance.unwrap(),
+        snapshot_pre
+            .winner_total_balance
+            .unwrap()
+            .saturating_sub(amount)
+    );
+}
+
+pub struct SellNftFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: VideoId,
+    price: BalanceOf<Test>,
+}
+
+impl SellNftFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id: VideoId::one(),
+            price: Zero::zero(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_price(self, price: BalanceOf<Test>) -> Self {
+        Self { price, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let video_pre = Content::video_by_id(self.video_id);
+
+        let actual_result = Content::sell_nft(
+            Origin::signed(self.sender.clone()),
+            self.video_id,
+            self.actor.clone(),
+            self.price,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let video_post = Content::video_by_id(self.video_id);
+
+        if actual_result.is_ok() {
+            assert!(video_pre.nft_status.is_some());
+            assert!(video_post.nft_status.is_some());
+            let pre_nft_status = video_pre.nft_status.unwrap();
+            let nft_status = video_post.nft_status.unwrap();
+            assert_eq!(
+                nft_status,
+                Nft::<Test> {
+                    transactional_status: TransactionalStatus::<Test>::BuyNow(self.price),
+                    ..pre_nft_status
+                }
+            );
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::NftSellOrderMade(
+                    self.video_id,
+                    self.actor.clone(),
+                    self.price
+                ))
+            );
+        } else {
+            assert_eq!(video_post, video_pre);
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord)]
+pub enum AuctionType {
+    English,
+    Open,
+}
+
+pub struct CancelAuctionFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: VideoId,
+    auction_type: AuctionType,
+}
+
+impl CancelAuctionFixture {
+    pub fn default(auction_type: AuctionType) -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id: VideoId::one(),
+            auction_type,
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let video_pre = Content::video_by_id(self.video_id);
+
+        let call = match self.auction_type {
+            AuctionType::English => Content::cancel_english_auction,
+            AuctionType::Open => Content::cancel_open_auction,
+        };
+
+        let actual_result = call(
+            Origin::signed(self.sender.clone()),
+            self.actor.clone(),
+            self.video_id,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let video_post = Content::video_by_id(self.video_id);
+
+        if actual_result.is_ok() {
+            assert!(video_pre.nft_status.is_some());
+            assert!(video_post.nft_status.is_some());
+            let pre_nft_status = video_pre.nft_status.unwrap();
+            let nft_status = video_post.nft_status.unwrap();
+            assert_eq!(
+                nft_status,
+                Nft::<Test> {
+                    transactional_status: TransactionalStatus::<Test>::Idle,
+                    ..pre_nft_status
+                }
+            );
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::AuctionCanceled(self.actor.clone(), self.video_id,))
+            );
+        } else {
+            assert_eq!(video_post, video_pre);
+        }
+    }
+}
+
+pub struct CancelOfferFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: VideoId,
+}
+
+impl CancelOfferFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id: VideoId::one(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let video_pre = Content::video_by_id(self.video_id);
+
+        let actual_result = Content::cancel_offer(
+            Origin::signed(self.sender.clone()),
+            self.actor.clone(),
+            self.video_id,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let video_post = Content::video_by_id(self.video_id);
+
+        if actual_result.is_ok() {
+            assert!(video_pre.nft_status.is_some());
+            assert!(video_post.nft_status.is_some());
+            let pre_nft_status = video_pre.nft_status.unwrap();
+            let nft_status = video_post.nft_status.unwrap();
+            assert_eq!(
+                nft_status,
+                Nft::<Test> {
+                    transactional_status: TransactionalStatus::<Test>::Idle,
+                    ..pre_nft_status
+                }
+            );
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::OfferCanceled(self.video_id, self.actor.clone()))
+            );
+        } else {
+            assert_eq!(video_post, video_pre);
+        }
+    }
+}
+
+pub struct CancelBuyNowFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: VideoId,
+}
+
+impl CancelBuyNowFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id: VideoId::one(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let video_pre = Content::video_by_id(self.video_id);
+
+        let actual_result = Content::cancel_buy_now(
+            Origin::signed(self.sender.clone()),
+            self.actor.clone(),
+            self.video_id,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let video_post = Content::video_by_id(self.video_id);
+
+        if actual_result.is_ok() {
+            assert!(video_pre.nft_status.is_some());
+            assert!(video_post.nft_status.is_some());
+            let pre_nft_status = video_pre.nft_status.unwrap();
+            let nft_status = video_post.nft_status.unwrap();
+            assert_eq!(
+                nft_status,
+                Nft::<Test> {
+                    transactional_status: TransactionalStatus::<Test>::Idle,
+                    ..pre_nft_status
+                }
+            );
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::BuyNowCanceled(self.video_id, self.actor.clone()))
+            );
+        } else {
+            assert_eq!(video_post, video_pre);
+        }
+    }
+}
+
+pub struct UpdateBuyNowPriceFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    video_id: VideoId,
+    price: BalanceOf<Test>,
+}
+
+impl UpdateBuyNowPriceFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id: VideoId::one(),
+            price: One::one(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    #[allow(dead_code)]
+    pub fn with_video_id(self, video_id: VideoId) -> Self {
+        Self { video_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let video_pre = Content::video_by_id(self.video_id);
+
+        let actual_result = Content::update_buy_now_price(
+            Origin::signed(self.sender.clone()),
+            self.actor.clone(),
+            self.video_id,
+            self.price,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let video_post = Content::video_by_id(self.video_id);
+
+        if actual_result.is_ok() {
+            assert!(video_pre.nft_status.is_some());
+            assert!(video_post.nft_status.is_some());
+            let pre_nft_status = video_pre.nft_status.unwrap();
+            let nft_status = video_post.nft_status.unwrap();
+            assert_eq!(
+                nft_status,
+                Nft::<Test> {
+                    transactional_status: TransactionalStatus::<Test>::BuyNow(self.price),
+                    ..pre_nft_status
+                }
+            );
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::BuyNowPriceUpdated(
+                    self.video_id,
+                    self.actor.clone(),
+                    self.price
+                ))
+            );
+        } else {
+            assert_eq!(video_post, video_pre);
+        }
+    }
+}
+
+pub struct SuccessfulNftManagementFlow {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+}
+
+impl SuccessfulNftManagementFlow {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn run(&self) {
+        // Issue nft the standard way
+        IssueNftFixture::default()
+            .with_sender(self.sender.clone())
+            .with_actor(self.actor.clone())
+            .call_and_assert(Ok(()));
+        // Issue nft during video creation
+        CreateVideoFixture::default()
+            .with_sender(self.sender.clone())
+            .with_actor(self.actor.clone())
+            .with_nft_issuance(NftIssuanceParameters::<Test>::default())
+            .call_and_assert(Ok(()));
+        // Destroy nft
+        DestroyNftFixture::default()
+            .with_sender(self.sender.clone())
+            .with_actor(self.actor.clone())
+            .call_and_assert(Ok(()));
+        // Issue nft during video update
+        UpdateVideoFixture::default()
+            .with_sender(self.sender.clone())
+            .with_actor(self.actor.clone())
+            .with_nft_issuance(NftIssuanceParameters::<Test>::default())
+            .call_and_assert(Ok(()));
+        // Start open auction
+        StartOpenAuctionFixture::default()
+            .with_sender(self.sender.clone())
+            .with_actor(self.actor.clone())
+            .call_and_assert(Ok(()));
+        // Cancel open auction
+        CancelAuctionFixture::default(AuctionType::Open)
+            .with_sender(self.sender.clone())
+            .with_actor(self.actor.clone())
+            .call_and_assert(Ok(()));
+        // Start english auction
+        StartEnglishAuctionFixture::default()
+            .with_sender(self.sender.clone())
+            .with_actor(self.actor.clone())
+            .call_and_assert(Ok(()));
+        // Cancel english auction
+        CancelAuctionFixture::default(AuctionType::English)
+            .with_sender(self.sender.clone())
+            .with_actor(self.actor.clone())
+            .call_and_assert(Ok(()));
+        // Offer nft
+        OfferNftFixture::default()
+            .with_sender(self.sender.clone())
+            .with_actor(self.actor.clone())
+            .call_and_assert(Ok(()));
+        // Cancel nft offer
+        CancelOfferFixture::default()
+            .with_sender(self.sender.clone())
+            .with_actor(self.actor.clone())
+            .call_and_assert(Ok(()));
+        // Sell nft
+        SellNftFixture::default()
+            .with_sender(self.sender.clone())
+            .with_actor(self.actor.clone())
+            .call_and_assert(Ok(()));
+        // Update BuyNow price
+        UpdateBuyNowPriceFixture::default()
+            .with_sender(self.sender.clone())
+            .with_actor(self.actor.clone())
+            .call_and_assert(Ok(()));
+        // Cancel BuyNow
+        CancelBuyNowFixture::default()
+            .with_sender(self.sender.clone())
+            .with_actor(self.actor.clone())
+            .call_and_assert(Ok(()));
+        // NFT owner remark
+        NftOwnerRemarkFixture::default()
+            .with_sender(self.sender.clone())
+            .with_actor(self.actor.clone())
+            .call_and_assert(Ok(()));
+        // Pick open auction winner
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        StartOpenAuctionFixture::default()
+            .with_sender(self.sender.clone())
+            .with_actor(self.actor.clone())
+            .call_and_assert(Ok(()));
+        MakeOpenAuctionBidFixture::default().call_and_assert(Ok(()));
+        PickOpenAuctionWinnerFixture::default()
+            .with_sender(self.sender.clone())
+            .with_actor(self.actor.clone())
+            .call_and_assert(Ok(()));
+    }
+}
+
+pub struct SuccessfulChannelCollaboratorsManagementFlow {
+    owner_sender: AccountId,
+    owner_actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    agent_sender: AccountId,
+    agent_actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+}
+
+impl SuccessfulChannelCollaboratorsManagementFlow {
+    pub fn default() -> Self {
+        Self {
+            owner_sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            owner_actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            agent_sender: COLLABORATOR_MEMBER_ACCOUNT_ID,
+            agent_actor: ContentActor::Member(COLLABORATOR_MEMBER_ID),
+        }
+    }
+
+    pub fn with_owner_sender(self, owner_sender: AccountId) -> Self {
+        Self {
+            owner_sender,
+            ..self
+        }
+    }
+
+    pub fn with_agent_sender(self, agent_sender: AccountId) -> Self {
+        Self {
+            agent_sender,
+            ..self
+        }
+    }
+
+    pub fn with_owner_actor(
+        self,
+        owner_actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    ) -> Self {
+        Self {
+            owner_actor,
+            ..self
+        }
+    }
+
+    pub fn with_agent_actor(
+        self,
+        agent_actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    ) -> Self {
+        Self {
+            agent_actor,
+            ..self
+        }
+    }
+
+    pub fn run(&self) {
+        let default_collaborators = Module::<Test>::channel_by_id(ChannelId::one()).collaborators;
+        let mut updated_collaborators = default_collaborators.clone();
+
+        // Add collaborator (as owner) will full permissions
+        updated_collaborators.insert(
+            SECOND_MEMBER_ID,
+            BTreeSet::from_iter(ChannelActionPermission::iter()),
+        );
+        UpdateChannelFixture::default()
+            .with_sender(self.owner_sender.clone())
+            .with_actor(self.owner_actor.clone())
+            .with_collaborators(updated_collaborators.clone())
+            .call_and_assert(Ok(()));
+        // Add another collaborator with all permissions except AgentRemark
+        updated_collaborators.insert(
+            THIRD_MEMBER_ID,
+            all_permissions_except(&[ChannelActionPermission::AgentRemark])
+                .into_iter()
+                .collect(),
+        );
+        UpdateChannelFixture::default()
+            .with_sender(self.agent_sender.clone())
+            .with_actor(self.agent_actor.clone())
+            .with_collaborators(updated_collaborators.clone())
+            .call_and_assert(Ok(()));
+        // Update latest collaborator's permissions (remove ManageChannelCollaborators)
+        updated_collaborators.insert(
+            THIRD_MEMBER_ID,
+            all_permissions_except(&[
+                ChannelActionPermission::AgentRemark,
+                ChannelActionPermission::ManageChannelCollaborators,
+            ])
+            .into_iter()
+            .collect(),
+        );
+        UpdateChannelFixture::default()
+            .with_sender(self.agent_sender.clone())
+            .with_actor(self.agent_actor.clone())
+            .with_collaborators(updated_collaborators.clone())
+            .call_and_assert(Ok(()));
+        // Remove latest collaborator
+        updated_collaborators.remove(&THIRD_MEMBER_ID);
+        UpdateChannelFixture::default()
+            .with_sender(self.agent_sender.clone())
+            .with_actor(self.agent_actor.clone())
+            .with_collaborators(updated_collaborators.clone())
+            .call_and_assert(Ok(()));
+    }
+}
+
 // helper functions
 pub fn assert_group_has_permissions_for_actions(
     group: &CuratorGroup<Test>,
@@ -2047,7 +3466,10 @@ pub fn assert_group_has_permissions_for_actions(
 ) {
     if !allowed_actions.is_empty() {
         assert_eq!(
-            group.ensure_can_perform_actions(allowed_actions, privilege_level),
+            group.ensure_group_member_can_perform_moderation_actions(
+                allowed_actions,
+                privilege_level
+            ),
             Ok(()),
             "Expected curator group to have {:?} action permissions for privilege_level {}",
             allowed_actions,
@@ -2062,7 +3484,10 @@ pub fn assert_group_has_permissions_for_actions(
                         &ContentModerationAction::ChangeChannelFeatureStatus(feature),
                     ) {
                         assert_eq!(
-                                group.ensure_can_perform_action(ContentModerationAction::ChangeChannelFeatureStatus(feature), privilege_level),
+                                group.ensure_group_member_can_perform_moderation_actions(
+                                    &[ContentModerationAction::ChangeChannelFeatureStatus(feature)],
+                                    privilege_level
+                                ),
                                 Err(Error::<Test>::CuratorModerationActionNotAllowed.into()),
                                 "Expected curator group to NOT have {:?} action permissions for privilege_level {}",
                                 action.clone(),
@@ -2074,7 +3499,10 @@ pub fn assert_group_has_permissions_for_actions(
             _ => {
                 if !allowed_actions.contains(&action) {
                     assert_eq!(
-                            group.ensure_can_perform_action(action.clone(), privilege_level),
+                            group.ensure_group_member_can_perform_moderation_actions(
+                                &[action.clone()],
+                                privilege_level
+                            ),
                             Err(Error::<Test>::CuratorModerationActionNotAllowed.into()),
                             "Expected curator group to NOT have {:?} action permissions for privilege_level {}",
                             action.clone(),
@@ -2111,6 +3539,13 @@ pub fn create_data_object_candidates_helper(
 
 pub fn create_data_objects_helper() -> Vec<DataObjectCreationParameters> {
     create_data_object_candidates_helper(1, DATA_OBJECTS_NUMBER)
+}
+
+pub fn create_default_assets_helper() -> StorageAssets<Test> {
+    StorageAssets::<Test> {
+        expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+        object_creation_list: create_data_objects_helper(),
+    }
 }
 
 pub fn set_dynamic_bag_creation_policy_for_storage_numbers(storage_bucket_number: u64) {
@@ -2192,22 +3627,40 @@ pub fn create_default_member_owned_channel_with_video_with_nft() -> (ChannelId, 
 }
 
 pub fn create_default_member_owned_channel() {
-    create_default_member_owned_channel_with_storage_buckets(true, DATA_OBJECT_DELETION_PRIZE)
+    create_default_member_owned_channel_with_storage_buckets(true, DATA_OBJECT_DELETION_PRIZE, &[])
+}
+
+pub fn create_default_member_owned_channel_with_collaborator_permissions(
+    collaborator_permissions: &[ChannelActionPermission],
+) {
+    create_default_member_owned_channel_with_storage_buckets(
+        true,
+        DATA_OBJECT_DELETION_PRIZE,
+        collaborator_permissions,
+    )
 }
 
 pub fn create_default_member_owned_channel_with_storage_buckets(
     include_storage_buckets: bool,
     deletion_prize: u64,
+    collaborator_permissions: &[ChannelActionPermission],
 ) {
     let mut channel_fixture = CreateChannelFixture::default()
         .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-        .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+        .with_channel_owner(ChannelOwner::Member(DEFAULT_MEMBER_ID))
         .with_data_object_deletion_prize(deletion_prize)
         .with_assets(StorageAssets::<Test> {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
             object_creation_list: create_data_objects_helper(),
         })
-        .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect());
+        .with_collaborators(
+            vec![(
+                COLLABORATOR_MEMBER_ID,
+                collaborator_permissions.iter().cloned().collect(),
+            )]
+            .into_iter()
+            .collect(),
+        );
 
     if include_storage_buckets {
         set_dynamic_bag_creation_policy_for_storage_numbers(1);
@@ -2217,23 +3670,34 @@ pub fn create_default_member_owned_channel_with_storage_buckets(
     channel_fixture.call_and_assert(Ok(()));
 }
 
-pub fn create_default_curator_owned_channel(deletion_prize: u64) {
-    let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+pub fn create_default_curator_owned_channel(
+    deletion_prize: u64,
+    curator_agent_permissions: &[ChannelActionPermission],
+) {
+    let curator_group_id =
+        curators::add_curator_to_new_group(DEFAULT_CURATOR_ID, curator_agent_permissions);
     CreateChannelFixture::default()
         .with_default_storage_buckets()
-        .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-        .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+        .with_sender(LEAD_ACCOUNT_ID)
+        .with_channel_owner(ChannelOwner::CuratorGroup(curator_group_id))
         .with_data_object_deletion_prize(deletion_prize)
         .with_assets(StorageAssets::<Test> {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
             object_creation_list: create_data_objects_helper(),
         })
-        .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
+        .with_collaborators(
+            vec![(COLLABORATOR_MEMBER_ID, BTreeSet::new())]
+                .into_iter()
+                .collect(),
+        )
         .call_and_assert(Ok(()));
 }
 
-pub fn create_default_member_owned_channel_with_videos(number_of_videos: u8) {
-    create_default_member_owned_channel();
+pub fn create_default_member_owned_channel_with_videos(
+    number_of_videos: u8,
+    collaborator_permissions: &[ChannelActionPermission],
+) {
+    create_default_member_owned_channel_with_collaborator_permissions(collaborator_permissions);
 
     for _ in 0..number_of_videos {
         CreateVideoFixture::default()
@@ -2250,7 +3714,13 @@ pub fn create_default_member_owned_channel_with_videos(number_of_videos: u8) {
 }
 
 pub fn create_default_member_owned_channel_with_video() {
-    create_default_member_owned_channel_with_videos(1)
+    create_default_member_owned_channel_with_videos(1, &[])
+}
+
+pub fn create_default_member_owned_channel_with_video_with_collaborator_permissions(
+    collaborator_permissions: &[ChannelActionPermission],
+) {
+    create_default_member_owned_channel_with_videos(1, collaborator_permissions)
 }
 
 pub fn create_default_member_owned_channel_with_video_with_storage_buckets(
@@ -2260,6 +3730,7 @@ pub fn create_default_member_owned_channel_with_video_with_storage_buckets(
     create_default_member_owned_channel_with_storage_buckets(
         include_storage_buckets,
         deletion_prize,
+        &[],
     );
 
     CreateVideoFixture::default()
@@ -2274,13 +3745,14 @@ pub fn create_default_member_owned_channel_with_video_with_storage_buckets(
         .call_and_assert(Ok(()));
 }
 
-pub fn create_default_curator_owned_channel_with_video(deletion_prize: u64) {
-    create_default_curator_owned_channel(deletion_prize);
-    let curator_group_id = NextCuratorGroupId::<Test>::get() - 1;
-
+pub fn create_default_curator_owned_channel_with_video(
+    deletion_prize: u64,
+    permissions: &[ChannelActionPermission],
+) {
+    create_default_curator_owned_channel(deletion_prize, &permissions);
     CreateVideoFixture::default()
-        .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-        .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+        .with_sender(LEAD_ACCOUNT_ID)
+        .with_actor(ContentActor::Lead)
         .with_assets(StorageAssets::<Test> {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
             object_creation_list: create_data_objects_helper(),
@@ -2409,4 +3881,446 @@ pub fn update_commit_value_with_payments_helper(payments: &[PullPayment<Test>]) 
     UpdateCommitmentValueFixture::default()
         .with_commit(commit)
         .call_and_assert(Ok(()));
+}
+
+pub fn default_curator_actor() -> ContentActor<CuratorGroupId, CuratorId, MemberId> {
+    ContentActor::Curator(CuratorGroupId::one(), DEFAULT_CURATOR_ID)
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
+pub enum NftTransactionalStatusType {
+    Idle,
+    BuyNow,
+    Offer,
+    Auction(AuctionType),
+}
+
+pub struct ContentTest {
+    channel_owner_sender: AccountId,
+    channel_owner_actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    agent_permissions: BTreeSet<ChannelActionPermission>,
+    claimable_reward: bool,
+    create_video: bool,
+    video_assets: Option<StorageAssets<Test>>,
+    create_video_nft: bool,
+    nft_status: NftTransactionalStatusType,
+    make_open_auction_bid: bool,
+    collaborators: Option<BTreeMap<MemberId, ChannelAgentPermissions>>,
+}
+
+impl ContentTest {
+    pub fn default() -> Self {
+        Self {
+            channel_owner_sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            channel_owner_actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            agent_permissions: BTreeSet::new(),
+            claimable_reward: false,
+            create_video: false,
+            video_assets: Some(create_default_assets_helper()),
+            create_video_nft: false,
+            nft_status: NftTransactionalStatusType::Idle,
+            make_open_auction_bid: false,
+            collaborators: None,
+        }
+    }
+
+    pub fn with_curator_channel() -> Self {
+        let channel_owner_sender = LEAD_ACCOUNT_ID;
+        let channel_owner_actor = ContentActor::Lead;
+        Self {
+            channel_owner_sender,
+            channel_owner_actor,
+            ..Self::default()
+        }
+    }
+
+    pub fn with_member_channel() -> Self {
+        let channel_owner_sender = DEFAULT_MEMBER_ACCOUNT_ID;
+        let channel_owner_actor = ContentActor::Member(DEFAULT_MEMBER_ID);
+        Self {
+            channel_owner_sender,
+            channel_owner_actor,
+            ..Self::default()
+        }
+    }
+
+    pub fn with_collaborators(
+        self,
+        collaborators: &[(u64, BTreeSet<ChannelActionPermission>)],
+    ) -> Self {
+        Self {
+            collaborators: Some(collaborators.iter().cloned().collect::<BTreeMap<_, _>>()),
+            ..self
+        }
+    }
+
+    pub fn with_agent_permissions(self, permissions: &[ChannelActionPermission]) -> Self {
+        Self {
+            agent_permissions: agent_permissions(permissions),
+            ..self
+        }
+    }
+
+    pub fn with_all_agent_permissions_except(
+        self,
+        except_permissions: &[ChannelActionPermission],
+    ) -> Self {
+        Self {
+            agent_permissions: all_permissions_except(except_permissions),
+            ..self
+        }
+    }
+
+    pub fn with_claimable_reward(self) -> Self {
+        Self {
+            claimable_reward: true,
+            ..self
+        }
+    }
+
+    pub fn with_video(self) -> Self {
+        Self {
+            create_video: true,
+            ..self
+        }
+    }
+
+    pub fn with_video_assets(self, video_assets: Option<StorageAssets<Test>>) -> Self {
+        Self {
+            video_assets,
+            ..self.with_video()
+        }
+    }
+
+    pub fn with_video_nft(self) -> Self {
+        Self {
+            create_video_nft: true,
+            ..self.with_video()
+        }
+    }
+
+    pub fn with_video_nft_status(self, nft_status: NftTransactionalStatusType) -> Self {
+        Self {
+            nft_status,
+            ..self.with_video_nft()
+        }
+    }
+
+    pub fn with_nft_open_auction_bid(self) -> Self {
+        Self {
+            make_open_auction_bid: true,
+            ..self.with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::Open))
+        }
+    }
+
+    pub fn setup(&self) {
+        run_to_block(1);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(self.channel_owner_sender, INITIAL_BALANCE);
+
+        // Create channel
+        let agent_permissions = self.agent_permissions.iter().cloned().collect::<Vec<_>>();
+        match self.channel_owner_actor {
+            ContentActor::Lead => {
+                create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE, &agent_permissions)
+            }
+            ContentActor::Member(..) => {
+                create_default_member_owned_channel_with_collaborator_permissions(
+                    &agent_permissions,
+                )
+            }
+            _ => assert!(false),
+        }
+
+        // Setup claimable reward (optionally)
+        if self.claimable_reward {
+            let payments = create_some_pull_payments_helper();
+            update_commit_value_with_payments_helper(&payments);
+        }
+
+        // Set channel collaborators (optionally)
+        if let Some(collaborators) = self.collaborators.as_ref() {
+            UpdateChannelFixture::default()
+                .with_sender(self.channel_owner_sender)
+                .with_actor(self.channel_owner_actor.clone())
+                .with_collaborators(collaborators.clone())
+                .call_and_assert(Ok(()));
+        }
+
+        // Create video (optionally)
+        if self.create_video {
+            CreateVideoFixture::default()
+                .with_sender(self.channel_owner_sender)
+                .with_actor(self.channel_owner_actor.clone())
+                .with_opt_assets(self.video_assets.clone())
+                .call_and_assert(Ok(()));
+        }
+
+        // Create video nft (optinally)
+        if self.create_video_nft {
+            IssueNftFixture::default()
+                .with_sender(self.channel_owner_sender.clone())
+                .with_actor(self.channel_owner_actor.clone())
+                .call_and_assert(Ok(()));
+        }
+
+        // Set nft status (optionally)
+        match self.nft_status {
+            NftTransactionalStatusType::Auction(auction_type) => match auction_type {
+                AuctionType::Open => {
+                    StartOpenAuctionFixture::default()
+                        .with_sender(self.channel_owner_sender.clone())
+                        .with_actor(self.channel_owner_actor.clone())
+                        .call_and_assert(Ok(()));
+                }
+                AuctionType::English => {
+                    StartEnglishAuctionFixture::default()
+                        .with_sender(self.channel_owner_sender.clone())
+                        .with_actor(self.channel_owner_actor.clone())
+                        .call_and_assert(Ok(()));
+                }
+            },
+            NftTransactionalStatusType::BuyNow => {
+                SellNftFixture::default()
+                    .with_sender(self.channel_owner_sender.clone())
+                    .with_actor(self.channel_owner_actor.clone())
+                    .call_and_assert(Ok(()));
+            }
+            NftTransactionalStatusType::Offer => {
+                OfferNftFixture::default()
+                    .with_sender(self.channel_owner_sender.clone())
+                    .with_actor(self.channel_owner_actor.clone())
+                    .call_and_assert(Ok(()));
+            }
+            _ => {}
+        }
+
+        // Make nft open auction bid (optionally)
+        if self.make_open_auction_bid {
+            increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+            MakeOpenAuctionBidFixture::default().call_and_assert(Ok(()));
+        }
+    }
+}
+
+pub fn all_permissions_except(
+    excluded_permissions: &[ChannelActionPermission],
+) -> ChannelAgentPermissions {
+    ChannelActionPermission::iter()
+        .filter(|p| !excluded_permissions.contains(p))
+        .collect()
+}
+
+pub fn agent_permissions(permissions: &[ChannelActionPermission]) -> ChannelAgentPermissions {
+    permissions.iter().cloned().collect()
+}
+
+pub fn get_default_member_channel_invalid_contexts() -> Vec<(
+    AccountId,
+    ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    Error<Test>,
+)> {
+    vec![
+        // collaborator as owner
+        (
+            COLLABORATOR_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            Error::<Test>::MemberAuthFailed,
+        ),
+        // unauth member as owner
+        (
+            UNAUTHORIZED_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            Error::<Test>::MemberAuthFailed,
+        ),
+        // unauth collaborator as collaborator
+        (
+            UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(COLLABORATOR_MEMBER_ID),
+            Error::<Test>::MemberAuthFailed,
+        ),
+        // lead as lead
+        (
+            LEAD_ACCOUNT_ID,
+            ContentActor::Lead,
+            Error::<Test>::ActorNotAuthorized,
+        ),
+        // curator as curator
+        (
+            DEFAULT_CURATOR_ACCOUNT_ID,
+            default_curator_actor(),
+            Error::<Test>::ActorNotAuthorized,
+        ),
+        // unauth member as unauth member
+        (
+            UNAUTHORIZED_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(UNAUTHORIZED_MEMBER_ID),
+            Error::<Test>::ActorNotAuthorized,
+        ),
+        // unauth collaborator as unauth collaborator
+        (
+            UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(UNAUTHORIZED_COLLABORATOR_MEMBER_ID),
+            Error::<Test>::ActorNotAuthorized,
+        ),
+    ]
+}
+
+pub fn get_default_curator_channel_invalid_contexts() -> Vec<(
+    AccountId,
+    ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    Error<Test>,
+)> {
+    vec![
+        // collaborator as lead
+        (
+            COLLABORATOR_MEMBER_ACCOUNT_ID,
+            ContentActor::Lead,
+            Error::<Test>::LeadAuthFailed,
+        ),
+        // agent as lead
+        (
+            DEFAULT_CURATOR_ACCOUNT_ID,
+            ContentActor::Lead,
+            Error::<Test>::LeadAuthFailed,
+        ),
+        // unauth lead as lead
+        (
+            UNAUTHORIZED_LEAD_ACCOUNT_ID,
+            ContentActor::Lead,
+            Error::<Test>::LeadAuthFailed,
+        ),
+        // collaborator as agent
+        (
+            COLLABORATOR_MEMBER_ACCOUNT_ID,
+            default_curator_actor(),
+            Error::<Test>::CuratorAuthFailed,
+        ),
+        // unauth curator as agent
+        (
+            UNAUTHORIZED_CURATOR_ACCOUNT_ID,
+            default_curator_actor(),
+            Error::<Test>::CuratorAuthFailed,
+        ),
+        // agent as collaborator
+        (
+            DEFAULT_CURATOR_ACCOUNT_ID,
+            ContentActor::Member(COLLABORATOR_MEMBER_ID),
+            Error::<Test>::MemberAuthFailed,
+        ),
+        // unauth collaborator as collaborator
+        (
+            UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(COLLABORATOR_MEMBER_ID),
+            Error::<Test>::MemberAuthFailed,
+        ),
+        // unauth curator as unauth curator
+        (
+            UNAUTHORIZED_CURATOR_ACCOUNT_ID,
+            ContentActor::Curator(2, UNAUTHORIZED_CURATOR_ID),
+            Error::<Test>::ActorNotAuthorized,
+        ),
+        // unauth collaborator as unauth collaborator
+        (
+            UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(UNAUTHORIZED_COLLABORATOR_MEMBER_ID),
+            Error::<Test>::ActorNotAuthorized,
+        ),
+    ]
+}
+
+pub fn run_all_fixtures_with_contexts(
+    contexts: Vec<(
+        AccountId,
+        ContentActor<CuratorGroupId, CuratorId, MemberId>,
+        Error<Test>,
+    )>,
+) {
+    for (sender, actor, error) in contexts {
+        let expected_err = Err(error.into());
+        UpdateChannelFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        CreateVideoFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        UpdateVideoFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        DeleteChannelFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        DeleteVideoFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        IssueNftFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        StartOpenAuctionFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        StartEnglishAuctionFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        CancelAuctionFixture::default(AuctionType::Open)
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        CancelAuctionFixture::default(AuctionType::English)
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        OfferNftFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        CancelOfferFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        SellNftFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        CancelBuyNowFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        UpdateBuyNowPriceFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        PickOpenAuctionWinnerFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        NftOwnerRemarkFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        DestroyNftFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        ChannelAgentRemarkFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        UpdateChannelTransferStatusFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        ClaimChannelRewardFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+    }
 }

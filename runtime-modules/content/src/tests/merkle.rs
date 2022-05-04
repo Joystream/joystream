@@ -80,7 +80,10 @@ fn unsuccessful_reward_claim_with_curator_auth_failed() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_curator_owned_channel_with_video(
+            DATA_OBJECT_DELETION_PRIZE,
+            &[ChannelActionPermission::ClaimChannelReward],
+        );
 
         let default_curator_group_id = Content::next_curator_group_id() - 1;
         ClaimChannelRewardFixture::default()
@@ -90,22 +93,6 @@ fn unsuccessful_reward_claim_with_curator_auth_failed() {
                 DEFAULT_CURATOR_ID,
             ))
             .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()))
-    })
-}
-
-#[test]
-fn unsuccessful_reward_claim_by_lead() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
-
-        ClaimChannelRewardFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            .call_and_assert(Err(Error::<Test>::ActorCannotOwnChannel.into()))
     })
 }
 
@@ -132,9 +119,15 @@ fn unsuccessful_reward_claim_by_unauth_curator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_curator_owned_channel_with_video(
+            DATA_OBJECT_DELETION_PRIZE,
+            &[ChannelActionPermission::ClaimChannelReward],
+        );
 
-        let unauthorized_curator_group_id = add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
+        let unauthorized_curator_group_id = add_curator_to_new_group(
+            UNAUTHORIZED_CURATOR_ID,
+            &[ChannelActionPermission::ClaimChannelReward],
+        );
         ClaimChannelRewardFixture::default()
             .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
             .with_actor(ContentActor::Curator(
@@ -273,7 +266,10 @@ fn unsuccessful_reward_claim_with_pending_channel_transfer() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_curator_owned_channel_with_video(
+            DATA_OBJECT_DELETION_PRIZE,
+            &[ChannelActionPermission::ClaimChannelReward],
+        );
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
 
@@ -317,7 +313,10 @@ fn successful_reward_claim_by_curator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video(DATA_OBJECT_DELETION_PRIZE);
+        create_default_curator_owned_channel_with_video(
+            DATA_OBJECT_DELETION_PRIZE,
+            &[ChannelActionPermission::ClaimChannelReward],
+        );
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
 

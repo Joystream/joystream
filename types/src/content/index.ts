@@ -123,6 +123,26 @@ export class ChannelOwner extends JoyEnum({
   Curators: CuratorGroupId,
 }) {}
 
+// Agent permissions
+
+export class ChannelActionPermission extends JoyEnum({
+  UpdateChannelMetadata: Null,
+  ManageNonVideoChannelAssets: Null,
+  ManageChannelCollaborators: Null,
+  UpdateVideoMetadata: Null,
+  AddVideo: Null,
+  ManageVideoAssets: Null,
+  DeleteChannel: Null,
+  DeleteVideo: Null,
+  ManageVideoNfts: Null,
+  AgentRemark: Null,
+  TransferChannel: Null,
+  ClaimChannelReward: Null,
+  WithdrawFromChannelBalance: Null,
+}) {}
+
+export class ChannelAgentPermissions extends BTreeSet.with(ChannelActionPermission) {}
+
 // Moderation
 
 export class PausableChannelFeature extends JoyEnum({
@@ -150,7 +170,7 @@ export class ContentModerationActionsSet extends BTreeSet.with(ContentModeration
 export class ModerationPermissionsByLevel extends BTreeMap.with(ChannelPrivilegeLevel, ContentModerationActionsSet) {}
 
 export class CuratorGroup extends JoyStructDecorated({
-  curators: BTreeSet.with(CuratorId),
+  curators: BTreeMap.with(CuratorId, ChannelAgentPermissions),
   active: bool,
   permissions_by_level: ModerationPermissionsByLevel,
 }) {}
@@ -183,7 +203,7 @@ export class ChannelOwnershipTransferRequest extends JoyStructDecorated({
 export class Channel extends JoyStructDecorated({
   owner: ChannelOwner,
   num_videos: u64,
-  collaborators: BTreeSet.with(MemberId),
+  collaborators: BTreeMap.with(MemberId, ChannelAgentPermissions),
   cumulative_payout_earned: Balance,
   privilege_level: ChannelPrivilegeLevel,
   paused_features: BTreeSet.with(PausableChannelFeature),
@@ -194,7 +214,7 @@ export class Channel extends JoyStructDecorated({
 export class ChannelCreationParameters extends JoyStructDecorated({
   assets: Option.with(StorageAssets),
   meta: Option.with(Bytes),
-  collaborators: BTreeSet.with(MemberId),
+  collaborators: BTreeMap.with(MemberId, ChannelAgentPermissions),
   storage_buckets: BTreeSet.with(StorageBucketId),
   distribution_Bucket: BTreeSet.with(DistributionBucketId),
   expected_dynamic_bag_deletion_prize: Balance,
@@ -205,7 +225,7 @@ export class ChannelUpdateParameters extends JoyStructDecorated({
   assets_to_upload: Option.with(StorageAssets),
   new_meta: Option.with(Bytes),
   assets_to_remove: BTreeSet.with(DataObjectId),
-  collaborators: Option.with(BTreeSet.with(MemberId)),
+  collaborators: Option.with(BTreeMap.with(MemberId, ChannelAgentPermissions)),
   expected_data_object_deletion_prize: Balance,
 }) {}
 
@@ -331,6 +351,9 @@ export const contentTypes = {
   TransferParameters,
   ChannelTransferStatus_PendingTransfer,
   ChannelTransferStatus,
+  // Agent permissions
+  ChannelActionPermission,
+  ChannelAgentPermissions,
 }
 
 export default contentTypes

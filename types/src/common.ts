@@ -1,4 +1,4 @@
-import { Struct, Option, Text, bool, u16, u32, u64, Null, U8aFixed, u128 } from '@polkadot/types'
+import { Struct, Option, Text, bool, u32, u64, Null, U8aFixed, u128 } from '@polkadot/types'
 import { Hash as PolkadotHash, Moment } from '@polkadot/types/interfaces'
 import { Codec, RegistryTypes } from '@polkadot/types/types'
 // we get 'moment' because it is a dependency of @polkadot/util, via @polkadot/keyring
@@ -63,19 +63,19 @@ export function getOptionPropOrUndefined<T extends Codec>(struct: Struct, fieldN
 
 export class OptionText extends Option.with(Text) {}
 
-export type InputValidationLengthConstraintType = {
-  min: u16
-  max_min_diff: u16
+export type InputValidationLengthConstraintU64Type = {
+  min: u64
+  max_min_diff: u64
 }
 
-export class InputValidationLengthConstraint
+export class InputValidationLengthConstraintU64
   extends JoyStructDecorated({
-    min: u16,
-    max_min_diff: u16,
+    min: u64,
+    max_min_diff: u64,
   })
-  implements InputValidationLengthConstraintType {
-  get max(): u16 {
-    return this.registry.createType('u16', this.min.add(this.max_min_diff))
+  implements InputValidationLengthConstraintU64Type {
+  get max(): u64 {
+    return this.registry.createType('u64', this.min.add(this.max_min_diff))
   }
 }
 
@@ -111,7 +111,7 @@ export const commonTypes: RegistryTypes = {
   BlockAndTime,
   ThreadId,
   PostId,
-  InputValidationLengthConstraint,
+  InputValidationLengthConstraintU64,
   WorkingGroup,
   BalanceKind,
   // Customize Address type for joystream chain

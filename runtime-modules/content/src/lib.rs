@@ -303,6 +303,7 @@ decl_module! {
             origin,
             curator_group_id: T::CuratorGroupId,
             curator_id: T::CuratorId,
+            permissions: ChannelAgentPermissions,
         ) {
 
             // Ensure given origin is lead
@@ -328,11 +329,11 @@ decl_module! {
 
             // Insert curator_id into curator_group under given curator_group_id
             <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
-                curator_group.get_curators_mut().insert(curator_id);
+                curator_group.get_curators_mut().insert(curator_id, permissions.clone());
             });
 
             // Trigger event
-            Self::deposit_event(RawEvent::CuratorAdded(curator_group_id, curator_id));
+            Self::deposit_event(RawEvent::CuratorAdded(curator_group_id, curator_id, permissions));
         }
 
         /// Remove curator from a given curator group
@@ -370,22 +371,19 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_channel(
             origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_owner: ChannelOwner<T::MemberId, T::CuratorGroupId>,
             params: ChannelCreationParameters<T>,
         ) {
             // channel creator account
             let sender = ensure_signed(origin)?;
 
-            ensure_actor_authorized_to_create_channel::<T>(
+            ensure_is_authorized_to_act_as_channel_owner::<T>(
                 &sender,
-                &actor,
+                &channel_owner,
             )?;
 
             // ensure collaborator member ids are valid
-            Self::validate_member_set(&params.collaborators)?;
-
-            // The channel owner will be..
-            let channel_owner = actor_to_channel_owner::<T>(&actor)?;
+            Self::validate_member_set(&params.collaborators.keys().cloned().collect())?;
 
             // next channel id
             let channel_id = NextChannelId::<T>::get();
@@ -430,7 +428,7 @@ decl_module! {
             // add channel to onchain state
             ChannelById::<T>::insert(channel_id, channel.clone());
 
-            Self::deposit_event(RawEvent::ChannelCreated(actor, channel_id, channel, params));
+            Self::deposit_event(RawEvent::ChannelCreated(channel_id, channel, params));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -447,19 +445,19 @@ decl_module! {
 
             channel.ensure_has_no_active_transfer::<T>()?;
 
-            ensure_actor_authorized_to_update_channel_assets::<T>(
+            // permissions check
+            ensure_actor_authorized_to_perform_channel_update::<T>(
                 &sender,
                 &actor,
                 &channel,
+                &params
             )?;
 
             channel.ensure_feature_not_paused::<T>(PausableChannelFeature::ChannelUpdate)?;
 
             // ensure actor is not a collaborator if collaborators set is to be updated
             if let Some(new_collabs) = params.collaborators.as_ref() {
-                ensure_actor_can_manage_collaborators::<T>(&sender, &channel.owner, &actor)?;
-                // ensure collaborator member ids are valid
-                Self::validate_member_set(new_collabs)?;
+                Self::validate_member_set(&new_collabs.keys().cloned().collect())?;
             }
 
             Self::ensure_assets_to_remove_are_part_of_assets_set(&params.assets_to_remove, &channel.data_objects)?;
@@ -568,11 +566,8 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            ensure_actor_authorized_to_delete_channel::<T>(
-                &sender,
-                &actor,
-                &channel.owner,
-            )?;
+            // permissions check
+            ensure_actor_authorized_to_delete_channel::<T>(&sender, &actor, &channel)?;
 
             // check that channel videos are 0
             ensure!(channel.num_videos == 0, Error::<T>::ChannelContainsVideos);
@@ -773,11 +768,8 @@ decl_module! {
             let channel = Self::ensure_channel_exists(&channel_id)?;
             channel.ensure_has_no_active_transfer::<T>()?;
 
-            ensure_actor_authorized_to_update_channel_assets::<T>(
-                &sender,
-                &actor,
-                &channel,
-            )?;
+            // permissions check
+            ensure_actor_authorized_to_create_video::<T>(&sender, &actor, &channel, &params)?;
 
             channel.ensure_feature_not_paused::<T>(PausableChannelFeature::VideoCreation)?;
             if params.auto_issue_nft.is_some() {
@@ -850,20 +842,22 @@ decl_module! {
             // check that video exists, retrieve corresponding channel id.
             let video = Self::ensure_video_exists(&video_id)?;
 
-            // Ensure nft is not issued for the video. Videos with issued nfts are immutable.
-            video.ensure_nft_is_not_issued::<T>()?;
-
-            let channel = Self::get_channel_from_video(&video);
+            // get associated channel and ensure it has no active transfer
             let channel_id = video.in_channel;
+            let channel = Self::get_channel_from_video(&video);
 
             channel.ensure_has_no_active_transfer::<T>()?;
 
-            // Check for permission to update channel assets
-            ensure_actor_authorized_to_update_channel_assets::<T>(
+            // permissions check
+            ensure_actor_authorized_to_perform_video_update::<T>(
                 &sender,
                 &actor,
                 &channel,
+                &params
             )?;
+
+            // Ensure nft is not issued for the video. Videos with issued nfts are immutable.
+            video.ensure_nft_is_not_issued::<T>()?;
 
             channel.ensure_feature_not_paused::<T>(PausableChannelFeature::VideoUpdate)?;
             if params.auto_issue_nft.is_some() {
@@ -931,16 +925,18 @@ decl_module! {
             // check that video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
-            // get information regarding channel
-            let channel = Self::get_channel_from_video(&video);
+            // get associated channel and ensure it has no active transfer
             let channel_id = video.in_channel;
+            let channel = Self::get_channel_from_video(&video);
 
             channel.ensure_has_no_active_transfer::<T>()?;
 
-            ensure_actor_authorized_to_update_channel_assets::<T>(
+            // permissions check
+            ensure_actor_authorized_to_delete_video::<T>(
                 &sender,
                 &actor,
                 &channel,
+                &video,
             )?;
 
             // ensure video can be removed
@@ -973,8 +969,8 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // get information regarding channel
-            let channel = Self::get_channel_from_video(&video);
             let channel_id = video.in_channel;
+            let channel = Self::get_channel_from_video(&video);
 
             // permissions check
             let is_nft = video.nft_status.is_some();
@@ -1020,8 +1016,8 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
 
             // get information regarding channel
-            let channel = Self::get_channel_from_video(&video);
             let channel_id = video.in_channel;
+            let channel = Self::get_channel_from_video(&video);
 
             // Permissions check
             let actions_to_perform = vec![ContentModerationAction::DeleteVideo];
@@ -1097,8 +1093,8 @@ decl_module! {
             let channel = Self::ensure_channel_exists(&item.channel_id)?;
             channel.ensure_has_no_active_transfer::<T>()?;
 
-
-            ensure_actor_authorized_to_claim_payment::<T>(origin, &actor, &channel.owner)?;
+            // permissions check
+            ensure_actor_authorized_to_claim_payment::<T>(origin, &actor, &channel)?;
 
             channel.ensure_feature_not_paused::<T>(PausableChannelFeature::CreatorCashout)?;
 
@@ -1156,13 +1152,16 @@ decl_module! {
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
+            // Get associated channel
+            let channel = Self::get_channel_from_video(&video);
+
+            // permissions check
+            ensure_actor_authorized_to_manage_video_nfts::<T>(&sender, &actor, &channel)?;
+
             // Ensure have not been issued yet
             video.ensure_nft_is_not_issued::<T>()?;
 
-            let channel = Self::get_channel_from_video(&video);
-
-            ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
-
+            // Ensure nft issuance is not paused
             channel.ensure_feature_not_paused::<T>(PausableChannelFeature::VideoNftIssuance)?;
 
             // The content owner will be..
@@ -1735,11 +1734,11 @@ decl_module! {
             // Ensure nft is issued
             let nft = video.ensure_nft_is_issued::<T>()?;
 
-            // Ensure auction for given video id exists, retrieve corresponding one
-            let auction = Self::ensure_in_open_auction_state(&nft)?;
-
             // Ensure actor is authorized to accept open auction bid
             ensure_actor_authorized_to_manage_nft::<T>(origin, &owner_id, &nft.owner, video.in_channel)?;
+
+            // Ensure auction for given video id exists, retrieve corresponding one
+            let auction = Self::ensure_in_open_auction_state(&nft)?;
 
             // Ensure open auction bid exists
             let bid = Self::ensure_open_bid_exists(video_id, winner_id)?;
@@ -1958,30 +1957,29 @@ decl_module! {
 
         /// Channel owner remark
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn channel_owner_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, channel_id: T::ChannelId, msg: Vec<u8>) {
+        pub fn channel_owner_remark(origin, channel_id: T::ChannelId, msg: Vec<u8>) {
             let sender = ensure_signed(origin)?;
             let channel = Self::ensure_channel_exists(&channel_id)?;
-            ensure_actor_auth_success::<T>(&sender, &actor)?;
-            ensure_actor_is_channel_owner::<T>(&actor, &channel.owner)?;
+            ensure_is_authorized_to_act_as_channel_owner::<T>(&sender, &channel.owner)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            Self::deposit_event(RawEvent::ChannelOwnerRemarked(actor, channel_id, msg));
+            Self::deposit_event(RawEvent::ChannelOwnerRemarked(channel_id, msg));
         }
 
         /// Channel collaborator remark
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn channel_collaborator_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, channel_id: T::ChannelId, msg: Vec<u8>) {
+        pub fn channel_agent_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, channel_id: T::ChannelId, msg: Vec<u8>) {
             let sender = ensure_signed(origin)?;
             let channel = Self::ensure_channel_exists(&channel_id)?;
-            ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
+            ensure_actor_authorized_to_send_channel_agent_remark::<T>(&sender, &actor, &channel)?;
             //
             // == MUTATION SAFE ==
             //
 
-            Self::deposit_event(RawEvent::ChannelCollaboratorRemarked(actor, channel_id, msg));
+            Self::deposit_event(RawEvent::ChannelAgentRemarked(actor, channel_id, msg));
         }
 
         /// NFT owner remark
@@ -2007,7 +2005,7 @@ decl_module! {
             new_transfer_status: ChannelTransferStatus<T::MemberId, T::CuratorGroupId, BalanceOf<T>>
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
-            ensure_actor_authorized_to_transfer_channel::<T>(origin, &actor, &channel.owner)?;
+            ensure_actor_authorized_to_transfer_channel::<T>(origin, &actor, &channel)?;
 
             if let ChannelTransferStatus::PendingTransfer(ref params) = new_transfer_status {
                 Self::validate_member_set(&params.transfer_params.new_collaborators)?;
@@ -2032,22 +2030,22 @@ decl_module! {
         pub fn accept_channel_transfer(
             origin,
             channel_id: T::ChannelId,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             commitment_params: TransferParameters<T::MemberId, BalanceOf<T>>
         ) {
+            let sender = ensure_signed(origin)?;
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
             let params =
                 if let ChannelTransferStatus::PendingTransfer(ref params) =channel.transfer_status {
-                    ensure_actor_authorized_to_accept_channel::<T>(origin, &actor, &params.new_owner)?;
-                    Self::validate_channel_transfer_acceptance(&actor, &commitment_params, params)?;
+                    ensure_is_authorized_to_act_as_channel_owner::<T>(&sender, &params.new_owner)?;
+                    Self::validate_channel_transfer_acceptance(&commitment_params, params)?;
 
                     params
                 } else {
                     return Err(Error::<T>::InvalidChannelTransferStatus.into());
                 };
 
-            let new_owner = actor_to_channel_owner::<T>(&actor)?;
+            let new_owner = params.new_owner.clone();
 
             //
             // == MUTATION SAFE ==
@@ -2059,11 +2057,11 @@ decl_module! {
 
             ChannelById::<T>::mutate(&channel_id, |channel| {
                 channel.transfer_status = ChannelTransferStatus::NoActiveTransfer;
-                channel.owner = params.new_owner.clone();
+                channel.owner = new_owner;
             });
 
             Self::deposit_event(
-                RawEvent::ChannelTransferAccepted(channel_id, actor, commitment_params)
+                RawEvent::ChannelTransferAccepted(channel_id, commitment_params)
             );
         }
 
@@ -2418,7 +2416,6 @@ impl<T: Trait> Module<T> {
 
     // Validates channel transfer acceptance parameters: commitment params, new owner balance.
     fn validate_channel_transfer_acceptance(
-        actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         commitment_params: &TransferParameters<T::MemberId, BalanceOf<T>>,
         params: &PendingTransfer<T::MemberId, T::CuratorGroupId, BalanceOf<T>>,
     ) -> DispatchResult {
@@ -2429,10 +2426,8 @@ impl<T: Trait> Module<T> {
 
         // Check for new owner balance only if the transfer is not free.
         if !params.transfer_params.is_free_of_charge() {
-            let owner = actor_to_channel_owner::<T>(actor)?;
-
             Self::ensure_sufficient_balance_for_channel_transfer(
-                &owner,
+                &params.new_owner,
                 params.transfer_params.price,
             )?;
         }
@@ -2520,11 +2515,11 @@ decl_event!(
         CuratorGroupCreated(CuratorGroupId),
         CuratorGroupPermissionsUpdated(CuratorGroupId, ModerationPermissionsByLevel),
         CuratorGroupStatusSet(CuratorGroupId, bool /* active status */),
-        CuratorAdded(CuratorGroupId, CuratorId),
+        CuratorAdded(CuratorGroupId, CuratorId, ChannelAgentPermissions),
         CuratorRemoved(CuratorGroupId, CuratorId),
 
         // Channels
-        ChannelCreated(ContentActor, ChannelId, Channel, ChannelCreationParameters),
+        ChannelCreated(ChannelId, Channel, ChannelCreationParameters),
         ChannelUpdated(
             ContentActor,
             ChannelId,
@@ -2618,13 +2613,13 @@ decl_event!(
         BuyNowPriceUpdated(VideoId, ContentActor, Balance),
         NftSlingedBackToTheOriginalArtist(VideoId, ContentActor),
 
-        // Metaprotocols related event
-        ChannelOwnerRemarked(ContentActor, ChannelId, Vec<u8>),
-        ChannelCollaboratorRemarked(ContentActor, ChannelId, Vec<u8>),
+        /// Metaprotocols related event
+        ChannelOwnerRemarked(ChannelId, Vec<u8>),
+        ChannelAgentRemarked(ContentActor, ChannelId, Vec<u8>),
         NftOwnerRemarked(ContentActor, VideoId, Vec<u8>),
 
         // Channel transfer
         UpdateChannelTransferStatus(ChannelId, ContentActor, ChannelTransferStatus),
-        ChannelTransferAccepted(ChannelId, ContentActor, TransferParameters),
+        ChannelTransferAccepted(ChannelId, TransferParameters),
     }
 );

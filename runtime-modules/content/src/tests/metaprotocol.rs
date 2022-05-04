@@ -1,23 +1,24 @@
 #![cfg(test)]
-use super::curators;
 use super::fixtures::*;
 use super::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
 
 #[test]
-fn successful_collaborator_remark() {
+fn successful_agent_remark() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        create_default_member_owned_channel_with_collaborator_permissions(&[
+            ChannelActionPermission::AgentRemark,
+        ]);
 
         let channel_id = Content::next_channel_id() - 1;
         let msg = b"test".to_vec();
 
-        assert_ok!(Content::channel_collaborator_remark(
+        assert_ok!(Content::channel_agent_remark(
             Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
             ContentActor::Member(COLLABORATOR_MEMBER_ID),
             channel_id,
@@ -27,7 +28,7 @@ fn successful_collaborator_remark() {
 }
 
 #[test]
-fn unsuccessful_collaborator_remark_with_invalid_channel_id() {
+fn unsuccessful_agent_remark_with_invalid_channel_id() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -39,7 +40,7 @@ fn unsuccessful_collaborator_remark_with_invalid_channel_id() {
         let msg = b"test".to_vec();
 
         assert_err!(
-            Content::channel_collaborator_remark(
+            Content::channel_agent_remark(
                 Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(COLLABORATOR_MEMBER_ID),
                 invalid_channel_id,
@@ -51,7 +52,7 @@ fn unsuccessful_collaborator_remark_with_invalid_channel_id() {
 }
 
 #[test]
-fn unsuccessful_collaborator_remark_with_invalid_account_id() {
+fn unsuccessful_agent_remark_with_invalid_account_id() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -63,7 +64,7 @@ fn unsuccessful_collaborator_remark_with_invalid_account_id() {
         let msg = b"test".to_vec();
 
         assert_err!(
-            Content::channel_collaborator_remark(
+            Content::channel_agent_remark(
                 Origin::signed(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID + 1),
                 ContentActor::Member(COLLABORATOR_MEMBER_ID),
                 channel_id,
@@ -75,7 +76,7 @@ fn unsuccessful_collaborator_remark_with_invalid_account_id() {
 }
 
 #[test]
-fn unsuccessful_collaborator_remark_with_member_id() {
+fn unsuccessful_agent_remark_with_invalid_member_id() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -87,7 +88,7 @@ fn unsuccessful_collaborator_remark_with_member_id() {
         let msg = b"test".to_vec();
 
         assert_err!(
-            Content::channel_collaborator_remark(
+            Content::channel_agent_remark(
                 Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(UNAUTHORIZED_COLLABORATOR_MEMBER_ID),
                 channel_id,
@@ -99,7 +100,7 @@ fn unsuccessful_collaborator_remark_with_member_id() {
 }
 
 #[test]
-fn unsuccessful_collaborator_remark_by_non_collaborator() {
+fn unsuccessful_agent_remark_by_non_agent() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -111,7 +112,7 @@ fn unsuccessful_collaborator_remark_by_non_collaborator() {
         let msg = b"test".to_vec();
 
         assert_err!(
-            Content::channel_collaborator_remark(
+            Content::channel_agent_remark(
                 Origin::signed(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(UNAUTHORIZED_COLLABORATOR_MEMBER_ID),
                 channel_id,
@@ -137,7 +138,6 @@ fn unsuccessful_owner_remark_with_invalid_channel_id() {
         assert_err!(
             Content::channel_owner_remark(
                 Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
-                ContentActor::Member(DEFAULT_MEMBER_ID),
                 invalid_channel_id,
                 msg
             ),
@@ -161,7 +161,6 @@ fn unsuccessful_owner_remark_with_invalid_account_id() {
         assert_err!(
             Content::channel_owner_remark(
                 Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
-                ContentActor::Member(DEFAULT_MEMBER_ID),
                 channel_id,
                 msg
             ),
@@ -185,31 +184,6 @@ fn unsuccessful_owner_remark_by_non_owner() {
         assert_err!(
             Content::channel_owner_remark(
                 Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
-                ContentActor::Member(UNAUTHORIZED_MEMBER_ID),
-                channel_id,
-                msg
-            ),
-            Error::<Test>::ActorNotAuthorized,
-        );
-    })
-}
-
-#[test]
-fn unsuccessful_owner_remark_with_invalid_member_id() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        let channel_id = Content::next_channel_id() - 1;
-        let msg = b"test".to_vec();
-
-        assert_err!(
-            Content::channel_owner_remark(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-                ContentActor::Member(UNAUTHORIZED_MEMBER_ID),
                 channel_id,
                 msg
             ),
@@ -219,26 +193,26 @@ fn unsuccessful_owner_remark_with_invalid_member_id() {
 }
 
 #[test]
-fn unsuccessful_owner_remark_with_invalid_curator() {
+fn unsuccessful_curator_channel_owner_remark_by_unauthorized_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE);
-
+        create_default_curator_owned_channel(
+            DATA_OBJECT_DELETION_PRIZE,
+            &[ChannelActionPermission::AgentRemark],
+        );
         let channel_id = Content::next_channel_id() - 1;
         let msg = b"test".to_vec();
-        let invalid_curator_group_id = curators::add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
 
         assert_err!(
             Content::channel_owner_remark(
                 Origin::signed(UNAUTHORIZED_CURATOR_ACCOUNT_ID),
-                ContentActor::Curator(invalid_curator_group_id, UNAUTHORIZED_CURATOR_ACCOUNT_ID),
                 channel_id,
                 msg
             ),
-            Error::<Test>::CuratorAuthFailed,
+            Error::<Test>::LeadAuthFailed,
         );
     })
 }

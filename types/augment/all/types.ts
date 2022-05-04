@@ -1,7 +1,7 @@
 // Auto-generated via `yarn polkadot-types-from-defs`, do not edit
 /* eslint-disable */
 
-import type { BTreeMap, BTreeSet, Bytes, Enum, GenericAccountId, Option, Struct, Text, Vec, bool, u128, u16, u32, u64, u8 } from '@polkadot/types';
+import type { BTreeMap, BTreeSet, Bytes, Enum, GenericAccountId, Option, Struct, Text, Vec, bool, u128, u32, u64, u8 } from '@polkadot/types';
 import type { ITuple } from '@polkadot/types/types';
 import type { AccountId, Balance, Hash, Perbill } from '@polkadot/types/interfaces/runtime';
 import type { AccountInfoWithRefCount } from '@polkadot/types/interfaces/system';
@@ -212,13 +212,33 @@ export interface CategoryId extends u64 {}
 export interface Channel extends Struct {
   readonly owner: ChannelOwner;
   readonly num_videos: u64;
-  readonly collaborators: BTreeSet<MemberId>;
+  readonly collaborators: BTreeMap<MemberId, ChannelAgentPermissions>;
   readonly cumulative_payout_earned: u128;
   readonly privilege_level: ChannelPrivilegeLevel;
   readonly paused_features: BTreeSet<PausableChannelFeature>;
   readonly transfer_status: ChannelTransferStatus;
   readonly data_objects: BTreeSet<DataObjectId>;
 }
+
+/** @name ChannelActionPermission */
+export interface ChannelActionPermission extends Enum {
+  readonly isUpdateChannelMetadata: boolean;
+  readonly isManageNonVideoChannelAssets: boolean;
+  readonly isManageChannelCollaborators: boolean;
+  readonly isUpdateVideoMetadata: boolean;
+  readonly isAddVideo: boolean;
+  readonly isManageVideoAssets: boolean;
+  readonly isDeleteChannel: boolean;
+  readonly isDeleteVideo: boolean;
+  readonly isManageVideoNfts: boolean;
+  readonly isAgentRemark: boolean;
+  readonly isTransferChannel: boolean;
+  readonly isClaimChannelReward: boolean;
+  readonly isWithdrawFromChannelBalance: boolean;
+}
+
+/** @name ChannelAgentPermissions */
+export interface ChannelAgentPermissions extends BTreeSet<ChannelActionPermission> {}
 
 /** @name ChannelCategory */
 export interface ChannelCategory extends Struct {}
@@ -240,7 +260,7 @@ export interface ChannelCategoryUpdateParameters extends Struct {
 export interface ChannelCreationParameters extends Struct {
   readonly assets: Option<StorageAssets>;
   readonly meta: Option<Bytes>;
-  readonly collaborators: BTreeSet<MemberId>;
+  readonly collaborators: BTreeMap<MemberId, ChannelAgentPermissions>;
   readonly storage_buckets: BTreeSet<u64>;
   readonly distribution_Bucket: BTreeSet<u64>;
   readonly expected_dynamic_bag_deletion_prize: u128;
@@ -279,7 +299,7 @@ export interface ChannelUpdateParameters extends Struct {
   readonly assets_to_upload: Option<StorageAssets>;
   readonly new_meta: Option<Bytes>;
   readonly assets_to_remove: BTreeSet<DataObjectId>;
-  readonly collaborators: Option<BTreeSet<MemberId>>;
+  readonly collaborators: Option<BTreeMap<MemberId, ChannelAgentPermissions>>;
   readonly expected_data_object_deletion_prize: u128;
 }
 
@@ -364,7 +384,7 @@ export interface CreateOpeningParameters extends Struct {
 
 /** @name CuratorGroup */
 export interface CuratorGroup extends Struct {
-  readonly curators: BTreeSet<CuratorId>;
+  readonly curators: BTreeMap<CuratorId, ChannelAgentPermissions>;
   readonly active: bool;
   readonly permissions_by_level: ModerationPermissionsByLevel;
 }
@@ -612,10 +632,10 @@ export interface InitTransactionalStatus extends Enum {
   readonly asOpenAuction: OpenAuctionParams;
 }
 
-/** @name InputValidationLengthConstraint */
-export interface InputValidationLengthConstraint extends Struct {
-  readonly min: u16;
-  readonly max_min_diff: u16;
+/** @name InputValidationLengthConstraintU64 */
+export interface InputValidationLengthConstraintU64 extends Struct {
+  readonly min: u64;
+  readonly max_min_diff: u64;
 }
 
 /** @name InviteMembershipParameters */
@@ -1176,6 +1196,8 @@ export interface UploadParameters extends Struct {
   readonly expectedDataSizeFee: u128;
   readonly expectedDynamicBagDeletionPrize: u128;
   readonly expectedDataObjectDeletionPrize: u128;
+  readonly storageBuckets: BTreeSet<StorageBucketId>;
+  readonly distributionBuckets: BTreeSet<DistributionBucketId>;
 }
 
 /** @name Url */

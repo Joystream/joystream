@@ -136,106 +136,274 @@ pub fn ensure_actor_auth_success<T: Trait>(
 
 /// CHANNEL CORE FIELDS MANAGEMENT PERMISSIONS
 
-/// Ensure actor is authorized to create a channel
-pub fn ensure_actor_authorized_to_create_channel<T: Trait>(
+// Ensure sender is authorized to act as channel owner
+pub fn ensure_is_authorized_to_act_as_channel_owner<T: Trait>(
     sender: &T::AccountId,
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
 ) -> DispatchResult {
-    ensure_actor_auth_success::<T>(sender, actor)?;
-    actor_to_channel_owner::<T>(actor).map(|_| ())
+    match channel_owner {
+        ChannelOwner::CuratorGroup(_) => ensure_lead_auth_success::<T>(sender),
+        ChannelOwner::Member(member_id) => ensure_member_auth_success::<T>(sender, member_id),
+    }
 }
 
 /// Ensure actor is authorized to delete channel
 pub fn ensure_actor_authorized_to_delete_channel<T: Trait>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
-) -> DispatchResult {
-    ensure_actor_auth_success::<T>(sender, actor)?;
-    match actor {
-        ContentActor::Lead => ensure_channel_is_owned_by_curators::<T>(owner),
-        _ => ensure_actor_is_channel_owner::<T>(actor, owner),
+    channel: &Channel<T>,
+) -> Result<Option<ChannelAgentPermissions>, DispatchError> {
+    let mut required_permissions = vec![ChannelActionPermission::DeleteChannel];
+    if !channel.data_objects.is_empty() {
+        required_permissions.push(ChannelActionPermission::ManageNonVideoChannelAssets);
     }
+    ensure_actor_has_channel_permissions::<T>(&sender, &actor, &channel, &required_permissions)
 }
 
-/// Ensure actor is authorized to manage collaborator set for a channel
-pub fn ensure_actor_can_manage_collaborators<T: Trait>(
+/// Ensure actor is authorized to perform channel update with given params
+pub fn ensure_actor_authorized_to_perform_channel_update<T: Trait>(
     sender: &T::AccountId,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-) -> DispatchResult {
-    ensure_actor_auth_success::<T>(sender, actor)?;
-    match actor {
-        ContentActor::Lead => ensure_channel_is_owned_by_curators::<T>(owner),
-        _ => ensure_actor_is_channel_owner::<T>(actor, owner),
+    channel: &Channel<T>,
+    params: &ChannelUpdateParameters<T>,
+) -> Result<Option<ChannelAgentPermissions>, DispatchError> {
+    let mut required_permissions: Vec<ChannelActionPermission> = Vec::new();
+
+    if params.collaborators.is_some() {
+        required_permissions.push(ChannelActionPermission::ManageChannelCollaborators);
     }
+
+    if params.new_meta.is_some() {
+        required_permissions.push(ChannelActionPermission::UpdateChannelMetadata);
+    }
+
+    if params.assets_to_upload.is_some() || !params.assets_to_remove.is_empty() {
+        required_permissions.push(ChannelActionPermission::ManageNonVideoChannelAssets);
+    }
+
+    let opt_agent_permissions = ensure_actor_has_channel_permissions::<T>(
+        &sender,
+        &actor,
+        &channel,
+        &required_permissions,
+    )?;
+
+    if let (Some(agent_permissions), Some(new_collaborators_set)) = (
+        opt_agent_permissions.as_ref(),
+        params.collaborators.as_ref(),
+    ) {
+        let updated_collaborators = channel.collaborators.iter().filter_map(|(k, v)| {
+            let new_v = new_collaborators_set.get(k);
+            if new_v != Some(v) {
+                Some((*k, new_v.map_or(BTreeSet::new(), |v| v.clone())))
+            } else {
+                None
+            }
+        });
+        let added_collaborators = new_collaborators_set.iter().filter_map(|(k, v)| {
+            if !channel.collaborators.contains_key(k) {
+                Some((*k, v.clone()))
+            } else {
+                None
+            }
+        });
+        ensure!(
+            updated_collaborators
+                .chain(added_collaborators)
+                .all(|(member_id, new_permissions)| {
+                    let old_permissions = channel
+                        .collaborators
+                        .get(&member_id)
+                        .map_or(BTreeSet::new(), |v| v.clone());
+                    old_permissions.is_subset(agent_permissions)
+                        && new_permissions.is_subset(agent_permissions)
+                }),
+            Error::<T>::ChannelAgentInsufficientPermissions
+        )
+    }
+
+    Ok(opt_agent_permissions)
 }
 
-/// Ensure actor is authorized to manage reward account for a channel
-pub fn ensure_actor_can_manage_reward_account<T: Trait>(
+/// Ensure actor is authorized to create video with given params
+pub fn ensure_actor_authorized_to_create_video<T: Trait>(
     sender: &T::AccountId,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-) -> DispatchResult {
-    ensure_actor_auth_success::<T>(sender, actor)?;
-    match actor {
-        ContentActor::Lead => ensure_channel_is_owned_by_curators::<T>(owner),
-        _ => ensure_actor_is_channel_owner::<T>(actor, owner),
+    channel: &Channel<T>,
+    params: &VideoCreationParameters<T>,
+) -> Result<Option<ChannelAgentPermissions>, DispatchError> {
+    let mut required_permissions: Vec<ChannelActionPermission> =
+        vec![ChannelActionPermission::AddVideo];
+
+    if params.auto_issue_nft.is_some() {
+        required_permissions.push(ChannelActionPermission::ManageVideoNfts);
     }
+
+    ensure_actor_has_channel_permissions::<T>(&sender, &actor, &channel, &required_permissions)
+}
+
+/// Ensure actor is authorized to perform video update with given params
+pub fn ensure_actor_authorized_to_perform_video_update<T: Trait>(
+    sender: &T::AccountId,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel: &Channel<T>,
+    params: &VideoUpdateParameters<T>,
+) -> Result<Option<ChannelAgentPermissions>, DispatchError> {
+    let mut required_permissions: Vec<ChannelActionPermission> = Vec::new();
+
+    if params.new_meta.is_some() {
+        required_permissions.push(ChannelActionPermission::UpdateVideoMetadata);
+    }
+
+    if params.assets_to_upload.is_some() || !params.assets_to_remove.is_empty() {
+        required_permissions.push(ChannelActionPermission::ManageVideoAssets);
+    }
+
+    if params.auto_issue_nft.is_some() {
+        required_permissions.push(ChannelActionPermission::ManageVideoNfts);
+    }
+
+    ensure_actor_has_channel_permissions::<T>(&sender, &actor, &channel, &required_permissions)
+}
+
+/// Ensure actor is authorized to delete video
+pub fn ensure_actor_authorized_to_delete_video<T: Trait>(
+    sender: &T::AccountId,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel: &Channel<T>,
+    video: &Video<T>,
+) -> Result<Option<ChannelAgentPermissions>, DispatchError> {
+    let mut required_permissions = vec![ChannelActionPermission::DeleteVideo];
+    if !video.data_objects.is_empty() {
+        required_permissions.push(ChannelActionPermission::ManageVideoAssets);
+    }
+    ensure_actor_has_channel_permissions::<T>(&sender, &actor, &channel, &required_permissions)
+}
+
+/// Ensure actor is authorized to manage video nfts
+pub fn ensure_actor_authorized_to_manage_video_nfts<T: Trait>(
+    sender: &T::AccountId,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel: &Channel<T>,
+) -> Result<Option<ChannelAgentPermissions>, DispatchError> {
+    ensure_actor_has_channel_permissions::<T>(
+        &sender,
+        &actor,
+        &channel,
+        &[ChannelActionPermission::ManageVideoNfts],
+    )
+}
+
+// Ensure actor is authorized to send channel_agent_remark
+pub fn ensure_actor_authorized_to_send_channel_agent_remark<T: Trait>(
+    sender: &T::AccountId,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel: &Channel<T>,
+) -> Result<Option<ChannelAgentPermissions>, DispatchError> {
+    ensure_actor_has_channel_permissions::<T>(
+        &sender,
+        &actor,
+        &channel,
+        &[ChannelActionPermission::AgentRemark],
+    )
 }
 
 /// CHANNEL ASSET MANAGEMENT PERMISSIONS
 
 // Ensure channel is owned by curators
-pub fn ensure_channel_is_owned_by_curators<T: Trait>(
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
-) -> DispatchResult {
-    if let ChannelOwner::CuratorGroup(_) = *owner {
+pub fn ensure_channel_is_owned_by_curators<T: Trait>(channel: &Channel<T>) -> DispatchResult {
+    if let ChannelOwner::CuratorGroup(_) = channel.owner {
         return Ok(());
     };
     Err(Error::<T>::ActorNotAuthorized.into())
 }
 
-// Ensure actor is authorized to manage channel assets & videos
-pub fn ensure_actor_authorized_to_update_channel_assets<T: Trait>(
-    sender: &T::AccountId,
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+// Ensure channel is owned by specified member
+pub fn ensure_channel_is_owned_by_member<T: Trait>(
     channel: &Channel<T>,
-) -> DispatchResult {
-    // Only owner of a channel can update and delete channel assets.
-    // Lead can update and delete curator group owned channel assets.
-    ensure_actor_auth_success::<T>(&sender, actor)?;
-    match actor {
-        ContentActor::Lead => ensure_channel_is_owned_by_curators::<T>(&channel.owner),
-        ContentActor::Curator(..) => ensure_actor_is_channel_owner::<T>(actor, &channel.owner),
-        ContentActor::Member(member_id) => {
-            let is_collaborator = ensure_member_is_collaborator::<T>(member_id, channel);
-            let is_owner = ensure_actor_is_channel_owner::<T>(actor, &channel.owner);
-            is_owner.or(is_collaborator)
-        }
-    }
-}
-
-// ensure member id is in the channel collaborator set
-pub fn ensure_member_is_collaborator<T: Trait>(
     member_id: &T::MemberId,
-    channel: &Channel<T>,
 ) -> DispatchResult {
     ensure!(
-        channel.collaborators.contains(member_id),
+        channel.owner == ChannelOwner::Member(*member_id),
         Error::<T>::ActorNotAuthorized
     );
     Ok(())
 }
 
-// Ensure actor can update channels and videos in the channel
-pub fn ensure_actor_is_channel_owner<T: Trait>(
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
+// Ensure channel is owned by specified group
+pub fn ensure_channel_is_owned_by_curator_group<T: Trait>(
+    channel: &Channel<T>,
+    group_id: &T::CuratorGroupId,
 ) -> DispatchResult {
-    let resulting_owner = actor_to_channel_owner::<T>(actor)?;
-    ensure!(resulting_owner == *owner, Error::<T>::ActorNotAuthorized);
+    ensure!(
+        channel.owner == ChannelOwner::CuratorGroup(*group_id),
+        Error::<T>::ActorNotAuthorized
+    );
     Ok(())
+}
+
+pub fn ensure_actor_authorized_to_act_as_channel_owner<T: Trait>(
+    sender: &T::AccountId,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel: &Channel<T>,
+) -> DispatchResult {
+    ensure_actor_auth_success::<T>(&sender, actor)?;
+    match actor {
+        ContentActor::Lead => ensure_channel_is_owned_by_curators::<T>(&channel),
+        ContentActor::Member(member_id) => {
+            ensure_channel_is_owned_by_member::<T>(channel, member_id)
+        }
+        _ => Err(Error::<T>::ActorNotAuthorized.into()),
+    }
+}
+
+pub fn ensure_actor_has_channel_permissions<T: Trait>(
+    sender: &T::AccountId,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel: &Channel<T>,
+    required_permissions: &[ChannelActionPermission],
+) -> Result<Option<ChannelAgentPermissions>, DispatchError> {
+    ensure_actor_auth_success::<T>(&sender, actor)?;
+    match actor {
+        ContentActor::Lead => ensure_channel_is_owned_by_curators::<T>(&channel).map(|_| None),
+        ContentActor::Curator(curator_group_id, curator_id) => {
+            ensure_channel_is_owned_by_curator_group::<T>(channel, curator_group_id)?;
+            let group = Module::<T>::curator_group_by_id(&curator_group_id);
+            let agent_permissions =
+                group.get_existing_group_member_channel_agent_permissions(curator_id)?;
+            ensure_agent_has_required_permissions::<T>(agent_permissions, required_permissions)?;
+            Ok(Some(agent_permissions.clone()))
+        }
+        ContentActor::Member(member_id) => {
+            ensure_channel_is_owned_by_member::<T>(channel, member_id).map_or_else(
+                |_| {
+                    let agent_permissions =
+                        channel.get_existing_collaborator_permissions::<T>(&member_id)?;
+                    ensure_agent_has_required_permissions::<T>(
+                        agent_permissions,
+                        required_permissions,
+                    )?;
+                    Ok(Some(agent_permissions.clone()))
+                },
+                |_| Ok(None),
+            )
+        }
+    }
+}
+
+fn ensure_agent_has_required_permissions<T: Trait>(
+    agent_permissions: &ChannelAgentPermissions,
+    required_permissions: &[ChannelActionPermission],
+) -> Result<ChannelAgentPermissions, DispatchError> {
+    ensure!(
+        required_permissions
+            .iter()
+            .cloned()
+            .collect::<BTreeSet<_>>()
+            .is_subset(agent_permissions),
+        Error::<T>::ChannelAgentInsufficientPermissions
+    );
+    Ok(agent_permissions.clone())
 }
 
 /// SET FEATURED VIDEOS & CATEGORIES MANAGEMENT PERMISSION
@@ -256,32 +424,8 @@ pub fn ensure_actor_authorized_to_manage_nft<T: Trait>(
             Error::<T>::ActorNotAuthorized
         );
     } else {
-        // Ensure curator group is the channel owner.
-        let channel_owner = Module::<T>::ensure_channel_exists(&in_channel)?.owner;
-
-        match actor {
-            ContentActor::Lead => {
-                if let ChannelOwner::CuratorGroup(_) = channel_owner {
-                    return Ok(());
-                } else {
-                    return Err(Error::<T>::ActorNotAuthorized.into());
-                }
-            }
-            ContentActor::Curator(curator_group_id, _) => {
-                // Ensure curator group is the channel owner.
-                ensure!(
-                    channel_owner == ChannelOwner::CuratorGroup(*curator_group_id),
-                    Error::<T>::ActorNotAuthorized
-                );
-            }
-            ContentActor::Member(member_id) => {
-                // Ensure the member is the channel owner.
-                ensure!(
-                    channel_owner == ChannelOwner::Member(*member_id),
-                    Error::<T>::ActorNotAuthorized
-                );
-            }
-        }
+        let channel = Module::<T>::ensure_channel_exists(&in_channel)?;
+        ensure_actor_authorized_to_manage_video_nfts::<T>(&sender, &actor, &channel)?;
     }
     Ok(())
 }
@@ -319,11 +463,15 @@ pub fn actor_to_channel_owner<T: Trait>(
 pub fn ensure_actor_authorized_to_claim_payment<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
-) -> DispatchResult {
+    channel: &Channel<T>,
+) -> Result<Option<ChannelAgentPermissions>, DispatchError> {
     let sender = ensure_signed(origin)?;
-    ensure_actor_auth_success::<T>(&sender, actor)?;
-    ensure_actor_is_channel_owner::<T>(actor, owner)
+    ensure_actor_has_channel_permissions::<T>(
+        &sender,
+        &actor,
+        &channel,
+        &[ChannelActionPermission::ClaimChannelReward],
+    )
 }
 
 // authorized account can update payouts vector commitment
@@ -353,7 +501,10 @@ pub fn ensure_actor_authorized_to_perform_moderation_actions<T: Trait>(
         ContentActor::Lead => Ok(()),
         ContentActor::Curator(curator_group_id, ..) => {
             let group = Module::<T>::curator_group_by_id(&curator_group_id);
-            group.ensure_can_perform_actions(actions, channel_privilege_level)?;
+            group.ensure_group_member_can_perform_moderation_actions(
+                actions,
+                channel_privilege_level,
+            )?;
             Ok(())
         }
         _ => Err(Error::<T>::ActorNotAuthorized.into()),
@@ -366,23 +517,15 @@ pub fn ensure_actor_authorized_to_perform_moderation_actions<T: Trait>(
 pub fn ensure_actor_authorized_to_transfer_channel<T: Trait>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
-) -> DispatchResult {
+    channel: &Channel<T>,
+) -> Result<Option<ChannelAgentPermissions>, DispatchError> {
     let sender = ensure_signed(origin)?;
-    ensure_actor_auth_success::<T>(&sender, actor)?;
-    ensure_actor_is_channel_owner::<T>(actor, owner)
-}
-
-// Transfer acceptance check.
-pub fn ensure_actor_authorized_to_accept_channel<T: Trait>(
-    origin: T::Origin,
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    channel_acceptor: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
-) -> DispatchResult {
-    let sender = ensure_signed(origin)?;
-    ensure_actor_auth_success::<T>(&sender, actor)?;
-
-    ensure_actor_is_channel_owner::<T>(actor, channel_acceptor)
+    ensure_actor_has_channel_permissions::<T>(
+        &sender,
+        &actor,
+        &channel,
+        &[ChannelActionPermission::TransferChannel],
+    )
 }
 
 // Council reward
