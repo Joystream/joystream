@@ -1835,7 +1835,10 @@ impl UpdateChannelTransferStatusFixture {
         Self { channel_id, ..self }
     }
 
-    pub fn with_collaborators(self, new_collaborators: BTreeSet<MemberId>) -> Self {
+    pub fn with_collaborators(
+        self,
+        new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
+    ) -> Self {
         let old_transfer_params = self.get_transfer_params();
         self.with_transfer_parameters(TransferParameters {
             new_collaborators,
@@ -1989,6 +1992,17 @@ impl AcceptChannelTransferFixture {
         })
     }
 
+    pub fn with_collaborators(
+        self,
+        new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
+    ) -> Self {
+        let old_transfer_params = self.params.clone();
+        self.with_transfer_params(TransferParameters {
+            new_collaborators,
+            ..old_transfer_params
+        })
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let old_channel = Content::channel_by_id(self.channel_id);
 
@@ -2015,6 +2029,7 @@ impl AcceptChannelTransferFixture {
             };
 
             assert_eq!(new_channel.owner, channel_owner);
+            assert_eq!(new_channel.collaborators, self.params.new_collaborators);
             assert_eq!(
                 System::events().last().unwrap().event,
                 MetaEvent::content(RawEvent::ChannelTransferAccepted(

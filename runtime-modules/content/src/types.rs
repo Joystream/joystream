@@ -175,8 +175,8 @@ pub struct PendingTransfer<MemberId: Ord, CuratorGroupId, Balance: Zero> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 /// Contains parameters for the pending transfer.
 pub struct TransferParameters<MemberId: Ord, Balance: Zero> {
-    /// New set of the channel's collaborators.
-    pub new_collaborators: BTreeSet<MemberId>,
+    /// Channel's new collaborators along with their respective permissions
+    pub new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
     /// Transfer price: can be 0, which means free.
     pub price: Balance,
 }

@@ -5,6 +5,8 @@ use crate::tests::curators::add_curator_to_new_group;
 use crate::*;
 use frame_system::RawOrigin;
 use sp_core::sp_std::iter::FromIterator;
+use sp_std::collections::btree_map::BTreeMap;
+use strum::IntoEnumIterator;
 
 #[test]
 fn update_channel_transfer_status_succeeds() {
@@ -78,7 +80,10 @@ fn update_channel_transfer_status_fails_with_invalid_collaborators() {
 
         let invalid_member_id = 111;
         UpdateChannelTransferStatusFixture::default()
-            .with_collaborators(BTreeSet::from_iter(vec![invalid_member_id]))
+            .with_collaborators(BTreeMap::from_iter(vec![(
+                invalid_member_id,
+                BTreeSet::new(),
+            )]))
             .call_and_assert(Err(Error::<Test>::InvalidMemberProvided.into()))
     })
 }
@@ -131,10 +136,17 @@ fn accept_transfer_status_succeeds() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel();
 
+        let new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions> = BTreeMap::from_iter(
+            vec![(SECOND_MEMBER_ID, ChannelActionPermission::iter().collect())],
+        );
+
         UpdateChannelTransferStatusFixture::default()
             .with_new_member_channel_owner(DEFAULT_MEMBER_ID)
+            .with_collaborators(new_collaborators.clone())
             .call_and_assert(Ok(()));
-        AcceptChannelTransferFixture::default().call_and_assert(Ok(()));
+        AcceptChannelTransferFixture::default()
+            .with_collaborators(new_collaborators)
+            .call_and_assert(Ok(()));
     })
 }
 

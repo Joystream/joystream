@@ -1178,7 +1178,7 @@ export interface TransactionalStatus extends Enum {
 
 /** @name TransferParameters */
 export interface TransferParameters extends Struct {
-  readonly new_collaborators: BTreeSet<MemberId>;
+  readonly new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions>;
   readonly price: u128;
 }
 
