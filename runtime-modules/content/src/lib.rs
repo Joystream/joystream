@@ -911,6 +911,7 @@ decl_module! {
             }
 
             if nft_status.is_some() {
+                VideoById::<T>::mutate(&video_id, |video| video.nft_status = nft_status);
                 ChannelById::<T>::mutate(channel_id, |channel| {
                     Self::increment_nft_counters(channel);
                 });
