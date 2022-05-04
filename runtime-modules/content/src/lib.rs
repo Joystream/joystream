@@ -971,6 +971,7 @@ decl_module! {
                 ChannelById::<T>::mutate(channel_id, |channel| {
                     Self::increment_nft_counters(channel);
                 });
+                VideoById::<T>::mutate(&video_id, |video| video.nft_status = nft_status);
             }
 
             // Update the video
@@ -1279,6 +1280,8 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            // Update the video
+            VideoById::<T>::mutate(video_id, |v| v.destroy_nft());
 
             Self::deposit_event(RawEvent::NftDestroyed(
                 actor,

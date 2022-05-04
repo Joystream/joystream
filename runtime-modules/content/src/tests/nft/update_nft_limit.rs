@@ -96,8 +96,11 @@ fn default_channel_nft_limits_set_successfully() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
+        set_dynamic_bag_creation_policy_for_storage_numbers(0);
+        create_initial_storage_buckets_helper();
 
         CreateChannelFixture::default()
+            .with_default_storage_buckets()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_channel_owner(ChannelOwner::Member(DEFAULT_MEMBER_ID))
             .call_and_assert(Ok(()));

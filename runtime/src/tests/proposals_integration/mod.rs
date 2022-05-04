@@ -9,7 +9,7 @@ use crate::tests::{
 };
 use crate::{BlogInstance, MembershipWorkingGroupInstance, ProposalCancellationFee, Runtime};
 use codec::Encode;
-use content::{LimitPerPeriod, NftLimitId};
+use content::LimitPerPeriod;
 use proposals_codex::{GeneralProposalParameters, GlobalNftLimitType, ProposalDetails};
 use proposals_engine::{
     ApprovedProposalDecision, Proposal, ProposalCreationParameters, ProposalParameters,
@@ -38,7 +38,6 @@ pub type Council = council::Module<Runtime>;
 pub type Membership = membership::Module<Runtime>;
 pub type MembershipWorkingGroup = working_group::Module<Runtime, MembershipWorkingGroupInstance>;
 pub type Blog = blog::Module<Runtime, BlogInstance>;
-pub type Content = content::Module<Runtime>;
 
 struct VoteGenerator {
     proposal_id: u32,
@@ -1241,7 +1240,6 @@ fn update_nft_limit_proposal_succeeds() {
         let params = <Runtime as proposals_codex::Trait>::UpdateNftLimitProposalParameters::get();
         run_to_block(System::block_number() + params.grace_period + 1);
 
-        let nft_limit_id: NftLimitId<crate::ChannelId> = limit_type.into();
         assert_eq!(content::GlobalDailyNftLimit::<Runtime>::get(), new_limit);
     });
 }
