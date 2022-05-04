@@ -27,13 +27,19 @@ fn issue_token<T: Trait>(
 ) -> Result<T::TokenId, DispatchError> {
     let token_id = Token::<T>::next_token_id();
     Token::<T>::issue_token(
+        token_owner_account::<T>(),
         TokenIssuanceParametersOf::<T> {
             /// Initial issuance
-            initial_allocation: InitialAllocationOf::<T> {
-                address: token_owner_account::<T>(),
-                amount: supply,
-                vesting_schedule: None,
-            },
+            initial_allocation: [(
+                token_owner_account::<T>(),
+                TokenAllocation {
+                    amount: supply,
+                    vesting_schedule: None,
+                },
+            )]
+            .iter()
+            .cloned()
+            .collect(),
             symbol: <T as frame_system::Trait>::Hashing::hash_of(b"CRT"),
             transfer_policy,
             patronage_rate: DEFAULT_PATRONAGE,
