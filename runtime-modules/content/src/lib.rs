@@ -2008,7 +2008,7 @@ decl_module! {
             ensure_actor_authorized_to_transfer_channel::<T>(origin, &actor, &channel)?;
 
             if let ChannelTransferStatus::PendingTransfer(ref params) = new_transfer_status {
-                Self::validate_member_set(&params.transfer_params.new_collaborators)?;
+                Self::validate_member_set(&params.transfer_params.new_collaborators.keys().cloned().collect())?;
             }
 
             //
@@ -2036,7 +2036,7 @@ decl_module! {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
             let params =
-                if let ChannelTransferStatus::PendingTransfer(ref params) =channel.transfer_status {
+                if let ChannelTransferStatus::PendingTransfer(ref params) = channel.transfer_status {
                     ensure_is_authorized_to_act_as_channel_owner::<T>(&sender, &params.new_owner)?;
                     Self::validate_channel_transfer_acceptance(&commitment_params, params)?;
 
@@ -2046,6 +2046,7 @@ decl_module! {
                 };
 
             let new_owner = params.new_owner.clone();
+            let new_collaborators = commitment_params.new_collaborators.clone();
 
             //
             // == MUTATION SAFE ==
@@ -2058,6 +2059,7 @@ decl_module! {
             ChannelById::<T>::mutate(&channel_id, |channel| {
                 channel.transfer_status = ChannelTransferStatus::NoActiveTransfer;
                 channel.owner = new_owner;
+                channel.collaborators = new_collaborators;
             });
 
             Self::deposit_event(
