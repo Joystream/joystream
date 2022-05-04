@@ -30,7 +30,6 @@ pub type TokenSaleParams = TokenSaleParamsOf<Test>;
 pub type TokenSale = TokenSaleOf<Test>;
 pub type IssuanceParams = TokenIssuanceParametersOf<Test>;
 pub type VestingScheduleParams = VestingScheduleParamsOf<Test>;
-pub type InitialAllocation = InitialAllocationOf<Test>;
 pub type IssuanceState = OfferingStateOf<Test>;
 pub type TransferPolicyParams = TransferPolicyParamsOf<Test>;
 pub type AccountData = AccountDataOf<Test>;

@@ -7,12 +7,14 @@ use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
 use crate::types::{
-    BlockRate, MerkleProofOf, PatronageData, TokenIssuanceParametersOf, YearlyRate,
+    BlockRate, Joy, MerkleProofOf, PatronageData, TokenIssuanceParametersOf, VestingSource,
+    YearlyRate,
 };
 use crate::{
-    account, assert_approx_eq, balance, joy, last_event_eq, merkle_proof, merkle_root, origin,
-    token, yearly_rate, Error, RawEvent, TokenDataOf,
+    account, assert_approx_eq, balance, block, joy, last_event_eq, merkle_proof, merkle_root,
+    origin, token, yearly_rate, Error, RawEvent, TokenDataOf,
 };
+use frame_support::traits::Currency;
 
 #[test]
 fn join_whitelist_fails_with_token_id_not_valid() {
@@ -765,7 +767,7 @@ fn issue_token_fails_with_existing_symbol() {
     };
 
     build_test_externalities(config).execute_with(|| {
-        let result = Token::issue_token(params, default_upload_context());
+        let result = Token::issue_token(owner, params, default_upload_context());
 
         assert_noop!(result, Error::<Test>::TokenSymbolAlreadyInUse);
     })
@@ -774,23 +776,27 @@ fn issue_token_fails_with_existing_symbol() {
 #[test]
 fn issue_token_fails_with_insufficient_balance_for_bloat_bond() {
     let token_id = token!(1);
-    let owner = account!(1);
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let bloat_bond = joy!(100);
 
     let params = TokenIssuanceParametersOf::<Test> {
-        initial_allocation: InitialAllocation {
-            address: owner,
-            ..Default::default()
-        },
         symbol: Hashing::hash_of(&token_id),
         ..Default::default()
-    };
+    }
+    .with_allocation(&owner, 0, None)
+    .with_allocation(&acc1, 0, None)
+    .with_allocation(&acc2, 0, None);
+
+    let required_joy_balance: JoyBalance = <Test as crate::Trait>::JoyExistentialDeposit::get()
+        .saturating_add(bloat_bond.saturating_mul(3u32.into()));
+
     let config = GenesisConfigBuilder::new_empty()
         .with_bloat_bond(bloat_bond)
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result = Token::issue_token(params.clone(), default_upload_context());
+        let _ = Joy::<Test>::deposit_creating(&owner, required_joy_balance.saturating_sub(1));
+        let result = Token::issue_token(owner, params.clone(), default_upload_context());
         assert_noop!(result, Error::<Test>::InsufficientJoyBalance);
     })
 }
@@ -798,30 +804,30 @@ fn issue_token_fails_with_insufficient_balance_for_bloat_bond() {
 #[test]
 fn issue_token_ok_with_bloat_bond_transferred() {
     let token_id = token!(1);
-    let owner = account!(1);
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
     let (treasury, bloat_bond) = (Token::bloat_bond_treasury_account_id(), joy!(100));
 
     let params = TokenIssuanceParametersOf::<Test> {
-        initial_allocation: InitialAllocation {
-            address: owner,
-            ..Default::default()
-        },
         symbol: Hashing::hash_of(&token_id),
         ..Default::default()
-    };
+    }
+    .with_allocation(&owner, 0, None)
+    .with_allocation(&acc1, 0, None)
+    .with_allocation(&acc2, 0, None);
+
+    let required_joy_balance: JoyBalance = <Test as crate::Trait>::JoyExistentialDeposit::get()
+        .saturating_add(bloat_bond.saturating_mul(3u32.into()));
+
     let config = GenesisConfigBuilder::new_empty()
         .with_bloat_bond(bloat_bond)
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&owner, bloat_bond + ExistentialDeposit::get());
+        increase_account_balance(&owner, required_joy_balance);
 
-        let _ = Token::issue_token(params.clone(), default_upload_context());
+        let _ = Token::issue_token(owner.clone(), params.clone(), default_upload_context());
 
-        assert_eq!(
-            Balances::usable_balance(treasury),
-            bloat_bond + ExistentialDeposit::get()
-        );
+        assert_eq!(Balances::usable_balance(treasury), required_joy_balance);
         assert_eq!(Balances::usable_balance(owner), ExistentialDeposit::get());
     })
 }
@@ -839,16 +845,12 @@ fn issue_token_ok_owner_having_already_issued_a_token() {
 
     let params = TokenIssuanceParametersOf::<Test> {
         symbol: Hashing::hash_of(&"CRT2".to_string()),
-        initial_allocation: InitialAllocation {
-            address: owner,
-            amount: init_supply,
-            vesting_schedule: None,
-        },
         ..Default::default()
-    };
+    }
+    .with_allocation(&owner, init_supply, None);
 
     build_test_externalities(config).execute_with(|| {
-        let result = Token::issue_token(params, default_upload_context());
+        let result = Token::issue_token(owner, params, default_upload_context());
 
         assert_ok!(result);
     })
@@ -857,13 +859,14 @@ fn issue_token_ok_owner_having_already_issued_a_token() {
 #[test]
 fn issue_token_ok_with_token_id_increased() {
     let token_id = token!(1); // chainspec value for next_token_id
+    let owner = account!(1);
 
     let config = GenesisConfigBuilder::new_empty().build();
 
     let params = TokenIssuanceParametersOf::<Test>::default();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(params, default_upload_context());
+        let _ = Token::issue_token(owner, params, default_upload_context());
 
         assert_eq!(Token::next_token_id(), token_id + 1);
     })
@@ -873,9 +876,10 @@ fn issue_token_ok_with_token_id_increased() {
 fn issue_token_ok() {
     let params = TokenIssuanceParametersOf::<Test>::default();
     let config = GenesisConfigBuilder::new_empty().build();
+    let owner = account!(1);
 
     build_test_externalities(config).execute_with(|| {
-        let result = Token::issue_token(params, default_upload_context());
+        let result = Token::issue_token(owner, params, default_upload_context());
         assert_ok!(result);
     })
 }
@@ -886,20 +890,17 @@ fn issue_token_ok_with_event_deposit() {
     let owner = account!(1);
 
     let params = TokenIssuanceParametersOf::<Test> {
-        initial_allocation: InitialAllocation {
-            amount: balance!(100),
-            address: owner,
-            vesting_schedule: None,
-        },
         symbol: Hashing::hash_of(&token_id),
         transfer_policy: TransferPolicyParams::Permissionless,
         patronage_rate: yearly_rate!(1),
-    };
+        ..Default::default()
+    }
+    .with_allocation(&owner, balance!(100), None);
 
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(params.clone(), default_upload_context());
+        let _ = Token::issue_token(owner, params.clone(), default_upload_context());
         last_event_eq!(RawEvent::TokenIssued(token_id, params.clone()));
     })
 }
@@ -907,34 +908,40 @@ fn issue_token_ok_with_event_deposit() {
 #[test]
 fn issue_token_ok_with_token_info_added() {
     let token_id = token!(1);
-    let owner = account!(1);
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
+    let (owner_balance, acc1_balance, acc2_balance) = (balance!(100), balance!(200), balance!(300));
+    let initial_supply = owner_balance + acc1_balance + acc2_balance;
+    let non_owner_vesting = VestingScheduleParams {
+        blocks_before_cliff: block!(100),
+        cliff_amount_percentage: Permill::from_percent(50),
+        duration: block!(100),
+    };
 
     let params = TokenIssuanceParametersOf::<Test> {
-        initial_allocation: InitialAllocation {
-            amount: balance!(100),
-            address: owner,
-            vesting_schedule: None,
-        },
         symbol: Hashing::hash_of(&token_id),
         transfer_policy: TransferPolicyParams::Permissionless,
         patronage_rate: yearly_rate!(10),
-    };
+        ..Default::default()
+    }
+    .with_allocation(&owner, owner_balance, None)
+    .with_allocation(&acc1, acc1_balance, Some(non_owner_vesting.clone()))
+    .with_allocation(&acc2, acc2_balance, Some(non_owner_vesting.clone()));
 
     let rate = BlockRate::from_yearly_rate(params.patronage_rate, BlocksPerYear::get());
 
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(params.clone(), default_upload_context());
+        let _ = Token::issue_token(owner, params.clone(), default_upload_context());
 
         assert_eq!(
             <crate::TokenInfoById<Test>>::get(token_id),
             TokenDataOf::<Test> {
-                tokens_issued: params.initial_allocation.amount,
-                total_supply: params.initial_allocation.amount,
+                tokens_issued: initial_supply,
+                total_supply: initial_supply,
                 transfer_policy: params.transfer_policy.into(),
                 symbol: params.symbol,
-                accounts_number: 1u64, // owner account
+                accounts_number: 3u64, // owner account + acc1 + acc2
                 patronage_info: PatronageData::<Balance, BlockNumber> {
                     last_unclaimed_patronage_tally_block: System::block_number(),
                     unclaimed_patronage_tally_amount: balance!(0),
@@ -951,17 +958,15 @@ fn issue_token_ok_with_token_info_added() {
 fn issue_token_ok_with_correct_patronage_rate_approximated() {
     let token_id = token!(1);
     let owner = account!(1);
+    let supply = balance!(100);
 
     let params = TokenIssuanceParametersOf::<Test> {
-        initial_allocation: InitialAllocation {
-            address: owner,
-            amount: balance!(100),
-            ..Default::default()
-        },
         symbol: Hashing::hash_of(&token_id),
         transfer_policy: TransferPolicyParams::Permissionless,
         patronage_rate: YearlyRate(Permill::from_perthousand(105)), // 10.5%
-    };
+        ..Default::default()
+    }
+    .with_allocation(&owner, supply, None);
 
     // rate = floor(.105 / blocks_per_year * 1e18) per quintill = 19963924238 per quintill
     let expected = BlockRate(Perquintill::from_parts(19963924238));
@@ -969,7 +974,7 @@ fn issue_token_ok_with_correct_patronage_rate_approximated() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(params.clone(), default_upload_context());
+        let _ = Token::issue_token(owner, params.clone(), default_upload_context());
 
         let actual = <crate::TokenInfoById<Test>>::get(token_id)
             .patronage_info
@@ -982,6 +987,7 @@ fn issue_token_ok_with_correct_patronage_rate_approximated() {
 #[test]
 fn issue_token_ok_with_symbol_added() {
     let token_id = token!(1);
+    let owner = account!(1);
 
     let params = TokenIssuanceParametersOf::<Test> {
         symbol: Hashing::hash_of(&token_id),
@@ -990,32 +996,61 @@ fn issue_token_ok_with_symbol_added() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(params.clone(), default_upload_context());
+        let _ = Token::issue_token(owner, params.clone(), default_upload_context());
         assert!(<crate::SymbolsUsed<Test>>::contains_key(&params.symbol));
     })
 }
 
 #[test]
-fn issue_token_ok_with_owner_account_data_added_and_balance_equals_to_initial_supply() {
+fn issue_token_ok_with_owner_accounts_data_added() {
     let token_id = token!(1);
-    let (owner, initial_supply) = (account!(1), balance!(100));
+    let (owner, acc1, acc2) = (account!(1), account!(2), account!(3));
+    let (owner_balance, acc1_balance, acc2_balance) = (balance!(100), balance!(200), balance!(300));
+    let non_owner_vesting = VestingScheduleParams {
+        blocks_before_cliff: block!(100),
+        cliff_amount_percentage: Permill::from_percent(50),
+        duration: block!(100),
+    };
 
     let params = TokenIssuanceParametersOf::<Test> {
         symbol: Hashing::hash_of(&token_id),
-        initial_allocation: InitialAllocation {
-            amount: initial_supply,
-            address: owner,
-            vesting_schedule: None,
-        },
         ..Default::default()
-    };
+    }
+    .with_allocation(&owner, owner_balance, None)
+    .with_allocation(&acc1, acc1_balance, Some(non_owner_vesting.clone()))
+    .with_allocation(&acc2, acc2_balance, Some(non_owner_vesting.clone()));
+
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(params, default_upload_context());
+        let _ = Token::issue_token(owner, params, default_upload_context());
         assert_ok!(
             Token::ensure_account_data_exists(token_id, &owner),
-            AccountData::new_with_amount(initial_supply)
+            AccountData::new_with_amount(owner_balance)
+        );
+        assert_ok!(
+            Token::ensure_account_data_exists(token_id, &acc1),
+            AccountData::new_with_vesting_and_bond(
+                VestingSource::InitialIssuance,
+                VestingSchedule::from_params(
+                    System::block_number(),
+                    acc1_balance,
+                    non_owner_vesting.clone()
+                ),
+                0
+            )
+        );
+        assert_ok!(
+            Token::ensure_account_data_exists(token_id, &acc2),
+            AccountData::new_with_vesting_and_bond(
+                VestingSource::InitialIssuance,
+                VestingSchedule::from_params(
+                    System::block_number(),
+                    acc2_balance,
+                    non_owner_vesting.clone()
+                ),
+                0
+            )
         );
     })
 }

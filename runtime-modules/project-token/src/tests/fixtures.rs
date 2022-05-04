@@ -71,6 +71,7 @@ pub fn default_single_data_object_upload_params() -> SingleDataObjectUploadParam
 }
 
 pub struct IssueTokenFixture {
+    issuer: AccountId,
     params: IssuanceParams,
     upload_context: UploadContext,
 }
@@ -83,16 +84,14 @@ pub struct IssueTokenFixtureStateSnapshot {
 impl IssueTokenFixture {
     pub fn default() -> Self {
         Self {
+            issuer: DEFAULT_ACCOUNT_ID,
             params: IssuanceParams {
-                initial_allocation: InitialAllocation {
-                    address: DEFAULT_ACCOUNT_ID,
-                    amount: DEFAULT_INITIAL_ISSUANCE,
-                    vesting_schedule: None,
-                },
                 patronage_rate: yearly_rate!(0),
                 symbol: Hashing::hash_of(b"ABC"),
                 transfer_policy: TransferPolicyParams::Permissionless,
-            },
+                ..Default::default()
+            }
+            .with_allocation(&DEFAULT_ACCOUNT_ID, DEFAULT_INITIAL_ISSUANCE, None),
             upload_context: default_upload_context(),
         }
     }
@@ -116,7 +115,11 @@ impl Fixture<IssueTokenFixtureStateSnapshot> for IssueTokenFixture {
     }
 
     fn execute_call(&self) -> DispatchResult {
-        Token::issue_token(self.params.clone(), self.upload_context.clone())
+        Token::issue_token(
+            self.issuer.clone(),
+            self.params.clone(),
+            self.upload_context.clone(),
+        )
     }
 
     fn on_success(
@@ -128,7 +131,7 @@ impl Fixture<IssueTokenFixtureStateSnapshot> for IssueTokenFixture {
         assert_eq!(
             Token::token_info_by_id(snapshot_pre.next_token_id),
             TokenData {
-                accounts_number: 1,
+                accounts_number: self.params.initial_allocation.len() as u64,
                 ..TokenData::from_params::<Test>(self.params.clone())
             }
         );

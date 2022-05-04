@@ -6,7 +6,8 @@ use sp_std::collections::btree_map::BTreeMap;
 use crate::tests::mock::*;
 use crate::types::{
     AccountData, AccountDataOf, BlockRate, MerkleProof, MerkleSide, PatronageData, Payment,
-    TokenSaleId, TokenSaleOf, TransferPolicy, TransferPolicyOf, Transfers,
+    TokenAllocation, TokenIssuanceParameters, TokenSaleId, TokenSaleOf, TransferPolicy,
+    TransferPolicyOf, Transfers,
 };
 use crate::{balance, GenesisConfig};
 
@@ -182,6 +183,39 @@ impl<Balance, Account: Ord> Transfers<Account, Balance> {
                 })
                 .collect::<BTreeMap<_, _>>(),
         )
+    }
+}
+
+impl<Hash, Balance, VestingScheduleParams, TransferPolicyParams, AccountId>
+    TokenIssuanceParameters<
+        Hash,
+        TokenAllocation<Balance, VestingScheduleParams>,
+        TransferPolicyParams,
+        AccountId,
+    >
+where
+    AccountId: Ord + Clone,
+    Balance: Clone,
+    VestingScheduleParams: Clone,
+{
+    pub fn with_allocation(
+        self,
+        account: &AccountId,
+        amount: Balance,
+        vesting_schedule: Option<VestingScheduleParams>,
+    ) -> Self {
+        let mut initial_allocation = self.initial_allocation.clone();
+        initial_allocation.insert(
+            account.clone(),
+            TokenAllocation {
+                amount,
+                vesting_schedule,
+            },
+        );
+        Self {
+            initial_allocation,
+            ..self
+        }
     }
 }
 
