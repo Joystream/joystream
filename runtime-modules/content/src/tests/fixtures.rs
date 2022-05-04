@@ -618,6 +618,10 @@ impl UpdateVideoFixture {
                 assert!(!self.params.assets_to_remove.iter().any(|obj_id| {
                     storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
                 }));
+
+                if self.params.auto_issue_nft.is_some() {
+                    assert!(video_post.nft_status.is_some())
+                }
             }
             Err(err) => {
                 assert_eq!(video_pre, video_post);
