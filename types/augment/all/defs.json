@@ -870,7 +870,7 @@
     "ContentModerationActionsSet": "BTreeSet<ContentModerationAction>",
     "ModerationPermissionsByLevel": "BTreeMap<ChannelPrivilegeLevel,ContentModerationActionsSet>",
     "TransferParameters": {
-        "new_collaborators": "BTreeSet<MemberId>",
+        "new_collaborators": "BTreeMap<MemberId,ChannelAgentPermissions>",
         "price": "u128"
     },
     "ChannelTransferStatus_PendingTransfer": {

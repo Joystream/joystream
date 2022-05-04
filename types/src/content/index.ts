@@ -178,7 +178,7 @@ export class CuratorGroup extends JoyStructDecorated({
 // Channel transfers
 
 export class TransferParameters extends JoyStructDecorated({
-  new_collaborators: BTreeSet.with(MemberId),
+  new_collaborators: BTreeMap.with(MemberId, ChannelAgentPermissions),
   price: Balance,
 }) {}
 
