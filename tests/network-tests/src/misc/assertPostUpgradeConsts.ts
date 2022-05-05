@@ -1,8 +1,11 @@
 import { assert } from 'chai'
 import { FlowProps } from '../Flow'
 import { extendDebug } from '../Debugger'
+import { CreateProposalsFixture } from '../fixtures/proposals/CreateProposalsFixture'
+import { BuyMembershipHappyCaseFixture } from '../fixtures/membership/BuyMembershipHappyCaseFixture'
+import { FixtureRunner } from '../Fixture'
 
-export default async function assertValues({ api }: FlowProps): Promise<void> {
+export default async function assertValues({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:postMigrationAssertions')
   debug('Started')
 
@@ -27,6 +30,29 @@ export default async function assertValues({ api }: FlowProps): Promise<void> {
 
   assert.equal(maxForumCategories, 40)
   assert.equal(maxForumSubCategories, 40)
+
+  debug('Check set_council_budget_increment_proposal grace period')
+
+  const [memberControllerAcc] = (await api.createKeyPairs(1)).map(({ key }) => key.address)
+  const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, [memberControllerAcc])
+  await new FixtureRunner(buyMembershipFixture).run()
+  const [memberId] = buyMembershipFixture.getCreatedMembers()
+
+  const createProposal = new CreateProposalsFixture(api, query, [
+    {
+      asMember: memberId,
+      title: 'test proposal',
+      description: 'testing council budget increment proposal grace period',
+      exactExecutionBlock: undefined,
+      type: 'SetCouncilBudgetIncrement',
+      details: 1_000_000,
+    },
+  ])
+
+  await new FixtureRunner(createProposal).run()
+  const proposalId = createProposal.getCreatedProposalsIds()[0]
+  const proposal = await api.query.proposalsEngine.proposals(proposalId)
+  assert.equal(proposal.parameters.gracePeriod.toNumber(), 14400)
 
   debug('Done')
 }
