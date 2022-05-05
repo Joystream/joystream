@@ -339,6 +339,14 @@ export class Api {
     return this.sender.signAndSend(this.api.tx.balances.transfer(to, amount), from)
   }
 
+  public async grantTreasuryWorkingBalance(): Promise<ISubmittableResult> {
+    return this.sudoSetBalance(this.treasuryAccount, new BN(100000000), new BN(0))
+  }
+
+  public async sudoSetBalance(who: string, free: BN, reserved: BN): Promise<ISubmittableResult> {
+    return this.makeSudoCall(this.api.tx.balances.setBalance(who, free, reserved))
+  }
+
   public async treasuryTransferBalance(to: string, amount: BN): Promise<ISubmittableResult> {
     return this.transferBalance({ from: this.treasuryAccount, to, amount })
   }

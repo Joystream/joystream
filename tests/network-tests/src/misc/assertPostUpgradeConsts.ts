@@ -4,6 +4,7 @@ import { extendDebug } from '../Debugger'
 import { CreateProposalsFixture } from '../fixtures/proposals/CreateProposalsFixture'
 import { BuyMembershipHappyCaseFixture } from '../fixtures/membership/BuyMembershipHappyCaseFixture'
 import { FixtureRunner } from '../Fixture'
+import BN from 'bn.js'
 
 export default async function assertValues({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:postMigrationAssertions')
@@ -11,7 +12,6 @@ export default async function assertValues({ api, query }: FlowProps): Promise<v
 
   debug('Check runtime spec version')
   const version = await api.rpc.state.getRuntimeVersion()
-  console.log(`Runtime Version: ${version.authoringVersion}.${version.specVersion}.${version.implVersion}`)
   assert.equal(version.specVersion.toNumber(), 6)
 
   debug('Check that post migration NFT value are updated')
@@ -33,11 +33,17 @@ export default async function assertValues({ api, query }: FlowProps): Promise<v
 
   debug('Check set_council_budget_increment_proposal grace period')
 
+  // Grant treasury account large balance to transfer to new member for buying membership
+  // and staking. From a forked state there is no guarantee the account has sufficient funds.
+  await api.grantTreasuryWorkingBalance()
+
+  debug('creating new member')
   const [memberControllerAcc] = (await api.createKeyPairs(1)).map(({ key }) => key.address)
   const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, [memberControllerAcc])
   await new FixtureRunner(buyMembershipFixture).run()
   const [memberId] = buyMembershipFixture.getCreatedMembers()
 
+  debug('creating proposal')
   const createProposal = new CreateProposalsFixture(api, query, [
     {
       asMember: memberId,
@@ -50,6 +56,7 @@ export default async function assertValues({ api, query }: FlowProps): Promise<v
   ])
 
   await new FixtureRunner(createProposal).run()
+  debug('checking proposal parameters')
   const proposalId = createProposal.getCreatedProposalsIds()[0]
   const proposal = await api.query.proposalsEngine.proposals(proposalId)
   assert.equal(proposal.parameters.gracePeriod.toNumber(), 14400)
