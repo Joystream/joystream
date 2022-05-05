@@ -1,6 +1,9 @@
 import { scenario } from '../Scenario'
-import assertNftValues from '../flows/content/assertNftValues'
+import assertValues from '../misc/assertPostUpgradeConsts'
 
 scenario('Post Runtime Upgrade', async ({ job }) => {
-  job('Verify Nft Values', assertNftValues)
+  // Verify spec version 6
+
+  // Verify constants
+  job('Verify Values', assertValues)
 })
