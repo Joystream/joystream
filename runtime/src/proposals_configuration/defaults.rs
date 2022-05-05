@@ -205,7 +205,7 @@ pub(crate) fn set_membership_price_proposal() -> ProposalParameters<BlockNumber,
 pub(crate) fn set_council_budget_increment_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 72000,
-        grace_period: 100800,
+        grace_period: 14400,
         approval_quorum_percentage: 66,
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,

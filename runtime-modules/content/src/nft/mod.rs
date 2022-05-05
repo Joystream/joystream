@@ -1,4 +1,5 @@
 mod types;
+use sp_runtime::traits::CheckedSub;
 use sp_std::borrow::ToOwned;
 pub use types::*;
 
@@ -20,7 +21,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Make bid transfer to the treasury account or get refunded if the old bid is greater than a new one.
-    pub(crate) fn make_bid_payment(
+    pub(crate) fn transfer_bid_to_treasury(
         participant: &T::AccountId,
         bid: BalanceOf<T>,
         old_bid: Option<BalanceOf<T>>,
@@ -282,36 +283,30 @@ impl<T: Trait> Module<T> {
 
     /// Buy nft
     pub(crate) fn buy_now(
-        in_channel: T::ChannelId,
-        mut nft: Nft<T>,
-        owner_account_id: T::AccountId,
+        nft: Nft<T>,
+        royalty_payment: Option<(Royalty, T::AccountId)>,
+        old_owner_account_id: Option<T::AccountId>,
         new_owner_account_id: T::AccountId,
         new_owner: T::MemberId,
     ) -> Nft<T> {
         if let TransactionalStatus::<T>::BuyNow(price) = &nft.transactional_status {
             Self::complete_payment(
-                in_channel,
-                nft.creator_royalty,
-                *price,
+                royalty_payment,
+                price.to_owned(),
                 new_owner_account_id,
-                Some(owner_account_id),
-                false,
+                old_owner_account_id,
             );
-
-            nft.owner = NftOwner::Member(new_owner);
         }
 
-        Nft::<T> {
-            transactional_status: TransactionalStatus::<T>::Idle,
-            ..nft
-        }
+        nft.with_transactional_status(TransactionalStatus::<T>::Idle)
+            .with_member_owner(new_owner)
     }
 
     /// Completes nft offer
     pub(crate) fn complete_nft_offer(
-        in_channel: T::ChannelId,
         mut nft: Nft<T>,
-        owner_account_id: T::AccountId,
+        royalty_payment: Option<(Royalty, T::AccountId)>,
+        owner_account_id: Option<T::AccountId>,
         new_owner_account_id: T::AccountId,
     ) -> Nft<T> {
         if let TransactionalStatus::<T>::InitiatedOfferToMember(to, price) =
@@ -319,15 +314,12 @@ impl<T: Trait> Module<T> {
         {
             if let Some(price) = price {
                 Self::complete_payment(
-                    in_channel,
-                    nft.creator_royalty,
+                    royalty_payment,
                     *price,
                     new_owner_account_id,
-                    Some(owner_account_id),
-                    false,
+                    owner_account_id,
                 );
             }
-
             nft.owner = NftOwner::Member(*to);
         }
 
@@ -339,77 +331,57 @@ impl<T: Trait> Module<T> {
 
     /// Complete payment, either auction related or buy now/offer
     pub(crate) fn complete_payment(
-        in_channel: T::ChannelId,
-        creator_royalty: Option<Royalty>,
+        royalty_payment: Option<(Royalty, T::AccountId)>,
         amount: BalanceOf<T>,
         sender_account_id: T::AccountId,
         receiver_account_id: Option<T::AccountId>,
-        // for auction related payments
-        is_auction: bool,
     ) {
-        let auction_fee = Self::platform_fee_percentage() * amount;
+        let _ = Balances::<T>::slash(&sender_account_id, amount);
 
-        // Slash amount from sender
-        if is_auction {
-            let module_account_id = ContentTreasury::<T>::module_account_id();
-            let _ = Balances::<T>::slash(&module_account_id, amount);
-        } else {
-            let _ = Balances::<T>::slash(&sender_account_id, amount);
+        let platform_fee = Self::platform_fee_percentage().mul_floor(amount);
+        let amount_after_platform_fee = amount.saturating_sub(platform_fee);
+        let royalty_fee = royalty_payment
+            .as_ref()
+            .map_or(T::Balance::zero(), |(r, _)| r.mul_floor(amount));
+
+        let amount_for_receiver = amount_after_platform_fee
+            .checked_sub(&royalty_fee)
+            .unwrap_or(amount_after_platform_fee);
+
+        if let Some(ref receiver_account) = receiver_account_id {
+            if !amount_for_receiver.is_zero() {
+                let _ = Balances::<T>::deposit_creating(receiver_account, amount_for_receiver);
+            }
         }
 
-        if let Some(creator_royalty) = creator_royalty {
-            let royalty = creator_royalty * amount;
-
-            // Deposit amount, exluding royalty and platform fee into receiver account
-            match receiver_account_id {
-                Some(receiver_account_id) if amount > royalty + auction_fee => {
-                    let _ = Balances::<T>::deposit_creating(
-                        &receiver_account_id,
-                        amount - royalty - auction_fee,
-                    );
-                }
-                Some(receiver_account_id) => {
-                    let _ =
-                        Balances::<T>::deposit_creating(&receiver_account_id, amount - auction_fee);
-                }
-                _ => (),
-            };
-
-            // Should always be Some(_) at this stage, because of previously made check.
-            if let Some(creator_account_id) = Self::channel_by_id(in_channel).reward_account {
-                // Deposit royalty into creator account
-                let _ = Balances::<T>::deposit_creating(&creator_account_id, royalty);
+        if let Some((_, ref royalty_reward_account)) = royalty_payment {
+            if !royalty_fee.is_zero() {
+                let _ = Balances::<T>::deposit_creating(royalty_reward_account, royalty_fee);
             }
-        } else if let Some(receiver_account_id) = receiver_account_id {
-            // Deposit amount, exluding auction fee into receiver account
-            let _ = Balances::<T>::deposit_creating(&receiver_account_id, amount - auction_fee);
         }
     }
 
     pub(crate) fn complete_auction(
         nft: Nft<T>,
         in_channel: T::ChannelId,
-        src_account_id: T::AccountId,
+        royalty_payment: Option<(Royalty, T::AccountId)>,
         winner_id: T::MemberId,
         amount: BalanceOf<T>,
     ) -> Nft<T> {
-        let dest_account_id = Self::ensure_owner_account_id(in_channel, &nft).ok();
+        let account_deposit_into = Self::ensure_owner_account_id(in_channel, &nft).ok();
+        let account_withdraw_from = ContentTreasury::<T>::module_account_id();
 
         Self::complete_payment(
-            in_channel,
-            nft.creator_royalty,
+            royalty_payment,
             amount,
-            src_account_id,
-            dest_account_id,
-            true,
+            account_withdraw_from,
+            account_deposit_into,
         );
 
         nft.with_transactional_status(TransactionalStatus::<T>::Idle)
             .with_member_owner(winner_id)
     }
 
-    // fetches the desginated nft owner account, preconditions:
-    // 1. Self::ensure_channel_exist(channel_id).is_ok()
     pub(crate) fn ensure_owner_account_id(
         channel_id: T::ChannelId,
         nft: &Nft<T>,
@@ -481,5 +453,31 @@ impl<T: Trait> Module<T> {
             Error::<T>::NftNotInBuyNowState
         );
         Ok(())
+    }
+
+    pub(crate) fn build_royalty_payment(
+        video: &Video<T>,
+        creator_royalty: Option<Royalty>,
+    ) -> Option<(Royalty, T::AccountId)> {
+        // payment is none if there is no royalty
+        if let Some(royalty) = creator_royalty {
+            let channel = Self::channel_by_id(&video.in_channel);
+            // use reward account if specified
+            if let Some(creator_reward_account) = channel.reward_account {
+                Some((royalty, creator_reward_account))
+            } else {
+                // otherwise resort to controller account for member owned channels
+                if let ChannelOwner::Member(member_id) = channel.owner {
+                    T::MemberAuthenticator::controller_account_id(member_id)
+                        .ok()
+                        .map(|reward_account| (royalty, reward_account))
+                } else {
+                    // no royalty paid for curator owned channel with unspecified reward account
+                    None
+                }
+            }
+        } else {
+            None
+        }
     }
 }

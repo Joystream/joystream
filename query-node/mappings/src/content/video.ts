@@ -7,7 +7,6 @@ import { Content } from '../../generated/types'
 import { deserializeMetadata, genericEventFields, inconsistentState, logger } from '../common'
 import {
   processVideoMetadata,
-  videoRelationsForCountersBare,
   videoRelationsForCounters,
   convertContentActorToChannelOrNftOwner,
   convertContentActor,
@@ -227,7 +226,7 @@ export async function content_VideoDeleted({ store, event }: EventContext & Stor
   // load video
   const video = await store.get(Video, {
     where: { id: videoId.toString() },
-    relations: [...videoRelationsForCountersBare],
+    relations: [...videoRelationsForCounters],
   })
 
   // ensure video exists

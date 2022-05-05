@@ -247,6 +247,9 @@ type EnglishAuctionSettledEvent implements Event @entity {
   "Auctioned video."
   video: Video!
 
+  "Members who bid on this auction"
+  bidders: [Membership!]
+
   "Member owning the Nft (if any) before english auction was completed."
   ownerMember: Membership
 
@@ -297,6 +300,9 @@ type BidMadeCompletingAuctionEvent implements Event @entity {
 
   "Previous top bidder"
   previousTopBidder: Membership
+
+  "Members who bid on this auction"
+  bidders: [Membership!]
 }
 
 type OpenAuctionBidAcceptedEvent implements Event @entity {
@@ -336,6 +342,9 @@ type OpenAuctionBidAcceptedEvent implements Event @entity {
 
   "Winning bidder"
   winningBidder: Membership
+
+  "Members who bid on this auction"
+  bidders: [Membership!]
 }
 
 type OfferStartedEvent implements Event @entity {

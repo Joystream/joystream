@@ -6,6 +6,13 @@
   gather_facts: yes
 
   tasks:
+    - name: Add authorized key
+      when: (ssh_pub_key is defined) and (ssh_pub_key|length > 0)
+      ansible.posix.authorized_key:
+        user: ubuntu
+        state: present
+        key: "{{ ssh_pub_key }}"
+
     - name: Get code from git repo
       include_role:
         name: common
