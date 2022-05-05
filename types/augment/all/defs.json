@@ -429,7 +429,8 @@
             "EditBlogPost": "(PostId,Option<Text>,Option<Text>)",
             "LockBlogPost": "PostId",
             "UnlockBlogPost": "PostId",
-            "VetoProposal": "ProposalId"
+            "VetoProposal": "ProposalId",
+            "UpdateNftLimit": "(GlobalNftLimitType,LimitPerPeriod)"
         }
     },
     "ProposalDetailsOf": {
@@ -458,7 +459,8 @@
             "EditBlogPost": "(PostId,Option<Text>,Option<Text>)",
             "LockBlogPost": "PostId",
             "UnlockBlogPost": "PostId",
-            "VetoProposal": "ProposalId"
+            "VetoProposal": "ProposalId",
+            "UpdateNftLimit": "(GlobalNftLimitType,LimitPerPeriod)"
         }
     },
     "VotingResults": {
@@ -552,6 +554,12 @@
     "FundingRequestParameters": {
         "account": "AccountId",
         "amount": "u128"
+    },
+    "GlobalNftLimitType": {
+        "_enum": [
+            "DailyLimit",
+            "WeeklyLimit"
+        ]
     },
     "ReferendumStageVoting": {
         "started": "u32",
@@ -688,7 +696,11 @@
         "privilege_level": "ChannelPrivilegeLevel",
         "paused_features": "BTreeSet<PausableChannelFeature>",
         "transfer_status": "ChannelTransferStatus",
-        "data_objects": "BTreeSet<DataObjectId>"
+        "data_objects": "BTreeSet<DataObjectId>",
+        "daily_nft_limit": "LimitPerPeriod",
+        "weekly_nft_limit": "LimitPerPeriod",
+        "daily_nft_counter": "NftCounter",
+        "weekly_nft_counter": "NftCounter"
     },
     "ChannelOwner": {
         "_enum": {
@@ -901,5 +913,21 @@
         ]
     },
     "ChannelAgentPermissions": "BTreeSet<ChannelActionPermission>",
+    "NftLimitId": {
+        "_enum": {
+            "GlobalDaily": "Null",
+            "GlobalWeekly": "Null",
+            "ChannelDaily": "ChannelId",
+            "ChannelWeekly": "ChannelId"
+        }
+    },
+    "LimitPerPeriod": {
+        "limit": "u64",
+        "block_number_period": "u32"
+    },
+    "NftCounter": {
+        "counter": "u64",
+        "last_updated": "u32"
+    },
     "AccountInfo": "AccountInfoWithRefCount"
 }

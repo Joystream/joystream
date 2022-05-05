@@ -218,6 +218,10 @@ export interface Channel extends Struct {
   readonly paused_features: BTreeSet<PausableChannelFeature>;
   readonly transfer_status: ChannelTransferStatus;
   readonly data_objects: BTreeSet<DataObjectId>;
+  readonly daily_nft_limit: LimitPerPeriod;
+  readonly weekly_nft_limit: LimitPerPeriod;
+  readonly daily_nft_counter: NftCounter;
+  readonly weekly_nft_counter: NftCounter;
 }
 
 /** @name ChannelActionPermission */
@@ -619,6 +623,12 @@ export interface GeneralProposalParameters extends Struct {
   readonly exact_execution_block: Option<u32>;
 }
 
+/** @name GlobalNftLimitType */
+export interface GlobalNftLimitType extends Enum {
+  readonly isDailyLimit: boolean;
+  readonly isWeeklyLimit: boolean;
+}
+
 /** @name InitTransactionalStatus */
 export interface InitTransactionalStatus extends Enum {
   readonly isIdle: boolean;
@@ -650,6 +660,12 @@ export interface InviteMembershipParameters extends Struct {
 /** @name IsCensored */
 export interface IsCensored extends bool {}
 
+/** @name LimitPerPeriod */
+export interface LimitPerPeriod extends Struct {
+  readonly limit: u64;
+  readonly block_number_period: u32;
+}
+
 /** @name LookupSource */
 export interface LookupSource extends AccountId {}
 
@@ -674,12 +690,28 @@ export interface ModerationPermissionsByLevel extends BTreeMap<ChannelPrivilegeL
 /** @name ModeratorId */
 export interface ModeratorId extends u64 {}
 
+/** @name NftCounter */
+export interface NftCounter extends Struct {
+  readonly counter: u64;
+  readonly last_updated: u32;
+}
+
 /** @name NftIssuanceParameters */
 export interface NftIssuanceParameters extends Struct {
   readonly royalty: Option<Royalty>;
   readonly nft_metadata: Bytes;
   readonly non_channel_owner: Option<MemberId>;
   readonly init_transactional_status: InitTransactionalStatus;
+}
+
+/** @name NftLimitId */
+export interface NftLimitId extends Enum {
+  readonly isGlobalDaily: boolean;
+  readonly isGlobalWeekly: boolean;
+  readonly isChannelDaily: boolean;
+  readonly asChannelDaily: ChannelId;
+  readonly isChannelWeekly: boolean;
+  readonly asChannelWeekly: ChannelId;
 }
 
 /** @name NftMetadata */
@@ -898,6 +930,8 @@ export interface ProposalDetails extends Enum {
   readonly asUnlockBlogPost: PostId;
   readonly isVetoProposal: boolean;
   readonly asVetoProposal: ProposalId;
+  readonly isUpdateNftLimit: boolean;
+  readonly asUpdateNftLimit: ITuple<[GlobalNftLimitType, LimitPerPeriod]>;
 }
 
 /** @name ProposalDetailsOf */
@@ -952,6 +986,8 @@ export interface ProposalDetailsOf extends Enum {
   readonly asUnlockBlogPost: PostId;
   readonly isVetoProposal: boolean;
   readonly asVetoProposal: ProposalId;
+  readonly isUpdateNftLimit: boolean;
+  readonly asUpdateNftLimit: ITuple<[GlobalNftLimitType, LimitPerPeriod]>;
 }
 
 /** @name ProposalId */
