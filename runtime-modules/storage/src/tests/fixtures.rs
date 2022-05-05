@@ -4,22 +4,25 @@ use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::{EventRecord, Phase, RawOrigin};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
+use sp_std::iter::FromIterator;
 
-use crate::sp_api_hidden_includes_decl_storage::hidden_include::IterableStorageDoubleMap;
-use crate::sp_api_hidden_includes_decl_storage::hidden_include::StorageDoubleMap;
+use crate::sp_api_hidden_includes_decl_storage::hidden_include::{
+    IterableStorageDoubleMap, StorageDoubleMap, StorageValue,
+};
 
 use super::mocks::{
     create_cid, Balances, CollectiveFlip, Storage, System, Test, TestEvent,
     DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID,
     DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT, DEFAULT_STORAGE_BUCKET_SIZE_LIMIT,
     DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
-    STORAGE_WG_LEADER_ACCOUNT_ID,
+    STORAGE_WG_LEADER_ACCOUNT_ID, VOUCHER_OBJECTS_LIMIT, VOUCHER_SIZE_LIMIT,
 };
 
 use crate::{
-    BagId, Cid, DataObjectCreationParameters, DataObjectStorage, DistributionBucket,
-    DistributionBucketId, DynBagCreationParameters, DynamicBagId, DynamicBagType, RawEvent,
-    StaticBagId, StorageBucketOperatorStatus, UploadParameters,
+    BagId, Cid, DataObjectCreationParameters, DataObjectDeletionPrizeValue,
+    DataObjectPerMegabyteFee, DataObjectStorage, DistributionBucket, DistributionBucketId,
+    DynBagCreationParameters, DynamicBagId, DynamicBagType, RawEvent, StaticBagId,
+    StorageBucketOperatorStatus, UploadParameters,
 };
 
 // Recommendation from Parity on testing on_finalize
@@ -38,6 +41,91 @@ pub fn run_to_block(n: u64) {
 
 pub fn increase_account_balance(account_id: &u64, balance: u64) {
     let _ = Balances::deposit_creating(&account_id, balance);
+}
+
+pub fn set_data_object_per_mega_byte_fee(mb_fee: u64) {
+    DataObjectPerMegabyteFee::<Test>::put(mb_fee);
+}
+
+pub fn set_data_object_deletion_prize_value(deletion_prize: u64) {
+    DataObjectDeletionPrizeValue::<Test>::put(deletion_prize);
+}
+
+pub fn set_max_voucher_limits() {
+    set_max_voucher_limits_with_params(VOUCHER_SIZE_LIMIT, VOUCHER_OBJECTS_LIMIT);
+}
+
+pub fn set_max_voucher_limits_with_params(size_limit: u64, objects_limit: u64) {
+    UpdateStorageBucketsVoucherMaxLimitsFixture::default()
+        .with_new_objects_size_limit(size_limit)
+        .with_new_objects_number_limit(objects_limit)
+        .call_and_assert(Ok(()));
+}
+
+pub fn create_storage_buckets(buckets_number: u64) -> BTreeSet<u64> {
+    set_max_voucher_limits();
+    CreateStorageBucketFixture::default()
+        .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+        .with_objects_limit(DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT)
+        .with_size_limit(DEFAULT_STORAGE_BUCKET_SIZE_LIMIT)
+        .create_several(buckets_number)
+}
+
+pub fn create_default_storage_bucket_and_assign_to_bag(bag_id: BagId<Test>) -> u64 {
+    let objects_limit = 1;
+    let size_limit = 100;
+
+    create_storage_bucket_and_assign_to_bag(bag_id, None, objects_limit, size_limit)
+}
+
+pub fn create_storage_bucket_and_assign_to_bag(
+    bag_id: BagId<Test>,
+    storage_provider_id: Option<u64>,
+    objects_limit: u64,
+    size_limit: u64,
+) -> u64 {
+    set_max_voucher_limits();
+    set_default_update_storage_buckets_per_bag_limit();
+
+    let bucket_id = CreateStorageBucketFixture::default()
+        .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+        .with_invite_worker(storage_provider_id)
+        .with_objects_limit(objects_limit)
+        .with_size_limit(size_limit)
+        .call_and_assert(Ok(()))
+        .unwrap();
+
+    let buckets = BTreeSet::from_iter(vec![bucket_id]);
+
+    UpdateStorageBucketForBagsFixture::default()
+        .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+        .with_bag_id(bag_id.clone())
+        .with_add_bucket_ids(buckets.clone())
+        .call_and_assert(Ok(()));
+
+    if let Some(storage_provider_id) = storage_provider_id {
+        AcceptStorageBucketInvitationFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
+            .with_transactor_account_id(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID)
+            .with_storage_bucket_id(bucket_id)
+            .with_worker_id(storage_provider_id)
+            .call_and_assert(Ok(()));
+    }
+
+    bucket_id
+}
+
+pub fn set_update_storage_buckets_per_bag_limit(new_limit: u64) {
+    UpdateStorageBucketsPerBagLimitFixture::default()
+        .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+        .with_new_limit(new_limit)
+        .call_and_assert(Ok(()))
+}
+
+pub fn set_default_update_storage_buckets_per_bag_limit() {
+    let new_limit = 7;
+
+    set_update_storage_buckets_per_bag_limit(new_limit);
 }
 
 pub struct EventFixture;

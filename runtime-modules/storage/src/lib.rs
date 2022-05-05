@@ -214,6 +214,14 @@ pub trait DataObjectStorage<T: Trait> {
     /// - balance of data size fee + total deletion prize is transferred from caller to treasury account
     fn upload_data_objects(params: UploadParameters<T>) -> DispatchResult;
 
+    /// Returns the funds needed to upload a num of objects
+    /// This is dependent on (data_obj_deletion_prize * num_of_objs_to_upload) plus a storage fee that depends on the
+    /// objs_total_size_in_bytes
+    fn funds_needed_for_upload(
+        num_of_objs_to_upload: usize,
+        objs_total_size_in_bytes: u64,
+    ) -> BalanceOf<T>;
+
     /// Validates moving objects parameters.
     /// Validates voucher usage for affected buckets.
     ///
@@ -3492,6 +3500,19 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         DataObjectsById::<T>::iter_prefix(&bag_id)
             .map(|x| x.0)
             .collect()
+    }
+
+    fn funds_needed_for_upload(
+        num_of_objs_to_upload: usize,
+        objs_total_size_in_bytes: u64,
+    ) -> BalanceOf<T> {
+        let num_of_objs_to_upload = num_of_objs_to_upload.saturated_into();
+        let deletion_fee =
+            Self::data_object_deletion_prize_value().saturating_mul(num_of_objs_to_upload);
+
+        let storage_fee = Self::calculate_data_storage_fee(objs_total_size_in_bytes);
+
+        deletion_fee.saturating_add(storage_fee)
     }
 }
 

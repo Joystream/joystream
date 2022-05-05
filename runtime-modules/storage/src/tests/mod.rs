@@ -16,7 +16,7 @@ use sp_std::iter::{repeat, FromIterator};
 use common::working_group::WorkingGroup;
 
 use crate::{
-    BagId, DataObject, DataObjectCreationParameters, DistributionBucketFamily,
+    BagId, DataObject, DataObjectCreationParameters, DataObjectStorage, DistributionBucketFamily,
     DistributionBucketId, DynamicBagId, DynamicBagType, Error, ModuleAccount, RawEvent,
     StaticBagId, StorageBucketOperatorStatus, StorageTreasury, UploadParameters, Voucher,
 };
@@ -31,22 +31,12 @@ use mocks::{
     DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID, DEFAULT_STORAGE_BUCKETS_NUMBER,
     DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT, DEFAULT_STORAGE_BUCKET_SIZE_LIMIT,
     DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DEFAULT_STORAGE_PROVIDER_ID,
-    DISTRIBUTION_WG_LEADER_ACCOUNT_ID, INITIAL_BALANCE, STORAGE_WG_LEADER_ACCOUNT_ID,
-    VOUCHER_OBJECTS_LIMIT, VOUCHER_SIZE_LIMIT,
+    DISTRIBUTION_WG_LEADER_ACCOUNT_ID, INITIAL_BALANCE, ONE_MB, STORAGE_WG_LEADER_ACCOUNT_ID,
 };
 
 use fixtures::*;
 
 // helper
-
-fn create_storage_buckets(buckets_number: u64) -> BTreeSet<u64> {
-    set_max_voucher_limits();
-    CreateStorageBucketFixture::default()
-        .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-        .with_objects_limit(DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT)
-        .with_size_limit(DEFAULT_STORAGE_BUCKET_SIZE_LIMIT)
-        .create_several(buckets_number)
-}
 
 #[test]
 fn create_storage_bucket_succeeded() {
@@ -2726,50 +2716,6 @@ fn update_blacklist_fails_with_non_leader_origin() {
     });
 }
 
-fn create_default_storage_bucket_and_assign_to_bag(bag_id: BagId<Test>) -> u64 {
-    let objects_limit = 1;
-    let size_limit = 100;
-
-    create_storage_bucket_and_assign_to_bag(bag_id, None, objects_limit, size_limit)
-}
-
-fn create_storage_bucket_and_assign_to_bag(
-    bag_id: BagId<Test>,
-    storage_provider_id: Option<u64>,
-    objects_limit: u64,
-    size_limit: u64,
-) -> u64 {
-    set_max_voucher_limits();
-    set_default_update_storage_buckets_per_bag_limit();
-
-    let bucket_id = CreateStorageBucketFixture::default()
-        .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-        .with_invite_worker(storage_provider_id)
-        .with_objects_limit(objects_limit)
-        .with_size_limit(size_limit)
-        .call_and_assert(Ok(()))
-        .unwrap();
-
-    let buckets = BTreeSet::from_iter(vec![bucket_id]);
-
-    UpdateStorageBucketForBagsFixture::default()
-        .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-        .with_bag_id(bag_id.clone())
-        .with_add_bucket_ids(buckets.clone())
-        .call_and_assert(Ok(()));
-
-    if let Some(storage_provider_id) = storage_provider_id {
-        AcceptStorageBucketInvitationFixture::default()
-            .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
-            .with_transactor_account_id(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID)
-            .with_storage_bucket_id(bucket_id)
-            .with_worker_id(storage_provider_id)
-            .call_and_assert(Ok(()));
-    }
-
-    bucket_id
-}
-
 #[test]
 fn delete_dynamic_bags_succeeded() {
     build_test_externalities().execute_with(|| {
@@ -3315,19 +3261,6 @@ fn update_storage_buckets_per_bag_limit_fails_with_incorrect_value() {
     });
 }
 
-fn set_update_storage_buckets_per_bag_limit(new_limit: u64) {
-    UpdateStorageBucketsPerBagLimitFixture::default()
-        .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-        .with_new_limit(new_limit)
-        .call_and_assert(Ok(()))
-}
-
-fn set_default_update_storage_buckets_per_bag_limit() {
-    let new_limit = 7;
-
-    set_update_storage_buckets_per_bag_limit(new_limit);
-}
-
 #[test]
 fn set_storage_bucket_voucher_limits_succeeded() {
     build_test_externalities().execute_with(|| {
@@ -3422,17 +3355,6 @@ fn set_storage_bucket_voucher_limits_fails_with_invalid_storage_bucket() {
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
             .call_and_assert(Err(Error::<Test>::StorageBucketDoesntExist.into()));
     });
-}
-
-fn set_max_voucher_limits() {
-    set_max_voucher_limits_with_params(VOUCHER_SIZE_LIMIT, VOUCHER_OBJECTS_LIMIT);
-}
-
-fn set_max_voucher_limits_with_params(size_limit: u64, objects_limit: u64) {
-    UpdateStorageBucketsVoucherMaxLimitsFixture::default()
-        .with_new_objects_size_limit(size_limit)
-        .with_new_objects_number_limit(objects_limit)
-        .call_and_assert(Ok(()));
 }
 
 #[test]
@@ -5706,9 +5628,6 @@ fn update_data_object_deletion_prize_failed_with_bad_origin() {
     });
 }
 
-fn set_data_object_deletion_prize_value(deletion_prize: u64) {
-    crate::DataObjectDeletionPrizeValue::<Test>::put(deletion_prize);
-}
 #[test]
 fn storage_operator_remark_successful() {
     build_test_externalities().execute_with(|| {
@@ -6052,4 +5971,124 @@ fn initial_module_account_balance_set() {
             ExistentialDeposit::get().saturated_into::<u64>()
         );
     })
+}
+
+#[test]
+fn funds_needed_for_upload_succeeds() {
+    //Module == 0 -> 0
+    build_test_externalities_with_genesis().execute_with(|| {
+        set_data_object_per_mega_byte_fee(0);
+        set_data_object_deletion_prize_value(0);
+
+        let num_of_objs_to_upload = 0;
+
+        let objs_total_size_in_bytes = 0;
+
+        let funds_needed =
+            Storage::funds_needed_for_upload(num_of_objs_to_upload, objs_total_size_in_bytes);
+
+        assert_eq!(funds_needed, 0);
+    });
+
+    //Module > 0 round_up((ONE_MB - 1) % ONE_MB) -> 1
+    build_test_externalities_with_genesis().execute_with(|| {
+        set_data_object_per_mega_byte_fee(1);
+        set_data_object_deletion_prize_value(0);
+
+        let num_of_objs_to_upload = 0;
+
+        let objs_total_size_in_bytes = ONE_MB - 1;
+
+        let funds_needed =
+            Storage::funds_needed_for_upload(num_of_objs_to_upload, objs_total_size_in_bytes);
+
+        assert_eq!(funds_needed, 1);
+    });
+
+    //Module == 0 ONE_MB % ONE_MB -> 1
+    build_test_externalities_with_genesis().execute_with(|| {
+        set_data_object_per_mega_byte_fee(1);
+        set_data_object_deletion_prize_value(0);
+
+        let num_of_objs_to_upload = 0;
+
+        let objs_total_size_in_bytes = ONE_MB;
+
+        let funds_needed =
+            Storage::funds_needed_for_upload(num_of_objs_to_upload, objs_total_size_in_bytes);
+
+        assert_eq!(funds_needed, 1);
+    });
+
+    //Module =! 0 round_up((ONE_MB + 1 ) % ONE_MB) -> 2
+    build_test_externalities_with_genesis().execute_with(|| {
+        set_data_object_per_mega_byte_fee(1);
+        set_data_object_deletion_prize_value(0);
+
+        let num_of_objs_to_upload = 0;
+
+        let objs_total_size_in_bytes = ONE_MB + 1;
+
+        let funds_needed =
+            Storage::funds_needed_for_upload(num_of_objs_to_upload, objs_total_size_in_bytes);
+
+        assert_eq!(funds_needed, 2);
+    });
+}
+
+#[test]
+fn funds_needed_for_upload_succeeds_overflow_sat() {
+    build_test_externalities_with_genesis().execute_with(|| {
+        //(num_of_objs * deletion_prize_value) + (obj_size * mega_byte_fee) = funds
+        set_data_object_per_mega_byte_fee(0);
+        set_data_object_deletion_prize_value(5);
+
+        //(3689348814741910323 * 5) + (0 * 0) = u64 max + 0
+        let num_of_objs_to_upload = 3689348814741910323;
+        let funds_needed = Storage::funds_needed_for_upload(num_of_objs_to_upload, 0);
+
+        assert_eq!(funds_needed, u64::MAX);
+
+        //(3689348814741910324 * 5) + (0 * 0) = u64 max + 5 -> u64 max overflow
+        let num_of_objs_to_upload = 3689348814741910324;
+        let funds_needed_saturated = Storage::funds_needed_for_upload(num_of_objs_to_upload, 0);
+
+        assert_eq!(funds_needed_saturated, u64::MAX);
+    });
+
+    build_test_externalities_with_genesis().execute_with(|| {
+        //(num_of_objs * deletion_prize_value) + (obj_size * mega_byte_fee) = funds
+        set_data_object_per_mega_byte_fee(3689348814741910323);
+        set_data_object_deletion_prize_value(0);
+
+        //(0 * 0) + (5 * 3689348814741910323) = 18446744073709551615 + 0
+        let funds_needed_saturated = Storage::funds_needed_for_upload(0, 5 * ONE_MB);
+
+        assert_eq!(funds_needed_saturated, u64::MAX);
+
+        set_data_object_per_mega_byte_fee(3689348814741910324);
+
+        //(0 * 0) + (5 * 3689348814741910324) = 18446744073709551615 + 5 -> u64 max overflow
+        let funds_needed_saturated = Storage::funds_needed_for_upload(0, 5 * ONE_MB);
+
+        assert_eq!(funds_needed_saturated, u64::MAX);
+    });
+
+    build_test_externalities_with_genesis().execute_with(|| {
+        //(num_of_objs * deletion_prize_value) + (obj_size * mega_byte_fee) = funds
+        set_data_object_per_mega_byte_fee(3689348814741910303);
+        set_data_object_deletion_prize_value(5);
+
+        //(20 * 5) + (5 * 3689348814741910303) = 18446744073709551615 + 0
+        let funds_needed_saturated = Storage::funds_needed_for_upload(20, 5 * ONE_MB);
+
+        assert_eq!(funds_needed_saturated, u64::MAX);
+
+        set_data_object_per_mega_byte_fee(3689348814741910304);
+
+        //(20 * 5) + (5 * 3689348814741910304) = 18446744073709551615 + 5 -> u64 max overflow
+        let funds_needed_saturated = Storage::funds_needed_for_upload(20, 5 * ONE_MB);
+
+        assert_eq!(funds_needed_saturated, u64::MAX);
+    });
 }
