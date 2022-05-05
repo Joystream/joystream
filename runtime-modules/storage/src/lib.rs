@@ -90,6 +90,7 @@
 //! #### Public methods
 //! Public integration methods are exposed via the [DataObjectStorage](./trait.DataObjectStorage.html)
 //! - upload_data_objects
+//! - funds_needed_for_upload
 //! - can_move_data_objects
 //! - move_data_objects
 //! - delete_data_objects
@@ -134,7 +135,7 @@ use frame_support::{
 use frame_system::{ensure_root, ensure_signed};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_arithmetic::traits::{AtLeast32BitUnsigned, BaseArithmetic, One, Unsigned};
+use sp_arithmetic::traits::{BaseArithmetic, One, Unsigned, Zero};
 use sp_runtime::traits::{AccountIdConversion, MaybeSerialize, Member, Saturating};
 use sp_runtime::{ModuleId, SaturatedConversion};
 use sp_std::collections::btree_map::BTreeMap;
@@ -187,6 +188,8 @@ pub trait WeightInfo {
 }
 
 type WeightInfoStorage<T> = <T as Trait>::WeightInfo;
+
+type DeletionPrizeAndStorageFee<T> = (BalanceOf<T>, BalanceOf<T>, BalanceOf<T>);
 
 /// Content ID length in bytes (46 bytes multihash).
 pub const CID_LENGTH: usize = 46;
@@ -992,57 +995,6 @@ impl VoucherUpdate {
         }
     }
 }
-
-/// Utility enum used for balance accounting
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-enum NetDeletionPrizeTypes<Balance: AtLeast32BitUnsigned + Default> {
-    /// Net Deletion Prize to be withdrawn
-    Pos(Balance),
-    /// Net Deletion Prize to be Deposited
-    Neg(Balance),
-}
-
-impl<Balance: AtLeast32BitUnsigned + Default> Default for NetDeletionPrizeTypes<Balance> {
-    fn default() -> Self {
-        Self::Pos(Balance::zero())
-    }
-}
-
-impl<Balance: AtLeast32BitUnsigned + Default> NetDeletionPrizeTypes<Balance> {
-    fn add_balance(self, balance: Balance) -> Self {
-        match self {
-            Self::Pos(b) => Self::Pos(b.saturating_add(balance)),
-            Self::Neg(b) => {
-                if b > balance {
-                    Self::Neg(b.saturating_sub(balance))
-                } else {
-                    Self::Pos(balance.saturating_sub(b))
-                }
-            }
-        }
-    }
-
-    fn sub_balance(self, balance: Balance) -> Self {
-        match self {
-            Self::Neg(b) => Self::Neg(b.saturating_add(balance)),
-            Self::Pos(b) => {
-                if b > balance {
-                    Self::Pos(b.saturating_sub(balance))
-                } else {
-                    Self::Neg(balance.saturating_sub(b))
-                }
-            }
-        }
-    }
-}
-
-impl<Balance: AtLeast32BitUnsigned + Default> From<Balance> for NetDeletionPrizeTypes<Balance> {
-    fn from(balance: Balance) -> Self {
-        Self::Pos(balance)
-    }
-}
-
-type NetDeletionPrize<T> = NetDeletionPrizeTypes<BalanceOf<T>>;
 
 /// Defines the storage bucket connection to the storage operator (storage WG worker).
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -4331,17 +4283,23 @@ impl<T: Trait> Module<T> {
             .collect()
     }
 
-    fn compute_net_prize(
-        init_value: NetDeletionPrize<T>,
+    fn compute_deletion_prizes(
+        deletion_prize_request: BalanceOf<T>,
+        deletion_prize_refund: BalanceOf<T>,
         num_obj_to_create: usize,
         num_obj_to_delete: usize,
-    ) -> NetDeletionPrize<T> {
+    ) -> (BalanceOf<T>, BalanceOf<T>) {
         let amnt = Self::data_object_deletion_prize_value();
-        let num_obj_to_create_bal: BalanceOf<T> = num_obj_to_create.saturated_into();
-        let num_obj_to_delete_bal: BalanceOf<T> = num_obj_to_delete.saturated_into();
-        init_value
-            .add_balance(amnt * num_obj_to_create_bal)
-            .sub_balance(amnt * num_obj_to_delete_bal)
+        let num_obj_to_create: BalanceOf<T> = num_obj_to_create.saturated_into();
+        let num_obj_to_delete: BalanceOf<T> = num_obj_to_delete.saturated_into();
+
+        let deletion_prize_request: BalanceOf<T> =
+            deletion_prize_request.saturating_add(num_obj_to_create.saturating_mul(amnt));
+
+        let deletion_prize_refund: BalanceOf<T> =
+            deletion_prize_refund.saturating_add(num_obj_to_delete.saturating_mul(amnt));
+
+        (deletion_prize_request, deletion_prize_refund)
     }
 
     /// Utility function that checks existence for bag deletion / update &
@@ -4405,25 +4363,29 @@ impl<T: Trait> Module<T> {
             Self::update_distribution_buckets(&distributed_by, &bag_op.params);
 
         // check that user or treasury account have enough balance
-        let (net_prize, storage_fee) = Self::ensure_sufficient_balance(
-            &bag_op,
-            new_voucher_update,
-            deletion_prize,
-            &account_id,
-        )?;
+        let (deletion_prize_request, deletion_prize_refund, storage_fee) =
+            Self::ensure_sufficient_balance(
+                &bag_op,
+                new_voucher_update,
+                deletion_prize,
+                &account_id,
+            )?;
 
         //
         // == MUTATION SAFE ==
         //
 
-        // refund or request deletion prize first: no-op if amnt = 0
-        match net_prize {
-            NetDeletionPrize::<T>::Neg(amnt) => <StorageTreasury<T>>::withdraw(&account_id, amnt)?,
-            NetDeletionPrize::<T>::Pos(amnt) => <StorageTreasury<T>>::deposit(&account_id, amnt)?,
+        //deletion prize request creating objects: no-op if deletion prize requested is 0
+        if !deletion_prize_request.is_zero() {
+            <StorageTreasury<T>>::deposit(&account_id, deletion_prize_request)?;
+            //  slash: no-op if storage_fee = 0
+            let _ = Balances::<T>::slash(&account_id, storage_fee);
         }
 
-        //  slash: no-op if storage_fee = 0
-        let _ = Balances::<T>::slash(&account_id, storage_fee);
+        //deletion prize refund deleting objects: no-op if deletion_prize_refund is 0
+        if !deletion_prize_refund.is_zero() {
+            <StorageTreasury<T>>::withdraw(&account_id, deletion_prize_refund)?;
+        }
 
         // insert candidate storage buckets: no op if new_storage_buckets is empty
         new_storage_buckets.iter().for_each(|(id, bucket)| {
@@ -4540,22 +4502,32 @@ impl<T: Trait> Module<T> {
         new_voucher_update: VoucherUpdate,
         deletion_prize: Option<BalanceOf<T>>,
         account_id: &T::AccountId,
-    ) -> Result<(NetDeletionPrize<T>, BalanceOf<T>), DispatchError> {
-        let init_net_prize = deletion_prize.map_or(Default::default(), |dp| match &op.params {
-            BagOperationParams::<T>::Delete => NetDeletionPrize::<T>::Neg(dp),
-            BagOperationParams::<T>::Create(..) => NetDeletionPrize::<T>::Pos(dp),
-            _ => Default::default(),
-        });
+    ) -> Result<DeletionPrizeAndStorageFee<T>, DispatchError> {
+        let (deletion_prize_request, deletion_prize_refund) =
+            deletion_prize.map_or(Default::default(), |dp| match &op.params {
+                BagOperationParams::<T>::Delete => (Zero::zero(), dp),
+                BagOperationParams::<T>::Create(..) => (dp, Zero::zero()),
+                _ => (Zero::zero(), Zero::zero()),
+            });
 
-        let net_prize = match &op.params {
-            BagOperationParams::<T>::Create(_, list, _, _) => {
-                Self::compute_net_prize(init_net_prize, list.len(), 0)
-            }
+        let (deletion_prize_request, deletion_prize_refund) = match &op.params {
+            BagOperationParams::<T>::Create(_, list, _, _) => Self::compute_deletion_prizes(
+                deletion_prize_request,
+                deletion_prize_refund,
+                list.len(),
+                0,
+            ),
             BagOperationParams::<T>::Update(creation_list, removal_list) => {
-                Self::compute_net_prize(init_net_prize, creation_list.len(), removal_list.len())
+                Self::compute_deletion_prizes(
+                    deletion_prize_request,
+                    deletion_prize_refund,
+                    creation_list.len(),
+                    removal_list.len(),
+                )
             }
-            BagOperationParams::<T>::Delete => Self::compute_net_prize(
-                init_net_prize,
+            BagOperationParams::<T>::Delete => Self::compute_deletion_prizes(
+                deletion_prize_request,
+                deletion_prize_refund,
                 0,
                 Bags::<T>::get(&op.bag_id).objects_number as usize,
             ),
@@ -4563,19 +4535,14 @@ impl<T: Trait> Module<T> {
 
         // storage fee: zero if VoucherUpdate is default
         let storage_fee = Self::calculate_data_storage_fee(new_voucher_update.objects_total_size);
-        match net_prize.add_balance(storage_fee) {
-            NetDeletionPrize::<T>::Pos(b) => ensure!(
-                Balances::<T>::usable_balance(account_id) >= b,
-                Error::<T>::InsufficientBalance
-            ),
-            NetDeletionPrize::<T>::Neg(b) => {
-                ensure!(
-                    <StorageTreasury<T>>::usable_balance() >= b,
-                    Error::<T>::InsufficientTreasuryBalance
-                )
-            }
-        }
-        Ok((net_prize, storage_fee))
+
+        ensure!(
+            Balances::<T>::usable_balance(account_id)
+                >= deletion_prize_request.saturating_add(storage_fee),
+            Error::<T>::InsufficientBalance
+        );
+
+        Ok((deletion_prize_request, deletion_prize_refund, storage_fee))
     }
 
     // Validate storage bucket IDs for dynamic bag type. Checks buckets' existence and dynamic bag
