@@ -342,6 +342,7 @@ export async function processReactCommentMessage(
   const commentReactedEvent = new CommentReactedEvent({
     ...genericEventFields(event),
     comment,
+    video,
     reactingMember: new Membership({ id: memberId.toString() }),
     reactionResult: reactionId,
   })
@@ -405,6 +406,7 @@ export async function processCreateCommentMessage(
   const commentCreatedEvent = new CommentCreatedEvent({
     ...genericEventFields(event),
     comment,
+    video,
     text: body,
   })
 
@@ -446,6 +448,7 @@ export async function processEditCommentMessage(
   const commentTextUpdatedEvent = new CommentTextUpdatedEvent({
     ...genericEventFields(event),
     comment,
+    video,
     newText: newBody,
   })
   await store.save<CommentTextUpdatedEvent>(commentTextUpdatedEvent)
@@ -509,6 +512,7 @@ export async function processDeleteCommentMessage(
   const commentDeletedEvent = new CommentDeletedEvent({
     ...genericEventFields(event),
     comment,
+    video,
   })
   await store.save<CommentDeletedEvent>(commentDeletedEvent)
 
@@ -562,6 +566,7 @@ export async function processModerateCommentMessage(
   const commentModeratedEvent = new CommentModeratedEvent({
     ...genericEventFields(event),
     comment,
+    video,
     actor: channelOwnerOrModerator,
     rationale,
   })
@@ -601,6 +606,7 @@ export async function processPinOrUnpinCommentMessage(
   const commentPinnedEvent = new CommentPinnedEvent({
     ...genericEventFields(event),
     comment,
+    video,
     action: option === PinOrUnpinComment.Option.PIN,
   })
 

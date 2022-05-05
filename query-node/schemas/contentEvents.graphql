@@ -51,6 +51,9 @@ type CommentReactedEvent implements Event @entity {
   "The comment being reacted to"
   comment: Comment!
 
+  "Comment's video"
+  video: Video!
+
   "The reaction id"
   reactionResult: Int!
 
@@ -81,6 +84,9 @@ type CommentCreatedEvent implements Event @entity {
   "The comment that was added"
   comment: Comment!
 
+  "Comment's video"
+  video: Video!
+
   "Comment's original text"
   text: String!
 }
@@ -107,6 +113,9 @@ type CommentTextUpdatedEvent implements Event @entity {
 
   "The comment being updated"
   comment: Comment!
+
+  "Comment's video"
+  video: Video!
 
   "New comment text"
   newText: String!
@@ -137,6 +146,9 @@ type CommentDeletedEvent implements Event @entity {
   "Comment deleted"
   comment: Comment!
 
+  "Comment's video"
+  video: Video!
+
   # No actor context required, since commenter would delete the comment
 }
 
@@ -162,6 +174,9 @@ type CommentModeratedEvent implements Event @entity {
 
   "Comment deleted"
   comment: Comment!
+
+  "Comment's video"
+  video: Video!
 
   "The actor responsible for the removal of comment"
   actor: ContentActor!
@@ -193,6 +208,9 @@ type CommentPinnedEvent implements Event @entity {
 
   "The comment being pinned"
   comment: Comment!
+
+  "Comment's video"
+  video: Video!
 
   "The action performed. true if comment is pinned, otherwise false."
   action: Boolean!
