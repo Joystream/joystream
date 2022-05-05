@@ -84,6 +84,10 @@ export class ApiFactory {
         // Give it a few seconds to be ready.
         await Utils.wait(5000)
 
+        // Log runtime version
+        const version = await api.rpc.state.getRuntimeVersion()
+        console.log(`Runtime Version: ${version.authoringVersion}.${version.specVersion}.${version.implVersion}`)
+
         return new ApiFactory(api, treasuryAccountUri, sudoAccountUri, miniSecret)
       } catch (err) {
         if (connectAttempts === 3) {
@@ -194,6 +198,10 @@ export class Api {
 
   public get derive(): ApiPromise['derive'] {
     return this.api.derive
+  }
+
+  public get rpc(): ApiPromise['rpc'] {
+    return this.api.rpc
   }
 
   public get createType(): ApiPromise['createType'] {

@@ -6,7 +6,12 @@ export default async function assertValues({ api }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:postMigrationAssertions')
   debug('Started')
 
-  debug('Check that post migration NFT value are set')
+  debug('Check runtime spec version')
+  const version = await api.rpc.state.getRuntimeVersion()
+  console.log(`Runtime Version: ${version.authoringVersion}.${version.specVersion}.${version.implVersion}`)
+  assert.equal(version.specVersion.toNumber(), 6)
+
+  debug('Check that post migration NFT value are updated')
 
   const maxNftStartingPrice = (await api.query.content.maxStartingPrice()).toNumber()
   const maxNftBidStep = (await api.query.content.maxBidStep()).toNumber()
@@ -15,7 +20,8 @@ export default async function assertValues({ api }: FlowProps): Promise<void> {
   assert.equal(maxNftStartingPrice, 1000000000000)
   assert.equal(maxNftBidStep, 1000000000000)
 
-  // Forum categories max values
+  debug('Check that post migration Forum values are updated')
+
   const maxForumCategories = api.consts.forum.maxCategories.toNumber()
   const maxForumSubCategories = api.consts.forum.maxSubcategories.toNumber()
 
