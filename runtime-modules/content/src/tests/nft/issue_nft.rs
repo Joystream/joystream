@@ -365,15 +365,7 @@ fn test_helper_for_nft_limit_works_as_expected(
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video();
 
-        let global_period_in_blocks = 10;
-
-        Content::set_nft_limit(
-            nft_limit_id,
-            LimitPerPeriod::<u64> {
-                limit: 1,
-                block_number_period: global_period_in_blocks,
-            },
-        );
+        Content::set_nft_limit(nft_limit_id, 1);
 
         // Issue nft 1
         assert_ok!(Content::issue_nft(
@@ -405,7 +397,9 @@ fn test_helper_for_nft_limit_works_as_expected(
             Err(expected_error.into()),
         );
 
-        run_to_block(global_period_in_blocks);
+        let nft_limit = nft_limit_by_id(nft_limit_id);
+
+        run_to_block(nft_limit.block_number_period);
 
         // Issue nft 3
         assert_ok!(Content::issue_nft(
@@ -430,16 +424,8 @@ fn nft_counters_increment_works_as_expected() {
         create_default_member_owned_channel_with_video();
 
         let channel_id = 1;
-        let daily_period_in_blocks = 10;
-        let daily_limit = LimitPerPeriod::<u64> {
-            limit: 1000,
-            block_number_period: daily_period_in_blocks,
-        };
-        let weekly_period_in_blocks = 20;
-        let weekly_limit = LimitPerPeriod::<u64> {
-            limit: 1000,
-            block_number_period: weekly_period_in_blocks,
-        };
+        let daily_limit = 1000;
+        let weekly_limit = 1000;
 
         set_global_daily_nft_limit(daily_limit);
         set_global_weekly_nft_limit(weekly_limit);
@@ -479,6 +465,7 @@ fn nft_counters_increment_works_as_expected() {
             })
             .call_and_assert(Ok(()));
 
+        let daily_period_in_blocks = nft_limit_by_id(NftLimitId::GlobalDaily).block_number_period;
         run_to_block(daily_period_in_blocks);
         assert_ok!(Content::issue_nft(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),

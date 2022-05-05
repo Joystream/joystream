@@ -64,6 +64,9 @@ pub enum ContentModerationAction {
     // Related extrinsics:
     // - `delete_channel_assets_as_moderator`
     DeleteNonVideoChannelAssets,
+    // Related extrinsics:
+    // - `update_channel_nft_limit`
+    UpdateChannelNftLimits,
 }
 
 pub type ModerationPermissionsByLevel<T> =

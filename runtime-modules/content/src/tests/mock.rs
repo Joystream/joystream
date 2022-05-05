@@ -809,36 +809,32 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for DistributionWG {
 }
 
 pub(crate) fn set_default_nft_limits() {
-    let limit = LimitPerPeriod::<u64> {
-        limit: 1000,
-        block_number_period: 1000,
-    };
-
+    let limit = 1000;
     let channel_id = 1;
 
     set_all_nft_limits(channel_id, limit);
 }
 
-pub(crate) fn set_all_nft_limits(channel_id: u64, limit: LimitPerPeriod<u64>) {
+pub(crate) fn set_all_nft_limits(channel_id: u64, limit: u64) {
     set_global_daily_nft_limit(limit);
     set_global_weekly_nft_limit(limit);
     set_channel_daily_nft_limit(channel_id, limit);
     set_channel_weekly_nft_limit(channel_id, limit);
 }
 
-pub(crate) fn set_global_daily_nft_limit(limit: LimitPerPeriod<u64>) {
+pub(crate) fn set_global_daily_nft_limit(limit: u64) {
     Content::set_nft_limit(NftLimitId::GlobalDaily, limit);
 }
 
-pub(crate) fn set_global_weekly_nft_limit(limit: LimitPerPeriod<u64>) {
+pub(crate) fn set_global_weekly_nft_limit(limit: u64) {
     Content::set_nft_limit(NftLimitId::GlobalWeekly, limit);
 }
 
-pub(crate) fn set_channel_daily_nft_limit(channel_id: u64, limit: LimitPerPeriod<u64>) {
+pub(crate) fn set_channel_daily_nft_limit(channel_id: u64, limit: u64) {
     Content::set_nft_limit(NftLimitId::ChannelDaily(channel_id), limit);
 }
 
-pub(crate) fn set_channel_weekly_nft_limit(channel_id: u64, limit: LimitPerPeriod<u64>) {
+pub(crate) fn set_channel_weekly_nft_limit(channel_id: u64, limit: u64) {
     Content::set_nft_limit(NftLimitId::ChannelWeekly(channel_id), limit);
 }
 

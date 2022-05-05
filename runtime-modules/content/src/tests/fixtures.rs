@@ -4335,33 +4335,108 @@ pub fn run_all_fixtures_with_contexts(
 }
 
 #[derive(Fixture, new)]
-pub struct UpdateNftLimitFixture {
+pub struct UpdateGlobalNftLimitFixture {
     #[new(value = "RawOrigin::Signed(LEAD_ACCOUNT_ID)")]
     origin: RawOrigin<u64>,
 
     #[new(default)]
-    nft_limit_id: NftLimitId<ChannelId>,
+    period: NftLimitPeriod,
 
     #[new(default)]
-    limit: LimitPerPeriod<u64>,
+    limit: u64,
 }
 
-impl UpdateNftLimitFixture {
+impl UpdateGlobalNftLimitFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let old_limit = nft_limit_by_id(self.nft_limit_id);
+        let nft_limit_id = match self.period {
+            NftLimitPeriod::Daily => NftLimitId::GlobalDaily,
+            NftLimitPeriod::Weekly => NftLimitId::GlobalWeekly,
+        };
+
+        let old_limit = nft_limit_by_id(nft_limit_id);
 
         let actual_result =
-            Content::update_nft_limit(self.origin.clone().into(), self.nft_limit_id, self.limit);
+            Content::update_global_nft_limit(self.origin.clone().into(), self.period, self.limit);
 
         assert_eq!(actual_result, expected_result);
 
-        let new_limit = nft_limit_by_id(self.nft_limit_id);
+        let new_limit = nft_limit_by_id(nft_limit_id);
+
         if actual_result.is_ok() {
-            assert_eq!(self.limit, new_limit);
+            assert_eq!(
+                LimitPerPeriod {
+                    limit: self.limit,
+                    ..old_limit
+                },
+                new_limit
+            );
 
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::NftLimitUpdated(self.nft_limit_id, self.limit))
+                MetaEvent::content(RawEvent::GlobalNftLimitUpdated(self.period, self.limit))
+            );
+        } else {
+            assert_eq!(old_limit, new_limit);
+        }
+    }
+}
+
+#[derive(Fixture, new)]
+pub struct UpdateChannelNftLimitFixture {
+    #[new(value = "RawOrigin::Signed(DEFAULT_CURATOR_ACCOUNT_ID)")]
+    origin: RawOrigin<u64>,
+
+    #[new(value = "default_curator_actor()")]
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+
+    #[new(default)]
+    period: NftLimitPeriod,
+
+    #[new(value = "ChannelId::one()")]
+    channel_id: ChannelId,
+
+    #[new(default)]
+    limit: u64,
+}
+
+impl UpdateChannelNftLimitFixture {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let nft_limit_id = match self.period {
+            NftLimitPeriod::Daily => NftLimitId::ChannelDaily(self.channel_id),
+            NftLimitPeriod::Weekly => NftLimitId::ChannelWeekly(self.channel_id),
+        };
+
+        let old_limit = nft_limit_by_id(nft_limit_id);
+
+        let actual_result = Content::update_channel_nft_limit(
+            self.origin.clone().into(),
+            self.actor.clone(),
+            self.period,
+            self.channel_id,
+            self.limit,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        let new_limit = nft_limit_by_id(nft_limit_id);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                LimitPerPeriod {
+                    limit: self.limit,
+                    ..old_limit
+                },
+                new_limit
+            );
+
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::ChannelNftLimitUpdated(
+                    self.actor,
+                    self.period,
+                    self.channel_id,
+                    self.limit
+                ))
             );
         } else {
             assert_eq!(old_limit, new_limit);

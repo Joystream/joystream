@@ -429,7 +429,8 @@
             "EditBlogPost": "(PostId,Option<Text>,Option<Text>)",
             "LockBlogPost": "PostId",
             "UnlockBlogPost": "PostId",
-            "VetoProposal": "ProposalId"
+            "VetoProposal": "ProposalId",
+            "UpdateGlobalNftLimit": "(NftLimitPeriod,u64)"
         }
     },
     "ProposalDetailsOf": {
@@ -458,7 +459,8 @@
             "EditBlogPost": "(PostId,Option<Text>,Option<Text>)",
             "LockBlogPost": "PostId",
             "UnlockBlogPost": "PostId",
-            "VetoProposal": "ProposalId"
+            "VetoProposal": "ProposalId",
+            "UpdateGlobalNftLimit": "(NftLimitPeriod,u64)"
         }
     },
     "VotingResults": {
@@ -688,7 +690,11 @@
         "privilege_level": "ChannelPrivilegeLevel",
         "paused_features": "BTreeSet<PausableChannelFeature>",
         "transfer_status": "ChannelTransferStatus",
-        "data_objects": "BTreeSet<DataObjectId>"
+        "data_objects": "BTreeSet<DataObjectId>",
+        "daily_nft_limit": "LimitPerPeriod",
+        "weekly_nft_limit": "LimitPerPeriod",
+        "daily_nft_counter": "NftCounter",
+        "weekly_nft_counter": "NftCounter"
     },
     "ChannelOwner": {
         "_enum": {
@@ -864,7 +870,8 @@
             "DeleteVideo": "Null",
             "DeleteChannel": "Null",
             "DeleteVideoAssets": "bool",
-            "DeleteNonVideoChannelAssets": "Null"
+            "DeleteNonVideoChannelAssets": "Null",
+            "UpdateChannelNftLimits": "Null"
         }
     },
     "ContentModerationActionsSet": "BTreeSet<ContentModerationAction>",
@@ -901,5 +908,27 @@
         ]
     },
     "ChannelAgentPermissions": "BTreeSet<ChannelActionPermission>",
+    "NftLimitPeriod": {
+        "_enum": [
+            "Daily",
+            "Weekly"
+        ]
+    },
+    "NftLimitId": {
+        "_enum": {
+            "GlobalDaily": "Null",
+            "GlobalWeekly": "Null",
+            "ChannelDaily": "ChannelId",
+            "ChannelWeekly": "ChannelId"
+        }
+    },
+    "LimitPerPeriod": {
+        "limit": "u64",
+        "block_number_period": "u32"
+    },
+    "NftCounter": {
+        "counter": "u64",
+        "last_updated": "u32"
+    },
     "AccountInfo": "AccountInfoWithRefCount"
 }
