@@ -176,6 +176,128 @@ fn issue_split_ok_with_revenue_split_correctly_activated() {
     })
 }
 
+#[test]
+fn finalize_split_fails_with_invalid_token_id() {
+    build_default_test_externalities_with_balances(vec![(
+        DEFAULT_ACCOUNT_ID,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(DEFAULT_SPLIT_DURATION);
+
+        let result = FinalizeRevenueSplitFixture::default().execute_call();
+
+        assert_err!(result, Error::<Test>::TokenDoesNotExist);
+    })
+}
+
+#[test]
+fn finalize_split_ok_with_active_but_not_ended_revenue_split() {
+    build_default_test_externalities_with_balances(vec![(
+        DEFAULT_ACCOUNT_ID,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(DEFAULT_SPLIT_DURATION - 1);
+
+        let result = FinalizeRevenueSplitFixture::default().execute_call();
+
+        assert_err!(result, Error::<Test>::RevenueSplitDidNotEnd);
+    })
+}
+
+#[test]
+fn finalize_split_fails_with_inactive_revenue_split() {
+    build_default_test_externalities_with_balances(vec![(
+        DEFAULT_ACCOUNT_ID,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+
+        let result = FinalizeRevenueSplitFixture::default().execute_call();
+
+        assert_err!(result, Error::<Test>::RevenueSplitNotActiveForToken);
+    })
+}
+
+#[test]
+fn finalize_split_ok_with_event_deposit() {
+    build_default_test_externalities_with_balances(vec![(
+        DEFAULT_ACCOUNT_ID,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(DEFAULT_SPLIT_DURATION);
+
+        FinalizeRevenueSplitFixture::default()
+            .execute_call()
+            .unwrap();
+
+        last_event_eq!(RawEvent::RevenueSplitFinalized(
+            1u64,
+            DEFAULT_ACCOUNT_ID,
+            DEFAULT_SPLIT_ALLOCATION
+        ))
+    })
+}
+
+#[test]
+fn finalize_split_ok_with_token_status_set_to_inactive() {
+    build_default_test_externalities_with_balances(vec![(
+        DEFAULT_ACCOUNT_ID,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(DEFAULT_SPLIT_DURATION);
+
+        FinalizeRevenueSplitFixture::default()
+            .execute_call()
+            .unwrap();
+
+        assert!(matches!(
+            Token::token_info_by_id(1u64).revenue_split,
+            RevenueSplitState::Inactive,
+        ));
+    })
+}
+
+#[test]
+fn finalize_split_ok_with_leftover_joys_transferred_to_account() {
+    build_default_test_externalities_with_balances(vec![(
+        DEFAULT_ACCOUNT_ID,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        let treasury_account = treasury_account_for(1u64);
+        IssueTokenFixture::default().execute_call().unwrap();
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(DEFAULT_SPLIT_DURATION);
+
+        FinalizeRevenueSplitFixture::default()
+            .execute_call()
+            .unwrap();
+
+        // treasury account final balance == Existential deposit
+        assert_eq!(
+            Joy::<Test>::usable_balance(treasury_account),
+            ExistentialDeposit::get()
+        );
+        // account id balance increased by leftover joy amount
+        assert_eq!(
+            Joy::<Test>::usable_balance(DEFAULT_ACCOUNT_ID),
+            DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get()
+        );
+    })
+}
+
 // #[test]
 // fn issue_split_ok_with_correct_activation() {
 //     let token_id = token!(1);
