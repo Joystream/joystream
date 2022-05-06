@@ -661,6 +661,14 @@ impl FinalizeRevenueSplitFixture {
             account_id: AccountId::from(DEFAULT_ACCOUNT_ID),
         }
     }
+
+    pub fn with_token_id(self, id: u64) -> Self {
+        Self {
+            token_id: id.into(),
+            ..self
+        }
+    }
+
     pub fn execute_call(&self) -> DispatchResult {
         let state_pre = sp_io::storage::root();
         let result = Token::finalize_revenue_split(self.token_id, self.account_id);

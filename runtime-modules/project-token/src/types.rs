@@ -106,15 +106,15 @@ pub struct TokenData<Balance, Hash, BlockNumber, TokenSale, RevenueSplitState> {
 
 /// Revenue Split State
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum RevenueSplitState<Balance, BlockNumber> {
+pub enum RevenueSplitState<JoyBalance, BlockNumber> {
     /// Inactive state: no split ongoing
     Inactive,
 
     /// Active state: split ongoing with info
-    Active(RevenueSplitInfo<Balance, BlockNumber>),
+    Active(RevenueSplitInfo<JoyBalance, BlockNumber>),
 }
 
-impl<Balance, BlockNumber> RevenueSplitState<Balance, BlockNumber> {
+impl<JoyBalance, BlockNumber: Copy> RevenueSplitState<JoyBalance, BlockNumber> {
     pub fn ensure_inactive<T: Trait>(&self) -> DispatchResult {
         ensure!(
             matches!(&self, &Self::Inactive),
@@ -122,6 +122,13 @@ impl<Balance, BlockNumber> RevenueSplitState<Balance, BlockNumber> {
         );
 
         Ok(())
+    }
+
+    pub fn ensure_active<T: Trait>(&self) -> Result<Timeline<BlockNumber>, DispatchError> {
+        match &self {
+            RevenueSplitState::Inactive => Err(Error::<T>::RevenueSplitNotActiveForToken.into()),
+            RevenueSplitState::<JoyBalance, BlockNumber>::Active(info) => Ok(info.timeline.clone()),
+        }
     }
 }
 
@@ -144,7 +151,7 @@ impl<Balance, BlockNumber: Copy + PartialOrd + Saturating> RevenueSplitState<Bal
     }
 
     pub fn deactivate(&mut self) {
-        todo!()
+        *self = RevenueSplitState::Inactive;
     }
 }
 
@@ -865,6 +872,10 @@ where
         self.latest_revenue_split_id = self
             .latest_revenue_split_id
             .saturating_add(RevenueSplitId::one());
+    }
+
+    pub(crate) fn deactivate_revenue_split(&mut self) {
+        self.revenue_split.deactivate()
     }
 
     pub(crate) fn from_params<T: crate::Trait>(

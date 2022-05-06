@@ -713,41 +713,48 @@ impl<T: Trait>
         Ok(())
     }
 
-    /// Participate to the token revenue split if ongoing
+    /// Finalize revenue split once it is ended
     /// Preconditions
     /// - `token` at `token_id`
     /// - `token.revenue_split` is active
     /// - `token.revenue_split` has ended
-    /// - `token.revenue_split.allocation_left` of JOYs can be transferred to `account_id`
     ///
     /// Postconditions
     /// - `token.revenue_split.allocation_left` of JOYs transferred to `account_id`
     /// - `token.revenue_split` status set to Inactive
-    fn finalize_revenue_split(_token_id: T::TokenId, _account_id: T::AccountId) -> DispatchResult {
-        todo!()
-        // let token_info = Self::ensure_token_exists(token_id)?;
+    fn finalize_revenue_split(token_id: T::TokenId, account_id: T::AccountId) -> DispatchResult {
+        let token_info = Self::ensure_token_exists(token_id)?;
 
-        // let (timeline, _) = token_info.revenue_split.ensure_active::<T>()?;
-        // let now = <frame_system::Module<T>>::block_number();
-        // ensure!(!timeline.is_ongoing(now), Error::<T>::RevenueSplitDidNotEnd);
+        let timeline = token_info.revenue_split.ensure_active::<T>()?;
 
-        // // = MUTATION SAFE =
+        let current_block = Self::current_block();
+        ensure!(
+            timeline.is_ended(current_block),
+            Error::<T>::RevenueSplitDidNotEnd
+        );
 
-        // let treasury_account: T::AccountId = T::ModuleId::get().into_sub_account(token_id);
-        // let leftovers = T::ReserveCurrency::free_balance(&treasury_account);
-        // let _ = T::ReserveCurrency::transfer(
-        //     &treasury_account,
-        //     &account_id,
-        //     leftovers,
-        //     ExistenceRequirement::KeepAlive,
-        // );
+        // = MUTATION SAFE =
 
-        // TokenInfoById::<T>::mutate(token_id, |token_info| token_info.revenue_split.deactivate());
+        let treasury_account = Self::revenue_split_treasury_account_id(token_id);
+        let amount_to_withdraw = Joy::<T>::usable_balance(&treasury_account)
+            .saturating_sub(T::JoyExistentialDeposit::get());
 
-        // Self::deposit_event(RawEvent::RevenueSplitFinalized(
-        //     token_id, account_id, leftovers,
-        // ));
-        // Ok(())
+        <Joy<T> as Currency<T::AccountId>>::transfer(
+            &treasury_account,
+            &account_id,
+            amount_to_withdraw,
+            ExistenceRequirement::KeepAlive,
+        )?;
+
+        TokenInfoById::<T>::mutate(token_id, |token_info| token_info.deactivate_revenue_split());
+
+        Self::deposit_event(RawEvent::RevenueSplitFinalized(
+            token_id,
+            account_id,
+            amount_to_withdraw,
+        ));
+
+        Ok(())
     }
 }
 

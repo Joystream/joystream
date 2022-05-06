@@ -183,10 +183,13 @@ fn finalize_split_fails_with_invalid_token_id() {
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
         IssueRevenueSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
 
-        let result = FinalizeRevenueSplitFixture::default().execute_call();
+        let result = FinalizeRevenueSplitFixture::default()
+            .with_token_id(2u64)
+            .execute_call();
 
         assert_err!(result, Error::<Test>::TokenDoesNotExist);
     })
