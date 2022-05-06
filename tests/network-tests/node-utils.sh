@@ -119,7 +119,6 @@ function cleanup() {
     # 	docker logs ${CONTAINER_ID} --tail 15
     # fi
     docker-compose -f ../../docker-compose.yml down -v
-    find ./assets/ -name '[A-Z0-9]*__rejectedContent.json' -delete
     rm -rf $DATA_PATH
 }
 
