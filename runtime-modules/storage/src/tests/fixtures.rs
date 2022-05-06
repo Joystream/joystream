@@ -536,6 +536,22 @@ impl UploadFixture {
     }
 }
 
+pub fn create_data_object_candidates_with_size(
+    starting_index: u8,
+    number: u8,
+    size: u64,
+) -> Vec<DataObjectCreationParameters> {
+    let range = starting_index..(starting_index + number);
+
+    range
+        .into_iter()
+        .map(|idx| DataObjectCreationParameters {
+            size: size,
+            ipfs_content_id: create_cid(idx.into()),
+        })
+        .collect()
+}
+
 pub fn create_data_object_candidates(
     starting_index: u8,
     number: u8,

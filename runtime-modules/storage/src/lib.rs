@@ -4210,7 +4210,7 @@ impl<T: Trait> Module<T> {
 
     fn update_storage_buckets(
         bucket_ids: &BTreeSet<T::StorageBucketId>,
-        new_voucher_update: VoucherUpdate,
+        all_objects_with_update_voucher: VoucherUpdate,
         op: &BagOperationParams<T>,
     ) -> Result<BTreeMap<T::StorageBucketId, StorageBucket<T>>, Error<T>> {
         // create temporary iterator of bucket
@@ -4226,7 +4226,7 @@ impl<T: Trait> Module<T> {
             .map(|(id, bk)| {
                 bk.voucher
                     .clone()
-                    .try_update(new_voucher_update)
+                    .try_update(all_objects_with_update_voucher)
                     .map(|voucher| (id, StorageBucket::<T> { voucher, ..bk }))
             });
 
@@ -4289,15 +4289,15 @@ impl<T: Trait> Module<T> {
         num_obj_to_create: usize,
         num_obj_to_delete: usize,
     ) -> (BalanceOf<T>, BalanceOf<T>) {
-        let amnt = Self::data_object_deletion_prize_value();
+        let obj_deletion_prize = Self::data_object_deletion_prize_value();
         let num_obj_to_create: BalanceOf<T> = num_obj_to_create.saturated_into();
         let num_obj_to_delete: BalanceOf<T> = num_obj_to_delete.saturated_into();
 
-        let deletion_prize_request: BalanceOf<T> =
-            deletion_prize_request.saturating_add(num_obj_to_create.saturating_mul(amnt));
+        let deletion_prize_request: BalanceOf<T> = deletion_prize_request
+            .saturating_add(num_obj_to_create.saturating_mul(obj_deletion_prize));
 
-        let deletion_prize_refund: BalanceOf<T> =
-            deletion_prize_refund.saturating_add(num_obj_to_delete.saturating_mul(amnt));
+        let deletion_prize_refund: BalanceOf<T> = deletion_prize_refund
+            .saturating_add(num_obj_to_delete.saturating_mul(obj_deletion_prize));
 
         (deletion_prize_request, deletion_prize_refund)
     }
@@ -4347,8 +4347,11 @@ impl<T: Trait> Module<T> {
         let object_creation_list = Self::construct_objects_to_upload(&bag_op)?;
         let objects_removal_list = Self::construct_objects_to_remove(&bag_op)?;
 
-        // new candidate voucher
-        let new_voucher_update = VoucherUpdate {
+        let objects_to_update_voucher = VoucherUpdate::default()
+            .add_objects_list(object_creation_list.as_slice())
+            .sub_objects_list(objects_removal_list.as_slice());
+
+        let all_objects_with_update_voucher = VoucherUpdate {
             objects_total_size,
             objects_number,
         }
@@ -4356,8 +4359,11 @@ impl<T: Trait> Module<T> {
         .sub_objects_list(objects_removal_list.as_slice());
 
         // new candidate storage buckets
-        let new_storage_buckets =
-            Self::update_storage_buckets(&stored_by, new_voucher_update, &bag_op.params)?;
+        let new_storage_buckets = Self::update_storage_buckets(
+            &stored_by,
+            all_objects_with_update_voucher,
+            &bag_op.params,
+        )?;
         // new candidate distribution buckets
         let new_distribution_buckets =
             Self::update_distribution_buckets(&distributed_by, &bag_op.params);
@@ -4366,7 +4372,7 @@ impl<T: Trait> Module<T> {
         let (deletion_prize_request, deletion_prize_refund, storage_fee) =
             Self::ensure_sufficient_balance(
                 &bag_op,
-                new_voucher_update,
+                objects_to_update_voucher,
                 deletion_prize,
                 &account_id,
             )?;
@@ -4438,15 +4444,15 @@ impl<T: Trait> Module<T> {
                         .map(|(id, _)| id)
                         .collect::<BTreeSet<_>>(),
                     deletion_prize,
-                    objects_total_size: new_voucher_update.objects_total_size,
-                    objects_number: new_voucher_update.objects_number,
+                    objects_total_size: all_objects_with_update_voucher.objects_total_size,
+                    objects_number: all_objects_with_update_voucher.objects_number,
                 },
             );
 
             Self::deposit_event(RawEvent::BagObjectsChanged(
                 bag_op.bag_id,
-                new_voucher_update.objects_total_size,
-                new_voucher_update.objects_number,
+                all_objects_with_update_voucher.objects_total_size,
+                all_objects_with_update_voucher.objects_number,
             ));
         };
 
@@ -4499,7 +4505,7 @@ impl<T: Trait> Module<T> {
 
     fn ensure_sufficient_balance(
         op: &BagOperation<T>,
-        new_voucher_update: VoucherUpdate,
+        objects_to_update_voucher: VoucherUpdate,
         deletion_prize: Option<BalanceOf<T>>,
         account_id: &T::AccountId,
     ) -> Result<DeletionPrizeAndStorageFee<T>, DispatchError> {
@@ -4534,7 +4540,8 @@ impl<T: Trait> Module<T> {
         };
 
         // storage fee: zero if VoucherUpdate is default
-        let storage_fee = Self::calculate_data_storage_fee(new_voucher_update.objects_total_size);
+        let storage_fee =
+            Self::calculate_data_storage_fee(objects_to_update_voucher.objects_total_size);
 
         ensure!(
             Balances::<T>::usable_balance(account_id)

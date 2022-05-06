@@ -810,25 +810,27 @@ fn upload_failed_with_exceeding_the_data_object_max_size() {
 }
 
 #[test]
-fn upload_succeeded_with_data_size_fee() {
+fn upload_succeeded_static_bag_with_data_size_and_deletion_fee() {
     build_test_externalities().execute_with(|| {
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
-        let data_size_fee = 100;
+        let data_object_per_mega_byte_fee = 50;
+        set_data_object_per_mega_byte_fee(data_object_per_mega_byte_fee);
 
         let data_object_deletion_prize = 10;
         set_data_object_deletion_prize_value(data_object_deletion_prize);
 
-        UpdateDataObjectPerMegabyteFeeFixture::default()
-            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-            .with_new_fee(data_size_fee)
-            .call_and_assert(Ok(()));
+        //This will not be charged in stactic bag
+        let dynamic_bag_deletion_prize_value = 5;
+        set_bag_deletion_prize_value(dynamic_bag_deletion_prize_value);
 
-        let upload_params = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::Static(StaticBagId::Council),
+        let bag_id = BagId::<Test>::Static(StaticBagId::Council);
+
+        let upload_params1 = UploadParameters::<Test> {
+            bag_id: bag_id.clone(),
             deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-            object_creation_list: create_single_data_object(),
+            object_creation_list: create_data_object_candidates_with_size(1, 2, ONE_MB),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
             expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
             expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
@@ -836,17 +838,192 @@ fn upload_succeeded_with_data_size_fee() {
         };
 
         UploadFixture::default()
-            .with_params(upload_params.clone())
+            .with_params(upload_params1.clone())
             .call_and_assert(Ok(()));
 
-        // check balances
+        let data_object_id_1 = 0_u64;
+        let data_object_id_2 = 1_u64;
+
+        assert!(<crate::DataObjectsById<Test>>::contains_key(
+            &bag_id,
+            &data_object_id_1
+        ));
+
+        assert!(<crate::DataObjectsById<Test>>::contains_key(
+            &bag_id,
+            &data_object_id_2
+        ));
+
         assert_eq!(
             Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
-            initial_balance - data_object_deletion_prize - data_size_fee
+            initial_balance
+            - 2 * data_object_deletion_prize //2 data objects upload fee
+            - 2 * data_object_per_mega_byte_fee // 2MB objetcs size fee
         );
+
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            data_object_deletion_prize
+            2 * data_object_deletion_prize
+        );
+
+        let upload_params2 = UploadParameters::<Test> {
+            bag_id: bag_id.clone(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: create_data_object_candidates_with_size(3, 2, ONE_MB),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
+            ..Default::default()
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params2.clone())
+            .call_and_assert(Ok(()));
+
+        let data_object_id_3 = 2_u64;
+        let data_object_id_4 = 3_u64;
+
+        assert!(<crate::DataObjectsById<Test>>::contains_key(
+            &bag_id,
+            &data_object_id_3
+        ));
+
+        assert!(<crate::DataObjectsById<Test>>::contains_key(
+            &bag_id,
+            &data_object_id_4
+        ));
+
+        assert_eq!(
+            Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
+            initial_balance
+            - 4 * data_object_deletion_prize //4 data objects upload fee
+            - 4 * data_object_per_mega_byte_fee // 4MB objetcs size fee
+        );
+
+        assert_eq!(
+            Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
+            4 * data_object_deletion_prize
+        );
+    });
+}
+
+#[test]
+fn upload_succeeded_dynamic_bag_with_data_size_and_deletion_fee() {
+    build_test_externalities().execute_with(|| {
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let data_object_per_mega_byte_fee = 50;
+        set_data_object_per_mega_byte_fee(data_object_per_mega_byte_fee);
+
+        let data_object_deletion_prize = 10;
+        set_data_object_deletion_prize_value(data_object_deletion_prize);
+
+        //This will  be charged in dynamic bag
+        let dynamic_bag_deletion_prize_value = 5;
+        set_bag_deletion_prize_value(dynamic_bag_deletion_prize_value);
+
+        UpdateStorageBucketsVoucherMaxLimitsFixture::default()
+            .with_new_objects_size_limit(5 * ONE_MB)
+            .with_new_objects_number_limit(10)
+            .call_and_assert(Ok(()));
+
+        let storage_buckets = CreateStorageBucketFixture::default()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_objects_limit(DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT)
+            .with_size_limit(5 * ONE_MB)
+            .create_several(DEFAULT_STORAGE_BUCKETS_NUMBER);
+
+        let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+
+        CreateDynamicBagFixture::default()
+            .with_bag_id(dynamic_bag_id.clone())
+            .with_storage_buckets(storage_buckets)
+            .with_expected_dynamic_bag_deletion_prize(Storage::dynamic_bag_deletion_prize_value())
+            .with_expected_data_object_deletion_prize(Storage::data_object_deletion_prize_value())
+            .with_expected_data_size_fee(Storage::data_object_per_mega_byte_fee())
+            .call_and_assert(Ok(()));
+
+        let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
+
+        let upload_params1 = UploadParameters::<Test> {
+            bag_id: bag_id.clone(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: create_data_object_candidates_with_size(1, 2, ONE_MB),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
+            ..Default::default()
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params1.clone())
+            .call_and_assert(Ok(()));
+
+        let data_object_id_1 = 0_u64;
+        let data_object_id_2 = 1_u64;
+
+        assert!(<crate::DataObjectsById<Test>>::contains_key(
+            &bag_id,
+            &data_object_id_1
+        ));
+
+        assert!(<crate::DataObjectsById<Test>>::contains_key(
+            &bag_id,
+            &data_object_id_2
+        ));
+
+        assert_eq!(
+            Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
+            initial_balance
+            - dynamic_bag_deletion_prize_value //1 dynamic_bag_deletion_prize_value
+            - 2 * data_object_deletion_prize //2 data objects upload fee
+            - 2 * data_object_per_mega_byte_fee // 2MB objetcs size fee
+        );
+
+        assert_eq!(
+            Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
+            dynamic_bag_deletion_prize_value + 2 * data_object_deletion_prize
+        );
+
+        let upload_params2 = UploadParameters::<Test> {
+            bag_id: bag_id.clone(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: create_data_object_candidates_with_size(3, 2, ONE_MB),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
+            ..Default::default()
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params2.clone())
+            .call_and_assert(Ok(()));
+
+        let data_object_id_3 = 2_u64;
+        let data_object_id_4 = 3_u64;
+
+        assert!(<crate::DataObjectsById<Test>>::contains_key(
+            &bag_id,
+            &data_object_id_3
+        ));
+
+        assert!(<crate::DataObjectsById<Test>>::contains_key(
+            &bag_id,
+            &data_object_id_4
+        ));
+
+        assert_eq!(
+            Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
+            initial_balance
+            - dynamic_bag_deletion_prize_value// 1 dynamic_bag_deletion_prize_value
+            - 4 * data_object_deletion_prize //4 data objects upload fee
+            - 4 * data_object_per_mega_byte_fee // 4MB objetcs size fee
+        );
+
+        assert_eq!(
+            Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
+            dynamic_bag_deletion_prize_value + 4 * data_object_deletion_prize
         );
     });
 }
@@ -1025,44 +1202,6 @@ fn upload_fails_with_non_existent_dynamic_bag() {
         UploadFixture::default()
             .with_params(upload_params.clone())
             .call_and_assert(Err(Error::<Test>::DynamicBagDoesntExist.into()));
-    });
-}
-
-#[test]
-fn upload_succeeded_with_non_empty_bag() {
-    build_test_externalities().execute_with(|| {
-        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, 1000);
-
-        let upload_params1 = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-            object_creation_list: create_data_object_candidates(1, 2),
-            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
-            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
-            ..Default::default()
-        };
-
-        UploadFixture::default()
-            .with_params(upload_params1.clone())
-            .call_and_assert(Ok(()));
-
-        let upload_params2 = UploadParameters::<Test> {
-            bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-            object_creation_list: create_data_object_candidates(3, 2),
-            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
-            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
-            ..Default::default()
-        };
-
-        UploadFixture::default()
-            .with_params(upload_params2.clone())
-            .call_and_assert(Ok(()));
-
-        let bag = Storage::static_bag(&StaticBagId::Council);
-        assert_eq!(bag.objects_number, 4);
     });
 }
 
@@ -5275,7 +5414,7 @@ fn unsuccessful_dyn_bag_creation_with_object_size_exceeding_max_obj_size() {
             .into_iter()
             .map(|idx| DataObjectCreationParameters {
                 // set size high on purpose to trigger error
-                size: 1_000_000,
+                size: 5 * ONE_MB + 1,
                 ipfs_content_id: vec![idx.try_into().unwrap()],
             })
             .collect();
