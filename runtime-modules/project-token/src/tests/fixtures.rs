@@ -648,6 +648,33 @@ impl IssueRevenueSplitFixture {
     }
 }
 
+/// Finalize Revenue Split
+pub struct FinalizeRevenueSplitFixture {
+    token_id: TokenId,
+    account_id: AccountId,
+}
+
+impl FinalizeRevenueSplitFixture {
+    pub fn default() -> Self {
+        Self {
+            token_id: TokenId::one(),
+            account_id: AccountId::from(DEFAULT_ACCOUNT_ID),
+        }
+    }
+    pub fn execute_call(&self) -> DispatchResult {
+        let state_pre = sp_io::storage::root();
+        let result = Token::finalize_revenue_split(self.token_id, self.account_id);
+        let state_post = sp_io::storage::root();
+
+        // no-op in case of error
+        if result.is_err() {
+            assert_eq!(state_pre, state_post)
+        }
+
+        result
+    }
+}
+
 pub fn treasury_account_for(token_id: u64) -> AccountId {
     TokenModuleId::get().into_sub_account(token_id)
 }
