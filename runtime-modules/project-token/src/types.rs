@@ -32,9 +32,8 @@ pub enum VestingSource {
 /// Represent's account's split staking status
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
 pub struct StakingStatus<Balance> {
-    // Id of the split
-    // TODO: SplitId
-    split_id: u32,
+    // identifier for the split
+    split_id: RevenueSplitId,
 
     // The amount staked for the split
     amount: Balance,
