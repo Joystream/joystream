@@ -540,8 +540,7 @@ decl_module! {
             Ok(())
         }
 
-        /// Unreserve `amount` of token for `who`
-        /// Members can claim their split revenue
+        /// Split-participating user leaves revenue split
         /// Preconditions
         /// - `token` must exist for `token_id`
         /// - `account` must exist for `(token_id, sender)` with `origin` signed by `sender`
@@ -549,24 +548,24 @@ decl_module! {
         ///
         /// Postconditions
         /// - `account.staking_status` set to None
-        /// - `account.amount` incresed by the staked amount
         #[weight = 10_000_000] // TODO: adjust weight
         fn abandon_revenue_split(origin, token_id: T::TokenId) -> DispatchResult {
-            todo!()
-            // // ensure token validity
-            // Self::ensure_token_exists(token_id).map(|_| ())?;
+            let sender = ensure_signed(origin)?;
 
-            // // ensure src account id validity
-            // let account_info = Self::ensure_account_data_exists(token_id, &who)?;
-            // let amount = account_info.staked_balance;
+            Self::ensure_token_exists(token_id).map(|_| ())?;
 
-            // // == MUTATION SAFE ==
+            let account_info = Self::ensure_account_data_exists(token_id, &sender)?;
 
-            // AccountInfoByTokenAndAccount::<T>::mutate(token_id, &who, |account_info| {
-            //     account_info.unstake();
-            // });
+            let staking_info = account_info.ensure_account_is_valid_split_participant::<T>()?;
 
-            // Self::deposit_event(RawEvent::RevenueSplitAbandoned(token_id, who, amount));
+            // == MUTATION SAFE ==
+
+             AccountInfoByTokenAndAccount::<T>::mutate(token_id, &sender, |account_info| {
+                 account_info.unstake();
+            });
+
+            Self::deposit_event(RawEvent::RevenueSplitAbandoned(token_id, sender, staking_info.amount));
+            Ok(())
         }
     }
 }
