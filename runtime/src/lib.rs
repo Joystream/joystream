@@ -89,6 +89,7 @@ pub use referendum;
 pub use working_group;
 
 pub use content;
+pub use content::LimitPerPeriod;
 pub use content::MaxNumber;
 
 /// This runtime version.
@@ -479,6 +480,22 @@ parameter_types! {
     pub const ContentModuleId: ModuleId = ModuleId(*b"mContent"); // module content
     pub const BagDeletionPrize: Balance = 0; // TODO: update
     pub const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = 25;
+    pub const DefaultGlobalDailyNftLimit: LimitPerPeriod<BlockNumber> = LimitPerPeriod {
+        block_number_period: DAYS,
+        limit: 10000,
+    };  // TODO: update
+    pub const DefaultGlobalWeeklyNftLimit: LimitPerPeriod<BlockNumber> = LimitPerPeriod {
+        block_number_period: WEEKS,
+        limit: 50000,
+    };  // TODO: update
+    pub const DefaultChannelDailyNftLimit: LimitPerPeriod<BlockNumber> = LimitPerPeriod {
+        block_number_period: DAYS,
+        limit: 100,
+    };  // TODO: update
+    pub const DefaultChannelWeeklyNftLimit: LimitPerPeriod<BlockNumber> = LimitPerPeriod {
+        block_number_period: WEEKS,
+        limit: 500,
+    };  // TODO: update
 }
 
 impl content::Trait for Runtime {
@@ -496,6 +513,10 @@ impl content::Trait for Runtime {
     type ChannelPrivilegeLevel = ChannelPrivilegeLevel;
     type CouncilBudgetManager = Council;
     type ContentWorkingGroup = ContentWorkingGroup;
+    type DefaultGlobalDailyNftLimit = DefaultGlobalDailyNftLimit;
+    type DefaultGlobalWeeklyNftLimit = DefaultGlobalWeeklyNftLimit;
+    type DefaultChannelDailyNftLimit = DefaultChannelDailyNftLimit;
+    type DefaultChannelWeeklyNftLimit = DefaultChannelWeeklyNftLimit;
 }
 
 // The referendum instance alias.
@@ -1034,6 +1055,7 @@ impl proposals_codex::Trait for Runtime {
     type LockBlogPostProposalParameters = LockBlogPostProposalParameters;
     type UnlockBlogPostProposalParameters = UnlockBlogPostProposalParameters;
     type VetoProposalProposalParameters = VetoProposalProposalParameters;
+    type UpdateNftLimitProposalParameters = UpdateNftLimitProposalParameters;
     type WeightInfo = weights::proposals_codex::WeightInfo;
 }
 

@@ -9,7 +9,8 @@ use crate::tests::{
 };
 use crate::{BlogInstance, MembershipWorkingGroupInstance, ProposalCancellationFee, Runtime};
 use codec::Encode;
-use proposals_codex::{GeneralProposalParameters, ProposalDetails};
+use content::LimitPerPeriod;
+use proposals_codex::{GeneralProposalParameters, GlobalNftLimitType, ProposalDetails};
 use proposals_engine::{
     ApprovedProposalDecision, Proposal, ProposalCreationParameters, ProposalParameters,
     ProposalStatus, VoteKind, VotersParameters, VotingResults,
@@ -1202,5 +1203,43 @@ fn proposal_reactivation_succeeds() {
             CouncilManager::<Runtime>::total_voters_count(),
             council_size
         );
+    });
+}
+
+#[test]
+fn update_nft_limit_proposal_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
+
+        let limit_type = GlobalNftLimitType::DailyLimit;
+        let new_limit = LimitPerPeriod {
+            limit: 9999,
+            block_number_period: 9999,
+        };
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id: member_id,
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.clone()),
+                exact_execution_block: None,
+            };
+
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone()).into(),
+                general_proposal_parameters,
+                ProposalDetails::UpdateNftLimit(limit_type, new_limit),
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        let params = <Runtime as proposals_codex::Trait>::UpdateNftLimitProposalParameters::get();
+        run_to_block(System::block_number() + params.grace_period + 1);
+
+        assert_eq!(content::GlobalDailyNftLimit::<Runtime>::get(), new_limit);
     });
 }

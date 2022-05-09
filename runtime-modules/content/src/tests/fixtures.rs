@@ -1,3 +1,6 @@
+use derive_fixture::Fixture;
+use derive_new::new;
+
 use super::curators;
 use super::mock::*;
 use crate::*;
@@ -207,6 +210,10 @@ impl CreateChannelFixture {
                         paused_features: BTreeSet::new(),
                         data_objects: BTreeSet::from_iter(beg_obj_id..end_obj_id),
                         transfer_status: Default::default(),
+                        daily_nft_limit: DefaultChannelDailyNftLimit::get(),
+                        weekly_nft_limit: DefaultChannelWeeklyNftLimit::get(),
+                        daily_nft_counter: Default::default(),
+                        weekly_nft_counter: Default::default(),
                     },
                     self.params.clone(),
                 ))
@@ -3748,6 +3755,8 @@ pub fn create_default_member_owned_channel_with_video_with_storage_buckets(
         &[],
     );
 
+    set_default_nft_limits();
+
     CreateVideoFixture::default()
         .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
         .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
@@ -4337,5 +4346,40 @@ pub fn run_all_fixtures_with_contexts(
             .with_sender(sender)
             .with_actor(actor)
             .call_and_assert(expected_err.clone());
+    }
+}
+
+#[derive(Fixture, new)]
+pub struct UpdateNftLimitFixture {
+    #[new(value = "RawOrigin::Signed(LEAD_ACCOUNT_ID)")]
+    origin: RawOrigin<u64>,
+
+    #[new(default)]
+    nft_limit_id: NftLimitId<ChannelId>,
+
+    #[new(default)]
+    limit: LimitPerPeriod<u64>,
+}
+
+impl UpdateNftLimitFixture {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_limit = nft_limit_by_id(self.nft_limit_id);
+
+        let actual_result =
+            Content::update_nft_limit(self.origin.clone().into(), self.nft_limit_id, self.limit);
+
+        assert_eq!(actual_result, expected_result);
+
+        let new_limit = nft_limit_by_id(self.nft_limit_id);
+        if actual_result.is_ok() {
+            assert_eq!(self.limit, new_limit);
+
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::NftLimitUpdated(self.nft_limit_id, self.limit))
+            );
+        } else {
+            assert_eq!(old_limit, new_limit);
+        }
     }
 }

@@ -4,6 +4,7 @@ import { Text, u32, Tuple, u8, u128, Vec, Option, Null, Bytes } from '@polkadot/
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
 import { Constructor, ITuple } from '@polkadot/types/types'
 import { MemberId, WorkingGroup, JoyEnum, JoyStructDecorated, BalanceKind, PostId, AccountId } from './common'
+import { LimitPerPeriod } from './content'
 import { ApplicationId, OpeningId, StakePolicy, WorkerId } from './working-group'
 
 export type IVotingResults = {
@@ -272,6 +273,15 @@ const EditBlogPost = (Tuple.with([PostId, 'Option<Text>', 'Option<Text>']) as un
   ITuple<[PostId, Option<Text>, Option<Text>]>
 >
 
+export class GlobalNftLimitType extends JoyEnum({
+  DailyLimit: Null,
+  WeeklyLimit: Null,
+}) {}
+
+const UpdateNftLimit = (Tuple.with([GlobalNftLimitType, LimitPerPeriod]) as unknown) as Constructor<
+  ITuple<[GlobalNftLimitType, LimitPerPeriod]>
+>
+
 export class ProposalDetails extends JoyEnum({
   Signal: Text,
   RuntimeUpgrade: Bytes,
@@ -298,6 +308,7 @@ export class ProposalDetails extends JoyEnum({
   LockBlogPost: PostId,
   UnlockBlogPost: PostId,
   VetoProposal: ProposalId,
+  UpdateNftLimit,
 } as const) {}
 
 // Discussions
@@ -343,6 +354,7 @@ export const proposalsTypes = {
   ThreadMode,
   ExecutionStatus,
   FundingRequestParameters,
+  GlobalNftLimitType,
 }
 
 export default proposalsTypes
