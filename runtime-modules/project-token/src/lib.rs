@@ -487,6 +487,7 @@ decl_module! {
         ///
         /// Postconditions
         /// - `dividend` amount of JOYs transferred to `treasury_account` to `sender`
+        /// - `token` revenue split dividends payed tracking variable increased by `dividend`
         /// - `account.staking_status` set to None
         #[weight = 10_000_000] // TODO: adjust weight
         fn claim_revenue_split_amount(origin, token_id: T::TokenId) -> DispatchResult {
@@ -528,6 +529,10 @@ decl_module! {
 
             AccountInfoByTokenAndAccount::<T>::mutate(token_id, &sender, |account_info| {
                 account_info.unstake()
+            });
+
+            TokenInfoById::<T>::mutate(token_id, |token_info| {
+                token_info.revenue_split.account_for_dividend(dividend_amount);
             });
 
             Self::deposit_event(RawEvent::UserClaimedRevenueSplit(
@@ -805,11 +810,10 @@ impl<T: Trait>
     /// Issue a revenue split for the token
     /// Preconditions:
     /// - `token` must exist for `token_id`
+    /// - `token` revenue split status must be inactive
     /// - `start` >= System::block_number()
     /// - `duration` must be >= `T::MinRevenueSplitDuration`
     /// - specified `reserve_source` must be able to *transfer* `allocation` amount of JOY
-    /// - revenue split status for `token_id` must be inactive
-    /// - `allocation_amount` > 0
     ///
     /// PostConditions
     /// - `allocation` transferred from `reserve_source` to `treasury_account` for `token_id`
@@ -824,7 +828,10 @@ impl<T: Trait>
         allocation_source: T::AccountId,
         allocation_amount: JoyBalanceOf<T>,
     ) -> DispatchResult {
-        // TODO(ignazio, now): make impossible to allocate 0
+        if allocation_amount.is_zero() {
+            return Ok(());
+        }
+
         let token_info = Self::ensure_token_exists(token_id)?;
 
         token_info.revenue_split.ensure_inactive::<T>()?;
@@ -876,22 +883,18 @@ impl<T: Trait>
     fn finalize_revenue_split(token_id: T::TokenId, account_id: T::AccountId) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
 
-        let timeline = token_info
-            .revenue_split
-            .ensure_active::<T>()
-            .map(|info| info.timeline)?;
+        let split_info = token_info.revenue_split.ensure_active::<T>()?;
 
         let current_block = Self::current_block();
         ensure!(
-            timeline.is_ended(current_block),
+            split_info.timeline.is_ended(current_block),
             Error::<T>::RevenueSplitDidNotEnd
         );
 
         // = MUTATION SAFE =
 
         let treasury_account = Self::revenue_split_treasury_account_id(token_id);
-        let amount_to_withdraw = Joy::<T>::usable_balance(&treasury_account)
-            .saturating_sub(T::JoyExistentialDeposit::get());
+        let amount_to_withdraw = split_info.leftovers();
 
         <Joy<T> as Currency<T::AccountId>>::transfer(
             &treasury_account,

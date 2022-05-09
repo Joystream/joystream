@@ -39,13 +39,6 @@ pub struct StakingStatus<Balance> {
     pub(crate) amount: Balance,
 }
 
-impl<Balance: Copy> StakingStatus<Balance> {
-    pub(crate) fn locks<BlockNumber>(&self, _b: BlockNumber) -> Balance {
-        // TODO: Implement
-        self.amount
-    }
-}
-
 /// Info for the account
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct AccountData<VestingSchedule, Balance, StakingStatus, JoyBalance> {
@@ -105,15 +98,17 @@ pub struct TokenData<Balance, Hash, BlockNumber, TokenSale, RevenueSplitState> {
 
 /// Revenue Split State
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum RevenueSplitState<Balance, BlockNumber> {
+pub enum RevenueSplitState<JoyBalance, BlockNumber> {
     /// Inactive state: no split ongoing
     Inactive,
 
     /// Active state: split ongoing with info
-    Active(RevenueSplitInfo<Balance, BlockNumber>),
+    Active(RevenueSplitInfo<JoyBalance, BlockNumber>),
 }
 
-impl<Balance: Copy, BlockNumber: Copy> RevenueSplitState<Balance, BlockNumber> {
+impl<JoyBalance: Saturating + Copy + Zero, BlockNumber: Copy>
+    RevenueSplitState<JoyBalance, BlockNumber>
+{
     pub fn ensure_inactive<T: Trait>(&self) -> DispatchResult {
         ensure!(
             matches!(&self, &Self::Inactive),
@@ -125,40 +120,58 @@ impl<Balance: Copy, BlockNumber: Copy> RevenueSplitState<Balance, BlockNumber> {
 
     pub fn ensure_active<T: Trait>(
         &self,
-    ) -> Result<RevenueSplitInfo<Balance, BlockNumber>, DispatchError> {
+    ) -> Result<RevenueSplitInfo<JoyBalance, BlockNumber>, DispatchError> {
         match &self {
             RevenueSplitState::Inactive => Err(Error::<T>::RevenueSplitNotActiveForToken.into()),
-            RevenueSplitState::<Balance, BlockNumber>::Active(info) => Ok(info.to_owned()),
+            RevenueSplitState::<JoyBalance, BlockNumber>::Active(info) => Ok(info.to_owned()),
         }
+    }
+
+    pub(crate) fn activate(&mut self, allocation: JoyBalance, timeline: Timeline<BlockNumber>) {
+        *self = RevenueSplitState::<_, _>::Active(RevenueSplitInfo {
+            allocation,
+            timeline,
+            dividends_payed: JoyBalance::zero(),
+        });
+    }
+
+    pub(crate) fn deactivate(&mut self) {
+        *self = RevenueSplitState::Inactive;
+    }
+
+    /// Increase dividends payed tracking variable
+    pub fn account_for_dividend(&mut self, dividend: JoyBalance) {
+        if let RevenueSplitState::<JoyBalance, BlockNumber>::Active(info) = self {
+            info.dividends_payed = info.dividends_payed.saturating_add(dividend);
+        }
+    }
+}
+
+impl<JoyBalance, BlockNumber> Default for RevenueSplitState<JoyBalance, BlockNumber> {
+    fn default() -> Self {
+        RevenueSplitState::<JoyBalance, BlockNumber>::Inactive
     }
 }
 
 /// Revenue Split Information for an *Active* revenue split
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct RevenueSplitInfo<Balance, BlockNumber> {
-    /// Remaning allocation
-    pub(crate) allocation: Balance,
+pub struct RevenueSplitInfo<JoyBalance, BlockNumber> {
+    /// Original Allocation
+    pub(crate) allocation: JoyBalance,
 
     /// Split timeline [start, start + duration)
     pub(crate) timeline: Timeline<BlockNumber>,
+
+    /// Dividends payed out after staking period is over
+    pub(crate) dividends_payed: JoyBalance,
 }
 
-impl<Balance, BlockNumber: Copy + PartialOrd + Saturating> RevenueSplitState<Balance, BlockNumber> {
-    pub fn activate(&mut self, allocation: Balance, timeline: Timeline<BlockNumber>) {
-        *self = RevenueSplitState::<_, _>::Active(RevenueSplitInfo {
-            allocation,
-            timeline,
-        });
-    }
-
-    pub fn deactivate(&mut self) {
-        *self = RevenueSplitState::Inactive;
-    }
-}
-
-impl<Balance, BlockNumber> Default for RevenueSplitState<Balance, BlockNumber> {
-    fn default() -> Self {
-        RevenueSplitState::<Balance, BlockNumber>::Inactive
+impl<JoyBalance: Saturating + Zero + Copy, BlockNumber: Copy>
+    RevenueSplitInfo<JoyBalance, BlockNumber>
+{
+    /// Leftovers allocation not claimed so far
+    pub(crate) fn leftovers(&self) -> JoyBalance {
+        self.allocation.saturating_sub(self.dividends_payed)
     }
 }
 
@@ -842,6 +855,7 @@ impl<JoyBalance, Balance, Hash, BlockNumber, VestingScheduleParams, AccountId>
 where
     Balance: Zero + Copy + Saturating + Debug + From<u64> + UniqueSaturatedInto<u64> + Unsigned,
     BlockNumber: PartialOrd + Saturating + Copy + AtLeast32BitUnsigned,
+    JoyBalance: Copy + Saturating + Zero,
 {
     // increase total issuance
     pub(crate) fn increase_supply_by(&mut self, amount: Balance) {

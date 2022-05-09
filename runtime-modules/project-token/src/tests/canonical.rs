@@ -7,8 +7,8 @@ use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
 use crate::types::{
-    BlockRate, Joy, MerkleProofOf, PatronageData, TokenIssuanceParametersOf, VestingSource,
-    YearlyRate,
+    BlockRate, Joy, MerkleProofOf, PatronageData, RevenueSplitState, TokenIssuanceParametersOf,
+    VestingSource, YearlyRate,
 };
 use crate::{
     account, assert_approx_eq, balance, block, joy, last_event_eq, merkle_proof, merkle_root,
@@ -948,7 +948,9 @@ fn issue_token_ok_with_token_info_added() {
                     rate,
                 },
                 last_sale: None,
-                sales_initialized: 0
+                sales_initialized: 0,
+                latest_revenue_split_id: 0,
+                revenue_split: RevenueSplitState::Inactive,
             }
         );
     })

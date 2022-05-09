@@ -16,8 +16,8 @@ use sp_runtime::{DispatchError, DispatchResult, ModuleId};
 
 // crate import
 use crate::{
-    types::*, AccountDataOf, GenesisConfig, RevenueSplitState, TokenDataOf,
-    TokenIssuanceParametersOf, Trait, TransferPolicyOf,
+    types::*, AccountDataOf, GenesisConfig, TokenDataOf, TokenIssuanceParametersOf, Trait,
+    TransferPolicyOf,
 };
 
 // Crate aliases
@@ -40,8 +40,6 @@ pub type JoyBalance = JoyBalanceOf<Test>;
 pub type Policy = TransferPolicyOf<Test>;
 pub type Hashing = <Test as frame_system::Trait>::Hashing;
 pub type HashOut = <Test as frame_system::Trait>::Hash;
-pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
-pub type RevenueSplitStateOf = RevenueSplitState<JoyBalance, BlockNumber>;
 pub type VestingSchedule = VestingScheduleOf<Test>;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -370,11 +368,6 @@ pub fn build_test_externalities_with_balances(
 /// test externalities
 pub fn build_test_externalities(config: GenesisConfig<Test>) -> TestExternalities {
     build_test_externalities_with_balances(config, vec![])
-}
-
-/// test externalities with empty Chain State
-pub fn build_default_test_externalities() -> TestExternalities {
-    build_test_externalities(GenesisConfigBuilder::new_empty().build())
 }
 
 /// test externalities with empty Chain State and specified balance allocation

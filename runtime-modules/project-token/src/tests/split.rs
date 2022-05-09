@@ -170,7 +170,8 @@ fn issue_split_ok_with_revenue_split_correctly_activated() {
                 timeline: Timeline::<_> {
                     start: 1u64,
                     duration: DEFAULT_SPLIT_DURATION,
-                }
+                },
+                dividends_payed: 0u128
             })
         ));
         // Latest split nonce correctly updated
@@ -675,11 +676,6 @@ fn claim_revenue_split_ok_with_dividends_transferred_to_claimer_joy_balance() {
         ParticipateToSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
 
-        println!(
-            "main treasury account balance:{:?}",
-            Joy::<Test>::usable_balance(Token::bloat_bond_treasury_account_id())
-        );
-
         ClaimRevenueSplitAmountFixture::default()
             .execute_call()
             .unwrap();
@@ -694,6 +690,14 @@ fn claim_revenue_split_ok_with_dividends_transferred_to_claimer_joy_balance() {
             Joy::<Test>::usable_balance(treasury_account_for(1u64)),
             DEFAULT_SPLIT_ALLOCATION - DEFAULT_SPLIT_JOY_DIVIDEND + ExistentialDeposit::get()
         );
+        assert!(matches!(
+            Token::token_info_by_id(1u64).revenue_split,
+            RevenueSplitState::<_, _>::Active(RevenueSplitInfo::<_, _> {
+                allocation: DEFAULT_SPLIT_ALLOCATION,
+                dividends_payed: DEFAULT_SPLIT_JOY_DIVIDEND,
+                ..
+            })
+        ));
     })
 }
 
