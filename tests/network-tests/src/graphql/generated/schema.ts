@@ -1404,7 +1404,9 @@ export type Bid = BaseGraphQlObject & {
   /** Index of event in block where bid was made. */
   indexInBlock: Scalars['Int']
   auctionbidmadeeventpreviousTopBid?: Maybe<Array<AuctionBidMadeEvent>>
+  bidmadecompletingauctioneventwinningBid?: Maybe<Array<BidMadeCompletingAuctionEvent>>
   bidmadecompletingauctioneventpreviousTopBid?: Maybe<Array<BidMadeCompletingAuctionEvent>>
+  englishauctionsettledeventwinningBid?: Maybe<Array<EnglishAuctionSettledEvent>>
   openauctionbidacceptedeventwinningBid?: Maybe<Array<OpenAuctionBidAcceptedEvent>>
 }
 
@@ -1459,10 +1461,13 @@ export type BidMadeCompletingAuctionEvent = Event &
     ownerCuratorGroupId?: Maybe<Scalars['String']>
     /** Price for which the NFT was bought */
     price: Scalars['BigInt']
+    winningBid: Bid
+    winningBidId: Scalars['String']
     previousTopBid?: Maybe<Bid>
     previousTopBidId?: Maybe<Scalars['String']>
     previousTopBidder?: Maybe<Membership>
     previousTopBidderId?: Maybe<Scalars['String']>
+    bidders: Array<Membership>
   }
 
 export type BidMadeCompletingAuctionEventConnection = {
@@ -1481,6 +1486,7 @@ export type BidMadeCompletingAuctionEventCreateInput = {
   ownerMember?: Maybe<Scalars['ID']>
   ownerCuratorGroup?: Maybe<Scalars['ID']>
   price: Scalars['String']
+  winningBid: Scalars['ID']
   previousTopBid?: Maybe<Scalars['ID']>
   previousTopBidder?: Maybe<Scalars['ID']>
 }
@@ -1515,6 +1521,8 @@ export enum BidMadeCompletingAuctionEventOrderByInput {
   OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
   PriceAsc = 'price_ASC',
   PriceDesc = 'price_DESC',
+  WinningBidAsc = 'winningBid_ASC',
+  WinningBidDesc = 'winningBid_DESC',
   PreviousTopBidAsc = 'previousTopBid_ASC',
   PreviousTopBidDesc = 'previousTopBid_DESC',
   PreviousTopBidderAsc = 'previousTopBidder_ASC',
@@ -1531,6 +1539,7 @@ export type BidMadeCompletingAuctionEventUpdateInput = {
   ownerMember?: Maybe<Scalars['ID']>
   ownerCuratorGroup?: Maybe<Scalars['ID']>
   price?: Maybe<Scalars['String']>
+  winningBid?: Maybe<Scalars['ID']>
   previousTopBid?: Maybe<Scalars['ID']>
   previousTopBidder?: Maybe<Scalars['ID']>
 }
@@ -1589,8 +1598,12 @@ export type BidMadeCompletingAuctionEventWhereInput = {
   video?: Maybe<VideoWhereInput>
   ownerMember?: Maybe<MembershipWhereInput>
   ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
+  winningBid?: Maybe<BidWhereInput>
   previousTopBid?: Maybe<BidWhereInput>
   previousTopBidder?: Maybe<MembershipWhereInput>
+  bidders_none?: Maybe<MembershipWhereInput>
+  bidders_some?: Maybe<MembershipWhereInput>
+  bidders_every?: Maybe<MembershipWhereInput>
   AND?: Maybe<Array<BidMadeCompletingAuctionEventWhereInput>>
   OR?: Maybe<Array<BidMadeCompletingAuctionEventWhereInput>>
 }
@@ -1684,9 +1697,15 @@ export type BidWhereInput = {
   auctionbidmadeeventpreviousTopBid_none?: Maybe<AuctionBidMadeEventWhereInput>
   auctionbidmadeeventpreviousTopBid_some?: Maybe<AuctionBidMadeEventWhereInput>
   auctionbidmadeeventpreviousTopBid_every?: Maybe<AuctionBidMadeEventWhereInput>
+  bidmadecompletingauctioneventwinningBid_none?: Maybe<BidMadeCompletingAuctionEventWhereInput>
+  bidmadecompletingauctioneventwinningBid_some?: Maybe<BidMadeCompletingAuctionEventWhereInput>
+  bidmadecompletingauctioneventwinningBid_every?: Maybe<BidMadeCompletingAuctionEventWhereInput>
   bidmadecompletingauctioneventpreviousTopBid_none?: Maybe<BidMadeCompletingAuctionEventWhereInput>
   bidmadecompletingauctioneventpreviousTopBid_some?: Maybe<BidMadeCompletingAuctionEventWhereInput>
   bidmadecompletingauctioneventpreviousTopBid_every?: Maybe<BidMadeCompletingAuctionEventWhereInput>
+  englishauctionsettledeventwinningBid_none?: Maybe<EnglishAuctionSettledEventWhereInput>
+  englishauctionsettledeventwinningBid_some?: Maybe<EnglishAuctionSettledEventWhereInput>
+  englishauctionsettledeventwinningBid_every?: Maybe<EnglishAuctionSettledEventWhereInput>
   openauctionbidacceptedeventwinningBid_none?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
   openauctionbidacceptedeventwinningBid_some?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
   openauctionbidacceptedeventwinningBid_every?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
@@ -1746,6 +1765,7 @@ export type Bounty = BaseGraphQlObject & {
   removedInEvent?: Maybe<BountyRemovedEvent>
   judgment?: Maybe<OracleJudgmentSubmittedEvent>
   bountycreatorcherrywithdrawaleventbounty?: Maybe<Array<BountyCreatorCherryWithdrawalEvent>>
+  worksubmittedeventbounty?: Maybe<Array<WorkSubmittedEvent>>
 }
 
 export type BountyCanceledEvent = Event &
@@ -2415,11 +2435,6 @@ export type BountyEntryStatus =
   | BountyEntryStatusWinner
   | BountyEntryStatusPassed
   | BountyEntryStatusRejected
-  | BountyEntryStatusCashedOut
-
-export type BountyEntryStatusCashedOut = {
-  reward?: Maybe<Scalars['Float']>
-}
 
 export type BountyEntryStatusPassed = {
   dummy?: Maybe<Scalars['Int']>
@@ -3288,6 +3303,9 @@ export type BountyWhereInput = {
   bountycreatorcherrywithdrawaleventbounty_none?: Maybe<BountyCreatorCherryWithdrawalEventWhereInput>
   bountycreatorcherrywithdrawaleventbounty_some?: Maybe<BountyCreatorCherryWithdrawalEventWhereInput>
   bountycreatorcherrywithdrawaleventbounty_every?: Maybe<BountyCreatorCherryWithdrawalEventWhereInput>
+  worksubmittedeventbounty_none?: Maybe<WorkSubmittedEventWhereInput>
+  worksubmittedeventbounty_some?: Maybe<WorkSubmittedEventWhereInput>
+  worksubmittedeventbounty_every?: Maybe<WorkSubmittedEventWhereInput>
   AND?: Maybe<Array<BountyWhereInput>>
   OR?: Maybe<Array<BountyWhereInput>>
 }
@@ -6568,6 +6586,8 @@ export type CommentCreatedEvent = Event &
     version: Scalars['Int']
     comment: Comment
     commentId: Scalars['String']
+    video: Video
+    videoId: Scalars['String']
     /** Comment's original text */
     text: Scalars['String']
   }
@@ -6584,6 +6604,7 @@ export type CommentCreatedEventCreateInput = {
   network: Network
   indexInBlock: Scalars['Float']
   comment: Scalars['ID']
+  video: Scalars['ID']
   text: Scalars['String']
 }
 
@@ -6609,6 +6630,8 @@ export enum CommentCreatedEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   CommentAsc = 'comment_ASC',
   CommentDesc = 'comment_DESC',
+  VideoAsc = 'video_ASC',
+  VideoDesc = 'video_DESC',
   TextAsc = 'text_ASC',
   TextDesc = 'text_DESC',
 }
@@ -6619,6 +6642,7 @@ export type CommentCreatedEventUpdateInput = {
   network?: Maybe<Network>
   indexInBlock?: Maybe<Scalars['Float']>
   comment?: Maybe<Scalars['ID']>
+  video?: Maybe<Scalars['ID']>
   text?: Maybe<Scalars['String']>
 }
 
@@ -6672,6 +6696,7 @@ export type CommentCreatedEventWhereInput = {
   text_endsWith?: Maybe<Scalars['String']>
   text_in?: Maybe<Array<Scalars['String']>>
   comment?: Maybe<CommentWhereInput>
+  video?: Maybe<VideoWhereInput>
   AND?: Maybe<Array<CommentCreatedEventWhereInput>>
   OR?: Maybe<Array<CommentCreatedEventWhereInput>>
 }
@@ -6715,6 +6740,8 @@ export type CommentDeletedEvent = Event &
     version: Scalars['Int']
     comment: Comment
     commentId: Scalars['String']
+    video: Video
+    videoId: Scalars['String']
     commentdeletedInEvent?: Maybe<Array<Comment>>
   }
 
@@ -6730,6 +6757,7 @@ export type CommentDeletedEventCreateInput = {
   network: Network
   indexInBlock: Scalars['Float']
   comment: Scalars['ID']
+  video: Scalars['ID']
 }
 
 export type CommentDeletedEventEdge = {
@@ -6754,6 +6782,8 @@ export enum CommentDeletedEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   CommentAsc = 'comment_ASC',
   CommentDesc = 'comment_DESC',
+  VideoAsc = 'video_ASC',
+  VideoDesc = 'video_DESC',
 }
 
 export type CommentDeletedEventUpdateInput = {
@@ -6762,6 +6792,7 @@ export type CommentDeletedEventUpdateInput = {
   network?: Maybe<Network>
   indexInBlock?: Maybe<Scalars['Float']>
   comment?: Maybe<Scalars['ID']>
+  video?: Maybe<Scalars['ID']>
 }
 
 export type CommentDeletedEventWhereInput = {
@@ -6809,6 +6840,7 @@ export type CommentDeletedEventWhereInput = {
   indexInBlock_lte?: Maybe<Scalars['Int']>
   indexInBlock_in?: Maybe<Array<Scalars['Int']>>
   comment?: Maybe<CommentWhereInput>
+  video?: Maybe<VideoWhereInput>
   commentdeletedInEvent_none?: Maybe<CommentWhereInput>
   commentdeletedInEvent_some?: Maybe<CommentWhereInput>
   commentdeletedInEvent_every?: Maybe<CommentWhereInput>
@@ -6847,6 +6879,8 @@ export type CommentModeratedEvent = Event &
     version: Scalars['Int']
     comment: Comment
     commentId: Scalars['String']
+    video: Video
+    videoId: Scalars['String']
     /** The actor responsible for the removal of comment */
     actor: ContentActor
     /** Comment deletion rationale */
@@ -6866,6 +6900,7 @@ export type CommentModeratedEventCreateInput = {
   network: Network
   indexInBlock: Scalars['Float']
   comment: Scalars['ID']
+  video: Scalars['ID']
   actor: Scalars['JSONObject']
   rationale: Scalars['String']
 }
@@ -6892,6 +6927,8 @@ export enum CommentModeratedEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   CommentAsc = 'comment_ASC',
   CommentDesc = 'comment_DESC',
+  VideoAsc = 'video_ASC',
+  VideoDesc = 'video_DESC',
   RationaleAsc = 'rationale_ASC',
   RationaleDesc = 'rationale_DESC',
 }
@@ -6902,6 +6939,7 @@ export type CommentModeratedEventUpdateInput = {
   network?: Maybe<Network>
   indexInBlock?: Maybe<Scalars['Float']>
   comment?: Maybe<Scalars['ID']>
+  video?: Maybe<Scalars['ID']>
   actor?: Maybe<Scalars['JSONObject']>
   rationale?: Maybe<Scalars['String']>
 }
@@ -6957,6 +6995,7 @@ export type CommentModeratedEventWhereInput = {
   rationale_endsWith?: Maybe<Scalars['String']>
   rationale_in?: Maybe<Array<Scalars['String']>>
   comment?: Maybe<CommentWhereInput>
+  video?: Maybe<VideoWhereInput>
   commentmoderatedInEvent_none?: Maybe<CommentWhereInput>
   commentmoderatedInEvent_some?: Maybe<CommentWhereInput>
   commentmoderatedInEvent_every?: Maybe<CommentWhereInput>
@@ -7019,6 +7058,8 @@ export type CommentPinnedEvent = Event &
     version: Scalars['Int']
     comment: Comment
     commentId: Scalars['String']
+    video: Video
+    videoId: Scalars['String']
     /** The action performed. true if comment is pinned, otherwise false. */
     action: Scalars['Boolean']
   }
@@ -7035,6 +7076,7 @@ export type CommentPinnedEventCreateInput = {
   network: Network
   indexInBlock: Scalars['Float']
   comment: Scalars['ID']
+  video: Scalars['ID']
   action: Scalars['Boolean']
 }
 
@@ -7060,6 +7102,8 @@ export enum CommentPinnedEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   CommentAsc = 'comment_ASC',
   CommentDesc = 'comment_DESC',
+  VideoAsc = 'video_ASC',
+  VideoDesc = 'video_DESC',
   ActionAsc = 'action_ASC',
   ActionDesc = 'action_DESC',
 }
@@ -7070,6 +7114,7 @@ export type CommentPinnedEventUpdateInput = {
   network?: Maybe<Network>
   indexInBlock?: Maybe<Scalars['Float']>
   comment?: Maybe<Scalars['ID']>
+  video?: Maybe<Scalars['ID']>
   action?: Maybe<Scalars['Boolean']>
 }
 
@@ -7120,6 +7165,7 @@ export type CommentPinnedEventWhereInput = {
   action_eq?: Maybe<Scalars['Boolean']>
   action_in?: Maybe<Array<Scalars['Boolean']>>
   comment?: Maybe<CommentWhereInput>
+  video?: Maybe<VideoWhereInput>
   AND?: Maybe<Array<CommentPinnedEventWhereInput>>
   OR?: Maybe<Array<CommentPinnedEventWhereInput>>
 }
@@ -7150,6 +7196,8 @@ export type CommentReactedEvent = Event &
     version: Scalars['Int']
     comment: Comment
     commentId: Scalars['String']
+    video: Video
+    videoId: Scalars['String']
     /** The reaction id */
     reactionResult: Scalars['Int']
     reactingMember: Membership
@@ -7168,6 +7216,7 @@ export type CommentReactedEventCreateInput = {
   network: Network
   indexInBlock: Scalars['Float']
   comment: Scalars['ID']
+  video: Scalars['ID']
   reactionResult: Scalars['Float']
   reactingMember: Scalars['ID']
 }
@@ -7194,6 +7243,8 @@ export enum CommentReactedEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   CommentAsc = 'comment_ASC',
   CommentDesc = 'comment_DESC',
+  VideoAsc = 'video_ASC',
+  VideoDesc = 'video_DESC',
   ReactionResultAsc = 'reactionResult_ASC',
   ReactionResultDesc = 'reactionResult_DESC',
   ReactingMemberAsc = 'reactingMember_ASC',
@@ -7206,6 +7257,7 @@ export type CommentReactedEventUpdateInput = {
   network?: Maybe<Network>
   indexInBlock?: Maybe<Scalars['Float']>
   comment?: Maybe<Scalars['ID']>
+  video?: Maybe<Scalars['ID']>
   reactionResult?: Maybe<Scalars['Float']>
   reactingMember?: Maybe<Scalars['ID']>
 }
@@ -7261,6 +7313,7 @@ export type CommentReactedEventWhereInput = {
   reactionResult_lte?: Maybe<Scalars['Int']>
   reactionResult_in?: Maybe<Array<Scalars['Int']>>
   comment?: Maybe<CommentWhereInput>
+  video?: Maybe<VideoWhereInput>
   reactingMember?: Maybe<MembershipWhereInput>
   AND?: Maybe<Array<CommentReactedEventWhereInput>>
   OR?: Maybe<Array<CommentReactedEventWhereInput>>
@@ -7652,6 +7705,8 @@ export type CommentTextUpdatedEvent = Event &
     version: Scalars['Int']
     comment: Comment
     commentId: Scalars['String']
+    video: Video
+    videoId: Scalars['String']
     /** New comment text */
     newText: Scalars['String']
   }
@@ -7668,6 +7723,7 @@ export type CommentTextUpdatedEventCreateInput = {
   network: Network
   indexInBlock: Scalars['Float']
   comment: Scalars['ID']
+  video: Scalars['ID']
   newText: Scalars['String']
 }
 
@@ -7693,6 +7749,8 @@ export enum CommentTextUpdatedEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   CommentAsc = 'comment_ASC',
   CommentDesc = 'comment_DESC',
+  VideoAsc = 'video_ASC',
+  VideoDesc = 'video_DESC',
   NewTextAsc = 'newText_ASC',
   NewTextDesc = 'newText_DESC',
 }
@@ -7703,6 +7761,7 @@ export type CommentTextUpdatedEventUpdateInput = {
   network?: Maybe<Network>
   indexInBlock?: Maybe<Scalars['Float']>
   comment?: Maybe<Scalars['ID']>
+  video?: Maybe<Scalars['ID']>
   newText?: Maybe<Scalars['String']>
 }
 
@@ -7756,6 +7815,7 @@ export type CommentTextUpdatedEventWhereInput = {
   newText_endsWith?: Maybe<Scalars['String']>
   newText_in?: Maybe<Array<Scalars['String']>>
   comment?: Maybe<CommentWhereInput>
+  video?: Maybe<VideoWhereInput>
   AND?: Maybe<Array<CommentTextUpdatedEventWhereInput>>
   OR?: Maybe<Array<CommentTextUpdatedEventWhereInput>>
 }
@@ -9553,8 +9613,11 @@ export type EnglishAuctionSettledEvent = Event &
     version: Scalars['Int']
     winner: Membership
     winnerId: Scalars['String']
+    winningBid: Bid
+    winningBidId: Scalars['String']
     video: Video
     videoId: Scalars['String']
+    bidders: Array<Membership>
     ownerMember?: Maybe<Membership>
     ownerMemberId?: Maybe<Scalars['String']>
     ownerCuratorGroup?: Maybe<CuratorGroup>
@@ -9573,6 +9636,7 @@ export type EnglishAuctionSettledEventCreateInput = {
   network: Network
   indexInBlock: Scalars['Float']
   winner: Scalars['ID']
+  winningBid: Scalars['ID']
   video: Scalars['ID']
   ownerMember?: Maybe<Scalars['ID']>
   ownerCuratorGroup?: Maybe<Scalars['ID']>
@@ -9600,6 +9664,8 @@ export enum EnglishAuctionSettledEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   WinnerAsc = 'winner_ASC',
   WinnerDesc = 'winner_DESC',
+  WinningBidAsc = 'winningBid_ASC',
+  WinningBidDesc = 'winningBid_DESC',
   VideoAsc = 'video_ASC',
   VideoDesc = 'video_DESC',
   OwnerMemberAsc = 'ownerMember_ASC',
@@ -9614,6 +9680,7 @@ export type EnglishAuctionSettledEventUpdateInput = {
   network?: Maybe<Network>
   indexInBlock?: Maybe<Scalars['Float']>
   winner?: Maybe<Scalars['ID']>
+  winningBid?: Maybe<Scalars['ID']>
   video?: Maybe<Scalars['ID']>
   ownerMember?: Maybe<Scalars['ID']>
   ownerCuratorGroup?: Maybe<Scalars['ID']>
@@ -9664,7 +9731,11 @@ export type EnglishAuctionSettledEventWhereInput = {
   indexInBlock_lte?: Maybe<Scalars['Int']>
   indexInBlock_in?: Maybe<Array<Scalars['Int']>>
   winner?: Maybe<MembershipWhereInput>
+  winningBid?: Maybe<BidWhereInput>
   video?: Maybe<VideoWhereInput>
+  bidders_none?: Maybe<MembershipWhereInput>
+  bidders_some?: Maybe<MembershipWhereInput>
+  bidders_every?: Maybe<MembershipWhereInput>
   ownerMember?: Maybe<MembershipWhereInput>
   ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
   AND?: Maybe<Array<EnglishAuctionSettledEventWhereInput>>
@@ -13028,6 +13099,9 @@ export type Membership = BaseGraphQlObject & {
   whitelistedInAuctions: Array<Auction>
   ownedNfts: Array<OwnedNft>
   nftCollectorInChannels: Array<ChannelNftCollectors>
+  memberEnglishAuctionSettledEvents: Array<EnglishAuctionSettledEvent>
+  memberOpenAuctionAcceptedBidEvents: Array<OpenAuctionBidAcceptedEvent>
+  memberBidMadeCompletingAuctionEvents: Array<BidMadeCompletingAuctionEvent>
   auctioninitialOwner?: Maybe<Array<Auction>>
   auctionwinningMember?: Maybe<Array<Auction>>
   auctionbidcanceledeventmember?: Maybe<Array<AuctionBidCanceledEvent>>
@@ -13705,6 +13779,15 @@ export type MembershipWhereInput = {
   nftCollectorInChannels_none?: Maybe<ChannelNftCollectorsWhereInput>
   nftCollectorInChannels_some?: Maybe<ChannelNftCollectorsWhereInput>
   nftCollectorInChannels_every?: Maybe<ChannelNftCollectorsWhereInput>
+  memberEnglishAuctionSettledEvents_none?: Maybe<EnglishAuctionSettledEventWhereInput>
+  memberEnglishAuctionSettledEvents_some?: Maybe<EnglishAuctionSettledEventWhereInput>
+  memberEnglishAuctionSettledEvents_every?: Maybe<EnglishAuctionSettledEventWhereInput>
+  memberOpenAuctionAcceptedBidEvents_none?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
+  memberOpenAuctionAcceptedBidEvents_some?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
+  memberOpenAuctionAcceptedBidEvents_every?: Maybe<OpenAuctionBidAcceptedEventWhereInput>
+  memberBidMadeCompletingAuctionEvents_none?: Maybe<BidMadeCompletingAuctionEventWhereInput>
+  memberBidMadeCompletingAuctionEvents_some?: Maybe<BidMadeCompletingAuctionEventWhereInput>
+  memberBidMadeCompletingAuctionEvents_every?: Maybe<BidMadeCompletingAuctionEventWhereInput>
   auctioninitialOwner_none?: Maybe<AuctionWhereInput>
   auctioninitialOwner_some?: Maybe<AuctionWhereInput>
   auctioninitialOwner_every?: Maybe<AuctionWhereInput>
@@ -16048,6 +16131,7 @@ export type OpenAuctionBidAcceptedEvent = Event &
     winningBidId?: Maybe<Scalars['String']>
     winningBidder?: Maybe<Membership>
     winningBidderId?: Maybe<Scalars['String']>
+    bidders: Array<Membership>
   }
 
 export type OpenAuctionBidAcceptedEventConnection = {
@@ -16164,6 +16248,9 @@ export type OpenAuctionBidAcceptedEventWhereInput = {
   ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
   winningBid?: Maybe<BidWhereInput>
   winningBidder?: Maybe<MembershipWhereInput>
+  bidders_none?: Maybe<MembershipWhereInput>
+  bidders_some?: Maybe<MembershipWhereInput>
+  bidders_every?: Maybe<MembershipWhereInput>
   AND?: Maybe<Array<OpenAuctionBidAcceptedEventWhereInput>>
   OR?: Maybe<Array<OpenAuctionBidAcceptedEventWhereInput>>
 }
@@ -29128,8 +29215,14 @@ export type Video = BaseGraphQlObject & {
   bidmadecompletingauctioneventvideo?: Maybe<Array<BidMadeCompletingAuctionEvent>>
   buynowcanceledeventvideo?: Maybe<Array<BuyNowCanceledEvent>>
   buynowpriceupdatedeventvideo?: Maybe<Array<BuyNowPriceUpdatedEvent>>
+  commentcreatedeventvideo?: Maybe<Array<CommentCreatedEvent>>
+  commentdeletedeventvideo?: Maybe<Array<CommentDeletedEvent>>
+  commentmoderatedeventvideo?: Maybe<Array<CommentModeratedEvent>>
+  commentpinnedeventvideo?: Maybe<Array<CommentPinnedEvent>>
+  commentreactedeventvideo?: Maybe<Array<CommentReactedEvent>>
   commentreactionvideo?: Maybe<Array<CommentReaction>>
   commentsectionpreferenceeventvideo?: Maybe<Array<CommentSectionPreferenceEvent>>
+  commenttextupdatedeventvideo?: Maybe<Array<CommentTextUpdatedEvent>>
   englishauctionsettledeventvideo?: Maybe<Array<EnglishAuctionSettledEvent>>
   englishauctionstartedeventvideo?: Maybe<Array<EnglishAuctionStartedEvent>>
   nftboughteventvideo?: Maybe<Array<NftBoughtEvent>>
@@ -30200,12 +30293,30 @@ export type VideoWhereInput = {
   buynowpriceupdatedeventvideo_none?: Maybe<BuyNowPriceUpdatedEventWhereInput>
   buynowpriceupdatedeventvideo_some?: Maybe<BuyNowPriceUpdatedEventWhereInput>
   buynowpriceupdatedeventvideo_every?: Maybe<BuyNowPriceUpdatedEventWhereInput>
+  commentcreatedeventvideo_none?: Maybe<CommentCreatedEventWhereInput>
+  commentcreatedeventvideo_some?: Maybe<CommentCreatedEventWhereInput>
+  commentcreatedeventvideo_every?: Maybe<CommentCreatedEventWhereInput>
+  commentdeletedeventvideo_none?: Maybe<CommentDeletedEventWhereInput>
+  commentdeletedeventvideo_some?: Maybe<CommentDeletedEventWhereInput>
+  commentdeletedeventvideo_every?: Maybe<CommentDeletedEventWhereInput>
+  commentmoderatedeventvideo_none?: Maybe<CommentModeratedEventWhereInput>
+  commentmoderatedeventvideo_some?: Maybe<CommentModeratedEventWhereInput>
+  commentmoderatedeventvideo_every?: Maybe<CommentModeratedEventWhereInput>
+  commentpinnedeventvideo_none?: Maybe<CommentPinnedEventWhereInput>
+  commentpinnedeventvideo_some?: Maybe<CommentPinnedEventWhereInput>
+  commentpinnedeventvideo_every?: Maybe<CommentPinnedEventWhereInput>
+  commentreactedeventvideo_none?: Maybe<CommentReactedEventWhereInput>
+  commentreactedeventvideo_some?: Maybe<CommentReactedEventWhereInput>
+  commentreactedeventvideo_every?: Maybe<CommentReactedEventWhereInput>
   commentreactionvideo_none?: Maybe<CommentReactionWhereInput>
   commentreactionvideo_some?: Maybe<CommentReactionWhereInput>
   commentreactionvideo_every?: Maybe<CommentReactionWhereInput>
   commentsectionpreferenceeventvideo_none?: Maybe<CommentSectionPreferenceEventWhereInput>
   commentsectionpreferenceeventvideo_some?: Maybe<CommentSectionPreferenceEventWhereInput>
   commentsectionpreferenceeventvideo_every?: Maybe<CommentSectionPreferenceEventWhereInput>
+  commenttextupdatedeventvideo_none?: Maybe<CommentTextUpdatedEventWhereInput>
+  commenttextupdatedeventvideo_some?: Maybe<CommentTextUpdatedEventWhereInput>
+  commenttextupdatedeventvideo_every?: Maybe<CommentTextUpdatedEventWhereInput>
   englishauctionsettledeventvideo_none?: Maybe<EnglishAuctionSettledEventWhereInput>
   englishauctionsettledeventvideo_some?: Maybe<EnglishAuctionSettledEventWhereInput>
   englishauctionsettledeventvideo_every?: Maybe<EnglishAuctionSettledEventWhereInput>
@@ -33160,6 +33271,8 @@ export type WorkSubmittedEvent = Event &
     deletedAt?: Maybe<Scalars['DateTime']>
     deletedById?: Maybe<Scalars['String']>
     version: Scalars['Int']
+    bounty: Bounty
+    bountyId: Scalars['String']
     entry: BountyEntry
     entryId: Scalars['String']
     /** Title of the work */
@@ -33179,6 +33292,7 @@ export type WorkSubmittedEventCreateInput = {
   inBlock: Scalars['Float']
   network: Network
   indexInBlock: Scalars['Float']
+  bounty: Scalars['ID']
   entry: Scalars['ID']
   title?: Maybe<Scalars['String']>
   description?: Maybe<Scalars['String']>
@@ -33204,6 +33318,8 @@ export enum WorkSubmittedEventOrderByInput {
   NetworkDesc = 'network_DESC',
   IndexInBlockAsc = 'indexInBlock_ASC',
   IndexInBlockDesc = 'indexInBlock_DESC',
+  BountyAsc = 'bounty_ASC',
+  BountyDesc = 'bounty_DESC',
   EntryAsc = 'entry_ASC',
   EntryDesc = 'entry_DESC',
   TitleAsc = 'title_ASC',
@@ -33217,6 +33333,7 @@ export type WorkSubmittedEventUpdateInput = {
   inBlock?: Maybe<Scalars['Float']>
   network?: Maybe<Network>
   indexInBlock?: Maybe<Scalars['Float']>
+  bounty?: Maybe<Scalars['ID']>
   entry?: Maybe<Scalars['ID']>
   title?: Maybe<Scalars['String']>
   description?: Maybe<Scalars['String']>
@@ -33276,6 +33393,7 @@ export type WorkSubmittedEventWhereInput = {
   description_startsWith?: Maybe<Scalars['String']>
   description_endsWith?: Maybe<Scalars['String']>
   description_in?: Maybe<Array<Scalars['String']>>
+  bounty?: Maybe<BountyWhereInput>
   entry?: Maybe<BountyEntryWhereInput>
   AND?: Maybe<Array<WorkSubmittedEventWhereInput>>
   OR?: Maybe<Array<WorkSubmittedEventWhereInput>>

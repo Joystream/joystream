@@ -84,6 +84,10 @@ export class ApiFactory {
         // Give it a few seconds to be ready.
         await Utils.wait(5000)
 
+        // Log runtime version
+        const version = await api.rpc.state.getRuntimeVersion()
+        console.log(`Runtime Version: ${version.authoringVersion}.${version.specVersion}.${version.implVersion}`)
+
         return new ApiFactory(api, treasuryAccountUri, sudoAccountUri, miniSecret)
       } catch (err) {
         if (connectAttempts === 3) {
@@ -194,6 +198,10 @@ export class Api {
 
   public get derive(): ApiPromise['derive'] {
     return this.api.derive
+  }
+
+  public get rpc(): ApiPromise['rpc'] {
+    return this.api.rpc
   }
 
   public get createType(): ApiPromise['createType'] {
@@ -329,6 +337,14 @@ export class Api {
     amount: BN
   }): Promise<ISubmittableResult> {
     return this.sender.signAndSend(this.api.tx.balances.transfer(to, amount), from)
+  }
+
+  public async grantTreasuryWorkingBalance(): Promise<ISubmittableResult> {
+    return this.sudoSetBalance(this.treasuryAccount, new BN(100000000), new BN(0))
+  }
+
+  public async sudoSetBalance(who: string, free: BN, reserved: BN): Promise<ISubmittableResult> {
+    return this.makeSudoCall(this.api.tx.balances.setBalance(who, free, reserved))
   }
 
   public async treasuryTransferBalance(to: string, amount: BN): Promise<ISubmittableResult> {
