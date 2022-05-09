@@ -268,6 +268,7 @@ export async function processReactVideoMessage(
   const videoReactedEvent = new VideoReactedEvent({
     ...genericEventFields(event),
     video,
+    videoChannel: video.channel,
     reactingMember: new Membership({ id: memberId.toString() }),
     reactionResult,
   })
@@ -342,6 +343,8 @@ export async function processReactCommentMessage(
   const commentReactedEvent = new CommentReactedEvent({
     ...genericEventFields(event),
     comment,
+    video,
+    videoChannel: video.channel,
     reactingMember: new Membership({ id: memberId.toString() }),
     reactionResult: reactionId,
   })
@@ -405,6 +408,8 @@ export async function processCreateCommentMessage(
   const commentCreatedEvent = new CommentCreatedEvent({
     ...genericEventFields(event),
     comment,
+    video,
+    videoChannel: channel,
     text: body,
   })
 
@@ -446,6 +451,8 @@ export async function processEditCommentMessage(
   const commentTextUpdatedEvent = new CommentTextUpdatedEvent({
     ...genericEventFields(event),
     comment,
+    video,
+    videoChannel: video.channel,
     newText: newBody,
   })
   await store.save<CommentTextUpdatedEvent>(commentTextUpdatedEvent)
@@ -509,6 +516,8 @@ export async function processDeleteCommentMessage(
   const commentDeletedEvent = new CommentDeletedEvent({
     ...genericEventFields(event),
     comment,
+    video,
+    videoChannel: video.channel,
   })
   await store.save<CommentDeletedEvent>(commentDeletedEvent)
 
@@ -562,6 +571,8 @@ export async function processModerateCommentMessage(
   const commentModeratedEvent = new CommentModeratedEvent({
     ...genericEventFields(event),
     comment,
+    video,
+    videoChannel: video.channel,
     actor: channelOwnerOrModerator,
     rationale,
   })
@@ -601,6 +612,8 @@ export async function processPinOrUnpinCommentMessage(
   const commentPinnedEvent = new CommentPinnedEvent({
     ...genericEventFields(event),
     comment,
+    video,
+    videoChannel: video.channel,
     action: option === PinOrUnpinComment.Option.PIN,
   })
 

@@ -6586,6 +6586,8 @@ export type CommentCreatedEvent = Event &
     version: Scalars['Int']
     comment: Comment
     commentId: Scalars['String']
+    video: Video
+    videoId: Scalars['String']
     /** Comment's original text */
     text: Scalars['String']
   }
@@ -6602,6 +6604,7 @@ export type CommentCreatedEventCreateInput = {
   network: Network
   indexInBlock: Scalars['Float']
   comment: Scalars['ID']
+  video: Scalars['ID']
   text: Scalars['String']
 }
 
@@ -6627,6 +6630,8 @@ export enum CommentCreatedEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   CommentAsc = 'comment_ASC',
   CommentDesc = 'comment_DESC',
+  VideoAsc = 'video_ASC',
+  VideoDesc = 'video_DESC',
   TextAsc = 'text_ASC',
   TextDesc = 'text_DESC',
 }
@@ -6637,6 +6642,7 @@ export type CommentCreatedEventUpdateInput = {
   network?: Maybe<Network>
   indexInBlock?: Maybe<Scalars['Float']>
   comment?: Maybe<Scalars['ID']>
+  video?: Maybe<Scalars['ID']>
   text?: Maybe<Scalars['String']>
 }
 
@@ -6690,6 +6696,7 @@ export type CommentCreatedEventWhereInput = {
   text_endsWith?: Maybe<Scalars['String']>
   text_in?: Maybe<Array<Scalars['String']>>
   comment?: Maybe<CommentWhereInput>
+  video?: Maybe<VideoWhereInput>
   AND?: Maybe<Array<CommentCreatedEventWhereInput>>
   OR?: Maybe<Array<CommentCreatedEventWhereInput>>
 }
@@ -6733,6 +6740,8 @@ export type CommentDeletedEvent = Event &
     version: Scalars['Int']
     comment: Comment
     commentId: Scalars['String']
+    video: Video
+    videoId: Scalars['String']
     commentdeletedInEvent?: Maybe<Array<Comment>>
   }
 
@@ -6748,6 +6757,7 @@ export type CommentDeletedEventCreateInput = {
   network: Network
   indexInBlock: Scalars['Float']
   comment: Scalars['ID']
+  video: Scalars['ID']
 }
 
 export type CommentDeletedEventEdge = {
@@ -6772,6 +6782,8 @@ export enum CommentDeletedEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   CommentAsc = 'comment_ASC',
   CommentDesc = 'comment_DESC',
+  VideoAsc = 'video_ASC',
+  VideoDesc = 'video_DESC',
 }
 
 export type CommentDeletedEventUpdateInput = {
@@ -6780,6 +6792,7 @@ export type CommentDeletedEventUpdateInput = {
   network?: Maybe<Network>
   indexInBlock?: Maybe<Scalars['Float']>
   comment?: Maybe<Scalars['ID']>
+  video?: Maybe<Scalars['ID']>
 }
 
 export type CommentDeletedEventWhereInput = {
@@ -6827,6 +6840,7 @@ export type CommentDeletedEventWhereInput = {
   indexInBlock_lte?: Maybe<Scalars['Int']>
   indexInBlock_in?: Maybe<Array<Scalars['Int']>>
   comment?: Maybe<CommentWhereInput>
+  video?: Maybe<VideoWhereInput>
   commentdeletedInEvent_none?: Maybe<CommentWhereInput>
   commentdeletedInEvent_some?: Maybe<CommentWhereInput>
   commentdeletedInEvent_every?: Maybe<CommentWhereInput>
@@ -6865,6 +6879,8 @@ export type CommentModeratedEvent = Event &
     version: Scalars['Int']
     comment: Comment
     commentId: Scalars['String']
+    video: Video
+    videoId: Scalars['String']
     /** The actor responsible for the removal of comment */
     actor: ContentActor
     /** Comment deletion rationale */
@@ -6884,6 +6900,7 @@ export type CommentModeratedEventCreateInput = {
   network: Network
   indexInBlock: Scalars['Float']
   comment: Scalars['ID']
+  video: Scalars['ID']
   actor: Scalars['JSONObject']
   rationale: Scalars['String']
 }
@@ -6910,6 +6927,8 @@ export enum CommentModeratedEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   CommentAsc = 'comment_ASC',
   CommentDesc = 'comment_DESC',
+  VideoAsc = 'video_ASC',
+  VideoDesc = 'video_DESC',
   RationaleAsc = 'rationale_ASC',
   RationaleDesc = 'rationale_DESC',
 }
@@ -6920,6 +6939,7 @@ export type CommentModeratedEventUpdateInput = {
   network?: Maybe<Network>
   indexInBlock?: Maybe<Scalars['Float']>
   comment?: Maybe<Scalars['ID']>
+  video?: Maybe<Scalars['ID']>
   actor?: Maybe<Scalars['JSONObject']>
   rationale?: Maybe<Scalars['String']>
 }
@@ -6975,6 +6995,7 @@ export type CommentModeratedEventWhereInput = {
   rationale_endsWith?: Maybe<Scalars['String']>
   rationale_in?: Maybe<Array<Scalars['String']>>
   comment?: Maybe<CommentWhereInput>
+  video?: Maybe<VideoWhereInput>
   commentmoderatedInEvent_none?: Maybe<CommentWhereInput>
   commentmoderatedInEvent_some?: Maybe<CommentWhereInput>
   commentmoderatedInEvent_every?: Maybe<CommentWhereInput>
@@ -7037,6 +7058,8 @@ export type CommentPinnedEvent = Event &
     version: Scalars['Int']
     comment: Comment
     commentId: Scalars['String']
+    video: Video
+    videoId: Scalars['String']
     /** The action performed. true if comment is pinned, otherwise false. */
     action: Scalars['Boolean']
   }
@@ -7053,6 +7076,7 @@ export type CommentPinnedEventCreateInput = {
   network: Network
   indexInBlock: Scalars['Float']
   comment: Scalars['ID']
+  video: Scalars['ID']
   action: Scalars['Boolean']
 }
 
@@ -7078,6 +7102,8 @@ export enum CommentPinnedEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   CommentAsc = 'comment_ASC',
   CommentDesc = 'comment_DESC',
+  VideoAsc = 'video_ASC',
+  VideoDesc = 'video_DESC',
   ActionAsc = 'action_ASC',
   ActionDesc = 'action_DESC',
 }
@@ -7088,6 +7114,7 @@ export type CommentPinnedEventUpdateInput = {
   network?: Maybe<Network>
   indexInBlock?: Maybe<Scalars['Float']>
   comment?: Maybe<Scalars['ID']>
+  video?: Maybe<Scalars['ID']>
   action?: Maybe<Scalars['Boolean']>
 }
 
@@ -7138,6 +7165,7 @@ export type CommentPinnedEventWhereInput = {
   action_eq?: Maybe<Scalars['Boolean']>
   action_in?: Maybe<Array<Scalars['Boolean']>>
   comment?: Maybe<CommentWhereInput>
+  video?: Maybe<VideoWhereInput>
   AND?: Maybe<Array<CommentPinnedEventWhereInput>>
   OR?: Maybe<Array<CommentPinnedEventWhereInput>>
 }
@@ -7168,6 +7196,8 @@ export type CommentReactedEvent = Event &
     version: Scalars['Int']
     comment: Comment
     commentId: Scalars['String']
+    video: Video
+    videoId: Scalars['String']
     /** The reaction id */
     reactionResult: Scalars['Int']
     reactingMember: Membership
@@ -7186,6 +7216,7 @@ export type CommentReactedEventCreateInput = {
   network: Network
   indexInBlock: Scalars['Float']
   comment: Scalars['ID']
+  video: Scalars['ID']
   reactionResult: Scalars['Float']
   reactingMember: Scalars['ID']
 }
@@ -7212,6 +7243,8 @@ export enum CommentReactedEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   CommentAsc = 'comment_ASC',
   CommentDesc = 'comment_DESC',
+  VideoAsc = 'video_ASC',
+  VideoDesc = 'video_DESC',
   ReactionResultAsc = 'reactionResult_ASC',
   ReactionResultDesc = 'reactionResult_DESC',
   ReactingMemberAsc = 'reactingMember_ASC',
@@ -7224,6 +7257,7 @@ export type CommentReactedEventUpdateInput = {
   network?: Maybe<Network>
   indexInBlock?: Maybe<Scalars['Float']>
   comment?: Maybe<Scalars['ID']>
+  video?: Maybe<Scalars['ID']>
   reactionResult?: Maybe<Scalars['Float']>
   reactingMember?: Maybe<Scalars['ID']>
 }
@@ -7279,6 +7313,7 @@ export type CommentReactedEventWhereInput = {
   reactionResult_lte?: Maybe<Scalars['Int']>
   reactionResult_in?: Maybe<Array<Scalars['Int']>>
   comment?: Maybe<CommentWhereInput>
+  video?: Maybe<VideoWhereInput>
   reactingMember?: Maybe<MembershipWhereInput>
   AND?: Maybe<Array<CommentReactedEventWhereInput>>
   OR?: Maybe<Array<CommentReactedEventWhereInput>>
@@ -7670,6 +7705,8 @@ export type CommentTextUpdatedEvent = Event &
     version: Scalars['Int']
     comment: Comment
     commentId: Scalars['String']
+    video: Video
+    videoId: Scalars['String']
     /** New comment text */
     newText: Scalars['String']
   }
@@ -7686,6 +7723,7 @@ export type CommentTextUpdatedEventCreateInput = {
   network: Network
   indexInBlock: Scalars['Float']
   comment: Scalars['ID']
+  video: Scalars['ID']
   newText: Scalars['String']
 }
 
@@ -7711,6 +7749,8 @@ export enum CommentTextUpdatedEventOrderByInput {
   IndexInBlockDesc = 'indexInBlock_DESC',
   CommentAsc = 'comment_ASC',
   CommentDesc = 'comment_DESC',
+  VideoAsc = 'video_ASC',
+  VideoDesc = 'video_DESC',
   NewTextAsc = 'newText_ASC',
   NewTextDesc = 'newText_DESC',
 }
@@ -7721,6 +7761,7 @@ export type CommentTextUpdatedEventUpdateInput = {
   network?: Maybe<Network>
   indexInBlock?: Maybe<Scalars['Float']>
   comment?: Maybe<Scalars['ID']>
+  video?: Maybe<Scalars['ID']>
   newText?: Maybe<Scalars['String']>
 }
 
@@ -7774,6 +7815,7 @@ export type CommentTextUpdatedEventWhereInput = {
   newText_endsWith?: Maybe<Scalars['String']>
   newText_in?: Maybe<Array<Scalars['String']>>
   comment?: Maybe<CommentWhereInput>
+  video?: Maybe<VideoWhereInput>
   AND?: Maybe<Array<CommentTextUpdatedEventWhereInput>>
   OR?: Maybe<Array<CommentTextUpdatedEventWhereInput>>
 }
@@ -29173,8 +29215,14 @@ export type Video = BaseGraphQlObject & {
   bidmadecompletingauctioneventvideo?: Maybe<Array<BidMadeCompletingAuctionEvent>>
   buynowcanceledeventvideo?: Maybe<Array<BuyNowCanceledEvent>>
   buynowpriceupdatedeventvideo?: Maybe<Array<BuyNowPriceUpdatedEvent>>
+  commentcreatedeventvideo?: Maybe<Array<CommentCreatedEvent>>
+  commentdeletedeventvideo?: Maybe<Array<CommentDeletedEvent>>
+  commentmoderatedeventvideo?: Maybe<Array<CommentModeratedEvent>>
+  commentpinnedeventvideo?: Maybe<Array<CommentPinnedEvent>>
+  commentreactedeventvideo?: Maybe<Array<CommentReactedEvent>>
   commentreactionvideo?: Maybe<Array<CommentReaction>>
   commentsectionpreferenceeventvideo?: Maybe<Array<CommentSectionPreferenceEvent>>
+  commenttextupdatedeventvideo?: Maybe<Array<CommentTextUpdatedEvent>>
   englishauctionsettledeventvideo?: Maybe<Array<EnglishAuctionSettledEvent>>
   englishauctionstartedeventvideo?: Maybe<Array<EnglishAuctionStartedEvent>>
   nftboughteventvideo?: Maybe<Array<NftBoughtEvent>>
@@ -30245,12 +30293,30 @@ export type VideoWhereInput = {
   buynowpriceupdatedeventvideo_none?: Maybe<BuyNowPriceUpdatedEventWhereInput>
   buynowpriceupdatedeventvideo_some?: Maybe<BuyNowPriceUpdatedEventWhereInput>
   buynowpriceupdatedeventvideo_every?: Maybe<BuyNowPriceUpdatedEventWhereInput>
+  commentcreatedeventvideo_none?: Maybe<CommentCreatedEventWhereInput>
+  commentcreatedeventvideo_some?: Maybe<CommentCreatedEventWhereInput>
+  commentcreatedeventvideo_every?: Maybe<CommentCreatedEventWhereInput>
+  commentdeletedeventvideo_none?: Maybe<CommentDeletedEventWhereInput>
+  commentdeletedeventvideo_some?: Maybe<CommentDeletedEventWhereInput>
+  commentdeletedeventvideo_every?: Maybe<CommentDeletedEventWhereInput>
+  commentmoderatedeventvideo_none?: Maybe<CommentModeratedEventWhereInput>
+  commentmoderatedeventvideo_some?: Maybe<CommentModeratedEventWhereInput>
+  commentmoderatedeventvideo_every?: Maybe<CommentModeratedEventWhereInput>
+  commentpinnedeventvideo_none?: Maybe<CommentPinnedEventWhereInput>
+  commentpinnedeventvideo_some?: Maybe<CommentPinnedEventWhereInput>
+  commentpinnedeventvideo_every?: Maybe<CommentPinnedEventWhereInput>
+  commentreactedeventvideo_none?: Maybe<CommentReactedEventWhereInput>
+  commentreactedeventvideo_some?: Maybe<CommentReactedEventWhereInput>
+  commentreactedeventvideo_every?: Maybe<CommentReactedEventWhereInput>
   commentreactionvideo_none?: Maybe<CommentReactionWhereInput>
   commentreactionvideo_some?: Maybe<CommentReactionWhereInput>
   commentreactionvideo_every?: Maybe<CommentReactionWhereInput>
   commentsectionpreferenceeventvideo_none?: Maybe<CommentSectionPreferenceEventWhereInput>
   commentsectionpreferenceeventvideo_some?: Maybe<CommentSectionPreferenceEventWhereInput>
   commentsectionpreferenceeventvideo_every?: Maybe<CommentSectionPreferenceEventWhereInput>
+  commenttextupdatedeventvideo_none?: Maybe<CommentTextUpdatedEventWhereInput>
+  commenttextupdatedeventvideo_some?: Maybe<CommentTextUpdatedEventWhereInput>
+  commenttextupdatedeventvideo_every?: Maybe<CommentTextUpdatedEventWhereInput>
   englishauctionsettledeventvideo_none?: Maybe<EnglishAuctionSettledEventWhereInput>
   englishauctionsettledeventvideo_some?: Maybe<EnglishAuctionSettledEventWhereInput>
   englishauctionsettledeventvideo_every?: Maybe<EnglishAuctionSettledEventWhereInput>
