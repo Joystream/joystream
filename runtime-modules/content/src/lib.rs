@@ -50,7 +50,8 @@ use sp_runtime::{
     traits::{AccountIdConversion, Hash, MaybeSerializeDeserialize, Member},
     ModuleId,
 };
-use sp_std::{collections::btree_set::BTreeSet, vec::Vec};
+use sp_std::{borrow::ToOwned, collections::btree_set::BTreeSet, vec::Vec};
+
 /// Module configuration trait for Content Directory Module
 pub trait Trait:
     frame_system::Trait
@@ -710,7 +711,7 @@ decl_module! {
                 .map_or(
                     Ok(None),
                     |issuance_params| {
-                        Some(Self::construct_owned_nft(issuance_params,video_id)).transpose()
+                        Some(Self::construct_owned_nft(issuance_params)).transpose()
                     }
                 )?;
 
@@ -797,7 +798,7 @@ decl_module! {
                     Ok(None),
                     |issuance_params| {
                         ensure!(video.nft_status.is_none(), Error::<T>::NftAlreadyExists);
-                        Some(Self::construct_owned_nft(issuance_params, video_id)).transpose()
+                        Some(Self::construct_owned_nft(issuance_params)).transpose()
                     }
                 )?;
 
@@ -1342,7 +1343,7 @@ decl_module! {
             ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
 
             // The content owner will be..
-            let nft_status = Self::construct_owned_nft(&params, video_id)?;
+            let nft_status = Self::construct_owned_nft(&params)?;
 
             //
             // == MUTATION SAFE ==
@@ -1651,17 +1652,18 @@ decl_module! {
             let (nft, event) = match open_auction.buy_now_price {
                 Some(buy_now_price) if bid_amount >= buy_now_price => {
                     // Make a new bid considering the old one (if any) and the "buy-now-price".
-                    Self::make_bid_payment(
+                    Self::transfer_bid_to_treasury(
                         &participant_account_id,
                         buy_now_price,
                         old_bid_value
                     )?;
 
                     // complete auction @ buy_now_price
+                    let royalty_payment = Self::build_royalty_payment(&video, nft.creator_royalty);
                     let updated_nft = Self::complete_auction(
                         nft,
                         video.in_channel,
-                        participant_account_id,
+                        royalty_payment,
                         participant_id,
                         buy_now_price,
                     );
@@ -1673,7 +1675,7 @@ decl_module! {
                 },
                 _ =>  {
                     // Make a new bid considering the old one (if any).
-                    Self::make_bid_payment(
+                    Self::transfer_bid_to_treasury(
                         &participant_account_id,
                         bid_amount,
                         old_bid_value
@@ -1758,17 +1760,18 @@ decl_module! {
             let (updated_nft, event) = match eng_auction.buy_now_price {
                 Some(buy_now_price) if bid_amount >= buy_now_price => {
                     // Make a new bid considering the "buy-now-price".
-                    Self::make_bid_payment(
+                    Self::transfer_bid_to_treasury(
                         &participant_account_id,
                         buy_now_price,
                         None
                     )?;
 
                     // complete auction @ buy_now_price
+                    let royalty_payment = Self::build_royalty_payment(&video, nft.creator_royalty);
                     let updated_nft = Self::complete_auction(
                         nft,
                         video.in_channel,
-                        participant_account_id,
+                        royalty_payment,
                         participant_id,
                         buy_now_price,
                     );
@@ -1782,7 +1785,7 @@ decl_module! {
                 _ => {
 
                     // Make a new bid.
-                    Self::make_bid_payment(
+                    Self::transfer_bid_to_treasury(
                         &participant_account_id,
                         bid_amount,
                         None
@@ -1867,12 +1870,6 @@ decl_module! {
             let top_bid = english_auction.ensure_top_bid_exists::<T>()?;
             let top_bidder_id = top_bid.bidder_id;
 
-            // THIS WILL NOT FAIL UNLESS THE RUNTIME IS BROKEN
-            let top_bidder_account_result =
-                T::MemberAuthenticator::controller_account_id(top_bidder_id);
-            debug_assert!(top_bidder_account_result.is_ok());
-            let top_bidder_account_id = top_bidder_account_result.unwrap_or_default();
-
             // Ensure auction expired
             let current_block = <frame_system::Module<T>>::block_number();
             english_auction.ensure_auction_can_be_completed::<T>(current_block)?;
@@ -1882,10 +1879,11 @@ decl_module! {
             //
 
             // Complete auction
+            let royalty_payment = Self::build_royalty_payment(&video, nft.creator_royalty);
             let updated_nft = Self::complete_auction(
                 nft,
                 video.in_channel,
-                top_bidder_account_id,
+                royalty_payment,
                 top_bidder_id,
                 top_bid.amount
             );
@@ -1907,7 +1905,8 @@ decl_module! {
             winner_id: T::MemberId,
             commit: BalanceOf<T>, // amount the auctioner is committed to
         ) {
-            let winner_account_id = T::MemberAuthenticator::controller_account_id(winner_id)?;
+            T::MemberAuthenticator::controller_account_id(winner_id).map(|_| ())?;
+
             // Ensure video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
@@ -1933,10 +1932,11 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            let royalty_payment = Self::build_royalty_payment(&video, nft.creator_royalty);
             let updated_nft = Self::complete_auction(
                 nft,
                 video.in_channel,
-                winner_account_id,
+                royalty_payment,
                 winner_id,
                 bid.amount,
             );
@@ -2045,14 +2045,15 @@ decl_module! {
             // Ensure new pending offer is available to proceed
             Self::ensure_new_pending_offer_available_to_proceed(&nft, &receiver_account_id)?;
 
-            let owner_account_id = Self::ensure_owner_account_id(video.in_channel, &nft)?;
-
+            // account_id where the nft offer price is deposited
+            let nft_owner_account = Self::ensure_owner_account_id(video.in_channel, &nft).ok();
             //
             // == MUTATION SAFE ==
             //
 
             // Complete nft offer
-            let nft = Self::complete_nft_offer(video.in_channel, nft, owner_account_id, receiver_account_id);
+            let royalty_payment = Self::build_royalty_payment(&video, nft.creator_royalty);
+            let nft = Self::complete_nft_offer(nft, royalty_payment, nft_owner_account, receiver_account_id);
 
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
 
@@ -2120,15 +2121,22 @@ decl_module! {
             // Ensure given participant can buy nft now
             Self::ensure_can_buy_now(&nft, &participant_account_id, price_commit)?;
 
-            let channel = Self::channel_by_id(&video.in_channel);
-            let owner_account_id =  Self::ensure_reward_account(&channel)?;
+            // seller account
+            let old_nft_owner_account_id = Self::ensure_owner_account_id(video.in_channel, &nft).ok();
 
             //
             // == MUTATION SAFE ==
             //
 
             // Buy nft
-            let nft = Self::buy_now(video.in_channel, nft, owner_account_id, participant_account_id, participant_id);
+            let royalty_payment = Self::build_royalty_payment(&video, nft.creator_royalty);
+            let nft = Self::buy_now(
+                nft,
+                royalty_payment,
+                old_nft_owner_account_id,
+                participant_account_id,
+                participant_id
+            );
 
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft));
 
@@ -2290,7 +2298,6 @@ impl<T: Trait> Module<T> {
     /// Convert InitTransactionalStatus to TransactionalStatus after checking requirements on the Auction variant
     fn ensure_valid_init_transactional_status(
         init_status: &InitTransactionalStatus<T>,
-        video_id: T::VideoId,
     ) -> Result<TransactionalStatus<T>, DispatchError> {
         match init_status {
             InitTransactionalStatus::<T>::Idle => Ok(TransactionalStatus::<T>::Idle),
@@ -2310,10 +2317,8 @@ impl<T: Trait> Module<T> {
             InitTransactionalStatus::<T>::OpenAuction(ref params) => {
                 Self::validate_open_auction_params(params)?;
                 let current_block = <frame_system::Module<T>>::block_number();
-                let new_nonce = Self::ensure_nft_exists(video_id)
-                    .map(|nft| nft.open_auctions_nonce.saturating_add(One::one()))?;
                 Ok(TransactionalStatus::<T>::OpenAuction(
-                    OpenAuction::<T>::new(params.clone(), new_nonce, current_block),
+                    OpenAuction::<T>::new(params.clone(), T::OpenAuctionId::zero(), current_block),
                 ))
             }
         }
@@ -2322,11 +2327,9 @@ impl<T: Trait> Module<T> {
     /// Construct the Nft that is intended to be issued
     pub fn construct_owned_nft(
         issuance_params: &NftIssuanceParameters<T>,
-        video_id: T::VideoId,
     ) -> Result<Nft<T>, DispatchError> {
         let transactional_status = Self::ensure_valid_init_transactional_status(
             &issuance_params.init_transactional_status,
-            video_id,
         )?;
         // The content owner will be..
         let nft_owner = if let Some(to) = issuance_params.non_channel_owner {
@@ -2337,8 +2340,8 @@ impl<T: Trait> Module<T> {
         };
 
         // Enure royalty bounds satisfied, if provided
-        if let Some(royalty) = issuance_params.royalty.as_ref() {
-            Self::ensure_royalty_bounds_satisfied(*royalty)?;
+        if let Some(ref royalty) = issuance_params.royalty {
+            Self::ensure_royalty_bounds_satisfied(royalty.to_owned())?;
         }
 
         Ok(Nft::<T>::new(

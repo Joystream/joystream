@@ -88,6 +88,7 @@ export async function content_CuratorAdded({ store, event }: EventContext & Stor
   // load curator group
   const curatorGroup = await store.get(CuratorGroup, {
     where: { id: curatorGroupId.toString() } as FindConditions<CuratorGroup>,
+    relations: ['curators'],
   })
 
   // ensure curator group exists
@@ -118,6 +119,7 @@ export async function content_CuratorRemoved({ store, event }: EventContext & St
   // load curator group
   const curatorGroup = await store.get(CuratorGroup, {
     where: { id: curatorGroupId.toString() } as FindConditions<CuratorGroup>,
+    relations: ['curators'],
   })
 
   // ensure curator group exists

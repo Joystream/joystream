@@ -67,10 +67,8 @@ const ASSET_TYPES = {
   ],
 } as const
 
-// all relations that need to be loaded for updating active video counters when deleting content
-export const videoRelationsForCountersBare = ['channel', 'channel.category', 'category']
 // all relations that need to be loaded for full evalution of video active status to work
-export const videoRelationsForCounters = [...videoRelationsForCountersBare, 'thumbnailPhoto', 'media']
+export const videoRelationsForCounters = ['channel', 'channel.category', 'category', 'thumbnailPhoto', 'media']
 
 async function processChannelAssets(
   { event, store }: EventContext & StoreContext,
@@ -541,7 +539,7 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
         id: dataObject.id,
       },
     })),
-    relations: [...videoAssets, ...videoRelationsForCountersBare],
+    relations: [...videoRelationsForCounters],
   })
 
   if (channel) {

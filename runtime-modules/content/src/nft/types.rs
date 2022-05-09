@@ -94,7 +94,7 @@ impl<MemberId> Default for NftOwner<MemberId> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
 pub struct NftIssuanceParametersRecord<MemberId, InitTransactionalStatus> {
-    /// Roayalty used for the author
+    /// Royalty used for the author
     pub royalty: Option<Royalty>,
     /// Metadata
     pub nft_metadata: NftMetadata,

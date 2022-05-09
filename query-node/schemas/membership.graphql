@@ -121,6 +121,8 @@ type Membership @entity {
   "Elected councils' memberships of the member."
   councilMembers: [CouncilMember!] @derivedFrom(field: "member")
 
+  # NFTs & Members relations
+
   "Auctions in which is this user whitelisted to participate"
   whitelistedInAuctions: [Auction!]! @derivedFrom(field: "whitelistedMembers")
 
@@ -129,6 +131,18 @@ type Membership @entity {
 
   "NFTs owned by this member in various channels."
   nftCollectorInChannels: [ChannelNftCollectors!]! @derivedFrom(field: "member")
+
+  # Required for EnglishAuctionSettledEvent->members Many-to-Many relationship
+  "Member as bidder in EnglishAuctionSettledEvent/s."
+  memberEnglishAuctionSettledEvents: [EnglishAuctionSettledEvent!] @derivedFrom(field: "bidders")
+
+  # Required for OpenAuctionBidAcceptedEvent->members Many-to-Many relationship
+  "Member as bidder in OpenAuctionBidAcceptedEvent/s."
+  memberOpenAuctionAcceptedBidEvents: [OpenAuctionBidAcceptedEvent!] @derivedFrom(field: "bidders")
+
+  # Required for BidMadeCompletingAuctionEvent->members Many-to-Many relationship
+  "Member as bidder in BidMadeCompletingAuctionEvent/s."
+  memberBidMadeCompletingAuctionEvents: [BidMadeCompletingAuctionEvent!] @derivedFrom(field: "bidders")
 }
 
 type MembershipSystemSnapshot @entity {
