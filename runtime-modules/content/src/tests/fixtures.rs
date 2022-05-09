@@ -1,13 +1,9 @@
-use derive_fixture::Fixture;
-use derive_new::new;
-
 use super::curators;
 use super::mock::*;
 use crate::*;
 use common::council::CouncilBudgetManager;
 use frame_support::assert_ok;
 use frame_support::traits::Currency;
-use frame_system::RawOrigin;
 use sp_std::cmp::min;
 use sp_std::iter::{IntoIterator, Iterator};
 
@@ -126,10 +122,6 @@ impl CreateChannelFixture {
                         moderators: self.params.moderators.clone(),
                         num_videos: Zero::zero(),
                         cumulative_reward_claimed: Zero::zero(),
-                        daily_nft_limit: DefaultChannelDailyNftLimit::get(),
-                        weekly_nft_limit: DefaultChannelWeeklyNftLimit::get(),
-                        daily_nft_counter: Default::default(),
-                        weekly_nft_counter: Default::default(),
                     },
                     self.params.clone(),
                 ))
@@ -443,10 +435,6 @@ impl UpdateChannelFixture {
                             num_videos: channel_pre.num_videos,
                             moderators: channel_pre.moderators,
                             cumulative_reward_claimed: BalanceOf::<Test>::zero(),
-                            daily_nft_limit: channel_post.daily_nft_limit,
-                            weekly_nft_limit: channel_post.weekly_nft_limit,
-                            daily_nft_counter: channel_post.daily_nft_counter,
-                            weekly_nft_counter: channel_post.weekly_nft_counter,
                         },
                         self.params.clone(),
                     ))
@@ -1737,8 +1725,6 @@ pub fn create_default_curator_owned_channel() {
 pub fn create_default_member_owned_channel_with_video() {
     create_default_member_owned_channel();
 
-    set_default_nft_limits();
-
     CreateVideoFixture::default()
         .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
         .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
@@ -1948,40 +1934,5 @@ fn channel_reward_account_balance(channel: &Channel<Test>) -> u64 {
         Balances::<Test>::usable_balance(&reward_account)
     } else {
         Zero::zero()
-    }
-}
-
-#[derive(Fixture, new)]
-pub struct UpdateNftLimitFixture {
-    #[new(value = "RawOrigin::Signed(LEAD_ACCOUNT_ID)")]
-    origin: RawOrigin<u64>,
-
-    #[new(default)]
-    nft_limit_id: NftLimitId<ChannelId>,
-
-    #[new(default)]
-    limit: LimitPerPeriod<u64>,
-}
-
-impl UpdateNftLimitFixture {
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let old_limit = nft_limit_by_id(self.nft_limit_id);
-
-        let actual_result =
-            Content::update_nft_limit(self.origin.clone().into(), self.nft_limit_id, self.limit);
-
-        assert_eq!(actual_result, expected_result);
-
-        let new_limit = nft_limit_by_id(self.nft_limit_id);
-        if actual_result.is_ok() {
-            assert_eq!(self.limit, new_limit);
-
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::NftLimitUpdated(self.nft_limit_id, self.limit))
-            );
-        } else {
-            assert_eq!(old_limit, new_limit);
-        }
     }
 }
