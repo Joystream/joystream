@@ -40,16 +40,16 @@ message CreateComment {
 // edit comment by author
 message EditComment {
     // ID of the comment whose text is being edited
-    required string comment_id = 3;
+    required string comment_id = 1;
 
     // New comment body
-    required string new_body = 4;
+    required string new_body = 2;
 }
 
 // delete comment by author 
 message DeleteComment {
     // ID of the comment which will be deleted
-    required string comment_id = 2;
+    required string comment_id = 1;
 }
 
 // pin comment on a video by channel owner
@@ -73,10 +73,10 @@ message PinOrUnpinComment {
 // delete comment by moderator or channel owner;
 message ModerateComment {
     // ID of comment that will be deleted by moderator
-    required string comment_id = 2;
+    required string comment_id = 1;
 
     // why moderator wants to delete this comment
-    required string rationale = 3;
+    required string rationale = 2;
 }
 
 message BanOrUnbanMemberFromChannel { 
