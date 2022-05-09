@@ -1,0 +1,292 @@
+type VideoReactedEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The video being reacted to"
+  video: Video!
+
+  "The reaction result"
+  reactionResult: VideoReactionOptions!
+
+  "The member reacting to the video"
+  reactingMember: Membership!
+}
+
+type CommentReactedEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The comment being reacted to"
+  comment: Comment!
+
+  "The reaction id"
+  reactionResult: Int!
+
+  "The member reacting to the comment"
+  reactingMember: Membership!
+}
+
+type CommentCreatedEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The comment that was added"
+  comment: Comment!
+
+  "Comment's original text"
+  text: String!
+}
+
+type CommentTextUpdatedEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The comment being updated"
+  comment: Comment!
+
+  "New comment text"
+  newText: String!
+
+  # Only author can edit the comment, so no actor context required
+}
+
+type CommentDeletedEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Comment deleted"
+  comment: Comment!
+
+  # No actor context required, since commenter would delete the comment
+}
+
+type CommentModeratedEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Comment deleted"
+  comment: Comment!
+
+  "The actor responsible for the removal of comment"
+  actor: ContentActor!
+
+  "Comment deletion rationale"
+  rationale: String!
+}
+
+# This event entity is both pinning and unpinning the comment
+type CommentPinnedEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The comment being pinned"
+  comment: Comment!
+
+  "The action performed. true if comment is pinned, otherwise false."
+  action: Boolean!
+
+  # Only channel owner can pin the comment, so no actor context required
+}
+
+# This event is used for both banning & unbanning the member
+type MemberBannedFromChannelEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The chanel user is blocked from"
+  channel: Channel!
+
+  "The member being banned from channel"
+  member: Membership!
+
+  "The action performed. true if member is banned, false if member is unbanned"
+  action: Boolean!
+
+  # Only channel owner can pin the comment, so no actor context required
+}
+
+type CommentSectionPreferenceEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The video on which the comment section status changed"
+  video: Video!
+
+  "Is comment section enabled (true if enabled)"
+  commentSectionStatus: Boolean!
+
+  # Only channel owner can enable/disable the comment section, so no actor context required
+}
+
+type VideoReactionsPreferenceEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The video on which the comment section status changed"
+  video: Video!
+
+  "Is comment section enabled (true if enabled)"
+  reactionsStatus: Boolean!
+
+  # Only channel owner can enable/disable the comment section, so no actor context required
+}

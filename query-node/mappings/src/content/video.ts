@@ -2,7 +2,7 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { EventContext, StoreContext } from '@joystream/hydra-common'
-import { In } from 'typeorm'
+import { In, getManager } from 'typeorm'
 import { Content } from '../../generated/types'
 import { deserializeMetadata, genericEventFields, inconsistentState, logger } from '../common'
 import {
@@ -11,7 +11,7 @@ import {
   convertContentActorToChannelOrNftOwner,
   convertContentActor,
 } from './utils'
-import { Channel, NftIssuedEvent, Video, VideoCategory } from 'query-node/dist/model'
+import { Channel, NftIssuedEvent, Video, VideoCategory, CommentReaction, Comment } from 'query-node/dist/model'
 import { VideoMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import _ from 'lodash'
@@ -121,6 +121,10 @@ export async function content_VideoCreated(ctx: EventContext & StoreContext): Pr
     createdInBlock: event.blockNumber,
     createdAt: new Date(event.blockTimestamp),
     updatedAt: new Date(event.blockTimestamp),
+    isCommentSectionEnabled: true,
+    isReactionFeatureEnabled: true,
+    commentsCount: 0,
+    reactionsCount: 0,
   })
   // deserialize & process metadata
   if (videoCreationParameters.meta.isSome) {
@@ -232,6 +236,18 @@ export async function content_VideoDeleted({ store, event }: EventContext & Stor
 
   // update video active counters
   await getAllManagers(store).videos.onMainEntityDeletion(video)
+
+  // TODO: remove reactions & comments
+
+  await getManager().transaction(async (transactionalEntityManager) => {
+    await transactionalEntityManager
+      .createQueryBuilder()
+      .delete()
+      .from(CommentReaction)
+      .where({ video_id: video.id })
+      .execute()
+    await transactionalEntityManager.createQueryBuilder().delete().from(Comment).where({ video_id: video.id }).execute()
+  })
 
   // remove video
   await store.remove<Video>(video)

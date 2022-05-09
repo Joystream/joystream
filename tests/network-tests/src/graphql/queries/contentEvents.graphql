@@ -1,0 +1,219 @@
+fragment CommentCreatedEventFields on CommentCreatedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  comment {
+    id
+  }
+  text
+}
+
+fragment CommentDeletedEventFields on CommentDeletedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  comment {
+    id
+    status
+  }
+}
+
+fragment CommentTextUpdatedEventFields on CommentTextUpdatedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  comment {
+    id
+    status
+  }
+  newText
+}
+
+fragment CommentModeratedEventFields on CommentModeratedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  comment {
+    id
+    status
+  }
+  rationale
+}
+
+fragment CommentPinnedEventFields on CommentPinnedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  comment {
+    id
+    video {
+      id
+    }
+  }
+  action
+}
+
+fragment VideoReactedEventFields on VideoReactedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  video {
+    id
+  }
+  reactionResult
+  reactingMember {
+    id
+  }
+}
+
+fragment CommentReactedEventFields on CommentReactedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  comment {
+    id
+  }
+  reactionResult
+  reactingMember {
+    id
+  }
+}
+
+fragment MemberBannedFromChannelEventFields on MemberBannedFromChannelEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  channel {
+    id
+  }
+  member {
+    id
+  }
+  action
+}
+
+fragment MemberBannedFromChannelEventFields on MemberBannedFromChannelEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  channel {
+    id
+  }
+  member {
+    id
+  }
+  action
+}
+
+fragment CommentSectionPreferenceEventFields on CommentSectionPreferenceEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  video {
+    id
+  }
+  commentSectionStatus
+}
+
+fragment VideoReactionsPreferenceEventFields on VideoReactionsPreferenceEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  video {
+    id
+  }
+  reactionsStatus
+}
+
+query getCommentCreatedEventsByEventIds($eventIds: [ID!]) {
+  commentCreatedEvents(where: { id_in: $eventIds }) {
+    ...CommentCreatedEventFields
+  }
+}
+
+query getCommentDeletedEventsByEventIds($eventIds: [ID!]) {
+  commentDeletedEvents(where: { id_in: $eventIds }) {
+    ...CommentDeletedEventFields
+  }
+}
+
+query getCommentModeratedEventsByEventIds($eventIds: [ID!]) {
+  commentModeratedEvents(where: { id_in: $eventIds }) {
+    ...CommentModeratedEventFields
+  }
+}
+
+query getCommentEditedEventsByEventIds($eventIds: [ID!]) {
+  commentTextUpdatedEvents(where: { id_in: $eventIds }) {
+    ...CommentTextUpdatedEventFields
+  }
+}
+
+query getCommentPinnedEventsByEventIds($eventIds: [ID!]) {
+  commentPinnedEvents(where: { id_in: $eventIds }) {
+    ...CommentPinnedEventFields
+  }
+}
+
+query getVideoReactedEventsByEventIds($eventIds: [ID!]) {
+  videoReactedEvents(where: { id_in: $eventIds }) {
+    ...VideoReactedEventFields
+  }
+}
+
+query getCommentReactedEventsByEventIds($eventIds: [ID!]) {
+  commentReactedEvents(where: { id_in: $eventIds }) {
+    ...CommentReactedEventFields
+  }
+}
+
+query getMemberBannedFromChannelEventsByEventIds($eventIds: [ID!]) {
+  memberBannedFromChannelEvents(where: { id_in: $eventIds }) {
+    ...MemberBannedFromChannelEventFields
+  }
+}
+
+query getCommentSectionPreferenceEventsByEventIds($eventIds: [ID!]) {
+  commentSectionPreferenceEvents(where: { id_in: $eventIds }) {
+    ...CommentSectionPreferenceEventFields
+  }
+}
+
+query getVideoReactionsPreferenceEventsByEventIds($eventIds: [ID!]) {
+  videoReactionsPreferenceEvents(where: { id_in: $eventIds }) {
+    ...VideoReactionsPreferenceEventFields
+  }
+}
