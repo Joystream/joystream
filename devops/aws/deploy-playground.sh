@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 
@@ -19,11 +19,11 @@ if [ ! -f "$KEY_PATH" ]; then
 fi
 
 # Deploy the CloudFormation template
-echo -e "\n\n=========== Deploying single node ==========="
+echo -e "\n\n=========== Deploying Playground Node ==========="
 aws cloudformation deploy \
   --region $REGION \
   --profile $CLI_PROFILE \
-  --stack-name $SINGLE_NODE_STACK_NAME \
+  --stack-name $STACK_NAME \
   --template-file cloudformation/single-instance-docker.yml \
   --no-fail-on-empty-changeset \
   --capabilities CAPABILITY_NAMED_IAM \
@@ -36,13 +36,13 @@ if [ $? -eq 0 ]; then
   # Install additional Ansible roles from requirements
   ansible-galaxy install -r requirements.yml
 
-  SERVER_IP=$(get_aws_export $SINGLE_NODE_STACK_NAME "PublicIp")
+  SERVER_IP=$(get_aws_export $STACK_NAME "PublicIp")
 
   echo -e "New Node Public IP: $SERVER_IP"
 
   echo -e "\n\n=========== Configuring node ==========="
   ansible-playbook -i $SERVER_IP, --private-key $KEY_PATH deploy-playground-playbook.yml \
     --extra-vars "branch_name=$BRANCH_NAME git_repo=$GIT_REPO skip_chain_setup=$SKIP_CHAIN_SETUP
-                  stack_name=$SINGLE_NODE_STACK_NAME runtime_profile=$RUNTIME_PROFILE
+                  stack_name=$STACK_NAME runtime_profile=$RUNTIME_PROFILE
                   ssh_pub_key='${SSH_PUB_KEY}'"
 fi
