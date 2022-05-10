@@ -2195,7 +2195,7 @@ decl_module! {
             Self::deposit_event(RawEvent::GlobalNftLimitUpdated(nft_limit_period, limit));
         }
 
-        /// Updates global NFT limit.
+        /// Updates channel's NFT limit.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_channel_nft_limit(
             origin,
