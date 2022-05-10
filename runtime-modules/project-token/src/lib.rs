@@ -452,13 +452,11 @@ decl_module! {
             if amount.is_zero() { return Ok(()) }
 
             let token_info = Self::ensure_token_exists(token_id)?;
-
-            let timeline = token_info.revenue_split.ensure_active::<T>()
-                .map(|info| info.timeline)?;
+            let split_info = token_info.revenue_split.ensure_active::<T>()?;
 
             let current_block = Self::current_block();
             ensure!(
-                timeline.is_ongoing(current_block),
+                split_info.timeline.is_ongoing(current_block),
                 Error::<T>::RevenueSplitNotOngoing
             );
 
@@ -466,7 +464,29 @@ decl_module! {
 
             account_info.ensure_can_stake::<T>(amount)?;
 
+            // it should not really be possible to have supply == 0 with staked amount > 0
+            debug_assert!(!token_info.total_supply.is_zero());
+            let dividend_amount = Self::compute_revenue_split_dividend(
+                amount,
+                token_info.total_supply,
+                split_info.allocation,
+            );
+
+            let treasury_account: T::AccountId = Self::module_treasury_account();
+            Self::ensure_can_transfer_joy(&treasury_account, dividend_amount)?;
+
             // == MUTATION SAFE ==
+
+            <Joy<T> as Currency<T::AccountId>>::transfer(
+                &treasury_account,
+                &sender,
+                dividend_amount,
+                ExistenceRequirement::KeepAlive,
+            )?;
+
+            TokenInfoById::<T>::mutate(token_id, |token_info| {
+                token_info.revenue_split.account_for_dividend(dividend_amount);
+            });
 
             AccountInfoByTokenAndAccount::<T>::mutate(token_id, &sender, |account_info| {
                 account_info.stake(token_info.latest_revenue_split_id, amount);
