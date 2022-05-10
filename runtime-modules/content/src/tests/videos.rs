@@ -520,6 +520,26 @@ fn unsuccessful_video_creation_with_max_object_size_limits_exceeded() {
 }
 
 #[test]
+fn successful_video_update_by_member_with_nft() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+
+        UpdateVideoFixture::default()
+            .with_nft_issuance(NftIssuanceParameters::<Test> {
+                royalty: None,
+                nft_metadata: b"test_nft_metadata".to_vec(),
+                non_channel_owner: Some(SECOND_MEMBER_ID),
+                init_transactional_status: Default::default(),
+            })
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
 fn successful_video_update_by_member_with_assets_upload() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -1175,7 +1195,6 @@ fn unsuccessful_video_deletion_with_nft_already_issued() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel();
-        set_default_nft_limits();
 
         // create video with nft issued
         CreateVideoFixture::default()
@@ -1198,139 +1217,4 @@ fn unsuccessful_video_deletion_with_nft_already_issued() {
             })
             .call_and_assert(Err(Error::<Test>::NftAlreadyExists.into()))
     })
-}
-
-#[test]
-fn create_video_failed_with_exceeded_global_daily_nft_limits() {
-    with_default_mock_builder(|| {
-        nft_test_helper_for_exceeded_limit_on_creating_video(
-            NftLimitId::GlobalDaily,
-            Error::<Test>::GlobalNftDailyLimitExceeded,
-        );
-    })
-}
-
-#[test]
-fn create_video_failed_with_exceeded_global_weekly_nft_limits() {
-    with_default_mock_builder(|| {
-        nft_test_helper_for_exceeded_limit_on_creating_video(
-            NftLimitId::GlobalWeekly,
-            Error::<Test>::GlobalNftWeeklyLimitExceeded,
-        );
-    })
-}
-#[test]
-fn create_video_failed_with_exceeded_channel_daily_nft_limits() {
-    with_default_mock_builder(|| {
-        let channel_id = 1;
-        nft_test_helper_for_exceeded_limit_on_creating_video(
-            NftLimitId::ChannelDaily(channel_id),
-            Error::<Test>::ChannelNftDailyLimitExceeded,
-        );
-    })
-}
-#[test]
-fn create_video_failed_with_exceeded_channel_weekly_nft_limits() {
-    with_default_mock_builder(|| {
-        let channel_id = 1;
-        nft_test_helper_for_exceeded_limit_on_creating_video(
-            NftLimitId::ChannelWeekly(channel_id),
-            Error::<Test>::ChannelNftWeeklyLimitExceeded,
-        );
-    })
-}
-
-fn nft_test_helper_for_exceeded_limit_on_creating_video(
-    nft_limit_id: NftLimitId<u64>,
-    expected_error: Error<Test>,
-) {
-    run_to_block(1);
-
-    create_initial_storage_buckets_helper();
-    increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-    create_default_member_owned_channel();
-    set_default_nft_limits();
-
-    Content::set_nft_limit(nft_limit_id, Default::default());
-
-    // create video with nft issued
-    CreateVideoFixture::default()
-        .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-        .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-        .with_nft_issuance(NftIssuanceParameters::<Test> {
-            royalty: None,
-            nft_metadata: b"test_nft_metadata".to_vec(),
-            non_channel_owner: Some(SECOND_MEMBER_ID),
-            init_transactional_status: Default::default(),
-        })
-        .call_and_assert(Err(expected_error.into()));
-}
-
-#[test]
-fn update_video_failed_with_exceeded_global_daily_nft_limits() {
-    with_default_mock_builder(|| {
-        nft_test_helper_for_exceeded_limit_on_updating_video(
-            NftLimitId::GlobalDaily,
-            Error::<Test>::GlobalNftDailyLimitExceeded,
-        );
-    })
-}
-
-#[test]
-fn update_video_failed_with_exceeded_global_weekly_nft_limits() {
-    with_default_mock_builder(|| {
-        nft_test_helper_for_exceeded_limit_on_updating_video(
-            NftLimitId::GlobalWeekly,
-            Error::<Test>::GlobalNftWeeklyLimitExceeded,
-        );
-    })
-}
-#[test]
-fn update_video_failed_with_exceeded_channel_daily_nft_limits() {
-    with_default_mock_builder(|| {
-        let channel_id = 1;
-        nft_test_helper_for_exceeded_limit_on_updating_video(
-            NftLimitId::ChannelDaily(channel_id),
-            Error::<Test>::ChannelNftDailyLimitExceeded,
-        );
-    })
-}
-#[test]
-fn update_video_failed_with_exceeded_channel_weekly_nft_limits() {
-    with_default_mock_builder(|| {
-        let channel_id = 1;
-        nft_test_helper_for_exceeded_limit_on_updating_video(
-            NftLimitId::ChannelWeekly(channel_id),
-            Error::<Test>::ChannelNftWeeklyLimitExceeded,
-        );
-    })
-}
-
-fn nft_test_helper_for_exceeded_limit_on_updating_video(
-    nft_limit_id: NftLimitId<u64>,
-    expected_error: Error<Test>,
-) {
-    run_to_block(1);
-
-    create_initial_storage_buckets_helper();
-    increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-    create_default_member_owned_channel();
-    set_default_nft_limits();
-
-    Content::set_nft_limit(nft_limit_id, Default::default());
-
-    // create video with nft issued
-    CreateVideoFixture::default()
-        .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-        .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-        .call_and_assert(Ok(()));
-
-    UpdateVideoFixture::default()
-        .with_nft_issuance(NftIssuanceParameters::<Test> {
-            royalty: None,
-            nft_metadata: b"test_nft_metadata".to_vec(),
-            non_channel_owner: Some(SECOND_MEMBER_ID),
-            init_transactional_status: Default::default(),
-        })
-        .call_and_assert(Err(expected_error.into()));
 }

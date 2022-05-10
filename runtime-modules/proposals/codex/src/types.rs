@@ -9,8 +9,6 @@ use common::working_group::WorkingGroup;
 use common::BalanceKind;
 use common::FundingRequestParameters;
 
-use content::LimitPerPeriod;
-use content::NftLimitId;
 use working_group::StakePolicy;
 
 /// Encodes proposal using its details information.
@@ -126,9 +124,6 @@ pub enum ProposalDetails<
 
     /// `Update Channel Payouts` proposal
     UpdateChannelPayouts(UpdateChannelPayoutsParameters),
-
-    /// `Update global NFT limit` proposal
-    UpdateNftLimit(GlobalNftLimitType, LimitPerPeriod<BlockNumber>),
 }
 
 impl<
@@ -220,23 +215,4 @@ pub struct CreateOpeningParameters<BlockNumber, Balance> {
 
     /// Identifier for working group.
     pub group: WorkingGroup,
-}
-/// Parameters for the 'Set NFT limit' proposal.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, Copy)]
-pub enum GlobalNftLimitType {
-    /// Global daily NFT limit.
-    DailyLimit,
-
-    /// Global weekly NFT limit.
-    WeeklyLimit,
-}
-
-impl<ChannelId> From<GlobalNftLimitType> for NftLimitId<ChannelId> {
-    fn from(item: GlobalNftLimitType) -> Self {
-        match item {
-            GlobalNftLimitType::DailyLimit => NftLimitId::GlobalDaily,
-            GlobalNftLimitType::WeeklyLimit => NftLimitId::GlobalWeekly,
-        }
-    }
 }

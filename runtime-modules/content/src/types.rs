@@ -1,83 +1,5 @@
 use crate::*;
 
-/// Defines NFT limit ID type for global and channel NFT limits and counters.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy)]
-pub enum NftLimitId<ChannelId> {
-    /// Global daily NFT counter ID.
-    GlobalDaily,
-
-    /// Global weekly NFT counter ID.
-    GlobalWeekly,
-
-    /// Channel daily NFT counter ID.
-    ChannelDaily(ChannelId),
-
-    /// Channel weekly NFT counter ID.
-    ChannelWeekly(ChannelId),
-}
-
-// Default trait implemented for the NftLimitId. Required by Substrate.
-impl<ChannelId> Default for NftLimitId<ChannelId> {
-    fn default() -> Self {
-        Self::GlobalDaily
-    }
-}
-/// Defines limit for object for a defined period.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default, Copy)]
-pub struct LimitPerPeriod<BlockNumber> {
-    /// Limit for objects.
-    pub limit: u64,
-
-    /// Period in blocks for active limit.
-    pub block_number_period: BlockNumber,
-}
-
-/// Defines limit for object for a defined period.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default)]
-pub struct NftCounter<BlockNumber: BaseArithmetic + Copy> {
-    /// Counter for objects.
-    pub counter: u64,
-
-    /// Last updated block number for this counter.
-    pub last_updated: BlockNumber,
-}
-
-impl<BlockNumber: BaseArithmetic + Copy> NftCounter<BlockNumber> {
-    // Defines whether the counter is valid for the current block.
-    pub(crate) fn is_current_period(
-        &self,
-        current_block: BlockNumber,
-        period_length: BlockNumber,
-    ) -> bool {
-        if period_length.is_zero() {
-            return false;
-        }
-
-        let last_updated_period_number = self.last_updated / period_length;
-        let current_period_number = current_block / period_length;
-
-        last_updated_period_number == current_period_number
-    }
-
-    // Defines whether the counter is valid for the current block.
-    pub(crate) fn update_for_current_period(
-        &mut self,
-        current_block: BlockNumber,
-        period_length: BlockNumber,
-    ) {
-        if self.is_current_period(current_block, period_length) {
-            self.counter += 1;
-        } else {
-            self.counter = 1;
-        }
-
-        self.last_updated = current_block;
-    }
-}
-
 /// Specifies how a new asset will be provided on creating and updating
 /// Channels, Videos, Series and Person
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -150,13 +72,7 @@ pub struct ChannelCategoryUpdateParameters {
 /// Type representing an owned channel which videos, playlists, and series can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelRecord<
-    MemberId: Ord,
-    CuratorGroupId,
-    AccountId,
-    Balance,
-    BlockNumber: BaseArithmetic + Copy,
-> {
+pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance> {
     /// The owner of a channel
     pub owner: ChannelOwner<MemberId, CuratorGroupId>,
     /// The videos under this channel
@@ -171,18 +87,10 @@ pub struct ChannelRecord<
     pub moderators: BTreeSet<MemberId>,
     /// Cumulative cashout
     pub cumulative_reward_claimed: Balance,
-    /// Channel daily NFT limit.
-    pub daily_nft_limit: LimitPerPeriod<BlockNumber>,
-    /// Channel weekly NFT limit.
-    pub weekly_nft_limit: LimitPerPeriod<BlockNumber>,
-    /// Channel daily NFT counter.
-    pub daily_nft_counter: NftCounter<BlockNumber>,
-    /// Channel weekly NFT counter.
-    pub weekly_nft_counter: NftCounter<BlockNumber>,
 }
 
-impl<MemberId: Ord, CuratorGroupId, AccountId, Balance, BlockNumber: BaseArithmetic + Copy>
-    ChannelRecord<MemberId, CuratorGroupId, AccountId, Balance, BlockNumber>
+impl<MemberId: Ord, CuratorGroupId, AccountId, Balance>
+    ChannelRecord<MemberId, CuratorGroupId, AccountId, Balance>
 {
     /// Ensure censorship status have been changed
     pub fn ensure_censorship_status_changed<T: Trait>(&self, is_censored: bool) -> DispatchResult {
@@ -192,14 +100,6 @@ impl<MemberId: Ord, CuratorGroupId, AccountId, Balance, BlockNumber: BaseArithme
         );
         Ok(())
     }
-    /// Ensure censorship status have been changed
-    pub fn increment_channel_nft_counters(&mut self, current_block: BlockNumber) {
-        self.daily_nft_counter
-            .update_for_current_period(current_block, self.daily_nft_limit.block_number_period);
-
-        self.weekly_nft_counter
-            .update_for_current_period(current_block, self.weekly_nft_limit.block_number_period);
-    }
 }
 
 // Channel alias type for simplification.
@@ -208,7 +108,6 @@ pub type Channel<T> = ChannelRecord<
     <T as ContentActorAuthenticator>::CuratorGroupId,
     <T as frame_system::Trait>::AccountId,
     BalanceOf<T>,
-    <T as frame_system::Trait>::BlockNumber,
 >;
 
 /// A request to buy a channel by a new ChannelOwner.
