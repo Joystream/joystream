@@ -486,10 +486,10 @@ decl_module! {
         /// - `account.staking_status` is Some(..) with split_id == `token.latest_split`
         /// - let `dividend = split_allocation * account.staked_amount / token.supply``
         ///    then `treasury` must be ablet to transfer `dividend` amount of JOY.
-        ///    This conditions technically, should always be satisfied
+        ///    (This condition technically, should always be satisfied)
         ///
         /// Postconditions
-        /// - `dividend` amount of JOYs transferred to `treasury_account` to `sender`
+        /// - `dividend` amount of JOYs transferred from `treasury_account` to `sender`
         /// - `token` revenue split dividends payed tracking variable increased by `dividend`
         /// - `account.staking_status` set to None
         #[weight = 10_000_000] // TODO: adjust weight
