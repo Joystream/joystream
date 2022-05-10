@@ -653,6 +653,102 @@ impl<T: Trait>
 
         Ok(())
     }
+    /// Issue a revenue split for the token
+    /// Preconditions:
+    /// - `token` must exist for `token_id`
+    /// - `start` >= System::block_number()
+    /// - `duration` must be >= `T::MinRevenueSplitDuration`
+    /// - specified `reserve_source` must be able to *transfer* `allocation` amount of JOY
+    /// - revenue split status for `token_id` must be inactive
+    ///
+    /// PostConditions
+    /// - `allocation` transferred from `reserve_source` to `treasury_account` for `token_id`
+    /// - `token.revenue_split` set to `Active(..)` with timeline [start, start + duration)
+    ///    and `token.revenue_split.allocation_left = allocation`
+    /// - `token.latest_split` incremented by 1
+    /// no-op if allocation is 0
+    fn issue_revenue_split(
+        token_id: T::TokenId,
+        start: T::BlockNumber,
+        duration: T::BlockNumber,
+        allocation_source: T::AccountId,
+        allocation_amount: JoyBalanceOf<T>,
+    ) -> DispatchResult {
+        let token_info = Self::ensure_token_exists(token_id)?;
+
+        token_info.revenue_split.ensure_inactive::<T>()?;
+
+        ensure!(
+            duration >= T::MinRevenueSplitDuration::get(),
+            Error::<T>::RevenueSplitDurationTooShort
+        );
+
+        let current_block = Self::current_block();
+        let timeline = TimelineOf::<T>::try_from_params::<T>(start, duration, current_block)?;
+
+        Self::ensure_can_transfer_joy(&allocation_source, allocation_amount)?;
+
+        // == MUTATION SAFE ==
+
+        // tranfer allocation keeping the source account alive
+        let treasury_account = Self::revenue_split_treasury_account_id(token_id);
+        <Joy<T> as Currency<T::AccountId>>::transfer(
+            &allocation_source,
+            &treasury_account,
+            allocation_amount,
+            ExistenceRequirement::KeepAlive,
+        )?;
+
+        TokenInfoById::<T>::mutate(token_id, |token_info| {
+            token_info.activate_new_revenue_split(allocation_amount, timeline);
+        });
+
+        Self::deposit_event(RawEvent::RevenueSplitIssued(
+            token_id,
+            start,
+            duration,
+            allocation_amount,
+        ));
+
+        Ok(())
+    }
+
+    /// Participate to the token revenue split if ongoing
+    /// Preconditions
+    /// - `token` at `token_id`
+    /// - `token.revenue_split` is active
+    /// - `token.revenue_split` has ended
+    /// - `token.revenue_split.allocation_left` of JOYs can be transferred to `account_id`
+    ///
+    /// Postconditions
+    /// - `token.revenue_split.allocation_left` of JOYs transferred to `account_id`
+    /// - `token.revenue_split` status set to Inactive
+    fn finalize_revenue_split(_token_id: T::TokenId, _account_id: T::AccountId) -> DispatchResult {
+        todo!()
+        // let token_info = Self::ensure_token_exists(token_id)?;
+
+        // let (timeline, _) = token_info.revenue_split.ensure_active::<T>()?;
+        // let now = <frame_system::Module<T>>::block_number();
+        // ensure!(!timeline.is_ongoing(now), Error::<T>::RevenueSplitDidNotEnd);
+
+        // // = MUTATION SAFE =
+
+        // let treasury_account: T::AccountId = T::ModuleId::get().into_sub_account(token_id);
+        // let leftovers = T::ReserveCurrency::free_balance(&treasury_account);
+        // let _ = T::ReserveCurrency::transfer(
+        //     &treasury_account,
+        //     &account_id,
+        //     leftovers,
+        //     ExistenceRequirement::KeepAlive,
+        // );
+
+        // TokenInfoById::<T>::mutate(token_id, |token_info| token_info.revenue_split.deactivate());
+
+        // Self::deposit_event(RawEvent::RevenueSplitFinalized(
+        //     token_id, account_id, leftovers,
+        // ));
+        // Ok(())
+    }
 }
 
 /// Module implementation
@@ -862,6 +958,10 @@ impl<T: Trait> Module<T> {
     /// Returns the module account for the bloat bond treasury
     pub fn bloat_bond_treasury_account_id() -> T::AccountId {
         <T as Trait>::ModuleId::get().into_sub_account(Vec::<u8>::new())
+    }
+
+    pub fn revenue_split_treasury_account_id(token_id: T::TokenId) -> T::AccountId {
+        <T as Trait>::ModuleId::get().into_sub_account(token_id)
     }
 
     pub(crate) fn validate_destination(

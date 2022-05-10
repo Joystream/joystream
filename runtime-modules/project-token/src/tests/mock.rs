@@ -16,8 +16,8 @@ use sp_runtime::{DispatchError, DispatchResult, ModuleId};
 
 // crate import
 use crate::{
-    types::*, AccountDataOf, GenesisConfig, TokenDataOf, TokenIssuanceParametersOf, Trait,
-    TransferPolicyOf,
+    types::*, AccountDataOf, GenesisConfig, RevenueSplitState, TokenDataOf,
+    TokenIssuanceParametersOf, Trait, TransferPolicyOf,
 };
 
 // Crate aliases
@@ -41,6 +41,7 @@ pub type Policy = TransferPolicyOf<Test>;
 pub type Hashing = <Test as frame_system::Trait>::Hashing;
 pub type HashOut = <Test as frame_system::Trait>::Hash;
 pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
+pub type RevenueSplitStateOf = RevenueSplitState<JoyBalance, BlockNumber>;
 pub type VestingSchedule = VestingScheduleOf<Test>;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -129,7 +130,6 @@ impl storage::Trait for Test {
     type DistributionBucketFamilyId = u64;
     type DistributionBucketOperatorId = u64;
     type ChannelId = u64;
-    type DataObjectDeletionPrize = DataObjectDeletionPrize;
     type BlacklistSizeLimit = BlacklistSizeLimit;
     type ModuleId = StorageModuleId;
     type StorageBucketsPerBagValueConstraint = StorageBucketsPerBagValueConstraint;
@@ -137,8 +137,6 @@ impl storage::Trait for Test {
         DefaultMemberDynamicBagNumberOfStorageBuckets;
     type DefaultChannelDynamicBagNumberOfStorageBuckets =
         DefaultChannelDynamicBagNumberOfStorageBuckets;
-    type Randomness = CollectiveFlip;
-    type MaxRandomIterationNumber = MaxRandomIterationNumber;
     type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
     type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
     type MaxNumberOfPendingInvitationsPerDistributionBucket =
@@ -346,13 +344,20 @@ pub struct GenesisConfigBuilder {
     pub(crate) symbol_used: Vec<(HashOut, ())>,
 }
 
-/// test externalities
-pub fn build_test_externalities(config: GenesisConfig<Test>) -> TestExternalities {
+/// test externalities + initial balances allocation
+pub fn build_test_externalities_with_balances(
+    config: GenesisConfig<Test>,
+    balances: Vec<(AccountId, Balance)>,
+) -> TestExternalities {
     let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
 
     config.assimilate_storage(&mut t).unwrap();
+
+    balances::GenesisConfig::<Test> { balances }
+        .assimilate_storage(&mut t)
+        .unwrap();
 
     let mut test_scenario = Into::<sp_io::TestExternalities>::into(t.clone());
 
@@ -360,6 +365,23 @@ pub fn build_test_externalities(config: GenesisConfig<Test>) -> TestExternalitie
     test_scenario.execute_with(|| increase_block_number_by(1));
 
     test_scenario
+}
+
+/// test externalities
+pub fn build_test_externalities(config: GenesisConfig<Test>) -> TestExternalities {
+    build_test_externalities_with_balances(config, vec![])
+}
+
+/// test externalities with empty Chain State
+pub fn build_default_test_externalities() -> TestExternalities {
+    build_test_externalities(GenesisConfigBuilder::new_empty().build())
+}
+
+/// test externalities with empty Chain State and specified balance allocation
+pub fn build_default_test_externalities_with_balances(
+    balances: Vec<(AccountId, Balance)>,
+) -> TestExternalities {
+    build_test_externalities_with_balances(GenesisConfigBuilder::new_empty().build(), balances)
 }
 
 /// Moving past n blocks
@@ -429,13 +451,21 @@ pub type Token = crate::Module<Test>;
 pub type System = frame_system::Module<Test>;
 pub type Balances = balances::Module<Test>;
 
+// ------ Actors ---------------------------
 pub const DEFAULT_ACCOUNT_ID: u64 = 1;
 pub const OTHER_ACCOUNT_ID: u64 = 2;
 pub const DEFAULT_INITIAL_ISSUANCE: u128 = 1_000_000;
+
+// ------ Sale Constants ---------------------
 pub const DEFAULT_SALE_UNIT_PRICE: u128 = 10;
 pub const DEFAULT_SALE_DURATION: u64 = 100;
-pub const DEFAULT_SALE_PURCHASE_AMOUNT: u128 = 1000;
 
+// ------ Revenue Split constants ------------
+pub const DEFAULT_SALE_PURCHASE_AMOUNT: u128 = 1000;
+pub const DEFAULT_SPLIT_ALLOCATION: u128 = 1000;
+pub const DEFAULT_SPLIT_DURATION: u64 = 100;
+
+// ------ Storage Constants ------------------
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
 pub const DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID: u64 = 100002;
 pub const DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID: u64 = 100003;

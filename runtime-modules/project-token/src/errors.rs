@@ -24,23 +24,8 @@ decl_error! {
         /// Account Already exists
         AccountAlreadyExists,
 
-        /// Specified sale starting block is in the past
-        SaleStartingBlockInThePast,
-
-        /// Token's current issuance state is not Idle
+        /// Token's current offering state is not Idle
         TokenIssuanceNotInIdleState,
-
-        /// The token has no upcoming sale
-        NoUpcomingSale,
-
-        /// The token has no active sale at the moment
-        NoActiveSale,
-
-        /// Account's JOY balance is insufficient to make the token purchase
-        InsufficientBalanceForTokenPurchase,
-
-        /// Amount of tokens to purchase on sale exceeds the quantity of tokens still available on the sale
-        NotEnoughTokensOnSale,
 
         /// Insufficient JOY Balance to cover the transaction costs
         InsufficientJoyBalance,
@@ -56,6 +41,23 @@ decl_error! {
 
         /// Cannot Deissue Token with outstanding accounts
         CannotDeissueTokenWithOutstandingAccounts,
+
+        // ------Token Sale Errors ------------------------------------------------------
+
+        /// The token has no upcoming sale
+        NoUpcomingSale,
+
+        /// The token has no active sale at the moment
+        NoActiveSale,
+
+        /// Account's JOY balance is insufficient to make the token purchase
+        InsufficientBalanceForTokenPurchase,
+
+        /// Amount of tokens to purchase on sale exceeds the quantity of tokens still available on the sale
+        NotEnoughTokensOnSale,
+
+        /// Specified sale starting block is in the past
+        SaleStartingBlockInThePast,
 
         /// Only whitelisted participants are allowed to access the sale, therefore access proof is required
         SaleAccessProofRequired,
@@ -77,5 +79,28 @@ decl_error! {
 
         /// There are no remaining tokes to recover from the previous token sale.
         NoTokensToRecover,
+
+        // ------Revenue Split Errors ------------------------------------------------------
+
+        /// Specified revenue split starting block is in the past
+        RevenueSplitStartingBlockInThePast,
+
+        /// Revenue Split duration is too short
+        RevenueSplitDurationTooShort,
+
+        /// Attempt to activate split with one ongoing
+        RevenueSplitAlreadyActiveForToken,
+
+        /// Attempt to make revenue split operations with token not in active split state
+        RevenueSplitNotActiveForToken,
+
+        /// Revenue Split has not ended yet
+        RevenueSplitDidNotEnd,
+
+        /// Revenue Split for token active, but not ongoing
+        RevenueSplitNotOngoing,
+
+        /// Insufficient Treasury Balance revenue split claim
+        InsufficientTreasuryBalanceForClaim,
     }
 }

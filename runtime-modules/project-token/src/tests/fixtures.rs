@@ -6,7 +6,10 @@ use crate::{last_event_eq, yearly_rate, AccountInfoByTokenAndAccount, RawEvent, 
 use crate::{traits::PalletToken, types::VestingSource, SymbolsUsed};
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::{StorageDoubleMap, StorageMap};
+use sp_arithmetic::traits::{One, Zero};
+use sp_runtime::traits::AccountIdConversion;
 use sp_runtime::{traits::Hash, DispatchError, Permill};
+
 use sp_std::iter::FromIterator;
 use storage::{BagId, DataObjectCreationParameters, StaticBagId};
 
@@ -575,4 +578,76 @@ impl Fixture<RecoverUnsoldTokensFixtureStateSnapshot> for RecoverUnsoldTokensFix
                 .saturating_add(recovered_amount),
         )
     }
+}
+
+/// Issue Revenue Split Fixture
+pub struct IssueRevenueSplitFixture {
+    token_id: TokenId,
+    start: BlockNumber,
+    duration: BlockNumber,
+    allocation_source: AccountId,
+    allocation: JoyBalance,
+}
+
+impl IssueRevenueSplitFixture {
+    pub fn default() -> Self {
+        Self {
+            token_id: TokenId::one(),
+            start: BlockNumber::one(),
+            duration: BlockNumber::from(DEFAULT_SPLIT_DURATION),
+            allocation_source: AccountId::from(DEFAULT_ACCOUNT_ID),
+            allocation: Balance::from(DEFAULT_SPLIT_ALLOCATION),
+        }
+    }
+
+    pub fn with_starting_block(self, start: u64) -> Self {
+        Self {
+            start: BlockNumber::from(start),
+            ..self
+        }
+    }
+
+    pub fn with_duration(self, duration: u64) -> Self {
+        Self {
+            duration: BlockNumber::from(duration),
+            ..self
+        }
+    }
+
+    pub fn with_allocation(self, allocation: u128) -> Self {
+        Self {
+            allocation: Balance::from(allocation),
+            ..self
+        }
+    }
+
+    pub fn with_allocation_source(self, account: u64) -> Self {
+        Self {
+            allocation_source: AccountId::from(account),
+            ..self
+        }
+    }
+
+    pub fn execute_call(&self) -> DispatchResult {
+        let state_pre = sp_io::storage::root();
+        let result = Token::issue_revenue_split(
+            self.token_id,
+            self.start,
+            self.duration,
+            self.allocation_source,
+            self.allocation,
+        );
+        let state_post = sp_io::storage::root();
+
+        // no-op in case of error
+        if result.is_err() {
+            assert_eq!(state_pre, state_post)
+        }
+
+        result
+    }
+}
+
+pub fn treasury_account_for(token_id: u64) -> AccountId {
+    TokenModuleId::get().into_sub_account(token_id)
 }
