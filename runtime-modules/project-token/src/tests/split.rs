@@ -453,6 +453,7 @@ fn participate_in_split_ok_with_event_deposit() {
             1u64,
             OTHER_ACCOUNT_ID,
             DEFAULT_SPLIT_PARTICIPATION,
+            1u32, // participate in split no. 1
         ));
     })
 }
@@ -545,6 +546,7 @@ fn abandon_revenue_splitd_fails_with_invalid_token_id() {
         assert_err!(result, Error::<Test>::TokenDoesNotExist);
     })
 }
+
 #[test]
 fn abandon_revenue_splitd_fails_with_invalid_account_id() {
     build_default_test_externalities_with_balances(vec![(

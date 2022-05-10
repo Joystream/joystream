@@ -496,82 +496,10 @@ decl_module! {
                 token_id,
                 sender,
                 amount,
+                token_info.latest_revenue_split_id,
             ));
 
             Ok(())
-        }
-
-        /// Members can claim their split revenue
-        /// Preconditions
-        /// - `token` must exist for `token_id`
-        /// - `account` must exist for `(token_id, sender)` with `origin` signed by `sender`
-        /// - `token.revenue_split` is active
-        /// - `token.revenue_split` has ended
-        /// - `account.staking_status.is_some()`
-        /// - `account.staking_status` is Some(..) with split_id == `token.latest_split`
-        /// - let `dividend = split_allocation * account.staked_amount / token.supply``
-        ///    then `treasury` must be ablet to transfer `dividend` amount of JOY.
-        ///    (This condition technically, should always be satisfied)
-        ///
-        /// Postconditions
-        /// - `dividend` amount of JOYs transferred from `treasury_account` to `sender`
-        /// - `token` revenue split dividends payed tracking variable increased by `dividend`
-        /// - `account.staking_status` set to None
-        #[weight = 10_000_000] // TODO: adjust weight
-        fn claim_revenue_split_amount(origin, token_id: T::TokenId) -> DispatchResult {
-            todo!()
-            // let sender = ensure_signed(origin)?;
-
-            // let token_info = Self::ensure_token_exists(token_id)?;
-
-            // let split_info = token_info.revenue_split.ensure_active::<T>()?;
-            // let current_block = <frame_system::Module<T>>::block_number();
-            // ensure!(split_info.timeline.is_ended(current_block), Error::<T>::RevenueSplitDidNotEnd);
-
-            // let account_info = Self::ensure_account_data_exists(token_id, &sender)?;
-
-            // let staking_info = account_info.ensure_account_is_valid_split_participant::<T>()?;
-            // ensure!(
-            //     staking_info.split_id == token_info.latest_revenue_split_id,
-            //     Error::<T>::AttemptToClaimAmountForAPastSplit,
-            // );
-
-            // // it should not really be possible to have supply == 0 with staked amount > 0
-            // debug_assert!(!token_info.total_supply.is_zero());
-            // let dividend_amount = Self::compute_revenue_split_dividend(
-            //     staking_info.amount,
-            //     token_info.total_supply,
-            //     split_info.allocation,
-            // );
-
-            // let treasury_account: T::AccountId = Self::module_treasury_account();
-            // Self::ensure_can_transfer_joy(&treasury_account, dividend_amount)?;
-
-            // // == MUTATION SAFE ==
-
-            // <Joy<T> as Currency<T::AccountId>>::transfer(
-            //     &treasury_account,
-            //     &sender,
-            //     dividend_amount,
-            //     ExistenceRequirement::KeepAlive,
-            // )?;
-
-            // AccountInfoByTokenAndAccount::<T>::mutate(token_id, &sender, |account_info| {
-            //     account_info.unstake()
-            // });
-
-            // TokenInfoById::<T>::mutate(token_id, |token_info| {
-            //     token_info.revenue_split.account_for_dividend(dividend_amount);
-            // });
-
-            // Self::deposit_event(RawEvent::UserClaimedRevenueSplit(
-            //     token_id,
-            //     sender,
-            //     dividend_amount,
-            //     staking_info.split_id,
-            // ));
-
-            // Ok(())
         }
 
         /// Split-participating user leaves revenue split
@@ -579,8 +507,8 @@ decl_module! {
         /// - `token` must exist for `token_id`
         /// - `account` must exist for `(token_id, sender)` with `origin` signed by `sender`
         /// - `account.staking status.is_some()'
-        /// - (`account.staking_status.split_id` <`token.latest_split`) OR
-        ///    (split is active and ended) OR (split is inactive)
+        /// - if `(account.staking_status.split_id == token.latest_revenue_split_id`
+        ///    AND `token.revenue_split` is active) THEN split staking period  must be ended
         ///
         /// Postconditions
         /// - `account.staking_status` set to None
