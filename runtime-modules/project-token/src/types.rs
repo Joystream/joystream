@@ -184,16 +184,22 @@ pub struct Timeline<BlockNumber> {
 
 impl<BlockNumber: Copy + Saturating + PartialOrd> Timeline<BlockNumber> {
     pub fn try_from_params<T: Trait>(
-        start: BlockNumber,
+        start: Option<BlockNumber>,
         duration: BlockNumber,
         current_block: BlockNumber,
     ) -> Result<Self, DispatchError> {
-        ensure!(
-            current_block <= start,
-            Error::<T>::RevenueSplitStartingBlockInThePast
-        );
+        let starting_block = start.map_or(Ok(current_block), |sb| -> Result<_, DispatchError> {
+            ensure!(
+                current_block <= sb,
+                Error::<T>::RevenueSplitStartingBlockInThePast
+            );
+            Ok(sb)
+        })?;
 
-        Ok(Timeline::<_> { start, duration })
+        Ok(Timeline::<_> {
+            start: starting_block,
+            duration,
+        })
     }
 
     pub fn end(&self) -> BlockNumber {

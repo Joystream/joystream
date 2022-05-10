@@ -583,7 +583,7 @@ impl Fixture<RecoverUnsoldTokensFixtureStateSnapshot> for RecoverUnsoldTokensFix
 /// Issue Revenue Split Fixture
 pub struct IssueRevenueSplitFixture {
     token_id: TokenId,
-    start: BlockNumber,
+    start: Option<BlockNumber>,
     duration: BlockNumber,
     allocation_source: AccountId,
     allocation: JoyBalance,
@@ -593,7 +593,7 @@ impl IssueRevenueSplitFixture {
     pub fn default() -> Self {
         Self {
             token_id: TokenId::one(),
-            start: BlockNumber::one(),
+            start: None,
             duration: BlockNumber::from(DEFAULT_SPLIT_DURATION),
             allocation_source: AccountId::from(DEFAULT_ACCOUNT_ID),
             allocation: Balance::from(DEFAULT_SPLIT_ALLOCATION),
@@ -602,28 +602,28 @@ impl IssueRevenueSplitFixture {
 
     pub fn with_starting_block(self, start: u64) -> Self {
         Self {
-            start: BlockNumber::from(start),
+            start: Some(start.into()),
             ..self
         }
     }
 
     pub fn with_duration(self, duration: u64) -> Self {
         Self {
-            duration: BlockNumber::from(duration),
+            duration: duration.into(),
             ..self
         }
     }
 
     pub fn with_allocation(self, allocation: u128) -> Self {
         Self {
-            allocation: Balance::from(allocation),
+            allocation: allocation.into(),
             ..self
         }
     }
 
     pub fn with_allocation_source(self, account: u64) -> Self {
         Self {
-            allocation_source: AccountId::from(account),
+            allocation_source: account.into(),
             ..self
         }
     }

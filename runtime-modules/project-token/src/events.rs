@@ -40,7 +40,7 @@ decl_event! {
         /// Revenue Split issued
         /// Params:
         /// - token identifier
-        /// - start of the split
+        /// - starting block for the split
         /// - duration of the split
         /// - JOY allocated for the split
         RevenueSplitIssued(TokenId, BlockNumber, BlockNumber, JoyBalance),

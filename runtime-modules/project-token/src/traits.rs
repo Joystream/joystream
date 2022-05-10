@@ -59,7 +59,7 @@ pub trait PalletToken<
     /// Issue a revenue split for the token
     fn issue_revenue_split(
         token_id: Self::TokenId,
-        start: BlockNumber,
+        start: Option<BlockNumber>,
         duration: BlockNumber,
         allocation_source: AccountId,
         allocation_amount: Self::ReserveBalance,

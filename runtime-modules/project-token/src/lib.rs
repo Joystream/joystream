@@ -823,12 +823,12 @@ impl<T: Trait>
     /// PostConditions
     /// - `allocation` transferred from `reserve_source` to `treasury_account` for `token_id`
     /// - `token.revenue_split` set to `Active(..)` with timeline [start, start + duration)
-    ///    and `token.revenue_split.allocation_left = allocation`
+    ///    and `token.revenue_split.allocation = allocation`
     /// - `token.latest_split` incremented by 1
     /// no-op if allocation is 0
     fn issue_revenue_split(
         token_id: T::TokenId,
-        start: T::BlockNumber,
+        start: Option<T::BlockNumber>,
         duration: T::BlockNumber,
         allocation_source: T::AccountId,
         allocation_amount: JoyBalanceOf<T>,
@@ -868,7 +868,7 @@ impl<T: Trait>
 
         Self::deposit_event(RawEvent::RevenueSplitIssued(
             token_id,
-            start,
+            start.unwrap_or(current_block),
             duration,
             allocation_amount,
         ));
@@ -883,7 +883,7 @@ impl<T: Trait>
     /// - `token.revenue_split` has ended
     ///
     /// Postconditions
-    /// - `token.revenue_split.allocation_left` of JOYs transferred to `account_id`
+    /// - `token.revenue_split.allocation` of JOYs transferred to `account_id`
     /// - `token.revenue_split` status set to Inactive
     fn finalize_revenue_split(token_id: T::TokenId, account_id: T::AccountId) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
