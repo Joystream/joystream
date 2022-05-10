@@ -1,4 +1,4 @@
-type AuctionStartedEvent implements Event @entity {
+type OpenAuctionStartedEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}."
@@ -26,6 +26,48 @@ type AuctionStartedEvent implements Event @entity {
 
   "Auction started."
   auction: Auction!
+
+  "Member owning the Nft (if any) that started the auction."
+  ownerMember: Membership
+
+  "Curator group owning the Nft (if any) that started the auction."
+  ownerCuratorGroup: CuratorGroup
+}
+
+type EnglishAuctionStartedEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}."
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted."
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in."
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Actor that started this auction."
+  actor: ContentActor!
+
+  "Video that's being auctioned."
+  video: Video!
+
+  "Auction started."
+  auction: Auction!
+
+  "Member owning the Nft (if any) that started the auction."
+  ownerMember: Membership
+
+  "Curator group owning the Nft (if any) that started the auction.."
+  ownerCuratorGroup: CuratorGroup
 }
 
 type NftIssuedEvent implements Event @entity {
@@ -61,8 +103,11 @@ type NftIssuedEvent implements Event @entity {
   "NFT's metadata."
   metadata: String!
 
-  "Member NFT was originally issued to."
-  newOwner: Membership
+  "Member owning the Nft (if any)."
+  ownerMember: Membership
+
+  "Curator group owning the Nft (if any)."
+  ownerCuratorGroup: CuratorGroup
 }
 
 type AuctionBidMadeEvent implements Event @entity {
@@ -94,8 +139,17 @@ type AuctionBidMadeEvent implements Event @entity {
   "Bid made."
   bidAmount: BigInt!
 
-  "Sign of auction duration being extended by making this bid."
-  extendsAuction: Boolean!
+  "Member owning the Nft (if any) when auction bid was made."
+  ownerMember: Membership
+
+  "Curator group owning the Nft (if any) when auction bid was made."
+  ownerCuratorGroup: CuratorGroup
+
+  "Bid that is being displaced by current bid in English auction"
+  previousTopBid: Bid
+
+  "Previous top bidder"
+  previousTopBidder: Membership
 }
 
 type AuctionBidCanceledEvent implements Event @entity {
@@ -123,6 +177,12 @@ type AuctionBidCanceledEvent implements Event @entity {
 
   "Auctioned video."
   video: Video!
+
+  "Member owning the Nft (if any) when auction bid was canceled."
+  ownerMember: Membership
+
+  "Curator group owning the Nft (if any) when auction bid was canceled."
+  ownerCuratorGroup: CuratorGroup
 }
 
 type AuctionCanceledEvent implements Event @entity {
@@ -150,9 +210,15 @@ type AuctionCanceledEvent implements Event @entity {
 
   "Auctioned video."
   video: Video!
+
+  "Member owning the Nft (if any) that canceled the auction."
+  ownerMember: Membership
+
+  "Curator group owning the Nft (if any) that canceled the auction."
+  ownerCuratorGroup: CuratorGroup
 }
 
-type EnglishAuctionCompletedEvent implements Event @entity {
+type EnglishAuctionSettledEvent implements Event @entity {
   ### GENERIC DATA ###
 
   "(network}-{blockNumber}-{indexInBlock}."
@@ -175,8 +241,20 @@ type EnglishAuctionCompletedEvent implements Event @entity {
   "Member claiming the auctioned NFT."
   winner: Membership!
 
+  "winning bid"
+  winningBid: Bid!
+
   "Auctioned video."
   video: Video!
+
+  "Members who bid on this auction"
+  bidders: [Membership!]
+
+  "Member owning the Nft (if any) before english auction was completed."
+  ownerMember: Membership
+
+  "Curator group owning the Nft (if any) before english auction was completed."
+  ownerCuratorGroup: CuratorGroup
 }
 
 type BidMadeCompletingAuctionEvent implements Event @entity {
@@ -204,6 +282,27 @@ type BidMadeCompletingAuctionEvent implements Event @entity {
 
   "Auctioned video."
   video: Video!
+
+  "Member owning the Nft (if any) when the bid was made that completed the auction."
+  ownerMember: Membership
+
+  "Curator group owning the Nft (if any) when the bid was made that completed the auction."
+  ownerCuratorGroup: CuratorGroup
+
+  "Price for which the NFT was bought"
+  price: BigInt!
+
+  "winning bid"
+  winningBid: Bid!
+
+  "Bid that is being displaced by current bid in English auction"
+  previousTopBid: Bid
+
+  "Previous top bidder"
+  previousTopBidder: Membership
+
+  "Members who bid on this auction"
+  bidders: [Membership!]
 }
 
 type OpenAuctionBidAcceptedEvent implements Event @entity {
@@ -226,11 +325,26 @@ type OpenAuctionBidAcceptedEvent implements Event @entity {
 
   ### SPECIFIC DATA ###
 
-  "Content actor canceling the event."
+  "Content actor that accepted the bid."
   contentActor: ContentActor!
 
   "Auctioned video."
   video: Video!
+
+  "Member owning the Nft (if any) that accepted the open auction bid."
+  ownerMember: Membership
+
+  "Curator group owning the Nft (if any) that accepted the open auction bid."
+  ownerCuratorGroup: CuratorGroup
+
+  "Accepted/winning bid"
+  winningBid: Bid
+
+  "Winning bidder"
+  winningBidder: Membership
+
+  "Members who bid on this auction"
+  bidders: [Membership!]
 }
 
 type OfferStartedEvent implements Event @entity {
@@ -264,6 +378,12 @@ type OfferStartedEvent implements Event @entity {
 
   "Offer's price."
   price: BigInt
+
+  "Member owning the Nft (if any) that offered the Nft."
+  ownerMember: Membership
+
+  "Curator group owning the Nft (if any) that offered the Nft."
+  ownerCuratorGroup: CuratorGroup
 }
 
 type OfferAcceptedEvent implements Event @entity {
@@ -288,6 +408,15 @@ type OfferAcceptedEvent implements Event @entity {
 
   "NFT's video."
   video: Video!
+
+  "Member owning the Nft (if any) when the offer was accepted."
+  ownerMember: Membership
+
+  "Curator group owning the Nft (if any) when the offer was accepted."
+  ownerCuratorGroup: CuratorGroup
+
+  "Price for which the NFT was bought"
+  price: BigInt
 }
 
 type OfferCanceledEvent implements Event @entity {
@@ -315,6 +444,12 @@ type OfferCanceledEvent implements Event @entity {
 
   "Content actor acting as NFT owner."
   contentActor: ContentActor!
+
+  "Member owning the Nft (if any) that canceled the offer."
+  ownerMember: Membership
+
+  "Curator group owning the Nft (if any) that canceled the offer."
+  ownerCuratorGroup: CuratorGroup
 }
 
 type NftSellOrderMadeEvent @entity {
@@ -342,6 +477,12 @@ type NftSellOrderMadeEvent @entity {
 
   "Content actor acting as NFT owner."
   contentActor: ContentActor!
+
+  "Member owning the Nft (if any)."
+  ownerMember: Membership
+
+  "Curator group owning the Nft (if any)."
+  ownerCuratorGroup: CuratorGroup
 
   "Offer's price."
   price: BigInt!
@@ -372,6 +513,15 @@ type NftBoughtEvent implements Event @entity {
 
   "Member that bought the NFT."
   member: Membership!
+
+  "Member owning the Nft (if any) before it was bought."
+  ownerMember: Membership
+
+  "Curator group owning the Nft (if any) before it was bought."
+  ownerCuratorGroup: CuratorGroup
+
+  "Price for which NFT was bought"
+  price: BigInt!
 }
 
 type BuyNowCanceledEvent implements Event @entity {
@@ -399,6 +549,48 @@ type BuyNowCanceledEvent implements Event @entity {
 
   "Content actor acting as NFT owner."
   contentActor: ContentActor!
+
+  "Member owning the Nft (if any)."
+  ownerMember: Membership
+
+  "Curator group owning the Nft (if any)."
+  ownerCuratorGroup: CuratorGroup
+}
+
+type BuyNowPriceUpdatedEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}."
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted."
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in."
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "NFT's video."
+  video: Video!
+
+  "Content actor acting as NFT owner."
+  contentActor: ContentActor!
+
+  "New buy-now price."
+  newPrice: BigInt!
+
+  "Member owning the Nft (if any) before it was bought."
+  ownerMember: Membership
+
+  "Curator group owning the Nft (if any) before it was bought."
+  ownerCuratorGroup: CuratorGroup
 }
 
 type NftSlingedBackToTheOriginalArtistEvent implements Event @entity {
@@ -424,6 +616,12 @@ type NftSlingedBackToTheOriginalArtistEvent implements Event @entity {
   "NFT's video."
   video: Video!
 
-  "Content actor who slinged back the NFT."
+  "Content actor who slung back the NFT."
   contentActor: ContentActor!
+
+  "Member owning the Nft (if any) whom NFT was slung back."
+  ownerMember: Membership
+
+  "Curator group owning the Nft (if any) whom NFT was slung back."
+  ownerCuratorGroup: CuratorGroup
 }

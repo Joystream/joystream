@@ -311,10 +311,31 @@ import {
   GetOwnedNftByVideoId,
   GetOwnedNftByVideoIdQuery,
   GetOwnedNftByVideoIdQueryVariables,
+  ChannelNftCollectorFieldsFragment,
+  GetChannelNftCollectorsQuery,
+  GetChannelNftCollectorsQueryVariables,
+  GetChannelNftCollectors,
   MemberVerificationStatusUpdatedEventFieldsFragment,
   GetMemberVerificationStatusUpdatedEventsByEventIdsQuery,
   GetMemberVerificationStatusUpdatedEventsByEventIdsQueryVariables,
   GetMemberVerificationStatusUpdatedEventsByEventIds,
+  EnglishAuctionStartedEventFieldsFragment,
+  GetEnglishAuctionStartedEventsByEventIdsQuery,
+  GetEnglishAuctionStartedEventsByEventIdsQueryVariables,
+  GetEnglishAuctionStartedEventsByEventIds,
+  GetNftIssuedEventsByEventIds,
+  NftIssuedEventFieldsFragment,
+  GetNftIssuedEventsByEventIdsQuery,
+  GetNftIssuedEventsByEventIdsQueryVariables,
+  EnglishAuctionSettledEventFieldsFragment,
+  EnglishAuctionSettledEventFields,
+  GetEnglishAuctionSettledEventsByEventIdsQuery,
+  GetEnglishAuctionSettledEventsByEventIdsQueryVariables,
+  GetEnglishAuctionSettledEventsByEventIds,
+  BidFieldsFragment,
+  GetBidsByMemberIdQuery,
+  GetBidsByMemberIdQueryVariables,
+  GetBidsByMemberId,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1124,6 +1145,22 @@ export class QueryNodeApi {
     )
   }
 
+  public async bidsByMemberId(videoId: string, memberId: string): Promise<BidFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetBidsByMemberIdQuery, GetBidsByMemberIdQueryVariables>(
+      GetBidsByMemberId,
+      { videoId, memberId },
+      'bids'
+    )
+  }
+
+  public async getChannelNftCollectors(): Promise<ChannelNftCollectorFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetChannelNftCollectorsQuery, GetChannelNftCollectorsQueryVariables>(
+      GetChannelNftCollectors,
+      {},
+      'channelNftCollectors'
+    )
+  }
+
   public async getMembershipVerificationStatusUpdatedEvents(
     events: EventDetails[]
   ): Promise<MemberVerificationStatusUpdatedEventFieldsFragment[]> {
@@ -1132,5 +1169,34 @@ export class QueryNodeApi {
       GetMemberVerificationStatusUpdatedEventsByEventIdsQuery,
       GetMemberVerificationStatusUpdatedEventsByEventIdsQueryVariables
     >(GetMemberVerificationStatusUpdatedEventsByEventIds, { eventIds }, 'memberVerificationStatusUpdatedEvents')
+  }
+
+  public async getEnglishAuctionStartedEvents(
+    events: EventDetails[]
+  ): Promise<EnglishAuctionStartedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetEnglishAuctionStartedEventsByEventIdsQuery,
+      GetEnglishAuctionStartedEventsByEventIdsQueryVariables
+    >(GetEnglishAuctionStartedEventsByEventIds, { eventIds }, 'englishAuctionStartedEvents')
+  }
+
+  public async getNftIssuedEvents(events: EventDetails[]): Promise<NftIssuedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<GetNftIssuedEventsByEventIdsQuery, GetNftIssuedEventsByEventIdsQueryVariables>(
+      GetNftIssuedEventsByEventIds,
+      { eventIds },
+      'nftIssuedEvents'
+    )
+  }
+
+  public async getEnglishAuctionSettledEvents(
+    events: EventDetails[]
+  ): Promise<EnglishAuctionSettledEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetEnglishAuctionSettledEventsByEventIdsQuery,
+      GetEnglishAuctionSettledEventsByEventIdsQueryVariables
+    >(GetEnglishAuctionSettledEventsByEventIds, { eventIds }, 'englishAuctionSettledEvents')
   }
 }
