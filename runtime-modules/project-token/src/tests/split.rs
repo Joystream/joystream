@@ -773,7 +773,7 @@ fn abandon_revenue_split_ok_with_event_deposit() {
             .execute_call()
             .unwrap();
 
-        last_event_eq!(RawEvent::RevenueSplitAbandoned(
+        last_event_eq!(RawEvent::RevenueSplitLeft(
             1u64,
             OTHER_ACCOUNT_ID,
             DEFAULT_SPLIT_PARTICIPATION

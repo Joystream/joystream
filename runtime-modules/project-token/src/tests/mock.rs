@@ -41,6 +41,7 @@ pub type Policy = TransferPolicyOf<Test>;
 pub type Hashing = <Test as frame_system::Trait>::Hashing;
 pub type HashOut = <Test as frame_system::Trait>::Hash;
 pub type VestingSchedule = VestingScheduleOf<Test>;
+pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
@@ -144,6 +145,9 @@ impl storage::Trait for Test {
 
     type StorageWorkingGroup = StorageWG;
     type DistributionWorkingGroup = DistributionWG;
+    type MaxRandomIterationNumber = MaxRandomIterationNumber;
+    type DataObjectDeletionPrize = DataObjectDeletionPrize;
+    type Randomness = CollectiveFlip;
 }
 
 parameter_types! {
@@ -165,6 +169,9 @@ parameter_types! {
     pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
     storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
     pub const MaxDataObjectSize: u64 = 1_000_000_000;
+
+    // --------- project token pallet constants --------------
+    pub const MinRevenueSplitDuration: u64 = 10;
 }
 
 impl common::MembershipTypes for Test {
@@ -182,6 +189,7 @@ impl Trait for Test {
     type JoyExistentialDeposit = ExistentialDeposit;
     type MaxVestingBalancesPerAccountPerToken = MaxVestingBalancesPerAccountPerToken;
     type BlocksPerYear = BlocksPerYear;
+    type MinRevenueSplitDuration = MinRevenueSplitDuration;
 }
 
 // Working group integration

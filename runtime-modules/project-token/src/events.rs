@@ -9,8 +9,10 @@ decl_event! {
     pub enum Event<T>
     where
         Balance = <T as crate::Trait>::Balance,
+        JoyBalance = JoyBalanceOf<T>,
         TokenId = <T as crate::Trait>::TokenId,
         AccountId = <T as frame_system::Trait>::AccountId,
+        BlockNumber = <T as frame_system::Trait>::BlockNumber,
         TransferPolicy = TransferPolicyOf<T>,
         TokenIssuanceParameters = TokenIssuanceParametersOf<T>,
         ValidatedTransfers = Transfers<Validated<<T as frame_system::Trait>::AccountId>, <T as crate::Trait>::Balance>,
@@ -64,6 +66,13 @@ decl_event! {
         /// - Revenue Amount in JOY
         /// - Revenue split Id
         UserClaimedRevenueSplit(TokenId, AccountId, JoyBalance, RevenueSplitId),
+
+        /// User left revenue split
+        /// Params:
+        /// - token identifier
+        /// - user account id
+        /// - amount previously staked
+        RevenueSplitLeft(TokenId, AccountId, Balance),
 
         /// Member joined whitelist
         /// Params:

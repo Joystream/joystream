@@ -72,6 +72,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + storage::Trait {
 
     /// Number of blocks produced in a year
     type BlocksPerYear: Get<u32>;
+
+    /// Min number of block in a revenue split period
+    type MinRevenueSplitDuration: Get<<Self as frame_system::Trait>::BlockNumber>;
 }
 
 decl_storage! {
@@ -569,7 +572,7 @@ decl_module! {
                  account_info.unstake();
             });
 
-            Self::deposit_event(RawEvent::RevenueSplitAbandoned(token_id, sender, staking_info.amount));
+            Self::deposit_event(RawEvent::RevenueSplitLeft(token_id, sender, staking_info.amount));
             Ok(())
         }
     }
@@ -592,6 +595,8 @@ impl<T: Trait>
     type MerkleProof = MerkleProofOf<T>;
 
     type YearlyRate = YearlyRate;
+
+    type ReserveBalance = JoyBalanceOf<T>;
 
     /// Change to permissionless
     /// Preconditions:
@@ -1268,6 +1273,8 @@ impl<T: Trait> Module<T> {
             deletion_prize_source_account_id: upload_context.uploader_account.clone(),
             expected_data_size_fee: payload.expected_data_size_fee,
             object_creation_list: vec![payload.object_creation_params.clone()],
+            // Temporary to silence clippy
+            ..Default::default()
         })
     }
 

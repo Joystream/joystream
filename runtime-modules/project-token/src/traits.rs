@@ -21,6 +21,9 @@ pub trait PalletToken<
     /// Yearly rate used for expressing patronage rate
     type YearlyRate;
 
+    /// Joy Balance type
+    type ReserveBalance;
+
     /// Issue token with specified characteristics
     fn issue_token(
         issuer: AccountId,
