@@ -8,8 +8,8 @@ import FileType from 'file-type'
 import { Readable, pipeline } from 'stream'
 import { NetworkingService } from '../networking'
 import { ContentHash } from '../crypto/ContentHash'
-import readChunk from 'read-chunk'
 import { PendingDownloadStatusType } from '../networking/PendingDownload'
+import { FSP } from './FSPromise'
 
 export const DEFAULT_CONTENT_TYPE = 'application/octet-stream'
 export const MIME_TYPE_DETECTION_CHUNK_SIZE = 4100
@@ -168,10 +168,18 @@ export class ContentService {
     return new FileContinousReadStream(this.path(objectId), options)
   }
 
+  public async readFileChunk(path: string, bytes: number): Promise<Buffer> {
+    const buff = Buffer.alloc(bytes)
+    const fd = await FSP.open(path, 'r')
+    await FSP.read(fd, buff, 0, bytes, null)
+    await FSP.close(fd)
+    return buff
+  }
+
   public async detectMimeType(objectId: string): Promise<string> {
     const objectPath = this.path(objectId)
     try {
-      const buffer = await readChunk(objectPath, 0, MIME_TYPE_DETECTION_CHUNK_SIZE)
+      const buffer = await this.readFileChunk(objectPath, MIME_TYPE_DETECTION_CHUNK_SIZE)
       const result = await FileType.fromBuffer(buffer)
       return result?.mime || DEFAULT_CONTENT_TYPE
     } catch (err) {

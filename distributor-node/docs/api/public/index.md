@@ -78,6 +78,7 @@ Returns json object describing current node status.
 ```json
 {
   "id": "string",
+  "version": "string",
   "objectsInCache": 0,
   "storageLimit": 0,
   "storageUsed": 0,
@@ -326,6 +327,7 @@ This operation does not require authentication
 ```json
 {
   "id": "string",
+  "version": "string",
   "objectsInCache": 0,
   "storageLimit": 0,
   "storageUsed": 0,
@@ -340,6 +342,7 @@ This operation does not require authentication
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |id|string|true|none|none|
+|version|string|true|none|none|
 |objectsInCache|integer|true|none|none|
 |storageLimit|integer|true|none|none|
 |storageUsed|integer|true|none|none|
