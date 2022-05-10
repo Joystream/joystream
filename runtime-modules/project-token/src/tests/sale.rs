@@ -73,7 +73,7 @@ fn unsuccesful_token_sale_init_when_token_not_idle() {
 }
 
 #[test]
-fn unsuccesful_token_sale_init_when_remaining_reserved_toknes_from_previous_sale() {
+fn unsuccesful_token_sale_init_when_remaining_unrecovered_toknes_from_previous_sale() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
@@ -555,10 +555,10 @@ fn succesful_sale_purchase_existing_account_permissioned_token() {
 }
 
 /////////////////////////////////////////////////////////
-//////////////// UNRESERVE UNSOLD TOKENS ////////////////
+//////////////// RECOVER UNSOLD TOKENS ////////////////
 /////////////////////////////////////////////////////////
 #[test]
-fn unsuccesful_unreserve_unsold_tokens_non_existing_token() {
+fn unsuccesful_recover_unsold_tokens_non_existing_token() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
@@ -568,7 +568,7 @@ fn unsuccesful_unreserve_unsold_tokens_non_existing_token() {
 }
 
 #[test]
-fn unsuccesful_unreserve_unsold_tokens_no_sale() {
+fn unsuccesful_recover_unsold_tokens_no_sale() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
@@ -579,7 +579,7 @@ fn unsuccesful_unreserve_unsold_tokens_no_sale() {
 }
 
 #[test]
-fn unsuccesful_unreserve_unsold_tokens_during_active_sale() {
+fn unsuccesful_recover_unsold_tokens_during_active_sale() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
@@ -591,7 +591,7 @@ fn unsuccesful_unreserve_unsold_tokens_during_active_sale() {
 }
 
 #[test]
-fn unsuccesful_unreserve_unsold_tokens_when_no_tokens_left() {
+fn unsuccesful_recover_unsold_tokens_when_no_tokens_left() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
@@ -612,7 +612,7 @@ fn unsuccesful_unreserve_unsold_tokens_when_no_tokens_left() {
 }
 
 #[test]
-fn succesful_unreserve_unsold_tokens() {
+fn succesful_recover_unsold_tokens() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {

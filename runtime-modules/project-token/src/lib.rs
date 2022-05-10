@@ -132,7 +132,7 @@ decl_module! {
         /// Allow to transfer from `src` to the various `outputs` beneficiaries in the
         /// specified amounts.
         /// Preconditions:
-        /// - `token_id` must exists
+        /// - token by `token_id` must exists
         /// - `src` must be valid for `token_id`, and must have enough JOYs to cover
         ///    the total bloat bond required in case of destinations not existing.
         ///    Also `src` must have enough token funds to cover all the transfer
@@ -168,7 +168,7 @@ decl_module! {
 
         /// Allow any user to remove an account
         /// Preconditions:
-        /// - `token_id` must be valid
+        /// - token by `token_id` must exist
         /// - `account_id` must be valid for `token_id`
         /// - `origin` signer must be either:
         ///    - `account_id` in that case the deletion succeedes even with non empty account
@@ -216,7 +216,7 @@ decl_module! {
 
         /// Join whitelist for permissioned case: used to add accounts for token
         /// Preconditions:
-        /// - 'token_id' must be valid
+        /// - token by 'token_id' must exist
         /// - `origin` signer must not already exists
         /// - transfer policy is `Permissioned` and merkle proof must be valid
         ///
@@ -264,26 +264,29 @@ decl_module! {
         /// Purchase tokens on active token sale.
         ///
         /// Preconditions:
-        /// - `token_id` must be existing token's id
-        /// - token identified by `token_id` must have OfferingState::Sale
+        /// - token by `token_id` must exist
+        /// - token by `token_id` must be in OfferingState::Sale
         /// - `amount` cannot exceed number of tokens remaining on sale
         /// - sender's available JOY balance must be:
         ///   - >= `joy_existential_deposit + amount * sale.unit_price`
         ///     if AccountData already exist
         ///   - >= `joy_existential_deposit + amount * sale.unit_price + bloat_bond`
         ///     if AccountData does not exist
-        /// - there are no tokens still reserved from the previous sale
         /// - `(total number of tokens already purchased by the member + `amount`) must not exceed
         ///   sale's purchase cap per member
         /// - if Permissioned token:
         ///   - AccountInfoByTokenAndAccount(token_id, &sender) must exist
+        /// - number of sender's ongoing vesting schedules
+        ///   must be < MaxVestingSchedulesPerAccountPerToken
         ///
         /// Postconditions:
         /// - `amount * sale.unit_price` JOY tokens are transfered from `sender`
         ///   to `sale.tokens_source` account
         /// - if new account created: `bloat_bond` transferred from `sender` to treasury
-        /// - buyer's `vesting_balance` related to the current sale is increased by `amount`
-        ///   (or created with `amount` as `vesting_balance.total_amount`)
+        /// - buyer's `vesting_schedule` related to the current sale is updated/created
+        /// - some finished vesting schedule is removed from buyer's account_data in case
+        ///   number of buyer's vesting_schedules was == MaxVestingSchedulesPerAccountPerToken
+        ///   and a new schedule was added
         /// - `token_data.last_sale.quantity_left` is decreased by `amount`
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn purchase_tokens_on_sale(
@@ -379,17 +382,19 @@ decl_module! {
             Ok(())
         }
 
-        /// Allows anyone to unreserve tokens that were not sold during a token sale
-        /// that has already finished
+        /// Allows anyone to recover tokens that were not sold during a token sale
+        /// that has already finished (they will always be sent back to
+        /// `token_data.last_sale.tokens_source` account)
         ///
         /// Preconditions:
-        /// - `token_id` must exists
-        /// - `token_id` must identify a token with a finished sale (Idle offering state, last_sale.is_some)
+        /// - token by `token_id` must exists
+        /// - token must be in Idle offering state
+        /// - token must have `last_sale` set
         /// - `token_data.last_sale.quantity_left` must be > 0
         ///
         /// Postconditions:
-        /// - `token_data.last_sale.quantity_left` is unreserved from
-        ///   `token_data.last_sale.tokens_source` account
+        /// - `token_data.last_sale.tokens_source` account balance is increased by
+        ///   `token_data.last_sale.quantity_left`
         /// - `token_data.last_sale.quantity_left` is set to 0
         #[weight = 10_000_000] // TODO: adjust weight
         fn recover_unsold_tokens(origin, token_id: T::TokenId) -> DispatchResult {
@@ -441,7 +446,7 @@ impl<T: Trait>
 
     /// Change to permissionless
     /// Preconditions:
-    /// - Token `token_id` must exist
+    /// - token by `token_id` must exist
     /// Postconditions
     /// - transfer policy of `token_id` changed to permissionless
     fn change_to_permissionless(token_id: T::TokenId) -> DispatchResult {
@@ -457,7 +462,7 @@ impl<T: Trait>
 
     /// Reduce patronage rate by amount
     /// Preconditions:
-    /// - `token_id` must exists
+    /// - token by `token_id` must exists
     /// - `decrement` must be less or equal than current patronage rate for `token_id`
     ///
     /// Postconditions:
@@ -496,7 +501,7 @@ impl<T: Trait>
 
     /// Allow creator to receive credit into his accounts
     /// Preconditions:
-    /// - `token_id` must exists
+    /// - token by `token_id` must exists
     /// - `to_account` must be valid for `token_id`
     ///
     /// Postconditions:
@@ -536,15 +541,15 @@ impl<T: Trait>
 
     /// Issue token with specified characteristics
     /// Preconditions:
-    /// - `token_id` must NOT exists
-    /// - `symbol` specified in the parameters must NOT exists
-    /// - `owner_account_id` free balance in JOYs >= `bloat_bond`
+    /// - `symbol` specified in the parameters must NOT exists in `SymbolsUsed`
+    /// - `issuer` usable balance in JOYs >= `initial_allocation.len() * bloat_bond + JoyExistentialDeposit`
     ///
     /// Postconditions:
     /// - token with specified characteristics is added to storage state
     /// - `NextTokenId` increased by 1
-    /// - symbol is added to `Symbols`
-    /// - ``bloat_bond` JOYs transferred from `owner_account_id` to treasury account
+    /// - symbol is added to `SymbolsUsed`
+    /// - total bloat bond in JOY is transferred from `issuer` to treasury account
+    /// - new token accounts are initialized based on `initial_allocation`
     fn issue_token(
         issuer: T::AccountId,
         issuance_parameters: TokenIssuanceParametersOf<T>,
@@ -591,12 +596,36 @@ impl<T: Trait>
         Ok(())
     }
 
+    /// Initialize token sale
+    ///
+    /// Preconditions:
+    /// - token by `token_id` exists
+    /// - provided sale start block is >= current_block
+    /// - token offering is in Idle state
+    /// - there are no tokens still unrecovered from the previous sale
+    ///   (last_sale.quantity_left == 0)
+    /// - `sale_params.tokens_source` account exists
+    /// - `sale_params.tokens_source` has transferrable CRT balance
+    ///   >= `sale_params.upper_bound_quantity`
+    ///
+    /// Postconditions:
+    /// - `sale_params.tokens_source` account balance is decreased by
+    ///   `sale_params.upper_bound_quantity`
+    /// - token's `last_sale` is set
+    /// - token's `sales_initialized` is incremented
     fn init_token_sale(token_id: T::TokenId, sale_params: TokenSaleParamsOf<T>) -> DispatchResult {
         let token_data = Self::ensure_token_exists(token_id)?;
         let sale = TokenSaleOf::<T>::try_from_params::<T>(sale_params.clone())?;
-        // Validation + first mutation(!)
-        Self::try_init_sale(token_id, &token_data, &sale_params)?;
+        Self::ensure_can_init_sale(token_id, &token_data, &sale_params)?;
+
         // == MUTATION SAFE ==
+
+        // Decrease source account's tokens number by sale_params.upper_bound_quantity
+        // (unsold tokens can be later recovered with `recover_unsold_tokens`)
+        AccountInfoByTokenAndAccount::<T>::mutate(token_id, &sale_params.tokens_source, |ad| {
+            ad.decrease_amount_by(sale_params.upper_bound_quantity);
+        });
+
         TokenInfoById::<T>::mutate(token_id, |t| {
             t.last_sale = Some(sale);
             t.sales_initialized = t.sales_initialized.saturating_add(1);
@@ -607,7 +636,8 @@ impl<T: Trait>
 
     /// Update upcoming token sale
     /// Preconditions:
-    /// - token is in UpcomingSale state
+    /// - token by `token_id` exists
+    /// - token offering is in UpcomingSale state
     ///
     /// Postconditions:
     /// - token's sale `duration` and `start_block` is updated according to provided parameters
@@ -635,7 +665,7 @@ impl<T: Trait>
 
     /// Remove token data from storage
     /// Preconditions:
-    /// - `token_id` must exists
+    /// - token by `token_id` must exists
     /// - no account for `token_id` exists
     ///
     /// Postconditions:
@@ -755,7 +785,7 @@ impl<T: Trait> Module<T> {
         <frame_system::Module<T>>::block_number()
     }
 
-    pub(crate) fn try_init_sale(
+    pub(crate) fn ensure_can_init_sale(
         token_id: T::TokenId,
         token_data: &TokenDataOf<T>,
         sale_params: &TokenSaleParamsOf<T>,
@@ -771,19 +801,11 @@ impl<T: Trait> Module<T> {
             Error::<T>::RemainingUnrecoveredTokensFromPreviousSale
         );
 
-        // Ensure sale upper_bound_quantity can be reserved from `source`
+        // Ensure source account exists
         let account_data = Self::ensure_account_data_exists(token_id, &sale_params.tokens_source)?;
 
         // Ensure source account has enough transferrable tokens
         account_data.ensure_can_transfer::<T>(current_block, sale_params.upper_bound_quantity)?;
-
-        // == MUTATION SAFE ==
-
-        // Decrease source account's tokens number by sale_params.upper_bound_quantity
-        // (unsold tokens can be later recovered with `recover_unsold_tokens`)
-        AccountInfoByTokenAndAccount::<T>::mutate(token_id, &sale_params.tokens_source, |ad| {
-            ad.decrease_amount_by(sale_params.upper_bound_quantity);
-        });
 
         Ok(())
     }

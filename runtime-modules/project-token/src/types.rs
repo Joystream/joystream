@@ -750,8 +750,8 @@ where
         self.patronage_info.rate = new_rate;
     }
 
-    // Returns number of tokens that remain unpurchased & reserved in the the sale's
-    // `tokens_source` account (if any)
+    /// Returns number of tokens that remain neither purchased nor recovered from the last
+    /// token's sale
     pub(crate) fn last_sale_remaining_tokens(&self) -> Balance {
         self.last_sale
             .as_ref()
