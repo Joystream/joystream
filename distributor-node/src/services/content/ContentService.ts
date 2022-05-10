@@ -9,7 +9,7 @@ import { Readable, pipeline } from 'stream'
 import { NetworkingService } from '../networking'
 import { ContentHash } from '../crypto/ContentHash'
 import { PendingDownloadStatusType } from '../networking/PendingDownload'
-import { promisify } from 'util'
+import { FSP } from './FSPromise'
 
 export const DEFAULT_CONTENT_TYPE = 'application/octet-stream'
 export const MIME_TYPE_DETECTION_CHUNK_SIZE = 4100
@@ -169,13 +169,10 @@ export class ContentService {
   }
 
   public async readFileChunk(path: string, bytes: number): Promise<Buffer> {
-    const open = promisify(fs.open)
-    const read = promisify(fs.read)
-    const close = promisify(fs.close)
     const buff = Buffer.alloc(bytes)
-    const fd = await open(path, 'r')
-    await read(fd, buff, 0, bytes, null)
-    await close(fd)
+    const fd = await FSP.open(path, 'r')
+    await FSP.read(fd, buff, 0, bytes, null)
+    await FSP.close(fd)
     return buff
   }
 
