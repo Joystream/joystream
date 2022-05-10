@@ -591,8 +591,17 @@ decl_module! {
             let token_info = Self::ensure_token_exists(token_id)?;
 
             let account_info = Self::ensure_account_data_exists(token_id, &sender)?;
-
             let staking_info = account_info.ensure_account_is_valid_split_participant::<T>()?;
+
+            // staking_info.split_id <= token_info.latest_revenue_split_id is a runtime invariant
+            if staking_info.split_id == token_info.latest_revenue_split_id {
+                if let Ok(split_info) = token_info.revenue_split.ensure_active::<T>() {
+                    ensure!(
+                        split_info.timeline.is_ended(Self::current_block()),
+                        Error::<T>::RevenueSplitDidNotEnd,
+                    );
+                }
+            }
 
             // == MUTATION SAFE ==
 

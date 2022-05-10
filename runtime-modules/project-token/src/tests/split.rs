@@ -579,6 +579,7 @@ fn abandon_revenue_split_fails_with_user_not_a_participant() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(DEFAULT_SPLIT_DURATION);
         FinalizeRevenueSplitFixture::default()
             .execute_call()
             .unwrap();
