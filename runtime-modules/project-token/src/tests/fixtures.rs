@@ -405,7 +405,7 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
                 .map(|v| v.clone()),
             buyer_usable_joy_balance: Joy::<Test>::usable_balance(self.sender),
             treasury_usable_joy_balance: Joy::<Test>::usable_balance(
-                Token::bloat_bond_treasury_account_id(),
+                Token::module_treasury_account(),
             ),
         }
     }

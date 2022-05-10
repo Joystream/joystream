@@ -105,7 +105,7 @@ decl_storage! {
     add_extra_genesis {
         build(|_| {
             // We deposit some initial balance to the pallet's module account
-            // (and sub-accounts!!) on the genesis block to protect the account
+            // on the genesis block to protect the account
             // from being deleted ("dusted") on early stages of pallet's work
             // by the "garbage collector" of the balances pallet.
             // It should be equal to at least `ExistentialDeposit` from the balances pallet
@@ -114,7 +114,7 @@ decl_storage! {
             // - https://github.com/Joystream/joystream/issues/3497
             // - https://github.com/Joystream/joystream/issues/3510
 
-            let module_account_id = crate::Module::<T>::bloat_bond_treasury_account_id();
+            let module_account_id = crate::Module::<T>::module_treasury_account();
             let deposit = T::JoyExistentialDeposit::get();
 
             let _ = Joy::<T>::deposit_creating(&module_account_id, deposit);
@@ -518,7 +518,7 @@ decl_module! {
                 split_info.allocation,
             );
 
-            let treasury_account: T::AccountId = Self::revenue_split_treasury_account_id(token_id);
+            let treasury_account: T::AccountId = Self::module_treasury_account();
             Self::ensure_can_transfer_joy(&treasury_account, dividend_amount)?;
 
             // == MUTATION SAFE ==
@@ -854,7 +854,7 @@ impl<T: Trait>
         // == MUTATION SAFE ==
 
         // tranfer allocation keeping the source account alive
-        let treasury_account = Self::revenue_split_treasury_account_id(token_id);
+        let treasury_account = Self::module_treasury_account();
         <Joy<T> as Currency<T::AccountId>>::transfer(
             &allocation_source,
             &treasury_account,
@@ -898,7 +898,7 @@ impl<T: Trait>
 
         // = MUTATION SAFE =
 
-        let treasury_account = Self::revenue_split_treasury_account_id(token_id);
+        let treasury_account = Self::module_treasury_account();
         let amount_to_withdraw = split_info.leftovers();
 
         <Joy<T> as Currency<T::AccountId>>::transfer(
@@ -1137,13 +1137,9 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Returns the module account for the bloat bond treasury
-    pub fn bloat_bond_treasury_account_id() -> T::AccountId {
+    /// Returns the account for the current module used for both bloat bond & revenue split
+    pub fn module_treasury_account() -> T::AccountId {
         <T as Trait>::ModuleId::get().into_sub_account(Vec::<u8>::new())
-    }
-
-    pub fn revenue_split_treasury_account_id(token_id: T::TokenId) -> T::AccountId {
-        <T as Trait>::ModuleId::get().into_sub_account(token_id)
     }
 
     pub(crate) fn validate_destination(
@@ -1209,7 +1205,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub(crate) fn deposit_to_treasury(src: &T::AccountId, amount: JoyBalanceOf<T>) {
-        let treasury_account_id = Self::bloat_bond_treasury_account_id();
+        let treasury_account_id = Self::module_treasury_account();
         let _ = <Joy<T> as Currency<T::AccountId>>::transfer(
             src,
             &treasury_account_id,
@@ -1219,7 +1215,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub(crate) fn withdraw_from_treasury(dst: &T::AccountId, amount: JoyBalanceOf<T>) {
-        let treasury_account_id = Self::bloat_bond_treasury_account_id();
+        let treasury_account_id = Self::module_treasury_account();
         let _ = <Joy<T> as Currency<T::AccountId>>::transfer(
             &treasury_account_id,
             dst,
