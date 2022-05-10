@@ -819,6 +819,47 @@ impl ClaimRevenueSplitAmountFixture {
     }
 }
 
+pub struct AbandonRevenueSplitFixture {
+    sender: AccountId,
+    token_id: TokenId,
+}
+
+impl AbandonRevenueSplitFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: OTHER_ACCOUNT_ID.into(),
+            token_id: TokenId::one(),
+        }
+    }
+
+    pub fn with_account(self, account_id: u64) -> Self {
+        Self {
+            sender: account_id.into(),
+            ..self
+        }
+    }
+
+    pub fn with_token_id(self, token_id: u64) -> Self {
+        Self {
+            token_id: token_id.into(),
+            ..self
+        }
+    }
+
+    pub fn execute_call(&self) -> DispatchResult {
+        let state_pre = sp_io::storage::root();
+        let result = Token::abandon_revenue_split(Origin::signed(self.sender), self.token_id);
+        let state_post = sp_io::storage::root();
+
+        // no-op in case of error
+        if result.is_err() {
+            assert_eq!(state_pre, state_post)
+        }
+
+        result
+    }
+}
+
 pub fn treasury_account_for(token_id: u64) -> AccountId {
     TokenModuleId::get().into_sub_account(token_id)
 }

@@ -13,7 +13,7 @@ use frame_system::ensure_signed;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
     traits::{AccountIdConversion, Convert, UniqueSaturatedInto},
-    ModuleId,
+    ModuleId, Permill,
 };
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::Sum;
@@ -445,7 +445,9 @@ decl_module! {
 
             let token_info = Self::ensure_token_exists(token_id)?;
 
-            let timeline = token_info.revenue_split.ensure_active::<T>()?;
+            let timeline = token_info.revenue_split.ensure_active::<T>()
+                .map(|info| info.timeline)?;
+
             let current_block = Self::current_block();
             ensure!(
                 timeline.is_ongoing(current_block),
@@ -488,51 +490,54 @@ decl_module! {
         /// - `account.staking_status` set to None
         #[weight = 10_000_000] // TODO: adjust weight
         fn claim_revenue_split_amount(origin, token_id: T::TokenId) -> DispatchResult {
-            todo!()
-            // let token_info = Self::ensure_token_exists(token_id)?;
+            let sender = ensure_signed(origin)?;
 
-            // let (timeline, percentage) = token_info.revenue_split.ensure_active::<T>()?;
-            // let now = <frame_system::Module<T>>::block_number();
-            // // TODO(ignazio, now) change is_ongoing to has_ended
-            // ensure!(!timeline.is_ongoing(now), Error::<T>::RevenueSplitDidNotEnd);
+            let token_info = Self::ensure_token_exists(token_id)?;
 
-            // let account_info = Self::ensure_account_data_exists(token_id, &who)?;
+            let split_info = token_info.revenue_split.ensure_active::<T>()?;
+            let current_block = <frame_system::Module<T>>::block_number();
+            ensure!(split_info.timeline.is_ended(current_block), Error::<T>::RevenueSplitDidNotEnd);
 
-            // // no-op if reserve balance is zero
-            // if account_info.staked_balance.is_zero() {
-            //     return Ok(());
-            // }
+            let account_info = Self::ensure_account_data_exists(token_id, &sender)?;
 
-            // // == MUTATION SAFE ==
+            let staking_info = account_info.ensure_account_is_valid_split_participant::<T>()?;
+            ensure!(
+                staking_info.split_id == token_info.latest_revenue_split_id,
+                Error::<T>::AttemptToClaimAmountForAPastSplit,
+            );
 
-            // let treasury_account: T::AccountId = T::ModuleId::get().into_sub_account(token_id);
-            // let allocation = T::ReserveCurrency::free_balance(&treasury_account);
-            // let revenue_amount = Self::compute_revenue_split_amount(
-            //     account_info.staked_balance,
-            //     token_info.current_total_issuance,
-            //     allocation,
-            //     percentage,
-            // );
+            // it should not really be possible to have supply == 0 with staked amount > 0
+            debug_assert!(!token_info.total_supply.is_zero());
+            let dividend_amount = Self::compute_revenue_split_dividend(
+                staking_info.amount,
+                token_info.total_supply,
+                split_info.allocation,
+            );
 
-            // let _ = T::ReserveCurrency::transfer(
-            //     &treasury_account,
-            //     &who,
-            //     revenue_amount,
-            //     ExistenceRequirement::KeepAlive,
-            // );
+            let treasury_account: T::AccountId = Self::revenue_split_treasury_account_id(token_id);
+            Self::ensure_can_transfer_joy(&treasury_account, dividend_amount)?;
 
-            // AccountInfoByTokenAndAccount::<T>::mutate(token_id, &who, |account_info| {
-            //     account_info.unstake()
-            // });
+            // == MUTATION SAFE ==
 
-            // Self::deposit_event(RawEvent::UserClaimedRevenueSplit(
-            //     token_id,
-            //     who,
-            //     revenue_amount,
-            //     now,
-            // ));
+            <Joy<T> as Currency<T::AccountId>>::transfer(
+                &treasury_account,
+                &sender,
+                dividend_amount,
+                ExistenceRequirement::KeepAlive,
+            )?;
 
-            // Ok(())
+            AccountInfoByTokenAndAccount::<T>::mutate(token_id, &sender, |account_info| {
+                account_info.unstake()
+            });
+
+            Self::deposit_event(RawEvent::UserClaimedRevenueSplit(
+                token_id,
+                sender,
+                dividend_amount,
+                staking_info.split_id,
+            ));
+
+            Ok(())
         }
 
         /// Unreserve `amount` of token for `who`
@@ -805,6 +810,7 @@ impl<T: Trait>
     /// - `duration` must be >= `T::MinRevenueSplitDuration`
     /// - specified `reserve_source` must be able to *transfer* `allocation` amount of JOY
     /// - revenue split status for `token_id` must be inactive
+    /// - `allocation_amount` > 0
     ///
     /// PostConditions
     /// - `allocation` transferred from `reserve_source` to `treasury_account` for `token_id`
@@ -819,6 +825,7 @@ impl<T: Trait>
         allocation_source: T::AccountId,
         allocation_amount: JoyBalanceOf<T>,
     ) -> DispatchResult {
+        // TODO(ignazio, now): make impossible to allocate 0
         let token_info = Self::ensure_token_exists(token_id)?;
 
         token_info.revenue_split.ensure_inactive::<T>()?;
@@ -870,7 +877,10 @@ impl<T: Trait>
     fn finalize_revenue_split(token_id: T::TokenId, account_id: T::AccountId) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
 
-        let timeline = token_info.revenue_split.ensure_active::<T>()?;
+        let timeline = token_info
+            .revenue_split
+            .ensure_active::<T>()
+            .map(|info| info.timeline)?;
 
         let current_block = Self::current_block();
         ensure!(
@@ -1001,6 +1011,19 @@ impl<T: Trait> Module<T> {
 
     pub(crate) fn current_block() -> T::BlockNumber {
         <frame_system::Module<T>>::block_number()
+    }
+
+    /// Computes (staked_amount / supply) * allocation
+    /// Preconditions:
+    /// - supply > user_staked_amount > 0
+    /// - allocation > 0
+    pub(crate) fn compute_revenue_split_dividend(
+        user_staked_amount: TokenBalanceOf<T>,
+        supply: TokenBalanceOf<T>,
+        split_allocation: JoyBalanceOf<T>,
+    ) -> JoyBalanceOf<T> {
+        let perc_of_the_supply = Permill::from_rational_approximation(user_staked_amount, supply);
+        perc_of_the_supply.mul_floor(split_allocation)
     }
 
     pub(crate) fn try_init_sale(

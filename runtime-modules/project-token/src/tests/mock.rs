@@ -467,8 +467,8 @@ pub const DEFAULT_SALE_DURATION: u64 = 100;
 pub const DEFAULT_SALE_PURCHASE_AMOUNT: u128 = 1000;
 pub const DEFAULT_SPLIT_ALLOCATION: u128 = 1000;
 pub const DEFAULT_SPLIT_DURATION: u64 = 100;
-pub const DEFAULT_SPLIT_PARTICIPATION: u128 = 10_000;
-pub const DEFAULT_SPLIT_JOY_DIVIDEND: u128 = 10; // (participation / issuance) * allocation
+pub const DEFAULT_SPLIT_PARTICIPATION: u128 = 100_000;
+pub const DEFAULT_SPLIT_JOY_DIVIDEND: u128 = 100; // (participation / issuance) * allocation
 
 // ------ Storage Constants ------------------
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;

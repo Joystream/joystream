@@ -166,7 +166,7 @@ fn issue_split_ok_with_revenue_split_correctly_activated() {
         assert!(matches!(
             Token::token_info_by_id(1u64).revenue_split,
             RevenueSplitState::<_, _>::Active(RevenueSplitInfo::<_, _> {
-                allocation_left: DEFAULT_SPLIT_ALLOCATION,
+                allocation: DEFAULT_SPLIT_ALLOCATION,
                 timeline: Timeline::<_> {
                     start: 1u64,
                     duration: DEFAULT_SPLIT_DURATION,
@@ -599,6 +599,11 @@ fn claim_revenue_split_fails_with_attempt_to_claim_dividends_related_to_previous
         FinalizeRevenueSplitFixture::default()
             .execute_call()
             .unwrap(); // revenue split now inactive
+        IssueRevenueSplitFixture::default()
+            .with_starting_block(System::block_number())
+            .execute_call()
+            .unwrap(); // issue new split
+        increase_block_number_by(DEFAULT_SPLIT_DURATION);
 
         let result = ClaimRevenueSplitAmountFixture::default().execute_call();
 
@@ -670,6 +675,11 @@ fn claim_revenue_split_ok_with_dividends_transferred_to_claimer_joy_balance() {
         ParticipateToSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
 
+        println!(
+            "main treasury account balance:{:?}",
+            Joy::<Test>::usable_balance(Token::bloat_bond_treasury_account_id())
+        );
+
         ClaimRevenueSplitAmountFixture::default()
             .execute_call()
             .unwrap();
@@ -677,434 +687,120 @@ fn claim_revenue_split_ok_with_dividends_transferred_to_claimer_joy_balance() {
         // dividend transferred from treasury to claimer account
         assert_eq!(
             Joy::<Test>::usable_balance(OTHER_ACCOUNT_ID),
-            DEFAULT_SPLIT_JOY_DIVIDEND + ExistentialDeposit::get()
+            DEFAULT_SPLIT_JOY_DIVIDEND,
         );
         // split treasury account decreased
         assert_eq!(
             Joy::<Test>::usable_balance(treasury_account_for(1u64)),
             DEFAULT_SPLIT_ALLOCATION - DEFAULT_SPLIT_JOY_DIVIDEND + ExistentialDeposit::get()
         );
-        // module main account should not be influenced by split operations
-        assert_eq!(
-            Joy::<Test>::usable_balance(Token::bloat_bond_treasury_account_id()),
-            ExistentialDeposit::get() + ExistentialDeposit::get(),
-        );
     })
 }
 
-// #[test]
-// fn claim_split_revenue_fails_with_invalid_token_id() {
-//     let (token_id, issuance) = (token!(1), balance!(1_000));
-//     let timeline = timeline!(block!(1), block!(10));
-//     let (treasury, allocation, percentage) = (treasury!(token_id), joys!(50), percent!(10));
-//     let (participant_id, staked) = (account!(2), balance!(100));
-
-//     let token_data = TokenDataBuilder::new_empty()
-//         .with_issuance(issuance)
-//         .with_revenue_split(timeline.clone(), percentage)
-//         .build();
-//     let config = GenesisConfigBuilder::new_empty()
-//         .with_token(token_id, token_data)
-//         .with_account(participant_id, 0, staked)
-//         .build();
-
-//     build_test_externalities(config).execute_with(|| {
-//         increase_account_balance(treasury, allocation);
-//         increase_block_number_by(timeline.end());
-
-//         let result =
-//             <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_revenue_split_amount(
-//                 token_id + 1,
-//                 participant_id,
-//             );
-
-//         assert_noop!(result, Error::<Test>::TokenDoesNotExist);
-//     })
-// }
-
-// #[test]
-// fn claim_split_revenue_fails_with_invalid_account_id() {
-//     let (token_id, issuance) = (token!(1), balance!(1_000));
-//     let timeline = timeline!(block!(1), block!(10));
-//     let (treasury, allocation, percentage) = (treasury!(token_id), joys!(50), percent!(10));
-//     let (participant_id, staked) = (account!(2), balance!(100));
-
-//     let token_data = TokenDataBuilder::new_empty()
-//         .with_issuance(issuance)
-//         .with_revenue_split(timeline.clone(), percentage)
-//         .build();
-//     let config = GenesisConfigBuilder::new_empty()
-//         .with_token(token_id, token_data)
-//         .with_account(participant_id, 0, staked)
-//         .build();
-
-//     build_test_externalities(config).execute_with(|| {
-//         increase_account_balance(treasury, allocation);
-//         increase_block_number_by(timeline.end());
-
-//         let result =
-//             <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_revenue_split_amount(
-//                 token_id,
-//                 participant_id + 1,
-//             );
-
-//         assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
-//     })
-// }
-
-// #[test]
-// fn claim_split_revenue_fails_with_inactive_revenue_split_state() {
-//     let (token_id, issuance) = (token!(1), balance!(1_000));
-//     let timeline = timeline!(block!(1), block!(10));
-//     let (treasury, allocation, _percentage) = (treasury!(token_id), joys!(50), percent!(10));
-//     let (participant_id, staked) = (account!(2), balance!(100));
-
-//     let token_data = TokenDataBuilder::new_empty()
-//         .with_issuance(issuance)
-//         .build();
-//     let config = GenesisConfigBuilder::new_empty()
-//         .with_token(token_id, token_data)
-//         .with_account(participant_id, 0, staked)
-//         .build();
-
-//     build_test_externalities(config).execute_with(|| {
-//         increase_account_balance(treasury, allocation);
-//         increase_block_number_by(timeline.end());
-
-//         let result =
-//             <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_revenue_split_amount(
-//                 token_id,
-//                 participant_id + 1,
-//             );
-
-//         assert_noop!(result, Error::<Test>::RevenueSplitNotActiveForToken);
-//     })
-// }
-
-// #[test]
-// fn claim_split_revenue_fails_with_active_state_and_timeline_not_ended() {
-//     let (token_id, issuance) = (token!(1), balance!(1_000));
-//     let timeline = timeline!(block!(1), block!(10));
-//     let (treasury, allocation, percentage) = (treasury!(token_id), joys!(50), percent!(10));
-//     let (participant_id, staked) = (account!(2), balance!(100));
-
-//     let token_data = TokenDataBuilder::new_empty()
-//         .with_issuance(issuance)
-//         .with_revenue_split(timeline.clone(), percentage)
-//         .build();
-//     let config = GenesisConfigBuilder::new_empty()
-//         .with_token(token_id, token_data)
-//         .with_account(participant_id, 0, staked)
-//         .build();
-
-//     build_test_externalities(config).execute_with(|| {
-//         increase_account_balance(treasury, allocation);
-//         increase_block_number_by(timeline.end() - 1);
-
-//         let result =
-//             <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_revenue_split_amount(
-//                 token_id,
-//                 participant_id,
-//             );
-
-//         assert_noop!(result, Error::<Test>::RevenueSplitDidNotEnd);
-//     })
-// }
-
-// #[test]
-// fn claim_split_revenue_ok() {
-//     let (token_id, issuance) = (token!(1), balance!(1_000));
-//     let timeline = timeline!(block!(1), block!(10));
-//     let (treasury, allocation, percentage) = (treasury!(token_id), joys!(50), percent!(10));
-//     let (participant_id, staked, _revenue) = (account!(2), balance!(100), joys!(10));
-
-//     let token_data = TokenDataBuilder::new_empty()
-//         .with_issuance(issuance)
-//         .with_revenue_split(timeline.clone(), percentage)
-//         .build();
-//     let config = GenesisConfigBuilder::new_empty()
-//         .with_token(token_id, token_data)
-//         .with_account(participant_id, 0, staked)
-//         .build();
-
-//     build_test_externalities(config).execute_with(|| {
-//         increase_account_balance(treasury, allocation);
-//         increase_block_number_by(timeline.end());
-
-//         let result =
-//             <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_revenue_split_amount(
-//                 token_id,
-//                 participant_id,
-//             );
-
-//         assert_ok!(result);
-//     })
-// }
-
-// #[test]
-// fn claim_split_revenue_ok_with_no_balance_staked() {
-//     let (token_id, issuance) = (token!(1), balance!(1_000));
-//     let timeline = timeline!(block!(1), block!(10));
-//     let (treasury, allocation, percentage) = (treasury!(token_id), joys!(50), percent!(10));
-//     let (participant_id, _staked, _revenue) = (account!(2), balance!(100), joys!(10));
-
-//     let token_data = TokenDataBuilder::new_empty()
-//         .with_issuance(issuance)
-//         .with_revenue_split(timeline.clone(), percentage)
-//         .build();
-//     let config = GenesisConfigBuilder::new_empty()
-//         .with_token(token_id, token_data)
-//         .with_account(participant_id, balance!(0), balance!(0))
-//         .build();
-
-//     build_test_externalities(config).execute_with(|| {
-//         increase_account_balance(treasury, allocation);
-//         increase_block_number_by(timeline.end());
-
-//         let result =
-//             <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_revenue_split_amount(
-//                 token_id,
-//                 participant_id,
-//             );
-
-//         assert_ok!(result);
-//     })
-// }
-
-// #[test]
-// fn claim_split_revenue_ok_with_event_deposit() {
-//     let (token_id, pre_issuance) = (token!(1), balance!(900));
-//     let timeline = timeline!(block!(1), block!(10));
-//     let (treasury, allocation, percentage) = (treasury!(token_id), joys!(1000), percent!(10));
-//     let (participant_id, staked, revenue) = (account!(2), balance!(100), joys!(10));
-
-//     let token_data = TokenDataBuilder::new_empty()
-//         .with_issuance(pre_issuance)
-//         .with_revenue_split(timeline.clone(), percentage)
-//         .build();
-//     let config = GenesisConfigBuilder::new_empty()
-//         .with_token(token_id, token_data)
-//         .with_account(participant_id, 0, staked) // total issuance = pre_issuance + staked
-//         .build();
-
-//     build_test_externalities(config).execute_with(|| {
-//         increase_account_balance(treasury, allocation);
-//         increase_block_number_by(timeline.end());
-
-//         let _ =
-//             <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_revenue_split_amount(
-//                 token_id,
-//                 participant_id,
-//             );
-
-//         last_event_eq!(RawEvent::UserClaimedRevenueSplit(
-//             token_id,
-//             participant_id,
-//             revenue,
-//             timeline.end() + 1 // end + starting block
-//         ));
-//     })
-// }
-
-// #[test]
-// fn claim_split_revenue_ok_with_treasury_funds_decreased() {
-//     let (token_id, pre_issuance) = (token!(1), balance!(900));
-//     let timeline = timeline!(block!(1), block!(10));
-//     let (treasury, allocation, percentage) = (treasury!(token_id), joys!(1000), percent!(10));
-//     let (participant_id, staked, revenue) = (account!(2), balance!(100), joys!(10));
-
-//     let token_data = TokenDataBuilder::new_empty()
-//         .with_issuance(pre_issuance)
-//         .with_revenue_split(timeline.clone(), percentage)
-//         .build();
-//     let config = GenesisConfigBuilder::new_empty()
-//         .with_token(token_id, token_data)
-//         .with_account(participant_id, 0, staked) // total issuance = pre_issuance + staked
-//         .build();
-
-//     build_test_externalities(config).execute_with(|| {
-//         increase_account_balance(treasury, allocation);
-//         increase_block_number_by(timeline.end());
-
-//         let _ =
-//             <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_revenue_split_amount(
-//                 token_id,
-//                 participant_id,
-//             );
-//         assert_eq!(Balances::free_balance(treasury), allocation - revenue);
-//     })
-// }
-
-// #[test]
-// fn claim_split_revenue_ok_with_user_funds_increased() {
-//     let (token_id, pre_issuance) = (token!(1), balance!(900));
-//     let timeline = timeline!(block!(1), block!(10));
-//     let (treasury, allocation, percentage) = (treasury!(token_id), joys!(1000), percent!(10));
-//     let (participant_id, staked, revenue) = (account!(2), balance!(100), joys!(10));
-
-//     let token_data = TokenDataBuilder::new_empty()
-//         .with_issuance(pre_issuance)
-//         .with_revenue_split(timeline.clone(), percentage)
-//         .build();
-//     let config = GenesisConfigBuilder::new_empty()
-//         .with_token(token_id, token_data)
-//         .with_account(participant_id, 0, staked) // total_issuance = pre_issuance + staked
-//         .build();
-
-//     build_test_externalities(config).execute_with(|| {
-//         increase_account_balance(treasury, allocation);
-//         increase_block_number_by(timeline.end());
-
-//         let _ =
-//             <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_revenue_split_amount(
-//                 token_id,
-//                 participant_id,
-//             );
-//         assert_eq!(Balances::free_balance(participant_id), revenue);
-//     })
-// }
-
-// #[test]
-// fn claim_split_revenue_ok_with_user_reserved_amount_reset() {
-//     let (token_id, pre_issuance) = (token!(1), balance!(1_000));
-//     let timeline = timeline!(block!(1), block!(10));
-//     let (treasury, allocation, percentage) = (treasury!(token_id), joys!(1000), percent!(10));
-//     let (participant_id, staked, _revenue) = (account!(2), balance!(100), joys!(10));
-
-//     let token_data = TokenDataBuilder::new_empty()
-//         .with_issuance(pre_issuance)
-//         .with_revenue_split(timeline.clone(), percentage)
-//         .build();
-//     let config = GenesisConfigBuilder::new_empty()
-//         .with_token(token_id, token_data)
-//         .with_account(participant_id, 0, staked)
-//         .build();
-
-//     build_test_externalities(config).execute_with(|| {
-//         increase_account_balance(treasury, allocation);
-//         increase_block_number_by(timeline.end());
-
-//         let _ =
-//             <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_revenue_split_amount(
-//                 token_id,
-//                 participant_id,
-//             );
-//         assert_eq!(
-//             Token::account_info_by_token_and_account(token_id, participant_id).staked_balance,
-//             balance!(0)
-//         );
-//     })
-// }
-
-// #[test]
-// fn claim_split_revenue_ok_noop_with_user_having_no_stacked_funds() {
-//     let (token_id, pre_issuance) = (token!(1), balance!(900));
-//     let timeline = timeline!(block!(1), block!(10));
-//     let (treasury, allocation, percentage) = (treasury!(token_id), joys!(1000), percent!(10));
-//     let (participant_id, _staked, _revenue) = (account!(2), balance!(100), joys!(10));
-
-//     let token_data = TokenDataBuilder::new_empty()
-//         .with_issuance(pre_issuance)
-//         .with_revenue_split(timeline.clone(), percentage)
-//         .build();
-//     let config = GenesisConfigBuilder::new_empty()
-//         .with_token(token_id, token_data)
-//         .with_account(participant_id, 0, 0)
-//         .build();
-
-//     build_test_externalities(config).execute_with(|| {
-//         increase_account_balance(treasury, allocation);
-//         increase_block_number_by(timeline.end());
-
-//         let result =
-//             <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_revenue_split_amount(
-//                 token_id,
-//                 participant_id,
-//             );
-//         assert_ok!(result);
-//     })
-// }
-
-// #[test]
-// fn claim_split_revenue_ok_with_user_free_balance_increased() {
-//     let (token_id, issuance) = (token!(1), balance!(900));
-//     let timeline = timeline!(block!(1), block!(10));
-//     let (treasury, allocation, percentage) = (treasury!(token_id), joys!(1000), percent!(10));
-//     let (participant_id, staked, _revenue) = (account!(2), balance!(100), joys!(10));
-
-//     let token_data = TokenDataBuilder::new_empty()
-//         .with_issuance(issuance)
-//         .with_revenue_split(timeline.clone(), percentage)
-//         .build();
-//     let config = GenesisConfigBuilder::new_empty()
-//         .with_token(token_id, token_data)
-//         .with_account(participant_id, 0, staked)
-//         .build();
-
-//     build_test_externalities(config).execute_with(|| {
-//         increase_account_balance(treasury, allocation);
-//         increase_block_number_by(timeline.end());
-
-//         let _ =
-//             <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_revenue_split_amount(
-//                 token_id,
-//                 participant_id,
-//             );
-
-//         assert_eq!(
-//             Token::account_info_by_token_and_account(token_id, participant_id).liquidity,
-//             staked,
-//         );
-//     })
-// }
-
-// #[test]
-// fn abandon_revenue_splitd_fails_with_invalid_token_id() {
-//     let (token_id, pre_issuance) = (token!(1), balance!(900));
-//     let (participant_id, staked) = (account!(2), balance!(100));
-
-//     let token_data = TokenDataBuilder::new_empty()
-//         .with_issuance(pre_issuance)
-//         .build();
-//     let config = GenesisConfigBuilder::new_empty()
-//         .with_token(token_id, token_data)
-//         .with_account(participant_id, 0, staked)
-//         .build();
-
-//     build_test_externalities(config).execute_with(|| {
-//         let result =
-//             <Token as PalletToken<AccountId, Policy, IssuanceParams>>::abandon_revenue_split(
-//                 token_id + 1,
-//                 participant_id,
-//             );
-
-//         assert_noop!(result, Error::<Test>::TokenDoesNotExist);
-//     })
-// }
-
-// #[test]
-// fn abandon_revenue_splitd_fails_with_invalid_account_id() {
-//     let (token_id, pre_issuance) = (token!(1), balance!(900));
-//     let (participant_id, _staked) = (account!(2), balance!(100));
-
-//     let token_data = TokenDataBuilder::new_empty()
-//         .with_issuance(pre_issuance)
-//         .build();
-//     let config = GenesisConfigBuilder::new_empty()
-//         .with_token(token_id, token_data)
-//         .build();
-
-//     build_test_externalities(config).execute_with(|| {
-//         let result =
-//             <Token as PalletToken<AccountId, Policy, IssuanceParams>>::abandon_revenue_split(
-//                 token_id,
-//                 participant_id,
-//             );
-
-//         assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
-//     })
-// }
-
+#[test]
+fn abandon_revenue_splitd_fails_with_invalid_token_id() {
+    build_default_test_externalities_with_balances(vec![(
+        DEFAULT_ACCOUNT_ID,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap(); // send participation to other acc
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        ParticipateToSplitFixture::default().execute_call().unwrap();
+
+        let result = AbandonRevenueSplitFixture::default()
+            .with_token_id(2u64)
+            .execute_call();
+
+        assert_err!(result, Error::<Test>::TokenDoesNotExist);
+    })
+}
+#[test]
+fn abandon_revenue_splitd_fails_with_invalid_account_id() {
+    build_default_test_externalities_with_balances(vec![(
+        DEFAULT_ACCOUNT_ID,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap(); // send participation to other acc
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        ParticipateToSplitFixture::default().execute_call().unwrap();
+
+        let result = AbandonRevenueSplitFixture::default()
+            .with_account(OTHER_ACCOUNT_ID + 1)
+            .execute_call();
+
+        assert_err!(result, Error::<Test>::AccountInformationDoesNotExist);
+    })
+}
+
+#[test]
+fn abandon_revenue_split_fails_with_user_not_a_participant() {
+    build_default_test_externalities_with_balances(vec![(
+        DEFAULT_ACCOUNT_ID,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap(); // send participation to other acc
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+
+        let result = AbandonRevenueSplitFixture::default().execute_call();
+
+        assert_err!(result, Error::<Test>::UserNotAParticipantForTheSplit);
+    })
+}
+
+#[test]
+fn abandon_revenue_split_ok_with_event_deposit() {
+    build_default_test_externalities_with_balances(vec![(
+        DEFAULT_ACCOUNT_ID,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap(); // send participation to other acc
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        ParticipateToSplitFixture::default().execute_call().unwrap();
+
+        AbandonRevenueSplitFixture::default()
+            .execute_call()
+            .unwrap();
+
+        last_event_eq!(RawEvent::RevenueSplitAbandoned(
+            1u64,
+            OTHER_ACCOUNT_ID,
+            DEFAULT_SPLIT_PARTICIPATION
+        ));
+    })
+}
+
+#[test]
+fn abandon_revenue_split_ok_with_unstaking() {
+    build_default_test_externalities_with_balances(vec![(
+        DEFAULT_ACCOUNT_ID,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap(); // send participation to other acc
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        ParticipateToSplitFixture::default().execute_call().unwrap();
+
+        AbandonRevenueSplitFixture::default()
+            .execute_call()
+            .unwrap();
+
+        // staking status set back to None
+        assert!(
+            Token::account_info_by_token_and_account(1u64, OTHER_ACCOUNT_ID)
+                .split_staking_status
+                .is_none()
+        )
+    })
+}
 // #[test]
 // fn abandon_revenue_splitd_ok() {
 //     let (token_id, pre_issuance) = (token!(1), balance!(900));

@@ -105,15 +105,15 @@ pub struct TokenData<Balance, Hash, BlockNumber, TokenSale, RevenueSplitState> {
 
 /// Revenue Split State
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum RevenueSplitState<JoyBalance, BlockNumber> {
+pub enum RevenueSplitState<Balance, BlockNumber> {
     /// Inactive state: no split ongoing
     Inactive,
 
     /// Active state: split ongoing with info
-    Active(RevenueSplitInfo<JoyBalance, BlockNumber>),
+    Active(RevenueSplitInfo<Balance, BlockNumber>),
 }
 
-impl<JoyBalance, BlockNumber: Copy> RevenueSplitState<JoyBalance, BlockNumber> {
+impl<Balance: Copy, BlockNumber: Copy> RevenueSplitState<Balance, BlockNumber> {
     pub fn ensure_inactive<T: Trait>(&self) -> DispatchResult {
         ensure!(
             matches!(&self, &Self::Inactive),
@@ -123,10 +123,12 @@ impl<JoyBalance, BlockNumber: Copy> RevenueSplitState<JoyBalance, BlockNumber> {
         Ok(())
     }
 
-    pub fn ensure_active<T: Trait>(&self) -> Result<Timeline<BlockNumber>, DispatchError> {
+    pub fn ensure_active<T: Trait>(
+        &self,
+    ) -> Result<RevenueSplitInfo<Balance, BlockNumber>, DispatchError> {
         match &self {
             RevenueSplitState::Inactive => Err(Error::<T>::RevenueSplitNotActiveForToken.into()),
-            RevenueSplitState::<JoyBalance, BlockNumber>::Active(info) => Ok(info.timeline.clone()),
+            RevenueSplitState::<Balance, BlockNumber>::Active(info) => Ok(info.to_owned()),
         }
     }
 }
@@ -135,7 +137,7 @@ impl<JoyBalance, BlockNumber: Copy> RevenueSplitState<JoyBalance, BlockNumber> {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct RevenueSplitInfo<Balance, BlockNumber> {
     /// Remaning allocation
-    pub(crate) allocation_left: Balance,
+    pub(crate) allocation: Balance,
 
     /// Split timeline [start, start + duration)
     pub(crate) timeline: Timeline<BlockNumber>,
@@ -144,7 +146,7 @@ pub struct RevenueSplitInfo<Balance, BlockNumber> {
 impl<Balance, BlockNumber: Copy + PartialOrd + Saturating> RevenueSplitState<Balance, BlockNumber> {
     pub fn activate(&mut self, allocation: Balance, timeline: Timeline<BlockNumber>) {
         *self = RevenueSplitState::<_, _>::Active(RevenueSplitInfo {
-            allocation_left: allocation,
+            allocation,
             timeline,
         });
     }
@@ -702,14 +704,14 @@ where
             .sum()
     }
 
-    /// Calculate account's staked balance at block `b`
-    pub(crate) fn staked<T: Trait<Balance = Balance, BlockNumber = BlockNumber>>(
+    /// Ensure user is a valid revenue split participant, namely:
+    /// - staking status is Some
+    pub(crate) fn ensure_account_is_valid_split_participant<T: Trait>(
         &self,
-        b: BlockNumber,
-    ) -> Balance {
+    ) -> Result<StakingStatus<Balance>, DispatchError> {
         self.split_staking_status
-            .as_ref()
-            .map_or(Balance::zero(), |s| s.locks(b))
+            .clone()
+            .ok_or(Error::<T>::UserNotAParticipantForTheSplit.into())
     }
 
     /// Determine Wether user can stake `amount` of tokens
@@ -731,13 +733,24 @@ where
         self.split_staking_status = Some(StakingStatus { split_id, amount });
     }
 
+    /// Set self.staking status to None
+    pub(crate) fn unstake(&mut self) {
+        self.split_staking_status = None;
+    }
+
     /// Calculate account's transferrable balance at block `b`
     pub(crate) fn transferrable<T: Trait<Balance = Balance, BlockNumber = BlockNumber>>(
         &self,
         b: BlockNumber,
     ) -> Balance {
         self.amount
-            .saturating_sub(max(self.unvested::<T>(b), self.staked::<T>(b)))
+            .saturating_sub(max(self.unvested::<T>(b), self.staked()))
+    }
+
+    pub(crate) fn staked(&self) -> Balance {
+        self.split_staking_status
+            .as_ref()
+            .map_or(Balance::zero(), |info| info.amount)
     }
 
     pub(crate) fn ensure_can_add_or_update_vesting_schedule<
