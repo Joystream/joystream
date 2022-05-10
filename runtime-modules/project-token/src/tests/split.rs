@@ -305,7 +305,7 @@ fn finalize_split_ok_with_leftover_joys_transferred_to_account() {
 }
 
 #[test]
-fn participate_to_split_failst_with_invalid_token_id() {
+fn participate_in_split_failst_with_invalid_token_id() {
     build_default_test_externalities_with_balances(vec![(
         DEFAULT_ACCOUNT_ID,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get() + DEFAULT_BLOAT_BOND,
@@ -315,7 +315,7 @@ fn participate_to_split_failst_with_invalid_token_id() {
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
 
-        let result = ParticipateToSplitFixture::default()
+        let result = ParticipateInSplitFixture::default()
             .with_token_id(2u64)
             .execute_call();
 
@@ -324,7 +324,7 @@ fn participate_to_split_failst_with_invalid_token_id() {
 }
 
 #[test]
-fn participate_to_split_fails_with_non_existing_account() {
+fn participate_in_split_fails_with_non_existing_account() {
     build_default_test_externalities_with_balances(vec![(
         DEFAULT_ACCOUNT_ID,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get() + DEFAULT_BLOAT_BOND,
@@ -334,7 +334,7 @@ fn participate_to_split_fails_with_non_existing_account() {
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
 
-        let result = ParticipateToSplitFixture::default()
+        let result = ParticipateInSplitFixture::default()
             .with_sender(OTHER_ACCOUNT_ID + 1)
             .execute_call();
 
@@ -343,7 +343,7 @@ fn participate_to_split_fails_with_non_existing_account() {
 }
 
 #[test]
-fn participate_to_split_fails_with_token_having_inactive_revenue_split_status() {
+fn participate_in_split_fails_with_token_having_inactive_revenue_split_status() {
     build_default_test_externalities_with_balances(vec![(
         DEFAULT_ACCOUNT_ID,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get() + DEFAULT_BLOAT_BOND,
@@ -352,14 +352,14 @@ fn participate_to_split_fails_with_token_having_inactive_revenue_split_status() 
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
 
-        let result = ParticipateToSplitFixture::default().execute_call();
+        let result = ParticipateInSplitFixture::default().execute_call();
 
         assert_err!(result, Error::<Test>::RevenueSplitNotActiveForToken);
     })
 }
 
 #[test]
-fn participate_to_split_fails_with_ended_revenue_split_period() {
+fn participate_in_split_fails_with_ended_revenue_split_period() {
     build_default_test_externalities_with_balances(vec![(
         DEFAULT_ACCOUNT_ID,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get() + DEFAULT_BLOAT_BOND,
@@ -370,14 +370,14 @@ fn participate_to_split_fails_with_ended_revenue_split_period() {
         IssueRevenueSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
 
-        let result = ParticipateToSplitFixture::default().execute_call();
+        let result = ParticipateInSplitFixture::default().execute_call();
 
         assert_err!(result, Error::<Test>::RevenueSplitNotOngoing);
     })
 }
 
 #[test]
-fn participate_to_split_fails_with_revenue_not_started_yet() {
+fn participate_in_split_fails_with_revenue_not_started_yet() {
     build_default_test_externalities_with_balances(vec![(
         DEFAULT_ACCOUNT_ID,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get() + DEFAULT_BLOAT_BOND,
@@ -390,14 +390,14 @@ fn participate_to_split_fails_with_revenue_not_started_yet() {
             .execute_call()
             .unwrap();
 
-        let result = ParticipateToSplitFixture::default().execute_call();
+        let result = ParticipateInSplitFixture::default().execute_call();
 
         assert_err!(result, Error::<Test>::RevenueSplitNotOngoing);
     })
 }
 
 #[test]
-fn participate_to_split_fails_with_user_already_a_participant() {
+fn participate_in_split_fails_with_user_already_a_participant() {
     build_default_test_externalities_with_balances(vec![(
         DEFAULT_ACCOUNT_ID,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get() + DEFAULT_BLOAT_BOND,
@@ -406,16 +406,16 @@ fn participate_to_split_fails_with_user_already_a_participant() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
-        ParticipateToSplitFixture::default().execute_call().unwrap();
+        ParticipateInSplitFixture::default().execute_call().unwrap();
 
-        let result = ParticipateToSplitFixture::default().execute_call();
+        let result = ParticipateInSplitFixture::default().execute_call();
 
         assert_err!(result, Error::<Test>::UserAlreadyParticipating);
     })
 }
 
 #[test]
-fn participate_to_split_fails_with_user_having_insufficient_token_amount() {
+fn participate_in_split_fails_with_user_having_insufficient_token_amount() {
     build_default_test_externalities_with_balances(vec![(
         DEFAULT_ACCOUNT_ID,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get() + DEFAULT_BLOAT_BOND,
@@ -425,7 +425,7 @@ fn participate_to_split_fails_with_user_having_insufficient_token_amount() {
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
 
-        let result = ParticipateToSplitFixture::default()
+        let result = ParticipateInSplitFixture::default()
             .with_amount(DEFAULT_SPLIT_PARTICIPATION + 100u128)
             .execute_call();
 
@@ -437,7 +437,7 @@ fn participate_to_split_fails_with_user_having_insufficient_token_amount() {
 }
 
 #[test]
-fn participate_to_split_ok_with_event_deposit() {
+fn participate_in_split_ok_with_event_deposit() {
     build_default_test_externalities_with_balances(vec![(
         DEFAULT_ACCOUNT_ID,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
@@ -447,9 +447,9 @@ fn participate_to_split_ok_with_event_deposit() {
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
 
-        ParticipateToSplitFixture::default().execute_call().unwrap();
+        ParticipateInSplitFixture::default().execute_call().unwrap();
 
-        last_event_eq!(RawEvent::UserParticipatedToSplit(
+        last_event_eq!(RawEvent::UserParticipatedInSplit(
             1u64,
             OTHER_ACCOUNT_ID,
             DEFAULT_SPLIT_PARTICIPATION,
@@ -458,7 +458,7 @@ fn participate_to_split_ok_with_event_deposit() {
 }
 
 #[test]
-fn participate_to_split_ok_with_amount_staked() {
+fn participate_in_split_ok_with_amount_staked() {
     build_default_test_externalities_with_balances(vec![(
         DEFAULT_ACCOUNT_ID,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
@@ -468,7 +468,7 @@ fn participate_to_split_ok_with_amount_staked() {
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
 
-        ParticipateToSplitFixture::default().execute_call().unwrap();
+        ParticipateInSplitFixture::default().execute_call().unwrap();
 
         // verify that amount is staked
         assert!(matches!(
@@ -501,7 +501,7 @@ fn claim_revenue_split_fails_with_invalid_token_id() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
-        ParticipateToSplitFixture::default().execute_call().unwrap();
+        ParticipateInSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
 
         let result = ClaimRevenueSplitAmountFixture::default()
@@ -522,7 +522,7 @@ fn claim_revenue_split_fails_with_invalid_account_id() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
-        ParticipateToSplitFixture::default().execute_call().unwrap();
+        ParticipateInSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
 
         let result = ClaimRevenueSplitAmountFixture::default()
@@ -559,7 +559,7 @@ fn claim_revenue_split_fails_with_participation_period_not_ended() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
-        ParticipateToSplitFixture::default().execute_call().unwrap();
+        ParticipateInSplitFixture::default().execute_call().unwrap();
 
         let result = ClaimRevenueSplitAmountFixture::default().execute_call();
 
@@ -595,7 +595,7 @@ fn claim_revenue_split_fails_with_attempt_to_claim_dividends_related_to_previous
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
-        ParticipateToSplitFixture::default().execute_call().unwrap();
+        ParticipateInSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(DEFAULT_SPLIT_DURATION + 10);
         FinalizeRevenueSplitFixture::default()
             .execute_call()
@@ -622,7 +622,7 @@ fn claim_revenue_split_ok_with_event_deposit() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
-        ParticipateToSplitFixture::default().execute_call().unwrap();
+        ParticipateInSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
 
         ClaimRevenueSplitAmountFixture::default()
@@ -648,7 +648,7 @@ fn claim_revenue_split_ok_with_amount_unstaked() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
-        ParticipateToSplitFixture::default().execute_call().unwrap();
+        ParticipateInSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
 
         ClaimRevenueSplitAmountFixture::default()
@@ -673,7 +673,7 @@ fn claim_revenue_split_ok_with_dividends_transferred_to_claimer_joy_balance() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
-        ParticipateToSplitFixture::default().execute_call().unwrap();
+        ParticipateInSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
 
         ClaimRevenueSplitAmountFixture::default()
@@ -711,7 +711,7 @@ fn abandon_revenue_splitd_fails_with_invalid_token_id() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
-        ParticipateToSplitFixture::default().execute_call().unwrap();
+        ParticipateInSplitFixture::default().execute_call().unwrap();
 
         let result = AbandonRevenueSplitFixture::default()
             .with_token_id(2u64)
@@ -730,7 +730,7 @@ fn abandon_revenue_splitd_fails_with_invalid_account_id() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
-        ParticipateToSplitFixture::default().execute_call().unwrap();
+        ParticipateInSplitFixture::default().execute_call().unwrap();
 
         let result = AbandonRevenueSplitFixture::default()
             .with_account(OTHER_ACCOUNT_ID + 1)
@@ -767,7 +767,7 @@ fn abandon_revenue_split_ok_with_event_deposit() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
-        ParticipateToSplitFixture::default().execute_call().unwrap();
+        ParticipateInSplitFixture::default().execute_call().unwrap();
 
         AbandonRevenueSplitFixture::default()
             .execute_call()
@@ -791,7 +791,7 @@ fn abandon_revenue_split_ok_with_unstaking() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
-        ParticipateToSplitFixture::default().execute_call().unwrap();
+        ParticipateInSplitFixture::default().execute_call().unwrap();
 
         AbandonRevenueSplitFixture::default()
             .execute_call()

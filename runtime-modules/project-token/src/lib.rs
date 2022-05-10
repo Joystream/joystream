@@ -424,7 +424,7 @@ decl_module! {
             Ok(())
         }
 
-        /// Participate to the *latest* token revenue split (if ongoing)
+        /// Participate in the *latest* token revenue split (if ongoing)
         /// Preconditions:
         /// - `token` must exist for `token_id`
         /// - `account` must exist  for `(token_id, sender)` with `origin` signed by `sender`
@@ -437,7 +437,7 @@ decl_module! {
         /// - `account.staking_status` set to Some(..) with `amount` and `token.latest_split`
         /// no-op if `amount.is_zero()`
         #[weight = 10_000_000] // TODO: adjust weight
-        fn participate_to_split(
+        fn participate_in_split(
             origin,
             token_id: T::TokenId,
             amount: TokenBalanceOf<T>,
@@ -467,7 +467,7 @@ decl_module! {
                 account_info.stake(token_info.latest_revenue_split_id, amount);
             });
 
-            Self::deposit_event(RawEvent::UserParticipatedToSplit(
+            Self::deposit_event(RawEvent::UserParticipatedInSplit(
                 token_id,
                 sender,
                 amount,

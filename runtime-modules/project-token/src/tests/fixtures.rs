@@ -683,13 +683,13 @@ impl FinalizeRevenueSplitFixture {
     }
 }
 
-pub struct ParticipateToSplitFixture {
+pub struct ParticipateInSplitFixture {
     sender: AccountId,
     token_id: TokenId,
     amount: Balance,
 }
 
-impl ParticipateToSplitFixture {
+impl ParticipateInSplitFixture {
     pub fn default() -> Self {
         Self {
             sender: OTHER_ACCOUNT_ID.into(),
@@ -722,7 +722,7 @@ impl ParticipateToSplitFixture {
     pub fn execute_call(&self) -> DispatchResult {
         let state_pre = sp_io::storage::root();
         let result =
-            Token::participate_to_split(Origin::signed(self.sender), self.token_id, self.amount);
+            Token::participate_in_split(Origin::signed(self.sender), self.token_id, self.amount);
         let state_post = sp_io::storage::root();
 
         // no-op in case of error

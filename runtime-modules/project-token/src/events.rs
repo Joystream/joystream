@@ -45,19 +45,19 @@ decl_event! {
         /// - JOY allocated for the split
         RevenueSplitIssued(TokenId, BlockNumber, BlockNumber, JoyBalance),
 
-        /// Revenue Split issued
+        /// Revenue Split finalized
         /// Params:
         /// - token identifier
         /// - recovery account for the leftover funds
         /// - leftover funds
         RevenueSplitFinalized(TokenId, AccountId, JoyBalance),
 
-        /// Revenue Split issued
+        /// User partipated in a revenue split
         /// Params:
         /// - token identifier
         /// - user account
-        /// - user allocated reserved balance
-        UserParticipatedToSplit(TokenId, AccountId, Balance),
+        /// - user allocated staked balance
+        UserParticipatedInSplit(TokenId, AccountId, Balance),
 
         /// User claimed revenue split
         /// Params:
@@ -71,7 +71,7 @@ decl_event! {
         /// Params:
         /// - token identifier
         /// - user account id
-        /// - amount previously staked
+        /// - amount unstaked
         RevenueSplitLeft(TokenId, AccountId, Balance),
 
         /// Member joined whitelist
