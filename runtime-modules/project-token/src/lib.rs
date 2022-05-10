@@ -420,6 +420,150 @@ decl_module! {
 
             Ok(())
         }
+
+        /// Participate to the *latest* token revenue split (if ongoing)
+        /// Preconditions:
+        /// - `token` must exist for `token_id`
+        /// - `account` must exist  for `(token_id, sender)` with `origin` signed by `sender`
+        /// - `token.split_status` must be active AND THEN current_block in
+        ///    [split.start, split.start + split_duration)
+        /// - `account.staking_status.is_none()`
+        /// - `account.amount` >= `amount`
+        ///
+        /// Postconditions:
+        /// - `account.staking_status` set to Some(..) with `amount` and `token.latest_split`
+        /// no-op if `amount.is_zero()`
+        #[weight = 10_000_000] // TODO: adjust weight
+        fn participate_to_split(
+            origin,
+            token_id: T::TokenId,
+            amount: TokenBalanceOf<T>,
+        ) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            if amount.is_zero() { return Ok(()) }
+
+            let token_info = Self::ensure_token_exists(token_id)?;
+
+            let timeline = token_info.revenue_split.ensure_active::<T>()?;
+            let current_block = Self::current_block();
+            ensure!(
+                timeline.is_ongoing(current_block),
+                Error::<T>::RevenueSplitNotOngoing
+            );
+
+            let account_info = Self::ensure_account_data_exists(token_id, &sender)?;
+
+            account_info.ensure_can_stake::<T>(amount)?;
+
+            // == MUTATION SAFE ==
+
+            AccountInfoByTokenAndAccount::<T>::mutate(token_id, &sender, |account_info| {
+                account_info.stake(token_info.latest_revenue_split_id, amount);
+            });
+
+            Self::deposit_event(RawEvent::UserParticipatedToSplit(
+                token_id,
+                sender,
+                amount,
+            ));
+
+            Ok(())
+        }
+
+        /// Members can claim their split revenue
+        /// Preconditions
+        /// - `token` must exist for `token_id`
+        /// - `account` must exist for `(token_id, sender)` with `origin` signed by `sender`
+        /// - `token.revenue_split` is active
+        /// - `token.revenue_split` has ended
+        /// - `account.staking_status` is Some(..) with split_id == `token.latest_split`
+        /// - `token.issuance` > 0 in order to avoid computation errors
+        /// - let `dividend = split_allocation * account.staked_amount / token.supply``
+        ///    then `treasury` must be ablet to transfer `dividend` amount of JOY
+        ///
+        /// Postconditions
+        /// - `dividend` amount of JOYs transferred to `treasury_account` to `sender`
+        /// - `account.staking_status` set to None
+        /// - `token.allocation_left` -= `dividend`
+        /// - `account.amount` incresed by the staked amount
+        #[weight = 10_000_000] // TODO: adjust weight
+        fn claim_revenue_split_amount(origin, token_id: T::TokenId) -> DispatchResult {
+            todo!()
+            // let token_info = Self::ensure_token_exists(token_id)?;
+
+            // let (timeline, percentage) = token_info.revenue_split.ensure_active::<T>()?;
+            // let now = <frame_system::Module<T>>::block_number();
+            // // TODO(ignazio, now) change is_ongoing to has_ended
+            // ensure!(!timeline.is_ongoing(now), Error::<T>::RevenueSplitDidNotEnd);
+
+            // let account_info = Self::ensure_account_data_exists(token_id, &who)?;
+
+            // // no-op if reserve balance is zero
+            // if account_info.staked_balance.is_zero() {
+            //     return Ok(());
+            // }
+
+            // // == MUTATION SAFE ==
+
+            // let treasury_account: T::AccountId = T::ModuleId::get().into_sub_account(token_id);
+            // let allocation = T::ReserveCurrency::free_balance(&treasury_account);
+            // let revenue_amount = Self::compute_revenue_split_amount(
+            //     account_info.staked_balance,
+            //     token_info.current_total_issuance,
+            //     allocation,
+            //     percentage,
+            // );
+
+            // let _ = T::ReserveCurrency::transfer(
+            //     &treasury_account,
+            //     &who,
+            //     revenue_amount,
+            //     ExistenceRequirement::KeepAlive,
+            // );
+
+            // AccountInfoByTokenAndAccount::<T>::mutate(token_id, &who, |account_info| {
+            //     account_info.unstake()
+            // });
+
+            // Self::deposit_event(RawEvent::UserClaimedRevenueSplit(
+            //     token_id,
+            //     who,
+            //     revenue_amount,
+            //     now,
+            // ));
+
+            // Ok(())
+        }
+
+        /// Unreserve `amount` of token for `who`
+        /// Members can claim their split revenue
+        /// Preconditions
+        /// - `token` must exist for `token_id`
+        /// - `account` must exist for `(token_id, sender)` with `origin` signed by `sender`
+        /// - `account` staking status is Some(..)`
+        ///
+        /// Postconditions
+        /// - `account.staking_status` set to None
+        /// - `account.amount` incresed by the staked amount
+        #[weight = 10_000_000] // TODO: adjust weight
+        fn abandon_revenue_split(origin, token_id: T::TokenId) -> DispatchResult {
+            todo!()
+            // // ensure token validity
+            // Self::ensure_token_exists(token_id).map(|_| ())?;
+
+            // // ensure src account id validity
+            // let account_info = Self::ensure_account_data_exists(token_id, &who)?;
+            // let amount = account_info.staked_balance;
+
+            // // == MUTATION SAFE ==
+
+            // AccountInfoByTokenAndAccount::<T>::mutate(token_id, &who, |account_info| {
+            //     account_info.unstake();
+            // });
+
+            // Self::deposit_event(RawEvent::RevenueSplitAbandoned(token_id, who, amount));
+        }
     }
 }
 

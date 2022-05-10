@@ -102,5 +102,11 @@ decl_error! {
 
         /// Insufficient Treasury Balance revenue split claim
         InsufficientTreasuryBalanceForClaim,
+
+        /// User already participating in the revenue split
+        UserAlreadyParticipating,
+
+        /// User does not posses enough balance to participate in the revenue split
+        InsufficientBalanceForSplitParticipation,
     }
 }

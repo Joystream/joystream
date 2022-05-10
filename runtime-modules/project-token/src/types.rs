@@ -33,10 +33,10 @@ pub enum VestingSource {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
 pub struct StakingStatus<Balance> {
     // identifier for the split
-    split_id: RevenueSplitId,
+    pub(crate) split_id: RevenueSplitId,
 
     // The amount staked for the split
-    amount: Balance,
+    pub(crate) amount: Balance,
 }
 
 impl<Balance: Copy> StakingStatus<Balance> {
@@ -710,6 +710,25 @@ where
         self.split_staking_status
             .as_ref()
             .map_or(Balance::zero(), |s| s.locks(b))
+    }
+
+    /// Determine Wether user can stake `amount` of tokens
+    pub(crate) fn ensure_can_stake<T: Trait>(self, to_stake: Balance) -> DispatchResult {
+        ensure!(
+            self.split_staking_status.is_none(),
+            Error::<T>::UserAlreadyParticipating,
+        );
+
+        ensure!(
+            self.amount >= to_stake,
+            Error::<T>::InsufficientBalanceForSplitParticipation
+        );
+        Ok(())
+    }
+
+    /// Set self.staking_status to Some(..)
+    pub(crate) fn stake(&mut self, split_id: RevenueSplitId, amount: Balance) {
+        self.split_staking_status = Some(StakingStatus { split_id, amount });
     }
 
     /// Calculate account's transferrable balance at block `b`

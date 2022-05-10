@@ -34,6 +34,36 @@ decl_event! {
         /// - account
         PatronageCreditClaimed(TokenId, Balance, AccountId),
 
+        /// Revenue Split issued
+        /// Params:
+        /// - token identifier
+        /// - start of the split
+        /// - duration of the split
+        /// - JOY allocated for the split
+        RevenueSplitIssued(TokenId, BlockNumber, BlockNumber, JoyBalance),
+
+        /// Revenue Split issued
+        /// Params:
+        /// - token identifier
+        /// - recovery account for the leftover funds
+        /// - leftover funds
+        RevenueSplitFinalized(TokenId, AccountId, JoyBalance),
+
+        /// Revenue Split issued
+        /// Params:
+        /// - token identifier
+        /// - user account
+        /// - user allocated reserved balance
+        UserParticipatedToSplit(TokenId, AccountId, Balance),
+
+        /// User claimed revenue split
+        /// Params:
+        /// - token identifier
+        /// - user account
+        /// - Revenue Amount in JOY
+        /// - block height
+        UserClaimedRevenueSplit(TokenId, AccountId, JoyBalance, BlockNumber),
+
         /// Member joined whitelist
         /// Params:
         /// - token identifier

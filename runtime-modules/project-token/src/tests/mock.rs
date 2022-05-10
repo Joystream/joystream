@@ -451,6 +451,9 @@ pub type Token = crate::Module<Test>;
 pub type System = frame_system::Module<Test>;
 pub type Balances = balances::Module<Test>;
 
+// ------ General constants ---------------
+pub const DEFAULT_BLOAT_BOND: u128 = 0;
+
 // ------ Actors ---------------------------
 pub const DEFAULT_ACCOUNT_ID: u64 = 1;
 pub const OTHER_ACCOUNT_ID: u64 = 2;
@@ -464,6 +467,7 @@ pub const DEFAULT_SALE_DURATION: u64 = 100;
 pub const DEFAULT_SALE_PURCHASE_AMOUNT: u128 = 1000;
 pub const DEFAULT_SPLIT_ALLOCATION: u128 = 1000;
 pub const DEFAULT_SPLIT_DURATION: u64 = 100;
+pub const DEFAULT_SPLIT_PARTICIPATION: u128 = 100;
 
 // ------ Storage Constants ------------------
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;

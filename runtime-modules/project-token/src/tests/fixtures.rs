@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::tests::mock::*;
-use crate::types::Joy;
+use crate::types::{Joy, Payment, Transfers, TransfersOf};
 use crate::{last_event_eq, yearly_rate, AccountInfoByTokenAndAccount, RawEvent, YearlyRate};
 use crate::{traits::PalletToken, types::VestingSource, SymbolsUsed};
 use frame_support::dispatch::DispatchResult;
@@ -672,6 +672,101 @@ impl FinalizeRevenueSplitFixture {
     pub fn execute_call(&self) -> DispatchResult {
         let state_pre = sp_io::storage::root();
         let result = Token::finalize_revenue_split(self.token_id, self.account_id);
+        let state_post = sp_io::storage::root();
+
+        // no-op in case of error
+        if result.is_err() {
+            assert_eq!(state_pre, state_post)
+        }
+
+        result
+    }
+}
+
+pub struct ParticipateToSplitFixture {
+    sender: AccountId,
+    token_id: TokenId,
+    amount: Balance,
+}
+
+impl ParticipateToSplitFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: OTHER_ACCOUNT_ID.into(),
+            token_id: TokenId::one(),
+            amount: DEFAULT_SPLIT_PARTICIPATION.into(),
+        }
+    }
+
+    pub fn with_amount(self, amount: u128) -> Self {
+        Self {
+            amount: amount.into(),
+            ..self
+        }
+    }
+
+    pub fn with_token_id(self, token_id: u64) -> Self {
+        Self {
+            token_id: token_id.into(),
+            ..self
+        }
+    }
+
+    pub fn with_sender(self, account_id: u64) -> Self {
+        Self {
+            sender: account_id.into(),
+            ..self
+        }
+    }
+
+    pub fn execute_call(&self) -> DispatchResult {
+        let state_pre = sp_io::storage::root();
+        let result =
+            Token::participate_to_split(Origin::signed(self.sender), self.token_id, self.amount);
+        let state_post = sp_io::storage::root();
+
+        // no-op in case of error
+        if result.is_err() {
+            assert_eq!(state_pre, state_post)
+        }
+
+        result
+    }
+}
+
+pub struct TransferFixture {
+    sender: AccountId,
+    token_id: TokenId,
+    outputs: TransfersOf<Test>,
+}
+
+impl TransferFixture {
+    pub fn default() -> Self {
+        let outputs = Transfers::<_, _>(
+            vec![(
+                OTHER_ACCOUNT_ID,
+                Payment::<Balance> {
+                    remark: "remark".as_bytes().to_vec(),
+                    amount: DEFAULT_SPLIT_PARTICIPATION,
+                },
+            )]
+            .into_iter()
+            .collect(),
+        );
+        Self {
+            sender: DEFAULT_ACCOUNT_ID.into(),
+            token_id: 1u64.into(),
+            outputs,
+        }
+    }
+
+    pub fn execute_call(&self) -> DispatchResult {
+        let state_pre = sp_io::storage::root();
+        let result = Token::transfer(
+            Origin::signed(self.sender),
+            self.token_id,
+            self.outputs.clone(),
+        );
         let state_post = sp_io::storage::root();
 
         // no-op in case of error

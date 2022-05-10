@@ -98,7 +98,7 @@ impl GenesisConfigBuilder {
             account_info_by_token_and_account: vec![],
             next_token_id: TokenId::one(),
             symbol_used: vec![],
-            bloat_bond: JoyBalance::zero(),
+            bloat_bond: DEFAULT_BLOAT_BOND.into(),
         }
     }
 
