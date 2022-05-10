@@ -108,5 +108,11 @@ decl_error! {
 
         /// User does not posses enough balance to participate in the revenue split
         InsufficientBalanceForSplitParticipation,
+
+        /// User attempts to claim amount with an outdated split id
+        AttemptToClaimAmountForAPastSplit,
+
+        /// Attempt to claim revenue split by a non participant
+        UserNotAParticipantForTheSplit,
     }
 }

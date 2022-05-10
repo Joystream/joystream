@@ -477,16 +477,15 @@ decl_module! {
         /// - `account` must exist for `(token_id, sender)` with `origin` signed by `sender`
         /// - `token.revenue_split` is active
         /// - `token.revenue_split` has ended
+        /// - `account.staking_status.is_some()`
         /// - `account.staking_status` is Some(..) with split_id == `token.latest_split`
-        /// - `token.issuance` > 0 in order to avoid computation errors
         /// - let `dividend = split_allocation * account.staked_amount / token.supply``
-        ///    then `treasury` must be ablet to transfer `dividend` amount of JOY
+        ///    then `treasury` must be ablet to transfer `dividend` amount of JOY.
+        ///    This conditions technically, should always be satisfied
         ///
         /// Postconditions
         /// - `dividend` amount of JOYs transferred to `treasury_account` to `sender`
         /// - `account.staking_status` set to None
-        /// - `token.allocation_left` -= `dividend`
-        /// - `account.amount` incresed by the staked amount
         #[weight = 10_000_000] // TODO: adjust weight
         fn claim_revenue_split_amount(origin, token_id: T::TokenId) -> DispatchResult {
             todo!()

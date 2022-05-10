@@ -1,5 +1,6 @@
 use crate::types::{
-    TokenIssuanceParametersOf, TokenSaleId, TransferPolicyOf, Transfers, Validated,
+    JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId, TransferPolicyOf,
+    Transfers, Validated,
 };
 use frame_support::decl_event;
 use sp_runtime::Perquintill;
@@ -61,8 +62,8 @@ decl_event! {
         /// - token identifier
         /// - user account
         /// - Revenue Amount in JOY
-        /// - block height
-        UserClaimedRevenueSplit(TokenId, AccountId, JoyBalance, BlockNumber),
+        /// - Revenue split Id
+        UserClaimedRevenueSplit(TokenId, AccountId, JoyBalance, RevenueSplitId),
 
         /// Member joined whitelist
         /// Params:

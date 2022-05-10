@@ -490,6 +490,208 @@ fn participate_to_split_ok_with_amount_staked() {
     })
 }
 
+#[test]
+fn claim_revenue_split_fails_with_invalid_token_id() {
+    build_default_test_externalities_with_balances(vec![(
+        DEFAULT_ACCOUNT_ID,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap(); // send participation to other acc
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        ParticipateToSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(DEFAULT_SPLIT_DURATION);
+
+        let result = ClaimRevenueSplitAmountFixture::default()
+            .with_token_id(2u64)
+            .execute_call();
+
+        assert_err!(result, Error::<Test>::TokenDoesNotExist);
+    })
+}
+
+#[test]
+fn claim_revenue_split_fails_with_invalid_account_id() {
+    build_default_test_externalities_with_balances(vec![(
+        DEFAULT_ACCOUNT_ID,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap(); // send participation to other acc
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        ParticipateToSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(DEFAULT_SPLIT_DURATION);
+
+        let result = ClaimRevenueSplitAmountFixture::default()
+            .with_account(OTHER_ACCOUNT_ID + 1)
+            .execute_call();
+
+        assert_err!(result, Error::<Test>::AccountInformationDoesNotExist);
+    })
+}
+
+#[test]
+fn claim_revenue_split_fails_with_revenue_split_not_active() {
+    build_default_test_externalities_with_balances(vec![(
+        DEFAULT_ACCOUNT_ID,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap(); // send participation to other acc
+
+        let result = ClaimRevenueSplitAmountFixture::default().execute_call();
+
+        assert_err!(result, Error::<Test>::RevenueSplitNotActiveForToken);
+    })
+}
+
+#[test]
+fn claim_revenue_split_fails_with_participation_period_not_ended() {
+    build_default_test_externalities_with_balances(vec![(
+        DEFAULT_ACCOUNT_ID,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap(); // send participation to other acc
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        ParticipateToSplitFixture::default().execute_call().unwrap();
+
+        let result = ClaimRevenueSplitAmountFixture::default().execute_call();
+
+        assert_err!(result, Error::<Test>::RevenueSplitDidNotEnd);
+    })
+}
+
+#[test]
+fn claim_revenue_split_fails_with_user_not_participating_in_the_split() {
+    build_default_test_externalities_with_balances(vec![(
+        DEFAULT_ACCOUNT_ID,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap(); // send participation to other acc
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(DEFAULT_SPLIT_DURATION);
+
+        let result = ClaimRevenueSplitAmountFixture::default().execute_call();
+
+        assert_err!(result, Error::<Test>::UserNotAParticipantForTheSplit);
+    })
+}
+
+#[test]
+fn claim_revenue_split_fails_with_attempt_to_claim_dividends_related_to_previous_split() {
+    build_default_test_externalities_with_balances(vec![(
+        DEFAULT_ACCOUNT_ID,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap(); // send participation to other acc
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        ParticipateToSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(DEFAULT_SPLIT_DURATION + 10);
+        FinalizeRevenueSplitFixture::default()
+            .execute_call()
+            .unwrap(); // revenue split now inactive
+
+        let result = ClaimRevenueSplitAmountFixture::default().execute_call();
+
+        assert_err!(result, Error::<Test>::AttemptToClaimAmountForAPastSplit)
+    })
+}
+
+#[test]
+fn claim_revenue_split_ok_with_event_deposit() {
+    build_default_test_externalities_with_balances(vec![(
+        DEFAULT_ACCOUNT_ID,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap(); // send participation to other acc
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        ParticipateToSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(DEFAULT_SPLIT_DURATION);
+
+        ClaimRevenueSplitAmountFixture::default()
+            .execute_call()
+            .unwrap();
+
+        last_event_eq!(RawEvent::UserClaimedRevenueSplit(
+            1u64,
+            OTHER_ACCOUNT_ID,
+            DEFAULT_SPLIT_JOY_DIVIDEND,
+            1u32
+        ));
+    })
+}
+
+#[test]
+fn claim_revenue_split_ok_with_amount_unstaked() {
+    build_default_test_externalities_with_balances(vec![(
+        DEFAULT_ACCOUNT_ID,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap(); // send participation to other acc
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        ParticipateToSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(DEFAULT_SPLIT_DURATION);
+
+        ClaimRevenueSplitAmountFixture::default()
+            .execute_call()
+            .unwrap();
+
+        assert!(
+            Token::account_info_by_token_and_account(1u64, OTHER_ACCOUNT_ID)
+                .split_staking_status
+                .is_none()
+        );
+    })
+}
+
+#[test]
+fn claim_revenue_split_ok_with_dividends_transferred_to_claimer_joy_balance() {
+    build_default_test_externalities_with_balances(vec![(
+        DEFAULT_ACCOUNT_ID,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap(); // send participation to other acc
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        ParticipateToSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(DEFAULT_SPLIT_DURATION);
+
+        ClaimRevenueSplitAmountFixture::default()
+            .execute_call()
+            .unwrap();
+
+        // dividend transferred from treasury to claimer account
+        assert_eq!(
+            Joy::<Test>::usable_balance(OTHER_ACCOUNT_ID),
+            DEFAULT_SPLIT_JOY_DIVIDEND + ExistentialDeposit::get()
+        );
+        // split treasury account decreased
+        assert_eq!(
+            Joy::<Test>::usable_balance(treasury_account_for(1u64)),
+            DEFAULT_SPLIT_ALLOCATION - DEFAULT_SPLIT_JOY_DIVIDEND + ExistentialDeposit::get()
+        );
+        // module main account should not be influenced by split operations
+        assert_eq!(
+            Joy::<Test>::usable_balance(Token::bloat_bond_treasury_account_id()),
+            ExistentialDeposit::get() + ExistentialDeposit::get(),
+        );
+    })
+}
+
 // #[test]
 // fn claim_split_revenue_fails_with_invalid_token_id() {
 //     let (token_id, issuance) = (token!(1), balance!(1_000));
