@@ -1,5 +1,6 @@
 use crate::types::{
-    TokenIssuanceParametersOf, TokenSaleId, TransferPolicyOf, Transfers, Validated,
+    JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId, TransferPolicyOf,
+    Transfers, Validated,
 };
 use frame_support::decl_event;
 use sp_runtime::Perquintill;
@@ -8,8 +9,10 @@ decl_event! {
     pub enum Event<T>
     where
         Balance = <T as crate::Trait>::Balance,
+        JoyBalance = JoyBalanceOf<T>,
         TokenId = <T as crate::Trait>::TokenId,
         AccountId = <T as frame_system::Trait>::AccountId,
+        BlockNumber = <T as frame_system::Trait>::BlockNumber,
         TransferPolicy = TransferPolicyOf<T>,
         TokenIssuanceParameters = TokenIssuanceParametersOf<T>,
         ValidatedTransfers = Transfers<Validated<<T as frame_system::Trait>::AccountId>, <T as crate::Trait>::Balance>,
@@ -33,6 +36,37 @@ decl_event! {
         /// - credit amount
         /// - account
         PatronageCreditClaimed(TokenId, Balance, AccountId),
+
+        /// Revenue Split issued
+        /// Params:
+        /// - token identifier
+        /// - starting block for the split
+        /// - duration of the split
+        /// - JOY allocated for the split
+        RevenueSplitIssued(TokenId, BlockNumber, BlockNumber, JoyBalance),
+
+        /// Revenue Split finalized
+        /// Params:
+        /// - token identifier
+        /// - recovery account for the leftover funds
+        /// - leftover funds
+        RevenueSplitFinalized(TokenId, AccountId, JoyBalance),
+
+        /// User partipated in a revenue split
+        /// Params:
+        /// - token identifier
+        /// - user account
+        /// - user allocated staked balance
+        /// - dividend amount (JOY) granted
+        /// - revenue split identifier
+        UserParticipatedInSplit(TokenId, AccountId, Balance, JoyBalance, RevenueSplitId),
+
+        /// User left revenue split
+        /// Params:
+        /// - token identifier
+        /// - user account id
+        /// - amount unstaked
+        RevenueSplitLeft(TokenId, AccountId, Balance),
 
         /// Member joined whitelist
         /// Params:

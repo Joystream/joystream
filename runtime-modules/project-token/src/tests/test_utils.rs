@@ -6,8 +6,8 @@ use sp_std::collections::btree_map::BTreeMap;
 use crate::tests::mock::*;
 use crate::types::{
     AccountData, AccountDataOf, BlockRate, MerkleProof, MerkleSide, PatronageData, Payment,
-    TokenAllocation, TokenIssuanceParameters, TokenSaleId, TokenSaleOf, TransferPolicy,
-    TransferPolicyOf, Transfers,
+    RevenueSplitState, TokenAllocation, TokenIssuanceParameters, TokenSaleId, TokenSaleOf,
+    TransferPolicy, TransferPolicyOf, Transfers,
 };
 use crate::{balance, GenesisConfig};
 
@@ -20,6 +20,10 @@ pub struct TokenDataBuilder {
     pub(crate) patronage_info:
         PatronageData<<Test as crate::Trait>::Balance, <Test as frame_system::Trait>::BlockNumber>,
     pub(crate) symbol: <Test as frame_system::Trait>::Hash,
+    pub(crate) revenue_split: RevenueSplitState<
+        <Test as crate::Trait>::Balance,
+        <Test as frame_system::Trait>::BlockNumber,
+    >,
 }
 
 impl TokenDataBuilder {
@@ -33,6 +37,8 @@ impl TokenDataBuilder {
             patronage_info: self.patronage_info,
             symbol: self.symbol,
             accounts_number: 0u64,
+            revenue_split: self.revenue_split,
+            latest_revenue_split_id: 0u32,
         }
     }
 
@@ -80,6 +86,7 @@ impl TokenDataBuilder {
             },
             // hash of "default"
             symbol: <Test as frame_system::Trait>::Hash::default(),
+            revenue_split: RevenueSplitState::Inactive,
         }
     }
 }
@@ -91,7 +98,7 @@ impl GenesisConfigBuilder {
             account_info_by_token_and_account: vec![],
             next_token_id: TokenId::one(),
             symbol_used: vec![],
-            bloat_bond: JoyBalance::zero(),
+            bloat_bond: DEFAULT_BLOAT_BOND.into(),
         }
     }
 

@@ -640,7 +640,6 @@ impl crate::Trait for Test {
     type UnlockBlogPostProposalParameters = DefaultProposalParameters;
     type VetoProposalProposalParameters = DefaultProposalParameters;
     type UpdateChannelPayoutsProposalParameters = DefaultProposalParameters;
-    type UpdateNftLimitProposalParameters = DefaultProposalParameters;
 }
 
 parameter_types! {
@@ -911,9 +910,6 @@ impl crate::WeightInfo for () {
         0
     }
     fn create_proposal_update_channel_payouts(_: u32, _: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_update_nft_limit(_: u32, _: u32) -> Weight {
         0
     }
 }

@@ -21,6 +21,9 @@ pub trait PalletToken<
     /// Yearly rate used for expressing patronage rate
     type YearlyRate;
 
+    /// Joy Balance type
+    type ReserveBalance;
+
     /// Issue token with specified characteristics
     fn issue_token(
         issuer: AccountId,
@@ -52,4 +55,16 @@ pub trait PalletToken<
 
     /// Allow creator to receive credit into his accounts
     fn claim_patronage_credit(token_id: Self::TokenId, to_account: AccountId) -> DispatchResult;
+
+    /// Issue a revenue split for the token
+    fn issue_revenue_split(
+        token_id: Self::TokenId,
+        start: Option<BlockNumber>,
+        duration: BlockNumber,
+        allocation_source: AccountId,
+        allocation_amount: Self::ReserveBalance,
+    ) -> DispatchResult;
+
+    /// Finalize split by sending back eventual JOYs leftover
+    fn finalize_revenue_split(token_id: Self::TokenId, account_id: AccountId) -> DispatchResult;
 }

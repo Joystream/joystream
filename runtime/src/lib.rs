@@ -91,7 +91,6 @@ pub use referendum;
 pub use working_group;
 
 pub use content;
-pub use content::LimitPerPeriod;
 pub use content::MaxNumber;
 
 /// This runtime version.
@@ -484,22 +483,6 @@ parameter_types! {
     pub const PricePerByte: u32 = 2; // TODO: update
     pub const ContentModuleId: ModuleId = ModuleId(*b"mContent"); // module content
     pub const BloatBondCap: u32 = 1000;  // TODO: update
-    pub const DefaultGlobalDailyNftLimit: LimitPerPeriod<BlockNumber> = LimitPerPeriod {
-        block_number_period: DAYS,
-        limit: 10000,
-    };  // TODO: update
-    pub const DefaultGlobalWeeklyNftLimit: LimitPerPeriod<BlockNumber> = LimitPerPeriod {
-        block_number_period: WEEKS,
-        limit: 50000,
-    };  // TODO: update
-    pub const DefaultChannelDailyNftLimit: LimitPerPeriod<BlockNumber> = LimitPerPeriod {
-        block_number_period: DAYS,
-        limit: 100,
-    };  // TODO: update
-    pub const DefaultChannelWeeklyNftLimit: LimitPerPeriod<BlockNumber> = LimitPerPeriod {
-        block_number_period: WEEKS,
-        limit: 500,
-    };  // TODO: update
 }
 
 impl content::Trait for Runtime {
@@ -520,16 +503,13 @@ impl content::Trait for Runtime {
     type ModuleId = ContentModuleId;
     type MemberAuthenticator = Members;
     type CouncilBudgetManager = Council;
-    type DefaultGlobalDailyNftLimit = DefaultGlobalDailyNftLimit;
-    type DefaultGlobalWeeklyNftLimit = DefaultGlobalWeeklyNftLimit;
-    type DefaultChannelDailyNftLimit = DefaultChannelDailyNftLimit;
-    type DefaultChannelWeeklyNftLimit = DefaultChannelWeeklyNftLimit;
 }
 
 parameter_types! {
     pub const ProjectTokenModuleId: ModuleId = ModuleId(*b"mo:token"); // module: token
     pub const MaxVestingSchedulesPerAccountPerToken: u8 = 5; // TODO: adjust
     pub const BlocksPerYear: u32 = 5259600; // 365,25 * 24 * 60 * 60 / 6
+    pub const MinRevenueSplitDuration: u32 = DAYS; // one day TODO: adjust
 }
 
 impl project_token::Trait for Runtime {
@@ -542,6 +522,7 @@ impl project_token::Trait for Runtime {
     type MaxVestingSchedulesPerAccountPerToken = MaxVestingSchedulesPerAccountPerToken;
     type JoyExistentialDeposit = ExistentialDeposit;
     type BlocksPerYear = BlocksPerYear;
+    type MinRevenueSplitDuration = MinRevenueSplitDuration;
     type WeightInfo = weights::project_token::WeightInfo;
 }
 
@@ -1143,7 +1124,6 @@ impl proposals_codex::Trait for Runtime {
     type UnlockBlogPostProposalParameters = UnlockBlogPostProposalParameters;
     type VetoProposalProposalParameters = VetoProposalProposalParameters;
     type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;
-    type UpdateNftLimitProposalParameters = UpdateNftLimitProposalParameters;
     type WeightInfo = weights::proposals_codex::WeightInfo;
 }
 

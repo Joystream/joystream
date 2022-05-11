@@ -152,9 +152,6 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::UpdateChannelPayouts(params) => {
                 Call::Content(content::Call::update_channel_payouts(params))
             }
-            ProposalDetails::UpdateNftLimit(limit_type, limit) => {
-                Call::Content(content::Call::update_nft_limit(limit_type.into(), limit))
-            }
         };
 
         call.encode()
