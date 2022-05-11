@@ -987,7 +987,7 @@ impl<T: Trait> Module<T> {
 
     /// Computes (staked_amount / supply) * allocation
     /// Preconditions:
-    /// - supply > user_staked_amount > 0
+    /// - supply >= user_staked_amount > 0
     /// - allocation > 0
     pub(crate) fn compute_revenue_split_dividend(
         user_staked_amount: TokenBalanceOf<T>,
