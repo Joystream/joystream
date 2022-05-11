@@ -357,28 +357,24 @@ fn dust_account_fails_with_invalid_account_id() {
 }
 
 #[test]
-fn dust_account_fails_with_permissionless_mode_and_non_empty_non_owned_account() {
+fn dust_account_fails_with_permissionless_mode_and_non_empty_account() {
     let (token_id, init_supply) = (token!(1), balance!(100));
-    let (owner, user_account, other_user_account) = (account!(1), account!(2), account!(3));
+    let (owner, user_account) = (account!(1), account!(2));
 
     let token_data = TokenDataBuilder::new_empty().build();
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token_and_owner(token_id, token_data, owner, init_supply)
-        .with_account(user_account, AccountData::new_empty())
         .with_account(
-            other_user_account,
+            user_account,
             AccountData::new_with_liquidity(balance!(10)).with_stacked(balance!(10)),
         )
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result = Token::dust_account(origin!(user_account), token_id, other_user_account);
+        let result = Token::dust_account(origin!(user_account), token_id, user_account);
 
-        assert_noop!(
-            result,
-            Error::<Test>::AttemptToRemoveNonOwnedAndNonEmptyAccount
-        );
+        assert_noop!(result, Error::<Test>::AttemptToRemoveNonEmptyAccount);
     })
 }
 
@@ -409,31 +405,7 @@ fn dust_account_fails_with_permissioned_mode_and_non_owned_account() {
 }
 
 #[test]
-fn dust_account_ok_with_permissionless_mode_and_owned_account() {
-    let (token_id, init_supply) = (token!(1), balance!(100));
-    let (owner, user_account, other_user_account) = (account!(1), account!(2), account!(3));
-
-    let token_data = TokenDataBuilder::new_empty().build();
-
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token_and_owner(token_id, token_data, owner, init_supply)
-        .with_account(
-            user_account,
-            AccountData::new_with_liquidity_and_bond(balance!(10), joy!(10))
-                .with_stacked(balance!(5)),
-        )
-        .with_account(other_user_account, AccountData::new_empty())
-        .build();
-
-    build_test_externalities(config).execute_with(|| {
-        let result = Token::dust_account(origin!(user_account), token_id, user_account);
-
-        assert_ok!(result);
-    })
-}
-
-#[test]
-fn dust_account_ok_with_permissioned_mode_and_owned_account() {
+fn dust_account_ok_with_permissioned_mode_and_empty_owned_account() {
     let (token_id, init_supply) = (token!(1), balance!(100));
     let (owner, user_account, other_user_account) = (account!(1), account!(2), account!(3));
     let commit = merkle_root![user_account, other_user_account];
@@ -444,7 +416,7 @@ fn dust_account_ok_with_permissioned_mode_and_owned_account() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token_and_owner(token_id, token_data, owner, init_supply)
-        .with_account(user_account, AccountData::new_with_liquidity(balance!(100)))
+        .with_account(user_account, AccountData::default())
         .build();
 
     build_test_externalities(config).execute_with(|| {
@@ -540,26 +512,6 @@ fn dust_account_ok_with_account_removed() {
             token_id,
             other_user_account
         ));
-    })
-}
-
-#[test]
-fn dust_account_ok_with_nonempty_owned_account_removed_and_supply_decreased() {
-    let (owner_balance, user_balance) = (balance!(100), balance!(100));
-    let (owner, user_account) = (account!(1), account!(2));
-    let token_id = token!(1);
-
-    let token_data = TokenDataBuilder::new_empty().build();
-
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token_and_owner(token_id, token_data, owner, owner_balance)
-        .with_account(user_account, AccountData::new_with_liquidity(user_balance))
-        .build();
-
-    build_test_externalities(config).execute_with(|| {
-        let _ = Token::dust_account(origin!(user_account), token_id, user_account);
-
-        assert_eq!(Token::token_info_by_id(token_id).supply, balance!(100));
     })
 }
 

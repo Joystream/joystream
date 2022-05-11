@@ -172,13 +172,10 @@ decl_module! {
         /// Preconditions:
         /// - `token_id` must be valid
         /// - `account_id` must be valid for `token_id`
-        /// - `origin` signer must be either:
-        ///    - `account_id` in that case the deletion succeedes even with non empty account
-        ///    - different from `account_id` in that case deletion succeedes only
-        ///      for `Permissionless` mode and empty account
+        /// - if Permissioned token: `origin` signer must be `account_id`
+        /// - `account_id` must be an empty account (`account_data.amount` == 0)
         /// Postconditions:
         /// - Account information for `account_id` removed from storage
-        /// - `token_id` supply decreased if necessary
         /// - bloat bond refunded
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn dust_account(origin, token_id: T::TokenId, account_id: T::AccountId) -> DispatchResult {
@@ -194,18 +191,9 @@ decl_module! {
             )?;
 
             // == MUTATION SAFE ==
-
-            let now = Self::current_block();
-            let unclaimed_patronage = token_info.unclaimed_patronage_at_block(now);
-
             AccountInfoByTokenAndAccount::<T>::remove(token_id, &account_id);
             TokenInfoById::<T>::mutate(token_id, |token_info| {
                 token_info.decrement_accounts_number();
-                token_info.decrease_supply_by(account_to_remove_info.total_balance());
-
-                if !unclaimed_patronage.is_zero() {
-                    token_info.set_unclaimed_tally_patronage_at_block(unclaimed_patronage, now);
-                }
             });
 
             let bloat_bond = account_to_remove_info.bloat_bond;
@@ -569,18 +557,17 @@ impl<T: Trait> Module<T> {
         account_to_remove: &T::AccountId,
         account_to_remove_info: &AccountDataOf<T>,
     ) -> DispatchResult {
-        match (
-            transfer_policy,
+        ensure!(
             account_to_remove_info.is_empty(),
-            sender == account_to_remove,
-        ) {
-            (_, _, true) => Ok(()),
-            (TransferPolicyOf::<T>::Permissionless, true, _) => Ok(()),
-            (TransferPolicyOf::<T>::Permissioned(_), _, _) => {
-                Err(Error::<T>::AttemptToRemoveNonOwnedAccountUnderPermissionedMode.into())
-            }
-            _ => Err(Error::<T>::AttemptToRemoveNonOwnedAndNonEmptyAccount.into()),
+            Error::<T>::AttemptToRemoveNonEmptyAccount
+        );
+        if let TransferPolicyOf::<T>::Permissioned(_) = transfer_policy {
+            ensure!(
+                sender == account_to_remove,
+                Error::<T>::AttemptToRemoveNonOwnedAccountUnderPermissionedMode
+            );
         }
+        Ok(())
     }
 
     /// Validate token issuance parameters

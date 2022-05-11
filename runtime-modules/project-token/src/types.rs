@@ -254,11 +254,6 @@ impl<
         self.supply = self.supply.saturating_add(amount);
     }
 
-    // decrease total supply
-    pub(crate) fn decrease_supply_by(&mut self, amount: Balance) {
-        self.supply = self.supply.saturating_sub(amount);
-    }
-
     pub fn set_unclaimed_tally_patronage_at_block(&mut self, amount: Balance, block: BlockNumber) {
         self.patronage_info.last_unclaimed_patronage_tally_block = block;
         self.patronage_info.unclaimed_patronage_tally_amount = amount;
