@@ -7,7 +7,6 @@ use crate::{traits::PalletToken, types::VestingSource, SymbolsUsed};
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::{StorageDoubleMap, StorageMap};
 use sp_arithmetic::traits::One;
-use sp_runtime::traits::AccountIdConversion;
 use sp_runtime::{traits::Hash, DispatchError, Permill};
 
 use sp_std::iter::FromIterator;
@@ -817,8 +816,4 @@ impl AbandonRevenueSplitFixture {
 
         result
     }
-}
-
-pub fn treasury_account_for(token_id: u64) -> AccountId {
-    TokenModuleId::get().into_sub_account(token_id)
 }

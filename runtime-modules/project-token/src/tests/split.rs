@@ -134,7 +134,7 @@ fn issue_split_ok_with_allocation_transferred_to_treasury_account() {
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
-        let treasury_account = treasury_account_for(1u64);
+        let treasury_account = Token::module_treasury_account();
         IssueTokenFixture::default().execute_call().unwrap();
 
         IssueRevenueSplitFixture::default().execute_call().unwrap();
@@ -282,7 +282,7 @@ fn finalize_split_ok_with_leftover_joys_transferred_to_account() {
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
-        let treasury_account = treasury_account_for(1u64);
+        let treasury_account = Token::module_treasury_account();
         IssueTokenFixture::default().execute_call().unwrap();
         IssueRevenueSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
@@ -513,7 +513,7 @@ fn participate_in_split_ok_with_dividends_transferred_to_claimer_joy_balance() {
         );
         // split treasury account decreased
         assert_eq!(
-            Joy::<Test>::usable_balance(treasury_account_for(1u64)),
+            Joy::<Test>::usable_balance(Token::module_treasury_account()),
             DEFAULT_SPLIT_ALLOCATION - DEFAULT_SPLIT_JOY_DIVIDEND + ExistentialDeposit::get()
         );
         assert!(matches!(
