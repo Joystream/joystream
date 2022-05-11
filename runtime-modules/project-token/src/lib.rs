@@ -1235,8 +1235,6 @@ impl<T: Trait> Module<T> {
             deletion_prize_source_account_id: upload_context.uploader_account.clone(),
             expected_data_size_fee: payload.expected_data_size_fee,
             object_creation_list: vec![payload.object_creation_params.clone()],
-            // Temporary to silence clippy
-            ..Default::default()
         })
     }
 

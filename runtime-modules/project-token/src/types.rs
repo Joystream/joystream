@@ -203,22 +203,22 @@ impl<BlockNumber: Copy + Saturating + PartialOrd> Timeline<BlockNumber> {
     }
 
     pub fn end(&self) -> BlockNumber {
-        return self.start.saturating_add(self.duration);
+        self.start.saturating_add(self.duration)
     }
 
     /// Wether current block in [self.end(), INFINITY)
     pub fn is_ended(&self, current_block: BlockNumber) -> bool {
-        return self.end() <= current_block;
+        self.end() <= current_block
     }
 
     /// Wether current block in [self.start, INFINITY)
     pub fn is_started(&self, current_block: BlockNumber) -> bool {
-        return current_block >= self.start;
+        current_block >= self.start
     }
 
     /// Wether current block in [self.start, self.end())
     pub fn is_ongoing(&self, current_block: BlockNumber) -> bool {
-        return self.is_started(current_block) && !self.is_ended(current_block);
+        self.is_started(current_block) && !self.is_ended(current_block)
     }
 }
 
@@ -730,7 +730,7 @@ where
     ) -> Result<StakingStatus<Balance>, DispatchError> {
         self.split_staking_status
             .clone()
-            .ok_or(Error::<T>::UserNotParticipantingInAnySplit.into())
+            .ok_or_else(|| Error::<T>::UserNotParticipantingInAnySplit.into())
     }
 
     /// Determine Wether user can stake `amount` of tokens
