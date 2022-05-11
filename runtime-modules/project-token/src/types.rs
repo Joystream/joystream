@@ -730,7 +730,7 @@ where
     ) -> Result<StakingStatus<Balance>, DispatchError> {
         self.split_staking_status
             .clone()
-            .ok_or(Error::<T>::UserNotAParticipantForTheSplit.into())
+            .ok_or(Error::<T>::UserNotParticipantingInAnySplit.into())
     }
 
     /// Determine Wether user can stake `amount` of tokens

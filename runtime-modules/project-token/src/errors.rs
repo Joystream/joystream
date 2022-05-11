@@ -106,7 +106,7 @@ decl_error! {
         /// User does not posses enough balance to participate in the revenue split
         InsufficientBalanceForSplitParticipation,
 
-        /// Attempt to claim revenue split by a non participant
-        UserNotAParticipantForTheSplit,
+        /// User is not participating in any split
+        UserNotParticipantingInAnySplit,
     }
 }

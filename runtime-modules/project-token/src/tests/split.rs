@@ -591,7 +591,7 @@ fn abandon_revenue_split_fails_with_user_not_a_participant() {
 
         let result = AbandonRevenueSplitFixture::default().execute_call();
 
-        assert_err!(result, Error::<Test>::UserNotAParticipantForTheSplit);
+        assert_err!(result, Error::<Test>::UserNotParticipantingInAnySplit);
     })
 }
 
