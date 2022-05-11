@@ -284,7 +284,9 @@ fn finalize_split_ok_with_leftover_joys_transferred_to_account() {
     .execute_with(|| {
         let treasury_account = Token::module_treasury_account();
         IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
+        ParticipateInSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
 
         FinalizeRevenueSplitFixture::default()
@@ -296,10 +298,10 @@ fn finalize_split_ok_with_leftover_joys_transferred_to_account() {
             Joy::<Test>::usable_balance(treasury_account),
             ExistentialDeposit::get()
         );
-        // account id balance increased by leftover joy amount
+        // account id balance increased by DEFAULT_SPLIT_ALLOCATION - DEFAULT_SPLIT_JOY_DIVIDEND
         assert_eq!(
             Joy::<Test>::usable_balance(DEFAULT_ACCOUNT_ID),
-            DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get()
+            DEFAULT_SPLIT_ALLOCATION - DEFAULT_SPLIT_JOY_DIVIDEND + ExistentialDeposit::get()
         );
     })
 }
