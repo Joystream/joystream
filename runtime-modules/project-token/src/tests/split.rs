@@ -527,7 +527,7 @@ fn participate_in_split_ok_with_dividends_transferred_to_claimer_joy_balance() {
 }
 
 #[test]
-fn abandon_revenue_splitd_fails_with_invalid_token_id() {
+fn abandon_revenue_split_fails_with_invalid_token_id() {
     build_default_test_externalities_with_balances(vec![(
         DEFAULT_ACCOUNT_ID,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
