@@ -338,6 +338,7 @@ export interface ContentModerationAction extends Enum {
   readonly isDeleteVideoAssets: boolean;
   readonly asDeleteVideoAssets: bool;
   readonly isDeleteNonVideoChannelAssets: boolean;
+  readonly isUpdateChannelNftLimits: boolean;
 }
 
 /** @name ContentModerationActionsSet */
@@ -623,12 +624,6 @@ export interface GeneralProposalParameters extends Struct {
   readonly exact_execution_block: Option<u32>;
 }
 
-/** @name GlobalNftLimitType */
-export interface GlobalNftLimitType extends Enum {
-  readonly isDailyLimit: boolean;
-  readonly isWeeklyLimit: boolean;
-}
-
 /** @name InitTransactionalStatus */
 export interface InitTransactionalStatus extends Enum {
   readonly isIdle: boolean;
@@ -712,6 +707,12 @@ export interface NftLimitId extends Enum {
   readonly asChannelDaily: ChannelId;
   readonly isChannelWeekly: boolean;
   readonly asChannelWeekly: ChannelId;
+}
+
+/** @name NftLimitPeriod */
+export interface NftLimitPeriod extends Enum {
+  readonly isDaily: boolean;
+  readonly isWeekly: boolean;
 }
 
 /** @name NftMetadata */
@@ -930,8 +931,8 @@ export interface ProposalDetails extends Enum {
   readonly asUnlockBlogPost: PostId;
   readonly isVetoProposal: boolean;
   readonly asVetoProposal: ProposalId;
-  readonly isUpdateNftLimit: boolean;
-  readonly asUpdateNftLimit: ITuple<[GlobalNftLimitType, LimitPerPeriod]>;
+  readonly isUpdateGlobalNftLimit: boolean;
+  readonly asUpdateGlobalNftLimit: ITuple<[NftLimitPeriod, u64]>;
 }
 
 /** @name ProposalDetailsOf */
@@ -986,8 +987,8 @@ export interface ProposalDetailsOf extends Enum {
   readonly asUnlockBlogPost: PostId;
   readonly isVetoProposal: boolean;
   readonly asVetoProposal: ProposalId;
-  readonly isUpdateNftLimit: boolean;
-  readonly asUpdateNftLimit: ITuple<[GlobalNftLimitType, LimitPerPeriod]>;
+  readonly isUpdateGlobalNftLimit: boolean;
+  readonly asUpdateGlobalNftLimit: ITuple<[NftLimitPeriod, u64]>;
 }
 
 /** @name ProposalId */

@@ -637,7 +637,7 @@ impl crate::Trait for Test {
     type LockBlogPostProposalParameters = DefaultProposalParameters;
     type UnlockBlogPostProposalParameters = DefaultProposalParameters;
     type VetoProposalProposalParameters = DefaultProposalParameters;
-    type UpdateNftLimitProposalParameters = DefaultProposalParameters;
+    type UpdateGlobalNftLimitProposalParameters = DefaultProposalParameters;
 }
 
 parameter_types! {
@@ -910,7 +910,7 @@ impl crate::WeightInfo for () {
     fn create_proposal_veto_proposal(_: u32, _: u32) -> Weight {
         0
     }
-    fn create_proposal_update_nft_limit(_: u32, _: u32) -> Weight {
+    fn create_proposal_update_global_nft_limit(_: u32, _: u32) -> Weight {
         0
     }
 }

@@ -1,6 +1,6 @@
 mod mock;
 
-use content::LimitPerPeriod;
+use content::NftLimitPeriod;
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;
@@ -1929,7 +1929,7 @@ fn create_set_referral_cut_common_checks_succeed() {
 }
 
 #[test]
-fn create_update_nft_limit_proposal_common_checks_succeed() {
+fn create_update_global_nft_limit_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
         let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
             member_id: 1,
@@ -1955,13 +1955,7 @@ fn create_update_nft_limit_proposal_common_checks_succeed() {
             exact_execution_block: None,
         };
 
-        let proposal_details = ProposalDetails::UpdateNftLimit(
-            GlobalNftLimitType::DailyLimit,
-            LimitPerPeriod {
-                limit: 100,
-                block_number_period: 1000,
-            },
-        );
+        let proposal_details = ProposalDetails::UpdateGlobalNftLimit(NftLimitPeriod::Daily, 100);
 
         let proposal_fixture = ProposalTestFixture {
             general_proposal_parameters: general_proposal_parameters.clone(),

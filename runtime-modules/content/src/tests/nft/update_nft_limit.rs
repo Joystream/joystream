@@ -1,91 +1,142 @@
 #![cfg(test)]
+use crate::tests::curators::add_curator_to_new_group_with_permissions;
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
 use frame_system::RawOrigin;
+use sp_std::collections::btree_map::BTreeMap;
+use sp_std::iter::FromIterator;
 
 #[test]
-fn update_nft_limits_works_as_expected_for_global_daily_limit() {
+fn update_nft_limits_works_as_expected_for_global_limits() {
     with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
         let lead = RawOrigin::Signed(LEAD_ACCOUNT_ID);
         let root = RawOrigin::Root;
         let member = RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID);
-        let nft_limit_id = NftLimitId::GlobalDaily;
 
-        update_nft_limit_test_helper(root.clone(), nft_limit_id, Ok(()));
-        update_nft_limit_test_helper(lead.clone(), nft_limit_id, Err(DispatchError::BadOrigin));
-        update_nft_limit_test_helper(member.clone(), nft_limit_id, Err(DispatchError::BadOrigin));
+        for period in [NftLimitPeriod::Daily, NftLimitPeriod::Weekly].iter() {
+            update_global_nft_limit_test_helper(root.clone(), *period, Ok(()));
+            update_global_nft_limit_test_helper(
+                lead.clone(),
+                *period,
+                Err(DispatchError::BadOrigin),
+            );
+            update_global_nft_limit_test_helper(
+                member.clone(),
+                *period,
+                Err(DispatchError::BadOrigin),
+            );
+        }
     })
 }
 
 #[test]
-fn update_nft_limits_works_as_expected_for_global_weekly_limit() {
+fn update_nft_limits_works_as_expected_for_channel_limits() {
     with_default_mock_builder(|| {
-        let lead = RawOrigin::Signed(LEAD_ACCOUNT_ID);
-        let root = RawOrigin::Root;
-        let member = RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID);
-        let nft_limit_id = NftLimitId::GlobalWeekly;
+        ContentTest::with_member_channel().setup();
 
-        update_nft_limit_test_helper(root.clone(), nft_limit_id, Ok(()));
-        update_nft_limit_test_helper(lead.clone(), nft_limit_id, Err(DispatchError::BadOrigin));
-        update_nft_limit_test_helper(member.clone(), nft_limit_id, Err(DispatchError::BadOrigin));
-    })
-}
-
-#[test]
-fn update_nft_limits_works_as_expected_for_channel_daily_limit() {
-    with_default_mock_builder(|| {
+        let authorized_group_id = add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(
+                0,
+                BTreeSet::from_iter(vec![ContentModerationAction::UpdateChannelNftLimits]),
+            )]),
+        );
+        let unauthorized_group_id = add_curator_to_new_group_with_permissions(
+            DEFAULT_CURATOR_ID,
+            BTreeMap::from_iter(vec![(0, BTreeSet::new())]),
+        );
         let lead = RawOrigin::Signed(LEAD_ACCOUNT_ID);
+        let curator = RawOrigin::Signed(DEFAULT_CURATOR_ACCOUNT_ID);
         let root = RawOrigin::Root;
         let member = RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID);
         let channel_id = 1;
-        let nft_limit_id = NftLimitId::ChannelDaily(channel_id);
 
-        update_nft_limit_test_helper(root.clone(), nft_limit_id, Err(DispatchError::BadOrigin));
-        update_nft_limit_test_helper(lead.clone(), nft_limit_id, Ok(()));
-        update_nft_limit_test_helper(
-            member.clone(),
-            nft_limit_id,
-            Err(Error::<Test>::LeadAuthFailed.into()),
-        );
+        for period in [NftLimitPeriod::Daily, NftLimitPeriod::Weekly].iter() {
+            update_channel_nft_limit_test_helper(
+                lead.clone(),
+                ContentActor::Lead,
+                *period,
+                channel_id,
+                Ok(()),
+            );
+            update_channel_nft_limit_test_helper(
+                curator.clone(),
+                ContentActor::Lead,
+                *period,
+                channel_id,
+                Err(Error::<Test>::LeadAuthFailed.into()),
+            );
+            update_channel_nft_limit_test_helper(
+                curator.clone(),
+                ContentActor::Curator(authorized_group_id, DEFAULT_CURATOR_ID),
+                *period,
+                channel_id,
+                Ok(()),
+            );
+            update_channel_nft_limit_test_helper(
+                curator.clone(),
+                ContentActor::Curator(unauthorized_group_id, DEFAULT_CURATOR_ID),
+                *period,
+                channel_id,
+                Err(Error::<Test>::CuratorModerationActionNotAllowed.into()),
+            );
+            update_channel_nft_limit_test_helper(
+                member.clone(),
+                ContentActor::Curator(authorized_group_id, DEFAULT_CURATOR_ID),
+                *period,
+                channel_id,
+                Err(Error::<Test>::CuratorAuthFailed.into()),
+            );
+            update_channel_nft_limit_test_helper(
+                member.clone(),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                *period,
+                channel_id,
+                Err(Error::<Test>::ActorNotAuthorized.into()),
+            );
+            update_channel_nft_limit_test_helper(
+                root.clone(),
+                ContentActor::Lead,
+                *period,
+                channel_id,
+                Err(DispatchError::BadOrigin),
+            );
+        }
     })
 }
 
-#[test]
-fn update_nft_limits_works_as_expected_for_channel_weekly_limit() {
-    with_default_mock_builder(|| {
-        let lead = RawOrigin::Signed(LEAD_ACCOUNT_ID);
-        let root = RawOrigin::Root;
-        let member = RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID);
-        let channel_id = 1;
-        let nft_limit_id = NftLimitId::ChannelWeekly(channel_id);
-
-        update_nft_limit_test_helper(root.clone(), nft_limit_id, Err(DispatchError::BadOrigin));
-        update_nft_limit_test_helper(lead.clone(), nft_limit_id, Ok(()));
-        update_nft_limit_test_helper(
-            member.clone(),
-            nft_limit_id,
-            Err(Error::<Test>::LeadAuthFailed.into()),
-        );
-    })
-}
-
-fn update_nft_limit_test_helper(
+fn update_global_nft_limit_test_helper(
     origin: RawOrigin<AccountId>,
-    nft_limit_id: NftLimitId<u64>,
+    period: NftLimitPeriod,
     expected_result: DispatchResult,
 ) {
-    // Run to block one to see emitted events
-    run_to_block(1);
+    let new_limit: u64 = 7777;
 
-    let new_limit = LimitPerPeriod {
-        block_number_period: 1111,
-        limit: 7777,
-    };
-
-    UpdateNftLimitFixture::new()
+    UpdateGlobalNftLimitFixture::new()
         .with_origin(origin)
-        .with_nft_limit_id(nft_limit_id)
+        .with_period(period)
+        .with_limit(new_limit)
+        .call_and_assert(expected_result);
+}
+
+fn update_channel_nft_limit_test_helper(
+    origin: RawOrigin<AccountId>,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    period: NftLimitPeriod,
+    channel_id: ChannelId,
+    expected_result: DispatchResult,
+) {
+    let new_limit: u64 = 7777;
+
+    UpdateChannelNftLimitFixture::new()
+        .with_origin(origin)
+        .with_actor(actor)
+        .with_period(period)
+        .with_channel_id(channel_id)
         .with_limit(new_limit)
         .call_and_assert(expected_result);
 }

@@ -26,6 +26,22 @@ impl<ChannelId> Default for NftLimitId<ChannelId> {
         Self::GlobalDaily
     }
 }
+
+/// All periods that nft limits apply to
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy)]
+pub enum NftLimitPeriod {
+    Daily,
+    Weekly,
+}
+
+// Default trait implemented for the NftLimitPeriod.
+impl Default for NftLimitPeriod {
+    fn default() -> Self {
+        Self::Daily
+    }
+}
+
 /// Defines limit for object for a defined period.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default, Copy)]

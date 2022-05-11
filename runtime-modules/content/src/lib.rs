@@ -40,7 +40,7 @@ use frame_support::{
     Parameter,
 };
 
-use frame_system::ensure_signed;
+use frame_system::{ensure_root, ensure_signed};
 
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
@@ -2174,14 +2174,19 @@ decl_module! {
             Self::deposit_event(RawEvent::CouncilRewardClaimed(channel_id, reward));
         }
 
-        /// Updates global or channel NFT limit.
+        /// Updates global NFT limit.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_nft_limit(
+        pub fn update_global_nft_limit(
             origin,
-            nft_limit_id: NftLimitId<T::ChannelId>,
-            limit: LimitPerPeriod<T::BlockNumber>,
+            nft_limit_period: NftLimitPeriod,
+            limit: u64,
         ) {
-            ensure_nft_limits_auth_success::<T>(origin, nft_limit_id)?;
+            ensure_root(origin)?;
+
+            let nft_limit_id: NftLimitId<T::ChannelId> = match nft_limit_period {
+                NftLimitPeriod::Daily => NftLimitId::GlobalDaily,
+                NftLimitPeriod::Weekly => NftLimitId::GlobalWeekly,
+            };
 
             //
             // == MUTATION SAFE ==
@@ -2189,7 +2194,33 @@ decl_module! {
 
             Self::set_nft_limit(nft_limit_id, limit);
 
-            Self::deposit_event(RawEvent::NftLimitUpdated(nft_limit_id, limit));
+            Self::deposit_event(RawEvent::GlobalNftLimitUpdated(nft_limit_period, limit));
+        }
+
+        /// Updates channel's NFT limit.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_channel_nft_limit(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            nft_limit_period: NftLimitPeriod,
+            channel_id: T::ChannelId,
+            limit: u64,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            ensure_actor_authorized_to_update_channel_nft_limits::<T>(origin, &actor, &channel)?;
+
+            let nft_limit_id: NftLimitId<T::ChannelId> = match nft_limit_period {
+                NftLimitPeriod::Daily => NftLimitId::ChannelDaily(channel_id),
+                NftLimitPeriod::Weekly => NftLimitId::ChannelWeekly(channel_id),
+            };
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::set_nft_limit(nft_limit_id, limit);
+
+            Self::deposit_event(RawEvent::ChannelNftLimitUpdated(actor, nft_limit_period, channel_id, limit));
         }
     }
 }
@@ -2641,21 +2672,18 @@ impl<T: Trait> Module<T> {
     }
 
     // Set global and channel NFT limit
-    pub(crate) fn set_nft_limit(
-        limit_id: NftLimitId<T::ChannelId>,
-        limit: LimitPerPeriod<T::BlockNumber>,
-    ) {
+    pub(crate) fn set_nft_limit(limit_id: NftLimitId<T::ChannelId>, limit: u64) {
         match limit_id {
-            NftLimitId::GlobalDaily => GlobalDailyNftLimit::<T>::put(limit),
-            NftLimitId::GlobalWeekly => GlobalWeeklyNftLimit::<T>::put(limit),
+            NftLimitId::GlobalDaily => GlobalDailyNftLimit::<T>::mutate(|l| l.limit = limit),
+            NftLimitId::GlobalWeekly => GlobalWeeklyNftLimit::<T>::mutate(|l| l.limit = limit),
             NftLimitId::ChannelDaily(channel_id) => {
                 ChannelById::<T>::mutate(channel_id, |channel| {
-                    channel.daily_nft_limit = limit;
+                    channel.daily_nft_limit.limit = limit;
                 });
             }
             NftLimitId::ChannelWeekly(channel_id) => {
                 ChannelById::<T>::mutate(channel_id, |channel| {
-                    channel.weekly_nft_limit = limit;
+                    channel.weekly_nft_limit.limit = limit;
                 });
             }
         }
@@ -2697,7 +2725,6 @@ decl_event!(
         >,
         TransferParameters =
             TransferParameters<<T as common::MembershipTypes>::MemberId, BalanceOf<T>>,
-        BlockNumber = <T as frame_system::Trait>::BlockNumber,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2811,6 +2838,7 @@ decl_event!(
         ChannelTransferAccepted(ChannelId, TransferParameters),
 
         /// Nft limits
-        NftLimitUpdated(NftLimitId<ChannelId>, LimitPerPeriod<BlockNumber>),
+        GlobalNftLimitUpdated(NftLimitPeriod, u64),
+        ChannelNftLimitUpdated(ContentActor, NftLimitPeriod, ChannelId, u64),
     }
 );

@@ -430,7 +430,7 @@
             "LockBlogPost": "PostId",
             "UnlockBlogPost": "PostId",
             "VetoProposal": "ProposalId",
-            "UpdateNftLimit": "(GlobalNftLimitType,LimitPerPeriod)"
+            "UpdateGlobalNftLimit": "(NftLimitPeriod,u64)"
         }
     },
     "ProposalDetailsOf": {
@@ -460,7 +460,7 @@
             "LockBlogPost": "PostId",
             "UnlockBlogPost": "PostId",
             "VetoProposal": "ProposalId",
-            "UpdateNftLimit": "(GlobalNftLimitType,LimitPerPeriod)"
+            "UpdateGlobalNftLimit": "(NftLimitPeriod,u64)"
         }
     },
     "VotingResults": {
@@ -554,12 +554,6 @@
     "FundingRequestParameters": {
         "account": "AccountId",
         "amount": "u128"
-    },
-    "GlobalNftLimitType": {
-        "_enum": [
-            "DailyLimit",
-            "WeeklyLimit"
-        ]
     },
     "ReferendumStageVoting": {
         "started": "u32",
@@ -876,7 +870,8 @@
             "DeleteVideo": "Null",
             "DeleteChannel": "Null",
             "DeleteVideoAssets": "bool",
-            "DeleteNonVideoChannelAssets": "Null"
+            "DeleteNonVideoChannelAssets": "Null",
+            "UpdateChannelNftLimits": "Null"
         }
     },
     "ContentModerationActionsSet": "BTreeSet<ContentModerationAction>",
@@ -913,6 +908,12 @@
         ]
     },
     "ChannelAgentPermissions": "BTreeSet<ChannelActionPermission>",
+    "NftLimitPeriod": {
+        "_enum": [
+            "Daily",
+            "Weekly"
+        ]
+    },
     "NftLimitId": {
         "_enum": {
             "GlobalDaily": "Null",

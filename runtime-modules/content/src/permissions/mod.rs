@@ -5,7 +5,6 @@ pub use codec::{Codec, Decode, Encode};
 use core::fmt::Debug;
 pub use curator_group::*;
 use frame_support::{ensure, Parameter};
-use frame_system::ensure_root;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::BaseArithmetic;
@@ -554,21 +553,17 @@ pub fn ensure_no_channel_transfers<T: Trait>(channel: &Channel<T>) -> DispatchRe
     Ok(())
 }
 
-// Authenticate NFT-limits change
-pub fn ensure_nft_limits_auth_success<T: Trait>(
+// Nft limits
+pub fn ensure_actor_authorized_to_update_channel_nft_limits<T: Trait>(
     origin: T::Origin,
-    nft_limit_id: NftLimitId<T::ChannelId>,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel: &Channel<T>,
 ) -> DispatchResult {
-    match nft_limit_id {
-        NftLimitId::GlobalDaily | NftLimitId::GlobalWeekly => {
-            ensure_root(origin)?;
-        }
-        NftLimitId::ChannelDaily(..) | NftLimitId::ChannelWeekly(..) => {
-            let sender = ensure_signed(origin)?;
-
-            ensure_lead_auth_success::<T>(&sender)?;
-        }
-    };
-
-    Ok(())
+    let sender = ensure_signed(origin)?;
+    ensure_actor_authorized_to_perform_moderation_actions::<T>(
+        &sender,
+        actor,
+        &[ContentModerationAction::UpdateChannelNftLimits],
+        channel.privilege_level,
+    )
 }

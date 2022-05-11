@@ -163,6 +163,7 @@ export class ContentModerationAction extends JoyEnum({
   DeleteChannel: Null,
   DeleteVideoAssets: bool,
   DeleteNonVideoChannelAssets: Null,
+  UpdateChannelNftLimits: Null,
 }) {}
 
 export class ContentModerationActionsSet extends BTreeSet.with(ContentModerationAction) {}
@@ -199,6 +200,11 @@ export class ChannelOwnershipTransferRequest extends JoyStructDecorated({
 }) {}
 
 // Nft limits
+
+export class NftLimitPeriod extends JoyEnum({
+  Daily: Null,
+  Weekly: Null,
+}) {}
 
 export class NftLimitId extends JoyEnum({
   GlobalDaily: Null,
@@ -378,6 +384,7 @@ export const contentTypes = {
   ChannelActionPermission,
   ChannelAgentPermissions,
   // Nft limits
+  NftLimitPeriod,
   NftLimitId,
   LimitPerPeriod,
   NftCounter,

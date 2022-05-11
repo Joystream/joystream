@@ -359,8 +359,8 @@ pub(crate) fn veto_proposal_proposal() -> ProposalParameters<BlockNumber, Balanc
     }
 }
 
-// Proposal parameters for the 'Update NFT limit' proposal
-pub(crate) fn update_nft_limit_proposal() -> ProposalParameters<BlockNumber, Balance> {
+// Proposal parameters for the 'Update global NFT limit' proposal
+pub(crate) fn update_global_nft_limit_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 72000,
         grace_period: 0,
