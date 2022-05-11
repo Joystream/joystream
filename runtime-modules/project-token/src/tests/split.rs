@@ -1,6 +1,7 @@
 #[cfg(test)]
 use frame_support::assert_err;
 use sp_arithmetic::traits::Zero;
+use sp_runtime::Permill;
 
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
@@ -568,6 +569,78 @@ fn participate_in_split_ok_with_dividends_transferred_to_claimer_joy_balance() {
                 ..
             })
         ));
+    })
+}
+
+#[test]
+fn participate_in_split_ok_with_vesting_schedule_and_correct_transferrable_balance_accounting() {
+    pub const TOTAL_AMOUNT: u128 = DEFAULT_SALE_PURCHASE_AMOUNT * 2;
+    build_default_test_externalities_with_balances(vec![
+        (
+            DEFAULT_ACCOUNT_ID,
+            DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+        ),
+        (
+            OTHER_ACCOUNT_ID,
+            ExistentialDeposit::get() + (DEFAULT_SALE_UNIT_PRICE * TOTAL_AMOUNT),
+        ),
+    ])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        IssueRevenueSplitFixture::default()
+            .with_duration(2 * DEFAULT_SALE_DURATION)
+            .execute_call()
+            .unwrap();
+        InitTokenSaleFixture::default()
+            .with_vesting_schedule(Some(VestingScheduleParams {
+                blocks_before_cliff: 0,
+                duration: DEFAULT_SALE_DURATION,
+                cliff_amount_percentage: Permill::from_percent(30),
+            }))
+            .execute_call()
+            .unwrap();
+        PurchaseTokensOnSaleFixture::default()
+            .with_amount(TOTAL_AMOUNT)
+            .execute_call()
+            .unwrap();
+        increase_block_number_by(DEFAULT_SALE_DURATION);
+
+        ParticipateInSplitFixture::default()
+            .with_amount(DEFAULT_SALE_PURCHASE_AMOUNT)
+            .execute_call()
+            .unwrap();
+
+        // expect vesting amount to be accounted for together with split participation
+        let account = Token::account_info_by_token_and_account(1u64, OTHER_ACCOUNT_ID);
+        assert!(matches!(
+            account,
+            AccountDataOf::<Test> {
+                amount: TOTAL_AMOUNT,
+                split_staking_status: Some(StakingStatus::<Balance> {
+                    split_id: 1u32,
+                    amount: DEFAULT_SALE_PURCHASE_AMOUNT,
+                }),
+                ..
+            }
+        ));
+        // vested (at cliff) = 2 * DEFAULT_SALE_PURCHASE_AMOUNT * 30%
+        // staked = DEFAULT_SALE_PURCHASE_AMOUNT
+        // unvested = 2 * DEFAULT_SALE_PURCHASE_AMOUNT * 70% > staked
+        // expect transferrable == TOTAL_AMOUNT - unvested
+        assert_eq!(
+            account.transferrable::<Test>(System::block_number()),
+            Permill::from_percent(30) * DEFAULT_SALE_PURCHASE_AMOUNT * 2,
+        );
+        // Advance 50 % of the vesting schedule duration
+        // vested = 2 * DEFAULT_SALE_PURCHASE_AMOUNT * (30% + 50% * 70%)
+        // staked = DEFAULT_SALE_PURCHASE_AMOUNT
+        // unvested = 2 * DEFAULT_SALE_PURCHASE_AMOUNT * 35% < staked
+        // expect transferrable == TOTAL_AMOUNT - staked
+        increase_block_number_by(Permill::from_percent(50) * DEFAULT_SALE_DURATION);
+        assert_eq!(
+            account.transferrable::<Test>(System::block_number()),
+            DEFAULT_SALE_PURCHASE_AMOUNT,
+        );
     })
 }
 
