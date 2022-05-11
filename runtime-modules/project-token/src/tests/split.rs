@@ -305,7 +305,7 @@ fn finalize_split_ok_with_leftover_joys_transferred_to_account() {
 }
 
 #[test]
-fn participate_in_split_failst_with_invalid_token_id() {
+fn participate_in_split_fails_with_invalid_token_id() {
     build_default_test_externalities_with_balances(vec![(
         DEFAULT_ACCOUNT_ID,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get() + DEFAULT_BLOAT_BOND,
