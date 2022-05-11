@@ -14,7 +14,6 @@ use staking_handler::LockComparator;
 
 use crate::ContentActorAuthenticator;
 use crate::Trait;
-use common::currency::GovernanceCurrency;
 
 /// Module Aliases
 pub type System = frame_system::Module<Test>;
@@ -174,10 +173,6 @@ impl pallet_timestamp::Trait for Test {
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
-}
-
-impl GovernanceCurrency for Test {
-    type Currency = balances::Module<Self>;
 }
 
 parameter_types! {

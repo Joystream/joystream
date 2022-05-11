@@ -75,12 +75,18 @@ fn cancel_open_auction_bid() {
         let bid_lock_duration = Content::min_bid_lock_duration();
         run_to_block(bid_lock_duration + 1);
 
+        let bid = Content::min_starting_price();
+        let module_account_id = ContentTreasury::<Test>::module_account_id();
+        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), bid);
+
         // Cancel auction bid
         assert_ok!(Content::cancel_open_auction_bid(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
         ));
+
+        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), 0);
 
         // Runtime tested state after call
 
