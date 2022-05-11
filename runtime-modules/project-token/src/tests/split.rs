@@ -128,6 +128,26 @@ fn issue_split_ok_with_event_deposited() {
 }
 
 #[test]
+fn issue_split_ok_noop_with_allocation_zero() {
+    build_default_test_externalities_with_balances(vec![(
+        DEFAULT_ACCOUNT_ID,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        let state_pre = sp_io::storage::root();
+
+        IssueRevenueSplitFixture::default()
+            .with_allocation(0u128)
+            .execute_call()
+            .unwrap();
+
+        let state_post = sp_io::storage::root();
+        assert_eq!(state_pre, state_post);
+    })
+}
+
+#[test]
 fn issue_split_ok_with_allocation_transferred_to_treasury_account() {
     build_default_test_externalities_with_balances(vec![(
         DEFAULT_ACCOUNT_ID,
