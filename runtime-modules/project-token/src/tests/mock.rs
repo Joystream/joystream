@@ -79,17 +79,18 @@ impl_outer_event! {
 
 // Trait constants
 parameter_types! {
-    // constants for frame_system::Trait
+    // --------- frame_system::Trait parameters ---------------------
     pub const BlockHashCount: u64 = 250;
     pub const MaximumBlockWeight: u32 = 1024;
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    // constants for crate::Trait
+    // --------- Pallet Project Token parameters ---------------------
     pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token");
     pub const MaxVestingBalancesPerAccountPerToken: u8 = 3;
     pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
-    // constants for balances::Trait
+    pub const MinRevenueSplitDuration: u64 = 10;
+    // --------- balances::Trait parameters ---------------------------
     pub const ExistentialDeposit: u128 = 10;
 }
 
@@ -169,9 +170,6 @@ parameter_types! {
     pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
     storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
     pub const MaxDataObjectSize: u64 = 1_000_000_000;
-
-    // --------- project token pallet constants --------------
-    pub const MinRevenueSplitDuration: u64 = 10;
 }
 
 impl common::MembershipTypes for Test {
