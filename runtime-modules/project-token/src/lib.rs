@@ -848,7 +848,7 @@ impl<T: Trait>
     /// - `token.revenue_split` has ended
     ///
     /// Postconditions
-    /// - `token.revenue_split.allocation` of JOYs transferred to `account_id`
+    /// - `token.revenue_split.leftovers()` of JOYs transferred to `account_id`
     /// - `token.revenue_split` status set to Inactive
     fn finalize_revenue_split(token_id: T::TokenId, account_id: T::AccountId) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
