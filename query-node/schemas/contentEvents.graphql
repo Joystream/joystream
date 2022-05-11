@@ -90,6 +90,9 @@ type CommentCreatedEvent implements Event @entity {
   "The comment that was added"
   comment: Comment!
 
+  "Parent comment author (if any)"
+  parentCommentAuthor: Membership
+
   "Comment's video"
   video: Video!
 
