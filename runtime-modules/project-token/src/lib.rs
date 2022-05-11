@@ -433,7 +433,7 @@ decl_module! {
         /// - `account.staking_status.is_none()`
         /// - `account.amount` >= `amount`
         /// - let `dividend = split_allocation * account.staked_amount / token.supply``
-        ///    then `treasury` must be ablet to transfer `dividend` amount of JOY.
+        ///    then `treasury` must be able to transfer `dividend` amount of JOY.
         ///    (This condition technically, should always be satisfied)
         ///
         /// Postconditions
