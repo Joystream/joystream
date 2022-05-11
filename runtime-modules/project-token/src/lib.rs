@@ -496,6 +496,7 @@ decl_module! {
                 token_id,
                 sender,
                 amount,
+                dividend_amount,
                 token_info.latest_revenue_split_id,
             ));
 

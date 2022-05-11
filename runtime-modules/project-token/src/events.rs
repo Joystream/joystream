@@ -57,7 +57,9 @@ decl_event! {
         /// - token identifier
         /// - user account
         /// - user allocated staked balance
-        UserParticipatedInSplit(TokenId, AccountId, Balance, RevenueSplitId),
+        /// - dividend amount (JOY) granted
+        /// - revenue split identifier
+        UserParticipatedInSplit(TokenId, AccountId, Balance, JoyBalance, RevenueSplitId),
 
         /// User left revenue split
         /// Params:

@@ -453,6 +453,7 @@ fn participate_in_split_ok_with_event_deposit() {
             1u64,
             OTHER_ACCOUNT_ID,
             DEFAULT_SPLIT_PARTICIPATION,
+            DEFAULT_SPLIT_JOY_DIVIDEND,
             1u32, // participate in split no. 1
         ));
     })
