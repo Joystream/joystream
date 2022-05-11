@@ -199,7 +199,7 @@ fn finalize_split_fails_with_invalid_token_id() {
 }
 
 #[test]
-fn finalize_split_ok_with_active_but_not_ended_revenue_split() {
+fn finalize_split_fails_with_active_but_not_ended_revenue_split() {
     build_default_test_externalities_with_balances(vec![(
         DEFAULT_ACCOUNT_ID,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
