@@ -786,7 +786,7 @@ impl<T: Trait>
     /// - specified `reserve_source` must be able to *transfer* `allocation` amount of JOY
     ///
     /// PostConditions
-    /// - `allocation` transferred from `reserve_source` to `treasury_account` for `token_id`
+    /// - `allocation` transferred from `reserve_source` to `treasury_account`
     /// - `token.revenue_split` set to `Active(..)` with timeline [start, start + duration)
     ///    and `token.revenue_split.allocation = allocation`
     /// - `token.latest_split` incremented by 1
