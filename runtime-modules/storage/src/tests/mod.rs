@@ -2097,6 +2097,9 @@ fn move_data_objects_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
+        let data_object_deletion_prize = 10;
+        set_data_object_deletion_prize_value(data_object_deletion_prize);
+
         let storage_buckets1 = create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
         let src_dynamic_bag_id = DynamicBagId::<Test>::Member(1u64);
         let src_bag_id = BagId::<Test>::Dynamic(src_dynamic_bag_id.clone());
@@ -2583,6 +2586,79 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
         assert_eq!(bucket.voucher.size_used, 0);
 
         EventFixture::contains_crate_event(RawEvent::BagObjectsChanged(bag_id.clone(), 0, 0));
+    });
+}
+
+#[test]
+fn delete_data_objects_succeeds_with_original_obj_deletion_prize() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let storage_buckets = create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
+
+        let initial_balance = 1000;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
+
+        let data_object_deletion_prize = 10;
+        set_data_object_deletion_prize_value(data_object_deletion_prize);
+
+        let dynamic_bag_deletion_prize_value = 5;
+        set_bag_deletion_prize_value(dynamic_bag_deletion_prize_value);
+
+        let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+        let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
+
+        CreateDynamicBagFixture::default()
+            .with_bag_id(dynamic_bag_id.clone())
+            .with_deletion_prize_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_storage_buckets(storage_buckets)
+            .with_expected_dynamic_bag_deletion_prize(Storage::dynamic_bag_deletion_prize_value())
+            .with_expected_data_object_deletion_prize(Storage::data_object_deletion_prize_value())
+            .call_and_assert(Ok(()));
+
+        let upload_params = UploadParameters::<Test> {
+            bag_id: bag_id.clone(),
+            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            object_creation_list: create_data_object_candidates(1, 5),
+            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
+            ..Default::default()
+        };
+
+        UploadFixture::default()
+            .with_params(upload_params.clone())
+            .call_and_assert(Ok(()));
+
+        //Doubling the data object deletion prize, should not influence older data objects when deleting them.
+        //If one object is uploaded at time T0 with 10 deletion prize, at time T2 deletion prize increses to 20,
+        //now if at T3 the object is deleted, the deletion_refund must be 10 not 20, failing this opens the possibility of
+        //member account stealing funds deposited in the treasury account.
+        set_data_object_deletion_prize_value(2 * data_object_deletion_prize);
+
+        let data_object_id_1 = 0;
+        let data_object_id_2 = 1;
+        let data_object_id_3 = 2;
+        let data_object_ids =
+            BTreeSet::from_iter(vec![data_object_id_1, data_object_id_2, data_object_id_3]);
+
+        DeleteDataObjectsFixture::default()
+            .with_bag_id(bag_id.clone())
+            .with_data_object_ids(data_object_ids.clone())
+            .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
+            .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
+            2 * data_object_deletion_prize + dynamic_bag_deletion_prize_value
+        );
+
+        EventFixture::assert_last_crate_event(RawEvent::DataObjectsDeleted(
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            bag_id,
+            data_object_ids,
+        ));
     });
 }
 

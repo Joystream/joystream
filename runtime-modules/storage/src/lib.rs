@@ -189,7 +189,8 @@ pub trait WeightInfo {
 
 type WeightInfoStorage<T> = <T as Trait>::WeightInfo;
 
-type DeletionPrizeAndStorageFee<T> = (BalanceOf<T>, BalanceOf<T>, BalanceOf<T>);
+type DataObjAndDeletionPrizeAndObjSize<T> =
+    Result<(Vec<DataObject<BalanceOf<T>>>, BalanceOf<T>, u64), DispatchError>;
 
 /// Content ID length in bytes (46 bytes multihash).
 pub const CID_LENGTH: usize = 46;
@@ -953,14 +954,6 @@ struct VoucherUpdate {
 }
 
 impl VoucherUpdate {
-    fn add_objects_list<Balance>(self, list: &[DataObject<Balance>]) -> Self {
-        list.iter().fold(self, |acc, obj| acc.add_object(obj.size))
-    }
-
-    fn sub_objects_list<Balance>(self, list: &[DataObject<Balance>]) -> Self {
-        list.iter().fold(self, |acc, obj| acc.sub_object(obj.size))
-    }
-
     fn get_updated_voucher(&self, voucher: &Voucher, voucher_operation: OperationType) -> Voucher {
         let (objects_used, size_used) = match voucher_operation {
             OperationType::Increase => (
@@ -985,13 +978,6 @@ impl VoucherUpdate {
         Self {
             objects_number: self.objects_number.saturating_add(1),
             objects_total_size: self.objects_total_size.saturating_add(size),
-        }
-    }
-
-    fn sub_object(self, size: u64) -> Self {
-        Self {
-            objects_number: self.objects_number.saturating_sub(1),
-            objects_total_size: self.objects_total_size.saturating_sub(size),
         }
     }
 }
@@ -4283,25 +4269,6 @@ impl<T: Trait> Module<T> {
             .collect()
     }
 
-    fn compute_deletion_prizes(
-        deletion_prize_request: BalanceOf<T>,
-        deletion_prize_refund: BalanceOf<T>,
-        num_obj_to_create: usize,
-        num_obj_to_delete: usize,
-    ) -> (BalanceOf<T>, BalanceOf<T>) {
-        let obj_deletion_prize = Self::data_object_deletion_prize_value();
-        let num_obj_to_create: BalanceOf<T> = num_obj_to_create.saturated_into();
-        let num_obj_to_delete: BalanceOf<T> = num_obj_to_delete.saturated_into();
-
-        let deletion_prize_request: BalanceOf<T> = deletion_prize_request
-            .saturating_add(num_obj_to_create.saturating_mul(obj_deletion_prize));
-
-        let deletion_prize_refund: BalanceOf<T> = deletion_prize_refund
-            .saturating_add(num_obj_to_delete.saturating_mul(obj_deletion_prize));
-
-        (deletion_prize_request, deletion_prize_refund)
-    }
-
     /// Utility function that checks existence for bag deletion / update &
     /// verifies that dynamic bag does not exists in case of bag creation
     /// returning a new one
@@ -4344,19 +4311,27 @@ impl<T: Trait> Module<T> {
         } = Self::retrieve_dynamic_bag(&bag_op)?;
 
         // check and generate any objects to add/remove from storage
-        let object_creation_list = Self::construct_objects_to_upload(&bag_op)?;
-        let objects_removal_list = Self::construct_objects_to_remove(&bag_op)?;
+        let (object_creation_list, deletion_prize_request, upload_objs_size) =
+            Self::construct_objects_to_upload(&bag_op)?;
 
-        let objects_to_update_voucher = VoucherUpdate::default()
-            .add_objects_list(object_creation_list.as_slice())
-            .sub_objects_list(objects_removal_list.as_slice());
+        let (objects_removal_list, deletion_prize_refund, remove_objs_size) =
+            Self::construct_objects_to_remove(&bag_op, deletion_prize.unwrap_or_else(Zero::zero))?;
+
+        // storage fee: zero if VoucherUpdate is default
+        let storage_fee = Self::calculate_data_storage_fee(upload_objs_size);
+
+        let objects_number = objects_number
+            .saturating_add(object_creation_list.len() as u64)
+            .saturating_sub(objects_removal_list.len() as u64);
+
+        let objects_total_size = objects_total_size
+            .saturating_add(upload_objs_size)
+            .saturating_sub(remove_objs_size);
 
         let all_objects_with_update_voucher = VoucherUpdate {
             objects_total_size,
             objects_number,
-        }
-        .add_objects_list(object_creation_list.as_slice())
-        .sub_objects_list(objects_removal_list.as_slice());
+        };
 
         // new candidate storage buckets
         let new_storage_buckets = Self::update_storage_buckets(
@@ -4364,18 +4339,13 @@ impl<T: Trait> Module<T> {
             all_objects_with_update_voucher,
             &bag_op.params,
         )?;
+
         // new candidate distribution buckets
         let new_distribution_buckets =
             Self::update_distribution_buckets(&distributed_by, &bag_op.params);
 
         // check that user or treasury account have enough balance
-        let (deletion_prize_request, deletion_prize_refund, storage_fee) =
-            Self::ensure_sufficient_balance(
-                &bag_op,
-                objects_to_update_voucher,
-                deletion_prize,
-                &account_id,
-            )?;
+        Self::ensure_sufficient_balance(&account_id, deletion_prize_request, storage_fee)?;
 
         //
         // == MUTATION SAFE ==
@@ -4459,97 +4429,136 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn construct_objects_to_upload(
-        op: &BagOperation<T>,
-    ) -> Result<Vec<DataObject<BalanceOf<T>>>, DispatchError> {
+    fn construct_objects_to_upload(op: &BagOperation<T>) -> DataObjAndDeletionPrizeAndObjSize<T> {
         match &op.params {
-            BagOperationParams::<T>::Delete => Ok(Default::default()),
-            BagOperationParams::<T>::Create(_, list, _, _) => {
-                Self::construct_objects_from_list(list)
+            BagOperationParams::<T>::Delete => Ok((Default::default(), Zero::zero(), Zero::zero())),
+            BagOperationParams::<T>::Create(bag_deletion_prize, list, _, _) => {
+                Self::construct_objects_from_list(list, *bag_deletion_prize)
             }
-            BagOperationParams::<T>::Update(list, _) => Self::construct_objects_from_list(list),
+            BagOperationParams::<T>::Update(list, _) => {
+                Self::construct_objects_from_list(list, Zero::zero())
+            }
         }
     }
 
+    //Sums the accumulated prize and size to the new object in the iteration.
+    fn calculate_acc_size_and_acc_prize(
+        mut acc_obj: Vec<DataObject<BalanceOf<T>>>,
+        acc_deletion_prize: BalanceOf<T>,
+        acc_size: u64,
+        obj: DataObject<BalanceOf<T>>,
+    ) -> (Vec<DataObject<BalanceOf<T>>>, BalanceOf<T>, u64) {
+        let acc_deletion_prize: T::Balance = acc_deletion_prize.saturating_add(obj.deletion_prize);
+
+        let acc_size: u64 = acc_size.saturating_add(obj.size);
+
+        acc_obj.push(obj);
+
+        (acc_obj, acc_deletion_prize, acc_size)
+    }
+
+    //When the operation is create/update, this function will check if the object exists,
+    //then in one iteration, it'll sum the total of object sizes and deletion prizes of that list.
+    //If one object doesn't exist the iteration stops immediately.
+    //At last, it'll return the list of objects to create/update, total deletion prize to pay and total size.
     fn construct_objects_from_list(
         list: &[DataObjectCreationParameters],
-    ) -> Result<Vec<DataObject<BalanceOf<T>>>, DispatchError> {
+        bag_deletion_prize: BalanceOf<T>,
+    ) -> DataObjAndDeletionPrizeAndObjSize<T> {
+        let deletion_prize = Self::data_object_deletion_prize_value();
         list.iter()
             .map(|param| {
                 Self::upload_data_objects_checks(param).and({
                     Ok(DataObject {
                         accepted: false,
-                        deletion_prize: Self::data_object_deletion_prize_value(),
+                        deletion_prize,
                         size: param.size,
                         ipfs_content_id: param.ipfs_content_id.clone(),
                     })
                 })
             })
-            .collect()
+            .try_fold(
+                //As an initial value we set the fold with an empty vec, the bag deletion prize,
+                //(it's zero in case of an update), and 0 size.
+                Ok((Vec::new(), bag_deletion_prize, 0)),
+                |acc: DataObjAndDeletionPrizeAndObjSize<T>, obj| {
+                    obj.map(|obj| {
+                        acc.map(|(acc_obj, acc_deletion_prize_request, acc_size)| {
+                            Self::calculate_acc_size_and_acc_prize(
+                                acc_obj,
+                                acc_deletion_prize_request,
+                                acc_size,
+                                obj,
+                            )
+                        })
+                    })
+                },
+            )
+            //Removes outer result
+            //(Result<Result[Item1 + Item2 + Item3 + ...]>) -> Result[Item1 + Item2 + Item3 + ...]
+            .and_then(|x| x)
     }
 
+    //When the operation is delete/update, this function will check if the object exists,
+    //then in one iteration, it'll sum the total of object sizes and deletion prizes of that list.
+    //If one object doesn't exist the iteration stops immediately.
+    //At last, it'll return the list of objects to delete/update, total deletion prize to refund and total size.
     fn construct_objects_to_remove(
         op: &BagOperation<T>,
-    ) -> Result<Vec<DataObject<BalanceOf<T>>>, DispatchError> {
+        bag_deletion_prize: BalanceOf<T>,
+    ) -> DataObjAndDeletionPrizeAndObjSize<T> {
         match &op.params {
             BagOperationParams::<T>::Delete => Ok(DataObjectsById::<T>::iter_prefix(&op.bag_id)
                 .map(|(_, obj)| obj)
-                .collect()),
-            BagOperationParams::<T>::Create(..) => Ok(Default::default()),
+                .fold(
+                    (Vec::new(), bag_deletion_prize, 0),
+                    |(acc_obj, acc_deletion_prize_refund, acc_size), obj| {
+                        Self::calculate_acc_size_and_acc_prize(
+                            acc_obj,
+                            acc_deletion_prize_refund,
+                            acc_size,
+                            obj,
+                        )
+                    },
+                )),
+            BagOperationParams::<T>::Create(..) => Ok((Default::default(), Zero::zero(), 0)),
             BagOperationParams::<T>::Update(_, list) => list
                 .iter()
-                .map(|id| Self::ensure_data_object_exists(&op.bag_id, id))
-                .collect(),
+                .try_fold(
+                    //As an initial value we set the fold with an empty vec, the bag deletion prize,
+                    //(it's zero in case of an update/delete), and 0 size.
+                    Ok((Vec::new(), Zero::zero(), 0)),
+                    |acc: DataObjAndDeletionPrizeAndObjSize<T>, id| {
+                        Self::ensure_data_object_exists(&op.bag_id, id).map(|obj| {
+                            acc.map(|(acc_obj, acc_deletion_prize_refund, acc_size)| {
+                                Self::calculate_acc_size_and_acc_prize(
+                                    acc_obj,
+                                    acc_deletion_prize_refund,
+                                    acc_size,
+                                    obj,
+                                )
+                            })
+                        })
+                    },
+                )
+                //Removes outer result
+                //(Result<Result[Item1 + Item2 + Item3 + ...]>) -> Result[Item1 + Item2 + Item3 + ...]
+                .and_then(|x| x),
         }
     }
 
     fn ensure_sufficient_balance(
-        op: &BagOperation<T>,
-        objects_to_update_voucher: VoucherUpdate,
-        deletion_prize: Option<BalanceOf<T>>,
         account_id: &T::AccountId,
-    ) -> Result<DeletionPrizeAndStorageFee<T>, DispatchError> {
-        let (deletion_prize_request, deletion_prize_refund) =
-            deletion_prize.map_or(Default::default(), |dp| match &op.params {
-                BagOperationParams::<T>::Delete => (Zero::zero(), dp),
-                BagOperationParams::<T>::Create(..) => (dp, Zero::zero()),
-                _ => (Zero::zero(), Zero::zero()),
-            });
-
-        let (deletion_prize_request, deletion_prize_refund) = match &op.params {
-            BagOperationParams::<T>::Create(_, list, _, _) => Self::compute_deletion_prizes(
-                deletion_prize_request,
-                deletion_prize_refund,
-                list.len(),
-                0,
-            ),
-            BagOperationParams::<T>::Update(creation_list, removal_list) => {
-                Self::compute_deletion_prizes(
-                    deletion_prize_request,
-                    deletion_prize_refund,
-                    creation_list.len(),
-                    removal_list.len(),
-                )
-            }
-            BagOperationParams::<T>::Delete => Self::compute_deletion_prizes(
-                deletion_prize_request,
-                deletion_prize_refund,
-                0,
-                Bags::<T>::get(&op.bag_id).objects_number as usize,
-            ),
-        };
-
-        // storage fee: zero if VoucherUpdate is default
-        let storage_fee =
-            Self::calculate_data_storage_fee(objects_to_update_voucher.objects_total_size);
-
+        deletion_prize_request: T::Balance,
+        storage_fee: T::Balance,
+    ) -> DispatchResult {
         ensure!(
             Balances::<T>::usable_balance(account_id)
                 >= deletion_prize_request.saturating_add(storage_fee),
             Error::<T>::InsufficientBalance
         );
 
-        Ok((deletion_prize_request, deletion_prize_refund, storage_fee))
+        Ok(())
     }
 
     // Validate storage bucket IDs for dynamic bag type. Checks buckets' existence and dynamic bag
