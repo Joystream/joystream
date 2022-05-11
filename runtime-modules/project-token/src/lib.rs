@@ -46,6 +46,8 @@ pub trait WeightInfo {
     fn join_whitelist(h: u32) -> Weight;
     fn purchase_tokens_on_sale() -> Weight;
     fn recover_unsold_tokens() -> Weight;
+    fn participate_in_split() -> Weight;
+    fn abandon_revenue_split() -> Weight;
 }
 
 // Default implementation.
@@ -67,6 +69,14 @@ impl WeightInfo for () {
     }
 
     fn recover_unsold_tokens() -> Weight {
+        0
+    }
+
+    fn participate_in_split() -> Weight {
+        0
+    }
+
+    fn abandon_revenue_split() -> Weight {
         0
     }
 }
@@ -527,7 +537,15 @@ decl_module! {
         /// - `token` revenue split dividends payed tracking variable increased by `dividend`
         /// - `account.staking_status` set to Some(..) with `amount` and `token.latest_split`
         /// no-op if `amount.is_zero()`
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///   - `O(1)` - doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::participate_in_split()]
         fn participate_in_split(
             origin,
             token_id: T::TokenId,
@@ -599,7 +617,15 @@ decl_module! {
         ///
         /// Postconditions
         /// - `account.staking_status` set to None
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///   - `O(1)` - doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::abandon_revenue_split()]
         fn abandon_revenue_split(origin, token_id: T::TokenId) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
