@@ -20,7 +20,9 @@ function cleanup() {
     docker-compose down -v
 }
 
-trap cleanup EXIT
+if [ -z "$DEBUG" ]; then
+  trap cleanup EXIT
+fi
 
 # Clean start
 docker-compose down -v

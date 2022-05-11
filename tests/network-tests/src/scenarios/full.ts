@@ -31,8 +31,7 @@ import initStorageBucket from '../flows/clis/initStorageBucket'
 import createChannel from '../flows/clis/createChannel'
 import { scenario } from '../Scenario'
 import activeVideoCounters from '../flows/content/activeVideoCounters'
-// Disable nft tests until functionality re-activated in rhodes release
-// import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
+import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
 import updatingVerificationStatus from '../flows/membership/updateVerificationStatus'
 
 scenario('Full', async ({ job, env }) => {
@@ -95,8 +94,7 @@ scenario('Full', async ({ job, env }) => {
 
   // Content directory
   const videoCountersJob = job('check active video counters', activeVideoCounters).requires(sudoHireLead)
-  // Disable nft tests until functionality re-activated in rhodes release
-  // job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
+  job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
 
   // CLIs:
   const createChannelJob = job('create channel via CLI', createChannel).after(videoCountersJob)

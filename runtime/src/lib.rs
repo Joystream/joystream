@@ -98,7 +98,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 10,
-    spec_version: 5,
+    spec_version: 6,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -385,7 +385,7 @@ impl pallet_session::historical::Trait for Runtime {
 pallet_staking_reward_curve::build! {
     const REWARD_CURVE: PiecewiseLinear<'static> = curve!(
         min_inflation: 0_050_000,
-        max_inflation: 0_750_000,
+        max_inflation: 0_180_000,
         ideal_stake: 0_300_000,
         falloff: 0_050_000,
         max_piece_count: 100,
@@ -471,10 +471,6 @@ impl pallet_finality_tracker::Trait for Runtime {
     type ReportLatency = ReportLatency;
 }
 
-impl common::currency::GovernanceCurrency for Runtime {
-    type Currency = pallet_balances::Module<Self>;
-}
-
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
     pub const MaxModerators: u64 = 5;    // TODO: update
@@ -489,6 +485,7 @@ impl content::Trait for Runtime {
     type Event = Event;
     type ChannelCategoryId = ChannelCategoryId;
     type VideoId = VideoId;
+    type OpenAuctionId = OpenAuctionId;
     type VideoCategoryId = VideoCategoryId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
     type DataObjectStorage = Storage;
@@ -500,6 +497,7 @@ impl content::Trait for Runtime {
     type CleanupMargin = CleanupMargin;
     type CleanupCost = CleanupCost;
     type ModuleId = ContentModuleId;
+    type MemberAuthenticator = Members;
 }
 
 // The referendum instance alias.
@@ -733,11 +731,11 @@ impl membership::Trait for Runtime {
 
 parameter_types! {
     pub const MaxCategoryDepth: u64 = 6;
-    pub const MaxSubcategories: u64 = 20;
+    pub const MaxSubcategories: u64 = 40;
     pub const MaxThreadsInCategory: u64 = 20;
     pub const MaxPostsInThread: u64 = 20;
     pub const MaxModeratorsForCategory: u64 = 20;
-    pub const MaxCategories: u64 = 20;
+    pub const MaxCategories: u64 = 40;
     pub const MaxPollAlternativesNumber: u64 = 20;
     pub const ThreadDeposit: u64 = 30;
     pub const PostDeposit: u64 = 10;
