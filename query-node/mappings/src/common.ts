@@ -9,6 +9,7 @@ import {
   WorkingGroup as WGEntity,
   MetaprotocolTransactionStatusEvent,
   MetaprotocolTransactionStatus,
+  MetaprotocolTransactionErrored,
 } from 'query-node/dist/model'
 import { BaseModel } from '@joystream/warthog'
 import { metaToObject } from '@joystream/metadata-protobuf/utils'
@@ -282,8 +283,13 @@ export function toNumber(value: BN, maxValue = Number.MAX_SAFE_INTEGER): number 
 export async function updateMetaprotocolTransactionStatus(
   store: DatabaseManager,
   txStatusEventId: string,
-  newStatus: typeof MetaprotocolTransactionStatus
+  newStatus: typeof MetaprotocolTransactionStatus,
+  errorMessage?: unknown
 ): Promise<void> {
+  if (errorMessage && newStatus instanceof MetaprotocolTransactionErrored) {
+    newStatus.message = errorMessage instanceof Error ? errorMessage.message : (errorMessage as string)
+  }
+
   const metaprotocolTxStatusEvent = await getById(store, MetaprotocolTransactionStatusEvent, txStatusEventId)
   metaprotocolTxStatusEvent.status = newStatus
 

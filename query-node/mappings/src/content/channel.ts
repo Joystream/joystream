@@ -344,15 +344,9 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
       await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
     }
   } catch (e) {
-    const statusErrored = new MetaprotocolTransactionErrored()
-
-    if (typeof e === 'string') {
-      statusErrored.message = e
-    } else if (e instanceof Error) {
-      statusErrored.message = e.message
-    }
-
-    await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusErrored)
+    // update MetaprotocolTransactionStatusEvent
+    const statusErrored = new MetaprotocolTransactionSuccessful()
+    updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusErrored, e)
   }
 }
 
@@ -386,14 +380,8 @@ export async function content_ChannelModeratorRemarked(ctx: EventContext & Store
       await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
     }
   } catch (e) {
-    const statusErrored = new MetaprotocolTransactionErrored()
-
-    if (typeof e === 'string') {
-      statusErrored.message = e
-    } else if (e instanceof Error) {
-      statusErrored.message = e.message
-    }
-
-    await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusErrored)
+    // update MetaprotocolTransactionStatusEvent
+    const statusErrored = new MetaprotocolTransactionSuccessful()
+    updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusErrored, e)
   }
 }
