@@ -555,7 +555,7 @@ export async function members_MemberRemarked(ctx: EventContext & StoreContext): 
     await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
   } catch (e) {
     // update MetaprotocolTransactionStatusEvent
-    const statusErrored = new MetaprotocolTransactionSuccessful()
-    updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusErrored, e)
+    const statusErrored = new MetaprotocolTransactionErrored()
+    await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusErrored, e)
   }
 }
