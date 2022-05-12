@@ -389,10 +389,7 @@ export async function processCreateCommentMessage(
 
   // if new comment is replying to some parent comment, 1. validate that comment existence,
   //  2. set `parentComment` to the parent comment, otherwise set `parentComment` to undefined
-  const parentComment =
-    parentCommentId && parentCommentId !== ''
-      ? await getComment(store, parentCommentId.toString(), ['author'])
-      : undefined
+  const parentComment = parentCommentId ? await getComment(store, parentCommentId.toString(), ['author']) : undefined
 
   // increment video's comment count
   ++video.commentsCount
