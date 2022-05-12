@@ -43,9 +43,9 @@ pub fn default_token_sale_params() -> TokenSaleParams {
         starts_at: None,
         unit_price: DEFAULT_SALE_UNIT_PRICE,
         upper_bound_quantity: DEFAULT_INITIAL_ISSUANCE,
-        vesting_schedule: Some(VestingScheduleParams {
+        vesting_schedule_params: Some(VestingScheduleParams {
             blocks_before_cliff: 0,
-            duration: 100,
+            linear_vesting_duration: 100,
             cliff_amount_percentage: Permill::from_percent(0),
         }),
         cap_per_member: None,
@@ -169,6 +169,16 @@ impl InitTokenSaleFixture {
         }
     }
 
+    pub fn with_duration(self, duration: BlockNumber) -> Self {
+        Self {
+            params: TokenSaleParams {
+                duration,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
     pub fn with_tokens_source(self, tokens_source: AccountId) -> Self {
         Self {
             params: TokenSaleParams {
@@ -189,10 +199,13 @@ impl InitTokenSaleFixture {
         }
     }
 
-    pub fn with_vesting_schedule(self, vesting_schedule: Option<VestingScheduleParams>) -> Self {
+    pub fn with_vesting_schedule_params(
+        self,
+        vesting_schedule_params: Option<VestingScheduleParams>,
+    ) -> Self {
         Self {
             params: TokenSaleParams {
-                vesting_schedule,
+                vesting_schedule_params,
                 ..self.params
             },
             ..self
@@ -231,10 +244,12 @@ impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
         snapshot_pre: &InitTokenSaleFixtureStateSnapshot,
         snapshot_post: &InitTokenSaleFixtureStateSnapshot,
     ) {
+        let execution_block = System::block_number();
+
         // Token's `last_sale` updated
         assert_eq!(
-            snapshot_post.token_data.last_sale,
-            Some(TokenSale::try_from_params::<Test>(self.params.clone()).unwrap())
+            snapshot_post.token_data.sale,
+            Some(TokenSale::try_from_params::<Test>(self.params.clone(), execution_block).unwrap())
         );
 
         // Token's `sales_initialized` updated
@@ -244,7 +259,7 @@ impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
         );
 
         // Token state is valid
-        let sale = snapshot_post.token_data.last_sale.clone().unwrap();
+        let sale = snapshot_post.token_data.sale.clone().unwrap();
         assert_eq!(
             IssuanceState::of::<Test>(&snapshot_post.token_data),
             if let Some(start_block) = self.params.starts_at {
@@ -324,10 +339,10 @@ impl Fixture<UpdateUpcomingSaleFixtureStateSnapshot> for UpdateUpcomingSaleFixtu
         snapshot_pre: &UpdateUpcomingSaleFixtureStateSnapshot,
         snapshot_post: &UpdateUpcomingSaleFixtureStateSnapshot,
     ) {
-        // Token's `last_sale` updated
-        let sale_pre = snapshot_pre.token_data.last_sale.clone().unwrap();
+        // Token's `sale` updated
+        let sale_pre = snapshot_pre.token_data.sale.clone().unwrap();
         assert_eq!(
-            snapshot_post.token_data.last_sale.clone().unwrap(),
+            snapshot_post.token_data.sale.clone().unwrap(),
             TokenSale {
                 duration: self.new_duration.unwrap_or(sale_pre.duration),
                 start_block: self.new_start_block.unwrap_or(sale_pre.start_block),
@@ -341,6 +356,7 @@ pub struct PurchaseTokensOnSaleFixture {
     sender: AccountId,
     token_id: TokenId,
     amount: Balance,
+    sale_source_account: Option<AccountId>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -361,6 +377,10 @@ impl PurchaseTokensOnSaleFixture {
             sender: OTHER_ACCOUNT_ID,
             token_id: 1,
             amount: DEFAULT_SALE_PURCHASE_AMOUNT,
+            sale_source_account: Token::token_info_by_id(1)
+                .sale
+                .as_ref()
+                .map(|s| s.tokens_source),
         }
     }
 
@@ -376,10 +396,8 @@ impl PurchaseTokensOnSaleFixture {
 impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleFixture {
     fn get_state_snapshot(&self) -> PurchaseTokensOnSaleFixtureStateSnapshot {
         let token_data = Token::token_info_by_id(self.token_id);
-        let sale_source_account = token_data
-            .last_sale
-            .as_ref()
-            .map_or(AccountId::default(), |s| s.tokens_source);
+        let sale_source_account = self.sale_source_account.unwrap_or_default();
+
         let buyer_account_data =
             Token::account_info_by_token_and_account(self.token_id, self.sender);
         PurchaseTokensOnSaleFixtureStateSnapshot {
@@ -423,15 +441,26 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
             self.amount,
             self.sender
         ));
-        let sale_pre = snapshot_pre.token_data.last_sale.clone().unwrap();
-        // `quantity_left` decreased
-        assert_eq!(
-            snapshot_post.token_data.last_sale.clone().unwrap(),
-            TokenSale {
-                quantity_left: sale_pre.quantity_left.saturating_sub(self.amount),
-                ..sale_pre.clone()
-            }
-        );
+        let sale_pre = snapshot_pre.token_data.sale.clone().unwrap();
+        // `quantity_left` decreased or `token_data.sale` removed
+        let expected_quantity_left = snapshot_pre
+            .token_data
+            .sale
+            .as_ref()
+            .unwrap()
+            .quantity_left
+            .saturating_sub(self.amount);
+        if expected_quantity_left == 0 {
+            assert!(snapshot_post.token_data.sale.is_none())
+        } else {
+            assert_eq!(
+                snapshot_post.token_data.sale.clone().unwrap(),
+                TokenSale {
+                    quantity_left: sale_pre.quantity_left.saturating_sub(self.amount),
+                    ..sale_pre.clone()
+                }
+            );
+        }
         // source account's JOY balance increased
         assert_eq!(
             snapshot_post.source_account_usable_joy_balance,
@@ -453,13 +482,13 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
                     .as_ref()
                     .map_or(0, |vs| vs.cliff_amount)
                     .saturating_add(purchase_vesting_schedule.cliff_amount),
-                duration: purchase_vesting_schedule.duration,
+                linear_vesting_duration: purchase_vesting_schedule.linear_vesting_duration,
                 post_cliff_total_amount: snapshot_pre
                     .buyer_vesting_schedule
                     .as_ref()
                     .map_or(0, |vs| vs.post_cliff_total_amount)
                     .saturating_add(purchase_vesting_schedule.post_cliff_total_amount),
-                start_block: purchase_vesting_schedule.start_block
+                linear_vesting_start_block: purchase_vesting_schedule.linear_vesting_start_block
             }
         );
         // buyer's transferrable balance is unchanged
@@ -508,6 +537,7 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
 pub struct RecoverUnsoldTokensFixture {
     origin: Origin,
     token_id: TokenId,
+    sale_source_account: Option<AccountId>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -521,17 +551,17 @@ impl RecoverUnsoldTokensFixture {
         Self {
             token_id: 1,
             origin: Origin::signed(DEFAULT_ACCOUNT_ID),
+            sale_source_account: Token::token_info_by_id(1)
+                .sale
+                .as_ref()
+                .map(|s| s.tokens_source),
         }
     }
 }
 
 impl Fixture<RecoverUnsoldTokensFixtureStateSnapshot> for RecoverUnsoldTokensFixture {
     fn get_state_snapshot(&self) -> RecoverUnsoldTokensFixtureStateSnapshot {
-        let token_data = Token::token_info_by_id(self.token_id);
-        let sale_source_acc = token_data
-            .last_sale
-            .as_ref()
-            .map_or(AccountId::default(), |s| s.tokens_source);
+        let sale_source_acc = self.sale_source_account.unwrap_or_default();
         RecoverUnsoldTokensFixtureStateSnapshot {
             token_data: Token::token_info_by_id(self.token_id),
             source_account_data: Token::account_info_by_token_and_account(
@@ -550,13 +580,13 @@ impl Fixture<RecoverUnsoldTokensFixtureStateSnapshot> for RecoverUnsoldTokensFix
         snapshot_pre: &RecoverUnsoldTokensFixtureStateSnapshot,
         snapshot_post: &RecoverUnsoldTokensFixtureStateSnapshot,
     ) {
-        let recovered_amount = snapshot_pre.token_data.last_sale_remaining_tokens();
+        let recovered_amount = snapshot_pre.token_data.sale.as_ref().unwrap().quantity_left;
         last_event_eq!(RawEvent::UnsoldTokensRecovered(
             self.token_id,
             snapshot_pre.token_data.sales_initialized,
             recovered_amount
         ));
-        assert_eq!(snapshot_post.token_data.last_sale_remaining_tokens(), 0);
+        assert!(snapshot_post.token_data.sale.is_none());
         // `acc.amount` and `acc.transferrable` increased by `recovered_amount`
         assert_eq!(
             snapshot_post

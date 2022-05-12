@@ -14,7 +14,7 @@ use crate::{balance, GenesisConfig};
 pub struct TokenDataBuilder {
     pub(crate) total_supply: <Test as crate::Trait>::Balance,
     pub(crate) tokens_issued: <Test as crate::Trait>::Balance,
-    pub(crate) last_sale: Option<TokenSaleOf<Test>>,
+    pub(crate) sale: Option<TokenSaleOf<Test>>,
     pub(crate) sales_initialized: TokenSaleId,
     pub(crate) transfer_policy: TransferPolicyOf<Test>,
     pub(crate) patronage_info:
@@ -27,7 +27,7 @@ impl TokenDataBuilder {
         crate::types::TokenDataOf::<Test> {
             total_supply: self.total_supply,
             tokens_issued: self.tokens_issued,
-            last_sale: self.last_sale,
+            sale: self.sale,
             sales_initialized: self.sales_initialized,
             transfer_policy: self.transfer_policy,
             patronage_info: self.patronage_info,
@@ -70,7 +70,7 @@ impl TokenDataBuilder {
         Self {
             tokens_issued: Balance::zero(),
             total_supply: Balance::zero(),
-            last_sale: None,
+            sale: None,
             sales_initialized: 0,
             transfer_policy: TransferPolicy::Permissionless,
             patronage_info: PatronageData::<Balance, BlockNumber> {
@@ -202,14 +202,14 @@ where
         self,
         account: &AccountId,
         amount: Balance,
-        vesting_schedule: Option<VestingScheduleParams>,
+        vesting_schedule_params: Option<VestingScheduleParams>,
     ) -> Self {
         let mut initial_allocation = self.initial_allocation.clone();
         initial_allocation.insert(
             account.clone(),
             TokenAllocation {
                 amount,
-                vesting_schedule,
+                vesting_schedule_params,
             },
         );
         Self {

@@ -70,6 +70,9 @@ pub trait Trait: frame_system::Trait + balances::Trait + storage::Trait {
     /// Maximum number of vesting balances per account per token
     type MaxVestingBalancesPerAccountPerToken: Get<u8>;
 
+    /// Minimum duration of a token sale
+    type MinSaleDuration: Get<u32>;
+
     /// Number of blocks produced in a year
     type BlocksPerYear: Get<u32>;
 }
@@ -283,11 +286,20 @@ decl_module! {
         /// - `amount * sale.unit_price` JOY tokens are transfered from `sender`
         ///   to `sale.tokens_source` account
         /// - if new account created: `bloat_bond` transferred from `sender` to treasury
-        /// - buyer's `vesting_schedule` related to the current sale is updated/created
-        /// - some finished vesting schedule is removed from buyer's account_data in case
+        /// - if buyer has no `vesting_schedule` related to the current sale:
+        ///   - a new vesting schedule (`sale.get_vesting_schedule(purchase_amount)`) is added to
+        ///     buyer's `vesing_schedules`
+        ///   - some finished vesting schedule is removed from buyer's account_data in case the
         ///   number of buyer's vesting_schedules was == MaxVestingSchedulesPerAccountPerToken
-        ///   and a new schedule was added
-        /// - `token_data.last_sale.quantity_left` is decreased by `amount`
+        /// - if buyer already has a `vesting_schedule` related to the current sale:
+        ///   - current vesting schedule's `cliff_amount` is increased by
+        ///     `sale.get_vesting_schedule(purchase_amount).cliff_amount`
+        ///   - current vesting schedule's `post_cliff_total_amount` is increased by
+        ///     `sale.get_vesting_schedule(purchase_amount).post_cliff_total_amount`
+        /// - if `token_data.sale.quantity_left - amount > 0`:
+        ///   - `token_data.sale.quantity_left` is decreased by `amount`
+        /// - if `token_data.sale.quantity_left - amount == 0`:
+        ///   - `token_data.sale` is set to None
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn purchase_tokens_on_sale(
             origin,
@@ -332,7 +344,7 @@ decl_module! {
 
             // Ensure account exists if Permissioned token
             if let TransferPolicy::Permissioned(_) = token_data.transfer_policy {
-                Self::ensure_account_data_exists(token_id, &sender)?;
+                ensure!(account_exists, Error::<T>::AccountInformationDoesNotExist);
             }
 
             // Ensure vesting schedule can added if doesn't already exist
@@ -373,8 +385,13 @@ decl_module! {
                 );
             }
 
+            let updated_sale_quantity = sale.quantity_left.saturating_sub(amount);
             TokenInfoById::<T>::mutate(token_id, |t| {
-                t.last_sale.as_mut().unwrap().quantity_left = sale.quantity_left.saturating_sub(amount);
+                if updated_sale_quantity.is_zero() {
+                    t.sale = None;
+                } else if let Some(s) = t.sale.as_mut() {
+                    s.quantity_left = updated_sale_quantity;
+                }
             });
 
             Self::deposit_event(RawEvent::TokensPurchasedOnSale(token_id, sale_id, amount, sender));
@@ -384,42 +401,37 @@ decl_module! {
 
         /// Allows anyone to recover tokens that were not sold during a token sale
         /// that has already finished (they will always be sent back to
-        /// `token_data.last_sale.tokens_source` account)
+        /// `token_data.sale.tokens_source` account)
         ///
         /// Preconditions:
         /// - token by `token_id` must exists
         /// - token must be in Idle offering state
-        /// - token must have `last_sale` set
-        /// - `token_data.last_sale.quantity_left` must be > 0
+        /// - token must have `sale` set
         ///
         /// Postconditions:
-        /// - `token_data.last_sale.tokens_source` account balance is increased by
+        /// - `token_data.sale.tokens_source` account balance is increased by
         ///   `token_data.last_sale.quantity_left`
-        /// - `token_data.last_sale.quantity_left` is set to 0
+        /// - `token_data.sale` is set to None
         #[weight = 10_000_000] // TODO: adjust weight
         fn recover_unsold_tokens(origin, token_id: T::TokenId) -> DispatchResult {
             ensure_signed(origin)?;
             let token_info = Self::ensure_token_exists(token_id)?;
             OfferingStateOf::<T>::ensure_idle_of::<T>(&token_info)?;
-            let amount_to_recover = token_info.last_sale_remaining_tokens();
-            ensure!(
-                !amount_to_recover.is_zero(),
-                Error::<T>::NoTokensToRecover
-            );
+            let sale = token_info.sale.ok_or(Error::<T>::NoTokensToRecover)?;
 
             // == MUTATION SAFE ==
             AccountInfoByTokenAndAccount::<T>::mutate(
                 token_id,
-                &token_info.last_sale.unwrap().tokens_source,
+                &sale.tokens_source,
                 |ad| {
-                    ad.increase_amount_by(amount_to_recover);
+                    ad.increase_amount_by(sale.quantity_left);
                 },
             );
             TokenInfoById::<T>::mutate(token_id, |token_info| {
-                token_info.last_sale.as_mut().unwrap().quantity_left = <T as Trait>::Balance::zero();
+                token_info.sale = None;
             });
 
-            Self::deposit_event(RawEvent::UnsoldTokensRecovered(token_id, token_info.sales_initialized, amount_to_recover));
+            Self::deposit_event(RawEvent::UnsoldTokensRecovered(token_id, token_info.sales_initialized, sale.quantity_left));
 
             Ok(())
         }
@@ -602,8 +614,7 @@ impl<T: Trait>
     /// - token by `token_id` exists
     /// - provided sale start block is >= current_block
     /// - token offering is in Idle state
-    /// - there are no tokens still unrecovered from the previous sale
-    ///   (last_sale.quantity_left == 0)
+    /// - previous sale has been finalized (token_data.sale.is_none())
     /// - `sale_params.tokens_source` account exists
     /// - `sale_params.tokens_source` has transferrable CRT balance
     ///   >= `sale_params.upper_bound_quantity`
@@ -611,12 +622,13 @@ impl<T: Trait>
     /// Postconditions:
     /// - `sale_params.tokens_source` account balance is decreased by
     ///   `sale_params.upper_bound_quantity`
-    /// - token's `last_sale` is set
+    /// - token's `sale` is set
     /// - token's `sales_initialized` is incremented
     fn init_token_sale(token_id: T::TokenId, sale_params: TokenSaleParamsOf<T>) -> DispatchResult {
+        let current_block = Self::current_block();
         let token_data = Self::ensure_token_exists(token_id)?;
-        let sale = TokenSaleOf::<T>::try_from_params::<T>(sale_params.clone())?;
-        Self::ensure_can_init_sale(token_id, &token_data, &sale_params)?;
+        let sale = TokenSaleOf::<T>::try_from_params::<T>(sale_params.clone(), current_block)?;
+        Self::ensure_can_init_sale(token_id, &token_data, &sale_params, current_block)?;
 
         // == MUTATION SAFE ==
 
@@ -627,7 +639,7 @@ impl<T: Trait>
         });
 
         TokenInfoById::<T>::mutate(token_id, |t| {
-            t.last_sale = Some(sale);
+            t.sale = Some(sale);
             t.sales_initialized = t.sales_initialized.saturating_add(1);
         });
 
@@ -658,7 +670,7 @@ impl<T: Trait>
             Error::<T>::SaleStartingBlockInThePast
         );
         // == MUTATION SAFE ==
-        TokenInfoById::<T>::mutate(token_id, |t| t.last_sale = Some(updated_sale));
+        TokenInfoById::<T>::mutate(token_id, |t| t.sale = Some(updated_sale));
 
         Ok(())
     }
@@ -789,15 +801,14 @@ impl<T: Trait> Module<T> {
         token_id: T::TokenId,
         token_data: &TokenDataOf<T>,
         sale_params: &TokenSaleParamsOf<T>,
+        current_block: T::BlockNumber,
     ) -> DispatchResult {
-        let current_block = Self::current_block();
-
         // Ensure token offering state is Idle
         OfferingStateOf::<T>::ensure_idle_of::<T>(token_data)?;
 
-        // Ensure no unrecovered tokens remaining from the previous sale
+        // Ensure previous sale was finalized
         ensure!(
-            token_data.last_sale_remaining_tokens().is_zero(),
+            token_data.sale.is_none(),
             Error::<T>::RemainingUnrecoveredTokensFromPreviousSale
         );
 
@@ -988,7 +999,7 @@ impl<T: Trait> Module<T> {
         let current_block = Self::current_block();
 
         for (destination, allocation) in targets {
-            let account_data = if let Some(vsp) = allocation.vesting_schedule.as_ref() {
+            let account_data = if let Some(vsp) = allocation.vesting_schedule_params.as_ref() {
                 AccountDataOf::<T>::new_with_vesting_and_bond(
                     VestingSource::InitialIssuance,
                     VestingSchedule::from_params(current_block, allocation.amount, vsp.clone()),

@@ -27,6 +27,9 @@ decl_error! {
         /// Specified sale starting block is in the past
         SaleStartingBlockInThePast,
 
+        /// Specified sale duration is shorter than MinSaleDuration
+        SaleDurationTooShort,
+
         /// Token's current issuance state is not Idle
         TokenIssuanceNotInIdleState,
 
