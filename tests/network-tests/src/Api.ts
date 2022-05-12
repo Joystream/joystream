@@ -460,8 +460,8 @@ export class Api {
     const blockNumber = (await this.api.rpc.chain.getHeader(blockHash)).number.toNumber()
     const blockTimestamp = (await this.api.query.timestamp.now.at(blockHash)).toNumber()
     const blockEvents = await this.api.query.system.events.at(blockHash)
-    const indexInBlock = blockEvents.findIndex(({ event: blockEvent }) =>
-      blockEvent.hash.eq((event as EventType<S, M> & Codec).hash)
+    const indexInBlock = blockEvents.findIndex((blockEvent) =>
+      blockEvent.hash.eq(result.findRecord(section, method)?.hash)
     )
 
     return {
