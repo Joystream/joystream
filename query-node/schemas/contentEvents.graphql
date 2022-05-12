@@ -21,6 +21,9 @@ type VideoReactedEvent implements Event @entity {
   "The video being reacted to"
   video: Video!
 
+  "Video channel"
+  videoChannel: Channel!
+
   "The reaction result"
   reactionResult: VideoReactionOptions!
 
@@ -50,6 +53,12 @@ type CommentReactedEvent implements Event @entity {
 
   "The comment being reacted to"
   comment: Comment!
+
+  "Comment's video"
+  video: Video!
+
+  "Video channel"
+  videoChannel: Channel!
 
   "The reaction id"
   reactionResult: Int!
@@ -81,6 +90,15 @@ type CommentCreatedEvent implements Event @entity {
   "The comment that was added"
   comment: Comment!
 
+  "Parent comment author (if any)"
+  parentCommentAuthor: Membership
+
+  "Comment's video"
+  video: Video!
+
+  "Video channel"
+  videoChannel: Channel!
+
   "Comment's original text"
   text: String!
 }
@@ -107,6 +125,12 @@ type CommentTextUpdatedEvent implements Event @entity {
 
   "The comment being updated"
   comment: Comment!
+
+  "Comment's video"
+  video: Video!
+
+  "Video channel"
+  videoChannel: Channel!
 
   "New comment text"
   newText: String!
@@ -137,6 +161,12 @@ type CommentDeletedEvent implements Event @entity {
   "Comment deleted"
   comment: Comment!
 
+  "Comment's video"
+  video: Video!
+
+  "Video channel"
+  videoChannel: Channel!
+
   # No actor context required, since commenter would delete the comment
 }
 
@@ -162,6 +192,12 @@ type CommentModeratedEvent implements Event @entity {
 
   "Comment deleted"
   comment: Comment!
+
+  "Comment's video"
+  video: Video!
+
+  "Video channel"
+  videoChannel: Channel!
 
   "The actor responsible for the removal of comment"
   actor: ContentActor!
@@ -193,6 +229,12 @@ type CommentPinnedEvent implements Event @entity {
 
   "The comment being pinned"
   comment: Comment!
+
+  "Comment's video"
+  video: Video!
+
+  "Video channel"
+  videoChannel: Channel!
 
   "The action performed. true if comment is pinned, otherwise false."
   action: Boolean!

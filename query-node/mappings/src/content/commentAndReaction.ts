@@ -1,4 +1,4 @@
-import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
+import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
 import {
   BanOrUnbanMemberFromChannel,
   CommentSectionPreference,
@@ -163,6 +163,29 @@ async function getOrCreateCommentReactionsCountByReactionId(
   return reactionsCountByReactionId
 }
 
+export function setReactionsCount(
+  event: SubstrateEvent,
+  entity: Video | Comment,
+  reactionsCountByReactionId: VideoReactionsCountByReactionType | CommentReactionsCountByReactionId,
+  operation: 'INCREMENT' | 'DECREMENT'
+): void {
+  const eventTime = new Date(event.blockTimestamp)
+  if (operation === 'INCREMENT') {
+    ++reactionsCountByReactionId.count
+    reactionsCountByReactionId.updatedAt = eventTime
+
+    ++entity.reactionsCount
+    entity.updatedAt = eventTime
+    return
+  }
+
+  --reactionsCountByReactionId.count
+  reactionsCountByReactionId.updatedAt = eventTime
+
+  --entity.reactionsCount
+  entity.updatedAt = eventTime
+}
+
 function parseVideoReaction(reaction: ReactVideo.Reaction): VideoReactionOptions {
   switch (reaction) {
     case ReactVideo.Reaction.LIKE: {
@@ -183,6 +206,45 @@ export async function processReactVideoMessage(
   const eventTime = new Date(event.blockTimestamp)
   const reactionResult = parseVideoReaction(reaction)
 
+  const changeOrRemovePreviousReaction = async (
+    store: DatabaseManager,
+    video: Video,
+    previousReactionByMember: VideoReaction,
+    reaction: VideoReactionOptions
+  ) => {
+    // remove the reaction if member has already reacted with the same option already else change the reaction
+    if (reaction === previousReactionByMember.reaction) {
+      // decrement reactions count
+      setReactionsCount(event, video, reactionsCountByReactionType, 'DECREMENT')
+      // remove reaction
+      await store.remove<VideoReaction>(previousReactionByMember)
+      return
+    }
+
+    // increment reaction count of current reaction type
+    ++reactionsCountByReactionType.count
+    reactionsCountByReactionType.updatedAt = eventTime
+
+    const reactionsCountByReactionTypeOfPreviousReaction = await getOrCreateVideoReactionsCountByReactionId(
+      store,
+      video,
+      previousReactionByMember.reaction
+    )
+
+    // decrement reaction count of previous reaction type
+    --reactionsCountByReactionTypeOfPreviousReaction.count
+    reactionsCountByReactionTypeOfPreviousReaction.updatedAt = eventTime
+
+    // save reactionsCount of previous reaction
+    await store.save<VideoReactionsCountByReactionType>(reactionsCountByReactionTypeOfPreviousReaction)
+
+    previousReactionByMember.reaction = reaction
+    previousReactionByMember.updatedAt = eventTime
+
+    // update reaction
+    await store.save<VideoReaction>(previousReactionByMember)
+  }
+
   // load video
   const video = await getVideo(store, videoId.toString(), ['channel', 'channel.bannedMembers'])
 
@@ -201,40 +263,7 @@ export async function processReactVideoMessage(
   const reactionsCountByReactionType = await getOrCreateVideoReactionsCountByReactionId(store, video, reactionResult)
 
   if (previousReactionByMember) {
-    // remove the reaction if member has already reacted with the same option already else change the reaction
-    if (reactionResult === previousReactionByMember.reaction) {
-      --video.reactionsCount
-      video.updatedAt = eventTime
-
-      --reactionsCountByReactionType.count
-      reactionsCountByReactionType.updatedAt = eventTime
-
-      // remove reaction
-      await store.remove<VideoReaction>(previousReactionByMember)
-    } else {
-      // increment reaction count of current reaction type
-      ++reactionsCountByReactionType.count
-      reactionsCountByReactionType.updatedAt = eventTime
-
-      const reactionsCountByReactionTypeOfPreviousReaction = await getOrCreateVideoReactionsCountByReactionId(
-        store,
-        video,
-        previousReactionByMember.reaction
-      )
-
-      // decrement reaction count of previous reaction type
-      --reactionsCountByReactionTypeOfPreviousReaction.count
-      reactionsCountByReactionTypeOfPreviousReaction.updatedAt = eventTime
-
-      // save reactionsCount of previous reaction
-      await store.save<VideoReactionsCountByReactionType>(reactionsCountByReactionTypeOfPreviousReaction)
-
-      previousReactionByMember.reaction = reactionResult
-      previousReactionByMember.updatedAt = eventTime
-
-      // update reaction
-      await store.save<VideoReaction>(previousReactionByMember)
-    }
+    changeOrRemovePreviousReaction(store, video, previousReactionByMember, reactionResult)
   } else {
     // new reaction
     const newReactionByMember = new VideoReaction({
@@ -247,14 +276,9 @@ export async function processReactVideoMessage(
       member: new Membership({ id: memberId.toString() }),
     })
 
+    setReactionsCount(event, video, reactionsCountByReactionType, 'INCREMENT')
     // add reaction
     await store.save<VideoReaction>(newReactionByMember)
-
-    ++video.reactionsCount
-    video.updatedAt = eventTime
-
-    ++reactionsCountByReactionType.count
-    reactionsCountByReactionType.updatedAt = eventTime
   }
 
   // save updated comment
@@ -268,6 +292,7 @@ export async function processReactVideoMessage(
   const videoReactedEvent = new VideoReactedEvent({
     ...genericEventFields(event),
     video,
+    videoChannel: video.channel,
     reactingMember: new Membership({ id: memberId.toString() }),
     reactionResult,
   })
@@ -291,7 +316,7 @@ export async function processReactCommentMessage(
   ensureMemberIsNotBannedFromChannel(video.channel, memberId.toString(), 'Cannot add reaction')
 
   // load same reaction by member to the comment (if any)
-  const existingReactionByMember = await store.get(CommentReaction, {
+  const previousReactionByMember = await store.get(CommentReaction, {
     where: { id: commentReactionEntityId({ memberId, commentId, reactionId }) },
   })
 
@@ -299,15 +324,11 @@ export async function processReactCommentMessage(
   const reactionsCountByReactionId = await getOrCreateCommentReactionsCountByReactionId(store, comment, reactionId)
 
   // remove the reaction if same reaction already exists by the member on the comment
-  if (existingReactionByMember) {
-    --reactionsCountByReactionId.count
-    reactionsCountByReactionId.updatedAt = eventTime
-
-    --comment.reactionsCount
-    comment.updatedAt = eventTime
-
+  if (previousReactionByMember) {
+    // decrement reactions count
+    setReactionsCount(event, comment, reactionsCountByReactionId, 'DECREMENT')
     // remove reaction
-    await store.remove<CommentReaction>(existingReactionByMember)
+    await store.remove<CommentReaction>(previousReactionByMember)
   } else {
     // new reaction
     const newReactionByMember = new CommentReaction({
@@ -321,14 +342,10 @@ export async function processReactCommentMessage(
       member: new Membership({ id: memberId.toString() }),
     })
 
+    // increment reactions count
+    setReactionsCount(event, comment, reactionsCountByReactionId, 'INCREMENT')
     // add reaction
     await store.save<CommentReaction>(newReactionByMember)
-
-    ++reactionsCountByReactionId.count
-    reactionsCountByReactionId.updatedAt = eventTime
-
-    ++comment.reactionsCount
-    comment.updatedAt = eventTime
   }
 
   // save updated comment
@@ -342,6 +359,8 @@ export async function processReactCommentMessage(
   const commentReactedEvent = new CommentReactedEvent({
     ...genericEventFields(event),
     comment,
+    video,
+    videoChannel: video.channel,
     reactingMember: new Membership({ id: memberId.toString() }),
     reactionResult: reactionId,
   })
@@ -371,7 +390,9 @@ export async function processCreateCommentMessage(
   // if new comment is replying to some parent comment, 1. validate that comment existence,
   //  2. set `parentComment` to the parent comment, otherwise set `parentComment` to undefined
   const parentComment =
-    parentCommentId && parentCommentId !== '' ? await getComment(store, parentCommentId.toString()) : undefined
+    parentCommentId && parentCommentId !== ''
+      ? await getComment(store, parentCommentId.toString(), ['author'])
+      : undefined
 
   // increment video's comment count
   ++video.commentsCount
@@ -405,6 +426,9 @@ export async function processCreateCommentMessage(
   const commentCreatedEvent = new CommentCreatedEvent({
     ...genericEventFields(event),
     comment,
+    video,
+    videoChannel: channel,
+    parentCommentAuthor: parentComment?.author,
     text: body,
   })
 
@@ -446,6 +470,8 @@ export async function processEditCommentMessage(
   const commentTextUpdatedEvent = new CommentTextUpdatedEvent({
     ...genericEventFields(event),
     comment,
+    video,
+    videoChannel: video.channel,
     newText: newBody,
   })
   await store.save<CommentTextUpdatedEvent>(commentTextUpdatedEvent)
@@ -509,6 +535,8 @@ export async function processDeleteCommentMessage(
   const commentDeletedEvent = new CommentDeletedEvent({
     ...genericEventFields(event),
     comment,
+    video,
+    videoChannel: video.channel,
   })
   await store.save<CommentDeletedEvent>(commentDeletedEvent)
 
@@ -562,6 +590,8 @@ export async function processModerateCommentMessage(
   const commentModeratedEvent = new CommentModeratedEvent({
     ...genericEventFields(event),
     comment,
+    video,
+    videoChannel: video.channel,
     actor: channelOwnerOrModerator,
     rationale,
   })
@@ -601,6 +631,8 @@ export async function processPinOrUnpinCommentMessage(
   const commentPinnedEvent = new CommentPinnedEvent({
     ...genericEventFields(event),
     comment,
+    video,
+    videoChannel: video.channel,
     action: option === PinOrUnpinComment.Option.PIN,
   })
 
