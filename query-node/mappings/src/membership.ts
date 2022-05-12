@@ -520,11 +520,12 @@ export async function members_MemberRemarked(ctx: EventContext & StoreContext): 
   const { event, store } = ctx
   const [memberId, message] = new Members.MemberRemarkedEvent(event).params
 
+  const genericFields = genericEventFields(event)
   // unique identifier for metaprotocol tx
-  const { id: metaprotocolTxIdentifier } = genericEventFields(event) as BaseModel
+  const { id: metaprotocolTxIdentifier } = genericFields as BaseModel
 
   const metaprotocolTxStatusEvent = new MetaprotocolTransactionStatusEvent({
-    ...genericEventFields(event),
+    ...genericFields,
     status: new MetaprotocolTransactionPending(),
   })
 
@@ -537,49 +538,24 @@ export async function members_MemberRemarked(ctx: EventContext & StoreContext): 
 
     if (!messageType) {
       inconsistentState('Unsupported message type in member_remark action')
-    }
-
-    if (messageType === 'reactVideo') {
+    } else if (messageType === 'reactVideo') {
       await processReactVideoMessage(ctx, memberId, decodedMessage.reactVideo!)
-      const statusSuccessful = new MetaprotocolTransactionSuccessful()
-      await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
-      return
-    }
-
-    if (messageType === 'reactComment') {
+    } else if (messageType === 'reactComment') {
       await processReactCommentMessage(ctx, memberId, decodedMessage.reactComment!)
-      const statusSuccessful = new MetaprotocolTransactionSuccessful()
-      await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
-      return
-    }
-
-    if (messageType === 'createComment') {
+    } else if (messageType === 'createComment') {
       await processCreateCommentMessage(ctx, memberId, decodedMessage.createComment!)
-      const statusSuccessful = new MetaprotocolTransactionSuccessful()
-      await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
-      return
-    }
-
-    if (messageType === 'editComment') {
+    } else if (messageType === 'editComment') {
       await processEditCommentMessage(ctx, memberId, decodedMessage.editComment!)
-      const statusSuccessful = new MetaprotocolTransactionSuccessful()
-      await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
-    }
-
-    if (messageType === 'deleteComment') {
+    } else if (messageType === 'deleteComment') {
       await processDeleteCommentMessage(ctx, memberId, decodedMessage.deleteComment!)
-      const statusSuccessful = new MetaprotocolTransactionSuccessful()
-      await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
     }
+
+    // update MetaprotocolTransactionStatusEvent
+    const statusSuccessful = new MetaprotocolTransactionSuccessful()
+    await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
   } catch (e) {
+    // update MetaprotocolTransactionStatusEvent
     const statusErrored = new MetaprotocolTransactionErrored()
-
-    if (typeof e === 'string') {
-      statusErrored.message = e
-    } else if (e instanceof Error) {
-      statusErrored.message = e.message
-    }
-
-    await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusErrored)
+    await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusErrored, e)
   }
 }
