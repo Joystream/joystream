@@ -239,16 +239,6 @@ export async function content_VideoDeleted({ store, event }: EventContext & Stor
 
   // TODO: remove reactions & comments
 
-  await getManager().transaction(async (transactionalEntityManager) => {
-    await transactionalEntityManager
-      .createQueryBuilder()
-      .delete()
-      .from(CommentReaction)
-      .where({ video_id: video.id })
-      .execute()
-    await transactionalEntityManager.createQueryBuilder().delete().from(Comment).where({ video_id: video.id }).execute()
-  })
-
   // remove video
   await store.remove<Video>(video)
 
