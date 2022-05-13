@@ -7,9 +7,7 @@ use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
 use crate::types::{BlockRate, TokenIssuanceParametersOf, YearlyRate};
-use crate::{
-    account, balance, block, last_event_eq, origin, rate, token, yearly_rate, Error, RawEvent,
-};
+use crate::{account, balance, block, last_event_eq, rate, token, yearly_rate, Error, RawEvent};
 
 #[test]
 fn issue_token_ok_with_patronage_tally_count_zero() {
@@ -501,69 +499,6 @@ fn claim_patronage_ok_with_tally_amount_set_to_zero() {
                 .patronage_info
                 .unclaimed_patronage_tally_amount,
             balance!(0)
-        );
-    })
-}
-
-#[test]
-fn dust_account_ok_with_tally_block_update_after_account_removed() {
-    let (token_id, init_supply) = (token!(1), balance!(100));
-    let (owner, user_account) = (account!(1), account!(2));
-    let (rate, blocks) = (rate!(10), block!(10));
-    let amount_burned = balance!(100);
-
-    let token_info = TokenDataBuilder::new_empty()
-        .with_patronage_rate(rate)
-        .build();
-
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token_and_owner(token_id, token_info, owner, init_supply)
-        .with_account(user_account, AccountData::new_with_amount(amount_burned))
-        .build();
-
-    build_test_externalities(config).execute_with(|| {
-        increase_block_number_by(blocks);
-
-        let _ = Token::dust_account(origin!(user_account), token_id, user_account);
-
-        assert_eq!(
-            Token::token_info_by_id(token_id)
-                .patronage_info
-                .last_unclaimed_patronage_tally_block,
-            block!(1) + blocks
-        );
-    })
-}
-
-#[test]
-fn dust_account_ok_with_tally_amount_update_after_account_removed() {
-    let (token_id, owner_balance) = (token!(1), balance!(100));
-    let (owner, user_account) = (account!(1), account!(2));
-    let (rate, blocks) = (rate!(10), block!(10));
-    let amount_to_burn = balance!(100);
-
-    let token_info = TokenDataBuilder::new_empty()
-        .with_patronage_rate(rate)
-        .build();
-
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token_and_owner(token_id, token_info, owner, owner_balance)
-        .with_account(user_account, AccountData::new_with_amount(amount_to_burn))
-        .build();
-
-    // 10%(rate) * 10(blocks) * 200(init_supply + amount_to_burn)
-    let expected_tally = balance!(200);
-
-    build_test_externalities(config).execute_with(|| {
-        increase_block_number_by(blocks);
-
-        let _ = Token::dust_account(origin!(user_account), token_id, user_account);
-
-        assert_eq!(
-            Token::token_info_by_id(token_id)
-                .patronage_info
-                .unclaimed_patronage_tally_amount,
-            expected_tally,
         );
     })
 }

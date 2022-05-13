@@ -754,11 +754,6 @@ where
         self.total_supply = self.total_supply.saturating_add(amount);
     }
 
-    // decrease total issuance (use when tokens are burned for any reason)
-    pub(crate) fn decrease_supply_by(&mut self, amount: Balance) {
-        self.total_supply = self.total_supply.saturating_sub(amount);
-    }
-
     // increment account number
     pub(crate) fn increment_accounts_number(&mut self) {
         self.accounts_number = self.accounts_number.saturating_add(1u64);
