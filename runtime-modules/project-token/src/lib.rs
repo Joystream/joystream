@@ -873,7 +873,8 @@ impl<T: Trait>
     /// PostConditions
     /// - `allocation` transferred from `reserve_source` to `treasury_account`
     /// - `token.revenue_split` set to `Active(..)` with timeline [start, start + duration)
-    ///    and `token.revenue_split.allocation = allocation`
+    ///    and `token.revenue_split.allocation = allocation`. `start` is either the starting
+    ///    block specified or `current_block + min_revenue_split_forewarning`
     /// - `token.latest_split` incremented by 1
     /// no-op if allocation is 0
     fn issue_revenue_split(
@@ -897,7 +898,17 @@ impl<T: Trait>
         );
 
         let current_block = Self::current_block();
-        let timeline = TimelineOf::<T>::try_from_params::<T>(start, duration, current_block)?;
+        if let Some(starting_block) = start {
+            ensure!(
+                starting_block.saturating_sub(current_block)
+                    >= Self::min_revenue_split_forewarning(),
+                Error::<T>::RevenueSplitStartForewarningTooShort,
+            );
+        }
+
+        let revenue_split_start =
+            start.unwrap_or(current_block.saturating_add(Self::min_revenue_split_forewarning()));
+        let timeline = TimelineOf::<T>::from_params(revenue_split_start, duration);
 
         Self::ensure_can_transfer_joy(&allocation_source, allocation_amount)?;
 
@@ -918,7 +929,7 @@ impl<T: Trait>
 
         Self::deposit_event(RawEvent::RevenueSplitIssued(
             token_id,
-            start.unwrap_or(current_block),
+            revenue_split_start,
             duration,
             allocation_amount,
         ));

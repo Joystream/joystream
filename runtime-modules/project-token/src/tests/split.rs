@@ -121,7 +121,7 @@ fn issue_split_ok_with_event_deposited() {
 
         last_event_eq!(RawEvent::RevenueSplitIssued(
             1u64,
-            1u64,
+            1u64 + MIN_REVENUE_SPLIT_FOREWARNING,
             DEFAULT_SPLIT_DURATION,
             DEFAULT_SPLIT_ALLOCATION,
         ));
@@ -174,6 +174,7 @@ fn issue_split_ok_with_allocation_transferred_to_treasury_account() {
 
 #[test]
 fn issue_split_ok_with_revenue_split_correctly_activated() {
+    pub const START: u64 = 1u64 + MIN_REVENUE_SPLIT_FOREWARNING;
     build_default_test_externalities_with_balances(vec![(
         DEFAULT_ACCOUNT_ID,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
@@ -189,7 +190,7 @@ fn issue_split_ok_with_revenue_split_correctly_activated() {
             RevenueSplitState::<_, _>::Active(RevenueSplitInfo::<_, _> {
                 allocation: DEFAULT_SPLIT_ALLOCATION,
                 timeline: Timeline::<_> {
-                    start: 1u64,
+                    start: START,
                     duration: DEFAULT_SPLIT_DURATION,
                 },
                 dividends_claimed: 0u128
@@ -260,6 +261,7 @@ fn finalize_split_ok_with_event_deposit() {
     .execute_with(|| {
         IssueTokenFixture::default().execute_call().unwrap();
         IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(MIN_REVENUE_SPLIT_FOREWARNING);
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
 
         FinalizeRevenueSplitFixture::default()
@@ -283,6 +285,7 @@ fn finalize_split_ok_with_token_status_set_to_inactive() {
     .execute_with(|| {
         IssueTokenFixture::default().execute_call().unwrap();
         IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(MIN_REVENUE_SPLIT_FOREWARNING);
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
 
         FinalizeRevenueSplitFixture::default()
@@ -307,6 +310,7 @@ fn finalize_split_ok_with_leftover_joys_transferred_to_account() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(MIN_REVENUE_SPLIT_FOREWARNING);
         ParticipateInSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
 
@@ -356,6 +360,7 @@ fn participate_in_split_fails_with_non_existing_account() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(MIN_REVENUE_SPLIT_FOREWARNING);
 
         let result = ParticipateInSplitFixture::default()
             .with_sender(OTHER_ACCOUNT_ID + 1)
@@ -391,6 +396,7 @@ fn participate_in_split_fails_with_ended_revenue_split_period() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(MIN_REVENUE_SPLIT_FOREWARNING);
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
 
         let result = ParticipateInSplitFixture::default().execute_call();
@@ -429,6 +435,8 @@ fn participate_in_split_fails_with_user_already_a_participant() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(MIN_REVENUE_SPLIT_FOREWARNING);
+
         ParticipateInSplitFixture::default().execute_call().unwrap();
 
         let result = ParticipateInSplitFixture::default().execute_call();
@@ -447,6 +455,7 @@ fn participate_in_split_fails_with_user_having_insufficient_token_amount() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(MIN_REVENUE_SPLIT_FOREWARNING);
 
         let result = ParticipateInSplitFixture::default()
             .with_amount(DEFAULT_SPLIT_PARTICIPATION + 100u128)
@@ -469,6 +478,7 @@ fn participate_in_split_ok_with_event_deposit() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(MIN_REVENUE_SPLIT_FOREWARNING);
 
         ParticipateInSplitFixture::default().execute_call().unwrap();
 
@@ -514,6 +524,7 @@ fn participate_in_split_ok_with_amount_staked() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(MIN_REVENUE_SPLIT_FOREWARNING);
 
         ParticipateInSplitFixture::default().execute_call().unwrap();
 
@@ -548,6 +559,7 @@ fn participate_in_split_ok_with_dividends_transferred_to_claimer_joy_balance() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(MIN_REVENUE_SPLIT_FOREWARNING);
 
         ParticipateInSplitFixture::default().execute_call().unwrap();
 
@@ -654,6 +666,7 @@ fn exit_revenue_split_fails_with_invalid_token_id() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(MIN_REVENUE_SPLIT_FOREWARNING);
         ParticipateInSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
 
@@ -675,6 +688,7 @@ fn exit_revenue_split_fails_with_invalid_account_id() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(MIN_REVENUE_SPLIT_FOREWARNING);
         ParticipateInSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
         FinalizeRevenueSplitFixture::default()
@@ -699,7 +713,7 @@ fn exit_revenue_split_fails_with_user_not_a_participant() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
-        increase_block_number_by(DEFAULT_SPLIT_DURATION);
+        increase_block_number_by(DEFAULT_SPLIT_DURATION + MIN_REVENUE_SPLIT_FOREWARNING);
         FinalizeRevenueSplitFixture::default()
             .execute_call()
             .unwrap();
@@ -720,6 +734,7 @@ fn exit_revenue_split_fails_with_active_non_ended_split() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(MIN_REVENUE_SPLIT_FOREWARNING);
         ParticipateInSplitFixture::default().execute_call().unwrap();
 
         let result = ExitRevenueSplitFixture::default().execute_call();
@@ -738,6 +753,7 @@ fn exit_revenue_split_ok_with_event_deposit() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(MIN_REVENUE_SPLIT_FOREWARNING);
         ParticipateInSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
         FinalizeRevenueSplitFixture::default()
@@ -764,6 +780,7 @@ fn exit_revenue_split_ok_with_unstaking() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(MIN_REVENUE_SPLIT_FOREWARNING);
         ParticipateInSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
         FinalizeRevenueSplitFixture::default()
@@ -791,6 +808,7 @@ fn exit_revenue_split_ok_with_active_and_ended_split() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(MIN_REVENUE_SPLIT_FOREWARNING);
         ParticipateInSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
 

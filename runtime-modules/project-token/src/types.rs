@@ -181,23 +181,8 @@ pub struct Timeline<BlockNumber> {
 }
 
 impl<BlockNumber: Copy + Saturating + PartialOrd> Timeline<BlockNumber> {
-    pub fn try_from_params<T: Trait>(
-        start: Option<BlockNumber>,
-        duration: BlockNumber,
-        current_block: BlockNumber,
-    ) -> Result<Self, DispatchError> {
-        let starting_block = start.map_or(Ok(current_block), |sb| -> Result<_, DispatchError> {
-            ensure!(
-                current_block <= sb,
-                Error::<T>::RevenueSplitStartForewarningTooShort,
-            );
-            Ok(sb)
-        })?;
-
-        Ok(Timeline::<_> {
-            start: starting_block,
-            duration,
-        })
+    pub fn from_params(start: BlockNumber, duration: BlockNumber) -> Self {
+        Timeline::<_> { start, duration }
     }
 
     pub fn end(&self) -> BlockNumber {
