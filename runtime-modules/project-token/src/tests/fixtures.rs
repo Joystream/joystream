@@ -262,10 +262,10 @@ impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
             Some(TokenSale::try_from_params::<Test>(self.params.clone(), execution_block).unwrap())
         );
 
-        // Token's `sales_initialized` updated
+        // Token's `next_sale_id` updated
         assert_eq!(
-            snapshot_post.token_data.sales_initialized,
-            snapshot_pre.token_data.sales_initialized.saturating_add(1)
+            snapshot_post.token_data.next_sale_id,
+            snapshot_pre.token_data.next_sale_id.saturating_add(1)
         );
 
         // Token state is valid
@@ -426,7 +426,9 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
             ),
             buyer_vesting_schedule: buyer_account_data
                 .vesting_schedules
-                .get(&VestingSource::Sale(token_data.sales_initialized))
+                .get(&VestingSource::Sale(
+                    token_data.next_sale_id.saturating_sub(1),
+                ))
                 .map(|v| v.clone()),
             buyer_usable_joy_balance: Joy::<Test>::usable_balance(self.sender),
             treasury_usable_joy_balance: Joy::<Test>::usable_balance(
@@ -447,7 +449,7 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
         // event emitted
         last_event_eq!(RawEvent::TokensPurchasedOnSale(
             self.token_id,
-            snapshot_pre.token_data.sales_initialized,
+            snapshot_pre.token_data.next_sale_id - 1,
             self.amount,
             self.sender
         ));
@@ -593,7 +595,7 @@ impl Fixture<RecoverUnsoldTokensFixtureStateSnapshot> for RecoverUnsoldTokensFix
         let recovered_amount = snapshot_pre.token_data.sale.as_ref().unwrap().quantity_left;
         last_event_eq!(RawEvent::UnsoldTokensRecovered(
             self.token_id,
-            snapshot_pre.token_data.sales_initialized,
+            snapshot_pre.token_data.next_sale_id - 1,
             recovered_amount
         ));
         assert!(snapshot_post.token_data.sale.is_none());

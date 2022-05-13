@@ -948,7 +948,7 @@ fn issue_token_ok_with_token_info_added() {
                     rate,
                 },
                 sale: None,
-                sales_initialized: 0
+                next_sale_id: 0
             }
         );
     })

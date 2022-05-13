@@ -15,7 +15,7 @@ pub struct TokenDataBuilder {
     pub(crate) total_supply: <Test as crate::Trait>::Balance,
     pub(crate) tokens_issued: <Test as crate::Trait>::Balance,
     pub(crate) sale: Option<TokenSaleOf<Test>>,
-    pub(crate) sales_initialized: TokenSaleId,
+    pub(crate) next_sale_id: TokenSaleId,
     pub(crate) transfer_policy: TransferPolicyOf<Test>,
     pub(crate) patronage_info:
         PatronageData<<Test as crate::Trait>::Balance, <Test as frame_system::Trait>::BlockNumber>,
@@ -28,7 +28,7 @@ impl TokenDataBuilder {
             total_supply: self.total_supply,
             tokens_issued: self.tokens_issued,
             sale: self.sale,
-            sales_initialized: self.sales_initialized,
+            next_sale_id: self.next_sale_id,
             transfer_policy: self.transfer_policy,
             patronage_info: self.patronage_info,
             symbol: self.symbol,
@@ -71,7 +71,7 @@ impl TokenDataBuilder {
             tokens_issued: Balance::zero(),
             total_supply: Balance::zero(),
             sale: None,
-            sales_initialized: 0,
+            next_sale_id: 0,
             transfer_policy: TransferPolicy::Permissionless,
             patronage_info: PatronageData::<Balance, BlockNumber> {
                 rate: BlockRate(Perquintill::zero()),

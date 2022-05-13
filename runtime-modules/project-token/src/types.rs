@@ -77,9 +77,8 @@ pub struct TokenData<Balance, Hash, BlockNumber, TokenSale> {
     /// Total number of tokens issued
     pub(crate) tokens_issued: Balance,
 
-    /// Number of sales initialized, also serves as unique identifier
-    /// of the current sale (`TokenData.sale`) if any.
-    pub(crate) sales_initialized: TokenSaleId,
+    /// Id of the next token sale
+    pub(crate) next_sale_id: TokenSaleId,
 
     /// Current token sale (upcoming / ongoing / ended but w/ remaining tokens to recover)
     pub(crate) sale: Option<TokenSale>,
@@ -817,7 +816,7 @@ where
             sale: None,
             transfer_policy: params.transfer_policy.into(),
             patronage_info,
-            sales_initialized: 0,
+            next_sale_id: 0,
             accounts_number: 0,
         }
     }

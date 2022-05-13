@@ -313,7 +313,7 @@ decl_module! {
             let sender = ensure_signed(origin)?;
             let token_data = Self::ensure_token_exists(token_id)?;
             let sale = OfferingStateOf::<T>::ensure_sale_of::<T>(&token_data)?;
-            let sale_id = token_data.sales_initialized;
+            let sale_id = token_data.next_sale_id - 1;
             let joy_amount = sale.unit_price.saturating_mul(amount.into());
             let account_exists = AccountInfoByTokenAndAccount::<T>::contains_key(token_id, &sender);
             let bloat_bond = Self::bloat_bond();
@@ -421,6 +421,7 @@ decl_module! {
             let token_info = Self::ensure_token_exists(token_id)?;
             OfferingStateOf::<T>::ensure_idle_of::<T>(&token_info)?;
             let sale = token_info.sale.ok_or(Error::<T>::NoTokensToRecover)?;
+            let sale_id = token_info.next_sale_id - 1;
 
             // == MUTATION SAFE ==
             AccountInfoByTokenAndAccount::<T>::mutate(
@@ -434,7 +435,7 @@ decl_module! {
                 token_info.sale = None;
             });
 
-            Self::deposit_event(RawEvent::UnsoldTokensRecovered(token_id, token_info.sales_initialized, sale.quantity_left));
+            Self::deposit_event(RawEvent::UnsoldTokensRecovered(token_id, sale_id, sale.quantity_left));
 
             Ok(())
         }
@@ -626,7 +627,7 @@ impl<T: Trait>
     /// - `sale_params.tokens_source` account balance is decreased by
     ///   `sale_params.upper_bound_quantity`
     /// - token's `sale` is set
-    /// - token's `sales_initialized` is incremented
+    /// - token's `next_sale_id` is incremented
     fn init_token_sale(token_id: T::TokenId, sale_params: TokenSaleParamsOf<T>) -> DispatchResult {
         let current_block = Self::current_block();
         let token_data = Self::ensure_token_exists(token_id)?;
@@ -643,7 +644,7 @@ impl<T: Trait>
 
         TokenInfoById::<T>::mutate(token_id, |t| {
             t.sale = Some(sale);
-            t.sales_initialized = t.sales_initialized.saturating_add(1);
+            t.next_sale_id = t.next_sale_id.saturating_add(1);
         });
 
         Ok(())
