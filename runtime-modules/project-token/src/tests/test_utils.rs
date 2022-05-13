@@ -1,30 +1,34 @@
-use sp_arithmetic::traits::{One, Saturating, Zero};
+use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::Hash;
 use sp_runtime::Perquintill;
 use sp_std::collections::btree_map::BTreeMap;
 
 use crate::tests::mock::*;
 use crate::types::{
-    AccountData, AccountDataOf, BlockRate, MerkleProof, MerkleSide, OfferingState, PatronageData,
-    Payment, TransferPolicy, Transfers,
+    AccountData, AccountDataOf, BlockRate, MerkleProof, MerkleSide, PatronageData, Payment,
+    TokenAllocation, TokenIssuanceParameters, TokenSaleId, TokenSaleOf, TransferPolicy,
+    TransferPolicyOf, Transfers,
 };
-use crate::{balance, joy, GenesisConfig};
+use crate::{balance, GenesisConfig};
 
-pub struct TokenDataBuilder<Balance, Hash, BlockNumber> {
-    pub(crate) supply: Balance,
-    pub(crate) offering_state: OfferingState,
-    pub(crate) transfer_policy: TransferPolicy<Hash>,
-    pub(crate) patronage_info: PatronageData<Balance, BlockNumber>,
-    pub(crate) symbol: Hash,
+pub struct TokenDataBuilder {
+    pub(crate) total_supply: <Test as crate::Trait>::Balance,
+    pub(crate) tokens_issued: <Test as crate::Trait>::Balance,
+    pub(crate) sale: Option<TokenSaleOf<Test>>,
+    pub(crate) next_sale_id: TokenSaleId,
+    pub(crate) transfer_policy: TransferPolicyOf<Test>,
+    pub(crate) patronage_info:
+        PatronageData<<Test as crate::Trait>::Balance, <Test as frame_system::Trait>::BlockNumber>,
+    pub(crate) symbol: <Test as frame_system::Trait>::Hash,
 }
 
-impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash: Default, BlockNumber: One>
-    TokenDataBuilder<Balance, Hash, BlockNumber>
-{
-    pub fn build(self) -> crate::types::TokenData<Balance, Hash, BlockNumber> {
-        crate::types::TokenData::<_, _, _> {
-            supply: self.supply,
-            offering_state: self.offering_state,
+impl TokenDataBuilder {
+    pub fn build(self) -> crate::types::TokenDataOf<Test> {
+        crate::types::TokenDataOf::<Test> {
+            total_supply: self.total_supply,
+            tokens_issued: self.tokens_issued,
+            sale: self.sale,
+            next_sale_id: self.next_sale_id,
             transfer_policy: self.transfer_policy,
             patronage_info: self.patronage_info,
             symbol: self.symbol,
@@ -32,15 +36,19 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash: Default, BlockNumber:
         }
     }
 
-    pub fn with_symbol(self, symbol: Hash) -> Self {
+    pub fn with_symbol(self, symbol: <Test as frame_system::Trait>::Hash) -> Self {
         Self { symbol, ..self }
     }
 
     pub fn with_supply(self, supply: Balance) -> Self {
-        Self { supply, ..self }
+        Self {
+            total_supply: supply,
+            tokens_issued: supply,
+            ..self
+        }
     }
 
-    pub fn with_transfer_policy(self, transfer_policy: TransferPolicy<Hash>) -> Self {
+    pub fn with_transfer_policy(self, transfer_policy: TransferPolicyOf<Test>) -> Self {
         Self {
             transfer_policy,
             ..self
@@ -60,16 +68,18 @@ impl<Balance: Zero + Copy + PartialOrd + Saturating, Hash: Default, BlockNumber:
 
     pub fn new_empty() -> Self {
         Self {
-            supply: Balance::zero(),
-            offering_state: OfferingState::Idle,
-            transfer_policy: TransferPolicy::<Hash>::Permissionless,
+            tokens_issued: Balance::zero(),
+            total_supply: Balance::zero(),
+            sale: None,
+            next_sale_id: 0,
+            transfer_policy: TransferPolicy::Permissionless,
             patronage_info: PatronageData::<Balance, BlockNumber> {
                 rate: BlockRate(Perquintill::zero()),
                 unclaimed_patronage_tally_amount: Balance::zero(),
                 last_unclaimed_patronage_tally_block: BlockNumber::one(),
             },
             // hash of "default"
-            symbol: Hash::default(),
+            symbol: <Test as frame_system::Trait>::Hash::default(),
         }
     }
 }
@@ -81,7 +91,8 @@ impl GenesisConfigBuilder {
             account_info_by_token_and_account: vec![],
             next_token_id: TokenId::one(),
             symbol_used: vec![],
-            bloat_bond: ReserveBalance::zero(),
+            bloat_bond: JoyBalance::zero(),
+            min_sale_duration: BlockNumber::zero(),
         }
     }
 
@@ -102,11 +113,18 @@ impl GenesisConfigBuilder {
         initial_supply: Balance,
     ) -> Self {
         self.with_token(token_id, token_info)
-            .with_account(owner, AccountData::new_with_liquidity(initial_supply))
+            .with_account(owner, AccountData::new_with_amount(initial_supply))
     }
 
-    pub fn with_bloat_bond(self, bloat_bond: ReserveBalance) -> Self {
+    pub fn with_bloat_bond(self, bloat_bond: JoyBalance) -> Self {
         Self { bloat_bond, ..self }
+    }
+
+    pub fn with_min_sale_duration(self, min_sale_duration: BlockNumber) -> Self {
+        Self {
+            min_sale_duration,
+            ..self
+        }
     }
 
     // add account & updates token supply
@@ -121,7 +139,7 @@ impl GenesisConfigBuilder {
             .last_mut()
             .unwrap()
             .1
-            .increase_supply_by(Balance::from(account_data.total_balance()));
+            .increase_supply_by(Balance::from(account_data.amount));
 
         self.account_info_by_token_and_account
             .push((id, account_id, account_data));
@@ -137,30 +155,18 @@ impl GenesisConfigBuilder {
             next_token_id: self.next_token_id,
             symbol_used: self.symbol_used,
             bloat_bond: self.bloat_bond,
+            min_sale_duration: self.min_sale_duration,
         }
     }
 }
 
-impl<Balance: Zero, ReserveBalance: Zero> AccountData<Balance, ReserveBalance> {
-    pub fn new_empty() -> Self {
+impl<VestingSchedule, Balance: Zero, StakingStatus, ReserveBalance: Zero>
+    AccountData<VestingSchedule, Balance, StakingStatus, ReserveBalance>
+{
+    pub fn new_with_amount(amount: Balance) -> Self {
         Self {
-            free_balance: Balance::zero(),
-            stacked_balance: Balance::zero(),
-            bloat_bond: ReserveBalance::zero(),
-        }
-    }
-
-    pub fn new_with_liquidity(free_balance: Balance) -> Self {
-        Self {
-            free_balance,
-            ..Self::new_empty()
-        }
-    }
-
-    pub fn with_stacked(self, stacked_balance: Balance) -> Self {
-        Self {
-            stacked_balance,
-            ..self
+            amount,
+            ..Self::default()
         }
     }
 }
@@ -189,6 +195,39 @@ impl<Balance, Account: Ord> Transfers<Account, Balance> {
     }
 }
 
+impl<Hash, Balance, VestingScheduleParams, TransferPolicyParams, AccountId>
+    TokenIssuanceParameters<
+        Hash,
+        TokenAllocation<Balance, VestingScheduleParams>,
+        TransferPolicyParams,
+        AccountId,
+    >
+where
+    AccountId: Ord + Clone,
+    Balance: Clone,
+    VestingScheduleParams: Clone,
+{
+    pub fn with_allocation(
+        self,
+        account: &AccountId,
+        amount: Balance,
+        vesting_schedule_params: Option<VestingScheduleParams>,
+    ) -> Self {
+        let mut initial_allocation = self.initial_allocation.clone();
+        initial_allocation.insert(
+            account.clone(),
+            TokenAllocation {
+                amount,
+                vesting_schedule_params,
+            },
+        );
+        Self {
+            initial_allocation,
+            ..self
+        }
+    }
+}
+
 #[cfg(test)]
 #[test]
 fn with_token_assigns_correct_token_id() {
@@ -207,19 +246,18 @@ fn with_supply_adds_supply_to_token() {
 
     let builder = GenesisConfigBuilder::new_empty().with_token(1, token_params);
 
-    let supply = builder.token_info_by_id.last().unwrap().1.supply;
-    assert_eq!(supply, 5);
+    let token = &builder.token_info_by_id.last().unwrap().1;
+    assert_eq!(token.tokens_issued, 5);
+    assert_eq!(token.total_supply, 5);
 }
 
 #[test]
-fn adding_account_with_free_balance_also_adds_supply() {
+fn adding_account_with_tokens_also_adds_supply() {
     let token_params = TokenDataBuilder::new_empty().with_supply(5).build();
     let mut builder = GenesisConfigBuilder::new_empty().with_token(1, token_params);
-    builder = builder.with_account(
-        1,
-        AccountData::new_with_liquidity(balance!(5)).with_stacked(joy!(5)),
-    );
+    builder = builder.with_account(1, AccountData::new_with_amount(balance!(5)));
 
-    let supply = builder.token_info_by_id.last().unwrap().1.supply;
-    assert_eq!(supply, 15);
+    let token = &builder.token_info_by_id.last().unwrap().1;
+    assert_eq!(token.tokens_issued, 10);
+    assert_eq!(token.total_supply, 10);
 }
