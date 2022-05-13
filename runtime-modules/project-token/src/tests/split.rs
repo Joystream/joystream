@@ -436,7 +436,6 @@ fn participate_in_split_fails_with_user_already_a_participant() {
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(MIN_REVENUE_SPLIT_FOREWARNING);
-
         ParticipateInSplitFixture::default().execute_call().unwrap();
 
         let result = ParticipateInSplitFixture::default().execute_call();
@@ -511,6 +510,42 @@ fn participate_in_split_fails_with_zero_amount() {
             result,
             Error::<Test>::CannotParticipateInSplitWithZeroAmount
         );
+    })
+}
+
+#[test]
+fn participate_in_split_ok_with_user_participating_to_a_previous_ended_split() {
+    build_default_test_externalities_with_balances(vec![(
+        DEFAULT_ACCOUNT_ID,
+        2 * DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get() + DEFAULT_BLOAT_BOND,
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap(); // send participation to other acc
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(MIN_REVENUE_SPLIT_FOREWARNING);
+        ParticipateInSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(DEFAULT_SPLIT_DURATION);
+        FinalizeRevenueSplitFixture::default()
+            .execute_call()
+            .unwrap();
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(MIN_REVENUE_SPLIT_FOREWARNING);
+
+        ParticipateInSplitFixture::default().execute_call().unwrap();
+
+        // verify that amount is staked
+        assert!(matches!(
+            Token::account_info_by_token_and_account(1u64, OTHER_ACCOUNT_ID),
+            AccountDataOf::<Test> {
+                amount: DEFAULT_SPLIT_PARTICIPATION,
+                split_staking_status: Some(StakingStatus {
+                    split_id: 2u32, // revenue split id participated
+                    amount: DEFAULT_SPLIT_PARTICIPATION,
+                }),
+                ..
+            }
+        ));
     })
 }
 

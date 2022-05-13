@@ -441,7 +441,7 @@ decl_module! {
         /// - `account` must exist  for `(token_id, sender)` with `origin` signed by `sender`
         /// - `token.split_status` must be active AND THEN current_block in
         ///    [split.start, split.start + split_duration)
-        /// - `account.staking_status.is_none()`
+        /// - `account.staking_status.is_none()` OR `account.staking_status.split_id` refers to a past split
         /// - `account.amount` >= `amount`
         /// - let `dividend = split_allocation * account.staked_amount / token.supply``
         ///    then `treasury` must be able to transfer `dividend` amount of JOY.
@@ -476,7 +476,7 @@ decl_module! {
 
             let account_info = Self::ensure_account_data_exists(token_id, &sender)?;
 
-            account_info.ensure_can_stake::<T>(amount)?;
+            account_info.ensure_can_stake::<T>(amount, token_info.latest_revenue_split_id)?;
 
             // it should not really be possible to have supply == 0 with staked amount > 0
             debug_assert!(!token_info.total_supply.is_zero());

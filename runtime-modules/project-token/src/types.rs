@@ -828,11 +828,17 @@ where
     }
 
     /// Determine Wether user can stake `amount` of tokens
-    pub(crate) fn ensure_can_stake<T: Trait>(self, to_stake: Balance) -> DispatchResult {
-        ensure!(
-            self.split_staking_status.is_none(),
-            Error::<T>::UserAlreadyParticipating,
-        );
+    pub(crate) fn ensure_can_stake<T: Trait>(
+        self,
+        to_stake: Balance,
+        ongoing_split_id: RevenueSplitId,
+    ) -> DispatchResult {
+        if let Some(split_info) = self.split_staking_status {
+            ensure!(
+                split_info.split_id < ongoing_split_id,
+                Error::<T>::UserAlreadyParticipating,
+            );
+        }
 
         ensure!(
             self.amount >= to_stake,
