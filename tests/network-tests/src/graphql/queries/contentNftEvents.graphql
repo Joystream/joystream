@@ -1,0 +1,61 @@
+fragment EnglishAuctionStartedEventFields on EnglishAuctionStartedEvent {
+  video {
+    id
+  }
+  auction {
+    id
+  }
+  ownerMember {
+    id
+  }
+  ownerCuratorGroup {
+    id
+  }
+}
+
+query getEnglishAuctionStartedEventsByEventIds($eventIds: [ID!]) {
+  englishAuctionStartedEvents(where: { id_in: $eventIds }) {
+    ...EnglishAuctionStartedEventFields
+  }
+}
+
+fragment NftIssuedEventFields on NftIssuedEvent {
+  video {
+    id
+  }
+  royalty
+  metadata
+  ownerMember {
+    id
+  }
+  ownerCuratorGroup {
+    id
+  }
+}
+
+query getNftIssuedEventsByEventIds($eventIds: [ID!]) {
+  nftIssuedEvents(where: { id_in: $eventIds }) {
+    ...NftIssuedEventFields
+  }
+}
+
+fragment EnglishAuctionSettledEventFields on EnglishAuctionSettledEvent {
+  winner {
+    id
+  }
+  video {
+    id
+  }
+  ownerMember {
+    id
+  }
+  ownerCuratorGroup {
+    id
+  }
+}
+
+query getEnglishAuctionSettledEventsByEventIds($eventIds: [ID!]) {
+  englishAuctionSettledEvents(where: { id_in: $eventIds }) {
+    ...EnglishAuctionSettledEventFields
+  }
+}

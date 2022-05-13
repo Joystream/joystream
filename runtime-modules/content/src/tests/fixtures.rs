@@ -1,13 +1,10 @@
-use derive_fixture::Fixture;
-use derive_new::new;
-
 use super::curators;
 use super::mock::*;
 use crate::*;
 use common::council::CouncilBudgetManager;
 use frame_support::assert_ok;
 use frame_support::traits::Currency;
-use frame_system::RawOrigin;
+use sp_runtime::Perbill;
 use sp_std::cmp::min;
 use sp_std::iter::{IntoIterator, Iterator};
 
@@ -84,6 +81,11 @@ impl CreateChannelFixture {
         }
     }
 
+    pub fn call(self) {
+        let origin = Origin::signed(self.sender);
+        assert_ok!(Content::create_channel(origin, self.actor, self.params));
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
         let balance_pre = Balances::<Test>::usable_balance(self.sender);
@@ -126,10 +128,6 @@ impl CreateChannelFixture {
                         moderators: self.params.moderators.clone(),
                         num_videos: Zero::zero(),
                         cumulative_reward_claimed: Zero::zero(),
-                        daily_nft_limit: DefaultChannelDailyNftLimit::get(),
-                        weekly_nft_limit: DefaultChannelWeeklyNftLimit::get(),
-                        daily_nft_counter: Default::default(),
-                        weekly_nft_counter: Default::default(),
                     },
                     self.params.clone(),
                 ))
@@ -178,7 +176,7 @@ impl CreateVideoFixture {
     pub fn default() -> Self {
         Self {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
-            actor: ContentActor::Member(DEFAULT_MEMBER_ACCOUNT_ID),
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             params: VideoCreationParameters::<Test> {
                 assets: None,
                 meta: None,
@@ -186,6 +184,32 @@ impl CreateVideoFixture {
                 auto_issue_nft: None,
             },
             channel_id: ChannelId::one(), // channel index starts at 1
+        }
+    }
+
+    pub fn with_nft_in_sale(self, nft_price: u64) -> Self {
+        Self {
+            params: VideoCreationParameters::<Test> {
+                auto_issue_nft: Some(NftIssuanceParameters::<Test> {
+                    init_transactional_status: InitTransactionalStatus::<Test>::BuyNow(nft_price),
+                    ..Default::default()
+                }),
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_nft_royalty(self, royalty_pct: u32) -> Self {
+        Self {
+            params: VideoCreationParameters::<Test> {
+                auto_issue_nft: Some(NftIssuanceParameters::<Test> {
+                    royalty: Some(Perbill::from_percent(royalty_pct)),
+                    ..self.params.auto_issue_nft.unwrap()
+                }),
+                ..self.params
+            },
+            ..self
         }
     }
 
@@ -219,6 +243,16 @@ impl CreateVideoFixture {
             },
             ..self
         }
+    }
+
+    pub fn call(self) {
+        let origin = Origin::signed(self.sender.clone());
+        assert_ok!(Content::create_video(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.params.clone(),
+        ));
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -443,10 +477,6 @@ impl UpdateChannelFixture {
                             num_videos: channel_pre.num_videos,
                             moderators: channel_pre.moderators,
                             cumulative_reward_claimed: BalanceOf::<Test>::zero(),
-                            daily_nft_limit: channel_post.daily_nft_limit,
-                            weekly_nft_limit: channel_post.weekly_nft_limit,
-                            daily_nft_counter: channel_post.daily_nft_counter,
-                            weekly_nft_counter: channel_post.weekly_nft_counter,
                         },
                         self.params.clone(),
                     ))
@@ -618,6 +648,10 @@ impl UpdateVideoFixture {
                 assert!(!self.params.assets_to_remove.iter().any(|obj_id| {
                     storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
                 }));
+
+                if self.params.auto_issue_nft.is_some() {
+                    assert!(video_post.nft_status.is_some())
+                }
             }
             Err(err) => {
                 assert_eq!(video_pre, video_post);
@@ -1712,7 +1746,7 @@ pub fn create_default_member_owned_channel() {
         .with_reward_account(DEFAULT_MEMBER_CHANNEL_REWARD_ACCOUNT_ID)
         .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
         .with_moderators(vec![DEFAULT_MODERATOR_ID].into_iter().collect())
-        .call_and_assert(Ok(()));
+        .call();
 }
 
 pub fn create_default_curator_owned_channel() {
@@ -1727,13 +1761,11 @@ pub fn create_default_curator_owned_channel() {
         .with_reward_account(DEFAULT_CURATOR_CHANNEL_REWARD_ACCOUNT_ID)
         .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
         .with_moderators(vec![DEFAULT_MODERATOR_ID].into_iter().collect())
-        .call_and_assert(Ok(()));
+        .call();
 }
 
 pub fn create_default_member_owned_channel_with_video() {
     create_default_member_owned_channel();
-
-    set_default_nft_limits();
 
     CreateVideoFixture::default()
         .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
@@ -1743,7 +1775,7 @@ pub fn create_default_member_owned_channel_with_video() {
             object_creation_list: create_data_objects_helper(),
         })
         .with_channel_id(NextChannelId::<Test>::get() - 1)
-        .call_and_assert(Ok(()));
+        .call();
 }
 
 pub fn create_default_curator_owned_channel_with_video() {
@@ -1758,7 +1790,7 @@ pub fn create_default_curator_owned_channel_with_video() {
             object_creation_list: create_data_objects_helper(),
         })
         .with_channel_id(NextChannelId::<Test>::get() - 1)
-        .call_and_assert(Ok(()));
+        .call();
 }
 
 pub fn create_default_member_owned_channel_with_video_and_post() {
@@ -1944,40 +1976,5 @@ fn channel_reward_account_balance(channel: &Channel<Test>) -> u64 {
         Balances::<Test>::usable_balance(&reward_account)
     } else {
         Zero::zero()
-    }
-}
-
-#[derive(Fixture, new)]
-pub struct UpdateNftLimitFixture {
-    #[new(value = "RawOrigin::Signed(LEAD_ACCOUNT_ID)")]
-    origin: RawOrigin<u64>,
-
-    #[new(default)]
-    nft_limit_id: NftLimitId<ChannelId>,
-
-    #[new(default)]
-    limit: LimitPerPeriod<u64>,
-}
-
-impl UpdateNftLimitFixture {
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let old_limit = nft_limit_by_id(self.nft_limit_id);
-
-        let actual_result =
-            Content::update_nft_limit(self.origin.clone().into(), self.nft_limit_id, self.limit);
-
-        assert_eq!(actual_result, expected_result);
-
-        let new_limit = nft_limit_by_id(self.nft_limit_id);
-        if actual_result.is_ok() {
-            assert_eq!(self.limit, new_limit);
-
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::NftLimitUpdated(self.nft_limit_id, self.limit))
-            );
-        } else {
-            assert_eq!(old_limit, new_limit);
-        }
     }
 }

@@ -28,15 +28,14 @@ pub use storage::{
 };
 
 pub use common::{
-    council::CouncilBudgetManager, currency::GovernanceCurrency,
-    membership::MembershipInfoProvider, working_group::WorkingGroup, MembershipTypes,
-    StorageOwnership, Url,
+    council::CouncilBudgetManager, membership::MembershipInfoProvider, working_group::WorkingGroup,
+    MembershipTypes, StorageOwnership, Url,
 };
 use frame_support::{
     decl_event, decl_module, decl_storage,
     dispatch::{DispatchError, DispatchResult},
     ensure,
-    traits::{Currency, ExistenceRequirement, Get, ReservableCurrency},
+    traits::{Currency, ExistenceRequirement, Get},
     Parameter,
 };
 
@@ -52,7 +51,7 @@ use sp_runtime::{
     traits::{AccountIdConversion, Hash, MaybeSerializeDeserialize, Member},
     ModuleId,
 };
-use sp_std::{collections::btree_set::BTreeSet, vec::Vec};
+use sp_std::{borrow::ToOwned, collections::btree_set::BTreeSet, vec::Vec};
 
 /// Module configuration trait for Content Directory Module
 pub trait Trait:
@@ -62,7 +61,6 @@ pub trait Trait:
     + membership::Trait
     + balances::Trait
     + storage::Trait
-    + GovernanceCurrency
 {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -114,18 +112,6 @@ pub trait Trait:
 
     /// Provides an access for the council budget.
     type CouncilBudgetManager: CouncilBudgetManager<Self::AccountId, BalanceOf<Self>>;
-
-    /// Default global daily NFT limit.
-    type DefaultGlobalDailyNftLimit: Get<LimitPerPeriod<Self::BlockNumber>>;
-
-    /// Default global weekly NFT limit.
-    type DefaultGlobalWeeklyNftLimit: Get<LimitPerPeriod<Self::BlockNumber>>;
-
-    /// Default channel daily NFT limit.
-    type DefaultChannelDailyNftLimit: Get<LimitPerPeriod<Self::BlockNumber>>;
-
-    /// Default channel weekly NFT limit.
-    type DefaultChannelWeeklyNftLimit: Get<LimitPerPeriod<Self::BlockNumber>>;
 }
 
 decl_storage! {
@@ -189,10 +175,10 @@ decl_storage! {
         pub MaxBidLockDuration get(fn max_bid_lock_duration) config(): T::BlockNumber;
 
         /// Min auction staring price
-        pub MinStartingPrice get(fn min_starting_price) config(): CurrencyOf<T>;
+        pub MinStartingPrice get(fn min_starting_price) config(): BalanceOf<T>;
 
         /// Max auction staring price
-        pub MaxStartingPrice get(fn max_starting_price) config(): CurrencyOf<T>;
+        pub MaxStartingPrice get(fn max_starting_price) config(): BalanceOf<T>;
 
         /// Min creator royalty percentage
         pub MinCreatorRoyalty get(fn min_creator_royalty) config(): Perbill;
@@ -201,10 +187,10 @@ decl_storage! {
         pub MaxCreatorRoyalty get(fn max_creator_royalty) config(): Perbill;
 
         /// Min auction bid step
-        pub MinBidStep get(fn min_bid_step) config(): CurrencyOf<T>;
+        pub MinBidStep get(fn min_bid_step) config(): BalanceOf<T>;
 
         /// Max auction bid step
-        pub MaxBidStep get(fn max_bid_step) config(): CurrencyOf<T>;
+        pub MaxBidStep get(fn max_bid_step) config(): BalanceOf<T>;
 
         /// Platform fee percentage
         pub PlatfromFeePercentage get(fn platform_fee_percentage) config(): Perbill;
@@ -219,30 +205,6 @@ decl_storage! {
         pub OpenAuctionBidByVideoAndMember get(fn open_auction_bid_by_video_and_member):
         double_map hasher(blake2_128_concat) T::VideoId,
         hasher(blake2_128_concat) T::MemberId => OpenAuctionBid<T>;
-
-        /// Global daily NFT counter.
-        pub GlobalDailyNftCounter get(fn global_daily_nft_counter):
-            NftCounter<T::BlockNumber>;
-
-        /// Global weekly NFT counter.
-        pub GlobalWeeklyNftCounter get(fn global_weekly_nft_counter):
-            NftCounter<T::BlockNumber>;
-
-        /// Global daily NFT limit.
-        pub GlobalDailyNftLimit get(fn global_daily_nft_limit):
-            LimitPerPeriod<T::BlockNumber>;
-
-        /// Global weekly NFT limit.
-        pub GlobalWeeklyNftLimit get(fn global_weekly_nft_limit):
-            LimitPerPeriod<T::BlockNumber>;
-
-    }
-    add_extra_genesis {
-        build(|_| {
-            // We set initial global NFT limits.
-            GlobalDailyNftLimit::<T>::put(T::DefaultGlobalDailyNftLimit::get());
-            GlobalWeeklyNftLimit::<T>::put(T::DefaultGlobalWeeklyNftLimit::get());
-        });
     }
 }
 
@@ -256,22 +218,6 @@ decl_module! {
 
         /// Exports const -  max number of curators per group
         const MaxNumberOfCuratorsPerGroup: MaxNumber = T::MaxNumberOfCuratorsPerGroup::get();
-
-        /// Exports const - default global daily NFT limit.
-        const DefaultGlobalDailyNftLimit: LimitPerPeriod<T::BlockNumber> =
-            T::DefaultGlobalDailyNftLimit::get();
-
-        /// Exports const - default global weekly NFT limit.
-        const DefaultGlobalWeeklyNftLimit: LimitPerPeriod<T::BlockNumber> =
-            T::DefaultGlobalDailyNftLimit::get();
-
-        /// Exports const - default channel daily NFT limit.
-        const DefaultChannelDailyNftLimit: LimitPerPeriod<T::BlockNumber> =
-            T::DefaultGlobalDailyNftLimit::get();
-
-        /// Exports const - default channel weekly NFT limit.
-        const DefaultChannelWeeklyNftLimit: LimitPerPeriod<T::BlockNumber> =
-            T::DefaultGlobalDailyNftLimit::get();
 
         // ======
         // Next set of extrinsics can only be invoked by lead.
@@ -496,10 +442,6 @@ decl_module! {
                 collaborators: params.collaborators.clone(),
                 moderators: params.moderators.clone(),
                 cumulative_reward_claimed: BalanceOf::<T>::zero(),
-                daily_nft_limit: T::DefaultChannelDailyNftLimit::get(),
-                weekly_nft_limit: T::DefaultChannelWeeklyNftLimit::get(),
-                daily_nft_counter: Default::default(),
-                weekly_nft_counter: Default::default(),
             };
 
             // add channel to onchain state
@@ -788,13 +730,9 @@ decl_module! {
                 .map_or(
                     Ok(None),
                     |issuance_params| {
-                        Some(Self::construct_owned_nft(issuance_params,video_id)).transpose()
+                        Some(Self::construct_owned_nft(issuance_params)).transpose()
                     }
                 )?;
-
-            if nft_status.is_some() {
-                Self::check_nft_limits(&channel)?;
-            }
 
             // create the video struct
             let video: Video<T> = VideoRecord {
@@ -802,7 +740,7 @@ decl_module! {
                 is_censored: false,
                 enable_comments: params.enable_comments,
                 video_post_id:  None,
-                nft_status: nft_status.clone(),
+                nft_status,
             };
 
             if let Some(upload_assets) = params.assets.as_ref() {
@@ -818,6 +756,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+
             // add it to the onchain state
             VideoById::<T>::insert(video_id, video);
 
@@ -828,9 +767,6 @@ decl_module! {
 
             ChannelById::<T>::mutate(channel_id, |channel| {
                 channel.num_videos = channel.num_videos.saturating_add(1);
-                if nft_status.is_some() {
-                    Self::increment_nft_counters(channel);
-                }
             });
 
             Self::deposit_event(RawEvent::VideoCreated(actor, channel_id, video_id, params));
@@ -881,13 +817,10 @@ decl_module! {
                     Ok(None),
                     |issuance_params| {
                         ensure!(video.nft_status.is_none(), Error::<T>::NftAlreadyExists);
-                        Some(Self::construct_owned_nft(issuance_params, video_id)).transpose()
+                        Some(Self::construct_owned_nft(issuance_params)).transpose()
                     }
                 )?;
 
-            if nft_status.is_some() {
-                Self::check_nft_limits(&channel)?;
-            }
 
             //
             // == MUTATION SAFE ==
@@ -911,9 +844,7 @@ decl_module! {
             }
 
             if nft_status.is_some() {
-                ChannelById::<T>::mutate(channel_id, |channel| {
-                    Self::increment_nft_counters(channel);
-                });
+                VideoById::<T>::mutate(&video_id, |video| video.nft_status = nft_status);
             }
 
             Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params));
@@ -1514,17 +1445,11 @@ decl_module! {
             ensure_actor_authorized_to_update_channel_assets::<T>(&sender, &actor, &channel)?;
 
             // The content owner will be..
-            let nft_status = Self::construct_owned_nft(&params, video_id)?;
-
-            Self::check_nft_limits(&channel)?;
+            let nft_status = Self::construct_owned_nft(&params)?;
 
             //
             // == MUTATION SAFE ==
             //
-
-            ChannelById::<T>::mutate(channel_id, |channel| {
-                Self::increment_nft_counters(channel);
-            });
 
             // Update the video
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(nft_status));
@@ -1794,7 +1719,7 @@ decl_module! {
             origin,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
-            new_price: CurrencyOf<T>,
+            new_price: BalanceOf<T>,
         ) {
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
@@ -1834,14 +1759,19 @@ decl_module! {
             origin,
             participant_id: T::MemberId,
             video_id: T::VideoId,
-            bid_amount: CurrencyOf<T>,
+            bid_amount: BalanceOf<T>,
         ) {
             // Authorize participant under given member id
             let participant_account_id = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&participant_account_id, &participant_id)?;
 
             // Balance check
-            Self::ensure_has_sufficient_balance(&participant_account_id, bid_amount)?;
+            let maybe_old_bid = Self::ensure_open_bid_exists(video_id, participant_id).ok();
+            let old_bid_value = maybe_old_bid.as_ref().map(|bid| bid.amount);
+            Self::ensure_has_sufficient_balance_for_bid(&participant_account_id,
+                bid_amount,
+                old_bid_value
+            )?;
 
             // Ensure nft is already issued
             let video = Self::ensure_video_exists(&video_id)?;
@@ -1867,22 +1797,22 @@ decl_module! {
 
             let (nft, event) = match open_auction.buy_now_price {
                 Some(buy_now_price) if bid_amount >= buy_now_price => {
+                    // Make a new bid considering the old one (if any) and the "buy-now-price".
+                    Self::transfer_bid_to_treasury(
+                        &participant_account_id,
+                        buy_now_price,
+                        old_bid_value
+                    )?;
+
                     // complete auction @ buy_now_price
+                    let royalty_payment = Self::build_royalty_payment(&video, nft.creator_royalty);
                     let updated_nft = Self::complete_auction(
                         nft,
                         video.in_channel,
-                        participant_account_id,
+                        royalty_payment,
                         participant_id,
                         buy_now_price,
                     );
-
-                    // remove eventual superseeded bid
-                    if maybe_old_bid.is_some() {
-                        OpenAuctionBidByVideoAndMember::<T>::remove(
-                            video_id,
-                            participant_id,
-                        )
-                    }
 
                     (
                         updated_nft,
@@ -1890,15 +1820,12 @@ decl_module! {
                     )
                 },
                 _ =>  {
-                    maybe_old_bid.map_or((), |bid| {
-                            T::Currency::unreserve(
-                                &participant_account_id,
-                                bid.amount
-                            );
-                        });
-
-                    // unfallible: can_reserve already called
-                    T::Currency::reserve(&participant_account_id, bid_amount)?;
+                    // Make a new bid considering the old one (if any).
+                    Self::transfer_bid_to_treasury(
+                        &participant_account_id,
+                        bid_amount,
+                        old_bid_value
+                    )?;
 
                     OpenAuctionBidByVideoAndMember::<T>::insert(
                         video_id,
@@ -1924,14 +1851,11 @@ decl_module! {
             origin,
             participant_id: T::MemberId,
             video_id: T::VideoId,
-            bid_amount: CurrencyOf<T>,
+            bid_amount: BalanceOf<T>,
         ) {
             // Authorize participant under given member id
             let participant_account_id = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&participant_account_id, &participant_id)?;
-
-            // Balance check
-            Self::ensure_has_sufficient_balance(&participant_account_id, bid_amount)?;
 
             // Ensure nft is already issued
             let video = Self::ensure_video_exists(&video_id)?;
@@ -1939,6 +1863,20 @@ decl_module! {
 
             // Validate parameters & return english auction
             let eng_auction =  Self::ensure_in_english_auction_state(&nft)?;
+
+            // Balance check
+            let old_bid_value = eng_auction.top_bid.as_ref().map(|bid| {
+                if bid.bidder_id == participant_id {
+                    bid.amount
+                } else{
+                    Zero::zero()
+                }
+            });
+            Self::ensure_has_sufficient_balance_for_bid(
+                &participant_account_id,
+                bid_amount,
+                old_bid_value
+            )?;
 
             // Ensure auction is not expired
             let current_block = <frame_system::Module<T>>::block_number();
@@ -1959,16 +1897,31 @@ decl_module! {
             // == MUTATION_SAFE ==
             //
 
+            if let Some(bid) = eng_auction.top_bid.as_ref() {
+                let bidder_account_id =
+                    T::MemberAuthenticator::controller_account_id(bid.bidder_id)?;
+                Self::withdraw_bid_payment(&bidder_account_id, bid.amount)?;
+            };
+
             let (updated_nft, event) = match eng_auction.buy_now_price {
                 Some(buy_now_price) if bid_amount >= buy_now_price => {
+                    // Make a new bid considering the "buy-now-price".
+                    Self::transfer_bid_to_treasury(
+                        &participant_account_id,
+                        buy_now_price,
+                        None
+                    )?;
+
                     // complete auction @ buy_now_price
+                    let royalty_payment = Self::build_royalty_payment(&video, nft.creator_royalty);
                     let updated_nft = Self::complete_auction(
                         nft,
                         video.in_channel,
-                        participant_account_id,
+                        royalty_payment,
                         participant_id,
                         buy_now_price,
                     );
+
 
                     (
                         updated_nft,
@@ -1976,18 +1929,13 @@ decl_module! {
                     )
                 },
                 _ => {
-                    // unreseve balance from previous bid
-                    if let Some(ref bid) = eng_auction.top_bid {
-                        if bid.bidder_id == participant_id {
-                            T::Currency::unreserve(
-                                &participant_account_id,
-                                bid.amount
-                            );
-                        }
-                    }
 
-                    // Reserve amount for new bid
-                    T::Currency::reserve(&participant_account_id, bid_amount)?;
+                    // Make a new bid.
+                    Self::transfer_bid_to_treasury(
+                        &participant_account_id,
+                        bid_amount,
+                        None
+                    )?;
 
                     // update nft auction state
                     let updated_auction =
@@ -2039,8 +1987,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // unreserve amount
-            T::Currency::unreserve(&participant_account_id, old_bid.amount);
+            Self::withdraw_bid_payment(&participant_account_id, old_bid.amount)?;
 
             // remove
             OpenAuctionBidByVideoAndMember::<T>::remove(&video_id, &participant_id);
@@ -2052,14 +1999,12 @@ decl_module! {
         /// Claim won english auction
         /// Can be called by anyone
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn claim_won_english_auction(
+        pub fn settle_english_auction(
             origin,
-            member_id: T::MemberId,
             video_id: T::VideoId,
         ) {
             // Authorize member under given member id
-            let member_account_id = ensure_signed(origin)?;
-            ensure_member_auth_success::<T>(&member_account_id, &member_id)?;
+            let sender = ensure_signed(origin)?;
 
             // Ensure nft is already issued
             let video = Self::ensure_video_exists(&video_id)?;
@@ -2070,6 +2015,7 @@ decl_module! {
 
             // Ensure top bid exists
             let top_bid = english_auction.ensure_top_bid_exists::<T>()?;
+            let top_bidder_id = top_bid.bidder_id;
 
             // Ensure auction expired
             let current_block = <frame_system::Module<T>>::block_number();
@@ -2080,11 +2026,12 @@ decl_module! {
             //
 
             // Complete auction
+            let royalty_payment = Self::build_royalty_payment(&video, nft.creator_royalty);
             let updated_nft = Self::complete_auction(
                 nft,
                 video.in_channel,
-                member_account_id,
-                member_id,
+                royalty_payment,
+                top_bidder_id,
                 top_bid.amount
             );
 
@@ -2092,7 +2039,7 @@ decl_module! {
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(updated_nft));
 
             // Trigger event
-            Self::deposit_event(RawEvent::EnglishAuctionCompleted(member_id, video_id));
+            Self::deposit_event(RawEvent::EnglishAuctionSettled(top_bidder_id, sender, video_id));
         }
 
         /// Accept open auction bid
@@ -2103,9 +2050,10 @@ decl_module! {
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId,
             winner_id: T::MemberId,
-            commit: CurrencyOf<T>, // amount the auctioner is committed to
+            commit: BalanceOf<T>, // amount the auctioner is committed to
         ) {
-            let winner_account_id = T::MemberAuthenticator::controller_account_id(winner_id)?;
+            T::MemberAuthenticator::controller_account_id(winner_id).map(|_| ())?;
+
             // Ensure video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
@@ -2136,10 +2084,11 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            let royalty_payment = Self::build_royalty_payment(&video, nft.creator_royalty);
             let updated_nft = Self::complete_auction(
                 nft,
                 video.in_channel,
-                winner_account_id,
+                royalty_payment,
                 winner_id,
                 bid.amount,
             );
@@ -2151,7 +2100,7 @@ decl_module! {
             VideoById::<T>::mutate(video_id, |v| v.set_nft_status(updated_nft));
 
             // Trigger event
-            Self::deposit_event(RawEvent::OpenAuctionBidAccepted(owner_id, video_id, bid.amount));
+            Self::deposit_event(RawEvent::OpenAuctionBidAccepted(owner_id, video_id, winner_id, bid.amount));
         }
 
         /// Offer Nft
@@ -2161,7 +2110,7 @@ decl_module! {
             video_id: T::VideoId,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             to: T::MemberId,
-            price: Option<CurrencyOf<T>>,
+            price: Option<BalanceOf<T>>,
         ) {
 
             // Ensure given video exists
@@ -2258,17 +2207,18 @@ decl_module! {
             // Ensure new pending offer is available to proceed
             Self::ensure_new_pending_offer_available_to_proceed(&nft, &receiver_account_id)?;
 
-            let owner_account_id = Self::ensure_owner_account_id(video.in_channel, &nft)?;
-
+            // account_id where the nft offer price is deposited
+            let nft_owner_account = Self::ensure_owner_account_id(video.in_channel, &nft).ok();
             //
             // == MUTATION SAFE ==
             //
 
             // Complete nft offer
+            let royalty_payment = Self::build_royalty_payment(&video, nft.creator_royalty);
             let nft = Self::complete_nft_offer(
-                video.in_channel,
                 nft,
-                owner_account_id,
+                royalty_payment,
+                nft_owner_account,
                 receiver_account_id
             );
 
@@ -2284,7 +2234,7 @@ decl_module! {
             origin,
             video_id: T::VideoId,
             owner_id: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            price: CurrencyOf<T>,
+            price: BalanceOf<T>,
         ) {
 
             // Ensure given video exists
@@ -2327,7 +2277,7 @@ decl_module! {
             origin,
             video_id: T::VideoId,
             participant_id: T::MemberId,
-            price_commit: CurrencyOf<T>, // in order to avoid front running
+            price_commit: BalanceOf<T>, // in order to avoid front running
         ) {
 
             // Authorize participant under given member id
@@ -2343,18 +2293,19 @@ decl_module! {
             // Ensure given participant can buy nft now
             Self::ensure_can_buy_now(&nft, &participant_account_id, price_commit)?;
 
-            let channel = Self::channel_by_id(&video.in_channel);
-            let owner_account_id =  Self::ensure_reward_account(&channel)?;
+            // seller account
+            let old_nft_owner_account_id = Self::ensure_owner_account_id(video.in_channel, &nft).ok();
 
             //
             // == MUTATION SAFE ==
             //
 
             // Buy nft
+            let royalty_payment = Self::build_royalty_payment(&video, nft.creator_royalty);
             let nft = Self::buy_now(
-                video.in_channel,
                 nft,
-                owner_account_id,
+                royalty_payment,
+                old_nft_owner_account_id,
                 participant_account_id,
                 participant_id
             );
@@ -2450,23 +2401,6 @@ decl_module! {
             Self::deposit_event(RawEvent::NftOwnerRemarked(actor, video_id, msg));
         }
 
-        /// Updates global or channel NFT limit.
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_nft_limit(
-            origin,
-            nft_limit_id: NftLimitId<T::ChannelId>,
-            limit: LimitPerPeriod<T::BlockNumber>,
-        ) {
-            ensure_nft_limits_auth_success::<T>(origin, nft_limit_id)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            Self::set_nft_limit(nft_limit_id, limit);
-
-            Self::deposit_event(RawEvent::NftLimitUpdated(nft_limit_id, limit));
-        }
     }
 }
 
@@ -2564,7 +2498,6 @@ impl<T: Trait> Module<T> {
     /// Convert InitTransactionalStatus to TransactionalStatus after checking requirements on the Auction variant
     fn ensure_valid_init_transactional_status(
         init_status: &InitTransactionalStatus<T>,
-        video_id: T::VideoId,
     ) -> Result<TransactionalStatus<T>, DispatchError> {
         match init_status {
             InitTransactionalStatus::<T>::Idle => Ok(TransactionalStatus::<T>::Idle),
@@ -2584,10 +2517,8 @@ impl<T: Trait> Module<T> {
             InitTransactionalStatus::<T>::OpenAuction(ref params) => {
                 Self::validate_open_auction_params(params)?;
                 let current_block = <frame_system::Module<T>>::block_number();
-                let new_nonce = Self::ensure_nft_exists(video_id)
-                    .map(|nft| nft.open_auctions_nonce.saturating_add(One::one()))?;
                 Ok(TransactionalStatus::<T>::OpenAuction(
-                    OpenAuction::<T>::new(params.clone(), new_nonce, current_block),
+                    OpenAuction::<T>::new(params.clone(), T::OpenAuctionId::zero(), current_block),
                 ))
             }
         }
@@ -2596,11 +2527,9 @@ impl<T: Trait> Module<T> {
     /// Construct the Nft that is intended to be issued
     pub fn construct_owned_nft(
         issuance_params: &NftIssuanceParameters<T>,
-        video_id: T::VideoId,
     ) -> Result<Nft<T>, DispatchError> {
         let transactional_status = Self::ensure_valid_init_transactional_status(
             &issuance_params.init_transactional_status,
-            video_id,
         )?;
         // The content owner will be..
         let nft_owner = if let Some(to) = issuance_params.non_channel_owner {
@@ -2611,8 +2540,8 @@ impl<T: Trait> Module<T> {
         };
 
         // Enure royalty bounds satisfied, if provided
-        if let Some(royalty) = issuance_params.royalty.as_ref() {
-            Self::ensure_royalty_bounds_satisfied(*royalty)?;
+        if let Some(ref royalty) = issuance_params.royalty {
+            Self::ensure_royalty_bounds_satisfied(royalty.to_owned())?;
         }
 
         Ok(Nft::<T>::new(
@@ -2792,97 +2721,6 @@ impl<T: Trait> Module<T> {
         )?;
         Ok(())
     }
-
-    // Increment NFT numbers for a channel and global counters.
-    fn increment_nft_counters(channel: &mut Channel<T>) {
-        Self::increment_global_nft_counters();
-        channel.increment_channel_nft_counters(frame_system::Module::<T>::block_number());
-    }
-
-    // Increment global NFT counters (daily and weekly).
-    fn increment_global_nft_counters() {
-        let current_block = frame_system::Module::<T>::block_number();
-
-        let daily_limit = Self::global_daily_nft_limit();
-        GlobalDailyNftCounter::<T>::mutate(|nft_counter| {
-            nft_counter.update_for_current_period(current_block, daily_limit.block_number_period);
-        });
-
-        let weekly_limit = Self::global_weekly_nft_limit();
-        GlobalWeeklyNftCounter::<T>::mutate(|nft_counter| {
-            nft_counter.update_for_current_period(current_block, weekly_limit.block_number_period);
-        });
-    }
-
-    // Checks all NFT-limits
-    fn check_nft_limits(channel: &Channel<T>) -> DispatchResult {
-        // Global daily limit.
-        Self::check_generic_nft_limit(
-            &Self::global_daily_nft_limit(),
-            &Self::global_daily_nft_counter(),
-            Error::<T>::GlobalNftDailyLimitExceeded,
-        )?;
-
-        // Global weekly limit.
-        Self::check_generic_nft_limit(
-            &Self::global_weekly_nft_limit(),
-            &Self::global_weekly_nft_counter(),
-            Error::<T>::GlobalNftWeeklyLimitExceeded,
-        )?;
-
-        // Channel daily limit.
-        Self::check_generic_nft_limit(
-            &channel.daily_nft_limit,
-            &channel.daily_nft_counter,
-            Error::<T>::ChannelNftDailyLimitExceeded,
-        )?;
-
-        // Channel weekly limit.
-        Self::check_generic_nft_limit(
-            &channel.weekly_nft_limit,
-            &channel.weekly_nft_counter,
-            Error::<T>::ChannelNftWeeklyLimitExceeded,
-        )?;
-
-        Ok(())
-    }
-
-    // Checks generic NFT-limit.
-    fn check_generic_nft_limit(
-        nft_limit: &LimitPerPeriod<T::BlockNumber>,
-        nft_counter: &NftCounter<T::BlockNumber>,
-        error: Error<T>,
-    ) -> DispatchResult {
-        ensure!(!nft_limit.limit.is_zero(), error);
-
-        let current_block = frame_system::Module::<T>::block_number();
-        if nft_counter.is_current_period(current_block, nft_limit.block_number_period) {
-            ensure!(nft_counter.counter < nft_limit.limit, error);
-        }
-
-        Ok(())
-    }
-
-    // Set global and channel NFT limit
-    pub(crate) fn set_nft_limit(
-        limit_id: NftLimitId<T::ChannelId>,
-        limit: LimitPerPeriod<T::BlockNumber>,
-    ) {
-        match limit_id {
-            NftLimitId::GlobalDaily => GlobalDailyNftLimit::<T>::put(limit),
-            NftLimitId::GlobalWeekly => GlobalWeeklyNftLimit::<T>::put(limit),
-            NftLimitId::ChannelDaily(channel_id) => {
-                ChannelById::<T>::mutate(channel_id, |channel| {
-                    channel.daily_nft_limit = limit;
-                });
-            }
-            NftLimitId::ChannelWeekly(channel_id) => {
-                ChannelById::<T>::mutate(channel_id, |channel| {
-                    channel.weekly_nft_limit = limit;
-                });
-            }
-        }
-    }
 }
 
 decl_event!(
@@ -2908,7 +2746,7 @@ decl_event!(
         OpenAuctionId = <T as Trait>::OpenAuctionId,
         NftIssuanceParameters = NftIssuanceParameters<T>,
         Balance = BalanceOf<T>,
-        CurrencyAmount = CurrencyOf<T>,
+        CurrencyAmount = BalanceOf<T>,
         ChannelCreationParameters = ChannelCreationParameters<T>,
         ChannelUpdateParameters = ChannelUpdateParameters<T>,
         VideoCreationParameters = VideoCreationParameters<T>,
@@ -2919,7 +2757,6 @@ decl_event!(
         ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
         AccountId = <T as frame_system::Trait>::AccountId,
         UpdateChannelPayoutsParameters = UpdateChannelPayoutsParameters<T>,
-        BlockNumber = <T as frame_system::Trait>::BlockNumber,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2997,9 +2834,9 @@ decl_event!(
         AuctionBidMade(MemberId, VideoId, CurrencyAmount, Option<MemberId>),
         AuctionBidCanceled(MemberId, VideoId),
         AuctionCanceled(ContentActor, VideoId),
-        EnglishAuctionCompleted(MemberId, VideoId),
+        EnglishAuctionSettled(MemberId, AccountId, VideoId),
         BidMadeCompletingAuction(MemberId, VideoId, Option<MemberId>),
-        OpenAuctionBidAccepted(ContentActor, VideoId, CurrencyAmount),
+        OpenAuctionBidAccepted(ContentActor, VideoId, MemberId, CurrencyAmount),
         OfferStarted(VideoId, ContentActor, MemberId, Option<CurrencyAmount>),
         OfferAccepted(VideoId),
         OfferCanceled(VideoId, ContentActor),
@@ -3014,8 +2851,5 @@ decl_event!(
         ChannelCollaboratorRemarked(ContentActor, ChannelId, Vec<u8>),
         ChannelModeratorRemarked(ContentActor, ChannelId, Vec<u8>),
         NftOwnerRemarked(ContentActor, VideoId, Vec<u8>),
-
-        /// Nft limits
-        NftLimitUpdated(NftLimitId<ChannelId>, LimitPerPeriod<BlockNumber>),
     }
 );

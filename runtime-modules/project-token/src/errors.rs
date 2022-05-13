@@ -27,6 +27,24 @@ decl_error! {
         /// Specified sale starting block is in the past
         SaleStartingBlockInThePast,
 
+        /// Specified sale duration is shorter than MinSaleDuration
+        SaleDurationTooShort,
+
+        /// Sale duration cannot be zero
+        SaleDurationIsZero,
+
+        /// Upper bound quantity cannot be zero
+        SaleUpperBoundQuantityIsZero,
+
+        /// Purchase cap per member cannot be zero
+        SaleCapPerMemberIsZero,
+
+        /// Token's unit price cannot be zero
+        SaleUnitPriceIsZero,
+
+        /// Amount of tokens to purchase on sale cannot be zero
+        SalePurchaseAmountIsZero,
+
         /// Token's current issuance state is not Idle
         TokenIssuanceNotInIdleState,
 

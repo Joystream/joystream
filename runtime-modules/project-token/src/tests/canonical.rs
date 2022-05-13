@@ -914,7 +914,7 @@ fn issue_token_ok_with_token_info_added() {
     let non_owner_vesting = VestingScheduleParams {
         blocks_before_cliff: block!(100),
         cliff_amount_percentage: Permill::from_percent(50),
-        duration: block!(100),
+        linear_vesting_duration: block!(100),
     };
 
     let params = TokenIssuanceParametersOf::<Test> {
@@ -947,8 +947,8 @@ fn issue_token_ok_with_token_info_added() {
                     unclaimed_patronage_tally_amount: balance!(0),
                     rate,
                 },
-                last_sale: None,
-                sales_initialized: 0
+                sale: None,
+                next_sale_id: 0
             }
         );
     })
@@ -1009,7 +1009,7 @@ fn issue_token_ok_with_owner_accounts_data_added() {
     let non_owner_vesting = VestingScheduleParams {
         blocks_before_cliff: block!(100),
         cliff_amount_percentage: Permill::from_percent(50),
-        duration: block!(100),
+        linear_vesting_duration: block!(100),
     };
 
     let params = TokenIssuanceParametersOf::<Test> {

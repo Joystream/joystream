@@ -996,7 +996,7 @@ fn issuer_permissioned_token_transfer_fails_with_dst_vesting_schedules_limit_exc
         Some(VestingScheduleParams {
             blocks_before_cliff: 100,
             cliff_amount_percentage: Permill::from_percent(50),
-            duration: 100
+            linear_vesting_duration: 100
         })
     )];
 
@@ -1030,13 +1030,13 @@ fn issuer_permissioned_token_transfer_ok() {
         Some(VestingScheduleParams {
             blocks_before_cliff: 100,
             cliff_amount_percentage: Permill::from_percent(10),
-            duration: 100,
+            linear_vesting_duration: 100,
         }),
         None,
         Some(VestingScheduleParams {
             blocks_before_cliff: 200,
             cliff_amount_percentage: Permill::from_percent(20),
-            duration: 200,
+            linear_vesting_duration: 200,
         }),
     );
     let balance_existing = balance!(1000);
@@ -1180,7 +1180,7 @@ fn issuer_multiple_permissioned_token_transfers_ok_with_vesting_cleanup_executed
     let vesting = Some(VestingScheduleParams {
         blocks_before_cliff: 100,
         cliff_amount_percentage: Permill::from_percent(50),
-        duration: 100,
+        linear_vesting_duration: 100,
     });
     let out = issuer_outputs![(dst, amount, vesting.clone())];
     let src_balance = amount.saturating_mul((max_vesting_schedules + 1).into());

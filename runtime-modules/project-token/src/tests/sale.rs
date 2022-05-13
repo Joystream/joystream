@@ -1,5 +1,6 @@
 #![cfg(test)]
 
+use crate::balance;
 use crate::errors::Error;
 use crate::joy;
 use crate::tests::fixtures::*;
@@ -33,6 +34,69 @@ fn unsuccesful_token_sale_init_with_start_block_in_the_past() {
         InitTokenSaleFixture::default()
             .with_start_block(0)
             .call_and_assert(Err(Error::<Test>::SaleStartingBlockInThePast.into()))
+    })
+}
+
+#[test]
+fn unsuccesful_token_sale_init_with_zero_duration() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default()
+            .with_duration(0)
+            .call_and_assert(Err(Error::<Test>::SaleDurationIsZero.into()))
+    })
+}
+
+#[test]
+fn unsuccesful_token_sale_init_with_zero_upper_bound_quantity() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default()
+            .with_upper_bound_quantity(0)
+            .call_and_assert(Err(Error::<Test>::SaleUpperBoundQuantityIsZero.into()))
+    })
+}
+
+#[test]
+fn unsuccesful_token_sale_init_with_zero_unit_price() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default()
+            .with_unit_price(balance!(0))
+            .call_and_assert(Err(Error::<Test>::SaleUnitPriceIsZero.into()))
+    })
+}
+
+#[test]
+fn unsuccesful_token_sale_init_with_zero_cap_per_member() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default()
+            .with_cap_per_member(balance!(0))
+            .call_and_assert(Err(Error::<Test>::SaleCapPerMemberIsZero.into()))
+    })
+}
+
+#[test]
+fn unsuccesful_token_sale_init_with_duration_too_short() {
+    let min_sale_duration: BlockNumber = 10u64;
+    let config = GenesisConfigBuilder::new_empty()
+        .with_min_sale_duration(min_sale_duration)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default()
+            .with_duration(min_sale_duration - 1)
+            .call_and_assert(Err(Error::<Test>::SaleDurationTooShort.into()))
     })
 }
 
@@ -73,7 +137,7 @@ fn unsuccesful_token_sale_init_when_token_not_idle() {
 }
 
 #[test]
-fn unsuccesful_token_sale_init_when_remaining_reserved_toknes_from_previous_sale() {
+fn unsuccesful_token_sale_init_when_remaining_unrecovered_toknes_from_previous_sale() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
@@ -121,7 +185,14 @@ fn succesful_token_sale_init_with_custom_start_block() {
 
         // Assert sale begins at block 100
         increase_block_number_by(99);
-        let sale = TokenSale::try_from_params::<Test>(default_token_sale_params()).unwrap();
+        let sale = TokenSale::try_from_params::<Test>(
+            TokenSaleParams {
+                starts_at: Some(100),
+                ..default_token_sale_params()
+            },
+            0,
+        )
+        .unwrap();
         let token = Token::token_info_by_id(1);
         assert_eq!(IssuanceState::of::<Test>(&token), IssuanceState::Sale(sale));
         // Assert Idle state at block block 100 + DEFAULT_SALE_DURATION
@@ -335,6 +406,19 @@ fn unsuccesful_sale_purchase_amount_exceeds_quantity_left() {
 }
 
 #[test]
+fn unsuccesful_sale_purchase_amount_is_zero() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default().call_and_assert(Ok(()));
+        PurchaseTokensOnSaleFixture::default()
+            .with_amount(0)
+            .call_and_assert(Err(Error::<Test>::SalePurchaseAmountIsZero.into()));
+    })
+}
+
+#[test]
 fn unsuccesful_sale_purchase_vesting_balances_limit_reached() {
     let config = GenesisConfigBuilder::new_empty().build();
 
@@ -352,9 +436,9 @@ fn unsuccesful_sale_purchase_vesting_balances_limit_reached() {
         for _ in 0..<Test as crate::Trait>::MaxVestingBalancesPerAccountPerToken::get() {
             InitTokenSaleFixture::default()
                 .with_upper_bound_quantity(DEFAULT_SALE_PURCHASE_AMOUNT)
-                .with_vesting_schedule(Some(VestingScheduleParams {
+                .with_vesting_schedule_params(Some(VestingScheduleParams {
                     blocks_before_cliff: DEFAULT_SALE_DURATION * (max_vesting_schedules + 1) as u64,
-                    duration: 100,
+                    linear_vesting_duration: 100,
                     cliff_amount_percentage: Permill::from_percent(0),
                 }))
                 .call_and_assert(Ok(()));
@@ -430,7 +514,7 @@ fn succesful_sale_purchases_non_existing_account_no_vesting_schedule() {
         );
         IssueTokenFixture::default().call_and_assert(Ok(()));
         InitTokenSaleFixture::default()
-            .with_vesting_schedule(None)
+            .with_vesting_schedule_params(None)
             .call_and_assert(Ok(()));
         increase_account_balance(
             &OTHER_ACCOUNT_ID,
@@ -463,9 +547,9 @@ fn succesful_sale_purchases_non_existing_account_vesting_schedule() {
         );
         IssueTokenFixture::default().call_and_assert(Ok(()));
         InitTokenSaleFixture::default()
-            .with_vesting_schedule(Some(VestingScheduleParams {
+            .with_vesting_schedule_params(Some(VestingScheduleParams {
                 blocks_before_cliff: 100,
-                duration: 200,
+                linear_vesting_duration: 200,
                 cliff_amount_percentage: Permill::from_percent(30),
             }))
             .call_and_assert(Ok(()));
@@ -554,11 +638,47 @@ fn succesful_sale_purchase_existing_account_permissioned_token() {
     })
 }
 
+#[test]
+fn succesful_sale_purchase_that_clears_the_sale() {
+    let bloat_bond = joy!(100);
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(
+            &DEFAULT_ACCOUNT_ID,
+            <Test as crate::Trait>::JoyExistentialDeposit::get() + bloat_bond,
+        );
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default()
+            .with_vesting_schedule_params(None)
+            .call_and_assert(Ok(()));
+        increase_account_balance(
+            &OTHER_ACCOUNT_ID,
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
+                + DEFAULT_SALE_UNIT_PRICE * DEFAULT_INITIAL_ISSUANCE
+                + bloat_bond,
+        );
+        PurchaseTokensOnSaleFixture::default()
+            .with_amount(DEFAULT_INITIAL_ISSUANCE)
+            .call_and_assert(Ok(()));
+
+        // At sale (planned) end block expect all tokens transferrable
+        increase_block_number_by(DEFAULT_SALE_DURATION);
+        let buyer_acc_info = Token::account_info_by_token_and_account(1, OTHER_ACCOUNT_ID);
+        assert_eq!(
+            buyer_acc_info.transferrable::<Test>(System::block_number()),
+            DEFAULT_INITIAL_ISSUANCE
+        );
+    })
+}
+
 /////////////////////////////////////////////////////////
-//////////////// UNRESERVE UNSOLD TOKENS ////////////////
+//////////////// RECOVER UNSOLD TOKENS ////////////////
 /////////////////////////////////////////////////////////
 #[test]
-fn unsuccesful_unreserve_unsold_tokens_non_existing_token() {
+fn unsuccesful_recover_unsold_tokens_non_existing_token() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
@@ -568,7 +688,7 @@ fn unsuccesful_unreserve_unsold_tokens_non_existing_token() {
 }
 
 #[test]
-fn unsuccesful_unreserve_unsold_tokens_no_sale() {
+fn unsuccesful_recover_unsold_tokens_no_sale() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
@@ -579,7 +699,7 @@ fn unsuccesful_unreserve_unsold_tokens_no_sale() {
 }
 
 #[test]
-fn unsuccesful_unreserve_unsold_tokens_during_active_sale() {
+fn unsuccesful_recover_unsold_tokens_during_active_sale() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
@@ -591,7 +711,7 @@ fn unsuccesful_unreserve_unsold_tokens_during_active_sale() {
 }
 
 #[test]
-fn unsuccesful_unreserve_unsold_tokens_when_no_tokens_left() {
+fn unsuccesful_recover_unsold_tokens_when_no_tokens_left() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
@@ -612,7 +732,7 @@ fn unsuccesful_unreserve_unsold_tokens_when_no_tokens_left() {
 }
 
 #[test]
-fn succesful_unreserve_unsold_tokens() {
+fn succesful_recover_unsold_tokens() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {

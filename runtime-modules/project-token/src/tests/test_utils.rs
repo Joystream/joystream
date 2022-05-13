@@ -18,8 +18,8 @@ use crate::{
 pub struct TokenDataBuilder {
     pub(crate) total_supply: <Test as crate::Trait>::Balance,
     pub(crate) tokens_issued: <Test as crate::Trait>::Balance,
-    pub(crate) last_sale: Option<TokenSaleOf<Test>>,
-    pub(crate) sales_initialized: TokenSaleId,
+    pub(crate) sale: Option<TokenSaleOf<Test>>,
+    pub(crate) next_sale_id: TokenSaleId,
     pub(crate) transfer_policy: TransferPolicyOf<Test>,
     pub(crate) patronage_info:
         PatronageData<<Test as crate::Trait>::Balance, <Test as frame_system::Trait>::BlockNumber>,
@@ -31,8 +31,8 @@ impl TokenDataBuilder {
         crate::types::TokenDataOf::<Test> {
             total_supply: self.total_supply,
             tokens_issued: self.tokens_issued,
-            last_sale: self.last_sale,
-            sales_initialized: self.sales_initialized,
+            sale: self.sale,
+            next_sale_id: self.next_sale_id,
             transfer_policy: self.transfer_policy,
             patronage_info: self.patronage_info,
             symbol: self.symbol,
@@ -74,8 +74,8 @@ impl TokenDataBuilder {
         Self {
             tokens_issued: Balance::zero(),
             total_supply: Balance::zero(),
-            last_sale: None,
-            sales_initialized: 0,
+            sale: None,
+            next_sale_id: 0,
             transfer_policy: TransferPolicy::Permissionless,
             patronage_info: PatronageData::<Balance, BlockNumber> {
                 rate: BlockRate(Perquintill::zero()),
@@ -96,6 +96,7 @@ impl GenesisConfigBuilder {
             next_token_id: TokenId::one(),
             symbol_used: vec![],
             bloat_bond: JoyBalance::zero(),
+            min_sale_duration: BlockNumber::zero(),
         }
     }
 
@@ -121,6 +122,13 @@ impl GenesisConfigBuilder {
 
     pub fn with_bloat_bond(self, bloat_bond: JoyBalance) -> Self {
         Self { bloat_bond, ..self }
+    }
+
+    pub fn with_min_sale_duration(self, min_sale_duration: BlockNumber) -> Self {
+        Self {
+            min_sale_duration,
+            ..self
+        }
     }
 
     // add account & updates token supply
@@ -151,6 +159,7 @@ impl GenesisConfigBuilder {
             next_token_id: self.next_token_id,
             symbol_used: self.symbol_used,
             bloat_bond: self.bloat_bond,
+            min_sale_duration: self.min_sale_duration,
         }
     }
 }
@@ -175,10 +184,10 @@ impl<BlockNumber: From<u32>, Balance: Zero + From<u32>, StakingStatus, ReserveBa
                     (
                         VestingSource::IssuerTransfer(i.into()),
                         VestingSchedule::<BlockNumber, Balance> {
-                            duration: 100u32.into(),
+                            linear_vesting_duration: 100u32.into(),
                             post_cliff_total_amount: 700u32.into(),
                             cliff_amount: 300u32.into(),
-                            start_block: 1u32.into(),
+                            linear_vesting_start_block: 1u32.into(),
                         },
                     )
                 })
@@ -287,14 +296,14 @@ where
         self,
         account: &AccountId,
         amount: Balance,
-        vesting_schedule: Option<VestingScheduleParams>,
+        vesting_schedule_params: Option<VestingScheduleParams>,
     ) -> Self {
         let mut initial_allocation = self.initial_allocation.clone();
         initial_allocation.insert(
             account.clone(),
             TokenAllocation {
                 amount,
-                vesting_schedule,
+                vesting_schedule_params,
             },
         );
         Self {

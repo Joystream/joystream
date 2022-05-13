@@ -28,6 +28,11 @@ import {
   DataObjectTypeChannelCoverPhoto,
   DataObjectTypeVideoMedia,
   DataObjectTypeVideoThumbnail,
+  ContentActorLead,
+  ContentActorCurator,
+  ContentActorMember,
+  ContentActor as ContentActorVariant,
+  Curator,
 } from 'query-node/dist/model'
 // Joystream types
 import { ContentActor, StorageAssets } from '@joystream/types/augment'
@@ -62,10 +67,8 @@ const ASSET_TYPES = {
   ],
 } as const
 
-// all relations that need to be loaded for updating active video counters when deleting content
-export const videoRelationsForCountersBare = ['channel', 'channel.category', 'category']
 // all relations that need to be loaded for full evalution of video active status to work
-export const videoRelationsForCounters = [...videoRelationsForCountersBare, 'thumbnailPhoto', 'media']
+export const videoRelationsForCounters = ['channel', 'channel.category', 'category', 'thumbnailPhoto', 'media']
 
 async function processChannelAssets(
   { event, store }: EventContext & StoreContext,
@@ -254,7 +257,7 @@ async function processVideoMediaMetadata(
   return videoMedia
 }
 
-export async function convertContentActorToChannelOwner(
+export async function convertContentActorToChannelOrNftOwner(
   store: DatabaseManager,
   contentActor: ContentActor
 ): Promise<{
@@ -294,6 +297,50 @@ export async function convertContentActorToChannelOwner(
   }
 
   // TODO: contentActor.isLead
+
+  logger.error('Not implemented ContentActor type', { contentActor: contentActor.toString() })
+  throw new Error('Not-implemented ContentActor type used')
+}
+
+export async function convertContentActor(
+  store: DatabaseManager,
+  contentActor: ContentActor
+): Promise<typeof ContentActorVariant> {
+  if (contentActor.isMember) {
+    const memberId = contentActor.asMember.toNumber()
+    const member = await store.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
+
+    // ensure member exists
+    if (!member) {
+      return inconsistentState(`Actor is non-existing member`, memberId)
+    }
+
+    const result = new ContentActorMember()
+    result.member = member
+
+    return result
+  }
+
+  if (contentActor.isCurator) {
+    const curatorId = contentActor.asCurator[1].toNumber()
+    const curator = await store.get(Curator, {
+      where: { id: curatorId.toString() } as FindConditions<Curator>,
+    })
+
+    // ensure curator group exists
+    if (!curator) {
+      return inconsistentState('Actor is non-existing curator group', curatorId)
+    }
+
+    const result = new ContentActorCurator()
+    result.curator = curator
+
+    return result
+  }
+
+  if (contentActor.isLead) {
+    return new ContentActorLead()
+  }
 
   logger.error('Not implemented ContentActor type', { contentActor: contentActor.toString() })
   throw new Error('Not-implemented ContentActor type used')
@@ -492,7 +539,7 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
         id: dataObject.id,
       },
     })),
-    relations: [...videoAssets, ...videoRelationsForCountersBare],
+    relations: [...videoRelationsForCounters],
   })
 
   if (channel) {

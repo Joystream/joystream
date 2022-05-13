@@ -205,7 +205,7 @@ pub(crate) fn set_membership_price_proposal() -> ProposalParameters<BlockNumber,
 pub(crate) fn set_council_budget_increment_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 72000,
-        grace_period: 100800,
+        grace_period: 14400,
         approval_quorum_percentage: 66,
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
@@ -361,20 +361,6 @@ pub(crate) fn veto_proposal_proposal() -> ProposalParameters<BlockNumber, Balanc
 
 // Proposal parameters for the 'Update Channel Payouts' proposal
 pub(crate) fn update_channel_payouts_proposal() -> ProposalParameters<BlockNumber, Balance> {
-    ProposalParameters {
-        voting_period: 72000,
-        grace_period: 0,
-        approval_quorum_percentage: 60,
-        approval_threshold_percentage: 80,
-        slashing_quorum_percentage: 60,
-        slashing_threshold_percentage: 80,
-        required_stake: Some(100_000),
-        constitutionality: 1,
-    }
-}
-
-// Proposal parameters for the 'Update NFT limit' proposal
-pub(crate) fn update_nft_limit_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 72000,
         grace_period: 0,
