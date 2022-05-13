@@ -6,30 +6,42 @@ use frame_support::{
 };
 
 use codec::Encode;
+use frame_support::ensure;
+use frame_system::ensure_signed;
 use sp_arithmetic::Perbill;
 use sp_io::TestExternalities;
 use sp_runtime::testing::{Header, H256};
 use sp_runtime::traits::{BlakeTwo256, Convert, Hash, IdentityLookup};
-use sp_runtime::ModuleId;
+use sp_runtime::{DispatchError, DispatchResult, ModuleId};
 
 // crate import
 use crate::{
-    types::MerkleSide, AccountDataOf, GenesisConfig, ReserveBalanceOf, TokenDataOf,
-    TokenIssuanceParametersOf, Trait, TransferPolicyOf,
+    types::*, AccountDataOf, GenesisConfig, TokenDataOf, TokenIssuanceParametersOf, Trait,
+    TransferPolicyOf,
 };
 
 // Crate aliases
 pub type TokenId = <Test as Trait>::TokenId;
 pub type TokenData = TokenDataOf<Test>;
+pub type UploadContext = UploadContextOf<Test>;
+pub type SingleDataObjectUploadParams = SingleDataObjectUploadParamsOf<Test>;
+pub type WhitelistParams = WhitelistParamsOf<Test>;
+pub type TokenSaleParams = TokenSaleParamsOf<Test>;
+pub type TokenSale = TokenSaleOf<Test>;
 pub type IssuanceParams = TokenIssuanceParametersOf<Test>;
+pub type VestingScheduleParams = VestingScheduleParamsOf<Test>;
+pub type IssuanceState = OfferingStateOf<Test>;
+pub type TransferPolicyParams = TransferPolicyParamsOf<Test>;
 pub type AccountData = AccountDataOf<Test>;
 pub type AccountId = <Test as frame_system::Trait>::AccountId;
 pub type BlockNumber = <Test as frame_system::Trait>::BlockNumber;
-pub type Balance = <Test as Trait>::Balance;
-pub type ReserveBalance = ReserveBalanceOf<Test>;
+pub type Balance = TokenBalanceOf<Test>;
+pub type JoyBalance = JoyBalanceOf<Test>;
 pub type Policy = TransferPolicyOf<Test>;
 pub type Hashing = <Test as frame_system::Trait>::Hashing;
 pub type HashOut = <Test as frame_system::Trait>::Hash;
+pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
+pub type VestingSchedule = VestingScheduleOf<Test>;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
@@ -61,6 +73,7 @@ impl_outer_event! {
         token<T>,
         frame_system<T>,
         balances<T>,
+        storage<T>,
     }
 }
 
@@ -74,7 +87,9 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
     // constants for crate::Trait
     pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token");
-    pub const BlocksPerYear: u32 = 5259487; // floor(seconds in a year / 6s) , 1 block every 6s
+    pub const MaxVestingBalancesPerAccountPerToken: u8 = 3;
+    pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
+    pub const MinSaleDuration: u32 = 10;
     // constants for balances::Trait
     pub const ExistentialDeposit: u128 = 10;
 }
@@ -107,15 +122,209 @@ impl frame_system::Trait for Test {
     type SystemWeightInfo = ();
 }
 
+impl storage::Trait for Test {
+    type Event = TestEvent;
+    type DataObjectId = u64;
+    type StorageBucketId = u64;
+    type DistributionBucketIndex = u64;
+    type DistributionBucketFamilyId = u64;
+    type DistributionBucketOperatorId = u64;
+    type ChannelId = u64;
+    type DataObjectDeletionPrize = DataObjectDeletionPrize;
+    type BlacklistSizeLimit = BlacklistSizeLimit;
+    type ModuleId = StorageModuleId;
+    type StorageBucketsPerBagValueConstraint = StorageBucketsPerBagValueConstraint;
+    type DefaultMemberDynamicBagNumberOfStorageBuckets =
+        DefaultMemberDynamicBagNumberOfStorageBuckets;
+    type DefaultChannelDynamicBagNumberOfStorageBuckets =
+        DefaultChannelDynamicBagNumberOfStorageBuckets;
+    type Randomness = CollectiveFlip;
+    type MaxRandomIterationNumber = MaxRandomIterationNumber;
+    type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
+    type DistributionBucketsPerBagValueConstraint = DistributionBucketsPerBagValueConstraint;
+    type MaxNumberOfPendingInvitationsPerDistributionBucket =
+        MaxNumberOfPendingInvitationsPerDistributionBucket;
+    type ContentId = u64;
+    type MaxDataObjectSize = MaxDataObjectSize;
+
+    type StorageWorkingGroup = StorageWG;
+    type DistributionWorkingGroup = DistributionWG;
+}
+
+parameter_types! {
+    pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
+    pub const MaxDistributionBucketFamilyNumber: u64 = 4;
+    // FIXME: Currently this must be >= ExistentialDeposit (see: https://github.com/Joystream/joystream/issues/3510)
+    // When trying to deposit an amount < ExistentialDeposit into storage module account, we'd get:
+    // Err(DispatchError::Module { index: 0, error: 4, message: Some("ExistentialDeposit") })
+    pub const DataObjectDeletionPrize: u64 = 15;
+    pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
+    pub const BlacklistSizeLimit: u64 = 1;
+    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 1;
+    pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
+        storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
+    pub const InitialStorageBucketsNumberForDynamicBag: u64 = 3;
+    pub const MaxRandomIterationNumber: u64 = 3;
+    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 3;
+    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 4;
+    pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
+    storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
+    pub const MaxDataObjectSize: u64 = 1_000_000_000;
+}
+
+impl common::MembershipTypes for Test {
+    type MemberId = u64;
+    type ActorId = u64;
+}
+
 impl Trait for Test {
     type Event = TestEvent;
     type Balance = u128;
     type TokenId = u64;
     type BlockNumberToBalance = Block2Balance;
+    type DataObjectStorage = storage::Module<Self>;
     type ModuleId = TokenModuleId;
-    type ReserveExistentialDeposit = ExistentialDeposit;
-    type ReserveCurrency = Balances;
+    type JoyExistentialDeposit = ExistentialDeposit;
+    type MaxVestingBalancesPerAccountPerToken = MaxVestingBalancesPerAccountPerToken;
     type BlocksPerYear = BlocksPerYear;
+}
+
+// Working group integration
+pub struct StorageWG;
+pub struct DistributionWG;
+
+impl common::working_group::WorkingGroupBudgetHandler<u64, u128> for StorageWG {
+    fn get_budget() -> u128 {
+        unimplemented!()
+    }
+
+    fn set_budget(_new_value: u128) {
+        unimplemented!()
+    }
+
+    fn try_withdraw(_account_id: &u64, _amount: u128) -> DispatchResult {
+        unimplemented!()
+    }
+}
+
+impl common::working_group::WorkingGroupBudgetHandler<u64, u128> for DistributionWG {
+    fn get_budget() -> u128 {
+        unimplemented!()
+    }
+
+    fn set_budget(_new_value: u128) {
+        unimplemented!()
+    }
+
+    fn try_withdraw(_account_id: &u64, _amount: u128) -> DispatchResult {
+        unimplemented!()
+    }
+}
+
+impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
+    fn ensure_worker_origin(
+        origin: <Test as frame_system::Trait>::Origin,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
+        ensure!(
+            account_id == DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID,
+            DispatchError::BadOrigin,
+        );
+        Ok(())
+    }
+
+    fn ensure_leader_origin(origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
+        ensure!(
+            account_id == STORAGE_WG_LEADER_ACCOUNT_ID,
+            DispatchError::BadOrigin,
+        );
+        Ok(())
+    }
+
+    fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+        unimplemented!()
+    }
+
+    fn is_worker_account_id(
+        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> bool {
+        unimplemented!()
+    }
+
+    fn worker_exists(worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
+        Self::ensure_worker_exists(worker_id).is_ok()
+    }
+
+    fn ensure_worker_exists(
+        worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        let allowed_storage_providers = vec![DEFAULT_STORAGE_PROVIDER_ID];
+        ensure!(
+            allowed_storage_providers.contains(worker_id),
+            DispatchError::Other("Invailid worker"),
+        );
+        Ok(())
+    }
+}
+
+impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
+    fn ensure_worker_origin(
+        origin: <Test as frame_system::Trait>::Origin,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
+        ensure!(
+            account_id == DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID,
+            DispatchError::BadOrigin,
+        );
+        Ok(())
+    }
+
+    fn ensure_leader_origin(origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+        let account_id = ensure_signed(origin)?;
+        ensure!(
+            account_id == DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
+            DispatchError::BadOrigin,
+        );
+        Ok(())
+    }
+
+    fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+        unimplemented!()
+    }
+
+    fn is_worker_account_id(
+        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> bool {
+        unimplemented!()
+    }
+
+    fn worker_exists(worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
+        Self::ensure_worker_exists(worker_id).is_ok()
+    }
+
+    fn ensure_worker_exists(
+        worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        let allowed_storage_providers = vec![DEFAULT_DISTRIBUTION_PROVIDER_ID];
+        ensure!(
+            allowed_storage_providers.contains(worker_id),
+            DispatchError::Other("Invailid worker"),
+        );
+        Ok(())
+    }
 }
 
 /// Implement pallet balances trait for Test
@@ -134,8 +343,9 @@ pub struct GenesisConfigBuilder {
     pub(crate) account_info_by_token_and_account: Vec<(TokenId, AccountId, AccountData)>,
     pub(crate) token_info_by_id: Vec<(TokenId, TokenData)>,
     pub(crate) next_token_id: TokenId,
-    pub(crate) bloat_bond: ReserveBalance,
+    pub(crate) bloat_bond: JoyBalance,
     pub(crate) symbol_used: Vec<(HashOut, ())>,
+    pub(crate) min_sale_duration: BlockNumber,
 }
 
 /// test externalities
@@ -205,7 +415,7 @@ macro_rules! yearly_rate {
 #[macro_export]
 macro_rules! joy {
     ($bal:expr) => {
-        ReserveBalance::from($bal as u128)
+        JoyBalance::from($bal as u128)
     };
 }
 
@@ -220,6 +430,20 @@ macro_rules! block {
 pub type Token = crate::Module<Test>;
 pub type System = frame_system::Module<Test>;
 pub type Balances = balances::Module<Test>;
+
+pub const DEFAULT_ACCOUNT_ID: u64 = 1;
+pub const OTHER_ACCOUNT_ID: u64 = 2;
+pub const DEFAULT_INITIAL_ISSUANCE: u128 = 1_000_000;
+pub const DEFAULT_SALE_UNIT_PRICE: u128 = 10;
+pub const DEFAULT_SALE_DURATION: u64 = 100;
+pub const DEFAULT_SALE_PURCHASE_AMOUNT: u128 = 1000;
+
+pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
+pub const DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID: u64 = 100002;
+pub const DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID: u64 = 100003;
+pub const DISTRIBUTION_WG_LEADER_ACCOUNT_ID: u64 = 100004;
+pub const DEFAULT_STORAGE_PROVIDER_ID: u64 = 10;
+pub const DEFAULT_DISTRIBUTION_PROVIDER_ID: u64 = 12;
 
 // Merkle tree Helpers
 #[derive(Debug)]

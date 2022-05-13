@@ -1,4 +1,6 @@
-use crate::types::{TokenDataOf, TransferPolicyOf, Transfers, Validated};
+use crate::types::{
+    TokenIssuanceParametersOf, TokenSaleId, TransferPolicyOf, Transfers, Validated,
+};
 use frame_support::decl_event;
 use sp_runtime::Perquintill;
 
@@ -9,7 +11,7 @@ decl_event! {
         TokenId = <T as crate::Trait>::TokenId,
         AccountId = <T as frame_system::Trait>::AccountId,
         TransferPolicy = TransferPolicyOf<T>,
-        TokenData = TokenDataOf<T>,
+        TokenIssuanceParameters = TokenIssuanceParametersOf<T>,
         ValidatedTransfers = Transfers<Validated<<T as frame_system::Trait>::AccountId>, <T as crate::Trait>::Balance>,
     {
         /// Token amount is transferred from src to dst
@@ -55,8 +57,22 @@ decl_event! {
         /// Token Issued
         /// Params:
         /// - token id
-        /// - token data stored
-        /// - owner account id
-        TokenIssued(TokenId, TokenData, AccountId),
+        /// - token issuance parameters
+        TokenIssued(TokenId, TokenIssuanceParameters),
+
+        /// Tokens Purchased On Sale
+        /// Params:
+        /// - token id
+        /// - token sale id
+        /// - amount of tokens purchased
+        /// - address of the buyer
+        TokensPurchasedOnSale(TokenId, TokenSaleId, Balance, AccountId),
+
+        /// Unsold Tokens Recovered
+        /// Params:
+        /// - token id
+        /// - token sale id
+        /// - amount of tokens recovered
+        UnsoldTokensRecovered(TokenId, TokenSaleId, Balance),
     }
 }

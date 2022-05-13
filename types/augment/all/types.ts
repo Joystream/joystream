@@ -462,12 +462,12 @@ export interface DynamicBagType extends Enum {
 export interface EnglishAuction extends Struct {
   readonly starting_price: u128;
   readonly buy_now_price: Option<u128>;
-  readonly top_bid: Option<EnglishAuctionBid>;
   readonly whitelist: BTreeSet<MemberId>;
-  readonly extension_period: u32;
-  readonly min_bid_step: u128;
   readonly end: u32;
   readonly start: u32;
+  readonly extension_period: u32;
+  readonly min_bid_step: u128;
+  readonly top_bid: Option<EnglishAuctionBid>;
 }
 
 /** @name EnglishAuctionBid */
@@ -641,8 +641,9 @@ export interface OpenAuction extends Struct {
   readonly starting_price: u128;
   readonly buy_now_price: Option<u128>;
   readonly whitelist: BTreeSet<MemberId>;
-  readonly start: u32;
   readonly bid_lock_duration: u32;
+  readonly auction_id: OpenAuctionId;
+  readonly start: u32;
 }
 
 /** @name OpenAuctionBid */
@@ -659,8 +660,8 @@ export interface OpenAuctionId extends u64 {}
 export interface OpenAuctionParams extends Struct {
   readonly starting_price: u128;
   readonly buy_now_price: Option<u128>;
-  readonly whitelist: BTreeSet<MemberId>;
   readonly starts_at: Option<u32>;
+  readonly whitelist: BTreeSet<MemberId>;
   readonly bid_lock_duration: u32;
 }
 

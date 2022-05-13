@@ -2,6 +2,7 @@
 use frame_support::{assert_noop, assert_ok};
 use sp_runtime::{Permill, Perquintill};
 
+use crate::tests::fixtures::default_upload_context;
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
@@ -16,14 +17,13 @@ fn issue_token_ok_with_patronage_tally_count_zero() {
 
     let params = TokenIssuanceParametersOf::<Test> {
         patronage_rate,
-        initial_supply: init_supply,
         ..Default::default()
-    };
+    }
+    .with_allocation(&owner, init_supply, None);
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::issue_token(owner, params);
+        let _ = Token::issue_token(owner, params, default_upload_context());
 
         assert_eq!(
             Token::token_info_by_id(token_id)
@@ -42,17 +42,16 @@ fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
 
     let params = TokenIssuanceParametersOf::<Test> {
         patronage_rate,
-        initial_supply: init_supply,
         ..Default::default()
-    };
+    }
+    .with_allocation(&owner, init_supply, None);
     let config = GenesisConfigBuilder::new_empty().build();
 
     // K = 1/blocks_per_years => floor(20% * 10 * K * 1bill) = floor(K * 2bill) = 380
     let expected = balance!(380);
 
     build_test_externalities(config).execute_with(|| {
-        let _ =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::issue_token(owner, params);
+        let _ = Token::issue_token(owner, params, default_upload_context());
         increase_block_number_by(blocks);
 
         assert_eq!(
@@ -70,17 +69,16 @@ fn issue_token_ok_with_correct_patronage_accounting_and_zero_supply() {
 
     let params = TokenIssuanceParametersOf::<Test> {
         patronage_rate,
-        initial_supply,
         ..Default::default()
-    };
+    }
+    .with_allocation(&owner, initial_supply, None);
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::issue_token(owner, params);
+        let _ = Token::issue_token(owner, params, default_upload_context());
         increase_block_number_by(blocks);
 
-        assert_eq!(Token::token_info_by_id(token_id).supply, balance!(0));
+        assert_eq!(Token::token_info_by_id(token_id).total_supply, balance!(0),);
     })
 }
 
@@ -99,10 +97,7 @@ fn decrease_patronage_ok() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_to(
-                token_id, decrement,
-            );
+        let result = Token::reduce_patronage_rate_to(token_id, decrement);
 
         assert_ok!(result);
     })
@@ -128,11 +123,7 @@ fn decrease_patronage_ok_with_tally_count_correctly_updated() {
 
     build_test_externalities(config).execute_with(|| {
         increase_block_number_by(blocks);
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_to(
-                token_id,
-                target_rate,
-            );
+        let result = Token::reduce_patronage_rate_to(token_id, target_rate);
 
         assert_ok!(result);
         assert_eq!(
@@ -159,11 +150,7 @@ fn decrease_patronage_ok_noop_with_current_patronage_rate_specified_as_target() 
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_to(
-                token_id,
-                target_rate,
-            );
+        let result = Token::reduce_patronage_rate_to(token_id, target_rate);
 
         assert_ok!(result);
         assert_eq!(Token::token_info_by_id(token_id).patronage_info.rate, rate);
@@ -184,9 +171,7 @@ fn decrease_patronage_ok_with_event_deposit() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_to(
-            token_id, decrement,
-        );
+        let _ = Token::reduce_patronage_rate_to(token_id, decrement);
 
         let final_rate = Token::token_info_by_id(token_id)
             .patronage_info
@@ -212,10 +197,7 @@ fn decrease_patronage_ok_with_new_patronage_rate_correctly_approximated() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_to(
-            token_id,
-            target_rate,
-        );
+        let _ = Token::reduce_patronage_rate_to(token_id, target_rate);
 
         assert_eq!(
             Token::token_info_by_id(token_id)
@@ -244,10 +226,7 @@ fn decrease_patronage_ok_with_last_tally_block_updated() {
     build_test_externalities(config).execute_with(|| {
         increase_block_number_by(blocks);
 
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_to(
-            token_id,
-            target_rate,
-        );
+        let _ = Token::reduce_patronage_rate_to(token_id, target_rate);
 
         assert_eq!(
             block!(1) + blocks, // starting block + blocks
@@ -273,11 +252,7 @@ fn decreasing_patronage_rate_fails_with_target_rate_exceeding_current_rate() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_to(
-                token_id,
-                target_rate,
-            );
+        let result = Token::reduce_patronage_rate_to(token_id, target_rate);
 
         assert_noop!(
             result,
@@ -293,10 +268,7 @@ fn decreasing_patronage_rate_fails_invalid_token() {
     let token_id = token!(1);
 
     build_test_externalities(config).execute_with(|| {
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::reduce_patronage_rate_to(
-                token_id, decrease,
-            );
+        let result = Token::reduce_patronage_rate_to(token_id, decrease);
 
         assert_noop!(result, Error::<Test>::TokenDoesNotExist);
     })
@@ -312,16 +284,13 @@ fn claim_patronage_ok() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
-        .with_account(owner, AccountData::new_empty())
+        .with_account(owner, AccountData::default())
         .build();
 
     build_test_externalities(config).execute_with(|| {
         increase_block_number_by(blocks);
 
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
-                token_id, owner,
-            );
+        let result = Token::claim_patronage_credit(token_id, owner);
 
         assert_ok!(result);
     })
@@ -347,13 +316,12 @@ fn claim_patronage_ok_with_patronage_rate_for_period_capped_at_100pct() {
     build_test_externalities(config).execute_with(|| {
         increase_block_number_by(blocks);
 
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
-            token_id, owner,
-        );
+        let _ = Token::claim_patronage_credit(token_id, owner);
 
         assert_eq!(
             expected,
-            Token::account_info_by_token_and_account(token_id, owner).free_balance
+            Token::account_info_by_token_and_account(token_id, owner)
+                .transferrable::<Test>(System::block_number())
         );
     })
 }
@@ -376,12 +344,11 @@ fn claim_patronage_ok_with_supply_greater_than_u64_max() {
     build_test_externalities(config).execute_with(|| {
         increase_block_number_by(blocks);
 
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
-            token_id, owner,
-        );
+        let _ = Token::claim_patronage_credit(token_id, owner);
 
         assert_eq!(
-            Token::account_info_by_token_and_account(token_id, owner).free_balance,
+            Token::account_info_by_token_and_account(token_id, owner)
+                .transferrable::<Test>(System::block_number()),
             expected_amount
         );
     })
@@ -400,15 +367,13 @@ fn claim_patronage_ok_with_event_deposit() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())
-        .with_account(owner, AccountData::new_with_liquidity(init_supply))
+        .with_account(owner, AccountData::new_with_amount(init_supply))
         .build();
 
     build_test_externalities(config).execute_with(|| {
         increase_block_number_by(blocks);
 
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
-            token_id, owner,
-        );
+        let _ = Token::claim_patronage_credit(token_id, owner);
 
         last_event_eq!(RawEvent::PatronageCreditClaimed(
             token_id,
@@ -438,12 +403,11 @@ fn claim_patronage_ok_with_credit_accounting() {
     build_test_externalities(config).execute_with(|| {
         increase_block_number_by(blocks);
 
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
-            token_id, owner,
-        );
+        let _ = Token::claim_patronage_credit(token_id, owner);
 
         assert_eq!(
-            Token::account_info_by_token_and_account(token_id, owner).free_balance,
+            Token::account_info_by_token_and_account(token_id, owner)
+                .transferrable::<Test>(System::block_number()),
             expected_patronage_credit + init_supply,
         );
     })
@@ -462,15 +426,13 @@ fn claim_patronage_ok_with_unclaimed_patronage_reset() {
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token_and_owner(token_id, token_info, owner, init_supply)
-        .with_account(account_id, AccountData::new_empty())
+        .with_account(account_id, AccountData::default())
         .build();
 
     build_test_externalities(config).execute_with(|| {
         increase_block_number_by(blocks);
 
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
-            token_id, owner,
-        );
+        let _ = Token::claim_patronage_credit(token_id, owner);
 
         assert_eq!(
             Token::token_info_by_id(token_id).unclaimed_patronage_at_block(System::block_number()),
@@ -486,11 +448,7 @@ fn claim_patronage_credit_fails_with_invalid_token_id() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
-                token_id,
-                owner_account,
-            );
+        let result = Token::claim_patronage_credit(token_id, owner_account);
 
         assert_noop!(result, Error::<Test>::TokenDoesNotExist,);
     })
@@ -511,11 +469,7 @@ fn claim_patronage_credit_fails_with_invalid_owner() {
         .with_token_and_owner(token_id, token_info, owner, init_supply)
         .build();
     build_test_externalities(config).execute_with(|| {
-        let result =
-            <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
-                token_id,
-                invalid_owner,
-            );
+        let result = Token::claim_patronage_credit(token_id, invalid_owner);
 
         assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
     })
@@ -538,9 +492,7 @@ fn claim_patronage_ok_with_tally_amount_set_to_zero() {
     build_test_externalities(config).execute_with(|| {
         increase_block_number_by(blocks);
 
-        let _ = <Token as PalletToken<AccountId, Policy, IssuanceParams>>::claim_patronage_credit(
-            token_id, owner,
-        );
+        let _ = Token::claim_patronage_credit(token_id, owner);
 
         assert_eq!(
             Token::token_info_by_id(token_id)
