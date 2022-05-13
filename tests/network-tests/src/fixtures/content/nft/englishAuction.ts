@@ -131,7 +131,7 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
     await assertNftEventContentActor(
       this.query,
       () => this.query.getEnglishAuctionSettledEvents([englishAuctionSettledRuntimeEvent]),
-      winner.memberId.toString(),
+      this.author.memberId.toString(),
       'Member'
     )
 

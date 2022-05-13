@@ -25,4 +25,4 @@ OPTIONS
   -y, --yes                        Answer "yes" to any prompt, skipping any manual confirmations
 ```
 
-_See code: [src/commands/dev/batchUpload.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/dev/batchUpload.ts)_
+_See code: [src/commands/dev/batchUpload.ts](https://github.com/Joystream/joystream/blob/v0.1.1/src/commands/dev/batchUpload.ts)_

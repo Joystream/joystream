@@ -269,7 +269,11 @@ async function finishAuction(
   }
 
   // load video and auction
-  const { video, auction } = await getCurrentAuctionFromVideo(
+  const {
+    video,
+    auction,
+    nft: { ownerMember: previousOwnerMember, ownerCuratorGroup: previousOwnerCuratorGroup },
+  } = await getCurrentAuctionFromVideo(
     store,
     videoId.toString(),
     `Non-existing video's auction was completed`,
@@ -303,7 +307,7 @@ async function finishAuction(
   // save auction
   await store.save<Auction>(auction)
 
-  return { video, nft, winningBid, bidders }
+  return { video, nft, winningBid, bidders, previousOwnerMember, previousOwnerCuratorGroup }
 }
 
 async function createBid(
@@ -865,13 +869,15 @@ export async function contentNft_EnglishAuctionSettled({ event, store }: EventCo
   // specific event processing
 
   // finish auction
-  const { video, nft, winningBid, bidders } = await finishAuction(store, videoId.toNumber(), event.blockNumber)
+  const { video, nft, winningBid, bidders, previousOwnerMember, previousOwnerCuratorGroup } = await finishAuction(
+    store,
+    videoId.toNumber(),
+    event.blockNumber
+  )
 
   if (winnerId.toString() !== winningBid.bidder.id) {
     return inconsistentState(`English auction winner haven't placed the top bid`, { videoId, winnerId })
   }
-
-  nft.ownerMember = winningBid.bidder
 
   // set last sale
   nft.lastSalePrice = winningBid.amount
@@ -889,8 +895,8 @@ export async function contentNft_EnglishAuctionSettled({ event, store }: EventCo
     video,
     bidders,
     winningBid,
-    ownerMember: nft.ownerMember,
-    ownerCuratorGroup: nft.ownerCuratorGroup,
+    ownerMember: previousOwnerMember,
+    ownerCuratorGroup: previousOwnerCuratorGroup,
   })
 
   await store.save<EnglishAuctionSettledEvent>(englishAuctionSettledEvent)

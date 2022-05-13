@@ -1,7 +1,7 @@
 {
   "name": "@joystream/distributor-cli",
   "description": "Joystream distributor node CLI",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": "Joystream contributors",
   "bin": {
     "joystream-distributor": "./bin/run"
@@ -36,7 +36,6 @@
     "node-cleanup": "^2.1.2",
     "proper-lockfile": "^4.1.2",
     "queue": "^6.0.2",
-    "read-chunk": "^3.2.0",
     "send": "^0.17.1",
     "tslib": "^1",
     "winston": "^3.3.3",
