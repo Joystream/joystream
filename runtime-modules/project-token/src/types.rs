@@ -69,13 +69,11 @@ pub struct TokenData<Balance, Hash, BlockNumber, TokenSale, RevenueSplitState> {
     /// Total number of tokens issued
     pub(crate) tokens_issued: Balance,
 
-    // TODO: Limit number of sales per token?
-    /// Number of sales initialized, also serves as unique identifier
-    /// of the current sale (`last_sale`) if any.
-    pub(crate) sales_initialized: TokenSaleId,
+    /// Id of the next token sale
+    pub(crate) next_sale_id: TokenSaleId,
 
-    /// Last token sale (upcoming / ongoing / past)
-    pub(crate) last_sale: Option<TokenSale>,
+    /// Current token sale (upcoming / ongoing / ended but w/ remaining tokens to recover)
+    pub(crate) sale: Option<TokenSale>,
 
     /// Transfer policy
     pub(crate) transfer_policy: TransferPolicy<Hash>,
@@ -286,8 +284,8 @@ impl<Hash> Default for TransferPolicy<Hash> {
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default)]
 pub struct VestingScheduleParams<BlockNumber> {
-    // Vesting duration
-    pub(crate) duration: BlockNumber,
+    // Duration of the linear vesting period
+    pub(crate) linear_vesting_duration: BlockNumber,
     // Number of blocks before the linear vesting begins
     pub(crate) blocks_before_cliff: BlockNumber,
     // Initial, instantly vested amount once linear vesting begins (percentage of total amount)
@@ -296,13 +294,13 @@ pub struct VestingScheduleParams<BlockNumber> {
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default)]
 pub struct VestingSchedule<BlockNumber, Balance> {
-    // Block at which the vesting begins
-    pub(crate) start_block: BlockNumber,
-    // Linear vesting duration
-    pub(crate) duration: BlockNumber,
-    // Amount instantly vested at "start_block"
+    // Block at which the linear vesting begins and cliff_amount is unlocked
+    pub(crate) linear_vesting_start_block: BlockNumber,
+    // Duration of the linear vesting period
+    pub(crate) linear_vesting_duration: BlockNumber,
+    // Amount instantly unloacked at "linear_vesting_start_block"
     pub(crate) cliff_amount: Balance,
-    // Total amount to be vested linearly over "duration" (after "start_block")
+    // Total amount to be vested linearly over "linear_vesting_duration" (after "linear_vesting_start_block")
     pub(crate) post_cliff_total_amount: Balance,
 }
 
@@ -311,6 +309,10 @@ where
     BlockNumber: Saturating + PartialOrd + Copy,
     Balance: Saturating + Clone + Copy + From<u32> + Unsigned + TryInto<u32> + TryInto<u64> + Ord,
 {
+    /// Construct a vesting schedule from `VestingScheduleParams` and `init_block`
+    ///
+    /// `init_block` is a block from which to start counting remaining blocks until cliff, making:
+    /// `linear_vesting_start_block = init_block + blocks_before_cliff`
     pub(crate) fn from_params(
         init_block: BlockNumber,
         amount: Balance,
@@ -318,8 +320,8 @@ where
     ) -> Self {
         let cliff_amount = params.cliff_amount_percentage * amount;
         Self {
-            start_block: init_block.saturating_add(params.blocks_before_cliff),
-            duration: params.duration,
+            linear_vesting_start_block: init_block.saturating_add(params.blocks_before_cliff),
+            linear_vesting_duration: params.linear_vesting_duration,
             cliff_amount,
             post_cliff_total_amount: amount.saturating_sub(cliff_amount),
         }
@@ -329,9 +331,11 @@ where
         &self,
         b: BlockNumber,
     ) -> Balance {
-        let end_block = self.start_block.saturating_add(self.duration);
+        let end_block = self
+            .linear_vesting_start_block
+            .saturating_add(self.linear_vesting_duration);
         // Vesting not yet started
-        if self.start_block > b {
+        if self.linear_vesting_start_block > b {
             return self.total_amount();
         }
         // Vesting period is ongoing
@@ -339,7 +343,7 @@ where
             let remaining_vesting_blocks = end_block.saturating_sub(b);
             let remaining_vesting_percentage = Permill::from_rational_approximation(
                 T::BlockNumberToBalance::convert(remaining_vesting_blocks),
-                T::BlockNumberToBalance::convert(self.duration),
+                T::BlockNumberToBalance::convert(self.linear_vesting_duration),
             );
             return remaining_vesting_percentage * self.post_cliff_total_amount;
         }
@@ -348,7 +352,9 @@ where
     }
 
     pub(crate) fn is_finished(&self, b: BlockNumber) -> bool {
-        self.start_block.saturating_add(self.duration) <= b
+        self.linear_vesting_start_block
+            .saturating_add(self.linear_vesting_duration)
+            <= b
     }
 
     pub(crate) fn total_amount(&self) -> Balance {
@@ -389,8 +395,8 @@ pub struct TokenSaleParams<JoyBalance, Balance, BlockNumber, VestingSchedulePara
     pub starts_at: Option<BlockNumber>,
     /// Sale duration in blocks
     pub duration: BlockNumber,
-    /// Optional vesting schedule for all tokens on sale
-    pub vesting_schedule: Option<VestingScheduleParams>,
+    /// Optional vesting schedule parameters for all tokens on sale
+    pub vesting_schedule_params: Option<VestingScheduleParams>,
     /// Optional total sale purchase amount cap per member
     pub cap_per_member: Option<Balance>,
     /// Optional sale metadata
@@ -409,8 +415,8 @@ pub struct TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams, Ac
     pub start_block: BlockNumber,
     /// Sale duration (in blocks)
     pub duration: BlockNumber,
-    /// Optional vesting schedule for all tokens on sale
-    pub vesting_schedule: Option<VestingScheduleParams>,
+    /// Optional vesting schedule parameters for all tokens on sale
+    pub vesting_schedule_params: Option<VestingScheduleParams>,
     /// Optional total sale purchase amount cap per member
     pub cap_per_member: Option<Balance>,
 }
@@ -423,8 +429,8 @@ where
 {
     pub(crate) fn try_from_params<T: Trait>(
         params: TokenSaleParamsOf<T>,
+        current_block: T::BlockNumber,
     ) -> Result<TokenSaleOf<T>, DispatchError> {
-        let current_block = <frame_system::Module<T>>::block_number();
         let start_block = params.starts_at.unwrap_or(current_block);
 
         ensure!(
@@ -432,32 +438,67 @@ where
             Error::<T>::SaleStartingBlockInThePast
         );
 
+        // Ensure sale duration is non-zero
+        ensure!(!params.duration.is_zero(), Error::<T>::SaleDurationIsZero);
+
+        // Ensure upper_bound_quantity is non-zero
+        ensure!(
+            !params.upper_bound_quantity.is_zero(),
+            Error::<T>::SaleUpperBoundQuantityIsZero
+        );
+
+        // Ensure cap_per_member is non-zero
+        if let Some(cap) = params.cap_per_member {
+            ensure!(!cap.is_zero(), Error::<T>::SaleCapPerMemberIsZero);
+        }
+
+        // Ensure unit_price is non-zero
+        ensure!(
+            !params.unit_price.is_zero(),
+            Error::<T>::SaleUnitPriceIsZero
+        );
+
         Ok(TokenSale {
             start_block,
             duration: params.duration,
             unit_price: params.unit_price,
             quantity_left: params.upper_bound_quantity,
-            vesting_schedule: params.vesting_schedule,
+            vesting_schedule_params: params.vesting_schedule_params,
             tokens_source: params.tokens_source,
             cap_per_member: params.cap_per_member,
         })
     }
 
+    pub(crate) fn end_block(&self) -> BlockNumber {
+        self.start_block.saturating_add(self.duration)
+    }
+
+    /// Get sale's vesting_schedule based on purchase amount.
+    ///
+    /// If the sale has no `vesting_schedule_params` provided, a vesting schedule is constructed
+    /// which unlocks all purchased tokens at once at `sale.end_block()`
+    ///
+    /// If the sale has a `vesting_schedule_params` provided, a vesting schedule is constructed
+    /// based on those params, with `init_block = sale.end_block()`
+    /// (making `vesting_schedule.linear_vesting_start_block` equal to
+    /// `sale.end_block() + sale.vesting_schedule_params.blocks_before_cliff`)
     pub(crate) fn get_vesting_schedule(
         &self,
         amount: Balance,
     ) -> VestingSchedule<BlockNumber, Balance> {
-        self.vesting_schedule.as_ref().map_or(
-            // Default VestingSchedule when none specified (distribute all tokens right after sale ends)
+        self.vesting_schedule_params.as_ref().map_or(
+            // Default VestingSchedule: unlock all tokens at once at `sale.end_block()`
             VestingSchedule::<BlockNumber, Balance> {
-                start_block: self.start_block.saturating_add(self.duration),
+                linear_vesting_start_block: self.end_block(),
+                linear_vesting_duration: BlockNumber::zero(),
                 cliff_amount: amount,
                 post_cliff_total_amount: Balance::zero(),
-                duration: BlockNumber::zero(),
             },
+            // Vesting schedule constructed from `sale.vesting_schedule_params`
+            // with `init_block = sale.end_block()`
             |vs| {
                 VestingSchedule::<BlockNumber, Balance>::from_params(
-                    self.start_block.saturating_add(self.duration),
+                    self.end_block(),
                     amount,
                     vs.clone(),
                 )
@@ -486,7 +527,7 @@ pub enum OfferingState<TokenSale> {
 impl<TokenSale> OfferingState<TokenSale> {
     pub(crate) fn of<T: crate::Trait>(token: &TokenDataOf<T>) -> OfferingStateOf<T> {
         token
-            .last_sale
+            .sale
             .as_ref()
             .map_or(OfferingStateOf::<T>::Idle, |sale| {
                 let current_block = <frame_system::Module<T>>::block_number();
@@ -531,7 +572,7 @@ impl<TokenSale> OfferingState<TokenSale> {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct TokenAllocation<Balance, VestingScheduleParams> {
     pub(crate) amount: Balance,
-    pub(crate) vesting_schedule: Option<VestingScheduleParams>,
+    pub(crate) vesting_schedule_params: Option<VestingScheduleParams>,
 }
 
 /// Input parameters for token issuance
@@ -649,7 +690,7 @@ impl<Balance: Zero, VestingScheduleParams> Default
     fn default() -> Self {
         TokenAllocation {
             amount: Balance::zero(),
-            vesting_schedule: None,
+            vesting_schedule_params: None,
         }
     }
 }
@@ -906,14 +947,6 @@ where
         self.patronage_info.rate = new_rate;
     }
 
-    // Returns number of tokens that remain unpurchased & reserved in the the sale's
-    // `tokens_source` account (if any)
-    pub(crate) fn last_sale_remaining_tokens(&self) -> Balance {
-        self.last_sale
-            .as_ref()
-            .map_or(Balance::zero(), |last_sale| last_sale.quantity_left)
-    }
-
     pub(crate) fn activate_new_revenue_split(
         &mut self,
         allocation: JoyBalance,
@@ -951,10 +984,10 @@ where
             symbol: params.symbol,
             total_supply,
             tokens_issued: total_supply,
-            last_sale: None,
+            sale: None,
             transfer_policy: params.transfer_policy.into(),
             patronage_info,
-            sales_initialized: 0,
+            next_sale_id: 0,
             accounts_number: 0,
             revenue_split: RevenueSplitState::Inactive,
             latest_revenue_split_id: 0,

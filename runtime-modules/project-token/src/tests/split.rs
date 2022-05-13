@@ -592,9 +592,9 @@ fn participate_in_split_ok_with_vesting_schedule_and_correct_transferrable_balan
             .execute_call()
             .unwrap();
         InitTokenSaleFixture::default()
-            .with_vesting_schedule(Some(VestingScheduleParams {
+            .with_vesting_schedule_params(Some(VestingScheduleParams {
                 blocks_before_cliff: 0,
-                duration: DEFAULT_SALE_DURATION,
+                linear_vesting_duration: DEFAULT_SALE_DURATION,
                 cliff_amount_percentage: Permill::from_percent(30),
             }))
             .execute_call()

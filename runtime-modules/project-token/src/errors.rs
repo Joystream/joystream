@@ -24,6 +24,7 @@ decl_error! {
         /// Account Already exists
         AccountAlreadyExists,
 
+        /// Token's current issuance state is not Idle
         /// Token's current offering state is not Idle
         TokenIssuanceNotInIdleState,
 
@@ -79,6 +80,24 @@ decl_error! {
 
         /// There are no remaining tokes to recover from the previous token sale.
         NoTokensToRecover,
+
+        /// Specified sale duration is shorter than MinSaleDuration
+        SaleDurationTooShort,
+
+        /// Sale duration cannot be zero
+        SaleDurationIsZero,
+
+        /// Upper bound quantity cannot be zero
+        SaleUpperBoundQuantityIsZero,
+
+        /// Purchase cap per member cannot be zero
+        SaleCapPerMemberIsZero,
+
+        /// Token's unit price cannot be zero
+        SaleUnitPriceIsZero,
+
+        /// Amount of tokens to purchase on sale cannot be zero
+        SalePurchaseAmountIsZero,
 
         // ------Revenue Split Errors ------------------------------------------------------
 

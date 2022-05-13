@@ -3,7 +3,7 @@ eslint-disable @typescript-eslint/naming-convention
 */
 import { EventContext, StoreContext } from '@joystream/hydra-common'
 import { Content } from '../../generated/types'
-import { convertContentActorToChannelOwner, processChannelMetadata, unsetAssetRelations } from './utils'
+import { convertContentActorToChannelOrNftOwner, processChannelMetadata, unsetAssetRelations } from './utils'
 import { Channel, ChannelCategory, StorageDataObject, Membership } from 'query-node/dist/model'
 import { deserializeMetadata, inconsistentState, logger } from '../common'
 import { ChannelCategoryMetadata, ChannelMetadata } from '@joystream/metadata-protobuf'
@@ -31,7 +31,7 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     updatedAt: new Date(event.blockTimestamp),
 
     // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
-    ...(await convertContentActorToChannelOwner(store, contentActor)),
+    ...(await convertContentActorToChannelOrNftOwner(store, contentActor)),
 
     collaborators: Array.from(channelCreationParameters.collaborators).map(
       (id) => new Membership({ id: id.toString() })

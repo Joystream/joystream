@@ -129,10 +129,6 @@ impl pallet_timestamp::Trait for Test {
     type WeightInfo = ();
 }
 
-impl common::currency::GovernanceCurrency for Test {
-    type Currency = balances::Module<Self>;
-}
-
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
     pub const MaximumBlockWeight: u32 = 1024;

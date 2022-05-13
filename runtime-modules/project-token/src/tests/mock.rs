@@ -90,6 +90,7 @@ parameter_types! {
     pub const MaxVestingBalancesPerAccountPerToken: u8 = 3;
     pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
     pub const MinRevenueSplitDuration: u64 = 10;
+    pub const MinSaleDuration: u32 = 10;
     // --------- balances::Trait parameters ---------------------------
     pub const ExistentialDeposit: u128 = 10;
 }
@@ -346,6 +347,7 @@ pub struct GenesisConfigBuilder {
     pub(crate) next_token_id: TokenId,
     pub(crate) bloat_bond: JoyBalance,
     pub(crate) symbol_used: Vec<(HashOut, ())>,
+    pub(crate) min_sale_duration: BlockNumber,
 }
 
 /// test externalities + initial balances allocation
