@@ -221,6 +221,16 @@ impl InitTokenSaleFixture {
             ..self
         }
     }
+
+    pub fn with_unit_price(self, unit_price: Balance) -> Self {
+        Self {
+            params: TokenSaleParams {
+                unit_price,
+                ..self.params
+            },
+            ..self
+        }
+    }
 }
 
 impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {

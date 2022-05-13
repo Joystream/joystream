@@ -315,9 +315,24 @@ where
             Error::<T>::SaleStartingBlockInThePast
         );
 
+        // Ensure sale duration is non-zero
+        ensure!(!params.duration.is_zero(), Error::<T>::SaleDurationIsZero);
+
+        // Ensure upper_bound_quantity is non-zero
         ensure!(
-            params.duration >= T::MinSaleDuration::get().into(),
-            Error::<T>::SaleDurationTooShort
+            !params.upper_bound_quantity.is_zero(),
+            Error::<T>::SaleUpperBoundQuantityIsZero
+        );
+
+        // Ensure cap_per_member is non-zero
+        if let Some(cap) = params.cap_per_member {
+            ensure!(!cap.is_zero(), Error::<T>::SaleCapPerMemberIsZero);
+        }
+
+        // Ensure unit_price is non-zero
+        ensure!(
+            !params.unit_price.is_zero(),
+            Error::<T>::SaleUnitPriceIsZero
         );
 
         Ok(TokenSale {

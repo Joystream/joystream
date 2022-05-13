@@ -1,12 +1,12 @@
 #![cfg(test)]
 
+use crate::balance;
 use crate::errors::Error;
 use crate::joy;
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::types::Joy;
 use crate::types::MerkleProofOf;
-use crate::Trait;
 use crate::{merkle_proof, merkle_root};
 use frame_support::assert_ok;
 use sp_arithmetic::Permill;
@@ -38,17 +38,64 @@ fn unsuccesful_token_sale_init_with_start_block_in_the_past() {
 }
 
 #[test]
-fn unsuccesful_token_sale_init_with_duration_too_short() {
+fn unsuccesful_token_sale_init_with_zero_duration() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().call_and_assert(Ok(()));
         InitTokenSaleFixture::default()
-            .with_duration(
-                <Test as Trait>::MinSaleDuration::get()
-                    .saturating_sub(1)
-                    .into(),
-            )
+            .with_duration(0)
+            .call_and_assert(Err(Error::<Test>::SaleDurationIsZero.into()))
+    })
+}
+
+#[test]
+fn unsuccesful_token_sale_init_with_zero_upper_bound_quantity() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default()
+            .with_upper_bound_quantity(0)
+            .call_and_assert(Err(Error::<Test>::SaleUpperBoundQuantityIsZero.into()))
+    })
+}
+
+#[test]
+fn unsuccesful_token_sale_init_with_zero_unit_price() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default()
+            .with_unit_price(balance!(0))
+            .call_and_assert(Err(Error::<Test>::SaleUnitPriceIsZero.into()))
+    })
+}
+
+#[test]
+fn unsuccesful_token_sale_init_with_zero_cap_per_member() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default()
+            .with_cap_per_member(balance!(0))
+            .call_and_assert(Err(Error::<Test>::SaleCapPerMemberIsZero.into()))
+    })
+}
+
+#[test]
+fn unsuccesful_token_sale_init_with_duration_too_short() {
+    let min_sale_duration: BlockNumber = 10u64;
+    let config = GenesisConfigBuilder::new_empty()
+        .with_min_sale_duration(min_sale_duration)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default()
+            .with_duration(min_sale_duration - 1)
             .call_and_assert(Err(Error::<Test>::SaleDurationTooShort.into()))
     })
 }
@@ -355,6 +402,19 @@ fn unsuccesful_sale_purchase_amount_exceeds_quantity_left() {
         PurchaseTokensOnSaleFixture::default()
             .with_amount(DEFAULT_INITIAL_ISSUANCE + 1)
             .call_and_assert(Err(Error::<Test>::NotEnoughTokensOnSale.into()));
+    })
+}
+
+#[test]
+fn unsuccesful_sale_purchase_amount_is_zero() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default().call_and_assert(Ok(()));
+        PurchaseTokensOnSaleFixture::default()
+            .with_amount(0)
+            .call_and_assert(Err(Error::<Test>::SalePurchaseAmountIsZero.into()));
     })
 }
 

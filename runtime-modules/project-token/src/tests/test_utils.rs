@@ -92,6 +92,7 @@ impl GenesisConfigBuilder {
             next_token_id: TokenId::one(),
             symbol_used: vec![],
             bloat_bond: JoyBalance::zero(),
+            min_sale_duration: BlockNumber::zero(),
         }
     }
 
@@ -117,6 +118,13 @@ impl GenesisConfigBuilder {
 
     pub fn with_bloat_bond(self, bloat_bond: JoyBalance) -> Self {
         Self { bloat_bond, ..self }
+    }
+
+    pub fn with_min_sale_duration(self, min_sale_duration: BlockNumber) -> Self {
+        Self {
+            min_sale_duration,
+            ..self
+        }
     }
 
     // add account & updates token supply
@@ -147,6 +155,7 @@ impl GenesisConfigBuilder {
             next_token_id: self.next_token_id,
             symbol_used: self.symbol_used,
             bloat_bond: self.bloat_bond,
+            min_sale_duration: self.min_sale_duration,
         }
     }
 }

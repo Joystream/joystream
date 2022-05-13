@@ -70,9 +70,6 @@ pub trait Trait: frame_system::Trait + balances::Trait + storage::Trait {
     /// Maximum number of vesting balances per account per token
     type MaxVestingBalancesPerAccountPerToken: Get<u8>;
 
-    /// Minimum duration of a token sale
-    type MinSaleDuration: Get<u32>;
-
     /// Number of blocks produced in a year
     type BlocksPerYear: Get<u32>;
 }
@@ -100,6 +97,9 @@ decl_storage! {
 
         /// Bloat Bond value used during account creation
         pub BloatBond get(fn bloat_bond) config(): JoyBalanceOf<T>;
+
+        /// Minimum duration of a token sale
+        pub MinSaleDuration get(fn min_sale_duration) config(): T::BlockNumber;
     }
 
     add_extra_genesis {
@@ -306,6 +306,9 @@ decl_module! {
             token_id: T::TokenId,
             amount: <T as Trait>::Balance
         ) -> DispatchResult {
+            // Ensure non-zero amount
+            ensure!(!amount.is_zero(), Error::<T>::SalePurchaseAmountIsZero);
+
             let current_block = Self::current_block();
             let sender = ensure_signed(origin)?;
             let token_data = Self::ensure_token_exists(token_id)?;
@@ -803,6 +806,12 @@ impl<T: Trait> Module<T> {
         sale_params: &TokenSaleParamsOf<T>,
         current_block: T::BlockNumber,
     ) -> DispatchResult {
+        // Ensure sale duration is >= MinSaleDuration
+        ensure!(
+            sale_params.duration >= MinSaleDuration::<T>::get(),
+            Error::<T>::SaleDurationTooShort
+        );
+
         // Ensure token offering state is Idle
         OfferingStateOf::<T>::ensure_idle_of::<T>(token_data)?;
 

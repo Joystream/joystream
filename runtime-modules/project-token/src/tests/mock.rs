@@ -187,7 +187,6 @@ impl Trait for Test {
     type JoyExistentialDeposit = ExistentialDeposit;
     type MaxVestingBalancesPerAccountPerToken = MaxVestingBalancesPerAccountPerToken;
     type BlocksPerYear = BlocksPerYear;
-    type MinSaleDuration = MinSaleDuration;
 }
 
 // Working group integration
@@ -346,6 +345,7 @@ pub struct GenesisConfigBuilder {
     pub(crate) next_token_id: TokenId,
     pub(crate) bloat_bond: JoyBalance,
     pub(crate) symbol_used: Vec<(HashOut, ())>,
+    pub(crate) min_sale_duration: BlockNumber,
 }
 
 /// test externalities
