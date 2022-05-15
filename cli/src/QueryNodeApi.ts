@@ -46,6 +46,95 @@ import {
   UpcomingWorkingGroupOpeningsByGroupQuery,
   UpcomingWorkingGroupOpeningsByGroupQueryVariables,
   UpcomingWorkingGroupOpeningsByGroup,
+
+  BudgetUpdatedEventFieldsFragment,
+  BudgetUpdatedEventsBetweenDatesQuery,
+  BudgetUpdatedEventsBetweenDatesQueryVariables,
+  BudgetUpdatedEventsBetweenDates,
+  
+  BudgetUpdatedEventsBetweenBlocksQuery,
+  BudgetUpdatedEventsBetweenBlocksQueryVariables,
+  BudgetUpdatedEventsBetweenBlocks,
+  
+  BudgetRefillEventFieldsFragment,
+  BudgetRefillEventsBetweenBlocksQuery,
+  BudgetRefillEventsBetweenBlocksQueryVariables,
+  BudgetRefillEventsBetweenBlocks,
+
+  RewardPaidEventFieldsFragment,
+  RewardPaidEventsBetweenBlocksQuery,
+  RewardPaidEventsBetweenBlocksQueryVariables,
+  RewardPaidEventsBetweenBlocks,
+
+  ProposalExecutedEventFieldsFragment,
+  ProposalExecutedEventsBetweenBlocksQuery,
+  ProposalExecutedEventsBetweenBlocksQueryVariables,
+  ProposalExecutedEventsBetweenBlocks,
+
+  CouncilMembersRewardFieldsFragment,
+  CouncilMembersAtBlockQuery,
+  CouncilMembersAtBlockQueryVariables,
+  CouncilMembersAtBlock,
+
+  AllWorkerHistoryFieldsFragment,
+  AllWorkerHistoryQuery,
+  AllWorkerHistoryQueryVariables,
+  AllWorkerHistory,
+
+  ProposalsDecisionMadeEventsFieldsFragment,
+  ProposalsDecisionMadeEventsBetweenBlocksQuery,
+  ProposalsDecisionMadeEventsBetweenBlocksQueryVariables,
+  ProposalsDecisionMadeEventsBetweenBlocks,
+
+  MemberInvitedEventsFieldsFragment,
+  MemberInvitedEventsBetweenBlocksQuery,
+  MemberInvitedEventsBetweenBlocksQueryVariables,
+  MemberInvitedEventsBetweenBlocks,
+
+  AllBountiesFieldsFragment,
+  AllBountiesQuery,
+  AllBountiesQueryVariables,
+  AllBounties,
+
+  StorageBagStorageReplicationFieldsFragment,
+  StorageBagStorageReplicationQuery,
+  StorageBagStorageReplicationQueryVariables,
+  StorageBagStorageReplication,
+
+  StorageBagDistributionStatusFieldsFragment,
+  StorageBagDistributionStatusQuery,
+  StorageBagDistributionStatusQueryVariables,
+  StorageBagDistributionStatus,
+
+  StorageBucketsDataFieldsFragment,
+  StorageBucketsDataQuery,
+  StorageBucketsDataQueryVariables,
+  StorageBucketsData,
+
+  OracleJudgmentSubmittedEventsBetweenBlocksFieldsFragment,
+  OracleJudgmentSubmittedEventsBetweenBlocksQuery,
+  OracleJudgmentSubmittedEventsBetweenBlocksQueryVariables,
+  OracleJudgmentSubmittedEventsBetweenBlocks,
+
+  BountiesCreatedBetweenBlocksFieldsFragment,
+  BountiesCreatedBetweenBlocksQuery,
+  BountiesCreatedBetweenBlocksQueryVariables,
+  BountiesCreatedBetweenBlocks,
+
+  BountiesFundedBetweenBlocksFieldsFragment,
+  BountiesFundedBetweenBlocksQuery,
+  BountiesFundedBetweenBlocksQueryVariables,
+  BountiesFundedBetweenBlocks,
+
+  MembersByControllerAccounts,
+  MembersByControllerAccountsQuery,
+  MembersByControllerAccountsQueryVariables,
+  MembershipDataFieldsFragment,
+
+  MembersByRootAccounts,
+  MembersByRootAccountsQuery,
+  MembersByRootAccountsQueryVariables,
+
 } from './graphql/generated/queries'
 import { URL } from 'url'
 import fetch from 'cross-fetch'
@@ -205,5 +294,172 @@ export default class QueryNodeApi {
       UpcomingWorkingGroupOpeningsByGroupQuery,
       UpcomingWorkingGroupOpeningsByGroupQueryVariables
     >(UpcomingWorkingGroupOpeningsByGroup, { workingGroupId: apiModuleByGroup[group] }, 'upcomingWorkingGroupOpenings')
+  }
+
+  async budgetUpdatedEventsBetweenDates(
+    startDate: Date,
+    endDate: Date
+  ): Promise<BudgetUpdatedEventFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+      BudgetUpdatedEventsBetweenDatesQuery,
+      BudgetUpdatedEventsBetweenDatesQueryVariables
+    >(BudgetUpdatedEventsBetweenDates, { startDate, endDate }, 'budgetUpdatedEvents')
+  }
+
+  async budgetUpdatedEventsBetweenBlocks(
+    startBlock: number,
+    endBlock: number
+  ): Promise<BudgetUpdatedEventFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+      BudgetUpdatedEventsBetweenBlocksQuery,
+      BudgetUpdatedEventsBetweenBlocksQueryVariables
+    >(BudgetUpdatedEventsBetweenBlocks, { startBlock, endBlock }, 'budgetUpdatedEvents')
+  }
+
+  async budgetRefillEventsBetweenBlocks(
+    startBlock: number,
+    endBlock: number
+  ): Promise<BudgetRefillEventFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+    BudgetRefillEventsBetweenBlocksQuery,
+    BudgetRefillEventsBetweenBlocksQueryVariables
+    >(BudgetRefillEventsBetweenBlocks, { startBlock, endBlock }, 'budgetRefillEvents')
+  }
+
+  async rewardPaidEventsBetweenBlocks(
+    startBlock: number,
+    endBlock: number
+  ): Promise<RewardPaidEventFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+    RewardPaidEventsBetweenBlocksQuery,
+    RewardPaidEventsBetweenBlocksQueryVariables
+    >(RewardPaidEventsBetweenBlocks, { startBlock, endBlock }, 'rewardPaidEvents')
+  }
+
+  async proposalExecutedEventsBetweenBlocks(
+    startBlock: number,
+    endBlock: number
+  ): Promise<ProposalExecutedEventFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+    ProposalExecutedEventsBetweenBlocksQuery,
+    ProposalExecutedEventsBetweenBlocksQueryVariables
+    >(ProposalExecutedEventsBetweenBlocks, { startBlock, endBlock }, 'proposalExecutedEvents')
+  }
+
+  async councilMembersAtBlock(
+    endBlock: number
+  ): Promise<CouncilMembersRewardFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+    CouncilMembersAtBlockQuery,
+    CouncilMembersAtBlockQueryVariables
+    >(CouncilMembersAtBlock, { endBlock }, 'councilMembers')
+  }
+
+  async workerHistory(
+  ): Promise<AllWorkerHistoryFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+    AllWorkerHistoryQuery,
+    AllWorkerHistoryQueryVariables
+    >(AllWorkerHistory, {}, 'workers')
+  }
+
+  async proposalsDecisionMadeEventsBetweenBlocks(
+    startBlock: number,
+    endBlock: number
+  ): Promise<ProposalsDecisionMadeEventsFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+    ProposalsDecisionMadeEventsBetweenBlocksQuery,
+    ProposalsDecisionMadeEventsBetweenBlocksQueryVariables
+    >(ProposalsDecisionMadeEventsBetweenBlocks, { startBlock, endBlock }, 'proposalDecisionMadeEvents')
+  }
+
+  async memberInvitedEventsBetweenBlocks(
+    startBlock: number,
+    endBlock: number
+  ): Promise<MemberInvitedEventsFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+    MemberInvitedEventsBetweenBlocksQuery,
+    MemberInvitedEventsBetweenBlocksQueryVariables
+    >(MemberInvitedEventsBetweenBlocks, { startBlock, endBlock }, 'memberInvitedEvents')
+  }
+
+  async allBounties(
+  ): Promise<AllBountiesFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+    AllBountiesQuery,
+    AllBountiesQueryVariables
+    >(AllBounties, { }, 'bounties')
+  }
+
+  async storageBagStorageReplication(
+  ): Promise<StorageBagStorageReplicationFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+    StorageBagStorageReplicationQuery,
+    StorageBagStorageReplicationQueryVariables
+    >(StorageBagStorageReplication, { }, 'storageBags')
+  }
+
+  async storageBagDistributionStatus(
+  ): Promise<StorageBagDistributionStatusFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+    StorageBagDistributionStatusQuery,
+    StorageBagDistributionStatusQueryVariables
+    >(StorageBagDistributionStatus, { }, 'storageBags')
+  }
+
+  async storageBucketsData(
+  ): Promise<StorageBucketsDataFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+    StorageBucketsDataQuery,
+    StorageBucketsDataQueryVariables
+    >(StorageBucketsData, { }, 'storageBuckets')
+  }
+
+  async bountiesCreatedBetweenBlocks(
+    startBlock: number,
+    endBlock: number
+  ): Promise<BountiesCreatedBetweenBlocksFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+    BountiesCreatedBetweenBlocksQuery,
+    BountiesCreatedBetweenBlocksQueryVariables
+    >(BountiesCreatedBetweenBlocks, { startBlock, endBlock }, 'bountyCreatedEvents')
+  }
+
+  async oracleJudgmentSubmittedEventsBetweenBlocks(
+    startBlock: number,
+    endBlock: number
+  ): Promise<OracleJudgmentSubmittedEventsBetweenBlocksFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+    OracleJudgmentSubmittedEventsBetweenBlocksQuery,
+    OracleJudgmentSubmittedEventsBetweenBlocksQueryVariables
+    >(OracleJudgmentSubmittedEventsBetweenBlocks, { startBlock, endBlock }, 'oracleJudgmentSubmittedEvents')
+  }
+
+  async bountiesFundedBetweenBlocks(
+    startBlock: number,
+    endBlock: number
+  ): Promise<BountiesFundedBetweenBlocksFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+    BountiesFundedBetweenBlocksQuery,
+    BountiesFundedBetweenBlocksQueryVariables
+    >(BountiesFundedBetweenBlocks, { startBlock, endBlock }, 'bountyFundedEvents')
+  }
+
+  async membersByControllerAccounts(
+    controllerAccounts: string[]
+  ): Promise<MembershipDataFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+    MembersByControllerAccountsQuery,
+    MembersByControllerAccountsQueryVariables
+    >(MembersByControllerAccounts, { controllerAccounts }, 'memberships')
+  }
+
+  async membersByRootAccounts(
+    rootAccounts: string[]
+  ): Promise<MembershipDataFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+    MembersByRootAccountsQuery,
+    MembersByRootAccountsQueryVariables
+    >(MembersByRootAccounts, { rootAccounts }, 'memberships')
   }
 }

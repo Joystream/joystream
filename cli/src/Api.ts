@@ -158,6 +158,12 @@ export default class Api {
     return blockHash.toString()
   }
 
+  async unprotecedBlockHash(height: number): Promise<string> {
+    const blockHash = await this._api.rpc.chain.getBlockHash(height)
+
+    return blockHash.toString()
+  }
+
   protected async blockTimestamp(height: number): Promise<Date> {
     const blockTime = await this._api.query.timestamp.now.at(await this.blockHash(height))
 
@@ -167,6 +173,16 @@ export default class Api {
   protected workingGroupApiQuery<T extends WorkingGroups>(group: T): ApiPromise['query'][typeof apiModuleByGroup[T]] {
     const module = apiModuleByGroup[group]
     return this._api.query[module]
+  }
+
+  unprotectedWorkingGroupApiQuery<T extends WorkingGroups>(group: T): ApiPromise['query'][typeof apiModuleByGroup[T]] {
+    const module = apiModuleByGroup[group]
+    return this._api.query[module]
+  }
+
+  unprotectedWorkingGroupApiConsts<T extends WorkingGroups>(group: T): ApiPromise['consts'][typeof apiModuleByGroup[T]] {
+    const module = apiModuleByGroup[group]
+    return this._api.consts[module]
   }
 
   async membersDetails(entries: [MemberId, Membership][]): Promise<MemberDetails[]> {

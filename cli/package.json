@@ -128,6 +128,9 @@
       },
       "staking": {
         "description": "Staking and validation commands"
+      },
+      "incentives": {
+      "description": "Tools to compute and verify rewards and grading."
       }
     }
   },

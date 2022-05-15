@@ -1,0 +1,482 @@
+fragment BudgetUpdatedEventFields on BudgetUpdatedEvent {
+  inBlock
+  groupId
+  budgetChangeAmount
+}
+
+fragment BudgetRefillEventFields on BudgetRefillEvent {
+  inBlock
+  balance
+}
+
+fragment RewardPaidEventFields on RewardPaidEvent {
+  inBlock
+  groupId
+  amount
+  paymentType
+  worker {
+    ...WorkerFields
+  }
+}
+
+fragment WorkerFields on Worker {
+  id 
+  membership {
+    ...MembershipOnWorkerFields
+  }
+}
+
+fragment MembershipDataFields on Membership {
+  id
+  handle
+  rootAccount
+  controllerAccount
+}
+
+fragment MembershipOnWorkerFields on Membership {
+  id
+  handle
+}
+
+fragment ProposalExecutedEventFields on ProposalExecutedEvent {
+  inBlock
+  executionStatus {
+    __typename
+    ... on ProposalStatusExecutionFailed {
+      errorMessage
+    }
+  }
+  proposal {
+    id
+    details {
+      __typename
+      ... on FundingRequestProposalDetails {
+        destinationsList {
+          destinations {
+            amount
+            account
+          }
+        }
+      }
+    }
+  }
+}
+
+fragment ProposalsDecisionMadeEventsFields on ProposalDecisionMadeEvent {
+  inBlock
+  id
+  proposal {
+    id
+    createdInEvent {
+      inBlock
+    }
+    details {
+      __typename
+    }
+  }
+  decisionStatus {
+    __typename
+  }
+}
+
+fragment CouncilMembersRewardFields on CouncilMember {
+  electedInCouncilId
+  accumulatedReward
+  unpaidReward
+  rewardAccountId
+  member {
+    id
+    handle
+  }
+}
+
+fragment AllWorkerHistoryFields on Worker {
+  groupId
+  isActive
+  isLead
+  runtimeId
+  rewardAccount
+  slashes {
+    slashedAmount
+    inBlock
+  }
+  leaderunseteventleader {
+    inBlock
+  }
+  status {
+    __typename
+    ...on WorkerStatusLeft {
+      workerExitedEvent {
+        inBlock
+      }
+    }
+    ... on WorkerStatusTerminated {
+      terminatedWorkerEvent {
+        inBlock
+      }
+    }
+  }
+  entry {
+    inBlock
+  }
+  membership {
+    handle
+    id
+  }
+}
+
+fragment MemberInvitedEventsFields on MemberInvitedEvent {
+  inBlock
+  newMemberId
+  invitingMemberId
+}
+
+fragment OracleJudgmentSubmittedEventsBetweenBlocksFields on OracleJudgmentSubmittedEvent {
+  inBlock
+  bounty {
+    id
+    entries {
+      stakingAccount
+      worker {
+        id
+        handle
+      }
+      status {
+        ...on BountyEntryStatusWinner {
+          reward
+        }
+      }
+    }
+    creator {
+      id
+      handle
+    }
+    oracle {
+      id
+      handle
+    }
+    createdInEvent {
+      inBlock
+    }
+  }
+}
+
+
+
+fragment BountiesCreatedBetweenBlocksFields on BountyCreatedEvent {
+  inBlock
+  bounty {
+    id
+    stage
+    creator {
+      id
+      handle
+    }
+  }
+}
+
+fragment BountiesFundedBetweenBlocksFields on BountyFundedEvent {
+  inBlock
+  contribution {
+    bounty {
+      id
+      stage
+      creator {
+        id
+        handle
+      }
+    }
+  }
+}
+
+
+fragment AllBountiesFields on Bounty {
+  id
+  stage
+  entrantWhitelist {
+    members {
+      ...MembershipOnWorkerFields
+    }
+  }
+  creator {
+    ...MembershipOnWorkerFields
+  }
+  oracle {
+    ...MembershipOnWorkerFields
+  }
+  totalFunding
+  isTerminated
+  createdInEvent {
+    inBlock
+  }
+  contributions {
+    amount
+    withdrawnInEvent {
+      inBlock
+    }
+    contributor {
+      ...MembershipOnWorkerFields
+    }
+    bountyFundedEvents {
+      inBlock
+    }
+  }
+  maxFundingReachedEvent {
+    inBlock
+  }
+  judgment {
+    rationale
+  }
+  removedInEvent {
+    inBlock
+  }
+}
+
+
+fragment StorageBagStorageReplicationFields on StorageBag {
+  id
+  storageBuckets {
+    id
+  }
+}
+
+fragment StorageBagDistributionStatusFields on StorageBag {
+  id
+  distributionBuckets {
+    familyId
+    bucketIndex
+    distributing
+  }
+}
+
+fragment StorageBucketsDataFields on StorageBucket {
+  id
+  acceptingNewBags
+  dataObjectsSizeLimit
+  dataObjectCountLimit
+  dataObjectsCount
+  dataObjectsSize
+  operatorStatus {
+    ... on StorageBucketOperatorStatusActive {
+      workerId
+    }
+  }
+  operatorMetadata {
+    nodeEndpoint
+  }
+}
+
+
+
+
+query BudgetUpdatedEventsBetweenDates($startDate: DateTime!, $endDate: DateTime!) {
+  budgetUpdatedEvents (
+    limit:1000,
+    orderBy: inBlock_ASC,
+    where: {
+      updatedAt_gte: $startDate,
+      updatedAt_lt: $endDate
+    }
+  ) {
+		...BudgetUpdatedEventFields
+  }
+}
+
+query BudgetUpdatedEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
+  budgetUpdatedEvents (
+    limit:1000,
+    orderBy: inBlock_ASC,
+    where: {
+      inBlock_gte: $startBlock,
+      inBlock_lt: $endBlock
+    }
+  ) {
+		...BudgetUpdatedEventFields
+  }
+}
+
+query BudgetRefillEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
+  budgetRefillEvents (
+    limit:1000,
+    orderBy: inBlock_ASC,
+    where: {
+      inBlock_gte: $startBlock,
+      inBlock_lt: $endBlock
+    }
+  ) {
+    ...BudgetRefillEventFields
+  }
+}
+
+
+query RewardPaidEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
+  rewardPaidEvents (
+    limit:1000, 
+    orderBy: inBlock_ASC,
+    where: {
+      inBlock_gte: $startBlock,
+      inBlock_lt: $endBlock
+    }
+  ) {
+    ...RewardPaidEventFields
+  }
+}
+
+
+query ProposalExecutedEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
+  proposalExecutedEvents (
+    limit:1000, 
+    orderBy: inBlock_ASC,
+    where: {
+      inBlock_gte: $startBlock,
+      inBlock_lt: $endBlock
+    }
+  ) {
+    ...ProposalExecutedEventFields
+  }
+}
+
+query CouncilMembersAtBlock($endBlock: BigInt!) {
+  councilMembers (
+    limit:1000, 
+    where: {
+      lastPaymentBlock_eq: $endBlock
+    }
+  ) {
+    ...CouncilMembersRewardFields
+  }
+}
+
+query AllWorkerHistory {
+  workers (
+    limit:1000000
+    ) {
+    ...AllWorkerHistoryFields
+  }
+}
+
+query ProposalsDecisionMadeEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
+  proposalDecisionMadeEvents (
+    limit:1000, 
+    orderBy: inBlock_ASC,
+    where: {
+      inBlock_gte: $startBlock,
+      inBlock_lt: $endBlock
+    }
+  ) {
+    ...ProposalsDecisionMadeEventsFields
+  }
+}
+
+
+query MemberInvitedEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
+  memberInvitedEvents (
+    limit:1000, 
+    orderBy: inBlock_ASC,
+    where: {
+      inBlock_gte: $startBlock,
+      inBlock_lt: $endBlock
+    }
+  ) {
+    ...MemberInvitedEventsFields
+  }
+}
+
+
+query AllBounties {
+	bounties (
+    limit:1000000,
+    orderBy: createdAt_ASC
+  ) {
+    ...AllBountiesFields
+  }
+}
+
+query BountiesFundedBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
+  bountyFundedEvents (
+    limit:1000000,
+    orderBy: inBlock_ASC
+    where: {
+      inBlock_gte: $startBlock,
+      inBlock_lt: $endBlock
+    }
+  ) {
+    ...BountiesFundedBetweenBlocksFields
+  }
+}
+
+query BountiesCreatedBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
+  bountyCreatedEvents (
+    limit:1000000,
+    orderBy: createdAt_DESC
+    where: {
+      inBlock_gte: $startBlock,
+      inBlock_lt: $endBlock
+    }
+  ) {
+    ...BountiesCreatedBetweenBlocksFields
+  }
+}
+
+
+query StorageBagStorageReplication {
+  storageBags (
+    limit: 1000000
+    orderBy: createdAt_DESC
+  ) {
+    ...StorageBagStorageReplicationFields
+  }
+}
+
+query StorageBagDistributionStatus {
+  storageBags (
+    limit: 1000000
+    orderBy: createdAt_DESC
+  ) {
+    ...StorageBagDistributionStatusFields
+  }
+}
+
+query StorageBucketsData {
+  storageBuckets (
+    limit: 1000000
+  ) {
+    ...StorageBucketsDataFields
+  }
+}
+
+query MembersByControllerAccounts($controllerAccounts: [String!]) {
+  memberships(
+    where: {
+      controllerAccount_in: $controllerAccounts
+    }
+  ) {
+    ...MembershipDataFields
+  }
+}
+
+query MembersByRootAccounts($rootAccounts: [String!]) {
+  memberships(
+    where: {
+      rootAccount_in: $rootAccounts
+    }
+  ) {
+    ...MembershipDataFields
+  }
+}
+
+
+
+query OracleJudgmentSubmittedEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
+  oracleJudgmentSubmittedEvents (
+    limit:1000000,
+    orderBy: inBlock_ASC
+    where: {
+      inBlock_gte: $startBlock,
+      inBlock_lt: $endBlock
+    }
+  ) {
+    ...OracleJudgmentSubmittedEventsBetweenBlocksFields
+  }
+}
+
