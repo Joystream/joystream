@@ -6,6 +6,7 @@ use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
 use crate::types::{TransferPolicyOf, Transfers, Validated};
 use crate::{balance, joy, last_event_eq, member, merkle_root, origin, token, Error, RawEvent};
+use sp_runtime::DispatchError;
 
 // some helpers
 macro_rules! outputs {
@@ -50,6 +51,32 @@ fn transfer_fails_with_non_existing_source() {
         let result = Token::transfer(origin, src_member_id, token_id, outputs![(dst, amount)]);
 
         assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
+    })
+}
+
+#[test]
+fn transfer_fails_with_invalid_src_member_controller() {
+    let token_id = token!(1);
+    let origin = origin!(member!(2).1);
+    let src_member_id = member!(1).0;
+    let (dst, amount) = (member!(2).1, balance!(100));
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissionless)
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(src_member_id, AccountData::new_with_amount(amount))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::transfer(origin, src_member_id, token_id, outputs![(dst, amount)]);
+
+        assert_noop!(
+            result,
+            DispatchError::Other("origin signer not a member controller account")
+        );
     })
 }
 

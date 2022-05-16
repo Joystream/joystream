@@ -459,7 +459,7 @@ impl MemberOriginValidator<Origin, u64, u64> for TestMemberships {
         let sender = ensure_signed(origin)?;
         ensure!(
             Self::is_member_controller_account(&member_id, &sender),
-            "origin signer not a member controller account",
+            DispatchError::Other("origin signer not a member controller account"),
         );
         Ok(sender)
     }

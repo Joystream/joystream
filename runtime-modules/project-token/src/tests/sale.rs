@@ -10,6 +10,7 @@ use crate::types::MerkleProofOf;
 use crate::{member, merkle_proof, merkle_root};
 use frame_support::assert_ok;
 use sp_arithmetic::Permill;
+use sp_runtime::DispatchError;
 
 /////////////////////////////////////////////////////////
 ////////////////// SALE INITIALIZATION //////////////////
@@ -498,6 +499,26 @@ fn unsuccesful_sale_purchase_with_permissioned_token_and_non_existing_account() 
         );
         PurchaseTokensOnSaleFixture::default()
             .call_and_assert(Err(Error::<Test>::AccountInformationDoesNotExist.into()));
+    })
+}
+
+#[test]
+fn unsuccesful_sale_purchase_with_invalid_member_controller() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default().call_and_assert(Ok(()));
+        increase_account_balance(
+            &member!(2).1,
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
+                + (DEFAULT_SALE_UNIT_PRICE * DEFAULT_SALE_PURCHASE_AMOUNT),
+        );
+        PurchaseTokensOnSaleFixture::default()
+            .with_sender(member!(1).1)
+            .call_and_assert(Err(DispatchError::Other(
+                "origin signer not a member controller account",
+            )));
     })
 }
 

@@ -15,6 +15,7 @@ use crate::{
     merkle_root, origin, token, yearly_rate, Error, RawEvent, TokenDataOf,
 };
 use frame_support::traits::Currency;
+use sp_runtime::DispatchError;
 
 #[test]
 fn join_whitelist_fails_with_token_id_not_valid() {
@@ -68,6 +69,36 @@ fn join_whitelist_fails_with_existing_account() {
         let result = Token::join_whitelist(origin!(user_acc), user_id, token_id, proof);
 
         assert_noop!(result, Error::<Test>::AccountAlreadyExists,);
+    })
+}
+
+#[test]
+fn join_whitelist_fails_with_invalid_member_controller() {
+    let (token_id, init_supply) = (token!(1), balance!(100));
+    let ((owner_id, _), (user_id, _), (other_user_id, other_user_acc)) =
+        (member!(1), member!(2), member!(3));
+    let commit = merkle_root![user_id, other_user_id];
+    let proof = merkle_proof!(0, [user_id, other_user_id]);
+    let bloat_bond = joy!(100);
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token_and_owner(token_id, token_data, owner_id, init_supply)
+        .with_bloat_bond(bloat_bond)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&other_user_acc, bloat_bond + ExistentialDeposit::get());
+
+        let result = Token::join_whitelist(origin!(other_user_acc), user_id, token_id, proof);
+
+        assert_noop!(
+            result,
+            DispatchError::Other("origin signer not a member controller account")
+        );
     })
 }
 
