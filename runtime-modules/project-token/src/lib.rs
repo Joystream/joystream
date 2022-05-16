@@ -990,21 +990,39 @@ impl<T: Trait> Module<T> {
     }
 
     pub(crate) fn validate_destination(
-        token_id: T::TokenId,
-        dst: &T::AccountId,
+        dst: T::AccountId,
+        dst_acc_data: &Option<AccountDataOf<T>>,
         transfer_policy: &TransferPolicyOf<T>,
         is_issuer: bool,
-    ) -> Result<Option<AccountDataOf<T>>, DispatchError> {
-        match (
-            transfer_policy,
-            Self::ensure_account_data_exists(token_id, dst),
-            is_issuer,
-        ) {
-            (&TransferPolicyOf::<T>::Permissionless, Err(_), _) => Ok(None),
-            (&TransferPolicyOf::<T>::Permissionless, Ok(acc_data), _) => Ok(Some(acc_data)),
-            (&TransferPolicyOf::<T>::Permissioned(_), Ok(acc_data), _) => Ok(Some(acc_data)),
-            (&TransferPolicyOf::<T>::Permissioned(_), Err(_), true) => Ok(None),
-            (&TransferPolicyOf::<T>::Permissioned(_), Err(e), false) => Err(e),
+    ) -> Result<Validated<T::AccountId>, DispatchError> {
+        if let TransferPolicy::Permissioned(_) = transfer_policy {
+            ensure!(
+                is_issuer || dst_acc_data.is_some(),
+                Error::<T>::AccountInformationDoesNotExist
+            );
+        }
+        if dst_acc_data.is_some() {
+            Ok(Validated::Existing(dst))
+        } else {
+            Ok(Validated::NonExisting(dst))
+        }
+    }
+
+    pub(crate) fn validate_payment(
+        payment: PaymentWithVestingOf<T>,
+        dst_acc_data: Option<AccountDataOf<T>>,
+    ) -> Result<ValidatedPaymentOf<T>, DispatchError> {
+        if let (Some(_), Some(acc_data)) =
+            (payment.vesting_schedule.as_ref(), dst_acc_data.as_ref())
+        {
+            let cleanup_candidate = acc_data.ensure_can_add_or_update_vesting_schedule::<T>(
+                Self::current_block(),
+                VestingSource::IssuerTransfer(acc_data.next_vesting_transfer_id),
+            )?;
+
+            Ok(ValidatedPaymentOf::<T>::new(payment, cleanup_candidate))
+        } else {
+            Ok(payment.into())
         }
     }
 
@@ -1034,26 +1052,11 @@ impl<T: Trait> Module<T> {
             .0
             .into_iter()
             .map(|(dst, payment)| {
-                let dst_acc_data =
-                    Self::validate_destination(token_id, &dst, transfer_policy, is_issuer)?;
-                let validated_dst = match dst_acc_data {
-                    Some(_) => Validated::Existing(dst),
-                    None => Validated::NonExisting(dst),
-                };
-                if let (Some(_), Some(acc_data)) =
-                    (payment.vesting_schedule.as_ref(), dst_acc_data.as_ref())
-                {
-                    let cleanup_candidate = acc_data
-                        .ensure_can_add_or_update_vesting_schedule::<T>(
-                            Self::current_block(),
-                            VestingSource::IssuerTransfer(acc_data.next_vesting_transfer_id),
-                        )?;
-                    return Ok((
-                        validated_dst,
-                        ValidatedPaymentOf::<T>::new(payment, cleanup_candidate),
-                    ));
-                }
-                Ok((validated_dst, payment.into()))
+                let dst_acc_data = Self::ensure_account_data_exists(token_id, &dst).ok();
+                let validated_dst =
+                    Self::validate_destination(dst, &dst_acc_data, transfer_policy, is_issuer)?;
+                let validated_payment = Self::validate_payment(payment, dst_acc_data)?;
+                Ok((validated_dst, validated_payment))
             })
             .collect::<Result<BTreeMap<_, _>, DispatchError>>()?;
 
