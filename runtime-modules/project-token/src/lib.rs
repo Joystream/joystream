@@ -496,9 +496,13 @@ decl_module! {
                 split_info.allocation,
             );
 
+            // dividend_amount <= usable_balance(treasury_account) should be a runtime invariant
+            let treasury_account: T::AccountId = Self::module_treasury_account();
+            debug_assert!(Joy::<T>::usable_balance(&treasury_account)
+                    >= T::JoyExistentialDeposit::get().saturating_add(dividend_amount));
+
             // == MUTATION SAFE ==
 
-            let treasury_account: T::AccountId = Self::module_treasury_account();
             <Joy<T> as Currency<T::AccountId>>::transfer(
                 &treasury_account,
                 &sender,
