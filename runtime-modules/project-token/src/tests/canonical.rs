@@ -949,7 +949,7 @@ fn issue_token_ok_with_token_info_added() {
                 },
                 sale: None,
                 next_sale_id: 0,
-                latest_revenue_split_id: 0,
+                next_revenue_split_id: 0,
                 revenue_split: RevenueSplitState::Inactive,
             }
         );

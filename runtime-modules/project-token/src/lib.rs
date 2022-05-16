@@ -515,7 +515,7 @@ decl_module! {
             });
 
             AccountInfoByTokenAndAccount::<T>::mutate(token_id, &sender, |account_info| {
-                account_info.stake(token_info.latest_revenue_split_id, amount);
+                account_info.stake(token_info.next_revenue_split_id - 1, amount);
             });
 
             Self::deposit_event(RawEvent::UserParticipatedInSplit(
@@ -523,7 +523,7 @@ decl_module! {
                 sender,
                 amount,
                 dividend_amount,
-                token_info.latest_revenue_split_id,
+                token_info.next_revenue_split_id - 1,
             ));
 
             Ok(())
@@ -534,7 +534,7 @@ decl_module! {
         /// - `token` must exist for `token_id`
         /// - `account` must exist for `(token_id, sender)` with `origin` signed by `sender`
         /// - `account.staking status.is_some()'
-        /// - if `(account.staking_status.split_id == token.latest_revenue_split_id`
+        /// - if `(account.staking_status.split_id == token.next_revenue_split_id`
         ///    AND `token.revenue_split` is active) THEN split staking period  must be ended
         ///
         /// Postconditions
@@ -548,8 +548,8 @@ decl_module! {
             let account_info = Self::ensure_account_data_exists(token_id, &sender)?;
             let staking_info = account_info.ensure_account_is_valid_split_participant::<T>()?;
 
-            // staking_info.split_id <= token_info.latest_revenue_split_id is a runtime invariant
-            if staking_info.split_id == token_info.latest_revenue_split_id {
+            // staking_info.split_id in [0,token_info.next_revenue_split_id) is a runtime invariant
+            if staking_info.split_id == token_info.next_revenue_split_id - 1 {
                 if let Ok(split_info) = token_info.revenue_split.ensure_active::<T>() {
                     ensure!(
                         split_info.timeline.is_ended(Self::current_block()),

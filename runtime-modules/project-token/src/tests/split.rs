@@ -196,7 +196,7 @@ fn issue_split_ok_with_revenue_split_correctly_activated() {
             })
         ));
         // Latest split nonce correctly updated
-        assert_eq!(Token::token_info_by_id(1u64).latest_revenue_split_id, 1u32);
+        assert_eq!(Token::token_info_by_id(1u64).next_revenue_split_id, 1u32);
     })
 }
 
@@ -477,7 +477,7 @@ fn participate_in_split_ok_with_event_deposit() {
             OTHER_ACCOUNT_ID,
             DEFAULT_SPLIT_PARTICIPATION,
             DEFAULT_SPLIT_JOY_DIVIDEND,
-            1u32, // participate in split no. 1
+            0u32, // participate in split @ 0
         ));
     })
 }
@@ -523,7 +523,7 @@ fn participate_in_split_ok_with_amount_staked() {
             AccountDataOf::<Test> {
                 amount: DEFAULT_SPLIT_PARTICIPATION,
                 split_staking_status: Some(StakingStatus {
-                    split_id: 1u32, // revenue split id participated
+                    split_id: 0u32, // revenue split id participated
                     amount: DEFAULT_SPLIT_PARTICIPATION,
                 }),
                 ..
@@ -617,7 +617,7 @@ fn participate_in_split_ok_with_vesting_schedule_and_correct_transferrable_balan
             AccountDataOf::<Test> {
                 amount: TOTAL_AMOUNT,
                 split_staking_status: Some(StakingStatus::<Balance> {
-                    split_id: 1u32,
+                    split_id: 0u32,
                     amount: DEFAULT_SALE_PURCHASE_AMOUNT,
                 }),
                 ..

@@ -91,7 +91,7 @@ pub struct TokenData<Balance, Hash, BlockNumber, TokenSale, RevenueSplitState> {
     pub(crate) revenue_split: RevenueSplitState,
 
     /// Latest Token Revenue split (active / inactive)
-    pub(crate) latest_revenue_split_id: RevenueSplitId,
+    pub(crate) next_revenue_split_id: RevenueSplitId,
 }
 
 /// Revenue Split State
@@ -953,8 +953,8 @@ where
         timeline: Timeline<BlockNumber>,
     ) {
         self.revenue_split.activate(allocation, timeline);
-        self.latest_revenue_split_id = self
-            .latest_revenue_split_id
+        self.next_revenue_split_id = self
+            .next_revenue_split_id
             .saturating_add(RevenueSplitId::one());
     }
 
@@ -990,7 +990,7 @@ where
             next_sale_id: 0,
             accounts_number: 0,
             revenue_split: RevenueSplitState::Inactive,
-            latest_revenue_split_id: 0,
+            next_revenue_split_id: 0,
         }
     }
 }

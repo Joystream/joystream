@@ -38,7 +38,7 @@ impl TokenDataBuilder {
             symbol: self.symbol,
             accounts_number: 0u64,
             revenue_split: self.revenue_split,
-            latest_revenue_split_id: 0u32,
+            next_revenue_split_id: 0u32,
         }
     }
 
