@@ -483,7 +483,7 @@ fn participate_in_split_ok_with_event_deposit() {
 }
 
 #[test]
-fn participate_in_split_ok_noop_with_amount_zero() {
+fn participate_in_split_fails_with_zero_amount() {
     build_default_test_externalities_with_balances(vec![(
         DEFAULT_ACCOUNT_ID,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
@@ -492,15 +492,15 @@ fn participate_in_split_ok_noop_with_amount_zero() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
-        let state_pre = sp_io::storage::root();
 
-        ParticipateInSplitFixture::default()
+        let result = ParticipateInSplitFixture::default()
             .with_amount(0u128)
-            .execute_call()
-            .unwrap();
+            .execute_call();
 
-        let state_post = sp_io::storage::root();
-        assert_eq!(state_pre, state_post);
+        assert_err!(
+            result,
+            Error::<Test>::CannotParticipateInSplitWithZeroAmount
+        );
     })
 }
 

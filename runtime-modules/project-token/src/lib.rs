@@ -470,7 +470,10 @@ decl_module! {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            if amount.is_zero() { return Ok(()) }
+            ensure!(
+                !amount.is_zero(),
+                Error::<T>::CannotParticipateInSplitWithZeroAmount,
+            );
 
             let token_info = Self::ensure_token_exists(token_id)?;
             let split_info = token_info.revenue_split.ensure_active::<T>()?;

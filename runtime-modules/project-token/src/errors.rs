@@ -127,5 +127,8 @@ decl_error! {
 
         /// User is not participating in any split
         UserNotParticipantingInAnySplit,
+
+        /// Attempt to participate in a split with zero token to stake
+        CannotParticipateInSplitWithZeroAmount,
     }
 }
