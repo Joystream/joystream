@@ -819,12 +819,12 @@ impl TransferFixture {
     }
 }
 
-pub struct AbandonRevenueSplitFixture {
+pub struct ExitRevenueSplitFixture {
     sender: AccountId,
     token_id: TokenId,
 }
 
-impl AbandonRevenueSplitFixture {
+impl ExitRevenueSplitFixture {
     pub fn default() -> Self {
         Self {
             sender: OTHER_ACCOUNT_ID.into(),
@@ -848,7 +848,7 @@ impl AbandonRevenueSplitFixture {
 
     pub fn execute_call(&self) -> DispatchResult {
         let state_pre = sp_io::storage::root();
-        let result = Token::abandon_revenue_split(Origin::signed(self.sender), self.token_id);
+        let result = Token::exit_revenue_split(Origin::signed(self.sender), self.token_id);
         let state_post = sp_io::storage::root();
 
         // no-op in case of error

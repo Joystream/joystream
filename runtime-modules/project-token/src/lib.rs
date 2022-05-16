@@ -540,7 +540,7 @@ decl_module! {
         /// Postconditions
         /// - `account.staking_status` set to None
         #[weight = 10_000_000] // TODO: adjust weight
-        fn abandon_revenue_split(origin, token_id: T::TokenId) -> DispatchResult {
+        fn exit_revenue_split(origin, token_id: T::TokenId) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
             let token_info = Self::ensure_token_exists(token_id)?;

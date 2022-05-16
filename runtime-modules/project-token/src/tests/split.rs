@@ -645,7 +645,7 @@ fn participate_in_split_ok_with_vesting_schedule_and_correct_transferrable_balan
 }
 
 #[test]
-fn abandon_revenue_split_fails_with_invalid_token_id() {
+fn exit_revenue_split_fails_with_invalid_token_id() {
     build_default_test_externalities_with_balances(vec![(
         DEFAULT_ACCOUNT_ID,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
@@ -657,7 +657,7 @@ fn abandon_revenue_split_fails_with_invalid_token_id() {
         ParticipateInSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
 
-        let result = AbandonRevenueSplitFixture::default()
+        let result = ExitRevenueSplitFixture::default()
             .with_token_id(2u64)
             .execute_call();
 
@@ -666,7 +666,7 @@ fn abandon_revenue_split_fails_with_invalid_token_id() {
 }
 
 #[test]
-fn abandon_revenue_split_fails_with_invalid_account_id() {
+fn exit_revenue_split_fails_with_invalid_account_id() {
     build_default_test_externalities_with_balances(vec![(
         DEFAULT_ACCOUNT_ID,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
@@ -681,7 +681,7 @@ fn abandon_revenue_split_fails_with_invalid_account_id() {
             .execute_call()
             .unwrap();
 
-        let result = AbandonRevenueSplitFixture::default()
+        let result = ExitRevenueSplitFixture::default()
             .with_account(OTHER_ACCOUNT_ID + 1)
             .execute_call();
 
@@ -690,7 +690,7 @@ fn abandon_revenue_split_fails_with_invalid_account_id() {
 }
 
 #[test]
-fn abandon_revenue_split_fails_with_user_not_a_participant() {
+fn exit_revenue_split_fails_with_user_not_a_participant() {
     build_default_test_externalities_with_balances(vec![(
         DEFAULT_ACCOUNT_ID,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
@@ -704,14 +704,14 @@ fn abandon_revenue_split_fails_with_user_not_a_participant() {
             .execute_call()
             .unwrap();
 
-        let result = AbandonRevenueSplitFixture::default().execute_call();
+        let result = ExitRevenueSplitFixture::default().execute_call();
 
         assert_err!(result, Error::<Test>::UserNotParticipantingInAnySplit);
     })
 }
 
 #[test]
-fn abandon_revenue_split_fails_with_active_non_ended_split() {
+fn exit_revenue_split_fails_with_active_non_ended_split() {
     build_default_test_externalities_with_balances(vec![(
         DEFAULT_ACCOUNT_ID,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
@@ -722,14 +722,14 @@ fn abandon_revenue_split_fails_with_active_non_ended_split() {
         IssueRevenueSplitFixture::default().execute_call().unwrap();
         ParticipateInSplitFixture::default().execute_call().unwrap();
 
-        let result = AbandonRevenueSplitFixture::default().execute_call();
+        let result = ExitRevenueSplitFixture::default().execute_call();
 
         assert_err!(result, Error::<Test>::RevenueSplitDidNotEnd);
     })
 }
 
 #[test]
-fn abandon_revenue_split_ok_with_event_deposit() {
+fn exit_revenue_split_ok_with_event_deposit() {
     build_default_test_externalities_with_balances(vec![(
         DEFAULT_ACCOUNT_ID,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
@@ -744,9 +744,7 @@ fn abandon_revenue_split_ok_with_event_deposit() {
             .execute_call()
             .unwrap();
 
-        AbandonRevenueSplitFixture::default()
-            .execute_call()
-            .unwrap();
+        ExitRevenueSplitFixture::default().execute_call().unwrap();
 
         last_event_eq!(RawEvent::RevenueSplitLeft(
             1u64,
@@ -757,7 +755,7 @@ fn abandon_revenue_split_ok_with_event_deposit() {
 }
 
 #[test]
-fn abandon_revenue_split_ok_with_unstaking() {
+fn exit_revenue_split_ok_with_unstaking() {
     build_default_test_externalities_with_balances(vec![(
         DEFAULT_ACCOUNT_ID,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
@@ -772,9 +770,7 @@ fn abandon_revenue_split_ok_with_unstaking() {
             .execute_call()
             .unwrap();
 
-        AbandonRevenueSplitFixture::default()
-            .execute_call()
-            .unwrap();
+        ExitRevenueSplitFixture::default().execute_call().unwrap();
 
         // staking status set back to None
         assert!(
@@ -786,7 +782,7 @@ fn abandon_revenue_split_ok_with_unstaking() {
 }
 
 #[test]
-fn abandon_revenue_split_ok_with_active_and_ended_split() {
+fn exit_revenue_split_ok_with_active_and_ended_split() {
     build_default_test_externalities_with_balances(vec![(
         DEFAULT_ACCOUNT_ID,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
@@ -798,8 +794,6 @@ fn abandon_revenue_split_ok_with_active_and_ended_split() {
         ParticipateInSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
 
-        AbandonRevenueSplitFixture::default()
-            .execute_call()
-            .unwrap();
+        ExitRevenueSplitFixture::default().execute_call().unwrap();
     })
 }
