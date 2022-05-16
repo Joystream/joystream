@@ -1,6 +1,6 @@
 use crate::types::{
     JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId, TransferPolicyOf,
-    Transfers, Validated,
+    ValidatedTransfersOf,
 };
 use frame_support::decl_event;
 use sp_runtime::Perquintill;
@@ -15,14 +15,25 @@ decl_event! {
         BlockNumber = <T as frame_system::Trait>::BlockNumber,
         TransferPolicy = TransferPolicyOf<T>,
         TokenIssuanceParameters = TokenIssuanceParametersOf<T>,
-        ValidatedTransfers = Transfers<Validated<<T as frame_system::Trait>::AccountId>, <T as crate::Trait>::Balance>,
+        ValidatedTransfers = ValidatedTransfersOf<T>,
+
     {
         /// Token amount is transferred from src to dst
         /// Params:
         /// - token identifier
         /// - source account
-        /// - outputs: list of pairs (destination account, amount)
+        /// - map containing validated outputs (amount, remark) data indexed by
+        ///   (account_id + account existance)
         TokenAmountTransferred(TokenId, AccountId, ValidatedTransfers),
+
+        /// Token amount transferred by issuer
+        /// Params:
+        /// - token identifier
+        /// - source account
+        /// - map containing validated outputs
+        ///   (amount, opt. vesting schedule, opt. vesting cleanup key, remark) data indexed by
+        ///   (account_id + account existance)
+        TokenAmountTransferredByIssuer(TokenId, AccountId, ValidatedTransfers),
 
         /// Patronage rate decreased
         /// Params:

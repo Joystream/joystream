@@ -31,11 +31,11 @@ decl_error! {
         /// Insufficient JOY Balance to cover the transaction costs
         InsufficientJoyBalance,
 
-        /// Attempt to removed non owned account under permissioned mode
+        /// Attempt to remove non owned account under permissioned mode
         AttemptToRemoveNonOwnedAccountUnderPermissionedMode,
 
-        /// Attempt to removed non empty non owned
-        AttemptToRemoveNonOwnedAndNonEmptyAccount,
+        /// Attempt to remove an account with some outstanding tokens
+        AttemptToRemoveNonEmptyAccount,
 
         /// Cannot join whitelist in permissionless mode
         CannotJoinWhitelistInPermissionlessMode,

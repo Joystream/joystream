@@ -9,12 +9,7 @@ use sp_runtime::{
     traits::{Convert, Hash, UniqueSaturatedInto},
     PerThing, Permill, Perquintill, SaturatedConversion,
 };
-use sp_std::{
-    cmp::max,
-    collections::btree_map::{BTreeMap, IntoIter, Iter},
-    convert::TryInto,
-    iter::Sum,
-};
+use sp_std::{cmp::max, collections::btree_map::BTreeMap, convert::TryInto, iter::Sum};
 
 use storage::{BagId, DataObjectCreationParameters};
 
@@ -27,6 +22,7 @@ use crate::{errors::Error, Trait};
 pub enum VestingSource {
     InitialIssuance,
     Sale(TokenSaleId),
+    IssuerTransfer(u64),
 }
 
 /// Represent's account's split staking status
@@ -58,6 +54,10 @@ pub struct AccountData<VestingSchedule, Balance, StakingStatus, JoyBalance> {
     /// Bloat bond (in 'JOY's) deposited into treasury upon creation of this
     /// account, returned when this account is removed
     pub(crate) bloat_bond: JoyBalance,
+
+    /// Id of the next incoming transfer that includes tokens subject to vesting
+    /// (for the purpose of generating VestingSource)
+    pub(crate) next_vesting_transfer_id: u64,
 }
 
 /// Info for the token
@@ -653,9 +653,70 @@ pub struct Payment<Balance> {
     pub amount: Balance,
 }
 
-/// Wrapper around BTreeMap<AccountId, Payment<Balance>>
+/// Information about a payment with optional vesting schedule
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct Transfers<AccountId, Balance>(pub BTreeMap<AccountId, Payment<Balance>>);
+pub struct PaymentWithVesting<Balance, VestingScheduleParams> {
+    /// Ignored by runtime
+    pub remark: Vec<u8>,
+
+    /// Amount
+    pub amount: Balance,
+
+    /// Optional vesting schedule to be applied on the transferred tokens
+    pub vesting_schedule: Option<VestingScheduleParams>,
+}
+
+impl<Balance, VestingScheduleParams> From<Payment<Balance>>
+    for PaymentWithVesting<Balance, VestingScheduleParams>
+{
+    fn from(payment: Payment<Balance>) -> Self {
+        Self {
+            remark: payment.remark,
+            amount: payment.amount,
+            vesting_schedule: None,
+        }
+    }
+}
+
+/// Represents a validated payment with additional information (ie. vesting cleanup candidate)
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct ValidatedPayment<PaymentWithVesting> {
+    /// Original payment
+    pub payment: PaymentWithVesting,
+
+    /// Optional source (key) of the vesting schedule to be removed before
+    /// the new vesting schedule can be added for the destination account
+    pub vesting_cleanup_candidate: Option<VestingSource>,
+}
+
+impl<Balance, VestingScheduleParams> From<PaymentWithVesting<Balance, VestingScheduleParams>>
+    for ValidatedPayment<PaymentWithVesting<Balance, VestingScheduleParams>>
+{
+    fn from(payment: PaymentWithVesting<Balance, VestingScheduleParams>) -> Self {
+        Self {
+            payment,
+            vesting_cleanup_candidate: None,
+        }
+    }
+}
+
+impl<Balance, VestingScheduleParams>
+    ValidatedPayment<PaymentWithVesting<Balance, VestingScheduleParams>>
+{
+    pub fn new(
+        payment: PaymentWithVesting<Balance, VestingScheduleParams>,
+        vesting_cleanup_candidate: Option<VestingSource>,
+    ) -> Self {
+        Self {
+            payment,
+            vesting_cleanup_candidate,
+        }
+    }
+}
+
+/// Wrapper around BTreeMap<AccountId, Payment>
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub struct Transfers<AccountId, Payment>(pub BTreeMap<AccountId, Payment>);
 
 /// Default trait for Merkle Side
 impl Default for MerkleSide {
@@ -705,6 +766,7 @@ impl<VestingSchedule, Balance: Zero, StakingStatus, JoyBalance: Zero> Default
             split_staking_status: None,
             amount: Balance::zero(),
             bloat_bond: JoyBalance::zero(),
+            next_vesting_transfer_id: 0,
         }
     }
 }
@@ -740,11 +802,17 @@ where
         schedule: VestingSchedule<BlockNumber, Balance>,
         bloat_bond: JoyBalance,
     ) -> Self {
+        let next_vesting_transfer_id = if let VestingSource::IssuerTransfer(_) = source {
+            1
+        } else {
+            0
+        };
         Self {
             amount: schedule.total_amount(),
             vesting_schedules: [(source, schedule)].iter().cloned().collect(),
             bloat_bond,
-            split_staking_status: None,
+            next_vesting_transfer_id,
+            ..Self::default()
         }
     }
 
@@ -848,6 +916,10 @@ where
     ) {
         let existing_schedule = self.vesting_schedules.get_mut(&source);
 
+        if let VestingSource::IssuerTransfer(_) = source {
+            self.next_vesting_transfer_id = self.next_vesting_transfer_id.saturating_add(1);
+        }
+
         if let Some(vs) = existing_schedule {
             // Update existing schedule - increase amounts
             vs.cliff_amount = vs.cliff_amount.saturating_add(new_schedule.cliff_amount);
@@ -908,11 +980,6 @@ where
     pub(crate) fn increase_supply_by(&mut self, amount: Balance) {
         self.tokens_issued = self.tokens_issued.saturating_add(amount);
         self.total_supply = self.total_supply.saturating_add(amount);
-    }
-
-    // decrease total issuance (use when tokens are burned for any reason)
-    pub(crate) fn decrease_supply_by(&mut self, amount: Balance) {
-        self.total_supply = self.total_supply.saturating_sub(amount);
     }
 
     // increment account number
@@ -1016,28 +1083,49 @@ impl<Hasher: Hash> MerkleProof<Hasher> {
     }
 }
 
-impl<AccountId, Balance: Sum + Copy> Transfers<AccountId, Balance> {
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-
+impl<AccountId, Balance, VestingScheduleParams>
+    Transfers<AccountId, PaymentWithVesting<Balance, VestingScheduleParams>>
+where
+    Balance: Sum + Copy,
+{
     pub fn total_amount(&self) -> Balance {
         self.0.iter().map(|(_, payment)| payment.amount).sum()
     }
+}
 
-    pub fn iter(&self) -> Iter<'_, AccountId, Payment<Balance>> {
-        self.0.iter()
-    }
-
-    pub fn into_iter(self) -> IntoIter<AccountId, Payment<Balance>> {
-        self.0.into_iter()
+impl<ValidatedAccount, Balance, VestingScheduleParams>
+    Transfers<
+        ValidatedAccount,
+        ValidatedPayment<PaymentWithVesting<Balance, VestingScheduleParams>>,
+    >
+where
+    Balance: Sum + Copy,
+{
+    pub fn total_amount(&self) -> Balance {
+        self.0
+            .iter()
+            .map(|(_, validated_payment)| validated_payment.payment.amount)
+            .sum()
     }
 }
 
-impl<AccountId, Balance> From<Transfers<AccountId, Balance>>
-    for BTreeMap<AccountId, Payment<Balance>>
+impl<AccountId, Balance, VestingScheduleParams> From<Transfers<AccountId, Payment<Balance>>>
+    for Transfers<AccountId, PaymentWithVesting<Balance, VestingScheduleParams>>
+where
+    AccountId: Ord + Clone,
+    Balance: Clone,
 {
-    fn from(v: Transfers<AccountId, Balance>) -> Self {
+    fn from(v: Transfers<AccountId, Payment<Balance>>) -> Self {
+        Self(
+            v.0.iter()
+                .map(|(a, p)| (a.clone(), p.clone().into()))
+                .collect(),
+        )
+    }
+}
+
+impl<AccountId, Payment> From<Transfers<AccountId, Payment>> for BTreeMap<AccountId, Payment> {
+    fn from(v: Transfers<AccountId, Payment>) -> Self {
         v.0
     }
 }
@@ -1161,17 +1249,29 @@ pub(crate) type TokenSaleId = u32;
 /// RevenueSplitId
 pub(crate) type RevenueSplitId = u32;
 
-/// Alias for Transfers
+/// Alias for PaymentWithVesting
+pub(crate) type PaymentWithVestingOf<T> =
+    PaymentWithVesting<TokenBalanceOf<T>, VestingScheduleParamsOf<T>>;
+
+/// Alias for ValidatedPayment
+pub(crate) type ValidatedPaymentOf<T> = ValidatedPayment<PaymentWithVestingOf<T>>;
+
+/// Alias for Transfers w/ Payment
 pub(crate) type TransfersOf<T> =
-    Transfers<<T as frame_system::Trait>::AccountId, TokenBalanceOf<T>>;
+    Transfers<<T as frame_system::Trait>::AccountId, Payment<TokenBalanceOf<T>>>;
+
+/// Alias for Transfers w/ PaymentWithVesting
+pub(crate) type TransfersWithVestingOf<T> =
+    Transfers<<T as frame_system::Trait>::AccountId, PaymentWithVestingOf<T>>;
 
 /// Validated transfers
-pub(crate) type ValidatedTransfers<T> =
-    Transfers<Validated<<T as frame_system::Trait>::AccountId>, TokenBalanceOf<T>>;
-
 /// Alias for Timeline
 pub type TimelineOf<T> = Timeline<<T as frame_system::Trait>::BlockNumber>;
 
 /// Alias for Revenue Split State
 pub type RevenueSplitStateOf<T> =
     RevenueSplitState<JoyBalanceOf<T>, <T as frame_system::Trait>::BlockNumber>;
+
+/// Alias for ValidatedTransfers
+pub(crate) type ValidatedTransfersOf<T> =
+    Transfers<Validated<<T as frame_system::Trait>::AccountId>, ValidatedPaymentOf<T>>;
