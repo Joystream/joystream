@@ -4,7 +4,6 @@ mod fixtures;
 pub(crate) mod mocks;
 
 use frame_support::dispatch::DispatchError;
-use frame_support::traits::Currency;
 use frame_support::{assert_err, assert_ok, StorageDoubleMap, StorageMap, StorageValue};
 use frame_system::RawOrigin;
 use sp_runtime::SaturatedConversion;
@@ -2384,60 +2383,6 @@ fn delete_data_objects_fails_with_non_existent_dynamic_bag() {
 }
 
 #[test]
-fn delete_data_objects_fails_with_invalid_treasury_balance() {
-    build_test_externalities().execute_with(|| {
-        let starting_block = 1;
-        run_to_block(starting_block);
-
-        let storage_provider_id = DEFAULT_STORAGE_PROVIDER_ID;
-        let invite_worker = Some(storage_provider_id);
-
-        let data_object_deletion_prize = 10;
-        set_data_object_deletion_prize_value(data_object_deletion_prize);
-
-        CreateStorageBucketFixture::default()
-            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-            .with_invite_worker(invite_worker)
-            .call_and_assert(Ok(()))
-            .unwrap();
-
-        let initial_balance = 1000;
-        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
-
-        let council_bag_id = BagId::<Test>::Static(StaticBagId::Council);
-        let upload_params = UploadParameters::<Test> {
-            bag_id: council_bag_id.clone(),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-            object_creation_list: create_single_data_object(),
-            expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
-            expected_dynamic_bag_deletion_prize: Storage::dynamic_bag_deletion_prize_value(),
-            ..Default::default()
-        };
-
-        UploadFixture::default()
-            .with_params(upload_params.clone())
-            .call_and_assert(Ok(()));
-
-        let data_object_id = 0; // just uploaded data object
-
-        let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
-
-        // Corrupt module balance.
-        let _ = Balances::slash(
-            &<StorageTreasury<Test>>::module_account_id(),
-            <StorageTreasury<Test>>::usable_balance(),
-        );
-
-        DeleteDataObjectsFixture::default()
-            .with_bag_id(council_bag_id.clone())
-            .with_data_object_ids(data_object_ids.clone())
-            .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
-            .call_and_assert(Err(Error::<Test>::InsufficientTreasuryBalance.into()));
-    });
-}
-
-#[test]
 fn delete_data_objects_succeeded_with_voucher_usage() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
@@ -2895,37 +2840,6 @@ fn delete_dynamic_bags_fails_with_non_existent_dynamic_bag() {
             .with_bag_id(dynamic_bag_id.clone())
             .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .call_and_assert(Err(Error::<Test>::DynamicBagDoesntExist.into()));
-    });
-}
-
-#[test]
-fn delete_dynamic_bags_fails_with_insufficient_balance_for_deletion_prize() {
-    build_test_externalities().execute_with(|| {
-        let initial_balance = 1000;
-        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
-
-        let storage_buckets = create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
-        set_bag_deletion_prize_value(BAG_DELETION_PRIZE_VALUE);
-
-        let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
-
-        create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
-        CreateDynamicBagFixture::default()
-            .with_bag_id(dynamic_bag_id.clone())
-            .with_expected_dynamic_bag_deletion_prize(BAG_DELETION_PRIZE_VALUE)
-            .with_storage_buckets(storage_buckets)
-            .call_and_assert(Ok(()));
-
-        // Corrupt module balance.
-        let _ = Balances::slash(
-            &<StorageTreasury<Test>>::module_account_id(),
-            <StorageTreasury<Test>>::usable_balance(),
-        );
-
-        DeleteDynamicBagFixture::default()
-            .with_bag_id(dynamic_bag_id.clone())
-            .with_deletion_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
-            .call_and_assert(Err(Error::<Test>::InsufficientTreasuryBalance.into()));
     });
 }
 
