@@ -157,9 +157,6 @@ type Video @entity {
 
   "Is video featured or not"
   isFeatured: Boolean!
-
-  "List of playlists this video is part of."
-  videoInPlaylists: [Playlist!] @derivedFrom(field: "videos")
 }
 
 type VideoMediaMetadata @entity {
@@ -208,6 +205,21 @@ type License @entity {
   custom_text: String
 }
 
+type PlaylistVideo @entity {
+  "{playlistId}-{videoId}"
+  id: ID!
+
+  # Required for Playlist<->PlaylistVideos Many-to-Many relationship
+  "List of playlists this video is part of."
+  videoInPlaylists: [Playlist!] @derivedFrom(field: "videos")
+
+  "Playlist's video"
+  video: Video!
+
+  "Position of video in playlist"
+  position: Int!
+}
+
 type Playlist @entity {
   "METAPROTOCOL-{network}-{blockNumber}-{indexInBlock}"
   id: ID!
@@ -221,9 +233,8 @@ type Playlist @entity {
   "Description of the playlist"
   description: String!
 
-  # Many-to-many relationship between playlists and videos
   "List of videos in the playlist"
-  videos: [Video!]!
+  videos: [PlaylistVideo!]!
 
   "Number of public uncensored videos in the playlist"
   publicUncensoredVideosCount: Int

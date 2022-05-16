@@ -36,6 +36,7 @@ import {
   Curator,
   Playlist,
   DataObjectTypePlaylistThumbnail,
+  PlaylistVideo,
 } from 'query-node/dist/model'
 // Joystream types
 import { ContentActor, StorageAssets } from '@joystream/types/augment'
@@ -250,9 +251,9 @@ export async function processPlaylistMetadata(
   await processPlaylistAssets(ctx, assets, playlist, meta)
 
   if (meta.videoIds) {
-    playlist.videos = await processPlaylistVideos(store, (meta.videoIds as unknown) as VideoId[])
-    playlist.publicUncensoredVideosCount = _.sumBy(playlist.videos, ({ isCensored }) => Number(!isCensored))
-    playlist.publicUncensoredVideosDuration = _.sumBy(playlist.videos, ({ duration }) => duration || 0)
+    playlist.videos = await processPlaylistVideos(store, playlist, (meta.videoIds as unknown) as VideoId[])
+    playlist.publicUncensoredVideosCount = _.sumBy(playlist.videos, ({ video }) => Number(!video.isCensored))
+    playlist.publicUncensoredVideosDuration = _.sumBy(playlist.videos, ({ video }) => video.duration || 0)
   }
 
   return playlist
@@ -638,15 +639,32 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
   await store.remove<StorageDataObject>(dataObject)
 }
 
-export async function processPlaylistVideos(store: DatabaseManager, videoIds: VideoId[]): Promise<Video[]> {
-  const playlistVideos = (
-    await Promise.all(videoIds.map((videoId) => store.get(Video, { where: { id: videoId } })))
-  ).filter((video, i) => {
-    if (!video) {
-      invalidMetadata('Non-existing video requested to be the part of playlist', videoIds[i])
+export async function processPlaylistVideos(
+  store: DatabaseManager,
+  playlist: Playlist,
+  videoIds: VideoId[]
+): Promise<PlaylistVideo[]> {
+  const videos = (await Promise.all(videoIds.map((videoId) => store.get(Video, { where: { id: videoId } })))).filter(
+    (video, i) => {
+      if (!video) {
+        invalidMetadata('Non-existing video requested to be the part of playlist', videoIds[i])
+      }
+      return video !== undefined
     }
-    return video !== undefined
-  }) as Video[]
+  ) as Video[]
+
+  const playlistVideos = await Promise.all(
+    videos.map(async (video, i) => {
+      const v = new PlaylistVideo({
+        id: `${playlist.id}-${video.id}`,
+        video,
+        position: i,
+      })
+
+      await store.save<PlaylistVideo>(v)
+      return v
+    })
+  )
 
   return playlistVideos
 }
