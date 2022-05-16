@@ -176,7 +176,10 @@ fragment PlaylistFields on Playlist {
   title
   description
   videos {
-    id
+    video {
+      id
+    }
+    position
   }
   publicUncensoredVideosCount
   publicUncensoredVideosDuration

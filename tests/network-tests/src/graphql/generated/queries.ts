@@ -134,7 +134,7 @@ export type PlaylistFieldsFragment = {
   publicUncensoredVideosDuration?: Types.Maybe<number>
   isPublic?: Types.Maybe<boolean>
   channel: ChannelFieldsFragment
-  videos: Array<{ id: string }>
+  videos: Array<{ position: number; video: { id: string } }>
 }
 
 export type GetChannelByIdQueryVariables = Types.Exact<{
@@ -2329,7 +2329,10 @@ export const PlaylistFields = gql`
     title
     description
     videos {
-      id
+      video {
+        id
+      }
+      position
     }
     publicUncensoredVideosCount
     publicUncensoredVideosDuration

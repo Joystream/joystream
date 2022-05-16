@@ -15423,7 +15423,7 @@ export type Playlist = BaseGraphQlObject & {
   title: Scalars['String']
   /** Description of the playlist */
   description: Scalars['String']
-  videos: Array<Video>
+  videos: Array<PlaylistVideo>
   /** Number of public uncensored videos in the playlist */
   publicUncensoredVideosCount?: Maybe<Scalars['Int']>
   /** Total duration of public uncensored videos in the playlist */
@@ -15875,6 +15875,99 @@ export type PlaylistUpdateInput = {
   thumbnailPhoto?: Maybe<Scalars['ID']>
 }
 
+export type PlaylistVideo = BaseGraphQlObject & {
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['String']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['String']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['String']>
+  version: Scalars['Int']
+  videoInPlaylists: Array<Playlist>
+  video: Video
+  videoId: Scalars['String']
+  /** Position of video in playlist */
+  position: Scalars['Int']
+}
+
+export type PlaylistVideoConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<PlaylistVideoEdge>
+  pageInfo: PageInfo
+}
+
+export type PlaylistVideoCreateInput = {
+  video: Scalars['ID']
+  position: Scalars['Float']
+}
+
+export type PlaylistVideoEdge = {
+  node: PlaylistVideo
+  cursor: Scalars['String']
+}
+
+export enum PlaylistVideoOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  VideoAsc = 'video_ASC',
+  VideoDesc = 'video_DESC',
+  PositionAsc = 'position_ASC',
+  PositionDesc = 'position_DESC',
+}
+
+export type PlaylistVideoUpdateInput = {
+  video?: Maybe<Scalars['ID']>
+  position?: Maybe<Scalars['Float']>
+}
+
+export type PlaylistVideoWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  position_eq?: Maybe<Scalars['Int']>
+  position_gt?: Maybe<Scalars['Int']>
+  position_gte?: Maybe<Scalars['Int']>
+  position_lt?: Maybe<Scalars['Int']>
+  position_lte?: Maybe<Scalars['Int']>
+  position_in?: Maybe<Array<Scalars['Int']>>
+  videoInPlaylists_none?: Maybe<PlaylistWhereInput>
+  videoInPlaylists_some?: Maybe<PlaylistWhereInput>
+  videoInPlaylists_every?: Maybe<PlaylistWhereInput>
+  video?: Maybe<VideoWhereInput>
+  AND?: Maybe<Array<PlaylistVideoWhereInput>>
+  OR?: Maybe<Array<PlaylistVideoWhereInput>>
+}
+
+export type PlaylistVideoWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
 export type PlaylistWhereInput = {
   id_eq?: Maybe<Scalars['ID']>
   id_in?: Maybe<Array<Scalars['ID']>>
@@ -15925,9 +16018,9 @@ export type PlaylistWhereInput = {
   isPublic_eq?: Maybe<Scalars['Boolean']>
   isPublic_in?: Maybe<Array<Scalars['Boolean']>>
   channel?: Maybe<ChannelWhereInput>
-  videos_none?: Maybe<VideoWhereInput>
-  videos_some?: Maybe<VideoWhereInput>
-  videos_every?: Maybe<VideoWhereInput>
+  videos_none?: Maybe<PlaylistVideoWhereInput>
+  videos_some?: Maybe<PlaylistVideoWhereInput>
+  videos_every?: Maybe<PlaylistVideoWhereInput>
   thumbnailPhoto?: Maybe<StorageDataObjectWhereInput>
   playlistcreatedeventplaylist_none?: Maybe<PlaylistCreatedEventWhereInput>
   playlistcreatedeventplaylist_some?: Maybe<PlaylistCreatedEventWhereInput>
@@ -19073,6 +19166,9 @@ export type Query = {
   playlistUpdatedEvents: Array<PlaylistUpdatedEvent>
   playlistUpdatedEventByUniqueInput?: Maybe<PlaylistUpdatedEvent>
   playlistUpdatedEventsConnection: PlaylistUpdatedEventConnection
+  playlistVideos: Array<PlaylistVideo>
+  playlistVideoByUniqueInput?: Maybe<PlaylistVideo>
+  playlistVideosConnection: PlaylistVideoConnection
   playlists: Array<Playlist>
   playlistByUniqueInput?: Maybe<Playlist>
   playlistsConnection: PlaylistConnection
@@ -21538,6 +21634,26 @@ export type QueryPlaylistUpdatedEventsConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<PlaylistUpdatedEventWhereInput>
   orderBy?: Maybe<Array<PlaylistUpdatedEventOrderByInput>>
+}
+
+export type QueryPlaylistVideosArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<PlaylistVideoWhereInput>
+  orderBy?: Maybe<Array<PlaylistVideoOrderByInput>>
+}
+
+export type QueryPlaylistVideoByUniqueInputArgs = {
+  where: PlaylistVideoWhereUniqueInput
+}
+
+export type QueryPlaylistVideosConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<PlaylistVideoWhereInput>
+  orderBy?: Maybe<Array<PlaylistVideoOrderByInput>>
 }
 
 export type QueryPlaylistsArgs = {
@@ -27731,7 +27847,6 @@ export type Video = BaseGraphQlObject & {
   createdInBlock: Scalars['Int']
   /** Is video featured or not */
   isFeatured: Scalars['Boolean']
-  videoInPlaylists: Array<Playlist>
   auctionbidcanceledeventvideo?: Maybe<Array<AuctionBidCanceledEvent>>
   auctionbidmadeeventvideo?: Maybe<Array<AuctionBidMadeEvent>>
   auctioncanceledeventvideo?: Maybe<Array<AuctionCanceledEvent>>
@@ -27749,6 +27864,7 @@ export type Video = BaseGraphQlObject & {
   offerstartedeventvideo?: Maybe<Array<OfferStartedEvent>>
   openauctionbidacceptedeventvideo?: Maybe<Array<OpenAuctionBidAcceptedEvent>>
   openauctionstartedeventvideo?: Maybe<Array<OpenAuctionStartedEvent>>
+  playlistvideovideo?: Maybe<Array<PlaylistVideo>>
 }
 
 export type VideoCategoriesByNameFtsOutput = {
@@ -28269,9 +28385,6 @@ export type VideoWhereInput = {
   license?: Maybe<LicenseWhereInput>
   media?: Maybe<StorageDataObjectWhereInput>
   mediaMetadata?: Maybe<VideoMediaMetadataWhereInput>
-  videoInPlaylists_none?: Maybe<PlaylistWhereInput>
-  videoInPlaylists_some?: Maybe<PlaylistWhereInput>
-  videoInPlaylists_every?: Maybe<PlaylistWhereInput>
   auctionbidcanceledeventvideo_none?: Maybe<AuctionBidCanceledEventWhereInput>
   auctionbidcanceledeventvideo_some?: Maybe<AuctionBidCanceledEventWhereInput>
   auctionbidcanceledeventvideo_every?: Maybe<AuctionBidCanceledEventWhereInput>
@@ -28323,6 +28436,9 @@ export type VideoWhereInput = {
   openauctionstartedeventvideo_none?: Maybe<OpenAuctionStartedEventWhereInput>
   openauctionstartedeventvideo_some?: Maybe<OpenAuctionStartedEventWhereInput>
   openauctionstartedeventvideo_every?: Maybe<OpenAuctionStartedEventWhereInput>
+  playlistvideovideo_none?: Maybe<PlaylistVideoWhereInput>
+  playlistvideovideo_some?: Maybe<PlaylistVideoWhereInput>
+  playlistvideovideo_every?: Maybe<PlaylistVideoWhereInput>
   AND?: Maybe<Array<VideoWhereInput>>
   OR?: Maybe<Array<VideoWhereInput>>
 }
