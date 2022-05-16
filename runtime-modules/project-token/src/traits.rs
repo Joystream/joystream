@@ -1,6 +1,7 @@
 use frame_support::dispatch::DispatchResult;
 
 pub trait PalletToken<
+    MemberId,
     AccountId,
     Policy,
     IssuanceParams,
@@ -23,7 +24,7 @@ pub trait PalletToken<
 
     /// Issue token with specified characteristics
     fn issue_token(
-        issuer: AccountId,
+        issuer_account: AccountId,
         issuance_parameters: IssuanceParams,
         upload_context: UploadContext,
     ) -> DispatchResult;
@@ -51,5 +52,5 @@ pub trait PalletToken<
     ) -> DispatchResult;
 
     /// Allow creator to receive credit into his accounts
-    fn claim_patronage_credit(token_id: Self::TokenId, to_account: AccountId) -> DispatchResult;
+    fn claim_patronage_credit(token_id: Self::TokenId, member_id: MemberId) -> DispatchResult;
 }

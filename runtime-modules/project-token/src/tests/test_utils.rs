@@ -88,7 +88,7 @@ impl GenesisConfigBuilder {
     pub fn new_empty() -> Self {
         Self {
             token_info_by_id: vec![],
-            account_info_by_token_and_account: vec![],
+            account_info_by_token_and_member: vec![],
             next_token_id: TokenId::one(),
             symbol_used: vec![],
             bloat_bond: JoyBalance::zero(),
@@ -109,7 +109,7 @@ impl GenesisConfigBuilder {
         self,
         token_id: TokenId,
         token_info: TokenData,
-        owner: AccountId,
+        owner: MemberId,
         initial_supply: Balance,
     ) -> Self {
         self.with_token(token_id, token_info)
@@ -128,11 +128,7 @@ impl GenesisConfigBuilder {
     }
 
     // add account & updates token supply
-    pub fn with_account(
-        mut self,
-        account_id: AccountId,
-        account_data: AccountDataOf<Test>,
-    ) -> Self {
+    pub fn with_account(mut self, member_id: MemberId, account_data: AccountDataOf<Test>) -> Self {
         let id = self.next_token_id.saturating_sub(TokenId::one());
 
         self.token_info_by_id
@@ -141,8 +137,8 @@ impl GenesisConfigBuilder {
             .1
             .increase_supply_by(Balance::from(account_data.amount));
 
-        self.account_info_by_token_and_account
-            .push((id, account_id, account_data));
+        self.account_info_by_token_and_member
+            .push((id, member_id, account_data));
 
         self.token_info_by_id.last_mut().unwrap().1.accounts_number += 1u64;
         self
@@ -150,7 +146,7 @@ impl GenesisConfigBuilder {
 
     pub fn build(self) -> GenesisConfig<Test> {
         GenesisConfig::<Test> {
-            account_info_by_token_and_account: self.account_info_by_token_and_account,
+            account_info_by_token_and_member: self.account_info_by_token_and_member,
             token_info_by_id: self.token_info_by_id,
             next_token_id: self.next_token_id,
             symbol_used: self.symbol_used,
@@ -195,27 +191,27 @@ impl<Balance, Account: Ord> Transfers<Account, Balance> {
     }
 }
 
-impl<Hash, Balance, VestingScheduleParams, TransferPolicyParams, AccountId>
+impl<Hash, Balance, VestingScheduleParams, TransferPolicyParams, MemberId>
     TokenIssuanceParameters<
         Hash,
         TokenAllocation<Balance, VestingScheduleParams>,
         TransferPolicyParams,
-        AccountId,
+        MemberId,
     >
 where
-    AccountId: Ord + Clone,
+    MemberId: Ord + Clone,
     Balance: Clone,
     VestingScheduleParams: Clone,
 {
     pub fn with_allocation(
         self,
-        account: &AccountId,
+        member_id: &MemberId,
         amount: Balance,
         vesting_schedule_params: Option<VestingScheduleParams>,
     ) -> Self {
         let mut initial_allocation = self.initial_allocation.clone();
         initial_allocation.insert(
-            account.clone(),
+            member_id.clone(),
             TokenAllocation {
                 amount,
                 vesting_schedule_params,
