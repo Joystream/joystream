@@ -129,7 +129,7 @@ impl<JoyBalance: Saturating + Copy + Zero, BlockNumber: Copy>
         *self = RevenueSplitState::<_, _>::Active(RevenueSplitInfo {
             allocation,
             timeline,
-            dividends_payed: JoyBalance::zero(),
+            dividends_claimed: JoyBalance::zero(),
         });
     }
 
@@ -140,7 +140,7 @@ impl<JoyBalance: Saturating + Copy + Zero, BlockNumber: Copy>
     /// Increase dividends payed tracking variable
     pub fn account_for_dividend(&mut self, dividend: JoyBalance) {
         if let RevenueSplitState::<JoyBalance, BlockNumber>::Active(info) = self {
-            info.dividends_payed = info.dividends_payed.saturating_add(dividend);
+            info.dividends_claimed = info.dividends_claimed.saturating_add(dividend);
         }
     }
 }
@@ -161,7 +161,7 @@ pub struct RevenueSplitInfo<JoyBalance, BlockNumber> {
     pub(crate) timeline: Timeline<BlockNumber>,
 
     /// Dividends payed out after staking period is over
-    pub(crate) dividends_payed: JoyBalance,
+    pub(crate) dividends_claimed: JoyBalance,
 }
 
 impl<JoyBalance: Saturating + Zero + Copy, BlockNumber: Copy>
@@ -169,7 +169,7 @@ impl<JoyBalance: Saturating + Zero + Copy, BlockNumber: Copy>
 {
     /// Leftovers allocation not claimed so far
     pub(crate) fn leftovers(&self) -> JoyBalance {
-        self.allocation.saturating_sub(self.dividends_payed)
+        self.allocation.saturating_sub(self.dividends_claimed)
     }
 }
 

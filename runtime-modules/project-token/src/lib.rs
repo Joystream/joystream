@@ -493,11 +493,9 @@ decl_module! {
                 split_info.allocation,
             );
 
-            let treasury_account: T::AccountId = Self::module_treasury_account();
-            Self::ensure_can_transfer_joy(&treasury_account, dividend_amount)?;
-
             // == MUTATION SAFE ==
 
+            let treasury_account: T::AccountId = Self::module_treasury_account();
             <Joy<T> as Currency<T::AccountId>>::transfer(
                 &treasury_account,
                 &sender,

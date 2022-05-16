@@ -192,7 +192,7 @@ fn issue_split_ok_with_revenue_split_correctly_activated() {
                     start: 1u64,
                     duration: DEFAULT_SPLIT_DURATION,
                 },
-                dividends_payed: 0u128
+                dividends_claimed: 0u128
             })
         ));
         // Latest split nonce correctly updated
@@ -565,7 +565,7 @@ fn participate_in_split_ok_with_dividends_transferred_to_claimer_joy_balance() {
             Token::token_info_by_id(1u64).revenue_split,
             RevenueSplitState::<_, _>::Active(RevenueSplitInfo::<_, _> {
                 allocation: DEFAULT_SPLIT_ALLOCATION,
-                dividends_payed: DEFAULT_SPLIT_JOY_DIVIDEND,
+                dividends_claimed: DEFAULT_SPLIT_JOY_DIVIDEND,
                 ..
             })
         ));
