@@ -137,15 +137,15 @@ decl_module! {
         /// Preconditions:
         /// - token by `token_id` must exists
         /// - `src` must be valid for `token_id`, and must have enough JOYs to cover
-        ///    the total bloat bond required in case of destinations not existing.
-        ///    Also `src` must have enough token funds to cover all the transfer
-        /// - `outputs` must designated  existing destination for "Permissioned" transfers.
+        ///    the total bloat bond required in case of destination(s) not existing.
+        /// - `src` must have enough token funds to cover all the transfers
+        /// - `outputs` must designate existing destination(s) for "Permissioned" transfers.
         //
         /// Postconditions:
-        /// - `src` free balance decreased by `amount`.
-        ///    Also `src` JOY balance is decreased by the
+        /// - `src` tokens amount decreased by `amount`.
+        /// - `src` JOY balance is decreased by the
         ///    total bloat bond deposited in case destination have been added to storage
-        /// - `outputs.beneficiary` "free balance"" increased by `amount`
+        /// - `outputs.beneficiary` tokens amount increased by `amount`
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn transfer(
             origin,
@@ -155,7 +155,7 @@ decl_module! {
             let src = ensure_signed(origin)?;
 
             // Currency transfer preconditions
-            let validated_transfers = Self::ensure_can_transfer(token_id, &src, outputs)?;
+            let validated_transfers = Self::ensure_can_transfer(token_id, &src, outputs.into(), false)?;
 
             // == MUTATION SAFE ==
 
@@ -438,6 +438,7 @@ impl<T: Trait>
         T::BlockNumber,
         TokenSaleParamsOf<T>,
         UploadContextOf<T>,
+        TransfersWithVestingOf<T>,
     > for Module<T>
 {
     type Balance = <T as Trait>::Balance;
@@ -600,6 +601,48 @@ impl<T: Trait>
         Ok(())
     }
 
+    /// Allow to transfer from `src` (issuer) to the various `outputs` beneficiaries in the
+    /// specified amounts, with optional vesting schemes attached.
+    ///
+    /// Preconditions:
+    /// - token by `token_id` must exists
+    /// - `src` must be valid for `token_id`, and must have enough JOYs to cover
+    ///    the total bloat bond required in case of destination(s) not existing.
+    /// - `src` must have enough token funds to cover all the transfers
+    /// - each account in `outputs` must have the number of ongoing `vesting_schedules` <
+    ///   MaxVestingSchedulesPerAccountPerToken in case `vesting_schedule` was provided
+    ///   in the output
+    //
+    /// Postconditions:
+    /// - `src` tokens amount decreased by `amount`.
+    /// - `src` JOY balance is decreased by the
+    ///    total bloat bond deposited in case destination(s) have been added to storage
+    /// - `outputs.beneficiary` tokens amount increased by `amount`
+    /// - if `vesting_schedule` provided in the output - vesting schedule added to
+    ///   `outputs.beneficiary` account data
+    /// - if number of `vesting_schedules` in `outputs.beneficiary` account data was equal to
+    ///   MaxVestingSchedulesPerAccountPerToken - some finished vesting_schedule is dropped
+    ///   from beneficiary'es `account_data`
+    fn issuer_transfer(
+        src: T::AccountId,
+        token_id: T::TokenId,
+        outputs: TransfersWithVestingOf<T>,
+    ) -> DispatchResult {
+        // Currency transfer preconditions
+        let validated_transfers = Self::ensure_can_transfer(token_id, &src, outputs, true)?;
+
+        // == MUTATION SAFE ==
+
+        Self::do_transfer(token_id, &src, &validated_transfers);
+
+        Self::deposit_event(RawEvent::TokenAmountTransferredByIssuer(
+            token_id,
+            src,
+            validated_transfers,
+        ));
+        Ok(())
+    }
+
     /// Initialize token sale
     ///
     /// Preconditions:
@@ -725,24 +768,26 @@ impl<T: Trait> Module<T> {
     pub(crate) fn ensure_can_transfer(
         token_id: T::TokenId,
         src: &T::AccountId,
-        transfers: TransfersOf<T>,
-    ) -> Result<ValidatedTransfers<T>, DispatchError> {
+        transfers: TransfersWithVestingOf<T>,
+        is_issuer: bool,
+    ) -> Result<ValidatedTransfersOf<T>, DispatchError> {
         // ensure token validity
         let token_info = Self::ensure_token_exists(token_id)?;
 
         // ensure src account id validity
         let src_account_info = Self::ensure_account_data_exists(token_id, src)?;
 
+        // ensure src account can cover total transfers amount
+        src_account_info
+            .ensure_can_transfer::<T>(Self::current_block(), transfers.total_amount())?;
+
         // validate destinations
         let validated_transfers =
-            Self::validate_transfers(token_id, transfers, &token_info.transfer_policy)?;
+            Self::validate_transfers(token_id, transfers, &token_info.transfer_policy, is_issuer)?;
 
         // compute bloat bond
         let cumulative_bloat_bond = Self::compute_bloat_bond(&validated_transfers);
         Self::ensure_can_transfer_joy(src, cumulative_bloat_bond)?;
-
-        src_account_info
-            .ensure_can_transfer::<T>(Self::current_block(), validated_transfers.total_amount())?;
 
         Ok(validated_transfers)
     }
@@ -751,29 +796,66 @@ impl<T: Trait> Module<T> {
     pub(crate) fn do_transfer(
         token_id: T::TokenId,
         src: &T::AccountId,
-        validated_transfers: &ValidatedTransfers<T>,
+        validated_transfers: &ValidatedTransfersOf<T>,
     ) {
-        validated_transfers.iter().for_each(
-            |(validated_account, payment)| match validated_account {
-                Validated::<_>::Existing(account_id) => AccountInfoByTokenAndAccount::<T>::mutate(
-                    token_id,
-                    &account_id,
-                    |account_data| {
-                        account_data.increase_amount_by(payment.amount);
-                    },
-                ),
-                Validated::<_>::NonExisting(account_id) => {
-                    Self::do_insert_new_account_for_token(
-                        token_id,
-                        &account_id,
-                        AccountDataOf::<T>::new_with_amount_and_bond(
-                            payment.amount,
-                            Self::bloat_bond(),
-                        ),
-                    );
+        let current_block = Self::current_block();
+        validated_transfers
+            .0
+            .iter()
+            .for_each(|(validated_account, validated_payment)| {
+                let vesting_schedule =
+                    validated_payment
+                        .payment
+                        .vesting_schedule
+                        .clone()
+                        .map(|vsp| {
+                            VestingSchedule::from_params(
+                                current_block,
+                                validated_payment.payment.amount,
+                                vsp,
+                            )
+                        });
+                match validated_account {
+                    Validated::<_>::Existing(account_id) => {
+                        AccountInfoByTokenAndAccount::<T>::mutate(
+                            token_id,
+                            &account_id,
+                            |account_data| {
+                                if let Some(vs) = vesting_schedule {
+                                    account_data.add_or_update_vesting_schedule(
+                                        VestingSource::IssuerTransfer(
+                                            account_data.next_vesting_transfer_id,
+                                        ),
+                                        vs,
+                                        validated_payment.vesting_cleanup_candidate.clone(),
+                                    )
+                                } else {
+                                    account_data
+                                        .increase_amount_by(validated_payment.payment.amount);
+                                }
+                            },
+                        )
+                    }
+                    Validated::<_>::NonExisting(account_id) => {
+                        Self::do_insert_new_account_for_token(
+                            token_id,
+                            &account_id,
+                            if let Some(vs) = vesting_schedule {
+                                AccountDataOf::<T>::new_with_vesting_and_bond(
+                                    VestingSource::IssuerTransfer(0),
+                                    vs,
+                                    Self::bloat_bond(),
+                                )
+                            } else {
+                                AccountDataOf::<T>::new_with_amount_and_bond(
+                                    validated_payment.payment.amount,
+                                    Self::bloat_bond(),
+                                )
+                            },
+                        );
+                    }
                 }
-            },
-        );
+            });
 
         let cumulative_bloat_bond = Self::compute_bloat_bond(validated_transfers);
         if !cumulative_bloat_bond.is_zero() {
@@ -895,28 +977,48 @@ impl<T: Trait> Module<T> {
     }
 
     pub(crate) fn validate_destination(
-        token_id: T::TokenId,
         dst: T::AccountId,
+        dst_acc_data: &Option<AccountDataOf<T>>,
         transfer_policy: &TransferPolicyOf<T>,
+        is_issuer: bool,
     ) -> Result<Validated<T::AccountId>, DispatchError> {
-        match (
-            transfer_policy,
-            Self::ensure_account_data_exists(token_id, &dst),
-        ) {
-            (&TransferPolicyOf::<T>::Permissionless, Err(_)) => {
-                Ok(Validated::<_>::NonExisting(dst))
-            }
-            (&TransferPolicyOf::<T>::Permissionless, Ok(_)) => Ok(Validated::<_>::Existing(dst)),
-            (&TransferPolicyOf::<T>::Permissioned(_), Ok(_)) => Ok(Validated::<_>::Existing(dst)),
-            (&TransferPolicyOf::<T>::Permissioned(_), Err(e)) => Err(e),
+        if let TransferPolicy::Permissioned(_) = transfer_policy {
+            ensure!(
+                is_issuer || dst_acc_data.is_some(),
+                Error::<T>::AccountInformationDoesNotExist
+            );
+        }
+        if dst_acc_data.is_some() {
+            Ok(Validated::Existing(dst))
+        } else {
+            Ok(Validated::NonExisting(dst))
+        }
+    }
+
+    pub(crate) fn validate_payment(
+        payment: PaymentWithVestingOf<T>,
+        dst_acc_data: Option<AccountDataOf<T>>,
+    ) -> Result<ValidatedPaymentOf<T>, DispatchError> {
+        if let (Some(_), Some(acc_data)) =
+            (payment.vesting_schedule.as_ref(), dst_acc_data.as_ref())
+        {
+            let cleanup_candidate = acc_data.ensure_can_add_or_update_vesting_schedule::<T>(
+                Self::current_block(),
+                VestingSource::IssuerTransfer(acc_data.next_vesting_transfer_id),
+            )?;
+
+            Ok(ValidatedPaymentOf::<T>::new(payment, cleanup_candidate))
+        } else {
+            Ok(payment.into())
         }
     }
 
     pub(crate) fn compute_bloat_bond(
-        validated_transfers: &ValidatedTransfers<T>,
+        validated_transfers: &ValidatedTransfersOf<T>,
     ) -> JoyBalanceOf<T> {
         let bloat_bond = Self::bloat_bond();
         validated_transfers
+            .0
             .iter()
             .fold(JoyBalanceOf::<T>::zero(), |acc, (account, _)| {
                 if matches!(account, Validated::<_>::NonExisting(_)) {
@@ -929,15 +1031,21 @@ impl<T: Trait> Module<T> {
 
     pub(crate) fn validate_transfers(
         token_id: T::TokenId,
-        transfers: TransfersOf<T>,
+        transfers: TransfersWithVestingOf<T>,
         transfer_policy: &TransferPolicyOf<T>,
-    ) -> Result<ValidatedTransfers<T>, DispatchError> {
+        is_issuer: bool,
+    ) -> Result<ValidatedTransfersOf<T>, DispatchError> {
         let result = transfers
+            .0
             .into_iter()
             .map(|(dst, payment)| {
-                Self::validate_destination(token_id, dst, transfer_policy).map(|res| (res, payment))
+                let dst_acc_data = Self::ensure_account_data_exists(token_id, &dst).ok();
+                let validated_dst =
+                    Self::validate_destination(dst, &dst_acc_data, transfer_policy, is_issuer)?;
+                let validated_payment = Self::validate_payment(payment, dst_acc_data)?;
+                Ok((validated_dst, validated_payment))
             })
-            .collect::<Result<BTreeMap<_, _>, _>>()?;
+            .collect::<Result<BTreeMap<_, _>, DispatchError>>()?;
 
         Ok(Transfers::<_, _>(result))
     }
