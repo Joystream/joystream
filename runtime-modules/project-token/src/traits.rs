@@ -8,6 +8,7 @@ pub trait PalletToken<
     BlockNumber,
     TokenSaleParams,
     UploadContext,
+    TransfersWithVesting,
 >
 {
     /// Balance type used
@@ -27,6 +28,14 @@ pub trait PalletToken<
         issuer_account: AccountId,
         issuance_parameters: IssuanceParams,
         upload_context: UploadContext,
+    ) -> DispatchResult;
+
+    /// Perform transfer as the issuer, allowing new account creation if the token is Permissioned
+    /// and setting optional vesting schedule.
+    fn issuer_transfer(
+        src: MemberId,
+        token_id: Self::TokenId,
+        outputs: TransfersWithVesting,
     ) -> DispatchResult;
 
     /// Update existing, upcoming token sale

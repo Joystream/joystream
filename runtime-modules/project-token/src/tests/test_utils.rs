@@ -3,13 +3,17 @@ use sp_runtime::traits::Hash;
 use sp_runtime::Perquintill;
 use sp_std::collections::btree_map::BTreeMap;
 
-use crate::tests::mock::*;
-use crate::types::{
-    AccountData, AccountDataOf, BlockRate, MerkleProof, MerkleSide, PatronageData, Payment,
-    TokenAllocation, TokenIssuanceParameters, TokenSaleId, TokenSaleOf, TransferPolicy,
-    TransferPolicyOf, Transfers,
+use crate::{
+    balance,
+    tests::mock::*,
+    types::{
+        AccountData, AccountDataOf, BlockRate, MerkleProof, MerkleSide, PatronageData, Payment,
+        PaymentWithVesting, TokenAllocation, TokenIssuanceParameters, TokenSaleId, TokenSaleOf,
+        TransferPolicy, TransferPolicyOf, Transfers, Validated, ValidatedPayment, VestingSchedule,
+        VestingSource,
+    },
+    GenesisConfig, Trait,
 };
-use crate::{balance, GenesisConfig};
 
 pub struct TokenDataBuilder {
     pub(crate) total_supply: <Test as crate::Trait>::Balance,
@@ -156,13 +160,35 @@ impl GenesisConfigBuilder {
     }
 }
 
-impl<VestingSchedule, Balance: Zero, StakingStatus, ReserveBalance: Zero>
-    AccountData<VestingSchedule, Balance, StakingStatus, ReserveBalance>
+impl<BlockNumber: From<u32>, Balance: Zero + From<u32>, StakingStatus, ReserveBalance: Zero>
+    AccountData<VestingSchedule<BlockNumber, Balance>, Balance, StakingStatus, ReserveBalance>
 {
     pub fn new_with_amount(amount: Balance) -> Self {
         Self {
             amount,
             ..Self::default()
+        }
+    }
+
+    pub fn new_with_max_vesting_schedules() -> Self {
+        let max_vesting_schedules = <Test as Trait>::MaxVestingBalancesPerAccountPerToken::get();
+        Self {
+            next_vesting_transfer_id: max_vesting_schedules.into(),
+            amount: 1000u32.into(),
+            vesting_schedules: (0..max_vesting_schedules)
+                .map(|i| {
+                    (
+                        VestingSource::IssuerTransfer(i.into()),
+                        VestingSchedule::<BlockNumber, Balance> {
+                            linear_vesting_duration: 100u32.into(),
+                            post_cliff_total_amount: 700u32.into(),
+                            cliff_amount: 300u32.into(),
+                            linear_vesting_start_block: 1u32.into(),
+                        },
+                    )
+                })
+                .collect(),
+            ..Default::default()
         }
     }
 }
@@ -173,7 +199,7 @@ impl<Hasher: Hash> MerkleProof<Hasher> {
     }
 }
 
-impl<Balance, Account: Ord> Transfers<Account, Balance> {
+impl<Balance, Account: Ord> Transfers<Account, Payment<Balance>> {
     pub fn new(v: Vec<(Account, Balance)>) -> Self {
         Transfers::<_, _>(
             v.into_iter()
@@ -186,6 +212,65 @@ impl<Balance, Account: Ord> Transfers<Account, Balance> {
                         },
                     )
                 })
+                .collect::<BTreeMap<_, _>>(),
+        )
+    }
+}
+
+impl<Balance, MemberId: Ord, VestingScheduleParams>
+    Transfers<MemberId, PaymentWithVesting<Balance, VestingScheduleParams>>
+{
+    pub fn new_issuer(v: Vec<(MemberId, Balance, Option<VestingScheduleParams>)>) -> Self {
+        Transfers::<_, _>(
+            v.into_iter()
+                .map(|(member_id, amount, vesting_schedule)| {
+                    (
+                        member_id,
+                        PaymentWithVesting {
+                            remark: vec![],
+                            amount,
+                            vesting_schedule,
+                        },
+                    )
+                })
+                .collect::<BTreeMap<_, _>>(),
+        )
+    }
+}
+
+impl<Balance, VestingScheduleParams, MemberId>
+    Transfers<
+        Validated<MemberId>,
+        ValidatedPayment<PaymentWithVesting<Balance, VestingScheduleParams>>,
+    >
+where
+    MemberId: Ord + Eq + Clone,
+{
+    pub fn new_validated(
+        v: Vec<(
+            Validated<MemberId>,
+            Balance,
+            Option<VestingScheduleParams>,
+            Option<VestingSource>,
+        )>,
+    ) -> Self {
+        Transfers::<_, _>(
+            v.into_iter()
+                .map(
+                    |(validated_acc, amount, vesting_schedule, vesting_cleanup_candidate)| {
+                        (
+                            validated_acc,
+                            ValidatedPayment {
+                                payment: PaymentWithVesting::<Balance, VestingScheduleParams> {
+                                    remark: vec![],
+                                    amount,
+                                    vesting_schedule,
+                                },
+                                vesting_cleanup_candidate,
+                            },
+                        )
+                    },
+                )
                 .collect::<BTreeMap<_, _>>(),
         )
     }
