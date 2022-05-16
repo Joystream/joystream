@@ -89,13 +89,10 @@ export class PlaylistActionsFixture extends BaseQueryNodeFixture {
       () => this.query.playlistById(playlistId.toString()),
       (playlist) => {
         Utils.assert(playlist, 'Playlist not found')
-        console.log(
-          playlist.videos.map((v) => Number(v.id)),
-          videoIds
-        )
+
         Utils.assert(
           _.isEqual(
-            playlist.videos.map((v) => Number(v.id)),
+            _.sortBy(playlist.videos, ['position']).map((v) => Number(v.video.id)),
             videoIds
           ),
           'Invalid videos in playlist'
