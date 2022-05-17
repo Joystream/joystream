@@ -24,7 +24,7 @@ fn issue_split_fails_with_invalid_token_id() {
 }
 
 #[test]
-fn issue_split_fails_with_invalid_starting_block() {
+fn issue_split_fails_with_start_forewarning_too_short() {
     build_default_test_externalities_with_balances(vec![(
         DEFAULT_ACCOUNT_ID,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
@@ -33,10 +33,10 @@ fn issue_split_fails_with_invalid_starting_block() {
         IssueTokenFixture::default().execute_call().unwrap();
 
         let result = IssueRevenueSplitFixture::default()
-            .with_starting_block(0u64)
+            .with_starting_block(Token::current_block() + MIN_REVENUE_SPLIT_FOREWARNING - 1)
             .execute_call();
 
-        assert_err!(result, Error::<Test>::RevenueSplitStartingBlockInThePast);
+        assert_err!(result, Error::<Test>::RevenueSplitStartForewarningTooShort);
     })
 }
 

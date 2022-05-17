@@ -103,6 +103,8 @@ decl_storage! {
         
         /// Minimum revenue split duration constraint
         pub MinRevenueSplitDuration get(fn min_revenue_split_duration) config(): T::BlockNumber;
+        /// Minimum revenue split forewarning constraint
+        pub MinRevenueSplitForewarning get(fn min_revenue_split_forewarning) config(): T::BlockNumber
     }
 
     add_extra_genesis {
@@ -864,8 +866,8 @@ impl<T: Trait>
     /// Preconditions:
     /// - `token` must exist for `token_id`
     /// - `token` revenue split status must be inactive
-    /// - `start` >= System::block_number()
-    /// - `duration` must be >= `T::MinRevenueSplitDuration`
+    /// - if Some(start) specified: `start` - System::block_number() >= `MinRevenueSplitForewarning`
+    /// - `duration` must be >= `MinRevenueSplitDuration`
     /// - specified `reserve_source` must be able to *transfer* `allocation` amount of JOY
     ///
     /// PostConditions

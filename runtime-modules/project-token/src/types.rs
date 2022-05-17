@@ -189,7 +189,7 @@ impl<BlockNumber: Copy + Saturating + PartialOrd> Timeline<BlockNumber> {
         let starting_block = start.map_or(Ok(current_block), |sb| -> Result<_, DispatchError> {
             ensure!(
                 current_block <= sb,
-                Error::<T>::RevenueSplitStartingBlockInThePast
+                Error::<T>::RevenueSplitStartForewarningTooShort,
             );
             Ok(sb)
         })?;

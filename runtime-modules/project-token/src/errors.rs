@@ -99,10 +99,10 @@ decl_error! {
         /// Amount of tokens to purchase on sale cannot be zero
         SalePurchaseAmountIsZero,
 
-        // ------Revenue Split Errors ------------------------------------------------------
+        // ------ Revenue Split Errors ------------------------------------------------------
 
         /// Specified revenue split starting block is in the past
-        RevenueSplitStartingBlockInThePast,
+        RevenueSplitStartForewarningTooShort,
 
         /// Revenue Split duration is too short
         RevenueSplitDurationTooShort,
