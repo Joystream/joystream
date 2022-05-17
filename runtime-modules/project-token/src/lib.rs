@@ -522,7 +522,7 @@ decl_module! {
         /// - `token` must exist for `token_id`
         /// - `account` must exist for `(token_id, sender)` with `origin` signed by `sender`
         /// - `account.staking status.is_some()'
-        /// - if `(account.staking_status.split_id == token.next_revenue_split_id`
+        /// - if `(account.staking_status.split_id == token.next_revenue_split_id - 1`
         ///    AND `token.revenue_split` is active) THEN split staking period  must be ended
         ///
         /// Postconditions
