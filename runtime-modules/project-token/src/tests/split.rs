@@ -540,7 +540,7 @@ fn participate_in_split_ok_with_user_participating_to_a_previous_ended_split() {
             AccountDataOf::<Test> {
                 amount: DEFAULT_SPLIT_PARTICIPATION,
                 split_staking_status: Some(StakingStatus {
-                    split_id: 2u32, // revenue split id participated
+                    split_id: 1u32, // 2nd revenue split participated -> nonce == 1
                     amount: DEFAULT_SPLIT_PARTICIPATION,
                 }),
                 ..

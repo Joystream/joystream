@@ -100,7 +100,7 @@ decl_storage! {
 
         /// Minimum duration of a token sale
         pub MinSaleDuration get(fn min_sale_duration) config(): T::BlockNumber;
-        
+
         /// Minimum revenue split duration constraint
         pub MinRevenueSplitDuration get(fn min_revenue_split_duration) config(): T::BlockNumber;
         /// Minimum revenue split forewarning constraint
@@ -476,7 +476,7 @@ decl_module! {
 
             let account_info = Self::ensure_account_data_exists(token_id, &sender)?;
 
-            account_info.ensure_can_stake::<T>(amount, token_info.latest_revenue_split_id)?;
+            account_info.ensure_can_stake::<T>(amount, token_info.next_revenue_split_id)?;
 
             // it should not really be possible to have supply == 0 with staked amount > 0
             debug_assert!(!token_info.total_supply.is_zero());
