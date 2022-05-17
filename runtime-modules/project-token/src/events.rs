@@ -2,6 +2,7 @@ use crate::types::{
     JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId, TransferPolicyOf,
     ValidatedTransfersOf,
 };
+use common::MembershipTypes;
 use frame_support::decl_event;
 use sp_runtime::Perquintill;
 
@@ -12,6 +13,7 @@ decl_event! {
         JoyBalance = JoyBalanceOf<T>,
         TokenId = <T as crate::Trait>::TokenId,
         AccountId = <T as frame_system::Trait>::AccountId,
+        MemberId = <T as MembershipTypes>::MemberId,
         BlockNumber = <T as frame_system::Trait>::BlockNumber,
         TransferPolicy = TransferPolicyOf<T>,
         TokenIssuanceParameters = TokenIssuanceParametersOf<T>,
@@ -21,19 +23,19 @@ decl_event! {
         /// Token amount is transferred from src to dst
         /// Params:
         /// - token identifier
-        /// - source account
+        /// - source member id
         /// - map containing validated outputs (amount, remark) data indexed by
-        ///   (account_id + account existance)
-        TokenAmountTransferred(TokenId, AccountId, ValidatedTransfers),
+        ///   (member_id + account existance)
+        TokenAmountTransferred(TokenId, MemberId, ValidatedTransfers),
 
         /// Token amount transferred by issuer
         /// Params:
         /// - token identifier
-        /// - source account
+        /// - source (issuer) member id
         /// - map containing validated outputs
         ///   (amount, opt. vesting schedule, opt. vesting cleanup key, remark) data indexed by
         ///   (account_id + account existance)
-        TokenAmountTransferredByIssuer(TokenId, AccountId, ValidatedTransfers),
+        TokenAmountTransferredByIssuer(TokenId, MemberId, ValidatedTransfers),
 
         /// Patronage rate decreased
         /// Params:
@@ -45,8 +47,8 @@ decl_event! {
         /// Params:
         /// - token identifier
         /// - credit amount
-        /// - account
-        PatronageCreditClaimed(TokenId, Balance, AccountId),
+        /// - member id
+        PatronageCreditClaimed(TokenId, Balance, MemberId),
 
         /// Revenue Split issued
         /// Params:
@@ -66,33 +68,33 @@ decl_event! {
         /// User partipated in a revenue split
         /// Params:
         /// - token identifier
-        /// - user account
+        /// - participant's member id
         /// - user allocated staked balance
         /// - dividend amount (JOY) granted
         /// - revenue split identifier
-        UserParticipatedInSplit(TokenId, AccountId, Balance, JoyBalance, RevenueSplitId),
+        UserParticipatedInSplit(TokenId, MemberId, Balance, JoyBalance, RevenueSplitId),
 
         /// User left revenue split
         /// Params:
         /// - token identifier
-        /// - user account id
+        /// - ex-participant's member id
         /// - amount unstaked
-        RevenueSplitLeft(TokenId, AccountId, Balance),
+        RevenueSplitLeft(TokenId, MemberId, Balance),
 
         /// Member joined whitelist
         /// Params:
         /// - token identifier
-        /// - account that has just joined
+        /// - member id
         /// - ongoing transfer policy
-        MemberJoinedWhitelist(TokenId, AccountId, TransferPolicy),
+        MemberJoinedWhitelist(TokenId, MemberId, TransferPolicy),
 
         /// Account Dusted
         /// Params:
         /// - token identifier
-        /// - account dusted
+        /// - id of the dusted account owner member
         /// - account that called the extrinsic
         /// - ongoing policy
-        AccountDustedBy(TokenId, AccountId, AccountId, TransferPolicy),
+        AccountDustedBy(TokenId, MemberId, AccountId, TransferPolicy),
 
         /// Token Deissued
         /// Params:
@@ -110,8 +112,8 @@ decl_event! {
         /// - token id
         /// - token sale id
         /// - amount of tokens purchased
-        /// - address of the buyer
-        TokensPurchasedOnSale(TokenId, TokenSaleId, Balance, AccountId),
+        /// - buyer's member id
+        TokensPurchasedOnSale(TokenId, TokenSaleId, Balance, MemberId),
 
         /// Unsold Tokens Recovered
         /// Params:

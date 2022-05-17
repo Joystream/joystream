@@ -1,8 +1,9 @@
 #[cfg(test)]
 use frame_support::assert_err;
 use sp_arithmetic::traits::Zero;
-use sp_runtime::Permill;
+use sp_runtime::{DispatchError, Permill};
 
+use crate::member;
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::types::{
@@ -13,7 +14,7 @@ use crate::{last_event_eq, Error, RawEvent};
 #[test]
 fn issue_split_fails_with_invalid_token_id() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -26,7 +27,7 @@ fn issue_split_fails_with_invalid_token_id() {
 #[test]
 fn issue_split_fails_with_invalid_starting_block() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -43,7 +44,7 @@ fn issue_split_fails_with_invalid_starting_block() {
 #[test]
 fn issue_split_fails_with_duration_too_short() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -60,7 +61,7 @@ fn issue_split_fails_with_duration_too_short() {
 #[test]
 fn issue_split_fails_with_source_having_insufficient_balance() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -77,14 +78,14 @@ fn issue_split_fails_with_source_having_insufficient_balance() {
 #[test]
 fn issue_split_fails_with_non_existing_source() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
         IssueTokenFixture::default().execute_call().unwrap();
 
         let result = IssueRevenueSplitFixture::default()
-            .with_allocation_source(OTHER_ACCOUNT_ID)
+            .with_allocation_source(member!(2).1)
             .execute_call();
 
         assert_err!(result, Error::<Test>::InsufficientJoyBalance,);
@@ -94,7 +95,7 @@ fn issue_split_fails_with_non_existing_source() {
 #[test]
 fn issue_split_fails_with_revenue_split_already_active() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         // endow enough allocation for 2 splits
         DEFAULT_SPLIT_ALLOCATION + DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
@@ -111,7 +112,7 @@ fn issue_split_fails_with_revenue_split_already_active() {
 #[test]
 fn issue_split_ok_with_event_deposited() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -131,7 +132,7 @@ fn issue_split_ok_with_event_deposited() {
 #[test]
 fn issue_split_ok_noop_with_allocation_zero() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -151,7 +152,7 @@ fn issue_split_ok_noop_with_allocation_zero() {
 #[test]
 fn issue_split_ok_with_allocation_transferred_to_treasury_account() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -166,7 +167,7 @@ fn issue_split_ok_with_allocation_transferred_to_treasury_account() {
             DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
         );
         assert_eq!(
-            Joy::<Test>::usable_balance(DEFAULT_ACCOUNT_ID),
+            Joy::<Test>::usable_balance(member!(1).1),
             ExistentialDeposit::get()
         );
     })
@@ -175,7 +176,7 @@ fn issue_split_ok_with_allocation_transferred_to_treasury_account() {
 #[test]
 fn issue_split_ok_with_revenue_split_correctly_activated() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -203,7 +204,7 @@ fn issue_split_ok_with_revenue_split_correctly_activated() {
 #[test]
 fn finalize_split_fails_with_invalid_token_id() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -222,7 +223,7 @@ fn finalize_split_fails_with_invalid_token_id() {
 #[test]
 fn finalize_split_fails_with_active_but_not_ended_revenue_split() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -239,7 +240,7 @@ fn finalize_split_fails_with_active_but_not_ended_revenue_split() {
 #[test]
 fn finalize_split_fails_with_inactive_revenue_split() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -254,7 +255,7 @@ fn finalize_split_fails_with_inactive_revenue_split() {
 #[test]
 fn finalize_split_ok_with_event_deposit() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -268,7 +269,7 @@ fn finalize_split_ok_with_event_deposit() {
 
         last_event_eq!(RawEvent::RevenueSplitFinalized(
             1u64,
-            DEFAULT_ACCOUNT_ID,
+            member!(1).1,
             DEFAULT_SPLIT_ALLOCATION
         ))
     })
@@ -277,7 +278,7 @@ fn finalize_split_ok_with_event_deposit() {
 #[test]
 fn finalize_split_ok_with_token_status_set_to_inactive() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -299,7 +300,7 @@ fn finalize_split_ok_with_token_status_set_to_inactive() {
 #[test]
 fn finalize_split_ok_with_leftover_joys_transferred_to_account() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -321,7 +322,7 @@ fn finalize_split_ok_with_leftover_joys_transferred_to_account() {
         );
         // account id balance increased by DEFAULT_SPLIT_ALLOCATION - DEFAULT_SPLIT_JOY_DIVIDEND
         assert_eq!(
-            Joy::<Test>::usable_balance(DEFAULT_ACCOUNT_ID),
+            Joy::<Test>::usable_balance(member!(1).1),
             DEFAULT_SPLIT_ALLOCATION - DEFAULT_SPLIT_JOY_DIVIDEND + ExistentialDeposit::get()
         );
     })
@@ -330,7 +331,7 @@ fn finalize_split_ok_with_leftover_joys_transferred_to_account() {
 #[test]
 fn participate_in_split_fails_with_invalid_token_id() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get() + DEFAULT_BLOAT_BOND,
     )])
     .execute_with(|| {
@@ -349,7 +350,7 @@ fn participate_in_split_fails_with_invalid_token_id() {
 #[test]
 fn participate_in_split_fails_with_non_existing_account() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get() + DEFAULT_BLOAT_BOND,
     )])
     .execute_with(|| {
@@ -358,7 +359,8 @@ fn participate_in_split_fails_with_non_existing_account() {
         IssueRevenueSplitFixture::default().execute_call().unwrap();
 
         let result = ParticipateInSplitFixture::default()
-            .with_sender(OTHER_ACCOUNT_ID + 1)
+            .with_sender(member!(3).1)
+            .with_member_id(member!(3).0)
             .execute_call();
 
         assert_err!(result, Error::<Test>::AccountInformationDoesNotExist);
@@ -366,9 +368,31 @@ fn participate_in_split_fails_with_non_existing_account() {
 }
 
 #[test]
+fn participate_in_split_fails_with_invalid_member_controller_account() {
+    build_default_test_externalities_with_balances(vec![(
+        member!(1).1,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get() + DEFAULT_BLOAT_BOND,
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap(); // send participation to other acc
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+
+        let result = ParticipateInSplitFixture::default()
+            .with_sender(member!(3).1)
+            .execute_call();
+
+        assert_err!(
+            result,
+            DispatchError::Other("origin signer not a member controller account")
+        );
+    })
+}
+
+#[test]
 fn participate_in_split_fails_with_token_having_inactive_revenue_split_status() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get() + DEFAULT_BLOAT_BOND,
     )])
     .execute_with(|| {
@@ -384,7 +408,7 @@ fn participate_in_split_fails_with_token_having_inactive_revenue_split_status() 
 #[test]
 fn participate_in_split_fails_with_ended_revenue_split_period() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get() + DEFAULT_BLOAT_BOND,
     )])
     .execute_with(|| {
@@ -402,7 +426,7 @@ fn participate_in_split_fails_with_ended_revenue_split_period() {
 #[test]
 fn participate_in_split_fails_with_revenue_not_started_yet() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get() + DEFAULT_BLOAT_BOND,
     )])
     .execute_with(|| {
@@ -422,7 +446,7 @@ fn participate_in_split_fails_with_revenue_not_started_yet() {
 #[test]
 fn participate_in_split_fails_with_user_already_a_participant() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get() + DEFAULT_BLOAT_BOND,
     )])
     .execute_with(|| {
@@ -440,7 +464,7 @@ fn participate_in_split_fails_with_user_already_a_participant() {
 #[test]
 fn participate_in_split_fails_with_user_having_insufficient_token_amount() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get() + DEFAULT_BLOAT_BOND,
     )])
     .execute_with(|| {
@@ -462,7 +486,7 @@ fn participate_in_split_fails_with_user_having_insufficient_token_amount() {
 #[test]
 fn participate_in_split_ok_with_event_deposit() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -474,7 +498,7 @@ fn participate_in_split_ok_with_event_deposit() {
 
         last_event_eq!(RawEvent::UserParticipatedInSplit(
             1u64,
-            OTHER_ACCOUNT_ID,
+            member!(2).0,
             DEFAULT_SPLIT_PARTICIPATION,
             DEFAULT_SPLIT_JOY_DIVIDEND,
             0u32, // participate in split @ 0
@@ -485,7 +509,7 @@ fn participate_in_split_ok_with_event_deposit() {
 #[test]
 fn participate_in_split_fails_with_zero_amount() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -507,7 +531,7 @@ fn participate_in_split_fails_with_zero_amount() {
 #[test]
 fn participate_in_split_ok_with_amount_staked() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -519,7 +543,7 @@ fn participate_in_split_ok_with_amount_staked() {
 
         // verify that amount is staked
         assert!(matches!(
-            Token::account_info_by_token_and_account(1u64, OTHER_ACCOUNT_ID),
+            Token::account_info_by_token_and_member(1u64, member!(2).0),
             AccountDataOf::<Test> {
                 amount: DEFAULT_SPLIT_PARTICIPATION,
                 split_staking_status: Some(StakingStatus {
@@ -530,18 +554,16 @@ fn participate_in_split_ok_with_amount_staked() {
             }
         ));
         // transferrable balance should be 0, since all available amount is staked
-        assert!(
-            Token::account_info_by_token_and_account(1u64, OTHER_ACCOUNT_ID)
-                .transferrable::<Test>(System::block_number())
-                .is_zero()
-        );
+        assert!(Token::account_info_by_token_and_member(1u64, member!(2).0)
+            .transferrable::<Test>(System::block_number())
+            .is_zero());
     })
 }
 
 #[test]
 fn participate_in_split_ok_with_dividends_transferred_to_claimer_joy_balance() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -553,7 +575,7 @@ fn participate_in_split_ok_with_dividends_transferred_to_claimer_joy_balance() {
 
         // dividend transferred from treasury to claimer account
         assert_eq!(
-            Joy::<Test>::usable_balance(OTHER_ACCOUNT_ID),
+            Joy::<Test>::usable_balance(member!(2).1),
             DEFAULT_SPLIT_JOY_DIVIDEND,
         );
         // split treasury account decreased
@@ -577,11 +599,11 @@ fn participate_in_split_ok_with_vesting_schedule_and_correct_transferrable_balan
     pub const TOTAL_AMOUNT: u128 = DEFAULT_SALE_PURCHASE_AMOUNT * 2;
     build_default_test_externalities_with_balances(vec![
         (
-            DEFAULT_ACCOUNT_ID,
+            member!(1).1,
             DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
         ),
         (
-            OTHER_ACCOUNT_ID,
+            member!(2).1,
             ExistentialDeposit::get() + (DEFAULT_SALE_UNIT_PRICE * TOTAL_AMOUNT),
         ),
     ])
@@ -611,7 +633,7 @@ fn participate_in_split_ok_with_vesting_schedule_and_correct_transferrable_balan
             .unwrap();
 
         // expect vesting amount to be accounted for together with split participation
-        let account = Token::account_info_by_token_and_account(1u64, OTHER_ACCOUNT_ID);
+        let account = Token::account_info_by_token_and_member(1u64, member!(2).0);
         assert!(matches!(
             account,
             AccountDataOf::<Test> {
@@ -647,7 +669,7 @@ fn participate_in_split_ok_with_vesting_schedule_and_correct_transferrable_balan
 #[test]
 fn exit_revenue_split_fails_with_invalid_token_id() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -666,9 +688,9 @@ fn exit_revenue_split_fails_with_invalid_token_id() {
 }
 
 #[test]
-fn exit_revenue_split_fails_with_invalid_account_id() {
+fn exit_revenue_split_fails_with_non_existing_account() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -682,7 +704,8 @@ fn exit_revenue_split_fails_with_invalid_account_id() {
             .unwrap();
 
         let result = ExitRevenueSplitFixture::default()
-            .with_account(OTHER_ACCOUNT_ID + 1)
+            .with_account(member!(3).1)
+            .with_member_id(member!(3).0)
             .execute_call();
 
         assert_err!(result, Error::<Test>::AccountInformationDoesNotExist);
@@ -690,9 +713,36 @@ fn exit_revenue_split_fails_with_invalid_account_id() {
 }
 
 #[test]
+fn exit_revenue_split_fails_with_invalid_member_controller() {
+    build_default_test_externalities_with_balances(vec![(
+        member!(1).1,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap(); // send participation to other acc
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        ParticipateInSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(DEFAULT_SPLIT_DURATION);
+        FinalizeRevenueSplitFixture::default()
+            .execute_call()
+            .unwrap();
+
+        let result = ExitRevenueSplitFixture::default()
+            .with_account(member!(3).1)
+            .execute_call();
+
+        assert_err!(
+            result,
+            DispatchError::Other("origin signer not a member controller account")
+        );
+    })
+}
+
+#[test]
 fn exit_revenue_split_fails_with_user_not_a_participant() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -713,7 +763,7 @@ fn exit_revenue_split_fails_with_user_not_a_participant() {
 #[test]
 fn exit_revenue_split_fails_with_active_non_ended_split() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -731,7 +781,7 @@ fn exit_revenue_split_fails_with_active_non_ended_split() {
 #[test]
 fn exit_revenue_split_ok_with_event_deposit() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -748,7 +798,7 @@ fn exit_revenue_split_ok_with_event_deposit() {
 
         last_event_eq!(RawEvent::RevenueSplitLeft(
             1u64,
-            OTHER_ACCOUNT_ID,
+            member!(2).0,
             DEFAULT_SPLIT_PARTICIPATION
         ));
     })
@@ -757,7 +807,7 @@ fn exit_revenue_split_ok_with_event_deposit() {
 #[test]
 fn exit_revenue_split_ok_with_unstaking() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -773,18 +823,16 @@ fn exit_revenue_split_ok_with_unstaking() {
         ExitRevenueSplitFixture::default().execute_call().unwrap();
 
         // staking status set back to None
-        assert!(
-            Token::account_info_by_token_and_account(1u64, OTHER_ACCOUNT_ID)
-                .split_staking_status
-                .is_none()
-        )
+        assert!(Token::account_info_by_token_and_member(1u64, member!(2).0)
+            .split_staking_status
+            .is_none())
     })
 }
 
 #[test]
 fn exit_revenue_split_ok_with_active_and_ended_split() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {

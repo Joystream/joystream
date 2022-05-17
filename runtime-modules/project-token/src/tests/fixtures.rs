@@ -2,8 +2,12 @@
 
 use crate::tests::mock::*;
 use crate::types::{Joy, Payment, Transfers, TransfersOf};
-use crate::{last_event_eq, yearly_rate, AccountInfoByTokenAndAccount, RawEvent, YearlyRate};
+use crate::Trait;
+use crate::{
+    last_event_eq, member, yearly_rate, AccountInfoByTokenAndMember, RawEvent, YearlyRate,
+};
 use crate::{traits::PalletToken, types::VestingSource, SymbolsUsed};
+use common::membership::MembershipInfoProvider;
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::{StorageDoubleMap, StorageMap};
 use sp_arithmetic::traits::One;
@@ -39,7 +43,7 @@ pub trait Fixture<S: std::fmt::Debug + std::cmp::PartialEq> {
 
 pub fn default_token_sale_params() -> TokenSaleParams {
     TokenSaleParams {
-        tokens_source: DEFAULT_ACCOUNT_ID,
+        tokens_source: member!(1).0,
         duration: DEFAULT_SALE_DURATION,
         metadata: None,
         starts_at: None,
@@ -57,7 +61,7 @@ pub fn default_token_sale_params() -> TokenSaleParams {
 pub fn default_upload_context() -> UploadContext {
     UploadContext {
         bag_id: BagId::<Test>::Static(StaticBagId::Council),
-        uploader_account: DEFAULT_ACCOUNT_ID,
+        uploader_account: member!(1).1,
     }
 }
 
@@ -73,7 +77,7 @@ pub fn default_single_data_object_upload_params() -> SingleDataObjectUploadParam
 }
 
 pub struct IssueTokenFixture {
-    issuer: AccountId,
+    issuer_account: AccountId,
     params: IssuanceParams,
     upload_context: UploadContext,
 }
@@ -86,14 +90,14 @@ pub struct IssueTokenFixtureStateSnapshot {
 impl IssueTokenFixture {
     pub fn default() -> Self {
         Self {
-            issuer: DEFAULT_ACCOUNT_ID,
+            issuer_account: member!(1).1,
             params: IssuanceParams {
                 patronage_rate: yearly_rate!(0),
                 symbol: Hashing::hash_of(b"ABC"),
                 transfer_policy: TransferPolicyParams::Permissionless,
                 ..Default::default()
             }
-            .with_allocation(&DEFAULT_ACCOUNT_ID, DEFAULT_INITIAL_ISSUANCE, None),
+            .with_allocation(&member!(1).0, DEFAULT_INITIAL_ISSUANCE, None),
             upload_context: default_upload_context(),
         }
     }
@@ -118,7 +122,7 @@ impl Fixture<IssueTokenFixtureStateSnapshot> for IssueTokenFixture {
 
     fn execute_call(&self) -> DispatchResult {
         Token::issue_token(
-            self.issuer.clone(),
+            self.issuer_account.clone(),
             self.params.clone(),
             self.upload_context.clone(),
         )
@@ -181,7 +185,7 @@ impl InitTokenSaleFixture {
         }
     }
 
-    pub fn with_tokens_source(self, tokens_source: AccountId) -> Self {
+    pub fn with_tokens_source(self, tokens_source: MemberId) -> Self {
         Self {
             params: TokenSaleParams {
                 tokens_source,
@@ -240,7 +244,7 @@ impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
         InitTokenSaleFixtureStateSnapshot {
             token_data: Token::token_info_by_id(self.token_id),
             next_data_object_id: storage::Module::<Test>::next_data_object_id(),
-            source_account_data: Token::account_info_by_token_and_account(
+            source_account_data: Token::account_info_by_token_and_member(
                 self.token_id,
                 self.params.tokens_source,
             ),
@@ -367,8 +371,9 @@ impl Fixture<UpdateUpcomingSaleFixtureStateSnapshot> for UpdateUpcomingSaleFixtu
 pub struct PurchaseTokensOnSaleFixture {
     sender: AccountId,
     token_id: TokenId,
+    member_id: MemberId,
     amount: Balance,
-    sale_source_account: Option<AccountId>,
+    sale_source_member: Option<MemberId>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -386,10 +391,11 @@ pub struct PurchaseTokensOnSaleFixtureStateSnapshot {
 impl PurchaseTokensOnSaleFixture {
     pub fn default() -> Self {
         Self {
-            sender: OTHER_ACCOUNT_ID,
+            sender: member!(2).1,
             token_id: 1,
+            member_id: member!(2).0,
             amount: DEFAULT_SALE_PURCHASE_AMOUNT,
-            sale_source_account: Token::token_info_by_id(1)
+            sale_source_member: Token::token_info_by_id(1)
                 .sale
                 .as_ref()
                 .map(|s| s.tokens_source),
@@ -403,28 +409,35 @@ impl PurchaseTokensOnSaleFixture {
     pub fn with_sender(self, sender: AccountId) -> Self {
         Self { sender, ..self }
     }
+
+    pub fn with_member_id(self, member_id: MemberId) -> Self {
+        Self { member_id, ..self }
+    }
 }
 
 impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleFixture {
     fn get_state_snapshot(&self) -> PurchaseTokensOnSaleFixtureStateSnapshot {
         let token_data = Token::token_info_by_id(self.token_id);
-        let sale_source_account = self.sale_source_account.unwrap_or_default();
+        let sale_source_member = self.sale_source_member.unwrap_or_default();
+        let sale_source_controller =
+            <Test as Trait>::MembershipInfoProvider::controller_account_id(sale_source_member)
+                .unwrap_or_default();
 
         let buyer_account_data =
-            Token::account_info_by_token_and_account(self.token_id, self.sender);
+            Token::account_info_by_token_and_member(self.token_id, self.member_id);
         PurchaseTokensOnSaleFixtureStateSnapshot {
             token_data: token_data.clone(),
-            source_account_data: Token::account_info_by_token_and_account(
+            source_account_data: Token::account_info_by_token_and_member(
                 self.token_id,
-                sale_source_account,
+                sale_source_member,
             ),
             source_account_usable_joy_balance: balances::Module::<Test>::usable_balance(
-                sale_source_account,
+                sale_source_controller,
             ),
             buyer_account_data: buyer_account_data.clone(),
-            buyer_account_exists: AccountInfoByTokenAndAccount::<Test>::contains_key(
+            buyer_account_exists: AccountInfoByTokenAndMember::<Test>::contains_key(
                 self.token_id,
-                &self.sender,
+                &self.member_id,
             ),
             buyer_vesting_schedule: buyer_account_data
                 .vesting_schedules
@@ -440,7 +453,12 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
     }
 
     fn execute_call(&self) -> DispatchResult {
-        Token::purchase_tokens_on_sale(Origin::signed(self.sender), self.token_id, self.amount)
+        Token::purchase_tokens_on_sale(
+            Origin::signed(self.sender),
+            self.token_id,
+            self.member_id,
+            self.amount,
+        )
     }
 
     fn on_success(
@@ -453,7 +471,7 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
             self.token_id,
             snapshot_pre.token_data.next_sale_id - 1,
             self.amount,
-            self.sender
+            self.member_id
         ));
         let sale_pre = snapshot_pre.token_data.sale.clone().unwrap();
         // `quantity_left` decreased or `token_data.sale` removed
@@ -551,7 +569,7 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
 pub struct RecoverUnsoldTokensFixture {
     origin: Origin,
     token_id: TokenId,
-    sale_source_account: Option<AccountId>,
+    sale_source_member: Option<MemberId>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -564,8 +582,8 @@ impl RecoverUnsoldTokensFixture {
     pub fn default() -> Self {
         Self {
             token_id: 1,
-            origin: Origin::signed(DEFAULT_ACCOUNT_ID),
-            sale_source_account: Token::token_info_by_id(1)
+            origin: Origin::signed(member!(1).1),
+            sale_source_member: Token::token_info_by_id(1)
                 .sale
                 .as_ref()
                 .map(|s| s.tokens_source),
@@ -575,12 +593,12 @@ impl RecoverUnsoldTokensFixture {
 
 impl Fixture<RecoverUnsoldTokensFixtureStateSnapshot> for RecoverUnsoldTokensFixture {
     fn get_state_snapshot(&self) -> RecoverUnsoldTokensFixtureStateSnapshot {
-        let sale_source_acc = self.sale_source_account.unwrap_or_default();
+        let sale_source_member = self.sale_source_member.unwrap_or_default();
         RecoverUnsoldTokensFixtureStateSnapshot {
             token_data: Token::token_info_by_id(self.token_id),
-            source_account_data: Token::account_info_by_token_and_account(
+            source_account_data: Token::account_info_by_token_and_member(
                 self.token_id,
-                &sale_source_acc,
+                &sale_source_member,
             ),
         }
     }
@@ -636,7 +654,7 @@ impl IssueRevenueSplitFixture {
             token_id: TokenId::one(),
             start: None,
             duration: BlockNumber::from(DEFAULT_SPLIT_DURATION),
-            allocation_source: AccountId::from(DEFAULT_ACCOUNT_ID),
+            allocation_source: member!(1).1,
             allocation: Balance::from(DEFAULT_SPLIT_ALLOCATION),
         }
     }
@@ -699,7 +717,7 @@ impl FinalizeRevenueSplitFixture {
     pub fn default() -> Self {
         Self {
             token_id: TokenId::one(),
-            account_id: AccountId::from(DEFAULT_ACCOUNT_ID),
+            account_id: member!(1).1,
         }
     }
 
@@ -727,14 +745,16 @@ impl FinalizeRevenueSplitFixture {
 pub struct ParticipateInSplitFixture {
     sender: AccountId,
     token_id: TokenId,
+    member_id: MemberId,
     amount: Balance,
 }
 
 impl ParticipateInSplitFixture {
     pub fn default() -> Self {
         Self {
-            sender: OTHER_ACCOUNT_ID.into(),
+            sender: member!(2).1,
             token_id: TokenId::one(),
+            member_id: member!(2).0,
             amount: DEFAULT_SPLIT_PARTICIPATION.into(),
         }
     }
@@ -760,10 +780,18 @@ impl ParticipateInSplitFixture {
         }
     }
 
+    pub fn with_member_id(self, member_id: u64) -> Self {
+        Self { member_id, ..self }
+    }
+
     pub fn execute_call(&self) -> DispatchResult {
         let state_pre = sp_io::storage::root();
-        let result =
-            Token::participate_in_split(Origin::signed(self.sender), self.token_id, self.amount);
+        let result = Token::participate_in_split(
+            Origin::signed(self.sender),
+            self.token_id,
+            self.member_id,
+            self.amount,
+        );
         let state_post = sp_io::storage::root();
 
         // no-op in case of error
@@ -778,6 +806,7 @@ impl ParticipateInSplitFixture {
 pub struct TransferFixture {
     sender: AccountId,
     token_id: TokenId,
+    src_member_id: MemberId,
     outputs: TransfersOf<Test>,
 }
 
@@ -785,7 +814,7 @@ impl TransferFixture {
     pub fn default() -> Self {
         let outputs = Transfers::<_, _>(
             vec![(
-                OTHER_ACCOUNT_ID,
+                member!(2).0,
                 Payment::<Balance> {
                     remark: "remark".as_bytes().to_vec(),
                     amount: DEFAULT_SPLIT_PARTICIPATION,
@@ -795,8 +824,9 @@ impl TransferFixture {
             .collect(),
         );
         Self {
-            sender: DEFAULT_ACCOUNT_ID.into(),
+            sender: member!(1).1,
             token_id: 1u64.into(),
+            src_member_id: member!(1).0,
             outputs,
         }
     }
@@ -805,6 +835,7 @@ impl TransferFixture {
         let state_pre = sp_io::storage::root();
         let result = Token::transfer(
             Origin::signed(self.sender),
+            self.src_member_id,
             self.token_id,
             self.outputs.clone(),
         );
@@ -822,13 +853,15 @@ impl TransferFixture {
 pub struct ExitRevenueSplitFixture {
     sender: AccountId,
     token_id: TokenId,
+    member_id: MemberId,
 }
 
 impl ExitRevenueSplitFixture {
     pub fn default() -> Self {
         Self {
-            sender: OTHER_ACCOUNT_ID.into(),
+            sender: member!(2).1,
             token_id: TokenId::one(),
+            member_id: member!(2).0,
         }
     }
 
@@ -846,9 +879,14 @@ impl ExitRevenueSplitFixture {
         }
     }
 
+    pub fn with_member_id(self, member_id: u64) -> Self {
+        Self { member_id, ..self }
+    }
+
     pub fn execute_call(&self) -> DispatchResult {
         let state_pre = sp_io::storage::root();
-        let result = Token::exit_revenue_split(Origin::signed(self.sender), self.token_id);
+        let result =
+            Token::exit_revenue_split(Origin::signed(self.sender), self.token_id, self.member_id);
         let state_post = sp_io::storage::root();
 
         // no-op in case of error
