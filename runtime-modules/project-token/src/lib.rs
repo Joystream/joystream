@@ -906,8 +906,8 @@ impl<T: Trait>
             );
         }
 
-        let revenue_split_start =
-            start.unwrap_or(current_block.saturating_add(Self::min_revenue_split_forewarning()));
+        let revenue_split_start = start
+            .unwrap_or_else(|| current_block.saturating_add(Self::min_revenue_split_forewarning()));
         let timeline = TimelineOf::<T>::from_params(revenue_split_start, duration);
 
         Self::ensure_can_transfer_joy(&allocation_source, allocation_amount)?;
