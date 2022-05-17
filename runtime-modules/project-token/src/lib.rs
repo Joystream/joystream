@@ -298,27 +298,31 @@ decl_module! {
         ///     if AccountData already exist
         ///   - >= `joy_existential_deposit + amount * sale.unit_price + bloat_bond`
         ///     if AccountData does not exist
-        /// - `(total number of tokens already purchased by the member + `amount`) must not exceed
-        ///   sale's purchase cap per member
+        /// - total number of tokens already purchased by the member on the current sale
+        ///   PLUS `amount` must not exceed sale's purchase cap per member
         /// - if Permissioned token:
         ///   - AccountInfoByTokenAndMember(token_id, &member_id) must exist
-        /// - number of sender account's ongoing vesting schedules
-        ///   must be < MaxVestingSchedulesPerAccountPerToken
+        /// - if `sale.vesting_schedule.is_some()`:
+        ///   - number of sender account's ongoing vesting schedules
+        ///     must be < MaxVestingSchedulesPerAccountPerToken
         ///
         /// Postconditions:
         /// - `amount * sale.unit_price` JOY tokens are transfered from `sender`
         ///   to `sale.tokens_source` member controller account
         /// - if new account created: `bloat_bond` transferred from `sender` to treasury
-        /// - if buyer has no `vesting_schedule` related to the current sale:
-        ///   - a new vesting schedule (`sale.get_vesting_schedule(purchase_amount)`) is added to
-        ///     buyer's `vesing_schedules`
-        ///   - some finished vesting schedule is removed from buyer's account_data in case the
-        ///   number of buyer's vesting_schedules was == MaxVestingSchedulesPerAccountPerToken
-        /// - if buyer already has a `vesting_schedule` related to the current sale:
-        ///   - current vesting schedule's `cliff_amount` is increased by
-        ///     `sale.get_vesting_schedule(purchase_amount).cliff_amount`
-        ///   - current vesting schedule's `post_cliff_total_amount` is increased by
-        ///     `sale.get_vesting_schedule(purchase_amount).post_cliff_total_amount`
+        /// - if `sale.vesting_schedule.is_some()`:
+        ///   - if buyer has no `vesting_schedule` related to the current sale:
+        ///     - a new vesting schedule (`sale.get_vesting_schedule(purchase_amount)`) is added to
+        ///       buyer's `vesing_schedules`
+        ///     - some finished vesting schedule is removed from buyer's account_data in case the
+        ///       number of buyer's vesting_schedules was == MaxVestingSchedulesPerAccountPerToken
+        ///   - if buyer already has a `vesting_schedule` related to the current sale:
+        ///     - current vesting schedule's `cliff_amount` is increased by
+        ///       `sale.get_vesting_schedule(purchase_amount).cliff_amount`
+        ///     - current vesting schedule's `post_cliff_total_amount` is increased by
+        ///       `sale.get_vesting_schedule(purchase_amount).post_cliff_total_amount`
+        /// - if `sale.vesting_schedule.is_none()`:
+        ///   - buyer's account token amount increased by `amount`
         /// - if `token_data.sale.quantity_left - amount > 0`:
         ///   - `token_data.sale.quantity_left` is decreased by `amount`
         /// - if `token_data.sale.quantity_left - amount == 0`:
@@ -342,12 +346,13 @@ decl_module! {
             let sale = OfferingStateOf::<T>::ensure_sale_of::<T>(&token_data)?;
             let sale_id = token_data.next_sale_id - 1;
             let joy_amount = sale.unit_price.saturating_mul(amount.into());
-            let account_exists = AccountInfoByTokenAndMember::<T>::contains_key(token_id, &member_id);
+            let account_data = Self::ensure_account_data_exists(token_id, &member_id).ok();
             let bloat_bond = Self::bloat_bond();
             let sale_source_controller =
                 T::MembershipInfoProvider::controller_account_id(sale.tokens_source)?;
+            let vesting_schedule = sale.get_vesting_schedule(amount);
 
-            let required_joy_balance = if account_exists {
+            let required_joy_balance = if account_data.is_some() {
                 joy_amount
             } else {
                 joy_amount.saturating_add(bloat_bond)
@@ -366,9 +371,8 @@ decl_module! {
             // Ensure participant's cap is not exceeded
             if let Some(cap) = sale.cap_per_member {
                 Self::ensure_purchase_cap_not_exceeded(
-                    token_id,
                     sale_id,
-                    &member_id,
+                    &account_data,
                     amount,
                     cap
                 )?;
@@ -376,16 +380,20 @@ decl_module! {
 
             // Ensure account exists if Permissioned token
             if let TransferPolicy::Permissioned(_) = token_data.transfer_policy {
-                ensure!(account_exists, Error::<T>::AccountInformationDoesNotExist);
+                ensure!(account_data.is_some(), Error::<T>::AccountInformationDoesNotExist);
             }
 
-            // Ensure vesting schedule can added if doesn't already exist
-            // (MaxVestingSchedulesPerAccountPerToken not exceeded)
-            let acc_data = AccountInfoByTokenAndMember::<T>::get(token_id, &member_id);
-            let vesting_cleanup_key = acc_data.ensure_can_add_or_update_vesting_schedule::<T>(
-                current_block,
-                VestingSource::Sale(sale_id)
-            )?;
+            let vesting_cleanup_key = if vesting_schedule.is_some() {
+                    // Ensure vesting schedule can added if doesn't already exist
+                    // (MaxVestingSchedulesPerAccountPerToken not exceeded)
+                    let acc_data = AccountInfoByTokenAndMember::<T>::get(token_id, &member_id);
+                    acc_data.ensure_can_add_or_update_vesting_schedule::<T>(
+                        current_block,
+                        VestingSource::Sale(sale_id)
+                    )
+                } else {
+                    Ok(None)
+                }?;
 
             // == MUTATION SAFE ==
 
@@ -396,11 +404,12 @@ decl_module! {
                 ExistenceRequirement::KeepAlive
             )?;
 
-            if account_exists {
+            if account_data.is_some() {
                 AccountInfoByTokenAndMember::<T>::mutate(token_id, &member_id, |acc_data| {
-                    acc_data.add_or_update_vesting_schedule(
-                        VestingSource::Sale(sale_id),
-                        sale.get_vesting_schedule(amount),
+                    acc_data.process_sale_purchase(
+                        sale_id,
+                        amount,
+                        vesting_schedule,
                         vesting_cleanup_key
                     );
                 });
@@ -409,11 +418,14 @@ decl_module! {
                 Self::do_insert_new_account_for_token(
                     token_id,
                     &member_id,
-                    AccountData::new_with_vesting_and_bond(
-                        VestingSource::Sale(sale_id),
-                        sale.get_vesting_schedule(amount),
-                        bloat_bond,
-                    )
+                    AccountDataOf::<T>
+                        ::new_with_amount_and_bond(TokenBalanceOf::<T>::zero(), bloat_bond)
+                        .process_sale_purchase(
+                            sale_id,
+                            amount,
+                            vesting_schedule,
+                            vesting_cleanup_key
+                        ).clone()
                 );
             }
 
@@ -1266,18 +1278,21 @@ impl<T: Trait> Module<T> {
     }
 
     pub(crate) fn ensure_purchase_cap_not_exceeded(
-        token_id: T::TokenId,
         sale_id: TokenSaleId,
-        buyer_id: &T::MemberId,
+        account_data: &Option<AccountDataOf<T>>,
         purchase_amount: <T as Trait>::Balance,
         cap: <T as Trait>::Balance,
     ) -> DispatchResult {
-        let opt_acc_data = Self::ensure_account_data_exists(token_id, &buyer_id).ok();
-        let tokens_purchased = opt_acc_data.map_or(<T as Trait>::Balance::zero(), |ad| {
-            ad.vesting_schedules
-                .get(&VestingSource::Sale(sale_id))
-                .map_or(<T as Trait>::Balance::zero(), |vs| vs.total_amount())
-        });
+        let tokens_purchased = account_data
+            .as_ref()
+            .map_or(TokenBalanceOf::<T>::zero(), |ad| {
+                match ad.last_sale_total_purchased_amount {
+                    Some((last_sale_id, tokens_purchased)) if last_sale_id == sale_id => {
+                        tokens_purchased
+                    }
+                    _ => TokenBalanceOf::<T>::zero(),
+                }
+            });
         ensure!(
             tokens_purchased.saturating_add(purchase_amount) <= cap,
             Error::<T>::SalePurchaseCapExceeded

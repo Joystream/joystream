@@ -500,37 +500,74 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
                 .source_account_usable_joy_balance
                 .saturating_add(self.amount * sale_pre.unit_price)
         );
-        // buyer's vesting schedule is correct
-        let purchase_vesting_schedule = sale_pre.get_vesting_schedule(self.amount);
-        assert_eq!(
-            snapshot_post
-                .buyer_vesting_schedule
-                .as_ref()
-                .unwrap()
-                .clone(),
-            VestingSchedule {
-                cliff_amount: snapshot_pre
+        if let Some(vesting_schedule) = snapshot_pre
+            .token_data
+            .sale
+            .as_ref()
+            .unwrap()
+            .get_vesting_schedule(self.amount)
+        {
+            // buyer's vesting schedule is correct
+            assert_eq!(
+                snapshot_post
                     .buyer_vesting_schedule
                     .as_ref()
-                    .map_or(0, |vs| vs.cliff_amount)
-                    .saturating_add(purchase_vesting_schedule.cliff_amount),
-                linear_vesting_duration: purchase_vesting_schedule.linear_vesting_duration,
-                post_cliff_total_amount: snapshot_pre
-                    .buyer_vesting_schedule
-                    .as_ref()
-                    .map_or(0, |vs| vs.post_cliff_total_amount)
-                    .saturating_add(purchase_vesting_schedule.post_cliff_total_amount),
-                linear_vesting_start_block: purchase_vesting_schedule.linear_vesting_start_block
-            }
-        );
-        // buyer's transferrable balance is unchanged
+                    .unwrap()
+                    .clone(),
+                VestingSchedule {
+                    cliff_amount: snapshot_pre
+                        .buyer_vesting_schedule
+                        .as_ref()
+                        .map_or(0, |vs| vs.cliff_amount)
+                        .saturating_add(vesting_schedule.cliff_amount),
+                    linear_vesting_duration: vesting_schedule.linear_vesting_duration,
+                    post_cliff_total_amount: snapshot_pre
+                        .buyer_vesting_schedule
+                        .as_ref()
+                        .map_or(0, |vs| vs.post_cliff_total_amount)
+                        .saturating_add(vesting_schedule.post_cliff_total_amount),
+                    linear_vesting_start_block: vesting_schedule.linear_vesting_start_block
+                }
+            );
+            // buyer's transferrable balance is unchanged
+            assert_eq!(
+                snapshot_post
+                    .buyer_account_data
+                    .transferrable::<Test>(System::block_number()),
+                snapshot_pre
+                    .buyer_account_data
+                    .transferrable::<Test>(System::block_number())
+            );
+        } else {
+            // buyer's transferrable balance is increased
+            assert_eq!(
+                snapshot_post
+                    .buyer_account_data
+                    .transferrable::<Test>(System::block_number()),
+                snapshot_pre
+                    .buyer_account_data
+                    .transferrable::<Test>(System::block_number())
+                    .saturating_add(self.amount)
+            );
+        }
+        // last_sale_purchased_amount is increased
+        let sale_id = snapshot_pre.token_data.next_sale_id - 1;
         assert_eq!(
             snapshot_post
                 .buyer_account_data
-                .transferrable::<Test>(System::block_number()),
-            snapshot_pre
-                .buyer_account_data
-                .transferrable::<Test>(System::block_number())
+                .last_sale_total_purchased_amount,
+            Some((
+                sale_id,
+                match snapshot_pre
+                    .buyer_account_data
+                    .last_sale_total_purchased_amount
+                {
+                    Some((last_sale_id, tokens_purchased)) if last_sale_id == sale_id => {
+                        tokens_purchased.saturating_add(self.amount)
+                    }
+                    _ => self.amount,
+                }
+            ))
         );
         // new account case
         if !snapshot_pre.buyer_account_exists {
