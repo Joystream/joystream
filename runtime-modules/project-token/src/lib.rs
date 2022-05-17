@@ -72,9 +72,6 @@ pub trait Trait: frame_system::Trait + balances::Trait + storage::Trait {
 
     /// Number of blocks produced in a year
     type BlocksPerYear: Get<u32>;
-
-    /// Min number of block in a revenue split period
-    type MinRevenueSplitDuration: Get<<Self as frame_system::Trait>::BlockNumber>;
 }
 
 decl_storage! {
@@ -103,6 +100,9 @@ decl_storage! {
 
         /// Minimum duration of a token sale
         pub MinSaleDuration get(fn min_sale_duration) config(): T::BlockNumber;
+        
+        /// Minimum revenue split duration constraint
+        pub MinRevenueSplitDuration get(fn min_revenue_split_duration) config(): T::BlockNumber;
     }
 
     add_extra_genesis {
@@ -890,7 +890,7 @@ impl<T: Trait>
         token_info.revenue_split.ensure_inactive::<T>()?;
 
         ensure!(
-            duration >= T::MinRevenueSplitDuration::get(),
+            duration >= Self::min_revenue_split_duration(),
             Error::<T>::RevenueSplitDurationTooShort
         );
 

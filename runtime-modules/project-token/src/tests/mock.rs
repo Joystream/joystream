@@ -188,7 +188,6 @@ impl Trait for Test {
     type JoyExistentialDeposit = ExistentialDeposit;
     type MaxVestingBalancesPerAccountPerToken = MaxVestingBalancesPerAccountPerToken;
     type BlocksPerYear = BlocksPerYear;
-    type MinRevenueSplitDuration = MinRevenueSplitDuration;
 }
 
 // Working group integration
@@ -348,6 +347,7 @@ pub struct GenesisConfigBuilder {
     pub(crate) bloat_bond: JoyBalance,
     pub(crate) symbol_used: Vec<(HashOut, ())>,
     pub(crate) min_sale_duration: BlockNumber,
+    pub(crate) min_revenue_split_duration: BlockNumber,
 }
 
 /// test externalities + initial balances allocation
@@ -455,6 +455,7 @@ pub type Balances = balances::Module<Test>;
 // ------ General constants ---------------
 pub const DEFAULT_BLOAT_BOND: u128 = 0;
 pub const DEFAULT_INITIAL_ISSUANCE: u128 = 1_000_000;
+pub const MIN_REVENUE_SPLIT_DURATION: u64 = 10;
 
 // ------ Actors ---------------------------
 pub const DEFAULT_ACCOUNT_ID: u64 = 1;

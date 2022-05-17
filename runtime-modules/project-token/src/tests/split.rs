@@ -50,7 +50,7 @@ fn issue_split_fails_with_duration_too_short() {
         IssueTokenFixture::default().execute_call().unwrap();
 
         let result = IssueRevenueSplitFixture::default()
-            .with_duration(MinRevenueSplitDuration::get() - 1)
+            .with_duration(MIN_REVENUE_SPLIT_DURATION - 1)
             .execute_call();
 
         assert_err!(result, Error::<Test>::RevenueSplitDurationTooShort);
