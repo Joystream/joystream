@@ -197,7 +197,7 @@ fn permissionless_transfer_ok_for_new_destination_with_bloat_bond_transferred_to
         .with_transfer_policy(Policy::Permissionless)
         .build();
     let src = account!(1);
-    let (treasury, bloat_bond) = (Token::bloat_bond_treasury_account_id(), joy!(100));
+    let (treasury, bloat_bond) = (Token::module_treasury_account(), joy!(100));
     let (dst, amount) = (account!(2), balance!(100));
 
     let config = GenesisConfigBuilder::new_empty()
@@ -589,7 +589,7 @@ fn multiout_transfer_ok_with_bloat_bond_for_new_destinations_slashed_from_src() 
 #[test]
 fn multiout_transfer_ok_with_bloat_bond_transferred_to_treasury() {
     let token_id = token!(1);
-    let treasury = Token::bloat_bond_treasury_account_id();
+    let treasury = Token::module_treasury_account();
     let (dst1, amount1) = (account!(2), balance!(1));
     let (dst2, amount2) = (account!(3), balance!(1));
     let (src, src_balance, bloat_bond) = (account!(1), amount1 + amount2, joy!(100));
@@ -1044,7 +1044,7 @@ fn issuer_permissioned_token_transfer_ok() {
     let bloat_bond_new = joy!(100);
     let src_balance = amount1 + amount2 + amount3 + amount4;
     let total_supply = src_balance + balance_existing * 2;
-    let treasury = Token::bloat_bond_treasury_account_id();
+    let treasury = Token::module_treasury_account();
 
     let config = GenesisConfigBuilder::new_empty()
         .with_bloat_bond(bloat_bond_new)

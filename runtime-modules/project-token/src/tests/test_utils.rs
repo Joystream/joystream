@@ -8,9 +8,9 @@ use crate::{
     tests::mock::*,
     types::{
         AccountData, AccountDataOf, BlockRate, MerkleProof, MerkleSide, PatronageData, Payment,
-        PaymentWithVesting, TokenAllocation, TokenIssuanceParameters, TokenSaleId, TokenSaleOf,
-        TransferPolicy, TransferPolicyOf, Transfers, Validated, ValidatedPayment, VestingSchedule,
-        VestingSource,
+        PaymentWithVesting, RevenueSplitState, TokenAllocation, TokenIssuanceParameters,
+        TokenSaleId, TokenSaleOf, TransferPolicy, TransferPolicyOf, Transfers, Validated,
+        ValidatedPayment, VestingSchedule, VestingSource,
     },
     GenesisConfig, Trait,
 };
@@ -24,6 +24,10 @@ pub struct TokenDataBuilder {
     pub(crate) patronage_info:
         PatronageData<<Test as crate::Trait>::Balance, <Test as frame_system::Trait>::BlockNumber>,
     pub(crate) symbol: <Test as frame_system::Trait>::Hash,
+    pub(crate) revenue_split: RevenueSplitState<
+        <Test as crate::Trait>::Balance,
+        <Test as frame_system::Trait>::BlockNumber,
+    >,
 }
 
 impl TokenDataBuilder {
@@ -37,6 +41,8 @@ impl TokenDataBuilder {
             patronage_info: self.patronage_info,
             symbol: self.symbol,
             accounts_number: 0u64,
+            revenue_split: self.revenue_split,
+            next_revenue_split_id: 0u32,
         }
     }
 
@@ -84,6 +90,7 @@ impl TokenDataBuilder {
             },
             // hash of "default"
             symbol: <Test as frame_system::Trait>::Hash::default(),
+            revenue_split: RevenueSplitState::Inactive,
         }
     }
 }
