@@ -1,6 +1,6 @@
 use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::Hash;
-use sp_runtime::Perquintill;
+use sp_runtime::{Permill, Perquintill};
 use sp_std::collections::btree_map::BTreeMap;
 
 use crate::{
@@ -104,6 +104,7 @@ impl GenesisConfigBuilder {
             symbol_used: vec![],
             bloat_bond: JoyBalance::zero(),
             min_sale_duration: BlockNumber::zero(),
+            sale_platform_fee: Permill::zero(),
         }
     }
 
@@ -138,6 +139,13 @@ impl GenesisConfigBuilder {
         }
     }
 
+    pub fn with_sale_platform_fee(self, sale_platform_fee: Permill) -> Self {
+        Self {
+            sale_platform_fee,
+            ..self
+        }
+    }
+
     // add account & updates token supply
     pub fn with_account(mut self, member_id: MemberId, account_data: AccountDataOf<Test>) -> Self {
         let id = self.next_token_id.saturating_sub(TokenId::one());
@@ -163,6 +171,7 @@ impl GenesisConfigBuilder {
             symbol_used: self.symbol_used,
             bloat_bond: self.bloat_bond,
             min_sale_duration: self.min_sale_duration,
+            sale_platform_fee: self.sale_platform_fee,
         }
     }
 }

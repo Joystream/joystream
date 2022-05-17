@@ -386,6 +386,7 @@ pub struct PurchaseTokensOnSaleFixtureStateSnapshot {
     buyer_account_exists: bool,
     buyer_usable_joy_balance: JoyBalance,
     treasury_usable_joy_balance: JoyBalance,
+    joy_total_supply: JoyBalance,
 }
 
 impl PurchaseTokensOnSaleFixture {
@@ -449,6 +450,7 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
             treasury_usable_joy_balance: Joy::<Test>::usable_balance(
                 Token::module_treasury_account(),
             ),
+            joy_total_supply: Joy::<Test>::total_issuance(),
         }
     }
 
@@ -473,6 +475,7 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
             self.amount,
             self.member_id
         ));
+        let platform_fee = Token::sale_platform_fee();
         let sale_pre = snapshot_pre.token_data.sale.clone().unwrap();
         // `quantity_left` decreased or `token_data.sale` removed
         let expected_quantity_left = snapshot_pre
@@ -494,11 +497,19 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
             );
         }
         // source account's JOY balance increased
+        let joy_amount = self.amount * sale_pre.unit_price;
+        let fee_amount = platform_fee.mul_floor(joy_amount);
         assert_eq!(
             snapshot_post.source_account_usable_joy_balance,
             snapshot_pre
                 .source_account_usable_joy_balance
-                .saturating_add(self.amount * sale_pre.unit_price)
+                .saturating_add(joy_amount)
+                .saturating_sub(fee_amount)
+        );
+        // Platform fee burned
+        assert_eq!(
+            snapshot_post.joy_total_supply,
+            snapshot_pre.joy_total_supply.saturating_sub(fee_amount)
         );
         // buyer's vesting schedule is correct
         let purchase_vesting_schedule = sale_pre.get_vesting_schedule(self.amount);
@@ -540,7 +551,7 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
                 snapshot_pre
                     .buyer_usable_joy_balance
                     .saturating_sub(Token::bloat_bond())
-                    .saturating_sub(self.amount * sale_pre.unit_price)
+                    .saturating_sub(joy_amount)
             );
             // treasury account balance is increased by bloat_bond
             assert_eq!(
@@ -560,7 +571,7 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
                 snapshot_post.buyer_usable_joy_balance,
                 snapshot_pre
                     .buyer_usable_joy_balance
-                    .saturating_sub(self.amount * sale_pre.unit_price)
+                    .saturating_sub(joy_amount)
             );
         }
     }
