@@ -831,11 +831,11 @@ where
     pub(crate) fn ensure_can_stake<T: Trait>(
         self,
         to_stake: Balance,
-        ongoing_split_id: RevenueSplitId,
+        next_split_id: RevenueSplitId,
     ) -> DispatchResult {
         if let Some(split_info) = self.split_staking_status {
             ensure!(
-                split_info.split_id < ongoing_split_id - 1,
+                split_info.split_id < next_split_id - 1,
                 Error::<T>::UserAlreadyParticipating,
             );
         }
