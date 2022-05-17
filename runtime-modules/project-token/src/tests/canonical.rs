@@ -7,8 +7,8 @@ use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
 use crate::types::{
-    BlockRate, Joy, MerkleProofOf, PatronageData, TokenIssuanceParametersOf, VestingSource,
-    YearlyRate,
+    BlockRate, Joy, MerkleProofOf, PatronageData, RevenueSplitState, TokenIssuanceParametersOf,
+    VestingSource, YearlyRate,
 };
 use crate::{
     account, assert_approx_eq, balance, block, joy, last_event_eq, member, merkle_proof,
@@ -246,7 +246,7 @@ fn join_whitelist_ok_with_bloat_bond_transferred_to_treasury() {
         (member!(1), member!(2), member!(3));
     let commit = merkle_root![user_id, other_user_id];
     let proof = merkle_proof!(0, [user_id, other_user_id]);
-    let (treasury, bloat_bond) = (Token::bloat_bond_treasury_account_id(), joy!(100));
+    let (treasury, bloat_bond) = (Token::module_treasury_account(), joy!(100));
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(commit))
@@ -567,7 +567,7 @@ fn dust_account_ok_with_account_removed() {
 #[test]
 fn dust_account_ok_by_user_with_correct_bloat_bond_refunded() {
     let (token_id, init_supply) = (token!(1), balance!(100));
-    let treasury = Token::bloat_bond_treasury_account_id();
+    let treasury = Token::module_treasury_account();
     let ((owner_id, _), (user_id, user_acc), (other_user_id, other_user_acc)) =
         (member!(1), member!(2), member!(3));
     let (bloat_bond, updated_bloat_bond) = (joy!(100), joy!(150));
@@ -596,7 +596,7 @@ fn dust_account_ok_by_user_with_correct_bloat_bond_refunded() {
 #[test]
 fn dust_account_ok_with_unregistered_member_doing_the_dusting() {
     let (token_id, init_supply) = (token!(1), balance!(100));
-    let treasury = Token::bloat_bond_treasury_account_id();
+    let treasury = Token::module_treasury_account();
     let ((owner_id, _), (other_user_id, _)) = (member!(1), member!(2));
     let user_acc = account!(99999);
     let bloat_bond = joy!(100);
@@ -626,7 +626,7 @@ fn dust_account_ok_with_bloat_bond_slashed_from_treasury() {
     let (token_id, init_supply) = (token!(1), balance!(100));
     let ((owner_id, _), (user_id, user_acc), (other_user_id, _)) =
         (member!(1), member!(2), member!(3));
-    let treasury = Token::bloat_bond_treasury_account_id();
+    let treasury = Token::module_treasury_account();
     let (bloat_bond, updated_bloat_bond) = (joy!(100), joy!(150));
 
     let token_data = TokenDataBuilder::new_empty().build();
@@ -805,7 +805,7 @@ fn issue_token_fails_with_insufficient_balance_for_bloat_bond() {
 fn issue_token_ok_with_bloat_bond_transferred() {
     let token_id = token!(1);
     let ((owner_id, owner_acc), mem1, mem2) = (member!(1), member!(2).0, member!(3).0);
-    let (treasury, bloat_bond) = (Token::bloat_bond_treasury_account_id(), joy!(100));
+    let (treasury, bloat_bond) = (Token::module_treasury_account(), joy!(100));
 
     let params = TokenIssuanceParametersOf::<Test> {
         symbol: Hashing::hash_of(&token_id),
@@ -954,7 +954,9 @@ fn issue_token_ok_with_token_info_added() {
                     rate,
                 },
                 sale: None,
-                next_sale_id: 0
+                next_sale_id: 0,
+                next_revenue_split_id: 0,
+                revenue_split: RevenueSplitState::Inactive,
             }
         );
     })

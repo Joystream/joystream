@@ -1,5 +1,6 @@
 use crate::types::{
-    TokenIssuanceParametersOf, TokenSaleId, TransferPolicyOf, ValidatedTransfersOf,
+    JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId, TransferPolicyOf,
+    ValidatedTransfersOf,
 };
 use common::MembershipTypes;
 use frame_support::decl_event;
@@ -9,9 +10,11 @@ decl_event! {
     pub enum Event<T>
     where
         Balance = <T as crate::Trait>::Balance,
+        JoyBalance = JoyBalanceOf<T>,
         TokenId = <T as crate::Trait>::TokenId,
         AccountId = <T as frame_system::Trait>::AccountId,
         MemberId = <T as MembershipTypes>::MemberId,
+        BlockNumber = <T as frame_system::Trait>::BlockNumber,
         TransferPolicy = TransferPolicyOf<T>,
         TokenIssuanceParameters = TokenIssuanceParametersOf<T>,
         ValidatedTransfers = ValidatedTransfersOf<T>,
@@ -46,6 +49,37 @@ decl_event! {
         /// - credit amount
         /// - member id
         PatronageCreditClaimed(TokenId, Balance, MemberId),
+
+        /// Revenue Split issued
+        /// Params:
+        /// - token identifier
+        /// - starting block for the split
+        /// - duration of the split
+        /// - JOY allocated for the split
+        RevenueSplitIssued(TokenId, BlockNumber, BlockNumber, JoyBalance),
+
+        /// Revenue Split finalized
+        /// Params:
+        /// - token identifier
+        /// - recovery account for the leftover funds
+        /// - leftover funds
+        RevenueSplitFinalized(TokenId, AccountId, JoyBalance),
+
+        /// User partipated in a revenue split
+        /// Params:
+        /// - token identifier
+        /// - participant's member id
+        /// - user allocated staked balance
+        /// - dividend amount (JOY) granted
+        /// - revenue split identifier
+        UserParticipatedInSplit(TokenId, MemberId, Balance, JoyBalance, RevenueSplitId),
+
+        /// User left revenue split
+        /// Params:
+        /// - token identifier
+        /// - ex-participant's member id
+        /// - amount unstaked
+        RevenueSplitLeft(TokenId, MemberId, Balance),
 
         /// Member joined whitelist
         /// Params:

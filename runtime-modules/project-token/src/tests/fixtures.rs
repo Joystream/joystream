@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::tests::mock::*;
-use crate::types::Joy;
+use crate::types::{Joy, Payment, Transfers, TransfersOf};
 use crate::Trait;
 use crate::{
     last_event_eq, member, yearly_rate, AccountInfoByTokenAndMember, RawEvent, YearlyRate,
@@ -10,7 +10,9 @@ use crate::{traits::PalletToken, types::VestingSource, SymbolsUsed};
 use common::membership::MembershipInfoProvider;
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::{StorageDoubleMap, StorageMap};
+use sp_arithmetic::traits::One;
 use sp_runtime::{traits::Hash, DispatchError, Permill};
+
 use sp_std::iter::FromIterator;
 use storage::{BagId, DataObjectCreationParameters, StaticBagId};
 
@@ -445,7 +447,7 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
                 .map(|v| v.clone()),
             buyer_usable_joy_balance: Joy::<Test>::usable_balance(self.sender),
             treasury_usable_joy_balance: Joy::<Test>::usable_balance(
-                Token::bloat_bond_treasury_account_id(),
+                Token::module_treasury_account(),
             ),
         }
     }
@@ -634,5 +636,264 @@ impl Fixture<RecoverUnsoldTokensFixtureStateSnapshot> for RecoverUnsoldTokensFix
                 .amount
                 .saturating_add(recovered_amount),
         )
+    }
+}
+
+/// Issue Revenue Split Fixture
+pub struct IssueRevenueSplitFixture {
+    token_id: TokenId,
+    start: Option<BlockNumber>,
+    duration: BlockNumber,
+    allocation_source: AccountId,
+    allocation: JoyBalance,
+}
+
+impl IssueRevenueSplitFixture {
+    pub fn default() -> Self {
+        Self {
+            token_id: TokenId::one(),
+            start: None,
+            duration: BlockNumber::from(DEFAULT_SPLIT_DURATION),
+            allocation_source: member!(1).1,
+            allocation: Balance::from(DEFAULT_SPLIT_ALLOCATION),
+        }
+    }
+
+    pub fn with_starting_block(self, start: u64) -> Self {
+        Self {
+            start: Some(start.into()),
+            ..self
+        }
+    }
+
+    pub fn with_duration(self, duration: u64) -> Self {
+        Self {
+            duration: duration.into(),
+            ..self
+        }
+    }
+
+    pub fn with_allocation(self, allocation: u128) -> Self {
+        Self {
+            allocation: allocation.into(),
+            ..self
+        }
+    }
+
+    pub fn with_allocation_source(self, account: u64) -> Self {
+        Self {
+            allocation_source: account.into(),
+            ..self
+        }
+    }
+
+    pub fn execute_call(&self) -> DispatchResult {
+        let state_pre = sp_io::storage::root();
+        let result = Token::issue_revenue_split(
+            self.token_id,
+            self.start,
+            self.duration,
+            self.allocation_source,
+            self.allocation,
+        );
+        let state_post = sp_io::storage::root();
+
+        // no-op in case of error
+        if result.is_err() {
+            assert_eq!(state_pre, state_post)
+        }
+
+        result
+    }
+}
+
+/// Finalize Revenue Split
+pub struct FinalizeRevenueSplitFixture {
+    token_id: TokenId,
+    account_id: AccountId,
+}
+
+impl FinalizeRevenueSplitFixture {
+    pub fn default() -> Self {
+        Self {
+            token_id: TokenId::one(),
+            account_id: member!(1).1,
+        }
+    }
+
+    pub fn with_token_id(self, id: u64) -> Self {
+        Self {
+            token_id: id.into(),
+            ..self
+        }
+    }
+
+    pub fn execute_call(&self) -> DispatchResult {
+        let state_pre = sp_io::storage::root();
+        let result = Token::finalize_revenue_split(self.token_id, self.account_id);
+        let state_post = sp_io::storage::root();
+
+        // no-op in case of error
+        if result.is_err() {
+            assert_eq!(state_pre, state_post)
+        }
+
+        result
+    }
+}
+
+pub struct ParticipateInSplitFixture {
+    sender: AccountId,
+    token_id: TokenId,
+    member_id: MemberId,
+    amount: Balance,
+}
+
+impl ParticipateInSplitFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: member!(2).1,
+            token_id: TokenId::one(),
+            member_id: member!(2).0,
+            amount: DEFAULT_SPLIT_PARTICIPATION.into(),
+        }
+    }
+
+    pub fn with_amount(self, amount: u128) -> Self {
+        Self {
+            amount: amount.into(),
+            ..self
+        }
+    }
+
+    pub fn with_token_id(self, token_id: u64) -> Self {
+        Self {
+            token_id: token_id.into(),
+            ..self
+        }
+    }
+
+    pub fn with_sender(self, account_id: u64) -> Self {
+        Self {
+            sender: account_id.into(),
+            ..self
+        }
+    }
+
+    pub fn with_member_id(self, member_id: u64) -> Self {
+        Self { member_id, ..self }
+    }
+
+    pub fn execute_call(&self) -> DispatchResult {
+        let state_pre = sp_io::storage::root();
+        let result = Token::participate_in_split(
+            Origin::signed(self.sender),
+            self.token_id,
+            self.member_id,
+            self.amount,
+        );
+        let state_post = sp_io::storage::root();
+
+        // no-op in case of error
+        if result.is_err() {
+            assert_eq!(state_pre, state_post)
+        }
+
+        result
+    }
+}
+
+pub struct TransferFixture {
+    sender: AccountId,
+    token_id: TokenId,
+    src_member_id: MemberId,
+    outputs: TransfersOf<Test>,
+}
+
+impl TransferFixture {
+    pub fn default() -> Self {
+        let outputs = Transfers::<_, _>(
+            vec![(
+                member!(2).0,
+                Payment::<Balance> {
+                    remark: "remark".as_bytes().to_vec(),
+                    amount: DEFAULT_SPLIT_PARTICIPATION,
+                },
+            )]
+            .into_iter()
+            .collect(),
+        );
+        Self {
+            sender: member!(1).1,
+            token_id: 1u64.into(),
+            src_member_id: member!(1).0,
+            outputs,
+        }
+    }
+
+    pub fn execute_call(&self) -> DispatchResult {
+        let state_pre = sp_io::storage::root();
+        let result = Token::transfer(
+            Origin::signed(self.sender),
+            self.src_member_id,
+            self.token_id,
+            self.outputs.clone(),
+        );
+        let state_post = sp_io::storage::root();
+
+        // no-op in case of error
+        if result.is_err() {
+            assert_eq!(state_pre, state_post)
+        }
+
+        result
+    }
+}
+
+pub struct ExitRevenueSplitFixture {
+    sender: AccountId,
+    token_id: TokenId,
+    member_id: MemberId,
+}
+
+impl ExitRevenueSplitFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: member!(2).1,
+            token_id: TokenId::one(),
+            member_id: member!(2).0,
+        }
+    }
+
+    pub fn with_account(self, account_id: u64) -> Self {
+        Self {
+            sender: account_id.into(),
+            ..self
+        }
+    }
+
+    pub fn with_token_id(self, token_id: u64) -> Self {
+        Self {
+            token_id: token_id.into(),
+            ..self
+        }
+    }
+
+    pub fn with_member_id(self, member_id: u64) -> Self {
+        Self { member_id, ..self }
+    }
+
+    pub fn execute_call(&self) -> DispatchResult {
+        let state_pre = sp_io::storage::root();
+        let result =
+            Token::exit_revenue_split(Origin::signed(self.sender), self.token_id, self.member_id);
+        let state_post = sp_io::storage::root();
+
+        // no-op in case of error
+        if result.is_err() {
+            assert_eq!(state_pre, state_post)
+        }
+
+        result
     }
 }
