@@ -181,7 +181,7 @@ fn accept_incoming_offer_no_incoming_offers() {
 }
 
 #[test]
-fn accept_incoming_offer_ok_with_reward_account_is_not_set_succeeds_with_member_owner_channel() {
+fn accept_incoming_offer_ok_with_reward_account_not_set_succeeds_with_member_owner_channel() {
     let video_id = 1u64;
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
