@@ -102,10 +102,10 @@ decl_error! {
         /// Amount of tokens to purchase on sale cannot be zero
         SalePurchaseAmountIsZero,
 
-        // ------Revenue Split Errors ------------------------------------------------------
+        // ------ Revenue Split Errors ------------------------------------------------------
 
         /// Specified revenue split starting block is in the past
-        RevenueSplitStartingBlockInThePast,
+        RevenueSplitTimeToStartTooShort,
 
         /// Revenue Split duration is too short
         RevenueSplitDurationTooShort,
@@ -133,5 +133,9 @@ decl_error! {
 
         /// Attempt to participate in a split with zero token to stake
         CannotParticipateInSplitWithZeroAmount,
+
+        /// Attempt to issue in a split with zero allocation amount
+        CannotIssueSplitWithZeroAllocationAmount,
+
     }
 }

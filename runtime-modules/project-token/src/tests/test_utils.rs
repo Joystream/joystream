@@ -102,8 +102,10 @@ impl GenesisConfigBuilder {
             account_info_by_token_and_member: vec![],
             next_token_id: TokenId::one(),
             symbol_used: vec![],
-            bloat_bond: JoyBalance::zero(),
             min_sale_duration: BlockNumber::zero(),
+            bloat_bond: DEFAULT_BLOAT_BOND.into(),
+            min_revenue_split_duration: MIN_REVENUE_SPLIT_DURATION.into(),
+            min_revenue_split_time_to_start: MIN_REVENUE_SPLIT_TIME_TO_START.into(),
             sale_platform_fee: Permill::zero(),
         }
     }
@@ -171,6 +173,8 @@ impl GenesisConfigBuilder {
             symbol_used: self.symbol_used,
             bloat_bond: self.bloat_bond,
             min_sale_duration: self.min_sale_duration,
+            min_revenue_split_duration: self.min_revenue_split_duration,
+            min_revenue_split_time_to_start: self.min_revenue_split_time_to_start,
             sale_platform_fee: self.sale_platform_fee,
         }
     }

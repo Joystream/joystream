@@ -186,23 +186,8 @@ pub struct Timeline<BlockNumber> {
 }
 
 impl<BlockNumber: Copy + Saturating + PartialOrd> Timeline<BlockNumber> {
-    pub fn try_from_params<T: Trait>(
-        start: Option<BlockNumber>,
-        duration: BlockNumber,
-        current_block: BlockNumber,
-    ) -> Result<Self, DispatchError> {
-        let starting_block = start.map_or(Ok(current_block), |sb| -> Result<_, DispatchError> {
-            ensure!(
-                current_block <= sb,
-                Error::<T>::RevenueSplitStartingBlockInThePast
-            );
-            Ok(sb)
-        })?;
-
-        Ok(Timeline::<_> {
-            start: starting_block,
-            duration,
-        })
+    pub fn from_params(start: BlockNumber, duration: BlockNumber) -> Self {
+        Timeline::<_> { start, duration }
     }
 
     pub fn end(&self) -> BlockNumber {
@@ -841,11 +826,17 @@ where
     }
 
     /// Determine Wether user can stake `amount` of tokens
-    pub(crate) fn ensure_can_stake<T: Trait>(self, to_stake: Balance) -> DispatchResult {
-        ensure!(
-            self.split_staking_status.is_none(),
-            Error::<T>::UserAlreadyParticipating,
-        );
+    pub(crate) fn ensure_can_stake<T: Trait>(
+        self,
+        to_stake: Balance,
+        next_split_id: RevenueSplitId,
+    ) -> DispatchResult {
+        if let Some(split_info) = self.split_staking_status {
+            ensure!(
+                split_info.split_id < next_split_id - 1,
+                Error::<T>::UserAlreadyParticipating,
+            );
+        }
 
         ensure!(
             self.amount >= to_stake,

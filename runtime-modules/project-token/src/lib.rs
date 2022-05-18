@@ -117,6 +117,11 @@ decl_storage! {
         /// Minimum duration of a token sale
         pub MinSaleDuration get(fn min_sale_duration) config(): T::BlockNumber;
 
+        /// Minimum revenue split duration constraint
+        pub MinRevenueSplitDuration get(fn min_revenue_split_duration) config(): T::BlockNumber;
+        /// Minimum revenue split time to start constraint
+        pub MinRevenueSplitTimeToStart get(fn min_revenue_split_time_to_start) config(): T::BlockNumber;
+
         /// Platform fee (percentage) charged on top of each sale purchase (in JOY) and burned
         pub SalePlatformFee get(fn sale_platform_fee) config(): Permill;
     }
@@ -514,7 +519,7 @@ decl_module! {
         /// - `account` must exist  for `(token_id, member_id)`
         /// - `token.split_status` must be active AND THEN current_block in
         ///    [split.start, split.start + split_duration)
-        /// - `account.staking_status.is_none()`
+        /// - `account.staking_status.is_none()` OR `account.staking_status.split_id` refers to a past split
         /// - `account.amount` >= `amount`
         /// - let `dividend = split_allocation * account.staked_amount / token.supply``
         ///    then `treasury` must be able to transfer `dividend` amount of JOY.
@@ -552,7 +557,7 @@ decl_module! {
 
             let account_info = Self::ensure_account_data_exists(token_id, &member_id)?;
 
-            account_info.ensure_can_stake::<T>(amount)?;
+            account_info.ensure_can_stake::<T>(amount, token_info.next_revenue_split_id)?;
 
             // it should not really be possible to have supply == 0 with staked amount > 0
             debug_assert!(!token_info.total_supply.is_zero());
@@ -969,17 +974,20 @@ impl<T: Trait>
     /// Issue a revenue split for the token
     /// Preconditions:
     /// - `token` must exist for `token_id`
+    /// - `allocation_amount > 0`
     /// - `token` revenue split status must be inactive
-    /// - `start` >= System::block_number()
-    /// - `duration` must be >= `T::MinRevenueSplitDuration`
+    /// - if Some(start) specified: `start - System::block_number() >= MinRevenueSplitTimeToStart`
+    /// - `duration` must be >= `MinRevenueSplitDuration`
     /// - specified `reserve_source` must be able to *transfer* `allocation` amount of JOY
     ///
     /// PostConditions
     /// - `allocation` transferred from `reserve_source` to `treasury_account`
-    /// - `token.revenue_split` set to `Active(..)` with timeline [start, start + duration)
-    ///    and `token.revenue_split.allocation = allocation`
+    /// - `token.revenue_split` set to `Active(..)`
+    /// -  `token.revenue_split.timeline` is [start, start + duration), with `start` one of:
+    ///    - `current_block + MinRevenuSplitTimeToStart`
+    ///    - specfied `Some(start)``
+    /// - `token.revenue_split.allocation = allocation`
     /// - `token.latest_split` incremented by 1
-    /// no-op if allocation is 0
     fn issue_revenue_split(
         token_id: T::TokenId,
         start: Option<T::BlockNumber>,
@@ -987,21 +995,33 @@ impl<T: Trait>
         allocation_source: T::AccountId,
         allocation_amount: JoyBalanceOf<T>,
     ) -> DispatchResult {
-        if allocation_amount.is_zero() {
-            return Ok(());
-        }
+        ensure!(
+            !allocation_amount.is_zero(),
+            Error::<T>::CannotIssueSplitWithZeroAllocationAmount,
+        );
 
         let token_info = Self::ensure_token_exists(token_id)?;
 
         token_info.revenue_split.ensure_inactive::<T>()?;
 
         ensure!(
-            duration >= T::MinRevenueSplitDuration::get(),
+            duration >= Self::min_revenue_split_duration(),
             Error::<T>::RevenueSplitDurationTooShort
         );
 
         let current_block = Self::current_block();
-        let timeline = TimelineOf::<T>::try_from_params::<T>(start, duration, current_block)?;
+        if let Some(starting_block) = start {
+            ensure!(
+                starting_block.saturating_sub(current_block)
+                    >= Self::min_revenue_split_time_to_start(),
+                Error::<T>::RevenueSplitTimeToStartTooShort,
+            );
+        }
+
+        let revenue_split_start = start.unwrap_or_else(|| {
+            current_block.saturating_add(Self::min_revenue_split_time_to_start())
+        });
+        let timeline = TimelineOf::<T>::from_params(revenue_split_start, duration);
 
         let treasury_account = Self::module_treasury_account();
         Self::ensure_can_transfer_joy(
@@ -1020,7 +1040,7 @@ impl<T: Trait>
 
         Self::deposit_event(RawEvent::RevenueSplitIssued(
             token_id,
-            start.unwrap_or(current_block),
+            revenue_split_start,
             duration,
             allocation_amount,
         ));
