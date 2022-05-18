@@ -382,11 +382,13 @@ impl<T: Trait> Module<T> {
             .with_member_owner(winner_id)
     }
 
-    /// Channel reward account is
-    /// - Some -> use that as reward account
-    /// - None -> then if channel owner is:
-    ///   - Member -> use member controller account
-    ///   - CuratorGroup -> burn
+    /// NFT owned by:
+    /// - Member: member controller account is used
+    /// - Channel: then if reward account is:
+    ///    - `Some(acc)` -> use `acc` as reward account
+    ///    - `None` -> then if channel owner is:
+    ///      - `Member` -> use member controller account
+    ///      - `CuratorGroup` -> Error
     pub(crate) fn ensure_owner_account_id(
         channel_id: T::ChannelId,
         nft: &Nft<T>,
