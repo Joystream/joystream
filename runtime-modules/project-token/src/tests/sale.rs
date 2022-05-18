@@ -722,6 +722,40 @@ fn succesful_sale_purchases_equal_to_member_cap_on_subsequent_sales() {
     })
 }
 
+#[test]
+fn succesful_sale_purchases_with_platform_fee() {
+    let sale_platform_fee = Permill::from_percent(30);
+    let config = GenesisConfigBuilder::new_empty()
+        .with_sale_platform_fee(sale_platform_fee)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default()
+            .with_unit_price(1)
+            .call_and_assert(Ok(()));
+        increase_account_balance(
+            &member!(2).1,
+            <Test as crate::Trait>::JoyExistentialDeposit::get() + 100,
+        );
+        PurchaseTokensOnSaleFixture::default()
+            .with_amount(99)
+            .call_and_assert(Ok(()));
+        // 99 tokens bought for 1 JOY each - expect `99 - floor(99 * 30%) = 99 - 29 = 70` JOY transferred
+        assert_eq!(Joy::<Test>::usable_balance(member!(1).1), 70);
+        PurchaseTokensOnSaleFixture::default()
+            .with_amount(1)
+            .call_and_assert(Ok(()));
+        // 1 token bought for 1 JOY - expect `1 - floor(1 * 30%) = 1 - 0 = 1` JOY transferred
+        assert_eq!(Joy::<Test>::usable_balance(member!(1).1), 71);
+        // expect "empty" buyer JOY balance
+        assert_eq!(
+            Joy::<Test>::usable_balance(member!(2).1),
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
+        )
+    })
+}
+
 /////////////////////////////////////////////////////////
 //////////////// RECOVER UNSOLD TOKENS ////////////////
 /////////////////////////////////////////////////////////
