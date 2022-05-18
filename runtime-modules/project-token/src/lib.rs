@@ -119,8 +119,8 @@ decl_storage! {
 
         /// Minimum revenue split duration constraint
         pub MinRevenueSplitDuration get(fn min_revenue_split_duration) config(): T::BlockNumber;
-        /// Minimum revenue split forewarning constraint
-        pub MinRevenueSplitForewarning get(fn min_revenue_split_forewarning) config(): T::BlockNumber
+        /// Minimum revenue split time to start constraint
+        pub MinRevenueSplitTimeToStart get(fn min_revenue_split_time_to_start) config(): T::BlockNumber
     }
 
     add_extra_genesis {
@@ -933,18 +933,20 @@ impl<T: Trait>
     /// Issue a revenue split for the token
     /// Preconditions:
     /// - `token` must exist for `token_id`
+    /// - `allocation_amount > 0`
     /// - `token` revenue split status must be inactive
-    /// - if Some(start) specified: `start` - System::block_number() >= `MinRevenueSplitForewarning`
+    /// - if Some(start) specified: `start - System::block_number() >= MinRevenueSplitTimeToStart`
     /// - `duration` must be >= `MinRevenueSplitDuration`
     /// - specified `reserve_source` must be able to *transfer* `allocation` amount of JOY
     ///
     /// PostConditions
     /// - `allocation` transferred from `reserve_source` to `treasury_account`
-    /// - `token.revenue_split` set to `Active(..)` with timeline [start, start + duration)
-    ///    and `token.revenue_split.allocation = allocation`. `start` is either the starting
-    ///    block specified or `current_block + min_revenue_split_forewarning`
+    /// - `token.revenue_split` set to `Active(..)`
+    /// -  `token.revenue_split.timeline` is [start, start + duration), with `start` one of:
+    ///    - `current_block + MinRevenuSplitTimeToStart`
+    ///    - specfied `Some(start)``
+    /// - `token.revenue_split.allocation = allocation`
     /// - `token.latest_split` incremented by 1
-    /// no-op if allocation is 0
     fn issue_revenue_split(
         token_id: T::TokenId,
         start: Option<T::BlockNumber>,
@@ -970,13 +972,14 @@ impl<T: Trait>
         if let Some(starting_block) = start {
             ensure!(
                 starting_block.saturating_sub(current_block)
-                    >= Self::min_revenue_split_forewarning(),
-                Error::<T>::RevenueSplitStartForewarningTooShort,
+                    >= Self::min_revenue_split_time_to_start(),
+                Error::<T>::RevenueSplitTimeToStartTooShort,
             );
         }
 
-        let revenue_split_start = start
-            .unwrap_or_else(|| current_block.saturating_add(Self::min_revenue_split_forewarning()));
+        let revenue_split_start = start.unwrap_or_else(|| {
+            current_block.saturating_add(Self::min_revenue_split_time_to_start())
+        });
         let timeline = TimelineOf::<T>::from_params(revenue_split_start, duration);
 
         Self::ensure_can_transfer_joy(&allocation_source, allocation_amount)?;

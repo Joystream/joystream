@@ -480,7 +480,7 @@ pub struct GenesisConfigBuilder {
     pub(crate) symbol_used: Vec<(HashOut, ())>,
     pub(crate) min_sale_duration: BlockNumber,
     pub(crate) min_revenue_split_duration: BlockNumber,
-    pub(crate) min_revenue_split_forewarning: BlockNumber,
+    pub(crate) min_revenue_split_time_to_start: BlockNumber,
 }
 
 /// test externalities + initial balances allocation
@@ -600,7 +600,7 @@ pub type Balances = balances::Module<Test>;
 pub const DEFAULT_BLOAT_BOND: u128 = 0;
 pub const DEFAULT_INITIAL_ISSUANCE: u128 = 1_000_000;
 pub const MIN_REVENUE_SPLIT_DURATION: u64 = 10;
-pub const MIN_REVENUE_SPLIT_FOREWARNING: u64 = 10;
+pub const MIN_REVENUE_SPLIT_TIME_TO_START: u64 = 10;
 
 // ------ Sale Constants ---------------------
 pub const DEFAULT_SALE_UNIT_PRICE: u128 = 10;

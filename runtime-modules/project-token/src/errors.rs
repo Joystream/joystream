@@ -102,7 +102,7 @@ decl_error! {
         // ------ Revenue Split Errors ------------------------------------------------------
 
         /// Specified revenue split starting block is in the past
-        RevenueSplitStartForewarningTooShort,
+        RevenueSplitTimeToStartTooShort,
 
         /// Revenue Split duration is too short
         RevenueSplitDurationTooShort,

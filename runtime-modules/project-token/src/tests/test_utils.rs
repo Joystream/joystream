@@ -105,7 +105,7 @@ impl GenesisConfigBuilder {
             min_sale_duration: BlockNumber::zero(),
             bloat_bond: DEFAULT_BLOAT_BOND.into(),
             min_revenue_split_duration: MIN_REVENUE_SPLIT_DURATION.into(),
-            min_revenue_split_forewarning: MIN_REVENUE_SPLIT_FOREWARNING.into(),
+            min_revenue_split_time_to_start: MIN_REVENUE_SPLIT_TIME_TO_START.into(),
         }
     }
 
@@ -166,7 +166,7 @@ impl GenesisConfigBuilder {
             bloat_bond: self.bloat_bond,
             min_sale_duration: self.min_sale_duration,
             min_revenue_split_duration: self.min_revenue_split_duration,
-            min_revenue_split_forewarning: self.min_revenue_split_forewarning,
+            min_revenue_split_time_to_start: self.min_revenue_split_time_to_start,
         }
     }
 }
