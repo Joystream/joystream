@@ -382,15 +382,29 @@ impl<T: Trait> Module<T> {
             .with_member_owner(winner_id)
     }
 
+    /// Channel reward account is
+    /// - Some -> use that as reward account
+    /// - None -> then if channel owner is:
+    ///   - Member -> use member controller account
+    ///   - CuratorGroup -> burn
     pub(crate) fn ensure_owner_account_id(
         channel_id: T::ChannelId,
         nft: &Nft<T>,
     ) -> Result<T::AccountId, DispatchError> {
         match nft.owner {
             NftOwner::Member(member_id) => T::MemberAuthenticator::controller_account_id(member_id),
-            NftOwner::ChannelOwner => Self::channel_by_id(channel_id)
-                .reward_account
-                .ok_or_else(|| Error::<T>::RewardAccountIsNotSet.into()),
+            NftOwner::ChannelOwner => {
+                let channel = Self::ensure_channel_exists(&channel_id)?;
+                channel.reward_account.as_ref().map_or_else(
+                    || match channel.owner {
+                        ChannelOwner::Member(member_id) => {
+                            T::MemberAuthenticator::controller_account_id(member_id)
+                        }
+                        _ => Err(Error::<T>::RewardAccountIsNotSet.into()),
+                    },
+                    |ra| Ok(ra.to_owned()),
+                )
+            }
         }
     }
 
