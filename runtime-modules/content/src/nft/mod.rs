@@ -368,7 +368,7 @@ impl<T: Trait> Module<T> {
         winner_id: T::MemberId,
         amount: BalanceOf<T>,
     ) -> Nft<T> {
-        let account_deposit_into = Self::ensure_owner_account_id(in_channel, &nft).ok();
+        let account_deposit_into = Self::ensure_nft_owner_account_id(in_channel, &nft).ok();
         let account_withdraw_from = ContentTreasury::<T>::module_account_id();
 
         Self::complete_payment(
@@ -389,7 +389,7 @@ impl<T: Trait> Module<T> {
     ///    - `None` -> then if channel owner is:
     ///      - `Member` -> use member controller account
     ///      - `CuratorGroup` -> Error
-    pub(crate) fn ensure_owner_account_id(
+    pub(crate) fn ensure_nft_owner_account_id(
         channel_id: T::ChannelId,
         nft: &Nft<T>,
     ) -> Result<T::AccountId, DispatchError> {
@@ -397,15 +397,7 @@ impl<T: Trait> Module<T> {
             NftOwner::Member(member_id) => T::MemberAuthenticator::controller_account_id(member_id),
             NftOwner::ChannelOwner => {
                 let channel = Self::ensure_channel_exists(&channel_id)?;
-                channel.reward_account.as_ref().map_or_else(
-                    || match channel.owner {
-                        ChannelOwner::Member(member_id) => {
-                            T::MemberAuthenticator::controller_account_id(member_id)
-                        }
-                        _ => Err(Error::<T>::RewardAccountIsNotSet.into()),
-                    },
-                    |ra| Ok(ra.to_owned()),
-                )
+                Self::ensure_reward_account(&channel)
             }
         }
     }

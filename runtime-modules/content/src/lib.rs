@@ -2046,7 +2046,7 @@ decl_module! {
             Self::ensure_new_pending_offer_available_to_proceed(&nft, &receiver_account_id)?;
 
             // account_id where the nft offer price is deposited
-            let nft_owner_account = Self::ensure_owner_account_id(video.in_channel, &nft).ok();
+            let nft_owner_account = Self::ensure_nft_owner_account_id(video.in_channel, &nft).ok();
             //
             // == MUTATION SAFE ==
             //
@@ -2122,7 +2122,7 @@ decl_module! {
             Self::ensure_can_buy_now(&nft, &participant_account_id, price_commit)?;
 
             // seller account
-            let old_nft_owner_account_id = Self::ensure_owner_account_id(video.in_channel, &nft).ok();
+            let old_nft_owner_account_id = Self::ensure_nft_owner_account_id(video.in_channel, &nft).ok();
 
             //
             // == MUTATION SAFE ==
