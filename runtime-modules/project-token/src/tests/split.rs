@@ -130,6 +130,30 @@ fn issue_split_ok_with_event_deposited() {
 }
 
 #[test]
+fn issue_split_ok_with_user_provided_start_block() {
+    build_default_test_externalities_with_balances(vec![(
+        member!(1).1,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+
+        IssueRevenueSplitFixture::default()
+            .with_starting_block(2 + MIN_REVENUE_SPLIT_FOREWARNING)
+            .execute_call()
+            .unwrap();
+
+        // use event to assert that correct starting block is set
+        last_event_eq!(RawEvent::RevenueSplitIssued(
+            1u64,
+            2 + MIN_REVENUE_SPLIT_FOREWARNING,
+            DEFAULT_SPLIT_DURATION,
+            DEFAULT_SPLIT_ALLOCATION,
+        ));
+    })
+}
+
+#[test]
 fn issue_split_fails_with_allocation_zero() {
     build_default_test_externalities_with_balances(vec![(
         member!(1).1,
@@ -540,7 +564,7 @@ fn participate_in_split_fails_with_zero_amount() {
 #[test]
 fn participate_in_split_ok_with_user_participating_to_a_previous_ended_split() {
     build_default_test_externalities_with_balances(vec![(
-        DEFAULT_ACCOUNT_ID,
+        member!(1).1,
         2 * DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get() + DEFAULT_BLOAT_BOND,
     )])
     .execute_with(|| {
@@ -560,7 +584,7 @@ fn participate_in_split_ok_with_user_participating_to_a_previous_ended_split() {
 
         // verify that amount is staked
         assert!(matches!(
-            Token::account_info_by_token_and_account(1u64, OTHER_ACCOUNT_ID),
+            Token::account_info_by_token_and_member(1u64, member!(2).0),
             AccountDataOf::<Test> {
                 amount: DEFAULT_SPLIT_PARTICIPATION,
                 split_staking_status: Some(StakingStatus {
@@ -771,6 +795,7 @@ fn exit_revenue_split_fails_with_invalid_member_controller() {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(MIN_REVENUE_SPLIT_FOREWARNING);
         ParticipateInSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
         FinalizeRevenueSplitFixture::default()

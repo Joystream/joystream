@@ -955,7 +955,7 @@ impl<T: Trait>
         ensure!(
             !allocation_amount.is_zero(),
             Error::<T>::CannotIssueSplitWithZeroAllocationAmount,
-        }
+        );
 
         let token_info = Self::ensure_token_exists(token_id)?;
 
