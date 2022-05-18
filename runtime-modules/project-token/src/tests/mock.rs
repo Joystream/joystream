@@ -14,7 +14,7 @@ use sp_arithmetic::Perbill;
 use sp_io::TestExternalities;
 use sp_runtime::testing::{Header, H256};
 use sp_runtime::traits::{BlakeTwo256, Convert, Hash, IdentityLookup};
-use sp_runtime::{DispatchError, DispatchResult, ModuleId};
+use sp_runtime::{DispatchError, DispatchResult, ModuleId, Permill};
 use staking_handler::LockComparator;
 
 // crate import
@@ -481,6 +481,7 @@ pub struct GenesisConfigBuilder {
     pub(crate) min_sale_duration: BlockNumber,
     pub(crate) min_revenue_split_duration: BlockNumber,
     pub(crate) min_revenue_split_time_to_start: BlockNumber,
+    pub(crate) sale_platform_fee: Permill,
 }
 
 /// test externalities + initial balances allocation

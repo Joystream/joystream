@@ -1,6 +1,6 @@
 use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::Hash;
-use sp_runtime::Perquintill;
+use sp_runtime::{Permill, Perquintill};
 use sp_std::collections::btree_map::BTreeMap;
 
 use crate::{
@@ -106,6 +106,7 @@ impl GenesisConfigBuilder {
             bloat_bond: DEFAULT_BLOAT_BOND.into(),
             min_revenue_split_duration: MIN_REVENUE_SPLIT_DURATION.into(),
             min_revenue_split_time_to_start: MIN_REVENUE_SPLIT_TIME_TO_START.into(),
+            sale_platform_fee: Permill::zero(),
         }
     }
 
@@ -140,6 +141,13 @@ impl GenesisConfigBuilder {
         }
     }
 
+    pub fn with_sale_platform_fee(self, sale_platform_fee: Permill) -> Self {
+        Self {
+            sale_platform_fee,
+            ..self
+        }
+    }
+
     // add account & updates token supply
     pub fn with_account(mut self, member_id: MemberId, account_data: AccountDataOf<Test>) -> Self {
         let id = self.next_token_id.saturating_sub(TokenId::one());
@@ -167,6 +175,7 @@ impl GenesisConfigBuilder {
             min_sale_duration: self.min_sale_duration,
             min_revenue_split_duration: self.min_revenue_split_duration,
             min_revenue_split_time_to_start: self.min_revenue_split_time_to_start,
+            sale_platform_fee: self.sale_platform_fee,
         }
     }
 }

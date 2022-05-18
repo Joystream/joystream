@@ -31,6 +31,9 @@ decl_error! {
         /// Insufficient JOY Balance to cover the transaction costs
         InsufficientJoyBalance,
 
+        /// The amount of JOY to be transferred is not enough to keep the destination account alive
+        JoyTransferSubjectToDusting,
+
         /// Attempt to remove non owned account under permissioned mode
         AttemptToRemoveNonOwnedAccountUnderPermissionedMode,
 
