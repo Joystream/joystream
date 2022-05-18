@@ -943,8 +943,8 @@ impl<T: Trait>
     /// - `allocation` transferred from `reserve_source` to `treasury_account`
     /// - `token.revenue_split` set to `Active(..)`
     /// -  `token.revenue_split.timeline` is [start, start + duration), with `start` one of:
-    ///    - `current_block + MinRevenuSplitTimeToStart`
-    ///    - specfied `Some(start)``
+    ///    + `current_block + MinRevenuSplitTimeToStart`
+    ///    + specfied `Some(start)``
     /// - `token.revenue_split.allocation = allocation`
     /// - `token.latest_split` incremented by 1
     fn issue_revenue_split(
