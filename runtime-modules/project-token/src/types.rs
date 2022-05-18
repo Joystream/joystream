@@ -11,6 +11,7 @@ use sp_runtime::{
 };
 use sp_std::{cmp::max, collections::btree_map::BTreeMap, convert::TryInto, iter::Sum};
 
+use common::MembershipTypes;
 use storage::{BagId, DataObjectCreationParameters};
 
 // crate imports
@@ -369,9 +370,9 @@ pub struct WhitelistParams<Hash, SingleDataObjectUploadParams> {
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct TokenSaleParams<JoyBalance, Balance, BlockNumber, VestingScheduleParams, AccountId> {
+pub struct TokenSaleParams<JoyBalance, Balance, BlockNumber, VestingScheduleParams, MemberId> {
     /// Account that acts as the source of the tokens on sale
-    pub tokens_source: AccountId,
+    pub tokens_source: MemberId,
     /// Token's unit price in JOY
     pub unit_price: JoyBalance,
     /// Number of tokens on sale
@@ -389,13 +390,13 @@ pub struct TokenSaleParams<JoyBalance, Balance, BlockNumber, VestingSchedulePara
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default)]
-pub struct TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams, AccountId> {
+pub struct TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams, MemberId> {
     /// Token's unit price in JOY
     pub unit_price: JoyBalance,
     /// Number of tokens still on sale (if any)
     pub quantity_left: Balance,
-    /// Account that acts as the source of the tokens on sale
-    pub tokens_source: AccountId,
+    /// Account (member) that acts as the source of the tokens on sale
+    pub tokens_source: MemberId,
     /// Block at which the sale started / will start
     pub start_block: BlockNumber,
     /// Sale duration (in blocks)
@@ -406,8 +407,8 @@ pub struct TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams, Ac
     pub cap_per_member: Option<Balance>,
 }
 
-impl<JoyBalance, Balance, BlockNumber, AccountId>
-    TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams<BlockNumber>, AccountId>
+impl<JoyBalance, Balance, BlockNumber, MemberId>
+    TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams<BlockNumber>, MemberId>
 where
     BlockNumber: Saturating + Zero + Copy + Clone + PartialOrd,
     Balance: Saturating + Clone + Copy + From<u32> + Unsigned + TryInto<u32> + TryInto<u64> + Ord,
@@ -562,9 +563,9 @@ pub struct TokenAllocation<Balance, VestingScheduleParams> {
 
 /// Input parameters for token issuance
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
-pub struct TokenIssuanceParameters<Hash, TokenAllocation, TransferPolicyParams, AddressId: Ord> {
+pub struct TokenIssuanceParameters<Hash, TokenAllocation, TransferPolicyParams, MemberId: Ord> {
     /// Initial allocation of the token
-    pub(crate) initial_allocation: BTreeMap<AddressId, TokenAllocation>,
+    pub(crate) initial_allocation: BTreeMap<MemberId, TokenAllocation>,
 
     /// Token Symbol
     pub(crate) symbol: Hash,
@@ -576,15 +577,15 @@ pub struct TokenIssuanceParameters<Hash, TokenAllocation, TransferPolicyParams, 
     pub(crate) patronage_rate: YearlyRate,
 }
 
-impl<Hash, AddressId, Balance, VestingScheduleParams, SingleDataObjectUploadParams>
+impl<Hash, MemberId, Balance, VestingScheduleParams, SingleDataObjectUploadParams>
     TokenIssuanceParameters<
         Hash,
         TokenAllocation<Balance, VestingScheduleParams>,
         TransferPolicyParams<WhitelistParams<Hash, SingleDataObjectUploadParams>>,
-        AddressId,
+        MemberId,
     >
 where
-    AddressId: Ord,
+    MemberId: Ord,
     Balance: Sum + Copy,
     SingleDataObjectUploadParams: Clone,
 {
@@ -699,9 +700,9 @@ impl<Balance, VestingScheduleParams>
     }
 }
 
-/// Wrapper around BTreeMap<AccountId, Payment>
+/// Wrapper around BTreeMap<MemberId, Payment>
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct Transfers<AccountId, Payment>(pub BTreeMap<AccountId, Payment>);
+pub struct Transfers<MemberId, Payment>(pub BTreeMap<MemberId, Payment>);
 
 /// Default trait for Merkle Side
 impl Default for MerkleSide {
@@ -712,12 +713,12 @@ impl Default for MerkleSide {
 
 /// Utility wrapper around existing/non existing accounts to be used with transfer etc..
 #[derive(Encode, Decode, PartialEq, Eq, Debug, PartialOrd, Ord, Clone)]
-pub enum Validated<AccountId: Ord + Eq + Clone> {
+pub enum Validated<MemberId: Ord + Eq + Clone> {
     /// Existing account
-    Existing(AccountId),
+    Existing(MemberId),
 
     /// Non Existing account
-    NonExisting(AccountId),
+    NonExisting(MemberId),
 }
 
 // implementation
@@ -954,12 +955,12 @@ where
     }
 }
 /// Token Data implementation
-impl<JoyBalance, Balance, Hash, BlockNumber, VestingScheduleParams, AccountId>
+impl<JoyBalance, Balance, Hash, BlockNumber, VestingScheduleParams, MemberId>
     TokenData<
         Balance,
         Hash,
         BlockNumber,
-        TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams, AccountId>,
+        TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams, MemberId>,
         RevenueSplitState<JoyBalance, BlockNumber>,
     >
 where
@@ -1074,8 +1075,8 @@ impl<Hasher: Hash> MerkleProof<Hasher> {
     }
 }
 
-impl<AccountId, Balance, VestingScheduleParams>
-    Transfers<AccountId, PaymentWithVesting<Balance, VestingScheduleParams>>
+impl<MemberId, Balance, VestingScheduleParams>
+    Transfers<MemberId, PaymentWithVesting<Balance, VestingScheduleParams>>
 where
     Balance: Sum + Copy,
 {
@@ -1100,13 +1101,13 @@ where
     }
 }
 
-impl<AccountId, Balance, VestingScheduleParams> From<Transfers<AccountId, Payment<Balance>>>
-    for Transfers<AccountId, PaymentWithVesting<Balance, VestingScheduleParams>>
+impl<MemberId, Balance, VestingScheduleParams> From<Transfers<MemberId, Payment<Balance>>>
+    for Transfers<MemberId, PaymentWithVesting<Balance, VestingScheduleParams>>
 where
-    AccountId: Ord + Clone,
+    MemberId: Ord + Clone,
     Balance: Clone,
 {
-    fn from(v: Transfers<AccountId, Payment<Balance>>) -> Self {
+    fn from(v: Transfers<MemberId, Payment<Balance>>) -> Self {
         Self(
             v.0.iter()
                 .map(|(a, p)| (a.clone(), p.clone().into()))
@@ -1115,8 +1116,8 @@ where
     }
 }
 
-impl<AccountId, Payment> From<Transfers<AccountId, Payment>> for BTreeMap<AccountId, Payment> {
-    fn from(v: Transfers<AccountId, Payment>) -> Self {
+impl<MemberId, Payment> From<Transfers<MemberId, Payment>> for BTreeMap<MemberId, Payment> {
+    fn from(v: Transfers<MemberId, Payment>) -> Self {
         v.0
     }
 }
@@ -1183,7 +1184,7 @@ pub(crate) type TokenIssuanceParametersOf<T> = TokenIssuanceParameters<
     <T as frame_system::Trait>::Hash,
     TokenAllocationOf<T>,
     TransferPolicyParamsOf<T>,
-    <T as frame_system::Trait>::AccountId,
+    <T as MembershipTypes>::MemberId,
 >;
 
 /// Alias for TransferPolicyParams
@@ -1216,7 +1217,7 @@ pub(crate) type TokenSaleParamsOf<T> = TokenSaleParams<
     TokenBalanceOf<T>,
     <T as frame_system::Trait>::BlockNumber,
     VestingScheduleParamsOf<T>,
-    <T as frame_system::Trait>::AccountId,
+    <T as MembershipTypes>::MemberId,
 >;
 
 /// Alias for TokenSale
@@ -1225,7 +1226,7 @@ pub(crate) type TokenSaleOf<T> = TokenSale<
     TokenBalanceOf<T>,
     <T as frame_system::Trait>::BlockNumber,
     VestingScheduleParamsOf<T>,
-    <T as frame_system::Trait>::AccountId,
+    <T as MembershipTypes>::MemberId,
 >;
 
 /// Alias for OfferingState
@@ -1249,11 +1250,11 @@ pub(crate) type ValidatedPaymentOf<T> = ValidatedPayment<PaymentWithVestingOf<T>
 
 /// Alias for Transfers w/ Payment
 pub(crate) type TransfersOf<T> =
-    Transfers<<T as frame_system::Trait>::AccountId, Payment<TokenBalanceOf<T>>>;
+    Transfers<<T as MembershipTypes>::MemberId, Payment<TokenBalanceOf<T>>>;
 
 /// Alias for Transfers w/ PaymentWithVesting
 pub(crate) type TransfersWithVestingOf<T> =
-    Transfers<<T as frame_system::Trait>::AccountId, PaymentWithVestingOf<T>>;
+    Transfers<<T as MembershipTypes>::MemberId, PaymentWithVestingOf<T>>;
 
 /// Validated transfers
 /// Alias for Timeline
@@ -1265,4 +1266,4 @@ pub type RevenueSplitStateOf<T> =
 
 /// Alias for ValidatedTransfers
 pub(crate) type ValidatedTransfersOf<T> =
-    Transfers<Validated<<T as frame_system::Trait>::AccountId>, ValidatedPaymentOf<T>>;
+    Transfers<Validated<<T as MembershipTypes>::MemberId>, ValidatedPaymentOf<T>>;
