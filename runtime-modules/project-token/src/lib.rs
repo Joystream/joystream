@@ -952,8 +952,9 @@ impl<T: Trait>
         allocation_source: T::AccountId,
         allocation_amount: JoyBalanceOf<T>,
     ) -> DispatchResult {
-        if allocation_amount.is_zero() {
-            return Ok(());
+        ensure!(
+            !allocation_amount.is_zero(),
+            Error::<T>::CannotIssueSplitWithZeroAllocationAmount,
         }
 
         let token_info = Self::ensure_token_exists(token_id)?;

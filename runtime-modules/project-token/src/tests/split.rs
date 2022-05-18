@@ -130,22 +130,22 @@ fn issue_split_ok_with_event_deposited() {
 }
 
 #[test]
-fn issue_split_ok_noop_with_allocation_zero() {
+fn issue_split_fails_with_allocation_zero() {
     build_default_test_externalities_with_balances(vec![(
         member!(1).1,
         DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
         IssueTokenFixture::default().execute_call().unwrap();
-        let state_pre = sp_io::storage::root();
 
-        IssueRevenueSplitFixture::default()
+        let result = IssueRevenueSplitFixture::default()
             .with_allocation(0u128)
-            .execute_call()
-            .unwrap();
+            .execute_call();
 
-        let state_post = sp_io::storage::root();
-        assert_eq!(state_pre, state_post);
+        assert_err!(
+            result,
+            Error::<Test>::CannotIssueSplitWithZeroAllocationAmount
+        );
     })
 }
 

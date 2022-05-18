@@ -130,5 +130,9 @@ decl_error! {
 
         /// Attempt to participate in a split with zero token to stake
         CannotParticipateInSplitWithZeroAmount,
+
+        /// Attempt to issue in a split with zero allocation amount
+        CannotIssueSplitWithZeroAllocationAmount,
+
     }
 }
