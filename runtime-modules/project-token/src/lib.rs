@@ -920,9 +920,13 @@ impl<T: Trait>
     /// Preconditions:
     /// - token by `token_id` exists
     /// - token offering is in UpcomingSale state
+    /// - If `new_duration.is_some()`:
+    ///   - `new_duration` >= `min_sale_duration` && `new_duration` > 0
+    /// - If `new_start_block.is_some()`:
+    ///   - `new_start_block` >= `current_block`
     ///
     /// Postconditions:
-    /// - token's sale `duration` and `start_block` is updated according to provided parameters
+    /// - token's sale `duration` and `start_block` updated according to provided parameters
     fn update_upcoming_sale(
         token_id: T::TokenId,
         new_start_block: Option<T::BlockNumber>,
@@ -930,15 +934,30 @@ impl<T: Trait>
     ) -> DispatchResult {
         let token_data = Self::ensure_token_exists(token_id)?;
         let sale = OfferingStateOf::<T>::ensure_upcoming_sale_of::<T>(&token_data)?;
+
+        // Validate sale duration
+        if let Some(duration) = new_duration {
+            ensure!(!duration.is_zero(), Error::<T>::SaleDurationIsZero);
+            ensure!(
+                duration >= Self::min_sale_duration(),
+                Error::<T>::SaleDurationTooShort
+            );
+        }
+
+        // Validate start_block
+        if let Some(start_block) = new_start_block {
+            ensure!(
+                start_block >= <frame_system::Module<T>>::block_number(),
+                Error::<T>::SaleStartingBlockInThePast
+            );
+        }
+
         let updated_sale = TokenSaleOf::<T> {
             start_block: new_start_block.unwrap_or(sale.start_block),
             duration: new_duration.unwrap_or(sale.duration),
             ..sale
         };
-        ensure!(
-            updated_sale.start_block >= <frame_system::Module<T>>::block_number(),
-            Error::<T>::SaleStartingBlockInThePast
-        );
+
         // == MUTATION SAFE ==
         TokenInfoById::<T>::mutate(token_id, |t| t.sale = Some(updated_sale));
 
