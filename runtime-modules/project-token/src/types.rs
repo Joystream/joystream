@@ -59,6 +59,10 @@ pub struct AccountData<VestingSchedule, Balance, StakingStatus, JoyBalance> {
     /// Id of the next incoming transfer that includes tokens subject to vesting
     /// (for the purpose of generating VestingSource)
     pub(crate) next_vesting_transfer_id: u64,
+
+    /// The sum of all tokens purchased on the last sale the account participated in
+    /// along with the id of that sale.
+    pub(crate) last_sale_total_purchased_amount: Option<(TokenSaleId, Balance)>,
 }
 
 /// Info for the token
@@ -476,25 +480,17 @@ where
 
     /// Get sale's vesting_schedule based on purchase amount.
     ///
-    /// If the sale has no `vesting_schedule_params` provided, a vesting schedule is constructed
-    /// which unlocks all purchased tokens at once at `sale.end_block()`
+    /// If the sale has no `vesting_schedule_params` provided, returns None;
     ///
-    /// If the sale has a `vesting_schedule_params` provided, a vesting schedule is constructed
-    /// based on those params, with `init_block = sale.end_block()`
+    /// If the sale has a `vesting_schedule_params` provided, returns Some with a vesting schedule
+    /// constructed based on those params, with `init_block = sale.end_block()`
     /// (making `vesting_schedule.linear_vesting_start_block` equal to
     /// `sale.end_block() + sale.vesting_schedule_params.blocks_before_cliff`)
     pub(crate) fn get_vesting_schedule(
         &self,
         amount: Balance,
-    ) -> VestingSchedule<BlockNumber, Balance> {
-        self.vesting_schedule_params.as_ref().map_or(
-            // Default VestingSchedule: unlock all tokens at once at `sale.end_block()`
-            VestingSchedule::<BlockNumber, Balance> {
-                linear_vesting_start_block: self.end_block(),
-                linear_vesting_duration: BlockNumber::zero(),
-                cliff_amount: amount,
-                post_cliff_total_amount: Balance::zero(),
-            },
+    ) -> Option<VestingSchedule<BlockNumber, Balance>> {
+        self.vesting_schedule_params.as_ref().map(
             // Vesting schedule constructed from `sale.vesting_schedule_params`
             // with `init_block = sale.end_block()`
             |vs| {
@@ -768,6 +764,7 @@ impl<VestingSchedule, Balance: Zero, StakingStatus, JoyBalance: Zero> Default
             amount: Balance::zero(),
             bloat_bond: JoyBalance::zero(),
             next_vesting_transfer_id: 0,
+            last_sale_total_purchased_amount: None,
         }
     }
 }
@@ -961,6 +958,33 @@ where
             crate::Error::<T>::InsufficientTransferrableBalance,
         );
         Ok(())
+    }
+
+    /// Process changes related to new sale purchase
+    pub(crate) fn process_sale_purchase(
+        &mut self,
+        sale_id: TokenSaleId,
+        amount: Balance,
+        vesting_schedule: Option<VestingSchedule<BlockNumber, Balance>>,
+        vesting_cleanup_key: Option<VestingSource>,
+    ) -> &mut Self {
+        if let Some(vs) = vesting_schedule {
+            self.add_or_update_vesting_schedule(
+                VestingSource::Sale(sale_id),
+                vs,
+                vesting_cleanup_key,
+            );
+        } else {
+            self.increase_amount_by(amount);
+        }
+        self.last_sale_total_purchased_amount = match self.last_sale_total_purchased_amount {
+            Some((last_sale_id, tokens_purchased)) if last_sale_id == sale_id => {
+                Some((last_sale_id, tokens_purchased.saturating_add(amount)))
+            }
+            _ => Some((sale_id, amount)),
+        };
+
+        self
     }
 }
 /// Token Data implementation
