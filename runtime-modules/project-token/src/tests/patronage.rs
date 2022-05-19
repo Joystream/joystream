@@ -2,7 +2,7 @@
 use frame_support::{assert_noop, assert_ok};
 use sp_runtime::{Permill, Perquintill};
 
-use crate::tests::fixtures::default_upload_context;
+use crate::tests::fixtures::{default_upload_context, IssueRevenueSplitFixture};
 use crate::tests::mock::*;
 use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
@@ -271,6 +271,35 @@ fn decreasing_patronage_rate_fails_invalid_token() {
         let result = Token::reduce_patronage_rate_to(token_id, decrease);
 
         assert_noop!(result, Error::<Test>::TokenDoesNotExist);
+    })
+}
+
+#[test]
+fn claim_patronage_fails_with_ongoing_revenue_split() {
+    let token_id = token!(1);
+    let (owner_id, owner_account) = member!(1);
+    let (rate, blocks) = (rate!(10), block!(MIN_REVENUE_SPLIT_TIME_TO_START - 1));
+
+    let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, params.build())
+        .with_account(owner_id, AccountData::default())
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(
+            &owner_account,
+            DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+        );
+        IssueRevenueSplitFixture::default().execute_call().unwrap(); // activate revenue split
+        increase_block_number_by(blocks);
+
+        // expect it to fail even though the staking period is not started yet
+        assert_noop!(
+            Token::claim_patronage_credit(token_id, owner_id),
+            Error::<Test>::CannotModifySupplyWhenRevenueSplitsAreActive,
+        );
     })
 }
 

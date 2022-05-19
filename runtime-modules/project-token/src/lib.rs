@@ -726,6 +726,8 @@ impl<T: Trait>
     /// Preconditions:
     /// - token by `token_id` must exists
     /// - `member_id` x `token_id` account must exist
+    /// - `to_account` must be valid for `token_id`
+    /// - `token.revenue_split` has Inactive status
     ///
     /// Postconditions:
     /// - outstanding patronage credit for `token_id` transferred to `member_id` account
