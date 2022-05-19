@@ -79,6 +79,7 @@ bounty = { package = 'pallet-bounty', default-features = false, path = '../runti
 blog = { package = 'pallet-blog', default-features = false, path = '../runtime-modules/blog'}
 content = { package = 'pallet-content', default-features = false, path = '../runtime-modules/content'}
 joystream-utility = { package = 'pallet-utility', default-features = false, path = '../runtime-modules/utility'}
+project-token = { package = 'pallet-project-token', default-features = false, path = '../runtime-modules/project-token'}
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
@@ -153,6 +154,7 @@ std = [
     'blog/std',
     'joystream-utility/std',
     'content/std',
+    'project-token/std',
 ]
 runtime-benchmarks = [
     "hex-literal",

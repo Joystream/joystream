@@ -120,7 +120,7 @@ fn unsuccesful_token_sale_init_with_invalid_source() {
     build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().call_and_assert(Ok(()));
         InitTokenSaleFixture::default()
-            .with_tokens_source(member!(2).1)
+            .with_member_id(member!(2).1)
             .call_and_assert(Err(Error::<Test>::AccountInformationDoesNotExist.into()));
     })
 }
@@ -191,6 +191,8 @@ fn succesful_token_sale_init_with_custom_start_block() {
                 starts_at: Some(100),
                 ..default_token_sale_params()
             },
+            member!(1).0,
+            Some(member!(1).1),
             0,
         )
         .unwrap();
@@ -753,6 +755,43 @@ fn succesful_sale_purchases_with_platform_fee() {
             Joy::<Test>::usable_balance(member!(2).1),
             <Test as crate::Trait>::JoyExistentialDeposit::get()
         )
+    })
+}
+
+#[test]
+fn succesful_sale_purchases_with_no_sale_earnings_destination_provided() {
+    let sale_platform_fee = Permill::from_percent(30);
+    let config = GenesisConfigBuilder::new_empty()
+        .with_sale_platform_fee(sale_platform_fee)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default()
+            .with_unit_price(1)
+            .with_earnings_destination(None)
+            .call_and_assert(Ok(()));
+        increase_account_balance(
+            &member!(2).1,
+            <Test as crate::Trait>::JoyExistentialDeposit::get() + 100,
+        );
+
+        let joy_supply_pre = Joy::<Test>::total_issuance();
+        PurchaseTokensOnSaleFixture::default()
+            .with_amount(100)
+            .call_and_assert(Ok(()));
+
+        // expect "empty" buyer JOY balance
+        assert_eq!(
+            Joy::<Test>::usable_balance(member!(2).1),
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
+        );
+
+        // expect JOY supply decreased by 100
+        assert_eq!(
+            Joy::<Test>::total_issuance(),
+            joy_supply_pre.saturating_sub(100)
+        );
     })
 }
 

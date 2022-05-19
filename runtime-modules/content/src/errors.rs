@@ -280,7 +280,19 @@ decl_error! {
         /// New values for min_cashout_allowed/max_cashout_allowed are invalid: min_cashout_allowed cannot exceed max_cashout_allowed
         MinCashoutAllowedExceedsMaxCashoutAllowed,
 
-        // Insufficient council budget to cover channel reward claim
+        /// Insufficient council budget to cover channel reward claim
         InsufficientCouncilBudget,
+
+        // Creator Tokens
+        // ---------------------
+
+        /// Creator token was already issued for this channel
+        CreatorTokenAlreadyIssued,
+
+        /// Creator token wasn't issued for this channel
+        CreatorTokenNotIssued,
+
+        /// Member id could not be derived from the provided ContentActor context
+        MemberIdCouldNotBeDerivedFromActor,
     }
 }

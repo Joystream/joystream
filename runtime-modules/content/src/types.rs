@@ -72,7 +72,7 @@ pub struct ChannelCategoryUpdateParameters {
 /// Type representing an owned channel which videos, playlists, and series can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance> {
+pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance, TokenId> {
     /// The owner of a channel
     pub owner: ChannelOwner<MemberId, CuratorGroupId>,
     /// The videos under this channel
@@ -87,16 +87,32 @@ pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance> {
     pub moderators: BTreeSet<MemberId>,
     /// Cumulative cashout
     pub cumulative_reward_claimed: Balance,
+    /// Id of the channel's creator token (if issued)
+    pub creator_token_id: Option<TokenId>,
 }
 
-impl<MemberId: Ord, CuratorGroupId, AccountId, Balance>
-    ChannelRecord<MemberId, CuratorGroupId, AccountId, Balance>
+impl<MemberId: Ord, CuratorGroupId, AccountId, Balance, TokenId: Clone>
+    ChannelRecord<MemberId, CuratorGroupId, AccountId, Balance, TokenId>
 {
     /// Ensure censorship status have been changed
     pub fn ensure_censorship_status_changed<T: Trait>(&self, is_censored: bool) -> DispatchResult {
         ensure!(
             self.is_censored != is_censored,
             Error::<T>::ChannelCensorshipStatusDidNotChange
+        );
+        Ok(())
+    }
+
+    pub fn ensure_creator_token_issued<T: Trait>(&self) -> Result<TokenId, DispatchError> {
+        self.creator_token_id
+            .clone()
+            .ok_or_else(|| Error::<T>::CreatorTokenNotIssued.into())
+    }
+
+    pub fn ensure_creator_token_not_issued<T: Trait>(&self) -> DispatchResult {
+        ensure!(
+            self.creator_token_id.is_none(),
+            Error::<T>::CreatorTokenAlreadyIssued
         );
         Ok(())
     }
@@ -108,6 +124,7 @@ pub type Channel<T> = ChannelRecord<
     <T as ContentActorAuthenticator>::CuratorGroupId,
     <T as frame_system::Trait>::AccountId,
     BalanceOf<T>,
+    <T as project_token::Trait>::TokenId,
 >;
 
 /// A request to buy a channel by a new ChannelOwner.

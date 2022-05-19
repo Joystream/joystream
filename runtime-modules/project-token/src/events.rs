@@ -1,6 +1,6 @@
 use crate::types::{
-    JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId, TransferPolicyOf,
-    ValidatedTransfersOf,
+    JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId, TokenSaleOf,
+    TransferPolicyOf, ValidatedTransfersOf,
 };
 use common::MembershipTypes;
 use frame_support::decl_event;
@@ -18,6 +18,7 @@ decl_event! {
         TransferPolicy = TransferPolicyOf<T>,
         TokenIssuanceParameters = TokenIssuanceParametersOf<T>,
         ValidatedTransfers = ValidatedTransfersOf<T>,
+        TokenSale = TokenSaleOf<T>,
 
     {
         /// Token amount is transferred from src to dst
@@ -106,6 +107,21 @@ decl_event! {
         /// - token id
         /// - token issuance parameters
         TokenIssued(TokenId, TokenIssuanceParameters),
+
+        /// Toke Sale was Initialized
+        /// Params:
+        /// - token id
+        /// - token sale id
+        /// - token sale data
+        TokenSaleInitialized(TokenId, TokenSaleId, TokenSale),
+
+        /// Upcoming Token Sale was Updated
+        /// Params:
+        /// - token id
+        /// - token sale id
+        /// - new sale start block
+        /// - new sale duration
+        UpcomingTokenSaleUpdated(TokenId, TokenSaleId, Option<BlockNumber>, Option<BlockNumber>),
 
         /// Tokens Purchased On Sale
         /// Params:

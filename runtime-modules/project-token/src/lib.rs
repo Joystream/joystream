@@ -1,5 +1,7 @@
 // Compiler demand.
 #![recursion_limit = "256"]
+// Ensure we're `no_std` when compiling for Wasm.
+#![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::FullCodec;
 use common::membership::{MemberId as MemberIdOf, MemberOriginValidator, MembershipInfoProvider};
@@ -18,13 +20,15 @@ use sp_runtime::{
 };
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::Sum;
+use sp_std::vec;
+use sp_std::vec::Vec;
 use storage::UploadParameters;
 
 // crate modules
 mod errors;
 mod events;
-mod traits;
-mod types;
+pub mod traits;
+pub mod types;
 
 // #[cfg(test)]
 mod tests;
@@ -312,6 +316,12 @@ decl_module! {
         ///     if AccountData already exist
         ///   - >= `joy_existential_deposit + amount * sale.unit_price + bloat_bond`
         ///     if AccountData does not exist
+        /// - let `fee_amount` be `sale_platform_fee.mul_floor(amount * sale.unit_price)`
+        /// - if `sale.earnings_destination.is_some()` and `sale.earnings_destination` account has
+        ///   zero balance:
+        ///   - the amount to be transferred from `sender` to `sale.earnings_destination`,
+        ///     which is equal to `amount * sale.unit_price - fee_amount`, must be greater than
+        ///     `joy_existential_deposit`
         /// - total number of tokens already purchased by the member on the current sale
         ///   PLUS `amount` must not exceed sale's purchase cap per member
         /// - if Permissioned token:
@@ -321,11 +331,13 @@ decl_module! {
         ///     must be < MaxVestingSchedulesPerAccountPerToken
         ///
         /// Postconditions:
-        /// - let `fee_amount` be `sale_platform_fee.mul_floor(amount * sale.unit_price)`
-        /// - `amount * sale.unit_price - fee_amount` JOY tokens are transfered from `sender`
-        ///   to `sale.tokens_source` member controller account
-        /// - `fee_amount` JOY is slashed from `sender` balance
-        /// - if new account created: `bloat_bond` transferred from `sender` to treasury
+        /// - if `sale.earnings_destination.is_some()`:
+        ///   - `amount * sale.unit_price - fee_amount` JOY tokens are transfered from `sender`
+        ///     to `sale.earnings_destination`
+        ///   - `fee_amount` JOY is slashed from `sender` balance
+        /// - if `sale.earnings_destination.is_none()`:
+        ///   - `amount * sale.unit_price` JOY is slashed from `sender` balance
+        /// - if new token account created: `bloat_bond` transferred from `sender` to treasury
         /// - if `sale.vesting_schedule.is_some()`:
         ///   - if buyer has no `vesting_schedule` related to the current sale:
         ///     - a new vesting schedule (`sale.get_vesting_schedule(purchase_amount)`) is added to
@@ -363,26 +375,29 @@ decl_module! {
             let sale_id = token_data.next_sale_id - 1;
             let platform_fee = Self::sale_platform_fee();
             let joy_amount = sale.unit_price.saturating_mul(amount.into());
-            let fee_amount = platform_fee.mul_floor(joy_amount);
-            let transfer_amount = joy_amount.saturating_sub(fee_amount);
+            let burn_amount = if sale.earnings_destination.is_some() {
+                platform_fee.mul_floor(joy_amount)
+            } else {
+                joy_amount
+            };
+            let transfer_amount = joy_amount.saturating_sub(burn_amount);
             let account_data = Self::ensure_account_data_exists(token_id, &member_id).ok();
             let bloat_bond = Self::bloat_bond();
-            let sale_source_controller =
-                T::MembershipInfoProvider::controller_account_id(sale.tokens_source)?;
             let vesting_schedule = sale.get_vesting_schedule(amount);
             let treasury = Self::module_treasury_account();
 
             // Ensure buyer can perform the required JOY transfers
-            let destinations = if account_data.is_some() {
-                vec![(&sale_source_controller, transfer_amount)]
-            } else {
-                vec![(&sale_source_controller, transfer_amount), (&treasury, bloat_bond)]
+            let destinations = match (account_data.as_ref(), sale.earnings_destination.as_ref()) {
+                (Some(_), None) => vec![],
+                (Some(_), Some(dst)) => vec![(dst, transfer_amount)],
+                (None, None) => vec![(&treasury, bloat_bond)],
+                (None, Some(dst)) => vec![(dst, transfer_amount), (&treasury, bloat_bond)]
             };
             let remaining_balance = Self::ensure_can_transfer_joy(&sender, &destinations)?;
 
-            // Ensure remaining balance after transfers is >= fee_amount + existential_deposit
+            // Ensure remaining balance after transfers is >= burn_amount + existential_deposit
             ensure!(
-                remaining_balance >= fee_amount.saturating_add(T::JoyExistentialDeposit::get()),
+                remaining_balance >= burn_amount.saturating_add(T::JoyExistentialDeposit::get()),
                 Error::<T>::InsufficientJoyBalance
             );
 
@@ -421,16 +436,18 @@ decl_module! {
 
             // == MUTATION SAFE ==
 
-            Self::transfer_joy(
-                &sender,
-                &sale_source_controller,
-                transfer_amount
-            );
+            if let Some(dst) = sale.earnings_destination.as_ref() {
+                Self::transfer_joy(
+                    &sender,
+                    &dst,
+                    transfer_amount
+                );
+            }
 
-            if !fee_amount.is_zero() {
+            if !burn_amount.is_zero() {
                 let _ = <Joy::<T> as Currency<T::AccountId>>::slash(
                     &sender,
-                    fee_amount
+                    burn_amount
                 );
             }
 
@@ -646,9 +663,10 @@ decl_module! {
 
 impl<T: Trait>
     PalletToken<
+        T::TokenId,
         T::MemberId,
         <T as frame_system::Trait>::AccountId,
-        TransferPolicyOf<T>,
+        JoyBalanceOf<T>,
         TokenIssuanceParametersOf<T>,
         T::BlockNumber,
         TokenSaleParamsOf<T>,
@@ -656,16 +674,6 @@ impl<T: Trait>
         TransfersWithVestingOf<T>,
     > for Module<T>
 {
-    type Balance = <T as Trait>::Balance;
-
-    type TokenId = T::TokenId;
-
-    type MerkleProof = MerkleProofOf<T>;
-
-    type YearlyRate = YearlyRate;
-
-    type ReserveBalance = JoyBalanceOf<T>;
-
     /// Change to permissionless
     /// Preconditions:
     /// - token by `token_id` must exist
@@ -779,7 +787,7 @@ impl<T: Trait>
         issuer_account: T::AccountId,
         issuance_parameters: TokenIssuanceParametersOf<T>,
         upload_context: UploadContextOf<T>,
-    ) -> DispatchResult {
+    ) -> Result<T::TokenId, DispatchError> {
         let token_id = Self::next_token_id();
         let bloat_bond = Self::bloat_bond();
         Self::validate_issuance_parameters(&issuance_parameters)?;
@@ -819,7 +827,7 @@ impl<T: Trait>
 
         Self::deposit_event(RawEvent::TokenIssued(token_id, issuance_parameters));
 
-        Ok(())
+        Ok(token_id)
     }
 
     /// Allow to transfer from `src` (issuer) to the various `outputs` beneficiaries in the
@@ -889,34 +897,52 @@ impl<T: Trait>
     /// - provided sale start block is >= current_block
     /// - token offering is in Idle state
     /// - previous sale has been finalized (token_data.sale.is_none())
-    /// - `sale_params.tokens_source` account exists
-    /// - `sale_params.tokens_source` has transferrable CRT balance
+    /// - `token_id` x `member_id` account exists
+    /// - `token_id` x `member_id` account has transferrable CRT balance
     ///   >= `sale_params.upper_bound_quantity`
     ///
     /// Postconditions:
-    /// - `sale_params.tokens_source` account balance is decreased by
+    /// - `token_id` x `member_id` account balance is decreased by
     ///   `sale_params.upper_bound_quantity`
     /// - token's `sale` is set
     /// - token's `next_sale_id` is incremented
-    fn init_token_sale(token_id: T::TokenId, sale_params: TokenSaleParamsOf<T>) -> DispatchResult {
+    fn init_token_sale(
+        token_id: T::TokenId,
+        member_id: T::MemberId,
+        earnings_destination: Option<T::AccountId>,
+        sale_params: TokenSaleParamsOf<T>,
+    ) -> DispatchResult {
         let current_block = Self::current_block();
         let token_data = Self::ensure_token_exists(token_id)?;
-        let sale = TokenSaleOf::<T>::try_from_params::<T>(sale_params.clone(), current_block)?;
-        Self::ensure_can_init_sale(token_id, &token_data, &sale_params, current_block)?;
+        let sale_id = token_data.next_sale_id;
+        let sale = TokenSaleOf::<T>::try_from_params::<T>(
+            sale_params.clone(),
+            member_id,
+            earnings_destination,
+            current_block,
+        )?;
+        Self::ensure_can_init_sale(
+            token_id,
+            member_id,
+            &token_data,
+            &sale_params,
+            current_block,
+        )?;
 
         // == MUTATION SAFE ==
 
         // Decrease source account's tokens number by sale_params.upper_bound_quantity
         // (unsold tokens can be later recovered with `recover_unsold_tokens`)
-        AccountInfoByTokenAndMember::<T>::mutate(token_id, &sale_params.tokens_source, |ad| {
+        AccountInfoByTokenAndMember::<T>::mutate(token_id, &member_id, |ad| {
             ad.decrease_amount_by(sale_params.upper_bound_quantity);
         });
 
         TokenInfoById::<T>::mutate(token_id, |t| {
-            t.sale = Some(sale);
+            t.sale = Some(sale.clone());
             t.next_sale_id = t.next_sale_id.saturating_add(1);
         });
 
+        Self::deposit_event(RawEvent::TokenSaleInitialized(token_id, sale_id, sale));
         Ok(())
     }
 
@@ -934,6 +960,7 @@ impl<T: Trait>
         new_duration: Option<T::BlockNumber>,
     ) -> DispatchResult {
         let token_data = Self::ensure_token_exists(token_id)?;
+        let sale_id = token_data.next_sale_id - 1;
         let sale = OfferingStateOf::<T>::ensure_upcoming_sale_of::<T>(&token_data)?;
         let updated_sale = TokenSaleOf::<T> {
             start_block: new_start_block.unwrap_or(sale.start_block),
@@ -947,6 +974,12 @@ impl<T: Trait>
         // == MUTATION SAFE ==
         TokenInfoById::<T>::mutate(token_id, |t| t.sale = Some(updated_sale));
 
+        Self::deposit_event(RawEvent::UpcomingTokenSaleUpdated(
+            token_id,
+            sale_id,
+            new_start_block,
+            new_duration,
+        ));
         Ok(())
     }
 
@@ -1246,6 +1279,7 @@ impl<T: Trait> Module<T> {
 
     pub(crate) fn ensure_can_init_sale(
         token_id: T::TokenId,
+        member_id: T::MemberId,
         token_data: &TokenDataOf<T>,
         sale_params: &TokenSaleParamsOf<T>,
         current_block: T::BlockNumber,
@@ -1266,7 +1300,7 @@ impl<T: Trait> Module<T> {
         );
 
         // Ensure source account exists
-        let account_data = Self::ensure_account_data_exists(token_id, &sale_params.tokens_source)?;
+        let account_data = Self::ensure_account_data_exists(token_id, &member_id)?;
 
         // Ensure source account has enough transferrable tokens
         account_data.ensure_can_transfer::<T>(current_block, sale_params.upper_bound_quantity)?;

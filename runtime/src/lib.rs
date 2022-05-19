@@ -499,6 +499,29 @@ impl content::Trait for Runtime {
     type ModuleId = ContentModuleId;
     type MemberAuthenticator = Members;
     type CouncilBudgetManager = Council;
+    type ProjectToken = ProjectToken;
+}
+
+parameter_types! {
+    pub const ProjectTokenModuleId: ModuleId = ModuleId(*b"mo:token"); // module: token
+    pub const MaxVestingSchedulesPerAccountPerToken: u8 = 5; // TODO: adjust
+    pub const BlocksPerYear: u32 = 5259600; // 365,25 * 24 * 60 * 60 / 6
+    pub const MinRevenueSplitDuration: u32 = DAYS; // one day TODO: adjust
+}
+
+impl project_token::Trait for Runtime {
+    type Event = Event;
+    type Balance = Balance;
+    type TokenId = TokenId;
+    type BlockNumberToBalance = BlockNumberToBalance;
+    type DataObjectStorage = Storage;
+    type ModuleId = ProjectTokenModuleId;
+    type MaxVestingBalancesPerAccountPerToken = MaxVestingSchedulesPerAccountPerToken;
+    type JoyExistentialDeposit = ExistentialDeposit;
+    type BlocksPerYear = BlocksPerYear;
+    type MemberOriginValidator = Members;
+    type MembershipInfoProvider = Members;
+    type MinRevenueSplitDuration = MinRevenueSplitDuration;
 }
 
 // The referendum instance alias.
@@ -1205,6 +1228,7 @@ construct_runtime!(
         JoystreamUtility: joystream_utility::{Module, Call, Event<T>},
         Content: content::{Module, Call, Storage, Event<T>, Config<T>},
         Storage: storage::{Module, Call, Storage, Event<T>},
+        ProjectToken: project_token::{Module, Call, Storage, Event<T>},
         // --- Proposals
         ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},

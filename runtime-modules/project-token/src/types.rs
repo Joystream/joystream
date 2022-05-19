@@ -9,6 +9,8 @@ use sp_runtime::{
     traits::{Convert, Hash, UniqueSaturatedInto},
     PerThing, Permill, Perquintill, SaturatedConversion,
 };
+use sp_std::borrow::ToOwned;
+use sp_std::vec::Vec;
 use sp_std::{cmp::max, collections::btree_map::BTreeMap, convert::TryInto, iter::Sum};
 
 use common::MembershipTypes;
@@ -374,9 +376,7 @@ pub struct WhitelistParams<Hash, SingleDataObjectUploadParams> {
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct TokenSaleParams<JoyBalance, Balance, BlockNumber, VestingScheduleParams, MemberId> {
-    /// Account that acts as the source of the tokens on sale
-    pub tokens_source: MemberId,
+pub struct TokenSaleParams<JoyBalance, Balance, BlockNumber, VestingScheduleParams> {
     /// Token's unit price in JOY
     pub unit_price: JoyBalance,
     /// Number of tokens on sale
@@ -394,13 +394,16 @@ pub struct TokenSaleParams<JoyBalance, Balance, BlockNumber, VestingSchedulePara
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default)]
-pub struct TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams, MemberId> {
+pub struct TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams, MemberId, AccountId> {
     /// Token's unit price in JOY
     pub unit_price: JoyBalance,
     /// Number of tokens still on sale (if any)
     pub quantity_left: Balance,
     /// Account (member) that acts as the source of the tokens on sale
     pub tokens_source: MemberId,
+    /// Optional sale earnings (JOY) destination account.
+    /// If None: All sale earnings are burned.
+    pub earnings_destination: Option<AccountId>,
     /// Block at which the sale started / will start
     pub start_block: BlockNumber,
     /// Sale duration (in blocks)
@@ -411,14 +414,23 @@ pub struct TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams, Me
     pub cap_per_member: Option<Balance>,
 }
 
-impl<JoyBalance, Balance, BlockNumber, MemberId>
-    TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams<BlockNumber>, MemberId>
+impl<JoyBalance, Balance, BlockNumber, MemberId, AccountId>
+    TokenSale<
+        JoyBalance,
+        Balance,
+        BlockNumber,
+        VestingScheduleParams<BlockNumber>,
+        MemberId,
+        AccountId,
+    >
 where
     BlockNumber: Saturating + Zero + Copy + Clone + PartialOrd,
     Balance: Saturating + Clone + Copy + From<u32> + Unsigned + TryInto<u32> + TryInto<u64> + Ord,
 {
     pub(crate) fn try_from_params<T: Trait>(
         params: TokenSaleParamsOf<T>,
+        member_id: T::MemberId,
+        earnings_destination: Option<<T as frame_system::Trait>::AccountId>,
         current_block: T::BlockNumber,
     ) -> Result<TokenSaleOf<T>, DispatchError> {
         let start_block = params.starts_at.unwrap_or(current_block);
@@ -454,8 +466,9 @@ where
             unit_price: params.unit_price,
             quantity_left: params.upper_bound_quantity,
             vesting_schedule_params: params.vesting_schedule_params,
-            tokens_source: params.tokens_source,
+            tokens_source: member_id,
             cap_per_member: params.cap_per_member,
+            earnings_destination,
         })
     }
 
@@ -979,12 +992,12 @@ where
     }
 }
 /// Token Data implementation
-impl<JoyBalance, Balance, Hash, BlockNumber, VestingScheduleParams, MemberId>
+impl<JoyBalance, Balance, Hash, BlockNumber, VestingScheduleParams, MemberId, AccountId>
     TokenData<
         Balance,
         Hash,
         BlockNumber,
-        TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams, MemberId>,
+        TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams, MemberId, AccountId>,
         RevenueSplitState<JoyBalance, BlockNumber>,
     >
 where
@@ -1204,7 +1217,7 @@ pub(crate) type TokenAllocationOf<T> =
     TokenAllocation<TokenBalanceOf<T>, VestingScheduleParamsOf<T>>;
 
 /// Alias for Token Issuance Parameters
-pub(crate) type TokenIssuanceParametersOf<T> = TokenIssuanceParameters<
+pub type TokenIssuanceParametersOf<T> = TokenIssuanceParameters<
     <T as frame_system::Trait>::Hash,
     TokenAllocationOf<T>,
     TransferPolicyParamsOf<T>,
@@ -1236,12 +1249,11 @@ pub(crate) type WhitelistParamsOf<T> =
     WhitelistParams<<T as frame_system::Trait>::Hash, SingleDataObjectUploadParamsOf<T>>;
 
 /// Alias for TokenSaleParams
-pub(crate) type TokenSaleParamsOf<T> = TokenSaleParams<
+pub type TokenSaleParamsOf<T> = TokenSaleParams<
     JoyBalanceOf<T>,
     TokenBalanceOf<T>,
     <T as frame_system::Trait>::BlockNumber,
     VestingScheduleParamsOf<T>,
-    <T as MembershipTypes>::MemberId,
 >;
 
 /// Alias for TokenSale
@@ -1251,13 +1263,14 @@ pub(crate) type TokenSaleOf<T> = TokenSale<
     <T as frame_system::Trait>::BlockNumber,
     VestingScheduleParamsOf<T>,
     <T as MembershipTypes>::MemberId,
+    <T as frame_system::Trait>::AccountId,
 >;
 
 /// Alias for OfferingState
 pub(crate) type OfferingStateOf<T> = OfferingState<TokenSaleOf<T>>;
 
 /// Alias for UploadContext
-pub(crate) type UploadContextOf<T> = UploadContext<<T as frame_system::Trait>::AccountId, BagId<T>>;
+pub type UploadContextOf<T> = UploadContext<<T as frame_system::Trait>::AccountId, BagId<T>>;
 
 /// TokenSaleId
 pub(crate) type TokenSaleId = u32;
@@ -1277,7 +1290,7 @@ pub(crate) type TransfersOf<T> =
     Transfers<<T as MembershipTypes>::MemberId, Payment<TokenBalanceOf<T>>>;
 
 /// Alias for Transfers w/ PaymentWithVesting
-pub(crate) type TransfersWithVestingOf<T> =
+pub type TransfersWithVestingOf<T> =
     Transfers<<T as MembershipTypes>::MemberId, PaymentWithVestingOf<T>>;
 
 /// Validated transfers

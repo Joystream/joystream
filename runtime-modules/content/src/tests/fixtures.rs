@@ -128,6 +128,7 @@ impl CreateChannelFixture {
                         moderators: self.params.moderators.clone(),
                         num_videos: Zero::zero(),
                         cumulative_reward_claimed: Zero::zero(),
+                        creator_token_id: None,
                     },
                     self.params.clone(),
                 ))
@@ -455,15 +456,12 @@ impl UpdateChannelFixture {
 
         match actual_result {
             Ok(()) => {
-                let owner = channel_post.owner.clone();
                 assert_eq!(
                     System::events().last().unwrap().event,
                     MetaEvent::content(RawEvent::ChannelUpdated(
                         self.actor.clone(),
                         self.channel_id,
                         ChannelRecord {
-                            owner: owner,
-                            is_censored: channel_pre.is_censored,
                             reward_account: self
                                 .params
                                 .reward_account
@@ -474,9 +472,7 @@ impl UpdateChannelFixture {
                                 .collaborators
                                 .clone()
                                 .unwrap_or(channel_pre.collaborators),
-                            num_videos: channel_pre.num_videos,
-                            moderators: channel_pre.moderators,
-                            cumulative_reward_claimed: BalanceOf::<Test>::zero(),
+                            ..channel_pre
                         },
                         self.params.clone(),
                     ))
@@ -1961,7 +1957,7 @@ fn channel_reward_account(channel: &Channel<Test>) -> Option<AccountId> {
     channel.reward_account.map_or_else(
         || {
             if let ChannelOwner::Member(member_id) = channel.owner {
-                let acc = MemberInfoProvider::controller_account_id(member_id);
+                let acc = TestMemberships::controller_account_id(member_id);
                 acc.map_or(None, |a| Some(a))
             } else {
                 None
