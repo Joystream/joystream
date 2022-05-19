@@ -33,7 +33,7 @@ import { scenario } from '../Scenario'
 import activeVideoCounters from '../flows/content/activeVideoCounters'
 import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
 import updatingVerificationStatus from '../flows/membership/updateVerificationStatus'
-import channelPlaylists from 'src/flows/content/channelPlaylists'
+import channelPlaylists from '../flows/content/channelPlaylists'
 
 scenario('Full', async ({ job, env }) => {
   // Runtime upgrade should always be first job
