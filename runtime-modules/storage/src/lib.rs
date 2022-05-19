@@ -41,8 +41,6 @@
 //! updates whether new bags are being accepted for storage.
 //! - [set_storage_bucket_voucher_limits](./struct.Module.html#method.set_storage_bucket_voucher_limits) -
 //! sets storage bucket voucher limits.
-//! - [update_dynamic_bag_deletion_prize](./struct.Module.html#method.update_dynamic_bag_deletion_prize) -
-//! updates dynamic bag deletion prize value
 //!
 //!
 //! #### Storage provider extrinsics
@@ -135,7 +133,7 @@ use frame_support::{
 use frame_system::{ensure_root, ensure_signed};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_arithmetic::traits::{BaseArithmetic, One, Unsigned, Zero};
+use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{AccountIdConversion, MaybeSerialize, Member, Saturating};
 use sp_runtime::{ModuleId, SaturatedConversion};
 use sp_std::collections::btree_map::BTreeMap;
@@ -576,20 +574,17 @@ pub struct DataObject<Balance> {
 }
 
 /// Type alias for the BagRecord.
-pub type Bag<T> = BagRecord<<T as Trait>::StorageBucketId, DistributionBucketId<T>, BalanceOf<T>>;
+pub type Bag<T> = BagRecord<<T as Trait>::StorageBucketId, DistributionBucketId<T>>;
 
 /// Bag container.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct BagRecord<StorageBucketId: Ord, DistributionBucketId: Ord, Balance> {
+pub struct BagRecord<StorageBucketId: Ord, DistributionBucketId: Ord> {
     /// Associated storage buckets.
     pub stored_by: BTreeSet<StorageBucketId>,
 
     /// Associated distribution buckets.
     pub distributed_by: BTreeSet<DistributionBucketId>,
-
-    /// Bag deletion prize (valid for dynamic bags).
-    pub deletion_prize: Option<Balance>,
 
     /// Total object size for bag.
     pub objects_total_size: u64,
@@ -598,8 +593,8 @@ pub struct BagRecord<StorageBucketId: Ord, DistributionBucketId: Ord, Balance> {
     pub objects_number: u64,
 }
 
-impl<StorageBucketId: Ord, DistributionBucketId: Ord, Balance>
-    BagRecord<StorageBucketId, DistributionBucketId, Balance>
+impl<StorageBucketId: Ord, DistributionBucketId: Ord>
+    BagRecord<StorageBucketId, DistributionBucketId>
 {
     // Add and/or remove storage buckets.
     fn update_storage_buckets(
@@ -645,26 +640,13 @@ impl<StorageBucketId: Ord, DistributionBucketId: Ord, Balance>
             ..self
         }
     }
-
-    fn with_prize(self, deletion_prize: Balance) -> Self {
-        // Option<T> defaults to None
-        Self {
-            deletion_prize: Some(deletion_prize),
-            ..self
-        }
-    }
 }
 
 // Helper enum for performing bag operation: no default since it is non trivial
 type ObjectsToUpload<DataObjectCreationParameters> = Vec<DataObjectCreationParameters>;
 type ObjectsToRemove<ObjectId> = BTreeSet<ObjectId>;
 #[derive(Clone, PartialEq, Eq, Debug)]
-enum BagOperationParamsTypes<
-    DeletionPrize: Unsigned,
-    ObjectId: Clone,
-    StorageBucketId: Ord,
-    DistributionBucketId: Ord,
-> {
+enum BagOperationParamsTypes<ObjectId: Clone, StorageBucketId: Ord, DistributionBucketId: Ord> {
     /// Update operation: both upload and removal allowed
     Update(
         ObjectsToUpload<DataObjectCreationParameters>,
@@ -673,8 +655,6 @@ enum BagOperationParamsTypes<
 
     /// Create operation: Create bag with deletion prize & Upload Objects
     Create(
-        /// Bag deletion prize.
-        DeletionPrize,
         /// Objects' creation parameters
         ObjectsToUpload<DataObjectCreationParameters>,
         /// Storage bucket IDs collection
@@ -687,8 +667,8 @@ enum BagOperationParamsTypes<
     Delete,
 }
 
-impl<Balance: Unsigned, ObjectId: Clone, StorageBucketId: Ord, DistributionBucketId: Ord>
-    BagOperationParamsTypes<Balance, ObjectId, StorageBucketId, DistributionBucketId>
+impl<ObjectId: Clone, StorageBucketId: Ord, DistributionBucketId: Ord>
+    BagOperationParamsTypes<ObjectId, StorageBucketId, DistributionBucketId>
 {
     fn is_delete(&self) -> bool {
         matches!(self, Self::Delete)
@@ -699,17 +679,15 @@ impl<Balance: Unsigned, ObjectId: Clone, StorageBucketId: Ord, DistributionBucke
 struct BagOperationRecord<
     MemberId: Clone,
     ChannelId: Clone,
-    DeletionPrize: Unsigned,
     ObjectId: Clone,
     StorageBucketId: Ord,
     DistributionBucketId: Ord,
 > {
     bag_id: BagIdType<MemberId, ChannelId>,
-    params: BagOperationParamsTypes<DeletionPrize, ObjectId, StorageBucketId, DistributionBucketId>,
+    params: BagOperationParamsTypes<ObjectId, StorageBucketId, DistributionBucketId>,
 }
 
 type BagOperationParams<T> = BagOperationParamsTypes<
-    BalanceOf<T>,
     <T as Trait>::DataObjectId,
     <T as Trait>::StorageBucketId,
     DistributionBucketId<T>,
@@ -717,7 +695,6 @@ type BagOperationParams<T> = BagOperationParamsTypes<
 type BagOperation<T> = BagOperationRecord<
     MemberId<T>,
     <T as Trait>::ChannelId,
-    BalanceOf<T>,
     <T as Trait>::DataObjectId,
     <T as Trait>::StorageBucketId,
     DistributionBucketId<T>,
@@ -884,9 +861,6 @@ pub struct UploadParametersRecord<
 
     /// Expected data size fee value for this extrinsic call.
     pub expected_data_size_fee: Balance,
-
-    /// Expected for the dynamic bag deletion prize for the storage pallet.
-    pub expected_dynamic_bag_deletion_prize: Balance,
 
     /// Expected for the data object deletion prize for the storage pallet.
     pub expected_data_object_deletion_prize: Balance,
@@ -1187,9 +1161,6 @@ decl_storage! {
         /// "Max objects number for a storage  bucket voucher" number limit.
         pub VoucherMaxObjectsNumberLimit get (fn voucher_max_objects_number_limit): u64;
 
-        /// The deletion prize for the dynamic bags (helps preventing the state bloat).
-        pub DynamicBagDeletionPrizeValue get (fn dynamic_bag_deletion_prize_value): BalanceOf<T>;
-
         /// The deletion prize for the data objects (helps preventing the state bloat).
         pub DataObjectDeletionPrizeValue get (fn data_object_deletion_prize_value): BalanceOf<T>;
 
@@ -1379,12 +1350,10 @@ decl_event! {
         /// Emits on creating a dynamic bag.
         /// Params
         /// - dynamic bag ID
-        /// - optional DynamicBagDeletionPrize instance
         /// - assigned storage buckets' IDs
         /// - assigned distribution buckets' IDs
         DynamicBagCreated(
             DynamicBagId,
-            Balance,
             BTreeSet<StorageBucketId>,
             BTreeSet<DistributionBucketId>,
         ),
@@ -1528,11 +1497,6 @@ decl_event! {
             DistributionBucketFamilyId,
             Vec<u8>
         ),
-
-        /// Emits on updating the dynamic bag deletion prize.
-        /// Params
-        /// - deletion prize value
-        DynamicBagDeletionPrizeValueUpdated(Balance),
 
         /// Emits on updating the data object deletion prize.
         /// Params
@@ -1698,9 +1662,6 @@ decl_error! {
 
         /// Invalid extrinsic call: data object deletion prize changed.
         DataObjectDeletionPrizeChanged,
-
-        /// Invalid extrinsic call: dynamic bag deletion prize changed.
-        DynamicBagDeletionPrizeChanged,
 
         /// Cannot delete non empty dynamic bag.
         CannotDeleteNonEmptyDynamicBag,
@@ -1945,24 +1906,6 @@ decl_module! {
             );
         }
 
-        /// Updates dynamic bag deletion prize value.
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_dynamic_bag_deletion_prize(
-            origin,
-            deletion_prize: BalanceOf<T>,
-        ) {
-            T::StorageWorkingGroup::ensure_leader_origin(origin)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            DynamicBagDeletionPrizeValue::<T>::put(deletion_prize);
-
-            Self::deposit_event(
-                RawEvent::DynamicBagDeletionPrizeValueUpdated(deletion_prize)
-            );
-        }
 
         /// Updates data object deletion prize value.
         #[weight = 10_000_000] // TODO: adjust weight
@@ -3371,14 +3314,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
     }
 
     fn create_dynamic_bag(params: DynBagCreationParameters<T>) -> DispatchResult {
-        let deletion_prize = Self::dynamic_bag_deletion_prize_value();
         let bag_id: BagId<T> = params.bag_id.clone().into();
-
-        // ensure dynamic bag deletion prize
-        ensure!(
-            params.expected_dynamic_bag_deletion_prize == Self::dynamic_bag_deletion_prize_value(),
-            Error::<T>::DynamicBagDeletionPrizeChanged,
-        );
 
         // ensure data object deletion prize
         ensure!(
@@ -3406,7 +3342,6 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             BagOperation::<T> {
                 bag_id: bag_id.clone(),
                 params: BagOperationParams::<T>::Create(
-                    deletion_prize,
                     params.object_creation_list,
                     params.storage_buckets,
                     params.distribution_buckets,
@@ -3422,7 +3357,6 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
 
         Self::deposit_event(RawEvent::DynamicBagCreated(
             params.bag_id,
-            deletion_prize,
             stored_by,
             distributed_by,
         ));
@@ -4273,19 +4207,14 @@ impl<T: Trait> Module<T> {
     /// verifies that dynamic bag does not exists in case of bag creation
     /// returning a new one
     fn retrieve_dynamic_bag(bag_op: &BagOperation<T>) -> Result<Bag<T>, DispatchError> {
-        if let BagOperationParams::<T>::Create(
-            deletion_prize,
-            _,
-            ref storage_buckets,
-            ref distribution_buckets,
-        ) = bag_op.params
+        if let BagOperationParams::<T>::Create(_, ref storage_buckets, ref distribution_buckets) =
+            bag_op.params
         {
             bag_op.bag_id.clone().ensure_is_dynamic_bag::<T>()?;
 
             Self::ensure_bag_exists(&bag_op.bag_id).map_or_else(
                 |_| {
                     Ok(Bag::<T>::default()
-                        .with_prize(deletion_prize)
                         .with_storage_buckets(storage_buckets.clone())
                         .with_distribution_buckets(distribution_buckets.clone()))
                 },
@@ -4305,7 +4234,6 @@ impl<T: Trait> Module<T> {
         let Bag::<T> {
             stored_by,
             distributed_by,
-            deletion_prize,
             objects_total_size,
             objects_number,
         } = Self::retrieve_dynamic_bag(&bag_op)?;
@@ -4315,7 +4243,7 @@ impl<T: Trait> Module<T> {
             Self::construct_objects_to_upload(&bag_op)?;
 
         let (objects_removal_list, deletion_prize_refund, remove_objs_size) =
-            Self::construct_objects_to_remove(&bag_op, deletion_prize.unwrap_or_else(Zero::zero))?;
+            Self::construct_objects_to_remove(&bag_op)?;
 
         // storage fee: zero if VoucherUpdate is default
         let storage_fee = Self::calculate_data_storage_fee(upload_objs_size);
@@ -4413,7 +4341,6 @@ impl<T: Trait> Module<T> {
                         .into_iter()
                         .map(|(id, _)| id)
                         .collect::<BTreeSet<_>>(),
-                    deletion_prize,
                     objects_total_size: all_objects_with_update_voucher.objects_total_size,
                     objects_number: all_objects_with_update_voucher.objects_number,
                 },
@@ -4432,12 +4359,8 @@ impl<T: Trait> Module<T> {
     fn construct_objects_to_upload(op: &BagOperation<T>) -> DataObjAndDeletionPrizeAndObjSize<T> {
         match &op.params {
             BagOperationParams::<T>::Delete => Ok((Default::default(), Zero::zero(), Zero::zero())),
-            BagOperationParams::<T>::Create(bag_deletion_prize, list, _, _) => {
-                Self::construct_objects_from_list(list, *bag_deletion_prize)
-            }
-            BagOperationParams::<T>::Update(list, _) => {
-                Self::construct_objects_from_list(list, Zero::zero())
-            }
+            BagOperationParams::<T>::Create(list, _, _) => Self::construct_objects_from_list(list),
+            BagOperationParams::<T>::Update(list, _) => Self::construct_objects_from_list(list),
         }
     }
 
@@ -4463,7 +4386,6 @@ impl<T: Trait> Module<T> {
     //At last, it'll return the list of objects to create/update, total deletion prize to pay and total size.
     fn construct_objects_from_list(
         list: &[DataObjectCreationParameters],
-        bag_deletion_prize: BalanceOf<T>,
     ) -> DataObjAndDeletionPrizeAndObjSize<T> {
         let deletion_prize = Self::data_object_deletion_prize_value();
         list.iter()
@@ -4478,9 +4400,7 @@ impl<T: Trait> Module<T> {
                 })
             })
             .try_fold(
-                //As an initial value we set the fold with an empty vec, the bag deletion prize,
-                //(it's zero in case of an update), and 0 size.
-                Ok((Vec::new(), bag_deletion_prize, 0)),
+                Ok((Vec::new(), Zero::zero(), 0)),
                 |acc: DataObjAndDeletionPrizeAndObjSize<T>, obj| {
                     obj.map(|obj| {
                         acc.map(|(acc_obj, acc_deletion_prize_request, acc_size)| {
@@ -4503,15 +4423,12 @@ impl<T: Trait> Module<T> {
     //then in one iteration, it'll sum the total of object sizes and deletion prizes of that list.
     //If one object doesn't exist the iteration stops immediately.
     //At last, it'll return the list of objects to delete/update, total deletion prize to refund and total size.
-    fn construct_objects_to_remove(
-        op: &BagOperation<T>,
-        bag_deletion_prize: BalanceOf<T>,
-    ) -> DataObjAndDeletionPrizeAndObjSize<T> {
+    fn construct_objects_to_remove(op: &BagOperation<T>) -> DataObjAndDeletionPrizeAndObjSize<T> {
         match &op.params {
             BagOperationParams::<T>::Delete => Ok(DataObjectsById::<T>::iter_prefix(&op.bag_id)
                 .map(|(_, obj)| obj)
                 .fold(
-                    (Vec::new(), bag_deletion_prize, 0),
+                    (Vec::new(), Zero::zero(), 0),
                     |(acc_obj, acc_deletion_prize_refund, acc_size), obj| {
                         Self::calculate_acc_size_and_acc_prize(
                             acc_obj,

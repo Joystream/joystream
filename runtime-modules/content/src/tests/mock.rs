@@ -75,7 +75,6 @@ pub const PAYMENTS_NUMBER: u64 = 10;
 pub const DEFAULT_PAYOUT_CLAIMED: u64 = 10;
 pub const DEFAULT_PAYOUT_EARNED: u64 = 10;
 pub const DEFAULT_NFT_PRICE: u64 = 1000;
-pub const BAG_DELETION_PRIZE: u64 = 0;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -315,7 +314,6 @@ parameter_types! {
     pub const ContentModuleId: ModuleId = ModuleId(*b"mContent"); // module content
     pub const PricePerByte: u32 = 2;
     pub const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = 25;
-    pub const BagDeletionPrize: u64 = BAG_DELETION_PRIZE;
     pub const ModuleAccountInitialBalance: u64 = 1;
     pub const DefaultGlobalDailyNftLimit: LimitPerPeriod<u64> = LimitPerPeriod {
         block_number_period: 100,
@@ -359,9 +357,6 @@ impl Trait for Test {
 
     /// module id
     type ModuleId = ContentModuleId;
-
-    /// Bag deletion prize for channel bag
-    type BagDeletionPrize = BagDeletionPrize;
 
     /// membership info provider
     type MemberAuthenticator = MemberInfoProvider;
