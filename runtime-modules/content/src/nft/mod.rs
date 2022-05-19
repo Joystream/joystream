@@ -363,12 +363,12 @@ impl<T: Trait> Module<T> {
 
     pub(crate) fn complete_auction(
         nft: Nft<T>,
-        in_channel: T::ChannelId,
+        video: &Video<T>,
         royalty_payment: Option<(Royalty, T::AccountId)>,
         winner_id: T::MemberId,
         amount: BalanceOf<T>,
     ) -> Nft<T> {
-        let account_deposit_into = Self::ensure_nft_owner_account_id(in_channel, &nft).ok();
+        let account_deposit_into = Self::ensure_nft_owner_has_beneficiary_account(video, &nft).ok();
         let account_withdraw_from = ContentTreasury::<T>::module_account_id();
 
         Self::complete_payment(
@@ -389,15 +389,17 @@ impl<T: Trait> Module<T> {
     ///    - `None` -> then if channel owner is:
     ///      - `Member` -> use member controller account
     ///      - `CuratorGroup` -> Error
-    pub(crate) fn ensure_nft_owner_account_id(
-        channel_id: T::ChannelId,
+    /// In order to statically guarantee that `video.in_channel` exists, by leveraging the
+    /// Runtime invariant: `video` exists => `video.in_channel` exists
+    pub(crate) fn ensure_nft_owner_has_beneficiary_account(
+        video: &Video<T>,
         nft: &Nft<T>,
     ) -> Result<T::AccountId, DispatchError> {
         match nft.owner {
             NftOwner::Member(member_id) => T::MemberAuthenticator::controller_account_id(member_id),
             NftOwner::ChannelOwner => {
-                let channel = Self::ensure_channel_exists(&channel_id)?;
-                Self::ensure_reward_account(&channel)
+                let channel = Self::ensure_channel_exists(&video.in_channel)?;
+                Self::ensure_channel_has_beneficiary_account(&channel)
             }
         }
     }
@@ -470,7 +472,7 @@ impl<T: Trait> Module<T> {
         // payment is none if there is no royalty
         if let Some(royalty) = creator_royalty {
             let channel = Self::channel_by_id(&video.in_channel);
-            Self::ensure_reward_account(&channel)
+            Self::ensure_channel_has_beneficiary_account(&channel)
                 .ok()
                 .map(|reward_acc| (royalty, reward_acc))
         } else {
