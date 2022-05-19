@@ -160,20 +160,21 @@ export async function content_ContentCreated(ctx: EventContext & StoreContext): 
       deserializeMetadata(VideoMetadata, contentCreationParameters.meta.unwrap())
     : undefined
 
-  if (metadata && (metadata as DecodedMetadataObject<IContentMetadata>).playlistMetadata) {
-    await processCreatePlaylistMessage(
-      ctx,
-      channel,
-      (metadata as DecodedMetadataObject<IContentMetadata>).playlistMetadata!,
-      contentCreatedEventData
-    )
+  const asContentMetadata = metadata as DecodedMetadataObject<IContentMetadata> | undefined
+
+  // Content Creation Preference
+  // 1. metadata == `PlaylistMetadata` -> create Playlist
+  // 2. metadata == `VideoMetadata` || undefined -> create Video
+
+  if (asContentMetadata && asContentMetadata.playlistMetadata) {
+    await processCreatePlaylistMessage(ctx, channel, asContentMetadata.playlistMetadata, contentCreatedEventData)
     return
   }
 
   await processCreateVideoMessage(
     ctx,
     channel,
-    metadata as DecodedMetadataObject<IVideoMetadata>,
+    asContentMetadata?.videoMetadata || (metadata as DecodedMetadataObject<IVideoMetadata>),
     contentCreatedEventData
   )
 }
@@ -278,18 +279,20 @@ export async function content_ContentUpdated(ctx: EventContext & StoreContext): 
       deserializeMetadata(VideoMetadata, contentUpdateParameters.new_meta.unwrap())
     : undefined
 
-  if (newMetadataBytes && (newMetadataBytes as DecodedMetadataObject<IContentMetadata>).playlistMetadata) {
-    await processUpdatePlaylistMessage(
-      ctx,
-      (newMetadataBytes as DecodedMetadataObject<IContentMetadata>).playlistMetadata!,
-      contentUpdatedEventData
-    )
+  const asContentMetadata = newMetadataBytes as DecodedMetadataObject<IContentMetadata> | undefined
+
+  // Content Update Preference
+  // 1. metadata == `PlaylistMetadata` -> update Playlist
+  // 2. metadata == `VideoMetadata` || undefined -> update Video
+
+  if (asContentMetadata && asContentMetadata.playlistMetadata) {
+    await processUpdatePlaylistMessage(ctx, asContentMetadata.playlistMetadata, contentUpdatedEventData)
     return
   }
 
   await processUpdateVideoMessage(
     ctx,
-    newMetadataBytes as DecodedMetadataObject<IVideoMetadata>,
+    asContentMetadata?.videoMetadata || (newMetadataBytes as DecodedMetadataObject<IVideoMetadata>),
     contentUpdatedEventData
   )
 }

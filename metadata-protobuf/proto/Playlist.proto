@@ -2,10 +2,10 @@ syntax = "proto2";
 
 message PlaylistMetadata {
     // Title of the playlist
-    required string title = 2;
+    optional string title = 2;
 
     // Description of the playlist
-    required string description = 3;
+    optional string description = 3;
 
     // IDs of the videos to include in playlist (in given order)
     repeated uint64 video_ids = 4;

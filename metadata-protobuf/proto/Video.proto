@@ -91,10 +91,12 @@ message VideoCategoryMetadata {
 
 message ContentMetadata {
     oneof content_metadata {
-        // Therotically `VideoMetadata` should also be part of `ContentMetadata` message, 
-        // but it can't be because of backward compatibality issue (i.e. metadata of past
-        // videos already exist as serialized in `VideoMetadata` format and not as `ContentMetadata`).
-        // But metadata of any future content type should be wrapped in `ContentMetadata` message
-        PlaylistMetadata playlist_metadata = 1;
+        // For backward compatibility reasons, apps that deserialize metadata (e.g. Query Node) 
+        // need to handle the deserialization of `VideoMetadata` message both as independent
+        // message and as a variant of  `ContentMetadata`. Though, apps that serialize protobuf
+        // messages (mostly frontend apps) are advised to use `ContentMetadata` message for all 
+        // new videos & playlists
+        VideoMetadata video_metadata = 1;
+        PlaylistMetadata playlist_metadata = 2;
     }
 }

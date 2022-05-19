@@ -363,8 +363,8 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| title | [string](#string) | required | Title of the playlist |
-| description | [string](#string) | required | Description of the playlist |
+| title | [string](#string) | optional | Title of the playlist |
+| description | [string](#string) | optional | Description of the playlist |
 | video_ids | [uint64](#uint64) | repeated | IDs of the videos to include in playlist (in given order) |
 | thumbnail_photo | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
 | is_public | [bool](#bool) | optional | Playlist status, whether it is public or private. If the field is omitted the default playlist status would be public??? |
@@ -617,7 +617,7 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| video_metadata | [VideoMetadata](#VideoMetadata) | optional |  |
+| video_metadata | [VideoMetadata](#VideoMetadata) | optional | For backward compatibility reasons, apps that deserialize metadata (e.g. Query Node) need to handle the deserialization of `VideoMetadata` message both as independent message and as a variant of `ContentMetadata`. Though, apps that serialize protobuf messages (mostly frontend apps) are advised to use `ContentMetadata` message for all new videos &amp; playlists |
 | playlist_metadata | [PlaylistMetadata](#PlaylistMetadata) | optional |  |
 
 
