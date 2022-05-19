@@ -1,5 +1,4 @@
 use frame_support::inherent::{CheckInherentsResult, InherentData};
-use frame_support::storage::StorageValue;
 use frame_support::traits::{KeyOwnerProofSystem, OnRuntimeUpgrade, Randomness};
 use frame_support::unsigned::{TransactionSource, TransactionValidity};
 use pallet_grandpa::fg_primitives;
