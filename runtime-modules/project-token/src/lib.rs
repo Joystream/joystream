@@ -735,7 +735,12 @@ impl<T: Trait>
     /// no-op if outstanding credit is zero
     fn claim_patronage_credit(token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
-        Self::ensure_account_data_exists(token_id, &member_id).map(|_| ())?;
+        ensure!(
+            matches!(token_info.revenue_split, RevenueSplitState::Inactive),
+            Error::<T>::CannotModifySupplyWhenRevenueSplitsAreActive,
+        );
+
+        Self::ensure_account_data_exists(token_id, &to_account).map(|_| ())?;
 
         let now = Self::current_block();
         let unclaimed_patronage = token_info.unclaimed_patronage_at_block(now);
