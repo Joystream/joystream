@@ -83,9 +83,6 @@ pub struct CustomOnRuntimeUpgrade;
 impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
     fn on_runtime_upgrade() -> Weight {
         ProposalsEngine::cancel_active_and_pending_proposals();
-        // Set NFT values
-        <content::MaxStartingPrice<Runtime>>::put(Balance::from(1_000_000_000_000u64));
-        <content::MaxBidStep<Runtime>>::put(Balance::from(1_000_000_000_000u64));
 
         10_000_000 // TODO: adjust weight
     }
