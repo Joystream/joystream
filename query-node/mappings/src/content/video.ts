@@ -22,7 +22,14 @@ import {
   Video,
   VideoCategory,
 } from 'query-node/dist/model'
-import { VideoCategoryMetadata, ContentMetadata, IVideoMetadata, IPlaylistMetadata } from '@joystream/metadata-protobuf'
+import {
+  VideoCategoryMetadata,
+  ContentMetadata,
+  IVideoMetadata,
+  IPlaylistMetadata,
+  VideoMetadata,
+  IContentMetadata,
+} from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import _ from 'lodash'
 import { createNft } from './nft'
@@ -149,14 +156,26 @@ export async function content_ContentCreated(ctx: EventContext & StoreContext): 
 
   // deserialize & process metadata
   const metadata = contentCreationParameters.meta.isSome
-    ? deserializeMetadata(ContentMetadata, contentCreationParameters.meta.unwrap())
+    ? deserializeMetadata(ContentMetadata, contentCreationParameters.meta.unwrap()) ||
+      deserializeMetadata(VideoMetadata, contentCreationParameters.meta.unwrap())
     : undefined
 
-  if (metadata && metadata.playlistMetadata) {
-    await processCreatePlaylistMessage(ctx, channel, metadata.playlistMetadata, contentCreatedEventData)
-  } else {
-    await processCreateVideoMessage(ctx, channel, metadata?.videoMetadata || undefined, contentCreatedEventData)
+  if (metadata && (metadata as DecodedMetadataObject<IContentMetadata>).playlistMetadata) {
+    await processCreatePlaylistMessage(
+      ctx,
+      channel,
+      (metadata as DecodedMetadataObject<IContentMetadata>).playlistMetadata!,
+      contentCreatedEventData
+    )
+    return
   }
+
+  await processCreateVideoMessage(
+    ctx,
+    channel,
+    metadata as DecodedMetadataObject<IVideoMetadata>,
+    contentCreatedEventData
+  )
 }
 
 export async function processCreateVideoMessage(
@@ -255,14 +274,24 @@ export async function content_ContentUpdated(ctx: EventContext & StoreContext): 
 
   // deserialize & process metadata
   const newMetadataBytes = contentUpdateParameters.new_meta.isSome
-    ? deserializeMetadata(ContentMetadata, contentUpdateParameters.new_meta.unwrap())
+    ? deserializeMetadata(ContentMetadata, contentUpdateParameters.new_meta.unwrap()) ||
+      deserializeMetadata(VideoMetadata, contentUpdateParameters.new_meta.unwrap())
     : undefined
 
-  if (newMetadataBytes && newMetadataBytes.playlistMetadata) {
-    await processUpdatePlaylistMessage(ctx, newMetadataBytes.playlistMetadata, contentUpdatedEventData)
-  } else {
-    await processUpdateVideoMessage(ctx, newMetadataBytes?.videoMetadata || undefined, contentUpdatedEventData)
+  if (newMetadataBytes && (newMetadataBytes as DecodedMetadataObject<IContentMetadata>).playlistMetadata) {
+    await processUpdatePlaylistMessage(
+      ctx,
+      (newMetadataBytes as DecodedMetadataObject<IContentMetadata>).playlistMetadata!,
+      contentUpdatedEventData
+    )
+    return
   }
+
+  await processUpdateVideoMessage(
+    ctx,
+    newMetadataBytes as DecodedMetadataObject<IVideoMetadata>,
+    contentUpdatedEventData
+  )
 }
 
 export async function processUpdateVideoMessage(

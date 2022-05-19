@@ -91,7 +91,10 @@ message VideoCategoryMetadata {
 
 message ContentMetadata {
     oneof content_metadata {
-        VideoMetadata video_metadata = 1;
-        PlaylistMetadata playlist_metadata = 2;
+        // Therotically `VideoMetadata` should also be part of `ContentMetadata` message, 
+        // but it can't be because of backward compatibality issue (i.e. metadata of past
+        // videos already exist as serialized in `VideoMetadata` format and not as `ContentMetadata`).
+        // But metadata of any future content type should be wrapped in `ContentMetadata` message
+        PlaylistMetadata playlist_metadata = 1;
     }
 }
