@@ -726,7 +726,6 @@ impl<T: Trait>
     /// Preconditions:
     /// - token by `token_id` must exists
     /// - `member_id` x `token_id` account must exist
-    /// - `to_account` must be valid for `token_id`
     /// - `token.revenue_split` has Inactive status
     ///
     /// Postconditions:
@@ -740,7 +739,7 @@ impl<T: Trait>
             Error::<T>::CannotModifySupplyWhenRevenueSplitsAreActive,
         );
 
-        Self::ensure_account_data_exists(token_id, &to_account).map(|_| ())?;
+        Self::ensure_account_data_exists(token_id, &member_id).map(|_| ())?;
 
         let now = Self::current_block();
         let unclaimed_patronage = token_info.unclaimed_patronage_at_block(now);
