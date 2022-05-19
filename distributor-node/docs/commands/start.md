@@ -20,4 +20,4 @@ OPTIONS
   -y, --yes                    Answer "yes" to any prompt, skipping any manual confirmations
 ```
 
-_See code: [src/commands/start.ts](https://github.com/Joystream/joystream/blob/v0.1.1/src/commands/start.ts)_
+_See code: [src/commands/start.ts](https://github.com/Joystream/joystream/blob/v0.1.2/src/commands/start.ts)_
