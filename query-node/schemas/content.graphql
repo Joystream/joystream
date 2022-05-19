@@ -216,6 +216,9 @@ type PlaylistVideo @entity {
   "Playlist's video"
   video: Video!
 
+  "The Playlist"
+  playlist: Playlist!
+
   "Position of video in playlist"
   position: Int!
 }

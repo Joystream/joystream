@@ -653,11 +653,16 @@ export async function processPlaylistVideos(
     }
   ) as Video[]
 
+  // save playlist; playlist record should exist in DB
+  // before creating PlaylistVideo<->Playlist relation
+  await store.save<Playlist>(playlist)
+
   const playlistVideos = await Promise.all(
     videos.map(async (video, i) => {
       const v = new PlaylistVideo({
         id: `${playlist.id}-${video.id}`,
         video,
+        playlist,
         position: i,
       })
 
