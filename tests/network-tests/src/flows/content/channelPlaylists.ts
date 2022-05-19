@@ -10,7 +10,7 @@ import {
 import { FlowProps } from '../../Flow'
 import { createJoystreamCli } from '../utils'
 
-export default async function chanelPlaylists({ api, query }: FlowProps): Promise<void> {
+export default async function channelPlaylists({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:channel-playlists')
   debug('Started')
   api.enableDebugTxLogs()
