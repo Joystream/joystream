@@ -416,7 +416,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<EnglishAuction<T>, DispatchError> {
         if let TransactionalStatus::<T>::EnglishAuction(auction) = &nft.transactional_status {
             Ok(auction.to_owned())
-         } else {
+        } else {
             Err(Error::<T>::IsNotEnglishAuctionType.into())
         }
     }
