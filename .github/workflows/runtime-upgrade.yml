@@ -71,9 +71,9 @@ jobs:
           name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
           path: joystream-node-docker-image.tar.gz
 
-  runtime_upgrade_from_olympia:
+  runtime_upgrade:
     # if: ${{ false }}
-    name: Runtime Upgrade From Olypia
+    name: Runtime Upgrade From Rhodes Spec 6
     needs: build_images
     runs-on: ubuntu-latest
     steps:
@@ -102,7 +102,7 @@ jobs:
           export HOME=${PWD}
           mkdir -p ${HOME}/.local/share/joystream-cli
           yarn joystream-cli api:setUri ws://localhost:9944
-          # Olympia release production runtime profile
-          export RUNTIME_TAG=6740a4ae2bf40fe7c670fb49943cbbe290277601
+          # Rhodes release (spec 6) production runtime profile
+          export RUNTIME_TAG=8c2e70abcb34a6892991355b61e804b7c1492290
           export TARGET_RUNTIME_TAG=latest
           tests/network-tests/run-migration-tests.sh

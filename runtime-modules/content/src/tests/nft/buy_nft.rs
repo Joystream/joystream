@@ -463,28 +463,35 @@ fn buy_now_ok_with_nft_owner_member_credited_with_payment() {
 }
 
 #[test]
-fn buy_now_ok_with_nft_owner_member_owned_channel_credited_with_payment() {
+fn buy_now_ok_with_nft_owner_member_owned_channel_and_no_reward_account_credited_with_payment() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
-        let starting_block = 1;
-        let video_id = Content::next_video_id();
-        run_to_block(starting_block);
-        setup_nft_on_sale_scenario();
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
-        let platform_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE);
-        let balance_pre = Balances::<Test>::usable_balance(DEFAULT_MEMBER_ACCOUNT_ID);
+        run_to_block(1u64);
 
+        let video_id = 1u64;
+        CreateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Ok(()));
+
+        CreateVideoFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_channel_id(1u64)
+            .with_nft_in_sale(100u64)
+            .call_and_assert(Ok(()));
+
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, 100u64);
         assert_ok!(Content::buy_nft(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             SECOND_MEMBER_ID,
-            DEFAULT_NFT_PRICE,
+            100u64,
         ));
 
         assert_eq!(
             Balances::<Test>::usable_balance(DEFAULT_MEMBER_ACCOUNT_ID),
-            // balance_pre - platform fee (since channel owner it retains royalty)
-            balance_pre + DEFAULT_NFT_PRICE - platform_fee,
+            100u64 - (Content::platform_fee_percentage() * 100u64),
         )
     })
 }
@@ -508,7 +515,6 @@ fn buy_now_ok_with_nft_owner_curator_group_owned_channel_and_non_set_account_and
         CreateVideoFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
             .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
-            .with_channel_id(NextChannelId::<Test>::get() - 1)
             .call_and_assert(Ok(()));
 
         assert_ok!(Content::issue_nft(
@@ -578,7 +584,38 @@ pub fn proceeds_are_burned_if_nft_owned_by_curator_channel_with_no_reward_accoun
 }
 
 #[test]
-pub fn nft_channel_member_owner_is_correctly_credited_after_sale() {
+pub fn proceeds_are_correctly_credited_if_nft_owned_by_member_channel_with_no_reward_account_and_royalty_specified(
+) {
+    with_default_mock_builder(|| {
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, 100u64);
+        // channel with no reward account
+        CreateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call();
+        CreateVideoFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .with_nft_in_sale(100u64)
+            .with_nft_royalty(1)
+            .call();
+
+        assert_ok!(Content::buy_nft(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            1u64,
+            SECOND_MEMBER_ID,
+            100u64,
+        ));
+
+        assert_eq!(
+            Balances::<Test>::usable_balance(DEFAULT_MEMBER_ACCOUNT_ID),
+            100u64 - (Content::platform_fee_percentage() * 100u64)
+        );
+    })
+}
+
+#[test]
+pub fn nft_channel_member_owner_with_reward_account_set_is_correctly_credited_after_sale() {
     with_default_mock_builder(|| {
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, 100u64);
         CreateChannelFixture::default()

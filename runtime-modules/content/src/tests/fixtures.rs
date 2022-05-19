@@ -1374,7 +1374,8 @@ impl ClaimChannelRewardFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
         let channel = Content::channel_by_id(self.item.channel_id);
-        let reward_account = Content::ensure_reward_account(&channel).unwrap_or_default();
+        let reward_account =
+            Content::ensure_channel_has_beneficiary_account(&channel).unwrap_or_default();
         let balance_pre = Balances::<Test>::usable_balance(&reward_account);
         let payout_earned_pre =
             Content::channel_by_id(self.item.channel_id).cumulative_payout_earned;
