@@ -256,6 +256,39 @@ fn unsuccesful_upcoming_sale_update_with_start_block_in_the_past() {
 }
 
 #[test]
+fn unsuccesful_upcoming_sale_update_with_zero_duration() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default()
+            .with_start_block(100)
+            .call_and_assert(Ok(()));
+        UpdateUpcomingSaleFixture::default()
+            .with_new_duration(Some(0))
+            .call_and_assert(Err(Error::<Test>::SaleDurationIsZero.into()));
+    })
+}
+
+#[test]
+fn unsuccesful_upcoming_sale_update_with_duration_too_short() {
+    let min_sale_duration = 10u64;
+    let config = GenesisConfigBuilder::new_empty()
+        .with_min_sale_duration(min_sale_duration)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default()
+            .with_start_block(100)
+            .call_and_assert(Ok(()));
+        UpdateUpcomingSaleFixture::default()
+            .with_new_duration(Some(min_sale_duration - 1))
+            .call_and_assert(Err(Error::<Test>::SaleDurationTooShort.into()));
+    })
+}
+
+#[test]
 fn successful_upcoming_sale_update() {
     let config = GenesisConfigBuilder::new_empty().build();
 
