@@ -140,6 +140,11 @@ impl Fixture<IssueTokenFixtureStateSnapshot> for IssueTokenFixture {
             }
         );
         assert!(SymbolsUsed::<Test>::contains_key(self.params.symbol));
+        // Event emitted
+        last_event_eq!(RawEvent::TokenIssued(
+            snapshot_pre.next_token_id,
+            self.params.clone()
+        ));
     }
 }
 
@@ -296,12 +301,12 @@ impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
             IssuanceState::of::<Test>(&snapshot_post.token_data),
             if let Some(start_block) = self.params.starts_at {
                 if System::block_number() < start_block {
-                    IssuanceState::UpcomingSale(sale)
+                    IssuanceState::UpcomingSale(sale.clone())
                 } else {
-                    IssuanceState::Sale(sale)
+                    IssuanceState::Sale(sale.clone())
                 }
             } else {
-                IssuanceState::Sale(sale)
+                IssuanceState::Sale(sale.clone())
             }
         );
 
@@ -313,6 +318,13 @@ impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
                 .amount
                 .saturating_sub(self.params.upper_bound_quantity)
         );
+
+        // Event emitted
+        last_event_eq!(RawEvent::TokenSaleInitialized(
+            self.token_id,
+            snapshot_pre.token_data.next_sale_id,
+            sale
+        ));
     }
 }
 
@@ -381,6 +393,13 @@ impl Fixture<UpdateUpcomingSaleFixtureStateSnapshot> for UpdateUpcomingSaleFixtu
                 ..sale_pre
             }
         );
+        // Event emitted
+        last_event_eq!(RawEvent::UpcomingTokenSaleUpdated(
+            self.token_id,
+            snapshot_post.token_data.next_sale_id - 1,
+            self.new_start_block.clone(),
+            self.new_duration.clone()
+        ));
     }
 }
 

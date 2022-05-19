@@ -566,24 +566,24 @@ impl<TokenSale> OfferingState<TokenSale> {
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct TokenAllocation<Balance, VestingScheduleParams> {
-    pub(crate) amount: Balance,
-    pub(crate) vesting_schedule_params: Option<VestingScheduleParams>,
+    pub amount: Balance,
+    pub vesting_schedule_params: Option<VestingScheduleParams>,
 }
 
 /// Input parameters for token issuance
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
 pub struct TokenIssuanceParameters<Hash, TokenAllocation, TransferPolicyParams, MemberId: Ord> {
     /// Initial allocation of the token
-    pub(crate) initial_allocation: BTreeMap<MemberId, TokenAllocation>,
+    pub initial_allocation: BTreeMap<MemberId, TokenAllocation>,
 
     /// Token Symbol
-    pub(crate) symbol: Hash,
+    pub symbol: Hash,
 
     /// Initial transfer policy:
-    pub(crate) transfer_policy: TransferPolicyParams,
+    pub transfer_policy: TransferPolicyParams,
 
     /// Initial Patronage rate
-    pub(crate) patronage_rate: YearlyRate,
+    pub patronage_rate: YearlyRate,
 }
 
 impl<Hash, MemberId, Balance, VestingScheduleParams, SingleDataObjectUploadParams>
@@ -1213,8 +1213,7 @@ pub(crate) type TokenDataOf<T> = TokenData<
 >;
 
 /// Alias for InitialAllocation
-pub(crate) type TokenAllocationOf<T> =
-    TokenAllocation<TokenBalanceOf<T>, VestingScheduleParamsOf<T>>;
+pub type TokenAllocationOf<T> = TokenAllocation<TokenBalanceOf<T>, VestingScheduleParamsOf<T>>;
 
 /// Alias for Token Issuance Parameters
 pub type TokenIssuanceParametersOf<T> = TokenIssuanceParameters<
@@ -1234,7 +1233,7 @@ pub(crate) type TransferPolicyOf<T> = TransferPolicy<<T as frame_system::Trait>:
 pub(crate) type MerkleProofOf<T> = MerkleProof<<T as frame_system::Trait>::Hashing>;
 
 /// Alias for VestingScheduleParams
-pub(crate) type VestingScheduleParamsOf<T> =
+pub type VestingScheduleParamsOf<T> =
     VestingScheduleParams<<T as frame_system::Trait>::BlockNumber>;
 
 /// Alias for VestingSchedule

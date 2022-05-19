@@ -2,8 +2,9 @@ use super::curators;
 use super::mock::*;
 use crate::*;
 use common::council::CouncilBudgetManager;
-use frame_support::assert_ok;
 use frame_support::traits::Currency;
+use frame_support::{assert_noop, assert_ok};
+use project_token::types::{TokenAllocationOf, TokenIssuanceParametersOf};
 use sp_runtime::Perbill;
 use sp_std::cmp::min;
 use sp_std::iter::{IntoIterator, Iterator};
@@ -1679,6 +1680,199 @@ impl ClaimAndWithdrawChannelRewardFixture {
     }
 }
 
+pub struct IssueCreatorTokenFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    params: TokenIssuanceParametersOf<Test>,
+}
+
+impl IssueCreatorTokenFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+            params: TokenIssuanceParametersOf::<Test> {
+                symbol: Hashing::hash_of(b"CRT"),
+                ..Default::default()
+            },
+        }
+        .with_initial_allocation_to(DEFAULT_MEMBER_ID)
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_initial_allocation_to(self, member_id: MemberId) -> Self {
+        Self {
+            params: TokenIssuanceParametersOf::<Test> {
+                initial_allocation: [(
+                    member_id,
+                    TokenAllocationOf::<Test> {
+                        amount: DEFAULT_CREATOR_TOKEN_ISSUANCE,
+                        vesting_schedule_params: None,
+                    },
+                )]
+                .iter()
+                .cloned()
+                .collect(),
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let expected_token_id = project_token::Module::<Test>::next_token_id();
+        let channel_pre = Content::channel_by_id(self.channel_id);
+
+        let actual_result = Content::issue_creator_token(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.params.clone(),
+        );
+
+        let channel_post = Content::channel_by_id(self.channel_id);
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+            assert_eq!(
+                channel_post,
+                Channel::<Test> {
+                    creator_token_id: Some(expected_token_id),
+                    ..channel_pre
+                }
+            );
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::CreatorTokenIssued(
+                    self.actor.clone(),
+                    self.channel_id,
+                    expected_token_id
+                ))
+            );
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+
+pub struct InitCreatorTokenSale {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    params: TokenSaleParamsOf<Test>,
+}
+
+impl InitCreatorTokenSale {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+            params: TokenSaleParamsOf::<Test> {
+                unit_price: DEFAULT_CREATOR_TOKEN_SALE_UNIT_PRICE,
+                upper_bound_quantity: DEFAULT_CREATOR_TOKEN_ISSUANCE,
+                starts_at: None,
+                duration: DEFAULT_CREATOR_TOKEN_SALE_DURATION,
+                vesting_schedule_params: None,
+                cap_per_member: None,
+                metadata: None,
+            },
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_start_block(self, start_block: u64) -> Self {
+        Self {
+            params: TokenSaleParamsOf::<Test> {
+                starts_at: Some(start_block),
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let actual_result = Content::init_creator_token_sale(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.params.clone(),
+        );
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+
+pub struct UpdateUpcomingCreatorTokenSale {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    new_start_block: Option<u64>,
+    new_duration: Option<u64>,
+}
+
+impl UpdateUpcomingCreatorTokenSale {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+            new_start_block: Some(123),
+            new_duration: Some(DEFAULT_CREATOR_TOKEN_SALE_DURATION + 1),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let actual_result = Content::update_upcoming_creator_token_sale(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.new_start_block,
+            self.new_duration,
+        );
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+
 // helper functions
 pub fn increase_account_balance_helper(account_id: u64, balance: u64) {
     let _ = Balances::<Test>::deposit_creating(&account_id, balance.into());
@@ -1973,4 +2167,122 @@ fn channel_reward_account_balance(channel: &Channel<Test>) -> u64 {
     } else {
         Zero::zero()
     }
+}
+
+pub fn default_curator_actor() -> ContentActor<CuratorGroupId, CuratorId, MemberId> {
+    ContentActor::Curator(CuratorGroupId::one(), DEFAULT_CURATOR_ID)
+}
+
+pub fn get_default_member_channel_invalid_owner_contexts() -> Vec<(
+    AccountId,
+    ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    Error<Test>,
+)> {
+    vec![
+        // lead as owner
+        (
+            LEAD_ACCOUNT_ID,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            Error::<Test>::MemberAuthFailed,
+        ),
+        // curator as owner
+        (
+            DEFAULT_CURATOR_ACCOUNT_ID,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            Error::<Test>::MemberAuthFailed,
+        ),
+        // collaborator as owner
+        (
+            COLLABORATOR_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            Error::<Test>::MemberAuthFailed,
+        ),
+        // unauth member as owner
+        (
+            UNAUTHORIZED_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            Error::<Test>::MemberAuthFailed,
+        ),
+        // lead as lead
+        (
+            LEAD_ACCOUNT_ID,
+            ContentActor::Lead,
+            Error::<Test>::ActorCannotOwnChannel,
+        ),
+        // curator as curator
+        (
+            DEFAULT_CURATOR_ACCOUNT_ID,
+            default_curator_actor(),
+            Error::<Test>::ActorNotAuthorized,
+        ),
+        // collaborator as collaborator
+        (
+            COLLABORATOR_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(COLLABORATOR_MEMBER_ID),
+            Error::<Test>::ActorNotAuthorized,
+        ),
+        // unauth member as unauth member
+        (
+            UNAUTHORIZED_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(UNAUTHORIZED_MEMBER_ID),
+            Error::<Test>::ActorNotAuthorized,
+        ),
+    ]
+}
+
+pub fn get_default_curator_channel_invalid_owner_contexts() -> Vec<(
+    AccountId,
+    ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    Error<Test>,
+)> {
+    vec![
+        // lead as curator
+        (
+            LEAD_ACCOUNT_ID,
+            default_curator_actor(),
+            Error::<Test>::CuratorAuthFailed,
+        ),
+        // collaborator as curator
+        (
+            COLLABORATOR_MEMBER_ACCOUNT_ID,
+            default_curator_actor(),
+            Error::<Test>::CuratorAuthFailed,
+        ),
+        // unauth curator as curator
+        (
+            UNAUTHORIZED_CURATOR_ACCOUNT_ID,
+            default_curator_actor(),
+            Error::<Test>::CuratorAuthFailed,
+        ),
+        // member as curator
+        (
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            default_curator_actor(),
+            Error::<Test>::CuratorAuthFailed,
+        ),
+        // lead as lead
+        (
+            LEAD_ACCOUNT_ID,
+            ContentActor::Lead,
+            Error::<Test>::ActorCannotOwnChannel,
+        ),
+        // collaborator as collaborator
+        (
+            COLLABORATOR_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(COLLABORATOR_MEMBER_ID),
+            Error::<Test>::ActorNotAuthorized,
+        ),
+        // unauth curator as unauth curator
+        (
+            UNAUTHORIZED_CURATOR_ACCOUNT_ID,
+            ContentActor::Curator(2, UNAUTHORIZED_CURATOR_ID),
+            Error::<Test>::ActorNotAuthorized,
+        ),
+        // member as member
+        (
+            DEFAULT_MEMBER_ACCOUNT_ID,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            Error::<Test>::ActorNotAuthorized,
+        ),
+    ]
 }
