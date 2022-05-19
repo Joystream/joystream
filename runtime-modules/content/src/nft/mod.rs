@@ -398,7 +398,7 @@ impl<T: Trait> Module<T> {
         match nft.owner {
             NftOwner::Member(member_id) => T::MemberAuthenticator::controller_account_id(member_id),
             NftOwner::ChannelOwner => {
-                let channel = Self::ensure_channel_exists(&video.in_channel)?;
+                let channel = Self::channel_by_id(&video.in_channel);
                 Self::ensure_channel_has_beneficiary_account(&channel)
             }
         }
@@ -416,7 +416,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<EnglishAuction<T>, DispatchError> {
         if let TransactionalStatus::<T>::EnglishAuction(auction) = &nft.transactional_status {
             Ok(auction.to_owned())
-        } else {
+         } else {
             Err(Error::<T>::IsNotEnglishAuctionType.into())
         }
     }
