@@ -1278,7 +1278,7 @@ pub(crate) type TokenSaleId = u32;
 pub(crate) type RevenueSplitId = u32;
 
 /// Alias for PaymentWithVesting
-pub(crate) type PaymentWithVestingOf<T> =
+pub type PaymentWithVestingOf<T> =
     PaymentWithVesting<TokenBalanceOf<T>, VestingScheduleParamsOf<T>>;
 
 /// Alias for ValidatedPayment

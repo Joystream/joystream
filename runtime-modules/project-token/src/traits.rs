@@ -25,8 +25,9 @@ pub trait PalletToken<
     /// Perform transfer as the issuer, allowing new account creation if the token is Permissioned
     /// and setting optional vesting schedule.
     fn issuer_transfer(
-        src: MemberId,
         token_id: TokenId,
+        src_member_id: MemberId,
+        bloat_bond_payer: AccountId,
         outputs: TransfersWithVesting,
     ) -> DispatchResult;
 

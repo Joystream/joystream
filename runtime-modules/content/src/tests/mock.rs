@@ -93,6 +93,7 @@ pub const DEFAULT_NFT_PRICE: u64 = 1000;
 pub const DEFAULT_CREATOR_TOKEN_ISSUANCE: u64 = 1_000_000_000;
 pub const DEFAULT_CREATOR_TOKEN_SALE_UNIT_PRICE: u64 = 10;
 pub const DEFAULT_CREATOR_TOKEN_SALE_DURATION: u64 = 100;
+pub const DEFAULT_ISSUER_TRANSFER_AMOUNT: u64 = 1_000_000;
 
 impl_outer_origin! {
     pub enum Origin for Test {}

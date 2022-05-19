@@ -836,7 +836,7 @@ impl<T: Trait>
     /// Preconditions:
     /// - token by `token_id` must exists
     /// - `src_member_id` x `token_id` account must exist
-    /// - `src_member_id` member's controller account must have enough JOYs to cover
+    /// - `bloat_bond_payer` account must have enough JOYs to cover
     ///    the total bloat bond required in case of destination(s) not existing.
     /// - source account must have enough token funds to cover all the transfers
     /// - each account in `outputs` must have the number of ongoing `vesting_schedules` <
@@ -845,7 +845,7 @@ impl<T: Trait>
     //
     /// Postconditions:
     /// - source account tokens amount decreased by `amount`.
-    /// - total bloat bond transferred from `src_member_id` member controller account's
+    /// - total bloat bond transferred from `bloat_bond_payer`
     ///   to module treasury account
     /// - `outputs.beneficiary` tokens amount increased by `amount`
     /// - if `vesting_schedule` provided in the output - vesting schedule added to
@@ -854,18 +854,17 @@ impl<T: Trait>
     ///   MaxVestingSchedulesPerAccountPerToken - some finished vesting_schedule is dropped
     ///   from beneficiary'es `account_data`
     fn issuer_transfer(
-        src_member_id: T::MemberId,
         token_id: T::TokenId,
+        src_member_id: T::MemberId,
+        bloat_bond_payer: T::AccountId,
         outputs: TransfersWithVestingOf<T>,
     ) -> DispatchResult {
-        let src_controller_account =
-            T::MembershipInfoProvider::controller_account_id(src_member_id)?;
         let treasury = Self::module_treasury_account();
 
         // Currency transfer preconditions
         let validated_transfers = Self::ensure_can_transfer(
             token_id,
-            &src_controller_account,
+            &bloat_bond_payer,
             &src_member_id,
             &treasury,
             outputs,
@@ -876,7 +875,7 @@ impl<T: Trait>
 
         Self::do_transfer(
             token_id,
-            &src_controller_account,
+            &bloat_bond_payer,
             &src_member_id,
             &treasury,
             &validated_transfers,
@@ -1153,7 +1152,7 @@ impl<T: Trait> Module<T> {
     /// Transfer preconditions
     pub(crate) fn ensure_can_transfer(
         token_id: T::TokenId,
-        src_controller_account: &T::AccountId,
+        bloat_bond_payer: &T::AccountId,
         src_member_id: &T::MemberId,
         treasury: &T::AccountId,
         transfers: TransfersWithVestingOf<T>,
@@ -1175,10 +1174,7 @@ impl<T: Trait> Module<T> {
 
         // compute bloat bond
         let cumulative_bloat_bond = Self::compute_bloat_bond(&validated_transfers);
-        Self::ensure_can_transfer_joy(
-            src_controller_account,
-            &[(&treasury, cumulative_bloat_bond)],
-        )?;
+        Self::ensure_can_transfer_joy(bloat_bond_payer, &[(&treasury, cumulative_bloat_bond)])?;
 
         Ok(validated_transfers)
     }
@@ -1186,7 +1182,7 @@ impl<T: Trait> Module<T> {
     /// Perform balance accounting for balances
     pub(crate) fn do_transfer(
         token_id: T::TokenId,
-        src_controller_account: &T::AccountId,
+        bloat_bond_payer: &T::AccountId,
         src_member_id: &T::MemberId,
         treasury: &T::AccountId,
         validated_transfers: &ValidatedTransfersOf<T>,
@@ -1252,7 +1248,7 @@ impl<T: Trait> Module<T> {
 
         let cumulative_bloat_bond = Self::compute_bloat_bond(validated_transfers);
         if !cumulative_bloat_bond.is_zero() {
-            Self::transfer_joy(src_controller_account, treasury, cumulative_bloat_bond);
+            Self::transfer_joy(bloat_bond_payer, treasury, cumulative_bloat_bond);
         }
 
         AccountInfoByTokenAndMember::<T>::mutate(token_id, &src_member_id, |account_data| {

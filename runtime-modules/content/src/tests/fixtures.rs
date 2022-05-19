@@ -4,7 +4,9 @@ use crate::*;
 use common::council::CouncilBudgetManager;
 use frame_support::traits::Currency;
 use frame_support::{assert_noop, assert_ok};
-use project_token::types::{TokenAllocationOf, TokenIssuanceParametersOf};
+use project_token::types::{
+    PaymentWithVestingOf, TokenAllocationOf, TokenIssuanceParametersOf, Transfers,
+};
 use sp_runtime::Perbill;
 use sp_std::cmp::min;
 use sp_std::iter::{IntoIterator, Iterator};
@@ -1863,6 +1865,61 @@ impl UpdateUpcomingCreatorTokenSale {
             self.channel_id,
             self.new_start_block,
             self.new_duration,
+        );
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+
+pub struct CreatorTokenIssuerTransfer {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    outputs: TransfersWithVestingOf<Test>,
+}
+
+impl CreatorTokenIssuerTransfer {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+            outputs: Transfers(
+                [(
+                    SECOND_MEMBER_ID,
+                    PaymentWithVestingOf::<Test> {
+                        amount: DEFAULT_ISSUER_TRANSFER_AMOUNT,
+                        vesting_schedule: None,
+                        remark: Vec::new(),
+                    },
+                )]
+                .iter()
+                .cloned()
+                .collect(),
+            ),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let actual_result = Content::creator_token_issuer_transfer(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.outputs.clone(),
         );
 
         if expected_result.is_ok() {
