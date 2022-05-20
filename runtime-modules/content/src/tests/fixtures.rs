@@ -10,6 +10,7 @@ use project_token::types::{
 };
 use sp_runtime::{Perbill, Permill};
 use sp_std::cmp::min;
+use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::{IntoIterator, Iterator};
 
 // Index which indentifies the item in the commitment set we want the proof for
@@ -1732,6 +1733,19 @@ impl IssueCreatorTokenFixture {
         }
     }
 
+    pub fn with_initial_allocation(
+        self,
+        initial_allocation: BTreeMap<AccountId, TokenAllocationOf<Test>>,
+    ) -> Self {
+        Self {
+            params: TokenIssuanceParametersOf::<Test> {
+                initial_allocation,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
     pub fn with_transfer_policy(self, transfer_policy: TransferPolicyParamsOf<Test>) -> Self {
         Self {
             params: TokenIssuanceParametersOf::<Test> {
@@ -2143,6 +2157,55 @@ impl FinalizeRevenueSplitFixture {
 
         if expected_result.is_ok() {
             assert_ok!(actual_result);
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+
+pub struct DeissueCreatorTokenFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+}
+
+impl DeissueCreatorTokenFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let channel_pre = Content::channel_by_id(self.channel_id);
+
+        let actual_result =
+            Content::deissue_creator_token(origin, self.actor.clone(), self.channel_id);
+
+        let channel_post = Content::channel_by_id(self.channel_id);
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+
+            assert_eq!(
+                channel_post,
+                Channel::<Test> {
+                    creator_token_id: None,
+                    ..channel_pre
+                }
+            );
         } else {
             assert_noop!(actual_result, expected_result.err().unwrap());
         }

@@ -2704,6 +2704,39 @@ decl_module! {
                 reward_account, // send any leftovers back to reward_account
             )?;
         }
+
+        /// Deissue channel's creator token
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn deissue_creator_token(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Permissions check
+            ensure_actor_authorized_to_manage_creator_token::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Call to ProjectToken - should be the first call before MUTATION SAFE!
+            T::ProjectToken::deissue_token(
+                token_id
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            ChannelById::<T>::mutate(&channel_id, |channel| {
+                channel.creator_token_id = None;
+            });
+        }
     }
 }
 
