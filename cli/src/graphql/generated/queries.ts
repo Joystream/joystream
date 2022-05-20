@@ -25,7 +25,7 @@ export type GetStorageNodesInfoByBagIdQuery = { storageBuckets: Array<StorageNod
 export type DataObjectInfoFragment = {
   id: string
   size: any
-  deletionPrize: any
+  stateBloatBond: any
   type:
     | { __typename: 'DataObjectTypeChannelAvatar'; channel?: Types.Maybe<{ id: string }> }
     | { __typename: 'DataObjectTypeChannelCoverPhoto'; channel?: Types.Maybe<{ id: string }> }
@@ -145,7 +145,7 @@ export const DataObjectInfo = gql`
   fragment DataObjectInfo on StorageDataObject {
     id
     size
-    deletionPrize
+    stateBloatBond
     type {
       __typename
       ... on DataObjectTypeVideoMedia {

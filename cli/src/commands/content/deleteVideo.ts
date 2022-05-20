@@ -36,7 +36,7 @@ export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
       })
     }
 
-    return dataObjects.map((o) => [o.id, new BN(o.deletionPrize)])
+    return dataObjects.map((o) => [o.id, new BN(o.stateBloatBond)])
   }
 
   async run(): Promise<void> {
@@ -55,10 +55,10 @@ export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
           exit: ExitCodes.InvalidInput,
         })
       }
-      const deletionPrize = dataObjectsInfo.reduce((sum, [, prize]) => sum.add(prize), new BN(0))
+      const stateBloatBond = dataObjectsInfo.reduce((sum, [, bloat_bond]) => sum.add(bloat_bond), new BN(0))
       this.log(
-        `Data objects deletion prize of ${chalk.cyanBright(
-          formatBalance(deletionPrize)
+        `Data objects state bloat bond of ${chalk.cyanBright(
+          formatBalance(stateBloatBond)
         )} will be transferred to ${chalk.magentaBright(address)}`
       )
     }

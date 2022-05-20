@@ -108,15 +108,15 @@ export class AssetsManager {
 
   public calcDataObjectsFee(params: DataObjectCreationParameters[]): BN {
     const { dataObjectFeePerMB, api } = this
-    const deletionPrize = api.consts.storage.dataObjectDeletionPrize
+    const stateBloatBond = api.consts.storage.dataObjectStateBloatBond
     const totalSize = params
       .reduce((a, b) => {
         return a.add(b.getField('size'))
       }, new BN(0))
       .toNumber()
     const totalStorageFee = dataObjectFeePerMB.muln(Math.ceil(totalSize / 1024 / 1024))
-    const totalDeletionPrize = deletionPrize.muln(params.length)
-    return totalStorageFee.add(totalDeletionPrize)
+    const totalStateBloatBond = stateBloatBond.muln(params.length)
+    return totalStorageFee.add(totalStateBloatBond)
   }
 
   private async prepareAsset(

@@ -932,9 +932,9 @@ benchmarks! {
 
         let upload_parameters = UploadParameters::<T>{
             bag_id: bag_id.clone(),
-            deletion_prize_source_account_id: worker_account_id.clone(),
+            state_bloat_bond_source_account_id: worker_account_id.clone(),
             expected_data_size_fee: Default::default(),
-            expected_data_object_deletion_prize: Default::default(),
+            expected_data_object_state_bloat_bond: Default::default(),
             storage_buckets: Default::default(),
             distribution_buckets: Default::default(),
             object_creation_list: object_parameters

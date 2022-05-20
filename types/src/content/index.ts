@@ -246,7 +246,7 @@ export class ChannelCreationParameters extends JoyStructDecorated({
   collaborators: BTreeMap.with(MemberId, ChannelAgentPermissions),
   storage_buckets: BTreeSet.with(StorageBucketId),
   distribution_Bucket: BTreeSet.with(DistributionBucketId),
-  expected_data_object_deletion_prize: Balance,
+  expected_data_object_state_bloat_bond: Balance,
 }) {}
 
 export class ChannelUpdateParameters extends JoyStructDecorated({
@@ -254,7 +254,7 @@ export class ChannelUpdateParameters extends JoyStructDecorated({
   new_meta: Option.with(Bytes),
   assets_to_remove: BTreeSet.with(DataObjectId),
   collaborators: Option.with(BTreeMap.with(MemberId, ChannelAgentPermissions)),
-  expected_data_object_deletion_prize: Balance,
+  expected_data_object_state_bloat_bond: Balance,
 }) {}
 
 // Channel category creation/update
@@ -297,7 +297,7 @@ export class VideoCreationParameters extends JoyStructDecorated({
   assets: Option.with(StorageAssets),
   meta: Option.with(Bytes),
   auto_issue_nft: Option.with(NftIssuanceParameters),
-  expected_data_object_deletion_prize: Balance,
+  expected_data_object_state_bloat_bond: Balance,
 }) {}
 
 export class VideoUpdateParameters extends JoyStructDecorated({
@@ -305,7 +305,7 @@ export class VideoUpdateParameters extends JoyStructDecorated({
   new_meta: Option.with(Bytes),
   assets_to_remove: BTreeSet.with(DataObjectId),
   auto_issue_nft: Option.with(NftIssuanceParameters),
-  expected_data_object_deletion_prize: Balance,
+  expected_data_object_state_bloat_bond: Balance,
 }) {}
 
 // Channel payouts

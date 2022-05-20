@@ -35,7 +35,7 @@ export type StorageDataObjectFieldsFragment = {
   ipfsHash: string
   isAccepted: boolean
   size: any
-  deletionPrize: any
+  stateBloatBond: any
   unsetAt?: Types.Maybe<any>
   storageBagId: string
   type:
@@ -2055,7 +2055,7 @@ export const StorageDataObjectFields = gql`
     type {
       ...DataObjectTypeFields
     }
-    deletionPrize
+    stateBloatBond
     unsetAt
     storageBagId
   }

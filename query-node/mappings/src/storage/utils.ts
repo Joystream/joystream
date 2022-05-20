@@ -196,7 +196,7 @@ export async function getStorageSystem(store: DatabaseManager): Promise<StorageS
 export async function createDataObjects(
   store: DatabaseManager,
   uploadParams: UploadParameters,
-  deletionPrize: Balance,
+  stateBloatBond: Balance,
   objectIds?: BN[]
 ): Promise<StorageDataObject[]> {
   const storageSystem = await getStorageSystem(store)
@@ -212,7 +212,7 @@ export async function createDataObjects(
       ipfsHash: bytesToString(objectParams.ipfsContentId),
       size: new BN(params.getField('size').toString()),
       type: new DataObjectTypeUnknown(),
-      deletionPrize,
+      stateBloatBond,
       storageBag,
     })
     if (objectId.gte(storageSystem.nextDataObjectId)) {

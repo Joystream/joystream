@@ -444,9 +444,9 @@ decl_module! {
             let bag_creation_params = DynBagCreationParameters::<T> {
                 bag_id: DynBagId::<T>::Channel(channel_id),
                 object_creation_list: storage_assets.object_creation_list,
-                deletion_prize_source_account_id: sender,
+                state_bloat_bond_source_account_id: sender,
                 expected_data_size_fee: storage_assets.expected_data_size_fee,
-                expected_data_object_deletion_prize: params.expected_data_object_deletion_prize,
+                expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond,
                 storage_buckets: params.storage_buckets.clone(),
                 distribution_buckets: params.distribution_buckets.clone(),
             };
@@ -524,9 +524,9 @@ decl_module! {
             let upload_parameters = UploadParameters::<T> {
                 bag_id: Self::bag_id_for_channel(&channel_id),
                 object_creation_list: assets_to_upload.object_creation_list,
-                deletion_prize_source_account_id: sender,
+                state_bloat_bond_source_account_id: sender,
                 expected_data_size_fee: assets_to_upload.expected_data_size_fee,
-                expected_data_object_deletion_prize: params.expected_data_object_deletion_prize,
+                expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond,
                 storage_buckets: Default::default(),
                 distribution_buckets: Default::default(),
             };
@@ -860,7 +860,7 @@ decl_module! {
                     upload_assets,
                     &channel_id,
                     &sender,
-                    params.expected_data_object_deletion_prize,
+                    params.expected_data_object_state_bloat_bond,
                 );
                 Storage::<T>::upload_data_objects(params)?;
             }
@@ -948,10 +948,10 @@ decl_module! {
                 bag_id: Self::bag_id_for_channel(&channel_id),
                 object_creation_list: params.assets_to_upload.clone()
                     .map_or(Default::default(), |assets| assets.object_creation_list),
-                deletion_prize_source_account_id: sender,
+                state_bloat_bond_source_account_id: sender,
                 expected_data_size_fee: params.assets_to_upload.clone()
                     .map_or(Default::default(), |assets| assets.expected_data_size_fee),
-                expected_data_object_deletion_prize: params.expected_data_object_deletion_prize,
+                expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond,
                 storage_buckets: Default::default(),
                 distribution_buckets: Default::default(),
             };
@@ -2345,15 +2345,15 @@ impl<T: Trait> Module<T> {
     fn construct_upload_parameters(
         assets: &StorageAssets<T>,
         channel_id: &T::ChannelId,
-        prize_source_account: &T::AccountId,
-        expected_data_object_deletion_prize: BalanceOf<T>,
+        obj_state_bloat_bond_source_account: &T::AccountId,
+        expected_data_object_state_bloat_bond: BalanceOf<T>,
     ) -> UploadParameters<T> {
         UploadParameters::<T> {
             bag_id: Self::bag_id_for_channel(channel_id),
             object_creation_list: assets.object_creation_list.clone(),
-            deletion_prize_source_account_id: prize_source_account.clone(),
+            state_bloat_bond_source_account_id: obj_state_bloat_bond_source_account.clone(),
             expected_data_size_fee: assets.expected_data_size_fee,
-            expected_data_object_deletion_prize,
+            expected_data_object_state_bloat_bond,
             storage_buckets: Default::default(),
             distribution_buckets: Default::default(),
         }

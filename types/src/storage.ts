@@ -7,12 +7,9 @@ import {
   GenericAccountId as AccountId,
   BTreeSet,
   BTreeMap,
-  Option,
   u32,
-  u128,
   Tuple,
 } from '@polkadot/types'
-import { Balance } from '@polkadot/types/interfaces'
 import { RegistryTypes } from '@polkadot/types/types'
 import {
   JoyEnum,
@@ -29,7 +26,7 @@ export class StorageBucketId extends u64 {}
 
 export type IDataObject = {
   accepted: bool
-  deletion_prize: BalanceOf
+  state_bloat_bond: BalanceOf
   size: u64
   ipfsContentId: Bytes
 }
@@ -37,7 +34,7 @@ export type IDataObject = {
 export class DataObject
   extends JoyStructDecorated({
     accepted: bool,
-    deletion_prize: BalanceOf,
+    state_bloat_bond: BalanceOf,
     size: u64,
     ipfsContentId: Bytes,
   })
@@ -177,9 +174,9 @@ export class DataObjectCreationParameters
 export type IUploadParameters = {
   bagId: BagId
   objectCreationList: Vec<DataObjectCreationParameters>
-  deletionPrizeSourceAccountId: AccountId
+  stateBloatBondSourceAccountId: AccountId
   expectedDataSizeFee: BalanceOf
-  expectedDataObjectDeletionPrize: BalanceOf
+  expectedDataObjectStateBloatBond: BalanceOf
   storageBuckets: BTreeSet<StorageBucketId>
   distributionBuckets: BTreeSet<DistributionBucketId>
 }
@@ -188,9 +185,9 @@ export class UploadParameters
   extends JoyStructDecorated({
     bagId: BagId,
     objectCreationList: Vec.with(DataObjectCreationParameters),
-    deletionPrizeSourceAccountId: AccountId,
+    stateBloatBondSourceAccountId: AccountId,
     expectedDataSizeFee: BalanceOf,
-    expectedDataObjectDeletionPrize: BalanceOf,
+    expectedDataObjectStateBloatBond: BalanceOf,
     storageBuckets: BTreeSet.with(StorageBucketId),
     distributionBuckets: BTreeSet.with(DistributionBucketId),
   })
@@ -199,7 +196,7 @@ export class UploadParameters
 export class DynBagCreationParameters extends JoyStructDecorated({
   bagId: DynamicBagId,
   objectCreationList: Vec.with(DataObjectCreationParameters),
-  deletionPrizeSourceAccountId: AccountId,
+  stateBloatBondSourceAccountId: AccountId,
   expectedDataSizeFee: BalanceOf,
 }) {}
 

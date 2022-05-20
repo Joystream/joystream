@@ -266,7 +266,7 @@ export interface ChannelCreationParameters extends Struct {
   readonly collaborators: BTreeMap<MemberId, ChannelAgentPermissions>;
   readonly storage_buckets: BTreeSet<u64>;
   readonly distribution_Bucket: BTreeSet<u64>;
-  readonly expected_data_object_deletion_prize: u128;
+  readonly expected_data_object_state_bloat_bond: u128;
 }
 
 /** @name ChannelId */
@@ -302,7 +302,7 @@ export interface ChannelUpdateParameters extends Struct {
   readonly new_meta: Option<Bytes>;
   readonly assets_to_remove: BTreeSet<DataObjectId>;
   readonly collaborators: Option<BTreeMap<MemberId, ChannelAgentPermissions>>;
-  readonly expected_data_object_deletion_prize: u128;
+  readonly expected_data_object_state_bloat_bond: u128;
 }
 
 /** @name Cid */
@@ -401,7 +401,7 @@ export interface CuratorId extends u64 {}
 /** @name DataObject */
 export interface DataObject extends Struct {
   readonly accepted: bool;
-  readonly deletion_prize: u128;
+  readonly state_bloat_bond: u128;
   readonly ipfsContentId: Bytes;
 }
 
@@ -501,7 +501,7 @@ export interface DynamicBagType extends Enum {
 export interface DynBagCreationParameters extends Struct {
   readonly bagId: DynamicBagId;
   readonly objectCreationList: Vec<DataObjectCreationParameters>;
-  readonly deletionPrizeSourceAccountId: GenericAccountId;
+  readonly stateBloatBondSourceAccountId: GenericAccountId;
   readonly expectedDataSizeFee: u128;
 }
 
@@ -1215,9 +1215,9 @@ export interface UpdatedTitle extends Option<Text> {}
 export interface UploadParameters extends Struct {
   readonly bagId: BagId;
   readonly objectCreationList: Vec<DataObjectCreationParameters>;
-  readonly deletionPrizeSourceAccountId: GenericAccountId;
+  readonly stateBloatBondSourceAccountId: GenericAccountId;
   readonly expectedDataSizeFee: u128;
-  readonly expectedDataObjectDeletionPrize: u128;
+  readonly expectedDataObjectStateBloatBond: u128;
   readonly storageBuckets: BTreeSet<StorageBucketId>;
   readonly distributionBuckets: BTreeSet<DistributionBucketId>;
 }
@@ -1253,7 +1253,7 @@ export interface VideoCreationParameters extends Struct {
   readonly assets: Option<StorageAssets>;
   readonly meta: Option<Bytes>;
   readonly auto_issue_nft: Option<NftIssuanceParameters>;
-  readonly expected_data_object_deletion_prize: u128;
+  readonly expected_data_object_state_bloat_bond: u128;
 }
 
 /** @name VideoId */
@@ -1265,7 +1265,7 @@ export interface VideoUpdateParameters extends Struct {
   readonly new_meta: Option<Bytes>;
   readonly assets_to_remove: BTreeSet<DataObjectId>;
   readonly auto_issue_nft: Option<NftIssuanceParameters>;
-  readonly expected_data_object_deletion_prize: u128;
+  readonly expected_data_object_state_bloat_bond: u128;
 }
 
 /** @name VoteKind */

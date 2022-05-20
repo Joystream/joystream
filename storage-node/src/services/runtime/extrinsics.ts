@@ -124,7 +124,7 @@ export async function uploadDataObjects(
     const alice = getAlicePair()
 
     const data = api.createType('UploadParameters', {
-      deletionPrizeSourceAccountId: alice.address,
+      stateBloatBondSourceAccountId: alice.address,
       objectCreationList: [
         {
           Size: objectSize,

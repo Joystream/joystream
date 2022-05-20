@@ -52,8 +52,8 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       if (assetsToRemove.length) {
         this.log(`\nData objects to be removed due to replacement:`)
         assetsToRemove.forEach((a) => this.log(`- ${a.id} (${a.type.__typename})`))
-        const totalPrize = assetsToRemove.reduce((sum, { deletionPrize }) => sum.add(new BN(deletionPrize)), new BN(0))
-        this.log(`Total deletion prize: ${chalk.cyanBright(formatBalance(totalPrize))}\n`)
+        const totalStateBloatBond = assetsToRemove.reduce((sum, { stateBloatBond }) => sum.add(new BN(stateBloatBond)), new BN(0))
+        this.log(`Total state bloat bond: ${chalk.cyanBright(formatBalance(totalStateBloatBond))}\n`)
       }
     }
 

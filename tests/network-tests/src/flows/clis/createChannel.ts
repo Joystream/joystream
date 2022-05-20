@@ -18,7 +18,7 @@ export default async function createChannel({ api, query }: FlowProps): Promise<
   await new FixtureRunner(buyMembershipFixture).run()
   const memberId = buyMembershipFixture.getCreatedMembers()[0]
 
-  // Send some funds to pay the deletion_prize and fees
+  // Send some funds to pay the state_bloat_bond and fees
   const channelOwnerBalance = new BN(10000)
   await api.treasuryTransferBalance(channelOwnerKeypair.key.address, channelOwnerBalance)
 

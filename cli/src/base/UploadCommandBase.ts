@@ -346,7 +346,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
 
   async prepareAssetsForExtrinsic(resolvedAssets: ResolvedAsset[]): Promise<StorageAssets | undefined> {
     const feePerMB = await this.getOriginalApi().query.storage.dataObjectPerMegabyteFee()
-    const { dataObjectDeletionPrize } = this.getOriginalApi().consts.storage
+    const { dataObjectStateBloatBond } = this.getOriginalApi().consts.storage
     if (resolvedAssets.length) {
       const totalBytes = resolvedAssets
         .reduce((a, b) => {
@@ -354,12 +354,12 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
         }, new BN(0))
         .toNumber()
       const totalStorageFee = feePerMB.muln(Math.ceil(totalBytes / 1024 / 1024))
-      const totalDeletionPrize = dataObjectDeletionPrize.muln(resolvedAssets.length)
+      const totalStateBloatBond = dataObjectStateBloatBond.muln(resolvedAssets.length)
       await this.requireConfirmation(
         `Some additional costs will be associated with this operation:\n` +
           `Total data storage fee: ${chalk.cyan(formatBalance(totalStorageFee))}\n` +
-          `Total deletion prize: ${chalk.cyan(
-            formatBalance(totalDeletionPrize)
+          `Total state bloat bond: ${chalk.cyan(
+            formatBalance(totalStateBloatBond)
           )} (recoverable on data object(s) removal)\n` +
           `Are you sure you want to continue?`
       )

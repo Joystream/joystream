@@ -20,7 +20,7 @@ query getStorageNodesInfoByBagId($bagId: ID) {
 fragment DataObjectInfo on StorageDataObject {
   id
   size
-  deletionPrize
+  stateBloatBond
   type {
     __typename
     ... on DataObjectTypeVideoMedia {

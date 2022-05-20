@@ -30,7 +30,7 @@ fragment StorageDataObjectFields on StorageDataObject {
   type {
     ...DataObjectTypeFields
   }
-  deletionPrize
+  stateBloatBond
   unsetAt
   storageBagId
 }

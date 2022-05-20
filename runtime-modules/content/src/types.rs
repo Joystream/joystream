@@ -399,8 +399,8 @@ pub struct ChannelCreationParametersRecord<
     pub storage_buckets: BTreeSet<StorageBucketId>,
     /// Distribution buckets to assign to a bag.
     pub distribution_buckets: BTreeSet<DistributionBucketId>,
-    /// Commitment for the data object deletion prize for the storage pallet.
-    pub expected_data_object_deletion_prize: Balance,
+    /// Commitment for the data object state bloat bond for the storage pallet.
+    pub expected_data_object_state_bloat_bond: Balance,
 }
 
 pub type ChannelCreationParameters<T> = ChannelCreationParametersRecord<
@@ -423,8 +423,8 @@ pub struct ChannelUpdateParametersRecord<StorageAssets, DataObjectId: Ord, Membe
     pub assets_to_remove: BTreeSet<DataObjectId>,
     /// Optional, updated map of collaborator_member_id => collaborator_channel_agent_permissions
     pub collaborators: Option<BTreeMap<MemberId, ChannelAgentPermissions>>,
-    /// Commitment for the data object deletion prize for the storage pallet.
-    pub expected_data_object_deletion_prize: Balance,
+    /// Commitment for the data object state bloat bond for the storage pallet.
+    pub expected_data_object_state_bloat_bond: Balance,
 }
 
 pub type ChannelUpdateParameters<T> = ChannelUpdateParametersRecord<
@@ -481,8 +481,8 @@ pub struct VideoCreationParametersRecord<StorageAssets, NftIssuanceParameters, B
     pub meta: Option<Vec<u8>>,
     /// Parameters for issuing video Nft
     pub auto_issue_nft: Option<NftIssuanceParameters>,
-    /// Commitment for the data object deletion prize for the storage pallet.
-    pub expected_data_object_deletion_prize: Balance,
+    /// Commitment for the data object state bloat bond for the storage pallet.
+    pub expected_data_object_state_bloat_bond: Balance,
 }
 
 pub type VideoCreationParameters<T> =
@@ -505,8 +505,8 @@ pub struct VideoUpdateParametersRecord<
     pub assets_to_remove: BTreeSet<DataObjectId>,
     /// Parameters for updating Nft along with video
     pub auto_issue_nft: Option<NftIssuanceParameters>,
-    /// Commitment for the data object deletion prize for the storage pallet.
-    pub expected_data_object_deletion_prize: Balance,
+    /// Commitment for the data object state bloat bond for the storage pallet.
+    pub expected_data_object_state_bloat_bond: Balance,
 }
 
 pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<
