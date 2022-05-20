@@ -242,56 +242,15 @@ fn successful_reward_claim_by_curator() {
 }
 
 #[test]
-fn successful_reward_claim_with_member_owned_channel_no_reward_account_found() {
+fn unsuccessful_reward_claim_with_no_reward_account() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
-        let payments = create_some_pull_payments_helper();
-        update_commit_value_with_payments_helper(&payments);
-        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
-
-        UpdateChannelFixture::default()
-            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_reward_account(Some(None))
-            .call_and_assert(Ok(()));
-
-        ClaimChannelRewardFixture::default()
-            .with_payments(payments)
-            .call_and_assert(Ok(()))
-    })
-}
-
-#[test]
-fn unsuccessful_reward_claim_with_curator_owned_channel_no_reward_account_found() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video();
+        CreateChannelFixture::default().call_and_assert(Ok(()));
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
 
-        let default_curator_group_id = Content::next_curator_group_id() - 1;
-        UpdateChannelFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
-            .with_reward_account(Some(None))
-            .call_and_assert(Ok(()));
-
         ClaimChannelRewardFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
             .with_payments(payments)
             .call_and_assert(Err(Error::<Test>::RewardAccountIsNotSet.into()));
     })
@@ -532,17 +491,9 @@ fn unsuccessful_channel_balance_withdrawal_when_no_reward_account() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        let group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
-        CreateChannelFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
-            .call_and_assert(Ok(()));
+        CreateChannelFixture::default().call_and_assert(Ok(()));
 
         WithdrawFromChannelBalanceFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
             .call_and_assert(Err(Error::<Test>::RewardAccountIsNotSet.into()));
     })
 }
@@ -559,6 +510,27 @@ fn unsuccessful_channel_balance_withdrawal_invalid_channel_id() {
         WithdrawFromChannelBalanceFixture::default()
             .with_channel_id(ChannelId::zero())
             .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_balance_withdrawal_when_creator_token_issued() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        CreateChannelFixture::default()
+            .with_reward_account(DEFAULT_MEMBER_CHANNEL_REWARD_ACCOUNT_ID)
+            .call_and_assert(Ok(()));
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+
+        increase_account_balance_helper(
+            DEFAULT_MEMBER_CHANNEL_REWARD_ACCOUNT_ID,
+            DEFAULT_PAYOUT_EARNED,
+        );
+
+        WithdrawFromChannelBalanceFixture::default().call_and_assert(Err(
+            Error::<Test>::CannotWithdrawFromChannelWithCreatorTokenIssued.into(),
+        ));
     })
 }
 
@@ -692,20 +664,12 @@ fn unsuccessful_claim_and_withdraw_channel_reward_when_no_reward_account() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        let group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
-        CreateChannelFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
-            .call_and_assert(Ok(()));
+        CreateChannelFixture::default().call_and_assert(Ok(()));
 
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
 
         ClaimAndWithdrawChannelRewardFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
             .call_and_assert(Err(Error::<Test>::RewardAccountIsNotSet.into()));
     })
 }

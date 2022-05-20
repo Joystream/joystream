@@ -294,5 +294,9 @@ decl_error! {
 
         /// Member id could not be derived from the provided ContentActor context
         MemberIdCouldNotBeDerivedFromActor,
+
+        /// Cannot directly withdraw funds from a channel account when the channel has
+        /// a creator token issued
+        CannotWithdrawFromChannelWithCreatorTokenIssued,
     }
 }

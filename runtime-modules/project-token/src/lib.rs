@@ -34,7 +34,7 @@ pub mod types;
 mod tests;
 
 // crate imports
-use errors::Error;
+pub use errors::Error;
 pub use events::{Event, RawEvent};
 use traits::PalletToken;
 use types::*;

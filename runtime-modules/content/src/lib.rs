@@ -1394,6 +1394,11 @@ decl_module! {
                 Error::<T>::WithdrawFromChannelAmountExceedsBalance
             );
 
+            ensure!(
+                channel.creator_token_id.is_none(),
+                Error::<T>::CannotWithdrawFromChannelWithCreatorTokenIssued
+            );
+
             //
             // == MUTATION_SAFE ==
             //
@@ -2635,6 +2640,70 @@ decl_module! {
                 member_id
             )?;
         }
+
+        /// Issue revenue split for a channel
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn issue_revenue_split(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            start: Option<T::BlockNumber>,
+            duration: T::BlockNumber
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Permissions check
+            ensure_actor_authorized_to_manage_creator_token::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Get channel's reward account and its balance
+            let reward_account = Self::ensure_reward_account(&channel)?;
+            let reward_account_balance = Balances::<T>::usable_balance(&reward_account);
+
+            // Call to ProjectToken - should be the first call before MUTATION SAFE!
+            T::ProjectToken::issue_revenue_split(
+                token_id,
+                start,
+                duration,
+                reward_account,
+                reward_account_balance
+            )?;
+        }
+
+        /// Finalize an ended revenue split
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn finalize_revenue_split(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Permissions check
+            ensure_actor_authorized_to_manage_creator_token::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Get channel's reward account
+            let reward_account = Self::ensure_reward_account(&channel)?;
+
+            // Call to ProjectToken - should be the first call before MUTATION SAFE!
+            T::ProjectToken::finalize_revenue_split(
+                token_id,
+                reward_account, // send any leftovers back to reward_account
+            )?;
+        }
     }
 }
 
@@ -2865,16 +2934,10 @@ impl<T: Trait> Module<T> {
     pub(crate) fn ensure_reward_account(
         channel: &Channel<T>,
     ) -> Result<T::AccountId, DispatchError> {
-        if let Some(reward_account) = &channel.reward_account {
-            Ok(reward_account.clone())
-        } else {
-            match &channel.owner {
-                ChannelOwner::CuratorGroup(..) => Err(Error::<T>::RewardAccountIsNotSet.into()),
-                ChannelOwner::Member(member_id) => {
-                    T::MemberAuthenticator::controller_account_id(*member_id)
-                }
-            }
-        }
+        channel
+            .reward_account
+            .clone()
+            .ok_or(Error::<T>::RewardAccountIsNotSet.into())
     }
 
     pub(crate) fn ensure_open_bid_exists(

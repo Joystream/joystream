@@ -95,6 +95,7 @@ pub const DEFAULT_CREATOR_TOKEN_SALE_UNIT_PRICE: u64 = 10;
 pub const DEFAULT_CREATOR_TOKEN_SALE_DURATION: u64 = 100;
 pub const DEFAULT_ISSUER_TRANSFER_AMOUNT: u64 = 1_000_000;
 pub const DEFAULT_PATRONAGE_RATE: YearlyRate = YearlyRate(Permill::from_percent(1));
+pub const DEFAULT_REVENUE_SPLIT_DURATION: u64 = 1000;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
