@@ -478,7 +478,7 @@ fn buy_now_ok_with_nft_owner_curator_channel_correctly_credited() {
         CreateVideoFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
             .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .with_nft_in_sale(100u64)
+            .with_nft_in_sale(DEFAULT_NFT_PRICE)
             .call();
 
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
@@ -507,7 +507,7 @@ fn buy_now_ok_with_nft_owner_member_channel_correctly_credited() {
         CreateChannelFixture::default().call();
 
         CreateVideoFixture::default()
-            .with_nft_in_sale(100u64)
+            .with_nft_in_sale(DEFAULT_NFT_PRICE)
             .call();
 
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);

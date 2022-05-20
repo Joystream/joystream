@@ -223,7 +223,7 @@ fn accept_incoming_offer_reward_account_is_not_set_succeeds_with_member_owner_ch
 }
 
 #[test]
-fn accept_incoming_offer_reward_account_burns_token_with_curator_owner_channel() {
+fn accept_incoming_offer_reward_account_ok_with_curator_owner_channel_account_correctly_credited() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);

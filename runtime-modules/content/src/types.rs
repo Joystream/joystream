@@ -484,7 +484,7 @@ pub type UpdateChannelPayoutsParameters<T> = UpdateChannelPayoutsParametersRecor
 >;
 
 /// Operations with local pallet account.
-pub trait ModuleAccount<T: balances::Trait> {
+pub trait ModuleAccount<T: Trait> {
     /// The module id, used for deriving its sovereign account ID.
     type ModuleId: Get<ModuleId>;
 
@@ -494,7 +494,7 @@ pub trait ModuleAccount<T: balances::Trait> {
     }
 
     /// The account ID of the module account.
-    fn account_for_channel(channel_id: <T as storage::Trait>::ChannelId) -> T::AccountId {
+    fn account_for_channel(channel_id: T::ChannelId) -> T::AccountId {
         Self::ModuleId::get().into_sub_account(("CHANNEL", channel_id))
     }
 
@@ -534,7 +534,7 @@ pub struct ModuleAccountHandler<T: balances::Trait, ModId: Get<ModuleId>> {
     module_id_marker: PhantomData<ModId>,
 }
 
-impl<T: balances::Trait, ModId: Get<ModuleId>> ModuleAccount<T> for ModuleAccountHandler<T, ModId> {
+impl<T: Trait, ModId: Get<ModuleId>> ModuleAccount<T> for ModuleAccountHandler<T, ModId> {
     type ModuleId = ModId;
 }
 

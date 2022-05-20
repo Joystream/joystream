@@ -4,7 +4,6 @@ use crate::*;
 use common::council::CouncilBudgetManager;
 use frame_support::assert_ok;
 use frame_support::traits::Currency;
-use sp_runtime::Perbill;
 use sp_std::cmp::min;
 use sp_std::iter::{IntoIterator, Iterator};
 
@@ -193,19 +192,6 @@ impl CreateVideoFixture {
                 auto_issue_nft: Some(NftIssuanceParameters::<Test> {
                     init_transactional_status: InitTransactionalStatus::<Test>::BuyNow(nft_price),
                     ..Default::default()
-                }),
-                ..self.params
-            },
-            ..self
-        }
-    }
-
-    pub fn with_nft_royalty(self, royalty_pct: u32) -> Self {
-        Self {
-            params: VideoCreationParameters::<Test> {
-                auto_issue_nft: Some(NftIssuanceParameters::<Test> {
-                    royalty: Some(Perbill::from_percent(royalty_pct)),
-                    ..self.params.auto_issue_nft.unwrap()
                 }),
                 ..self.params
             },
@@ -1433,7 +1419,7 @@ impl ClaimChannelRewardFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
         let channel_pre = Content::channel_by_id(self.item.channel_id);
-        let channel_balance_pre = channel_reward_account_balance(&channel_pre);
+        let channel_balance_pre = channel_reward_account_balance(self.item.channel_id);
         let council_budget_pre = <Test as Trait>::CouncilBudgetManager::get_budget();
 
         let proof = if self.payments.is_empty() {
@@ -1446,7 +1432,7 @@ impl ClaimChannelRewardFixture {
             Content::claim_channel_reward(origin, self.actor.clone(), proof, self.item.clone());
 
         let channel_post = Content::channel_by_id(self.item.channel_id);
-        let channel_balance_post = channel_reward_account_balance(&channel_post);
+        let channel_balance_post = channel_reward_account_balance(self.item.channel_id);
         let council_budget_post = <Test as Trait>::CouncilBudgetManager::get_budget();
 
         assert_eq!(actual_result, expected_result);
@@ -1529,7 +1515,7 @@ impl WithdrawFromChannelBalanceFixture {
         let origin = Origin::signed(self.sender.clone());
         let dest_balance_pre = Balances::<Test>::usable_balance(self.destination);
         let channel_pre = Content::channel_by_id(self.channel_id);
-        let channel_balance_pre = channel_reward_account_balance(&channel_pre);
+        let channel_balance_pre = channel_reward_account_balance(self.channel_id);
 
         let actual_result = Content::withdraw_from_channel_balance(
             origin,
@@ -1541,7 +1527,7 @@ impl WithdrawFromChannelBalanceFixture {
 
         let dest_balance_post = Balances::<Test>::usable_balance(&self.destination);
         let channel_post = Content::channel_by_id(self.channel_id);
-        let channel_balance_post = channel_reward_account_balance(&channel_post);
+        let channel_balance_post = channel_reward_account_balance(self.channel_id);
 
         assert_eq!(actual_result, expected_result);
 
@@ -1622,7 +1608,7 @@ impl ClaimAndWithdrawChannelRewardFixture {
         let origin = Origin::signed(self.sender.clone());
         let dest_balance_pre = Balances::<Test>::usable_balance(&self.destination);
         let channel_pre = Content::channel_by_id(&self.item.channel_id);
-        let channel_balance_pre = channel_reward_account_balance(&channel_pre);
+        let channel_balance_pre = channel_reward_account_balance(self.item.channel_id);
         let council_budget_pre = <Test as Trait>::CouncilBudgetManager::get_budget();
 
         let proof = if self.payments.is_empty() {
@@ -1641,7 +1627,7 @@ impl ClaimAndWithdrawChannelRewardFixture {
 
         let dest_balance_post = Balances::<Test>::usable_balance(&self.destination);
         let channel_post = Content::channel_by_id(&self.item.channel_id);
-        let channel_balance_post = channel_reward_account_balance(&channel_post);
+        let channel_balance_post = channel_reward_account_balance(self.item.channel_id);
         let council_budget_post = <Test as Trait>::CouncilBudgetManager::get_budget();
 
         assert_eq!(actual_result, expected_result);
@@ -1957,21 +1943,7 @@ pub fn update_commit_value_with_payments_helper(payments: &[PullPayment<Test>]) 
         .call_and_assert(Ok(()));
 }
 
-fn channel_reward_account(channel: &Channel<Test>) -> Option<AccountId> {
-    channel.reward_account.map_or_else(
-        || {
-            if let ChannelOwner::Member(member_id) = channel.owner {
-                let acc = MemberInfoProvider::controller_account_id(member_id);
-                acc.map_or(None, |a| Some(a))
-            } else {
-                None
-            }
-        },
-        |a| Some(a),
-    )
-}
-
-fn channel_reward_account_balance(channel_id: &ChannelId) -> u64 {
+pub fn channel_reward_account_balance(channel_id: ChannelId) -> u64 {
     let reward_account = ContentTreasury::<Test>::account_for_channel(channel_id);
     Balances::<Test>::usable_balance(&reward_account)
 }
