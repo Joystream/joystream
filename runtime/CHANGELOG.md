@@ -1,3 +1,21 @@
+### Version 10.7.0 - upgrade
+- NFT channel proceeds bug fix #3763
+  Fix logic in dispatch calls:
+    content::claim_channel_reward()
+    content::pick_open_auction_winner()
+- No runtime types changed
+
+### Version 10.6.0 - Rhodes - upgrade
+- Enable NFT functionality
+- Types updated - types pacakge version v0.19.3
+
+### Version 10.5.0 - Olympia - new chain
+- New feature new Membership system
+- New feature Improved Council and Election system
+- New feature Bountines
+- Forum improvements
+- New types package - version v0.18.3
+
 ### Version 9.14.0 - Giza - upgrade
 - New storage and distribution runtime module
 - Renaming of working groups and adding new working group for distributor role
