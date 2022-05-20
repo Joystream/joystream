@@ -1,18 +1,22 @@
 ### Version 10.7.0 - upgrade
-- NFT channel proceeds bug fix #3763
-  Fix logic in dispatch calls:
-    content::claim_channel_reward()
-    content::pick_open_auction_winner()
+- NFT channel proceeds bug fix [#3763](https://github.com/Joystream/joystream/pull/3763)
+  - Fix logic in dispatch calls: `content::claim_channel_reward()`, `content::pick_open_auction_winner()`
 - No runtime types changed
 
 ### Version 10.6.0 - Rhodes - upgrade
 - Enable NFT functionality
 - Types updated - types pacakge version v0.19.3
+- Modified some runtime constants and initial [values](https://github.com/Joystream/joystream/pull/3678):
+  - Changed NFT parameters `MaxStartingPrice` and `MaxBidStep`
+  - Changed inflation curve, to reduce validator rewards
+  - Changed grace period for proposal types Set council budget increment
+  - Changed forum `MaxSubcategories` and `MaxCategories`
 
 ### Version 10.5.0 - Olympia - new chain
 - New feature new Membership system
 - New feature Improved Council and Election system
-- New feature Bountines
+- New feature Bounties
+- New NFT feature - Disabled to simplify next update
 - Forum improvements
 - New types package - version v0.18.3
 
