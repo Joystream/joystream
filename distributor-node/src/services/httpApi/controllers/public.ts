@@ -18,8 +18,8 @@ import proxy from 'express-http-proxy'
 import { PendingDownload, PendingDownloadStatusType } from '../../networking/PendingDownload'
 import urljoin from 'url-join'
 
-const CACHED_MAX_AGE = 31536000
-const PENDING_MAX_AGE = 180
+const CACHED_MAX_AGE_SEC = 31536000
+const PENDING_MAX_AGE_SEC = 180
 
 export class PublicApiController {
   private config: ReadonlyConfig
@@ -115,7 +115,7 @@ export class PublicApiController {
 
     const path = this.content.path(objectId)
     const stream = send(req, path, {
-      maxAge: CACHED_MAX_AGE,
+      maxAge: CACHED_MAX_AGE_SEC * 1000, // miliseconds
       lastModified: false,
     })
     const mimeType = this.stateCache.getContentMimeType(objectId)
@@ -161,7 +161,7 @@ export class PublicApiController {
     res.setHeader('content-type', contentType || DEFAULT_CONTENT_TYPE)
     // Allow caching pendingDownload reponse only for very short period of time and requite revalidation,
     // since the data coming from the source may not be valid
-    res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE}, must-revalidate`)
+    res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE_SEC}, must-revalidate`)
 
     // Handle request using pending download file if this makes sense in current context:
     if (this.content.exists(objectId)) {
@@ -225,14 +225,14 @@ export class PublicApiController {
       case ObjectStatusType.Available:
         res.status(200)
         res.setHeader('x-cache', 'hit')
-        res.setHeader('cache-control', `max-age=${CACHED_MAX_AGE}`)
+        res.setHeader('cache-control', `max-age=${CACHED_MAX_AGE_SEC}`)
         res.setHeader('content-type', this.stateCache.getContentMimeType(objectId) || DEFAULT_CONTENT_TYPE)
         res.setHeader('content-length', this.content.fileSize(objectId))
         break
       case ObjectStatusType.PendingDownload:
         res.status(200)
         res.setHeader('x-cache', 'pending')
-        res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE}, must-revalidate`)
+        res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE_SEC}, must-revalidate`)
         res.setHeader('content-length', objectStatus.pendingDownload.getObjectSize())
         break
       case ObjectStatusType.NotFound:
@@ -244,7 +244,7 @@ export class PublicApiController {
       case ObjectStatusType.Missing:
         res.status(200)
         res.setHeader('x-cache', 'miss')
-        res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE}, must-revalidate`)
+        res.setHeader('cache-control', `max-age=${PENDING_MAX_AGE_SEC}, must-revalidate`)
         res.setHeader('content-length', objectStatus.objectData.size)
         break
     }

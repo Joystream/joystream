@@ -1,7 +1,7 @@
 {
   "name": "@joystream/distributor-cli",
   "description": "Joystream distributor node CLI",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": "Joystream contributors",
   "bin": {
     "joystream-distributor": "./bin/run"
