@@ -1971,10 +1971,7 @@ fn channel_reward_account(channel: &Channel<Test>) -> Option<AccountId> {
     )
 }
 
-fn channel_reward_account_balance(channel: &Channel<Test>) -> u64 {
-    if let Some(reward_account) = channel_reward_account(channel) {
-        Balances::<Test>::usable_balance(&reward_account)
-    } else {
-        Zero::zero()
-    }
+fn channel_reward_account_balance(channel_id: &ChannelId) -> u64 {
+    let reward_account = ContentTreasury::<Test>::account_for_channel(channel_id);
+    Balances::<Test>::usable_balance(&reward_account)
 }

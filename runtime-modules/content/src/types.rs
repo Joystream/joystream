@@ -493,6 +493,11 @@ pub trait ModuleAccount<T: balances::Trait> {
         Self::ModuleId::get().into_sub_account(Vec::<u8>::new())
     }
 
+    /// The account ID of the module account.
+    fn account_for_channel(channel_id: <T as storage::Trait>::ChannelId) -> T::AccountId {
+        Self::ModuleId::get().into_sub_account(("CHANNEL", channel_id))
+    }
+
     /// Transfer tokens from the module account to the destination account (spends from
     /// module account).
     fn withdraw(dest_account_id: &T::AccountId, amount: BalanceOf<T>) -> DispatchResult {
