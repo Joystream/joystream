@@ -1224,7 +1224,7 @@ pub type TokenIssuanceParametersOf<T> = TokenIssuanceParameters<
 >;
 
 /// Alias for TransferPolicyParams
-pub(crate) type TransferPolicyParamsOf<T> = TransferPolicyParams<WhitelistParamsOf<T>>;
+pub type TransferPolicyParamsOf<T> = TransferPolicyParams<WhitelistParamsOf<T>>;
 
 /// Alias for TransferPolicy
 pub(crate) type TransferPolicyOf<T> = TransferPolicy<<T as frame_system::Trait>::Hash>;
@@ -1244,7 +1244,7 @@ pub(crate) type VestingScheduleOf<T> =
 pub(crate) type SingleDataObjectUploadParamsOf<T> = SingleDataObjectUploadParams<JoyBalanceOf<T>>;
 
 /// Alias for WhitelistParams
-pub(crate) type WhitelistParamsOf<T> =
+pub type WhitelistParamsOf<T> =
     WhitelistParams<<T as frame_system::Trait>::Hash, SingleDataObjectUploadParamsOf<T>>;
 
 /// Alias for TokenSaleParams

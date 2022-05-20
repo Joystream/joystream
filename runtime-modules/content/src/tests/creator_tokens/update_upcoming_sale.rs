@@ -10,7 +10,7 @@ fn unsuccessful_update_upcoming_token_sale_non_existing_channel() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
-        UpdateUpcomingCreatorTokenSale::default()
+        UpdateUpcomingCreatorTokenSaleFixture::default()
             .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()));
     })
 }
@@ -21,7 +21,7 @@ fn unsuccessful_update_creator_token_sale_token_not_issued() {
         run_to_block(1);
 
         CreateChannelFixture::default().call_and_assert(Ok(()));
-        UpdateUpcomingCreatorTokenSale::default()
+        UpdateUpcomingCreatorTokenSaleFixture::default()
             .call_and_assert(Err(Error::<Test>::CreatorTokenNotIssued.into()));
     })
 }
@@ -33,11 +33,11 @@ fn unsuccessful_update_creator_token_sale_member_channel_unauthorized_actors() {
         curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
         CreateChannelFixture::default().call_and_assert(Ok(()));
         IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
-        InitCreatorTokenSale::default()
+        InitCreatorTokenSaleFixture::default()
             .with_start_block(100)
             .call_and_assert(Ok(()));
         for (sender, actor, err) in get_default_member_channel_invalid_owner_contexts() {
-            UpdateUpcomingCreatorTokenSale::default()
+            UpdateUpcomingCreatorTokenSaleFixture::default()
                 .with_sender(sender)
                 .with_actor(actor)
                 .call_and_assert(Err(err.into()))
@@ -60,13 +60,13 @@ fn unsuccessful_update_creator_token_sale_curator_channel_unauthorized_actors() 
             .with_actor(default_curator_actor())
             .with_initial_allocation_to(DEFAULT_CURATOR_MEMBER_ID)
             .call_and_assert(Ok(()));
-        InitCreatorTokenSale::default()
+        InitCreatorTokenSaleFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
             .with_actor(default_curator_actor())
             .with_start_block(100)
             .call_and_assert(Ok(()));
         for (sender, actor, err) in get_default_curator_channel_invalid_owner_contexts() {
-            UpdateUpcomingCreatorTokenSale::default()
+            UpdateUpcomingCreatorTokenSaleFixture::default()
                 .with_sender(sender)
                 .with_actor(actor)
                 .call_and_assert(Err(err.into()))
@@ -80,10 +80,10 @@ fn successful_update_creator_token_sale_member_channel() {
         run_to_block(1);
         CreateChannelFixture::default().call_and_assert(Ok(()));
         IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
-        InitCreatorTokenSale::default()
+        InitCreatorTokenSaleFixture::default()
             .with_start_block(100)
             .call_and_assert(Ok(()));
-        UpdateUpcomingCreatorTokenSale::default().call_and_assert(Ok(()));
+        UpdateUpcomingCreatorTokenSaleFixture::default().call_and_assert(Ok(()));
     })
 }
 
@@ -101,12 +101,12 @@ fn successful_update_creator_token_sale_curator_channel() {
             .with_actor(default_curator_actor())
             .with_initial_allocation_to(DEFAULT_CURATOR_MEMBER_ID)
             .call_and_assert(Ok(()));
-        InitCreatorTokenSale::default()
+        InitCreatorTokenSaleFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
             .with_actor(default_curator_actor())
             .with_start_block(100)
             .call_and_assert(Ok(()));
-        UpdateUpcomingCreatorTokenSale::default()
+        UpdateUpcomingCreatorTokenSaleFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
             .with_actor(default_curator_actor())
             .call_and_assert(Ok(()));

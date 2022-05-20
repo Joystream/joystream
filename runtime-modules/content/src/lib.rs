@@ -2557,6 +2557,30 @@ decl_module! {
                 outputs
             )?;
         }
+
+
+        /// Make channel's creator token permissionless
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn make_creator_token_permissionless(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Permissions check
+            ensure_actor_authorized_to_manage_creator_token::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Call to ProjectToken - should be the first call before MUTATION SAFE!
+            T::ProjectToken::change_to_permissionless(token_id)?;
+        }
     }
 }
 

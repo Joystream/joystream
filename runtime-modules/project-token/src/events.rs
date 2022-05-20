@@ -137,5 +137,10 @@ decl_event! {
         /// - token sale id
         /// - amount of tokens recovered
         UnsoldTokensRecovered(TokenId, TokenSaleId, Balance),
+
+        /// Transfer Policy Changed To Permissionless
+        /// Params:
+        /// - token id
+        TransferPolicyChangedToPermissionless(TokenId),
     }
 }

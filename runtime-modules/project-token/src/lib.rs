@@ -686,8 +686,10 @@ impl<T: Trait>
 
         TokenInfoById::<T>::mutate(token_id, |token_info| {
             token_info.transfer_policy = TransferPolicyOf::<T>::Permissionless;
-            Ok(())
-        })
+        });
+
+        Self::deposit_event(RawEvent::TransferPolicyChangedToPermissionless(token_id));
+        Ok(())
     }
 
     /// Reduce patronage rate by amount

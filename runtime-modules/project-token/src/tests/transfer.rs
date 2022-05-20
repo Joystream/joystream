@@ -955,6 +955,7 @@ fn change_to_permissionless_ok_from_permissioned_state() {
             Token::token_info_by_id(token_id).transfer_policy,
             TransferPolicyOf::<Test>::Permissionless
         ));
+        last_event_eq!(RawEvent::TransferPolicyChangedToPermissionless(token_id));
     })
 }
 
@@ -977,6 +978,7 @@ fn change_to_permissionless_ok_from_permissionless_state() {
             Token::token_info_by_id(token_id).transfer_policy,
             TransferPolicyOf::<Test>::Permissionless
         ));
+        last_event_eq!(RawEvent::TransferPolicyChangedToPermissionless(token_id));
     })
 }
 

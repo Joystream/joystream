@@ -4,6 +4,7 @@ use crate::*;
 use common::council::CouncilBudgetManager;
 use frame_support::traits::Currency;
 use frame_support::{assert_noop, assert_ok};
+use project_token::types::TransferPolicyParamsOf;
 use project_token::types::{
     PaymentWithVestingOf, TokenAllocationOf, TokenIssuanceParametersOf, Transfers,
 };
@@ -1730,6 +1731,16 @@ impl IssueCreatorTokenFixture {
         }
     }
 
+    pub fn with_transfer_policy(self, transfer_policy: TransferPolicyParamsOf<Test>) -> Self {
+        Self {
+            params: TokenIssuanceParametersOf::<Test> {
+                transfer_policy,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
 
@@ -1768,14 +1779,14 @@ impl IssueCreatorTokenFixture {
     }
 }
 
-pub struct InitCreatorTokenSale {
+pub struct InitCreatorTokenSaleFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
     params: TokenSaleParamsOf<Test>,
 }
 
-impl InitCreatorTokenSale {
+impl InitCreatorTokenSaleFixture {
     pub fn default() -> Self {
         Self {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
@@ -1829,7 +1840,7 @@ impl InitCreatorTokenSale {
     }
 }
 
-pub struct UpdateUpcomingCreatorTokenSale {
+pub struct UpdateUpcomingCreatorTokenSaleFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
@@ -1837,7 +1848,7 @@ pub struct UpdateUpcomingCreatorTokenSale {
     new_duration: Option<u64>,
 }
 
-impl UpdateUpcomingCreatorTokenSale {
+impl UpdateUpcomingCreatorTokenSaleFixture {
     pub fn default() -> Self {
         Self {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
@@ -1875,14 +1886,14 @@ impl UpdateUpcomingCreatorTokenSale {
     }
 }
 
-pub struct CreatorTokenIssuerTransfer {
+pub struct CreatorTokenIssuerTransferFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
     outputs: TransfersWithVestingOf<Test>,
 }
 
-impl CreatorTokenIssuerTransfer {
+impl CreatorTokenIssuerTransferFixture {
     pub fn default() -> Self {
         Self {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
@@ -1921,6 +1932,43 @@ impl CreatorTokenIssuerTransfer {
             self.channel_id,
             self.outputs.clone(),
         );
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+
+pub struct MakeCreatorTokenPermissionlessFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+}
+
+impl MakeCreatorTokenPermissionlessFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let actual_result =
+            Content::make_creator_token_permissionless(origin, self.actor.clone(), self.channel_id);
 
         if expected_result.is_ok() {
             assert_ok!(actual_result);
