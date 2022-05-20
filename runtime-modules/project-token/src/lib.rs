@@ -726,6 +726,7 @@ impl<T: Trait>
     /// Preconditions:
     /// - token by `token_id` must exists
     /// - `member_id` x `token_id` account must exist
+    /// - `token.revenue_split` has Inactive status
     ///
     /// Postconditions:
     /// - outstanding patronage credit for `token_id` transferred to `member_id` account
@@ -733,6 +734,11 @@ impl<T: Trait>
     /// no-op if outstanding credit is zero
     fn claim_patronage_credit(token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
+        ensure!(
+            matches!(token_info.revenue_split, RevenueSplitState::Inactive),
+            Error::<T>::CannotModifySupplyWhenRevenueSplitsAreActive,
+        );
+
         Self::ensure_account_data_exists(token_id, &member_id).map(|_| ())?;
 
         let now = Self::current_block();
