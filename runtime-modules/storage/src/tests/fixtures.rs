@@ -1567,15 +1567,25 @@ impl CreateDynamicBagFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let balance_pre = Balances::usable_balance(self.params.deletion_prize_source_account_id);
+
         let actual_result = Storage::create_dynamic_bag(self.params.clone());
 
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
+            let balance_post =
+                Balances::usable_balance(self.params.deletion_prize_source_account_id);
             let bag_id: BagId<Test> = self.params.bag_id.clone().into();
             assert!(<crate::Bags<Test>>::contains_key(&bag_id));
+
             let bag = <crate::Bags<Test>>::get(&bag_id);
             assert!(bag.stored_by.len() > 0);
+
+            assert_eq!(
+                balance_pre.saturating_sub(balance_post),
+                bag.deletion_prize.unwrap_or(0)
+            );
         }
     }
 }
