@@ -275,7 +275,7 @@ fn decreasing_patronage_rate_fails_invalid_token() {
 }
 
 #[test]
-fn claim_patronage_fails_with_ongoing_revenue_split() {
+fn claim_patronage_fails_with_active_revenue_split() {
     let token_id = token!(1);
     let (owner_id, owner_account) = member!(1);
     let (rate, blocks) = (rate!(10), block!(MIN_REVENUE_SPLIT_TIME_TO_START - 1));
