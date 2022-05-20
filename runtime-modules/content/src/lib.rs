@@ -438,7 +438,6 @@ decl_module! {
                 owner: channel_owner,
                 num_videos: 0u64,
                 is_censored: false,
-                reward_account: params.reward_account.clone(),
                 collaborators: params.collaborators.clone(),
                 moderators: params.moderators.clone(),
                 cumulative_reward_claimed: BalanceOf::<T>::zero(),
@@ -467,12 +466,6 @@ decl_module! {
                 &actor,
                 &channel,
             )?;
-
-            // maybe update the reward account if actor is not a collaborator
-            if let Some(reward_account) = params.reward_account.as_ref() {
-                ensure_actor_can_manage_reward_account::<T>(&sender, &channel.owner, &actor)?;
-                channel.reward_account = reward_account.clone();
-            }
 
             // update collaborator set if actor is not a collaborator
             if let Some(new_collabs) = params.collaborators.as_ref() {
@@ -1367,7 +1360,7 @@ decl_module! {
         ) -> DispatchResult {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            let reward_account = Self::ensure_reward_account(&channel)?;
+            let reward_account = ContentTreasury::<T>::account_for_channel(channel_id);
             ensure_actor_authorized_to_withdraw_from_channel::<T>(origin, &actor, &channel.owner)?;
 
             ensure!(
@@ -2628,21 +2621,6 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub(crate) fn ensure_reward_account(
-        channel: &Channel<T>,
-    ) -> Result<T::AccountId, DispatchError> {
-        if let Some(reward_account) = &channel.reward_account {
-            Ok(reward_account.clone())
-        } else {
-            match &channel.owner {
-                ChannelOwner::CuratorGroup(..) => Err(Error::<T>::RewardAccountIsNotSet.into()),
-                ChannelOwner::Member(member_id) => {
-                    T::MemberAuthenticator::controller_account_id(*member_id)
-                }
-            }
-        }
-    }
-
     pub(crate) fn ensure_open_bid_exists(
         video_id: T::VideoId,
         member_id: T::MemberId,
@@ -2671,7 +2649,7 @@ impl<T: Trait> Module<T> {
             Error::<T>::ChannelCashoutsDisabled
         );
 
-        let reward_account = Self::ensure_reward_account(&channel)?;
+        let reward_account = ContentTreasury::<T>::account_for_channel(item.channel_id);
 
         let cashout = item
             .cumulative_reward_earned

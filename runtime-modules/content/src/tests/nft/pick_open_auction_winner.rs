@@ -96,8 +96,7 @@ fn pick_open_auction_winner() {
                 SECOND_MEMBER_ID,
                 bid,
             )),
-            // 3 events: NewAccount (channel reward acc), Endowed (channel reward acc), OpenAuctionBidAccepted
-            number_of_events_before_call + 3,
+            number_of_events_before_call + 1,
         );
     })
 }

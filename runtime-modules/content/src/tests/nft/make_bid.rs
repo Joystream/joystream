@@ -1,7 +1,7 @@
 #![cfg(test)]
 use crate::tests::fixtures::{
-    create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
-    increase_account_balance_helper,
+    channel_reward_account_balance, create_default_member_owned_channel_with_video,
+    create_initial_storage_buckets_helper, increase_account_balance_helper,
 };
 use crate::tests::mock::*;
 use crate::*;
@@ -834,7 +834,7 @@ fn make_bid_ok_with_open_auction_owner_account_increased_balance_by_correct_amou
         ));
 
         assert_eq!(
-            Balances::<Test>::free_balance(DEFAULT_MEMBER_CHANNEL_REWARD_ACCOUNT_ID),
+            channel_reward_account_balance(1u64),
             DEFAULT_BUY_NOW_PRICE + balance_pre - auction_fee
         );
     })
@@ -860,7 +860,7 @@ fn make_bid_ok_with_english_auction_owner_account_increased_balance_by_correct_a
         ));
 
         assert_eq!(
-            Balances::<Test>::free_balance(DEFAULT_MEMBER_CHANNEL_REWARD_ACCOUNT_ID),
+            channel_reward_account_balance(1u64),
             DEFAULT_BUY_NOW_PRICE + balance_pre - auction_fee,
         );
     })

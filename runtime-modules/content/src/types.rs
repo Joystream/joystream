@@ -72,15 +72,13 @@ pub struct ChannelCategoryUpdateParameters {
 /// Type representing an owned channel which videos, playlists, and series can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance> {
+pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, Balance> {
     /// The owner of a channel
     pub owner: ChannelOwner<MemberId, CuratorGroupId>,
     /// The videos under this channel
     pub num_videos: u64,
     /// If curators have censored this channel or not
     pub is_censored: bool,
-    /// Reward account where revenue is sent if set.
-    pub reward_account: Option<AccountId>,
     /// collaborator set
     pub collaborators: BTreeSet<MemberId>,
     /// moderator set
@@ -89,9 +87,7 @@ pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance> {
     pub cumulative_reward_claimed: Balance,
 }
 
-impl<MemberId: Ord, CuratorGroupId, AccountId, Balance>
-    ChannelRecord<MemberId, CuratorGroupId, AccountId, Balance>
-{
+impl<MemberId: Ord, CuratorGroupId, Balance> ChannelRecord<MemberId, CuratorGroupId, Balance> {
     /// Ensure censorship status have been changed
     pub fn ensure_censorship_status_changed<T: Trait>(&self, is_censored: bool) -> DispatchResult {
         ensure!(
@@ -106,7 +102,6 @@ impl<MemberId: Ord, CuratorGroupId, AccountId, Balance>
 pub type Channel<T> = ChannelRecord<
     <T as common::MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
-    <T as frame_system::Trait>::AccountId,
     BalanceOf<T>,
 >;
 
@@ -138,36 +133,28 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
 /// Information about channel being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelCreationParametersRecord<StorageAssets, AccountId, MemberId: Ord> {
+pub struct ChannelCreationParametersRecord<StorageAssets, MemberId: Ord> {
     /// Assets referenced by metadata
     pub assets: Option<StorageAssets>,
     /// Metadata about the channel.
     pub meta: Option<Vec<u8>>,
-    /// optional reward account
-    pub reward_account: Option<AccountId>,
     /// initial collaborator set
     pub collaborators: BTreeSet<MemberId>,
     /// initial moderator set
     pub moderators: BTreeSet<MemberId>,
 }
 
-pub type ChannelCreationParameters<T> = ChannelCreationParametersRecord<
-    StorageAssets<T>,
-    <T as frame_system::Trait>::AccountId,
-    <T as common::MembershipTypes>::MemberId,
->;
+pub type ChannelCreationParameters<T> =
+    ChannelCreationParametersRecord<StorageAssets<T>, <T as common::MembershipTypes>::MemberId>;
 
 /// Information about channel being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelUpdateParametersRecord<StorageAssets, AccountId, DataObjectId: Ord, MemberId: Ord>
-{
+pub struct ChannelUpdateParametersRecord<StorageAssets, DataObjectId: Ord, MemberId: Ord> {
     /// Asset collection for the channel, referenced by metadata
     pub assets_to_upload: Option<StorageAssets>,
     /// If set, metadata update for the channel.
     pub new_meta: Option<Vec<u8>>,
-    /// If set, updates the reward account of the channel
-    pub reward_account: Option<Option<AccountId>>,
     /// assets to be removed from channel
     pub assets_to_remove: BTreeSet<DataObjectId>,
     /// collaborator set
@@ -176,7 +163,6 @@ pub struct ChannelUpdateParametersRecord<StorageAssets, AccountId, DataObjectId:
 
 pub type ChannelUpdateParameters<T> = ChannelUpdateParametersRecord<
     StorageAssets<T>,
-    <T as frame_system::Trait>::AccountId,
     DataObjectId<T>,
     <T as common::MembershipTypes>::MemberId,
 >;

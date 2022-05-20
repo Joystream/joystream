@@ -25,7 +25,6 @@ impl CreateChannelFixture {
             params: ChannelCreationParameters::<Test> {
                 assets: None,
                 meta: None,
-                reward_account: None,
                 collaborators: BTreeSet::new(),
                 moderators: BTreeSet::new(),
             },
@@ -64,16 +63,6 @@ impl CreateChannelFixture {
         Self {
             params: ChannelCreationParameters::<Test> {
                 moderators,
-                ..self.params
-            },
-            ..self
-        }
-    }
-
-    pub fn with_reward_account(self, reward_account: AccountId) -> Self {
-        Self {
-            params: ChannelCreationParameters::<Test> {
-                reward_account: Some(reward_account),
                 ..self.params
             },
             ..self
@@ -122,7 +111,6 @@ impl CreateChannelFixture {
                     Channel::<Test> {
                         owner: owner,
                         is_censored: false,
-                        reward_account: self.params.reward_account.clone(),
                         collaborators: self.params.collaborators.clone(),
                         moderators: self.params.moderators.clone(),
                         num_videos: Zero::zero(),
@@ -332,7 +320,6 @@ impl UpdateChannelFixture {
             params: ChannelUpdateParameters::<Test> {
                 assets_to_upload: None,
                 new_meta: None,
-                reward_account: None,
                 assets_to_remove: BTreeSet::new(),
                 collaborators: None,
             },
@@ -375,16 +362,6 @@ impl UpdateChannelFixture {
         Self {
             params: ChannelUpdateParameters::<Test> {
                 collaborators: Some(collaborators),
-                ..self.params
-            },
-            ..self
-        }
-    }
-
-    pub fn with_reward_account(self, reward_account: Option<Option<AccountId>>) -> Self {
-        Self {
-            params: ChannelUpdateParameters::<Test> {
-                reward_account,
                 ..self.params
             },
             ..self
@@ -450,11 +427,6 @@ impl UpdateChannelFixture {
                         ChannelRecord {
                             owner: owner,
                             is_censored: channel_pre.is_censored,
-                            reward_account: self
-                                .params
-                                .reward_account
-                                .clone()
-                                .unwrap_or(channel_pre.reward_account),
                             collaborators: self
                                 .params
                                 .collaborators
@@ -1729,7 +1701,6 @@ pub fn create_default_member_owned_channel() {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
             object_creation_list: create_data_objects_helper(),
         })
-        .with_reward_account(DEFAULT_MEMBER_CHANNEL_REWARD_ACCOUNT_ID)
         .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
         .with_moderators(vec![DEFAULT_MODERATOR_ID].into_iter().collect())
         .call();
@@ -1744,7 +1715,6 @@ pub fn create_default_curator_owned_channel() {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
             object_creation_list: create_data_objects_helper(),
         })
-        .with_reward_account(DEFAULT_CURATOR_CHANNEL_REWARD_ACCOUNT_ID)
         .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
         .with_moderators(vec![DEFAULT_MODERATOR_ID].into_iter().collect())
         .call();

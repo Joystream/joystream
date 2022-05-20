@@ -52,7 +52,7 @@ fn buy_nft_ok_with_royalty_account() {
         let platform_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE);
         setup_nft_on_sale_scenario();
 
-        let balance_pre = Balances::<Test>::free_balance(DEFAULT_MEMBER_CHANNEL_REWARD_ACCOUNT_ID);
+        let balance_pre = channel_reward_account_balance(1u64);
 
         assert_ok!(Content::buy_nft(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
@@ -62,7 +62,7 @@ fn buy_nft_ok_with_royalty_account() {
         ));
 
         assert_eq!(
-            Balances::<Test>::free_balance(DEFAULT_MEMBER_CHANNEL_REWARD_ACCOUNT_ID),
+            channel_reward_account_balance(1u64),
             balance_pre + DEFAULT_NFT_PRICE - platform_fee,
         );
     })
@@ -92,7 +92,7 @@ fn buy_nft() {
         // deposit balance to second member
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
 
-        let reward_account = ChannelById::<Test>::get(channel_id).reward_account.unwrap();
+        let reward_account = ContentTreasury::<Test>::account_for_channel(channel_id);
         let balance_pre = balances::Module::<Test>::free_balance(reward_account);
 
         // Sell nft
@@ -332,7 +332,6 @@ fn buy_nft_reward_account_is_not_set() {
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_reward_account(Some(None))
             .call_and_assert(Ok(()));
 
         // Issue nft
@@ -383,7 +382,6 @@ fn buy_nft_fails_with_invalid_price_commit() {
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_reward_account(Some(None))
             .call_and_assert(Ok(()));
 
         // Issue nft

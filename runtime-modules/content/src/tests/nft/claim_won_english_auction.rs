@@ -81,7 +81,7 @@ fn settle_english_auction() {
         ));
 
         // Module account is empty.
-        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), 0);
+        assert_eq!(ContentTreasury::<Test>::usable_balance(), 0);
 
         // Runtime tested state after call
 
@@ -515,7 +515,7 @@ fn settle_english_auction_ok_with_balances_check() {
         assert_ok!(settle_english_auction_result);
 
         // Balances check
-        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), 0);
+        assert_eq!(ContentTreasury::<Test>::usable_balance(), 0);
         assert_eq!(
             Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID),
             INITIAL_BALANCE

@@ -1,7 +1,9 @@
 #![cfg(test)]
+use crate::tests::curators;
 use crate::tests::fixtures::{
-    create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
-    increase_account_balance_helper, UpdateChannelFixture,
+    channel_reward_account_balance, create_default_member_owned_channel_with_video,
+    create_initial_storage_buckets_helper, increase_account_balance_helper, CreateChannelFixture,
+    CreateVideoFixture, UpdateChannelFixture,
 };
 use crate::tests::mock::*;
 use crate::*;
@@ -193,7 +195,6 @@ fn accept_incoming_offer_reward_account_is_not_set_succeeds_with_member_owner_ch
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_reward_account(Some(None))
             .call_and_assert(Ok(()));
 
         // Issue nft
@@ -229,42 +230,42 @@ fn accept_incoming_offer_reward_account_ok_with_curator_owner_channel_account_co
         run_to_block(1);
 
         let video_id = NextVideoId::<Test>::get();
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
-        create_default_member_owned_channel_with_video();
+        let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
 
-        UpdateChannelFixture::default()
-            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_reward_account(Some(None))
-            .call_and_assert(Ok(()));
+        CreateChannelFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call();
+
+        CreateVideoFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
+            Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID),
+            ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
         ));
 
         // Offer nft
         assert_ok!(Content::offer_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID),
             video_id,
-            ContentActor::Member(DEFAULT_MEMBER_ID),
+            ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID),
             SECOND_MEMBER_ID,
             Some(DEFAULT_NFT_PRICE),
         ));
 
-        let issuance_pre = Balances::<Test>::total_issuance();
         // Make an attempt to accept incoming nft offer if sender is owner and reward account is not set
         let _ = Content::accept_incoming_offer(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
 
         // Failure checked
         assert_eq!(
-            Balances::<Test>::total_issuance(),
-            issuance_pre - DEFAULT_NFT_PRICE,
+            channel_reward_account_balance(1u64),
+            DEFAULT_NFT_PRICE - Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE)
         );
     })
 }
