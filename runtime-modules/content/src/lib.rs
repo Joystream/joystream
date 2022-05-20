@@ -13,6 +13,7 @@ mod types;
 use project_token::traits::PalletToken;
 use project_token::types::{
     TokenIssuanceParametersOf, TokenSaleParamsOf, TransfersWithVestingOf, UploadContextOf,
+    YearlyRate,
 };
 use sp_std::cmp::max;
 use sp_std::mem::size_of;
@@ -2580,6 +2581,59 @@ decl_module! {
 
             // Call to ProjectToken - should be the first call before MUTATION SAFE!
             T::ProjectToken::change_to_permissionless(token_id)?;
+        }
+
+        /// Reduce channel's creator token patronage rate to given value
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn reduce_creator_token_patronage_rate_to(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            target_rate: YearlyRate
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Permissions check
+            ensure_actor_authorized_to_manage_creator_token::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Call to ProjectToken - should be the first call before MUTATION SAFE!
+            T::ProjectToken::reduce_patronage_rate_to(token_id, target_rate)?;
+        }
+
+        /// Claim channel's creator token patronage credit
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn claim_creator_token_patronage_credit(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Permissions check
+            ensure_actor_authorized_to_manage_creator_token::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Retrieve member_id based on actor
+            let member_id = get_member_id_of_actor::<T>(&actor)?;
+
+            // Call to ProjectToken - should be the first call before MUTATION SAFE!
+            T::ProjectToken::claim_patronage_credit(
+                token_id,
+                member_id
+            )?;
         }
     }
 }

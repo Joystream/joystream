@@ -8,7 +8,7 @@ use project_token::types::TransferPolicyParamsOf;
 use project_token::types::{
     PaymentWithVestingOf, TokenAllocationOf, TokenIssuanceParametersOf, Transfers,
 };
-use sp_runtime::Perbill;
+use sp_runtime::{Perbill, Permill};
 use sp_std::cmp::min;
 use sp_std::iter::{IntoIterator, Iterator};
 
@@ -1698,6 +1698,7 @@ impl IssueCreatorTokenFixture {
             channel_id: ChannelId::one(),
             params: TokenIssuanceParametersOf::<Test> {
                 symbol: Hashing::hash_of(b"CRT"),
+                patronage_rate: DEFAULT_PATRONAGE_RATE,
                 ..Default::default()
             },
         }
@@ -1931,6 +1932,93 @@ impl CreatorTokenIssuerTransferFixture {
             self.actor.clone(),
             self.channel_id,
             self.outputs.clone(),
+        );
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+
+pub struct ReduceCreatorTokenPatronageRateFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    target_rate: YearlyRate,
+}
+
+impl ReduceCreatorTokenPatronageRateFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+            target_rate: YearlyRate(
+                DEFAULT_PATRONAGE_RATE
+                    .0
+                    .saturating_sub(Permill::from_perthousand(5)),
+            ),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let actual_result = Content::reduce_creator_token_patronage_rate_to(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.target_rate,
+        );
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+
+pub struct ClaimCreatorTokenPatronageCreditFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+}
+
+impl ClaimCreatorTokenPatronageCreditFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let actual_result = Content::claim_creator_token_patronage_credit(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
         );
 
         if expected_result.is_ok() {
