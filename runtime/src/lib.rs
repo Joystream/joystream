@@ -518,7 +518,7 @@ parameter_types! {
     pub const MinNumberOfExtraCandidates: u64 = 1;
     pub const AnnouncingPeriodDuration: BlockNumber = 14400;
     pub const IdlePeriodDuration: BlockNumber = 57600;
-    pub const CouncilSize: u64 = 5;
+    pub const CouncilSize: u64 = 3;
     pub const MinCandidateStake: u64 = 11000;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
     pub const DefaultBudgetIncrement: u64 = 5000000;
@@ -551,7 +551,7 @@ parameter_types! {
 #[cfg(feature = "staging_runtime")]
 #[cfg(not(feature = "playground_runtime"))]
 parameter_types! {
-    pub const CouncilSize: u64 = 5;
+    pub const CouncilSize: u64 = 3;
 }
 
 // Playground council size
@@ -574,7 +574,7 @@ parameter_types! {
     pub const MinNumberOfExtraCandidates: u64 = 1;
     pub const AnnouncingPeriodDuration: BlockNumber = 20;
     pub const IdlePeriodDuration: BlockNumber = 20;
-    pub const CouncilSize: u64 = 5;
+    pub const CouncilSize: u64 = 3;
     pub const MinCandidateStake: u64 = 11000;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
     pub const DefaultBudgetIncrement: u64 = 10000000;
