@@ -39,7 +39,6 @@ import {
   processModerateCommentMessage,
   processPinOrUnpinCommentMessage,
   processBanOrUnbanMemberFromChannelMessage,
-  processCommentSectionPreferenceMessage,
   processVideoReactionsPreferenceMessage,
 } from './commentAndReaction'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
@@ -302,13 +301,6 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
         contentActor,
         channelId,
         decodedMessage.banOrUnbanMemberFromChannel!
-      )
-    } else if (messageType === 'commentSectionPreference') {
-      await processCommentSectionPreferenceMessage(
-        ctx,
-        contentActor,
-        channelId,
-        decodedMessage.commentSectionPreference!
       )
     } else if (messageType === 'videoReactionsPreference') {
       await processVideoReactionsPreferenceMessage(
