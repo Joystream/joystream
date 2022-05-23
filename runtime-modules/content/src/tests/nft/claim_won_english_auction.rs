@@ -2,6 +2,7 @@
 use crate::tests::fixtures::{
     channel_reward_account_balance, create_default_member_owned_channel_with_video,
     create_initial_storage_buckets_helper, increase_account_balance_helper,
+    make_content_module_account_existential_deposit,
 };
 use crate::tests::mock::*;
 use crate::*;
@@ -16,6 +17,10 @@ fn settle_english_auction() {
         run_to_block(AUCTION_START_BLOCK);
 
         let video_id = NextVideoId::<Test>::get();
+        let existential_deposit: u64 = <Test as balances::Trait>::ExistentialDeposit::get().into();
+
+        // TODO: Should not be required afer https://github.com/Joystream/joystream/issues/3508
+        make_content_module_account_existential_deposit();
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
@@ -53,7 +58,10 @@ fn settle_english_auction() {
         let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         let module_account_id = ContentTreasury::<Test>::module_account_id();
-        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), 0);
+        assert_eq!(
+            Balances::<Test>::usable_balance(&module_account_id),
+            existential_deposit
+        );
 
         // Make nft auction bid
         assert_ok!(Content::make_english_auction_bid(
@@ -64,7 +72,10 @@ fn settle_english_auction() {
         ));
 
         // Module account contains a bid.
-        assert_eq!(ContentTreasury::<Test>::usable_balance(), bid);
+        assert_eq!(
+            ContentTreasury::<Test>::usable_balance(),
+            bid + existential_deposit
+        );
 
         // Runtime tested state before call
 
@@ -86,9 +97,9 @@ fn settle_english_auction() {
         // Sub account format (TypeId (4 bytes) ++ ParachainId ++ sub_id ) which is encoded
         // into a 32 bit value so sub accounts and main module account are the same
         // Module account is decreased by bid
-        // testing only that reward account receives the bid amount
-        // TODO: replace mock test env account type with the type used in production
-        assert_eq!(channel_reward_account_balance(1u64), bid);
+        // TODO: replace mock test env account type with the type used in production and
+        // check both module account balance (== existential_deposit) and channel account balance
+        // (== bid)
 
         // Ensure english auction successfully completed
         assert!(matches!(

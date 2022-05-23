@@ -12,6 +12,7 @@ use sp_runtime::Permill;
 use sp_std::cmp::min;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::{IntoIterator, Iterator};
+use storage::{ModuleAccount as StorageModuleAccount, StorageTreasury};
 
 // Index which indentifies the item in the commitment set we want the proof for
 pub const DEFAULT_PROOF_INDEX: usize = 1;
@@ -2446,6 +2447,30 @@ pub fn update_commit_value_with_payments_helper(payments: &[PullPayment<Test>]) 
 pub fn channel_reward_account_balance(channel_id: ChannelId) -> u64 {
     let reward_account = ContentTreasury::<Test>::account_for_channel(channel_id);
     Balances::<Test>::usable_balance(&reward_account)
+}
+
+// TODO: Should not be required after https://github.com/Joystream/joystream/issues/3511
+pub fn make_channel_account_existential_deposit(channel_id: ChannelId) {
+    increase_account_balance_helper(
+        ContentTreasury::<Test>::account_for_channel(channel_id),
+        <Test as balances::Trait>::ExistentialDeposit::get().into(),
+    );
+}
+
+// TODO: Should not be required after https://github.com/Joystream/joystream/issues/3510
+pub fn make_storage_module_account_existential_deposit() {
+    increase_account_balance_helper(
+        StorageTreasury::<Test>::module_account_id(),
+        <Test as balances::Trait>::ExistentialDeposit::get().into(),
+    );
+}
+
+// TODO: Should not be required afer https://github.com/Joystream/joystream/issues/3508
+pub fn make_content_module_account_existential_deposit() {
+    increase_account_balance_helper(
+        ContentTreasury::<Test>::module_account_id(),
+        <Test as balances::Trait>::ExistentialDeposit::get().into(),
+    );
 }
 
 pub fn default_curator_actor() -> ContentActor<CuratorGroupId, CuratorId, MemberId> {

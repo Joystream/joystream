@@ -366,6 +366,9 @@ fn unsuccessful_channel_balance_withdrawal_with_auth_failed() {
             .with_payments(payments)
             .call_and_assert(Ok(()));
 
+        // TODO: Should not be required after https://github.com/Joystream/joystream/issues/3511
+        make_channel_account_existential_deposit(ChannelId::one());
+
         let curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
 
         // As owner
@@ -406,6 +409,9 @@ fn unsuccessful_channel_balance_withdrawal_as_non_owner() {
         update_commit_value_with_payments_helper(&payments);
         <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
 
+        // TODO: Should not be required after https://github.com/Joystream/joystream/issues/3511
+        make_channel_account_existential_deposit(ChannelId::one());
+
         ClaimChannelRewardFixture::default()
             .with_payments(payments)
             .call_and_assert(Ok(()));
@@ -433,7 +439,7 @@ fn unsuccessful_channel_balance_withdrawal_as_non_owner() {
 }
 
 #[test]
-fn unsuccessful_channel_balance_withdrawal_when_amount_exceeds_balance() {
+fn unsuccessful_channel_balance_withdrawal_when_amount_exceeds_balance_minus_existential_deposit() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -441,9 +447,27 @@ fn unsuccessful_channel_balance_withdrawal_when_amount_exceeds_balance() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel();
 
+        // TODO: Should not be required after https://github.com/Joystream/joystream/issues/3511
+        make_channel_account_existential_deposit(ChannelId::one());
+
         WithdrawFromChannelBalanceFixture::default().call_and_assert(Err(
-            Error::<Test>::WithdrawFromChannelAmountExceedsBalance.into(),
+            Error::<Test>::WithdrawFromChannelAmountExceedsBalanceMinusExistentialDeposit.into(),
         ));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_balance_withdrawal_when_amount_is_zero() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel();
+
+        WithdrawFromChannelBalanceFixture::default()
+            .with_amount(0)
+            .call_and_assert(Err(Error::<Test>::WithdrawFromChannelAmountIsZero.into()));
     })
 }
 
@@ -460,13 +484,16 @@ fn unsuccessful_channel_balance_double_spend_withdrawal() {
         update_commit_value_with_payments_helper(&payments);
         <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
 
+        // TODO: Should not be required after https://github.com/Joystream/joystream/issues/3511
+        make_channel_account_existential_deposit(ChannelId::one());
+
         ClaimChannelRewardFixture::default()
             .with_payments(payments)
             .call_and_assert(Ok(()));
 
         WithdrawFromChannelBalanceFixture::default().call_and_assert(Ok(()));
         WithdrawFromChannelBalanceFixture::default().call_and_assert(Err(
-            Error::<Test>::WithdrawFromChannelAmountExceedsBalance.into(),
+            Error::<Test>::WithdrawFromChannelAmountExceedsBalanceMinusExistentialDeposit.into(),
         ));
     })
 }
@@ -496,7 +523,9 @@ fn unsuccessful_channel_balance_withdrawal_when_creator_token_issued() {
 
         increase_account_balance_helper(
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
-            DEFAULT_PAYOUT_EARNED,
+            DEFAULT_PAYOUT_EARNED
+                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
+                .saturating_add(<Test as balances::Trait>::ExistentialDeposit::get().into()),
         );
 
         WithdrawFromChannelBalanceFixture::default().call_and_assert(Err(
@@ -517,6 +546,9 @@ fn successful_channel_balance_withdrawal_to_custom_destination() {
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
         <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
+
+        // TODO: Should not be required after https://github.com/Joystream/joystream/issues/3511
+        make_channel_account_existential_deposit(ChannelId::one());
 
         ClaimChannelRewardFixture::default()
             .with_payments(payments)
@@ -540,6 +572,9 @@ fn successful_channel_balance_multiple_withdrawals() {
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
         <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
+
+        // TODO: Should not be required after https://github.com/Joystream/joystream/issues/3511
+        make_channel_account_existential_deposit(ChannelId::one());
 
         ClaimChannelRewardFixture::default()
             .with_payments(payments)
@@ -787,6 +822,9 @@ fn unsuccessful_claim_and_withdraw_double_spend() {
         update_commit_value_with_payments_helper(&payments);
         <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
 
+        // TODO: Should not be required after https://github.com/Joystream/joystream/issues/3511
+        make_channel_account_existential_deposit(ChannelId::one());
+
         ClaimAndWithdrawChannelRewardFixture::default()
             .with_payments(payments.clone())
             .call_and_assert(Ok(()));
@@ -803,7 +841,7 @@ fn unsuccessful_claim_and_withdraw_double_spend() {
 
         // withdraw only
         WithdrawFromChannelBalanceFixture::default().call_and_assert(Err(
-            Error::<Test>::WithdrawFromChannelAmountExceedsBalance.into(),
+            Error::<Test>::WithdrawFromChannelAmountExceedsBalanceMinusExistentialDeposit.into(),
         ))
     })
 }
@@ -966,6 +1004,8 @@ fn successful_channel_payouts_update() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
+        // TODO: Should not be required after https://github.com/Joystream/joystream/issues/3510
+        make_storage_module_account_existential_deposit();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
         let payments = create_some_pull_payments_helper();

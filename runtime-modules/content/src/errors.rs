@@ -271,13 +271,18 @@ decl_error! {
         /// Channel cashout amount is too low to be claimed
         CashoutAmountBelowMinimumAmount,
 
-        /// An attempt to withdraw funds from channel account failed, because the specified amount exceeds the account's balance
-        WithdrawFromChannelAmountExceedsBalance,
+        /// An attempt to withdraw funds from channel account failed, because the specified amount
+        /// exceeds the account's balance minus ExistantialDeposit
+        WithdrawFromChannelAmountExceedsBalanceMinusExistentialDeposit,
+        /// An attempt to withdraw funds from channel account failed, because the specified amount
+        /// is zero
+        WithdrawFromChannelAmountIsZero,
 
         /// Channel cashouts are currently disabled
         ChannelCashoutsDisabled,
 
-        /// New values for min_cashout_allowed/max_cashout_allowed are invalid: min_cashout_allowed cannot exceed max_cashout_allowed
+        /// New values for min_cashout_allowed/max_cashout_allowed are invalid
+        /// min_cashout_allowed cannot exceed max_cashout_allowed
         MinCashoutAllowedExceedsMaxCashoutAllowed,
 
         /// Insufficient council budget to cover channel reward claim

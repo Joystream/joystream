@@ -66,23 +66,10 @@ fn unsuccessful_issue_revenue_split_curator_channel_unauthorized_actors() {
 }
 
 #[test]
-fn unsuccessful_issue_revenue_split_with_no_reward_account() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-        CreateChannelFixture::default().call_and_assert(Ok(()));
-        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
-        IssueRevenueSplitFixture::default()
-            .call_and_assert(Err(Error::<Test>::RewardAccountIsNotSet.into()));
-    })
-}
-
-#[test]
 fn unsuccessful_issue_revenue_split_with_reward_account_empty() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        CreateChannelFixture::default()
-            .with_reward_account(DEFAULT_MEMBER_CHANNEL_REWARD_ACCOUNT_ID)
-            .call_and_assert(Ok(()));
+        CreateChannelFixture::default().call_and_assert(Ok(()));
         IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
         IssueRevenueSplitFixture::default().call_and_assert(Err(
             project_token::Error::<Test>::CannotIssueSplitWithZeroAllocationAmount.into(),
@@ -94,12 +81,12 @@ fn unsuccessful_issue_revenue_split_with_reward_account_empty() {
 fn successful_issue_revenue_split_member_channel() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        CreateChannelFixture::default()
-            .with_reward_account(DEFAULT_MEMBER_CHANNEL_REWARD_ACCOUNT_ID)
-            .call_and_assert(Ok(()));
+        CreateChannelFixture::default().call_and_assert(Ok(()));
         increase_account_balance_helper(
-            DEFAULT_MEMBER_CHANNEL_REWARD_ACCOUNT_ID,
-            DEFAULT_PAYOUT_EARNED,
+            ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
+            DEFAULT_PAYOUT_EARNED
+                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
+                .saturating_add(<Test as balances::Trait>::ExistentialDeposit::get().into()),
         );
         IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
         IssueRevenueSplitFixture::default().call_and_assert(Ok(()));
@@ -114,11 +101,12 @@ fn successful_issue_revenue_split_curator_channel() {
         CreateChannelFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
             .with_actor(default_curator_actor())
-            .with_reward_account(DEFAULT_CURATOR_CHANNEL_REWARD_ACCOUNT_ID)
             .call_and_assert(Ok(()));
         increase_account_balance_helper(
-            DEFAULT_CURATOR_CHANNEL_REWARD_ACCOUNT_ID,
-            DEFAULT_PAYOUT_EARNED,
+            ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
+            DEFAULT_PAYOUT_EARNED
+                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
+                .saturating_add(<Test as balances::Trait>::ExistentialDeposit::get().into()),
         );
         IssueCreatorTokenFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)

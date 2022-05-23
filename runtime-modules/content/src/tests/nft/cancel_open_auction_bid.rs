@@ -1,7 +1,7 @@
 #![cfg(test)]
 use crate::tests::fixtures::{
     create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
-    increase_account_balance_helper,
+    increase_account_balance_helper, make_content_module_account_existential_deposit,
 };
 use crate::tests::mock::*;
 use crate::*;
@@ -64,6 +64,9 @@ fn cancel_open_auction_bid() {
         run_to_block(1);
 
         let video_id = Content::next_video_id();
+        let existential_deposit: u64 = <Test as balances::Trait>::ExistentialDeposit::get().into();
+        // TODO: Should not be required afer https://github.com/Joystream/joystream/issues/3508
+        make_content_module_account_existential_deposit();
         setup_open_auction_scenario_with_bid();
 
         // Runtime tested state before call
@@ -77,7 +80,10 @@ fn cancel_open_auction_bid() {
 
         let bid = Content::min_starting_price();
         let module_account_id = ContentTreasury::<Test>::module_account_id();
-        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), bid);
+        assert_eq!(
+            Balances::<Test>::usable_balance(&module_account_id),
+            bid + existential_deposit
+        );
 
         // Cancel auction bid
         assert_ok!(Content::cancel_open_auction_bid(
@@ -86,7 +92,10 @@ fn cancel_open_auction_bid() {
             video_id,
         ));
 
-        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), 0);
+        assert_eq!(
+            Balances::<Test>::usable_balance(&module_account_id),
+            existential_deposit
+        );
 
         // Runtime tested state after call
 
@@ -99,7 +108,9 @@ fn cancel_open_auction_bid() {
         // Last event checked
         assert_event(
             MetaEvent::content(RawEvent::AuctionBidCanceled(SECOND_MEMBER_ID, video_id)),
-            number_of_events_before_call + 2,
+            // 4 events: NewAccount(SECOND_MEMBER_ACCOUNT_ID), Endowed(SECOND_MEMBER_ACCOUNT_ID),
+            // Transfer(module acc, SECOND_MEMBER_ACCOUNT_ID), AuctionBidCanceled
+            number_of_events_before_call + 4,
         );
     })
 }

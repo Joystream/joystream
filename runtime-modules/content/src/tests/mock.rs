@@ -83,8 +83,8 @@ pub const INITIAL_BALANCE: u64 = TOTAL_BALANCE_REQUIRED;
 
 pub const MEMBERS_COUNT: u64 = 10;
 pub const PAYMENTS_NUMBER: u64 = 10;
-pub const DEFAULT_PAYOUT_CLAIMED: u64 = 10;
-pub const DEFAULT_PAYOUT_EARNED: u64 = 10;
+pub const DEFAULT_PAYOUT_CLAIMED: u64 = 100;
+pub const DEFAULT_PAYOUT_EARNED: u64 = 100;
 pub const DEFAULT_NFT_PRICE: u64 = 1000;
 
 // Creator tokens
@@ -566,7 +566,7 @@ pub fn get_open_auction_params() -> OpenAuctionParams<Test> {
 // membership trait implementation and related stuff
 
 parameter_types! {
-    pub const ExistentialDeposit: u32 = 0;
+    pub const ExistentialDeposit: u32 = 10;
     pub const DefaultMembershipPrice: u64 = 100;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
     pub const StakingCandidateLockId: [u8; 8] = [3; 8];

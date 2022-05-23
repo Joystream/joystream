@@ -1383,8 +1383,14 @@ decl_module! {
             ensure_actor_authorized_to_withdraw_from_channel::<T>(origin, &actor, &channel.owner)?;
 
             ensure!(
-                <Balances<T>>::usable_balance(&reward_account) >= amount,
-                Error::<T>::WithdrawFromChannelAmountExceedsBalance
+                !amount.is_zero(),
+                Error::<T>::WithdrawFromChannelAmountIsZero
+            );
+
+            ensure!(
+                <Balances<T>>::usable_balance(&reward_account)
+                    .saturating_sub(T::ExistentialDeposit::get()) >= amount,
+                Error::<T>::WithdrawFromChannelAmountExceedsBalanceMinusExistentialDeposit
             );
 
             ensure!(
@@ -2656,7 +2662,7 @@ decl_module! {
             let token_id = channel.ensure_creator_token_issued::<T>()?;
 
             // Get channel's reward account and its balance
-            let reward_account = Self::ensure_reward_account(&channel)?;
+            let reward_account = ContentTreasury::<T>::account_for_channel(channel_id);
             let reward_account_balance = Balances::<T>::usable_balance(&reward_account);
 
             // Call to ProjectToken - should be the first call before MUTATION SAFE!
@@ -2665,7 +2671,7 @@ decl_module! {
                 start,
                 duration,
                 reward_account,
-                reward_account_balance
+                reward_account_balance.saturating_sub(<T as balances::Trait>::ExistentialDeposit::get())
             )?;
         }
 
@@ -2689,7 +2695,7 @@ decl_module! {
             let token_id = channel.ensure_creator_token_issued::<T>()?;
 
             // Get channel's reward account
-            let reward_account = Self::ensure_reward_account(&channel)?;
+            let reward_account = ContentTreasury::<T>::account_for_channel(channel_id);
 
             // Call to ProjectToken - should be the first call before MUTATION SAFE!
             T::ProjectToken::finalize_revenue_split(

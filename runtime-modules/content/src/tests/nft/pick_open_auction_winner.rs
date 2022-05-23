@@ -2,8 +2,8 @@
 use crate::tests::curators;
 use crate::tests::fixtures::{
     channel_reward_account_balance, create_default_member_owned_channel_with_video,
-    create_initial_storage_buckets_helper, increase_account_balance_helper, CreateChannelFixture,
-    CreateVideoFixture,
+    create_initial_storage_buckets_helper, increase_account_balance_helper,
+    make_content_module_account_existential_deposit, CreateChannelFixture, CreateVideoFixture,
 };
 use crate::tests::mock::*;
 use crate::*;
@@ -19,6 +19,9 @@ fn pick_open_auction_winner() {
         run_to_block(1);
 
         let video_id = NextVideoId::<Test>::get();
+
+        // TODO: Should not be required afer https://github.com/Joystream/joystream/issues/3508
+        make_content_module_account_existential_deposit();
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);

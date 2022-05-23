@@ -143,8 +143,8 @@ fn buy_nft() {
         // Last event checked
         assert_event(
             MetaEvent::content(RawEvent::NftBought(video_id, SECOND_MEMBER_ID)),
-            // 3 events: NewAccount (channel reward acc), Endowed (channel reward acc), NFTBought
-            number_of_events_before_call + 3,
+            // 4 events: KilledAccount (SECOND_MEMBER_ACCOUNT_ID), NewAccount (channel reward acc), Endowed (channel reward acc), NFTBought
+            number_of_events_before_call + 4,
         );
     })
 }
