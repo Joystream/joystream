@@ -20,6 +20,11 @@ fragment DataObjectTypeFields on DataObjectType {
       id
     }
   }
+  ... on DataObjectTypePlaylistThumbnail {
+    playlist {
+      id
+    }
+  }
 }
 
 fragment StorageDataObjectFields on StorageDataObject {

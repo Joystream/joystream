@@ -15435,6 +15435,7 @@ export type Playlist = BaseGraphQlObject & {
   playlistcreatedeventplaylist?: Maybe<Array<PlaylistCreatedEvent>>
   playlistdeletedeventplaylist?: Maybe<Array<PlaylistDeletedEvent>>
   playlistupdatedeventplaylist?: Maybe<Array<PlaylistUpdatedEvent>>
+  playlistvideoplaylist?: Maybe<Array<PlaylistVideo>>
 }
 
 export type PlaylistConnection = {
@@ -15463,8 +15464,8 @@ export type PlaylistCreatedEvent = Event &
     deletedAt?: Maybe<Scalars['DateTime']>
     deletedById?: Maybe<Scalars['String']>
     version: Scalars['Int']
-    playlist: Playlist
-    playlistId: Scalars['String']
+    playlist?: Maybe<Playlist>
+    playlistId?: Maybe<Scalars['String']>
     /** Content actor that created the playlist. */
     contentActor: ContentActor
   }
@@ -15480,7 +15481,7 @@ export type PlaylistCreatedEventCreateInput = {
   inBlock: Scalars['Float']
   network: Network
   indexInBlock: Scalars['Float']
-  playlist: Scalars['ID']
+  playlist?: Maybe<Scalars['ID']>
   contentActor: Scalars['JSONObject']
 }
 
@@ -15601,8 +15602,8 @@ export type PlaylistDeletedEvent = Event &
     deletedAt?: Maybe<Scalars['DateTime']>
     deletedById?: Maybe<Scalars['String']>
     version: Scalars['Int']
-    playlist: Playlist
-    playlistId: Scalars['String']
+    playlist?: Maybe<Playlist>
+    playlistId?: Maybe<Scalars['String']>
     /** Content actor that deleted the playlist. */
     contentActor: ContentActor
   }
@@ -15618,7 +15619,7 @@ export type PlaylistDeletedEventCreateInput = {
   inBlock: Scalars['Float']
   network: Network
   indexInBlock: Scalars['Float']
-  playlist: Scalars['ID']
+  playlist?: Maybe<Scalars['ID']>
   contentActor: Scalars['JSONObject']
 }
 
@@ -15757,8 +15758,8 @@ export type PlaylistUpdatedEvent = Event &
     deletedAt?: Maybe<Scalars['DateTime']>
     deletedById?: Maybe<Scalars['String']>
     version: Scalars['Int']
-    playlist: Playlist
-    playlistId: Scalars['String']
+    playlist?: Maybe<Playlist>
+    playlistId?: Maybe<Scalars['String']>
     /** Content actor that updated the playlist. */
     contentActor: ContentActor
   }
@@ -15774,7 +15775,7 @@ export type PlaylistUpdatedEventCreateInput = {
   inBlock: Scalars['Float']
   network: Network
   indexInBlock: Scalars['Float']
-  playlist: Scalars['ID']
+  playlist?: Maybe<Scalars['ID']>
   contentActor: Scalars['JSONObject']
 }
 
@@ -15887,6 +15888,8 @@ export type PlaylistVideo = BaseGraphQlObject & {
   videoInPlaylists: Array<Playlist>
   video: Video
   videoId: Scalars['String']
+  playlist: Playlist
+  playlistId: Scalars['String']
   /** Position of video in playlist */
   position: Scalars['Int']
 }
@@ -15899,6 +15902,7 @@ export type PlaylistVideoConnection = {
 
 export type PlaylistVideoCreateInput = {
   video: Scalars['ID']
+  playlist: Scalars['ID']
   position: Scalars['Float']
 }
 
@@ -15916,12 +15920,15 @@ export enum PlaylistVideoOrderByInput {
   DeletedAtDesc = 'deletedAt_DESC',
   VideoAsc = 'video_ASC',
   VideoDesc = 'video_DESC',
+  PlaylistAsc = 'playlist_ASC',
+  PlaylistDesc = 'playlist_DESC',
   PositionAsc = 'position_ASC',
   PositionDesc = 'position_DESC',
 }
 
 export type PlaylistVideoUpdateInput = {
   video?: Maybe<Scalars['ID']>
+  playlist?: Maybe<Scalars['ID']>
   position?: Maybe<Scalars['Float']>
 }
 
@@ -15960,6 +15967,7 @@ export type PlaylistVideoWhereInput = {
   videoInPlaylists_some?: Maybe<PlaylistWhereInput>
   videoInPlaylists_every?: Maybe<PlaylistWhereInput>
   video?: Maybe<VideoWhereInput>
+  playlist?: Maybe<PlaylistWhereInput>
   AND?: Maybe<Array<PlaylistVideoWhereInput>>
   OR?: Maybe<Array<PlaylistVideoWhereInput>>
 }
@@ -16031,6 +16039,9 @@ export type PlaylistWhereInput = {
   playlistupdatedeventplaylist_none?: Maybe<PlaylistUpdatedEventWhereInput>
   playlistupdatedeventplaylist_some?: Maybe<PlaylistUpdatedEventWhereInput>
   playlistupdatedeventplaylist_every?: Maybe<PlaylistUpdatedEventWhereInput>
+  playlistvideoplaylist_none?: Maybe<PlaylistVideoWhereInput>
+  playlistvideoplaylist_some?: Maybe<PlaylistVideoWhereInput>
+  playlistvideoplaylist_every?: Maybe<PlaylistVideoWhereInput>
   AND?: Maybe<Array<PlaylistWhereInput>>
   OR?: Maybe<Array<PlaylistWhereInput>>
 }

@@ -19,6 +19,7 @@ import {
   PlaylistCreatedEvent,
   PlaylistDeletedEvent,
   PlaylistUpdatedEvent,
+  PlaylistVideo,
   Video,
   VideoCategory,
 } from 'query-node/dist/model'
@@ -252,14 +253,16 @@ export async function processCreatePlaylistMessage(
 
   // common event processing
 
-  const playlistCreatedEvent = new PlaylistCreatedEvent({
-    ...genericEventFields(event),
+  // TODO: uncomment after https://github.com/Joystream/hydra/issues/490 has been implemented
 
-    playlist,
-    contentActor: await convertContentActor(store, contentActor),
-  })
+  // const playlistCreatedEvent = new PlaylistCreatedEvent({
+  //   ...genericEventFields(event),
 
-  await store.save<PlaylistCreatedEvent>(playlistCreatedEvent)
+  //   playlist,
+  //   contentActor: await convertContentActor(store, contentActor),
+  // })
+
+  // await store.save<PlaylistCreatedEvent>(playlistCreatedEvent)
 }
 
 export async function content_ContentUpdated(ctx: EventContext & StoreContext): Promise<void> {
@@ -366,7 +369,7 @@ export async function processUpdatePlaylistMessage(
   // load playlist
   const playlist = await store.get(Playlist, {
     where: { id: contentId.toString() },
-    relations: ['videos'],
+    relations: ['videos', 'thumbnailPhoto'],
   })
 
   // ensure playlist exists
@@ -381,14 +384,16 @@ export async function processUpdatePlaylistMessage(
 
   // common event processing
 
-  const playlistUpdatedEvent = new PlaylistUpdatedEvent({
-    ...genericEventFields(event),
+  // TODO: uncomment after https://github.com/Joystream/hydra/issues/490 has been implemented
 
-    playlist,
-    contentActor: await convertContentActor(store, contentActor),
-  })
+  // const playlistUpdatedEvent = new PlaylistUpdatedEvent({
+  //   ...genericEventFields(event),
 
-  await store.save<PlaylistUpdatedEvent>(playlistUpdatedEvent)
+  //   playlist,
+  //   contentActor: await convertContentActor(store, contentActor),
+  // })
+
+  // await store.save<PlaylistUpdatedEvent>(playlistUpdatedEvent)
 }
 
 export async function content_ContentDeleted({ store, event }: EventContext & StoreContext): Promise<void> {
@@ -404,6 +409,7 @@ export async function content_ContentDeleted({ store, event }: EventContext & St
   // load playlist
   const playlist = await store.get(Playlist, {
     where: { id: contentId.toString() },
+    relations: ['videos'],
   })
 
   if (video) {
@@ -416,19 +422,28 @@ export async function content_ContentDeleted({ store, event }: EventContext & St
     // emit log event
     logger.info('Video has been deleted', { id: contentId })
   } else if (playlist) {
+    // TODO: remove following block after https://github.com/Joystream/hydra/issues/490 has been implemented
+
+    // first remove all PlaylistVideo records referencing the deleted playlist
+    playlist.videos.forEach(async (playlistVideo) => {
+      await store.remove<PlaylistVideo>(playlistVideo)
+    })
+
     // remove playlist
     await store.remove<Playlist>(playlist)
 
     // common event processing
 
-    const playlistDeletedEvent = new PlaylistDeletedEvent({
-      ...genericEventFields(event),
+    // TODO: uncomment after https://github.com/Joystream/hydra/issues/490 has been implemented
 
-      playlist,
-      contentActor: await convertContentActor(store, contentActor),
-    })
+    // const playlistDeletedEvent = new PlaylistDeletedEvent({
+    //   ...genericEventFields(event),
 
-    await store.save<PlaylistDeletedEvent>(playlistDeletedEvent)
+    //   playlist,
+    //   contentActor: await convertContentActor(store, contentActor),
+    // })
+
+    // await store.save<PlaylistDeletedEvent>(playlistDeletedEvent)
   } else {
     inconsistentState('Non-existing content(video or playlist) deletion requested', contentId)
   }

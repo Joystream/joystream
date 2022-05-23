@@ -281,4 +281,15 @@ export class JoystreamCLI extends CLI {
       throw new Error(`Unexpected CLI on updating playlist: "${stderr}"`)
     }
   }
+
+  /**
+    Delete an existing playlist.
+  */
+  async deletePlaylist(playlistId: number): Promise<void> {
+    const { stderr, exitCode } = await this.run('content:deletePlaylist', ['-v', playlistId.toString(), '-f'])
+
+    if (exitCode) {
+      throw new Error(`Unexpected CLI failure on deleting playlist: "${stderr}"`)
+    }
+  }
 }

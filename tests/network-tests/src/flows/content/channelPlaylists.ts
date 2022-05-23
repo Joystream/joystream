@@ -89,5 +89,18 @@ export default async function channelPlaylists({ api, query }: FlowProps): Promi
   )
   await new FixtureRunner(updatePlaylistFixture).run()
 
+  // deleting playlist
+  const deletePlaylistFixture = new PlaylistActionsFixture(
+    api,
+    query,
+    joystreamCli,
+    'DELETE',
+    channelId,
+    [],
+    author,
+    playlistId
+  )
+  await new FixtureRunner(deletePlaylistFixture).run()
+
   debug('Done')
 }

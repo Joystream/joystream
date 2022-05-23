@@ -21,7 +21,10 @@ type DataObjectTypeFields_DataObjectTypeVideoThumbnail_Fragment = {
   video?: Types.Maybe<{ id: string }>
 }
 
-type DataObjectTypeFields_DataObjectTypePlaylistThumbnail_Fragment = { __typename: 'DataObjectTypePlaylistThumbnail' }
+type DataObjectTypeFields_DataObjectTypePlaylistThumbnail_Fragment = {
+  __typename: 'DataObjectTypePlaylistThumbnail'
+  playlist?: Types.Maybe<{ id: string }>
+}
 
 type DataObjectTypeFields_DataObjectTypeUnknown_Fragment = { __typename: 'DataObjectTypeUnknown' }
 
@@ -2270,6 +2273,11 @@ export const DataObjectTypeFields = gql`
     }
     ... on DataObjectTypeVideoMedia {
       video {
+        id
+      }
+    }
+    ... on DataObjectTypePlaylistThumbnail {
+      playlist {
         id
       }
     }

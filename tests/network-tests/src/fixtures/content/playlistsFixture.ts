@@ -49,13 +49,21 @@ export class PlaylistActionsFixture extends BaseQueryNodeFixture {
     if (this.action === 'CREATE') {
       this.debug('Creating playlist')
       this.createdPlaylist = await this.createPlaylist(this.channelId, this.videoIds)
-    } else if (this.action === 'UPDATE') {
+      return
+    }
+
+    if (this.action === 'UPDATE') {
       if (!this.playlistId) throw new Error('Playlist ID not provided')
       this.debug('Updating playlist')
       await this.updatePlaylist(this.playlistId, this.videoIds)
+      return
     }
 
-    // TODO: assert playlist created events
+    if (this.action === 'DELETE') {
+      if (!this.playlistId) throw new Error('Playlist ID not provided')
+      this.debug('Deleting playlist')
+      await this.deletePlaylist(this.playlistId)
+    }
   }
 
   /**
@@ -82,6 +90,13 @@ export class PlaylistActionsFixture extends BaseQueryNodeFixture {
 
     // assert playlist
     this.assertPlaylist(playlistId, videoIds)
+  }
+
+  /**
+    Deletes a playlist.
+  */
+  private async deletePlaylist(playlistId: number): Promise<void> {
+    await this.cli.deletePlaylist(playlistId)
   }
 
   private async assertPlaylist(playlistId: number, videoIds: Long[]): Promise<void> {
