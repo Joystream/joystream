@@ -52,7 +52,7 @@ impl CreateChannelFixture {
     pub fn with_collaborators(self, collaborators: BTreeSet<MemberId>) -> Self {
         Self {
             params: ChannelCreationParameters::<Test> {
-                collaborators: collaborators,
+                collaborators,
                 ..self.params
             },
             ..self

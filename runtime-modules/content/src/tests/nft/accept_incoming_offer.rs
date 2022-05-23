@@ -230,6 +230,7 @@ fn accept_incoming_offer_reward_account_ok_with_curator_owner_channel_account_co
         run_to_block(1);
 
         let video_id = NextVideoId::<Test>::get();
+        let channel_id = Content::next_channel_id();
         let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
 
         CreateChannelFixture::default()
@@ -258,13 +259,16 @@ fn accept_incoming_offer_reward_account_ok_with_curator_owner_channel_account_co
             SECOND_MEMBER_ID,
             Some(DEFAULT_NFT_PRICE),
         ));
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
 
-        // Make an attempt to accept incoming nft offer if sender is owner and reward account is not set
-        let _ = Content::accept_incoming_offer(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
+        assert_ok!(Content::accept_incoming_offer(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            video_id
+        ));
 
         // Failure checked
         assert_eq!(
-            channel_reward_account_balance(1u64),
+            channel_reward_account_balance(channel_id),
             DEFAULT_NFT_PRICE - Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE)
         );
     })

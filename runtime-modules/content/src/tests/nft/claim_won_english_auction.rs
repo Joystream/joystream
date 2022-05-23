@@ -1,7 +1,7 @@
 #![cfg(test)]
 use crate::tests::fixtures::{
-    create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
-    increase_account_balance_helper,
+    channel_reward_account_balance, create_default_member_owned_channel_with_video,
+    create_initial_storage_buckets_helper, increase_account_balance_helper,
 };
 use crate::tests::mock::*;
 use crate::*;
@@ -64,7 +64,7 @@ fn settle_english_auction() {
         ));
 
         // Module account contains a bid.
-        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), bid);
+        assert_eq!(ContentTreasury::<Test>::usable_balance(), bid);
 
         // Runtime tested state before call
 
@@ -80,10 +80,15 @@ fn settle_english_auction() {
             video_id,
         ));
 
-        // Module account is empty.
-        assert_eq!(ContentTreasury::<Test>::usable_balance(), 0);
-
         // Runtime tested state after call
+
+        // Account type used = 32bit = 4 bytes
+        // Sub account format (TypeId (4 bytes) ++ ParachainId ++ sub_id ) which is encoded
+        // into a 32 bit value so sub accounts and main module account are the same
+        // Module account is decreased by bid
+        // testing only that reward account receives the bid amount
+        // TODO: replace mock test env account type with the type used in production
+        assert_eq!(channel_reward_account_balance(1u64), bid);
 
         // Ensure english auction successfully completed
         assert!(matches!(
@@ -101,8 +106,7 @@ fn settle_english_auction() {
                 SECOND_MEMBER_ACCOUNT_ID,
                 video_id,
             )),
-            // 3 events: NewAccount (channel reward acc), Endowed (channel reward acc), EnglishAuctionCompleted
-            number_of_events_before_call + 3,
+            number_of_events_before_call + 1,
         );
     })
 }
@@ -515,7 +519,9 @@ fn settle_english_auction_ok_with_balances_check() {
         assert_ok!(settle_english_auction_result);
 
         // Balances check
-        assert_eq!(ContentTreasury::<Test>::usable_balance(), 0);
+        // TODO: use the same AccountId type used in production so that moduled account &
+        // sub-account are different
+        assert_eq!(channel_reward_account_balance(1u64), next_bid);
         assert_eq!(
             Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID),
             INITIAL_BALANCE
