@@ -4,7 +4,7 @@ use sp_runtime::{traits::Hash, Permill, Perquintill};
 
 use crate::tests::fixtures::default_upload_context;
 use crate::tests::mock::*;
-use crate::tests::test_utils::TokenDataBuilder;
+use crate::tests::test_utils::{default_vesting_schedule, TokenDataBuilder};
 use crate::traits::PalletToken;
 use crate::types::{
     BlockRate, Joy, MerkleProofOf, PatronageData, RevenueSplitState, TokenIssuanceParametersOf,
@@ -12,7 +12,7 @@ use crate::types::{
 };
 use crate::{
     account, assert_approx_eq, balance, block, joy, last_event_eq, member, merkle_proof,
-    merkle_root, origin, token, yearly_rate, Error, RawEvent, TokenDataOf,
+    merkle_root, origin, token, yearly_rate, Error, RawEvent, TokenDataOf, Trait,
 };
 use frame_support::traits::Currency;
 use sp_runtime::DispatchError;
@@ -1059,6 +1059,409 @@ fn issue_token_ok_with_owner_accounts_data_added() {
                 ),
                 0
             )
+        );
+    })
+}
+
+#[test]
+fn burn_fails_with_invalid_token_id() {
+    let (token_id, burn_amount, (member_id, account)) = (token!(1), balance!(100), member!(1));
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(member_id, AccountData::new_with_amount(burn_amount))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::burn(origin!(account), token_id + 1, member_id, burn_amount);
+
+        assert_noop!(result, Error::<Test>::TokenDoesNotExist);
+    })
+}
+
+#[test]
+fn burn_fails_with_non_existing_account() {
+    let (token_id, burn_amount, (member_id, account)) = (token!(1), balance!(100), member!(1));
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::burn(origin!(account), token_id, member_id, burn_amount);
+
+        assert_noop!(result, Error::<Test>::AccountInformationDoesNotExist);
+    })
+}
+
+#[test]
+fn burn_fails_with_invalid_member_controller_account() {
+    let (token_id, burn_amount, member_id, invalid_controller_account) =
+        (token!(1), balance!(100), member!(1).0, member!(2).1);
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(member_id, AccountData::new_with_amount(burn_amount))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::burn(
+            origin!(invalid_controller_account),
+            token_id,
+            member_id,
+            burn_amount,
+        );
+
+        assert_noop!(
+            result,
+            DispatchError::Other("origin signer not a member controller account")
+        );
+    })
+}
+
+#[test]
+fn burn_fails_with_zero_amount() {
+    let (token_id, burn_amount, (member_id, account)) = (token!(1), balance!(0), member!(1));
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(member_id, AccountData::new_with_amount(100))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::burn(origin!(account), token_id, member_id, burn_amount);
+
+        assert_noop!(result, Error::<Test>::BurnAmountIsZero);
+    })
+}
+
+#[test]
+fn burn_fails_with_amount_exceeding_account_tokens() {
+    let (token_id, burn_amount, (member_id, account)) = (token!(1), balance!(100), member!(1));
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(member_id, AccountData::new_with_amount(burn_amount - 1))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::burn(origin!(account), token_id, member_id, burn_amount);
+
+        assert_noop!(
+            result,
+            Error::<Test>::BurnAmountGreaterThanAccountTokensAmount
+        );
+    })
+}
+
+#[test]
+fn burn_fails_with_active_revenue_split() {
+    let (
+        token_id,
+        split_allocation_amount,
+        burn_amount,
+        split_allocation_src,
+        (member_id, account),
+    ) = (
+        token!(1),
+        joy!(100),
+        balance!(100),
+        member!(1).0,
+        member!(2),
+    );
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(member_id, AccountData::new_with_amount(burn_amount))
+        .build();
+
+    build_test_externalities_with_balances(
+        config,
+        vec![(
+            split_allocation_src,
+            <Test as Trait>::JoyExistentialDeposit::get() + split_allocation_amount,
+        )],
+    )
+    .execute_with(|| {
+        assert_ok!(Token::issue_revenue_split(
+            token_id,
+            Some(100),
+            100,
+            split_allocation_src,
+            split_allocation_amount
+        ));
+        let result = Token::burn(origin!(account), token_id, member_id, burn_amount);
+
+        assert_noop!(
+            result,
+            Error::<Test>::CannotModifySupplyWhenRevenueSplitsAreActive
+        );
+    })
+}
+
+#[test]
+fn burn_ok() {
+    let (token_id, burn_amount, (member_id, account)) = (token!(1), balance!(100), member!(1));
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(member_id, AccountData::new_with_amount(burn_amount))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::burn(origin!(account), token_id, member_id, burn_amount);
+
+        assert_ok!(result);
+    })
+}
+
+#[test]
+fn burn_ok_with_account_tokens_amount_decreased() {
+    let (token_id, burn_amount, (member_id, account)) = (token!(1), balance!(100), member!(1));
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(member_id, AccountData::new_with_amount(burn_amount))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::burn(origin!(account), token_id, member_id, burn_amount);
+
+        assert_ok!(result);
+        let acc_data = Token::ensure_account_data_exists(token_id, &member_id).unwrap();
+        assert_eq!(acc_data.amount, 0);
+    })
+}
+
+#[test]
+fn burn_ok_with_token_supply_decreased() {
+    let (token_id, burn_amount, (member_id, account)) = (token!(1), balance!(100), member!(1));
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(member_id, AccountData::new_with_amount(burn_amount))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::burn(origin!(account), token_id, member_id, burn_amount);
+
+        assert_ok!(result);
+        let token_data = Token::ensure_token_exists(token_id).unwrap();
+        assert_eq!(token_data.tokens_issued, burn_amount);
+        assert_eq!(token_data.total_supply, 0);
+    })
+}
+
+#[test]
+fn burn_ok_with_vesting_and_staked_tokens_burned_first() {
+    let vesting_schedule = default_vesting_schedule();
+    let init_vesting_amount = vesting_schedule
+        .total_amount()
+        .saturating_mul(<Test as Trait>::MaxVestingBalancesPerAccountPerToken::get().into());
+    let init_staked_amount = init_vesting_amount + 300;
+    let account_data = AccountData::new_with_amount(1000)
+        .with_max_vesting_schedules(vesting_schedule.clone())
+        .with_staked(init_staked_amount);
+    let (token_id, burn_amount, (member_id, account)) = (token!(1), init_staked_amount, member!(1));
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(member_id, account_data)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::burn(origin!(account), token_id, member_id, burn_amount);
+
+        assert_ok!(result);
+        let acc_data = Token::ensure_account_data_exists(token_id, &member_id).unwrap();
+        assert_eq!(acc_data.amount, 700);
+        assert_eq!(acc_data.transferrable::<Test>(1), 700);
+        assert_eq!(acc_data.vesting_schedules.len(), 0);
+        assert_eq!(acc_data.staked(), 0);
+    })
+}
+
+#[test]
+fn burn_ok_with_vesting_and_staked_tokens_partially_burned() {
+    let vesting_schedule = default_vesting_schedule();
+    let account_data = AccountData::default()
+        .with_max_vesting_schedules(vesting_schedule)
+        .with_staked(2000);
+    let initial_account_amount = account_data.amount;
+    let initial_vesting_schedules = account_data.vesting_schedules.len();
+    let (token_id, burn_amount, (member_id, account)) = (token!(1), balance!(1400), member!(1));
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(member_id, account_data)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::burn(origin!(account), token_id, member_id, burn_amount);
+
+        assert_ok!(result);
+        let acc_data = Token::ensure_account_data_exists(token_id, &member_id).unwrap();
+        assert_eq!(acc_data.amount, initial_account_amount - burn_amount);
+        assert_eq!(acc_data.staked(), 600);
+        assert_eq!(acc_data.transferrable::<Test>(1), 0);
+        assert_eq!(
+            acc_data.vesting_schedules.len(),
+            initial_vesting_schedules - 1
+        );
+        let first_vesting_schedule = acc_data.vesting_schedules.iter().next().unwrap().1;
+        assert_eq!(first_vesting_schedule.burned_amount, 400);
+        assert_eq!(first_vesting_schedule.locks::<Test>(1), 600);
+        assert_eq!(first_vesting_schedule.non_burned_amount(), 600);
+    })
+}
+
+#[test]
+fn burn_ok_with_vesting_schedule_partially_burned_twice() {
+    let vesting_schedule = default_vesting_schedule();
+    let account_data = AccountData::default().with_vesting_schedule(vesting_schedule);
+    let initial_account_amount = account_data.amount;
+    let (token_id, burn1_amount, burn2_amount, (member_id, account)) =
+        (token!(1), balance!(100), balance!(200), member!(1));
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(member_id, account_data)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        assert_ok!(Token::burn(
+            origin!(account),
+            token_id,
+            member_id,
+            burn1_amount
+        ));
+        assert_ok!(Token::burn(
+            origin!(account),
+            token_id,
+            member_id,
+            burn2_amount
+        ));
+
+        let acc_data = Token::ensure_account_data_exists(token_id, &member_id).unwrap();
+        assert_eq!(
+            acc_data.amount,
+            initial_account_amount - burn1_amount - burn2_amount
+        );
+        assert_eq!(acc_data.vesting_schedules.len(), 1);
+        let first_vesting_schedule = acc_data.vesting_schedules.iter().next().unwrap().1;
+        assert_eq!(
+            first_vesting_schedule.burned_amount,
+            burn1_amount + burn2_amount
+        );
+        assert_eq!(
+            first_vesting_schedule.locks::<Test>(1),
+            1000 - burn1_amount - burn2_amount
+        );
+        assert_eq!(
+            first_vesting_schedule.non_burned_amount(),
+            1000 - burn1_amount - burn2_amount
+        );
+    })
+}
+
+#[test]
+fn burn_ok_with_partially_burned_vesting_schedule_working_as_expected() {
+    let vesting_schedule = default_vesting_schedule();
+    let vesting_schedule_end_block =
+        vesting_schedule.linear_vesting_start_block + vesting_schedule.linear_vesting_duration;
+    let account_data = AccountData::default().with_vesting_schedule(vesting_schedule.clone());
+    let (token_id, (member_id, account)) = (token!(1), member!(1));
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(member_id, account_data)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        // Burn 300 tokens and re-fetch account_data
+        assert_ok!(Token::burn(origin!(account), token_id, member_id, 300));
+        let account_data = Token::ensure_account_data_exists(token_id, &member_id).unwrap();
+        // Expect transferrable amount at linear_vesting_start_block still equal to 300 (`cliff_amount`)
+        assert_eq!(
+            account_data.transferrable::<Test>(vesting_schedule.linear_vesting_start_block),
+            300
+        );
+        // Expect linear vesting rate to still be 1 token / block
+        assert_eq!(
+            account_data.transferrable::<Test>(vesting_schedule.linear_vesting_start_block + 100),
+            300 + 100
+        );
+        // Expect transferrable balance to be 700:
+        // - at `linear_vesting_start_block` + 400
+        assert_eq!(
+            account_data.transferrable::<Test>(vesting_schedule.linear_vesting_start_block + 400),
+            700
+        );
+        // - right at the original's vesting end_block
+        assert_eq!(
+            account_data.transferrable::<Test>(vesting_schedule_end_block),
+            700
+        );
+        // - after the original's vesting `end_block`
+        assert_eq!(
+            account_data.transferrable::<Test>(vesting_schedule_end_block + 1),
+            700
+        );
+
+        // Go to a block where 400 tokens are already vested
+        System::set_block_number(vesting_schedule.linear_vesting_start_block + 100);
+        // Burn another 200 tokens and re-fetch account_data
+        assert_ok!(Token::burn(origin!(account), token_id, member_id, 200));
+        let account_data = Token::ensure_account_data_exists(token_id, &member_id).unwrap();
+        // Expect transferrable balance at current block to still be 400
+        assert_eq!(
+            account_data.transferrable::<Test>(System::block_number()),
+            400
+        );
+        // Expect transferrable balance after 100 blocks to be 450 (1 token / block rate preserved)
+        assert_eq!(
+            account_data.transferrable::<Test>(System::block_number() + 50),
+            450
+        );
+        // Expect transferrable balance to be 500:
+        // after 100 blocks
+        assert_eq!(
+            account_data.transferrable::<Test>(System::block_number() + 100),
+            500
+        );
+        // right at the original vesting's `end_block`
+        assert_eq!(
+            account_data.transferrable::<Test>(vesting_schedule_end_block),
+            500
+        );
+        // after the original vesting's `end_block`
+        assert_eq!(
+            account_data.transferrable::<Test>(vesting_schedule_end_block + 1),
+            500
+        );
+
+        // Burn another 200 tokens and re-fetch account_data
+        assert_ok!(Token::burn(origin!(account), token_id, member_id, 200));
+        let account_data = Token::ensure_account_data_exists(token_id, &member_id).unwrap();
+        // expect vesting schedule to be gone
+        assert_eq!(account_data.vesting_schedules.len(), 0);
+        // expect transferrable balance at current block to be 300
+        assert_eq!(
+            account_data.transferrable::<Test>(System::block_number()),
+            300
         );
     })
 }

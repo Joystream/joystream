@@ -537,7 +537,8 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
                         .as_ref()
                         .map_or(0, |vs| vs.post_cliff_total_amount)
                         .saturating_add(vesting_schedule.post_cliff_total_amount),
-                    linear_vesting_start_block: vesting_schedule.linear_vesting_start_block
+                    linear_vesting_start_block: vesting_schedule.linear_vesting_start_block,
+                    burned_amount: 0
                 }
             );
             // buyer's transferrable balance is unchanged
