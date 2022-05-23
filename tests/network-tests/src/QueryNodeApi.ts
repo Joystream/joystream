@@ -347,10 +347,6 @@ import {
   GetMemberBannedFromChannelEventsByEventIdsQuery,
   GetMemberBannedFromChannelEventsByEventIdsQueryVariables,
   GetMemberBannedFromChannelEventsByEventIds,
-  CommentSectionPreferenceEventFieldsFragment,
-  GetCommentSectionPreferenceEventsByEventIdsQuery,
-  GetCommentSectionPreferenceEventsByEventIdsQueryVariables,
-  GetCommentSectionPreferenceEventsByEventIds,
   VideoFieldsFragment,
   GetVideosByIdsQuery,
   GetVideosByIdsQueryVariables,
@@ -1314,16 +1310,6 @@ export class QueryNodeApi {
       GetMemberBannedFromChannelEventsByEventIdsQuery,
       GetMemberBannedFromChannelEventsByEventIdsQueryVariables
     >(GetMemberBannedFromChannelEventsByEventIds, { eventIds }, 'memberBannedFromChannelEvents')
-  }
-
-  public async getCommentSectionPreferenceEvents(
-    events: EventDetails[]
-  ): Promise<CommentSectionPreferenceEventFieldsFragment[]> {
-    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
-    return this.multipleEntitiesQuery<
-      GetCommentSectionPreferenceEventsByEventIdsQuery,
-      GetCommentSectionPreferenceEventsByEventIdsQueryVariables
-    >(GetCommentSectionPreferenceEventsByEventIds, { eventIds }, 'commentSectionPreferenceEvents')
   }
 
   public async getVideoReactionsPreferenceEvents(

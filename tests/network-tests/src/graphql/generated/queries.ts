@@ -300,17 +300,6 @@ export type MemberBannedFromChannelEventFieldsFragment = {
   member: { id: string }
 }
 
-export type CommentSectionPreferenceEventFieldsFragment = {
-  id: string
-  createdAt: any
-  inBlock: number
-  network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
-  indexInBlock: number
-  commentSectionStatus: boolean
-  video: { id: string }
-}
-
 export type VideoReactionsPreferenceEventFieldsFragment = {
   id: string
   createdAt: any
@@ -374,14 +363,6 @@ export type GetMemberBannedFromChannelEventsByEventIdsQueryVariables = Types.Exa
 
 export type GetMemberBannedFromChannelEventsByEventIdsQuery = {
   memberBannedFromChannelEvents: Array<MemberBannedFromChannelEventFieldsFragment>
-}
-
-export type GetCommentSectionPreferenceEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
-}>
-
-export type GetCommentSectionPreferenceEventsByEventIdsQuery = {
-  commentSectionPreferenceEvents: Array<CommentSectionPreferenceEventFieldsFragment>
 }
 
 export type GetVideoReactionsPreferenceEventsByEventIdsQueryVariables = Types.Exact<{
@@ -2724,20 +2705,6 @@ export const MemberBannedFromChannelEventFields = gql`
     action
   }
 `
-export const CommentSectionPreferenceEventFields = gql`
-  fragment CommentSectionPreferenceEventFields on CommentSectionPreferenceEvent {
-    id
-    createdAt
-    inBlock
-    network
-    inExtrinsic
-    indexInBlock
-    video {
-      id
-    }
-    commentSectionStatus
-  }
-`
 export const VideoReactionsPreferenceEventFields = gql`
   fragment VideoReactionsPreferenceEventFields on VideoReactionsPreferenceEvent {
     id
@@ -4705,14 +4672,6 @@ export const GetMemberBannedFromChannelEventsByEventIds = gql`
     }
   }
   ${MemberBannedFromChannelEventFields}
-`
-export const GetCommentSectionPreferenceEventsByEventIds = gql`
-  query getCommentSectionPreferenceEventsByEventIds($eventIds: [ID!]) {
-    commentSectionPreferenceEvents(where: { id_in: $eventIds }) {
-      ...CommentSectionPreferenceEventFields
-    }
-  }
-  ${CommentSectionPreferenceEventFields}
 `
 export const GetVideoReactionsPreferenceEventsByEventIds = gql`
   query getVideoReactionsPreferenceEventsByEventIds($eventIds: [ID!]) {
