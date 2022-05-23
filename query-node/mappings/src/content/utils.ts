@@ -644,14 +644,21 @@ export async function processPlaylistVideos(
   playlist: Playlist,
   videoIds: VideoId[]
 ): Promise<PlaylistVideo[]> {
-  const videos = (await Promise.all(videoIds.map((videoId) => store.get(Video, { where: { id: videoId } })))).filter(
-    (video, i) => {
-      if (!video) {
-        invalidMetadata('Non-existing video requested to be the part of playlist', videoIds[i])
-      }
-      return video !== undefined
+  const videos = (
+    await Promise.all(
+      videoIds.map((videoId) => store.get(Video, { where: { id: videoId }, relations: ['thumbnailPhoto'] }))
+    )
+  ).filter((video, i) => {
+    if (!video) {
+      invalidMetadata('Non-existing video requested to be the part of playlist', videoIds[i])
     }
-  ) as Video[]
+    return video !== undefined
+  }) as Video[]
+
+  // set thumbnail of first video as playlist thumbnail if its not already set
+  if (!playlist.thumbnailPhoto) {
+    playlist.thumbnailPhoto = videos[0].thumbnailPhoto
+  }
 
   // save playlist; playlist record should exist in DB
   // before creating PlaylistVideo<->Playlist relation
