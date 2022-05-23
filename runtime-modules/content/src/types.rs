@@ -108,17 +108,10 @@ pub type Channel<T> = ChannelRecord<
 /// A request to buy a channel by a new ChannelOwner.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct ChannelOwnershipTransferRequestRecord<
-    ChannelId,
-    MemberId,
-    CuratorGroupId,
-    Balance,
-    AccountId,
-> {
+pub struct ChannelOwnershipTransferRequestRecord<ChannelId, MemberId, CuratorGroupId, Balance> {
     pub channel_id: ChannelId,
     pub new_owner: ChannelOwner<MemberId, CuratorGroupId>,
     pub payment: Balance,
-    pub new_reward_account: Option<AccountId>,
 }
 
 // ChannelOwnershipTransferRequest type alias for simplification.
@@ -127,7 +120,6 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
     <T as common::MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
     BalanceOf<T>,
-    <T as frame_system::Trait>::AccountId,
 >;
 
 /// Information about channel being created.

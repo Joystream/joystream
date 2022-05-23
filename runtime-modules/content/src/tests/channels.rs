@@ -369,27 +369,6 @@ fn unsuccessful_channel_creation_with_invalid_collaborators_set() {
     })
 }
 
-#[test]
-fn successful_channel_creation_with_reward_account() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        CreateChannelFixture::default()
-            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .call_and_assert(Ok(()));
-
-        let default_curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
-        CreateChannelFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
-            .call_and_assert(Ok(()));
-    })
-}
-
 // channel update tests
 #[test]
 fn unsuccessful_channel_update_with_uncorresponding_member_id_and_origin() {
