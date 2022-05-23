@@ -390,9 +390,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<T::AccountId, DispatchError> {
         match nft.owner {
             NftOwner::Member(member_id) => T::MemberAuthenticator::controller_account_id(member_id),
-            NftOwner::ChannelOwner => Self::channel_by_id(channel_id)
-                .reward_account
-                .ok_or_else(|| Error::<T>::RewardAccountIsNotSet.into()),
+            NftOwner::ChannelOwner => Ok(ContentTreasury::<T>::account_for_channel(channel_id)),
         }
     }
 
@@ -463,21 +461,8 @@ impl<T: Trait> Module<T> {
     ) -> Option<(Royalty, T::AccountId)> {
         // payment is none if there is no royalty
         if let Some(royalty) = creator_royalty {
-            let channel = Self::channel_by_id(&video.in_channel);
-            // use reward account if specified
-            if let Some(creator_reward_account) = channel.reward_account {
-                Some((royalty, creator_reward_account))
-            } else {
-                // otherwise resort to controller account for member owned channels
-                if let ChannelOwner::Member(member_id) = channel.owner {
-                    T::MemberAuthenticator::controller_account_id(member_id)
-                        .ok()
-                        .map(|reward_account| (royalty, reward_account))
-                } else {
-                    // no royalty paid for curator owned channel with unspecified reward account
-                    None
-                }
-            }
+            let reward_account = ContentTreasury::<T>::account_for_channel(video.in_channel);
+            Some((royalty, reward_account))
         } else {
             None
         }

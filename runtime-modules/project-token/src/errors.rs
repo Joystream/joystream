@@ -137,5 +137,8 @@ decl_error! {
         /// Attempt to issue in a split with zero allocation amount
         CannotIssueSplitWithZeroAllocationAmount,
 
+        /// Attempt to modify supply when revenue split is active
+        CannotModifySupplyWhenRevenueSplitsAreActive,
+
     }
 }
