@@ -193,6 +193,8 @@ export async function processVideoMetadata(
     )
   }
 
+  video.isCommentSectionEnabled = meta.enableComments || true
+
   return video
 }
 
