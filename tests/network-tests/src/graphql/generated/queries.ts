@@ -26,6 +26,8 @@ type DataObjectTypeFields_DataObjectTypePlaylistThumbnail_Fragment = {
   playlist?: Types.Maybe<{ id: string }>
 }
 
+type DataObjectTypeFields_DataObjectTypeVideoSubtitle_Fragment = { __typename: 'DataObjectTypeVideoSubtitle' }
+
 type DataObjectTypeFields_DataObjectTypeUnknown_Fragment = { __typename: 'DataObjectTypeUnknown' }
 
 export type DataObjectTypeFieldsFragment =
@@ -34,6 +36,7 @@ export type DataObjectTypeFieldsFragment =
   | DataObjectTypeFields_DataObjectTypeVideoMedia_Fragment
   | DataObjectTypeFields_DataObjectTypeVideoThumbnail_Fragment
   | DataObjectTypeFields_DataObjectTypePlaylistThumbnail_Fragment
+  | DataObjectTypeFields_DataObjectTypeVideoSubtitle_Fragment
   | DataObjectTypeFields_DataObjectTypeUnknown_Fragment
 
 export type StorageDataObjectFieldsFragment = {
@@ -50,6 +53,7 @@ export type StorageDataObjectFieldsFragment = {
     | DataObjectTypeFields_DataObjectTypeVideoMedia_Fragment
     | DataObjectTypeFields_DataObjectTypeVideoThumbnail_Fragment
     | DataObjectTypeFields_DataObjectTypePlaylistThumbnail_Fragment
+    | DataObjectTypeFields_DataObjectTypeVideoSubtitle_Fragment
     | DataObjectTypeFields_DataObjectTypeUnknown_Fragment
 }
 
