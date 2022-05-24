@@ -70,7 +70,6 @@ export interface AssuranceContractType_Closed extends BTreeSet<MemberId> {}
 export interface Bag extends Struct {
   readonly stored_by: BTreeSet<StorageBucketId>;
   readonly distributed_by: BTreeSet<DistributionBucketId>;
-  readonly deletion_prize: Option<u128>;
   readonly objects_total_size: u64;
   readonly objects_number: u64;
 }
@@ -267,7 +266,6 @@ export interface ChannelCreationParameters extends Struct {
   readonly collaborators: BTreeMap<MemberId, ChannelAgentPermissions>;
   readonly storage_buckets: BTreeSet<u64>;
   readonly distribution_Bucket: BTreeSet<u64>;
-  readonly expected_dynamic_bag_deletion_prize: u128;
   readonly expected_data_object_deletion_prize: u128;
 }
 
@@ -484,18 +482,6 @@ export interface DynamicBagCreationPolicy extends Struct {
 
 /** @name DynamicBagCreationPolicyDistributorFamiliesMap */
 export interface DynamicBagCreationPolicyDistributorFamiliesMap extends BTreeMap<DistributionBucketFamilyId, u32> {}
-
-/** @name DynamicBagDeletionPrize */
-export interface DynamicBagDeletionPrize extends Struct {
-  readonly account_id: GenericAccountId;
-  readonly prize: u128;
-}
-
-/** @name DynamicBagDeletionPrizeRecord */
-export interface DynamicBagDeletionPrizeRecord extends Struct {
-  readonly account_id: GenericAccountId;
-  readonly prize: u128;
-}
 
 /** @name DynamicBagId */
 export interface DynamicBagId extends Enum {
@@ -1231,7 +1217,6 @@ export interface UploadParameters extends Struct {
   readonly objectCreationList: Vec<DataObjectCreationParameters>;
   readonly deletionPrizeSourceAccountId: GenericAccountId;
   readonly expectedDataSizeFee: u128;
-  readonly expectedDynamicBagDeletionPrize: u128;
   readonly expectedDataObjectDeletionPrize: u128;
   readonly storageBuckets: BTreeSet<StorageBucketId>;
   readonly distributionBuckets: BTreeSet<DistributionBucketId>;

@@ -507,7 +507,6 @@ impl content::Trait for Runtime {
     type DataObjectStorage = Storage;
     type PricePerByte = PricePerByte;
     type ModuleId = ContentModuleId;
-    type BagDeletionPrize = BagDeletionPrize;
     type MemberAuthenticator = Members;
     type MaxKeysPerCuratorGroupPermissionsByLevelMap = MaxKeysPerCuratorGroupPermissionsByLevelMap;
     type ChannelPrivilegeLevel = ChannelPrivilegeLevel;

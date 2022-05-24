@@ -88,9 +88,6 @@ pub trait Trait:
     /// Content Module Id
     type ModuleId: Get<ModuleId>;
 
-    /// Deletion prize to be set when creating a dynamic bag
-    type BagDeletionPrize: Get<<Self as balances::Trait>::Balance>;
-
     /// Type in order to retrieve controller account from channel member owner
     type MemberAuthenticator: MembershipInfoProvider<Self>;
 
@@ -449,7 +446,6 @@ decl_module! {
                 object_creation_list: storage_assets.object_creation_list,
                 deletion_prize_source_account_id: sender,
                 expected_data_size_fee: storage_assets.expected_data_size_fee,
-                expected_dynamic_bag_deletion_prize: params.expected_dynamic_bag_deletion_prize,
                 expected_data_object_deletion_prize: params.expected_data_object_deletion_prize,
                 storage_buckets: params.storage_buckets.clone(),
                 distribution_buckets: params.distribution_buckets.clone(),
@@ -531,7 +527,6 @@ decl_module! {
                 deletion_prize_source_account_id: sender,
                 expected_data_size_fee: assets_to_upload.expected_data_size_fee,
                 expected_data_object_deletion_prize: params.expected_data_object_deletion_prize,
-                expected_dynamic_bag_deletion_prize: Default::default(),
                 storage_buckets: Default::default(),
                 distribution_buckets: Default::default(),
             };
@@ -957,7 +952,6 @@ decl_module! {
                 expected_data_size_fee: params.assets_to_upload.clone()
                     .map_or(Default::default(), |assets| assets.expected_data_size_fee),
                 expected_data_object_deletion_prize: params.expected_data_object_deletion_prize,
-                expected_dynamic_bag_deletion_prize: Default::default(),
                 storage_buckets: Default::default(),
                 distribution_buckets: Default::default(),
             };
@@ -2360,7 +2354,6 @@ impl<T: Trait> Module<T> {
             deletion_prize_source_account_id: prize_source_account.clone(),
             expected_data_size_fee: assets.expected_data_size_fee,
             expected_data_object_deletion_prize,
-            expected_dynamic_bag_deletion_prize: Default::default(),
             storage_buckets: Default::default(),
             distribution_buckets: Default::default(),
         }

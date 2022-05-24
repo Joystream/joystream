@@ -935,7 +935,6 @@ benchmarks! {
             deletion_prize_source_account_id: worker_account_id.clone(),
             expected_data_size_fee: Default::default(),
             expected_data_object_deletion_prize: Default::default(),
-            expected_dynamic_bag_deletion_prize: Default::default(),
             storage_buckets: Default::default(),
             distribution_buckets: Default::default(),
             object_creation_list: object_parameters

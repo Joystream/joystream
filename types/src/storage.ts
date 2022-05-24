@@ -62,24 +62,9 @@ export class DistributionBucketId
   })
   implements IDistributionBucketId {}
 
-export type IDynamicBagDeletionPrize = {
-  account_id: AccountId
-  prize: BalanceOf
-}
-
-export class DynamicBagDeletionPrize
-  extends JoyStructDecorated({
-    account_id: AccountId,
-    prize: BalanceOf,
-  })
-  implements IDynamicBagDeletionPrize {}
-
-export class DynamicBagDeletionPrizeRecord extends DynamicBagDeletionPrize {}
-
 export type IBag = {
   stored_by: BTreeSet<StorageBucketId>
   distributed_by: BTreeSet<DistributionBucketId>
-  deletion_prize: Option<Balance>
   objects_total_size: u64
   objects_number: u64
 }
@@ -88,7 +73,6 @@ export class Bag
   extends JoyStructDecorated({
     stored_by: BTreeSet.with(StorageBucketId),
     distributed_by: BTreeSet.with(DistributionBucketId),
-    deletion_prize: Option.with(u128),
     objects_total_size: u64,
     objects_number: u64,
   })
@@ -195,7 +179,6 @@ export type IUploadParameters = {
   objectCreationList: Vec<DataObjectCreationParameters>
   deletionPrizeSourceAccountId: AccountId
   expectedDataSizeFee: BalanceOf
-  expectedDynamicBagDeletionPrize: BalanceOf
   expectedDataObjectDeletionPrize: BalanceOf
   storageBuckets: BTreeSet<StorageBucketId>
   distributionBuckets: BTreeSet<DistributionBucketId>
@@ -207,7 +190,6 @@ export class UploadParameters
     objectCreationList: Vec.with(DataObjectCreationParameters),
     deletionPrizeSourceAccountId: AccountId,
     expectedDataSizeFee: BalanceOf,
-    expectedDynamicBagDeletionPrize: BalanceOf,
     expectedDataObjectDeletionPrize: BalanceOf,
     storageBuckets: BTreeSet.with(StorageBucketId),
     distributionBuckets: BTreeSet.with(DistributionBucketId),
@@ -265,8 +247,6 @@ export const storageTypes: RegistryTypes = {
   Voucher,
   DynamicBagType,
   DynamicBagCreationPolicy,
-  DynamicBagDeletionPrize,
-  DynamicBagDeletionPrizeRecord,
   Bag,
   StorageBucket,
   StaticBagId,

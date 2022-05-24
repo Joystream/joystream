@@ -99,7 +99,6 @@ impl CreateChannelFixture {
                 collaborators: BTreeMap::new(),
                 storage_buckets: BTreeSet::new(),
                 distribution_buckets: BTreeSet::new(),
-                expected_dynamic_bag_deletion_prize: Default::default(),
                 expected_data_object_deletion_prize: DATA_OBJECT_DELETION_PRIZE,
             },
         }
@@ -221,7 +220,7 @@ impl CreateChannelFixture {
 
             if let Some(assets) = self.params.assets.as_ref() {
                 // balance accounting is correct
-                let bag_deletion_prize = BalanceOf::<Test>::zero();
+
                 let objects_deletion_prize = assets
                     .object_creation_list
                     .iter()
@@ -231,7 +230,7 @@ impl CreateChannelFixture {
 
                 assert_eq!(
                     balance_pre.saturating_sub(balance_post),
-                    bag_deletion_prize.saturating_add(objects_deletion_prize),
+                    objects_deletion_prize,
                 );
 
                 assert!((beg_obj_id..end_obj_id).all(|id| {
@@ -362,7 +361,6 @@ impl CreateVideoFixture {
 
             if let Some(assets) = self.params.assets.as_ref() {
                 // balance accounting is correct
-                let bag_deletion_prize = BalanceOf::<Test>::zero();
                 let objects_deletion_prize = assets
                     .object_creation_list
                     .iter()
@@ -372,7 +370,7 @@ impl CreateVideoFixture {
 
                 assert_eq!(
                     balance_pre.saturating_sub(balance_post),
-                    bag_deletion_prize.saturating_add(objects_deletion_prize),
+                    objects_deletion_prize,
                 );
 
                 assert!((beg_obj_id..end_obj_id).all(|id| {
@@ -939,9 +937,7 @@ pub trait ChannelDeletion {
     fn call_and_assert(&self, expected_result: DispatchResult) {
         let balance_pre = Balances::<Test>::usable_balance(self.get_sender());
         let bag_id_for_channel = Content::bag_id_for_channel(&self.get_channel_id());
-        let bag_deletion_prize = storage::Bags::<Test>::get(&bag_id_for_channel)
-            .deletion_prize
-            .unwrap_or(BalanceOf::<Test>::zero());
+
         let objects_deletion_prize =
             storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel)
                 .fold(BalanceOf::<Test>::zero(), |acc, (_, obj)| {
@@ -965,9 +961,10 @@ pub trait ChannelDeletion {
                     self.expected_event_on_success()
                 );
 
-                let deletion_prize = bag_deletion_prize.saturating_add(objects_deletion_prize);
-
-                assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize,);
+                assert_eq!(
+                    balance_post.saturating_sub(balance_pre),
+                    objects_deletion_prize,
+                );
                 assert!(!<ChannelById<Test>>::contains_key(&self.get_channel_id()));
                 assert!(!channel_objects_ids.iter().any(|id| {
                     storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
@@ -3693,7 +3690,7 @@ pub fn create_default_member_owned_channel_with_storage_buckets(
 }
 
 pub fn create_default_curator_owned_channel(
-    deletion_prize: u64,
+    data_object_deletion_prize: u64,
     curator_agent_permissions: &[ChannelActionPermission],
 ) {
     let curator_group_id =
@@ -3702,7 +3699,7 @@ pub fn create_default_curator_owned_channel(
         .with_default_storage_buckets()
         .with_sender(LEAD_ACCOUNT_ID)
         .with_channel_owner(ChannelOwner::CuratorGroup(curator_group_id))
-        .with_data_object_deletion_prize(deletion_prize)
+        .with_data_object_deletion_prize(data_object_deletion_prize)
         .with_assets(StorageAssets::<Test> {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
             object_creation_list: create_data_objects_helper(),

@@ -246,7 +246,6 @@ export class ChannelCreationParameters extends JoyStructDecorated({
   collaborators: BTreeMap.with(MemberId, ChannelAgentPermissions),
   storage_buckets: BTreeSet.with(StorageBucketId),
   distribution_Bucket: BTreeSet.with(DistributionBucketId),
-  expected_dynamic_bag_deletion_prize: Balance,
   expected_data_object_deletion_prize: Balance,
 }) {}
 

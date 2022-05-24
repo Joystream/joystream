@@ -399,8 +399,6 @@ pub struct ChannelCreationParametersRecord<
     pub storage_buckets: BTreeSet<StorageBucketId>,
     /// Distribution buckets to assign to a bag.
     pub distribution_buckets: BTreeSet<DistributionBucketId>,
-    /// Commitment for the dynamic bag deletion prize for the storage pallet.
-    pub expected_dynamic_bag_deletion_prize: Balance,
     /// Commitment for the data object deletion prize for the storage pallet.
     pub expected_data_object_deletion_prize: Balance,
 }

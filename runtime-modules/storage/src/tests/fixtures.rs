@@ -1113,7 +1113,7 @@ impl DeleteDynamicBagFixture {
             .collect::<Vec<_>>();
 
         let deletion_prize = <crate::DataObjectsById<Test>>::iter_prefix(&bag_id)
-            .fold(bag.deletion_prize.unwrap_or_default(), |acc, (_, obj)| {
+            .fold(0, |acc: u64, (_, obj)| {
                 acc.saturating_add(obj.deletion_prize)
             });
 
@@ -1541,18 +1541,7 @@ impl CreateDynamicBagFixture {
             ..self
         }
     }
-    pub fn with_expected_dynamic_bag_deletion_prize(
-        self,
-        expected_dynamic_bag_deletion_prize: u64,
-    ) -> Self {
-        Self {
-            params: DynBagCreationParameters::<Test> {
-                expected_dynamic_bag_deletion_prize,
-                ..self.params
-            },
-            ..self
-        }
-    }
+
     pub fn with_expected_data_object_deletion_prize(
         self,
         expected_data_object_deletion_prize: u64,
@@ -1567,25 +1556,16 @@ impl CreateDynamicBagFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let balance_pre = Balances::usable_balance(self.params.deletion_prize_source_account_id);
-
         let actual_result = Storage::create_dynamic_bag(self.params.clone());
 
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            let balance_post =
-                Balances::usable_balance(self.params.deletion_prize_source_account_id);
             let bag_id: BagId<Test> = self.params.bag_id.clone().into();
             assert!(<crate::Bags<Test>>::contains_key(&bag_id));
 
             let bag = <crate::Bags<Test>>::get(&bag_id);
             assert!(bag.stored_by.len() > 0);
-
-            assert_eq!(
-                balance_pre.saturating_sub(balance_post),
-                bag.deletion_prize.unwrap_or(0)
-            );
         }
     }
 }
@@ -2442,54 +2422,6 @@ impl CreateStorageBucketFixture {
             bucket_ids.insert(bucket_id);
         }
         bucket_ids
-    }
-}
-
-pub struct UpdateDynamicBagDeletionPrizeValueFixture {
-    origin: RawOrigin<u64>,
-    deletion_prize: u64,
-}
-
-impl UpdateDynamicBagDeletionPrizeValueFixture {
-    pub fn default() -> Self {
-        Self {
-            origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
-            deletion_prize: 0,
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_deletion_prize(self, deletion_prize: u64) -> Self {
-        Self {
-            deletion_prize,
-            ..self
-        }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let old_deletion_prize = Storage::dynamic_bag_deletion_prize_value();
-
-        let actual_result = Storage::update_dynamic_bag_deletion_prize(
-            self.origin.clone().into(),
-            self.deletion_prize,
-        );
-
-        assert_eq!(actual_result, expected_result);
-
-        if actual_result.is_ok() {
-            assert_eq!(
-                self.deletion_prize,
-                Storage::dynamic_bag_deletion_prize_value()
-            );
-        } else {
-            assert_eq!(
-                old_deletion_prize,
-                Storage::dynamic_bag_deletion_prize_value()
-            );
-        }
     }
 }
 

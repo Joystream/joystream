@@ -3110,7 +3110,7 @@ fn claim_council_reward_succeeded() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(BAG_DELETION_PRIZE, &[]);
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE, &[]);
 
         let channel_id = ChannelId::one();
 
@@ -3137,7 +3137,7 @@ fn claim_council_reward_failed_with_invalid_channel() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(BAG_DELETION_PRIZE, &[]);
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE, &[]);
 
         let invalid_channel_id = 444;
         ClaimCouncilRewardFixture::default()
@@ -3154,7 +3154,7 @@ fn claim_council_reward_failed_with_invalid_channel_transfer_status() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(BAG_DELETION_PRIZE, &[]);
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE, &[]);
 
         // Change channel transfer status.
         let channel_id = ChannelId::one();
@@ -3176,7 +3176,7 @@ fn claim_council_reward_failed_with_zero_reward() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(BAG_DELETION_PRIZE, &[]);
+        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE, &[]);
 
         let channel_id = ChannelId::one();
 
