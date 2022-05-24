@@ -215,13 +215,12 @@ decl_module! {
         ///
         /// Postconditions:
         /// - starting with `unprocessed` beeing equal to `amount`, account's vesting schedules
-        ///   are iterated over and updated:
-        ///   - if a vesting scheduled has `vs.locked(current_block)` <= `unprocessed`:
-        ///     - `unprocessed` is set to `unprocessed - vs.locked(current_block)`
-        ///     - the vesting schedule is removed
-        ///   - if a vesting schedule has `vs.locked(current_block)` > `unprocessed`:
-        ///     - `unprocessed` is set to `0`
-        ///     - vesting schedule's `burned_amount` is updated to `vs.burned_amount + unprocessed`
+        ///   are iterated over and:
+        ///   - updated with `burned_amount += uprocessed` if vesting schedule's unvested amount is
+        ///     greater than `uprocessed`
+        ///   - removed otherwise
+        ///   (after each iteration `unprocessed` is reduced by the amount of unvested tokens
+        ///   burned during that iteration)
         /// - if the account has any `split_staking_status`, the `split_staking_status.amount`
         ///   is reduced by `min(amount, split_staking_status.amount)`
         /// - `account.amount` is reduced by `amount`

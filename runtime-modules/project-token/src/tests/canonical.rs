@@ -1262,6 +1262,33 @@ fn burn_ok_with_token_supply_decreased() {
 }
 
 #[test]
+fn burn_ok_with_staked_tokens_burned() {
+    let (token_id, (member_id, account)) = (token!(1), member!(1));
+    let token_data = TokenDataBuilder::new_empty().build();
+    let init_account_data = AccountData::new_with_amount(200).with_staked(100);
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(member_id, init_account_data)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        // Burn staked tokens partially
+        assert_ok!(Token::burn(origin!(account), token_id, member_id, 50));
+        let account_data = Token::ensure_account_data_exists(token_id, &member_id).unwrap();
+        assert_eq!(account_data.staked(), 50);
+        assert_eq!(account_data.transferrable::<Test>(1), 100);
+
+        // Burn an amount greater than staked tokens amount
+        assert_ok!(Token::burn(origin!(account), token_id, member_id, 100));
+        let account_data = Token::ensure_account_data_exists(token_id, &member_id).unwrap();
+        assert_eq!(account_data.staked(), 0);
+        assert!(account_data.split_staking_status.is_some());
+        assert_eq!(account_data.transferrable::<Test>(1), 50);
+    })
+}
+
+#[test]
 fn burn_ok_with_vesting_and_staked_tokens_burned_first() {
     let vesting_schedule = default_vesting_schedule();
     let init_vesting_amount = vesting_schedule
