@@ -402,7 +402,7 @@ export async function content_ContentDeleted({ store, event }: EventContext & St
 
   // load video
   const video = await store.get(Video, {
-    where: { id: videoId.toString() },
+    where: { id: contentId.toString() },
     relations: [...videoRelationsForCounters],
   })
 
