@@ -171,7 +171,12 @@ fn council_vote_for_winner_stakes_longer() {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
 
         // run first election round
-        let params = Mocks::run_full_council_cycle(0, &[], 0);
+        let params = Mocks::run_council_cycle_with_interrupt(
+            0,
+            &[],
+            0,
+            Some(CouncilCycleInterrupt::AfterElectionComplete),
+        );
         let second_round_user_offset = 100; // some number higher than the number of voters
 
         let voter_for_winner = params.voters[0].clone();

@@ -1184,41 +1184,32 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
     fn can_unlock_vote_stake(vote: &CastVoteOf<T>) -> Result<(), Error<T>> {
         let current_voting_cycle_id = AnnouncementPeriodNr::get();
 
-        // allow release for very old votes
-        if current_voting_cycle_id > vote.cycle_id + 1 {
+        // If the vote is for an election prior to the last concluded..
+        if vote.cycle_id != current_voting_cycle_id {
+            // ..it is always recoverable.
             return Ok(());
         }
 
-        // allow release for current cycle only in idle stage
-        if current_voting_cycle_id == vote.cycle_id
-            && !matches!(Stage::<T>::get().stage, CouncilStage::Idle)
-        {
-            return Err(Error::CantReleaseStakeNow);
-        }
+        // The vote is for the current election cycle.
 
-        let voting_for_winner = CouncilMembers::<T>::get()
-            .iter()
-            .map(|council_member| council_member.membership_id)
-            .any(|membership_id| vote.vote_for == Some(membership_id));
+        if Stage::<T>::get().stage == CouncilStage::Idle {
+            // The election is concluded..
+            let voted_for_winner = CouncilMembers::<T>::get()
+                .iter()
+                .map(|council_member| council_member.membership_id)
+                .any(|membership_id| vote.vote_for == Some(membership_id));
 
-        // allow release for vote from previous elections only when not voted for winner
-        if current_voting_cycle_id == vote.cycle_id + 1 {
-            // ensure vote was not cast for the one of winning candidates / council members
-            if voting_for_winner {
-                return Err(Error::CantReleaseStakeNow);
+            if voted_for_winner {
+                // ..and vote is for a winning candidate, so it is not recoverable.
+                Err(Error::CantReleaseStakeNow)
+            } else {
+                // ..and vote is for a losing candidate, so it is recoverable.
+                Ok(())
             }
-
-            return Ok(());
+        } else {
+            // The election is ongoing, so it is not recoverable.
+            Err(Error::CantReleaseStakeNow)
         }
-
-        // at this point vote.cycle_id == current_voting_cycle_id
-
-        // ensure election has ended and voter haven't voted for winner
-        if voting_for_winner || !matches!(Stage::<T>::get().stage, CouncilStage::Idle) {
-            return Err(Error::CantReleaseStakeNow);
-        }
-
-        Ok(())
     }
 
     // Checks that user is indeed candidating.
