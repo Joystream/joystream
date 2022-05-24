@@ -52,6 +52,7 @@
     - [License](#.License)
     - [MediaType](#.MediaType)
     - [PublishedBeforeJoystream](#.PublishedBeforeJoystream)
+    - [SubtitleMetadata](#.SubtitleMetadata)
     - [VideoCategoryMetadata](#.VideoCategoryMetadata)
     - [VideoMetadata](#.VideoMetadata)
   
@@ -675,6 +676,24 @@ Publication status before joystream
 
 
 
+<a name=".SubtitleMetadata"></a>
+
+### SubtitleMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [string](#string) | required |  |
+| new_asset | [uint32](#uint32) | optional | index into external [assets array](#.Assets) |
+| language | [string](#string) | required | ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) |
+| mimeType | [string](#string) | required |  |
+
+
+
+
+
+
 <a name=".VideoCategoryMetadata"></a>
 
 ### VideoCategoryMetadata
@@ -714,6 +733,7 @@ Publication status before joystream
 | is_explicit | [bool](#bool) | optional | Does Video have explicit language or scenes |
 | persons | [uint64](#uint64) | repeated | Person(s) referenced by PersonId involved in this video |
 | category | [uint64](#uint64) | optional | Video Category Id |
+| subtitles | [SubtitleMetadata](#SubtitleMetadata) | repeated | Video subtitles |
 
 
 

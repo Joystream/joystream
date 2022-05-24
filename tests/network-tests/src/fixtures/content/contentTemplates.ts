@@ -24,6 +24,20 @@ export function getVideoDefaults(index: number, cliExamplesFolderPath: string) {
       code: 1001,
       attribution: 'by Joystream Contributors',
     },
+    subtitles: [
+      {
+        type: 'subtitle',
+        language: 'en',
+        mimeType: 'SRT',
+        subtitleAssetPath: cliExamplesFolderPath + '/subtitle-en-1.srt',
+      },
+      {
+        type: 'subtitle',
+        language: 'fr',
+        mimeType: 'SRT',
+        subtitleAssetPath: cliExamplesFolderPath + '/subtitle-fr-1.srt',
+      },
+    ],
   }
 }
 

@@ -195,15 +195,11 @@ export class JoystreamCLI extends CLI {
   async updateVideo(videoId: number, video: Modify<VideoInputParameters, { category: number }>): Promise<void> {
     const jsonFile = this.tmpFileManager.jsonFile(video)
 
-    const { stdout, stderr, exitCode } = await this.run('content:updateVideo', [
-      '--input',
-      jsonFile,
-      videoId.toString(),
-    ])
+    const { stderr, exitCode } = await this.run('content:updateVideo', ['--input', jsonFile, videoId.toString()])
 
     if (exitCode && !this.isErrorDueToNoStorage(exitCode)) {
-      // ignore warnings
-      throw new Error(`Unexpected CLI failure on creating video category: "${stderr}"`)
+      // ignore warningscreating
+      throw new Error(`Unexpected CLI failure on  updating video: "${stderr}"`)
     }
   }
 
