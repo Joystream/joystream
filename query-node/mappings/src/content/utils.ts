@@ -7,6 +7,7 @@ import {
   IMediaType,
   IChannelMetadata,
   IPlaylistMetadata,
+  ISubtitleMetadata,
 } from '@joystream/metadata-protobuf'
 import { integrateMeta, isSet, isValidLanguageCode } from '@joystream/metadata-protobuf/utils'
 import { invalidMetadata, inconsistentState, logger, deterministicEntityId } from '../common'
@@ -37,6 +38,8 @@ import {
   Playlist,
   DataObjectTypePlaylistThumbnail,
   PlaylistVideo,
+  DataObjectTypeVideoSubtitle,
+  VideoSubtitle,
 } from 'query-node/dist/model'
 // Joystream types
 import { ContentActor, StorageAssets } from '@joystream/types/augment'
@@ -76,6 +79,13 @@ const ASSET_TYPES = {
       DataObjectTypeConstructor: DataObjectTypePlaylistThumbnail,
       metaFieldName: 'thumbnailPhoto',
       schemaFieldName: 'thumbnailPhoto',
+    },
+  ],
+  subtitle: [
+    {
+      DataObjectTypeConstructor: DataObjectTypeVideoSubtitle,
+      metaFieldName: 'newAsset',
+      schemaFieldName: 'asset',
     },
   ],
 } as const
@@ -132,6 +142,34 @@ async function processVideoAssets(
           dataObjectType.videoId = video.id
           asset.type = dataObjectType
           video[schemaFieldName] = asset
+          await store.save<StorageDataObject>(asset)
+        }
+      }
+    })
+  )
+}
+
+async function processVideoSubtiteAssets(
+  { event, store }: EventContext & StoreContext,
+  assets: StorageDataObject[],
+  subtitle: VideoSubtitle,
+  meta: DecodedMetadataObject<ISubtitleMetadata>
+) {
+  await Promise.all(
+    ASSET_TYPES.subtitle.map(async ({ metaFieldName, schemaFieldName, DataObjectTypeConstructor }) => {
+      const newAssetIndex = meta[metaFieldName]
+      const currentAsset = subtitle[schemaFieldName]
+      if (isSet(newAssetIndex)) {
+        const asset = findAssetByIndex(assets, newAssetIndex)
+        if (asset) {
+          if (currentAsset) {
+            currentAsset.unsetAt = new Date(event.blockTimestamp)
+            await store.save<StorageDataObject>(currentAsset)
+          }
+          const dataObjectType = new DataObjectTypeConstructor()
+          dataObjectType.subtitleId = subtitle.id
+          asset.type = dataObjectType
+          subtitle[schemaFieldName] = asset
           await store.save<StorageDataObject>(asset)
         }
       }
@@ -239,6 +277,11 @@ export async function processVideoMetadata(
   // prepare language if needed
   if (isSet(meta.language)) {
     video.language = await processLanguage(ctx, video.language, meta.language)
+  }
+
+  // prepare subtitles if needed
+  if (isSet(meta.subtitles)) {
+    video.subtitles = await processVideoSubtitles(ctx, assets, meta.subtitles)
   }
 
   if (isSet(meta.publishedBeforeJoystream)) {
@@ -502,6 +545,35 @@ async function processLanguage(
   await store.save<Language>(newLanguage)
 
   return newLanguage
+}
+
+async function processVideoSubtitles(
+  ctx: EventContext & StoreContext,
+  assets: StorageDataObject[],
+  meta: ISubtitleMetadata[]
+): Promise<VideoSubtitle[]> {
+  const { event, store } = ctx
+
+  return await Promise.all(
+    meta.map(async (sub) => {
+      // create new subtitle
+      const newSubtitle = new VideoSubtitle({
+        id: `${sub.type}-${sub.language}`,
+        type: sub.type,
+        language: await processLanguage(ctx, undefined, sub.language),
+        mimeType: sub.mimeType,
+        createdAt: new Date(event.blockTimestamp),
+        updatedAt: new Date(event.blockTimestamp),
+      })
+
+      // process subtitle assets
+      await processVideoSubtiteAssets(ctx, assets, newSubtitle, sub)
+
+      await store.save<VideoSubtitle>(newSubtitle)
+
+      return newSubtitle
+    })
+  )
 }
 
 async function updateVideoLicense(
