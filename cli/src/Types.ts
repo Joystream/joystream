@@ -23,6 +23,7 @@ import {
   IOpeningMetadata,
   IWorkingGroupMetadata,
   IPlaylistMetadata,
+  ISubtitleMetadata,
 } from '@joystream/metadata-protobuf'
 import { DataObjectCreationParameters } from '@joystream/types/storage'
 import {
@@ -195,10 +196,15 @@ export type VideoFileMetadata = VideoFFProbeMetadata & {
   mimeType: string
 }
 
-export type VideoInputParameters = Omit<IVideoMetadata, 'video' | 'thumbnailPhoto'> & {
+export type VideoInputParameters = Omit<IVideoMetadata, 'video' | 'thumbnailPhoto' | 'subtitles'> & {
   videoPath?: string
   thumbnailPhotoPath?: string
   enableComments?: boolean
+  subtitles?: VideoSubtitleInputParameters[]
+}
+
+export type VideoSubtitleInputParameters = Omit<ISubtitleMetadata, 'newAsset'> & {
+  subtitleAssetPath?: string
 }
 
 export type PlaylistInputParameters = Omit<IPlaylistMetadata, 'thumbnailPhoto'> & {

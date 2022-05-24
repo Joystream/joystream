@@ -55,22 +55,39 @@ export default class CreateVideoCommand extends UploadCommandBase {
     let meta = asValidatedMetadata(VideoMetadata, videoCreationParametersInput)
     const { enableComments } = videoCreationParametersInput
 
-    // Assets
-    const { videoPath, thumbnailPhotoPath } = videoCreationParametersInput
-    const [resolvedAssets, assetIndices] = await this.resolveAndValidateAssets({ videoPath, thumbnailPhotoPath }, input)
+    // Video assets
+    const { videoPath, thumbnailPhotoPath, subtitles } = videoCreationParametersInput
+    const [resolvedVideoAssets, videoAssetIndices] = await this.resolveAndValidateAssets(
+      { videoPath, thumbnailPhotoPath },
+      input
+    )
     // Set assets indices in the metadata
-    meta.video = assetIndices.videoPath
-    meta.thumbnailPhoto = assetIndices.thumbnailPhotoPath
+    meta.video = videoAssetIndices.videoPath
+    meta.thumbnailPhoto = videoAssetIndices.thumbnailPhotoPath
+
+    // Subtitle assets
+    const resolvedSubtitleAssets = await Promise.all(
+      (subtitles || []).map(async (subtitleInputParameters, i) => {
+        const { subtitleAssetPath } = subtitleInputParameters
+        const [[resolvedAsset], assetIndices] = await this.resolveAndValidateAssets({ subtitleAssetPath }, input)
+        // Set assets indices in the metadata
+        if (meta.subtitles) {
+          meta.subtitles[i].newAsset =
+            assetIndices.subtitleAssetPath || 0 + Object.entries(videoAssetIndices).length + i
+        }
+        return resolvedAsset
+      })
+    )
 
     // Try to get video file metadata
-    if (assetIndices.videoPath !== undefined) {
-      const videoFileMetadata = await this.getVideoFileMetadata(resolvedAssets[assetIndices.videoPath].path)
+    if (videoAssetIndices.videoPath !== undefined) {
+      const videoFileMetadata = await this.getVideoFileMetadata(resolvedVideoAssets[videoAssetIndices.videoPath].path)
       this.log('Video media file parameters established:', videoFileMetadata)
       meta = this.setVideoMetadataDefaults(meta, videoFileMetadata)
     }
 
     // Preare and send the extrinsic
-    const assets = await this.prepareAssetsForExtrinsic(resolvedAssets)
+    const assets = await this.prepareAssetsForExtrinsic([...resolvedVideoAssets, ...resolvedSubtitleAssets])
     const videoCreationParameters = createType<VideoCreationParameters, 'VideoCreationParameters'>(
       'VideoCreationParameters',
       {
@@ -100,7 +117,10 @@ export default class CreateVideoCommand extends UploadCommandBase {
         keypair,
         memberId.toNumber(),
         `dynamic:channel:${channelId.toString()}`,
-        objectIds.map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
+        objectIds.map((id, index) => ({
+          dataObjectId: id,
+          path: [...resolvedVideoAssets, ...resolvedSubtitleAssets][index].path,
+        })),
         input
       )
     }
