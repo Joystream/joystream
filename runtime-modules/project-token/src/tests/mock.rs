@@ -94,8 +94,6 @@ parameter_types! {
     pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token");
     pub const MaxVestingBalancesPerAccountPerToken: u8 = 3;
     pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
-    pub const MinRevenueSplitDuration: u64 = 10;
-    pub const MinSaleDuration: u32 = 10;
     // --------- balances::Trait parameters ---------------------------
     pub const ExistentialDeposit: u128 = 10;
     // constants for storage::Trait
@@ -200,7 +198,6 @@ impl Trait for Test {
     type BlocksPerYear = BlocksPerYear;
     type MemberOriginValidator = TestMemberships;
     type MembershipInfoProvider = TestMemberships;
-    type MinRevenueSplitDuration = MinRevenueSplitDuration;
 }
 
 // Working group integration

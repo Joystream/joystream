@@ -323,7 +323,8 @@ impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
         last_event_eq!(RawEvent::TokenSaleInitialized(
             self.token_id,
             snapshot_pre.token_data.next_sale_id,
-            sale
+            sale,
+            self.params.metadata.clone()
         ));
     }
 }

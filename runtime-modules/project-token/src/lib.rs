@@ -89,9 +89,6 @@ pub trait Trait:
 
     /// Membership info provider
     type MembershipInfoProvider: MembershipInfoProvider<Self>;
-
-    /// Min number of block in a revenue split period
-    type MinRevenueSplitDuration: Get<<Self as frame_system::Trait>::BlockNumber>;
 }
 
 decl_storage! {
@@ -949,7 +946,12 @@ impl<T: Trait>
             t.next_sale_id = t.next_sale_id.saturating_add(1);
         });
 
-        Self::deposit_event(RawEvent::TokenSaleInitialized(token_id, sale_id, sale));
+        Self::deposit_event(RawEvent::TokenSaleInitialized(
+            token_id,
+            sale_id,
+            sale,
+            sale_params.metadata,
+        ));
         Ok(())
     }
 

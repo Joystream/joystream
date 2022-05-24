@@ -113,7 +113,8 @@ decl_event! {
         /// - token id
         /// - token sale id
         /// - token sale data
-        TokenSaleInitialized(TokenId, TokenSaleId, TokenSale),
+        /// - token sale metadata
+        TokenSaleInitialized(TokenId, TokenSaleId, TokenSale, Option<Vec<u8>>),
 
         /// Upcoming Token Sale was Updated
         /// Params:

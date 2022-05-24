@@ -923,7 +923,6 @@ parameter_types! {
     pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token");
     pub const MaxVestingBalancesPerAccountPerToken: u8 = 3;
     pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
-    pub const MinRevenueSplitDuration: u64 = 10;
 }
 
 impl project_token::Trait for Test {
@@ -938,7 +937,6 @@ impl project_token::Trait for Test {
     type BlocksPerYear = BlocksPerYear;
     type MemberOriginValidator = TestMemberships;
     type MembershipInfoProvider = TestMemberships;
-    type MinRevenueSplitDuration = MinRevenueSplitDuration;
 }
 
 pub struct Block2Balance {}
