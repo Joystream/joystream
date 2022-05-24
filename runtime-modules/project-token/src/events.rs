@@ -5,6 +5,7 @@ use crate::types::{
 use common::MembershipTypes;
 use frame_support::decl_event;
 use sp_runtime::Perquintill;
+use sp_std::vec::Vec;
 
 decl_event! {
     pub enum Event<T>
