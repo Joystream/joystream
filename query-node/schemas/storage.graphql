@@ -190,6 +190,11 @@ type DataObjectTypeVideoThumbnail @variant {
   video: Video!
 }
 
+type DataObjectTypeVideoSubtitle @variant {
+  "Related subtitle entity"
+  subtitle: VideoSubtitle!
+}
+
 type DataObjectTypePlaylistThumbnail @variant {
   "Related playlist entity"
   playlist: Playlist!
@@ -205,6 +210,7 @@ union DataObjectType =
   | DataObjectTypeVideoMedia
   | DataObjectTypeVideoThumbnail
   | DataObjectTypePlaylistThumbnail
+  | DataObjectTypeVideoSubtitle
   | DataObjectTypeUnknown
 
 type StorageDataObject @entity {
@@ -241,6 +247,9 @@ type StorageDataObject @entity {
 
   "Video that has this data object associated as media."
   videoMedia: Video @derivedFrom(field: "media")
+
+  "Video subtitle that has this data object associated as subtitle file."
+  videoSubtitle: VideoSubtitle @derivedFrom(field: "asset")
 }
 
 type DistributionBucketFamilyGeographicArea @entity {

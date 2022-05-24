@@ -32,6 +32,18 @@ message MediaType {
     optional string mime_media_type = 3;
 }
 
+message SubtitleMetadata {
+  required string type = 1;
+
+  // index into external [assets array](#.Assets)
+  optional uint32 new_asset = 2;
+
+  // ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes)
+  required string language = 3;
+
+  required string mimeType = 4;
+}
+
 message VideoMetadata {
     // Video Title
     optional string title = 1;
@@ -82,6 +94,9 @@ message VideoMetadata {
 
     // Video Category Id
     optional uint64 category = 16;
+
+    // Video subtitles
+    repeated SubtitleMetadata subtitles = 17;
 }
 
 message VideoCategoryMetadata {

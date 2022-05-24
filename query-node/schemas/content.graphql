@@ -157,6 +157,8 @@ type Video @entity {
 
   "Is video featured or not"
   isFeatured: Boolean!
+
+  subtitles: [VideoSubtitle!]
 }
 
 type VideoMediaMetadata @entity {
@@ -250,4 +252,25 @@ type Playlist @entity {
 
   "Playlist thumbnail asset (If not provided, the thumbnail of the first video will be used)"
   thumbnailPhoto: StorageDataObject
+}
+
+type VideoSubtitle @entity {
+  "{type}-{language}"
+  id: ID!
+
+  "Subtitle's video"
+  video: Video! @derivedFrom(field: "subtitles")
+
+  # Atlas will use 'subtitles' | 'closed-captions' for now and possible other types in the future.
+  "Subtitle's type"
+  type: String!
+
+  "Subtitle's language"
+  language: Language!
+
+  "MIME type description of format used for this subtitle"
+  mimeType: String!
+
+  "Storage object representing the subtitle file"
+  asset: StorageDataObject!
 }
