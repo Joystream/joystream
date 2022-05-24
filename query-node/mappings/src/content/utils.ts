@@ -198,11 +198,26 @@ export async function processVideoMetadata(
   meta: DecodedMetadataObject<IVideoMetadata>,
   assetsParams?: StorageAssets
 ): Promise<Video> {
+  const { store } = ctx
   const assets = assetsParams ? await processNewAssets(ctx, assetsParams) : []
 
   integrateMeta(video, meta, ['title', 'description', 'duration', 'hasMarketing', 'isExplicit', 'isPublic'])
 
   await processVideoAssets(ctx, assets, video, meta)
+
+  if (isSet(meta.thumbnailPhoto)) {
+    // If this video is first video in Playlist/s, and video thumbnail
+    //  gets changed, update the thumbnail of all those Playlist/s
+    const asFirstVideoInPlaylists = await store.getMany<PlaylistVideo>(PlaylistVideo, {
+      where: { video: { id: video.id }, position: 0 },
+      relations: ['playlist'],
+    })
+
+    asFirstVideoInPlaylists.forEach(async ({ playlist }) => {
+      playlist.thumbnailPhoto = video.thumbnailPhoto
+      await store.save<Playlist>(playlist)
+    })
+  }
 
   // prepare video category if needed
   if (meta.category) {
@@ -251,7 +266,7 @@ export async function processPlaylistMetadata(
   await processPlaylistAssets(ctx, assets, playlist, meta)
 
   if (meta.videoIds) {
-    playlist.videos = await processPlaylistVideos(store, playlist, (meta.videoIds as unknown) as VideoId[])
+    playlist.videos = await processPlaylistVideos(store, playlist, meta)
     playlist.publicUncensoredVideosCount = _.sumBy(playlist.videos, ({ video }) => Number(!video.isCensored))
     playlist.publicUncensoredVideosDuration = _.sumBy(playlist.videos, ({ video }) => video.duration || 0)
   }
@@ -585,6 +600,7 @@ async function processChannelCategory(
 export async function unsetAssetRelations(store: DatabaseManager, dataObject: StorageDataObject): Promise<void> {
   const channelAssets = ['avatarPhoto', 'coverPhoto'] as const
   const videoAssets = ['thumbnailPhoto', 'media'] as const
+  const playlistAssets = ['thumbnailPhoto'] as const
 
   // NOTE: we don't need to retrieve multiple channels/videos via `store.getMany()` because dataObject
   // is allowed to be associated only with one channel/video in runtime
@@ -603,6 +619,14 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
       },
     })),
     relations: [...videoRelationsForCounters],
+  })
+  const playlist = await store.get(Playlist, {
+    where: playlistAssets.map((assetName) => ({
+      [assetName]: {
+        id: dataObject.id,
+      },
+    })),
+    relations: [...playlistAssets],
   })
 
   if (channel) {
@@ -635,6 +659,21 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
     })
   }
 
+  if (playlist) {
+    playlistAssets.forEach((assetName) => {
+      if (playlist[assetName] && playlist[assetName]?.id === dataObject.id) {
+        playlist[assetName] = null as any
+      }
+    })
+    await store.save<Playlist>(playlist)
+
+    // emit log event
+    logger.info('Content has been disconnected from Playlist', {
+      playlistId: playlist.id.toString(),
+      dataObjectId: dataObject.id,
+    })
+  }
+
   // remove data object
   await store.remove<StorageDataObject>(dataObject)
 }
@@ -642,21 +681,23 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
 export async function processPlaylistVideos(
   store: DatabaseManager,
   playlist: Playlist,
-  videoIds: VideoId[]
+  meta: DecodedMetadataObject<IPlaylistMetadata>
 ): Promise<PlaylistVideo[]> {
+  const { videoIds, thumbnailPhoto: thumbnailPhotoIndex } = meta
+
   const videos = (
     await Promise.all(
-      videoIds.map((videoId) => store.get(Video, { where: { id: videoId }, relations: ['thumbnailPhoto'] }))
+      videoIds!.map((videoId) => store.get(Video, { where: { id: videoId }, relations: ['thumbnailPhoto'] }))
     )
   ).filter((video, i) => {
     if (!video) {
-      invalidMetadata('Non-existing video requested to be the part of playlist', videoIds[i])
+      invalidMetadata('Non-existing video requested to be the part of playlist', videoIds![i])
     }
     return video !== undefined
   }) as Video[]
 
   // set thumbnail of first video as playlist thumbnail if its not already set
-  if (!playlist.thumbnailPhoto) {
+  if (thumbnailPhotoIndex === null || thumbnailPhotoIndex === undefined) {
     playlist.thumbnailPhoto = videos[0].thumbnailPhoto
   }
 

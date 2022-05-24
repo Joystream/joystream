@@ -13,7 +13,7 @@ export default class DeletePlaylistCommand extends ContentDirectoryCommandBase {
 
   static flags = {
     playlistId: flags.integer({
-      char: 'v',
+      char: 'p',
       required: true,
       description: 'ID of the Playlist',
     }),

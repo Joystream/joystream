@@ -31,7 +31,7 @@ import {
   VideoMetadata,
   IContentMetadata,
 } from '@joystream/metadata-protobuf'
-import { integrateMeta } from '@joystream/metadata-protobuf/utils'
+import { integrateMeta, isSet } from '@joystream/metadata-protobuf/utils'
 import _ from 'lodash'
 import { createNft } from './nft'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
