@@ -101,21 +101,6 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
   }
 
   /**
-    Creates a new video.
-
-    Note: Assets have to be accepted later on for videos to be counted as active.
-  */
-  private async updateVideos(channelId: number, videoCategoryId: number): Promise<void> {
-    const updateVideo = async (index: number) => {
-      return await this.cli.updateVideo(channelId, {
-        ...getVideoDefaults(index, cliExamplesFolderPath),
-        category: videoCategoryId,
-      })
-    }
-    await this.createCommonEntities(count, updateVideo)
-  }
-
-  /**
     Creates a bunch of content entities.
   */
   private async createCommonEntities<T>(count: number, createPromise: (index: number) => Promise<T>): Promise<T[]> {
