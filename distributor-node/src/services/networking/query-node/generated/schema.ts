@@ -18935,8 +18935,8 @@ export type StorageDataObject = BaseGraphQlObject & {
   ipfsHash: Scalars['String']
   /** The type of the asset that the data object represents (if known) */
   type: DataObjectType
-  /** Prize for removing the data object */
-  deletionPrize: Scalars['BigInt']
+  /** State Bloat Bond for removing the data object */
+  stateBloatBond: Scalars['BigInt']
   /** If the object is no longer used as an asset - the time at which it was unset (if known) */
   unsetAt?: Maybe<Scalars['DateTime']>
   channelcoverPhoto?: Maybe<Array<Channel>>
@@ -18957,7 +18957,7 @@ export type StorageDataObjectCreateInput = {
   storageBag: Scalars['ID']
   ipfsHash: Scalars['String']
   type: Scalars['JSONObject']
-  deletionPrize: Scalars['String']
+  stateBloatBond: Scalars['String']
   unsetAt?: Maybe<Scalars['DateTime']>
 }
 
@@ -18981,8 +18981,8 @@ export enum StorageDataObjectOrderByInput {
   StorageBagDesc = 'storageBag_DESC',
   IpfsHashAsc = 'ipfsHash_ASC',
   IpfsHashDesc = 'ipfsHash_DESC',
-  DeletionPrizeAsc = 'deletionPrize_ASC',
-  DeletionPrizeDesc = 'deletionPrize_DESC',
+  StateBloatBondAsc = 'stateBloatBond_ASC',
+  StateBloatBondDesc = 'stateBloatBond_DESC',
   UnsetAtAsc = 'unsetAt_ASC',
   UnsetAtDesc = 'unsetAt_DESC',
 }
@@ -18993,7 +18993,7 @@ export type StorageDataObjectUpdateInput = {
   storageBag?: Maybe<Scalars['ID']>
   ipfsHash?: Maybe<Scalars['String']>
   type?: Maybe<Scalars['JSONObject']>
-  deletionPrize?: Maybe<Scalars['String']>
+  stateBloatBond?: Maybe<Scalars['String']>
   unsetAt?: Maybe<Scalars['DateTime']>
 }
 
@@ -19036,12 +19036,12 @@ export type StorageDataObjectWhereInput = {
   ipfsHash_endsWith?: Maybe<Scalars['String']>
   ipfsHash_in?: Maybe<Array<Scalars['String']>>
   type_json?: Maybe<Scalars['JSONObject']>
-  deletionPrize_eq?: Maybe<Scalars['BigInt']>
-  deletionPrize_gt?: Maybe<Scalars['BigInt']>
-  deletionPrize_gte?: Maybe<Scalars['BigInt']>
-  deletionPrize_lt?: Maybe<Scalars['BigInt']>
-  deletionPrize_lte?: Maybe<Scalars['BigInt']>
-  deletionPrize_in?: Maybe<Array<Scalars['BigInt']>>
+  stateBloatBond_eq?: Maybe<Scalars['BigInt']>
+  stateBloatBond_gt?: Maybe<Scalars['BigInt']>
+  stateBloatBond_gte?: Maybe<Scalars['BigInt']>
+  stateBloatBond_lt?: Maybe<Scalars['BigInt']>
+  stateBloatBond_lte?: Maybe<Scalars['BigInt']>
+  stateBloatBond_in?: Maybe<Array<Scalars['BigInt']>>
   unsetAt_eq?: Maybe<Scalars['DateTime']>
   unsetAt_lt?: Maybe<Scalars['DateTime']>
   unsetAt_lte?: Maybe<Scalars['DateTime']>

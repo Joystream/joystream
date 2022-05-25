@@ -62,7 +62,7 @@ export default class DevBatchUpload extends AccountsCommandBase {
         batch.push([
           api.tx.sudo.sudo(
             api.tx.storage.sudoUploadDataObjects({
-              deletionPrizeSourceAccountId: sudoKey,
+              stateBloatBondSourceAccountId: sudoKey,
               objectCreationList: [
                 {
                   Size: dataObject.byteLength,

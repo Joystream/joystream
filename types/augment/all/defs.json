@@ -304,9 +304,9 @@
     "UploadParameters": {
         "bagId": "BagId",
         "objectCreationList": "Vec<DataObjectCreationParameters>",
-        "deletionPrizeSourceAccountId": "GenericAccountId",
+        "stateBloatBondSourceAccountId": "GenericAccountId",
         "expectedDataSizeFee": "u128",
-        "expectedDataObjectDeletionPrize": "u128",
+        "expectedDataObjectStateBloatBond": "u128",
         "storageBuckets": "BTreeSet<StorageBucketId>",
         "distributionBuckets": "BTreeSet<DistributionBucketId>"
     },
@@ -323,7 +323,7 @@
     },
     "DataObject": {
         "accepted": "bool",
-        "deletion_prize": "u128",
+        "state_bloat_bond": "u128",
         "size": "u64",
         "ipfsContentId": "Bytes"
     },
@@ -356,7 +356,7 @@
     "DynBagCreationParameters": {
         "bagId": "DynamicBagId",
         "objectCreationList": "Vec<DataObjectCreationParameters>",
-        "deletionPrizeSourceAccountId": "GenericAccountId",
+        "stateBloatBondSourceAccountId": "GenericAccountId",
         "expectedDataSizeFee": "u128"
     },
     "DynamicBagCreationPolicyDistributorFamiliesMap": "BTreeMap<DistributionBucketFamilyId,u32>",
@@ -706,14 +706,14 @@
         "collaborators": "BTreeMap<MemberId,ChannelAgentPermissions>",
         "storage_buckets": "BTreeSet<u64>",
         "distribution_Bucket": "BTreeSet<u64>",
-        "expected_data_object_deletion_prize": "u128"
+        "expected_data_object_state_bloat_bond": "u128"
     },
     "ChannelUpdateParameters": {
         "assets_to_upload": "Option<StorageAssets>",
         "new_meta": "Option<Bytes>",
         "assets_to_remove": "BTreeSet<DataObjectId>",
         "collaborators": "Option<BTreeMap<MemberId,ChannelAgentPermissions>>",
-        "expected_data_object_deletion_prize": "u128"
+        "expected_data_object_state_bloat_bond": "u128"
     },
     "Video": {
         "in_channel": "ChannelId",
@@ -733,14 +733,14 @@
         "assets": "Option<StorageAssets>",
         "meta": "Option<Bytes>",
         "auto_issue_nft": "Option<NftIssuanceParameters>",
-        "expected_data_object_deletion_prize": "u128"
+        "expected_data_object_state_bloat_bond": "u128"
     },
     "VideoUpdateParameters": {
         "assets_to_upload": "Option<StorageAssets>",
         "new_meta": "Option<Bytes>",
         "assets_to_remove": "BTreeSet<DataObjectId>",
         "auto_issue_nft": "Option<NftIssuanceParameters>",
-        "expected_data_object_deletion_prize": "u128"
+        "expected_data_object_state_bloat_bond": "u128"
     },
     "MaxNumber": "u32",
     "IsCensored": "bool",

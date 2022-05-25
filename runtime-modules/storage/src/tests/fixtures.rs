@@ -19,8 +19,8 @@ use super::mocks::{
 };
 
 use crate::{
-    BagId, Cid, DataObjectCreationParameters, DataObjectDeletionPrizeValue,
-    DataObjectPerMegabyteFee, DataObjectStorage, DistributionBucket, DistributionBucketId,
+    BagId, Cid, DataObjectCreationParameters, DataObjectPerMegabyteFee,
+    DataObjectStateBloatBondValue, DataObjectStorage, DistributionBucket, DistributionBucketId,
     DynBagCreationParameters, DynamicBagId, DynamicBagType, RawEvent, StaticBagId,
     StorageBucketOperatorStatus, UploadParameters,
 };
@@ -47,8 +47,8 @@ pub fn set_data_object_per_mega_byte_fee(mb_fee: u64) {
     DataObjectPerMegabyteFee::<Test>::put(mb_fee);
 }
 
-pub fn set_data_object_deletion_prize_value(deletion_prize: u64) {
-    DataObjectDeletionPrizeValue::<Test>::put(deletion_prize);
+pub fn set_data_object_state_bloat_bond_value(state_bloat_bond: u64) {
+    DataObjectStateBloatBondValue::<Test>::put(state_bloat_bond);
 }
 
 pub fn set_max_voucher_limits() {
@@ -409,13 +409,13 @@ impl UploadFixture {
         Self { params, ..self }
     }
 
-    pub fn with_expected_data_object_deletion_prize(
+    pub fn with_expected_data_object_state_bloat_bond(
         self,
-        expected_data_object_deletion_prize: u64,
+        expected_data_object_state_bloat_bond: u64,
     ) -> Self {
         Self {
             params: UploadParameters::<Test> {
-                expected_data_object_deletion_prize,
+                expected_data_object_state_bloat_bond,
                 ..self.params.clone()
             },
             ..self
@@ -423,7 +423,7 @@ impl UploadFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let balance_pre = Balances::usable_balance(self.params.deletion_prize_source_account_id);
+        let balance_pre = Balances::usable_balance(self.params.state_bloat_bond_source_account_id);
         let bag_pre = <crate::Bags<Test>>::get(&self.params.bag_id);
         let buckets_pre = bag_pre
             .stored_by
@@ -432,12 +432,12 @@ impl UploadFixture {
             .clone()
             .collect::<Vec<_>>();
 
-        let deletion_prize = self
+        let state_bloat_bond = self
             .params
             .object_creation_list
             .iter()
             .fold(0u64, |acc, _| {
-                acc.saturating_add(Storage::data_object_deletion_prize_value())
+                acc.saturating_add(Storage::data_object_state_bloat_bond_value())
             });
         let total_size_added = self
             .params
@@ -451,7 +451,7 @@ impl UploadFixture {
 
         let actual_result = Storage::upload_data_objects(self.params.clone());
 
-        let balance_post = Balances::usable_balance(self.params.deletion_prize_source_account_id);
+        let balance_post = Balances::usable_balance(self.params.state_bloat_bond_source_account_id);
         let bag_post = <crate::Bags<Test>>::get(&self.params.bag_id);
         let buckets_post = bag_post
             .stored_by
@@ -467,7 +467,7 @@ impl UploadFixture {
             // balance check
             assert_eq!(
                 balance_pre.saturating_sub(balance_post),
-                upload_fee.saturating_add(deletion_prize)
+                upload_fee.saturating_add(state_bloat_bond)
             );
 
             // bag size increased
@@ -861,7 +861,7 @@ impl MoveDataObjectsFixture {
 }
 
 pub struct DeleteDataObjectsFixture {
-    deletion_prize_account_id: u64,
+    state_bloat_bond_account_id: u64,
     bag_id: BagId<Test>,
     data_object_ids: BTreeSet<u64>,
 }
@@ -871,7 +871,7 @@ impl DeleteDataObjectsFixture {
         Self {
             bag_id: Default::default(),
             data_object_ids: Default::default(),
-            deletion_prize_account_id: DEFAULT_ACCOUNT_ID,
+            state_bloat_bond_account_id: DEFAULT_ACCOUNT_ID,
         }
     }
 
@@ -886,15 +886,15 @@ impl DeleteDataObjectsFixture {
         }
     }
 
-    pub fn with_deletion_account_id(self, deletion_prize_account_id: u64) -> Self {
+    pub fn with_deletion_account_id(self, state_bloat_bond_account_id: u64) -> Self {
         Self {
-            deletion_prize_account_id,
+            state_bloat_bond_account_id,
             ..self
         }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let balance_pre = Balances::usable_balance(self.deletion_prize_account_id);
+        let balance_pre = Balances::usable_balance(self.state_bloat_bond_account_id);
         let bag_pre = <crate::Bags<Test>>::get(&self.bag_id);
         let buckets_pre = bag_pre
             .stored_by
@@ -903,8 +903,8 @@ impl DeleteDataObjectsFixture {
             .clone()
             .collect::<Vec<_>>();
 
-        let deletion_prize = self.data_object_ids.iter().fold(0u64, |acc, id| {
-            acc.saturating_add(Storage::data_object_by_id(&self.bag_id, id).deletion_prize)
+        let state_bloat_bond = self.data_object_ids.iter().fold(0u64, |acc, id| {
+            acc.saturating_add(Storage::data_object_by_id(&self.bag_id, id).state_bloat_bond)
         });
 
         let total_size_removed = self.data_object_ids.iter().fold(0u64, |acc, id| {
@@ -914,14 +914,14 @@ impl DeleteDataObjectsFixture {
         let total_number_removed = self.data_object_ids.len() as u64;
 
         let actual_result = Storage::delete_data_objects(
-            self.deletion_prize_account_id,
+            self.state_bloat_bond_account_id,
             self.bag_id.clone(),
             self.data_object_ids.clone(),
         );
 
         assert_eq!(actual_result, expected_result);
 
-        let balance_post = Balances::usable_balance(self.deletion_prize_account_id.clone());
+        let balance_post = Balances::usable_balance(self.state_bloat_bond_account_id.clone());
         let bag_post = <crate::Bags<Test>>::get(&self.bag_id);
         let buckets_post = bag_post
             .stored_by
@@ -931,9 +931,9 @@ impl DeleteDataObjectsFixture {
             .collect::<Vec<_>>();
 
         if actual_result.is_ok() {
-            // deletion prize is given back
+            // state bloat bond is given back
 
-            assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize);
+            assert_eq!(balance_post.saturating_sub(balance_pre), state_bloat_bond);
 
             // objects are removed
             assert!(self
@@ -1112,9 +1112,9 @@ impl DeleteDynamicBagFixture {
             .clone()
             .collect::<Vec<_>>();
 
-        let deletion_prize = <crate::DataObjectsById<Test>>::iter_prefix(&bag_id)
+        let state_bloat_bond = <crate::DataObjectsById<Test>>::iter_prefix(&bag_id)
             .fold(0, |acc: u64, (_, obj)| {
-                acc.saturating_add(obj.deletion_prize)
+                acc.saturating_add(obj.state_bloat_bond)
             });
 
         let total_size_removed = bag.objects_total_size;
@@ -1148,7 +1148,7 @@ impl DeleteDynamicBagFixture {
         if actual_result.is_ok() {
             assert!(!<crate::Bags<Test>>::contains_key(&bag_id));
 
-            assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize);
+            assert_eq!(balance_post.saturating_sub(balance_pre), state_bloat_bond);
 
             assert!(s_buckets_post
                 .iter()
@@ -1476,16 +1476,16 @@ impl CreateDynamicBagFixture {
         Self {
             params: DynBagCreationParameters::<Test> {
                 bag_id: DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID),
-                deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+                state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
                 ..Default::default()
             },
         }
     }
 
-    pub fn with_deletion_prize_account_id(self, deletion_prize_account_id: u64) -> Self {
+    pub fn with_state_bloat_bond_account_id(self, state_bloat_bond_account_id: u64) -> Self {
         Self {
             params: DynBagCreationParameters::<Test> {
-                deletion_prize_source_account_id: deletion_prize_account_id,
+                state_bloat_bond_source_account_id: state_bloat_bond_account_id,
                 ..self.params
             },
         }
@@ -1542,13 +1542,13 @@ impl CreateDynamicBagFixture {
         }
     }
 
-    pub fn with_expected_data_object_deletion_prize(
+    pub fn with_expected_data_object_state_bloat_bond(
         self,
-        expected_data_object_deletion_prize: u64,
+        expected_data_object_state_bloat_bond: u64,
     ) -> Self {
         Self {
             params: DynBagCreationParameters::<Test> {
-                expected_data_object_deletion_prize,
+                expected_data_object_state_bloat_bond,
                 ..self.params
             },
             ..self
@@ -2425,16 +2425,16 @@ impl CreateStorageBucketFixture {
     }
 }
 
-pub struct UpdateDataObjectDeletionPrizeValueFixture {
+pub struct UpdateDataObjectStateBloatBondValueFixture {
     origin: RawOrigin<u64>,
-    deletion_prize: u64,
+    state_bloat_bond: u64,
 }
 
-impl UpdateDataObjectDeletionPrizeValueFixture {
+impl UpdateDataObjectStateBloatBondValueFixture {
     pub fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID),
-            deletion_prize: 0,
+            state_bloat_bond: 0,
         }
     }
 
@@ -2442,32 +2442,32 @@ impl UpdateDataObjectDeletionPrizeValueFixture {
         Self { origin, ..self }
     }
 
-    pub fn with_deletion_prize(self, deletion_prize: u64) -> Self {
+    pub fn with_state_bloat_bond(self, state_bloat_bond: u64) -> Self {
         Self {
-            deletion_prize,
+            state_bloat_bond,
             ..self
         }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let old_deletion_prize = Storage::data_object_deletion_prize_value();
+        let old_state_bloat_bond = Storage::data_object_state_bloat_bond_value();
 
-        let actual_result = Storage::update_data_object_deletion_prize(
+        let actual_result = Storage::update_data_object_state_bloat_bond(
             self.origin.clone().into(),
-            self.deletion_prize,
+            self.state_bloat_bond,
         );
 
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
             assert_eq!(
-                self.deletion_prize,
-                Storage::data_object_deletion_prize_value()
+                self.state_bloat_bond,
+                Storage::data_object_state_bloat_bond_value()
             );
         } else {
             assert_eq!(
-                old_deletion_prize,
-                Storage::data_object_deletion_prize_value()
+                old_state_bloat_bond,
+                Storage::data_object_state_bloat_bond_value()
             );
         }
     }

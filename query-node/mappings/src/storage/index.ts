@@ -229,8 +229,8 @@ export async function storage_DynamicBagDeleted({ event, store }: EventContext &
 
 // Note: "Uploaded" here actually means "created" (the real upload happens later)
 export async function storage_DataObjectsUploaded({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [dataObjectIds, uploadParams, deletionPrize] = new Storage.DataObjectsUploadedEvent(event).params
-  await createDataObjects(store, uploadParams, deletionPrize, dataObjectIds)
+  const [dataObjectIds, uploadParams, stateBloatBond] = new Storage.DataObjectsUploadedEvent(event).params
+  await createDataObjects(store, uploadParams, stateBloatBond, dataObjectIds)
 }
 
 export async function storage_PendingDataObjectsAccepted({ event, store }: EventContext & StoreContext): Promise<void> {

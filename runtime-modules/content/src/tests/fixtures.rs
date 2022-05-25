@@ -99,15 +99,18 @@ impl CreateChannelFixture {
                 collaborators: BTreeMap::new(),
                 storage_buckets: BTreeSet::new(),
                 distribution_buckets: BTreeSet::new(),
-                expected_data_object_deletion_prize: DATA_OBJECT_DELETION_PRIZE,
+                expected_data_object_state_bloat_bond: DATA_OBJECT_STATE_BLOAT_BOND,
             },
         }
     }
 
-    pub fn with_data_object_deletion_prize(self, expected_data_object_deletion_prize: u64) -> Self {
+    pub fn with_data_object_state_bloat_bond(
+        self,
+        expected_data_object_state_bloat_bond: u64,
+    ) -> Self {
         Self {
             params: ChannelCreationParameters::<Test> {
-                expected_data_object_deletion_prize,
+                expected_data_object_state_bloat_bond,
                 ..self.params.clone()
             },
             ..self
@@ -221,16 +224,16 @@ impl CreateChannelFixture {
             if let Some(assets) = self.params.assets.as_ref() {
                 // balance accounting is correct
 
-                let objects_deletion_prize = assets
+                let objects_state_bloat_bond = assets
                     .object_creation_list
                     .iter()
                     .fold(BalanceOf::<Test>::zero(), |acc, _| {
-                        acc.saturating_add(self.params.expected_data_object_deletion_prize)
+                        acc.saturating_add(self.params.expected_data_object_state_bloat_bond)
                     });
 
                 assert_eq!(
                     balance_pre.saturating_sub(balance_post),
-                    objects_deletion_prize,
+                    objects_state_bloat_bond,
                 );
 
                 assert!((beg_obj_id..end_obj_id).all(|id| {
@@ -263,16 +266,19 @@ impl CreateVideoFixture {
                 assets: None,
                 meta: None,
                 auto_issue_nft: None,
-                expected_data_object_deletion_prize: DATA_OBJECT_DELETION_PRIZE,
+                expected_data_object_state_bloat_bond: DATA_OBJECT_STATE_BLOAT_BOND,
             },
             channel_id: ChannelId::one(), // channel index starts at 1
         }
     }
 
-    pub fn with_data_object_deletion_prize(self, expected_data_object_deletion_prize: u64) -> Self {
+    pub fn with_data_object_state_bloat_bond(
+        self,
+        expected_data_object_state_bloat_bond: u64,
+    ) -> Self {
         Self {
             params: VideoCreationParameters::<Test> {
-                expected_data_object_deletion_prize,
+                expected_data_object_state_bloat_bond,
                 ..self.params.clone()
             },
             ..self
@@ -361,16 +367,16 @@ impl CreateVideoFixture {
 
             if let Some(assets) = self.params.assets.as_ref() {
                 // balance accounting is correct
-                let objects_deletion_prize = assets
+                let objects_state_bloat_bond = assets
                     .object_creation_list
                     .iter()
                     .fold(BalanceOf::<Test>::zero(), |acc, _| {
-                        acc.saturating_add(self.params.expected_data_object_deletion_prize)
+                        acc.saturating_add(self.params.expected_data_object_state_bloat_bond)
                     });
 
                 assert_eq!(
                     balance_pre.saturating_sub(balance_post),
-                    objects_deletion_prize,
+                    objects_state_bloat_bond,
                 );
 
                 assert!((beg_obj_id..end_obj_id).all(|id| {
@@ -411,7 +417,7 @@ impl UpdateChannelFixture {
                 new_meta: None,
                 assets_to_remove: BTreeSet::new(),
                 collaborators: None,
-                expected_data_object_deletion_prize: DATA_OBJECT_DELETION_PRIZE,
+                expected_data_object_state_bloat_bond: DATA_OBJECT_STATE_BLOAT_BOND,
             },
         }
     }
@@ -426,10 +432,13 @@ impl UpdateChannelFixture {
         }
     }
 
-    pub fn with_data_object_deletion_prize(self, expected_data_object_deletion_prize: u64) -> Self {
+    pub fn with_data_object_state_bloat_bond(
+        self,
+        expected_data_object_state_bloat_bond: u64,
+    ) -> Self {
         Self {
             params: ChannelUpdateParameters::<Test> {
-                expected_data_object_deletion_prize,
+                expected_data_object_state_bloat_bond,
                 ..self.params.clone()
             },
             ..self
@@ -487,7 +496,7 @@ impl UpdateChannelFixture {
         let channel_pre = Content::channel_by_id(&self.channel_id);
         let bag_id_for_channel = Content::bag_id_for_channel(&self.channel_id);
 
-        let deletion_prize_deposited =
+        let state_bloat_bond_deposited =
             self.params
                 .assets_to_upload
                 .as_ref()
@@ -496,17 +505,17 @@ impl UpdateChannelFixture {
                         .object_creation_list
                         .iter()
                         .fold(BalanceOf::<Test>::zero(), |acc, _| {
-                            acc.saturating_add(self.params.expected_data_object_deletion_prize)
+                            acc.saturating_add(self.params.expected_data_object_state_bloat_bond)
                         })
                 });
 
-        let deletion_prize_withdrawn = if !self.params.assets_to_remove.is_empty() {
+        let state_bloat_bond_withdrawn = if !self.params.assets_to_remove.is_empty() {
             self.params
                 .assets_to_remove
                 .iter()
                 .fold(BalanceOf::<Test>::zero(), |acc, id| {
                     acc + storage::DataObjectsById::<Test>::get(&bag_id_for_channel, id)
-                        .deletion_prize
+                        .state_bloat_bond
                 })
         } else {
             BalanceOf::<Test>::zero()
@@ -561,7 +570,7 @@ impl UpdateChannelFixture {
 
                 assert_eq!(
                     balance_post.saturating_sub(balance_pre),
-                    deletion_prize_withdrawn.saturating_sub(deletion_prize_deposited),
+                    state_bloat_bond_withdrawn.saturating_sub(state_bloat_bond_deposited),
                 );
 
                 if self.params.assets_to_upload.is_some() {
@@ -658,7 +667,7 @@ impl UpdateVideoFixture {
                 assets_to_remove: BTreeSet::new(),
                 new_meta: None,
                 auto_issue_nft: Default::default(),
-                expected_data_object_deletion_prize: Default::default(),
+                expected_data_object_state_bloat_bond: Default::default(),
             },
         }
     }
@@ -673,10 +682,13 @@ impl UpdateVideoFixture {
         }
     }
 
-    pub fn with_data_object_deletion_prize(self, expected_data_object_deletion_prize: u64) -> Self {
+    pub fn with_data_object_state_bloat_bond(
+        self,
+        expected_data_object_state_bloat_bond: u64,
+    ) -> Self {
         Self {
             params: VideoUpdateParameters::<Test> {
-                expected_data_object_deletion_prize,
+                expected_data_object_state_bloat_bond,
                 ..self.params.clone()
             },
             ..self
@@ -732,9 +744,9 @@ impl UpdateVideoFixture {
         let bag_id_for_channel = Content::bag_id_for_channel(&video_pre.in_channel);
         let beg_obj_id = storage::NextDataObjectId::<Test>::get();
 
-        let deletion_prize = DATA_OBJECT_DELETION_PRIZE;
+        let state_bloat_bond = DATA_OBJECT_STATE_BLOAT_BOND;
 
-        let deletion_prize_deposited =
+        let state_bloat_bond_deposited =
             self.params
                 .assets_to_upload
                 .as_ref()
@@ -743,17 +755,17 @@ impl UpdateVideoFixture {
                         .object_creation_list
                         .iter()
                         .fold(BalanceOf::<Test>::zero(), |acc, _| {
-                            acc.saturating_add(deletion_prize)
+                            acc.saturating_add(state_bloat_bond)
                         })
                 });
 
-        let deletion_prize_withdrawn = if !self.params.assets_to_remove.is_empty() {
+        let state_bloat_bond_withdrawn = if !self.params.assets_to_remove.is_empty() {
             self.params
                 .assets_to_remove
                 .iter()
                 .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
                     acc + storage::DataObjectsById::<Test>::get(&bag_id_for_channel, obj_id)
-                        .deletion_prize
+                        .state_bloat_bond
                 })
         } else {
             BalanceOf::<Test>::zero()
@@ -786,7 +798,7 @@ impl UpdateVideoFixture {
 
                 assert_eq!(
                     balance_post.saturating_sub(balance_pre),
-                    deletion_prize_withdrawn.saturating_sub(deletion_prize_deposited),
+                    state_bloat_bond_withdrawn.saturating_sub(state_bloat_bond_deposited),
                 );
 
                 if self.params.assets_to_upload.is_some() {
@@ -857,12 +869,12 @@ impl DeleteChannelAssetsAsModeratorFixture {
         let channel_pre = Content::channel_by_id(&self.channel_id);
         let bag_id_for_channel = Content::bag_id_for_channel(&self.channel_id);
 
-        let deletion_prize_withdrawn = if !self.assets_to_remove.is_empty() {
+        let state_bloat_bond_withdrawn = if !self.assets_to_remove.is_empty() {
             self.assets_to_remove
                 .iter()
                 .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
                     acc + storage::DataObjectsById::<Test>::get(&bag_id_for_channel, obj_id)
-                        .deletion_prize
+                        .state_bloat_bond
                 })
         } else {
             BalanceOf::<Test>::zero()
@@ -895,7 +907,7 @@ impl DeleteChannelAssetsAsModeratorFixture {
 
                 assert_eq!(
                     balance_post.saturating_sub(balance_pre),
-                    deletion_prize_withdrawn,
+                    state_bloat_bond_withdrawn,
                 );
 
                 assert_eq!(
@@ -938,10 +950,10 @@ pub trait ChannelDeletion {
         let balance_pre = Balances::<Test>::usable_balance(self.get_sender());
         let bag_id_for_channel = Content::bag_id_for_channel(&self.get_channel_id());
 
-        let objects_deletion_prize =
+        let objects_state_bloat_bond =
             storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel)
                 .fold(BalanceOf::<Test>::zero(), |acc, (_, obj)| {
-                    acc + obj.deletion_prize
+                    acc + obj.state_bloat_bond
                 });
 
         let channel_objects_ids =
@@ -963,7 +975,7 @@ pub trait ChannelDeletion {
 
                 assert_eq!(
                     balance_post.saturating_sub(balance_pre),
-                    objects_deletion_prize,
+                    objects_state_bloat_bond,
                 );
                 assert!(!<ChannelById<Test>>::contains_key(&self.get_channel_id()));
                 assert!(!channel_objects_ids.iter().any(|id| {
@@ -1350,12 +1362,12 @@ impl DeleteVideoAssetsAsModeratorFixture {
         let video_pre = Content::video_by_id(&self.video_id);
         let bag_id_for_channel = Content::bag_id_for_channel(&video_pre.in_channel);
 
-        let deletion_prize_withdrawn = if !self.assets_to_remove.is_empty() {
+        let state_bloat_bond_withdrawn = if !self.assets_to_remove.is_empty() {
             self.assets_to_remove
                 .iter()
                 .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
                     acc + storage::DataObjectsById::<Test>::get(&bag_id_for_channel, obj_id)
-                        .deletion_prize
+                        .state_bloat_bond
                 })
         } else {
             BalanceOf::<Test>::zero()
@@ -1389,7 +1401,7 @@ impl DeleteVideoAssetsAsModeratorFixture {
 
                 assert_eq!(
                     balance_post.saturating_sub(balance_pre),
-                    deletion_prize_withdrawn,
+                    state_bloat_bond_withdrawn,
                 );
 
                 assert_eq!(
@@ -1431,13 +1443,13 @@ pub trait VideoDeletion {
         let balance_pre = Balances::<Test>::usable_balance(self.get_sender());
         let video_pre = <VideoById<Test>>::get(&self.get_video_id());
         let channel_bag_id = Content::bag_id_for_channel(&video_pre.in_channel);
-        let deletion_prize =
+        let state_bloat_bond =
             video_pre
                 .data_objects
                 .iter()
                 .fold(BalanceOf::<Test>::zero(), |acc, obj_id| {
                     acc + storage::DataObjectsById::<Test>::get(&channel_bag_id, obj_id)
-                        .deletion_prize
+                        .state_bloat_bond
                 });
 
         let actual_result = self.execute_call();
@@ -1453,7 +1465,7 @@ pub trait VideoDeletion {
                     self.expected_event_on_success()
                 );
 
-                assert_eq!(balance_post.saturating_sub(balance_pre), deletion_prize);
+                assert_eq!(balance_post.saturating_sub(balance_pre), state_bloat_bond);
 
                 assert!(!video_pre.data_objects.iter().any(|obj_id| {
                     storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, obj_id)
@@ -3616,11 +3628,11 @@ pub fn create_initial_storage_buckets_helper() -> StorageBucketId {
     storage_bucket_id
 }
 
-pub fn set_data_object_deletion_prize(deletion_prize: u64) {
+pub fn set_data_object_state_bloat_bond(state_bloat_bond: u64) {
     assert_eq!(
-        Storage::<Test>::update_data_object_deletion_prize(
+        Storage::<Test>::update_data_object_state_bloat_bond(
             Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
-            deletion_prize
+            state_bloat_bond
         ),
         Ok(())
     );
@@ -3646,7 +3658,11 @@ pub fn create_default_member_owned_channel_with_video_with_nft() -> (ChannelId, 
 }
 
 pub fn create_default_member_owned_channel() {
-    create_default_member_owned_channel_with_storage_buckets(true, DATA_OBJECT_DELETION_PRIZE, &[])
+    create_default_member_owned_channel_with_storage_buckets(
+        true,
+        DATA_OBJECT_STATE_BLOAT_BOND,
+        &[],
+    )
 }
 
 pub fn create_default_member_owned_channel_with_collaborator_permissions(
@@ -3654,20 +3670,20 @@ pub fn create_default_member_owned_channel_with_collaborator_permissions(
 ) {
     create_default_member_owned_channel_with_storage_buckets(
         true,
-        DATA_OBJECT_DELETION_PRIZE,
+        DATA_OBJECT_STATE_BLOAT_BOND,
         collaborator_permissions,
     )
 }
 
 pub fn create_default_member_owned_channel_with_storage_buckets(
     include_storage_buckets: bool,
-    deletion_prize: u64,
+    state_bloat_bond: u64,
     collaborator_permissions: &[ChannelActionPermission],
 ) {
     let mut channel_fixture = CreateChannelFixture::default()
         .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
         .with_channel_owner(ChannelOwner::Member(DEFAULT_MEMBER_ID))
-        .with_data_object_deletion_prize(deletion_prize)
+        .with_data_object_state_bloat_bond(state_bloat_bond)
         .with_assets(StorageAssets::<Test> {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
             object_creation_list: create_data_objects_helper(),
@@ -3690,7 +3706,7 @@ pub fn create_default_member_owned_channel_with_storage_buckets(
 }
 
 pub fn create_default_curator_owned_channel(
-    data_object_deletion_prize: u64,
+    data_object_state_bloat_bond: u64,
     curator_agent_permissions: &[ChannelActionPermission],
 ) {
     let curator_group_id =
@@ -3699,7 +3715,7 @@ pub fn create_default_curator_owned_channel(
         .with_default_storage_buckets()
         .with_sender(LEAD_ACCOUNT_ID)
         .with_channel_owner(ChannelOwner::CuratorGroup(curator_group_id))
-        .with_data_object_deletion_prize(data_object_deletion_prize)
+        .with_data_object_state_bloat_bond(data_object_state_bloat_bond)
         .with_assets(StorageAssets::<Test> {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
             object_creation_list: create_data_objects_helper(),
@@ -3722,7 +3738,7 @@ pub fn create_default_member_owned_channel_with_videos(
         CreateVideoFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_data_object_deletion_prize(DATA_OBJECT_DELETION_PRIZE)
+            .with_data_object_state_bloat_bond(DATA_OBJECT_STATE_BLOAT_BOND)
             .with_assets(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_objects_helper(),
@@ -3744,11 +3760,11 @@ pub fn create_default_member_owned_channel_with_video_with_collaborator_permissi
 
 pub fn create_default_member_owned_channel_with_video_with_storage_buckets(
     include_storage_buckets: bool,
-    deletion_prize: u64,
+    state_bloat_bond: u64,
 ) {
     create_default_member_owned_channel_with_storage_buckets(
         include_storage_buckets,
-        deletion_prize,
+        state_bloat_bond,
         &[],
     );
 
@@ -3757,7 +3773,7 @@ pub fn create_default_member_owned_channel_with_video_with_storage_buckets(
     CreateVideoFixture::default()
         .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
         .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-        .with_data_object_deletion_prize(deletion_prize)
+        .with_data_object_state_bloat_bond(state_bloat_bond)
         .with_assets(StorageAssets::<Test> {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
             object_creation_list: create_data_objects_helper(),
@@ -3767,10 +3783,10 @@ pub fn create_default_member_owned_channel_with_video_with_storage_buckets(
 }
 
 pub fn create_default_curator_owned_channel_with_video(
-    deletion_prize: u64,
+    state_bloat_bond: u64,
     permissions: &[ChannelActionPermission],
 ) {
-    create_default_curator_owned_channel(deletion_prize, &permissions);
+    create_default_curator_owned_channel(state_bloat_bond, &permissions);
     CreateVideoFixture::default()
         .with_sender(LEAD_ACCOUNT_ID)
         .with_actor(ContentActor::Lead)
@@ -4042,9 +4058,10 @@ impl ContentTest {
         // Create channel
         let agent_permissions = self.agent_permissions.iter().cloned().collect::<Vec<_>>();
         match self.channel_owner_actor {
-            ContentActor::Lead => {
-                create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE, &agent_permissions)
-            }
+            ContentActor::Lead => create_default_curator_owned_channel(
+                DATA_OBJECT_STATE_BLOAT_BOND,
+                &agent_permissions,
+            ),
             ContentActor::Member(..) => {
                 create_default_member_owned_channel_with_collaborator_permissions(
                     &agent_permissions,

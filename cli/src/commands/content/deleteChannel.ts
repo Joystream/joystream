@@ -38,7 +38,7 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
       })
     }
 
-    return dataObjects.map((o) => [o.id, new BN(o.deletionPrize)])
+    return dataObjects.map((o) => [o.id, new BN(o.stateBloatBond)])
   }
 
   async getDataObjectsInfoFromChain(channelId: number): Promise<[string, BN][]> {
@@ -51,7 +51,7 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
       this.log(`Following data objects are still associated with the channel: ${dataObjectIds.join(', ')}`)
     }
 
-    return dataObjects.map(([id, o]) => [id.toString(), o.deletion_prize])
+    return dataObjects.map(([id, o]) => [id.toString(), o.state_bloat_bond])
   }
 
   async run(): Promise<void> {
@@ -79,10 +79,10 @@ export default class DeleteChannelCommand extends ContentDirectoryCommandBase {
           exit: ExitCodes.InvalidInput,
         })
       }
-      const deletionPrize = dataObjectsInfo.reduce((sum, [, prize]) => sum.add(prize), new BN(0))
+      const stateBloatBond = dataObjectsInfo.reduce((sum, [, bloat_bond]) => sum.add(bloat_bond), new BN(0))
       this.log(
-        `Data objects deletion prize of ${chalk.cyanBright(
-          formatBalance(deletionPrize)
+        `Data objects state bloat bond of ${chalk.cyanBright(
+          formatBalance(stateBloatBond)
         )} will be transferred to ${chalk.magentaBright(address)}`
       )
     }

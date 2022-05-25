@@ -98,7 +98,7 @@
 
 //!
 //! ### Pallet constants
-//! - DataObjectDeletionPrize
+//! - DataObjectStateBloatBond
 //! - BlacklistSizeLimit
 //! - StorageBucketsPerBagValueConstraint
 //! - DefaultMemberDynamicBagNumberOfStorageBuckets
@@ -187,7 +187,7 @@ pub trait WeightInfo {
 
 type WeightInfoStorage<T> = <T as Trait>::WeightInfo;
 
-type DataObjAndDeletionPrizeAndObjSize<T> =
+type DataObjAndStateBloatBondAndObjSize<T> =
     Result<(Vec<DataObject<BalanceOf<T>>>, BalanceOf<T>, u64), DispatchError>;
 
 /// Content ID length in bytes (46 bytes multihash).
@@ -208,16 +208,16 @@ pub trait DataObjectStorage<T: Trait> {
     /// - ipfs id of each object not black listed or DataObjectBlacklisted error returned
     /// - ALL storage bucket in the bag have enough size capacity for the new total objects size or StorageBucketObjectSizeLimitReached error  returned
     /// - ALL storage bucket in the bag have number capacity for the new total objects number or StorageBucketObjectNumberLimitReached error returned
-    /// - caller must have enough balance to cover data size fee + deletion prize for each object otherwise InsufficientBalance error returned
+    /// - caller must have enough balance to cover data size fee + state bloat bond for each object otherwise InsufficientBalance error returned
     ///
     /// POSTCONDITIONS:
     /// - each storage bucket for the bag is updated
     /// - bag state is updated
-    /// - balance of data size fee + total deletion prize is transferred from caller to treasury account
+    /// - balance of data size fee + total state bloat bond is transferred from caller to treasury account
     fn upload_data_objects(params: UploadParameters<T>) -> DispatchResult;
 
     /// Returns the funds needed to upload a num of objects
-    /// This is dependent on (data_obj_deletion_prize * num_of_objs_to_upload) plus a storage fee that depends on the
+    /// This is dependent on (data_obj_state_bloat_bond * num_of_objs_to_upload) plus a storage fee that depends on the
     /// objs_total_size_in_bytes
     fn funds_needed_for_upload(
         num_of_objs_to_upload: usize,
@@ -252,13 +252,13 @@ pub trait DataObjectStorage<T: Trait> {
         objects: BTreeSet<T::DataObjectId>,
     ) -> DispatchResult;
 
-    /// Delete storage objects. Transfer deletion prize to the provided account.
+    /// Delete storage objects. Transfer state bloat bond to the provided account.
     ///
     /// PRECONDITIONS:
     /// - objects is not empty or DataObjectIdCollectionIsEmpty error returned
     /// - bag_id must exists or BagDoesntExist error returned
     /// - ALL specified data objects ids must be valid or DataObjectDoesntExist error returned
-    /// - Storage Treasury must have sufficient balance for the cumulative deletion prize for all the object deleted or InsufficientTreasuryBalance error returned
+    /// - Storage Treasury must have sufficient balance for the cumulative state bloat bond for all the object deleted or InsufficientTreasuryBalance error returned
     ///
     /// POSTCONDITIONS:
     /// - Data Objects are removed from storage
@@ -266,7 +266,7 @@ pub trait DataObjectStorage<T: Trait> {
     /// - Bag storage buckets are updated as a result
     /// - relevant balance is deposited from storage treasury to caller account
     fn delete_data_objects(
-        deletion_prize_account_id: T::AccountId,
+        state_bloat_bond_account_id: T::AccountId,
         bag_id: BagId<T>,
         objects: BTreeSet<T::DataObjectId>,
     ) -> DispatchResult;
@@ -274,7 +274,7 @@ pub trait DataObjectStorage<T: Trait> {
     /// Delete dynamic bag. Updates related storage bucket vouchers.
     /// PRECONDITIONS:
     /// - bag_id must exists or BagDoesntExist error returned
-    /// - Storage Treasury must have sufficient balance for the cumulative deletion prize for all the object deleted + bag deletion prize or InsufficientTreasuryBalance error returned
+    /// - Storage Treasury must have sufficient balance for the cumulative state bloat bond for all the object deleted + bag state bloat bond or InsufficientTreasuryBalance error returned
     ///
     /// POSTCONDITIONS:
     /// - All Data Objects stored by the bag are removed from storage
@@ -283,7 +283,7 @@ pub trait DataObjectStorage<T: Trait> {
     /// - bag assignment is unregistered from distribution buckets
     /// - relevant balance is deposited from storage treasury to caller account
     fn delete_dynamic_bag(
-        deletion_prize_account_id: T::AccountId,
+        state_bloat_bond_account_id: T::AccountId,
         bag_id: DynamicBagId<T>,
     ) -> DispatchResult;
 
@@ -298,7 +298,7 @@ pub trait DataObjectStorage<T: Trait> {
     ///   - ipfs id of each object not black listed or DataObjectBlacklisted error returned
     ///   - ALL storage bucket in the bag have enough size capacity for the new total objects size or StorageBucketObjectSizeLimitReached error  returned
     ///   - ALL storage bucket in the bag have number capacity for the new total objects size or StorageBucketObjectNumberLimitReached error returned
-    /// - caller must have enough balance to cover dynamic bag deletion prize + eventual data size fee + deletion prize for each object otherwise InsufficientBalance error returned
+    /// - caller must have enough balance to cover eventual data size fee + state bloat bond for each object otherwise InsufficientBalance error returned
     ///
     /// POSTCONDITIONS
     /// - bag added to storage with correct object size/num if objects specified
@@ -564,7 +564,7 @@ pub struct DataObject<Balance> {
     pub accepted: bool,
 
     /// A reward for the data object deletion.
-    pub deletion_prize: Balance,
+    pub state_bloat_bond: Balance,
 
     /// Object size in bytes.
     pub size: u64,
@@ -653,7 +653,7 @@ enum BagOperationParamsTypes<ObjectId: Clone, StorageBucketId: Ord, Distribution
         ObjectsToRemove<ObjectId>,
     ),
 
-    /// Create operation: Create bag with deletion prize & Upload Objects
+    /// Create operation: Create bag with Upload Objects
     Create(
         /// Objects' creation parameters
         ObjectsToUpload<DataObjectCreationParameters>,
@@ -856,14 +856,14 @@ pub struct UploadParametersRecord<
     /// Data object parameters.
     pub object_creation_list: Vec<DataObjectCreationParameters>,
 
-    /// Account for the data object deletion prize.
-    pub deletion_prize_source_account_id: AccountId,
+    /// Account for the data object state bloat bond.
+    pub state_bloat_bond_source_account_id: AccountId,
 
     /// Expected data size fee value for this extrinsic call.
     pub expected_data_size_fee: Balance,
 
-    /// Expected for the data object deletion prize for the storage pallet.
-    pub expected_data_object_deletion_prize: Balance,
+    /// Expected for the data object state bloat bond for the storage pallet.
+    pub expected_data_object_state_bloat_bond: Balance,
 
     /// Chosen storage buckets to assign on the dynamic bag creation.
     pub storage_buckets: BTreeSet<StorageBucketId>,
@@ -1030,16 +1030,16 @@ struct BagUpdate<Balance> {
     // Voucher update for data objects
     voucher_update: VoucherUpdate,
 
-    // Total deletion prize for data objects.
-    total_deletion_prize: Balance,
+    // Total state bloat bond for data objects.
+    total_state_bloat_bond: Balance,
 }
 
 impl<Balance: Saturating + Copy> BagUpdate<Balance> {
     // Adds a single object data to the voucher update (updates objects size, number)
-    // and deletion prize.
-    fn add_object(&mut self, size: u64, deletion_prize: Balance) -> Self {
+    // and state bloat bond.
+    fn add_object(&mut self, size: u64, state_bloat_bond: Balance) -> Self {
         self.voucher_update = self.voucher_update.add_object(size);
-        self.total_deletion_prize = self.total_deletion_prize.saturating_add(deletion_prize);
+        self.total_state_bloat_bond = self.total_state_bloat_bond.saturating_add(state_bloat_bond);
 
         *self
     }
@@ -1161,8 +1161,8 @@ decl_storage! {
         /// "Max objects number for a storage  bucket voucher" number limit.
         pub VoucherMaxObjectsNumberLimit get (fn voucher_max_objects_number_limit): u64;
 
-        /// The deletion prize for the data objects (helps preventing the state bloat).
-        pub DataObjectDeletionPrizeValue get (fn data_object_deletion_prize_value): BalanceOf<T>;
+        /// The state bloat bond for the data objects (helps preventing the state bloat).
+        pub DataObjectStateBloatBondValue get (fn data_object_state_bloat_bond_value): BalanceOf<T>;
 
         /// DynamicBagCreationPolicy by bag type storage map.
         pub DynamicBagCreationPolicies get (fn dynamic_bag_creation_policy): map
@@ -1253,7 +1253,7 @@ decl_event! {
         /// Params
         /// - data objects IDs
         /// - initial uploading parameters
-        /// - deletion prize for objects
+        /// - state bloat bond for objects
         DataObjectsUploaded(Vec<DataObjectId>, UploadParameters, Balance),
 
         /// Emits on setting the storage operator metadata.
@@ -1324,7 +1324,7 @@ decl_event! {
 
         /// Emits on data objects deletion from bags.
         /// Params
-        /// - account ID for the deletion prize
+        /// - account ID for the state bloat bond
         /// - bag ID
         /// - data object IDs
         DataObjectsDeleted(AccountId, BagId, BTreeSet<DataObjectId>),
@@ -1343,7 +1343,7 @@ decl_event! {
 
         /// Emits on deleting a dynamic bag.
         /// Params
-        /// - account ID for the deletion prize
+        /// - account ID for the state bloat bond
         /// - dynamic bag ID
         DynamicBagDeleted(AccountId, DynamicBagId),
 
@@ -1498,10 +1498,10 @@ decl_event! {
             Vec<u8>
         ),
 
-        /// Emits on updating the data object deletion prize.
+        /// Emits on updating the data object state bloat bond.
         /// Params
-        /// - deletion prize value
-        DataObjectDeletionPrizeValueUpdated(Balance),
+        /// - state bloat bond value
+        DataObjectStateBloatBondValueUpdated(Balance),
 
         /// Emits on storage assets being uploaded and deleted at the same time
         /// Params
@@ -1588,8 +1588,8 @@ decl_error! {
         /// Upload data error: zero object size.
         ZeroObjectSize,
 
-        /// Upload data error: invalid deletion prize source account.
-        InvalidDeletionPrizeSourceAccount,
+        /// Upload data error: invalid state bloat bond source account.
+        InvalidStateBloatBondSourceAccount,
 
         /// Invalid storage provider for bucket.
         InvalidStorageProvider,
@@ -1660,8 +1660,8 @@ decl_error! {
         /// Invalid extrinsic call: data size fee changed.
         DataSizeFeeChanged,
 
-        /// Invalid extrinsic call: data object deletion prize changed.
-        DataObjectDeletionPrizeChanged,
+        /// Invalid extrinsic call: data object state bloat bond changed.
+        DataObjectStateBloatBondChanged,
 
         /// Cannot delete non empty dynamic bag.
         CannotDeleteNonEmptyDynamicBag,
@@ -1907,11 +1907,11 @@ decl_module! {
         }
 
 
-        /// Updates data object deletion prize value.
+        /// Updates data object state bloat bond value.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_data_object_deletion_prize(
+        pub fn update_data_object_state_bloat_bond(
             origin,
-            deletion_prize: BalanceOf<T>,
+            state_bloat_bond: BalanceOf<T>,
         ) {
             T::StorageWorkingGroup::ensure_leader_origin(origin)?;
 
@@ -1919,10 +1919,10 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            DataObjectDeletionPrizeValue::<T>::put(deletion_prize);
+            DataObjectStateBloatBondValue::<T>::put(state_bloat_bond);
 
             Self::deposit_event(
-                RawEvent::DataObjectDeletionPrizeValueUpdated(deletion_prize)
+                RawEvent::DataObjectStateBloatBondValueUpdated(state_bloat_bond)
             );
         }
 
@@ -3143,15 +3143,16 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
             Error::<T>::DataSizeFeeChanged,
         );
 
-        // ensure data object deletion prize
+        // ensure data object state bloat bond
         ensure!(
-            params.expected_data_object_deletion_prize == Self::data_object_deletion_prize_value(),
-            Error::<T>::DataObjectDeletionPrizeChanged,
+            params.expected_data_object_state_bloat_bond
+                == Self::data_object_state_bloat_bond_value(),
+            Error::<T>::DataObjectStateBloatBondChanged,
         );
 
         let start = NextDataObjectId::<T>::get();
         Self::try_mutating_storage_state(
-            params.deletion_prize_source_account_id.clone(),
+            params.state_bloat_bond_source_account_id.clone(),
             BagOperation::<T> {
                 bag_id: params.bag_id.clone(),
                 params: BagOperationParams::<T>::Update(
@@ -3162,11 +3163,11 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         )?;
         let end = NextDataObjectId::<T>::get();
 
-        let deletion_prize = Self::data_object_deletion_prize_value();
+        let state_bloat_bond = Self::data_object_state_bloat_bond_value();
         Self::deposit_event(RawEvent::DataObjectsUploaded(
             (start..end).collect(),
             params,
-            deletion_prize,
+            state_bloat_bond,
         ));
 
         Ok(())
@@ -3231,7 +3232,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
     }
 
     fn delete_data_objects(
-        deletion_prize_account_id: T::AccountId,
+        state_bloat_bond_account_id: T::AccountId,
         bag_id: BagId<T>,
         objects: BTreeSet<T::DataObjectId>,
     ) -> DispatchResult {
@@ -3241,7 +3242,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         );
 
         Self::try_mutating_storage_state(
-            deletion_prize_account_id.clone(),
+            state_bloat_bond_account_id.clone(),
             BagOperation::<T> {
                 bag_id: bag_id.clone(),
                 params: BagOperationParams::<T>::Update(Default::default(), objects.clone()),
@@ -3249,7 +3250,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         )?;
 
         Self::deposit_event(RawEvent::DataObjectsDeleted(
-            deletion_prize_account_id,
+            state_bloat_bond_account_id,
             bag_id,
             objects,
         ));
@@ -3267,15 +3268,15 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
                 Error::<T>::DataSizeFeeChanged,
             );
 
-            // ensure data object deletion prize
+            // ensure data object state bloat bond
             ensure!(
-                upload_parameters.expected_data_object_deletion_prize
-                    == Self::data_object_deletion_prize_value(),
-                Error::<T>::DataObjectDeletionPrizeChanged,
+                upload_parameters.expected_data_object_state_bloat_bond
+                    == Self::data_object_state_bloat_bond_value(),
+                Error::<T>::DataObjectStateBloatBondChanged,
             );
         }
         Self::try_mutating_storage_state(
-            upload_parameters.deletion_prize_source_account_id.clone(),
+            upload_parameters.state_bloat_bond_source_account_id.clone(),
             BagOperation::<T> {
                 bag_id: upload_parameters.bag_id.clone(),
                 params: BagOperationParams::<T>::Update(
@@ -3293,12 +3294,12 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
     }
 
     fn delete_dynamic_bag(
-        deletion_prize_account_id: T::AccountId,
+        state_bloat_bond_account_id: T::AccountId,
         dynamic_bag_id: DynamicBagId<T>,
     ) -> DispatchResult {
         let bag_id: BagId<T> = dynamic_bag_id.clone().into();
         Self::try_mutating_storage_state(
-            deletion_prize_account_id.clone(),
+            state_bloat_bond_account_id.clone(),
             BagOperation::<T> {
                 bag_id,
                 params: BagOperationParams::<T>::Delete,
@@ -3306,7 +3307,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         )?;
 
         Self::deposit_event(RawEvent::DynamicBagDeleted(
-            deletion_prize_account_id,
+            state_bloat_bond_account_id,
             dynamic_bag_id,
         ));
 
@@ -3316,10 +3317,11 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
     fn create_dynamic_bag(params: DynBagCreationParameters<T>) -> DispatchResult {
         let bag_id: BagId<T> = params.bag_id.clone().into();
 
-        // ensure data object deletion prize
+        // ensure data object state bloat bond
         ensure!(
-            params.expected_data_object_deletion_prize == Self::data_object_deletion_prize_value(),
-            Error::<T>::DataObjectDeletionPrizeChanged,
+            params.expected_data_object_state_bloat_bond
+                == Self::data_object_state_bloat_bond_value(),
+            Error::<T>::DataObjectStateBloatBondChanged,
         );
 
         // ensure specified data fee == storage data fee
@@ -3338,7 +3340,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
         )?;
 
         Self::try_mutating_storage_state(
-            params.deletion_prize_source_account_id.clone(),
+            params.state_bloat_bond_source_account_id.clone(),
             BagOperation::<T> {
                 bag_id: bag_id.clone(),
                 params: BagOperationParams::<T>::Create(
@@ -3380,7 +3382,7 @@ impl<T: Trait> DataObjectStorage<T> for Module<T> {
     ) -> BalanceOf<T> {
         let num_of_objs_to_upload = num_of_objs_to_upload.saturated_into();
         let deletion_fee =
-            Self::data_object_deletion_prize_value().saturating_mul(num_of_objs_to_upload);
+            Self::data_object_state_bloat_bond_value().saturating_mul(num_of_objs_to_upload);
 
         let storage_fee = Self::calculate_data_storage_fee(objs_total_size_in_bytes);
 
@@ -3637,7 +3639,7 @@ impl<T: Trait> Module<T> {
         for object_id in object_ids.iter() {
             let data_object = Self::ensure_data_object_exists(&src_bag_id, object_id)?;
 
-            bag_change.add_object(data_object.size, data_object.deletion_prize);
+            bag_change.add_object(data_object.size, data_object.state_bloat_bond);
         }
 
         Self::check_bag_for_buckets_overflow(&dest_bag, &bag_change.voucher_update)?;
@@ -4239,10 +4241,10 @@ impl<T: Trait> Module<T> {
         } = Self::retrieve_dynamic_bag(&bag_op)?;
 
         // check and generate any objects to add/remove from storage
-        let (object_creation_list, deletion_prize_request, upload_objs_size) =
+        let (object_creation_list, state_bloat_bond_request, upload_objs_size) =
             Self::construct_objects_to_upload(&bag_op)?;
 
-        let (objects_removal_list, deletion_prize_refund, remove_objs_size) =
+        let (objects_removal_list, state_bloat_bond_refund, remove_objs_size) =
             Self::construct_objects_to_remove(&bag_op)?;
 
         // storage fee: zero if VoucherUpdate is default
@@ -4273,22 +4275,22 @@ impl<T: Trait> Module<T> {
             Self::update_distribution_buckets(&distributed_by, &bag_op.params);
 
         // check that user or treasury account have enough balance
-        Self::ensure_sufficient_balance(&account_id, deletion_prize_request, storage_fee)?;
+        Self::ensure_sufficient_balance(&account_id, state_bloat_bond_request, storage_fee)?;
 
         //
         // == MUTATION SAFE ==
         //
 
-        //deletion prize request creating objects: no-op if deletion prize requested is 0
-        if !deletion_prize_request.is_zero() {
-            <StorageTreasury<T>>::deposit(&account_id, deletion_prize_request)?;
+        //state bloat bond request creating objects: no-op if state bloat bond requested is 0
+        if !state_bloat_bond_request.is_zero() {
+            <StorageTreasury<T>>::deposit(&account_id, state_bloat_bond_request)?;
             //  slash: no-op if storage_fee = 0
             let _ = Balances::<T>::slash(&account_id, storage_fee);
         }
 
-        //deletion prize refund deleting objects: no-op if deletion_prize_refund is 0
-        if !deletion_prize_refund.is_zero() {
-            <StorageTreasury<T>>::withdraw(&account_id, deletion_prize_refund)?;
+        //state bloat bond refund deleting objects: no-op if state_bloat_bond_refund is 0
+        if !state_bloat_bond_refund.is_zero() {
+            <StorageTreasury<T>>::withdraw(&account_id, state_bloat_bond_refund)?;
         }
 
         // insert candidate storage buckets: no op if new_storage_buckets is empty
@@ -4356,7 +4358,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn construct_objects_to_upload(op: &BagOperation<T>) -> DataObjAndDeletionPrizeAndObjSize<T> {
+    fn construct_objects_to_upload(op: &BagOperation<T>) -> DataObjAndStateBloatBondAndObjSize<T> {
         match &op.params {
             BagOperationParams::<T>::Delete => Ok((Default::default(), Zero::zero(), Zero::zero())),
             BagOperationParams::<T>::Create(list, _, _) => Self::construct_objects_from_list(list),
@@ -4364,36 +4366,37 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    //Sums the accumulated prize and size to the new object in the iteration.
-    fn calculate_acc_size_and_acc_prize(
+    //Sums the accumulated obj_state_bloat_bond and size to the new object in the iteration.
+    fn calculate_acc_size_and_acc_obj_state_bloat_bond(
         mut acc_obj: Vec<DataObject<BalanceOf<T>>>,
-        acc_deletion_prize: BalanceOf<T>,
+        acc_state_bloat_bond: BalanceOf<T>,
         acc_size: u64,
         obj: DataObject<BalanceOf<T>>,
     ) -> (Vec<DataObject<BalanceOf<T>>>, BalanceOf<T>, u64) {
-        let acc_deletion_prize: T::Balance = acc_deletion_prize.saturating_add(obj.deletion_prize);
+        let acc_state_bloat_bond: T::Balance =
+            acc_state_bloat_bond.saturating_add(obj.state_bloat_bond);
 
         let acc_size: u64 = acc_size.saturating_add(obj.size);
 
         acc_obj.push(obj);
 
-        (acc_obj, acc_deletion_prize, acc_size)
+        (acc_obj, acc_state_bloat_bond, acc_size)
     }
 
     //When the operation is create/update, this function will check if the object exists,
-    //then in one iteration, it'll sum the total of object sizes and deletion prizes of that list.
+    //then in one iteration, it'll sum the total of object sizes and state bloat bonds of that list.
     //If one object doesn't exist the iteration stops immediately.
-    //At last, it'll return the list of objects to create/update, total deletion prize to pay and total size.
+    //At last, it'll return the list of objects to create/update, total state bloat bond to pay and total size.
     fn construct_objects_from_list(
         list: &[DataObjectCreationParameters],
-    ) -> DataObjAndDeletionPrizeAndObjSize<T> {
-        let deletion_prize = Self::data_object_deletion_prize_value();
+    ) -> DataObjAndStateBloatBondAndObjSize<T> {
+        let state_bloat_bond = Self::data_object_state_bloat_bond_value();
         list.iter()
             .map(|param| {
                 Self::upload_data_objects_checks(param).and({
                     Ok(DataObject {
                         accepted: false,
-                        deletion_prize,
+                        state_bloat_bond,
                         size: param.size,
                         ipfs_content_id: param.ipfs_content_id.clone(),
                     })
@@ -4401,12 +4404,12 @@ impl<T: Trait> Module<T> {
             })
             .try_fold(
                 Ok((Vec::new(), Zero::zero(), 0)),
-                |acc: DataObjAndDeletionPrizeAndObjSize<T>, obj| {
+                |acc: DataObjAndStateBloatBondAndObjSize<T>, obj| {
                     obj.map(|obj| {
-                        acc.map(|(acc_obj, acc_deletion_prize_request, acc_size)| {
-                            Self::calculate_acc_size_and_acc_prize(
+                        acc.map(|(acc_obj, acc_state_bloat_bond_request, acc_size)| {
+                            Self::calculate_acc_size_and_acc_obj_state_bloat_bond(
                                 acc_obj,
-                                acc_deletion_prize_request,
+                                acc_state_bloat_bond_request,
                                 acc_size,
                                 obj,
                             )
@@ -4420,19 +4423,19 @@ impl<T: Trait> Module<T> {
     }
 
     //When the operation is delete/update, this function will check if the object exists,
-    //then in one iteration, it'll sum the total of object sizes and deletion prizes of that list.
+    //then in one iteration, it'll sum the total of object sizes and state bloat bonds of that list.
     //If one object doesn't exist the iteration stops immediately.
-    //At last, it'll return the list of objects to delete/update, total deletion prize to refund and total size.
-    fn construct_objects_to_remove(op: &BagOperation<T>) -> DataObjAndDeletionPrizeAndObjSize<T> {
+    //At last, it'll return the list of objects to delete/update, total state bloat bond to refund and total size.
+    fn construct_objects_to_remove(op: &BagOperation<T>) -> DataObjAndStateBloatBondAndObjSize<T> {
         match &op.params {
             BagOperationParams::<T>::Delete => Ok(DataObjectsById::<T>::iter_prefix(&op.bag_id)
                 .map(|(_, obj)| obj)
                 .fold(
                     (Vec::new(), Zero::zero(), 0),
-                    |(acc_obj, acc_deletion_prize_refund, acc_size), obj| {
-                        Self::calculate_acc_size_and_acc_prize(
+                    |(acc_obj, acc_state_bloat_bond_refund, acc_size), obj| {
+                        Self::calculate_acc_size_and_acc_obj_state_bloat_bond(
                             acc_obj,
-                            acc_deletion_prize_refund,
+                            acc_state_bloat_bond_refund,
                             acc_size,
                             obj,
                         )
@@ -4442,15 +4445,15 @@ impl<T: Trait> Module<T> {
             BagOperationParams::<T>::Update(_, list) => list
                 .iter()
                 .try_fold(
-                    //As an initial value we set the fold with an empty vec, the bag deletion prize,
+                    //As an initial value we set the fold with an empty vec, the bag state bloat bond,
                     //(it's zero in case of an update/delete), and 0 size.
                     Ok((Vec::new(), Zero::zero(), 0)),
-                    |acc: DataObjAndDeletionPrizeAndObjSize<T>, id| {
+                    |acc: DataObjAndStateBloatBondAndObjSize<T>, id| {
                         Self::ensure_data_object_exists(&op.bag_id, id).map(|obj| {
-                            acc.map(|(acc_obj, acc_deletion_prize_refund, acc_size)| {
-                                Self::calculate_acc_size_and_acc_prize(
+                            acc.map(|(acc_obj, acc_state_bloat_bond_refund, acc_size)| {
+                                Self::calculate_acc_size_and_acc_obj_state_bloat_bond(
                                     acc_obj,
-                                    acc_deletion_prize_refund,
+                                    acc_state_bloat_bond_refund,
                                     acc_size,
                                     obj,
                                 )
@@ -4466,12 +4469,12 @@ impl<T: Trait> Module<T> {
 
     fn ensure_sufficient_balance(
         account_id: &T::AccountId,
-        deletion_prize_request: T::Balance,
+        state_bloat_bond_request: T::Balance,
         storage_fee: T::Balance,
     ) -> DispatchResult {
         ensure!(
             Balances::<T>::usable_balance(account_id)
-                >= deletion_prize_request.saturating_add(storage_fee),
+                >= state_bloat_bond_request.saturating_add(storage_fee),
             Error::<T>::InsufficientBalance
         );
 

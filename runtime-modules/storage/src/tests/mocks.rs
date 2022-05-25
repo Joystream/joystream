@@ -56,7 +56,7 @@ impl balances::Trait for Test {
 
 parameter_types! {
     pub const MaxDistributionBucketFamilyNumber: u64 = 80;
-    pub const DataObjectDeletionPrize: u64 = 10;
+    pub const DataObjectStateBloatBond: u64 = 10;
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
     pub const BlacklistSizeLimit: u64 = 200;
     pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 1;

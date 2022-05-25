@@ -409,10 +409,10 @@ fn update_storage_buckets_for_bags_succeeded_with_voucher_usage() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -474,10 +474,10 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_numb
 
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -521,10 +521,10 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_tota
 
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -724,15 +724,15 @@ fn upload_succeeded() {
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
-        let data_object_deletion_prize = 10;
-        set_data_object_deletion_prize_value(data_object_deletion_prize);
+        let data_object_state_bloat_bond = 10;
+        set_data_object_state_bloat_bond_value(data_object_state_bloat_bond);
 
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -757,7 +757,7 @@ fn upload_succeeded() {
                 ipfs_content_id: upload_params.object_creation_list[0]
                     .ipfs_content_id
                     .clone(),
-                deletion_prize: data_object_deletion_prize,
+                state_bloat_bond: data_object_state_bloat_bond,
                 accepted: false,
             }
         );
@@ -765,17 +765,17 @@ fn upload_succeeded() {
         // check balances
         assert_eq!(
             Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
-            initial_balance - data_object_deletion_prize
+            initial_balance - data_object_state_bloat_bond
         );
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            data_object_deletion_prize
+            data_object_state_bloat_bond
         );
 
         EventFixture::assert_last_crate_event(RawEvent::DataObjectsUploaded(
             vec![data_object_id],
             upload_params,
-            data_object_deletion_prize,
+            data_object_state_bloat_bond,
         ));
     });
 }
@@ -791,10 +791,10 @@ fn upload_failed_with_exceeding_the_data_object_max_size() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: data_object_list,
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -813,17 +813,17 @@ fn upload_succeeded_static_bag_with_data_size_and_deletion_fee() {
         let data_object_per_mega_byte_fee = 50;
         set_data_object_per_mega_byte_fee(data_object_per_mega_byte_fee);
 
-        let data_object_deletion_prize = 10;
-        set_data_object_deletion_prize_value(data_object_deletion_prize);
+        let data_object_state_bloat_bond = 10;
+        set_data_object_state_bloat_bond_value(data_object_state_bloat_bond);
 
         let bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
         let upload_params1 = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_data_object_candidates_with_size(1, 2, ONE_MB),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -847,21 +847,21 @@ fn upload_succeeded_static_bag_with_data_size_and_deletion_fee() {
         assert_eq!(
             Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
             initial_balance
-            - 2 * data_object_deletion_prize //2 data objects upload fee
+            - 2 * data_object_state_bloat_bond //2 data objects upload fee
             - 2 * data_object_per_mega_byte_fee // 2MB objetcs size fee
         );
 
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            2 * data_object_deletion_prize
+            2 * data_object_state_bloat_bond
         );
 
         let upload_params2 = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_data_object_candidates_with_size(3, 2, ONE_MB),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -885,13 +885,13 @@ fn upload_succeeded_static_bag_with_data_size_and_deletion_fee() {
         assert_eq!(
             Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
             initial_balance
-            - 4 * data_object_deletion_prize //4 data objects upload fee
+            - 4 * data_object_state_bloat_bond //4 data objects upload fee
             - 4 * data_object_per_mega_byte_fee // 4MB objetcs size fee
         );
 
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            4 * data_object_deletion_prize
+            4 * data_object_state_bloat_bond
         );
     });
 }
@@ -905,8 +905,8 @@ fn upload_succeeded_dynamic_bag_with_data_size_and_deletion_fee() {
         let data_object_per_mega_byte_fee = 50;
         set_data_object_per_mega_byte_fee(data_object_per_mega_byte_fee);
 
-        let data_object_deletion_prize = 10;
-        set_data_object_deletion_prize_value(data_object_deletion_prize);
+        let data_object_state_bloat_bond = 10;
+        set_data_object_state_bloat_bond_value(data_object_state_bloat_bond);
 
         UpdateStorageBucketsVoucherMaxLimitsFixture::default()
             .with_new_objects_size_limit(5 * ONE_MB)
@@ -924,7 +924,9 @@ fn upload_succeeded_dynamic_bag_with_data_size_and_deletion_fee() {
         CreateDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
             .with_storage_buckets(storage_buckets)
-            .with_expected_data_object_deletion_prize(Storage::data_object_deletion_prize_value())
+            .with_expected_data_object_state_bloat_bond(
+                Storage::data_object_state_bloat_bond_value(),
+            )
             .with_expected_data_size_fee(Storage::data_object_per_mega_byte_fee())
             .call_and_assert(Ok(()));
 
@@ -932,10 +934,10 @@ fn upload_succeeded_dynamic_bag_with_data_size_and_deletion_fee() {
 
         let upload_params1 = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_data_object_candidates_with_size(1, 2, ONE_MB),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -959,21 +961,21 @@ fn upload_succeeded_dynamic_bag_with_data_size_and_deletion_fee() {
         assert_eq!(
             Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
             initial_balance
-            - 2 * data_object_deletion_prize //2 data objects upload fee
+            - 2 * data_object_state_bloat_bond //2 data objects upload fee
             - 2 * data_object_per_mega_byte_fee // 2MB objetcs size fee
         );
 
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            2 * data_object_deletion_prize
+            2 * data_object_state_bloat_bond
         );
 
         let upload_params2 = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_data_object_candidates_with_size(3, 2, ONE_MB),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -997,13 +999,13 @@ fn upload_succeeded_dynamic_bag_with_data_size_and_deletion_fee() {
         assert_eq!(
             Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
             initial_balance
-            - 4 * data_object_deletion_prize //4 data objects upload fee
+            - 4 * data_object_state_bloat_bond //4 data objects upload fee
             - 4 * data_object_per_mega_byte_fee // 4MB objetcs size fee
         );
 
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            4 * data_object_deletion_prize
+            4 * data_object_state_bloat_bond
         );
     });
 }
@@ -1022,10 +1024,10 @@ fn upload_succeeded_with_active_storage_bucket_having_voucher() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id,
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -1058,10 +1060,10 @@ fn upload_fails_with_active_storage_bucket_with_voucher_object_number_limit_exce
 
         let upload_params = UploadParameters::<Test> {
             bag_id,
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -1094,10 +1096,10 @@ fn upload_fails_with_active_storage_bucket_with_voucher_object_size_limit_exceed
 
         let upload_params = UploadParameters::<Test> {
             bag_id,
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -1120,15 +1122,15 @@ fn upload_succeeded_with_dynamic_bag() {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
         create_dynamic_bag(&dynamic_bag_id, storage_buckets);
 
-        let data_object_deletion_prize = 10;
-        set_data_object_deletion_prize_value(data_object_deletion_prize);
+        let data_object_state_bloat_bond = 10;
+        set_data_object_state_bloat_bond_value(data_object_state_bloat_bond);
 
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Dynamic(dynamic_bag_id.clone()),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -1153,7 +1155,7 @@ fn upload_succeeded_with_dynamic_bag() {
                 ipfs_content_id: upload_params.object_creation_list[0]
                     .ipfs_content_id
                     .clone(),
-                deletion_prize: data_object_deletion_prize,
+                state_bloat_bond: data_object_state_bloat_bond,
                 accepted: false,
             }
         );
@@ -1167,10 +1169,10 @@ fn upload_fails_with_non_existent_dynamic_bag() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Dynamic(dynamic_bag_id.clone()),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -1196,13 +1198,13 @@ fn upload_fails_with_zero_object_size() {
     build_test_externalities().execute_with(|| {
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: vec![DataObjectCreationParameters {
                 ipfs_content_id: vec![1],
                 size: 0,
             }],
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -1217,13 +1219,13 @@ fn upload_fails_with_empty_object_cid() {
     build_test_externalities().execute_with(|| {
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: vec![DataObjectCreationParameters {
                 ipfs_content_id: Vec::new(),
                 size: 220,
             }],
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -1234,67 +1236,67 @@ fn upload_fails_with_empty_object_cid() {
 }
 
 #[test]
-fn upload_fails_with_insufficient_balance_for_deletion_prize() {
+fn upload_fails_with_insufficient_balance_for_state_bloat_bond() {
     build_test_externalities().execute_with(|| {
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
-        let data_object_deletion_prize = 10;
-        set_data_object_deletion_prize_value(data_object_deletion_prize);
+        let data_object_state_bloat_bond = 10;
+        set_data_object_state_bloat_bond_value(data_object_state_bloat_bond);
 
         UploadFixture::default()
             .with_params(upload_params)
-            .with_expected_data_object_deletion_prize(data_object_deletion_prize)
+            .with_expected_data_object_state_bloat_bond(data_object_state_bloat_bond)
             .call_and_assert(Err(Error::<Test>::InsufficientBalance.into()));
     });
 }
 
 #[test]
-fn upload_fails_with_invalid_deletion_prize() {
+fn upload_fails_with_invalid_state_bloat_bond() {
     build_test_externalities().execute_with(|| {
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
-        let data_object_deletion_prize = 10;
-        set_data_object_deletion_prize_value(data_object_deletion_prize);
+        let data_object_state_bloat_bond = 10;
+        set_data_object_state_bloat_bond_value(data_object_state_bloat_bond);
 
-        let invalid_data_object_deletion_prize = 110;
+        let invalid_data_object_state_bloat_bond = 110;
         UploadFixture::default()
             .with_params(upload_params)
-            .with_expected_data_object_deletion_prize(invalid_data_object_deletion_prize)
-            .call_and_assert(Err(Error::<Test>::DataObjectDeletionPrizeChanged.into()));
+            .with_expected_data_object_state_bloat_bond(invalid_data_object_state_bloat_bond)
+            .call_and_assert(Err(Error::<Test>::DataObjectStateBloatBondChanged.into()));
     });
 }
 
 #[test]
 fn upload_fails_with_insufficient_balance_for_data_size_fee() {
     build_test_externalities().execute_with(|| {
-        let data_object_deletion_prize = 10;
+        let data_object_state_bloat_bond = 10;
 
-        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, data_object_deletion_prize);
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, data_object_state_bloat_bond);
 
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
-        // Check that balance is sufficient for the deletion prize.
+        // Check that balance is sufficient for the state bloat bond.
         //        assert_eq!(Storage::can_upload_data_objects(&upload_params), Ok(()));
 
         let data_size_fee = 1000;
@@ -1307,7 +1309,7 @@ fn upload_fails_with_insufficient_balance_for_data_size_fee() {
         // Update fee parameter after the change.
         let upload_params = UploadParameters::<Test> {
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..upload_params
         };
 
@@ -1320,15 +1322,15 @@ fn upload_fails_with_insufficient_balance_for_data_size_fee() {
 #[test]
 fn upload_fails_with_data_size_fee_changed() {
     build_test_externalities().execute_with(|| {
-        let data_object_deletion_prize = 10;
-        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, data_object_deletion_prize);
+        let data_object_state_bloat_bond = 10;
+        increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, data_object_state_bloat_bond);
 
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -1353,10 +1355,10 @@ fn upload_failed_with_blocked_uploading() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -1389,10 +1391,10 @@ fn upload_failed_with_blacklisted_data_object() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: BagId::<Test>::Static(StaticBagId::Council),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list,
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -1533,10 +1535,10 @@ fn accept_pending_data_objects_succeeded() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -1600,10 +1602,10 @@ fn accept_pending_data_objects_fails_with_unrelated_storage_bucket() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -1742,10 +1744,10 @@ fn accept_pending_data_objects_succeeded_with_dynamic_bag() {
         let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -2060,8 +2062,8 @@ fn move_data_objects_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let data_object_deletion_prize = 10;
-        set_data_object_deletion_prize_value(data_object_deletion_prize);
+        let data_object_state_bloat_bond = 10;
+        set_data_object_state_bloat_bond_value(data_object_state_bloat_bond);
 
         let storage_buckets1 = create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
         let src_dynamic_bag_id = DynamicBagId::<Test>::Member(1u64);
@@ -2078,10 +2080,10 @@ fn move_data_objects_succeeded() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: src_bag_id.clone(),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -2181,10 +2183,10 @@ fn move_data_objects_succeeded_having_voucher() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: src_bag_id.clone(),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -2257,10 +2259,10 @@ fn move_data_objects_fails_with_exceeding_voucher_object_number_limit() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: src_bag_id.clone(),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -2317,10 +2319,10 @@ fn move_data_objects_fails_with_exceeding_voucher_objects_size_limit() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: src_bag_id.clone(),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -2392,8 +2394,8 @@ fn delete_data_objects_succeeded() {
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
-        let data_object_deletion_prize = 10;
-        set_data_object_deletion_prize_value(data_object_deletion_prize);
+        let data_object_state_bloat_bond = 10;
+        set_data_object_state_bloat_bond_value(data_object_state_bloat_bond);
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
         let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
@@ -2402,10 +2404,10 @@ fn delete_data_objects_succeeded() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_single_data_object(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -2425,11 +2427,11 @@ fn delete_data_objects_succeeded() {
 
         assert_eq!(
             Balances::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
-            initial_balance - data_object_deletion_prize
+            initial_balance - data_object_state_bloat_bond
         );
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            data_object_deletion_prize
+            data_object_state_bloat_bond
         );
 
         DeleteDataObjectsFixture::default()
@@ -2499,10 +2501,10 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -2547,7 +2549,7 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
 }
 
 #[test]
-fn delete_data_objects_succeeds_with_original_obj_deletion_prize() {
+fn delete_data_objects_succeeds_with_original_obj_state_bloat_bond() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
@@ -2557,25 +2559,27 @@ fn delete_data_objects_succeeds_with_original_obj_deletion_prize() {
         let initial_balance = 1000;
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
-        let data_object_deletion_prize = 10;
-        set_data_object_deletion_prize_value(data_object_deletion_prize);
+        let data_object_state_bloat_bond = 10;
+        set_data_object_state_bloat_bond_value(data_object_state_bloat_bond);
 
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
         let bag_id = BagId::<Test>::Dynamic(dynamic_bag_id.clone());
 
         CreateDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
-            .with_deletion_prize_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_state_bloat_bond_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_storage_buckets(storage_buckets)
-            .with_expected_data_object_deletion_prize(Storage::data_object_deletion_prize_value())
+            .with_expected_data_object_state_bloat_bond(
+                Storage::data_object_state_bloat_bond_value(),
+            )
             .call_and_assert(Ok(()));
 
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: create_data_object_candidates(1, 5),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -2583,11 +2587,11 @@ fn delete_data_objects_succeeds_with_original_obj_deletion_prize() {
             .with_params(upload_params.clone())
             .call_and_assert(Ok(()));
 
-        //Doubling the data object deletion prize, should not influence older data objects when deleting them.
-        //If one object is uploaded at time T0 with 10 deletion prize, at time T2 deletion prize increses to 20,
+        //Doubling the data object state bloat bond, should not influence older data objects when deleting them.
+        //If one object is uploaded at time T0 with 10 state bloat bond, at time T2 state bloat bond increses to 20,
         //now if at T3 the object is deleted, the deletion_refund must be 10 not 20, failing this opens the possibility of
         //member account stealing funds deposited in the treasury account.
-        set_data_object_deletion_prize_value(2 * data_object_deletion_prize);
+        set_data_object_state_bloat_bond_value(2 * data_object_state_bloat_bond);
 
         let data_object_id_1 = 0;
         let data_object_id_2 = 1;
@@ -2603,7 +2607,7 @@ fn delete_data_objects_succeeds_with_original_obj_deletion_prize() {
 
         assert_eq!(
             Balances::usable_balance(&<StorageTreasury<Test>>::module_account_id()),
-            2 * data_object_deletion_prize
+            2 * data_object_state_bloat_bond
         );
 
         EventFixture::assert_last_crate_event(RawEvent::DataObjectsDeleted(
@@ -3060,10 +3064,10 @@ fn delete_storage_bucket_fails_with_non_empty_bucket() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -3264,10 +3268,10 @@ fn storage_bucket_voucher_changed_event_fired() {
 
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
-            deletion_prize_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+            state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
-            expected_data_object_deletion_prize: Storage::data_object_deletion_prize_value(),
+            expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
         };
 
@@ -3491,9 +3495,9 @@ fn create_dynamic_bag_succeeded() {
             .with_families(family_policy)
             .call_and_assert(Ok(()));
 
-        let deletion_prize_account_id = DEFAULT_MEMBER_ACCOUNT_ID;
+        let state_bloat_bond_account_id = DEFAULT_MEMBER_ACCOUNT_ID;
         let initial_balance = 10000;
-        increase_account_balance(&deletion_prize_account_id, initial_balance);
+        increase_account_balance(&state_bloat_bond_account_id, initial_balance);
 
         // pre-check balances
         assert_eq!(
@@ -3563,20 +3567,20 @@ fn create_dynamic_bag_succeeded() {
 }
 
 #[test]
-fn create_dynamic_bag_fails_with_invalid_data_object_deletion_prize() {
+fn create_dynamic_bag_fails_with_invalid_data_object_state_bloat_bond() {
     build_test_externalities().execute_with(|| {
         let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
 
-        let data_object_deletion_prize_value = 100;
-        set_data_object_deletion_prize_value(data_object_deletion_prize_value);
+        let data_object_state_bloat_bond_value = 100;
+        set_data_object_state_bloat_bond_value(data_object_state_bloat_bond_value);
         create_storage_buckets(DEFAULT_STORAGE_BUCKETS_NUMBER);
 
-        let invalid_data_object_deletion_prize_value = 55;
+        let invalid_data_object_state_bloat_bond_value = 55;
         CreateDynamicBagFixture::default()
             .with_bag_id(dynamic_bag_id.clone())
-            .with_expected_data_object_deletion_prize(invalid_data_object_deletion_prize_value)
-            .with_deletion_prize_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
-            .call_and_assert(Err(Error::<Test>::DataObjectDeletionPrizeChanged.into()));
+            .with_expected_data_object_state_bloat_bond(invalid_data_object_state_bloat_bond_value)
+            .with_state_bloat_bond_account_id(DEFAULT_MEMBER_ACCOUNT_ID)
+            .call_and_assert(Err(Error::<Test>::DataObjectStateBloatBondChanged.into()));
     });
 }
 
@@ -3603,7 +3607,7 @@ fn create_dynamic_bag(dynamic_bag_id: &DynamicBagId<Test>, storage_buckets: BTre
     CreateDynamicBagFixture::default()
         .with_bag_id(dynamic_bag_id.clone())
         .with_storage_buckets(storage_buckets)
-        .with_expected_data_object_deletion_prize(Storage::data_object_deletion_prize_value())
+        .with_expected_data_object_state_bloat_bond(Storage::data_object_state_bloat_bond_value())
         .call_and_assert(Ok(()));
 }
 
@@ -5217,13 +5221,13 @@ fn set_distribution_bucket_family_metadata_fails_with_invalid_distribution_bucke
 
 //         CreateDynamicBagFixture::default()
 //             .with_bag_id(dynamic_bag_id.clone())
-//             .with_deletion_prize(77)
+//             .with_state_bloat_bond(77)
 //             //            .with_parameters(default_upload_parameters())
 //             .call_and_assert(Ok(()));
 
 //         let _ = Balances::slash(
 //             &<StorageTreasury<Test>>::module_account_id(),
-//             DATA_OBJECT_DELETION_PRIZE,
+//             DATA_OBJECT_STATE_BLOAT_BOND,
 //         );
 
 //     });
@@ -5548,7 +5552,7 @@ fn unsuccessful_dyn_bag_creation_with_blacklisted_ipfs_id() {
 }
 
 #[test]
-fn successful_dyn_bag_creation_with_upload_and_no_deletion_prize() {
+fn successful_dyn_bag_creation_with_upload_and_no_state_bloat_bond() {
     build_test_externalities().execute_with(|| {
         run_to_block(1);
 
@@ -5576,30 +5580,30 @@ fn successful_dyn_bag_creation_with_all_parameters_specified() {
 }
 
 #[test]
-fn update_data_object_deletion_prize_succeeded() {
+fn update_data_object_state_bloat_bond_succeeded() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let deletion_prize = 40;
+        let state_bloat_bond = 40;
 
-        UpdateDataObjectDeletionPrizeValueFixture::default()
+        UpdateDataObjectStateBloatBondValueFixture::default()
             .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-            .with_deletion_prize(deletion_prize)
+            .with_state_bloat_bond(state_bloat_bond)
             .call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::DataObjectDeletionPrizeValueUpdated(
-            deletion_prize,
+        EventFixture::assert_last_crate_event(RawEvent::DataObjectStateBloatBondValueUpdated(
+            state_bloat_bond,
         ));
     });
 }
 
 #[test]
-fn update_data_object_deletion_prize_failed_with_bad_origin() {
+fn update_data_object_state_bloat_bond_failed_with_bad_origin() {
     build_test_externalities().execute_with(|| {
         let non_leader_id = 1;
 
-        UpdateDataObjectDeletionPrizeValueFixture::default()
+        UpdateDataObjectStateBloatBondValueFixture::default()
             .with_origin(RawOrigin::Signed(non_leader_id))
             .call_and_assert(Err(DispatchError::BadOrigin));
     });
@@ -5955,7 +5959,7 @@ fn funds_needed_for_upload_succeeds() {
     //Module == 0 -> 0
     build_test_externalities_with_genesis().execute_with(|| {
         set_data_object_per_mega_byte_fee(0);
-        set_data_object_deletion_prize_value(0);
+        set_data_object_state_bloat_bond_value(0);
 
         let num_of_objs_to_upload = 0;
 
@@ -5970,7 +5974,7 @@ fn funds_needed_for_upload_succeeds() {
     //Module > 0 round_up((ONE_MB - 1) % ONE_MB) -> 1
     build_test_externalities_with_genesis().execute_with(|| {
         set_data_object_per_mega_byte_fee(1);
-        set_data_object_deletion_prize_value(0);
+        set_data_object_state_bloat_bond_value(0);
 
         let num_of_objs_to_upload = 0;
 
@@ -5985,7 +5989,7 @@ fn funds_needed_for_upload_succeeds() {
     //Module == 0 ONE_MB % ONE_MB -> 1
     build_test_externalities_with_genesis().execute_with(|| {
         set_data_object_per_mega_byte_fee(1);
-        set_data_object_deletion_prize_value(0);
+        set_data_object_state_bloat_bond_value(0);
 
         let num_of_objs_to_upload = 0;
 
@@ -6000,7 +6004,7 @@ fn funds_needed_for_upload_succeeds() {
     //Module =! 0 round_up((ONE_MB + 1 ) % ONE_MB) -> 2
     build_test_externalities_with_genesis().execute_with(|| {
         set_data_object_per_mega_byte_fee(1);
-        set_data_object_deletion_prize_value(0);
+        set_data_object_state_bloat_bond_value(0);
 
         let num_of_objs_to_upload = 0;
 
@@ -6016,9 +6020,9 @@ fn funds_needed_for_upload_succeeds() {
 #[test]
 fn funds_needed_for_upload_succeeds_overflow_sat() {
     build_test_externalities_with_genesis().execute_with(|| {
-        //(num_of_objs * deletion_prize_value) + (obj_size * mega_byte_fee) = funds
+        //(num_of_objs * state_bloat_bond_value) + (obj_size * mega_byte_fee) = funds
         set_data_object_per_mega_byte_fee(0);
-        set_data_object_deletion_prize_value(5);
+        set_data_object_state_bloat_bond_value(5);
 
         //(3689348814741910323 * 5) + (0 * 0) = u64 max + 0
         let num_of_objs_to_upload = 3689348814741910323;
@@ -6034,9 +6038,9 @@ fn funds_needed_for_upload_succeeds_overflow_sat() {
     });
 
     build_test_externalities_with_genesis().execute_with(|| {
-        //(num_of_objs * deletion_prize_value) + (obj_size * mega_byte_fee) = funds
+        //(num_of_objs * state_bloat_bond_value) + (obj_size * mega_byte_fee) = funds
         set_data_object_per_mega_byte_fee(3689348814741910323);
-        set_data_object_deletion_prize_value(0);
+        set_data_object_state_bloat_bond_value(0);
 
         //(0 * 0) + (5 * 3689348814741910323) = 18446744073709551615 + 0
         let funds_needed_saturated = Storage::funds_needed_for_upload(0, 5 * ONE_MB);
@@ -6052,9 +6056,9 @@ fn funds_needed_for_upload_succeeds_overflow_sat() {
     });
 
     build_test_externalities_with_genesis().execute_with(|| {
-        //(num_of_objs * deletion_prize_value) + (obj_size * mega_byte_fee) = funds
+        //(num_of_objs * state_bloat_bond_value) + (obj_size * mega_byte_fee) = funds
         set_data_object_per_mega_byte_fee(3689348814741910303);
-        set_data_object_deletion_prize_value(5);
+        set_data_object_state_bloat_bond_value(5);
 
         //(20 * 5) + (5 * 3689348814741910303) = 18446744073709551615 + 0
         let funds_needed_saturated = Storage::funds_needed_for_upload(20, 5 * ONE_MB);

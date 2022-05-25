@@ -133,13 +133,13 @@ fn unsuccessful_channel_creation_with_insufficient_balance() {
         run_to_block(1);
         create_initial_storage_buckets_helper();
 
-        let data_object_deletion_prize = 10;
-        set_data_object_deletion_prize(data_object_deletion_prize);
+        let data_object_state_bloat_bond = 10;
+        set_data_object_state_bloat_bond(data_object_state_bloat_bond);
 
         CreateChannelFixture::default()
             .with_default_storage_buckets()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_data_object_deletion_prize(data_object_deletion_prize)
+            .with_data_object_state_bloat_bond(data_object_state_bloat_bond)
             .with_channel_owner(ChannelOwner::Member(DEFAULT_MEMBER_ID))
             .with_assets(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
@@ -182,7 +182,7 @@ fn unsuccessful_channel_creation_with_no_bucket_with_sufficient_number_available
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(
             DEFAULT_MEMBER_ACCOUNT_ID,
-            DATA_OBJECT_DELETION_PRIZE * (STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1),
+            DATA_OBJECT_STATE_BLOAT_BOND * (STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1),
         );
 
         set_dynamic_bag_creation_policy_for_storage_numbers(1);
@@ -420,12 +420,12 @@ fn unsuccessful_channel_update_with_insufficient_balance() {
         create_default_member_owned_channel();
         slash_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID);
 
-        let data_object_deletion_prize = 10;
-        set_data_object_deletion_prize(data_object_deletion_prize);
+        let data_object_state_bloat_bond = 10;
+        set_data_object_state_bloat_bond(data_object_state_bloat_bond);
 
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_data_object_deletion_prize(data_object_deletion_prize)
+            .with_data_object_state_bloat_bond(data_object_state_bloat_bond)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
             .with_assets_to_upload(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
@@ -469,8 +469,8 @@ fn unsuccessful_channel_update_with_no_bucket_with_sufficient_object_number_limi
         increase_account_balance_helper(
             DEFAULT_MEMBER_ACCOUNT_ID,
             // balance necessary to create channel + video with specified no. of assets
-            DATA_OBJECT_DELETION_PRIZE * (STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1)
-                + DATA_OBJECT_DELETION_PRIZE * DATA_OBJECTS_NUMBER,
+            DATA_OBJECT_STATE_BLOAT_BOND * (STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1)
+                + DATA_OBJECT_STATE_BLOAT_BOND * DATA_OBJECTS_NUMBER,
         );
 
         create_default_member_owned_channel();
@@ -3110,7 +3110,7 @@ fn claim_council_reward_succeeded() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE, &[]);
+        create_default_curator_owned_channel(DATA_OBJECT_STATE_BLOAT_BOND, &[]);
 
         let channel_id = ChannelId::one();
 
@@ -3137,7 +3137,7 @@ fn claim_council_reward_failed_with_invalid_channel() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE, &[]);
+        create_default_curator_owned_channel(DATA_OBJECT_STATE_BLOAT_BOND, &[]);
 
         let invalid_channel_id = 444;
         ClaimCouncilRewardFixture::default()
@@ -3154,7 +3154,7 @@ fn claim_council_reward_failed_with_invalid_channel_transfer_status() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE, &[]);
+        create_default_curator_owned_channel(DATA_OBJECT_STATE_BLOAT_BOND, &[]);
 
         // Change channel transfer status.
         let channel_id = ChannelId::one();
@@ -3176,7 +3176,7 @@ fn claim_council_reward_failed_with_zero_reward() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_DELETION_PRIZE, &[]);
+        create_default_curator_owned_channel(DATA_OBJECT_STATE_BLOAT_BOND, &[]);
 
         let channel_id = ChannelId::one();
 
