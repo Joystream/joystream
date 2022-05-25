@@ -9,7 +9,12 @@ use sp_runtime::{
     traits::{Convert, Hash, UniqueSaturatedInto},
     PerThing, Permill, Perquintill, SaturatedConversion,
 };
-use sp_std::{cmp::max, collections::btree_map::BTreeMap, convert::TryInto, iter::Sum};
+use sp_std::{
+    cmp::{max, min},
+    collections::btree_map::BTreeMap,
+    convert::TryInto,
+    iter::Sum,
+};
 
 use common::MembershipTypes;
 use storage::{BagId, DataObjectCreationParameters};
@@ -292,12 +297,15 @@ pub struct VestingSchedule<BlockNumber, Balance> {
     pub(crate) cliff_amount: Balance,
     // Total amount to be vested linearly over "linear_vesting_duration" (after "linear_vesting_start_block")
     pub(crate) post_cliff_total_amount: Balance,
+    // Amount of tokes that were "burned from" this vesting schedule
+    pub(crate) burned_amount: Balance,
 }
 
 impl<BlockNumber, Balance> VestingSchedule<BlockNumber, Balance>
 where
     BlockNumber: Saturating + PartialOrd + Copy,
-    Balance: Saturating + Clone + Copy + From<u32> + Unsigned + TryInto<u32> + TryInto<u64> + Ord,
+    Balance:
+        Saturating + Clone + Copy + From<u32> + Unsigned + TryInto<u32> + TryInto<u64> + Ord + Zero,
 {
     /// Construct a vesting schedule from `VestingScheduleParams` and `init_block`
     ///
@@ -314,6 +322,7 @@ where
             linear_vesting_duration: params.linear_vesting_duration,
             cliff_amount,
             post_cliff_total_amount: amount.saturating_sub(cliff_amount),
+            burned_amount: Balance::zero(),
         }
     }
 
@@ -326,7 +335,7 @@ where
             .saturating_add(self.linear_vesting_duration);
         // Vesting not yet started
         if self.linear_vesting_start_block > b {
-            return self.total_amount();
+            return self.non_burned_amount();
         }
         // Vesting period is ongoing
         if end_block > b {
@@ -335,7 +344,8 @@ where
                 T::BlockNumberToBalance::convert(remaining_vesting_blocks),
                 T::BlockNumberToBalance::convert(self.linear_vesting_duration),
             );
-            return remaining_vesting_percentage * self.post_cliff_total_amount;
+            return (remaining_vesting_percentage * self.post_cliff_total_amount)
+                .saturating_sub(self.burned_amount);
         }
         // Vesting period has finished
         Balance::zero()
@@ -350,6 +360,10 @@ where
     pub(crate) fn total_amount(&self) -> Balance {
         self.cliff_amount
             .saturating_add(self.post_cliff_total_amount)
+    }
+
+    pub(crate) fn non_burned_amount(&self) -> Balance {
+        self.total_amount().saturating_sub(self.burned_amount)
     }
 }
 
@@ -977,6 +991,45 @@ where
 
         self
     }
+
+    /// Burn a specified amount of tokens belonging to the account
+    pub(crate) fn burn<T: Trait<Balance = Balance, BlockNumber = BlockNumber>>(
+        &mut self,
+        amount: Balance,
+        b: BlockNumber,
+    ) {
+        // Burn tokens starting from those subject to vesting
+        let mut unprocessed = amount;
+        self.vesting_schedules = self
+            .vesting_schedules
+            .iter()
+            .filter_map(|(k, v)| {
+                // Can only burn up to the unvested amount of tokens from given vesting schedule
+                let to_be_burned = min(unprocessed, v.locks::<T>(b));
+                unprocessed = unprocessed.saturating_sub(to_be_burned);
+                // If the entire unvested amount is to be burned:
+                //   - remove the vesting schedule
+                if to_be_burned == v.locks::<T>(b) {
+                    None
+                // Otherwise: Update the vesting schedule's `burned_amount`
+                } else {
+                    Some((
+                        k.clone(),
+                        VestingSchedule {
+                            burned_amount: v.burned_amount.saturating_add(to_be_burned),
+                            ..v.clone()
+                        },
+                    ))
+                }
+            })
+            .collect();
+        // Reduce amount of staked tokens by the burned amount
+        if let Some(staking_status) = self.split_staking_status.as_mut() {
+            staking_status.amount = staking_status.amount.saturating_sub(amount);
+        }
+        // Reduce account's total tokens amount by the burned amount
+        self.decrease_amount_by(amount);
+    }
 }
 /// Token Data implementation
 impl<JoyBalance, Balance, Hash, BlockNumber, VestingScheduleParams, MemberId>
@@ -992,10 +1045,24 @@ where
     BlockNumber: PartialOrd + Saturating + Copy + AtLeast32BitUnsigned,
     JoyBalance: Copy + Saturating + Zero,
 {
-    // increase total issuance
+    // increase total supply
     pub(crate) fn increase_supply_by(&mut self, amount: Balance) {
         self.tokens_issued = self.tokens_issued.saturating_add(amount);
         self.total_supply = self.total_supply.saturating_add(amount);
+    }
+
+    // decrease total supply
+    pub(crate) fn decrease_supply_by(&mut self, amount: Balance) {
+        self.total_supply = self.total_supply.saturating_sub(amount);
+    }
+
+    // ensure token supply can be modified
+    pub(crate) fn ensure_can_modify_supply<T: Trait>(&self) -> DispatchResult {
+        ensure!(
+            matches!(self.revenue_split, RevenueSplitState::Inactive),
+            Error::<T>::CannotModifySupplyWhenRevenueSplitsAreActive,
+        );
+        Ok(())
     }
 
     // increment account number
