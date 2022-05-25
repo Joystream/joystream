@@ -1404,7 +1404,7 @@ fn burn_ok_with_vesting_schedule_partially_burned_twice() {
 }
 
 #[test]
-fn burn_ok_with_partially_burned_vesting_schedule_working_as_expected() {
+fn burn_ok_with_partially_burned_vesting_schedule_amounts_working_as_expected() {
     let vesting_schedule = default_vesting_schedule();
     let vesting_schedule_end_block =
         vesting_schedule.linear_vesting_start_block + vesting_schedule.linear_vesting_duration;
