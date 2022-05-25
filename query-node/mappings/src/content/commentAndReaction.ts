@@ -1,9 +1,7 @@
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
 import {
   BanOrUnbanMemberFromChannel,
-  CommentSectionPreference,
   IBanOrUnbanMemberFromChannel,
-  ICommentSectionPreference,
   ICreateComment,
   IDeleteComment,
   IModerateComment,
@@ -27,7 +25,6 @@ import {
   CommentReactedEvent,
   CommentReaction,
   CommentReactionsCountByReactionId,
-  CommentSectionPreferenceEvent,
   CommentStatus,
   CommentTextUpdatedEvent,
   ContentActor,
@@ -674,36 +671,6 @@ export async function processBanOrUnbanMemberFromChannelMessage(
   })
 
   await store.save<MemberBannedFromChannelEvent>(memberBannedFromChannelEvent)
-}
-
-export async function processCommentSectionPreferenceMessage(
-  { store, event }: EventContext & StoreContext,
-  channelOwner: typeof ContentActor,
-  channelId: ChannelId,
-  message: ICommentSectionPreference
-): Promise<void> {
-  const { videoId, option } = message
-  const eventTime = new Date(event.blockTimestamp)
-
-  // load video
-  const video = await getVideo(store, videoId.toString(), ['channel'])
-
-  // ensure channel owns the video
-  ensureChannelOwnsTheVideo(video, channelId.toString(), `Cannot change video's comment section settings`)
-
-  video.isCommentSectionEnabled = option === CommentSectionPreference.Option.ENABLE
-  video.updatedAt = eventTime
-  await store.save<Video>(video)
-
-  // common event processing
-
-  const commentSectionPreferenceEvent = new CommentSectionPreferenceEvent({
-    ...genericEventFields(event),
-    video,
-    commentSectionStatus: option === CommentSectionPreference.Option.ENABLE,
-  })
-
-  await store.save<CommentSectionPreferenceEvent>(commentSectionPreferenceEvent)
 }
 
 export async function processVideoReactionsPreferenceMessage(

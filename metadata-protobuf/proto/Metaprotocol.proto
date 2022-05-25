@@ -92,21 +92,6 @@ message BanOrUnbanMemberFromChannel {
     required Option option = 2;
 }
 
-// Enable or disable comment section for a single video
-message CommentSectionPreference {
-    // ID of the video
-    required uint64 video_id = 1;
-
-
-    enum Option {
-        ENABLE = 0; // Enable comment section (nothing happens if it is already enabled)
-        DISABLE = 1; // Disable comment section (nothing happens if it is already disabled)
-    }
-
-    // Selected option to enable or disable comment section
-    required Option option = 2;
-}
-
 // Enable or disable reactions on a single video
 message VideoReactionsPreference {
     // ID of the video
@@ -149,7 +134,6 @@ message ChannelOwnerRemarked {
         PinOrUnpinComment pin_or_unpin_comment = 1;
         BanOrUnbanMemberFromChannel ban_or_unban_member_from_channel = 2;
         VideoReactionsPreference video_reactions_preference = 3;
-        CommentSectionPreference comment_section_preference = 4;
         ModerateComment moderate_comment = 5;
     }
 }

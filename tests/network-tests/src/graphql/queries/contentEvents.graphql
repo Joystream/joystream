@@ -132,19 +132,6 @@ fragment MemberBannedFromChannelEventFields on MemberBannedFromChannelEvent {
   action
 }
 
-fragment CommentSectionPreferenceEventFields on CommentSectionPreferenceEvent {
-  id
-  createdAt
-  inBlock
-  network
-  inExtrinsic
-  indexInBlock
-  video {
-    id
-  }
-  commentSectionStatus
-}
-
 fragment VideoReactionsPreferenceEventFields on VideoReactionsPreferenceEvent {
   id
   createdAt
@@ -203,12 +190,6 @@ query getCommentReactedEventsByEventIds($eventIds: [ID!]) {
 query getMemberBannedFromChannelEventsByEventIds($eventIds: [ID!]) {
   memberBannedFromChannelEvents(where: { id_in: $eventIds }) {
     ...MemberBannedFromChannelEventFields
-  }
-}
-
-query getCommentSectionPreferenceEventsByEventIds($eventIds: [ID!]) {
-  commentSectionPreferenceEvents(where: { id_in: $eventIds }) {
-    ...CommentSectionPreferenceEventFields
   }
 }
 
