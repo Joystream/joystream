@@ -204,6 +204,73 @@ decl_module! {
             Ok(())
         }
 
+        /// Burn tokens from specified account
+        ///
+        /// Preconditions:
+        /// - `amount` is > 0
+        /// - origin signer is a controller account of `member_id` member
+        /// - token by `token_id` exists
+        /// - an account exists for `token_id` x `member_id`
+        /// - account's tokens amount is >= `amount`
+        /// - token supply can be modified (there is no active revenue split)
+        ///
+        /// Postconditions:
+        /// - starting with `unprocessed` beeing equal to `amount`, account's vesting schedules
+        ///   are iterated over and:
+        ///   - updated with `burned_amount += uprocessed` if vesting schedule's unvested amount is
+        ///     greater than `uprocessed`
+        ///   - removed otherwise
+        ///   (after each iteration `unprocessed` is reduced by the amount of unvested tokens
+        ///   burned during that iteration)
+        /// - if the account has any `split_staking_status`, the `split_staking_status.amount`
+        ///   is reduced by `min(amount, split_staking_status.amount)`
+        /// - `account.amount` is reduced by `amount`
+        /// - token supply is reduced by `amount`
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn burn(origin, token_id: T::TokenId, member_id: T::MemberId, amount: TokenBalanceOf<T>) -> DispatchResult {
+            // Ensure burn amount is non-zero
+            ensure!(
+                !amount.is_zero(),
+                Error::<T>::BurnAmountIsZero
+            );
+
+            // Ensure sender is member's controller account
+            T::MemberOriginValidator::ensure_member_controller_account_origin(
+                origin,
+                member_id
+            )?;
+
+            // Ensure token exists
+            let token_info = Self::ensure_token_exists(token_id)?;
+
+            // Ensure token account data exists by `token_id` x `member_id`
+            let account_info = Self::ensure_account_data_exists(token_id, &member_id)?;
+
+            // Ensure burn amount doesn't exceed account's tokens amount
+            ensure!(
+                account_info.amount >= amount,
+                Error::<T>::BurnAmountGreaterThanAccountTokensAmount
+            );
+
+            // Ensure token supply can be modified
+            token_info.ensure_can_modify_supply::<T>()?;
+
+            // == MUTATION SAFE ==
+            let now = Self::current_block();
+
+            // Burn tokens from the account
+            AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account| {
+                account.burn::<T>(amount, now);
+            });
+
+            // Decrease token supply by the burned amount
+            TokenInfoById::<T>::mutate(token_id, |token| {
+                token.decrease_supply_by(amount);
+            });
+
+            Ok(())
+        }
+
         /// Allow any user to remove an account
         ///
         /// Preconditions:
@@ -705,10 +772,7 @@ impl<T: Trait>
     /// no-op if outstanding credit is zero
     fn claim_patronage_credit(token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
-        ensure!(
-            matches!(token_info.revenue_split, RevenueSplitState::Inactive),
-            Error::<T>::CannotModifySupplyWhenRevenueSplitsAreActive,
-        );
+        token_info.ensure_can_modify_supply::<T>()?;
 
         Self::ensure_account_data_exists(token_id, &member_id).map(|_| ())?;
 

@@ -140,5 +140,12 @@ decl_error! {
         /// Attempt to modify supply when revenue split is active
         CannotModifySupplyWhenRevenueSplitsAreActive,
 
+        // ------ Burning ------------------------------------------------------
+
+        /// Provided amount to burn is == 0
+        BurnAmountIsZero,
+
+        /// Amount of tokens to burn exceeds total amount of tokens owned by the account
+        BurnAmountGreaterThanAccountTokensAmount,
     }
 }

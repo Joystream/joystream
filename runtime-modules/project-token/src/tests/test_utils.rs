@@ -1,16 +1,17 @@
 use sp_arithmetic::traits::{One, Zero};
-use sp_runtime::traits::Hash;
+use sp_runtime::traits::{Hash, Saturating};
 use sp_runtime::{Permill, Perquintill};
 use sp_std::collections::btree_map::BTreeMap;
 
+use crate::types::VestingScheduleOf;
 use crate::{
     balance,
     tests::mock::*,
     types::{
         AccountData, AccountDataOf, BlockRate, MerkleProof, MerkleSide, PatronageData, Payment,
-        PaymentWithVesting, RevenueSplitState, TokenAllocation, TokenIssuanceParameters,
-        TokenSaleId, TokenSaleOf, TransferPolicy, TransferPolicyOf, Transfers, Validated,
-        ValidatedPayment, VestingSchedule, VestingSource,
+        PaymentWithVesting, RevenueSplitState, StakingStatus, TokenAllocation,
+        TokenIssuanceParameters, TokenSaleId, TokenSaleOf, TransferPolicy, TransferPolicyOf,
+        Transfers, Validated, ValidatedPayment, VestingSchedule, VestingSource,
     },
     GenesisConfig, Trait,
 };
@@ -180,8 +181,27 @@ impl GenesisConfigBuilder {
     }
 }
 
-impl<BlockNumber: From<u32>, Balance: Zero + From<u32>, StakingStatus, ReserveBalance: Zero>
-    AccountData<VestingSchedule<BlockNumber, Balance>, Balance, StakingStatus, ReserveBalance>
+pub fn default_vesting_schedule() -> VestingScheduleOf<Test> {
+    VestingScheduleOf::<Test> {
+        burned_amount: 0,
+        cliff_amount: 300,
+        linear_vesting_duration: 700,
+        linear_vesting_start_block: 100,
+        post_cliff_total_amount: 700,
+    }
+}
+
+impl<
+        BlockNumber: From<u32> + Clone,
+        Balance: Zero + From<u32> + Saturating + Clone,
+        ReserveBalance: Zero + Clone,
+    >
+    AccountData<
+        VestingSchedule<BlockNumber, Balance>,
+        Balance,
+        StakingStatus<Balance>,
+        ReserveBalance,
+    >
 {
     pub fn new_with_amount(amount: Balance) -> Self {
         Self {
@@ -190,25 +210,46 @@ impl<BlockNumber: From<u32>, Balance: Zero + From<u32>, StakingStatus, ReserveBa
         }
     }
 
-    pub fn new_with_max_vesting_schedules() -> Self {
+    pub fn with_max_vesting_schedules(
+        self,
+        vesting_schedule: VestingSchedule<BlockNumber, Balance>,
+    ) -> Self {
         let max_vesting_schedules = <Test as Trait>::MaxVestingBalancesPerAccountPerToken::get();
+        let mut acc_data = self.clone();
+        for _ in 0..max_vesting_schedules - 1 {
+            acc_data = acc_data.with_vesting_schedule(vesting_schedule.clone())
+        }
+        acc_data.with_vesting_schedule(vesting_schedule)
+    }
+
+    pub fn with_vesting_schedule(
+        self,
+        vesting_schedule: VestingSchedule<BlockNumber, Balance>,
+    ) -> Self {
+        let mut new_vesting_schedules = self.vesting_schedules.clone();
+        new_vesting_schedules.insert(
+            VestingSource::IssuerTransfer(self.next_vesting_transfer_id),
+            vesting_schedule.clone(),
+        );
         Self {
-            next_vesting_transfer_id: max_vesting_schedules.into(),
-            amount: 1000u32.into(),
-            vesting_schedules: (0..max_vesting_schedules)
-                .map(|i| {
-                    (
-                        VestingSource::IssuerTransfer(i.into()),
-                        VestingSchedule::<BlockNumber, Balance> {
-                            linear_vesting_duration: 100u32.into(),
-                            post_cliff_total_amount: 700u32.into(),
-                            cliff_amount: 300u32.into(),
-                            linear_vesting_start_block: 1u32.into(),
-                        },
-                    )
-                })
-                .collect(),
-            ..Default::default()
+            next_vesting_transfer_id: self.next_vesting_transfer_id.saturating_add(1),
+            vesting_schedules: new_vesting_schedules,
+            amount: self.amount.saturating_add(
+                vesting_schedule
+                    .cliff_amount
+                    .saturating_add(vesting_schedule.post_cliff_total_amount),
+            ),
+            ..self
+        }
+    }
+
+    pub fn with_staked(self, amount: Balance) -> Self {
+        Self {
+            split_staking_status: Some(StakingStatus {
+                amount,
+                split_id: 0,
+            }),
+            ..self
         }
     }
 }

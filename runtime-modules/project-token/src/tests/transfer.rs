@@ -2,7 +2,7 @@
 use frame_support::{assert_noop, assert_ok};
 
 use crate::tests::mock::*;
-use crate::tests::test_utils::TokenDataBuilder;
+use crate::tests::test_utils::{default_vesting_schedule, TokenDataBuilder};
 use crate::traits::PalletToken;
 use crate::types::{TransferPolicyOf, Transfers, Validated, VestingSource};
 use crate::Trait;
@@ -1103,7 +1103,10 @@ fn issuer_permissioned_token_transfer_fails_with_dst_vesting_schedules_limit_exc
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token_and_owner(token_id, token_data, src_member_id, amount)
-        .with_account(dst, AccountData::new_with_max_vesting_schedules())
+        .with_account(
+            dst,
+            AccountData::default().with_max_vesting_schedules(default_vesting_schedule()),
+        )
         .build();
 
     build_test_externalities(config).execute_with(|| {
