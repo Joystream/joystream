@@ -2493,11 +2493,15 @@ decl_module! {
             // Ensure token was issued
             let token_id = channel.ensure_creator_token_issued::<T>()?;
 
+            // Auto-finalize the sale only if channel owner is a member
+            let auto_finalize = matches!(channel.owner, ChannelOwner::Member { .. });
+
             // Call to ProjectToken - should be the first call before MUTATION SAFE!
             T::ProjectToken::init_token_sale(
                 token_id,
                 member_id,
                 earnings_dst,
+                auto_finalize,
                 params
             )?;
         }
@@ -2630,6 +2634,12 @@ decl_module! {
             // Ensure token was issued
             let token_id = channel.ensure_creator_token_issued::<T>()?;
 
+            // Ensure channel is a member-owned channel
+            ensure!(
+                matches!(channel.owner, ChannelOwner::Member { .. }),
+                Error::<T>::PatronageCanOnlyBeClaimedForMemberOwnedChannels
+            );
+
             // Retrieve member_id based on actor
             let member_id = get_member_id_of_actor::<T>(&actor)?;
 
@@ -2702,6 +2712,39 @@ decl_module! {
                 token_id,
                 reward_account, // send any leftovers back to reward_account
             )?;
+        }
+
+        /// Finalize an ended creator token sale
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn finalize_creator_token_sale(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Permissions check
+            ensure_actor_authorized_to_manage_creator_token::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Call to ProjectToken - should be the first call before MUTATION SAFE!
+            let joy_collected = T::ProjectToken::finalize_token_sale(token_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Curator channels - increase council budget by the amount of tokens collected
+            // and burned during the sale
+            if let ChannelOwner::CuratorGroup(_) = channel.owner {
+                T::CouncilBudgetManager::increase_budget(joy_collected);
+            }
         }
 
         /// Deissue channel's creator token

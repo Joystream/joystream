@@ -152,6 +152,7 @@ pub struct InitTokenSaleFixture {
     token_id: TokenId,
     member_id: MemberId,
     earnings_destination: Option<AccountId>,
+    auto_finalize: bool,
     params: TokenSaleParams,
 }
 
@@ -168,6 +169,7 @@ impl InitTokenSaleFixture {
             token_id: 1,
             member_id: member!(1).0,
             earnings_destination: Some(member!(1).1),
+            auto_finalize: true,
             params: default_token_sale_params(),
         }
     }
@@ -245,6 +247,13 @@ impl InitTokenSaleFixture {
             ..self
         }
     }
+
+    pub fn with_auto_finalize(self, auto_finalize: bool) -> Self {
+        Self {
+            auto_finalize,
+            ..self
+        }
+    }
 }
 
 impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
@@ -264,6 +273,7 @@ impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
             self.token_id,
             self.member_id,
             self.earnings_destination,
+            self.auto_finalize,
             self.params.clone(),
         )
     }
@@ -283,6 +293,7 @@ impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
                     self.params.clone(),
                     self.member_id,
                     self.earnings_destination,
+                    self.auto_finalize,
                     execution_block
                 )
                 .unwrap()
@@ -515,28 +526,25 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
         ));
         let platform_fee = Token::sale_platform_fee();
         let sale_pre = snapshot_pre.token_data.sale.clone().unwrap();
-        // `quantity_left` decreased or `token_data.sale` removed
-        let expected_quantity_left = snapshot_pre
-            .token_data
-            .sale
-            .as_ref()
-            .unwrap()
-            .quantity_left
-            .saturating_sub(self.amount);
-        if expected_quantity_left == 0 {
-            assert!(snapshot_post.token_data.sale.is_none())
+        let joy_amount = self.amount * sale_pre.unit_price;
+        let fee_amount = platform_fee.mul_floor(joy_amount);
+
+        let expected_quantity_left = sale_pre.quantity_left.saturating_sub(self.amount);
+        if sale_pre.auto_finalize && expected_quantity_left == 0 {
+            // Sale removed
+            assert!(snapshot_post.token_data.sale.is_none());
         } else {
+            // `quantity_left` decreased and `funds_collected` increased
             assert_eq!(
                 snapshot_post.token_data.sale.clone().unwrap(),
                 TokenSale {
-                    quantity_left: sale_pre.quantity_left.saturating_sub(self.amount),
+                    quantity_left: expected_quantity_left,
+                    funds_collected: sale_pre.funds_collected.saturating_add(joy_amount),
                     ..sale_pre.clone()
                 }
             );
         }
 
-        let joy_amount = self.amount * sale_pre.unit_price;
-        let fee_amount = platform_fee.mul_floor(joy_amount);
         if self.earnings_dst_account.is_some() {
             // Earnings dst specified: destination account's JOY balance increased
             assert_eq!(
@@ -662,23 +670,21 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
     }
 }
 
-pub struct RecoverUnsoldTokensFixture {
-    origin: Origin,
+pub struct FinalizeTokenSaleFixture {
     token_id: TokenId,
     sale_source_member: Option<MemberId>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct RecoverUnsoldTokensFixtureStateSnapshot {
+pub struct FinalizeTokenSaleFixtureStateSnapshot {
     token_data: TokenData,
     source_account_data: AccountData,
 }
 
-impl RecoverUnsoldTokensFixture {
+impl FinalizeTokenSaleFixture {
     pub fn default() -> Self {
         Self {
             token_id: 1,
-            origin: Origin::signed(member!(1).1),
             sale_source_member: Token::token_info_by_id(1)
                 .sale
                 .as_ref()
@@ -687,10 +693,10 @@ impl RecoverUnsoldTokensFixture {
     }
 }
 
-impl Fixture<RecoverUnsoldTokensFixtureStateSnapshot> for RecoverUnsoldTokensFixture {
-    fn get_state_snapshot(&self) -> RecoverUnsoldTokensFixtureStateSnapshot {
+impl Fixture<FinalizeTokenSaleFixtureStateSnapshot> for FinalizeTokenSaleFixture {
+    fn get_state_snapshot(&self) -> FinalizeTokenSaleFixtureStateSnapshot {
         let sale_source_member = self.sale_source_member.unwrap_or_default();
-        RecoverUnsoldTokensFixtureStateSnapshot {
+        FinalizeTokenSaleFixtureStateSnapshot {
             token_data: Token::token_info_by_id(self.token_id),
             source_account_data: Token::account_info_by_token_and_member(
                 self.token_id,
@@ -700,22 +706,23 @@ impl Fixture<RecoverUnsoldTokensFixtureStateSnapshot> for RecoverUnsoldTokensFix
     }
 
     fn execute_call(&self) -> DispatchResult {
-        Token::recover_unsold_tokens(self.origin.clone(), self.token_id)
+        Token::finalize_token_sale(self.token_id).map(|_| ())
     }
 
     fn on_success(
         &self,
-        snapshot_pre: &RecoverUnsoldTokensFixtureStateSnapshot,
-        snapshot_post: &RecoverUnsoldTokensFixtureStateSnapshot,
+        snapshot_pre: &FinalizeTokenSaleFixtureStateSnapshot,
+        snapshot_post: &FinalizeTokenSaleFixtureStateSnapshot,
     ) {
-        let recovered_amount = snapshot_pre.token_data.sale.as_ref().unwrap().quantity_left;
-        last_event_eq!(RawEvent::UnsoldTokensRecovered(
+        let sale_pre = snapshot_pre.token_data.sale.as_ref().unwrap();
+        last_event_eq!(RawEvent::TokenSaleFinalized(
             self.token_id,
             snapshot_pre.token_data.next_sale_id - 1,
-            recovered_amount
+            sale_pre.quantity_left,
+            sale_pre.funds_collected
         ));
         assert!(snapshot_post.token_data.sale.is_none());
-        // `acc.amount` and `acc.transferrable` increased by `recovered_amount`
+        // `acc.amount` and `acc.transferrable` increased by `sale_pre.quantity_left`
         assert_eq!(
             snapshot_post
                 .source_account_data
@@ -723,14 +730,14 @@ impl Fixture<RecoverUnsoldTokensFixtureStateSnapshot> for RecoverUnsoldTokensFix
             snapshot_pre
                 .source_account_data
                 .transferrable::<Test>(System::block_number())
-                .saturating_add(recovered_amount)
+                .saturating_add(sale_pre.quantity_left)
         );
         assert_eq!(
             snapshot_post.source_account_data.amount,
             snapshot_pre
                 .source_account_data
                 .amount
-                .saturating_add(recovered_amount),
+                .saturating_add(sale_pre.quantity_left),
         )
     }
 }

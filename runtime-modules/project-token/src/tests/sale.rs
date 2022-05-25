@@ -138,7 +138,7 @@ fn unsuccesful_token_sale_init_when_token_not_idle() {
 }
 
 #[test]
-fn unsuccesful_token_sale_init_when_remaining_unrecovered_toknes_from_previous_sale() {
+fn unsuccesful_token_sale_init_when_previous_sale_not_finalized() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
@@ -151,9 +151,8 @@ fn unsuccesful_token_sale_init_when_remaining_unrecovered_toknes_from_previous_s
         );
         PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
         increase_block_number_by(DEFAULT_SALE_DURATION);
-        InitTokenSaleFixture::default().call_and_assert(Err(
-            Error::<Test>::RemainingUnrecoveredTokensFromPreviousSale.into(),
-        ));
+        InitTokenSaleFixture::default()
+            .call_and_assert(Err(Error::<Test>::PreviousSaleNotFinalized.into()));
     })
 }
 
@@ -193,6 +192,7 @@ fn succesful_token_sale_init_with_custom_start_block() {
             },
             member!(1).0,
             Some(member!(1).1),
+            true,
             0,
         )
         .unwrap();
@@ -828,44 +828,91 @@ fn succesful_sale_purchases_with_no_sale_earnings_destination_provided() {
     })
 }
 
-/////////////////////////////////////////////////////////
-//////////////// RECOVER UNSOLD TOKENS ////////////////
-/////////////////////////////////////////////////////////
 #[test]
-fn unsuccesful_recover_unsold_tokens_non_existing_token() {
+fn succesful_sale_purchase_auto_finalizing_the_sale() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        RecoverUnsoldTokensFixture::default()
+        let token_id = Token::next_token_id();
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default()
+            .with_upper_bound_quantity(DEFAULT_SALE_PURCHASE_AMOUNT)
+            .call_and_assert(Ok(()));
+        increase_account_balance(
+            &member!(2).1,
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
+                + DEFAULT_SALE_PURCHASE_AMOUNT * DEFAULT_SALE_UNIT_PRICE,
+        );
+
+        PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
+
+        let token_data = Token::token_info_by_id(token_id);
+        assert!(token_data.sale.is_none());
+    })
+}
+
+#[test]
+fn succesful_sale_purchase_not_auto_finalizing_the_sale() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        let token_id = Token::next_token_id();
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+        InitTokenSaleFixture::default()
+            .with_auto_finalize(false)
+            .with_upper_bound_quantity(DEFAULT_SALE_PURCHASE_AMOUNT)
+            .call_and_assert(Ok(()));
+        increase_account_balance(
+            &member!(2).1,
+            <Test as crate::Trait>::JoyExistentialDeposit::get()
+                + DEFAULT_SALE_PURCHASE_AMOUNT * DEFAULT_SALE_UNIT_PRICE,
+        );
+
+        PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
+
+        let token_data = Token::token_info_by_id(token_id);
+        assert!(token_data.sale.is_some());
+    })
+}
+
+/////////////////////////////////////////////////////////
+////////////////// FINALIZE TOKEN SALE //////////////////
+/////////////////////////////////////////////////////////
+#[test]
+fn unsuccesful_finalize_token_sale_non_existing_token() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        FinalizeTokenSaleFixture::default()
             .call_and_assert(Err(Error::<Test>::TokenDoesNotExist.into()));
     })
 }
 
 #[test]
-fn unsuccesful_recover_unsold_tokens_no_sale() {
+fn unsuccesful_finalize_token_sale_no_sale() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().call_and_assert(Ok(()));
-        RecoverUnsoldTokensFixture::default()
+        FinalizeTokenSaleFixture::default()
             .call_and_assert(Err(Error::<Test>::NoTokensToRecover.into()));
     })
 }
 
 #[test]
-fn unsuccesful_recover_unsold_tokens_during_active_sale() {
+fn unsuccesful_finalize_token_sale_during_active_sale() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().call_and_assert(Ok(()));
         InitTokenSaleFixture::default().call_and_assert(Ok(()));
-        RecoverUnsoldTokensFixture::default()
+        FinalizeTokenSaleFixture::default()
             .call_and_assert(Err(Error::<Test>::TokenIssuanceNotInIdleState.into()));
     })
 }
 
 #[test]
-fn unsuccesful_recover_unsold_tokens_when_no_tokens_left() {
+fn unsuccesful_finalize_token_sale_when_no_tokens_left() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
@@ -880,13 +927,13 @@ fn unsuccesful_recover_unsold_tokens_when_no_tokens_left() {
         );
         PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
         increase_block_number_by(DEFAULT_SALE_DURATION);
-        RecoverUnsoldTokensFixture::default()
+        FinalizeTokenSaleFixture::default()
             .call_and_assert(Err(Error::<Test>::NoTokensToRecover.into()));
     })
 }
 
 #[test]
-fn succesful_recover_unsold_tokens() {
+fn succesful_finalize_token_sale() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
@@ -899,6 +946,6 @@ fn succesful_recover_unsold_tokens() {
         );
         PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
         increase_block_number_by(DEFAULT_SALE_DURATION);
-        RecoverUnsoldTokensFixture::default().call_and_assert(Ok(()));
+        FinalizeTokenSaleFixture::default().call_and_assert(Ok(()));
     })
 }

@@ -1,5 +1,6 @@
 mod claim_patronage_credit;
 mod deissue;
+mod finalize_creator_token_sale;
 mod finalize_revenue_split;
 mod init_token_sale;
 mod issue;

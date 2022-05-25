@@ -78,8 +78,8 @@ decl_error! {
         /// Maximum number of vesting schedules for this account-token pair was reached.
         MaxVestingSchedulesPerAccountPerTokenReached,
 
-        /// Some unsold tokens from previous, finished sale are still unrecovered. Recover them first.
-        RemainingUnrecoveredTokensFromPreviousSale,
+        /// Previous sale was still not finalized, finalize it first.
+        PreviousSaleNotFinalized,
 
         /// There are no remaining tokes to recover from the previous token sale.
         NoTokensToRecover,

@@ -43,6 +43,7 @@ pub trait PalletToken<
         token_id: TokenId,
         member_id: MemberId,
         earnings_destination: Option<AccountId>,
+        auto_finalize: bool,
         sale_params: TokenSaleParams,
     ) -> DispatchResult;
 
@@ -69,4 +70,7 @@ pub trait PalletToken<
 
     /// Finalize split by sending back eventual JOYs leftover
     fn finalize_revenue_split(token_id: TokenId, account_id: AccountId) -> DispatchResult;
+
+    /// Finalize creator token sale and recover unsold tokens
+    fn finalize_token_sale(token_id: TokenId) -> Result<JoyBalance, DispatchError>;
 }

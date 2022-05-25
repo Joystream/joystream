@@ -71,34 +71,34 @@ pub struct AccountData<VestingSchedule, Balance, StakingStatus, JoyBalance> {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
 pub struct TokenData<Balance, Hash, BlockNumber, TokenSale, RevenueSplitState> {
     /// Current token's total supply (tokens_issued - tokens_burned)
-    pub(crate) total_supply: Balance,
+    pub total_supply: Balance,
 
     /// Total number of tokens issued
-    pub(crate) tokens_issued: Balance,
+    pub tokens_issued: Balance,
 
     /// Id of the next token sale
-    pub(crate) next_sale_id: TokenSaleId,
+    pub next_sale_id: TokenSaleId,
 
     /// Current token sale (upcoming / ongoing / ended but w/ remaining tokens to recover)
-    pub(crate) sale: Option<TokenSale>,
+    pub sale: Option<TokenSale>,
 
     /// Transfer policy
-    pub(crate) transfer_policy: TransferPolicy<Hash>,
+    pub transfer_policy: TransferPolicy<Hash>,
 
     /// Symbol used to identify token
-    pub(crate) symbol: Hash,
+    pub symbol: Hash,
 
     /// Patronage Information
-    pub(crate) patronage_info: PatronageData<Balance, BlockNumber>,
+    pub patronage_info: PatronageData<Balance, BlockNumber>,
 
     /// Account counter
-    pub(crate) accounts_number: u64,
+    pub accounts_number: u64,
 
     /// Revenue Split state info
-    pub(crate) revenue_split: RevenueSplitState,
+    pub revenue_split: RevenueSplitState,
 
     /// Latest Token Revenue split (active / inactive)
-    pub(crate) next_revenue_split_id: RevenueSplitId,
+    pub next_revenue_split_id: RevenueSplitId,
 }
 
 /// Revenue Split State
@@ -399,6 +399,8 @@ pub struct TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams, Me
     pub unit_price: JoyBalance,
     /// Number of tokens still on sale (if any)
     pub quantity_left: Balance,
+    /// Sum of all JOY tokens collected from sale participants
+    pub funds_collected: JoyBalance,
     /// Account (member) that acts as the source of the tokens on sale
     pub tokens_source: MemberId,
     /// Optional sale earnings (JOY) destination account.
@@ -412,6 +414,8 @@ pub struct TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams, Me
     pub vesting_schedule_params: Option<VestingScheduleParams>,
     /// Optional total sale purchase amount cap per member
     pub cap_per_member: Option<Balance>,
+    /// Whether the sale should be automatically finalized (removed) when `quantity_left == 0`
+    pub auto_finalize: bool,
 }
 
 impl<JoyBalance, Balance, BlockNumber, MemberId, AccountId>
@@ -431,6 +435,7 @@ where
         params: TokenSaleParamsOf<T>,
         member_id: T::MemberId,
         earnings_destination: Option<<T as frame_system::Trait>::AccountId>,
+        auto_finalize: bool,
         current_block: T::BlockNumber,
     ) -> Result<TokenSaleOf<T>, DispatchError> {
         let start_block = params.starts_at.unwrap_or(current_block);
@@ -469,6 +474,8 @@ where
             tokens_source: member_id,
             cap_per_member: params.cap_per_member,
             earnings_destination,
+            funds_collected: <T as balances::Trait>::Balance::zero(),
+            auto_finalize,
         })
     }
 

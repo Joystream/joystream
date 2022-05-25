@@ -133,12 +133,13 @@ decl_event! {
         /// - buyer's member id
         TokensPurchasedOnSale(TokenId, TokenSaleId, Balance, MemberId),
 
-        /// Unsold Tokens Recovered
+        /// Token Sale Finalized
         /// Params:
         /// - token id
         /// - token sale id
-        /// - amount of tokens recovered
-        UnsoldTokensRecovered(TokenId, TokenSaleId, Balance),
+        /// - amount of unsold tokens recovered
+        /// - amount of JOY collected
+        TokenSaleFinalized(TokenId, TokenSaleId, Balance, JoyBalance),
 
         /// Transfer Policy Changed To Permissionless
         /// Params:

@@ -2123,6 +2123,61 @@ impl FinalizeRevenueSplitFixture {
     }
 }
 
+pub struct FinalizeCreatorTokenSaleFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+}
+
+impl FinalizeCreatorTokenSaleFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let council_budget_pre = <Test as Trait>::CouncilBudgetManager::get_budget();
+        let channel = Content::channel_by_id(self.channel_id);
+        let joy_collected = channel.creator_token_id.map_or(0, |t_id| {
+            project_token::Module::<Test>::token_info_by_id(t_id)
+                .sale
+                .map_or(0, |s| s.funds_collected)
+        });
+
+        let actual_result =
+            Content::finalize_creator_token_sale(origin, self.actor.clone(), self.channel_id);
+
+        let council_budget_post = <Test as Trait>::CouncilBudgetManager::get_budget();
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+            if let ChannelOwner::CuratorGroup(_) = channel.owner {
+                assert_eq!(
+                    council_budget_post,
+                    council_budget_pre.saturating_add(joy_collected)
+                );
+            } else {
+                assert_eq!(council_budget_post, council_budget_pre);
+            }
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+
 pub struct DeissueCreatorTokenFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,

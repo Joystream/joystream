@@ -303,5 +303,8 @@ decl_error! {
         /// Cannot directly withdraw funds from a channel account when the channel has
         /// a creator token issued
         CannotWithdrawFromChannelWithCreatorTokenIssued,
+
+        /// Patronage can only be claimed if channel is owned by a member
+        PatronageCanOnlyBeClaimedForMemberOwnedChannels,
     }
 }

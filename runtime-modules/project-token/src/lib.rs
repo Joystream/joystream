@@ -348,10 +348,11 @@ decl_module! {
         ///       `sale.get_vesting_schedule(purchase_amount).post_cliff_total_amount`
         /// - if `sale.vesting_schedule.is_none()`:
         ///   - buyer's account token amount increased by `amount`
-        /// - if `token_data.sale.quantity_left - amount > 0`:
-        ///   - `token_data.sale.quantity_left` is decreased by `amount`
-        /// - if `token_data.sale.quantity_left - amount == 0`:
-        ///   - `token_data.sale` is set to None
+        /// - if `token_data.sale.quantity_left - amount == 0` and `sale.auto_finalize` is `true`
+        ///   `token_data.sale` is set to None, otherwise `token_data.sale.quantity_left` is
+        ///   decreased by `amount` and `token_data.sale.funds_collected` in increased by
+        ///   `amount * sale.unit_price`
+
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn purchase_tokens_on_sale(
             origin,
@@ -475,52 +476,15 @@ decl_module! {
 
             let updated_sale_quantity = sale.quantity_left.saturating_sub(amount);
             TokenInfoById::<T>::mutate(token_id, |t| {
-                if updated_sale_quantity.is_zero() {
+                if updated_sale_quantity.is_zero() && sale.auto_finalize {
                     t.sale = None;
                 } else if let Some(s) = t.sale.as_mut() {
                     s.quantity_left = updated_sale_quantity;
+                    s.funds_collected = s.funds_collected.saturating_add(joy_amount);
                 }
             });
 
             Self::deposit_event(RawEvent::TokensPurchasedOnSale(token_id, sale_id, amount, member_id));
-
-            Ok(())
-        }
-
-        /// Allows anyone to recover tokens that were not sold during a token sale
-        /// that has already finished (they will always be sent back to
-        /// `token_data.sale.tokens_source` account)
-        ///
-        /// Preconditions:
-        /// - token by `token_id` must exists
-        /// - token must be in Idle offering state
-        /// - token must have `sale` set
-        ///
-        /// Postconditions:
-        /// - `token_data.sale.tokens_source` account balance is increased by
-        ///   `token_data.last_sale.quantity_left`
-        /// - `token_data.sale` is set to None
-        #[weight = 10_000_000] // TODO: adjust weight
-        fn recover_unsold_tokens(origin, token_id: T::TokenId) -> DispatchResult {
-            ensure_signed(origin)?;
-            let token_info = Self::ensure_token_exists(token_id)?;
-            OfferingStateOf::<T>::ensure_idle_of::<T>(&token_info)?;
-            let sale = token_info.sale.ok_or(Error::<T>::NoTokensToRecover)?;
-            let sale_id = token_info.next_sale_id - 1;
-
-            // == MUTATION SAFE ==
-            AccountInfoByTokenAndMember::<T>::mutate(
-                token_id,
-                &sale.tokens_source,
-                |ad| {
-                    ad.increase_amount_by(sale.quantity_left);
-                },
-            );
-            TokenInfoById::<T>::mutate(token_id, |token_info| {
-                token_info.sale = None;
-            });
-
-            Self::deposit_event(RawEvent::UnsoldTokensRecovered(token_id, sale_id, sale.quantity_left));
 
             Ok(())
         }
@@ -914,6 +878,7 @@ impl<T: Trait>
         token_id: T::TokenId,
         member_id: T::MemberId,
         earnings_destination: Option<T::AccountId>,
+        auto_finalize: bool,
         sale_params: TokenSaleParamsOf<T>,
     ) -> DispatchResult {
         let current_block = Self::current_block();
@@ -923,6 +888,7 @@ impl<T: Trait>
             sale_params.clone(),
             member_id,
             earnings_destination,
+            auto_finalize,
             current_block,
         )?;
         Self::ensure_can_init_sale(
@@ -936,7 +902,7 @@ impl<T: Trait>
         // == MUTATION SAFE ==
 
         // Decrease source account's tokens number by sale_params.upper_bound_quantity
-        // (unsold tokens can be later recovered with `recover_unsold_tokens`)
+        // (unsold tokens can be later recovered with `finalize_token_sale`)
         AccountInfoByTokenAndMember::<T>::mutate(token_id, &member_id, |ad| {
             ad.decrease_amount_by(sale_params.upper_bound_quantity);
         });
@@ -1146,6 +1112,44 @@ impl<T: Trait>
 
         Ok(())
     }
+
+    /// Allows the issuer to finalize an ended creator token sale and recover any leftover
+    /// tokens that were not sold.
+    ///
+    /// Returns total amount of JOY collected during the sale.
+    ///
+    /// Preconditions:
+    /// - token by `token_id` must exists
+    /// - token must be in Idle offering state
+    /// - token must have `sale` set
+    ///
+    /// Postconditions:
+    /// - `token_data.sale.tokens_source` account balance is increased by
+    ///   `token_data.last_sale.quantity_left`
+    /// - `token_data.sale` is set to None
+    fn finalize_token_sale(token_id: T::TokenId) -> Result<JoyBalanceOf<T>, DispatchError> {
+        let token_info = Self::ensure_token_exists(token_id)?;
+        OfferingStateOf::<T>::ensure_idle_of::<T>(&token_info)?;
+        let sale = token_info.sale.ok_or(Error::<T>::NoTokensToRecover)?;
+        let sale_id = token_info.next_sale_id - 1;
+
+        // == MUTATION SAFE ==
+        AccountInfoByTokenAndMember::<T>::mutate(token_id, &sale.tokens_source, |ad| {
+            ad.increase_amount_by(sale.quantity_left);
+        });
+        TokenInfoById::<T>::mutate(token_id, |token_info| {
+            token_info.sale = None;
+        });
+
+        Self::deposit_event(RawEvent::TokenSaleFinalized(
+            token_id,
+            sale_id,
+            sale.quantity_left,
+            sale.funds_collected,
+        ));
+
+        Ok(sale.funds_collected)
+    }
 }
 
 /// Module implementation
@@ -1321,7 +1325,7 @@ impl<T: Trait> Module<T> {
         // Ensure previous sale was finalized
         ensure!(
             token_data.sale.is_none(),
-            Error::<T>::RemainingUnrecoveredTokensFromPreviousSale
+            Error::<T>::PreviousSaleNotFinalized
         );
 
         // Ensure source account exists
@@ -1502,11 +1506,13 @@ impl<T: Trait> Module<T> {
                 Error::<T>::InsufficientJoyBalance
             );
             for (dst, amount) in destinations {
-                ensure!(
-                    Joy::<T>::free_balance(*dst).saturating_add(*amount)
-                        >= T::JoyExistentialDeposit::get(),
-                    Error::<T>::JoyTransferSubjectToDusting
-                );
+                if !amount.is_zero() {
+                    ensure!(
+                        Joy::<T>::free_balance(*dst).saturating_add(*amount)
+                            >= T::JoyExistentialDeposit::get(),
+                        Error::<T>::JoyTransferSubjectToDusting
+                    );
+                }
             }
         }
         Ok(src_usable_balance.saturating_sub(total_amount))
