@@ -2354,8 +2354,6 @@ impl<T: Trait> Module<T> {
             deletion_prize_source_account_id: prize_source_account.clone(),
             expected_data_size_fee: assets.expected_data_size_fee,
             expected_data_object_deletion_prize,
-            storage_buckets: Default::default(),
-            distribution_buckets: Default::default(),
         }
     }
 
