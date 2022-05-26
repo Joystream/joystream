@@ -536,6 +536,9 @@ export async function members_MemberRemarked(ctx: EventContext & StoreContext): 
     const decodedMessage = MemberRemarked.decode(message.toU8a(true))
     const messageType = decodedMessage.memberRemarked
 
+    // update MetaprotocolTransactionStatusEvent
+    const statusSuccessful = new MetaprotocolTransactionSuccessful()
+
     if (!messageType) {
       inconsistentState('Unsupported message type in member_remark action')
     } else if (messageType === 'reactVideo') {
@@ -543,15 +546,16 @@ export async function members_MemberRemarked(ctx: EventContext & StoreContext): 
     } else if (messageType === 'reactComment') {
       await processReactCommentMessage(ctx, memberId, decodedMessage.reactComment!)
     } else if (messageType === 'createComment') {
-      await processCreateCommentMessage(ctx, memberId, decodedMessage.createComment!)
+      const comment = await processCreateCommentMessage(ctx, memberId, decodedMessage.createComment!)
+      statusSuccessful.commentCreated = comment
     } else if (messageType === 'editComment') {
-      await processEditCommentMessage(ctx, memberId, decodedMessage.editComment!)
+      const comment = await processEditCommentMessage(ctx, memberId, decodedMessage.editComment!)
+      statusSuccessful.commentEdited = comment
     } else if (messageType === 'deleteComment') {
-      await processDeleteCommentMessage(ctx, memberId, decodedMessage.deleteComment!)
+      const comment = await processDeleteCommentMessage(ctx, memberId, decodedMessage.deleteComment!)
+      statusSuccessful.commentDeleted = comment
     }
 
-    // update MetaprotocolTransactionStatusEvent
-    const statusSuccessful = new MetaprotocolTransactionSuccessful()
     await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
   } catch (e) {
     // update MetaprotocolTransactionStatusEvent

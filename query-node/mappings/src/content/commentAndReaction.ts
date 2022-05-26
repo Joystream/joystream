@@ -369,7 +369,7 @@ export async function processCreateCommentMessage(
   { store, event }: EventContext & StoreContext,
   memberId: MemberId,
   message: ICreateComment
-): Promise<void> {
+): Promise<Comment> {
   // in case of null `parentCommentId` protobuf would assign it a default value i.e. ''
   const { videoId, parentCommentId, body } = message
   const eventTime = new Date(event.blockTimestamp)
@@ -427,13 +427,15 @@ export async function processCreateCommentMessage(
   })
 
   await store.save<CommentCreatedEvent>(commentCreatedEvent)
+
+  return comment
 }
 
 export async function processEditCommentMessage(
   { store, event }: EventContext & StoreContext,
   memberId: MemberId,
   message: IEditComment
-): Promise<void> {
+): Promise<Comment> {
   const { commentId, newBody } = message
   const eventTime = new Date(event.blockTimestamp)
 
@@ -476,13 +478,15 @@ export async function processEditCommentMessage(
   comment.edits?.push(commentTextUpdatedEvent)
 
   await store.save<Comment>(comment)
+
+  return comment
 }
 
 export async function processDeleteCommentMessage(
   { store, event }: EventContext & StoreContext,
   memberId: MemberId,
   message: IDeleteComment
-): Promise<void> {
+): Promise<Comment> {
   const { commentId } = message
   const eventTime = new Date(event.blockTimestamp)
 
@@ -538,6 +542,8 @@ export async function processDeleteCommentMessage(
 
   // save deleted comment
   await store.save<Comment>(comment)
+
+  return comment
 }
 
 export async function processModerateCommentMessage(
@@ -545,7 +551,7 @@ export async function processModerateCommentMessage(
   channelOwnerOrModerator: typeof ContentActor,
   channelId: ChannelId,
   message: IModerateComment
-): Promise<void> {
+): Promise<Comment> {
   const { commentId, rationale } = message
   const eventTime = new Date(event.blockTimestamp)
 
@@ -595,6 +601,8 @@ export async function processModerateCommentMessage(
 
   // save deleted comment
   await store.save<Comment>(comment)
+
+  return comment
 }
 
 export async function processPinOrUnpinCommentMessage(

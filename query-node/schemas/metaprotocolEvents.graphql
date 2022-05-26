@@ -6,6 +6,18 @@ type MetaprotocolTransactionPending @variant {
 type MetaprotocolTransactionSuccessful @variant {
   "Type needs to have at least one non-relation entity. This value is not used."
   dummy: Int
+
+  "ID of the created comment (if any)"
+  commentCreated: Comment
+
+  "ID of the edited comment (if any)"
+  commentEdited: Comment
+
+  "ID of the deleted comment (if any)"
+  commentDeleted: Comment
+
+  "ID of the moderated comment (if any)"
+  commentModerated: Comment
 }
 
 type MetaprotocolTransactionErrored @variant {

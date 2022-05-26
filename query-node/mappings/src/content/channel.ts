@@ -291,6 +291,9 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
     const messageType = decodedMessage.channelOwnerRemarked
     const contentActor = await convertContentActor(ctx.store, owner)
 
+    // update MetaprotocolTransactionStatusEvent
+    const statusSuccessful = new MetaprotocolTransactionSuccessful()
+
     if (!messageType) {
       invalidMetadata('Unsupported message type in channel_owner_remark action')
     } else if (messageType === 'pinOrUnpinComment') {
@@ -310,11 +313,10 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
         decodedMessage.videoReactionsPreference!
       )
     } else if (messageType === 'moderateComment') {
-      await processModerateCommentMessage(ctx, contentActor, channelId, decodedMessage.moderateComment!)
+      const comment = await processModerateCommentMessage(ctx, contentActor, channelId, decodedMessage.moderateComment!)
+      statusSuccessful.commentModerated = comment
     }
 
-    // update MetaprotocolTransactionStatusEvent
-    const statusSuccessful = new MetaprotocolTransactionSuccessful()
     await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
   } catch (e) {
     // update MetaprotocolTransactionStatusEvent
@@ -344,14 +346,16 @@ export async function content_ChannelModeratorRemarked(ctx: EventContext & Store
     const messageType = decodedMessage.channelModeratorRemarked
     const contentActor = await convertContentActor(ctx.store, moderator)
 
+    // update MetaprotocolTransactionStatusEvent
+    const statusSuccessful = new MetaprotocolTransactionSuccessful()
+
     if (!messageType) {
       invalidMetadata('Unsupported message type in channel_moderator_remark action')
     } else if (messageType === 'moderateComment') {
-      await processModerateCommentMessage(ctx, contentActor, channelId, decodedMessage.moderateComment!)
+      const comment = await processModerateCommentMessage(ctx, contentActor, channelId, decodedMessage.moderateComment!)
+      statusSuccessful.commentModerated = comment
     }
 
-    // update MetaprotocolTransactionStatusEvent
-    const statusSuccessful = new MetaprotocolTransactionSuccessful()
     await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
   } catch (e) {
     // update MetaprotocolTransactionStatusEvent
