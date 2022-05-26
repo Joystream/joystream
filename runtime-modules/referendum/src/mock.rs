@@ -720,6 +720,18 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         >,
         expected_referendum_result: BTreeMap<u64, <Runtime as Trait>::VotePower>,
     ) {
+        Self::check_revealing_finished_winners(expected_winners);
+        Self::check_revealing_finished_referendum_results(expected_referendum_result);
+    }
+
+    pub fn check_revealing_finished_winners(
+        expected_winners: Vec<
+            OptionResult<
+                <Runtime as common::membership::MembershipTypes>::MemberId,
+                <Runtime as Trait>::VotePower,
+            >,
+        >,
+    ) {
         assert_eq!(
             Stage::<Runtime, DefaultInstance>::get(),
             ReferendumStage::Inactive,
@@ -732,6 +744,15 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .unwrap()
                 .event,
             TestEvent::event_mod_DefaultInstance(RawEvent::ReferendumFinished(expected_winners,))
+        );
+    }
+
+    pub fn check_revealing_finished_referendum_results(
+        expected_referendum_result: BTreeMap<u64, <Runtime as Trait>::VotePower>,
+    ) {
+        assert_eq!(
+            Stage::<Runtime, DefaultInstance>::get(),
+            ReferendumStage::Inactive,
         );
 
         INTERMEDIATE_RESULTS.with(|value| assert_eq!(*value.borrow(), expected_referendum_result,));
