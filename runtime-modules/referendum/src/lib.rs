@@ -734,9 +734,10 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     ) {
         // prepare new values
         let vote_power = T::calculate_vote_power(&account_id, &cast_vote.stake);
+        let total_vote_power = T::get_option_power(option_id) + vote_power;
         let option_result = OptionResult {
             option_id: *option_id,
-            vote_power,
+            vote_power: total_vote_power,
         };
         // try to insert option to winner list or update it's value when already present
         let new_winners = Self::try_winner_insert(
@@ -803,13 +804,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
 
             // update record in list when it is already present
             if let Some(index) = current_winners_index_of_vote_recipient {
-                let old_option_total = T::get_option_power(&option_result.option_id);
-                let new_option_total = old_option_total + option_result.vote_power;
-
-                new_winners[index] = OptionResult {
-                    option_id: option_result.option_id,
-                    vote_power: new_option_total,
-                };
+                new_winners[index] = option_result;
 
                 return (new_winners, Some(index));
             }
