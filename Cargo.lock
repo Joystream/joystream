@@ -722,7 +722,7 @@ dependencies = [
 
 [[package]]
 name = "chain-spec-builder"
-version = "6.5.0"
+version = "6.6.0"
 dependencies = [
  "ansi_term 0.12.1",
  "enum-utils",
@@ -2298,7 +2298,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "6.5.0"
+version = "6.6.0"
 dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -2359,7 +2359,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "10.5.0"
+version = "10.6.0"
 dependencies = [
  "frame-benchmarking",
  "frame-executive",
@@ -4023,8 +4023,11 @@ dependencies = [
  "frame-system",
  "pallet-balances",
  "pallet-common",
+ "pallet-membership",
  "pallet-randomness-collective-flip",
+ "pallet-staking-handler",
  "pallet-storage",
+ "pallet-timestamp",
  "parity-scale-codec",
  "serde",
  "sp-arithmetic",

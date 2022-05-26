@@ -14,7 +14,6 @@ use staking_handler::LockComparator;
 
 use crate::ContentActorAuthenticator;
 use crate::Trait;
-use common::currency::GovernanceCurrency;
 
 /// Module Aliases
 pub type System = frame_system::Module<Test>;
@@ -44,8 +43,6 @@ pub const UNAUTHORIZED_LEAD_ACCOUNT_ID: u64 = 113;
 pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID: u64 = 114;
 pub const UNAUTHORIZED_MODERATOR_ACCOUNT_ID: u64 = 115;
 pub const SECOND_MEMBER_ACCOUNT_ID: u64 = 116;
-pub const DEFAULT_MEMBER_CHANNEL_REWARD_ACCOUNT_ID: u64 = 117;
-pub const DEFAULT_CURATOR_CHANNEL_REWARD_ACCOUNT_ID: u64 = 118;
 pub const DEFAULT_CHANNEL_REWARD_WITHDRAWAL_ACCOUNT_ID: u64 = 119;
 
 /// Runtime Id's
@@ -174,10 +171,6 @@ impl pallet_timestamp::Trait for Test {
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
-}
-
-impl GovernanceCurrency for Test {
-    type Currency = balances::Module<Self>;
 }
 
 parameter_types! {

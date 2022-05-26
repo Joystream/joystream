@@ -5,13 +5,16 @@ use frame_support::{
     traits::{Currency, OnFinalize, OnInitialize},
 };
 
+use common::membership::{MemberOriginValidator, MembershipInfoProvider};
 use frame_support::ensure;
+use frame_support::traits::LockIdentifier;
 use frame_system::ensure_signed;
 use sp_arithmetic::Perbill;
 use sp_io::TestExternalities;
 use sp_runtime::testing::{Header, H256};
 use sp_runtime::traits::{BlakeTwo256, Convert, IdentityLookup};
-use sp_runtime::{DispatchError, DispatchResult, ModuleId};
+use sp_runtime::{DispatchError, DispatchResult, ModuleId, Permill};
+use staking_handler::LockComparator;
 
 // crate import
 pub(crate) use crate::utils::{build_merkle_path_helper, generate_merkle_root_helper};
@@ -41,6 +44,7 @@ pub type Policy = TransferPolicyOf<Test>;
 pub type Hashing = <Test as frame_system::Trait>::Hashing;
 pub type HashOut = <Test as frame_system::Trait>::Hash;
 pub type VestingSchedule = VestingScheduleOf<Test>;
+pub type MemberId = u64;
 pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -74,6 +78,7 @@ impl_outer_event! {
         frame_system<T>,
         balances<T>,
         storage<T>,
+        membership<T>,
     }
 }
 
@@ -90,8 +95,35 @@ parameter_types! {
     pub const MaxVestingSchedulesPerAccountPerToken: u8 = 3;
     pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
     pub const MinRevenueSplitDuration: u64 = 10;
+    pub const MinSaleDuration: u32 = 10;
     // --------- balances::Trait parameters ---------------------------
     pub const ExistentialDeposit: u128 = 10;
+    // constants for storage::Trait
+    pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
+    pub const MaxDistributionBucketFamilyNumber: u64 = 4;
+    // FIXME: Currently this must be >= ExistentialDeposit (see: https://github.com/Joystream/joystream/issues/3510)
+    // When trying to deposit an amount < ExistentialDeposit into storage module account, we'd get:
+    // Err(DispatchError::Module { index: 0, error: 4, message: Some("ExistentialDeposit") })
+    pub const DataObjectDeletionPrize: u64 = 15;
+    pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
+    pub const BlacklistSizeLimit: u64 = 1;
+    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 1;
+    pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
+        storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
+    pub const InitialStorageBucketsNumberForDynamicBag: u64 = 3;
+    pub const MaxRandomIterationNumber: u64 = 3;
+    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 3;
+    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 4;
+    pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
+    storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
+    pub const MaxDataObjectSize: u64 = 1_000_000_000;
+    // constants for membership::Trait
+    pub const DefaultMembershipPrice: u64 = 100;
+    pub const InvitedMemberLockId: [u8; 8] = [2; 8];
+    pub const StakingCandidateLockId: [u8; 8] = [3; 8];
+    pub const CandidateStake: u64 = 100;
+    pub const DefaultInitialInvitationBalance: u64 = 100;
+    pub const ReferralCutMaximumPercent: u8 = 50;
 }
 
 impl frame_system::Trait for Test {
@@ -151,27 +183,6 @@ impl storage::Trait for Test {
     type Randomness = CollectiveFlip;
 }
 
-parameter_types! {
-    pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
-    pub const MaxDistributionBucketFamilyNumber: u64 = 4;
-    // FIXME: Currently this must be >= ExistentialDeposit (see: https://github.com/Joystream/joystream/issues/3510)
-    // When trying to deposit an amount < ExistentialDeposit into storage module account, we'd get:
-    // Err(DispatchError::Module { index: 0, error: 4, message: Some("ExistentialDeposit") })
-    pub const DataObjectDeletionPrize: u64 = 15;
-    pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
-    pub const BlacklistSizeLimit: u64 = 1;
-    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 1;
-    pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
-        storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
-    pub const InitialStorageBucketsNumberForDynamicBag: u64 = 3;
-    pub const MaxRandomIterationNumber: u64 = 3;
-    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 3;
-    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 4;
-    pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
-    storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
-    pub const MaxDataObjectSize: u64 = 1_000_000_000;
-}
-
 impl common::MembershipTypes for Test {
     type MemberId = u64;
     type ActorId = u64;
@@ -188,6 +199,8 @@ impl Trait for Test {
     type MaxVestingSchedulesPerAccountPerToken = MaxVestingSchedulesPerAccountPerToken;
     type BlocksPerYear = BlocksPerYear;
     type WeightInfo = ();
+    type MemberOriginValidator = TestMemberships;
+    type MembershipInfoProvider = TestMemberships;
     type MinRevenueSplitDuration = MinRevenueSplitDuration;
 }
 
@@ -340,13 +353,139 @@ impl balances::Trait for Test {
     type MaxLocks = ();
 }
 
+/// Implement pallet_timestamp trait for Test
+impl pallet_timestamp::Trait for Test {
+    type Moment = u64;
+    type OnTimestampSet = ();
+    type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
+}
+
+/// Implement membership trait for Test
+impl membership::Trait for Test {
+    type Event = TestEvent;
+    type DefaultMembershipPrice = DefaultMembershipPrice;
+    type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
+    type WorkingGroup = Wg;
+    type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
+    type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
+    type StakingCandidateStakingHandler =
+        staking_handler::StakingManager<Self, StakingCandidateLockId>;
+    type CandidateStake = CandidateStake;
+    type WeightInfo = ();
+}
+
+impl LockComparator<u128> for Test {
+    fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
+        if *new_lock == InvitedMemberLockId::get() {
+            existing_locks.contains(new_lock)
+        } else {
+            false
+        }
+    }
+}
+
+pub struct Wg;
+impl common::working_group::WorkingGroupBudgetHandler<u64, u128> for Wg {
+    fn get_budget() -> u128 {
+        unimplemented!()
+    }
+
+    fn set_budget(_new_value: u128) {
+        unimplemented!()
+    }
+
+    fn try_withdraw(_account_id: &u64, _amount: u128) -> DispatchResult {
+        unimplemented!()
+    }
+}
+
+impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
+    fn ensure_worker_origin(
+        _origin: <Test as frame_system::Trait>::Origin,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!()
+    }
+
+    fn ensure_leader_origin(_origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+        unimplemented!()
+    }
+
+    fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+        unimplemented!()
+    }
+
+    fn is_worker_account_id(
+        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> bool {
+        unimplemented!()
+    }
+
+    fn worker_exists(_worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
+        unimplemented!();
+    }
+
+    fn ensure_worker_exists(
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!();
+    }
+}
+
+pub struct TestMemberships {}
+
+// Mock MembershipInfoProvider impl
+impl MembershipInfoProvider<Test> for TestMemberships {
+    fn controller_account_id(
+        member_id: common::MemberId<Test>,
+    ) -> Result<AccountId, DispatchError> {
+        membership::Module::<Test>::controller_account_id(member_id).or_else(|_| {
+            if member_id < 1000 {
+                return Ok(member_id + 1000);
+            }
+
+            Err(DispatchError::Other("no account found"))
+        })
+    }
+}
+
+// Mock MemberOriginValidator impl
+impl MemberOriginValidator<Origin, u64, u64> for TestMemberships {
+    fn ensure_member_controller_account_origin(
+        origin: Origin,
+        member_id: u64,
+    ) -> Result<u64, DispatchError> {
+        let sender = ensure_signed(origin)?;
+        ensure!(
+            membership::Module::<Test>::is_member_controller_account(&member_id, &sender)
+                || Self::is_member_controller_account(&member_id, &sender),
+            DispatchError::Other("origin signer not a member controller account"),
+        );
+        Ok(sender)
+    }
+
+    fn is_member_controller_account(member_id: &u64, account_id: &u64) -> bool {
+        *member_id < 1000 && *account_id == 1000 + *member_id
+    }
+}
+
 /// Genesis config builder
 pub struct GenesisConfigBuilder {
-    pub(crate) account_info_by_token_and_account: Vec<(TokenId, AccountId, AccountData)>,
+    pub(crate) account_info_by_token_and_member: Vec<(TokenId, MemberId, AccountData)>,
     pub(crate) token_info_by_id: Vec<(TokenId, TokenData)>,
     pub(crate) next_token_id: TokenId,
     pub(crate) bloat_bond: JoyBalance,
     pub(crate) symbol_used: Vec<(HashOut, ())>,
+    pub(crate) min_sale_duration: BlockNumber,
+    pub(crate) min_revenue_split_duration: BlockNumber,
+    pub(crate) min_revenue_split_time_to_start: BlockNumber,
+    pub(crate) sale_platform_fee: Permill,
 }
 
 /// test externalities + initial balances allocation
@@ -397,6 +536,17 @@ pub fn increase_block_number_by(n: u64) {
 }
 
 // helper macros
+
+#[macro_export]
+macro_rules! member {
+    ($id:expr) => {
+        (
+            MemberId::from($id as u64),
+            AccountId::from($id as u64 + 1000),
+        )
+    };
+}
+
 #[macro_export]
 macro_rules! account {
     ($acc:expr) => {
@@ -454,10 +604,8 @@ pub type Balances = balances::Module<Test>;
 // ------ General constants ---------------
 pub const DEFAULT_BLOAT_BOND: u128 = 0;
 pub const DEFAULT_INITIAL_ISSUANCE: u128 = 1_000_000;
-
-// ------ Actors ---------------------------
-pub const DEFAULT_ACCOUNT_ID: u64 = 1;
-pub const OTHER_ACCOUNT_ID: u64 = 2;
+pub const MIN_REVENUE_SPLIT_DURATION: u64 = 10;
+pub const MIN_REVENUE_SPLIT_TIME_TO_START: u64 = 10;
 
 // ------ Sale Constants ---------------------
 pub const DEFAULT_SALE_UNIT_PRICE: u128 = 10;

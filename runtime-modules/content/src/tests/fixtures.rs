@@ -25,7 +25,6 @@ impl CreateChannelFixture {
             params: ChannelCreationParameters::<Test> {
                 assets: None,
                 meta: None,
-                reward_account: None,
                 collaborators: BTreeSet::new(),
                 moderators: BTreeSet::new(),
             },
@@ -53,7 +52,7 @@ impl CreateChannelFixture {
     pub fn with_collaborators(self, collaborators: BTreeSet<MemberId>) -> Self {
         Self {
             params: ChannelCreationParameters::<Test> {
-                collaborators: collaborators,
+                collaborators,
                 ..self.params
             },
             ..self
@@ -70,14 +69,9 @@ impl CreateChannelFixture {
         }
     }
 
-    pub fn with_reward_account(self, reward_account: AccountId) -> Self {
-        Self {
-            params: ChannelCreationParameters::<Test> {
-                reward_account: Some(reward_account),
-                ..self.params
-            },
-            ..self
-        }
+    pub fn call(self) {
+        let origin = Origin::signed(self.sender);
+        assert_ok!(Content::create_channel(origin, self.actor, self.params));
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -117,7 +111,6 @@ impl CreateChannelFixture {
                     Channel::<Test> {
                         owner: owner,
                         is_censored: false,
-                        reward_account: self.params.reward_account.clone(),
                         collaborators: self.params.collaborators.clone(),
                         moderators: self.params.moderators.clone(),
                         num_videos: Zero::zero(),
@@ -170,7 +163,7 @@ impl CreateVideoFixture {
     pub fn default() -> Self {
         Self {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
-            actor: ContentActor::Member(DEFAULT_MEMBER_ACCOUNT_ID),
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             params: VideoCreationParameters::<Test> {
                 assets: None,
                 meta: None,
@@ -178,6 +171,19 @@ impl CreateVideoFixture {
                 auto_issue_nft: None,
             },
             channel_id: ChannelId::one(), // channel index starts at 1
+        }
+    }
+
+    pub fn with_nft_in_sale(self, nft_price: u64) -> Self {
+        Self {
+            params: VideoCreationParameters::<Test> {
+                auto_issue_nft: Some(NftIssuanceParameters::<Test> {
+                    init_transactional_status: InitTransactionalStatus::<Test>::BuyNow(nft_price),
+                    ..Default::default()
+                }),
+                ..self.params
+            },
+            ..self
         }
     }
 
@@ -211,6 +217,16 @@ impl CreateVideoFixture {
             },
             ..self
         }
+    }
+
+    pub fn call(self) {
+        let origin = Origin::signed(self.sender.clone());
+        assert_ok!(Content::create_video(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.params.clone(),
+        ));
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -304,7 +320,6 @@ impl UpdateChannelFixture {
             params: ChannelUpdateParameters::<Test> {
                 assets_to_upload: None,
                 new_meta: None,
-                reward_account: None,
                 assets_to_remove: BTreeSet::new(),
                 collaborators: None,
             },
@@ -347,16 +362,6 @@ impl UpdateChannelFixture {
         Self {
             params: ChannelUpdateParameters::<Test> {
                 collaborators: Some(collaborators),
-                ..self.params
-            },
-            ..self
-        }
-    }
-
-    pub fn with_reward_account(self, reward_account: Option<Option<AccountId>>) -> Self {
-        Self {
-            params: ChannelUpdateParameters::<Test> {
-                reward_account,
                 ..self.params
             },
             ..self
@@ -422,11 +427,6 @@ impl UpdateChannelFixture {
                         ChannelRecord {
                             owner: owner,
                             is_censored: channel_pre.is_censored,
-                            reward_account: self
-                                .params
-                                .reward_account
-                                .clone()
-                                .unwrap_or(channel_pre.reward_account),
                             collaborators: self
                                 .params
                                 .collaborators
@@ -1391,7 +1391,7 @@ impl ClaimChannelRewardFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
         let channel_pre = Content::channel_by_id(self.item.channel_id);
-        let channel_balance_pre = channel_reward_account_balance(&channel_pre);
+        let channel_balance_pre = channel_reward_account_balance(self.item.channel_id);
         let council_budget_pre = <Test as Trait>::CouncilBudgetManager::get_budget();
 
         let proof = if self.payments.is_empty() {
@@ -1404,7 +1404,7 @@ impl ClaimChannelRewardFixture {
             Content::claim_channel_reward(origin, self.actor.clone(), proof, self.item.clone());
 
         let channel_post = Content::channel_by_id(self.item.channel_id);
-        let channel_balance_post = channel_reward_account_balance(&channel_post);
+        let channel_balance_post = channel_reward_account_balance(self.item.channel_id);
         let council_budget_post = <Test as Trait>::CouncilBudgetManager::get_budget();
 
         assert_eq!(actual_result, expected_result);
@@ -1487,7 +1487,7 @@ impl WithdrawFromChannelBalanceFixture {
         let origin = Origin::signed(self.sender.clone());
         let dest_balance_pre = Balances::<Test>::usable_balance(self.destination);
         let channel_pre = Content::channel_by_id(self.channel_id);
-        let channel_balance_pre = channel_reward_account_balance(&channel_pre);
+        let channel_balance_pre = channel_reward_account_balance(self.channel_id);
 
         let actual_result = Content::withdraw_from_channel_balance(
             origin,
@@ -1499,7 +1499,7 @@ impl WithdrawFromChannelBalanceFixture {
 
         let dest_balance_post = Balances::<Test>::usable_balance(&self.destination);
         let channel_post = Content::channel_by_id(self.channel_id);
-        let channel_balance_post = channel_reward_account_balance(&channel_post);
+        let channel_balance_post = channel_reward_account_balance(self.channel_id);
 
         assert_eq!(actual_result, expected_result);
 
@@ -1580,7 +1580,7 @@ impl ClaimAndWithdrawChannelRewardFixture {
         let origin = Origin::signed(self.sender.clone());
         let dest_balance_pre = Balances::<Test>::usable_balance(&self.destination);
         let channel_pre = Content::channel_by_id(&self.item.channel_id);
-        let channel_balance_pre = channel_reward_account_balance(&channel_pre);
+        let channel_balance_pre = channel_reward_account_balance(self.item.channel_id);
         let council_budget_pre = <Test as Trait>::CouncilBudgetManager::get_budget();
 
         let proof = if self.payments.is_empty() {
@@ -1599,7 +1599,7 @@ impl ClaimAndWithdrawChannelRewardFixture {
 
         let dest_balance_post = Balances::<Test>::usable_balance(&self.destination);
         let channel_post = Content::channel_by_id(&self.item.channel_id);
-        let channel_balance_post = channel_reward_account_balance(&channel_post);
+        let channel_balance_post = channel_reward_account_balance(self.item.channel_id);
         let council_budget_post = <Test as Trait>::CouncilBudgetManager::get_budget();
 
         assert_eq!(actual_result, expected_result);
@@ -1701,10 +1701,9 @@ pub fn create_default_member_owned_channel() {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
             object_creation_list: create_data_objects_helper(),
         })
-        .with_reward_account(DEFAULT_MEMBER_CHANNEL_REWARD_ACCOUNT_ID)
         .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
         .with_moderators(vec![DEFAULT_MODERATOR_ID].into_iter().collect())
-        .call_and_assert(Ok(()));
+        .call();
 }
 
 pub fn create_default_curator_owned_channel() {
@@ -1716,10 +1715,9 @@ pub fn create_default_curator_owned_channel() {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
             object_creation_list: create_data_objects_helper(),
         })
-        .with_reward_account(DEFAULT_CURATOR_CHANNEL_REWARD_ACCOUNT_ID)
         .with_collaborators(vec![COLLABORATOR_MEMBER_ID].into_iter().collect())
         .with_moderators(vec![DEFAULT_MODERATOR_ID].into_iter().collect())
-        .call_and_assert(Ok(()));
+        .call();
 }
 
 pub fn create_default_member_owned_channel_with_video() {
@@ -1733,7 +1731,7 @@ pub fn create_default_member_owned_channel_with_video() {
             object_creation_list: create_data_objects_helper(),
         })
         .with_channel_id(NextChannelId::<Test>::get() - 1)
-        .call_and_assert(Ok(()));
+        .call();
 }
 
 pub fn create_default_curator_owned_channel_with_video() {
@@ -1748,7 +1746,7 @@ pub fn create_default_curator_owned_channel_with_video() {
             object_creation_list: create_data_objects_helper(),
         })
         .with_channel_id(NextChannelId::<Test>::get() - 1)
-        .call_and_assert(Ok(()));
+        .call();
 }
 
 pub fn create_default_member_owned_channel_with_video_and_post() {
@@ -1915,24 +1913,7 @@ pub fn update_commit_value_with_payments_helper(payments: &[PullPayment<Test>]) 
         .call_and_assert(Ok(()));
 }
 
-fn channel_reward_account(channel: &Channel<Test>) -> Option<AccountId> {
-    channel.reward_account.map_or_else(
-        || {
-            if let ChannelOwner::Member(member_id) = channel.owner {
-                let acc = MemberInfoProvider::controller_account_id(member_id);
-                acc.map_or(None, |a| Some(a))
-            } else {
-                None
-            }
-        },
-        |a| Some(a),
-    )
-}
-
-fn channel_reward_account_balance(channel: &Channel<Test>) -> u64 {
-    if let Some(reward_account) = channel_reward_account(channel) {
-        Balances::<Test>::usable_balance(&reward_account)
-    } else {
-        Zero::zero()
-    }
+pub fn channel_reward_account_balance(channel_id: ChannelId) -> u64 {
+    let reward_account = ContentTreasury::<Test>::account_for_channel(channel_id);
+    Balances::<Test>::usable_balance(&reward_account)
 }

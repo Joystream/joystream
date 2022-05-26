@@ -3,10 +3,13 @@ use super::*;
 use crate::types::*;
 use crate::utils::{build_merkle_path_helper, generate_merkle_root_helper};
 use crate::Module as Token;
+use balances::Module as Balances;
+use common::membership::MembershipTypes;
 use frame_benchmarking::{account, benchmarks, Zero};
 use frame_system::EventRecord;
 use frame_system::Module as System;
 use frame_system::RawOrigin;
+use membership::{BuyMembershipParameters, Module as Members};
 use sp_runtime::{traits::Hash, Permill};
 use sp_std::{boxed::Box, vec, vec::Vec};
 
@@ -37,6 +40,31 @@ fn token_owner_account<T: Trait>() -> T::AccountId {
     account::<T::AccountId>("owner", 0, SEED)
 }
 
+fn create_member<T: Trait>(
+    account_id: &T::AccountId,
+    handle: &str,
+) -> <T as MembershipTypes>::MemberId {
+    let member_id = Members::<T>::members_created();
+    let _ = Balances::<T>::deposit_creating(account_id, Members::<T>::membership_price());
+    Members::<T>::buy_membership(
+        RawOrigin::Signed(account_id.clone()).into(),
+        BuyMembershipParameters {
+            controller_account: account_id.clone(),
+            root_account: account_id.clone(),
+            handle: Some(handle.as_bytes().to_vec()),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    member_id
+}
+
+fn create_owner<T: Trait>() -> (<T as MembershipTypes>::MemberId, T::AccountId) {
+    let owner_account = token_owner_account::<T>();
+    let owner_member_id = create_member::<T>(&owner_account, "owner");
+    (owner_member_id, owner_account)
+}
+
 fn issue_token<T: Trait>(
     transfer_policy: TransferPolicyParamsOf<T>,
 ) -> Result<T::TokenId, DispatchError> {
@@ -46,10 +74,10 @@ fn issue_token<T: Trait>(
         TokenIssuanceParametersOf::<T> {
             /// Initial issuance
             initial_allocation: [(
-                token_owner_account::<T>(),
+                T::MemberId::zero(),
                 TokenAllocation {
                     amount: DEFAULT_TOKEN_ISSUANCE.into(),
-                    vesting_schedule: None,
+                    vesting_schedule_params: None,
                 },
             )]
             .iter()
@@ -65,21 +93,25 @@ fn issue_token<T: Trait>(
 }
 
 fn init_token_sale<T: Trait>(token_id: T::TokenId) -> Result<TokenSaleId, DispatchError> {
+    let sale_id = Token::<T>::token_info_by_id(token_id).next_sale_id;
     Token::<T>::init_token_sale(
         token_id,
         TokenSaleParamsOf::<T> {
-            tokens_source: token_owner_account::<T>(),
+            tokens_source: T::MemberId::zero(),
             unit_price: DEFAULT_SALE_UNIT_PRICE.into(),
-            upper_bound_quantity: DEFAULT_SALE_PURCHASE.into(),
+            upper_bound_quantity: DEFAULT_TOKEN_ISSUANCE.into(),
             starts_at: None,
             duration: DEFAULT_SALE_DURATION.into(),
             cap_per_member: Some(DEFAULT_SALE_PURCHASE.into()),
-            vesting_schedule: None,
+            vesting_schedule_params: Some(VestingScheduleParams {
+                blocks_before_cliff: 100u32.into(),
+                cliff_amount_percentage: Permill::from_percent(100),
+                linear_vesting_duration: 0u32.into(),
+            }),
             metadata: None,
         },
     )?;
-    let token_data = Token::<T>::token_info_by_id(token_id);
-    Ok(token_data.sales_initialized)
+    Ok(sale_id)
 }
 
 fn issue_revenue_split<T: Trait>(token_id: T::TokenId) -> DispatchResult {
@@ -102,23 +134,22 @@ fn participate_in_revenue_split<T: Trait>(token_id: T::TokenId) -> DispatchResul
     Token::<T>::participate_in_split(
         RawOrigin::Signed(token_owner_account::<T>()).into(),
         token_id,
+        T::MemberId::zero(),
         DEFAULT_SPLIT_PARTICIPATION.into(),
     )
 }
 
-fn setup_account_with_max_number_of_locks<T: Trait>(
-    token_id: T::TokenId,
-    account_id: &T::AccountId,
-) {
-    AccountInfoByTokenAndAccount::<T>::mutate(token_id, &account_id, |a| {
+fn setup_account_with_max_number_of_locks<T: Trait>(token_id: T::TokenId, member_id: &T::MemberId) {
+    AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |a| {
         (0u32..T::MaxVestingSchedulesPerAccountPerToken::get().into()).for_each(|i| {
             a.add_or_update_vesting_schedule(
                 VestingSource::Sale(i),
                 VestingSchedule {
-                    duration: 0u32.into(),
-                    start_block: u32::MAX.into(),
+                    linear_vesting_duration: 0u32.into(),
+                    linear_vesting_start_block: u32::MAX.into(),
                     cliff_amount: TokenBalanceOf::<T>::one(),
                     post_cliff_total_amount: TokenBalanceOf::<T>::zero(),
+                    burned_amount: TokenBalanceOf::<T>::zero(),
                 },
                 None,
             );
@@ -158,11 +189,11 @@ benchmarks! {
     transfer {
         let o in 1 .. MAX_TX_OUTPUTS;
 
-        let owner = token_owner_account::<T>();
+        let (owner_member_id, owner_account) = create_owner::<T>();
         let outputs = Transfers::<_, _>(
-            (0..o)
+            (1..=o)
             .map(|i| (
-                account::<T::AccountId>("dst", i, SEED),
+                i.saturated_into(),
                 Payment::<<T as Trait>::Balance> {
                     remark: vec![],
                     amount: DEFAULT_TX_AMOUNT.into()
@@ -173,82 +204,94 @@ benchmarks! {
         let bloat_bond: JoyBalanceOf<T> = 100u32.into();
 
         let _ = Joy::<T>::deposit_creating(
-            &owner,
+            &owner_account,
             T::JoyExistentialDeposit::get() +
             bloat_bond * o.into()
         );
         let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
-        setup_account_with_max_number_of_locks::<T>(token_id, &owner);
+        setup_account_with_max_number_of_locks::<T>(token_id, &owner_member_id);
         BloatBond::<T>::set(bloat_bond);
     }: _(
-        RawOrigin::Signed(owner.clone()),
+        RawOrigin::Signed(owner_account.clone()),
+        owner_member_id,
         token_id,
         outputs.clone()
     )
     verify {
-        outputs.0.keys().for_each(|a| {
+        outputs.0.keys().for_each(|m| {
             assert_eq!(
-                AccountInfoByTokenAndAccount::<T>::get(token_id, a).amount,
+                AccountInfoByTokenAndMember::<T>::get(token_id, m).amount,
                 DEFAULT_TX_AMOUNT.into()
             );
         });
         assert_last_event::<T>(
             RawEvent::TokenAmountTransferred(
                 token_id,
-                owner.clone(),
+                owner_member_id,
                 Transfers(
                     outputs
+                        .0
                         .iter()
-                        .map(|(a, p)| (Validated::NonExisting(a.clone()), p.clone()))
+                        .map(|(m, p)| (Validated::NonExisting(m.clone()), ValidatedPayment::from(PaymentWithVesting::from(p.clone()))))
                         .collect()
                 )
             ).into()
         );
         // Ensure bloat_bond was transferred
         assert_eq!(
-            Joy::<T>::usable_balance(&owner),
+            Joy::<T>::usable_balance(&owner_account),
             T::JoyExistentialDeposit::get()
         )
     }
 
     // Worst case scenario:
     // - account's bloat_bond is non-zero
-    // - unclaimed patronage is non-zero
+    // - token policy is Permissioned
     dust_account {
-        let owner = token_owner_account::<T>();
+        let (owner_member_id, owner_account) = create_owner::<T>();
         let bloat_bond: JoyBalanceOf<T> = 100u32.into();
 
         BloatBond::<T>::set(bloat_bond);
-        let _ = Joy::<T>::deposit_creating(&owner, T::JoyExistentialDeposit::get() + bloat_bond);
-        let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
+        let module_account = Token::<T>::module_treasury_account();
+        let _ = Joy::<T>::deposit_creating(&owner_account, T::JoyExistentialDeposit::get() + bloat_bond);
+        // This is needed, because `add_extra_genesis` seems not to work during benchmarks:
+        let _ = Joy::<T>::deposit_creating(&module_account, T::JoyExistentialDeposit::get());
+
+        // Issue token
+        let commitment = <T as frame_system::Trait>::Hashing::hash_of(b"commitment");
+        let policy_params = TransferPolicyParams::Permissioned(WhitelistParams {
+            commitment,
+            payload: None
+        });
+        let token_id = issue_token::<T>(policy_params)?;
+
         // Ensure bloat_bond was transferred
         assert_eq!(
-            Joy::<T>::usable_balance(&owner),
+            Joy::<T>::usable_balance(&owner_account),
             T::JoyExistentialDeposit::get()
         );
-        // Move some blocks into the future to make sure unclaimed patronage is non-zero
-        let tally_update_block_number = System::<T>::block_number() + T::BlocksPerYear::get().into();
-        System::<T>::set_block_number(tally_update_block_number);
+        // Burn all owner tokens
+        Token::<T>::burn(
+            RawOrigin::Signed(owner_account.clone()).into(),
+            token_id,
+            owner_member_id.clone(),
+            DEFAULT_TOKEN_ISSUANCE.into()
+        )?;
     }: _(
-        RawOrigin::Signed(owner.clone()),
+        RawOrigin::Signed(owner_account.clone()),
         token_id,
-        owner.clone()
+        owner_member_id
     )
     verify {
-        assert!(!AccountInfoByTokenAndAccount::<T>::contains_key(token_id, &owner));
+        assert!(!AccountInfoByTokenAndMember::<T>::contains_key(token_id, &owner_member_id));
         assert_last_event::<T>(
             RawEvent::AccountDustedBy(
                 token_id,
-                owner.clone(),
-                owner,
-                TransferPolicy::Permissionless
+                owner_member_id,
+                owner_account,
+                TransferPolicy::Permissioned(commitment)
             ).into()
         );
-        // Make sure patronage tally was updated
-        assert_eq!(
-            Token::<T>::token_info_by_id(token_id).patronage_info.last_unclaimed_patronage_tally_block,
-            tally_update_block_number
-        )
     }
 
     // Worst case scenario:
@@ -256,13 +299,15 @@ benchmarks! {
     join_whitelist {
         let h in 1 .. MAX_MERKLE_PROOF_HASHES;
 
-        let whitelisted_accounts: Vec<T::AccountId> = (0..2u32.pow(h)).map(|i|
-            account::<T::AccountId>("whitelisted", i, SEED),
+        create_owner::<T>();
+        let whitelisted_members: Vec<T::MemberId> = (1..=2u32.pow(h)).map(|i|
+            i.saturated_into()
         ).collect();
-        let acc = whitelisted_accounts[0].clone();
-        let commitment = generate_merkle_root_helper::<T, _>(&whitelisted_accounts).pop().unwrap();
+        let acc = account::<T::AccountId>("whitelisted", 0, SEED);
+        let member_id = create_member::<T>(&acc, "whitelisted");
+        let commitment = generate_merkle_root_helper::<T, _>(&whitelisted_members).pop().unwrap();
         let proof = MerkleProof::<<T as frame_system::Trait>::Hashing>(
-            build_merkle_path_helper::<T, _>(&whitelisted_accounts, 0)
+            build_merkle_path_helper::<T, _>(&whitelisted_members, 0)
         );
         let transfer_policy_params = TransferPolicyParamsOf::<T>::Permissioned(WhitelistParams {
             commitment,
@@ -279,15 +324,16 @@ benchmarks! {
         BloatBond::<T>::set(bloat_bond);
     }: _(
         RawOrigin::Signed(acc.clone()),
+        member_id,
         token_id,
         proof
     )
     verify {
-        assert!(AccountInfoByTokenAndAccount::<T>::contains_key(token_id, &acc));
+        assert!(AccountInfoByTokenAndMember::<T>::contains_key(token_id, &member_id));
         assert_last_event::<T>(
             RawEvent::MemberJoinedWhitelist(
                 token_id,
-                acc.clone(),
+                member_id,
                 transfer_policy_params.into()
             ).into()
         );
@@ -300,11 +346,16 @@ benchmarks! {
 
     // Worst case scenario:
     // - new account needs to be created
+    // - sale has a vesting schedule
     // - cap per member exists
     // - bloat_bond is non-zero
+    // - platform_fee is set
     purchase_tokens_on_sale {
+        create_owner::<T>();
         let participant = account::<T::AccountId>("participant", 0, SEED);
+        let member_id = create_member::<T>(&participant, "participant");
         let bloat_bond: JoyBalanceOf<T> = 100u32.into();
+        let platform_fee = Permill::from_percent(10);
 
         let _ = Joy::<T>::deposit_creating(
             &participant,
@@ -316,26 +367,31 @@ benchmarks! {
         let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
         let sale_id = init_token_sale::<T>(token_id)?;
         BloatBond::<T>::set(bloat_bond);
+        SalePlatformFee::set(platform_fee);
     }: _(
         RawOrigin::Signed(participant.clone()),
         token_id,
+        member_id,
         DEFAULT_SALE_PURCHASE.into()
     )
     verify {
-        assert_eq!(Token::<T>::account_info_by_token_and_account(
-            token_id, &participant
+        assert_eq!(Token::<T>::account_info_by_token_and_member(
+            token_id, &member_id
         ), AccountData {
             amount: DEFAULT_SALE_PURCHASE.into(),
             vesting_schedules: vec![
                 (
                     VestingSource::Sale(sale_id),
                     Token::<T>::token_info_by_id(token_id)
-                        .last_sale
+                        .sale
                         .unwrap()
                         .get_vesting_schedule(DEFAULT_SALE_PURCHASE.into())
+                        .unwrap()
                 )
             ].iter().cloned().collect(),
             split_staking_status: None,
+            last_sale_total_purchased_amount: Some((sale_id, DEFAULT_SALE_PURCHASE.into())),
+            next_vesting_transfer_id: 0,
             bloat_bond,
         });
         assert_last_event::<T>(
@@ -343,7 +399,7 @@ benchmarks! {
                 token_id,
                 sale_id,
                 DEFAULT_SALE_PURCHASE.into(),
-                participant.clone()
+                member_id
             ).into()
         );
         // Ensure bloat_bond was transferred
@@ -354,7 +410,7 @@ benchmarks! {
     }
 
     recover_unsold_tokens {
-        let owner = token_owner_account::<T>();
+        let (owner_member_id, owner_account) = create_owner::<T>();
 
         // Issue token and initialize sale
         let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
@@ -363,75 +419,122 @@ benchmarks! {
             System::<T>::block_number().saturating_add(DEFAULT_SALE_DURATION.into())
         );
     }: _(
-        RawOrigin::Signed(owner.clone()),
+        RawOrigin::Signed(owner_account.clone()),
         token_id
     )
     verify {
         assert_eq!(
-            Token::<T>::account_info_by_token_and_account(token_id, &owner).amount,
+            Token::<T>::account_info_by_token_and_member(token_id, &owner_member_id).amount,
             DEFAULT_TOKEN_ISSUANCE.into()
         );
         assert_last_event::<T>(
             RawEvent::UnsoldTokensRecovered(
                 token_id,
                 sale_id,
-                DEFAULT_SALE_PURCHASE.into()
+                DEFAULT_TOKEN_ISSUANCE.into()
             ).into()
         );
     }
 
+    // Worst case scenario:
+    // - dividend_amount/payout is non-zero
     participate_in_split {
-        let owner = token_owner_account::<T>();
+        let (owner_member_id, owner_account) = create_owner::<T>();
 
         // Issue token and issue revenue split
         let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
         issue_revenue_split::<T>(token_id)?;
+        System::<T>::set_block_number(
+            System::<T>::block_number().saturating_add(Token::<T>::min_revenue_split_time_to_start())
+        );
     }: _(
-        RawOrigin::Signed(owner.clone()),
+        RawOrigin::Signed(owner_account.clone()),
         token_id,
+        owner_member_id,
         DEFAULT_SPLIT_PARTICIPATION.into()
     )
     verify {
         assert_eq!(
-            Token::<T>::account_info_by_token_and_account(token_id, &owner).staked(),
+            Token::<T>::account_info_by_token_and_member(token_id, &owner_member_id).staked(),
             DEFAULT_SPLIT_PARTICIPATION.into()
         );
         assert_eq!(
-            Joy::<T>::usable_balance(&owner),
+            Joy::<T>::usable_balance(&owner_account),
             T::JoyExistentialDeposit::get() + DEFAULT_SPLIT_PAYOUT.into()
         );
         assert_last_event::<T>(
             RawEvent::UserParticipatedInSplit(
                 token_id,
-                owner,
+                owner_member_id,
                 DEFAULT_SPLIT_PARTICIPATION.into(),
                 DEFAULT_SPLIT_PAYOUT.into(),
-                1u32
+                0u32
             ).into()
         );
     }
 
-    abandon_revenue_split {
-        let owner = token_owner_account::<T>();
+    // Worst case scenario:
+    // - exiting current split
+    // - current split is active, but no longer ongoing
+    exit_revenue_split {
+        let (owner_member_id, owner_account) = create_owner::<T>();
 
         // Issue token and issue revenue split
         let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
         issue_revenue_split::<T>(token_id)?;
+        System::<T>::set_block_number(
+            System::<T>::block_number().saturating_add(Token::<T>::min_revenue_split_time_to_start())
+        );
         // Participate in split
         participate_in_revenue_split::<T>(token_id)?;
         // Go to: Split end
         System::<T>::set_block_number(System::<T>::block_number() + DEFAULT_SPLIT_DURATION.into());
     }: _(
-        RawOrigin::Signed(owner.clone()),
-        token_id
+        RawOrigin::Signed(owner_account.clone()),
+        token_id,
+        owner_member_id
     )
     verify {
-        assert!(Token::<T>::account_info_by_token_and_account(token_id, &owner).split_staking_status.is_none());
+        assert!(Token::<T>::account_info_by_token_and_member(token_id, &owner_member_id).split_staking_status.is_none());
         assert_last_event::<T>(
             RawEvent::RevenueSplitLeft(
                 token_id,
-                owner,
+                owner_member_id,
                 DEFAULT_SPLIT_PARTICIPATION.into()
+            ).into()
+        );
+    }
+
+    // Worst case scenario:
+    // - account has max number of vesting_schedules
+    // - account has a staking status set
+    // - all funds are burned
+    burn {
+        let (owner_member_id, owner_account) = create_owner::<T>();
+        let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
+        setup_account_with_max_number_of_locks::<T>(token_id, &owner_member_id);
+        let amount_to_burn = Token::<T>::account_info_by_token_and_member(token_id, &owner_member_id).amount;
+    }: _(
+        RawOrigin::Signed(owner_account.clone()),
+        token_id,
+        owner_member_id,
+        amount_to_burn
+    )
+    verify {
+        assert_eq!(
+            Token::<T>::ensure_account_data_exists(token_id, &owner_member_id).unwrap(),
+            AccountDataOf::<T> {
+            split_staking_status: Some(StakingStatus {
+                split_id: 0,
+                amount: TokenBalanceOf::<T>::zero()
+            }),
+            ..Default::default()
+        });
+        assert_last_event::<T>(
+            RawEvent::TokensBurned(
+                token_id,
+                owner_member_id,
+                amount_to_burn
             ).into()
         );
     }
@@ -486,9 +589,16 @@ mod tests {
     }
 
     #[test]
-    fn test_abandon_revenue_split() {
+    fn test_exit_revenue_split() {
         build_test_externalities(GenesisConfigBuilder::new_empty().build()).execute_with(|| {
-            assert_ok!(test_benchmark_abandon_revenue_split::<Test>());
+            assert_ok!(test_benchmark_exit_revenue_split::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_burn() {
+        build_test_externalities(GenesisConfigBuilder::new_empty().build()).execute_with(|| {
+            assert_ok!(test_benchmark_burn::<Test>());
         });
     }
 }

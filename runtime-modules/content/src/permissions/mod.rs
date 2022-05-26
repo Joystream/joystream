@@ -184,19 +184,6 @@ pub fn ensure_actor_can_manage_moderators<T: Trait>(
     }
 }
 
-/// Ensure actor is authorized to manage reward account for a channel
-pub fn ensure_actor_can_manage_reward_account<T: Trait>(
-    sender: &T::AccountId,
-    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-) -> DispatchResult {
-    ensure_actor_auth_success::<T>(sender, actor)?;
-    match actor {
-        ContentActor::Lead => ensure_channel_is_owned_by_curators::<T>(owner),
-        _ => ensure_actor_is_channel_owner::<T>(actor, owner),
-    }
-}
-
 /// CHANNEL ASSET MANAGEMENT PERMISSIONS
 
 // Ensure channel is owned by curators
