@@ -280,12 +280,23 @@ fn reveal() {
         MockUtils::move_to_block(voting_stage_duration + 1);
 
         Mocks::check_voting_finished(winning_target_count, cycle_id);
+
+        // First reveal
         Mocks::reveal_vote(
             origin.clone(),
             account_id,
-            salt,
+            salt.clone(),
             option_to_vote_for.clone(),
             Ok(()),
+        );
+
+        // Revealing more than once should fail!
+        Mocks::reveal_vote(
+            origin.clone(),
+            account_id,
+            salt.clone(),
+            option_to_vote_for.clone(),
+            Err(Error::InvalidReveal),
         );
     });
 }
