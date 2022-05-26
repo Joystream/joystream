@@ -897,7 +897,7 @@ fn correct_candidates_make_it_into_winners_list() {
             salt2,
             option_to_vote_for2,
             Ok(()),
-        ); // at this time, the size of current_winners is 2, equal to winning_target_count, so revelaling smaller votes don't help the user3 to crowd out user2
+        );
 
         Mocks::reveal_vote(
             origin_voter3.clone(),
