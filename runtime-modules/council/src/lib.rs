@@ -1184,7 +1184,7 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
     fn can_unlock_vote_stake(vote: &CastVoteOf<T>) -> Result<(), Error<T>> {
         let current_voting_cycle_id = AnnouncementPeriodNr::get();
 
-        // If the vote is for an election prior to the last concluded..
+        // If the vote was cast before the latest Announcing stage...
         if vote.cycle_id != current_voting_cycle_id {
             // ..it is always recoverable.
             return Ok(());
