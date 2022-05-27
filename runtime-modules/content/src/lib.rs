@@ -2354,8 +2354,6 @@ impl<T: Trait> Module<T> {
             state_bloat_bond_source_account_id: obj_state_bloat_bond_source_account.clone(),
             expected_data_size_fee: assets.expected_data_size_fee,
             expected_data_object_state_bloat_bond,
-            storage_buckets: Default::default(),
-            distribution_buckets: Default::default(),
         }
     }
 

@@ -935,8 +935,6 @@ benchmarks! {
             state_bloat_bond_source_account_id: worker_account_id.clone(),
             expected_data_size_fee: Default::default(),
             expected_data_object_state_bloat_bond: Default::default(),
-            storage_buckets: Default::default(),
-            distribution_buckets: Default::default(),
             object_creation_list: object_parameters
         };
 
