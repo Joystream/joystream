@@ -865,6 +865,31 @@ pub struct DynBagCreationParametersRecord<
     BagId,
     AccountId,
     Balance,
+> {
+    /// Static or dynamic bag to upload data.
+    pub bag_id: BagId,
+
+    /// Data object parameters.
+    pub object_creation_list: Vec<DataObjectCreationParameters>,
+
+    /// Account for the data object deletion prize.
+    pub deletion_prize_source_account_id: AccountId,
+
+    /// Expected data size fee value for this extrinsic call.
+    pub expected_data_size_fee: Balance,
+
+    /// Expected for the data object deletion prize for the storage pallet.
+    pub expected_data_object_deletion_prize: Balance,
+}
+
+
+/// Data wrapper structure. Helps passing the parameters to the `upload` extrinsic.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+pub struct DynBagCreationParametersRecord<
+    BagId,
+    AccountId,
+    Balance,
     StorageBucketId: Ord,
     DistributionBucketId: Ord,
 > {
@@ -889,7 +914,6 @@ pub struct DynBagCreationParametersRecord<
     /// Chosen distribution buckets to assign on the dynamic bag creation.
     pub distribution_buckets: BTreeSet<DistributionBucketId>,
 }
-
 /// Defines storage bucket parameters.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
