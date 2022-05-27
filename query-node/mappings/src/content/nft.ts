@@ -1,6 +1,6 @@
 // TODO: solve events' relations to videos and other entites that can be changed or deleted
 
-import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
+import { DatabaseManager, EventContext, StoreContext, SubstrateEvent, FindOneOptions } from '@joystream/hydra-common'
 import { genericEventFields, inconsistentState, logger, EntityType } from '../common'
 import {
   // entities
@@ -39,7 +39,7 @@ import {
 } from 'query-node/dist/model'
 import * as joystreamTypes from '@joystream/types/augment/all/types'
 import { Content } from '../../generated/types'
-import { FindConditions, In } from 'typeorm'
+import { In } from 'typeorm'
 import BN from 'bn.js'
 import { PERBILL_ONE_PERCENT } from '../temporaryConstants'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
@@ -53,7 +53,7 @@ async function getExistingEntity<Type extends Video | Membership>(
   relations: string[] = []
 ): Promise<Type | undefined> {
   // load entity
-  const entity = await store.get(entityType, { where: { id }, relations })
+  const entity = await store.get(entityType, { where: { id }, relations } as FindOneOptions<Type>)
 
   return entity
 }
@@ -156,7 +156,7 @@ async function resetNftTransactionalStatusFromVideo(
 ) {
   // load NFT
   const nft = await store.get(OwnedNft, {
-    where: { id: videoId.toString() } as FindConditions<OwnedNft>,
+    where: { id: videoId.toString() },
     relations: ['ownerMember', 'ownerCuratorGroup', 'creatorChannel'],
   })
 
@@ -185,7 +185,7 @@ async function getRequiredExistingEntites<Type extends Video | Membership>(
   throwOnMissingEntities = true
 ): Promise<Type[]> {
   // load entities
-  const entities = await store.getMany(entityType, { where: { id: In(ids) } })
+  const entities = await store.getMany(entityType, { where: { id: In(ids) } } as FindOneOptions<Type>)
 
   // assess loaded entity ids
   const loadedEntityIds = entities.map((item) => item.id.toString())

@@ -1,7 +1,7 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
+import { DatabaseManager, EventContext, StoreContext, FindOptionsWhere } from '@joystream/hydra-common'
 import { Storage } from '../../generated/types/storage'
 import {
   DistributionBucket,
@@ -47,13 +47,8 @@ import { getAllManagers } from '../derivedPropertiesManager/applications'
 // STORAGE BUCKETS
 
 export async function storage_StorageBucketCreated({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [
-    bucketId,
-    invitedWorkerId,
-    acceptingNewBags,
-    dataObjectSizeLimit,
-    dataObjectCountLimit,
-  ] = new Storage.StorageBucketCreatedEvent(event).params
+  const [bucketId, invitedWorkerId, acceptingNewBags, dataObjectSizeLimit, dataObjectCountLimit] =
+    new Storage.StorageBucketCreatedEvent(event).params
 
   const storageBucket = new StorageBucket({
     id: bucketId.toString(),
@@ -413,7 +408,7 @@ export async function storage_DistributionBucketDeleted({ event, store }: EventC
   const invitedOperators = await store.getMany(DistributionBucketOperator, {
     where: {
       status: DistributionBucketOperatorStatus.INVITED,
-      distributionBucket,
+      distributionBucket: distributionBucket as FindOptionsWhere<any>, // TODO: get rid of `any` type
     },
   })
   await Promise.all(invitedOperators.map((operator) => removeDistributionBucketOperator(store, operator)))
@@ -424,12 +419,8 @@ export async function storage_DistributionBucketsUpdatedForBag({
   event,
   store,
 }: EventContext & StoreContext): Promise<void> {
-  const [
-    bagId,
-    familyId,
-    addedBucketsIndices,
-    removedBucketsIndices,
-  ] = new Storage.DistributionBucketsUpdatedForBagEvent(event).params
+  const [bagId, familyId, addedBucketsIndices, removedBucketsIndices] =
+    new Storage.DistributionBucketsUpdatedForBagEvent(event).params
   // Get or create bag
   const storageBag = await getBag(store, bagId, ['distributionBuckets'])
   const removedBucketsIds = Array.from(removedBucketsIndices).map((bucketIndex) =>

@@ -27,6 +27,7 @@
     "fast-safe-stringify": "^2.1.1",
     "file-type": "^16.5.1",
     "graphql": "^14.7.0",
+    "graphql-tag": "^2.12.6",
     "inquirer": "^8.1.2",
     "js-image-generator": "^1.0.3",
     "lodash": "^4.17.21",

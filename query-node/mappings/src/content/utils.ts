@@ -1,5 +1,4 @@
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { FindConditions } from 'typeorm'
 import {
   IVideoMetadata,
   IPublishedBeforeJoystream,
@@ -266,7 +265,7 @@ export async function convertContentActorToChannelOrNftOwner(
 }> {
   if (contentActor.isMember) {
     const memberId = contentActor.asMember.toNumber()
-    const member = await store.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
+    const member = await store.get(Membership, { where: { id: memberId.toString() } })
 
     // ensure member exists
     if (!member) {
@@ -282,7 +281,7 @@ export async function convertContentActorToChannelOrNftOwner(
   if (contentActor.isCurator) {
     const curatorGroupId = contentActor.asCurator[0].toNumber()
     const curatorGroup = await store.get(CuratorGroup, {
-      where: { id: curatorGroupId.toString() } as FindConditions<CuratorGroup>,
+      where: { id: curatorGroupId.toString() },
     })
 
     // ensure curator group exists
@@ -308,7 +307,7 @@ export async function convertContentActor(
 ): Promise<typeof ContentActorVariant> {
   if (contentActor.isMember) {
     const memberId = contentActor.asMember.toNumber()
-    const member = await store.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
+    const member = await store.get(Membership, { where: { id: memberId.toString() } })
 
     // ensure member exists
     if (!member) {
@@ -324,7 +323,7 @@ export async function convertContentActor(
   if (contentActor.isCurator) {
     const curatorId = contentActor.asCurator[1].toNumber()
     const curator = await store.get(Curator, {
-      where: { id: curatorId.toString() } as FindConditions<Curator>,
+      where: { id: curatorId.toString() },
     })
 
     // ensure curator group exists

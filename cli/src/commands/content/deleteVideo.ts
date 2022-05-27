@@ -72,10 +72,7 @@ export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
     await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'deleteVideo', [
       actor,
       videoId,
-      createType(
-        'BTreeSet<DataObjectId>',
-        dataObjectsInfo.map(([id]) => id)
-      ),
+      createType('BTreeSet<DataObjectId>', dataObjectsInfo.map(([id]) => id) as string[]),
     ])
   }
 }

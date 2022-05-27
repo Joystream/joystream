@@ -275,15 +275,8 @@ export async function forum_CategoryDeleted({ event, store }: EventContext & Sto
 
 export async function forum_ThreadCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { event, store } = ctx
-  const [
-    categoryId,
-    threadId,
-    postId,
-    memberId,
-    threadMetaBytes,
-    postTextBytes,
-    pollInput,
-  ] = new Forum.ThreadCreatedEvent(event).params
+  const [categoryId, threadId, postId, memberId, threadMetaBytes, postTextBytes, pollInput] =
+    new Forum.ThreadCreatedEvent(event).params
   const eventTime = new Date(event.blockTimestamp)
   const author = new Membership({ id: memberId.toString() })
 
