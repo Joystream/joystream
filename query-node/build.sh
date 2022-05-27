@@ -24,7 +24,6 @@ sed -i -e "s#new TypeRegistry();#new TypeRegistry() as any;#" ./mappings/generat
 
 ################################################
 
-
 # We run yarn again to ensure graphql-server dependencies are installed
 # and are inline with root workspace resolutions
 yarn
