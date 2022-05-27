@@ -480,7 +480,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // reveal the vote - it can return error when stake fails to unlock
+            // reveal the vote
             Mutations::<T, I>::reveal_vote(stage_data, &account_id, &vote_option_id, cast_vote);
 
             // emit event
@@ -752,10 +752,10 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         // let runtime update option's vote power
         T::increase_option_power(option_id, &vote_power);
 
-        // store revealed vote
+        // update stage data, store new calculated winners
         Stage::<T, I>::mutate(|stage| *stage = ReferendumStage::Revealing(new_stage_data));
 
-        // remove user commitment to prevent repeated revealing
+        // store revealed vote
         Votes::<T, I>::mutate(account_id, |vote| (*vote).vote_for = Some(*option_id));
     }
 
@@ -962,6 +962,11 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         // ensure vote was cast for the running referendum
         if stage_data.current_cycle_id != cast_vote.cycle_id {
             return Err(Error::InvalidVote);
+        }
+
+        // ensure vote was not already revealed
+        if cast_vote.vote_for.is_some() {
+            return Err(Error::InvalidReveal);
         }
 
         // ensure salt is not too long
