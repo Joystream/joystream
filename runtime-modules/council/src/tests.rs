@@ -161,43 +161,98 @@ fn council_can_vote_for_yourself() {
     });
 }
 
-// Test that vote for a succesfull candidate has it's stake locked until the one referendum cycle
-// with succesfull council election
 #[test]
-fn council_vote_for_winner_stakes_longer() {
+fn vote_stake_locks_after_election_complete() {
     let config = default_genesis_config();
 
     build_test_externalities(config).execute_with(|| {
-        let council_settings = CouncilSettings::<Runtime>::extract_settings();
-
-        // run first election round
+        // run first election round stop at start of IdlePeriod / After election is completed
         let params = Mocks::run_council_cycle_with_interrupt(
             0,
             &[],
             0,
             Some(CouncilCycleInterrupt::AfterElectionComplete),
         );
+
+        let voter_for_winner = params.voters[0].clone();
+        let voter_for_looser = params.voters[params.voters.len() - 1].clone();
+
+        // When election is concluded and elected council is in idle periods,
+        // only vote stake of losing candidates can be released
+        Mocks::release_vote_stake(voter_for_winner.origin.clone(), Err(()));
+        Mocks::release_vote_stake(voter_for_looser.origin.clone(), Ok(()));
+    });
+}
+
+#[test]
+fn vote_stake_locks_after_voting() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        // run first election round stop after votes have been cast
+        let params = Mocks::run_council_cycle_with_interrupt(
+            0,
+            &[],
+            0,
+            Some(CouncilCycleInterrupt::AfterVoting),
+        );
+
+        let voter_for_winner = params.voters[0].clone();
+        let voter_for_looser = params.voters[params.voters.len() - 1].clone();
+
+        // While election is still in progress no vote stake can be released
+        Mocks::release_vote_stake(voter_for_winner.origin.clone(), Err(()));
+        Mocks::release_vote_stake(voter_for_looser.origin.clone(), Err(()));
+    });
+}
+
+#[test]
+fn vote_stake_locks_after_revealing() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        // run first election round stop at after votes are revealed
+        let params = Mocks::run_council_cycle_with_interrupt(
+            0,
+            &[],
+            0,
+            Some(CouncilCycleInterrupt::AfterRevealing),
+        );
+
+        let voter_for_winner = params.voters[0].clone();
+        let voter_for_looser = params.voters[params.voters.len() - 1].clone();
+
+        // While election is still in progress no vote stake can be released
+        Mocks::release_vote_stake(voter_for_winner.origin.clone(), Err(()));
+        Mocks::release_vote_stake(voter_for_looser.origin.clone(), Err(()));
+    });
+}
+
+#[test]
+fn vote_stake_locks_after_new_election_starts() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let council_settings = CouncilSettings::<Runtime>::extract_settings();
+
+        // run first election to completion
+        let params = Mocks::run_full_council_cycle(0, &[], 0);
         let second_round_user_offset = 100; // some number higher than the number of voters
 
         let voter_for_winner = params.voters[0].clone();
         let voter_for_looser = params.voters[params.voters.len() - 1].clone();
 
-        // try to release vote stake
-        Mocks::release_vote_stake(voter_for_winner.origin.clone(), Err(()));
-        Mocks::release_vote_stake(voter_for_looser.origin.clone(), Ok(()));
-
-        // try to release vote stake
-        Mocks::release_vote_stake(voter_for_winner.origin.clone(), Err(()));
-
-        // run second election round
-        Mocks::run_full_council_cycle(
+        // start next election round
+        Mocks::run_council_cycle_with_interrupt(
             council_settings.cycle_duration,
             &params.expected_final_council_members,
             second_round_user_offset,
+            Some(CouncilCycleInterrupt::AfterCandidatesAnnounce),
         );
 
-        // try to release vote stake
+        // Any vote from prior election can be released
         Mocks::release_vote_stake(voter_for_winner.origin.clone(), Ok(()));
+        Mocks::release_vote_stake(voter_for_looser.origin.clone(), Ok(()));
     });
 }
 
