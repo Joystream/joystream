@@ -628,6 +628,7 @@ pub enum CouncilCycleInterrupt {
     AfterVoting,
     BeforeRevealing,
     AfterRevealing,
+    AfterElectionComplete,
 }
 
 #[derive(Clone)]
@@ -1431,7 +1432,11 @@ where
         );
         Self::check_council_members(params.expected_final_council_members.clone());
 
-        // finish idle period
+        escape_checkpoint!(
+            params.interrupt_point.clone(),
+            Some(CouncilCycleInterrupt::AfterElectionComplete)
+        );
+
         InstanceMockUtils::<T>::increase_block_number(settings.idle_stage_duration.into());
     }
 
@@ -1442,6 +1447,34 @@ where
         expected_initial_council_members: &[CouncilMemberOf<T>],
         users_offset: u64,
     ) -> CouncilCycleParams<T> {
+        Self::run_council_cycle_with_interrupt(
+            start_block_number,
+            expected_initial_council_members,
+            users_offset,
+            None,
+        )
+    }
+
+    pub fn run_council_cycle_with_interrupt(
+        start_block_number: T::BlockNumber,
+        expected_initial_council_members: &[CouncilMemberOf<T>],
+        users_offset: u64,
+        interrupt_point: Option<CouncilCycleInterrupt>,
+    ) -> CouncilCycleParams<T> {
+        // If a prior call was made with an interrupt,
+        // we might need to move to desired start block, which is expected to be the begining of the
+        // announcing stage.
+        if start_block_number.into() > 0 {
+            let current_block_number = frame_system::Module::<Runtime>::block_number();
+            if current_block_number > start_block_number.into() + 1 {
+                panic!("start_block_number is in the past!");
+            }
+
+            InstanceMockUtils::<Runtime>::increase_block_number(
+                start_block_number.into() - current_block_number + 1,
+            );
+        }
+
         let council_settings = CouncilSettings::<T>::extract_settings();
         let vote_stake = <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
 
@@ -1509,7 +1542,7 @@ where
             expected_candidates,
             voters,
 
-            interrupt_point: None,
+            interrupt_point,
         };
 
         InstanceMocks::<T>::simulate_council_cycle(params.clone());
