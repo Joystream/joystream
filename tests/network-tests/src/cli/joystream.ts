@@ -286,7 +286,7 @@ export class JoystreamCLI extends CLI {
     Delete an existing playlist.
   */
   async deletePlaylist(playlistId: number): Promise<void> {
-    const { stderr, exitCode } = await this.run('content:deletePlaylist', ['-v', playlistId.toString(), '-f'])
+    const { stderr, exitCode } = await this.run('content:deletePlaylist', ['-p', playlistId.toString(), '-f'])
 
     if (exitCode) {
       throw new Error(`Unexpected CLI failure on deleting playlist: "${stderr}"`)
