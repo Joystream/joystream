@@ -409,7 +409,6 @@ export async function content_ContentDeleted({ store, event }: EventContext & St
   // load playlist
   const playlist = await store.get(Playlist, {
     where: { id: contentId.toString() },
-    relations: ['videos'],
   })
 
   if (video) {
@@ -425,9 +424,10 @@ export async function content_ContentDeleted({ store, event }: EventContext & St
     // TODO: remove following block after https://github.com/Joystream/hydra/issues/490 has been implemented
 
     // first remove all PlaylistVideo records referencing the deleted playlist
-    playlist.videos.forEach(async (playlistVideo) => {
-      await store.remove<PlaylistVideo>(playlistVideo)
-    })
+    const playlistVideos = await store.getMany(PlaylistVideo, { where: { playlist: { id: playlist.id } } })
+    for (const video of playlistVideos) {
+      await store.remove<PlaylistVideo>(video)
+    }
 
     // remove playlist
     await store.remove<Playlist>(playlist)

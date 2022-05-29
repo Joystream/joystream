@@ -251,10 +251,10 @@ export async function processVideoMetadata(
       relations: ['playlist'],
     })
 
-    asFirstVideoInPlaylists.forEach(async ({ playlist }) => {
+    for (const { playlist } of asFirstVideoInPlaylists) {
       playlist.thumbnailPhoto = video.thumbnailPhoto
       await store.save<Playlist>(playlist)
-    })
+    }
   }
 
   // prepare video category if needed
