@@ -306,8 +306,13 @@ export async function processReactCommentMessage(
   const eventTime = new Date(event.blockTimestamp)
 
   // load comment
-  const comment = await getComment(store, commentId, ['video', 'video.channel', 'video.channel.bannedMembers'])
-  const { video } = comment
+  const comment = await getComment(store, commentId, [
+    'parentComment',
+    'video',
+    'video.channel',
+    'video.channel.bannedMembers',
+  ])
+  const { video, parentComment } = comment
 
   // ensure member is not banned from channel
   ensureMemberIsNotBannedFromChannel(video.channel, memberId.toString(), 'Cannot add reaction')
@@ -333,6 +338,7 @@ export async function processReactCommentMessage(
       createdAt: eventTime,
       updatedAt: eventTime,
       comment,
+      parentComment,
       reactionId,
       video,
       memberId: memberId.toString(),

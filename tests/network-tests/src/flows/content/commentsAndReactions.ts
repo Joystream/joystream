@@ -154,6 +154,15 @@ export default async function commentsAndReactions({ api, query }: FlowProps): P
       asMember: participants[1].memberId,
     },
 
+    // replies reaction
+    {
+      msg: {
+        commentId: createdRepliesIds[0],
+        reactionId: 3,
+      },
+      asMember: participants[1].memberId,
+    },
+
     // Revert video reactions:
     {
       msg: {

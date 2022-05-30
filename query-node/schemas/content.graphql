@@ -282,6 +282,9 @@ type CommentReaction @entity {
   "The comment that has been reacted to"
   comment: Comment!
 
+  "A (parent) comment of the comment that has been reacted to (if any)"
+  parentComment: Comment
+
   # Added to efficiently delete all reactions of all
   # (deleted) comments once video has been deleted.
   "The video the comment (that has been reacted) exists"
