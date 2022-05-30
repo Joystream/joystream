@@ -678,3 +678,14 @@ pub fn ensure_actor_authorized_to_deissue_creator_token<T: Config>(
     ensure_actor_has_channel_permissions::<T>(&sender, &actor, &channel, &required_permissions)?;
     Ok(sender)
 }
+
+pub fn ensure_actor_authorized_to_toggle_nft_limits<T: Trait>(
+    sender: &T::AccountId,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+) -> DispatchResult {
+    if let ContentActor::Lead = actor {
+        ensure_lead_auth_success::<T>(sender)
+    } else {
+        Err(Error::<T>::ActorNotAuthorized.into())
+    }
+}

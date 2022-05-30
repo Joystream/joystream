@@ -235,7 +235,11 @@ decl_storage! {
 
         /// Global weekly NFT limit.
         pub GlobalWeeklyNftLimit get(fn global_weekly_nft_limit):
-            LimitPerPeriod<T::BlockNumber>;
+        LimitPerPeriod<T::BlockNumber>;
+
+        /// NFT limits enabled or not
+        /// Can be updated in flight by Lead
+        pub NftLimitsEnabled get(fn nft_limits_enabled) config(): bool;
 
     }
     add_extra_genesis {
@@ -2304,6 +2308,29 @@ decl_module! {
             Self::deposit_event(RawEvent::NftBought(video_id, participant_id));
         }
 
+        /// Only Lead can toggle nft issuance limits constraints
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn toggle_nft_limits(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        ) {
+            let sender = ensure_signed(origin)?;
+
+            ensure_actor_authorized_to_toggle_nft_limits::<T>(
+                &sender,
+                &actor
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let old_v = NftLimitsEnabled::get();
+            NftLimitsEnabled::put(!old_v);
+
+            Self::deposit_event(RawEvent::LeadToggledNftLimitsEnabled(!old_v));
+        }
+
         /// Channel owner remark
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn channel_owner_remark(origin, channel_id: T::ChannelId, msg: Vec<u8>) {
@@ -3292,34 +3319,35 @@ impl<T: Config> Module<T> {
 
     // Checks all NFT-limits
     fn check_nft_limits(channel: &Channel<T>) -> DispatchResult {
-        // Global daily limit.
-        Self::check_generic_nft_limit(
-            &Self::global_daily_nft_limit(),
-            &Self::global_daily_nft_counter(),
-            Error::<T>::GlobalNftDailyLimitExceeded,
-        )?;
+        if Self::nft_limits_enabled() {
+            // Global daily limit.
+            Self::check_generic_nft_limit(
+                &Self::global_daily_nft_limit(),
+                &Self::global_daily_nft_counter(),
+                Error::<T>::GlobalNftDailyLimitExceeded,
+            )?;
 
-        // Global weekly limit.
-        Self::check_generic_nft_limit(
-            &Self::global_weekly_nft_limit(),
-            &Self::global_weekly_nft_counter(),
-            Error::<T>::GlobalNftWeeklyLimitExceeded,
-        )?;
+            // Global weekly limit.
+            Self::check_generic_nft_limit(
+                &Self::global_weekly_nft_limit(),
+                &Self::global_weekly_nft_counter(),
+                Error::<T>::GlobalNftWeeklyLimitExceeded,
+            )?;
 
-        // Channel daily limit.
-        Self::check_generic_nft_limit(
-            &channel.daily_nft_limit,
-            &channel.daily_nft_counter,
-            Error::<T>::ChannelNftDailyLimitExceeded,
-        )?;
+            // Channel daily limit.
+            Self::check_generic_nft_limit(
+                &channel.daily_nft_limit,
+                &channel.daily_nft_counter,
+                Error::<T>::ChannelNftDailyLimitExceeded,
+            )?;
 
-        // Channel weekly limit.
-        Self::check_generic_nft_limit(
-            &channel.weekly_nft_limit,
-            &channel.weekly_nft_counter,
-            Error::<T>::ChannelNftWeeklyLimitExceeded,
-        )?;
-
+            // Channel weekly limit.
+            Self::check_generic_nft_limit(
+                &channel.weekly_nft_limit,
+                &channel.weekly_nft_counter,
+                Error::<T>::ChannelNftWeeklyLimitExceeded,
+            )?;
+        }
         Ok(())
     }
 
@@ -3589,7 +3617,7 @@ decl_event!(
         /// Nft limits
         GlobalNftLimitUpdated(NftLimitPeriod, u64),
         ChannelNftLimitUpdated(ContentActor, NftLimitPeriod, ChannelId, u64),
-
+        LeadToggledNftLimitsEnabled(bool),
         // Creator tokens
         CreatorTokenIssued(ContentActor, ChannelId, TokenId),
     }
