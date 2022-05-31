@@ -373,6 +373,7 @@ where
 pub struct SingleDataObjectUploadParams<JoyBalance> {
     pub object_creation_params: DataObjectCreationParameters,
     pub expected_data_size_fee: JoyBalance,
+    pub expected_data_object_state_bloat_bond: JoyBalance,
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]

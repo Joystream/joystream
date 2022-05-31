@@ -1,9 +1,8 @@
 #![cfg(test)]
-use crate::tests::curators;
 use crate::tests::fixtures::{
     channel_reward_account_balance, create_default_member_owned_channel_with_video,
     create_initial_storage_buckets_helper, increase_account_balance_helper,
-    make_content_module_account_existential_deposit, CreateChannelFixture, CreateVideoFixture,
+    make_content_module_account_existential_deposit, ContentTest,
 };
 use crate::tests::mock::*;
 use crate::*;
@@ -547,15 +546,7 @@ fn pick_open_auction_winner_fails_with_invalid_bid_commit() {
 fn pick_open_auction_winner_ok_with_nft_owner_member_channel_correctly_credited() {
     with_default_mock_builder(|| {
         let video_id = Content::next_video_id();
-        CreateChannelFixture::default().call();
-        CreateVideoFixture::default().call();
-
-        assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            video_id,
-            NftIssuanceParameters::<Test>::default(),
-        ));
+        ContentTest::with_member_channel().with_video_nft().setup();
 
         let bid_lock_duration = Content::min_bid_lock_duration();
 
@@ -605,26 +596,8 @@ fn pick_open_auction_winner_ok_with_nft_owner_member_channel_correctly_credited(
 #[test]
 fn pick_open_auction_winner_ok_with_nft_owner_curator_channel_correctly_credited() {
     with_default_mock_builder(|| {
-        let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
         let video_id = Content::next_video_id();
-        let curator_actor = ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID);
-
-        CreateChannelFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .call();
-
-        CreateVideoFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .call();
-
-        assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID),
-            curator_actor,
-            video_id,
-            NftIssuanceParameters::<Test>::default(),
-        ));
+        ContentTest::with_curator_channel().with_video_nft().setup();
 
         let bid_lock_duration = Content::min_bid_lock_duration();
 
@@ -638,8 +611,8 @@ fn pick_open_auction_winner_ok_with_nft_owner_curator_channel_correctly_credited
 
         // Start nft auction
         assert_ok!(Content::start_open_auction(
-            Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID),
-            curator_actor,
+            Origin::signed(LEAD_ACCOUNT_ID),
+            ContentActor::Lead,
             video_id,
             auction_params.clone(),
         ));
@@ -660,8 +633,8 @@ fn pick_open_auction_winner_ok_with_nft_owner_curator_channel_correctly_credited
 
         // Pick open auction winner
         assert_ok!(Content::pick_open_auction_winner(
-            Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID),
-            curator_actor,
+            Origin::signed(LEAD_ACCOUNT_ID),
+            ContentActor::Lead,
             video_id,
             SECOND_MEMBER_ID,
             bid,

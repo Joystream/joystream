@@ -66,6 +66,8 @@ pub fn default_upload_context() -> UploadContext {
 pub fn default_single_data_object_upload_params() -> SingleDataObjectUploadParams {
     SingleDataObjectUploadParams {
         expected_data_size_fee: storage::Module::<Test>::data_object_per_mega_byte_fee(),
+        expected_data_object_state_bloat_bond:
+            storage::Module::<Test>::data_object_state_bloat_bond_value(),
         object_creation_params: DataObjectCreationParameters {
             ipfs_content_id: Vec::from_iter(0..46),
             size: 1_000_000,

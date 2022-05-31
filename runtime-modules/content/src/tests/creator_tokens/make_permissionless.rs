@@ -1,6 +1,4 @@
 #![cfg(test)]
-
-use crate::tests::curators;
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
@@ -19,20 +17,38 @@ fn unsuccessful_make_creator_token_permissionless_non_existing_channel() {
 #[test]
 fn unsuccessful_make_creator_token_permissionless_token_not_issued() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        CreateChannelFixture::default().call_and_assert(Ok(()));
+        ContentTest::with_member_channel().setup();
         MakeCreatorTokenPermissionlessFixture::default()
             .call_and_assert(Err(Error::<Test>::CreatorTokenNotIssued.into()));
     })
 }
 
+// Member channel
+
 #[test]
-fn unsuccessful_make_creator_token_permissionless_member_channel_unauthorized_actors() {
+fn unsuccessful_make_member_channel_creator_token_permissionless_by_collaborator_without_permissions(
+) {
     with_default_mock_builder(|| {
-        run_to_block(1);
-        curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
-        CreateChannelFixture::default().call_and_assert(Ok(()));
+        ContentTest::with_member_channel()
+            .with_all_agent_permissions_except(&[
+                ChannelActionPermission::MakeCreatorTokenPermissionless,
+            ])
+            .setup();
+        MakeCreatorTokenPermissionlessFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_make_member_channel_creator_token_permissionless_by_collaborator() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_agent_permissions(&[ChannelActionPermission::MakeCreatorTokenPermissionless])
+            .setup();
         IssueCreatorTokenFixture::default()
             .with_transfer_policy(TransferPolicyParamsOf::<Test>::Permissioned(
                 WhitelistParamsOf::<Test> {
@@ -41,49 +57,17 @@ fn unsuccessful_make_creator_token_permissionless_member_channel_unauthorized_ac
                 },
             ))
             .call_and_assert(Ok(()));
-        for (sender, actor, err) in get_default_member_channel_invalid_owner_contexts() {
-            MakeCreatorTokenPermissionlessFixture::default()
-                .with_sender(sender)
-                .with_actor(actor)
-                .call_and_assert(Err(err.into()))
-        }
+        MakeCreatorTokenPermissionlessFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Ok(()));
     })
 }
 
 #[test]
-fn unsuccessful_make_creator_token_permissionless_curator_channel_unauthorized_actors() {
+fn successful_make_member_channel_creator_token_permissionless_by_owner() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-        curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
-        curators::add_curator_to_new_group(UNAUTHORIZED_CURATOR_ID);
-        CreateChannelFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(default_curator_actor())
-            .call_and_assert(Ok(()));
-        IssueCreatorTokenFixture::default()
-            .with_transfer_policy(TransferPolicyParamsOf::<Test>::Permissioned(
-                WhitelistParamsOf::<Test> {
-                    commitment: Hashing::hash(b"commitment"),
-                    payload: None,
-                },
-            ))
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(default_curator_actor())
-            .call_and_assert(Ok(()));
-        for (sender, actor, err) in get_default_curator_channel_invalid_owner_contexts() {
-            MakeCreatorTokenPermissionlessFixture::default()
-                .with_sender(sender)
-                .with_actor(actor)
-                .call_and_assert(Err(err.into()))
-        }
-    })
-}
-
-#[test]
-fn successful_make_creator_token_permissionless_member_channel() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-        CreateChannelFixture::default().call_and_assert(Ok(()));
+        ContentTest::with_member_channel().setup();
         IssueCreatorTokenFixture::default()
             .with_transfer_policy(TransferPolicyParamsOf::<Test>::Permissioned(
                 WhitelistParamsOf::<Test> {
@@ -96,15 +80,31 @@ fn successful_make_creator_token_permissionless_member_channel() {
     })
 }
 
+// Curator channel
+
 #[test]
-fn successful_make_creator_token_permissionless_curator_channel() {
+fn unsuccessful_make_curator_channel_creator_token_permissionless_by_curator_without_permissions() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-        curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
-        CreateChannelFixture::default()
+        ContentTest::with_curator_channel()
+            .with_all_agent_permissions_except(&[
+                ChannelActionPermission::MakeCreatorTokenPermissionless,
+            ])
+            .setup();
+        MakeCreatorTokenPermissionlessFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
             .with_actor(default_curator_actor())
-            .call_and_assert(Ok(()));
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_make_curator_channel_creator_token_permissionless_by_curator() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_agent_permissions(&[ChannelActionPermission::MakeCreatorTokenPermissionless])
+            .setup();
         IssueCreatorTokenFixture::default()
             .with_transfer_policy(TransferPolicyParamsOf::<Test>::Permissioned(
                 WhitelistParamsOf::<Test> {
@@ -112,13 +112,35 @@ fn successful_make_creator_token_permissionless_curator_channel() {
                     payload: None,
                 },
             ))
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(default_curator_actor())
-            .with_initial_allocation_to(DEFAULT_CURATOR_MEMBER_ID)
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .with_initial_allocation_to(LEAD_MEMBER_ID)
             .call_and_assert(Ok(()));
         MakeCreatorTokenPermissionlessFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
             .with_actor(default_curator_actor())
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_make_curator_channel_creator_token_permissionless_by_lead() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel().setup();
+        IssueCreatorTokenFixture::default()
+            .with_transfer_policy(TransferPolicyParamsOf::<Test>::Permissioned(
+                WhitelistParamsOf::<Test> {
+                    commitment: Hashing::hash(b"commitment"),
+                    payload: None,
+                },
+            ))
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .with_initial_allocation_to(LEAD_MEMBER_ID)
+            .call_and_assert(Ok(()));
+        MakeCreatorTokenPermissionlessFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
             .call_and_assert(Ok(()));
     })
 }

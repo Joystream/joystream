@@ -195,11 +195,40 @@ pub enum ChannelActionPermission {
     /// Allows updating channel transfer status through `update_channel_transfer_status` tx
     TransferChannel,
     /// Allows claiming channel reward through `claim_channel_reward` tx
-    // TODO: or `claim_and_withdraw_channel_reward` tx (provided `WithdrawFromChannelBalance` permission is also granted)
+    // or `claim_and_withdraw_channel_reward` tx (provided `WithdrawFromChannelBalance` permission is also granted)
     ClaimChannelReward,
-    // TODO: Allows withdrawing channel balance through `withdraw_from_channel_balance` tx
+    // Allows the agent to withdraw channel balance through `withdraw_from_channel_balance` tx
     // or `claim_and_withdraw_channel_reward` tx (provided `ClaimChannelReward` permission is also granted)
+    // into AGENT'S ACCOUNT(!)
     WithdrawFromChannelBalance,
+    /// Allows issuing channel's creator token through `issue_creator_token` extrinsic.
+    IssueCreatorToken,
+    /// Allows the agent to claim creator token patronage into AGENT'S MEMBERSHIP(!).
+    /// Affected extrinsics:
+    /// - `claim_creator_token_patronage_credit`
+    ClaimCreatorTokenPatronage,
+    /// Allows initializing and managing channel's creator token sale.
+    /// Included actions:
+    /// - `init_creator_token_sale` (CRT source: AGENT'S MEMBERSHIP, JOY dest: AGENT'S ACCOUNT / None)
+    /// - `update_upcoming_creator_token_sale` (only if initialized by AGENT in question)
+    /// - `finalize_creator_token_sale` (only if initialized by AGENT in question)
+    InitAndManageCreatorTokenSale,
+    /// Allows performing creator token issuer transfer (CRT source: AGENT'S MEMBERSHIP) through:
+    /// - `creator_token_issuer_transfer`
+    CreatorTokenIssuerTransfer,
+    /// Allows changing creator token transfer policy to permissionless through:
+    /// - `make_creator_token_permissionless`
+    MakeCreatorTokenPermissionless,
+    /// Allows reducing creator token patronage rate through:
+    /// - `reduce_creator_token_patronage_rate_to`
+    ReduceCreatorTokenPatronageRate,
+    /// Allows issuing and finalizing revenue splits. Affected extrinsics:
+    /// - `issue_revenue_split`
+    /// - `finalize_revenue_split`
+    ManageRevenueSplits,
+    /// Allows deissuing a creator token (provided it has 0 supply)
+    /// - `deissue_creator_token`
+    DeissueCreatorToken,
 }
 
 pub type ChannelAgentPermissions = BTreeSet<ChannelActionPermission>;
@@ -628,6 +657,7 @@ pub struct ChannelPayoutsPayloadParametersRecord<AccountId, Balance> {
     pub uploader_account: AccountId,
     pub object_creation_params: DataObjectCreationParameters,
     pub expected_data_size_fee: Balance,
+    pub expected_data_object_state_bloat_bond: Balance,
 }
 
 pub type ChannelPayoutsPayloadParameters<T> =
@@ -676,11 +706,6 @@ pub trait ModuleAccount<T: Trait> {
     /// The account ID of the module account.
     fn module_account_id() -> T::AccountId {
         Self::ModuleId::get().into_sub_account("TREASURY")
-    }
-
-    /// The account ID of the module account.
-    fn account_for_channel(channel_id: T::ChannelId) -> T::AccountId {
-        Self::ModuleId::get().into_sub_account(("CHANNEL", channel_id))
     }
 
     /// Transfer tokens from the module account to the destination account (spends from

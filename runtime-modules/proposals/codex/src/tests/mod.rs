@@ -1992,12 +1992,13 @@ fn create_update_global_nft_limit_proposal_common_checks_succeed() {
                 )
             },
             proposal_parameters:
-                <Test as crate::Trait>::UpdageGlobalNftLimitProposalParameters::get(),
+                <Test as crate::Trait>::UpdateGlobalNftLimitProposalParameters::get(),
         };
         proposal_fixture.check_all();
     });
 }
 
+#[test]
 fn create_update_channel_payouts_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
         let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
@@ -2036,6 +2037,8 @@ fn create_update_channel_payouts_common_checks_succeed() {
                         ipfs_content_id: Vec::from_iter((0..46).map(|_| u8::MAX)),
                     },
                     expected_data_size_fee: u128::MAX.saturated_into::<BalanceOf<Test>>(),
+                    expected_data_object_state_bloat_bond: u128::MAX
+                        .saturated_into::<BalanceOf<Test>>(),
                 }),
                 min_cashout_allowed: Some(u128::MAX.saturated_into::<BalanceOf<Test>>()),
                 max_cashout_allowed: Some(u128::MAX.saturated_into::<BalanceOf<Test>>()),

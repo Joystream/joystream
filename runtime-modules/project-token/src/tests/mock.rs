@@ -45,7 +45,6 @@ pub type Hashing = <Test as frame_system::Trait>::Hashing;
 pub type HashOut = <Test as frame_system::Trait>::Hash;
 pub type VestingSchedule = VestingScheduleOf<Test>;
 pub type MemberId = u64;
-pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Test;
@@ -99,9 +98,6 @@ parameter_types! {
     // constants for storage::Trait
     pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
     pub const MaxDistributionBucketFamilyNumber: u64 = 4;
-    // FIXME: Currently this must be >= ExistentialDeposit (see: https://github.com/Joystream/joystream/issues/3510)
-    // When trying to deposit an amount < ExistentialDeposit into storage module account, we'd get:
-    // Err(DispatchError::Module { index: 0, error: 4, message: Some("ExistentialDeposit") })
     pub const DataObjectDeletionPrize: u64 = 15;
     pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
     pub const BlacklistSizeLimit: u64 = 1;
@@ -176,9 +172,8 @@ impl storage::Trait for Test {
 
     type StorageWorkingGroup = StorageWG;
     type DistributionWorkingGroup = DistributionWG;
-    type MaxRandomIterationNumber = MaxRandomIterationNumber;
-    type DataObjectDeletionPrize = DataObjectDeletionPrize;
-    type Randomness = CollectiveFlip;
+    type ModuleAccountInitialBalance = ExistentialDeposit;
+    type WeightInfo = ();
 }
 
 impl common::MembershipTypes for Test {

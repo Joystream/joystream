@@ -861,6 +861,7 @@ benchmarks! {
                 ipfs_content_id: Vec::from_iter((0..i).map(|v| u8::MAX))
             },
             expected_data_size_fee: u128::MAX.saturated_into::<T::Balance>(),
+            expected_data_object_state_bloat_bond: u128::MAX.saturated_into::<T::Balance>()
         };
         let proposal_details = ProposalDetails::UpdateChannelPayouts(
             content::UpdateChannelPayoutsParameters::<T> {
@@ -1071,7 +1072,8 @@ mod tests {
         })
     }
 
-    fn test_update_channel_payouts() {
+    #[test]
+    fn test_update_channel_payouts_proposal() {
         initial_test_ext().execute_with(|| {
             assert_ok!(test_benchmark_create_proposal_update_channel_payouts::<Test>());
         });

@@ -1633,9 +1633,12 @@ impl<T: Trait> Module<T> {
         // TODO: TBD
         Ok(UploadParameters::<T> {
             bag_id: upload_context.bag_id.clone(),
-            deletion_prize_source_account_id: upload_context.uploader_account.clone(),
+            state_bloat_bond_source_account_id: upload_context.uploader_account.clone(),
             expected_data_size_fee: payload.expected_data_size_fee,
             object_creation_list: vec![payload.object_creation_params.clone()],
+            expected_data_object_state_bloat_bond: payload.expected_data_object_state_bloat_bond,
+            storage_buckets: Default::default(),
+            distribution_buckets: Default::default(),
         })
     }
 

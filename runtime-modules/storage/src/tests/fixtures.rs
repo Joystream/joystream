@@ -23,8 +23,8 @@ use super::mocks::{
 use crate::{
     BagId, Cid, DataObjectCreationParameters, DataObjectPerMegabyteFee,
     DataObjectStateBloatBondValue, DataObjectStorage, DistributionBucket, DistributionBucketId,
-    DynBagCreationParameters, DynamicBagId, DynamicBagType, RawEvent, StaticBagId,
-    StorageBucketOperatorStatus, UploadParameters,
+    DynBagCreationParameters, DynamicBagId, DynamicBagType, RawEvent, StorageBucketOperatorStatus,
+    UploadParameters,
 };
 
 // Recommendation from Parity on testing on_finalize
@@ -58,7 +58,7 @@ pub fn set_max_voucher_limits() {
 }
 
 pub fn set_max_voucher_limits_with_params(size_limit: u64, objects_limit: u64) {
-    UpdateStorageBucketsVoucherMaxLimitsFixture::default()
+    UpdateStorageBucketsVoucherMaxLimitsFixture::new()
         .with_new_objects_size_limit(size_limit)
         .with_new_objects_number_limit(objects_limit)
         .call_and_assert(Ok(()));
@@ -66,7 +66,7 @@ pub fn set_max_voucher_limits_with_params(size_limit: u64, objects_limit: u64) {
 
 pub fn create_storage_buckets(buckets_number: u64) -> BTreeSet<u64> {
     set_max_voucher_limits();
-    CreateStorageBucketFixture::default()
+    CreateStorageBucketFixture::new()
         .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
         .with_objects_limit(DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT)
         .with_size_limit(DEFAULT_STORAGE_BUCKET_SIZE_LIMIT)
@@ -89,7 +89,7 @@ pub fn create_storage_bucket_and_assign_to_bag(
     set_max_voucher_limits();
     set_default_update_storage_buckets_per_bag_limit();
 
-    let bucket_id = CreateStorageBucketFixture::default()
+    let bucket_id = CreateStorageBucketFixture::new()
         .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
         .with_invite_worker(storage_provider_id)
         .with_objects_limit(objects_limit)
@@ -99,14 +99,14 @@ pub fn create_storage_bucket_and_assign_to_bag(
 
     let buckets = BTreeSet::from_iter(vec![bucket_id]);
 
-    UpdateStorageBucketForBagsFixture::default()
+    UpdateStorageBucketForBagsFixture::new()
         .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
         .with_bag_id(bag_id.clone())
         .with_add_bucket_ids(buckets.clone())
         .call_and_assert(Ok(()));
 
     if let Some(storage_provider_id) = storage_provider_id {
-        AcceptStorageBucketInvitationFixture::default()
+        AcceptStorageBucketInvitationFixture::new()
             .with_origin(RawOrigin::Signed(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID))
             .with_transactor_account_id(DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID)
             .with_storage_bucket_id(bucket_id)
@@ -118,7 +118,7 @@ pub fn create_storage_bucket_and_assign_to_bag(
 }
 
 pub fn set_update_storage_buckets_per_bag_limit(new_limit: u64) {
-    UpdateStorageBucketsPerBagLimitFixture::default()
+    UpdateStorageBucketsPerBagLimitFixture::new()
         .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
         .with_new_limit(new_limit)
         .call_and_assert(Ok(()))
@@ -324,7 +324,6 @@ impl UpdateStorageBucketForBagsFixture {
 
 #[derive(Fixture, Default)]
 pub struct UploadFixture {
-    #[new(default)]
     params: UploadParameters<Test>,
 }
 

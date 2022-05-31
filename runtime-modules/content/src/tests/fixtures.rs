@@ -13,7 +13,6 @@ use project_token::types::{
     PaymentWithVestingOf, TokenAllocationOf, TokenIssuanceParametersOf, Transfers,
 };
 use sp_runtime::Permill;
-use sp_std::cmp::min;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::FromIterator;
 use sp_std::iter::{IntoIterator, Iterator};
@@ -179,11 +178,6 @@ impl CreateChannelFixture {
         return self.with_storage_buckets(BTreeSet::from_iter(vec![default_storage_bucket_id]));
     }
 
-    pub fn call(self) {
-        let origin = Origin::signed(self.sender);
-        assert_ok!(Content::create_channel(origin, self.actor, self.params));
-    }
-
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
         let balance_pre = Balances::<Test>::usable_balance(self.sender);
@@ -295,6 +289,7 @@ impl CreateVideoFixture {
                 expected_data_object_state_bloat_bond,
                 ..self.params.clone()
             },
+            ..self
         }
     }
 
@@ -1796,7 +1791,7 @@ impl UpdateChannelPayoutsFixture {
                 snapshot_post.uploader_account_balance,
                 snapshot_pre
                     .uploader_account_balance
-                    .saturating_sub(<Test as storage::Trait>::DataObjectDeletionPrize::get())
+                    .saturating_sub(Storage::<Test>::data_object_state_bloat_bond_value())
             );
         } else {
             assert_eq!(snapshot_post.next_object_id, snapshot_pre.next_object_id);
@@ -2173,7 +2168,7 @@ impl IssueCreatorTokenFixture {
 
     pub fn with_initial_allocation(
         self,
-        initial_allocation: BTreeMap<AccountId, TokenAllocationOf<Test>>,
+        initial_allocation: BTreeMap<MemberId, TokenAllocationOf<Test>>,
     ) -> Self {
         Self {
             params: TokenIssuanceParametersOf::<Test> {
@@ -2706,7 +2701,7 @@ impl DeissueCreatorTokenFixture {
 }
 
 pub struct UpdateChannelTransferStatusFixture {
-    origin: RawOrigin<u64>,
+    origin: RawOrigin<u128>,
     channel_id: u64,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     transfer_status: ChannelTransferStatus<MemberId, CuratorGroupId, BalanceOf<Test>>,
@@ -2729,7 +2724,7 @@ impl UpdateChannelTransferStatusFixture {
         }
     }
 
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
         Self { origin, ..self }
     }
 
@@ -2861,7 +2856,7 @@ impl UpdateChannelTransferStatusFixture {
 }
 
 pub struct AcceptChannelTransferFixture {
-    origin: RawOrigin<u64>,
+    origin: RawOrigin<u128>,
     channel_id: u64,
     params: TransferParameters<MemberId, BalanceOf<Test>>,
 }
@@ -2875,7 +2870,7 @@ impl AcceptChannelTransferFixture {
         }
     }
 
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
         Self { origin, ..self }
     }
 
@@ -2950,7 +2945,7 @@ impl AcceptChannelTransferFixture {
 }
 
 pub struct ClaimCouncilRewardFixture {
-    origin: RawOrigin<u64>,
+    origin: RawOrigin<u128>,
     channel_id: u64,
     expected_reward: BalanceOf<Test>,
 }
@@ -2964,7 +2959,7 @@ impl ClaimCouncilRewardFixture {
         }
     }
 
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
         Self { origin, ..self }
     }
 
@@ -3055,13 +3050,16 @@ impl IssueNftFixture {
                 TransactionalStatus::<Test>::BuyNow(balance)
             }
             InitTransactionalStatus::<Test>::EnglishAuction(params) => {
-                TransactionalStatus::<Test>::EnglishAuction(EnglishAuction::<Test>::new(params))
+                TransactionalStatus::<Test>::EnglishAuction(EnglishAuction::<Test>::new(
+                    params,
+                    System::block_number(),
+                ))
             }
-            // FIXME: Impossible currently!
             InitTransactionalStatus::<Test>::OpenAuction(params) => {
                 TransactionalStatus::<Test>::OpenAuction(OpenAuction::<Test>::new(
                     params,
-                    One::one(),
+                    Zero::zero(),
+                    System::block_number(),
                 ))
             }
         };
@@ -3109,6 +3107,7 @@ impl StartOpenAuctionFixture {
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id: VideoId::one(),
             params: OpenAuctionParams::<Test> {
+                starts_at: None,
                 starting_price: Content::min_starting_price(),
                 buy_now_price: None,
                 bid_lock_duration: Content::min_bid_lock_duration(),
@@ -3161,7 +3160,8 @@ impl StartOpenAuctionFixture {
                         Test,
                     >::new(
                         self.params.clone(),
-                        pre_nft_status.open_auctions_nonce.saturating_add(1)
+                        pre_nft_status.open_auctions_nonce.saturating_add(1),
+                        System::block_number()
                     )),
                     open_auctions_nonce: pre_nft_status.open_auctions_nonce.saturating_add(1),
                     ..pre_nft_status
@@ -3199,9 +3199,9 @@ impl StartEnglishAuctionFixture {
                 starting_price: Content::min_starting_price(),
                 buy_now_price: None,
                 extension_period: Content::min_auction_extension_period(),
-                auction_duration: Content::min_auction_duration(),
+                duration: Content::min_auction_duration(),
                 min_bid_step: Content::min_bid_step(),
-                end: 10,
+                starts_at: None,
                 whitelist: BTreeSet::new(),
             },
         }
@@ -3248,7 +3248,7 @@ impl StartEnglishAuctionFixture {
                 nft_status,
                 Nft::<Test> {
                     transactional_status: TransactionalStatus::<Test>::EnglishAuction(
-                        EnglishAuction::<Test>::new(self.params.clone(),)
+                        EnglishAuction::<Test>::new(self.params.clone(), System::block_number())
                     ),
                     ..pre_nft_status
                 }
@@ -3393,11 +3393,11 @@ impl MakeOpenAuctionBidFixture {
     pub fn create_auction_state_snapshot(&self) -> NftAuctionStateSnapshot {
         let video = Content::video_by_id(self.video_id);
         let winner_account =
-            MemberInfoProvider::controller_account_id(self.member_id).map_or(None, |a| Some(a));
+            TestMemberships::controller_account_id(self.member_id).map_or(None, |a| Some(a));
         let channel_account = ContentTreasury::<Test>::account_for_channel(video.in_channel);
         let owner_account = video.nft_status.as_ref().map(|s| match s.owner {
             NftOwner::Member(member_id) => {
-                MemberInfoProvider::controller_account_id(member_id).unwrap()
+                TestMemberships::controller_account_id(member_id).unwrap()
             }
             NftOwner::ChannelOwner => {
                 ContentTreasury::<Test>::account_for_channel(video.in_channel)
@@ -3406,8 +3406,8 @@ impl MakeOpenAuctionBidFixture {
 
         NftAuctionStateSnapshot {
             video: Content::video_by_id(self.video_id),
-            winner_reserved_balance: winner_account.map(|a| Balances::<Test>::reserved_balance(a)),
-            winner_total_balance: winner_account.map(|a| Balances::<Test>::total_balance(&a)),
+            winner_balance: winner_account.map(|a| Balances::<Test>::usable_balance(&a)),
+            treasury_balance: ContentTreasury::<Test>::usable_balance(),
             owner_balance: owner_account.map(|a| Balances::<Test>::usable_balance(a)),
             channel_balance: Balances::<Test>::usable_balance(channel_account),
         }
@@ -3444,6 +3444,7 @@ impl MakeOpenAuctionBidFixture {
                                 self.member_id,
                                 self.video_id,
                                 self.bid,
+                                None
                             ))
                         );
                     } else {
@@ -3460,6 +3461,7 @@ impl MakeOpenAuctionBidFixture {
                             MetaEvent::content(RawEvent::BidMadeCompletingAuction(
                                 self.member_id,
                                 self.video_id,
+                                None
                             ))
                         );
                     }
@@ -3518,13 +3520,13 @@ impl PickOpenAuctionWinnerFixture {
     pub fn create_auction_state_snapshot(&self) -> NftAuctionStateSnapshot {
         let video = Content::video_by_id(self.video_id);
         let winner_account =
-            MemberInfoProvider::controller_account_id(self.winner_id).map_or(None, |a| Some(a));
+            TestMemberships::controller_account_id(self.winner_id).map_or(None, |a| Some(a));
         let channel_account = ContentTreasury::<Test>::account_for_channel(video.in_channel);
 
         NftAuctionStateSnapshot {
             video: Content::video_by_id(self.video_id),
-            winner_reserved_balance: winner_account.map(|a| Balances::<Test>::reserved_balance(a)),
-            winner_total_balance: winner_account.map(|a| Balances::<Test>::total_balance(&a)),
+            winner_balance: winner_account.map(|a| Balances::<Test>::usable_balance(&a)),
+            treasury_balance: ContentTreasury::<Test>::usable_balance(),
             owner_balance: Some(Balances::<Test>::usable_balance(self.sender)),
             channel_balance: Balances::<Test>::usable_balance(channel_account),
         }
@@ -3559,7 +3561,8 @@ impl PickOpenAuctionWinnerFixture {
                 MetaEvent::content(RawEvent::OpenAuctionBidAccepted(
                     self.actor.clone(),
                     self.video_id,
-                    self.commitment,
+                    self.winner_id,
+                    self.commitment
                 ))
             );
         } else {
@@ -3742,8 +3745,8 @@ pub struct NftAuctionStateSnapshot {
     video: Video<Test>,
     owner_balance: Option<BalanceOf<Test>>,
     channel_balance: BalanceOf<Test>,
-    winner_reserved_balance: Option<BalanceOf<Test>>,
-    winner_total_balance: Option<BalanceOf<Test>>,
+    winner_balance: Option<BalanceOf<Test>>,
+    treasury_balance: BalanceOf<Test>,
 }
 
 fn assert_auction_completed_successfuly(
@@ -3761,10 +3764,8 @@ fn assert_auction_completed_successfuly(
     assert!(snapshot_post.video.nft_status.is_some());
     assert!(snapshot_pre.owner_balance.is_some());
     assert!(snapshot_post.owner_balance.is_some());
-    assert!(snapshot_pre.winner_total_balance.is_some());
-    assert!(snapshot_post.winner_total_balance.is_some());
-    assert!(snapshot_pre.winner_reserved_balance.is_some());
-    assert!(snapshot_post.winner_reserved_balance.is_some());
+    assert!(snapshot_pre.winner_balance.is_some());
+    assert!(snapshot_post.winner_balance.is_some());
     let pre_nft_status = snapshot_pre.video.nft_status.unwrap();
     let post_nft_status = snapshot_post.video.nft_status.unwrap();
     assert_eq!(
@@ -3803,23 +3804,19 @@ fn assert_auction_completed_successfuly(
             );
         }
     }
-    if !was_new_bid {
+    if was_new_bid {
+        // If new bid immediately completed auction - expect winner balance decreased
         assert_eq!(
-            snapshot_post.winner_reserved_balance.unwrap(),
-            snapshot_pre
-                .winner_reserved_balance
-                .unwrap()
-                .saturating_sub(amount)
+            snapshot_post.winner_balance.unwrap(),
+            snapshot_pre.winner_balance.unwrap().saturating_sub(amount)
+        );
+    } else {
+        // If already existing bid was chosen as a winner - expect treasury balance decreased
+        assert_eq!(
+            snapshot_post.treasury_balance,
+            snapshot_pre.treasury_balance.saturating_sub(amount)
         );
     }
-
-    assert_eq!(
-        snapshot_post.winner_total_balance.unwrap(),
-        snapshot_pre
-            .winner_total_balance
-            .unwrap()
-            .saturating_sub(amount)
-    );
 }
 
 pub struct SellNftFixture {
@@ -4435,11 +4432,11 @@ pub fn assert_group_has_permissions_for_actions(
     }
 }
 
-pub fn increase_account_balance_helper(account_id: u64, balance: u64) {
+pub fn increase_account_balance_helper(account_id: u128, balance: u64) {
     let _ = Balances::<Test>::deposit_creating(&account_id, balance.into());
 }
 
-pub fn slash_account_balance_helper(account_id: u64) {
+pub fn slash_account_balance_helper(account_id: u128) {
     let _ = Balances::<Test>::slash(&account_id, Balances::<Test>::total_balance(&account_id));
 }
 
@@ -4999,6 +4996,7 @@ impl ContentTest {
         if self.claimable_reward {
             let payments = create_some_pull_payments_helper();
             update_commit_value_with_payments_helper(&payments);
+            <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
         }
 
         // Set channel collaborators (optionally)
@@ -5078,63 +5076,6 @@ pub fn agent_permissions(permissions: &[ChannelActionPermission]) -> ChannelAgen
     permissions.iter().cloned().collect()
 }
 
-pub fn get_default_member_channel_invalid_owner_contexts() -> Vec<(
-    AccountId,
-    ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    Error<Test>,
-)> {
-    vec![
-        // lead as owner
-        (
-            LEAD_ACCOUNT_ID,
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            Error::<Test>::MemberAuthFailed,
-        ),
-        // curator as owner
-        (
-            DEFAULT_CURATOR_ACCOUNT_ID,
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            Error::<Test>::MemberAuthFailed,
-        ),
-        // collaborator as owner
-        (
-            COLLABORATOR_MEMBER_ACCOUNT_ID,
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            Error::<Test>::MemberAuthFailed,
-        ),
-        // unauth member as owner
-        (
-            UNAUTHORIZED_MEMBER_ACCOUNT_ID,
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            Error::<Test>::MemberAuthFailed,
-        ),
-        // lead as lead
-        (
-            LEAD_ACCOUNT_ID,
-            ContentActor::Lead,
-            Error::<Test>::ActorCannotOwnChannel,
-        ),
-        // curator as curator
-        (
-            DEFAULT_CURATOR_ACCOUNT_ID,
-            default_curator_actor(),
-            Error::<Test>::ActorNotAuthorized,
-        ),
-        // collaborator as collaborator
-        (
-            COLLABORATOR_MEMBER_ACCOUNT_ID,
-            ContentActor::Member(COLLABORATOR_MEMBER_ID),
-            Error::<Test>::ActorNotAuthorized,
-        ),
-        // unauth member as unauth member
-        (
-            UNAUTHORIZED_MEMBER_ACCOUNT_ID,
-            ContentActor::Member(UNAUTHORIZED_MEMBER_ID),
-            Error::<Test>::ActorNotAuthorized,
-        ),
-    ]
-}
-
 pub fn get_default_member_channel_invalid_contexts() -> Vec<(
     AccountId,
     ContentActor<CuratorGroupId, CuratorId, MemberId>,
@@ -5181,63 +5122,6 @@ pub fn get_default_member_channel_invalid_contexts() -> Vec<(
         (
             UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID,
             ContentActor::Member(UNAUTHORIZED_COLLABORATOR_MEMBER_ID),
-            Error::<Test>::ActorNotAuthorized,
-        ),
-    ]
-}
-
-pub fn get_default_curator_channel_invalid_owner_contexts() -> Vec<(
-    AccountId,
-    ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    Error<Test>,
-)> {
-    vec![
-        // lead as curator
-        (
-            LEAD_ACCOUNT_ID,
-            default_curator_actor(),
-            Error::<Test>::CuratorAuthFailed,
-        ),
-        // collaborator as curator
-        (
-            COLLABORATOR_MEMBER_ACCOUNT_ID,
-            default_curator_actor(),
-            Error::<Test>::CuratorAuthFailed,
-        ),
-        // unauth curator as curator
-        (
-            UNAUTHORIZED_CURATOR_ACCOUNT_ID,
-            default_curator_actor(),
-            Error::<Test>::CuratorAuthFailed,
-        ),
-        // member as curator
-        (
-            DEFAULT_MEMBER_ACCOUNT_ID,
-            default_curator_actor(),
-            Error::<Test>::CuratorAuthFailed,
-        ),
-        // lead as lead
-        (
-            LEAD_ACCOUNT_ID,
-            ContentActor::Lead,
-            Error::<Test>::ActorCannotOwnChannel,
-        ),
-        // collaborator as collaborator
-        (
-            COLLABORATOR_MEMBER_ACCOUNT_ID,
-            ContentActor::Member(COLLABORATOR_MEMBER_ID),
-            Error::<Test>::ActorNotAuthorized,
-        ),
-        // unauth curator as unauth curator
-        (
-            UNAUTHORIZED_CURATOR_ACCOUNT_ID,
-            ContentActor::Curator(2, UNAUTHORIZED_CURATOR_ID),
-            Error::<Test>::ActorNotAuthorized,
-        ),
-        // member as member
-        (
-            DEFAULT_MEMBER_ACCOUNT_ID,
-            ContentActor::Member(DEFAULT_MEMBER_ID),
             Error::<Test>::ActorNotAuthorized,
         ),
     ]
@@ -5399,13 +5283,65 @@ pub fn run_all_fixtures_with_contexts(
             .with_sender(sender)
             .with_actor(actor)
             .call_and_assert(expected_err.clone());
+        WithdrawFromChannelBalanceFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        ClaimAndWithdrawChannelRewardFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        IssueCreatorTokenFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        InitCreatorTokenSaleFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        UpdateUpcomingCreatorTokenSaleFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        FinalizeCreatorTokenSaleFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        CreatorTokenIssuerTransferFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        MakeCreatorTokenPermissionlessFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        ReduceCreatorTokenPatronageRateFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        ClaimCreatorTokenPatronageCreditFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        IssueRevenueSplitFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        FinalizeRevenueSplitFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        DeissueCreatorTokenFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
     }
 }
 
 #[derive(Fixture, new)]
 pub struct UpdateGlobalNftLimitFixture {
     #[new(value = "RawOrigin::Signed(LEAD_ACCOUNT_ID)")]
-    origin: RawOrigin<u64>,
+    origin: RawOrigin<u128>,
 
     #[new(default)]
     period: NftLimitPeriod,
@@ -5452,7 +5388,7 @@ impl UpdateGlobalNftLimitFixture {
 #[derive(Fixture, new)]
 pub struct UpdateChannelNftLimitFixture {
     #[new(value = "RawOrigin::Signed(DEFAULT_CURATOR_ACCOUNT_ID)")]
-    origin: RawOrigin<u64>,
+    origin: RawOrigin<u128>,
 
     #[new(value = "default_curator_actor()")]
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,

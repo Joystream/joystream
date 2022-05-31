@@ -93,13 +93,11 @@ fn settle_english_auction() {
 
         // Runtime tested state after call
 
-        // Account type used = 32bit = 4 bytes
-        // Sub account format (TypeId (4 bytes) ++ ParachainId ++ sub_id ) which is encoded
-        // into a 32 bit value so sub accounts and main module account are the same
-        // Module account is decreased by bid
-        // TODO: replace mock test env account type with the type used in production and
-        // check both module account balance (== existential_deposit) and channel account balance
-        // (== bid)
+        assert_eq!(
+            ContentTreasury::<Test>::usable_balance(),
+            existential_deposit
+        );
+        assert_eq!(channel_reward_account_balance(ChannelId::one()), bid);
 
         // Ensure english auction successfully completed
         assert!(matches!(
@@ -530,8 +528,7 @@ fn settle_english_auction_ok_with_balances_check() {
         assert_ok!(settle_english_auction_result);
 
         // Balances check
-        // TODO: use the same AccountId type used in production so that moduled account &
-        // sub-account are different
+        assert_eq!(Balances::<Test>::usable_balance(&module_account_id), 0);
         assert_eq!(channel_reward_account_balance(1u64), next_bid);
         assert_eq!(
             Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID),

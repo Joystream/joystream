@@ -1096,7 +1096,7 @@ fn unsuccessful_video_deletion_by_member_with_auth_failure() {
 
         DeleteVideoFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ACCOUNT_ID))
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
             .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
     })
 }

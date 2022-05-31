@@ -1,7 +1,7 @@
 #![cfg(test)]
 use crate::tests::fixtures::{
     create_data_objects_helper, create_default_member_owned_channel_with_video,
-    create_initial_storage_buckets_helper, increase_account_balance_helper, CreateChannelFixture,
+    create_initial_storage_buckets_helper, increase_account_balance_helper, ContentTest,
     CreateVideoFixture,
 };
 use crate::tests::mock::*;
@@ -62,11 +62,8 @@ fn issue_nft() {
 #[test]
 fn nft_is_issued_with_open_auction_status_successfully() {
     with_default_mock_builder(|| {
-        run_to_block(1u64);
         let video_id = 1u64;
-
-        CreateChannelFixture::default().call_and_assert(Ok(()));
-        CreateVideoFixture::default().call_and_assert(Ok(()));
+        ContentTest::with_member_channel().with_video().setup();
 
         // Issue nft
         assert_ok!(Content::issue_nft(

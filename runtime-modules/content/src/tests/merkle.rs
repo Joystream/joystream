@@ -1,90 +1,9 @@
 #![cfg(test)]
-use super::curators::add_curator_to_new_group;
 use super::fixtures::*;
 use super::mock::*;
 use crate::*;
 use common::council::CouncilBudgetManager;
 use sp_runtime::DispatchError;
-
-#[test]
-fn unsuccessful_reward_claim_with_member_auth_failed() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
-
-        ClaimChannelRewardFixture::default()
-            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
-            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()))
-    })
-}
-
-#[test]
-fn unsuccessful_reward_claim_with_curator_auth_failed() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video(
-            DATA_OBJECT_STATE_BLOAT_BOND,
-            &[ChannelActionPermission::ClaimChannelReward],
-        );
-
-        let default_curator_group_id = Content::next_curator_group_id() - 1;
-        ClaimChannelRewardFixture::default()
-            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
-            .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()))
-    })
-}
-
-#[test]
-fn unsuccessful_reward_claim_by_unath_member() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
-
-        ClaimChannelRewardFixture::default()
-            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(UNAUTHORIZED_MEMBER_ID))
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
-    })
-}
-
-#[test]
-fn unsuccessful_reward_claim_by_unauth_curator() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video(
-            DATA_OBJECT_STATE_BLOAT_BOND,
-            &[ChannelActionPermission::ClaimChannelReward],
-        );
-
-        let unauthorized_curator_group_id = add_curator_to_new_group(
-            UNAUTHORIZED_CURATOR_ID,
-            &[ChannelActionPermission::ClaimChannelReward],
-        );
-        ClaimChannelRewardFixture::default()
-            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(
-                unauthorized_curator_group_id,
-                UNAUTHORIZED_CURATOR_ID,
-            ))
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
-    })
-}
 
 #[test]
 fn unsuccessful_reward_claim_with_unsufficient_cashout() {
@@ -193,52 +112,7 @@ fn unsuccessful_reward_claim_with_empty_proof() {
 }
 
 #[test]
-fn successful_reward_claim_by_member() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
-        let payments = create_some_pull_payments_helper();
-        update_commit_value_with_payments_helper(&payments);
-        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
-
-        ClaimChannelRewardFixture::default()
-            .with_payments(payments)
-            .call_and_assert(Ok(()))
-    })
-}
-
-#[test]
 fn unsuccessful_reward_claim_with_pending_channel_transfer() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video(
-            DATA_OBJECT_STATE_BLOAT_BOND,
-            &[ChannelActionPermission::ClaimChannelReward],
-        );
-        let payments = create_some_pull_payments_helper();
-        update_commit_value_with_payments_helper(&payments);
-        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
-
-        let default_curator_group_id = Content::next_curator_group_id() - 1;
-        ClaimChannelRewardFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_payments(payments)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
-            .call_and_assert(Ok(()))
-    })
-}
-
-#[test]
-fn successful_reward_claim_by_curator() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
@@ -370,97 +244,93 @@ fn unsuccessful_reward_claim_with_insufficient_council_budget() {
     })
 }
 
-/// Withdrawals
-
 #[test]
-fn unsuccessful_channel_balance_withdrawal_with_auth_failed() {
+fn unsuccessful_channel_reward_claim_by_curator_agent_without_permissions() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        let payments = create_some_pull_payments_helper();
-        update_commit_value_with_payments_helper(&payments);
-        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
-
+        ContentTest::with_curator_channel()
+            .with_claimable_reward()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ClaimChannelReward])
+            .setup();
         ClaimChannelRewardFixture::default()
-            .with_payments(payments)
-            .call_and_assert(Ok(()));
-
-        // TODO: Should not be required after https://github.com/Joystream/joystream/issues/3511
-        make_channel_account_existential_deposit(ChannelId::one());
-
-        let curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
-
-        // As owner
-        WithdrawFromChannelBalanceFixture::default()
-            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
-            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
-
-        // As curator
-        WithdrawFromChannelBalanceFixture::default()
-            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()));
-
-        // As lead
-        WithdrawFromChannelBalanceFixture::default()
-            .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()));
-
-        // As collaborator
-        WithdrawFromChannelBalanceFixture::default()
-            .with_sender(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
     })
 }
 
 #[test]
-fn unsuccessful_channel_balance_withdrawal_as_non_owner() {
+fn successful_channel_reward_claim_by_curator_agent() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        let payments = create_some_pull_payments_helper();
-        update_commit_value_with_payments_helper(&payments);
-        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
-
-        // TODO: Should not be required after https://github.com/Joystream/joystream/issues/3511
-        make_channel_account_existential_deposit(ChannelId::one());
-
+        ContentTest::with_curator_channel()
+            .with_claimable_reward()
+            .with_agent_permissions(&[ChannelActionPermission::ClaimChannelReward])
+            .setup();
         ClaimChannelRewardFixture::default()
-            .with_payments(payments)
-            .call_and_assert(Ok(()));
-
-        let curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
-
-        // As curator
-        WithdrawFromChannelBalanceFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+            .with_actor(default_curator_actor())
+            .call_and_assert(Ok(()));
+    })
+}
 
-        // As lead
-        WithdrawFromChannelBalanceFixture::default()
+#[test]
+fn successful_channel_reward_claim_by_lead() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_claimable_reward()
+            .setup();
+        ClaimChannelRewardFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
-            .call_and_assert(Err(Error::<Test>::ActorCannotOwnChannel.into()));
-
-        // As collaborator
-        WithdrawFromChannelBalanceFixture::default()
-            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+            .call_and_assert(Ok(()));
     })
 }
 
+#[test]
+fn unsuccessful_channel_reward_claim_by_collaborator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_claimable_reward()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ClaimChannelReward])
+            .setup();
+        ClaimChannelRewardFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_channel_reward_claim_by_collaborator() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_claimable_reward()
+            .with_agent_permissions(&[ChannelActionPermission::ClaimChannelReward])
+            .setup();
+        ClaimChannelRewardFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_channel_reward_claim_by_owner_member() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_claimable_reward()
+            .setup();
+        ClaimChannelRewardFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Ok(()));
+    })
+}
+
+/// Withdrawals
 #[test]
 fn unsuccessful_channel_balance_withdrawal_when_amount_exceeds_balance_minus_existential_deposit() {
     with_default_mock_builder(|| {
@@ -539,9 +409,7 @@ fn unsuccessful_channel_balance_withdrawal_invalid_channel_id() {
 #[test]
 fn unsuccessful_channel_balance_withdrawal_when_creator_token_issued() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        CreateChannelFixture::default().call_and_assert(Ok(()));
+        ContentTest::with_member_channel().setup();
         IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
 
         increase_account_balance_helper(
@@ -554,32 +422,6 @@ fn unsuccessful_channel_balance_withdrawal_when_creator_token_issued() {
         WithdrawFromChannelBalanceFixture::default().call_and_assert(Err(
             Error::<Test>::CannotWithdrawFromChannelWithCreatorTokenIssued.into(),
         ));
-    })
-}
-
-#[test]
-fn successful_channel_balance_withdrawal_to_custom_destination() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        let payments = create_some_pull_payments_helper();
-        update_commit_value_with_payments_helper(&payments);
-        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
-
-        // TODO: Should not be required after https://github.com/Joystream/joystream/issues/3511
-        make_channel_account_existential_deposit(ChannelId::one());
-
-        ClaimChannelRewardFixture::default()
-            .with_payments(payments)
-            .call_and_assert(Ok(()));
-
-        WithdrawFromChannelBalanceFixture::default()
-            .with_destination(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .call_and_assert(Ok(()));
     })
 }
 
@@ -613,80 +455,114 @@ fn successful_channel_balance_multiple_withdrawals() {
     })
 }
 
-/// Claim&Withdraw
-
 #[test]
-fn unsuccessful_claim_and_withdraw_channel_reward_with_auth_failed() {
+fn unsuccessful_member_channel_balance_withdrawal_collaborator_without_permissions() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        let payments = create_some_pull_payments_helper();
-        update_commit_value_with_payments_helper(&payments);
-
-        let curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
-
-        // As owner
-        ClaimAndWithdrawChannelRewardFixture::default()
-            .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
-            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
-
-        // As curator
-        ClaimAndWithdrawChannelRewardFixture::default()
-            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .call_and_assert(Err(Error::<Test>::CuratorAuthFailed.into()));
-
-        // As lead
-        ClaimAndWithdrawChannelRewardFixture::default()
-            .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()));
-
-        // As collaborator
-        ClaimAndWithdrawChannelRewardFixture::default()
-            .with_sender(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
-    })
-}
-
-#[test]
-fn unsuccessful_claim_and_withdraw_channel_reward_as_non_owner() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        let payments = create_some_pull_payments_helper();
-        update_commit_value_with_payments_helper(&payments);
-
-        let curator_group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID);
-
-        // As curator
-        ClaimAndWithdrawChannelRewardFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
-
-        // As lead
-        ClaimAndWithdrawChannelRewardFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            .call_and_assert(Err(Error::<Test>::ActorCannotOwnChannel.into()));
-
-        // As collaborator
-        ClaimAndWithdrawChannelRewardFixture::default()
+        ContentTest::with_member_channel()
+            .with_all_agent_permissions_except(&[
+                ChannelActionPermission::WithdrawFromChannelBalance,
+            ])
+            .setup();
+        WithdrawFromChannelBalanceFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
     })
 }
+
+#[test]
+fn successful_member_channel_balance_withdrawal_by_collaborator() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_agent_permissions(&[ChannelActionPermission::WithdrawFromChannelBalance])
+            .setup();
+        increase_account_balance_helper(
+            ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
+            DEFAULT_PAYOUT_EARNED
+                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
+                .saturating_add(<Test as balances::Trait>::ExistentialDeposit::get().into()),
+        );
+        WithdrawFromChannelBalanceFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_destination(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_member_channel_balance_withdrawal_by_owner() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::with_member_channel().setup();
+        increase_account_balance_helper(
+            ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
+            DEFAULT_PAYOUT_EARNED
+                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
+                .saturating_add(<Test as balances::Trait>::ExistentialDeposit::get().into()),
+        );
+        WithdrawFromChannelBalanceFixture::default().call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn unsuccessful_curator_channel_balance_withdrawal_by_curator_without_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_all_agent_permissions_except(&[
+                ChannelActionPermission::WithdrawFromChannelBalance,
+            ])
+            .setup();
+        WithdrawFromChannelBalanceFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_curator_channel_balance_withdrawal_by_curator() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_agent_permissions(&[ChannelActionPermission::WithdrawFromChannelBalance])
+            .setup();
+        increase_account_balance_helper(
+            ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
+            DEFAULT_PAYOUT_EARNED
+                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
+                .saturating_add(<Test as balances::Trait>::ExistentialDeposit::get().into()),
+        );
+        WithdrawFromChannelBalanceFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .with_destination(DEFAULT_CURATOR_ACCOUNT_ID)
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_curator_channel_balance_withdrawal_by_lead() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel().setup();
+        increase_account_balance_helper(
+            ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
+            DEFAULT_PAYOUT_EARNED
+                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
+                .saturating_add(<Test as balances::Trait>::ExistentialDeposit::get().into()),
+        );
+        WithdrawFromChannelBalanceFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .with_destination(LEAD_ACCOUNT_ID)
+            .call_and_assert(Ok(()));
+    })
+}
+
+/// Claim&Withdraw
 
 #[test]
 fn unsuccessful_claim_and_withdraw_with_unsufficient_cashout() {
@@ -888,25 +764,6 @@ fn unsuccessful_claim_and_withdraw_insufficient_council_budget() {
 }
 
 #[test]
-fn successful_claim_and_withdraw_to_custom_destination() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
-        let payments = create_some_pull_payments_helper();
-        update_commit_value_with_payments_helper(&payments);
-        <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
-
-        ClaimAndWithdrawChannelRewardFixture::default()
-            .with_payments(payments.clone())
-            .with_destination(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
 fn successful_multiple_claims_and_withdrawals_when_reward_updated() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -928,6 +785,132 @@ fn successful_multiple_claims_and_withdrawals_when_reward_updated() {
         ClaimAndWithdrawChannelRewardFixture::default()
             .with_payments(payments2.clone())
             .with_item(payments2[DEFAULT_PROOF_INDEX])
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn unsuccessful_member_channel_claim_and_withdraw_by_collaborator_without_claim_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ClaimChannelReward])
+            .setup();
+        ClaimAndWithdrawChannelRewardFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_member_channel_claim_and_withdraw_by_collaborator_without_withdrawal_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_all_agent_permissions_except(&[
+                ChannelActionPermission::WithdrawFromChannelBalance,
+            ])
+            .with_claimable_reward()
+            .setup();
+        ClaimAndWithdrawChannelRewardFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_member_channel_claim_and_withdraw_by_collaborator() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_agent_permissions(&[
+                ChannelActionPermission::WithdrawFromChannelBalance,
+                ChannelActionPermission::ClaimChannelReward,
+            ])
+            .with_claimable_reward()
+            .setup();
+        ClaimAndWithdrawChannelRewardFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .with_destination(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_member_channel_claim_and_withdraw_by_owner() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_claimable_reward()
+            .setup();
+        ClaimAndWithdrawChannelRewardFixture::default().call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn unsuccessful_curator_channel_claim_and_withdraw_by_curator_without_cliam_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_all_agent_permissions_except(&[ChannelActionPermission::ClaimChannelReward])
+            .setup();
+        ClaimAndWithdrawChannelRewardFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn unsuccessful_curator_channel_claim_and_withdraw_by_curator_without_withdrawal_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_all_agent_permissions_except(&[
+                ChannelActionPermission::WithdrawFromChannelBalance,
+            ])
+            .with_claimable_reward()
+            .setup();
+        ClaimAndWithdrawChannelRewardFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ));
+    })
+}
+
+#[test]
+fn successful_curator_channel_claim_and_withdraw_by_curator() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_agent_permissions(&[
+                ChannelActionPermission::WithdrawFromChannelBalance,
+                ChannelActionPermission::ClaimChannelReward,
+            ])
+            .with_claimable_reward()
+            .setup();
+        ClaimAndWithdrawChannelRewardFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(default_curator_actor())
+            .with_destination(DEFAULT_CURATOR_ACCOUNT_ID)
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn successful_curator_channel_claim_and_withdraw_by_lead() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel()
+            .with_claimable_reward()
+            .setup();
+        ClaimAndWithdrawChannelRewardFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .with_destination(LEAD_ACCOUNT_ID)
             .call_and_assert(Ok(()));
     })
 }
@@ -956,8 +939,12 @@ fn unsuccessfull_channel_payouts_update_with_insufficient_uploader_account_balan
     with_default_mock_builder(|| {
         run_to_block(1);
 
+        storage::DataObjectStateBloatBondValue::<Test>::put(1);
+
         let payload_params = ChannelPayoutsPayloadParameters::<Test> {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+            expected_data_object_state_bloat_bond:
+                Storage::<Test>::data_object_state_bloat_bond_value(),
             object_creation_params: DataObjectCreationParameters {
                 size: 1,
                 ipfs_content_id: vec![1],
@@ -980,6 +967,8 @@ fn unsuccessfull_channel_payouts_update_with_unexpected_data_size_fee() {
         let payload_params = ChannelPayoutsPayloadParameters::<Test> {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee()
                 .saturating_add(One::one()),
+            expected_data_object_state_bloat_bond:
+                Storage::<Test>::data_object_state_bloat_bond_value(),
             object_creation_params: DataObjectCreationParameters {
                 size: 1,
                 ipfs_content_id: vec![1],
@@ -990,6 +979,31 @@ fn unsuccessfull_channel_payouts_update_with_unexpected_data_size_fee() {
         UpdateChannelPayoutsFixture::default()
             .with_payload(Some(payload_params))
             .call_and_assert(Err(storage::Error::<Test>::DataSizeFeeChanged.into()));
+    })
+}
+
+#[test]
+fn unsuccessfull_channel_payouts_update_with_unexpected_data_object_state_bloat_bond() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        let payload_params = ChannelPayoutsPayloadParameters::<Test> {
+            expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+            expected_data_object_state_bloat_bond:
+                Storage::<Test>::data_object_state_bloat_bond_value().saturating_add(1),
+            object_creation_params: DataObjectCreationParameters {
+                size: 1,
+                ipfs_content_id: vec![1],
+            },
+            uploader_account: DEFAULT_MEMBER_ACCOUNT_ID,
+        };
+
+        UpdateChannelPayoutsFixture::default()
+            .with_payload(Some(payload_params))
+            .call_and_assert(Err(
+                storage::Error::<Test>::DataObjectStateBloatBondChanged.into()
+            ));
     })
 }
 
@@ -1035,6 +1049,8 @@ fn successful_channel_payouts_update() {
         let merkle_root = generate_merkle_root_helper(&payments).pop().unwrap();
         let payload_params = ChannelPayoutsPayloadParameters::<Test> {
             expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
+            expected_data_object_state_bloat_bond:
+                Storage::<Test>::data_object_state_bloat_bond_value(),
             object_creation_params: DataObjectCreationParameters {
                 size: 1,
                 ipfs_content_id: vec![1],

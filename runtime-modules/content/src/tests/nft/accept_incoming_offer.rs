@@ -1,9 +1,8 @@
 #![cfg(test)]
-use crate::tests::curators;
 use crate::tests::fixtures::{
     channel_reward_account_balance, create_default_member_owned_channel_with_video,
-    create_initial_storage_buckets_helper, increase_account_balance_helper, CreateChannelFixture,
-    CreateVideoFixture, UpdateChannelFixture,
+    create_initial_storage_buckets_helper, increase_account_balance_helper, ContentTest,
+    UpdateChannelFixture,
 };
 use crate::tests::mock::*;
 use crate::*;
@@ -226,36 +225,15 @@ fn accept_incoming_offer_with_nft_owner_being_a_member_channel() {
 #[test]
 fn accept_incoming_offer_reward_account_ok_with_curator_owner_channel_account_correctly_credited() {
     with_default_mock_builder(|| {
-        // Run to block one to see emitted events
-        run_to_block(1);
-
         let video_id = NextVideoId::<Test>::get();
-        let channel_id = Content::next_channel_id();
-        let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
-
-        CreateChannelFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .call();
-
-        CreateVideoFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .call();
-
-        // Issue nft
-        assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID),
-            ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID),
-            video_id,
-            NftIssuanceParameters::<Test>::default(),
-        ));
+        let channel_id = NextChannelId::<Test>::get();
+        ContentTest::with_curator_channel().with_video_nft().setup();
 
         // Offer nft
         assert_ok!(Content::offer_nft(
-            Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID),
+            Origin::signed(LEAD_ACCOUNT_ID),
             video_id,
-            ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID),
+            ContentActor::Lead,
             SECOND_MEMBER_ID,
             Some(DEFAULT_NFT_PRICE),
         ));

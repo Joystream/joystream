@@ -1,9 +1,7 @@
 #![cfg(test)]
-
-use crate::tests::curators;
 use crate::tests::fixtures::{
     channel_reward_account_balance, create_default_member_owned_channel_with_video,
-    create_initial_storage_buckets_helper, increase_account_balance_helper, CreateChannelFixture,
+    create_initial_storage_buckets_helper, increase_account_balance_helper, ContentTest,
     CreateVideoFixture, UpdateChannelFixture,
 };
 use crate::tests::mock::*;
@@ -416,17 +414,12 @@ fn buy_now_ok_with_nft_owner_member_credited_with_payment() {
 #[test]
 fn buy_now_ok_with_nft_owner_curator_channel_correctly_credited() {
     with_default_mock_builder(|| {
-        run_to_block(1);
         let video_id = 1u64;
-        let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
-        CreateChannelFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .call();
+        ContentTest::with_curator_channel().setup();
 
         CreateVideoFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
             .with_nft_in_sale(DEFAULT_NFT_PRICE)
             .call();
 
@@ -451,9 +444,8 @@ fn buy_now_ok_with_nft_owner_curator_channel_correctly_credited() {
 #[test]
 fn buy_now_ok_with_nft_owner_member_channel_correctly_credited() {
     with_default_mock_builder(|| {
-        run_to_block(1);
         let video_id = 1u64;
-        CreateChannelFixture::default().call();
+        ContentTest::with_member_channel().setup();
 
         CreateVideoFixture::default()
             .with_nft_in_sale(DEFAULT_NFT_PRICE)
