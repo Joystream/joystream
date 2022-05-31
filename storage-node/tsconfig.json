@@ -12,17 +12,13 @@
     "baseUrl": ".",
     "paths": {
       "@polkadot/types/augment": ["../types/augment-codec/augment-types.ts"],
-      "@polkadot/api/augment": ["../types/augment-codec/augment-api.ts"],
+      "@polkadot/api/augment": ["../types/augment-codec/augment-api.ts"]
     },
     "esModuleInterop": true,
-    "types" : [ "node", "mocha" ],
+    "types": ["node", "mocha"],
     "noUnusedLocals": true,
     "resolveJsonModule": true,
     "useUnknownInCatchVariables": false
   },
-  "include": [
-    "src/**/*"
-  ]
+  "include": ["src/**/*"]
 }
-
-
