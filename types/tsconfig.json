@@ -3,10 +3,6 @@
   "compilerOptions": {
     "outDir": "./"
   },
-  "include": [
-    "src/**/*.ts"
-  ],
-  "exclude": [
-    "src/scripts"
-  ]
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/scripts"]
 }
