@@ -57,7 +57,7 @@ use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
 use frame_system::{ensure_root, ensure_signed};
 use sp_arithmetic::traits::{One, Zero};
 use sp_arithmetic::Perbill;
-use sp_runtime::traits::{Hash, Saturating};
+use sp_runtime::traits::Hash;
 use sp_runtime::SaturatedConversion;
 use sp_std::vec::Vec;
 
@@ -114,7 +114,7 @@ pub trait Trait:
 
     /// Working group pallet integration.
     type WorkingGroup: common::working_group::WorkingGroupAuthenticator<Self>
-        + common::working_group::WorkingGroupBudgetHandler<Self>;
+        + common::working_group::WorkingGroupBudgetHandler<Self::AccountId, BalanceOf<Self>>;
 
     /// Defines the default balance for the invited member.
     type DefaultInitialInvitationBalance: Get<BalanceOf<Self>>;
@@ -745,15 +745,8 @@ decl_module! {
                 membership.invites = membership.invites.saturating_sub(1);
             });
 
-            // Decrease the working group balance.
-            let new_wg_budget = current_wg_budget.saturating_sub(invitation_balance);
-            T::WorkingGroup::set_budget(new_wg_budget);
-
-            // Create default balance for the invited member.
-            let _ = balances::Module::<T>::deposit_creating(
-                &params.controller_account,
-                invitation_balance
-            );
+            // Transfer the balance from tne WG budget to the controller account.
+            T::WorkingGroup::withdraw(&params.controller_account, invitation_balance);
 
             // Lock invitation balance. Allow only transaction payments.
             T::InvitedMemberStakingHandler::lock_with_reasons(

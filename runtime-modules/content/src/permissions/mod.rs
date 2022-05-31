@@ -78,6 +78,12 @@ pub trait ContentActorAuthenticator: frame_system::Trait + common::MembershipTyp
 
     /// Ensure member id is valid
     fn validate_member_id(member_id: &Self::MemberId) -> bool;
+
+    /// Get leader member id
+    fn get_leader_member_id() -> Option<Self::MemberId>;
+
+    /// Get worker member id
+    fn get_curator_member_id(curator_id: &Self::CuratorId) -> Option<Self::MemberId>;
 }
 
 pub fn ensure_is_valid_curator_id<T: Trait>(curator_id: &T::CuratorId) -> DispatchResult {
@@ -474,6 +480,16 @@ pub fn ensure_actor_authorized_to_claim_payment<T: Trait>(
     )
 }
 
+pub fn ensure_actor_authorized_to_withdraw_from_channel<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
+) -> DispatchResult {
+    let sender = ensure_signed(origin)?;
+    ensure_actor_auth_success::<T>(&sender, actor)?;
+    ensure_actor_is_channel_owner::<T>(actor, owner)
+}
+
 // authorized account can update payouts vector commitment
 pub fn ensure_authorized_to_update_commitment<T: Trait>(sender: &T::AccountId) -> DispatchResult {
     ensure_lead_auth_success::<T>(sender)
@@ -566,4 +582,25 @@ pub fn ensure_actor_authorized_to_update_channel_nft_limits<T: Trait>(
         &[ContentModerationAction::UpdateChannelNftLimits],
         channel.privilege_level,
     )
+// Creator tokens
+pub fn get_member_id_of_actor<T: Trait>(
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+) -> Result<T::MemberId, DispatchError> {
+    let opt_member_id = match actor {
+        ContentActor::Member(member_id) => Some(*member_id),
+        ContentActor::Curator(_, curator_id) => T::get_curator_member_id(curator_id),
+        ContentActor::Lead => T::get_leader_member_id(),
+    };
+    opt_member_id.ok_or_else(|| Error::<T>::MemberIdCouldNotBeDerivedFromActor.into())
+}
+
+pub fn ensure_actor_authorized_to_manage_creator_token<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel: &Channel<T>,
+) -> Result<T::AccountId, DispatchError> {
+    let sender = ensure_signed(origin)?;
+    ensure_actor_auth_success::<T>(&sender, actor)?;
+    ensure_actor_is_channel_owner::<T>(actor, &channel.owner)?;
+    Ok(sender)
 }

@@ -4,6 +4,7 @@
 import type { BTreeMap, BTreeSet, Bytes, Enum, GenericAccountId, Option, Struct, Text, Vec, bool, u128, u32, u64, u8 } from '@polkadot/types';
 import type { ITuple } from '@polkadot/types/types';
 import type { AccountId, Balance, Hash, Perbill } from '@polkadot/types/interfaces/runtime';
+import type { ValidatorPrefsWithCommission } from '@polkadot/types/interfaces/staking';
 import type { AccountInfoWithRefCount } from '@polkadot/types/interfaces/system';
 
 /** @name AccountInfo */
@@ -212,7 +213,7 @@ export interface Channel extends Struct {
   readonly owner: ChannelOwner;
   readonly num_videos: u64;
   readonly collaborators: BTreeMap<MemberId, ChannelAgentPermissions>;
-  readonly cumulative_payout_earned: u128;
+  readonly cumulative_reward_claimed: u128;
   readonly privilege_level: ChannelPrivilegeLevel;
   readonly paused_features: BTreeSet<PausableChannelFeature>;
   readonly transfer_status: ChannelTransferStatus;
@@ -278,6 +279,13 @@ export interface ChannelOwner extends Enum {
   readonly asMember: MemberId;
   readonly isCurators: boolean;
   readonly asCurators: CuratorGroupId;
+}
+
+/** @name ChannelPayoutsPayloadParameters */
+export interface ChannelPayoutsPayloadParameters extends Struct {
+  readonly uploader_account: AccountId;
+  readonly object_creation_params: DataObjectCreationParameters;
+  readonly expected_data_size_fee: u128;
 }
 
 /** @name ChannelPrivilegeLevel */
@@ -511,7 +519,7 @@ export interface EnglishAuction extends Struct {
   readonly buy_now_price: Option<u128>;
   readonly whitelist: BTreeSet<MemberId>;
   readonly end: u32;
-  readonly auction_duration: u32;
+  readonly start: u32;
   readonly extension_period: u32;
   readonly min_bid_step: u128;
   readonly top_bid: Option<EnglishAuctionBid>;
@@ -528,8 +536,8 @@ export interface EnglishAuctionParams extends Struct {
   readonly starting_price: u128;
   readonly buy_now_price: Option<u128>;
   readonly whitelist: BTreeSet<MemberId>;
-  readonly end: u32;
-  readonly auction_duration: u32;
+  readonly starts_at: Option<u32>;
+  readonly duration: u32;
   readonly extension_period: u32;
   readonly min_bid_step: u128;
 }
@@ -718,6 +726,7 @@ export interface OpenAuction extends Struct {
   readonly whitelist: BTreeSet<MemberId>;
   readonly bid_lock_duration: u32;
   readonly auction_id: OpenAuctionId;
+  readonly start: u32;
 }
 
 /** @name OpenAuctionBid */
@@ -734,6 +743,7 @@ export interface OpenAuctionId extends u64 {}
 export interface OpenAuctionParams extends Struct {
   readonly starting_price: u128;
   readonly buy_now_price: Option<u128>;
+  readonly starts_at: Option<u32>;
   readonly whitelist: BTreeSet<MemberId>;
   readonly bid_lock_duration: u32;
 }
@@ -919,6 +929,8 @@ export interface ProposalDetails extends Enum {
   readonly asVetoProposal: ProposalId;
   readonly isUpdateGlobalNftLimit: boolean;
   readonly asUpdateGlobalNftLimit: ITuple<[NftLimitPeriod, u64]>;
+  readonly isUpdateChannelPayouts: boolean;
+  readonly asUpdateChannelPayouts: UpdateChannelPayoutsParameters;
 }
 
 /** @name ProposalDetailsOf */
@@ -975,6 +987,8 @@ export interface ProposalDetailsOf extends Enum {
   readonly asVetoProposal: ProposalId;
   readonly isUpdateGlobalNftLimit: boolean;
   readonly asUpdateGlobalNftLimit: ITuple<[NftLimitPeriod, u64]>;
+  readonly isUpdateChannelPayouts: boolean;
+  readonly asUpdateChannelPayouts: UpdateChannelPayoutsParameters;
 }
 
 /** @name ProposalId */
@@ -1015,7 +1029,7 @@ export interface ProposalStatus extends Enum {
 /** @name PullPayment */
 export interface PullPayment extends Struct {
   readonly channel_id: ChannelId;
-  readonly cumulative_payout_claimed: u128;
+  readonly cumulative_reward_earned: u128;
   readonly reason: Hash;
 }
 
@@ -1205,6 +1219,15 @@ export interface TransferParameters extends Struct {
   readonly price: u128;
 }
 
+/** @name UpdateChannelPayoutsParameters */
+export interface UpdateChannelPayoutsParameters extends Struct {
+  readonly commitment: Option<Hash>;
+  readonly payload: Option<ChannelPayoutsPayloadParameters>;
+  readonly min_cashout_allowed: Option<u128>;
+  readonly max_cashout_allowed: Option<u128>;
+  readonly channel_cashouts_enabled: Option<bool>;
+}
+
 /** @name UpdatedBody */
 export interface UpdatedBody extends Option<Text> {}
 
@@ -1224,6 +1247,9 @@ export interface UploadParameters extends Struct {
 
 /** @name Url */
 export interface Url extends Text {}
+
+/** @name ValidatorPrefs */
+export interface ValidatorPrefs extends ValidatorPrefsWithCommission {}
 
 /** @name Video */
 export interface Video extends Struct {

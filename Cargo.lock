@@ -722,7 +722,7 @@ dependencies = [
 
 [[package]]
 name = "chain-spec-builder"
-version = "5.2.0"
+version = "6.6.0"
 dependencies = [
  "ansi_term 0.12.1",
  "enum-utils",
@@ -2318,7 +2318,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "6.3.0"
+version = "6.6.0"
 dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -2379,7 +2379,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "10.3.0"
+version = "10.6.0"
 dependencies = [
  "frame-benchmarking",
  "frame-executive",
@@ -2407,6 +2407,7 @@ dependencies = [
  "pallet-membership",
  "pallet-offences",
  "pallet-offences-benchmarking",
+ "pallet-project-token",
  "pallet-proposals-codex",
  "pallet-proposals-discussion",
  "pallet-proposals-engine",
@@ -3862,6 +3863,7 @@ dependencies = [
  "pallet-balances",
  "pallet-common",
  "pallet-membership",
+ "pallet-project-token",
  "pallet-randomness-collective-flip",
  "pallet-staking-handler",
  "pallet-storage",
@@ -4035,6 +4037,27 @@ dependencies = [
  "parity-scale-codec",
  "sp-runtime",
  "sp-staking",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-project-token"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-common",
+ "pallet-membership",
+ "pallet-randomness-collective-flip",
+ "pallet-staking-handler",
+ "pallet-storage",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "serde",
+ "sp-arithmetic",
+ "sp-io",
+ "sp-runtime",
  "sp-std",
 ]
 
@@ -4241,6 +4264,8 @@ dependencies = [
 name = "pallet-storage"
 version = "4.0.1"
 dependencies = [
+ "derive-fixture",
+ "derive-new",
  "frame-benchmarking",
  "frame-support",
  "frame-system",

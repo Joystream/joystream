@@ -102,6 +102,7 @@ pub trait WeightInfo {
     fn create_proposal_unlock_blog_post(t: u32, d: u32) -> Weight;
     fn create_proposal_veto_proposal(t: u32, d: u32) -> Weight;
     fn create_proposal_update_global_nft_limit(t: u32, d: u32) -> Weight;
+    fn create_proposal_update_channel_payouts(t: u32, d: u32, i: u32) -> Weight;
 }
 
 type WeightInfoCodex<T> = <T as Trait>::WeightInfo;
@@ -252,6 +253,11 @@ pub trait Trait:
     type UpdateGlobalNftLimitProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
+
+    /// `Update Channel Payouts` proposal parameters
+    type UpdateChannelPayoutsProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
 }
 
 /// Specialized alias of GeneralProposalParams
@@ -266,13 +272,15 @@ decl_event! {
         GeneralProposalParameters = GeneralProposalParameters<T>,
         ProposalDetailsOf = ProposalDetailsOf<T>,
         <T as proposals_engine::Trait>::ProposalId,
+        <T as proposals_discussion::Trait>::ThreadId
     {
         /// A proposal was created
         /// Params:
         /// - Id of a newly created proposal after it was saved in storage.
         /// - General proposal parameter. Parameters shared by all proposals
         /// - Proposal Details. Parameter of proposal with a variant for each kind of proposal
-        ProposalCreated(ProposalId, GeneralProposalParameters, ProposalDetailsOf),
+        /// - Id of a newly created proposal thread
+        ProposalCreated(ProposalId, GeneralProposalParameters, ProposalDetailsOf, ThreadId),
     }
 }
 
@@ -338,6 +346,9 @@ decl_error! {
 
         /// Repeated account in 'Funding Request' proposal.
         InvalidFundingRequestProposalRepeatedAccount,
+
+        // The specified min channel cashout is greater than the specified max channel cashout in `Update Channel Payouts` proposal.
+        InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout,
     }
 }
 
@@ -453,6 +464,9 @@ decl_module! {
         const UpdateGlobalNftLimitProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateGlobalNftLimitProposalParameters::get();
 
+        const UpdateChannelPayoutsProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateChannelPayoutsProposalParameters::get();
+
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
         ///
@@ -524,7 +538,7 @@ decl_module! {
 
             <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
 
-            Self::deposit_event(RawEvent::ProposalCreated(proposal_id, general_proposal_parameters, proposal_details));
+            Self::deposit_event(RawEvent::ProposalCreated(proposal_id, general_proposal_parameters, proposal_details, discussion_thread_id));
         }
     }
 }
@@ -658,6 +672,15 @@ impl<T: Trait> Module<T> {
             ProposalDetails::UpdateGlobalNftLimit(..) => {
                 // Note: No checks for this proposal for now
             }
+
+            ProposalDetails::UpdateChannelPayouts(params) => {
+                if params.min_cashout_allowed.is_some() && params.max_cashout_allowed.is_some() {
+                    ensure!(
+                        params.max_cashout_allowed.unwrap() >= params.min_cashout_allowed.unwrap(),
+                        Error::<T>::InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout
+                    );
+                }
+            }
         }
 
         Ok(())
@@ -725,6 +748,9 @@ impl<T: Trait> Module<T> {
             ProposalDetails::VetoProposal(..) => T::VetoProposalProposalParameters::get(),
             ProposalDetails::UpdateGlobalNftLimit(..) => {
                 T::UpdateGlobalNftLimitProposalParameters::get()
+            }
+            ProposalDetails::UpdateChannelPayouts(..) => {
+                T::UpdateChannelPayoutsProposalParameters::get()
             }
         }
     }
@@ -897,6 +923,17 @@ impl<T: Trait> Module<T> {
                 WeightInfoCodex::<T>::create_proposal_update_global_nft_limit(
                     title_length.saturated_into(),
                     description_length.saturated_into(),
+                )
+                .saturated_into()
+            }
+            ProposalDetails::UpdateChannelPayouts(params) => {
+                WeightInfoCodex::<T>::create_proposal_update_channel_payouts(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                    params
+                        .payload
+                        .as_ref()
+                        .map_or(0, |p| p.object_creation_params.ipfs_content_id.len() as u32),
                 )
                 .saturated_into()
             }

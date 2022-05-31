@@ -41,6 +41,10 @@
   # Check for the status every 100s
   delay: 100
 
+- name: Make sure docker is running
+  command: systemctl start docker
+  become: yes
+
 - name: Run service containers
   command: yarn start
   environment:
@@ -50,9 +54,11 @@
     DISTRIBUTOR_1_URL: 'https://{{ inventory_hostname }}.nip.io/distributor-1/'
     SKIP_NODE: 'true'
     SKIP_CHAIN_SETUP: '{{ skip_chain_setup }}'
+    TREASURY_ACCOUNT_URI: '{{ endowed_key }}'
+    SUDO_ACCOUNT_URI: '{{ sudo_key }}'
   args:
     chdir: '{{ remote_code_path }}'
-  async: 1800
+  async: 3600
   poll: 0
   register: compose_result
 
@@ -62,7 +68,7 @@
   register: job_result
   until: job_result.finished
   # Max number of times to check for status
-  retries: 18
+  retries: 36
   # Check for the status every 100s
   delay: 100
 

@@ -1,7 +1,8 @@
 #![cfg(test)]
 use crate::tests::fixtures::{
     create_data_objects_helper, create_default_member_owned_channel_with_video,
-    create_initial_storage_buckets_helper, increase_account_balance_helper, CreateVideoFixture,
+    create_initial_storage_buckets_helper, increase_account_balance_helper, CreateChannelFixture,
+    CreateVideoFixture,
 };
 use crate::tests::mock::*;
 use crate::*;
@@ -55,6 +56,42 @@ fn issue_nft() {
             )),
             number_of_events_before_call + 1,
         );
+    })
+}
+
+#[test]
+fn nft_is_issued_with_open_auction_status_successfully() {
+    with_default_mock_builder(|| {
+        run_to_block(1u64);
+        let video_id = 1u64;
+
+        CreateChannelFixture::default().call_and_assert(Ok(()));
+        CreateVideoFixture::default().call_and_assert(Ok(()));
+
+        // Issue nft
+        assert_ok!(Content::issue_nft(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            NftIssuanceParameters::<Test> {
+                init_transactional_status: InitTransactionalStatus::<Test>::OpenAuction(
+                    OpenAuctionParams::<Test> {
+                        starting_price: Content::min_starting_price(),
+                        bid_lock_duration: Content::min_bid_lock_duration(),
+                        ..Default::default()
+                    }
+                ),
+                ..Default::default()
+            },
+        ));
+
+        assert!(matches!(
+            Content::video_by_id(video_id).nft_status,
+            Some(Nft::<Test> {
+                transactional_status: TransactionalStatusRecord::OpenAuction(..),
+                ..
+            }),
+        ));
     })
 }
 
@@ -220,6 +257,7 @@ fn issue_nft_fails_with_invalid_open_auction_parameters() {
             starting_price: Content::min_starting_price() - 1,
             buy_now_price: None,
             bid_lock_duration: Content::min_bid_lock_duration(),
+            starts_at: None,
             whitelist: BTreeSet::new(),
         };
 

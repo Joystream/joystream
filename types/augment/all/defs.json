@@ -420,7 +420,8 @@
             "LockBlogPost": "PostId",
             "UnlockBlogPost": "PostId",
             "VetoProposal": "ProposalId",
-            "UpdateGlobalNftLimit": "(NftLimitPeriod,u64)"
+            "UpdateGlobalNftLimit": "(NftLimitPeriod,u64)",
+            "UpdateChannelPayouts": "UpdateChannelPayoutsParameters"
         }
     },
     "ProposalDetailsOf": {
@@ -450,7 +451,8 @@
             "LockBlogPost": "PostId",
             "UnlockBlogPost": "PostId",
             "VetoProposal": "ProposalId",
-            "UpdateGlobalNftLimit": "(NftLimitPeriod,u64)"
+            "UpdateGlobalNftLimit": "(NftLimitPeriod,u64)",
+            "UpdateChannelPayouts": "UpdateChannelPayoutsParameters"
         }
     },
     "VotingResults": {
@@ -676,7 +678,7 @@
         "owner": "ChannelOwner",
         "num_videos": "u64",
         "collaborators": "BTreeMap<MemberId,ChannelAgentPermissions>",
-        "cumulative_payout_earned": "u128",
+        "cumulative_reward_claimed": "u128",
         "privilege_level": "ChannelPrivilegeLevel",
         "paused_features": "BTreeSet<PausableChannelFeature>",
         "transfer_status": "ChannelTransferStatus",
@@ -756,7 +758,7 @@
     },
     "PullPayment": {
         "channel_id": "ChannelId",
-        "cumulative_payout_claimed": "u128",
+        "cumulative_reward_earned": "u128",
         "reason": "Hash"
     },
     "Royalty": "Perbill",
@@ -764,14 +766,15 @@
         "starting_price": "u128",
         "buy_now_price": "Option<u128>",
         "whitelist": "BTreeSet<MemberId>",
-        "end": "u32",
-        "auction_duration": "u32",
+        "starts_at": "Option<u32>",
+        "duration": "u32",
         "extension_period": "u32",
         "min_bid_step": "u128"
     },
     "OpenAuctionParams": {
         "starting_price": "u128",
         "buy_now_price": "Option<u128>",
+        "starts_at": "Option<u32>",
         "whitelist": "BTreeSet<MemberId>",
         "bid_lock_duration": "u32"
     },
@@ -780,7 +783,7 @@
         "buy_now_price": "Option<u128>",
         "whitelist": "BTreeSet<MemberId>",
         "end": "u32",
-        "auction_duration": "u32",
+        "start": "u32",
         "extension_period": "u32",
         "min_bid_step": "u128",
         "top_bid": "Option<EnglishAuctionBid>"
@@ -790,7 +793,8 @@
         "buy_now_price": "Option<u128>",
         "whitelist": "BTreeSet<MemberId>",
         "bid_lock_duration": "u32",
-        "auction_id": "OpenAuctionId"
+        "auction_id": "OpenAuctionId",
+        "start": "u32"
     },
     "OpenAuctionBid": {
         "amount": "u128",
@@ -919,5 +923,18 @@
         "counter": "u64",
         "last_updated": "u32"
     },
-    "AccountInfo": "AccountInfoWithRefCount"
+    "ChannelPayoutsPayloadParameters": {
+        "uploader_account": "AccountId",
+        "object_creation_params": "DataObjectCreationParameters",
+        "expected_data_size_fee": "u128"
+    },
+    "UpdateChannelPayoutsParameters": {
+        "commitment": "Option<Hash>",
+        "payload": "Option<ChannelPayoutsPayloadParameters>",
+        "min_cashout_allowed": "Option<u128>",
+        "max_cashout_allowed": "Option<u128>",
+        "channel_cashouts_enabled": "Option<bool>"
+    },
+    "AccountInfo": "AccountInfoWithRefCount",
+    "ValidatorPrefs": "ValidatorPrefsWithCommission"
 }
