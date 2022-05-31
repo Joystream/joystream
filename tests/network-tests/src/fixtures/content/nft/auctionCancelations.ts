@@ -29,12 +29,8 @@ export class AuctionCancelationsFixture extends BaseQueryNodeFixture {
     // SCENARIO 1: Cancel bid during auction
     {
       this.debug('Start NFT auction')
-      const {
-        auctionParams,
-        startingPrice,
-        minimalBidStep,
-        bidLockDuration,
-      } = await this.api.createOpenAuctionParameters()
+      const { auctionParams, startingPrice, minimalBidStep, bidLockDuration } =
+        await this.api.createOpenAuctionParameters()
       await this.api.startOpenAuction(
         this.author.keyringPair.address,
         this.author.memberId.toNumber(),
@@ -74,12 +70,8 @@ export class AuctionCancelationsFixture extends BaseQueryNodeFixture {
 
     // SCENARIO 2: Cancel bid by re-bidding auction
     {
-      const {
-        auctionParams,
-        startingPrice,
-        minimalBidStep,
-        bidLockDuration,
-      } = await this.api.createOpenAuctionParameters()
+      const { auctionParams, startingPrice, minimalBidStep, bidLockDuration } =
+        await this.api.createOpenAuctionParameters()
 
       this.debug('Start NFT auction')
       await this.api.startOpenAuction(
@@ -140,12 +132,8 @@ export class AuctionCancelationsFixture extends BaseQueryNodeFixture {
     // SCENARIO 3: Cancel bid after auction
     {
       this.debug('Start NFT auction')
-      const {
-        auctionParams,
-        startingPrice,
-        minimalBidStep,
-        bidLockDuration,
-      } = await this.api.createOpenAuctionParameters()
+      const { auctionParams, startingPrice, minimalBidStep, bidLockDuration } =
+        await this.api.createOpenAuctionParameters()
       await this.api.startOpenAuction(
         this.author.keyringPair.address,
         this.author.memberId.toNumber(),
