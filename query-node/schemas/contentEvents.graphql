@@ -73,7 +73,7 @@ type PlaylistDeletedEvent implements Event @entity {
   ### SPECIFIC DATA ###
 
   "Deleted playlist"
-  playlist: Playlist!
+  deletedPlaylistId: String!
 
   "Content actor that deleted the playlist."
   contentActor: ContentActor!

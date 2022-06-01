@@ -136,6 +136,7 @@ export async function content_ContentCreated(ctx: EventContext & StoreContext): 
   const { store, event } = ctx
   // read event data
   const [contentActor, channelId, contentId, contentCreationParameters] = new Content.VideoCreatedEvent(event).params
+  const { meta } = contentCreationParameters
 
   const contentCreatedEventData: ContentCreatedEventData = {
     contentActor,
@@ -156,9 +157,8 @@ export async function content_ContentCreated(ctx: EventContext & StoreContext): 
   }
 
   // deserialize & process metadata
-  const metadata = contentCreationParameters.meta.isSome
-    ? deserializeMetadata(ContentMetadata, contentCreationParameters.meta.unwrap()) ||
-      deserializeMetadata(VideoMetadata, contentCreationParameters.meta.unwrap())
+  const metadata = meta.isSome
+    ? deserializeMetadata(ContentMetadata, meta.unwrap()) || deserializeMetadata(VideoMetadata, meta.unwrap())
     : undefined
 
   const asContentMetadata = metadata as DecodedMetadataObject<IContentMetadata> | undefined
@@ -266,9 +266,10 @@ export async function processCreatePlaylistMessage(
 }
 
 export async function content_ContentUpdated(ctx: EventContext & StoreContext): Promise<void> {
-  const { event } = ctx
+  const { store, event } = ctx
   // read event data
   const [contentActor, contentId, contentUpdateParameters] = new Content.VideoUpdatedEvent(event).params
+  const { new_meta } = contentUpdateParameters
 
   const contentUpdatedEventData: ContentUpdatedEventData = {
     contentActor,
@@ -276,52 +277,50 @@ export async function content_ContentUpdated(ctx: EventContext & StoreContext): 
     contentUpdateParameters,
   }
 
-  // deserialize & process metadata
-  const newMetadataBytes = contentUpdateParameters.new_meta.isSome
-    ? deserializeMetadata(ContentMetadata, contentUpdateParameters.new_meta.unwrap()) ||
-      deserializeMetadata(VideoMetadata, contentUpdateParameters.new_meta.unwrap())
-    : undefined
-
-  const asContentMetadata = newMetadataBytes as DecodedMetadataObject<IContentMetadata> | undefined
-
-  // Content Update Preference
-  // 1. metadata == `PlaylistMetadata` -> update Playlist
-  // 2. metadata == `VideoMetadata` || undefined -> update Video
-
-  if (asContentMetadata && asContentMetadata.playlistMetadata) {
-    await processUpdatePlaylistMessage(ctx, asContentMetadata.playlistMetadata, contentUpdatedEventData)
-    return
-  }
-
-  await processUpdateVideoMessage(
-    ctx,
-    asContentMetadata?.videoMetadata || (newMetadataBytes as DecodedMetadataObject<IVideoMetadata>),
-    contentUpdatedEventData
-  )
-}
-
-export async function processUpdateVideoMessage(
-  ctx: EventContext & StoreContext,
-  metadata: DecodedMetadataObject<IVideoMetadata> | undefined,
-  contentUpdatedEventData: ContentUpdatedEventData
-): Promise<void> {
-  const { store, event } = ctx
-  const { contentActor, contentId, contentUpdateParameters } = contentUpdatedEventData
-
   // load video
   const video = await store.get(Video, {
     where: { id: contentId.toString() },
     relations: [...videoRelationsForCounters, 'license', 'channel.ownerMember', 'channel.ownerCuratorGroup'],
   })
 
-  // ensure video exists
-  if (!video) {
-    return inconsistentState('Non-existing video update requested', contentId)
+  if (video) {
+    const videoMetadata = new_meta.isSome
+      ? deserializeMetadata(ContentMetadata, new_meta.unwrap())?.videoMetadata ||
+        deserializeMetadata(VideoMetadata, new_meta.unwrap())
+      : undefined
+
+    await processUpdateVideoMessage(ctx, video, videoMetadata || undefined, contentUpdatedEventData)
+    return
   }
 
-  if (metadata) {
-    await processVideoMetadata(ctx, video, metadata, contentUpdateParameters.assets_to_upload.unwrapOr(undefined))
+  // load playlist
+  const playlist = await store.get(Playlist, {
+    where: { id: contentId.toString() },
+  })
+
+  if (playlist) {
+    const playlistMetadata = new_meta.isSome
+      ? deserializeMetadata(ContentMetadata, new_meta.unwrap())?.playlistMetadata
+      : undefined
+
+    await processUpdatePlaylistMessage(ctx, playlist, playlistMetadata || undefined, contentUpdatedEventData)
+    return
   }
+
+  inconsistentState('Non-existing content update requested', contentId)
+}
+
+export async function processUpdateVideoMessage(
+  ctx: EventContext & StoreContext,
+  video: Video,
+  metadata: DecodedMetadataObject<IVideoMetadata> | undefined,
+  contentUpdatedEventData: ContentUpdatedEventData
+): Promise<void> {
+  const { store, event } = ctx
+  const { contentActor, contentId, contentUpdateParameters } = contentUpdatedEventData
+
+  if (metadata)
+    await processVideoMetadata(ctx, video, metadata, contentUpdateParameters.assets_to_upload.unwrapOr(undefined))
 
   // create nft if requested
   const issuanceParameters = contentUpdateParameters.auto_issue_nft.unwrapOr(null)
@@ -360,24 +359,15 @@ export async function processUpdateVideoMessage(
 
 export async function processUpdatePlaylistMessage(
   ctx: EventContext & StoreContext,
-  metadata: DecodedMetadataObject<IPlaylistMetadata>,
+  playlist: Playlist,
+  metadata: DecodedMetadataObject<IPlaylistMetadata> | undefined,
   contentUpdatedEventData: ContentUpdatedEventData
 ): Promise<void> {
   const { store, event } = ctx
   const { contentActor, contentId, contentUpdateParameters } = contentUpdatedEventData
 
-  // load playlist
-  const playlist = await store.get(Playlist, {
-    where: { id: contentId.toString() },
-    relations: ['videos', 'thumbnailPhoto'],
-  })
-
-  // ensure playlist exists
-  if (!playlist) {
-    return inconsistentState('Non-existing playlist update requested', contentId)
-  }
-
-  await processPlaylistMetadata(ctx, playlist, metadata, contentUpdateParameters.assets_to_upload.unwrapOr(undefined))
+  if (metadata)
+    await processPlaylistMetadata(ctx, playlist, metadata, contentUpdateParameters.assets_to_upload.unwrapOr(undefined))
 
   // save playlist
   await store.save<Playlist>(playlist)
@@ -434,16 +424,14 @@ export async function content_ContentDeleted({ store, event }: EventContext & St
 
     // common event processing
 
-    // TODO: uncomment after https://github.com/Joystream/hydra/issues/490 has been implemented
+    const playlistDeletedEvent = new PlaylistDeletedEvent({
+      ...genericEventFields(event),
 
-    // const playlistDeletedEvent = new PlaylistDeletedEvent({
-    //   ...genericEventFields(event),
+      deletedPlaylistId: contentId.toString(),
+      contentActor: await convertContentActor(store, contentActor),
+    })
 
-    //   playlist,
-    //   contentActor: await convertContentActor(store, contentActor),
-    // })
-
-    // await store.save<PlaylistDeletedEvent>(playlistDeletedEvent)
+    await store.save<PlaylistDeletedEvent>(playlistDeletedEvent)
   } else {
     inconsistentState('Non-existing content(video or playlist) deletion requested', contentId)
   }

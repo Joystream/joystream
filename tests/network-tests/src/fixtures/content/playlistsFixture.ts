@@ -75,7 +75,7 @@ export class PlaylistActionsFixture extends BaseQueryNodeFixture {
     })
 
     // assert playlist
-    this.assertPlaylist(newPlaylistsData.playlistId, videoIds)
+    await this.assertPlaylist(newPlaylistsData.playlistId, videoIds)
 
     return newPlaylistsData
   }
@@ -89,7 +89,7 @@ export class PlaylistActionsFixture extends BaseQueryNodeFixture {
     })
 
     // assert playlist
-    this.assertPlaylist(playlistId, videoIds)
+    await this.assertPlaylist(playlistId, videoIds)
   }
 
   /**
