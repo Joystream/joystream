@@ -282,10 +282,17 @@ fn accept_transfer_status_succeeds_for_curators_to_members_with_price() {
                 .call_and_assert(Ok(()));
             let group_balance_pre = <Test as Config>::ContentWorkingGroup::get_budget();
 
+<<<<<<< HEAD
             AcceptChannelTransferFixture::default()
                 .with_origin(RawOrigin::Signed(SECOND_MEMBER_ACCOUNT_ID))
                 .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
                 .call_and_assert(Ok(()));
+=======
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_curator_owned_channel(DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND, &[]);
+>>>>>>> 94c4c03c55 (introduce_channel_state_bloat_bond_#3511)
 
             assert_eq!(
                 (
