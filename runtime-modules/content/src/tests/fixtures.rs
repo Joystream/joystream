@@ -108,8 +108,22 @@ impl CreateChannelFixture {
                 collaborators: BTreeMap::new(),
                 storage_buckets: BTreeSet::new(),
                 distribution_buckets: BTreeSet::new(),
-                expected_data_object_state_bloat_bond: DATA_OBJECT_STATE_BLOAT_BOND,
+                expected_data_object_state_bloat_bond: DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
+                expected_channel_state_bloat_bond: DEFAULT_CHANNEL_STATE_BLOAT_BOND,
             },
+        }
+    }
+
+    pub fn with_expected_channel_state_bloat_bond(
+        self,
+        expected_channel_state_bloat_bond: u64,
+    ) -> Self {
+        Self {
+            params: ChannelCreationParameters::<Test> {
+                expected_channel_state_bloat_bond,
+                ..self.params.clone()
+            },
+            ..self
         }
     }
 
@@ -180,9 +194,13 @@ impl CreateChannelFixture {
         return self.with_storage_buckets(BTreeSet::from_iter(vec![default_storage_bucket_id]));
     }
 
+    fn get_balance(&self) -> BalanceOf<Test> {
+        Balances::<Test>::usable_balance(&self.sender)
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
-        let balance_pre = Balances::<Test>::usable_balance(self.sender);
+        let balance_pre = self.get_balance();
         let channel_id = Content::next_channel_id();
         let channel_bag_id = Content::bag_id_for_channel(&channel_id);
         let beg_obj_id = storage::NextDataObjectId::<Test>::get();
@@ -192,7 +210,7 @@ impl CreateChannelFixture {
 
         assert_eq!(actual_result, expected_result);
 
-        let balance_post = Balances::<Test>::usable_balance(self.sender);
+        let balance_post = self.get_balance();
 
         if actual_result.is_ok() {
             // ensure channel is on chain
@@ -226,6 +244,7 @@ impl CreateChannelFixture {
                         daily_nft_counter: Default::default(),
                         weekly_nft_counter: Default::default(),
                         creator_token_id: None,
+                        channel_state_bloat_bond: self.params.expected_channel_state_bloat_bond
                     },
                     self.params.clone(),
                 ))
@@ -243,7 +262,7 @@ impl CreateChannelFixture {
 
                 assert_eq!(
                     balance_pre.saturating_sub(balance_post),
-                    objects_state_bloat_bond,
+                    objects_state_bloat_bond + Content::channel_state_bloat_bond_value(),
                 );
 
                 assert!((beg_obj_id..end_obj_id).all(|id| {
@@ -276,7 +295,7 @@ impl CreateVideoFixture {
                 assets: None,
                 meta: None,
                 auto_issue_nft: None,
-                expected_data_object_state_bloat_bond: DATA_OBJECT_STATE_BLOAT_BOND,
+                expected_data_object_state_bloat_bond: DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
             },
             channel_id: ChannelId::one(), // channel index starts at 1
         }
@@ -450,7 +469,7 @@ impl UpdateChannelFixture {
                 new_meta: None,
                 assets_to_remove: BTreeSet::new(),
                 collaborators: None,
-                expected_data_object_state_bloat_bond: DATA_OBJECT_STATE_BLOAT_BOND,
+                expected_data_object_state_bloat_bond: DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
             },
         }
     }
@@ -777,7 +796,7 @@ impl UpdateVideoFixture {
         let bag_id_for_channel = Content::bag_id_for_channel(&video_pre.in_channel);
         let beg_obj_id = storage::NextDataObjectId::<Test>::get();
 
-        let state_bloat_bond = DATA_OBJECT_STATE_BLOAT_BOND;
+        let state_bloat_bond = DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND;
 
         let state_bloat_bond_deposited =
             self.params
@@ -983,8 +1002,12 @@ pub trait ChannelDeletion {
     fn execute_call(&self) -> DispatchResult;
     fn expected_event_on_success(&self) -> MetaEvent;
 
+    fn get_balance(&self) -> BalanceOf<Test> {
+        Balances::<Test>::usable_balance(self.get_sender())
+    }
+
     fn call_and_assert(&self, expected_result: DispatchResult) {
-        let balance_pre = Balances::<Test>::usable_balance(self.get_sender());
+        let balance_pre = self.get_balance();
         let bag_id_for_channel = Content::bag_id_for_channel(&self.get_channel_id());
 
         let objects_state_bloat_bond =
@@ -1000,7 +1023,7 @@ pub trait ChannelDeletion {
 
         let actual_result = self.execute_call();
 
-        let balance_post = Balances::<Test>::usable_balance(self.get_sender());
+        let balance_post = self.get_balance();
         assert_eq!(actual_result, expected_result);
 
         match actual_result {
@@ -1012,7 +1035,7 @@ pub trait ChannelDeletion {
 
                 assert_eq!(
                     balance_post.saturating_sub(balance_pre),
-                    objects_state_bloat_bond,
+                    objects_state_bloat_bond + Content::channel_state_bloat_bond_value(),
                 );
                 assert!(!<ChannelById<Test>>::contains_key(&self.get_channel_id()));
                 assert!(!channel_objects_ids.iter().any(|id| {
@@ -2650,6 +2673,62 @@ impl FinalizeCreatorTokenSaleFixture {
             }
         } else {
             assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+
+pub struct UpdateChannelStateBloatBondFixture {
+    sender: AccountId,
+    new_channel_state_bloat_bond: BalanceOf<Test>,
+}
+
+impl UpdateChannelStateBloatBondFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: LEAD_ACCOUNT_ID,
+            new_channel_state_bloat_bond: DEFAULT_CHANNEL_STATE_BLOAT_BOND,
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_channel_state_bloat_bond(
+        self,
+        new_channel_state_bloat_bond: BalanceOf<Test>,
+    ) -> Self {
+        Self {
+            new_channel_state_bloat_bond,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let channel_state_bloat_bond_pre = Content::channel_state_bloat_bond_value();
+
+        let actual_result = Content::update_channel_state_bloat_bond(
+            origin,
+            self.new_channel_state_bloat_bond.clone(),
+        );
+
+        let channel_state_bloat_bond_post = Content::channel_state_bloat_bond_value();
+
+        assert_eq!(actual_result, expected_result);
+        if actual_result.is_ok() {
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::Content(RawEvent::ChannelStateBloatBondValueUpdated(
+                    self.new_channel_state_bloat_bond
+                ))
+            );
+            assert_eq!(
+                channel_state_bloat_bond_post,
+                self.new_channel_state_bloat_bond
+            );
+        } else {
+            assert_eq!(channel_state_bloat_bond_post, channel_state_bloat_bond_pre);
         }
     }
 }
@@ -4576,7 +4655,7 @@ pub fn create_default_member_owned_channel_with_video_with_nft() -> (ChannelId, 
 pub fn create_default_member_owned_channel() {
     create_default_member_owned_channel_with_storage_buckets(
         true,
-        DATA_OBJECT_STATE_BLOAT_BOND,
+        DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
         &[],
     )
 }
@@ -4586,7 +4665,7 @@ pub fn create_default_member_owned_channel_with_collaborator_permissions(
 ) {
     create_default_member_owned_channel_with_storage_buckets(
         true,
-        DATA_OBJECT_STATE_BLOAT_BOND,
+        DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
         collaborator_permissions,
     )
 }
@@ -4654,7 +4733,7 @@ pub fn create_default_member_owned_channel_with_videos(
         CreateVideoFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_data_object_state_bloat_bond(DATA_OBJECT_STATE_BLOAT_BOND)
+            .with_data_object_state_bloat_bond(DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND)
             .with_assets(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_objects_helper(),
@@ -5010,7 +5089,7 @@ impl ContentTest {
         let agent_permissions = self.agent_permissions.iter().cloned().collect::<Vec<_>>();
         match self.channel_owner_actor {
             ContentActor::Lead => create_default_curator_owned_channel(
-                DATA_OBJECT_STATE_BLOAT_BOND,
+                DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
                 &agent_permissions,
             ),
             ContentActor::Member(..) => {
