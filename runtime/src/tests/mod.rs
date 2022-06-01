@@ -6,9 +6,7 @@ mod proposals_integration;
 
 mod locks;
 
-// Temporary commented for Olympia: https://github.com/Joystream/joystream/issues/3237
-// TODO: Restore after the Olympia release
-//mod fee_tests;
+mod fee_tests;
 
 use crate::primitives::MemberId;
 use crate::{BlockNumber, ReferendumInstance, Runtime};
