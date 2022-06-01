@@ -2,12 +2,10 @@
 
 use crate::tests::mock::*;
 use crate::types::{Joy, Payment, Transfers, TransfersOf};
-use crate::Trait;
 use crate::{
     last_event_eq, member, yearly_rate, AccountInfoByTokenAndMember, RawEvent, YearlyRate,
 };
 use crate::{traits::PalletToken, types::VestingSource, SymbolsUsed};
-use common::membership::MembershipInfoProvider;
 use frame_support::dispatch::DispatchResult;
 use frame_support::storage::{StorageDoubleMap, StorageMap};
 use sp_arithmetic::traits::One;
@@ -43,7 +41,6 @@ pub trait Fixture<S: std::fmt::Debug + std::cmp::PartialEq> {
 
 pub fn default_token_sale_params() -> TokenSaleParams {
     TokenSaleParams {
-        tokens_source: member!(1).0,
         duration: DEFAULT_SALE_DURATION,
         metadata: None,
         starts_at: None,
@@ -126,6 +123,7 @@ impl Fixture<IssueTokenFixtureStateSnapshot> for IssueTokenFixture {
             self.params.clone(),
             self.upload_context.clone(),
         )
+        .map(|_| ())
     }
 
     fn on_success(
@@ -142,11 +140,19 @@ impl Fixture<IssueTokenFixtureStateSnapshot> for IssueTokenFixture {
             }
         );
         assert!(SymbolsUsed::<Test>::contains_key(self.params.symbol));
+        // Event emitted
+        last_event_eq!(RawEvent::TokenIssued(
+            snapshot_pre.next_token_id,
+            self.params.clone()
+        ));
     }
 }
 
 pub struct InitTokenSaleFixture {
     token_id: TokenId,
+    member_id: MemberId,
+    earnings_destination: Option<AccountId>,
+    auto_finalize: bool,
     params: TokenSaleParams,
 }
 
@@ -161,6 +167,9 @@ impl InitTokenSaleFixture {
     pub fn default() -> Self {
         Self {
             token_id: 1,
+            member_id: member!(1).0,
+            earnings_destination: Some(member!(1).1),
+            auto_finalize: true,
             params: default_token_sale_params(),
         }
     }
@@ -185,12 +194,13 @@ impl InitTokenSaleFixture {
         }
     }
 
-    pub fn with_tokens_source(self, tokens_source: MemberId) -> Self {
+    pub fn with_member_id(self, member_id: MemberId) -> Self {
+        Self { member_id, ..self }
+    }
+
+    pub fn with_earnings_destination(self, earnings_destination: Option<AccountId>) -> Self {
         Self {
-            params: TokenSaleParams {
-                tokens_source,
-                ..self.params
-            },
+            earnings_destination,
             ..self
         }
     }
@@ -237,6 +247,13 @@ impl InitTokenSaleFixture {
             ..self
         }
     }
+
+    pub fn with_auto_finalize(self, auto_finalize: bool) -> Self {
+        Self {
+            auto_finalize,
+            ..self
+        }
+    }
 }
 
 impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
@@ -246,13 +263,19 @@ impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
             next_data_object_id: storage::Module::<Test>::next_data_object_id(),
             source_account_data: Token::account_info_by_token_and_member(
                 self.token_id,
-                self.params.tokens_source,
+                self.member_id,
             ),
         }
     }
 
     fn execute_call(&self) -> DispatchResult {
-        Token::init_token_sale(self.token_id, self.params.clone())
+        Token::init_token_sale(
+            self.token_id,
+            self.member_id,
+            self.earnings_destination,
+            self.auto_finalize,
+            self.params.clone(),
+        )
     }
 
     fn on_success(
@@ -265,7 +288,16 @@ impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
         // Token's `last_sale` updated
         assert_eq!(
             snapshot_post.token_data.sale,
-            Some(TokenSale::try_from_params::<Test>(self.params.clone(), execution_block).unwrap())
+            Some(
+                TokenSale::try_from_params::<Test>(
+                    self.params.clone(),
+                    self.member_id,
+                    self.earnings_destination,
+                    self.auto_finalize,
+                    execution_block
+                )
+                .unwrap()
+            )
         );
 
         // Token's `next_sale_id` updated
@@ -280,12 +312,12 @@ impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
             IssuanceState::of::<Test>(&snapshot_post.token_data),
             if let Some(start_block) = self.params.starts_at {
                 if System::block_number() < start_block {
-                    IssuanceState::UpcomingSale(sale)
+                    IssuanceState::UpcomingSale(sale.clone())
                 } else {
-                    IssuanceState::Sale(sale)
+                    IssuanceState::Sale(sale.clone())
                 }
             } else {
-                IssuanceState::Sale(sale)
+                IssuanceState::Sale(sale.clone())
             }
         );
 
@@ -297,6 +329,14 @@ impl Fixture<InitTokenSaleFixtureStateSnapshot> for InitTokenSaleFixture {
                 .amount
                 .saturating_sub(self.params.upper_bound_quantity)
         );
+
+        // Event emitted
+        last_event_eq!(RawEvent::TokenSaleInitialized(
+            self.token_id,
+            snapshot_pre.token_data.next_sale_id,
+            sale,
+            self.params.metadata.clone()
+        ));
     }
 }
 
@@ -365,6 +405,13 @@ impl Fixture<UpdateUpcomingSaleFixtureStateSnapshot> for UpdateUpcomingSaleFixtu
                 ..sale_pre
             }
         );
+        // Event emitted
+        last_event_eq!(RawEvent::UpcomingTokenSaleUpdated(
+            self.token_id,
+            snapshot_post.token_data.next_sale_id - 1,
+            self.new_start_block.clone(),
+            self.new_duration.clone()
+        ));
     }
 }
 
@@ -373,14 +420,15 @@ pub struct PurchaseTokensOnSaleFixture {
     token_id: TokenId,
     member_id: MemberId,
     amount: Balance,
-    sale_source_member: Option<MemberId>,
+    sale_source_member_id: Option<MemberId>,
+    earnings_dst_account: Option<AccountId>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct PurchaseTokensOnSaleFixtureStateSnapshot {
     token_data: TokenData,
     source_account_data: AccountData,
-    source_account_usable_joy_balance: <Test as balances::Trait>::Balance,
+    earnings_dst_account_usable_joy_balance: JoyBalance,
     buyer_account_data: AccountData,
     buyer_vesting_schedule: Option<VestingSchedule>,
     buyer_account_exists: bool,
@@ -391,15 +439,19 @@ pub struct PurchaseTokensOnSaleFixtureStateSnapshot {
 
 impl PurchaseTokensOnSaleFixture {
     pub fn default() -> Self {
+        let token_id = 1;
+        let token_data = Token::token_info_by_id(token_id);
         Self {
             sender: member!(2).1,
-            token_id: 1,
+            token_id,
             member_id: member!(2).0,
             amount: DEFAULT_SALE_PURCHASE_AMOUNT,
-            sale_source_member: Token::token_info_by_id(1)
+            sale_source_member_id: token_data.sale.as_ref().map(|s| s.tokens_source),
+            earnings_dst_account: token_data
                 .sale
                 .as_ref()
-                .map(|s| s.tokens_source),
+                .map(|s| s.earnings_destination)
+                .flatten(),
         }
     }
 
@@ -419,22 +471,19 @@ impl PurchaseTokensOnSaleFixture {
 impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleFixture {
     fn get_state_snapshot(&self) -> PurchaseTokensOnSaleFixtureStateSnapshot {
         let token_data = Token::token_info_by_id(self.token_id);
-        let sale_source_member = self.sale_source_member.unwrap_or_default();
-        let sale_source_controller =
-            <Test as Trait>::MembershipInfoProvider::controller_account_id(sale_source_member)
-                .unwrap_or_default();
 
         let buyer_account_data =
             Token::account_info_by_token_and_member(self.token_id, self.member_id);
         PurchaseTokensOnSaleFixtureStateSnapshot {
             token_data: token_data.clone(),
-            source_account_data: Token::account_info_by_token_and_member(
-                self.token_id,
-                sale_source_member,
-            ),
-            source_account_usable_joy_balance: balances::Module::<Test>::usable_balance(
-                sale_source_controller,
-            ),
+            source_account_data: self
+                .sale_source_member_id
+                .map_or(AccountData::default(), |m_id| {
+                    Token::account_info_by_token_and_member(self.token_id, m_id)
+                }),
+            earnings_dst_account_usable_joy_balance: self
+                .earnings_dst_account
+                .map_or(0, |dst| Joy::<Test>::usable_balance(dst)),
             buyer_account_data: buyer_account_data.clone(),
             buyer_account_exists: AccountInfoByTokenAndMember::<Test>::contains_key(
                 self.token_id,
@@ -477,40 +526,47 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
         ));
         let platform_fee = Token::sale_platform_fee();
         let sale_pre = snapshot_pre.token_data.sale.clone().unwrap();
-        // `quantity_left` decreased or `token_data.sale` removed
-        let expected_quantity_left = snapshot_pre
-            .token_data
-            .sale
-            .as_ref()
-            .unwrap()
-            .quantity_left
-            .saturating_sub(self.amount);
-        if expected_quantity_left == 0 {
-            assert!(snapshot_post.token_data.sale.is_none())
+        let joy_amount = self.amount * sale_pre.unit_price;
+        let fee_amount = platform_fee.mul_floor(joy_amount);
+
+        let expected_quantity_left = sale_pre.quantity_left.saturating_sub(self.amount);
+        if sale_pre.auto_finalize && expected_quantity_left == 0 {
+            // Sale removed
+            assert!(snapshot_post.token_data.sale.is_none());
         } else {
+            // `quantity_left` decreased and `funds_collected` increased
             assert_eq!(
                 snapshot_post.token_data.sale.clone().unwrap(),
                 TokenSale {
-                    quantity_left: sale_pre.quantity_left.saturating_sub(self.amount),
+                    quantity_left: expected_quantity_left,
+                    funds_collected: sale_pre.funds_collected.saturating_add(joy_amount),
                     ..sale_pre.clone()
                 }
             );
         }
-        // source account's JOY balance increased
-        let joy_amount = self.amount * sale_pre.unit_price;
-        let fee_amount = platform_fee.mul_floor(joy_amount);
-        assert_eq!(
-            snapshot_post.source_account_usable_joy_balance,
-            snapshot_pre
-                .source_account_usable_joy_balance
-                .saturating_add(joy_amount)
-                .saturating_sub(fee_amount)
-        );
-        // Platform fee burned
-        assert_eq!(
-            snapshot_post.joy_total_supply,
-            snapshot_pre.joy_total_supply.saturating_sub(fee_amount)
-        );
+
+        if self.earnings_dst_account.is_some() {
+            // Earnings dst specified: destination account's JOY balance increased
+            assert_eq!(
+                snapshot_post.earnings_dst_account_usable_joy_balance,
+                snapshot_pre
+                    .earnings_dst_account_usable_joy_balance
+                    .saturating_add(joy_amount)
+                    .saturating_sub(fee_amount)
+            );
+            // Platform fee burned
+            assert_eq!(
+                snapshot_post.joy_total_supply,
+                snapshot_pre.joy_total_supply.saturating_sub(fee_amount)
+            );
+        } else {
+            // Earnings dst not specified: All joy burned
+            assert_eq!(
+                snapshot_post.joy_total_supply,
+                snapshot_pre.joy_total_supply.saturating_sub(joy_amount),
+            );
+        }
+
         if let Some(vesting_schedule) = snapshot_pre
             .token_data
             .sale
@@ -615,23 +671,21 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
     }
 }
 
-pub struct RecoverUnsoldTokensFixture {
-    origin: Origin,
+pub struct FinalizeTokenSaleFixture {
     token_id: TokenId,
     sale_source_member: Option<MemberId>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct RecoverUnsoldTokensFixtureStateSnapshot {
+pub struct FinalizeTokenSaleFixtureStateSnapshot {
     token_data: TokenData,
     source_account_data: AccountData,
 }
 
-impl RecoverUnsoldTokensFixture {
+impl FinalizeTokenSaleFixture {
     pub fn default() -> Self {
         Self {
             token_id: 1,
-            origin: Origin::signed(member!(1).1),
             sale_source_member: Token::token_info_by_id(1)
                 .sale
                 .as_ref()
@@ -640,10 +694,10 @@ impl RecoverUnsoldTokensFixture {
     }
 }
 
-impl Fixture<RecoverUnsoldTokensFixtureStateSnapshot> for RecoverUnsoldTokensFixture {
-    fn get_state_snapshot(&self) -> RecoverUnsoldTokensFixtureStateSnapshot {
+impl Fixture<FinalizeTokenSaleFixtureStateSnapshot> for FinalizeTokenSaleFixture {
+    fn get_state_snapshot(&self) -> FinalizeTokenSaleFixtureStateSnapshot {
         let sale_source_member = self.sale_source_member.unwrap_or_default();
-        RecoverUnsoldTokensFixtureStateSnapshot {
+        FinalizeTokenSaleFixtureStateSnapshot {
             token_data: Token::token_info_by_id(self.token_id),
             source_account_data: Token::account_info_by_token_and_member(
                 self.token_id,
@@ -653,22 +707,23 @@ impl Fixture<RecoverUnsoldTokensFixtureStateSnapshot> for RecoverUnsoldTokensFix
     }
 
     fn execute_call(&self) -> DispatchResult {
-        Token::recover_unsold_tokens(self.origin.clone(), self.token_id)
+        Token::finalize_token_sale(self.token_id).map(|_| ())
     }
 
     fn on_success(
         &self,
-        snapshot_pre: &RecoverUnsoldTokensFixtureStateSnapshot,
-        snapshot_post: &RecoverUnsoldTokensFixtureStateSnapshot,
+        snapshot_pre: &FinalizeTokenSaleFixtureStateSnapshot,
+        snapshot_post: &FinalizeTokenSaleFixtureStateSnapshot,
     ) {
-        let recovered_amount = snapshot_pre.token_data.sale.as_ref().unwrap().quantity_left;
-        last_event_eq!(RawEvent::UnsoldTokensRecovered(
+        let sale_pre = snapshot_pre.token_data.sale.as_ref().unwrap();
+        last_event_eq!(RawEvent::TokenSaleFinalized(
             self.token_id,
             snapshot_pre.token_data.next_sale_id - 1,
-            recovered_amount
+            sale_pre.quantity_left,
+            sale_pre.funds_collected
         ));
         assert!(snapshot_post.token_data.sale.is_none());
-        // `acc.amount` and `acc.transferrable` increased by `recovered_amount`
+        // `acc.amount` and `acc.transferrable` increased by `sale_pre.quantity_left`
         assert_eq!(
             snapshot_post
                 .source_account_data
@@ -676,14 +731,14 @@ impl Fixture<RecoverUnsoldTokensFixtureStateSnapshot> for RecoverUnsoldTokensFix
             snapshot_pre
                 .source_account_data
                 .transferrable::<Test>(System::block_number())
-                .saturating_add(recovered_amount)
+                .saturating_add(sale_pre.quantity_left)
         );
         assert_eq!(
             snapshot_post.source_account_data.amount,
             snapshot_pre
                 .source_account_data
                 .amount
-                .saturating_add(recovered_amount),
+                .saturating_add(sale_pre.quantity_left),
         )
     }
 }

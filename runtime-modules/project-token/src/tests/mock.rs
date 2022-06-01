@@ -94,8 +94,6 @@ parameter_types! {
     pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token");
     pub const MaxVestingBalancesPerAccountPerToken: u8 = 3;
     pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
-    pub const MinRevenueSplitDuration: u64 = 10;
-    pub const MinSaleDuration: u32 = 10;
     // --------- balances::Trait parameters ---------------------------
     pub const ExistentialDeposit: u128 = 10;
     // constants for storage::Trait
@@ -200,7 +198,6 @@ impl Trait for Test {
     type BlocksPerYear = BlocksPerYear;
     type MemberOriginValidator = TestMemberships;
     type MembershipInfoProvider = TestMemberships;
-    type MinRevenueSplitDuration = MinRevenueSplitDuration;
 }
 
 // Working group integration
@@ -261,6 +258,12 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
         unimplemented!()
     }
 
+    fn get_worker_member_id(
+        _: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
     fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
         unimplemented!()
     }
@@ -311,6 +314,12 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
     }
 
     fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
+    fn get_worker_member_id(
+        _: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
         unimplemented!()
     }
 
@@ -412,6 +421,12 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     }
 
     fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
+    fn get_worker_member_id(
+        _: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
         unimplemented!()
     }
 

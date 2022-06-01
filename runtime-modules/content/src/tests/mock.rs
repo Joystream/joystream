@@ -1,5 +1,6 @@
 #![cfg(test)]
 use crate::*;
+use common::membership::MemberOriginValidator;
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
@@ -7,8 +8,8 @@ pub use membership::WeightInfo;
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
-    traits::{BlakeTwo256, IdentityLookup},
-    ModuleId, Perbill,
+    traits::{BlakeTwo256, Convert, IdentityLookup},
+    ModuleId, Perbill, Permill,
 };
 use staking_handler::LockComparator;
 
@@ -44,6 +45,9 @@ pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID: u64 = 114;
 pub const UNAUTHORIZED_MODERATOR_ACCOUNT_ID: u64 = 115;
 pub const SECOND_MEMBER_ACCOUNT_ID: u64 = 116;
 pub const DEFAULT_CHANNEL_REWARD_WITHDRAWAL_ACCOUNT_ID: u64 = 119;
+pub const LEAD_MEMBER_CONTROLLER_ACCOUNT_ID: u64 = 120;
+pub const DEFAULT_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID: u64 = 121;
+pub const UNAUTHORIZED_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID: u64 = 122;
 
 /// Runtime Id's
 pub const DEFAULT_MEMBER_ID: u64 = 201;
@@ -55,6 +59,9 @@ pub const UNAUTHORIZED_CURATOR_ID: u64 = 212;
 pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ID: u64 = 214;
 pub const UNAUTHORIZED_MODERATOR_ID: u64 = 215;
 pub const SECOND_MEMBER_ID: u64 = 216;
+pub const LEAD_MEMBER_ID: u64 = 217;
+pub const DEFAULT_CURATOR_MEMBER_ID: u64 = 218;
+pub const UNAUTHORIZED_CURATOR_MEMBER_ID: u64 = 219;
 
 pub const DATA_OBJECT_DELETION_PRIZE: u64 = 5;
 pub const DEFAULT_OBJECT_SIZE: u64 = 5;
@@ -76,9 +83,17 @@ pub const INITIAL_BALANCE: u64 = TOTAL_BALANCE_REQUIRED;
 
 pub const MEMBERS_COUNT: u64 = 10;
 pub const PAYMENTS_NUMBER: u64 = 10;
-pub const DEFAULT_PAYOUT_CLAIMED: u64 = 10;
-pub const DEFAULT_PAYOUT_EARNED: u64 = 10;
+pub const DEFAULT_PAYOUT_CLAIMED: u64 = 100;
+pub const DEFAULT_PAYOUT_EARNED: u64 = 100;
 pub const DEFAULT_NFT_PRICE: u64 = 1000;
+
+// Creator tokens
+pub const DEFAULT_CREATOR_TOKEN_ISSUANCE: u64 = 1_000_000_000;
+pub const DEFAULT_CREATOR_TOKEN_SALE_UNIT_PRICE: u64 = 10;
+pub const DEFAULT_CREATOR_TOKEN_SALE_DURATION: u64 = 100;
+pub const DEFAULT_ISSUER_TRANSFER_AMOUNT: u64 = 1_000_000;
+pub const DEFAULT_PATRONAGE_RATE: YearlyRate = YearlyRate(Permill::from_percent(1));
+pub const DEFAULT_REVENUE_SPLIT_DURATION: u64 = 1000;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -103,6 +118,7 @@ impl_outer_event! {
         balances<T>,
         membership_mod<T>,
         storage_mod<T>,
+        project_token<T>,
     }
 }
 
@@ -193,6 +209,18 @@ impl ContentActorAuthenticator for Test {
         }
     }
 
+    fn get_leader_member_id() -> Option<Self::MemberId> {
+        Some(LEAD_MEMBER_ID)
+    }
+
+    fn get_curator_member_id(curator_id: &Self::CuratorId) -> Option<Self::MemberId> {
+        match *curator_id {
+            DEFAULT_CURATOR_ID => Some(DEFAULT_CURATOR_MEMBER_ID),
+            UNAUTHORIZED_CURATOR_ID => Some(UNAUTHORIZED_CURATOR_MEMBER_ID),
+            _ => None,
+        }
+    }
+
     fn is_lead(account_id: &Self::AccountId) -> bool {
         *account_id == ensure_signed(Origin::signed(LEAD_ACCOUNT_ID)).unwrap()
     }
@@ -244,6 +272,22 @@ impl ContentActorAuthenticator for Test {
 
             DEFAULT_MODERATOR_ID => {
                 *account_id == ensure_signed(Origin::signed(DEFAULT_MODERATOR_ACCOUNT_ID)).unwrap()
+            }
+            LEAD_MEMBER_ID => {
+                *account_id
+                    == ensure_signed(Origin::signed(LEAD_MEMBER_CONTROLLER_ACCOUNT_ID)).unwrap()
+            }
+            DEFAULT_CURATOR_MEMBER_ID => {
+                *account_id
+                    == ensure_signed(Origin::signed(DEFAULT_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID))
+                        .unwrap()
+            }
+            UNAUTHORIZED_CURATOR_MEMBER_ID => {
+                *account_id
+                    == ensure_signed(Origin::signed(
+                        UNAUTHORIZED_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID,
+                    ))
+                    .unwrap()
             }
             _ => false,
         }
@@ -375,10 +419,13 @@ impl Trait for Test {
     type ModuleId = ContentModuleId;
 
     /// membership info provider
-    type MemberAuthenticator = MemberInfoProvider;
+    type MemberAuthenticator = TestMemberships;
 
     /// council budget manager
     type CouncilBudgetManager = CouncilBudgetManager;
+
+    /// Creator tokens interface
+    type ProjectToken = project_token::Module<Self>;
 }
 
 // #[derive (Default)]
@@ -519,7 +566,7 @@ pub fn get_open_auction_params() -> OpenAuctionParams<Test> {
 // membership trait implementation and related stuff
 
 parameter_types! {
-    pub const ExistentialDeposit: u32 = 0;
+    pub const ExistentialDeposit: u32 = 10;
     pub const DefaultMembershipPrice: u64 = 100;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
     pub const StakingCandidateLockId: [u8; 8] = [3; 8];
@@ -580,6 +627,12 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
         unimplemented!()
     }
 
+    fn get_worker_member_id(
+        _: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
     fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
         unimplemented!()
     }
@@ -612,8 +665,10 @@ impl LockComparator<u64> for Test {
     }
 }
 
-pub struct MemberInfoProvider {}
-impl MembershipInfoProvider<Test> for MemberInfoProvider {
+pub struct TestMemberships {}
+
+// Mock MembershipInfoProvider impl.
+impl MembershipInfoProvider<Test> for TestMemberships {
     fn controller_account_id(
         member_id: common::MemberId<Test>,
     ) -> Result<AccountId, DispatchError> {
@@ -625,7 +680,47 @@ impl MembershipInfoProvider<Test> for MemberInfoProvider {
             COLLABORATOR_MEMBER_ID => Ok(COLLABORATOR_MEMBER_ACCOUNT_ID),
             UNAUTHORIZED_MODERATOR_ID => Ok(UNAUTHORIZED_MODERATOR_ACCOUNT_ID),
             DEFAULT_MODERATOR_ID => Ok(DEFAULT_MODERATOR_ACCOUNT_ID),
+            LEAD_MEMBER_ID => Ok(LEAD_MEMBER_CONTROLLER_ACCOUNT_ID),
+            DEFAULT_CURATOR_MEMBER_ID => Ok(DEFAULT_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID),
+            UNAUTHORIZED_CURATOR_MEMBER_ID => Ok(UNAUTHORIZED_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID),
             _ => Err(DispatchError::Other("no account found")),
+        }
+    }
+}
+
+// Mock MemberOriginValidator impl.
+impl MemberOriginValidator<Origin, u64, u64> for TestMemberships {
+    fn ensure_member_controller_account_origin(
+        origin: Origin,
+        member_id: u64,
+    ) -> Result<u64, DispatchError> {
+        let sender = ensure_signed(origin)?;
+        ensure!(
+            Self::is_member_controller_account(&member_id, &sender),
+            DispatchError::Other("origin signer not a member controller account"),
+        );
+        Ok(sender)
+    }
+
+    fn is_member_controller_account(member_id: &u64, account_id: &u64) -> bool {
+        match *member_id {
+            DEFAULT_MEMBER_ID => *account_id == DEFAULT_MEMBER_ACCOUNT_ID,
+            SECOND_MEMBER_ID => *account_id == SECOND_MEMBER_ACCOUNT_ID,
+            UNAUTHORIZED_MEMBER_ID => *account_id == UNAUTHORIZED_MEMBER_ACCOUNT_ID,
+            UNAUTHORIZED_COLLABORATOR_MEMBER_ID => {
+                *account_id == UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID
+            }
+            COLLABORATOR_MEMBER_ID => *account_id == COLLABORATOR_MEMBER_ACCOUNT_ID,
+            UNAUTHORIZED_MODERATOR_ID => *account_id == UNAUTHORIZED_MODERATOR_ACCOUNT_ID,
+            DEFAULT_MODERATOR_ID => *account_id == DEFAULT_MODERATOR_ACCOUNT_ID,
+            LEAD_MEMBER_ID => *account_id == LEAD_MEMBER_CONTROLLER_ACCOUNT_ID,
+            DEFAULT_CURATOR_MEMBER_ID => {
+                *account_id == DEFAULT_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID
+            }
+            UNAUTHORIZED_CURATOR_MEMBER_ID => {
+                *account_id == UNAUTHORIZED_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID
+            }
+            _ => false,
         }
     }
 }
@@ -689,6 +784,12 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
         unimplemented!()
     }
 
+    fn get_worker_member_id(
+        _: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
     fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
         unimplemented!()
     }
@@ -740,6 +841,12 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
     }
 
     fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
+    fn get_worker_member_id(
+        _: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
         unimplemented!()
     }
 
@@ -808,5 +915,34 @@ impl common::council::CouncilBudgetManager<u64, u64> for CouncilBudgetManager {
         Self::set_budget(new_budget);
 
         Ok(())
+    }
+}
+
+// pallet_project_token trait implementation and related stuff
+parameter_types! {
+    pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token");
+    pub const MaxVestingBalancesPerAccountPerToken: u8 = 3;
+    pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
+}
+
+impl project_token::Trait for Test {
+    type Event = MetaEvent;
+    type Balance = u64;
+    type TokenId = u64;
+    type BlockNumberToBalance = Block2Balance;
+    type DataObjectStorage = storage::Module<Self>;
+    type ModuleId = TokenModuleId;
+    type JoyExistentialDeposit = ExistentialDeposit;
+    type MaxVestingBalancesPerAccountPerToken = MaxVestingBalancesPerAccountPerToken;
+    type BlocksPerYear = BlocksPerYear;
+    type MemberOriginValidator = TestMemberships;
+    type MembershipInfoProvider = TestMemberships;
+}
+
+pub struct Block2Balance {}
+
+impl Convert<u64, u64> for Block2Balance {
+    fn convert(block: u64) -> u64 {
+        block
     }
 }

@@ -1,10 +1,11 @@
 use crate::types::{
-    JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId, TransferPolicyOf,
-    ValidatedTransfersOf,
+    JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId, TokenSaleOf,
+    TransferPolicyOf, ValidatedTransfersOf,
 };
 use common::MembershipTypes;
 use frame_support::decl_event;
 use sp_runtime::Perquintill;
+use sp_std::vec::Vec;
 
 decl_event! {
     pub enum Event<T>
@@ -18,6 +19,7 @@ decl_event! {
         TransferPolicy = TransferPolicyOf<T>,
         TokenIssuanceParameters = TokenIssuanceParametersOf<T>,
         ValidatedTransfers = ValidatedTransfersOf<T>,
+        TokenSale = TokenSaleOf<T>,
 
     {
         /// Token amount is transferred from src to dst
@@ -107,6 +109,22 @@ decl_event! {
         /// - token issuance parameters
         TokenIssued(TokenId, TokenIssuanceParameters),
 
+        /// Toke Sale was Initialized
+        /// Params:
+        /// - token id
+        /// - token sale id
+        /// - token sale data
+        /// - token sale metadata
+        TokenSaleInitialized(TokenId, TokenSaleId, TokenSale, Option<Vec<u8>>),
+
+        /// Upcoming Token Sale was Updated
+        /// Params:
+        /// - token id
+        /// - token sale id
+        /// - new sale start block
+        /// - new sale duration
+        UpcomingTokenSaleUpdated(TokenId, TokenSaleId, Option<BlockNumber>, Option<BlockNumber>),
+
         /// Tokens Purchased On Sale
         /// Params:
         /// - token id
@@ -115,11 +133,17 @@ decl_event! {
         /// - buyer's member id
         TokensPurchasedOnSale(TokenId, TokenSaleId, Balance, MemberId),
 
-        /// Unsold Tokens Recovered
+        /// Token Sale Finalized
         /// Params:
         /// - token id
         /// - token sale id
-        /// - amount of tokens recovered
-        UnsoldTokensRecovered(TokenId, TokenSaleId, Balance),
+        /// - amount of unsold tokens recovered
+        /// - amount of JOY collected
+        TokenSaleFinalized(TokenId, TokenSaleId, Balance, JoyBalance),
+
+        /// Transfer Policy Changed To Permissionless
+        /// Params:
+        /// - token id
+        TransferPolicyChangedToPermissionless(TokenId),
     }
 }

@@ -955,6 +955,7 @@ fn change_to_permissionless_ok_from_permissioned_state() {
             Token::token_info_by_id(token_id).transfer_policy,
             TransferPolicyOf::<Test>::Permissionless
         ));
+        last_event_eq!(RawEvent::TransferPolicyChangedToPermissionless(token_id));
     })
 }
 
@@ -977,6 +978,7 @@ fn change_to_permissionless_ok_from_permissionless_state() {
             Token::token_info_by_id(token_id).transfer_policy,
             TransferPolicyOf::<Test>::Permissionless
         ));
+        last_event_eq!(RawEvent::TransferPolicyChangedToPermissionless(token_id));
     })
 }
 
@@ -986,11 +988,11 @@ fn change_to_permissionless_ok_from_permissionless_state() {
 fn issuer_transfer_fails_with_non_existing_token() {
     let token_id = token!(1);
     let config = GenesisConfigBuilder::new_empty().build();
-    let src_member_id = member!(1).0;
+    let (src_member_id, bloat_bond_payer) = member!(1);
     let out = issuer_outputs![(member!(2).0, balance!(1), None)];
 
     build_test_externalities(config).execute_with(|| {
-        let result = Token::issuer_transfer(src_member_id, token_id, out);
+        let result = Token::issuer_transfer(token_id, src_member_id, bloat_bond_payer, out);
 
         assert_noop!(result, Error::<Test>::TokenDoesNotExist);
     })
@@ -999,7 +1001,7 @@ fn issuer_transfer_fails_with_non_existing_token() {
 #[test]
 fn issuer_transfer_fails_with_non_existing_source() {
     let token_id = token!(1);
-    let src_member_id = member!(1).0;
+    let (src_member_id, bloat_bond_payer) = member!(1);
     let (dst, amount) = (member!(2).0, balance!(100));
 
     let token_data = TokenDataBuilder::new_empty()
@@ -1013,8 +1015,9 @@ fn issuer_transfer_fails_with_non_existing_source() {
 
     build_test_externalities(config).execute_with(|| {
         let result = Token::issuer_transfer(
-            src_member_id,
             token_id,
+            src_member_id,
+            bloat_bond_payer,
             issuer_outputs![(dst, amount, None)],
         );
 
@@ -1028,7 +1031,7 @@ fn issuer_transfer_fails_with_src_having_insufficient_funds_for_bloat_bond() {
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
         .build();
-    let (src_member_id, src_acc) = member!(1);
+    let (src_member_id, bloat_bond_payer) = member!(1);
     let (dst, amount) = (member!(2).0, balance!(100));
     let bloat_bond = joy!(100);
 
@@ -1038,11 +1041,15 @@ fn issuer_transfer_fails_with_src_having_insufficient_funds_for_bloat_bond() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&src_acc, ExistentialDeposit::get() + bloat_bond - 1);
+        increase_account_balance(
+            &bloat_bond_payer,
+            ExistentialDeposit::get() + bloat_bond - 1,
+        );
 
         let result = Token::issuer_transfer(
-            src_member_id,
             token_id,
+            src_member_id,
+            bloat_bond_payer,
             issuer_outputs![(dst, amount, None)],
         );
 
@@ -1057,7 +1064,7 @@ fn issuer_permissioned_token_transfer_fails_with_source_not_having_sufficient_fr
         .with_transfer_policy(Policy::Permissioned(Hashing::hash_of(b"default")))
         .build();
     let (dst, amount) = (member!(1).0, balance!(100));
-    let (src_member_id, src_balance) = (member!(2).0, amount - balance!(1));
+    let ((src_member_id, bloat_bond_payer), src_balance) = (member!(2), amount - balance!(1));
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token_and_owner(token_id, token_data, src_member_id, src_balance)
@@ -1066,8 +1073,9 @@ fn issuer_permissioned_token_transfer_fails_with_source_not_having_sufficient_fr
 
     build_test_externalities(config).execute_with(|| {
         let result = Token::issuer_transfer(
-            src_member_id,
             token_id,
+            src_member_id,
+            bloat_bond_payer,
             issuer_outputs![(dst, amount, None)],
         );
 
@@ -1081,7 +1089,8 @@ fn issuer_permissioned_token_transfer_fails_with_dst_vesting_schedules_limit_exc
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(Hashing::hash_of(b"default")))
         .build();
-    let (src_member_id, dst, amount) = (member!(1).0, member!(2).0, balance!(100));
+    let ((src_member_id, bloat_bond_payer), dst, amount) =
+        (member!(1), member!(2).0, balance!(100));
     let out = issuer_outputs![(
         dst,
         amount,
@@ -1101,7 +1110,7 @@ fn issuer_permissioned_token_transfer_fails_with_dst_vesting_schedules_limit_exc
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        let result = Token::issuer_transfer(src_member_id, token_id, out);
+        let result = Token::issuer_transfer(token_id, src_member_id, bloat_bond_payer, out);
 
         assert_noop!(
             result,
@@ -1116,7 +1125,7 @@ fn issuer_permissioned_token_transfer_ok() {
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(Hashing::hash_of(b"default")))
         .build();
-    let (src_member_id, src_acc) = member!(1);
+    let (src_member_id, bloat_bond_payer) = member!(1);
     let (dst1, dst2, dst3, dst4) = (member!(2).0, member!(3).0, member!(4).0, member!(5).0);
     let (amount1, amount2, amount3, amount4) =
         (balance!(100), balance!(200), balance!(300), balance!(400));
@@ -1155,12 +1164,16 @@ fn issuer_permissioned_token_transfer_ok() {
         .build();
 
     build_test_externalities(config).execute_with(|| {
-        increase_account_balance(&src_acc, ExistentialDeposit::get() + bloat_bond_new * 2);
+        increase_account_balance(
+            &bloat_bond_payer,
+            ExistentialDeposit::get() + bloat_bond_new * 2,
+        );
 
         // Call succeeds
         assert_ok!(Token::issuer_transfer(
-            src_member_id,
             token_id,
+            src_member_id,
+            bloat_bond_payer,
             issuer_outputs![
                 (dst1, amount1, vesting1.clone()),
                 (dst2, amount2, vesting2.clone()),
@@ -1241,9 +1254,9 @@ fn issuer_permissioned_token_transfer_ok() {
         // Token accounts number is valid
         assert_eq!(Token::token_info_by_id(token_id).accounts_number, 5u64);
 
-        // Bloat bond transferred from src
+        // Bloat bond transferred from bloat_bond_payer
         assert_eq!(
-            Balances::usable_balance(&src_acc),
+            Balances::usable_balance(&bloat_bond_payer),
             ExistentialDeposit::get()
         );
 
@@ -1274,7 +1287,8 @@ fn issuer_multiple_permissioned_token_transfers_ok_with_vesting_cleanup_executed
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(Hashing::hash_of(b"default")))
         .build();
-    let (src_member_id, dst, amount) = (member!(1).0, member!(2).0, balance!(100));
+    let ((src_member_id, bloat_bond_payer), dst, amount) =
+        (member!(1), member!(2).0, balance!(100));
     let vesting = Some(VestingScheduleParams {
         blocks_before_cliff: 100,
         cliff_amount_percentage: Permill::from_percent(50),
@@ -1291,13 +1305,23 @@ fn issuer_multiple_permissioned_token_transfers_ok_with_vesting_cleanup_executed
     build_test_externalities(config).execute_with(|| {
         // Create max vesting schedules
         for i in 0u64..max_vesting_schedules.into() {
-            assert_ok!(Token::issuer_transfer(src_member_id, token_id, out.clone()));
+            assert_ok!(Token::issuer_transfer(
+                token_id,
+                src_member_id,
+                bloat_bond_payer,
+                out.clone()
+            ));
             let dst_acc_data = Token::ensure_account_data_exists(token_id, &dst).unwrap();
             assert_eq!(dst_acc_data.next_vesting_transfer_id, i + 1);
         }
         // Go to vesting end block
         System::set_block_number(201);
-        assert_ok!(Token::issuer_transfer(src_member_id, token_id, out.clone()));
+        assert_ok!(Token::issuer_transfer(
+            token_id,
+            src_member_id,
+            bloat_bond_payer,
+            out.clone()
+        ));
         let dst_acc_data = Token::ensure_account_data_exists(token_id, &dst).unwrap();
         assert_eq!(
             dst_acc_data.next_vesting_transfer_id,

@@ -10,6 +10,11 @@ mod nft;
 mod permissions;
 mod types;
 
+use project_token::traits::PalletToken;
+use project_token::types::{
+    TokenIssuanceParametersOf, TokenSaleParamsOf, TransfersWithVestingOf, UploadContextOf,
+    YearlyRate,
+};
 use sp_std::cmp::max;
 use sp_std::mem::size_of;
 use sp_std::vec;
@@ -22,11 +27,6 @@ pub use types::*;
 use codec::Codec;
 use codec::{Decode, Encode};
 
-pub use storage::{
-    BagIdType, DataObjectCreationParameters, DataObjectStorage, DynamicBagIdType, StaticBagId,
-    UploadParameters, UploadParametersRecord,
-};
-
 pub use common::{
     council::CouncilBudgetManager, membership::MembershipInfoProvider, working_group::WorkingGroup,
     MembershipTypes, StorageOwnership, Url,
@@ -37,6 +37,10 @@ use frame_support::{
     ensure,
     traits::{Currency, ExistenceRequirement, Get},
     Parameter,
+};
+pub use storage::{
+    BagIdType, DataObjectCreationParameters, DataObjectStorage, DynamicBagIdType, StaticBagId,
+    UploadParameters, UploadParametersRecord,
 };
 
 use frame_system::{ensure_root, ensure_signed};
@@ -61,6 +65,7 @@ pub trait Trait:
     + membership::Trait
     + balances::Trait
     + storage::Trait
+    + project_token::Trait
 {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -112,6 +117,19 @@ pub trait Trait:
 
     /// Provides an access for the council budget.
     type CouncilBudgetManager: CouncilBudgetManager<Self::AccountId, BalanceOf<Self>>;
+
+    /// Interface for Creator Tokens functionality
+    type ProjectToken: PalletToken<
+        Self::TokenId,
+        Self::MemberId,
+        Self::AccountId,
+        BalanceOf<Self>,
+        TokenIssuanceParametersOf<Self>,
+        Self::BlockNumber,
+        TokenSaleParamsOf<Self>,
+        UploadContextOf<Self>,
+        TransfersWithVestingOf<Self>,
+    >;
 }
 
 decl_storage! {
@@ -441,6 +459,7 @@ decl_module! {
                 collaborators: params.collaborators.clone(),
                 moderators: params.moderators.clone(),
                 cumulative_reward_claimed: BalanceOf::<T>::zero(),
+                creator_token_id: None,
             };
 
             // add channel to onchain state
@@ -548,7 +567,7 @@ decl_module! {
             let bag_id = storage::BagIdType::from(dyn_bag.clone());
 
             // channel has a dynamic bag associated to it -> remove assets from storage
-            if let Ok(bag) = T::DataObjectStorage::ensure_bag_exists(&bag_id) {
+            if let Ok(bag) = <T as Trait>::DataObjectStorage::ensure_bag_exists(&bag_id) {
                 // ensure that bag size provided is valid
                 ensure!(
                     bag.objects_number == num_objects_to_delete,
@@ -556,7 +575,7 @@ decl_module! {
                 );
 
                 // construct collection of assets to be removed
-                let assets_to_remove = T::DataObjectStorage::get_data_objects_id(&bag_id);
+                let assets_to_remove = <T as Trait>::DataObjectStorage::get_data_objects_id(&bag_id);
 
                 if !assets_to_remove.is_empty() {
                     Storage::<T>::can_delete_dynamic_bag_with_objects(
@@ -1364,8 +1383,19 @@ decl_module! {
             ensure_actor_authorized_to_withdraw_from_channel::<T>(origin, &actor, &channel.owner)?;
 
             ensure!(
-                <Balances<T>>::usable_balance(&reward_account) >= amount,
-                Error::<T>::WithdrawFromChannelAmountExceedsBalance
+                !amount.is_zero(),
+                Error::<T>::WithdrawFromChannelAmountIsZero
+            );
+
+            ensure!(
+                <Balances<T>>::usable_balance(&reward_account)
+                    .saturating_sub(T::ExistentialDeposit::get()) >= amount,
+                Error::<T>::WithdrawFromChannelAmountExceedsBalanceMinusExistentialDeposit
+            );
+
+            ensure!(
+                channel.creator_token_id.is_none(),
+                Error::<T>::CannotWithdrawFromChannelWithCreatorTokenIssued
             );
 
             //
@@ -2394,6 +2424,361 @@ decl_module! {
             Self::deposit_event(RawEvent::NftOwnerRemarked(actor, video_id, msg));
         }
 
+        /// Issue creator token
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn issue_creator_token(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            params: TokenIssuanceParametersOf<T>,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Permissions check
+            let sender = ensure_actor_authorized_to_manage_creator_token::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Ensure token not already issued
+            channel.ensure_creator_token_not_issued::<T>()?;
+
+            // Call to ProjectToken - should be the first call before MUTATION SAFE!
+            let token_id = T::ProjectToken::issue_token(
+                sender.clone(),
+                params,
+                UploadContextOf::<T> {
+                    bag_id: Self::bag_id_for_channel(&channel_id),
+                    uploader_account: sender,
+                }
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            ChannelById::<T>::mutate(&channel_id, |channel| {
+                channel.creator_token_id = Some(token_id);
+            });
+
+            Self::deposit_event(RawEvent::CreatorTokenIssued(actor, channel_id, token_id));
+        }
+
+        /// Initialize creator token sale
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn init_creator_token_sale(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            params: TokenSaleParamsOf<T>,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Permissions check
+            ensure_actor_authorized_to_manage_creator_token::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Retrieve member_id based on actor
+            let member_id = get_member_id_of_actor::<T>(&actor)?;
+
+            // Establish earnings destination based on channel owner
+            let earnings_dst = Self::establish_creator_token_sale_earnings_destination(
+                &channel.owner
+            );
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Auto-finalize the sale only if channel owner is a member
+            let auto_finalize = matches!(channel.owner, ChannelOwner::Member { .. });
+
+            // Call to ProjectToken - should be the first call before MUTATION SAFE!
+            T::ProjectToken::init_token_sale(
+                token_id,
+                member_id,
+                earnings_dst,
+                auto_finalize,
+                params
+            )?;
+        }
+
+        /// Update upcoming creator token sale
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_upcoming_creator_token_sale(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            new_start_block: Option<T::BlockNumber>,
+            new_duration: Option<T::BlockNumber>,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Permissions check
+            ensure_actor_authorized_to_manage_creator_token::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Call to ProjectToken - should be the first call before MUTATION SAFE!
+            T::ProjectToken::update_upcoming_sale(
+                token_id,
+                new_start_block,
+                new_duration
+            )?;
+        }
+
+        /// Perform transfer of tokens as creator token issuer
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn creator_token_issuer_transfer(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            outputs: TransfersWithVestingOf<T>,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Permissions check
+            let sender = ensure_actor_authorized_to_manage_creator_token::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Retrieve member_id based on actor
+            let member_id = get_member_id_of_actor::<T>(&actor)?;
+
+            // Call to ProjectToken - should be the first call before MUTATION SAFE!
+            T::ProjectToken::issuer_transfer(
+                token_id,
+                member_id,
+                sender,
+                outputs
+            )?;
+        }
+
+
+        /// Make channel's creator token permissionless
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn make_creator_token_permissionless(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Permissions check
+            ensure_actor_authorized_to_manage_creator_token::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Call to ProjectToken - should be the first call before MUTATION SAFE!
+            T::ProjectToken::change_to_permissionless(token_id)?;
+        }
+
+        /// Reduce channel's creator token patronage rate to given value
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn reduce_creator_token_patronage_rate_to(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            target_rate: YearlyRate
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Permissions check
+            ensure_actor_authorized_to_manage_creator_token::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Call to ProjectToken - should be the first call before MUTATION SAFE!
+            T::ProjectToken::reduce_patronage_rate_to(token_id, target_rate)?;
+        }
+
+        /// Claim channel's creator token patronage credit
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn claim_creator_token_patronage_credit(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Permissions check
+            ensure_actor_authorized_to_manage_creator_token::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Ensure channel is a member-owned channel
+            ensure!(
+                matches!(channel.owner, ChannelOwner::Member { .. }),
+                Error::<T>::PatronageCanOnlyBeClaimedForMemberOwnedChannels
+            );
+
+            // Retrieve member_id based on actor
+            let member_id = get_member_id_of_actor::<T>(&actor)?;
+
+            // Call to ProjectToken - should be the first call before MUTATION SAFE!
+            T::ProjectToken::claim_patronage_credit(
+                token_id,
+                member_id
+            )?;
+        }
+
+        /// Issue revenue split for a channel
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn issue_revenue_split(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            start: Option<T::BlockNumber>,
+            duration: T::BlockNumber
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Permissions check
+            ensure_actor_authorized_to_manage_creator_token::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Get channel's reward account and its balance
+            let reward_account = ContentTreasury::<T>::account_for_channel(channel_id);
+            let reward_account_balance = Balances::<T>::usable_balance(&reward_account);
+
+            // Call to ProjectToken - should be the first call before MUTATION SAFE!
+            T::ProjectToken::issue_revenue_split(
+                token_id,
+                start,
+                duration,
+                reward_account,
+                reward_account_balance.saturating_sub(<T as balances::Trait>::ExistentialDeposit::get())
+            )?;
+        }
+
+        /// Finalize an ended revenue split
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn finalize_revenue_split(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Permissions check
+            ensure_actor_authorized_to_manage_creator_token::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Get channel's reward account
+            let reward_account = ContentTreasury::<T>::account_for_channel(channel_id);
+
+            // Call to ProjectToken - should be the first call before MUTATION SAFE!
+            T::ProjectToken::finalize_revenue_split(
+                token_id,
+                reward_account, // send any leftovers back to reward_account
+            )?;
+        }
+
+        /// Finalize an ended creator token sale
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn finalize_creator_token_sale(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Permissions check
+            ensure_actor_authorized_to_manage_creator_token::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Call to ProjectToken - should be the first call before MUTATION SAFE!
+            let joy_collected = T::ProjectToken::finalize_token_sale(token_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Curator channels - increase council budget by the amount of tokens collected
+            // and burned during the sale
+            if let ChannelOwner::CuratorGroup(_) = channel.owner {
+                T::CouncilBudgetManager::increase_budget(joy_collected);
+            }
+        }
+
+        /// Deissue channel's creator token
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn deissue_creator_token(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Permissions check
+            ensure_actor_authorized_to_manage_creator_token::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Call to ProjectToken - should be the first call before MUTATION SAFE!
+            T::ProjectToken::deissue_token(
+                token_id
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            ChannelById::<T>::mutate(&channel_id, |channel| {
+                channel.creator_token_id = None;
+            });
+        }
     }
 }
 
@@ -2699,6 +3084,19 @@ impl<T: Trait> Module<T> {
         )?;
         Ok(())
     }
+
+    fn establish_creator_token_sale_earnings_destination(
+        channel_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
+    ) -> Option<T::AccountId> {
+        match channel_owner {
+            // Channel owned by member - earnings destination is member controller account
+            ChannelOwner::Member(member_id) => {
+                T::MembershipInfoProvider::controller_account_id(*member_id).ok()
+            }
+            // Channel owned by curators - earnings are burned
+            ChannelOwner::CuratorGroup(_) => None,
+        }
+    }
 }
 
 decl_event!(
@@ -2735,6 +3133,7 @@ decl_event!(
         ModeratorSet = BTreeSet<<T as MembershipTypes>::MemberId>,
         AccountId = <T as frame_system::Trait>::AccountId,
         UpdateChannelPayoutsParameters = UpdateChannelPayoutsParameters<T>,
+        TokenId = <T as project_token::Trait>::TokenId,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -2824,10 +3223,13 @@ decl_event!(
         BuyNowPriceUpdated(VideoId, ContentActor, CurrencyAmount),
         NftSlingedBackToTheOriginalArtist(VideoId, ContentActor),
 
-        /// Metaprotocols related event
+        // Metaprotocols related event
         ChannelOwnerRemarked(ContentActor, ChannelId, Vec<u8>),
         ChannelCollaboratorRemarked(ContentActor, ChannelId, Vec<u8>),
         ChannelModeratorRemarked(ContentActor, ChannelId, Vec<u8>),
         NftOwnerRemarked(ContentActor, VideoId, Vec<u8>),
+
+        // Creator tokens
+        CreatorTokenIssued(ContentActor, ChannelId, TokenId),
     }
 );

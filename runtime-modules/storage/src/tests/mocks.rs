@@ -208,6 +208,12 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
         unimplemented!()
     }
 
+    fn get_worker_member_id(
+        _: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
     fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
         unimplemented!()
     }
@@ -259,6 +265,12 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
     }
 
     fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
+    fn get_worker_member_id(
+        _: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
         unimplemented!()
     }
 

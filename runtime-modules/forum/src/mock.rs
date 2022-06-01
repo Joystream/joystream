@@ -422,6 +422,12 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for Wg {
         unimplemented!()
     }
 
+    fn get_worker_member_id(
+        _: &<Runtime as common::membership::MembershipTypes>::ActorId,
+    ) -> Option<<Runtime as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
     fn is_leader_account_id(account_id: &<Runtime as frame_system::Trait>::AccountId) -> bool {
         *account_id != NOT_FORUM_LEAD_ORIGIN_ID && *account_id != NOT_FORUM_LEAD_2_ORIGIN_ID
     }

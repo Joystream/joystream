@@ -1607,6 +1607,12 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupAuthenticator<
             .ok()
     }
 
+    fn get_worker_member_id(worker_id: &WorkerId<T>) -> Option<T::MemberId> {
+        checks::ensure_worker_exists::<T, I>(worker_id)
+            .map(|worker| worker.member_id)
+            .ok()
+    }
+
     fn is_leader_account_id(account_id: &T::AccountId) -> bool {
         checks::ensure_is_lead_account::<T, I>(account_id.clone()).is_ok()
     }

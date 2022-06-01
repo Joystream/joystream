@@ -342,7 +342,9 @@ impl<T: Trait> Module<T> {
         let amount_after_platform_fee = amount.saturating_sub(platform_fee);
         let royalty_fee = royalty_payment
             .as_ref()
-            .map_or(T::Balance::zero(), |(r, _)| r.mul_floor(amount));
+            .map_or(<T as balances::Trait>::Balance::zero(), |(r, _)| {
+                r.mul_floor(amount)
+            });
 
         let amount_for_receiver = amount_after_platform_fee
             .checked_sub(&royalty_fee)

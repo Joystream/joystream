@@ -489,6 +489,12 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for Wg {
         unimplemented!();
     }
 
+    fn get_worker_member_id(
+        _: &<Runtime as common::membership::MembershipTypes>::ActorId,
+    ) -> Option<<Runtime as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
     fn ensure_leader_origin(_origin: <Runtime as frame_system::Trait>::Origin) -> DispatchResult {
         unimplemented!()
     }
