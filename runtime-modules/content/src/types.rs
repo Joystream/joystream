@@ -249,6 +249,8 @@ pub struct ChannelRecord<
     pub weekly_nft_counter: NftCounter<BlockNumber>,
     /// Id of the channel's creator token (if issued)
     pub creator_token_id: Option<TokenId>,
+    /// State bloat bond needed to store a channel
+    pub channel_state_bloat_bond: Balance,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -426,6 +428,8 @@ pub struct ChannelCreationParametersRecord<
     pub storage_buckets: BTreeSet<StorageBucketId>,
     /// Distribution buckets to assign to a bag.
     pub distribution_buckets: BTreeSet<DistributionBucketId>,
+    /// Commitment for the channel state bloat bond.
+    pub expected_channel_state_bloat_bond: Balance,
     /// Commitment for the data object state bloat bond for the storage pallet.
     pub expected_data_object_state_bloat_bond: Balance,
 }

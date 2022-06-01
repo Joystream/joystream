@@ -296,6 +296,10 @@ decl_error! {
         /// Cannot transfer the channel: channel owner has insufficient balance (budget for WGs)
         InsufficientBalanceForTransfer,
 
+        /// Cannot create the channel: channel creator has insufficient balance
+        /// (budget for state bloat bond + data objs statebloat bonds + data objs storage fees)
+        InsufficientBalanceForChannelCreation,
+
         // Insufficient council budget to cover channel reward claim
         InsufficientCouncilBudget,
 
@@ -329,5 +333,7 @@ decl_error! {
 
         /// Patronage can only be claimed if channel is owned by a member
         PatronageCanOnlyBeClaimedForMemberOwnedChannels,
+        /// Invalid extrinsic call: Channel state bloat bond changed.
+        ChannelStateBloatBondChanged,
     }
 }

@@ -159,6 +159,9 @@ decl_storage! {
 
         pub MinCashoutAllowed get(fn min_cashout_allowed) config(): BalanceOf<T>;
 
+        /// The state bloat bond for the channel (helps preventing the state bloat).
+        pub ChannelStateBloatBondValue get (fn channel_state_bloat_bond_value): BalanceOf<T>;
+
         pub ChannelCashoutsEnabled get(fn channel_cashouts_enabled) config(): bool;
 
         /// Min auction duration
@@ -447,6 +450,15 @@ decl_module! {
                 &channel_owner,
             )?;
 
+            let channel_state_bloat_bond = Self::channel_state_bloat_bond_value();
+
+            // ensure channel state bloat bond
+            ensure!(
+                params.expected_channel_state_bloat_bond
+                    == channel_state_bloat_bond,
+                Error::<T>::ChannelStateBloatBondChanged,
+            );
+
             // ensure collaborator member ids are valid
             Self::validate_member_set(&params.collaborators.keys().cloned().collect())?;
 
@@ -454,13 +466,20 @@ decl_module! {
             let channel_id = NextChannelId::<T>::get();
 
             let storage_assets = params.assets.clone().unwrap_or_default();
+            let num_objs = storage_assets.object_creation_list.len();
 
-            let data_objects_ids = Storage::<T>::get_next_data_object_ids(storage_assets.object_creation_list.len());
+            let data_objects_ids = Storage::<T>::get_next_data_object_ids(num_objs);
+
+            let total_size = storage_assets.object_creation_list.iter().fold(0, |acc, obj_param| acc.saturating_add(obj_param.size));
+            let funds_needed = <T as Config>::DataObjectStorage::funds_needed_for_upload(num_objs, total_size);
+            let total_funds_needed = channel_state_bloat_bond.saturating_add(funds_needed);
+
+            Self::ensure_sufficient_balance(&sender, total_funds_needed)?;
 
             let bag_creation_params = DynBagCreationParameters::<T> {
                 bag_id: DynBagId::<T>::Channel(channel_id),
                 object_creation_list: storage_assets.object_creation_list,
-                state_bloat_bond_source_account_id: sender,
+                state_bloat_bond_source_account_id: sender.clone(),
                 expected_data_size_fee: storage_assets.expected_data_size_fee,
                 expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond,
                 storage_buckets: params.storage_buckets.clone(),
@@ -470,6 +489,8 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
+            let _ = Balances::<T>::slash(&sender, channel_state_bloat_bond);
 
             // create channel bag
             Storage::<T>::create_dynamic_bag(bag_creation_params)?;
@@ -492,6 +513,7 @@ decl_module! {
                 daily_nft_counter: Default::default(),
                 weekly_nft_counter: Default::default(),
                 creator_token_id: None,
+                channel_state_bloat_bond
             };
 
             // add channel to onchain state
@@ -646,12 +668,14 @@ decl_module! {
             Self::ensure_channel_bag_can_be_dropped(channel_id, num_objects_to_delete)?;
 
             // try to remove the channel
-            Self::try_to_perform_channel_deletion(sender, channel_id)?;
+            Self::try_to_perform_channel_deletion(sender.clone(), channel_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
+            //rewards the sender a state bloat bond amount for the work to delete the channel.
+            let _ = Balances::<T>::deposit_creating(&sender, channel.channel_state_bloat_bond);
 
             // deposit event
             Self::deposit_event(RawEvent::ChannelDeleted(actor, channel_id));
@@ -712,6 +736,7 @@ decl_module! {
         ) -> DispatchResult {
 
             let sender = ensure_signed(origin)?;
+
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
@@ -726,11 +751,14 @@ decl_module! {
             Self::ensure_channel_bag_can_be_dropped(channel_id, num_objects_to_delete)?;
 
             // try to remove the channel
-            Self::try_to_perform_channel_deletion(sender, channel_id)?;
+            Self::try_to_perform_channel_deletion(sender.clone(), channel_id)?;
 
             //
             // == MUTATION SAFE ==
             //
+
+            //rewards the sender a state bloat bond amount for the work to delete the channel.
+            let _ = Balances::<T>::deposit_creating(&sender, channel.channel_state_bloat_bond);
 
             // deposit event
             Self::deposit_event(RawEvent::ChannelDeletedByModerator(actor, channel_id, rationale));
@@ -1225,6 +1253,26 @@ decl_module! {
             ));
 
             Ok(())
+        }
+
+        /// Updates channel state bloat bond value.
+        /// Only lead can upload this value
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_channel_state_bloat_bond(
+            origin,
+            new_channel_state_bloat_bond: BalanceOf<T>,
+        ) {
+            let sender = ensure_signed(origin)?;
+            ensure_authorized_to_update_channel_state_bloat_bond::<T>(&sender)?;
+
+            //
+            // == MUTATION_SAFE ==
+            //
+
+            ChannelStateBloatBondValue::<T>::put(new_channel_state_bloat_bond);
+            Self::deposit_event(
+                RawEvent::ChannelStateBloatBondValueUpdated(
+                    new_channel_state_bloat_bond));
         }
 
         #[weight = 10_000_000] // TODO: adjust Weight
@@ -3122,6 +3170,19 @@ impl<T: Config> Module<T> {
             .collect::<BTreeSet<_>>()
     }
 
+    fn ensure_sufficient_balance(
+        account_id: &T::AccountId,
+        amount: BalanceOf<T>,
+    ) -> DispatchResult {
+        let balance = Balances::<T>::usable_balance(account_id);
+
+        ensure!(
+            balance >= amount,
+            Error::<T>::InsufficientBalanceForChannelCreation
+        );
+        Ok(())
+    }
+
     fn ensure_sufficient_balance_for_channel_transfer(
         owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
         transfer_cost: BalanceOf<T>,
@@ -3428,6 +3489,7 @@ decl_event!(
             BTreeSet<DataObjectId>,
         ),
         ChannelPrivilegeLevelUpdated(ChannelId, ChannelPrivilegeLevel),
+        ChannelStateBloatBondValueUpdated(Balance),
         ChannelAssetsRemoved(ContentActor, ChannelId, BTreeSet<DataObjectId>, Channel),
         ChannelDeleted(ContentActor, ChannelId),
         ChannelDeletedByModerator(ContentActor, ChannelId, Vec<u8> /* rationale */),
