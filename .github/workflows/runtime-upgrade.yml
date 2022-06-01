@@ -102,7 +102,7 @@ jobs:
           export HOME=${PWD}
           mkdir -p ${HOME}/.local/share/joystream-cli
           yarn joystream-cli api:setUri ws://localhost:9944
-          # Rhodes release (spec 6) production runtime profile
-          export RUNTIME_TAG=8c2e70abcb34a6892991355b61e804b7c1492290
+          # Rhodes release (spec 7) production runtime profile
+          export RUNTIME_TAG=e3f72ac0dbfc3d8dc69b63c2ab991f104411f205
           export TARGET_RUNTIME_TAG=latest
           tests/network-tests/run-migration-tests.sh
