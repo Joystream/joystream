@@ -1051,7 +1051,7 @@ fn issuer_transfer_fails_with_non_existing_source() {
 #[test]
 fn issuer_transfer_fails_with_non_existing_dst_member() {
     let token_id = token!(1);
-    let src_member_id = member!(1).0;
+    let (src_member_id, src_acc) = member!(1);
     let (dst, amount) = (member!(9999).0, balance!(100));
 
     let token_data = TokenDataBuilder::new_empty()
@@ -1065,8 +1065,9 @@ fn issuer_transfer_fails_with_non_existing_dst_member() {
 
     build_test_externalities(config).execute_with(|| {
         let result = Token::issuer_transfer(
-            src_member_id,
             token_id,
+            src_member_id,
+            src_acc,
             issuer_outputs![(dst, amount, None)],
         );
 
