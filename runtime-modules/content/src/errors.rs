@@ -296,6 +296,10 @@ decl_error! {
         /// Cannot transfer the channel: channel owner has insufficient balance (budget for WGs)
         InsufficientBalanceForTransfer,
 
+        /// Cannot create the channel: channel creator has insufficient balance
+        /// (budget for state bloat bond + data objs statebloat bonds + data objs storage fees)
+        InsufficientBalanceForChannelCreation,
+
         // Insufficient council budget to cover channel reward claim
         InsufficientCouncilBudget,
 
@@ -336,5 +340,7 @@ decl_error! {
         /// Channel Transfers are blocked during token sales
         ChannelTransfersBlockedDuringTokenSales,
 
+        /// Invalid extrinsic call: Channel state bloat bond changed.
+        ChannelStateBloatBondChanged,
     }
 }
