@@ -547,13 +547,13 @@ export async function members_MemberRemarked(ctx: EventContext & StoreContext): 
       await processReactCommentMessage(ctx, memberId, decodedMessage.reactComment!)
     } else if (messageType === 'createComment') {
       const comment = await processCreateCommentMessage(ctx, memberId, decodedMessage.createComment!)
-      statusSuccessful.commentCreated = comment
+      statusSuccessful.commentCreatedId = comment.id
     } else if (messageType === 'editComment') {
       const comment = await processEditCommentMessage(ctx, memberId, decodedMessage.editComment!)
-      statusSuccessful.commentEdited = comment
+      statusSuccessful.commentEditedId = comment.id
     } else if (messageType === 'deleteComment') {
       const comment = await processDeleteCommentMessage(ctx, memberId, decodedMessage.deleteComment!)
-      statusSuccessful.commentDeleted = comment
+      statusSuccessful.commentDeletedId = comment.id
     }
 
     await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)

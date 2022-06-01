@@ -314,7 +314,7 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
       )
     } else if (messageType === 'moderateComment') {
       const comment = await processModerateCommentMessage(ctx, contentActor, channelId, decodedMessage.moderateComment!)
-      statusSuccessful.commentModerated = comment
+      statusSuccessful.commentModeratedId = comment.id
     }
 
     await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
@@ -353,7 +353,7 @@ export async function content_ChannelModeratorRemarked(ctx: EventContext & Store
       invalidMetadata('Unsupported message type in channel_moderator_remark action')
     } else if (messageType === 'moderateComment') {
       const comment = await processModerateCommentMessage(ctx, contentActor, channelId, decodedMessage.moderateComment!)
-      statusSuccessful.commentModerated = comment
+      statusSuccessful.commentModeratedId = comment.id
     }
 
     await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
