@@ -38,7 +38,10 @@ type StorageBucketOperatorStatusActive @variant {
   transactorAccountId: String!
 }
 
-union StorageBucketOperatorStatus = StorageBucketOperatorStatusMissing | StorageBucketOperatorStatusInvited | StorageBucketOperatorStatusActive
+union StorageBucketOperatorStatus =
+    StorageBucketOperatorStatusMissing
+  | StorageBucketOperatorStatusInvited
+  | StorageBucketOperatorStatusActive
 
 type GeoCoordinates @entity {
   latitude: Float!
@@ -143,7 +146,12 @@ type StorageBagOwnerDAO @variant {
   daoId: Int
 }
 
-union StorageBagOwner = StorageBagOwnerCouncil | StorageBagOwnerWorkingGroup | StorageBagOwnerMember | StorageBagOwnerChannel | StorageBagOwnerDAO
+union StorageBagOwner =
+    StorageBagOwnerCouncil
+  | StorageBagOwnerWorkingGroup
+  | StorageBagOwnerMember
+  | StorageBagOwnerChannel
+  | StorageBagOwnerDAO
 
 type StorageBag @entity {
   "Storage bag id"
@@ -186,7 +194,12 @@ type DataObjectTypeUnknown @variant {
   _phantom: Int
 }
 
-union DataObjectType = DataObjectTypeChannelAvatar | DataObjectTypeChannelCoverPhoto | DataObjectTypeVideoMedia | DataObjectTypeVideoThumbnail | DataObjectTypeUnknown
+union DataObjectType =
+    DataObjectTypeChannelAvatar
+  | DataObjectTypeChannelCoverPhoto
+  | DataObjectTypeVideoMedia
+  | DataObjectTypeVideoThumbnail
+  | DataObjectTypeUnknown
 
 type StorageDataObject @entity {
   "Data object runtime id"
@@ -213,6 +226,12 @@ type StorageDataObject @entity {
 
   "If the object is no longer used as an asset - the time at which it was unset (if known)"
   unsetAt: DateTime
+
+  "Video that has this data object associated as thumbnail photo."
+  videoThumbnail: Video @derivedFrom(field: "thumbnailPhoto")
+
+  "Video that has this data object associated as media."
+  videoMedia: Video @derivedFrom(field: "media")
 }
 
 type DistributionBucketFamilyGeographicArea @entity {
@@ -252,7 +271,7 @@ type DistributionBucketOperatorMetadata @entity {
 }
 
 enum DistributionBucketOperatorStatus {
-  INVITED,
+  INVITED
   ACTIVE
 }
 

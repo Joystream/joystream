@@ -18,6 +18,7 @@ export default class RemoveChannelAssetsCommand extends ContentDirectoryCommandB
       description: 'ID of an object to remove',
     }),
     context: ContentDirectoryCommandBase.channelManagementContextFlag,
+    ...ContentDirectoryCommandBase.flags,
   }
 
   async run(): Promise<void> {

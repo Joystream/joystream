@@ -13,6 +13,10 @@ export default class ChannelCommand extends ContentDirectoryCommandBase {
     },
   ]
 
+  static flags = {
+    ...ContentDirectoryCommandBase.flags,
+  }
+
   async displayMembersSet(set: BTreeSet<MemberId>): Promise<void> {
     const ids = Array.from(set)
     const members = await this.getApi().membersDetailsByIds(ids)

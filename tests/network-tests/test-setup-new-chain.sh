@@ -22,8 +22,11 @@ trap cleanup EXIT
 
 sleep 3
 
+# Start the query node
+../../query-node/start.sh
+
 # Display runtime version
 yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
 
 # Init chain state
-./run-test-scenario.sh setup-new-chain
+./run-test-scenario.sh setupNewChain

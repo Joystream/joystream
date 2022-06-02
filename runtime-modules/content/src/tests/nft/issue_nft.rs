@@ -1,7 +1,7 @@
 #![cfg(test)]
 use crate::tests::fixtures::{
     create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
-    increase_account_balance_helper,
+    increase_account_balance_helper, CreateChannelFixture, CreateVideoFixture,
 };
 use crate::tests::mock::*;
 use crate::*;
@@ -32,28 +32,65 @@ fn issue_nft() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Runtime tested state after call
 
         // Ensure nft created succesfully
-        let nft_status = Some(OwnedNFT::new(NFTOwner::ChannelOwner, None));
+        let nft_status = Some(OwnedNft::new(
+            NftOwner::ChannelOwner,
+            None,
+            TransactionalStatus::<Test>::Idle,
+        ));
         assert_eq!(nft_status, Content::video_by_id(video_id).nft_status);
 
         // Last event checked
+        let nft_issue_params = NftIssuanceParameters::<Test>::default();
         assert_event(
             MetaEvent::content(RawEvent::NftIssued(
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 video_id,
-                None,
-                b"metablob".to_vec(),
-                None,
+                nft_issue_params,
             )),
             number_of_events_before_call + 1,
         );
+    })
+}
+
+#[test]
+fn nft_is_issued_with_open_auction_status_successfully() {
+    with_default_mock_builder(|| {
+        run_to_block(1u64);
+        let video_id = 1u64;
+
+        CreateChannelFixture::default().call_and_assert(Ok(()));
+        CreateVideoFixture::default().call_and_assert(Ok(()));
+
+        // Issue nft
+        assert_ok!(Content::issue_nft(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            NftIssuanceParameters::<Test> {
+                init_transactional_status: InitTransactionalStatus::<Test>::OpenAuction(
+                    OpenAuctionParams::<Test> {
+                        starting_price: Content::min_starting_price(),
+                        bid_lock_duration: Content::min_bid_lock_duration(),
+                        ..Default::default()
+                    }
+                ),
+                ..Default::default()
+            },
+        ));
+
+        assert!(matches!(
+            Content::video_by_id(video_id).nft_status,
+            Some(Nft::<Test> {
+                transactional_status: TransactionalStatusRecord::OpenAuction(..),
+                ..
+            }),
+        ));
     })
 }
 
@@ -70,9 +107,7 @@ fn issue_nft_video_does_not_exist() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None,
+            NftIssuanceParameters::<Test>::default(),
         );
 
         // Failure checked
@@ -97,9 +132,7 @@ fn issue_nft_already_issued() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Make an attempt to issue nft once again for the same video
@@ -107,13 +140,11 @@ fn issue_nft_already_issued() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None,
+            NftIssuanceParameters::<Test>::default(),
         );
 
         // Failure checked
-        assert_err!(issue_nft_result, Error::<Test>::NFTAlreadyExists);
+        assert_err!(issue_nft_result, Error::<Test>::NftAlreadyExists);
     })
 }
 
@@ -134,9 +165,7 @@ fn issue_nft_auth_failed() {
             Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None,
+            NftIssuanceParameters::<Test>::default(),
         );
 
         // Failure checked
@@ -161,9 +190,7 @@ fn issue_nft_actor_not_authorized() {
             Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             ContentActor::Member(UNAUTHORIZED_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None,
+            NftIssuanceParameters::<Test>::default(),
         );
 
         // Failure checked
@@ -188,9 +215,10 @@ fn issue_nft_royalty_bounds_violated() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            Some(Perbill::one()),
-            b"metablob".to_vec(),
-            None,
+            NftIssuanceParameters::<Test> {
+                royalty: Some(Perbill::one()),
+                ..NftIssuanceParameters::<Test>::default()
+            },
         );
 
         // Failure checked
@@ -201,12 +229,54 @@ fn issue_nft_royalty_bounds_violated() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            Some(Perbill::from_perthousand(1)),
-            b"metablob".to_vec(),
-            None,
+            NftIssuanceParameters::<Test> {
+                royalty: Some(Perbill::from_perthousand(1)),
+                ..NftIssuanceParameters::<Test>::default()
+            },
         );
 
         // Failure checked
         assert_err!(issue_nft_result, Error::<Test>::RoyaltyLowerBoundExceeded);
+    })
+}
+
+#[test]
+fn issue_nft_fails_with_invalid_open_auction_parameters() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        let video_id = NextVideoId::<Test>::get();
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+
+        let auction_params = OpenAuctionParams::<Test> {
+            starting_price: Content::min_starting_price() - 1,
+            buy_now_price: None,
+            bid_lock_duration: Content::min_bid_lock_duration(),
+            starts_at: None,
+            whitelist: BTreeSet::new(),
+        };
+
+        // Make an attempt to issue nft with wrong credentials
+        let issue_nft_result = Content::issue_nft(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            NftIssuanceParameters::<Test> {
+                init_transactional_status: InitTransactionalStatus::<Test>::OpenAuction(
+                    auction_params,
+                ),
+                ..NftIssuanceParameters::<Test>::default()
+            },
+        );
+
+        // Failure checked
+        assert_err!(
+            issue_nft_result,
+            Error::<Test>::StartingPriceLowerBoundExceeded
+        );
     })
 }

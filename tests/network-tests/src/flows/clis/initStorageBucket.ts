@@ -1,17 +1,13 @@
 import { FlowProps } from '../../Flow'
 import { extendDebug } from '../../Debugger'
-import { WorkingGroups } from '../../WorkingGroups'
 import { StorageCLI } from '../../cli/storage'
 
 export default async function initStorageBucket({ api }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:initStorageBucketViaCLI')
   debug('Started')
 
-  const leaderId = await api.getLeadWorkerId(WorkingGroups.Storage)
-  const leader = await api.getGroupLead(WorkingGroups.Storage)
-  if (!leaderId || !leader) {
-    throw new Error('Active storage leader is required in this flow!')
-  }
+  const [leaderId, leader] = await api.getLeader('storageWorkingGroup')
+
   const leaderSuri = api.getSuri(leader.role_account_id)
   const transactorKey = '5DkE5YD8m5Yzno6EH2RTBnH268TDnnibZMEMjxwYemU4XevU' // //Colossus1
 

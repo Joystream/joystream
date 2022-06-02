@@ -24,16 +24,17 @@ fn sling_nft_back() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            Some(SECOND_MEMBER_ID),
+            NftIssuanceParameters::<Test> {
+                non_channel_owner: Some(SECOND_MEMBER_ID),
+                ..NftIssuanceParameters::<Test>::default()
+            }
         ));
 
         // Runtime tested state before call
         assert!(matches!(
             Content::video_by_id(video_id).nft_status,
-            Some(OwnedNFT {
-                owner: NFTOwner::Member(SECOND_MEMBER_ID),
+            Some(OwnedNft {
+                owner: NftOwner::Member(SECOND_MEMBER_ID),
                 ..
             })
         ));
@@ -53,8 +54,8 @@ fn sling_nft_back() {
         // Ensure nft slinged back successfully
         assert!(matches!(
             Content::video_by_id(video_id).nft_status,
-            Some(OwnedNFT {
-                owner: NFTOwner::ChannelOwner,
+            Some(OwnedNft {
+                owner: NftOwner::ChannelOwner,
                 ..
             })
         ));
@@ -110,7 +111,7 @@ fn sling_nft_back_not_issued() {
         );
 
         // Failure checked
-        assert_err!(sling_nft_back_result, Error::<Test>::NFTDoesNotExist);
+        assert_err!(sling_nft_back_result, Error::<Test>::NftDoesNotExist);
     })
 }
 
@@ -131,9 +132,7 @@ fn sling_nft_back_auth_failed() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Make an attempt to sling nft back with wrong credentials
@@ -165,9 +164,7 @@ fn sling_nft_back_not_authorized() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Make an attempt to sling nft back if actor is not authorized
@@ -199,9 +196,7 @@ fn sling_nft_back_transactional_status_is_not_idle() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Offer nft

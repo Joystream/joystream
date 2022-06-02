@@ -22,16 +22,18 @@ yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
 # docker-compose -f ../../docker-compose.yml up -d colossus-1
 
 # Start a query-node
-../../query-node/start.sh
+if [ "${NO_QN}" != true ]
+then
+  ../../query-node/start.sh
+fi
 
 # Execute tests
 
-# We can load env config used to start docker services and pass them on to the
-# tests. This could be useful to capture keys used or URLs.
-# We just have to watchout for clashing env var names.
-#set -a
-#. ../../.env
-#set +a
+if [ "${NO_STORAGE}" != true ]
+then
+  ./start-storage.sh
+  export REUSE_KEYS=true
+fi
 
 # First scenario..
 ./run-test-scenario.sh $1

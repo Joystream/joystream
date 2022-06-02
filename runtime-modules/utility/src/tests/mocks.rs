@@ -113,28 +113,28 @@ macro_rules! call_wg {
     ($working_group:ident<$T:ty>, $function:ident $(,$x:expr)*) => {{
         match $working_group {
             WorkingGroup::Content =>
-                <working_group::Module::<$T, ContentWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+                <working_group::Module::<$T, ContentWorkingGroupInstance> as WorkingGroupBudgetHandler<u64, u64>>::$function($($x,)*),
 
             WorkingGroup::Storage =>
-                <working_group::Module::<$T, StorageWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+                <working_group::Module::<$T, StorageWorkingGroupInstance> as WorkingGroupBudgetHandler<u64, u64>>::$function($($x,)*),
 
             WorkingGroup::Forum =>
-                <working_group::Module::<$T, ForumWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+                <working_group::Module::<$T, ForumWorkingGroupInstance> as WorkingGroupBudgetHandler<u64, u64>>::$function($($x,)*),
 
             WorkingGroup::Membership =>
-                <working_group::Module::<$T, MembershipWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+                <working_group::Module::<$T, MembershipWorkingGroupInstance> as WorkingGroupBudgetHandler<u64, u64>>::$function($($x,)*),
 
             WorkingGroup::Gateway =>
-                <working_group::Module::<$T, GatewayWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+                <working_group::Module::<$T, GatewayWorkingGroupInstance> as WorkingGroupBudgetHandler<u64, u64>>::$function($($x,)*),
 
             WorkingGroup::Distribution =>
-                <working_group::Module::<$T, DistributionWorkingGroupInstance> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+                <working_group::Module::<$T, DistributionWorkingGroupInstance> as WorkingGroupBudgetHandler<u64, u64>>::$function($($x,)*),
             WorkingGroup::OperationsAlpha =>
-                <working_group::Module::<$T, OperationsWorkingGroupInstanceAlpha> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+                <working_group::Module::<$T, OperationsWorkingGroupInstanceAlpha> as WorkingGroupBudgetHandler<u64, u64>>::$function($($x,)*),
             WorkingGroup::OperationsBeta =>
-                <working_group::Module::<$T, OperationsWorkingGroupInstanceAlpha> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+                <working_group::Module::<$T, OperationsWorkingGroupInstanceAlpha> as WorkingGroupBudgetHandler<u64, u64>>::$function($($x,)*),
             WorkingGroup::OperationsGamma =>
-                <working_group::Module::<$T, OperationsWorkingGroupInstanceAlpha> as WorkingGroupBudgetHandler<Test>>::$function($($x,)*),
+                <working_group::Module::<$T, OperationsWorkingGroupInstanceAlpha> as WorkingGroupBudgetHandler<u64, u64>>::$function($($x,)*),
         }
     }};
 }
@@ -245,7 +245,7 @@ parameter_types! {
 impl membership::Trait for Test {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
-    type WorkingGroup = ();
+    type WorkingGroup = Wg;
     type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = ();
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
@@ -255,7 +255,8 @@ impl membership::Trait for Test {
     type CandidateStake = CandidateStake;
 }
 
-impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
+pub struct Wg;
+impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
     fn get_budget() -> u64 {
         unimplemented!()
     }
@@ -263,9 +264,13 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
     fn set_budget(_new_value: u64) {
         unimplemented!()
     }
+
+    fn try_withdraw(_account_id: &u64, _amount: u64) -> DispatchResult {
+        unimplemented!()
+    }
 }
 
-impl common::working_group::WorkingGroupAuthenticator<Test> for () {
+impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     fn ensure_worker_origin(
         _origin: <Test as frame_system::Trait>::Origin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
@@ -278,7 +283,13 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     }
 
     fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
-        unimplemented!();
+        unimplemented!()
+    }
+
+    fn get_worker_member_id(
+        _: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
     }
 
     fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
@@ -357,6 +368,9 @@ impl membership::WeightInfo for Weights {
         unimplemented!()
     }
     fn remove_staking_account() -> Weight {
+        unimplemented!()
+    }
+    fn member_remark() -> Weight {
         unimplemented!()
     }
 }
@@ -448,6 +462,12 @@ impl working_group::WeightInfo for WorkingGroupWeightInfo {
         0
     }
     fn leave_role(_: u32) -> Weight {
+        0
+    }
+    fn lead_remark() -> Weight {
+        0
+    }
+    fn worker_remark() -> Weight {
         0
     }
 }
@@ -609,6 +629,12 @@ impl council::WeightInfo for CouncilWeightInfo {
         0
     }
     fn funding_request(_: u32) -> Weight {
+        0
+    }
+    fn councilor_remark() -> Weight {
+        0
+    }
+    fn candidate_remark() -> Weight {
         0
     }
 }

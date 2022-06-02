@@ -1,17 +1,13 @@
 import { FlowProps } from '../../Flow'
 import { extendDebug } from '../../Debugger'
-import { WorkingGroups } from '../../WorkingGroups'
 import { DistributorCLI } from '../../cli/distributor'
 
 export default async function initDistributionBucket({ api }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:initDistributionBucketViaCLI')
   debug('Started')
 
-  const leaderId = await api.getLeadWorkerId(WorkingGroups.Distribution)
-  const leader = await api.getGroupLead(WorkingGroups.Distribution)
-  if (!leaderId || !leader) {
-    throw new Error('Active distribution leader is required in this flow!')
-  }
+  const [leaderId, leader] = await api.getLeader('distributionWorkingGroup')
+
   const operatorId = leaderId.toString()
   const leaderSuri = api.getSuri(leader.role_account_id)
 

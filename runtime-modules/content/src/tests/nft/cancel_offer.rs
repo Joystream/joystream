@@ -24,9 +24,7 @@ fn cancel_offer() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Offer nft
@@ -55,8 +53,8 @@ fn cancel_offer() {
         // Ensure nft status changed to given Auction
         assert!(matches!(
             Content::video_by_id(video_id).nft_status,
-            Some(OwnedNFT {
-                transactional_status: TransactionalStatus::Idle,
+            Some(OwnedNft {
+                transactional_status: TransactionalStatus::<Test>::Idle,
                 ..
             })
         ));
@@ -112,7 +110,7 @@ fn cancel_offer_not_issued() {
         );
 
         // Failure checked
-        assert_err!(cancel_offer_result, Error::<Test>::NFTDoesNotExist);
+        assert_err!(cancel_offer_result, Error::<Test>::NftDoesNotExist);
     })
 }
 
@@ -133,9 +131,7 @@ fn cancel_offer_auth_failed() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Offer nft
@@ -176,9 +172,7 @@ fn cancel_offer_not_authorized() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Offer nft
@@ -219,9 +213,7 @@ fn cancel_offer_not_in_auction_state() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Make an attempt to cancel offer if there is no pending one

@@ -1,0 +1,271 @@
+# TODO: add runtime ids to entities (`id: ID!`) where it's needed and possible
+
+# TODO: move `ContentActor*` to `content.graphql` after schema/mappings are finished
+#       keep it here for easier reviews
+type ContentActorCurator @variant {
+  "Type needs to have at least one non-relation entity. This value is not used."
+  dummy: Int
+
+  curator: Curator!
+}
+
+type ContentActorMember @variant {
+  "Type needs to have at least one non-relation entity. This value is not used."
+  dummy: Int
+
+  member: Membership!
+}
+
+type ContentActorLead @variant {
+  "Type needs to have at least one non-relation entity. This value is not used."
+  dummy: Int
+}
+
+type ContentActorCollaborator @variant {
+  "Type needs to have at least one non-relation entity. This value is not used."
+  dummy: Int
+
+  member: Membership!
+}
+
+union ContentActor = ContentActorCurator | ContentActorMember | ContentActorLead | ContentActorCollaborator
+
+type CuratorGroup @entity {
+  "Runtime identifier"
+  id: ID!
+
+  "Is group active or not"
+  isActive: Boolean!
+
+  "Curators belonging to this group"
+  curators: [Curator!]! @derivedFrom(field: "curatorGroups")
+
+  "Channels curated by this group"
+  channels: [Channel!]! @derivedFrom(field: "ownerCuratorGroup")
+
+  "NFTs owned by this member in various channels."
+  nftCollectorInChannels: [ChannelNftCollectors!]! @derivedFrom(field: "curatorGroup")
+}
+
+type Curator @entity {
+  "Runtime identifier"
+  id: ID!
+
+  "Type needs to have at least one non-relation entity. This value is not used."
+  dummy: Int
+
+  curatorGroups: [CuratorGroup!]!
+}
+
+# NFT in name can't be UPPERCASE because it causes codegen errors
+"Represents NFT details"
+type OwnedNft @entity {
+  "NFT's video"
+  video: Video! @derivedFrom(field: "nft")
+
+  "Auctions done for this NFT"
+  auctions: [Auction!]! @derivedFrom(field: "nft")
+
+  "Member owning the NFT."
+  ownerMember: Membership
+
+  "NFT's metadata"
+  metadata: String!
+
+  "NFT's non-auction transactional status (if any)"
+  transactionalStatus: TransactionalStatus
+
+  "NFT's auction transactional status (if any)"
+  transactionalStatusAuction: Auction
+
+  "History of transacional status changes"
+  transactionalStatusUpdates: [TransactionalStatusUpdate!]! @derivedFrom(field: "nft")
+
+  "Creator royalty"
+  creatorRoyalty: Float
+
+  "Owner curator group"
+  ownerCuratorGroup: CuratorGroup
+
+  "Is NFT owned by channel"
+  isOwnedByChannel: Boolean!
+
+  "NFT creator's channel"
+  creatorChannel: Channel!
+
+  "NFT's last sale price (if any)"
+  lastSalePrice: BigInt
+
+  "NFT's last sale date (if any)"
+  lastSaleDate: DateTime
+
+  bids: [Bid!]! @derivedFrom(field: "nft")
+}
+
+type ChannelNftCollectors @entity {
+  "Reference to videos's channel"
+  channel: Channel!
+
+  "Member owning the channel (if any)"
+  member: Membership
+
+  "Curator group owning the channel (if any)"
+  curatorGroup: CuratorGroup
+
+  "Amount of NFTs owned in the channel"
+  amount: Int!
+
+  "Time of last NFT amount increase"
+  lastIncreaseAt: DateTime!
+}
+
+type TransactionalStatusUpdate @entity {
+  "Video NFT details"
+  nft: OwnedNft!
+
+  "NFT's non-auction transactional status (if any)"
+  transactionalStatus: TransactionalStatus
+
+  "NFT's auction transactional status (if any)"
+  transactionalStatusAuction: Auction
+
+  "Block number at which change happened"
+  changedAt: Int!
+}
+
+"NFT transactional state"
+union TransactionalStatus =
+    TransactionalStatusIdle
+  | TransactionalStatusInitiatedOfferToMember
+  | TransactionalStatusBuyNow
+
+# It's currently not used (probably) because of hydra
+# limitations in querying deeply nested variant relations
+# | TransactionalStatusAuction
+
+"Represents TransactionalStatus Idle"
+type TransactionalStatusIdle @variant {
+  "Type needs to have at least one non-relation entity. This value is not used."
+  dummy: Int
+}
+
+"Represents TransactionalStatus InitiatedOfferToMember"
+type TransactionalStatusInitiatedOfferToMember @variant {
+  "Member identifier"
+  memberId: Int!
+
+  "Whether member should pay to accept offer (optional)"
+  price: BigInt
+}
+
+# It's currently not used (probably) because of hydra
+# limitations in querying deeply nested variant relations
+# "Represents TransactionalStatus Auction"
+# type TransactionalStatusAuction @variant {
+#   "Type needs to have at least one non-relation entity. This value is not used."
+#   dummy: Int
+
+#   "Auction"
+#   auction: Auction!
+# }
+
+"Represents TransactionalStatus BuyNow"
+type TransactionalStatusBuyNow @variant {
+  price: BigInt!
+}
+
+"Represents various action types"
+union AuctionType = AuctionTypeEnglish | AuctionTypeOpen
+
+"Represents English auction details"
+type AuctionTypeEnglish @variant {
+  "English auction duration"
+  duration: Int!
+
+  "Auction extension time"
+  extensionPeriod: Int!
+
+  "Block when auction is supposed to end"
+  plannedEndAtBlock: Int!
+
+  "Minimal step between auction bids"
+  minimalBidStep: BigInt!
+}
+
+"Represents Open auction details"
+type AuctionTypeOpen @variant {
+  "Auction bid lock duration"
+  bidLockDuration: Int!
+}
+
+"Represents NFT auction"
+type Auction @entity {
+  "Auctioned NFT"
+  nft: OwnedNft!
+
+  "Member starting NFT auction. If not set channel owner started auction"
+  initialOwner: Membership
+
+  "Member that won this auction"
+  winningMember: Membership
+
+  "Auction starting price"
+  startingPrice: BigInt!
+
+  "Whether auction can be completed instantly"
+  buyNowPrice: BigInt
+
+  # TODO: maybe there is a need to distinguish regular auction completion from buy now
+
+  "The type of auction"
+  auctionType: AuctionType!
+
+  "Auction last bid (if exists)"
+  topBid: Bid
+
+  bids: [Bid!]! @derivedFrom(field: "auction")
+
+  "Block when auction starts"
+  startsAtBlock: Int!
+
+  "Block when auction ended"
+  endedAtBlock: Int
+
+  "Is auction canceled"
+  isCanceled: Boolean!
+
+  "Is auction completed"
+  isCompleted: Boolean!
+
+  "Auction participants whitelist"
+  whitelistedMembers: [Membership!]! @derivedFrom(field: "whitelistedInAuctions")
+}
+
+"Represents bid in NFT auction"
+type Bid @entity {
+  "NFT's auction"
+  auction: Auction!
+
+  "Bid's NFT"
+  nft: OwnedNft!
+
+  "NFT's auction where this bid is the current top bid"
+  auctionTopBid: Auction @derivedFrom(field: "topBid")
+
+  "Bidder membership"
+  bidder: Membership!
+
+  "Amount bidded"
+  amount: BigInt!
+
+  "Sign for canceled bid"
+  isCanceled: Boolean!
+
+  "Block in which the bid was placed"
+  createdInBlock: Int!
+
+  "Index of event in block where bid was made."
+  indexInBlock: Int!
+}
+
+# TODO entity for (cancelable) offers; will be needed to see history of offers

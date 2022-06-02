@@ -66,6 +66,8 @@ mod benchmarking;
 mod mock;
 mod tests;
 
+type Balances<T> = balances::Module<T>;
+
 /////////////////// Data Structures ////////////////////////////////////////////
 
 /// Information about council's current state and when it changed the last time.
@@ -217,6 +219,8 @@ pub trait WeightInfo {
     fn withdraw_candidacy() -> Weight;
     fn set_budget() -> Weight;
     fn plan_budget_refill() -> Weight;
+    fn councilor_remark() -> Weight;
+    fn candidate_remark() -> Weight;
 }
 
 type CouncilWeightInfo<T> = <T as Trait>::WeightInfo;
@@ -369,7 +373,7 @@ decl_event! {
         /// New council was elected and appointed
         NewCouncilElected(Vec<MemberId>),
 
-        /// New council was elected and appointed
+        /// New council was not elected
         NewCouncilNotElected(),
 
         /// Candidacy stake that was no longer needed was released
@@ -401,6 +405,12 @@ decl_event! {
 
         /// Request has been funded
         RequestFunded(AccountId, Balance),
+
+        /// Councilor remark message
+        CouncilorRemarked(MemberId, Vec<u8>),
+
+        /// Candidate remark message
+        CandidateRemarked(MemberId, Vec<u8>),
     }
 }
 
@@ -464,7 +474,13 @@ decl_error! {
         RepeatedFundRequestAccount,
 
         /// Funding requests without recieving accounts
-        EmptyFundingRequests
+        EmptyFundingRequests,
+
+        /// Candidate id not found
+        CandidateDoesNotExist,
+
+        /// Cannot withdraw: insufficient budget balance.
+        InsufficientBalanceForTransfer,
     }
 }
 
@@ -854,6 +870,58 @@ decl_module! {
                 let  _ = balances::Module::<T>::deposit_creating(&account, amount);
                 Self::deposit_event(RawEvent::RequestFunded(account, amount));
             }
+        }
+
+        /// Councilor makes a remark message
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = CouncilWeightInfo::<T>::councilor_remark()]
+        pub fn councilor_remark(
+            origin,
+            councilor_id: T::MemberId,
+            msg: Vec<u8>,
+        ) {
+            Self::ensure_member_consulate(origin, councilor_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::CouncilorRemarked(councilor_id, msg));
+        }
+
+        /// Candidate makes a remark message
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = CouncilWeightInfo::<T>::candidate_remark()]
+        pub fn candidate_remark(
+            origin,
+            candidate_id: T::MemberId,
+            msg: Vec<u8>,
+        ) {
+            EnsureChecks::<T>::ensure_user_membership(origin, &candidate_id)?;
+            ensure!(
+                Self::is_valid_candidate_id(&candidate_id),
+                Error::<T>::CandidateDoesNotExist,
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::CandidateRemarked(candidate_id, msg));
         }
     }
 }
@@ -1649,12 +1717,31 @@ impl<T: Trait + common::membership::MembershipTypes>
     }
 }
 
-impl<T: Trait + balances::Trait> common::council::CouncilBudgetManager<Balance<T>> for Module<T> {
+impl<T: Trait + balances::Trait> common::council::CouncilBudgetManager<T::AccountId, Balance<T>>
+    for Module<T>
+{
     fn get_budget() -> Balance<T> {
         Self::budget()
     }
 
     fn set_budget(budget: Balance<T>) {
         Mutations::<T>::set_budget(budget);
+    }
+
+    fn try_withdraw(account_id: &T::AccountId, amount: Balance<T>) -> DispatchResult {
+        ensure!(
+            Self::get_budget() >= amount,
+            Error::<T>::InsufficientBalanceForTransfer
+        );
+
+        let _ = Balances::<T>::deposit_creating(account_id, amount);
+
+        let current_budget = Self::get_budget();
+        let new_budget = current_budget.saturating_sub(amount);
+        <Self as common::council::CouncilBudgetManager<T::AccountId, Balance<T>>>::set_budget(
+            new_budget,
+        );
+
+        Ok(())
     }
 }

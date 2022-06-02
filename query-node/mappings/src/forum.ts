@@ -9,6 +9,8 @@ import {
   getWorker,
   inconsistentState,
   perpareString,
+  TIMESTAMPMAX,
+  toNumber,
 } from './common'
 import {
   CategoryCreatedEvent,
@@ -180,7 +182,7 @@ async function unsetThreadTags({ event, store }: StoreContext & EventContext, ta
 
 // Get standarized PostReactionResult by PostReactionId
 function parseReaction(reactionId: PostReactionId): typeof PostReactionResult {
-  switch (reactionId.toNumber()) {
+  switch (toNumber(reactionId)) {
     case SupportedPostReactions.Reaction.CANCEL: {
       return new PostReactionResultCancel()
     }
@@ -193,7 +195,7 @@ function parseReaction(reactionId: PostReactionId): typeof PostReactionResult {
     default: {
       console.warn(`Invalid post reaction id: ${reactionId.toString()}`)
       const result = new PostReactionResultInvalid()
-      result.reactionId = reactionId.toNumber()
+      result.reactionId = reactionId.toString()
       return result
     }
   }
@@ -307,7 +309,7 @@ export async function forum_ThreadCreated(ctx: EventContext & StoreContext): Pro
       createdAt: eventTime,
       updatedAt: eventTime,
       description: bytesToString(pollInput.unwrap().description),
-      endTime: new Date(pollInput.unwrap().end_time.toNumber()),
+      endTime: new Date(toNumber(pollInput.unwrap().end_time, TIMESTAMPMAX)),
       thread,
     })
     await store.save<ForumPoll>(threadPoll)

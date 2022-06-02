@@ -1,5 +1,10 @@
 #![cfg(test)]
-
+use crate::tests::curators;
+use crate::tests::fixtures::{
+    channel_reward_account_balance, create_default_member_owned_channel_with_video,
+    create_initial_storage_buckets_helper, increase_account_balance_helper, CreateChannelFixture,
+    CreateVideoFixture, UpdateChannelFixture,
+};
 use crate::tests::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
@@ -11,24 +16,23 @@ fn accept_incoming_offer() {
         run_to_block(1);
 
         let video_id = NextVideoId::<Test>::get();
-
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Offer nft
         assert_ok!(Content::offer_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             SECOND_MEMBER_ID,
             None,
         ));
@@ -40,7 +44,7 @@ fn accept_incoming_offer() {
 
         // Accept nft offer
         assert_ok!(Content::accept_incoming_offer(
-            Origin::signed(SECOND_MEMBER_ORIGIN),
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
         ));
 
@@ -49,17 +53,18 @@ fn accept_incoming_offer() {
         // Ensure nft offer accepted succesfully
         assert!(matches!(
             Content::video_by_id(video_id).nft_status,
-            Some(OwnedNFT {
-                owner: NFTOwner::Member(member_id),
-                transactional_status: TransactionalStatus::Idle,
+            Some(OwnedNft {
+                owner: NftOwner::Member(member_id),
+                transactional_status: TransactionalStatus::<Test>::Idle,
                 ..
             }) if member_id == SECOND_MEMBER_ID
         ));
 
-        let offer_accepted_event = get_test_event(RawEvent::OfferAccepted(video_id));
-
         // Last event checked
-        assert_event(offer_accepted_event, number_of_events_before_call + 1);
+        assert_event(
+            MetaEvent::content(RawEvent::OfferAccepted(video_id)),
+            number_of_events_before_call + 1,
+        );
     })
 }
 
@@ -73,7 +78,7 @@ fn accept_incoming_offer_video_does_not_exist() {
 
         // Make an attempt to accept incoming nft offer if corresponding video does not exist
         let accept_incoming_offer_result =
-            Content::accept_incoming_offer(Origin::signed(SECOND_MEMBER_ORIGIN), video_id);
+            Content::accept_incoming_offer(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
 
         // Failure checked
         assert_err!(
@@ -90,15 +95,16 @@ fn accept_incoming_offer_nft_not_issued() {
         run_to_block(1);
 
         let video_id = NextVideoId::<Test>::get();
-
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Make an attempt to accept incoming nft offer if corresponding nft is not issued yet
         let accept_incoming_offer_result =
-            Content::accept_incoming_offer(Origin::signed(SECOND_MEMBER_ORIGIN), video_id);
+            Content::accept_incoming_offer(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
 
         // Failure checked
-        assert_err!(accept_incoming_offer_result, Error::<Test>::NFTDoesNotExist);
+        assert_err!(accept_incoming_offer_result, Error::<Test>::NftDoesNotExist);
     })
 }
 
@@ -109,31 +115,32 @@ fn accept_incoming_offer_auth_failed() {
         run_to_block(1);
 
         let video_id = NextVideoId::<Test>::get();
-
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Offer nft
         assert_ok!(Content::offer_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             SECOND_MEMBER_ID,
             None,
         ));
 
         // Make an attempt to accept incoming nft offer providing wrong credentials
-        let accept_incoming_offer_result =
-            Content::accept_incoming_offer(Origin::signed(UNKNOWN_ORIGIN), video_id);
+        let accept_incoming_offer_result = Content::accept_incoming_offer(
+            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            video_id,
+        );
 
         // Failure checked
         assert_err!(
@@ -150,22 +157,21 @@ fn accept_incoming_offer_no_incoming_offers() {
         run_to_block(1);
 
         let video_id = NextVideoId::<Test>::get();
-
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Make an attempt to accept incoming nft offer if there is no incoming transfers
         let accept_incoming_offer_result =
-            Content::accept_incoming_offer(Origin::signed(SECOND_MEMBER_ORIGIN), video_id);
+            Content::accept_incoming_offer(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
 
         // Failure checked
         assert_err!(
@@ -176,69 +182,94 @@ fn accept_incoming_offer_no_incoming_offers() {
 }
 
 #[test]
-fn accept_incoming_offer_reward_account_is_not_set() {
+fn accept_incoming_offer_with_nft_owner_being_a_member_channel() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
 
         let video_id = NextVideoId::<Test>::get();
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
-        let _ = balances::Module::<Test>::deposit_creating(
-            &FIRST_MEMBER_ORIGIN,
-            <Test as balances::Trait>::Balance::from(100u32),
-        );
-
-        let channel_id = NextChannelId::<Test>::get();
-
-        create_channel_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            ChannelCreationParametersRecord {
-                assets: NewAssets::<Test>::Urls(vec![]),
-                meta: vec![],
-                reward_account: None,
-            },
-            Ok(()),
-        );
-
-        let params = get_video_creation_parameters();
-
-        // Create simple video using member actor
-        create_video_mock(
-            FIRST_MEMBER_ORIGIN,
-            ContentActor::Member(FIRST_MEMBER_ID),
-            channel_id,
-            params,
-            Ok(()),
-        );
+        UpdateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Ok(()));
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
 
         // Offer nft
         assert_ok!(Content::offer_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             SECOND_MEMBER_ID,
             None,
         ));
 
         // Make an attempt to accept incoming nft offer if sender is owner and reward account is not set
         let accept_incoming_offer_result =
-            Content::accept_incoming_offer(Origin::signed(SECOND_MEMBER_ORIGIN), video_id);
+            Content::accept_incoming_offer(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
 
         // Failure checked
-        assert_err!(
-            accept_incoming_offer_result,
-            Error::<Test>::RewardAccountIsNotSet
+        assert_ok!(accept_incoming_offer_result,);
+    })
+}
+
+#[test]
+fn accept_incoming_offer_reward_account_ok_with_curator_owner_channel_account_correctly_credited() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        let video_id = NextVideoId::<Test>::get();
+        let channel_id = Content::next_channel_id();
+        let curator_group_id = curators::add_curator_to_new_group(DEFAULT_CURATOR_ID);
+
+        CreateChannelFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call();
+
+        CreateVideoFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call();
+
+        // Issue nft
+        assert_ok!(Content::issue_nft(
+            Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID),
+            ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID),
+            video_id,
+            NftIssuanceParameters::<Test>::default(),
+        ));
+
+        // Offer nft
+        assert_ok!(Content::offer_nft(
+            Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID),
+            video_id,
+            ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID),
+            SECOND_MEMBER_ID,
+            Some(DEFAULT_NFT_PRICE),
+        ));
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
+
+        assert_ok!(Content::accept_incoming_offer(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            video_id
+        ));
+
+        // Failure checked
+        assert_eq!(
+            channel_reward_account_balance(channel_id),
+            DEFAULT_NFT_PRICE - Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE)
         );
     })
 }
@@ -250,33 +281,30 @@ fn accept_incoming_offer_insufficient_balance() {
         run_to_block(1);
 
         let video_id = NextVideoId::<Test>::get();
-
-        create_simple_channel_and_video(FIRST_MEMBER_ORIGIN, FIRST_MEMBER_ID);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
-            ContentActor::Member(FIRST_MEMBER_ID),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            None,
-            b"metablob".to_vec(),
-            None
+            NftIssuanceParameters::<Test>::default(),
         ));
-
-        let price = 10000;
 
         // Offer nft
         assert_ok!(Content::offer_nft(
-            Origin::signed(FIRST_MEMBER_ORIGIN),
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
-            ContentActor::Member(FIRST_MEMBER_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
             SECOND_MEMBER_ID,
-            Some(price),
+            Some(DEFAULT_NFT_PRICE),
         ));
 
         // Make an attempt to accept incoming nft offer if there is no incoming transfers
         let accept_incoming_offer_result =
-            Content::accept_incoming_offer(Origin::signed(SECOND_MEMBER_ORIGIN), video_id);
+            Content::accept_incoming_offer(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
 
         // Failure checked
         assert_err!(

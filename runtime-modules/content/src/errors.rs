@@ -76,20 +76,17 @@ decl_error! {
         // Auction Errors
         // ---------------------
 
-        /// Auction for given video did not start
-        AuctionDidNotStart,
+        /// Nft for given video id already exists
+        NftAlreadyExists,
 
-        /// NFT for given video id already exists
-        NFTAlreadyExists,
-
-        /// NFT for given video id does not exist
-        NFTDoesNotExist,
+        /// Nft for given video id does not exist
+        NftDoesNotExist,
 
         /// Overflow or underflow error happened
         OverflowOrUnderflowHappened,
 
         /// Given origin does not own nft
-        DoesNotOwnNFT,
+        DoesNotOwnNft,
 
         /// Royalty Upper Bound Exceeded
         RoyaltyUpperBoundExceeded,
@@ -133,35 +130,44 @@ decl_error! {
         /// Minimal auction bid step constraint violated.
         BidStepConstraintViolated,
 
+        /// Commit verification for bid amount
+        InvalidBidAmountSpecified,
+
         /// Auction starting price constraint violated.
         StartingPriceConstraintViolated,
 
         /// Already active auction cannot be cancelled
         ActionHasBidsAlready,
 
-        /// Can not create auction for NFT, if auction have been already started or nft is locked for the transfer
+        /// Can not create auction for Nft, if auction have been already started or nft is locked for the transfer
         NftIsNotIdle,
 
-        /// No pending offers for given NFT
+        /// No pending offers for given Nft
         PendingOfferDoesNotExist,
 
         /// Creator royalty requires reward account to be set.
         RewardAccountIsNotSet,
 
         /// Actor is not a last bidder
-        ActorIsNotALastBidder,
+        ActorIsNotBidder,
 
         /// Auction cannot be completed
         AuctionCannotBeCompleted,
 
         /// Auction does not have bids
-        LastBidDoesNotExist,
+        BidDoesNotExist,
+
+        /// Selected Bid is for past open auction
+        BidIsForPastAuction,
 
         /// Auction starts at lower bound exceeded
         StartsAtLowerBoundExceeded,
 
         /// Auction starts at upper bound exceeded
         StartsAtUpperBoundExceeded,
+
+        /// Auction did not started
+        AuctionDidNotStart,
 
         /// Nft is not in auction state
         NotInAuctionState,
@@ -173,7 +179,10 @@ decl_error! {
         MemberProfileNotFound,
 
         /// Given video nft is not in buy now state
-        NFTNotInBuyNowState,
+        NftNotInBuyNowState,
+
+        /// Invalid Buy Now price commit provided
+        InvalidBuyNowPriceProvided,
 
         /// Auction type is not `Open`
         IsNotOpenAuctionType,
@@ -184,8 +193,8 @@ decl_error! {
         /// Bid lock duration is not expired
         BidLockDurationIsNotExpired,
 
-        /// NFT auction is already expired
-        NFTAuctionIsAlreadyExpired,
+        /// Nft auction is already expired
+        NftAuctionIsAlreadyExpired,
 
         /// Auction buy now is less then starting price
         BuyNowIsLessThenStartingPrice,
@@ -256,14 +265,46 @@ decl_error! {
         /// Payment Proof verification failed
         PaymentProofVerificationFailed,
 
-        /// Total reward too high
-        TotalRewardLimitExceeded,
+        /// Channel cashout amount is too high to be claimed
+        CashoutAmountExceedsMaximumAmount,
 
-        /// Cashout amount too small
-        UnsufficientCashoutAmount,
+        /// Channel cashout amount is too low to be claimed
+        CashoutAmountBelowMinimumAmount,
 
-        /// Reward account is none
-        RewardAccountNotFoundInChannel,
+        /// An attempt to withdraw funds from channel account failed, because the specified amount
+        /// exceeds the account's balance minus ExistantialDeposit
+        WithdrawFromChannelAmountExceedsBalanceMinusExistentialDeposit,
+        /// An attempt to withdraw funds from channel account failed, because the specified amount
+        /// is zero
+        WithdrawFromChannelAmountIsZero,
 
+        /// Channel cashouts are currently disabled
+        ChannelCashoutsDisabled,
+
+        /// New values for min_cashout_allowed/max_cashout_allowed are invalid
+        /// min_cashout_allowed cannot exceed max_cashout_allowed
+        MinCashoutAllowedExceedsMaxCashoutAllowed,
+
+        /// Insufficient council budget to cover channel reward claim
+        InsufficientCouncilBudget,
+
+        // Creator Tokens
+        // ---------------------
+
+        /// Creator token was already issued for this channel
+        CreatorTokenAlreadyIssued,
+
+        /// Creator token wasn't issued for this channel
+        CreatorTokenNotIssued,
+
+        /// Member id could not be derived from the provided ContentActor context
+        MemberIdCouldNotBeDerivedFromActor,
+
+        /// Cannot directly withdraw funds from a channel account when the channel has
+        /// a creator token issued
+        CannotWithdrawFromChannelWithCreatorTokenIssued,
+
+        /// Patronage can only be claimed if channel is owned by a member
+        PatronageCanOnlyBeClaimedForMemberOwnedChannels,
     }
 }

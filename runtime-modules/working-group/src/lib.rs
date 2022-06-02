@@ -65,6 +65,7 @@ use frame_support::dispatch::DispatchResult;
 use staking_handler::StakingHandler;
 
 type WeightInfoWorkingGroup<T, I> = <T as Trait<I>>::WeightInfo;
+type Balances<T> = balances::Module<T>;
 
 /// Working group WeightInfo
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -91,6 +92,8 @@ pub trait WeightInfo {
     fn set_budget() -> Weight;
     fn add_opening(i: u32) -> Weight;
     fn leave_role(i: u32) -> Weight;
+    fn lead_remark() -> Weight;
+    fn worker_remark() -> Weight;
 }
 
 /// The _Group_ main _Trait_
@@ -288,6 +291,17 @@ decl_event!(
         /// - Id of the worker.
         /// - Raw storage field.
         WorkerStorageUpdated(WorkerId, Vec<u8>),
+
+        /// Emits on Lead making a remark message
+        /// Params:
+        /// - message
+        LeadRemarked(Vec<u8>),
+
+        /// Emits on Lead making a remark message
+        /// Params:
+        /// - worker
+        /// - message
+        WorkerRemarked(WorkerId, Vec<u8>),
     }
 );
 
@@ -1167,6 +1181,47 @@ decl_module! {
             // Trigger event
             Self::deposit_event(RawEvent::WorkerStorageUpdated(worker_id, storage));
         }
+
+        /// Lead remark message
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T,I>::lead_remark()]
+        pub fn lead_remark(origin, msg: Vec<u8>) {
+            let _ = checks::ensure_origin_is_active_leader::<T, I>(origin);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::LeadRemarked(msg));
+        }
+
+        /// Worker remark message
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T,I>::worker_remark()]
+        pub fn worker_remark(origin, worker_id: WorkerId<T>,msg: Vec<u8>) {
+            let _ = checks::ensure_worker_signed::<T, I>(origin, &worker_id).map(|_| ());
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::WorkerRemarked(worker_id, msg));
+        }
+
     }
 }
 
@@ -1552,6 +1607,12 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupAuthenticator<
             .ok()
     }
 
+    fn get_worker_member_id(worker_id: &WorkerId<T>) -> Option<T::MemberId> {
+        checks::ensure_worker_exists::<T, I>(worker_id)
+            .map(|worker| worker.member_id)
+            .ok()
+    }
+
     fn is_leader_account_id(account_id: &T::AccountId) -> bool {
         checks::ensure_is_lead_account::<T, I>(account_id.clone()).is_ok()
     }
@@ -1573,8 +1634,8 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupAuthenticator<
     }
 }
 
-impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupBudgetHandler<T>
-    for Module<T, I>
+impl<T: Trait<I>, I: Instance>
+    common::working_group::WorkingGroupBudgetHandler<T::AccountId, BalanceOf<T>> for Module<T, I>
 {
     fn get_budget() -> BalanceOf<T> {
         Self::budget()
@@ -1582,6 +1643,23 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupBudgetHandler<
 
     fn set_budget(new_value: BalanceOf<T>) {
         Self::set_working_group_budget(new_value);
+    }
+
+    fn try_withdraw(account_id: &T::AccountId, amount: BalanceOf<T>) -> DispatchResult {
+        ensure!(
+            Self::get_budget() >= amount,
+            Error::<T, I>::InsufficientBalanceForTransfer
+        );
+
+        let _ = Balances::<T>::deposit_creating(account_id, amount);
+
+        let current_budget = Self::get_budget();
+        let new_budget = current_budget.saturating_sub(amount);
+        <Self as common::working_group::WorkingGroupBudgetHandler<T::AccountId, BalanceOf<T>>>::set_budget(
+            new_budget,
+        );
+
+        Ok(())
     }
 }
 

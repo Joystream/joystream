@@ -93,8 +93,6 @@ export const WorkingGroupDef = {
 export type WorkingGroupKey = keyof typeof WorkingGroupDef
 export class WorkingGroup extends JoyEnum(WorkingGroupDef) {}
 
-export class MemoText extends Text {}
-
 export class BalanceKind extends JoyEnum({
   Positive: Null,
   Negative: Null,
@@ -115,7 +113,6 @@ export const commonTypes: RegistryTypes = {
   PostId,
   InputValidationLengthConstraint,
   WorkingGroup,
-  MemoText,
   BalanceKind,
   // Customize Address type for joystream chain
   Address,

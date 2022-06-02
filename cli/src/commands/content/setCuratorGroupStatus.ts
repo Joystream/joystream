@@ -17,6 +17,10 @@ export default class SetCuratorGroupStatusCommand extends ContentDirectoryComman
     },
   ]
 
+  static flags = {
+    ...ContentDirectoryCommandBase.flags,
+  }
+
   async run(): Promise<void> {
     const lead = await this.getRequiredLeadContext()
 

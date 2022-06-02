@@ -4,7 +4,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use sp_runtime::{
-    traits::{IdentifyAccount, Verify},
+    traits::{Convert, IdentifyAccount, Verify},
     MultiSignature,
 };
 
@@ -52,20 +52,11 @@ pub type ChannelCategoryId = u64;
 /// Content Directory Video identifier.
 pub type VideoId = u64;
 
+/// Content Directory Open Auction identifier.
+pub type OpenAuctionId = u64;
+
 /// Content Directory Video Category identifier.
 pub type VideoCategoryId = u64;
-
-/// Content Directory Playlist identifier.
-pub type PlaylistId = u64;
-
-/// Content Directory Person identifier.
-pub type PersonId = u64;
-
-/// Content Directory Series identifier.
-pub type SeriesId = u64;
-
-/// Content Directory Channel transfer request identifier.
-pub type ChannelOwnershipTransferRequestId = u64;
 
 /// Curator group identifier.
 pub type CuratorGroupId = u64;
@@ -113,6 +104,18 @@ pub type DistributionBucketFamilyId = u64;
 
 /// Represent relationships between distribution buckets and distribution working group workers.
 pub type DistributionBucketOperatorId = u64;
+
+/// Represents creator token id
+pub type TokenId = u64;
+
+/// BlockNumber to Balance converter
+pub struct BlockNumberToBalance;
+
+impl Convert<BlockNumber, Balance> for BlockNumberToBalance {
+    fn convert(block: BlockNumber) -> Balance {
+        block as Balance
+    }
+}
 
 /// App-specific crypto used for reporting equivocation/misbehavior in BABE and
 /// GRANDPA. Any rewards for misbehavior reporting will be paid out to this

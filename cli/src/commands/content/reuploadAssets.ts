@@ -14,6 +14,7 @@ export default class ReuploadVideoAssetsCommand extends UploadCommandBase {
       required: true,
       description: 'Path to JSON file containing array of assets to reupload (contentIds and paths)',
     }),
+    ...UploadCommandBase.flags,
   }
 
   async run(): Promise<void> {

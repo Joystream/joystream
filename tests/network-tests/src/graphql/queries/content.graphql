@@ -1,0 +1,205 @@
+fragment DataObjectTypeFields on DataObjectType {
+  __typename
+  ... on DataObjectTypeChannelAvatar {
+    channel {
+      id
+    }
+  }
+  ... on DataObjectTypeChannelCoverPhoto {
+    channel {
+      id
+    }
+  }
+  ... on DataObjectTypeVideoThumbnail {
+    video {
+      id
+    }
+  }
+  ... on DataObjectTypeVideoMedia {
+    video {
+      id
+    }
+  }
+}
+
+fragment StorageDataObjectFields on StorageDataObject {
+  id
+  ipfsHash
+  isAccepted
+  size
+  type {
+    ...DataObjectTypeFields
+  }
+  deletionPrize
+  unsetAt
+  storageBagId
+}
+
+fragment ChannelFields on Channel {
+  id
+  activeVideosCounter
+  title
+  description
+  isPublic
+  language {
+    iso
+  }
+  rewardAccount
+  isCensored
+  ownerMember {
+    id
+  }
+  ownerCuratorGroup {
+    id
+  }
+  category {
+    name
+  }
+  avatarPhoto {
+    ...StorageDataObjectFields
+  }
+  coverPhoto {
+    ...StorageDataObjectFields
+  }
+}
+
+fragment ChannelCategoryFields on ChannelCategory {
+  id
+  activeVideosCounter
+}
+
+fragment VideoCategoryFields on VideoCategory {
+  id
+  activeVideosCounter
+}
+
+fragment BidFields on Bid {
+  id
+  bidder {
+    id
+    handle
+  }
+  auction {
+    auctionType {
+      __typename
+      ... on AuctionTypeOpen {
+        bidLockDuration
+      }
+
+      ... on AuctionTypeEnglish {
+        extensionPeriod
+      }
+    }
+  }
+  nft {
+    id
+  }
+  isCanceled
+  amount
+  createdInBlock
+}
+
+fragment OwnedNftFields on OwnedNft {
+  id
+  video {
+    id
+  }
+  ownerMember {
+    id
+  }
+  metadata
+  transactionalStatus {
+    __typename
+    ... on TransactionalStatusIdle {
+      dummy
+    }
+    ... on TransactionalStatusBuyNow {
+      price
+    }
+  }
+  transactionalStatusAuction {
+    startsAtBlock
+    isCompleted
+    endedAtBlock
+    startingPrice
+    auctionType {
+      __typename
+      ... on AuctionTypeOpen {
+        bidLockDuration
+      }
+      ... on AuctionTypeEnglish {
+        extensionPeriod
+        duration
+        plannedEndAtBlock
+        minimalBidStep
+      }
+    }
+    bids {
+      ...BidFields
+    }
+    topBid {
+      id
+      amount
+      bidder {
+        id
+      }
+    }
+  }
+  creatorRoyalty
+  creatorChannel {
+    id
+  }
+  lastSalePrice
+  lastSaleDate
+}
+
+fragment ChannelNftCollectorFields on ChannelNftCollectors {
+  id
+  channel {
+    id
+  }
+  member {
+    id
+  }
+  curatorGroup {
+    id
+  }
+  amount
+  lastIncreaseAt
+}
+
+query getChannelById($id: ID!) {
+  channelByUniqueInput(where: { id: $id }) {
+    ...ChannelFields
+  }
+}
+
+query getChannelCategoryById($id: ID!) {
+  channelCategoryByUniqueInput(where: { id: $id }) {
+    ...ChannelCategoryFields
+  }
+}
+
+query getVideoCategoryById($id: ID!) {
+  videoCategoryByUniqueInput(where: { id: $id }) {
+    ...VideoCategoryFields
+  }
+}
+
+query getOwnedNftByVideoId($videoId: ID!) {
+  ownedNfts(where: { video: { id_eq: $videoId } }) {
+    ...OwnedNftFields
+  }
+}
+
+query getBidsByMemberId($videoId: ID!, $memberId: ID!) {
+  bids(where: { nft: { id_eq: $videoId }, bidder: { id_eq: $memberId } }) {
+    ...BidFields
+  }
+}
+
+query getChannelNftCollectors {
+  channelNftCollectors {
+    ...ChannelNftCollectorFields
+  }
+}

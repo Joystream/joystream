@@ -5,6 +5,7 @@ import { BlockNumber, Balance } from '@polkadot/types/interfaces'
 import { Constructor, ITuple } from '@polkadot/types/types'
 import { MemberId, WorkingGroup, JoyEnum, JoyStructDecorated, BalanceKind, PostId, AccountId } from './common'
 import { ApplicationId, OpeningId, StakePolicy, WorkerId } from './working-group'
+import { UpdateChannelPayoutsParameters } from './content'
 
 export type IVotingResults = {
   abstensions: u32
@@ -298,6 +299,7 @@ export class ProposalDetails extends JoyEnum({
   LockBlogPost: PostId,
   UnlockBlogPost: PostId,
   VetoProposal: ProposalId,
+  UpdateChannelPayouts: UpdateChannelPayoutsParameters,
 } as const) {}
 
 // Discussions

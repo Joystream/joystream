@@ -1,19 +1,16 @@
 import { Vec, Option, Tuple, BTreeSet, UInt } from '@polkadot/types'
-import { bool, u64, u32, Null, Bytes } from '@polkadot/types/primitive'
+import { bool, u8, u32, u64, Null, Bytes } from '@polkadot/types/primitive'
 import { JoyStructDecorated, JoyEnum, ChannelId, MemberId, Balance, Hash, BlockNumber, BalanceOf } from '../common'
 
 import { GenericAccountId as AccountId } from '@polkadot/types/generic/AccountId'
 import { DataObjectId, DataObjectCreationParameters } from '../storage'
 
+export class OpenAuctionId extends u64 {}
 export class CuratorId extends u64 {}
 export class CuratorGroupId extends u64 {}
 export class ChannelCategoryId extends u64 {}
 export class VideoId extends u64 {}
 export class VideoCategoryId extends u64 {}
-export class PlaylistId extends u64 {}
-export class PersonId extends u64 {}
-export class SeriesId extends u64 {}
-export class ChannelOwnershipTransferRequestId extends u64 {}
 export class MaxNumber extends u32 {}
 export class IsCensored extends bool {}
 export class VideoPostId extends u64 {}
@@ -23,68 +20,93 @@ export class CurrencyAmount extends CurrencyOf {}
 
 // NFT types
 
-export class Royalty extends UInt {}
-export class IsExtended extends bool {}
+export class Royalty extends UInt.with(32, 'Perbill') {}
 
-export class EnglishAuctionDetails extends JoyStructDecorated({
-  extension_period: BlockNumber,
-  auction_duration: BlockNumber,
-}) {}
-
-export class OpenAuctionDetails extends JoyStructDecorated({
-  bid_lock_duration: BlockNumber,
-}) {}
-
-export class AuctionType extends JoyEnum({
-  English: EnglishAuctionDetails,
-  Open: OpenAuctionDetails,
-}) {}
-
-export class Bid extends JoyStructDecorated({
-  bidder: MemberId,
-  bidder_account_id: AccountId,
+export class OpenAuctionBid extends JoyStructDecorated({
   amount: Balance,
   made_at_block: BlockNumber,
+  auction_id: OpenAuctionId,
 }) {}
 
-export class Auction extends JoyStructDecorated({
+export class EnglishAuctionBid extends JoyStructDecorated({
+  amount: Balance,
+  bidder_id: MemberId,
+}) {}
+
+export class EnglishAuction extends JoyStructDecorated({
   starting_price: Balance,
   buy_now_price: Option.with(Balance),
-  auction_type: AuctionType,
-  minimal_bid_step: Balance,
-  last_bid: Option.with(Bid),
-  starts_at: BlockNumber,
   whitelist: BTreeSet.with(MemberId),
+  end: BlockNumber,
+  start: BlockNumber,
+  extension_period: BlockNumber,
+  min_bid_step: Balance,
+  top_bid: Option.with(EnglishAuctionBid),
+}) {}
+
+export class OpenAuction extends JoyStructDecorated({
+  starting_price: Balance,
+  buy_now_price: Option.with(Balance),
+  whitelist: BTreeSet.with(MemberId),
+  bid_lock_duration: BlockNumber,
+  auction_id: OpenAuctionId,
+  start: BlockNumber,
 }) {}
 
 export class TransactionalStatus extends JoyEnum({
   Idle: Null,
   InitiatedOfferToMember: Tuple.with([MemberId, Option.with(Balance)]),
-  Auction,
+  EnglishAuction: EnglishAuction,
+  OpenAuction: OpenAuction,
   BuyNow: Balance,
 }) {}
 
-export class NFTOwner extends JoyEnum({
+export class NftOwner extends JoyEnum({
   ChannelOwner: Null,
   Member: MemberId,
 }) {}
 
-export class OwnedNFT extends JoyStructDecorated({
-  owner: NFTOwner,
+export class OwnedNft extends JoyStructDecorated({
+  owner: NftOwner,
   transactional_status: TransactionalStatus,
   creator_royalty: Option.with(Royalty),
+  open_auctions_nonce: OpenAuctionId,
 }) {}
 
-export class AuctionParams extends JoyStructDecorated({
-  auction_type: AuctionType,
+export class EnglishAuctionParams extends JoyStructDecorated({
   starting_price: Balance,
-  minimal_bid_step: Balance,
+  buy_now_price: Option.with(Balance),
+  whitelist: BTreeSet.with(MemberId),
+  starts_at: Option.with(BlockNumber),
+  duration: BlockNumber,
+  extension_period: BlockNumber,
+  min_bid_step: Balance,
+}) {}
+
+export class OpenAuctionParams extends JoyStructDecorated({
+  starting_price: Balance,
   buy_now_price: Option.with(Balance),
   starts_at: Option.with(BlockNumber),
   whitelist: BTreeSet.with(MemberId),
+  bid_lock_duration: BlockNumber,
 }) {}
 
-// end of NFT types
+export class InitTransactionalStatus extends JoyEnum({
+  Idle: Null,
+  BuyNow: Balance,
+  InitiatedOfferToMember: Tuple.with([MemberId, Option.with(Balance)]),
+  EnglishAuction: EnglishAuctionParams,
+  OpenAuction: OpenAuctionParams,
+}) {}
+
+export class NftIssuanceParameters extends JoyStructDecorated({
+  royalty: Option.with(Royalty),
+  nft_metadata: Bytes,
+  non_channel_owner: Option.with(MemberId),
+  init_transactional_status: InitTransactionalStatus,
+}) {}
+
+// end of Nft types
 
 export class StorageAssets extends JoyStructDecorated({
   object_creation_list: Vec.with(DataObjectCreationParameters),
@@ -114,7 +136,7 @@ export class Channel extends JoyStructDecorated({
   reward_account: Option.with(AccountId),
   collaborators: BTreeSet.with(MemberId),
   moderators: BTreeSet.with(MemberId),
-  cumulative_payout_earned: Balance,
+  cumulative_reward_claimed: Balance,
 }) {}
 
 export class ChannelCreationParameters extends JoyStructDecorated({
@@ -166,17 +188,17 @@ export class VideoCategoryUpdateParameters extends JoyStructDecorated({
 
 export class Video extends JoyStructDecorated({
   in_channel: ChannelId,
-  in_series: Option.with(SeriesId),
   is_censored: bool,
   enable_comments: bool,
   video_post_id: Option.with(VideoPostId),
-  nft_status: Option.with(OwnedNFT),
+  nft_status: Option.with(OwnedNft),
 }) {}
 
 export class VideoCreationParameters extends JoyStructDecorated({
   assets: Option.with(StorageAssets),
   meta: Option.with(Bytes),
   enable_comments: bool,
+  auto_issue_nft: Option.with(NftIssuanceParameters),
 }) {}
 
 export class VideoUpdateParameters extends JoyStructDecorated({
@@ -184,77 +206,7 @@ export class VideoUpdateParameters extends JoyStructDecorated({
   new_meta: Option.with(Bytes),
   assets_to_remove: BTreeSet.with(DataObjectId),
   enable_comments: Option.with(bool),
-}) {}
-
-export class Playlist extends JoyStructDecorated({
-  in_channel: ChannelId,
-}) {}
-
-export class PlaylistCreationParameters extends JoyStructDecorated({
-  meta: Bytes,
-}) {}
-
-export class PlaylistUpdateParameters extends JoyStructDecorated({
-  new_meta: Bytes,
-}) {}
-
-export class EpisodeParemters extends JoyEnum({
-  NewVideo: VideoCreationParameters,
-  ExistingVideo: VideoId,
-}) {}
-
-export class Season extends JoyStructDecorated({
-  episodes: Vec.with(VideoId),
-}) {}
-
-export class SeasonParameters extends JoyStructDecorated({
-  assets: Option.with(StorageAssets),
-  episodes: Option.with(Vec.with(Option.with(EpisodeParemters))),
-  meta: Option.with(Bytes),
-}) {}
-
-export class Series extends JoyStructDecorated({
-  in_channel: ChannelId,
-  seasons: Vec.with(Season),
-}) {}
-
-export class SeriesParameters extends JoyStructDecorated({
-  assets: Option.with(StorageAssets),
-  seasons: Option.with(Vec.with(Option.with(SeasonParameters))),
-  meta: Option.with(Bytes),
-}) {}
-
-export class PersonController extends JoyEnum({
-  Member: MemberId,
-  Curators: Null,
-}) {}
-
-export class Person extends JoyStructDecorated({
-  controlled_by: PersonController,
-}) {}
-
-export class PersonCreationParameters extends JoyStructDecorated({
-  assets: StorageAssets,
-  meta: Bytes,
-}) {}
-
-export class PersonUpdateParameters extends JoyStructDecorated({
-  assets: Option.with(StorageAssets),
-  meta: Option.with(Bytes),
-}) {}
-
-export class PersonActor extends JoyEnum({
-  Member: MemberId,
-  Curator: CuratorId,
-}) {}
-
-export class VideoMigrationConfig extends JoyStructDecorated({
-  current_id: VideoId,
-  final_id: VideoId,
-}) {}
-export class ChannelMigrationConfig extends JoyStructDecorated({
-  current_id: ChannelId,
-  final_id: ChannelId,
+  auto_issue_nft: Option.with(NftIssuanceParameters),
 }) {}
 
 export class VideoPostType extends JoyEnum({
@@ -292,11 +244,38 @@ export class VideoPostDeletionParameters extends JoyStructDecorated({
 
 export class PullPayment extends JoyStructDecorated({
   channel_id: ChannelId,
-  cumulative_payout_claimed: Balance,
+  cumulative_reward_earned: Balance,
   reason: Hash,
 }) {}
 
 export class ModeratorSet extends BTreeSet.with(MemberId) {}
+
+export class NftMetadata extends Vec.with(u8) {}
+
+export class NFTOwner extends JoyEnum({
+  ChannelOwner: Null,
+  Member: MemberId,
+}) {}
+
+export class OwnedNFT extends JoyStructDecorated({
+  owner: NFTOwner,
+  transactional_status: TransactionalStatus,
+  creator_royalty: Option.with(Royalty),
+}) {}
+
+export class ChannelPayoutsPayloadParameters extends JoyStructDecorated({
+  uploader_account: AccountId,
+  object_creation_params: DataObjectCreationParameters,
+  expected_data_size_fee: Balance,
+}) {}
+
+export class UpdateChannelPayoutsParameters extends JoyStructDecorated({
+  commitment: Option.with(Hash),
+  payload: Option.with(ChannelPayoutsPayloadParameters),
+  min_cashout_allowed: Option.with(Balance),
+  max_cashout_allowed: Option.with(Balance),
+  channel_cashouts_enabled: Option.with(bool),
+}) {}
 
 export const contentTypes = {
   CuratorId,
@@ -312,8 +291,6 @@ export const contentTypes = {
   ChannelCategoryUpdateParameters,
   ChannelCreationParameters,
   ChannelUpdateParameters,
-  ChannelOwnershipTransferRequestId,
-  ChannelOwnershipTransferRequest,
   Video,
   VideoId,
   VideoCategoryId,
@@ -322,26 +299,8 @@ export const contentTypes = {
   VideoCategoryUpdateParameters,
   VideoCreationParameters,
   VideoUpdateParameters,
-  Person,
-  PersonId,
-  PersonController,
-  PersonActor,
-  PersonCreationParameters,
-  PersonUpdateParameters,
-  Playlist,
-  PlaylistId,
-  PlaylistCreationParameters,
-  PlaylistUpdateParameters,
-  SeriesId,
-  Series,
-  Season,
-  SeriesParameters,
-  SeasonParameters,
-  EpisodeParemters,
   MaxNumber,
   IsCensored,
-  VideoMigrationConfig,
-  ChannelMigrationConfig,
   // Added in Olympia:
   VideoPostId,
   ReactionId,
@@ -353,20 +312,26 @@ export const contentTypes = {
   VideoPostDeletionParameters,
   PullPayment,
   ModeratorSet,
-  // NFT
+  // Nft
   Royalty,
-  IsExtended,
-  EnglishAuctionDetails,
-  OpenAuctionDetails,
-  AuctionType,
-  Bid,
-  Auction,
+  EnglishAuctionParams,
+  OpenAuctionParams,
+  EnglishAuction,
+  OpenAuction,
+  OpenAuctionBid,
+  EnglishAuctionBid,
   TransactionalStatus,
-  NFTOwner,
-  OwnedNFT,
-  AuctionParams,
+  NftOwner,
+  OwnedNft,
   CurrencyOf,
   CurrencyAmount,
+  InitTransactionalStatus,
+  NftIssuanceParameters,
+  NftMetadata,
+  OpenAuctionId,
+  // Channel payouts
+  ChannelPayoutsPayloadParameters,
+  UpdateChannelPayoutsParameters,
 }
 
 export default contentTypes

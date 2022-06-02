@@ -3,13 +3,13 @@ eslint-disable @typescript-eslint/naming-convention
 */
 import { EventContext, StoreContext } from '@joystream/hydra-common'
 import { Content } from '../../generated/types'
-import { convertContentActorToChannelOwner, processChannelMetadata } from './utils'
+import { convertContentActorToChannelOrNftOwner, processChannelMetadata, unsetAssetRelations } from './utils'
 import { Channel, ChannelCategory, StorageDataObject, Membership } from 'query-node/dist/model'
 import { deserializeMetadata, inconsistentState, logger } from '../common'
 import { ChannelCategoryMetadata, ChannelMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import { In } from 'typeorm'
-import { removeDataObject } from '../storage/utils'
+import { getAllManagers } from '../derivedPropertiesManager/applications'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
@@ -24,11 +24,15 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     videos: [],
     createdInBlock: event.blockNumber,
     rewardAccount: channelCreationParameters.reward_account.unwrapOr(undefined)?.toString(),
+    activeVideosCounter: 0,
+
     // fill in auto-generated fields
     createdAt: new Date(event.blockTimestamp),
     updatedAt: new Date(event.blockTimestamp),
+
     // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
-    ...(await convertContentActorToChannelOwner(store, contentActor)),
+    ...(await convertContentActorToChannelOrNftOwner(store, contentActor)),
+
     collaborators: Array.from(channelCreationParameters.collaborators).map(
       (id) => new Membership({ id: id.toString() })
     ),
@@ -53,7 +57,10 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
   const [, channelId, , channelUpdateParameters] = new Content.ChannelUpdatedEvent(event).params
 
   // load channel
-  const channel = await store.get(Channel, { where: { id: channelId.toString() } })
+  const channel = await store.get(Channel, {
+    where: { id: channelId.toString() },
+    relations: ['category'],
+  })
 
   // ensure channel exists
   if (!channel) {
@@ -90,6 +97,9 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
   // set last update time
   channel.updatedAt = new Date(event.blockTimestamp)
 
+  // transfer video active counter value to new category
+  await getAllManagers(store).channels.onMainEntityUpdate(channel)
+
   // save channel
   await store.save<Channel>(channel)
 
@@ -104,7 +114,7 @@ export async function content_ChannelAssetsRemoved({ store, event }: EventContex
       id: In(Array.from(dataObjectIds).map((item) => item.toString())),
     },
   })
-  await Promise.all(assets.map((a) => removeDataObject(store, a)))
+  await Promise.all(assets.map((a) => unsetAssetRelations(store, a)))
   logger.info('Channel assets have been removed', { ids: dataObjectIds.toJSON() })
 }
 
@@ -129,6 +139,8 @@ export async function content_ChannelCensorshipStatusUpdated({
   // set last update time
   channel.updatedAt = new Date(event.blockTimestamp)
 
+  await getAllManagers(store).channels.onMainEntityUpdate(channel)
+
   // save channel
   await store.save<Channel>(channel)
 
@@ -151,6 +163,7 @@ export async function content_ChannelCategoryCreated({ store, event }: EventCont
     id: channelCategoryId.toString(),
     channels: [],
     createdInBlock: event.blockNumber,
+    activeVideosCounter: 0,
 
     // fill in auto-generated fields
     createdAt: new Date(event.blockTimestamp),

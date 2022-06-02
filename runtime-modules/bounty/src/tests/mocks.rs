@@ -125,7 +125,7 @@ impl common::membership::MembershipInfoProvider<Test> for () {
 
 pub const COUNCIL_BUDGET_ACCOUNT_ID: u128 = 90000000;
 pub struct CouncilBudgetManager;
-impl common::council::CouncilBudgetManager<u64> for CouncilBudgetManager {
+impl common::council::CouncilBudgetManager<u128, u64> for CouncilBudgetManager {
     fn get_budget() -> u64 {
         balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID)
     }
@@ -144,6 +144,16 @@ impl common::council::CouncilBudgetManager<u64> for CouncilBudgetManager {
             let _ =
                 balances::Module::<Test>::slash(&COUNCIL_BUDGET_ACCOUNT_ID, old_budget - budget);
         }
+    }
+
+    fn try_withdraw(account_id: &u128, amount: u64) -> DispatchResult {
+        let _ = Balances::deposit_creating(account_id, amount);
+
+        let current_budget = Self::get_budget();
+        let new_budget = current_budget.saturating_sub(amount);
+        Self::set_budget(new_budget);
+
+        Ok(())
     }
 }
 
@@ -197,6 +207,18 @@ impl crate::WeightInfo for () {
         0
     }
     fn withdraw_work_entrant_funds() -> u64 {
+        0
+    }
+    fn contributor_remark() -> u64 {
+        0
+    }
+    fn oracle_remark() -> u64 {
+        0
+    }
+    fn entrant_remark() -> u64 {
+        0
+    }
+    fn creator_remark() -> u64 {
         0
     }
 }
@@ -290,6 +312,9 @@ impl membership::WeightInfo for Weights {
     fn remove_staking_account() -> Weight {
         unimplemented!()
     }
+    fn member_remark() -> Weight {
+        unimplemented!()
+    }
 }
 
 impl pallet_timestamp::Trait for Test {
@@ -303,7 +328,7 @@ impl membership::Trait for Test {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
-    type WorkingGroup = ();
+    type WorkingGroup = Wg;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type StakingCandidateStakingHandler =
@@ -322,7 +347,8 @@ impl LockComparator<<Test as balances::Trait>::Balance> for Test {
     }
 }
 
-impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
+pub struct Wg;
+impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for Wg {
     fn get_budget() -> u64 {
         unimplemented!()
     }
@@ -330,9 +356,13 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
     fn set_budget(_new_value: u64) {
         unimplemented!()
     }
+
+    fn try_withdraw(_account_id: &u128, _amount: u64) -> DispatchResult {
+        unimplemented!()
+    }
 }
 
-impl common::working_group::WorkingGroupAuthenticator<Test> for () {
+impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     fn ensure_worker_origin(
         _origin: <Test as frame_system::Trait>::Origin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
@@ -346,6 +376,12 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
 
     fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
         unimplemented!();
+    }
+
+    fn get_worker_member_id(
+        _: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
     }
 
     fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
@@ -459,6 +495,12 @@ impl council::WeightInfo for CouncilWeightInfo {
         0
     }
     fn funding_request(_: u32) -> Weight {
+        0
+    }
+    fn councilor_remark() -> Weight {
+        0
+    }
+    fn candidate_remark() -> Weight {
         0
     }
 }

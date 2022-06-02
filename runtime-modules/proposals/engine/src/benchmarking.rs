@@ -400,14 +400,8 @@ benchmarks! {
     }
 
     cancel_proposal {
-        let i in 1 .. T::MaxLocks::get();
 
         let (account_id, member_id, proposal_id) = create_proposal::<T>(0, 1, 0, 0);
-
-        for lock_number in 1 .. i {
-            let (locked_account_id, _) = member_funded_account::<T>("locked_member", lock_number);
-            <T as Trait>::StakingHandler::set_stake(&locked_account_id, One::one()).unwrap();
-        }
 
     }: _ (RawOrigin::Signed(account_id.clone()), member_id, proposal_id)
     verify {
@@ -452,6 +446,16 @@ benchmarks! {
 
         assert_last_event::<T>(
             RawEvent::ProposalDecisionMade(proposal_id, ProposalDecision::Vetoed).into()
+        );
+    }
+
+    proposer_remark {
+        let msg = b"test".to_vec();
+        let (proposer_account_id, proposer_id, proposal_id) = create_proposal::<T>(0, 1, 0, 0);
+    }: _ (RawOrigin::Signed(proposer_account_id.clone()), proposal_id, proposer_id, msg.clone())
+    verify {
+        assert_last_event::<T>(
+            RawEvent::ProposerRemarked(proposer_id, proposal_id, msg).into()
         );
     }
 
@@ -820,6 +824,13 @@ mod tests {
     fn test_cancel_active_and_pending_proposals() {
         initial_test_ext().execute_with(|| {
             assert_ok!(test_benchmark_cancel_active_and_pending_proposals::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_proposer_remark() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_proposer_remark::<Test>());
         });
     }
 }

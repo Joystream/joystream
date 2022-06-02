@@ -11,10 +11,9 @@ on:
         description: 'Branch to deploy'
         required: false
         default: 'master'
-      keyName:
-        description: 'SSH key pair on AWS'
+      sshPubKey:
+        description: 'SSH pubkey eg. `ssh-rsa AAAAB3NzaC1yc2EA....0hc3GND8IR mysshkey`'
         required: false
-        default: 'joystream-github-action-key'
       instanceType:
         description: 'AWS EC2 instance type (t2.micro, t2.large)'
         required: false
@@ -23,18 +22,21 @@ on:
         description: 'Additional identifier to include in stack name'
         required: false
         default: 'playground'
-      # TODO: customDomain instead of ip_address.nip.io
-      # customDomain:
-      #   description: 'DNS hostname to use for deployment'
-      #   required: false
-      #   default: ''
+      skipChainSetup:
+        description: 'Optionally skip running newChainSetup script (true or false)'
+        required: true
+        default: 'false'
+      runtimeProfile:
+        description: 'STAGING | PLAYGROUND | TESTING - leave balnk for production'
+        required: false
+
 defaults:
   run:
     working-directory: devops/aws
 
 jobs:
   deploy-playground:
-    name: Create an EC2 instance and configure docker-compose stack
+    name: Deploy Playground Job
     runs-on: ubuntu-latest
     env:
       STACK_NAME: ${{ github.event.inputs.stackNamePrefix }}-${{ github.event.inputs.branchName }}-${{ github.run_number }}
@@ -52,6 +54,16 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      - name: Check if CloudFormation stack exists
+        id: stack_exists
+        run: |
+          if aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} >/dev/null 2>/dev/null; then
+            echo "Stack already exists"
+            exit 1
+          else
+            echo "Stack does not exist"
+          fi
+
       - name: Deploy to AWS CloudFormation
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         id: deploy_stack
@@ -59,7 +71,7 @@ jobs:
           name: ${{ env.STACK_NAME }}
           template: devops/aws/cloudformation/single-instance-docker.yml
           no-fail-on-empty-changeset: '1'
-          parameter-overrides: 'KeyName=${{ github.event.inputs.keyName }},EC2InstanceType=${{ github.event.inputs.instanceType }}'
+          parameter-overrides: 'KeyName=joystream-github-action-key-new,EC2InstanceType=${{ github.event.inputs.instanceType }}'
 
       - name: Run playbook
         uses: dawidd6/action-ansible-playbook@v2
@@ -73,4 +85,23 @@ jobs:
             ${{ steps.deploy_stack.outputs.PublicIp }}
           options: |
             --extra-vars "git_repo=${{ github.event.inputs.gitRepo }} \
-                          branch_name=${{ github.event.inputs.branchName }}"
+                          branch_name=${{ github.event.inputs.branchName }} \
+                          skip_chain_setup=${{ github.event.inputs.skipChainSetup }} \
+                          stack_name=${{ env.STACK_NAME }} \
+                          runtime_profile=${{ github.event.inputs.runtimeProfile }} \
+                          ssh_pub_key='${{ github.event.inputs.sshPubKey }}'"
+
+      - name: Save the endpoints file as an artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: endpoints
+          path: devops/aws/endpoints.json
+
+      - name: Delete CloudFormation Stack if any step failed
+        # Skip only if stack already existed or all steps passed successfully
+        if: ( failure() || cancelled() ) && steps.stack_exists.outcome != 'failure'
+        run: |
+          echo "Deleting ${{ env.STACK_NAME }} stack"
+          aws cloudformation delete-stack --stack-name ${{ env.STACK_NAME }}
+          echo "Waiting for ${{ env.STACK_NAME }} to be deleted..."
+          aws cloudformation wait stack-delete-complete --stack-name ${{ env.STACK_NAME }}

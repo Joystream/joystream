@@ -7,10 +7,6 @@
     "description": "Branch to deploy",
     "value": "master"
   },
-  "keyName": {
-    "description": "SSH key pair on AWS",
-    "value": "joystream-github-action-key"
-  },
   "numberOfValidators": {
     "description": "Number of validators to deploy",
     "value": "2"
@@ -28,8 +24,16 @@
     "value": "t2.micro"
   },
   "ec2AMI": {
-    "description": "Pre-built AMI ID (ami-095792100b6e43a67)",
-    "value": "ami-095792100b6e43a67"
+    "description": "Pre-built AMI ID",
+    "value": "ami-0ce5f13e91397239a"
+  },
+  "volumeSize": {
+    "description": "Validator and Build instance volume size in GB",
+    "value": "120"
+  },
+  "rpcVolumeSize": {
+    "description": "RPC Instance volume size in GB",
+    "value": "120"
   },
   "networkSuffix": {
     "description": "Network suffix that will be added to the network name",
@@ -50,5 +54,13 @@
   "encryptionKey": {
     "description": "Password to encrypt the artifacts",
     "value": "password"
+  },
+  "runtimeProfile": {
+    "description": "STAGING | PLAYGROUND| TESTING - leave empty for production",
+    "value": ""
+  },
+  "skipChainSetup": {
+    "description": "Set to true to skip running setup new chain scenario",
+    "value": true
   }
 }

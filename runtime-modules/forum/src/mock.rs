@@ -224,6 +224,12 @@ impl working_group::WeightInfo for Weights {
     fn leave_role(_: u32) -> u64 {
         unimplemented!()
     }
+    fn lead_remark() -> u64 {
+        unimplemented!()
+    }
+    fn worker_remark() -> u64 {
+        unimplemented!()
+    }
 }
 
 impl membership::WeightInfo for Weights {
@@ -281,6 +287,9 @@ impl membership::WeightInfo for Weights {
     fn remove_staking_account() -> Weight {
         unimplemented!()
     }
+    fn member_remark() -> Weight {
+        unimplemented!()
+    }
 }
 
 pub const WORKING_GROUP_BUDGET: u64 = 100;
@@ -289,7 +298,12 @@ thread_local! {
     pub static WG_BUDGET: RefCell<u64> = RefCell::new(WORKING_GROUP_BUDGET);
 }
 
-impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
+pub struct Wg;
+impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for Wg {
+    fn try_withdraw(_account_id: &u128, _amount: u64) -> DispatchResult {
+        unimplemented!()
+    }
+
     fn get_budget() -> u64 {
         WG_BUDGET.with(|val| *val.borrow())
     }
@@ -305,7 +319,7 @@ impl membership::Trait for Runtime {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
-    type WorkingGroup = ();
+    type WorkingGroup = Wg;
     type WeightInfo = Weights;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InviteMemberLockId>;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
@@ -346,7 +360,7 @@ impl Trait for Runtime {
     type PostLifeTime = PostLifeTime;
 
     type MapLimits = MapLimits;
-    type WorkingGroup = ();
+    type WorkingGroup = Wg;
     type MemberOriginValidator = ();
     type ThreadDeposit = ThreadDeposit;
     type PostDeposit = PostDeposit;
@@ -391,7 +405,7 @@ impl common::membership::MemberOriginValidator<Origin, u128, u128> for () {
     }
 }
 
-impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
+impl common::working_group::WorkingGroupAuthenticator<Runtime> for Wg {
     fn ensure_worker_origin(
         _origin: <Runtime as frame_system::Trait>::Origin,
         _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
@@ -405,6 +419,12 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
 
     fn get_leader_member_id() -> Option<<Runtime as common::membership::MembershipTypes>::MemberId>
     {
+        unimplemented!()
+    }
+
+    fn get_worker_member_id(
+        _: &<Runtime as common::membership::MembershipTypes>::ActorId,
+    ) -> Option<<Runtime as common::membership::MembershipTypes>::MemberId> {
         unimplemented!()
     }
 

@@ -1,0 +1,27 @@
+---
+# Configure chain spec, start joystream-node and other services on the servers
+
+- name: Create and copy the chain-spec file
+  hosts: all
+
+  tasks:
+    - name: Generate chain-spec file and data keys on build server
+      include_role:
+        name: common
+        tasks_from: chain-spec-node-keys
+      vars:
+        build_instance: "{{ groups['build'][0] }}"
+
+- name: Copy secret, auth and start joystream-node service for validators
+  hosts: validators
+  gather_facts: no
+
+  roles:
+    - validators
+
+- name: Configure RPC service and start it
+  hosts: rpc
+  gather_facts: no
+
+  roles:
+    - rpc

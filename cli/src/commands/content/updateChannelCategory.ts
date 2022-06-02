@@ -16,6 +16,7 @@ export default class UpdateChannelCategoryCommand extends ContentDirectoryComman
       required: true,
       description: `Path to JSON file to use as input`,
     }),
+    ...ContentDirectoryCommandBase.flags,
   }
 
   static args = [

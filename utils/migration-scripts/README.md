@@ -19,7 +19,7 @@ $ npm install -g migration-scripts
 $ migration-scripts COMMAND
 running command...
 $ migration-scripts (-v|--version|version)
-migration-scripts/0.1.0 linux-x64 node-v14.16.1
+migration-scripts/0.1.0 linux-x64 node-v14.18.0
 $ migration-scripts --help [COMMAND]
 USAGE
   $ migration-scripts COMMAND
@@ -28,9 +28,127 @@ USAGE
 <!-- usagestop -->
 # Commands
 <!-- commands -->
+* [`migration-scripts giza-olympia:createContentDirectorySnapshot`](#migration-scripts-giza-olympiacreatecontentdirectorysnapshot)
+* [`migration-scripts giza-olympia:createMembershipsSnapshot`](#migration-scripts-giza-olympiacreatemembershipssnapshot)
+* [`migration-scripts giza-olympia:fetchAllObjects`](#migration-scripts-giza-olympiafetchallobjects)
+* [`migration-scripts giza-olympia:migrateContent`](#migration-scripts-giza-olympiamigratecontent)
+* [`migration-scripts giza-olympia:migrateMembers`](#migration-scripts-giza-olympiamigratemembers)
 * [`migration-scripts help [COMMAND]`](#migration-scripts-help-command)
 * [`migration-scripts sumer-giza:migrateContent`](#migration-scripts-sumer-gizamigratecontent)
 * [`migration-scripts sumer-giza:retryFailedUploads`](#migration-scripts-sumer-gizaretryfaileduploads)
+
+## `migration-scripts giza-olympia:createContentDirectorySnapshot`
+
+```
+USAGE
+  $ migration-scripts giza-olympia:createContentDirectorySnapshot
+
+OPTIONS
+  -o, --output=output          Output file path
+  --queryNodeUri=queryNodeUri  [default: https://hydra.joystream.org/graphql] Giza query node uri
+```
+
+_See code: [src/commands/giza-olympia/createContentDirectorySnapshot.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/giza-olympia/createContentDirectorySnapshot.ts)_
+
+## `migration-scripts giza-olympia:createMembershipsSnapshot`
+
+```
+USAGE
+  $ migration-scripts giza-olympia:createMembershipsSnapshot
+
+OPTIONS
+  -o, --output=output          Output file path
+  --queryNodeUri=queryNodeUri  [default: https://hydra.joystream.org/graphql] Giza query node uri
+```
+
+_See code: [src/commands/giza-olympia/createMembershipsSnapshot.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/giza-olympia/createMembershipsSnapshot.ts)_
+
+## `migration-scripts giza-olympia:fetchAllObjects`
+
+```
+USAGE
+  $ migration-scripts giza-olympia:fetchAllObjects
+
+OPTIONS
+  --continously                      Whether the script should run continously
+  --dataDir=dataDir                  [default: /tmp/joystream/giza-olympia-migration] Directory for storing data objects
+
+  --idleTime=idleTime                [default: 300] Time (in seconds) to remain idle in case no new data objects were
+                                     found
+
+  --objectsPerBatch=objectsPerBatch  [default: 20] Max. number of storage objects to fetch simultaneously
+
+  --queryNodeUri=queryNodeUri        [default: https://hydra.joystream.org/graphql] Giza query node uri
+```
+
+_See code: [src/commands/giza-olympia/fetchAllObjects.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/giza-olympia/fetchAllObjects.ts)_
+
+## `migration-scripts giza-olympia:migrateContent`
+
+```
+USAGE
+  $ migration-scripts giza-olympia:migrateContent
+
+OPTIONS
+  -c, --channelIds=channelIds                                      (required) Channel ids to migrate
+  --channelBatchSize=channelBatchSize                              [default: 20] Channel batch size
+
+  --dataDir=dataDir                                                (required) Directory where data objects to upload are
+                                                                   stored
+
+  --excludeVideoIds=excludeVideoIds                                [default: ] Video ids to exclude from migration
+
+  --forceChannelOwnerMemberId=forceChannelOwnerMemberId            Can be used to force a specific channel owner for all
+                                                                   channels, allowing to easily test the script in dev
+                                                                   environment
+
+  --membershipsMigrationResultPath=membershipsMigrationResultPath  (required) JSON artifact produced by membership
+                                                                   migration
+
+  --migrationStatePath=migrationStatePath                          [default:
+                                                                   /home/leszek/projects/joystream/joystream-ws-2/utils/
+                                                                   migration-scripts/results/giza-olympia] Path to
+                                                                   migration results directory
+
+  --snapshotFilePath=snapshotFilePath                              (required) Path to giza content directory snapshot
+                                                                   (json)
+
+  --sudoUri=sudoUri                                                [default: //Alice] Sudo key Substrate uri
+
+  --uploadSpBucketId=uploadSpBucketId                              [default: 0] Olympia storage bucket id
+
+  --uploadSpEndpoint=uploadSpEndpoint                              [default: http://localhost:3333] Olympia storage node
+                                                                   endpoint to use for uploading
+
+  --videoBatchSize=videoBatchSize                                  [default: 20] Video batch size
+
+  --wsProviderEndpointUri=wsProviderEndpointUri                    [default: ws://localhost:9944] WS provider endpoint
+                                                                   uri (Olympia)
+```
+
+_See code: [src/commands/giza-olympia/migrateContent.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/giza-olympia/migrateContent.ts)_
+
+## `migration-scripts giza-olympia:migrateMembers`
+
+```
+USAGE
+  $ migration-scripts giza-olympia:migrateMembers
+
+OPTIONS
+  --batchSize=batchSize                          [default: 100] Members batch size
+
+  --migrationStatePath=migrationStatePath        [default:
+                                                 /home/leszek/projects/joystream/joystream-ws-2/utils/migration-scripts/
+                                                 results/giza-olympia] Path to migration results directory
+
+  --snapshotFilePath=snapshotFilePath            (required) Path to giza memberships snapshot (json)
+
+  --sudoUri=sudoUri                              [default: //Alice] Sudo key Substrate uri
+
+  --wsProviderEndpointUri=wsProviderEndpointUri  [default: ws://localhost:9944] WS provider endpoint uri (Olympia)
+```
+
+_See code: [src/commands/giza-olympia/migrateMembers.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/giza-olympia/migrateMembers.ts)_
 
 ## `migration-scripts help [COMMAND]`
 
@@ -62,8 +180,11 @@ OPTIONS
   --dataDir=dataDir                                            [default: /tmp/joystream/sumer-giza-migration] Directory
                                                                for storing data objects to upload
 
+  --excludeVideoIds=excludeVideoIds                            [default: ] Video ids to exclude from migration
+
   --forceChannelOwnerMemberId=forceChannelOwnerMemberId        Can be used to force a specific channel owner for all
-                                                               channels, allowing to test the script in dev environment
+                                                               channels, allowing to easily test the script in dev
+                                                               environment
 
   --migrationStatePath=migrationStatePath                      [default:
                                                                /home/leszek/projects/joystream/joystream-ws-2/utils/migr

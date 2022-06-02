@@ -23,6 +23,7 @@ export default class DeleteVideoCommand extends ContentDirectoryCommandBase {
       description: 'Force-remove all associated video data objects',
     }),
     context: ContentDirectoryCommandBase.channelManagementContextFlag,
+    ...ContentDirectoryCommandBase.flags,
   }
 
   async getDataObjectsInfo(videoId: number): Promise<[string, BN][]> {

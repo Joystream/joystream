@@ -589,6 +589,12 @@ decl_module! {
         /// Deposit needed to create a thread
         const ThreadDeposit: BalanceOf<T> = T::ThreadDeposit::get();
 
+        /// MaxSubcategories
+        const MaxSubcategories: u64 = <T::MapLimits as StorageLimits>::MaxSubcategories::get();
+
+        /// MaxCategories
+        const MaxCategories: u64 = <T::MapLimits as StorageLimits>::MaxCategories::get();
+
         /// Enable a moderator can moderate a category and its sub categories.
         ///
         /// <weight>
@@ -2218,6 +2224,8 @@ impl<T: Trait> Module<T> {
     ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
         // Check that account is forum member
         Self::ensure_is_forum_user(account_id, &forum_user_id)?;
+
+        Self::ensure_category_exists(category_id)?;
 
         let category = Self::ensure_category_is_mutable(category_id)?;
 

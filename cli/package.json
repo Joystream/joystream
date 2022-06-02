@@ -1,7 +1,7 @@
 {
   "name": "@joystream/cli",
   "description": "Command Line Interface for Joystream community and governance activities",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "author": "Leszek Wiesner",
   "bin": {
     "joystream-cli": "./bin/run"
@@ -12,8 +12,8 @@
     "cross-fetch": "^3.0.6",
     "@apidevtools/json-schema-ref-parser": "^9.0.6",
     "@ffprobe-installer/ffprobe": "^1.1.0",
-    "@joystream/metadata-protobuf": "^2.0.0",
-    "@joystream/types": "^0.18.0",
+    "@joystream/metadata-protobuf": "^2.1.0",
+    "@joystream/types": "^0.19.3",
     "@oclif/command": "^1.5.19",
     "@oclif/config": "^1.14.0",
     "@oclif/plugin-autocomplete": "^0.2.0",
@@ -110,9 +110,6 @@
       "@oclif/plugin-warn-if-update-available"
     ],
     "topics": {
-      "council": {
-        "description": "Council-related information and activities like voting, becoming part of the council etc."
-      },
       "account": {
         "description": "Accounts management - create, import or switch currently used account"
       },
@@ -124,6 +121,15 @@
       },
       "content": {
         "description": "Interactions with content directory module - managing vidoes, channels, assets, categories and curator groups"
+      },
+      "membership": {
+        "description": "Membership management - buy a new membership, update membership, manage membership keys"
+      },
+      "forum": {
+        "description": "Forum working group activities (moderation, category management)"
+      },
+      "staking": {
+        "description": "Staking and validation commands"
       }
     }
   },
@@ -137,7 +143,7 @@
     "posttest": "yarn lint",
     "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
     "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
-    "build": "tsc --build tsconfig.json",
+    "build": "rm -rf lib && tsc --build tsconfig.json",
     "version": "oclif-dev readme && git add README.md",
     "lint": "eslint ./src --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",

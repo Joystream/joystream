@@ -60,14 +60,14 @@ yarn start
 
 **Testing infrastructure**
 
-- [Network integration](./tests/integration-tests) - Joystream network integration testing framework
+- [Network integration](./tests/network-tests) - Joystream network integration testing framework
 
 ## Running a local full node
 
 ```sh
 git checkout master
 WASM_BUILD_TOOLCHAIN=nightly-2021-02-20 cargo +nightly-2021-02-20 build --release
-./target/release/joystream-node -- --pruning archive --chain testnets/joy-testnet-5.json
+./target/release/joystream-node -- --pruning archive --chain testnets/joy-testnet-6.json
 ```
 
 Learn more about [joystream-node](node/README.md).
@@ -77,7 +77,14 @@ A step by step guide to setup a full node and validator on the Joystream testnet
 ### Integration tests
 
 ```bash
-tests/integration-tests/run-full-tests.sh
+# Make sure yarn packages are built
+yarn build:packages
+
+# Build the test joystream-node
+RUNTIME_PROFILE=TESTING yarn build:node:docker
+
+# Run tests
+./tests/network-tests/run-full-tests.sh
 ```
 
 ### Contributing

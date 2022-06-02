@@ -8,7 +8,7 @@ use crate::mock::*;
 use common::council::CouncilBudgetManager;
 use common::council::CouncilOriginValidator;
 use frame_support::traits::Currency;
-use frame_support::StorageValue;
+use frame_support::{assert_err, assert_ok, StorageValue};
 use frame_system::RawOrigin;
 use staking_handler::StakingHandler;
 
@@ -1783,7 +1783,7 @@ fn test_funding_request_succeeds() {
 }
 
 #[test]
-fn test_council_budget_manager_works_correctlyl() {
+fn test_council_budget_manager_works_correctly() {
     let config = default_genesis_config();
 
     build_test_externalities(config).execute_with(|| {
@@ -1793,15 +1793,136 @@ fn test_council_budget_manager_works_correctlyl() {
         Mocks::set_budget(origin.clone(), initial_budget, Ok(()));
 
         assert_eq!(
-            <Module<Runtime> as CouncilBudgetManager<u64>>::get_budget(),
+            <Module<Runtime> as CouncilBudgetManager<u64, u64>>::get_budget(),
             initial_budget
         );
 
         let new_budget = 200;
-        <Module<Runtime> as CouncilBudgetManager<u64>>::set_budget(new_budget);
+        <Module<Runtime> as CouncilBudgetManager<u64, u64>>::set_budget(new_budget);
         assert_eq!(
-            <Module<Runtime> as CouncilBudgetManager<u64>>::get_budget(),
+            <Module<Runtime> as CouncilBudgetManager<u64, u64>>::get_budget(),
             new_budget
+        );
+
+        let increase_amount = 100;
+        <Module<Runtime> as CouncilBudgetManager<u64, u64>>::increase_budget(increase_amount);
+        assert_eq!(
+            <Module<Runtime> as CouncilBudgetManager<u64, u64>>::get_budget(),
+            new_budget + increase_amount
+        );
+
+        let account_id = 11;
+        let transfer_amount = 100;
+        <Module<Runtime> as CouncilBudgetManager<u64, u64>>::withdraw(&account_id, transfer_amount);
+        assert_eq!(
+            <Module<Runtime> as CouncilBudgetManager<u64, u64>>::get_budget(),
+            new_budget + increase_amount - transfer_amount
+        );
+
+        let res = <Module<Runtime> as CouncilBudgetManager<u64, u64>>::try_withdraw(
+            &account_id,
+            transfer_amount,
+        );
+        assert!(res.is_ok());
+        assert_eq!(
+            <Module<Runtime> as CouncilBudgetManager<u64, u64>>::get_budget(),
+            new_budget + increase_amount - transfer_amount - transfer_amount
+        );
+
+        let incorrect_amount = 1000;
+        let res = <Module<Runtime> as CouncilBudgetManager<u64, u64>>::try_withdraw(
+            &account_id,
+            incorrect_amount,
+        );
+        assert_eq!(
+            res,
+            Err(Error::<Runtime>::InsufficientBalanceForTransfer.into())
+        );
+        assert_eq!(
+            <Module<Runtime> as CouncilBudgetManager<u64, u64>>::get_budget(),
+            new_budget + increase_amount - transfer_amount - transfer_amount
+        );
+    });
+}
+
+#[test]
+fn councilor_remark_successful() {
+    let config = augmented_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = 1;
+        let member_id = 1;
+        let msg = b"test".to_vec();
+        let origin = RawOrigin::Signed(account_id.clone());
+
+        assert_ok!(Council::councilor_remark(origin.into(), member_id, msg));
+    });
+}
+
+#[test]
+fn councilor_remark_unsuccessful_with_invalid_origin() {
+    let config = augmented_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = 21;
+        let member_id = 1;
+        let msg = b"test".to_vec();
+        let origin = RawOrigin::Signed(account_id.clone());
+
+        assert_err!(
+            Council::councilor_remark(origin.into(), member_id, msg),
+            Error::<Runtime>::MemberIdNotMatchAccount,
+        );
+    });
+}
+
+#[test]
+fn councilor_remark_unsuccessful_with_invalid_councilor() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = 2;
+        let member_id = 2;
+        let msg = b"test".to_vec();
+        let origin = RawOrigin::Signed(account_id.clone());
+
+        assert_err!(
+            Council::councilor_remark(origin.into(), member_id, msg),
+            Error::<Runtime>::NotCouncilor,
+        );
+    });
+}
+
+#[test]
+fn candidate_remark_unsuccessful_with_invalid_candidate() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = 2;
+        let member_id = 2;
+        let msg = b"test".to_vec();
+        let origin = RawOrigin::Signed(account_id.clone());
+
+        assert_err!(
+            Council::candidate_remark(origin.into(), member_id, msg),
+            Error::<Runtime>::CandidateDoesNotExist,
+        );
+    });
+}
+
+#[test]
+fn candidate_remark_unsuccessful_with_invalid_origin() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = 21;
+        let member_id = 2;
+        let msg = b"test".to_vec();
+        let origin = RawOrigin::Signed(account_id.clone());
+
+        assert_err!(
+            Council::candidate_remark(origin.into(), member_id, msg),
+            Error::<Runtime>::MemberIdNotMatchAccount,
         );
     });
 }

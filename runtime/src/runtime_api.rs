@@ -1,4 +1,5 @@
 use frame_support::inherent::{CheckInherentsResult, InherentData};
+use frame_support::storage::StorageValue;
 use frame_support::traits::{KeyOwnerProofSystem, OnRuntimeUpgrade, Randomness};
 use frame_support::unsigned::{TransactionSource, TransactionValidity};
 use pallet_grandpa::fg_primitives;
@@ -82,9 +83,9 @@ pub struct CustomOnRuntimeUpgrade;
 impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
     fn on_runtime_upgrade() -> Weight {
         ProposalsEngine::cancel_active_and_pending_proposals();
-
-        // initialize content module
-        content::Module::<Runtime>::on_runtime_upgrade();
+        // Set NFT values
+        <content::MaxStartingPrice<Runtime>>::put(Balance::from(1_000_000_000_000u64));
+        <content::MaxBidStep<Runtime>>::put(Balance::from(1_000_000_000_000u64));
 
         10_000_000 // TODO: adjust weight
     }
@@ -287,7 +288,7 @@ impl_runtime_apis! {
             use crate::Constitution;
             use crate::Forum;
             use crate::Members;
-            use crate::ContentDirectoryWorkingGroup;
+            use crate::ContentWorkingGroup;
             use crate::Utility;
             use crate::Timestamp;
             use crate::ImOnline;
@@ -297,7 +298,7 @@ impl_runtime_apis! {
             use crate::Blog;
             use crate::JoystreamUtility;
             use crate::Staking;
-            use crate::StorageV2;
+            use crate::Storage;
 
 
             // Trying to add benchmarks directly to the Session Pallet caused cyclic dependency issues.
@@ -385,13 +386,13 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, membership, Members);
             add_benchmark!(params, batches, forum, Forum);
             add_benchmark!(params, batches, pallet_constitution, Constitution);
-            add_benchmark!(params, batches, working_group, ContentDirectoryWorkingGroup);
+            add_benchmark!(params, batches, working_group, ContentWorkingGroup);
             add_benchmark!(params, batches, referendum, Referendum);
             add_benchmark!(params, batches, council, Council);
             add_benchmark!(params, batches, bounty, Bounty);
             add_benchmark!(params, batches, blog, Blog);
             add_benchmark!(params, batches, joystream_utility, JoystreamUtility);
-            add_benchmark!(params, batches, storage_v2, StorageV2);
+            add_benchmark!(params, batches, storage, Storage);
 
             if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
             Ok(batches)

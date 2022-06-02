@@ -8,7 +8,6 @@ members = [
 	"runtime-modules/council",
 	"runtime-modules/forum",
 	"runtime-modules/membership",
-	"runtime-modules/memo",
 	"runtime-modules/referendum",
 	"runtime-modules/storage",
 	"runtime-modules/working-group",
@@ -18,8 +17,10 @@ members = [
 	"runtime-modules/bounty",
 	"runtime-modules/blog",
 	"runtime-modules/utility",
+	"runtime-modules/project-token",    
 	"node",
 	"utils/chain-spec-builder/",
+	"runtime-modules/support/derive-fixture",
 ]
 exclude = [
     "analyses/bench"

@@ -490,8 +490,8 @@ fn run_create_add_working_group_leader_opening_proposal_execution_succeeds<
     <T as common::membership::MembershipTypes>::MemberId: From<u64>,
 {
     initial_test_ext().execute_with(|| {
-        let member_id: MemberId = 1;
-        let account_id: [u8; 32] = [member_id as u8; 32];
+        let member_id: MemberId = create_new_members(1)[0];
+        let account_id: [u8; 32] = account_from_member_id(member_id).into();
 
         let next_opening_id = WorkingGroupInstance::<T, I>::next_opening_id();
 
@@ -596,8 +596,8 @@ fn run_create_fill_working_group_leader_opening_proposal_execution_succeeds<
     common::MemberId<T>: From<u64>,
 {
     initial_test_ext().execute_with(|| {
-        let member_id: u64 = 14;
-        let account_id: [u8; 32] = [member_id as u8; 32];
+        let member_id: u64 = create_new_members(1)[0];
+        let account_id: [u8; 32] = account_from_member_id(member_id).into();
 
         increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
 
@@ -755,10 +755,8 @@ fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
     <T as pallet_balances::Trait>::Balance: From<u128>,
 {
     initial_test_ext().execute_with(|| {
-        // Don't use the same member id as a councilor, can lead to conflicting stakes
-        let member_id: MemberId = 14;
-
-        let account_id: [u8; 32] = [member_id as u8; 32];
+        let member_id: u64 = create_new_members(1)[0];
+        let account_id: [u8; 32] = account_from_member_id(member_id).into();
         let stake_amount: Balance = 10_000;
 
         increase_total_balance_issuance_using_account_id(account_id.into(), 1_500_000);
@@ -937,10 +935,8 @@ fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
     <T as pallet_balances::Trait>::Balance: From<u128>,
 {
     initial_test_ext().execute_with(|| {
-        // Don't use the same member id as a councilor, can lead to conflicting stakes
-        let member_id: MemberId = 14;
-
-        let account_id: [u8; 32] = [member_id as u8; 32];
+        let member_id: u64 = create_new_members(1)[0];
+        let account_id: [u8; 32] = account_from_member_id(member_id).into();
         let stake_amount: Balance = 10_000;
 
         let stake_policy = working_group::StakePolicy {
@@ -1107,13 +1103,12 @@ fn run_create_set_working_group_mint_capacity_proposal_execution_succeeds<
     working_group::BalanceOf<T>: From<u128>,
 {
     initial_test_ext().execute_with(|| {
-        let member_id: MemberId = 1;
-        let account_id: [u8; 32] = [member_id as u8; 32];
+        setup_new_council(0);
+
+        let member_id: MemberId = create_new_members(1)[0];
+        let account_id: [u8; 32] = account_from_member_id(member_id).into();
 
         let mint_capacity = 999999;
-
-        setup_members(15);
-        setup_council(0);
 
         increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
 
@@ -1147,8 +1142,8 @@ fn run_create_syphon_working_group_mint_capacity_proposal_execution_succeeds<
     working_group::BalanceOf<T>: From<u128>,
 {
     initial_test_ext().execute_with(|| {
-        let member_id: MemberId = 14;
-        let account_id: [u8; 32] = [member_id as u8; 32];
+        let member_id: u64 = create_new_members(1)[0];
+        let account_id: [u8; 32] = account_from_member_id(member_id).into();
 
         increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
 
@@ -1355,8 +1350,8 @@ fn run_create_set_group_leader_reward_proposal_execution_succeeds<
     working_group::BalanceOf<T>: From<u128>,
 {
     initial_test_ext().execute_with(|| {
-        let member_id: MemberId = 14;
-        let account_id: [u8; 32] = [member_id as u8; 32];
+        let member_id: u64 = create_new_members(1)[0];
+        let account_id: [u8; 32] = account_from_member_id(member_id).into();
 
         increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
 
@@ -1531,10 +1526,8 @@ fn run_create_terminate_group_leader_role_proposal_execution_succeeds<
     <T as pallet_balances::Trait>::Balance: From<u128>,
 {
     initial_test_ext().execute_with(|| {
-        // Don't use the same member id as a councilor, can lead to conflicting stakes
-        let member_id: MemberId = 14;
-
-        let account_id: [u8; 32] = [member_id as u8; 32];
+        let member_id: u64 = create_new_members(1)[0];
+        let account_id: [u8; 32] = account_from_member_id(member_id).into();
         let stake_amount = 100_000_u128;
 
         let stake_policy = working_group::StakePolicy {
@@ -1708,10 +1701,8 @@ fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succe
     <T as pallet_balances::Trait>::Balance: From<u128>,
 {
     initial_test_ext().execute_with(|| {
-        // Don't use the same member id as a councilor, can lead to conflicting stakes
-        let member_id: MemberId = 14;
-
-        let account_id: [u8; 32] = [member_id as u8; 32];
+        let member_id: u64 = create_new_members(1)[0];
+        let account_id: [u8; 32] = account_from_member_id(member_id).into();
         let stake_amount = 100_000_u128;
 
         let stake_policy = working_group::StakePolicy {

@@ -13,7 +13,6 @@ pub struct Member<MemberId, AccountId> {
     pub handle: String,
     pub avatar_uri: String,
     pub about: String,
-    pub name: String,
 }
 
 /// Builder fo membership module genesis configuration.
@@ -47,7 +46,6 @@ impl<T: Trait> GenesisConfigBuilder<T> {
                 handle: (10000 + ix).to_string(),
                 avatar_uri: "".into(),
                 about: "".into(),
-                name: "".into(),
             })
             .collect()
     }

@@ -4,7 +4,7 @@ edition = '2018'
 name = 'joystream-node-runtime'
 # Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
 # {Authoring}.{Spec}.{Impl} of the RuntimeVersion
-version = '10.0.0'
+version = '10.6.0'
 
 [dependencies]
 # Third-party dependencies
@@ -64,7 +64,6 @@ hex-literal = { optional = true, version = '0.3.1' }
 
 # Joystream
 common = { package = 'pallet-common', default-features = false, path = '../runtime-modules/common'}
-memo = { package = 'pallet-memo', default-features = false, path = '../runtime-modules/memo'}
 forum = { package = 'pallet-forum', default-features = false, path = '../runtime-modules/forum'}
 membership = { package = 'pallet-membership', default-features = false, path = '../runtime-modules/membership'}
 referendum = { package = 'pallet-referendum', default-features = false, path = '../runtime-modules/referendum'}
@@ -80,6 +79,7 @@ bounty = { package = 'pallet-bounty', default-features = false, path = '../runti
 blog = { package = 'pallet-blog', default-features = false, path = '../runtime-modules/blog'}
 content = { package = 'pallet-content', default-features = false, path = '../runtime-modules/content'}
 joystream-utility = { package = 'pallet-utility', default-features = false, path = '../runtime-modules/utility'}
+project-token = { package = 'pallet-project-token', default-features = false, path = '../runtime-modules/project-token'}
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '2cd20966cc09b059817c3ebe12fc130cdd850d62'}
@@ -139,7 +139,6 @@ std = [
 
     # Joystream
     'common/std',
-    'memo/std',
     'forum/std',
     'membership/std',
     'council/std',
@@ -155,6 +154,7 @@ std = [
     'blog/std',
     'joystream-utility/std',
     'content/std',
+    'project-token/std',
 ]
 runtime-benchmarks = [
     "hex-literal",
@@ -187,4 +187,9 @@ runtime-benchmarks = [
     "blog/runtime-benchmarks",
 ]
 
-
+# Staging and testing configurations
+# configuration suitable for staging networks and playground
+staging_runtime = []
+playground_runtime = ['staging_runtime']
+# configuration suitable for integration testing
+testing_runtime = []

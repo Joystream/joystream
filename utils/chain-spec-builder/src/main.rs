@@ -19,12 +19,12 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use ansi_term::Style;
 use rand::{distributions::Alphanumeric, rngs::OsRng, Rng};
 use structopt::StructOpt;
 
 use joystream_node::chain_spec::{
-    self, chain_spec_properties, forum_config, initial_balances, initial_members, AccountId,
+    self, chain_spec_properties, content_config, forum_config, initial_balances, initial_members,
+    AccountId,
 };
 
 use sc_chain_spec::ChainType;
@@ -196,7 +196,7 @@ impl ChainSpecBuilder {
 // as more args will likely be needed
 #[allow(clippy::too_many_arguments)]
 fn genesis_constructor(
-    _deployment: &ChainDeployment,
+    deployment: &ChainDeployment,
     authority_seeds: &[String],
     endowed_accounts: &[AccountId],
     sudo_account: &AccountId,
@@ -225,6 +225,11 @@ fn genesis_constructor(
         .map(|path| initial_balances::from_json(path.as_path()))
         .unwrap_or_else(Vec::new);
 
+    let content_config = match deployment {
+        ChainDeployment::live => content_config::production_config(),
+        _ => content_config::testing_config(),
+    };
+
     chain_spec::testnet_genesis(
         authorities,
         sudo_account.clone(),
@@ -232,6 +237,7 @@ fn genesis_constructor(
         members,
         forum_cfg,
         initial_account_balances,
+        content_config,
     )
 }
 
@@ -322,28 +328,25 @@ fn generate_authority_keys_and_store(seeds: &[String], keystore_path: &Path) -> 
 }
 
 fn print_seeds(authority_seeds: &[String], endowed_seeds: &[String], sudo_seed: &str) {
-    let header = Style::new().bold().underline();
-    let entry = Style::new().bold();
-
-    println!("{}", header.paint("Authority seeds"));
+    println!("# Authority seeds");
 
     for (n, seed) in authority_seeds.iter().enumerate() {
-        println!("{} //{}", entry.paint(format!("auth-{}:", n)), seed,);
+        println!("{}//{}", format!("auth_{}=", n), seed);
     }
 
     println!();
 
     if !endowed_seeds.is_empty() {
-        println!("{}", header.paint("Endowed seeds"));
+        println!("# Endowed seeds");
         for (n, seed) in endowed_seeds.iter().enumerate() {
-            println!("{} //{}", entry.paint(format!("endowed-{}:", n)), seed,);
+            println!("{}//{}", format!("endowed_{}=", n), seed);
         }
 
         println!();
     }
 
-    println!("{}", header.paint("Sudo seed"));
-    println!("//{}", sudo_seed);
+    println!("# Sudo seed");
+    println!("sudo=//{}", sudo_seed);
 }
 
 fn main() -> Result<(), String> {

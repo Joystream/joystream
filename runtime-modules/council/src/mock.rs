@@ -173,6 +173,12 @@ impl WeightInfo for () {
     fn funding_request(_: u32) -> Weight {
         0
     }
+    fn councilor_remark() -> Weight {
+        0
+    }
+    fn candidate_remark() -> Weight {
+        0
+    }
 }
 
 /////////////////// Module implementation //////////////////////////////////////
@@ -427,6 +433,9 @@ impl membership::WeightInfo for Weights {
     fn remove_staking_account() -> Weight {
         unimplemented!()
     }
+    fn member_remark() -> Weight {
+        unimplemented!()
+    }
 }
 
 impl balances::Trait for Runtime {
@@ -442,7 +451,7 @@ impl balances::Trait for Runtime {
 impl membership::Trait for Runtime {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
-    type WorkingGroup = ();
+    type WorkingGroup = Wg;
     type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
@@ -452,7 +461,8 @@ impl membership::Trait for Runtime {
     type CandidateStake = CandidateStake;
 }
 
-impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
+pub struct Wg;
+impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
     fn get_budget() -> u64 {
         unimplemented!()
     }
@@ -460,9 +470,13 @@ impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
     fn set_budget(_new_value: u64) {
         unimplemented!()
     }
+
+    fn try_withdraw(_account_id: &u64, _amount: u64) -> DispatchResult {
+        unimplemented!()
+    }
 }
 
-impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
+impl common::working_group::WorkingGroupAuthenticator<Runtime> for Wg {
     fn ensure_worker_origin(
         _origin: <Runtime as frame_system::Trait>::Origin,
         _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
@@ -473,6 +487,12 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn get_leader_member_id() -> Option<<Runtime as common::membership::MembershipTypes>::MemberId>
     {
         unimplemented!();
+    }
+
+    fn get_worker_member_id(
+        _: &<Runtime as common::membership::MembershipTypes>::ActorId,
+    ) -> Option<<Runtime as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
     }
 
     fn ensure_leader_origin(_origin: <Runtime as frame_system::Trait>::Origin) -> DispatchResult {
@@ -666,6 +686,23 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         stage: CouncilStageUpdate::default(),
         council_members: vec![],
         candidates: vec![],
+        announcement_period_nr: 0,
+        budget: 0,
+        next_reward_payments: 0,
+        next_budget_refill: <Runtime as Trait>::BudgetRefillPeriod::get(),
+        budget_increment: 1,
+        councilor_reward: 100,
+    }
+}
+
+pub fn augmented_genesis_config() -> GenesisConfig<Runtime> {
+    GenesisConfig::<Runtime> {
+        stage: CouncilStageUpdate::default(),
+        council_members: vec![CouncilMemberOf::<Runtime> {
+            membership_id: 1,
+            ..Default::default()
+        }],
+        candidates: vec![(2, Default::default())],
         announcement_period_nr: 0,
         budget: 0,
         next_reward_payments: 0,

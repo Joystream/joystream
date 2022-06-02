@@ -13,6 +13,10 @@ export default class CuratorGroupCommand extends ContentDirectoryCommandBase {
     },
   ]
 
+  static flags = {
+    ...ContentDirectoryCommandBase.flags,
+  }
+
   async run(): Promise<void> {
     const { id } = this.parse(CuratorGroupCommand).args
     const group = await this.getCuratorGroup(id)
