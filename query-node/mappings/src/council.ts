@@ -91,24 +91,18 @@ async function getCandidate(
 ): Promise<Candidate> {
   /* TODO: nested filtering is needed here to work properly
            it is better approach then `where` function used below
-  const where = {
-    memberId
+  */
+
+  const where: FindOptionsWhere<NewCandidateEvent> = {
+    candidate: { memberId: memberId.toString() } as any, // TODO: get rid of `any` typecast
   }
 
   if (electionRound) {
-    (where as any).electionRound = electionRound // TODO: get rid of `any` typecast
+    where.electionRound = {id: electionRound.id.toString()}
   }
-  */
 
   const event = await store.get(NewCandidateEvent, {
-    join: { alias: 'event', innerJoin: { candidate: 'event.candidate' } },
-    // where,
-    where: ((qb: SelectQueryBuilder<NewCandidateEvent>) => {
-      qb.where('candidate.memberId = :memberId', { memberId })
-      if (electionRound) {
-        qb.andWhere('candidate.electionRoundId = :electionRoundId', { electionRoundId: electionRound.id })
-      }
-    }) as any, // TODO: get rid of `any` typecast (see above)
+    where,
     order: { inBlock: 'DESC', indexInBlock: 'DESC' },
     relations: ['candidate'].concat(relations.map((r) => `candidate.${r}`)),
   })
@@ -181,11 +175,10 @@ async function getAccountCastVote(
   account: string,
   electionRound?: ElectionRound
 ): Promise<CastVote> {
-  // const where = { castBy: account } as FindOptionsWhere<CastVote> // TODO: make this work (causes type error)
   const where: FindOptionsWhere<CastVote> = { castBy: account }
 
   if (electionRound) {
-    ;(where as any).electionRound = electionRound // TODO: get rid of `any` typecast
+    where.electionRound = {id: electionRound.id.toString()}
   }
 
   const castVote = await store.get(CastVote, { where, order: { createdAt: 'DESC' } } as FindOneOptions<CastVote>)
@@ -462,6 +455,7 @@ export async function council_NewCandidate({ event, store }: EventContext & Stor
   const newCandidateEvent = new NewCandidateEvent({
     ...genericEventFields(event),
     candidate,
+    electionRound,
     stakingAccount: stakingAccount.toString(),
     rewardAccount: rewardAccount.toString(),
     balance,
