@@ -264,11 +264,7 @@ fn update_verification_status_fails_with_invalid_worker_id() {
         UpdateMembershipVerificationFixture::default()
             .with_member_id(next_member_id)
             .with_worker_id(invalid_worker_id)
-            .call_and_assert(Err(working_group::Error::<
-                Test,
-                MembershipWorkingGroupInstance,
-            >::WorkerDoesNotExist
-                .into()));
+            .call_and_assert(Err(DispatchError::Other("worker does not exist")));
     });
 }
 
