@@ -160,6 +160,12 @@ decl_storage! {
 
         pub Commitment get(fn commitment): <T as frame_system::Config>::Hash;
 
+        /// The state bloat bond for the channel (helps preventing the state bloat).
+        pub ChannelStateBloatBondValue get (fn channel_state_bloat_bond_value): BalanceOf<T>;
+
+        ///The state bloat bond for the video (helps preventing the state bloat).
+        pub VideoStateBloatBondValue get (fn video_state_bloat_bond_value): BalanceOf<T>;
+
         pub MaxCashoutAllowed get(fn max_cashout_allowed) config(): BalanceOf<T>;
 
         pub MinCashoutAllowed get(fn min_cashout_allowed) config(): BalanceOf<T>;
@@ -479,7 +485,7 @@ decl_module! {
             let funds_needed = <T as Config>::DataObjectStorage::funds_needed_for_upload(num_objs, total_size);
             let total_funds_needed = channel_state_bloat_bond.saturating_add(funds_needed);
 
-            Self::ensure_sufficient_balance(&sender, total_funds_needed)?;
+            Self::ensure_channel_creation_sufficient_balance(&sender, total_funds_needed)?;
 
             let bag_creation_params = DynBagCreationParameters::<T> {
                 bag_id: DynBagId::<T>::Channel(channel_id),
@@ -832,10 +838,25 @@ decl_module! {
                     }
                 )?;
 
-            let storage_assets = params.assets.clone().unwrap_or_default();
+            let video_state_bloat_bond = Self::video_state_bloat_bond_value();
 
-            // assets ids
-            let data_objects_ids = Storage::<T>::get_next_data_object_ids(storage_assets.object_creation_list.len());
+            // ensure expected video state bloat bond
+            ensure!(
+                params.expected_video_state_bloat_bond
+                    == video_state_bloat_bond,
+                Error::<T>::VideoStateBloatBondChanged,
+            );
+
+            let storage_assets = params.assets.clone().unwrap_or_default();
+            let num_objs = storage_assets.object_creation_list.len();
+
+            let data_objects_ids = Storage::<T>::get_next_data_object_ids(num_objs);
+
+            let total_size = storage_assets.object_creation_list.iter().fold(0, |acc, obj_param| acc.saturating_add(obj_param.size));
+            let funds_needed = T::DataObjectStorage::funds_needed_for_upload(num_objs, total_size);
+            let total_funds_needed = video_state_bloat_bond.saturating_add(funds_needed);
+
+            Self::ensure_video_creation_sufficient_balance(&sender, total_funds_needed)?;
 
             if nft_status.is_some() {
                 Self::check_nft_limits(&channel)?;
@@ -846,6 +867,7 @@ decl_module! {
                 in_channel: channel_id,
                 nft_status: nft_status.clone(),
                 data_objects: data_objects_ids.clone(),
+                video_state_bloat_bond
             };
 
             if let Some(upload_assets) = params.assets.as_ref() {
@@ -861,6 +883,8 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
+            let _ = Balances::<T>::slash(&sender, video_state_bloat_bond);
 
             // add it to the onchain state
             VideoById::<T>::insert(video_id, video);
@@ -1008,6 +1032,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            //rewards the sender a state bloat bond amount for the work to delete the video.
+            let _ = Balances::<T>::deposit_creating(&sender, video.video_state_bloat_bond);
+
             Self::deposit_event(RawEvent::VideoDeleted(actor, video_id));
         }
 
@@ -1091,6 +1118,9 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
+            //rewards the sender a state bloat bond amount for the work to delete the video.
+            let _ = Balances::<T>::deposit_creating(&sender, video.video_state_bloat_bond);
 
             Self::deposit_event(RawEvent::VideoDeletedByModerator(actor, video_id, rationale));
         }
@@ -1278,6 +1308,26 @@ decl_module! {
             Self::deposit_event(
                 RawEvent::ChannelStateBloatBondValueUpdated(
                     new_channel_state_bloat_bond));
+        }
+
+        /// Updates video state bloat bond value.
+        /// Only lead can upload this value
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_video_state_bloat_bond(
+            origin,
+            new_video_state_bloat_bond: BalanceOf<T>,
+        ) {
+            let sender = ensure_signed(origin)?;
+            ensure_authorized_to_update_video_state_bloat_bond::<T>(&sender)?;
+
+            //
+            // == MUTATION_SAFE ==
+            //
+
+            VideoStateBloatBondValue::<T>::put(new_video_state_bloat_bond);
+            Self::deposit_event(
+                RawEvent::VideoStateBloatBondValueUpdated(
+                    new_video_state_bloat_bond));
         }
 
         #[weight = 10_000_000] // TODO: adjust Weight
@@ -3202,7 +3252,7 @@ impl<T: Config> Module<T> {
             .collect::<BTreeSet<_>>()
     }
 
-    fn ensure_sufficient_balance(
+    fn ensure_channel_creation_sufficient_balance(
         account_id: &T::AccountId,
         amount: BalanceOf<T>,
     ) -> DispatchResult {
@@ -3211,6 +3261,19 @@ impl<T: Config> Module<T> {
         ensure!(
             balance >= amount,
             Error::<T>::InsufficientBalanceForChannelCreation
+        );
+        Ok(())
+    }
+
+    fn ensure_video_creation_sufficient_balance(
+        account_id: &T::AccountId,
+        amount: BalanceOf<T>,
+    ) -> DispatchResult {
+        let balance = Balances::<T>::usable_balance(account_id);
+
+        ensure!(
+            balance >= amount,
+            Error::<T>::InsufficientBalanceForVideoCreation
         );
         Ok(())
     }
@@ -3526,6 +3589,7 @@ decl_event!(
         ),
         ChannelPrivilegeLevelUpdated(ChannelId, ChannelPrivilegeLevel),
         ChannelStateBloatBondValueUpdated(Balance),
+        VideoStateBloatBondValueUpdated(Balance),
         ChannelAssetsRemoved(ContentActor, ChannelId, BTreeSet<DataObjectId>, Channel),
         ChannelDeleted(ContentActor, ChannelId),
         ChannelDeletedByModerator(ContentActor, ChannelId, Vec<u8> /* rationale */),
