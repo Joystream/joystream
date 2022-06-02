@@ -8,7 +8,7 @@ import {
 } from '@joystream/hydra-common'
 import { CURRENT_NETWORK, deserializeMetadata, genericEventFields } from './common'
 import BN from 'bn.js'
-import { FindOneOptions, SelectQueryBuilder } from 'typeorm'
+import { FindOneOptions } from 'typeorm'
 
 import {
   // Council events
@@ -98,7 +98,7 @@ async function getCandidate(
   }
 
   if (electionRound) {
-    where.electionRound = {id: electionRound.id.toString()}
+    where.electionRound = { id: electionRound.id.toString() }
   }
 
   const event = await store.get(NewCandidateEvent, {
@@ -178,7 +178,7 @@ async function getAccountCastVote(
   const where: FindOptionsWhere<CastVote> = { castBy: account }
 
   if (electionRound) {
-    where.electionRound = {id: electionRound.id.toString()}
+    where.electionRound = { id: electionRound.id.toString() }
   }
 
   const castVote = await store.get(CastVote, { where, order: { createdAt: 'DESC' } } as FindOneOptions<CastVote>)
