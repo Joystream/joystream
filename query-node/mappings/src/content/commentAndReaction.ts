@@ -160,7 +160,7 @@ async function getOrCreateCommentReactionsCountByReactionId(
   return reactionsCountByReactionId
 }
 
-export function setReactionsCount(
+export function setReactionsAndRepliesCount(
   event: SubstrateEvent,
   entity: Video | Comment,
   reactionsCountByReactionId: VideoReactionsCountByReactionType | CommentReactionsCountByReactionId,
@@ -172,6 +172,7 @@ export function setReactionsCount(
     reactionsCountByReactionId.updatedAt = eventTime
 
     ++entity.reactionsCount
+    if (entity instanceof Comment) ++entity.reactionsAndRepliesCount
     entity.updatedAt = eventTime
     return
   }
@@ -180,6 +181,7 @@ export function setReactionsCount(
   reactionsCountByReactionId.updatedAt = eventTime
 
   --entity.reactionsCount
+  if (entity instanceof Comment) ++entity.reactionsAndRepliesCount
   entity.updatedAt = eventTime
 }
 
@@ -209,10 +211,10 @@ export async function processReactVideoMessage(
     previousReactionByMember: VideoReaction,
     reaction: VideoReactionOptions
   ) => {
-    // remove the reaction if member has already reacted with the same option already else change the reaction
+    // remove the reaction if member has already reacted with the same option else change the reaction
     if (reaction === previousReactionByMember.reaction) {
       // decrement reactions count
-      setReactionsCount(event, video, reactionsCountByReactionType, 'DECREMENT')
+      setReactionsAndRepliesCount(event, video, reactionsCountByReactionType, 'DECREMENT')
       // remove reaction
       await store.remove<VideoReaction>(previousReactionByMember)
       return
@@ -273,7 +275,7 @@ export async function processReactVideoMessage(
       member: new Membership({ id: memberId.toString() }),
     })
 
-    setReactionsCount(event, video, reactionsCountByReactionType, 'INCREMENT')
+    setReactionsAndRepliesCount(event, video, reactionsCountByReactionType, 'INCREMENT')
     // add reaction
     await store.save<VideoReaction>(newReactionByMember)
   }
@@ -323,7 +325,7 @@ export async function processReactCommentMessage(
   // remove the reaction if same reaction already exists by the member on the comment
   if (previousReactionByMember) {
     // decrement reactions count
-    setReactionsCount(event, comment, reactionsCountByReactionId, 'DECREMENT')
+    setReactionsAndRepliesCount(event, comment, reactionsCountByReactionId, 'DECREMENT')
     // remove reaction
     await store.remove<CommentReaction>(previousReactionByMember)
   } else {
@@ -340,7 +342,7 @@ export async function processReactCommentMessage(
     })
 
     // increment reactions count
-    setReactionsCount(event, comment, reactionsCountByReactionId, 'INCREMENT')
+    setReactionsAndRepliesCount(event, comment, reactionsCountByReactionId, 'INCREMENT')
     // add reaction
     await store.save<CommentReaction>(newReactionByMember)
   }
@@ -396,6 +398,7 @@ export async function processCreateCommentMessage(
   // increment parent comment's replies count
   if (parentComment) {
     ++parentComment.repliesCount
+    ++parentComment.reactionsAndRepliesCount
     parentComment.updatedAt = eventTime
     await store.save<Comment>(parentComment)
   }
@@ -411,6 +414,7 @@ export async function processCreateCommentMessage(
     parentComment,
     repliesCount: 0,
     reactionsCount: 0,
+    reactionsAndRepliesCount: 0,
     isEdited: false,
   })
   await store.save<Comment>(comment)
@@ -520,6 +524,7 @@ export async function processDeleteCommentMessage(
   // decrement parent comment's replies count
   if (parentComment) {
     --parentComment.repliesCount
+    --parentComment.reactionsAndRepliesCount
     parentComment.updatedAt = eventTime
     await store.save<Comment>(parentComment)
   }
@@ -575,6 +580,7 @@ export async function processModerateCommentMessage(
   // decrement parent comment's replies count
   if (parentComment) {
     --parentComment.repliesCount
+    --parentComment.reactionsAndRepliesCount
     parentComment.updatedAt = eventTime
 
     // update parent comment
