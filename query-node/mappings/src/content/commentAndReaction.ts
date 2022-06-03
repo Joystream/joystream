@@ -181,7 +181,7 @@ export function setReactionsAndRepliesCount(
   reactionsCountByReactionId.updatedAt = eventTime
 
   --entity.reactionsCount
-  if (entity instanceof Comment) ++entity.reactionsAndRepliesCount
+  if (entity instanceof Comment) --entity.reactionsAndRepliesCount
   entity.updatedAt = eventTime
 }
 
