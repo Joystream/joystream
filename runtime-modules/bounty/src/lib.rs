@@ -110,7 +110,7 @@ pub trait WeightInfo {
 type WeightInfoBounty<T> = <T as Trait>::WeightInfo;
 
 pub(crate) use actors::BountyActorManager;
-use frame_support::error::BadOrigin;
+
 // use council::Balance;
 pub(crate) use stages::BountyStageCalculator;
 
@@ -409,13 +409,13 @@ impl<Balance: PartialOrd + Clone, BlockNumber: Clone, MemberId: Ord>
 {
     // Increments bounty active work entry counter.
     fn increment_active_work_entry_counter(&mut self) {
-        self.active_work_entry_count += 1;
+        self.active_work_entry_count = self.active_work_entry_count.saturating_add(1);
     }
 
     // Decrements bounty active work entry counter. Nothing happens on zero counter.
     fn decrement_active_work_entry_counter(&mut self) {
         if self.active_work_entry_count > 0 {
-            self.active_work_entry_count -= 1;
+            self.active_work_entry_count = self.active_work_entry_count.saturating_sub(1);
         }
     }
 
@@ -726,6 +726,16 @@ decl_event! {
             EntryId,
             AccountId),
 
+        /// Work entry stake slashed.
+        /// Params:
+        /// - bounty ID
+        /// - entry ID
+        /// - stake account
+        WorkEntrantStakeSlashed(
+            BountyId,
+            EntryId,
+            AccountId),
+
         /// A member or a council funder has withdrawn the funder state bloat bond.
         /// Params:
         /// - bounty ID
@@ -902,7 +912,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let next_bounty_count_value = Self::bounty_count() + 1;
+            let next_bounty_count_value = Self::bounty_count().saturating_add(1);
             let bounty_id = T::BountyId::from(next_bounty_count_value);
 
             bounty_creator_manager.transfer_funds_to_bounty_account(bounty_id, amount);
@@ -1028,8 +1038,11 @@ decl_module! {
 
             let bounty = Self::ensure_bounty_exists(&bounty_id)?;
 
-            let terminate_bounty_actor = Self::get_terminate_bounty_actor(origin, &bounty)?;
 
+            let terminate_bounty_actor = BountyActorManager::<T>::ensure_bounty_actor_manager(
+                origin,
+                bounty.creation_params.creator.clone(),
+            )?;
             let bounty_creator_manager = Self::ensure_creator_actor_manager(&bounty)?;
 
             //If origin is council then
@@ -1237,7 +1250,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let next_entry_count_value = Self::entry_count() + 1;
+            let next_entry_count_value = Self::entry_count().saturating_add(1);
             let entry_id = T::EntryId::from(next_entry_count_value);
 
             // Lock stake balance for bounty if the stake is required.
@@ -1442,6 +1455,13 @@ decl_module! {
                         T::StakingHandler::unlock(&entry.staking_account_id);
 
                         Self::remove_work_entry(&bounty_id, &entry_id);
+
+                        // Fire a WorkEntrantStakeSlashed event.
+                        Self::deposit_event(RawEvent::WorkEntrantStakeSlashed(
+                            bounty_id,
+                            *entry_id,
+                            entry.staking_account_id
+                        ));
                     }
                 }
             }
@@ -1863,26 +1883,6 @@ impl<T: Trait> Module<T> {
         //Check if new oracle is a member
         BountyActorManager::<T>::get_bounty_actor_manager(new_oracle)?;
         Ok(switcher)
-    }
-
-    fn get_terminate_bounty_actor(
-        origin: T::Origin,
-        bounty: &Bounty<T>,
-    ) -> Result<BountyActorManager<T>, BadOrigin> {
-        let bounty_creator_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
-            origin.clone(),
-            bounty.creation_params.creator.clone(),
-        );
-
-        let actor = match bounty_creator_manager {
-            Ok(creator_manager) => creator_manager,
-            Err(_) => {
-                ensure_root(origin)?;
-                BountyActorManager::Council
-            }
-        };
-
-        Ok(actor)
     }
 
     fn ensure_terminate_bounty_stage(

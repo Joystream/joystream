@@ -2,6 +2,7 @@
 //! It allows to get a bounty stage based on the current bounty state and the current system block.
 
 use crate::{Bounty, BountyMilestone, BountyStage, FundingType, Trait};
+use sp_arithmetic::traits::Saturating;
 
 // Bounty stage helper.
 pub(crate) struct BountyStageCalculator<'a, T: Trait> {
@@ -121,7 +122,9 @@ impl<'a, T: Trait> BountyStageCalculator<'a, T> {
         match self.bounty.creation_params.funding_type {
             // Never expires
             FundingType::Perpetual { .. } => false,
-            FundingType::Limited { funding_period, .. } => created_at + funding_period < self.now,
+            FundingType::Limited { funding_period, .. } => {
+                created_at.saturating_add(funding_period) < self.now
+            }
         }
     }
 }

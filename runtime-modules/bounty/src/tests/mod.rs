@@ -3853,6 +3853,18 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
             initial_balance - amount_slashed_entry_3
         );
 
+        EventFixture::contains_crate_event(RawEvent::WorkEntrantStakeSlashed(
+            bounty_id,
+            entry_id_2,
+            worker_account_id_2,
+        ));
+
+        EventFixture::contains_crate_event(RawEvent::WorkEntrantStakeSlashed(
+            bounty_id,
+            entry_id_3,
+            worker_account_id_3,
+        ));
+
         EventFixture::contains_crate_event(RawEvent::OracleJudgmentSubmitted(
             bounty_id,
             BountyActor::Council,
@@ -4020,6 +4032,18 @@ fn submit_judgment_by_member_succeeded_with_complex_judgment() {
             worker_member_id_1,
         ));
 
+        EventFixture::contains_crate_event(RawEvent::WorkEntrantStakeSlashed(
+            bounty_id,
+            entry_id_2,
+            worker_account_id_2,
+        ));
+
+        EventFixture::contains_crate_event(RawEvent::WorkEntrantStakeSlashed(
+            bounty_id,
+            entry_id_3,
+            worker_account_id_3,
+        ));
+
         let amount_slashed_entry_2 = slashing_share_entry_2 * entrant_stake;
         assert_eq!(
             Balances::free_balance(&worker_account_id_2),
@@ -4174,6 +4198,12 @@ fn submit_judgment_dont_return_cherry_on_unsuccessful_bounty() {
                 + get_funder_state_bloat_bond_amount()
                 + get_creator_state_bloat_bond_amount()
         );
+
+        EventFixture::contains_crate_event(RawEvent::WorkEntrantStakeSlashed(
+            bounty_id,
+            entry_id,
+            worker_account_id,
+        ));
 
         EventFixture::assert_last_crate_event(RawEvent::OracleJudgmentSubmitted(
             bounty_id,
