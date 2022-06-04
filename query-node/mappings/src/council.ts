@@ -341,8 +341,9 @@ export async function council_AnnouncingPeriodStarted({ event, store }: EventCon
 
   // specific event processing
 
+  // Get last cycleId
+  const { cycleId } = await getCurrentElectionRound(store)
   // restart elections
-  const { cycleId } = await concludeElectionRound(store, event)
   await startNextElectionRound(store, event, cycleId + 1)
 }
 
