@@ -497,8 +497,8 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
     electedAtBlock: event.blockNumber,
     electedAtTime: new Date(event.blockTimestamp),
     electedAtNetwork: CURRENT_NETWORK,
-    councilElections: oldElectedCouncil?.nextCouncilElections || [], // always empty ?
-    nextCouncilElections: [], // always empty ?
+    councilElections: [],
+    nextCouncilElections: [],
     isResigned: false,
   })
 
