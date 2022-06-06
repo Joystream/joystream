@@ -1,17 +1,35 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { EventContext, StoreContext } from '@joystream/hydra-common'
+import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
 import { In, getManager } from 'typeorm'
 import { Content } from '../../generated/types'
-import { deserializeMetadata, genericEventFields, inconsistentState, logger } from '../common'
+import { deserializeMetadata, EntityType, genericEventFields, inconsistentState, logger } from '../common'
 import {
   processVideoMetadata,
   videoRelationsForCounters,
   convertContentActorToChannelOrNftOwner,
   convertContentActor,
 } from './utils'
-import { Channel, NftIssuedEvent, Video, VideoCategory, CommentReaction, Comment } from 'query-node/dist/model'
+import {
+  Channel,
+  NftIssuedEvent,
+  Video,
+  VideoCategory,
+  CommentReaction,
+  Comment,
+  VideoReaction,
+  VideoReactionsCountByReactionType,
+  CommentReactionsCountByReactionId,
+  VideoReactedEvent,
+  CommentReactedEvent,
+  CommentCreatedEvent,
+  CommentTextUpdatedEvent,
+  CommentDeletedEvent,
+  CommentModeratedEvent,
+  CommentPinnedEvent,
+  VideoReactionsPreferenceEvent,
+} from 'query-node/dist/model'
 import { VideoMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import _ from 'lodash'
@@ -237,13 +255,97 @@ export async function content_VideoDeleted({ store, event }: EventContext & Stor
   // update video active counters
   await getAllManagers(store).videos.onMainEntityDeletion(video)
 
-  // TODO: remove reactions & comments
+  // TODO: remove manual deletion of referencing records after
+  // TODO: https://github.com/Joystream/hydra/issues/490 has been implemented
+
+  await removeVideoReferencingRelations(store, videoId.toString())
 
   // remove video
   await store.remove<Video>(video)
 
   // emit log event
   logger.info('Video has been deleted', { id: videoId })
+}
+
+async function removeVideoReferencingRelations(store: DatabaseManager, videoId: string): Promise<void> {
+  const loadReferencingEntities = async <T>(store: DatabaseManager, entityType: EntityType<T>, videoId: string) => {
+    return await store.getMany(entityType, {
+      where: { video: { id: videoId } },
+    })
+  }
+
+  /**
+   * Referencing Entities
+   */
+  // get referencing CommentReaction
+  const referencingCommentReactions = await loadReferencingEntities(store, CommentReaction, videoId)
+  // get referencing VideoReaction
+  const referencingVideoReactions = await loadReferencingEntities(store, VideoReaction, videoId)
+  // get referencing VideoReactionsCountByReactionType
+  const referencingVideoReactionsCountByReactionTypes = await loadReferencingEntities(
+    store,
+    VideoReactionsCountByReactionType,
+    videoId
+  )
+  // get referencing CommentReactionsCountByReactionId
+  const referencingCommentReactionsCountByReactionIds = await loadReferencingEntities(
+    store,
+    CommentReactionsCountByReactionId,
+    videoId
+  )
+  // get referencing Comments
+  const referencingComments = await loadReferencingEntities(store, Comment, videoId)
+
+  /**
+   * Referencing Event Entities
+   */
+  // referencing VideoReactedEvent
+  const referencingVideoReactedEvents = await loadReferencingEntities(store, VideoReactedEvent, videoId)
+  // referencing CommentReactedEvent
+  const referencingCommentReactedEvents = await loadReferencingEntities(store, CommentReactedEvent, videoId)
+  // referencing CommentCreatedEvent
+  const referencingCommentCreatedEvents = await loadReferencingEntities(store, CommentCreatedEvent, videoId)
+  // referencing CommentTextUpdatedEvent
+  const referencingCommentTextUpdatedEvents = await loadReferencingEntities(store, CommentTextUpdatedEvent, videoId)
+  // referencing CommentDeletedEvent
+  const referencingCommentDeletedEvents = await loadReferencingEntities(store, CommentDeletedEvent, videoId)
+  // referencing CommentModeratedEvent
+  const referencingCommentModeratedEvents = await loadReferencingEntities(store, CommentModeratedEvent, videoId)
+  // referencing CommentPinnedEvent
+  const referencingCommentPinnedEvents = await loadReferencingEntities(store, CommentPinnedEvent, videoId)
+  // referencing VideoReactionsPreferenceEvent
+  const referencingVideoReactionsPreferenceEvents = await loadReferencingEntities(
+    store,
+    VideoReactionsPreferenceEvent,
+    videoId
+  )
+
+  const removeRelations = async <T>(store: DatabaseManager, entities: T[]) => {
+    await Promise.all(entities.map(async (r) => await store.remove<T>(r)))
+  }
+
+  // remove referencing records
+  await removeRelations(store, referencingCommentReactions)
+  await removeRelations(store, referencingVideoReactions)
+  await removeRelations(store, referencingVideoReactionsCountByReactionTypes)
+  await removeRelations(store, referencingCommentReactionsCountByReactionIds)
+  await removeRelations(store, referencingVideoReactedEvents)
+  await removeRelations(store, referencingCommentReactedEvents)
+  await removeRelations(store, referencingCommentCreatedEvents)
+  await removeRelations(store, referencingCommentTextUpdatedEvents)
+  await removeRelations(store, referencingCommentDeletedEvents)
+  await removeRelations(store, referencingCommentModeratedEvents)
+  await removeRelations(store, referencingCommentPinnedEvents)
+  await removeRelations(store, referencingVideoReactionsPreferenceEvents)
+
+  // first delete all replies (where parentCommentId!==null), then top level comments
+  for (const comment of referencingComments) {
+    // find all comments(replies) where `comment` is parent comment
+    const replies = await store.getMany(Comment, { where: { parentComment: { id: comment.id } } })
+    await Promise.all(replies.map(async (r) => await store.remove<Comment>(r)))
+    // remove comment
+    await store.remove<Comment>(comment)
+  }
 }
 
 export async function content_VideoCensorshipStatusUpdated({

@@ -150,6 +150,7 @@ async function getOrCreateCommentReactionsCountByReactionId(
       id: `${comment.id}-${reactionId}`,
       reactionId,
       comment,
+      video: comment.video,
       count: 0,
     })
 
@@ -386,7 +387,13 @@ export async function processCreateCommentMessage(
 
   // if new comment is replying to some parent comment, 1. validate that comment existence,
   //  2. set `parentComment` to the parent comment, otherwise set `parentComment` to undefined
-  const parentComment = parentCommentId ? await getComment(store, parentCommentId.toString(), ['author']) : undefined
+  const parentComment = parentCommentId
+    ? await getComment(store, parentCommentId.toString(), ['author', 'video'])
+    : undefined
+
+  if (parentComment && parentComment.video.id !== videoId.toString()) {
+    inconsistentState(`Cannot add comment. parent comment ${parentComment.id} does not exist on video ${videoId}`)
+  }
 
   // increment video's comment count
   ++video.commentsCount

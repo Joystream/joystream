@@ -115,9 +115,9 @@ export default async function commentsAndReactions({ api, query }: FlowProps): P
     // Create replies
     {
       msg: {
-        videoId: Long.fromNumber(videosData[1].videoId),
+        videoId: Long.fromNumber(videosData[0].videoId),
         parentCommentId: createdCommentsIds[0],
-        body: 'video 1 comment by participant 1',
+        body: 'video 0 reply by participant 1',
       },
       asMember: participants[1].memberId,
     },
@@ -263,6 +263,12 @@ export default async function commentsAndReactions({ api, query }: FlowProps): P
 
   const moderateCommentsFixture = new ModerateCommentsFixture(api, query, moderateComments)
   await new FixtureRunner(moderateCommentsFixture).runWithQueryNodeChecks()
+
+  // Delete videos
+  debug('Delete video[0]')
+  await joystreamCli.deleteVideo(videosData[0].videoId)
+  debug('Delete video[1]')
+  await joystreamCli.deleteVideo(videosData[1].videoId)
 
   debug('Done')
 }
