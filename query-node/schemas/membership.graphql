@@ -10,6 +10,26 @@ type AvatarUri @variant {
 
 union Avatar = AvatarObject | AvatarUri
 
+enum MembershipExternalResourceType {
+  EMAIL
+  HYPERLINK
+  TWITTER
+  TELEGRAM
+  DISCORD
+  FACEBOOK
+  YOUTUBE
+  MATRIX
+  IRC
+  WECHAT
+  WHATSAPP
+}
+
+type MembershipExternalResource @entity {
+  type: MembershipExternalResourceType!
+  value: String!
+  memberMetadata: MemberMetadata!
+}
+
 type MemberMetadata @entity {
   "Member's name"
   name: String
@@ -19,6 +39,9 @@ type MemberMetadata @entity {
 
   "Short text chosen by member to share information about themselves"
   about: String
+
+  "Social media handles, email address..."
+  externalResources: [MembershipExternalResource] @derivedFrom(field: "memberMetadata")
 }
 
 type MembershipEntryPaid @variant {
