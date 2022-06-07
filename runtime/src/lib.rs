@@ -1098,10 +1098,6 @@ impl proposals_codex::Trait for Runtime {
     type SetMembershipLeadInvitationQuotaProposalParameters =
         SetMembershipLeadInvitationQuotaProposalParameters;
     type SetReferralCutProposalParameters = SetReferralCutProposalParameters;
-    type CreateBlogPostProposalParameters = CreateBlogPostProposalParameters;
-    type EditBlogPostProoposalParamters = EditBlogPostProoposalParamters;
-    type LockBlogPostProposalParameters = LockBlogPostProposalParameters;
-    type UnlockBlogPostProposalParameters = UnlockBlogPostProposalParameters;
     type VetoProposalProposalParameters = VetoProposalProposalParameters;
     type UpdateGlobalNftLimitProposalParameters = UpdateGlobalNftLimitProposalParameters;
     type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;

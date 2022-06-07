@@ -7,7 +7,7 @@ mod working_group_proposals;
 use crate::tests::{
     account_from_member_id, create_new_members, max_proposal_stake, run_to_block, setup_new_council,
 };
-use crate::{BlogInstance, MembershipWorkingGroupInstance, ProposalCancellationFee, Runtime};
+use crate::{MembershipWorkingGroupInstance, ProposalCancellationFee, Runtime};
 use codec::Encode;
 use content::NftLimitPeriod;
 use proposals_codex::{GeneralProposalParameters, ProposalDetails};
@@ -37,7 +37,6 @@ pub type ProposalCodex = proposals_codex::Module<Runtime>;
 pub type Council = council::Module<Runtime>;
 pub type Membership = membership::Module<Runtime>;
 pub type MembershipWorkingGroup = working_group::Module<Runtime, MembershipWorkingGroupInstance>;
-pub type Blog = blog::Module<Runtime, BlogInstance>;
 
 struct VoteGenerator {
     proposal_id: u32,
@@ -597,158 +596,6 @@ fn funding_request_proposal_execution_succeeds() {
             Balances::usable_balance(target_account_id),
             starting_balance + funding
         );
-    });
-}
-
-#[test]
-fn create_blog_post_proposal_execution_succeeds() {
-    initial_test_ext().execute_with(|| {
-        let member_id = create_new_members(1)[0];
-        let account_id = account_from_member_id(member_id);
-        let council_budget = 5_000_000;
-
-        assert!(Council::set_budget(RawOrigin::Root.into(), council_budget).is_ok());
-
-        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id,
-                title: b"title".to_vec(),
-                description: b"body".to_vec(),
-                staking_account_id: Some(account_id.clone()),
-                exact_execution_block: None,
-            };
-
-            ProposalCodex::create_proposal(
-                RawOrigin::Signed(account_id.clone()).into(),
-                general_proposal_parameters,
-                ProposalDetails::CreateBlogPost(vec![0u8], vec![0u8]),
-            )
-        })
-        .with_member_id(member_id as u64);
-
-        assert_eq!(Blog::post_count(), 0);
-
-        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
-        let params = <Runtime as proposals_codex::Trait>::CreateBlogPostProposalParameters::get();
-        run_to_block(System::block_number() + params.grace_period + 1);
-
-        assert_eq!(Blog::post_count(), 1);
-    });
-}
-
-#[test]
-fn edit_blog_post_proposal_execution_succeeds() {
-    initial_test_ext().execute_with(|| {
-        let member_id = create_new_members(1)[0];
-        let account_id = account_from_member_id(member_id);
-        let council_budget = 5_000_000;
-
-        assert!(Council::set_budget(RawOrigin::Root.into(), council_budget).is_ok());
-
-        let post_id = Blog::post_count();
-        Blog::create_post(RawOrigin::Root.into(), vec![0u8], vec![0u8]).unwrap();
-
-        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id,
-                title: b"title".to_vec(),
-                description: b"body".to_vec(),
-                staking_account_id: Some(account_id.clone()),
-                exact_execution_block: None,
-            };
-
-            ProposalCodex::create_proposal(
-                RawOrigin::Signed(account_id.clone()).into(),
-                general_proposal_parameters,
-                ProposalDetails::EditBlogPost(post_id, Some(vec![1u8]), None),
-            )
-        })
-        .with_member_id(member_id as u64);
-
-        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
-        let params = <Runtime as proposals_codex::Trait>::EditBlogPostProoposalParamters::get();
-        run_to_block(System::block_number() + params.grace_period + 1);
-
-        assert!(Blog::post_by_id(post_id) == blog::Post::new(&vec![1u8], &vec![0u8]));
-    });
-}
-
-#[test]
-fn lock_blog_post_proposal_execution_succeeds() {
-    initial_test_ext().execute_with(|| {
-        let member_id = create_new_members(1)[0];
-        let account_id = account_from_member_id(member_id);
-        let council_budget = 5_000_000;
-
-        assert!(Council::set_budget(RawOrigin::Root.into(), council_budget).is_ok());
-
-        let post_id = Blog::post_count();
-        Blog::create_post(RawOrigin::Root.into(), vec![0u8], vec![0u8]).unwrap();
-
-        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id,
-                title: b"title".to_vec(),
-                description: b"body".to_vec(),
-                staking_account_id: Some(account_id.clone()),
-                exact_execution_block: None,
-            };
-
-            ProposalCodex::create_proposal(
-                RawOrigin::Signed(account_id.clone()).into(),
-                general_proposal_parameters,
-                ProposalDetails::LockBlogPost(post_id),
-            )
-        })
-        .with_member_id(member_id as u64);
-
-        assert_eq!(Blog::post_by_id(post_id).is_locked(), false);
-
-        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
-        let params = <Runtime as proposals_codex::Trait>::LockBlogPostProposalParameters::get();
-        run_to_block(System::block_number() + params.grace_period + 1);
-
-        assert_eq!(Blog::post_by_id(post_id).is_locked(), true);
-    });
-}
-
-#[test]
-fn unlock_blog_post_proposal_execution_succeeds() {
-    initial_test_ext().execute_with(|| {
-        let member_id = create_new_members(1)[0];
-        let account_id = account_from_member_id(member_id);
-        let council_budget = 5_000_000;
-
-        assert!(Council::set_budget(RawOrigin::Root.into(), council_budget).is_ok());
-
-        let post_id = Blog::post_count();
-        Blog::create_post(RawOrigin::Root.into(), vec![0u8], vec![0u8]).unwrap();
-        Blog::lock_post(RawOrigin::Root.into(), post_id).unwrap();
-
-        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id,
-                title: b"title".to_vec(),
-                description: b"body".to_vec(),
-                staking_account_id: Some(account_id.clone()),
-                exact_execution_block: None,
-            };
-
-            ProposalCodex::create_proposal(
-                RawOrigin::Signed(account_id.clone()).into(),
-                general_proposal_parameters,
-                ProposalDetails::UnlockBlogPost(post_id),
-            )
-        })
-        .with_member_id(member_id as u64);
-
-        assert_eq!(Blog::post_by_id(0).is_locked(), true);
-
-        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
-        let params = <Runtime as proposals_codex::Trait>::UnlockBlogPostProposalParameters::get();
-        run_to_block(System::block_number() + params.grace_period + 1);
-
-        assert_eq!(Blog::post_by_id(0).is_locked(), false);
     });
 }
 

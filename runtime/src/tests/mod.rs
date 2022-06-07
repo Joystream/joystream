@@ -289,10 +289,6 @@ pub(crate) fn max_proposal_stake() -> u128 {
     stakes.push(<Runtime as proposals_codex::Trait>::SetInvitationCountProposalParameters::get());
     stakes.push(<Runtime as proposals_codex::Trait>::SetMembershipLeadInvitationQuotaProposalParameters::get());
     stakes.push(<Runtime as proposals_codex::Trait>::SetReferralCutProposalParameters::get());
-    stakes.push(<Runtime as proposals_codex::Trait>::CreateBlogPostProposalParameters::get());
-    stakes.push(<Runtime as proposals_codex::Trait>::EditBlogPostProoposalParamters::get());
-    stakes.push(<Runtime as proposals_codex::Trait>::LockBlogPostProposalParameters::get());
-    stakes.push(<Runtime as proposals_codex::Trait>::UnlockBlogPostProposalParameters::get());
     stakes.push(<Runtime as proposals_codex::Trait>::VetoProposalProposalParameters::get());
     stakes.push(<Runtime as proposals_codex::Trait>::UpdateChannelPayoutsProposalParameters::get());
 
