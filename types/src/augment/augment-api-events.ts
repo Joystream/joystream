@@ -63,40 +63,6 @@ declare module '@polkadot/api-base/types/events' {
        **/
       Withdraw: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32, amount: u128 }>;
     };
-    blog: {
-      /**
-       * A reply to a reply was created
-       **/
-      DirectReplyCreated: AugmentedEvent<ApiType, [u64, u64, u64, u64, Bytes, bool]>;
-      /**
-       * A post was created
-       **/
-      PostCreated: AugmentedEvent<ApiType, [u64, Bytes, Bytes]>;
-      /**
-       * A post was edited
-       **/
-      PostEdited: AugmentedEvent<ApiType, [u64, Option<Bytes>, Option<Bytes>]>;
-      /**
-       * A post was locked
-       **/
-      PostLocked: AugmentedEvent<ApiType, [u64]>;
-      /**
-       * A post was unlocked
-       **/
-      PostUnlocked: AugmentedEvent<ApiType, [u64]>;
-      /**
-       * A reply to a post was created
-       **/
-      ReplyCreated: AugmentedEvent<ApiType, [u64, u64, u64, Bytes, bool]>;
-      /**
-       * A reply was deleted from storage
-       **/
-      ReplyDeleted: AugmentedEvent<ApiType, [u64, u64, u64, bool]>;
-      /**
-       * A reply was edited
-       **/
-      ReplyEdited: AugmentedEvent<ApiType, [u64, u64, u64, Bytes]>;
-    };
     constitution: {
       /**
        * Emits on constitution amendment.
