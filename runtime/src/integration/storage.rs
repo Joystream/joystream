@@ -12,7 +12,7 @@ impl storage::data_directory::StorageProviderHelper<Runtime> for StorageProvider
 
         let live_ids: Vec<ActorId> = ids
             .into_iter()
-            .filter(|id| !<service_discovery::Module<Runtime>>::is_account_info_expired(id))
+            .filter(|id| !<service_discovery::Pallet<Runtime>>::is_account_info_expired(id))
             .collect();
 
         if live_ids.is_empty() {

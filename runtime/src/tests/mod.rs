@@ -13,11 +13,11 @@ use frame_system::RawOrigin;
 use referendum::ReferendumManager;
 use sp_runtime::{AccountId32, BuildStorage};
 
-type Membership = membership::Module<Runtime>;
-type System = frame_system::Module<Runtime>;
-type ProposalsEngine = proposals_engine::Module<Runtime>;
-type Council = council::Module<Runtime>;
-type Referendum = referendum::Module<Runtime, ReferendumInstance>;
+type Membership = membership::Pallet<Runtime>;
+type System = frame_system::Pallet<Runtime>;
+type ProposalsEngine = proposals_engine::Pallet<Runtime>;
+type Council = council::Pallet<Runtime>;
+type Referendum = referendum::Pallet<Runtime, ReferendumInstance>;
 
 pub(crate) fn initial_test_ext() -> sp_io::TestExternalities {
     let mut t = frame_system::GenesisConfig::default()
@@ -228,7 +228,7 @@ pub(crate) fn increase_total_balance_issuance_using_account_id(
     account_id: AccountId32,
     balance: u128,
 ) {
-    type Balances = pallet_balances::Module<Runtime>;
+    type Balances = pallet_balances::Pallet<Runtime>;
     let initial_balance = Balances::total_issuance();
     {
         let _ = Balances::deposit_creating(&account_id, balance);

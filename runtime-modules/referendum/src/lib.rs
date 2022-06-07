@@ -406,7 +406,7 @@ decl_module! {
 
         // No origin so this is a priviledged call
         fn on_initialize() -> Weight {
-            Self::try_progress_stage(frame_system::Module::<T>::block_number());
+            Self::try_progress_stage(frame_system::Pallet::<T>::block_number());
 
             ReferendumWeightInfo::<T, I>::on_initialize_voting()
                 .max(ReferendumWeightInfo::<T, I>::on_initialize_revealing(
@@ -656,7 +656,7 @@ impl<T: Config<I>, I: Instance> Mutations<T, I> {
         Stage::<T, I>::put(ReferendumStage::Voting(ReferendumStageVoting::<
             T::BlockNumber,
         > {
-            started: <frame_system::Module<T>>::block_number(),
+            started: <frame_system::Pallet<T>>::block_number(),
             winning_target_count: *winning_target_count,
             current_cycle_id: *cycle_id,
         }));
@@ -669,7 +669,7 @@ impl<T: Config<I>, I: Instance> Mutations<T, I> {
             T,
             I,
         > {
-            started: <frame_system::Module<T>>::block_number(),
+            started: <frame_system::Pallet<T>>::block_number(),
             winning_target_count: old_stage.winning_target_count,
             intermediate_winners: vec![],
             current_cycle_id: old_stage.current_cycle_id,

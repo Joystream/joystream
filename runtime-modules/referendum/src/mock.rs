@@ -302,7 +302,7 @@ impl balances::Config for Runtime {
     type Event = Event;
     type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
-    type AccountStore = frame_system::Module<Self>;
+    type AccountStore = frame_system::Pallet<Self>;
     type WeightInfo = ();
     type MaxLocks = MaxLocks;
 }
@@ -454,23 +454,23 @@ where
     }
 
     pub fn increase_block_number(increase: u64) -> () {
-        let mut block_number = frame_system::Module::<T>::block_number();
+        let mut block_number = frame_system::Pallet::<T>::block_number();
 
         for _ in 0..increase {
-            <frame_system::Module<T> as OnFinalize<T::BlockNumber>>::on_finalize(block_number);
+            <frame_system::Pallet<T> as OnFinalize<T::BlockNumber>>::on_finalize(block_number);
             <Module<T, I> as OnFinalize<T::BlockNumber>>::on_finalize(block_number);
             block_number = block_number + One::one();
-            frame_system::Module::<T>::set_block_number(block_number);
-            <frame_system::Module<T> as OnInitialize<T::BlockNumber>>::on_initialize(block_number);
+            frame_system::Pallet::<T>::set_block_number(block_number);
+            <frame_system::Pallet<T> as OnInitialize<T::BlockNumber>>::on_initialize(block_number);
             <Module<T, I> as OnInitialize<T::BlockNumber>>::on_initialize(block_number);
         }
     }
 
     pub fn move_to_block(block_number: T::BlockNumber) {
-        let mut current_block = frame_system::Module::<T>::block_number();
+        let mut current_block = frame_system::Pallet::<T>::block_number();
         while current_block < block_number {
             Self::increase_block_number(1);
-            current_block = frame_system::Module::<T>::block_number();
+            current_block = frame_system::Pallet::<T>::block_number();
         }
     }
 

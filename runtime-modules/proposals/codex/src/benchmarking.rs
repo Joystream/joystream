@@ -233,7 +233,7 @@ benchmarks! {
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
 
-        council::Module::<T>::set_budget(
+        council::Pallet::<T>::set_budget(
             RawOrigin::Root.into(),
             council::Balance::<T>::max_value()
         ).unwrap();

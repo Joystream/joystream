@@ -1,5 +1,4 @@
 #![allow(clippy::type_complexity)]
-
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use crate::Module as ProposalsDiscussion;

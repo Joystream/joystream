@@ -42,7 +42,7 @@ impl CreateAccountId for sp_core::crypto::AccountId32 {
 pub type ForumWorkingGroupInstance = working_group::Instance1;
 
 // Alias for forum working group
-type ForumGroup<T> = working_group::Module<T, ForumWorkingGroupInstance>;
+type ForumGroup<T> = working_group::Pallet<T, ForumWorkingGroupInstance>;
 
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Config>::Balance;
@@ -341,7 +341,7 @@ pub fn generate_poll<T: Config>(
 ) -> Poll<T::Moment, T::Hash> {
     Poll {
         description_hash: T::calculate_hash(good_poll_description().as_slice()),
-        end_time: pallet_timestamp::Module::<T>::now() + expiration_diff,
+        end_time: pallet_timestamp::Pallet::<T>::now() + expiration_diff,
         poll_alternatives: {
             let mut alternatives = vec![];
             for _ in 0..alternatives_number {

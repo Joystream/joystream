@@ -20,7 +20,7 @@ use crate::{
     StorageWorkingGroupStakingManager,
 };
 
-type WorkingGroupInstance<T, I> = working_group::Module<T, I>;
+type WorkingGroupInstance<T, I> = working_group::Pallet<T, I>;
 
 fn add_opening(
     member_id: MemberId,

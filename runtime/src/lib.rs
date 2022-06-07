@@ -514,8 +514,8 @@ impl content_directory::Config for Runtime {
 
 // The referendum instance alias.
 pub type ReferendumInstance = referendum::Instance1;
-pub type ReferendumModule = referendum::Module<Runtime, ReferendumInstance>;
-pub type CouncilModule = council::Module<Runtime>;
+pub type ReferendumModule = referendum::Pallet<Runtime, ReferendumInstance>;
+pub type CouncilModule = council::Pallet<Runtime>;
 
 parameter_types! {
     // referendum parameters
@@ -616,8 +616,8 @@ impl council::Config for Runtime {
     type WeightInfo = weights::council::WeightInfo;
 
     fn new_council_elected(_elected_members: &[council::CouncilMemberOf<Self>]) {
-        <proposals_engine::Module<Runtime>>::reject_active_proposals();
-        <proposals_engine::Module<Runtime>>::reactivate_pending_constitutionality_proposals();
+        <proposals_engine::Pallet<Runtime>>::reject_active_proposals();
+        <proposals_engine::Pallet<Runtime>>::reactivate_pending_constitutionality_proposals();
     }
 
     type MemberOriginValidator = Members;

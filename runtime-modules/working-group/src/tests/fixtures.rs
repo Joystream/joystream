@@ -617,7 +617,7 @@ impl LeaveWorkerRoleFixture {
             if worker.job_unstaking_period > 0 {
                 assert_eq!(
                     worker.started_leaving_at,
-                    Some(<frame_system::Module<Test>>::block_number())
+                    Some(<frame_system::Pallet<Test>>::block_number())
                 );
                 return;
             }

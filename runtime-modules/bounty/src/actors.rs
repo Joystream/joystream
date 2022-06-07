@@ -155,13 +155,13 @@ impl<T: Config> BountyActorManager<T> {
         T::CouncilBudgetManager::set_budget(new_budget);
 
         let bounty_account_id = Module::<T>::bounty_account_id(bounty_id);
-        let _ = balances::Module::<T>::deposit_creating(&bounty_account_id, amount);
+        let _ = balances::Pallet::<T>::deposit_creating(&bounty_account_id, amount);
     }
 
     // Add some balance from the council budget and slash from the bounty account.
     fn transfer_balance_to_council_budget(bounty_id: T::BountyId, amount: BalanceOf<T>) {
         let bounty_account_id = Module::<T>::bounty_account_id(bounty_id);
-        let _ = balances::Module::<T>::slash(&bounty_account_id, amount);
+        let _ = balances::Pallet::<T>::slash(&bounty_account_id, amount);
 
         let budget = T::CouncilBudgetManager::get_budget();
         let new_budget = budget.saturating_add(amount);

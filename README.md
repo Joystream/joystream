@@ -89,7 +89,7 @@ You can also run your our own joystream-node:
 
 ```sh
 git checkout master
-WASM_BUILD_TOOLCHAIN=nightly-2020-10-06 cargo build --release
+WASM_BUILD_TOOLCHAIN=nightly-2022-05-11 cargo build --release
 ./target/release/joystream-node -- --pruning archive --chain testnets/joy-testnet-4.json
 ```
 

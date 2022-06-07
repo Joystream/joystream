@@ -1169,7 +1169,7 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
 
     // Wrapper-function over frame_system::block_number()
     fn current_block() -> T::BlockNumber {
-        <frame_system::Module<T>>::block_number()
+        <frame_system::Pallet<T>>::block_number()
     }
 
     // Increases active worker counter (saturating).
@@ -1343,7 +1343,7 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
         let new_budget = budget.saturating_sub(amount);
         <Budget<T, I>>::put(new_budget);
 
-        let _ = <balances::Module<T>>::deposit_creating(account_id, amount);
+        let _ = <balances::Pallet<T>>::deposit_creating(account_id, amount);
     }
 
     // Helper-function joining the reward payment with the event.

@@ -60,6 +60,7 @@ use sp_arithmetic::traits::{One, Zero};
 use sp_arithmetic::Perbill;
 use sp_runtime::traits::{Hash, Saturating};
 use sp_runtime::SaturatedConversion;
+use sp_std::convert::TryInto;
 use sp_std::vec::Vec;
 
 use common::membership::{MemberOriginValidator, MembershipInfoProvider};
@@ -411,7 +412,7 @@ decl_module! {
 
             // Ensure enough free balance to cover membership fee.
             ensure!(
-                balances::Module::<T>::usable_balance(&who) >= fee,
+                balances::Pallet::<T>::usable_balance(&who) >= fee,
                 Error::<T>::NotEnoughBalanceToBuyMembership
             );
 
@@ -438,14 +439,14 @@ decl_module! {
             )?;
 
             // Collect membership fee (just burn it).
-            let _ = balances::Module::<T>::slash(&who, fee);
+            let _ = balances::Pallet::<T>::slash(&who, fee);
 
             // Reward the referring member.
             if let Some(referrer) = referrer {
                 let referral_cut: BalanceOf<T> = Self::get_referral_bonus();
 
                 if referral_cut > Zero::zero() {
-                    let _ = balances::Module::<T>::deposit_creating(
+                    let _ = balances::Pallet::<T>::deposit_creating(
                         &referrer.controller_account,
                         referral_cut
                     );
@@ -738,7 +739,7 @@ decl_module! {
             T::WorkingGroup::set_budget(new_wg_budget);
 
             // Create default balance for the invited member.
-            let _ = balances::Module::<T>::deposit_creating(
+            let _ = balances::Pallet::<T>::deposit_creating(
                 &params.controller_account,
                 default_invitation_balance
             );

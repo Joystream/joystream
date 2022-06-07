@@ -1240,7 +1240,7 @@ decl_module! {
 impl<T: Config> Module<T> {
     // Wrapper-function over System::block_number()
     pub(crate) fn current_block() -> T::BlockNumber {
-        <frame_system::Module<T>>::block_number()
+        <frame_system::Pallet<T>>::block_number()
     }
 
     // Validates parameters for a bounty creation.
@@ -1318,7 +1318,7 @@ impl<T: Config> Module<T> {
 
     // Verifies that member balance is sufficient for a bounty.
     fn check_balance_for_account(amount: BalanceOf<T>, account_id: &T::AccountId) -> bool {
-        balances::Module::<T>::usable_balance(account_id) >= amount
+        balances::Pallet::<T>::usable_balance(account_id) >= amount
     }
 
     // Transfer funds from the member account to the bounty account.
@@ -1329,7 +1329,7 @@ impl<T: Config> Module<T> {
     ) -> DispatchResult {
         let bounty_account_id = Self::bounty_account_id(bounty_id);
 
-        <balances::Module<T> as Currency<T::AccountId>>::transfer(
+        <balances::Pallet<T> as Currency<T::AccountId>>::transfer(
             account_id,
             &bounty_account_id,
             amount,
@@ -1345,7 +1345,7 @@ impl<T: Config> Module<T> {
     ) -> DispatchResult {
         let bounty_account_id = Self::bounty_account_id(bounty_id);
 
-        <balances::Module<T> as Currency<T::AccountId>>::transfer(
+        <balances::Pallet<T> as Currency<T::AccountId>>::transfer(
             &bounty_account_id,
             account_id,
             amount,
@@ -1385,9 +1385,9 @@ impl<T: Config> Module<T> {
 
         // Slash remaining funds.
         let bounty_account_id = Self::bounty_account_id(*bounty_id);
-        let all = balances::Module::<T>::usable_balance(&bounty_account_id);
+        let all = balances::Pallet::<T>::usable_balance(&bounty_account_id);
         if all != Zero::zero() {
-            let _ = balances::Module::<T>::slash(&bounty_account_id, all);
+            let _ = balances::Pallet::<T>::slash(&bounty_account_id, all);
         }
 
         Self::deposit_event(RawEvent::BountyRemoved(*bounty_id));

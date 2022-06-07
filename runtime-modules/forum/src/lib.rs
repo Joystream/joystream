@@ -52,7 +52,7 @@ pub type ThreadOf<T> = Thread<
     BalanceOf<T>,
 >;
 
-type Balances<T> = balances::Module<T>;
+type Balances<T> = balances::Pallet<T>;
 
 /// pallet_forum WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -1356,7 +1356,7 @@ decl_module! {
             // Update post text
             let text_hash = T::calculate_hash(&new_text);
             post.text_hash = text_hash;
-            post.last_edited = frame_system::Module::<T>::block_number();
+            post.last_edited = frame_system::Pallet::<T>::block_number();
 
             <PostById<T>>::insert(thread_id, post_id, post);
 
@@ -1587,7 +1587,7 @@ impl<T: Config> Module<T> {
                 thread_id,
                 author_id,
                 cleanup_pay_off: T::PostDeposit::get(),
-                last_edited: frame_system::Module::<T>::block_number(),
+                last_edited: frame_system::Pallet::<T>::block_number(),
             };
 
             <PostById<T>>::insert(thread_id, new_post_id, new_post);
@@ -1626,7 +1626,7 @@ impl<T: Config> Module<T> {
     // Ensure poll is valid
     fn ensure_poll_is_valid(poll: &Poll<T::Moment, T::Hash>) -> Result<(), Error<T>> {
         // Poll end time must larger than now
-        if poll.end_time < <pallet_timestamp::Module<T>>::now() {
+        if poll.end_time < <pallet_timestamp::Pallet<T>>::now() {
             return Err(Error::<T>::PollTimeSetting);
         }
 
@@ -1736,7 +1736,7 @@ impl<T: Config> Module<T> {
         thread_id: &T::ThreadId,
         category_id: &T::CategoryId,
     ) -> bool {
-        frame_system::Module::<T>::block_number() >= T::PostLifeTime::get() + post.last_edited
+        frame_system::Pallet::<T>::block_number() >= T::PostLifeTime::get() + post.last_edited
             && !Self::thread_exists(&category_id, &thread_id)
     }
 
@@ -2229,7 +2229,7 @@ impl<T: Config> Module<T> {
         );
 
         // Poll not expired
-        if poll.end_time < <pallet_timestamp::Module<T>>::now() {
+        if poll.end_time < <pallet_timestamp::Pallet<T>>::now() {
             Err(Error::<T>::PollCommitExpired)
         } else {
             let alternative_length = poll.poll_alternatives.len();

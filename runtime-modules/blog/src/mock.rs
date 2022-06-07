@@ -295,10 +295,10 @@ pub struct ExtBuilder;
 pub(crate) fn run_to_block(n: u64) {
     while System::block_number() < n {
         <System as OnFinalize<u64>>::on_finalize(System::block_number());
-        <crate::Module<Runtime> as OnFinalize<u64>>::on_finalize(System::block_number());
+        <crate::Pallet<Runtime> as OnFinalize<u64>>::on_finalize(System::block_number());
         System::set_block_number(System::block_number() + 1);
         <System as OnInitialize<u64>>::on_initialize(System::block_number());
-        <crate::Module<Runtime> as OnInitialize<u64>>::on_initialize(System::block_number());
+        <crate::Pallet<Runtime> as OnInitialize<u64>>::on_initialize(System::block_number());
     }
 }
 

@@ -17,6 +17,7 @@ use codec::{Decode, Encode};
 use frame_support::weights::Weight;
 use frame_support::{decl_event, decl_module, decl_storage};
 use frame_system::ensure_root;
+use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::traits::Hash;
@@ -40,7 +41,7 @@ pub trait Config: frame_system::Config {
 
 /// Contains constitution text hash and its amendment number.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default, TypeInfo)]
 pub struct ConstitutionInfo {
     /// Constitution text hash.
     pub text_hash: Vec<u8>,

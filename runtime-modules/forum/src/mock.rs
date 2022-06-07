@@ -107,7 +107,7 @@ pub type ForumWorkingGroupInstance = working_group::Instance1;
 impl working_group::Config<ForumWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingAccountValidator = membership::Module<Runtime>;
+    type StakingAccountValidator = membership::Pallet<Runtime>;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();

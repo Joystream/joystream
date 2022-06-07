@@ -70,7 +70,7 @@ impl common::membership::Config for Runtime {
 impl Config for Runtime {
     type Event = Event;
 
-    type Referendum = referendum::Module<Runtime, ReferendumInstance>;
+    type Referendum = referendum::Pallet<Runtime, ReferendumInstance>;
 
     type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
     type CouncilSize = CouncilSize;
@@ -673,19 +673,19 @@ where
     }
 
     pub fn increase_block_number(increase: u64) -> () {
-        let mut block_number = frame_system::Module::<T>::block_number();
+        let mut block_number = frame_system::Pallet::<T>::block_number();
 
         for _ in 0..increase {
             <Module<T> as OnFinalize<T::BlockNumber>>::on_finalize(block_number);
-            <referendum::Module<Runtime, ReferendumInstance> as OnFinalize<
+            <referendum::Pallet<Runtime, ReferendumInstance> as OnFinalize<
                 <Runtime as frame_system::Config>::BlockNumber,
             >>::on_finalize(block_number.into());
 
             block_number = block_number + 1.into();
-            frame_system::Module::<T>::set_block_number(block_number);
+            frame_system::Pallet::<T>::set_block_number(block_number);
 
             <Module<T> as OnInitialize<T::BlockNumber>>::on_initialize(block_number);
-            <referendum::Module<Runtime, ReferendumInstance> as OnInitialize<
+            <referendum::Pallet<Runtime, ReferendumInstance> as OnInitialize<
                 <Runtime as frame_system::Config>::BlockNumber,
             >>::on_initialize(block_number.into());
         }
@@ -1154,7 +1154,7 @@ where
                     ))));
 
             assert_eq!(
-                balances::Module::<T>::free_balance(funding_request.account.clone()),
+                balances::Pallet::<T>::free_balance(funding_request.account.clone()),
                 funding_request.amount
             );
         }

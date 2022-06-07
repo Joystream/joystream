@@ -35,8 +35,8 @@
 //!         pub fn create_discussion(origin, title: Vec<u8>, author_id : T::MemberId) {
 //!             ensure_root(origin)?;
 //!             let thread_mode = ThreadMode::Open;
-//!             <discussions::Module<T>>::ensure_can_create_thread(&thread_mode)?;
-//!             <discussions::Module<T>>::create_thread(author_id, thread_mode)?;
+//!             <discussions::Pallet<T>>::ensure_can_create_thread(&thread_mode)?;
+//!             <discussions::Pallet<T>>::create_thread(author_id, thread_mode)?;
 //!         }
 //!     }
 //! }
@@ -76,7 +76,7 @@ pub use types::ThreadMode;
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
-type Balances<T> = balances::Module<T>;
+type Balances<T> = balances::Pallet<T>;
 
 /// Proposals discussion WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -268,7 +268,7 @@ decl_module! {
                 let new_post = DiscussionPost {
                     author_id: post_author_id,
                     cleanup_pay_off: T::PostDeposit::get(),
-                    last_edited: frame_system::Module::<T>::block_number(),
+                    last_edited: frame_system::Pallet::<T>::block_number(),
                 };
 
                 <PostThreadIdByPostId<T>>::insert(thread_id, post_id, new_post);
@@ -366,7 +366,7 @@ decl_module! {
             <PostThreadIdByPostId<T>>::mutate(
                 thread_id,
                 post_id,
-                |new_post| new_post.last_edited = frame_system::Module::<T>::block_number()
+                |new_post| new_post.last_edited = frame_system::Pallet::<T>::block_number()
             );
             Self::deposit_event(RawEvent::PostUpdated(post_id, post_author_id, thread_id, text));
        }
@@ -471,14 +471,14 @@ impl<T: Config> Module<T> {
 impl<T: Config> Module<T> {
     // Wrapper-function over System::block_number()
     fn current_block() -> T::BlockNumber {
-        <frame_system::Module<T>>::block_number()
+        <frame_system::Pallet<T>>::block_number()
     }
 
     fn anyone_can_delete_post(thread_id: T::ThreadId, post_id: T::PostId) -> bool {
         let thread_exists = <ThreadById<T>>::contains_key(thread_id);
         let post = <PostThreadIdByPostId<T>>::get(thread_id, post_id);
         !thread_exists
-            && frame_system::Module::<T>::block_number().saturating_sub(post.last_edited)
+            && frame_system::Pallet::<T>::block_number().saturating_sub(post.last_edited)
                 >= T::PostLifeTime::get()
     }
 

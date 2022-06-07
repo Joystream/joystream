@@ -95,7 +95,7 @@
 //!                 .to_vec();
 //!             let encoded_proposal_code = <Call<T>>::executable_proposal().encode();
 //!
-//!             <engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
+//!             <engine::Pallet<T>>::ensure_create_proposal_parameters_are_valid(
 //!                 &parameters,
 //!                 &title,
 //!                 &description,
@@ -115,7 +115,7 @@
 //!                 exact_execution_block: None,
 //!             };
 //!
-//!             <engine::Module<T>>::create_proposal(creation_parameters)?;
+//!             <engine::Pallet<T>>::create_proposal(creation_parameters)?;
 //!         }
 //!     }
 //! }
@@ -812,7 +812,7 @@ impl<T: Config> Module<T> {
 
     // Wrapper-function over System::block_number()
     fn current_block() -> T::BlockNumber {
-        <frame_system::Module<T>>::block_number()
+        <frame_system::Pallet<T>>::block_number()
     }
 
     // Executes proposal code.

@@ -95,36 +95,36 @@ impl<
         amount: <T as pallet_balances::Config>::Balance,
         reasons: WithdrawReasons,
     ) {
-        <pallet_balances::Module<T>>::set_lock(LockId::get(), &account_id, amount, reasons)
+        <pallet_balances::Pallet<T>>::set_lock(LockId::get(), account_id, amount, reasons)
     }
 
     fn unlock(account_id: &<T as frame_system::Config>::AccountId) {
-        <pallet_balances::Module<T>>::remove_lock(LockId::get(), &account_id);
+        <pallet_balances::Pallet<T>>::remove_lock(LockId::get(), account_id);
     }
 
     fn slash(
         account_id: &<T as frame_system::Config>::AccountId,
         amount: Option<<T as pallet_balances::Config>::Balance>,
     ) -> <T as pallet_balances::Config>::Balance {
-        let locks = pallet_balances::Module::<T>::locks(&account_id);
+        let locks = pallet_balances::Pallet::<T>::locks(&account_id);
 
         let existing_lock = locks.iter().find(|lock| lock.id == LockId::get());
 
         let mut actually_slashed_balance = Default::default();
         if let Some(existing_lock) = existing_lock {
-            Self::unlock(&account_id);
+            Self::unlock(account_id);
 
             let mut slashable_amount = existing_lock.amount;
             if let Some(amount) = amount {
                 if existing_lock.amount > amount {
                     let new_amount = existing_lock.amount - amount;
-                    Self::lock(&account_id, new_amount);
+                    Self::lock(account_id, new_amount);
 
                     slashable_amount = amount;
                 }
             }
 
-            let _ = pallet_balances::Module::<T>::slash(&account_id, slashable_amount);
+            let _ = pallet_balances::Pallet::<T>::slash(account_id, slashable_amount);
 
             actually_slashed_balance = slashable_amount
         }
@@ -148,7 +148,7 @@ impl<
             return Ok(());
         }
 
-        let usable_balance = <pallet_balances::Module<T>>::usable_balance(account_id);
+        let usable_balance = <pallet_balances::Pallet<T>>::usable_balance(account_id);
 
         if new_stake > current_stake + usable_balance {
             return Err(DispatchError::Other("Not enough balance for a new stake."));
@@ -160,7 +160,7 @@ impl<
     }
 
     fn is_account_free_of_conflicting_stakes(account_id: &T::AccountId) -> bool {
-        let locks = <pallet_balances::Module<T>>::locks(&account_id);
+        let locks = <pallet_balances::Pallet<T>>::locks(&account_id);
         let lock_ids: Vec<LockIdentifier> =
             locks.iter().map(|balance_lock| balance_lock.id).collect();
 
@@ -171,13 +171,13 @@ impl<
         account_id: &<T as frame_system::Config>::AccountId,
         amount: <T as pallet_balances::Config>::Balance,
     ) -> bool {
-        <pallet_balances::Module<T>>::usable_balance(account_id) >= amount
+        <pallet_balances::Pallet<T>>::usable_balance(account_id) >= amount
     }
 
     fn current_stake(
         account_id: &<T as frame_system::Config>::AccountId,
     ) -> <T as pallet_balances::Config>::Balance {
-        let locks = <pallet_balances::Module<T>>::locks(&account_id);
+        let locks = <pallet_balances::Pallet<T>>::locks(&account_id);
 
         let existing_lock = locks.iter().find(|lock| lock.id == LockId::get());
 

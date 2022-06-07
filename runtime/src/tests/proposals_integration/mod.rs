@@ -29,14 +29,14 @@ use super::{
 use crate::tests::elect_council;
 use crate::CouncilManager;
 
-pub type Balances = pallet_balances::Module<Runtime>;
-pub type System = frame_system::Module<Runtime>;
-pub type ProposalsEngine = proposals_engine::Module<Runtime>;
-pub type ProposalsCodex = proposals_codex::Module<Runtime>;
-pub type Council = council::Module<Runtime>;
-pub type Membership = membership::Module<Runtime>;
-pub type MembershipWorkingGroup = working_group::Module<Runtime, MembershipWorkingGroupInstance>;
-pub type Blog = blog::Module<Runtime, BlogInstance>;
+pub type Balances = pallet_balances::Pallet<Runtime>;
+pub type System = frame_system::Pallet<Runtime>;
+pub type ProposalsEngine = proposals_engine::Pallet<Runtime>;
+pub type ProposalsCodex = proposals_codex::Pallet<Runtime>;
+pub type Council = council::Pallet<Runtime>;
+pub type Membership = membership::Pallet<Runtime>;
+pub type MembershipWorkingGroup = working_group::Pallet<Runtime, MembershipWorkingGroupInstance>;
+pub type Blog = blog::Pallet<Runtime, BlogInstance>;
 
 fn setup_members(count: u8) {
     for i in 0..count {

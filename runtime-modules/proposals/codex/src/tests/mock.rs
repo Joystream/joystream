@@ -211,7 +211,7 @@ impl proposals_engine::Config for Test {
     type DescriptionMaxLength = DescriptionMaxLength;
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
     type DispatchableCallCode = crate::Call<Test>;
-    type ProposalObserver = crate::Module<Test>;
+    type ProposalObserver = crate::Pallet<Test>;
     type WeightInfo = MockProposalsEngineWeight;
     type StakingAccountValidator = ();
 }
@@ -615,7 +615,7 @@ pub type ReferendumInstance = referendum::Instance0;
 impl council::Config for Test {
     type Event = Event;
 
-    type Referendum = referendum::Module<Test, ReferendumInstance>;
+    type Referendum = referendum::Pallet<Test, ReferendumInstance>;
 
     type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
     type CouncilSize = CouncilSize;
@@ -731,23 +731,23 @@ impl referendum::Config<ReferendumInstance> for Test {
                 vote_power: item.vote_power.into(),
             })
             .collect();
-        <council::Module<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(
+        <council::Pallet<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(
             tmp_winners.as_slice(),
         );
     }
 
     fn is_valid_option_id(option_index: &u64) -> bool {
-        <council::Module<Test> as council::ReferendumConnection<Test>>::is_valid_candidate_id(
+        <council::Pallet<Test> as council::ReferendumConnection<Test>>::is_valid_candidate_id(
             option_index,
         )
     }
 
     fn get_option_power(option_id: &u64) -> Self::VotePower {
-        <council::Module<Test> as council::ReferendumConnection<Test>>::get_option_power(option_id)
+        <council::Pallet<Test> as council::ReferendumConnection<Test>>::get_option_power(option_id)
     }
 
     fn increase_option_power(option_id: &u64, amount: &Self::VotePower) {
-        <council::Module<Test> as council::ReferendumConnection<Test>>::increase_option_power(
+        <council::Pallet<Test> as council::ReferendumConnection<Test>>::increase_option_power(
             option_id, amount,
         );
     }

@@ -1,5 +1,4 @@
 #![allow(clippy::type_complexity)]
-
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use frame_benchmarking::{account, benchmarks_instance, Zero};
@@ -46,7 +45,7 @@ fn start_voting_cycle<T: Config<I>, I: Instance>(winning_target_count: u32) {
 
 fn funded_account<T: Config<I>, I: Instance>(name: &'static str, id: u32) -> T::AccountId {
     let account_id = account::<T::AccountId>(name, id, SEED);
-    balances::Module::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
+    balances::Pallet::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
     account_id
 }
@@ -238,7 +237,7 @@ fn member_funded_account<T: Config<I> + membership::Config, I: Instance>(
 
     Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
-    balances::Module::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
+    balances::Pallet::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
     Membership::<T>::add_staking_account_candidate(
         RawOrigin::Signed(account_id.clone()).into(),

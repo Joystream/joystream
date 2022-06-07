@@ -71,7 +71,7 @@ pub type ParticipantId<T> = common::MemberId<T>;
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
-type Balances<T> = balances::Module<T>;
+type Balances<T> = balances::Pallet<T>;
 
 /// blog WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -318,7 +318,7 @@ impl<T: Config<I>, I: Instance> Reply<T, I> {
             owner,
             parent_id,
             cleanup_pay_off,
-            last_edited: frame_system::Module::<T>::block_number(),
+            last_edited: frame_system::Pallet::<T>::block_number(),
         }
     }
 
@@ -330,7 +330,7 @@ impl<T: Config<I>, I: Instance> Reply<T, I> {
     /// Update reply`s text
     fn update(&mut self, new_text: Vec<u8>) {
         self.text_hash = T::Hashing::hash(&new_text);
-        self.last_edited = frame_system::Module::<T>::block_number()
+        self.last_edited = frame_system::Pallet::<T>::block_number()
     }
 }
 
@@ -681,7 +681,7 @@ decl_module! {
                 let reply = Self::ensure_reply_exists(post_id, reply_id)?;
 
                 // Ensure reply -> owner relation exists if post lifetime hasn't ran out
-                if (frame_system::Module::<T>::block_number().saturating_sub(reply.last_edited)) <
+                if (frame_system::Pallet::<T>::block_number().saturating_sub(reply.last_edited)) <
                     T::ReplyLifetime::get()
                 {
                     Self::ensure_reply_ownership(&reply, &participant_id)?;

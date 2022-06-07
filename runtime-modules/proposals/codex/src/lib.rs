@@ -480,7 +480,7 @@ decl_module! {
                     general_proposal_parameters.member_id
                 )?;
 
-            <proposals_engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
+            <proposals_engine::Pallet<T>>::ensure_create_proposal_parameters_are_valid(
                 &proposal_parameters,
                 &general_proposal_parameters.title,
                 &general_proposal_parameters.description,
@@ -490,9 +490,9 @@ decl_module! {
             )?;
 
             let initial_thread_mode = ThreadMode::Open;
-            <proposals_discussion::Module<T>>::ensure_can_create_thread(&initial_thread_mode)?;
+            <proposals_discussion::Pallet<T>>::ensure_can_create_thread(&initial_thread_mode)?;
 
-            let discussion_thread_id = <proposals_discussion::Module<T>>::create_thread(
+            let discussion_thread_id = <proposals_discussion::Pallet<T>>::create_thread(
                 general_proposal_parameters.member_id,
                 initial_thread_mode,
             )?;
@@ -509,7 +509,7 @@ decl_module! {
             };
 
             let proposal_id =
-                <proposals_engine::Module<T>>::create_proposal(proposal_creation_params)?;
+                <proposals_engine::Pallet<T>>::create_proposal(proposal_creation_params)?;
 
             <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
 
@@ -569,7 +569,7 @@ impl<T: Config> Module<T> {
                 // We shouldn't access the storage for creation checks but we do it here for the
                 // reasons just explained **as an exception**.
                 ensure!(
-                    *new_validator_count >= <staking::Module<T>>::minimum_validator_count(),
+                    *new_validator_count >= <staking::Pallet<T>>::minimum_validator_count(),
                     Error::<T>::InvalidValidatorCount
                 );
 

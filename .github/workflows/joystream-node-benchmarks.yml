@@ -35,7 +35,7 @@ jobs:
       - name: Build
         run: |
           pushd node
-          WASM_BUILD_TOOLCHAIN=nightly-2020-10-06 cargo build --release --features runtime-benchmarks
+          WASM_BUILD_TOOLCHAIN=nightly-2022-05-11 cargo build --release --features runtime-benchmarks
           popd
         if: env.GIT_DIFF
 

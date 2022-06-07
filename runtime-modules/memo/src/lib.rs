@@ -35,7 +35,7 @@ decl_module! {
         fn update_memo(origin, memo: MemoText) {
             let sender = ensure_signed(origin)?;
 
-            ensure!(!<balances::Module<T>>::total_balance(&sender).is_zero(), "account must have a balance");
+            ensure!(!<balances::Pallet<T>>::total_balance(&sender).is_zero(), "account must have a balance");
             ensure!(memo.len() as u32 <= Self::max_memo_length(), "memo too long");
 
             <Memo<T>>::insert(&sender, memo.clone());

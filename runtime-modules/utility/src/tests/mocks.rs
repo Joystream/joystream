@@ -340,7 +340,7 @@ impl working_group::Config<ContentDirectoryWorkingGroupInstance> for Test {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId1>;
-    type StakingAccountValidator = membership::Module<Test>;
+    type StakingAccountValidator = membership::Pallet<Test>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
@@ -422,7 +422,7 @@ impl working_group::Config<StorageWorkingGroupInstance> for Test {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;
-    type StakingAccountValidator = membership::Module<Test>;
+    type StakingAccountValidator = membership::Pallet<Test>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
@@ -435,7 +435,7 @@ impl working_group::Config<ForumWorkingGroupInstance> for Test {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
-    type StakingAccountValidator = membership::Module<Test>;
+    type StakingAccountValidator = membership::Pallet<Test>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
@@ -448,7 +448,7 @@ impl working_group::Config<MembershipWorkingGroupInstance> for Test {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;
-    type StakingAccountValidator = membership::Module<Test>;
+    type StakingAccountValidator = membership::Pallet<Test>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
@@ -566,23 +566,23 @@ impl referendum::Config<ReferendumInstance> for Test {
                 vote_power: item.vote_power.into(),
             })
             .collect();
-        <council::Module<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(
+        <council::Pallet<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(
             tmp_winners.as_slice(),
         );
     }
 
     fn is_valid_option_id(option_index: &u64) -> bool {
-        <council::Module<Test> as council::ReferendumConnection<Test>>::is_valid_candidate_id(
+        <council::Pallet<Test> as council::ReferendumConnection<Test>>::is_valid_candidate_id(
             option_index,
         )
     }
 
     fn get_option_power(option_id: &u64) -> Self::VotePower {
-        <council::Module<Test> as council::ReferendumConnection<Test>>::get_option_power(option_id)
+        <council::Pallet<Test> as council::ReferendumConnection<Test>>::get_option_power(option_id)
     }
 
     fn increase_option_power(option_id: &u64, amount: &Self::VotePower) {
-        <council::Module<Test> as council::ReferendumConnection<Test>>::increase_option_power(
+        <council::Pallet<Test> as council::ReferendumConnection<Test>>::increase_option_power(
             option_id, amount,
         );
     }
@@ -660,7 +660,7 @@ impl BurnTokensFixture {
 impl council::Config for Test {
     type Event = Event;
 
-    type Referendum = referendum::Module<Test, ReferendumInstance>;
+    type Referendum = referendum::Pallet<Test, ReferendumInstance>;
 
     type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
     type CouncilSize = CouncilSize;

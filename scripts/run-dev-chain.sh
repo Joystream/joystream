@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-export WASM_BUILD_TOOLCHAIN=nightly-2020-10-06
+export WASM_BUILD_TOOLCHAIN=nightly-2022-05-11
 
 # Build release binary
 cargo build --release

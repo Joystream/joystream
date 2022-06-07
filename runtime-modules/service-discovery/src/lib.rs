@@ -136,7 +136,7 @@ decl_module! {
 
             <AccountInfoByStorageProviderId<T>>::insert(storage_provider_id, ServiceProviderRecord {
                 identity: id.clone(),
-                expires_at: <frame_system::Module<T>>::block_number() + Self::default_lifetime(),
+                expires_at: <frame_system::Pallet<T>>::block_number() + Self::default_lifetime(),
             });
 
             Self::deposit_event(RawEvent::AccountInfoUpdated(storage_provider_id, id));
@@ -186,7 +186,7 @@ impl<T: Config> Module<T> {
     /// Verifies that account info for the storage provider is still valid.
     pub fn is_account_info_expired(storage_provider_id: &StorageProviderId<T>) -> bool {
         !<AccountInfoByStorageProviderId<T>>::contains_key(storage_provider_id)
-            || <frame_system::Module<T>>::block_number()
+            || <frame_system::Pallet<T>>::block_number()
                 > <AccountInfoByStorageProviderId<T>>::get(storage_provider_id).expires_at
     }
 }

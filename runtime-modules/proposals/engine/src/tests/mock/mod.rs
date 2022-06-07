@@ -95,7 +95,7 @@ impl referendum::Config<ReferendumInstance> for Test {
                 vote_power: item.vote_power.into(),
             })
             .collect();
-        <council::Module<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(
+        <council::Pallet<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(
             tmp_winners.as_slice(),
         );
     }
@@ -445,7 +445,7 @@ type ReferendumInstance = referendum::Instance1;
 impl council::Config for Test {
     type Event = Event;
 
-    type Referendum = referendum::Module<Test, ReferendumInstance>;
+    type Referendum = referendum::Pallet<Test, ReferendumInstance>;
 
     type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
     type CouncilSize = CouncilSize;
@@ -460,7 +460,7 @@ impl council::Config for Test {
 
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
-    type StakingAccountValidator = membership::Module<Test>;
+    type StakingAccountValidator = membership::Pallet<Test>;
     type WeightInfo = CouncilWeightInfo;
 
     fn new_council_elected(_: &[council::CouncilMemberOf<Self>]) {}

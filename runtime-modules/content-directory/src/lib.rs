@@ -103,7 +103,7 @@
 //!     pub struct Module<T: Config> for enum Call where origin: T::Origin {
 //!         #[weight = 10_000_000]
 //!         pub fn add_curator_group(origin) -> Result<(), &'static str> {
-//!             <pallet_content_directory::Module<T>>::add_curator_group(origin)?;
+//!             <pallet_content_directory::Pallet<T>>::add_curator_group(origin)?;
 //!             Ok(())
 //!         }
 //!     }

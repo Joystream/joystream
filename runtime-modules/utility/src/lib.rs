@@ -39,7 +39,7 @@ use sp_runtime::SaturatedConversion;
 use sp_std::vec::Vec;
 
 type BalanceOf<T> = <T as balances::Config>::Balance;
-type Balances<T> = balances::Module<T>;
+type Balances<T> = balances::Pallet<T>;
 
 pub trait Config: frame_system::Config + balances::Config + council::Config {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
@@ -164,7 +164,7 @@ decl_module! {
 
             print("Runtime upgrade proposal execution started.");
 
-            let post_info = <frame_system::Module<T>>::set_code(origin, wasm.clone())?;
+            let post_info = <frame_system::Pallet<T>>::set_code(origin, wasm.clone())?;
 
             print("Runtime upgrade proposal execution finished.");
 

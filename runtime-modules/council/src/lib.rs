@@ -491,7 +491,7 @@ decl_module! {
 
         // No origin so this is a priviledged call
         fn on_initialize() -> Weight {
-            let now = frame_system::Module::<T>::block_number();
+            let now = frame_system::Pallet::<T>::block_number();
 
             // Council stage progress it returns the number of candidates
             // if in announcing stage
@@ -820,7 +820,7 @@ decl_module! {
             for funding_request in funding_requests {
                 let amount = funding_request.amount;
                 let account = funding_request.account;
-                let  _ = balances::Module::<T>::deposit_creating(&account, amount);
+                let  _ = balances::Pallet::<T>::deposit_creating(&account, amount);
                 Self::deposit_event(RawEvent::RequestFunded(account, amount));
             }
         }
@@ -905,7 +905,7 @@ impl<T: Config> Module<T> {
             return;
         }
 
-        let now: T::BlockNumber = <frame_system::Module<T>>::block_number();
+        let now: T::BlockNumber = <frame_system::Pallet<T>>::block_number();
 
         // prepare candidates that got elected
         let elected_members: Vec<CouncilMemberOf<T>> = winners
@@ -1210,7 +1210,7 @@ impl<T: Config> Mutations<T> {
             candidates_count: 0,
         };
 
-        let block_number = <frame_system::Module<T>>::block_number();
+        let block_number = <frame_system::Pallet<T>>::block_number();
 
         // set stage
         Stage::<T>::put(CouncilStageUpdate {
@@ -1229,7 +1229,7 @@ impl<T: Config> Mutations<T> {
         // start referendum
         T::Referendum::force_start(extra_winning_target_count, AnnouncementPeriodNr::get());
 
-        let block_number = <frame_system::Module<T>>::block_number();
+        let block_number = <frame_system::Pallet<T>>::block_number();
 
         // change council state
         Stage::<T>::put(CouncilStageUpdate {
@@ -1242,7 +1242,7 @@ impl<T: Config> Mutations<T> {
 
     // Elect new council after successful election.
     fn elect_new_council(elected_members: &[CouncilMemberOf<T>], now: T::BlockNumber) {
-        let block_number = <frame_system::Module<T>>::block_number();
+        let block_number = <frame_system::Pallet<T>>::block_number();
 
         // change council state
         Stage::<T>::mutate(|value| {
@@ -1358,7 +1358,7 @@ impl<T: Config> Mutations<T> {
         now: &T::BlockNumber,
     ) {
         // mint tokens into reward account
-        let _ = balances::Module::<T>::deposit_creating(account_id, *amount);
+        let _ = balances::Pallet::<T>::deposit_creating(account_id, *amount);
 
         // update elected council member
         CouncilMembers::<T>::mutate(|members| {
