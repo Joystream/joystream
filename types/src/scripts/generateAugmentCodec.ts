@@ -17,7 +17,6 @@ import storage from '../storage'
 import proposals from '../proposals'
 import referendum from '../referendum'
 import constitution from '../constitution'
-import blog from '../blog'
 import bounty from '../bounty'
 import content from '../content'
 
@@ -36,7 +35,6 @@ const typesByModule = {
   'proposals': proposals,
   'referendum': referendum,
   'constitution': constitution,
-  'blog': blog,
   'bounty': bounty,
   'content': content,
 }

@@ -269,10 +269,6 @@ const SetWorkingGroupLeadReward = (Tuple.with([WorkerId, 'Option<Balance>', Work
 const CancelWorkingGroupLeadOpening = (Tuple.with([OpeningId, WorkingGroup]) as unknown) as Constructor<
   ITuple<[OpeningId, WorkingGroup]>
 >
-const CreateBlogPost = (Tuple.with([Text, Text]) as unknown) as Constructor<ITuple<[Text, Text]>>
-const EditBlogPost = (Tuple.with([PostId, 'Option<Text>', 'Option<Text>']) as unknown) as Constructor<
-  ITuple<[PostId, Option<Text>, Option<Text>]>
->
 const UpdateGlobalNftLimit = (Tuple.with([NftLimitPeriod, u64]) as unknown) as Constructor<
   ITuple<[NftLimitPeriod, u64]>
 >
@@ -298,10 +294,6 @@ export class ProposalDetails extends JoyEnum({
   SetInitialInvitationCount: u32,
   SetMembershipLeadInvitationQuota: u32,
   SetReferralCut: u8,
-  CreateBlogPost,
-  EditBlogPost,
-  LockBlogPost: PostId,
-  UnlockBlogPost: PostId,
   VetoProposal: ProposalId,
   UpdateGlobalNftLimit,
   UpdateChannelPayouts: UpdateChannelPayoutsParameters,

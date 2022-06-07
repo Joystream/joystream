@@ -415,10 +415,6 @@
             "SetInitialInvitationCount": "u32",
             "SetMembershipLeadInvitationQuota": "u32",
             "SetReferralCut": "u8",
-            "CreateBlogPost": "(Text,Text)",
-            "EditBlogPost": "(PostId,Option<Text>,Option<Text>)",
-            "LockBlogPost": "PostId",
-            "UnlockBlogPost": "PostId",
             "VetoProposal": "ProposalId",
             "UpdateGlobalNftLimit": "(NftLimitPeriod,u64)",
             "UpdateChannelPayouts": "UpdateChannelPayoutsParameters"
@@ -446,10 +442,6 @@
             "SetInitialInvitationCount": "u32",
             "SetMembershipLeadInvitationQuota": "u32",
             "SetReferralCut": "u8",
-            "CreateBlogPost": "(Text,Text)",
-            "EditBlogPost": "(PostId,Option<Text>,Option<Text>)",
-            "LockBlogPost": "PostId",
-            "UnlockBlogPost": "PostId",
             "VetoProposal": "ProposalId",
             "UpdateGlobalNftLimit": "(NftLimitPeriod,u64)",
             "UpdateChannelPayouts": "UpdateChannelPayoutsParameters"
