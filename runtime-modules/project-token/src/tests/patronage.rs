@@ -280,7 +280,9 @@ fn claim_patronage_fails_with_active_revenue_split() {
     let (owner_id, owner_account) = member!(1);
     let (rate, blocks) = (rate!(10), block!(MIN_REVENUE_SPLIT_TIME_TO_START - 1));
 
-    let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
+    let params = TokenDataBuilder::new_empty()
+        .with_patronage_rate(rate)
+        .with_split_rate(DEFAULT_SPLIT_ALLOCATION_RATE);
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())

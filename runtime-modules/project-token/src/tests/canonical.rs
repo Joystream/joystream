@@ -927,6 +927,7 @@ fn issue_token_ok_with_token_info_added() {
         symbol: Hashing::hash_of(&token_id),
         transfer_policy: TransferPolicyParams::Permissionless,
         patronage_rate: yearly_rate!(10),
+        revenue_split_rate: DEFAULT_SPLIT_ALLOCATION_RATE,
         ..Default::default()
     }
     .with_allocation(&owner_id, owner_balance, None)
@@ -957,6 +958,7 @@ fn issue_token_ok_with_token_info_added() {
                 next_sale_id: 1,
                 next_revenue_split_id: 0,
                 revenue_split: RevenueSplitState::Inactive,
+                revenue_split_rate: DEFAULT_SPLIT_ALLOCATION_RATE,
             }
         );
     })
@@ -1174,7 +1176,9 @@ fn burn_fails_with_active_revenue_split() {
         member!(1).0,
         member!(2),
     );
-    let token_data = TokenDataBuilder::new_empty().build();
+    let token_data = TokenDataBuilder::new_empty()
+        .with_split_rate(DEFAULT_SPLIT_ALLOCATION_RATE)
+        .build();
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, token_data)
