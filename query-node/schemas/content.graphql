@@ -162,7 +162,7 @@ type Video @entity {
   isCommentSectionEnabled: Boolean!
 
   "channel owner pinned comment"
-  pinnedComment: Comment
+  pinnedComment: Comment @derivedFrom(field: "video")
 
   "List of all video comments"
   comments: [Comment!] @derivedFrom(field: "video")
@@ -306,6 +306,11 @@ type CommentReactionsCountByReactionId @entity {
 
   "The comment which has been react with given reaction Id"
   comment: Comment!
+
+  # Added to efficiently delete all reactions counts of all
+  # (deleted) comments once video has been deleted.
+  "The video the comment (that has been reacted) exists"
+  video: Video!
 }
 
 type Comment @entity {
@@ -349,8 +354,8 @@ type Comment @entity {
   edits: [CommentTextUpdatedEvent!] @derivedFrom(field: "comment")
 
   "The event the comment was deleted in (if any)"
-  deletedInEvent: CommentDeletedEvent
+  deletedInEvent: CommentDeletedEvent @derivedFrom(field: "comment")
 
   "The event the comment was moderated in (if any)"
-  moderatedInEvent: CommentModeratedEvent
+  moderatedInEvent: CommentModeratedEvent @derivedFrom(field: "comment")
 }
