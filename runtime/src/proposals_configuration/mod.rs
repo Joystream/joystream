@@ -83,18 +83,6 @@ parameter_types! {
     pub SetInvitationCountProposalParameters: ProposalParameters<BlockNumber, Balance> =
         set_invitation_count_proposal();
 
-    pub CreateBlogPostProposalParameters: ProposalParameters<BlockNumber, Balance> =
-        create_blog_post_proposal();
-
-    pub EditBlogPostProoposalParamters: ProposalParameters<BlockNumber, Balance> =
-        edit_blog_post_proposal();
-
-    pub LockBlogPostProposalParameters: ProposalParameters<BlockNumber, Balance> =
-        lock_blog_post_proposal();
-
-    pub UnlockBlogPostProposalParameters: ProposalParameters<BlockNumber, Balance> =
-        unlock_blog_post_proposal();
-
     pub VetoProposalProposalParameters: ProposalParameters<BlockNumber, Balance> =
         veto_proposal_proposal();
 

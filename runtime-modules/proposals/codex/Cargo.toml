@@ -21,7 +21,6 @@ proposals-engine = { package = 'pallet-proposals-engine', default-features = fal
 proposals-discussion = { package = 'pallet-proposals-discussion', default-features = false, path = '../discussion'}
 constitution = { package = 'pallet-constitution', default-features = false, path = '../../constitution'}
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
-blog = { package = 'pallet-blog', default-features = false, path = '../../blog'}
 content = { package = 'pallet-content', default-features = false, path = '../../content'}
 
 # Benchmarking dependencies
@@ -59,6 +58,5 @@ std = [
     'proposals-discussion/std',
     'constitution/std',
     'membership/std',
-    'blog/std',
     'content/std',
 ]
