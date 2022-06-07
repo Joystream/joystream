@@ -162,7 +162,7 @@ type Video @entity {
   isCommentSectionEnabled: Boolean!
 
   "channel owner pinned comment"
-  pinnedComment: Comment
+  pinnedComment: Comment @derivedFrom(field: "video")
 
   "List of all video comments"
   comments: [Comment!] @derivedFrom(field: "video")
