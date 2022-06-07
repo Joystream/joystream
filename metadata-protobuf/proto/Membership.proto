@@ -7,4 +7,23 @@ message MembershipMetadata {
     string avatar_uri = 4; // Url to member's avatar
   }
   optional string about = 3; // Member's md-formatted about text
+
+  message ExternalResource {
+    enum ResourceType {
+      EMAIL = 0;
+      HYPERLINK = 1;
+      TWITTER = 2;
+      TELEGRAM = 3;
+      DISCORD = 4;
+      FACEBOOK = 5;
+      YOUTUBE = 6;
+      MATRIX = 7;
+      IRC = 8;
+      WECHAT = 9;
+      WHATSAPP = 10;
+    }
+    optional ResourceType type = 1;
+    optional string value = 2;
+  }
+  repeated ExternalResource externalResources = 5;
 }
