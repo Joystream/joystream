@@ -1489,6 +1489,10 @@ impl<T: Config> Module<T> {
         transfer_policy: &TransferPolicyOf<T>,
         is_issuer: bool,
     ) -> Result<Validated<T::MemberId>, DispatchError> {
+        ensure!(
+            T::MembershipInfoProvider::controller_account_id(dst).is_ok(),
+            Error::<T>::TransferDestinationMemberDoesNotExist
+        );
         if let TransferPolicy::Permissioned(_) = transfer_policy {
             ensure!(
                 is_issuer || dst_acc_data.is_some(),

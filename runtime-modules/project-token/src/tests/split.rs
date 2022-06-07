@@ -68,7 +68,10 @@ fn issue_split_fails_with_source_having_insufficient_balance() {
         IssueTokenFixture::default().execute_call().unwrap();
 
         let result = IssueRevenueSplitFixture::default()
-            .with_allocation(DEFAULT_SPLIT_ALLOCATION + 1)
+            .with_allocation(
+                DEFAULT_SPLIT_ALLOCATION_RATE
+                    .saturating_reciprocal_mul_ceil(DEFAULT_SPLIT_ALLOCATION + 1),
+            )
             .execute_call();
 
         assert_err!(result, Error::<Test>::InsufficientJoyBalance,);
@@ -124,7 +127,7 @@ fn issue_split_ok_with_event_deposited() {
             1u64,
             1u64 + MIN_REVENUE_SPLIT_TIME_TO_START,
             DEFAULT_SPLIT_DURATION,
-            DEFAULT_SPLIT_ALLOCATION,
+            DEFAULT_SPLIT_ALLOCATION_RATE * DEFAULT_SPLIT_ALLOCATION,
         ));
     })
 }
@@ -148,7 +151,7 @@ fn issue_split_ok_with_user_provided_start_block() {
             1u64,
             2 + MIN_REVENUE_SPLIT_TIME_TO_START,
             DEFAULT_SPLIT_DURATION,
-            DEFAULT_SPLIT_ALLOCATION,
+            DEFAULT_SPLIT_ALLOCATION_RATE * DEFAULT_SPLIT_ALLOCATION,
         ));
     })
 }
@@ -188,11 +191,12 @@ fn issue_split_ok_with_allocation_transferred_to_treasury_account() {
         // allocation correctly transferred to treasury account
         assert_eq!(
             Joy::<Test>::usable_balance(treasury_account),
-            DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+            DEFAULT_SPLIT_ALLOCATION_RATE * DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
         );
         assert_eq!(
             Joy::<Test>::usable_balance(member!(1).1),
-            ExistentialDeposit::get()
+            ExistentialDeposit::get() + DEFAULT_SPLIT_ALLOCATION
+                - DEFAULT_SPLIT_ALLOCATION_RATE * DEFAULT_SPLIT_ALLOCATION
         );
     })
 }
@@ -210,17 +214,18 @@ fn issue_split_ok_with_revenue_split_correctly_activated() {
         IssueRevenueSplitFixture::default().execute_call().unwrap();
 
         // revenue split status active with correct timeline
-        assert!(matches!(
+        assert_eq!(
             Token::token_info_by_id(1u64).revenue_split,
             RevenueSplitState::<_, _>::Active(RevenueSplitInfo::<_, _> {
-                allocation: DEFAULT_SPLIT_ALLOCATION,
+                allocation: DEFAULT_SPLIT_ALLOCATION_RATE * DEFAULT_SPLIT_ALLOCATION,
                 timeline: Timeline::<_> {
                     start: START,
                     duration: DEFAULT_SPLIT_DURATION,
                 },
                 dividends_claimed: 0u128
             })
-        ));
+        );
+
         // Latest split nonce correctly updated
         assert_eq!(Token::token_info_by_id(1u64).next_revenue_split_id, 1u32);
     })
@@ -296,7 +301,7 @@ fn finalize_split_ok_with_event_deposit() {
         last_event_eq!(RawEvent::RevenueSplitFinalized(
             1u64,
             member!(1).1,
-            DEFAULT_SPLIT_ALLOCATION
+            DEFAULT_SPLIT_ALLOCATION_RATE * DEFAULT_SPLIT_ALLOCATION,
         ))
     })
 }
@@ -652,16 +657,20 @@ fn participate_in_split_ok_with_dividends_transferred_to_claimer_joy_balance() {
         // split treasury account decreased
         assert_eq!(
             Joy::<Test>::usable_balance(Token::module_treasury_account()),
-            DEFAULT_SPLIT_ALLOCATION - DEFAULT_SPLIT_JOY_DIVIDEND + ExistentialDeposit::get()
+            DEFAULT_SPLIT_ALLOCATION_RATE * DEFAULT_SPLIT_ALLOCATION - DEFAULT_SPLIT_JOY_DIVIDEND
+                + ExistentialDeposit::get()
         );
-        assert!(matches!(
+        assert_eq!(
             Token::token_info_by_id(1u64).revenue_split,
             RevenueSplitState::<_, _>::Active(RevenueSplitInfo::<_, _> {
-                allocation: DEFAULT_SPLIT_ALLOCATION,
+                allocation: DEFAULT_SPLIT_ALLOCATION_RATE * DEFAULT_SPLIT_ALLOCATION,
+                timeline: Timeline::<_> {
+                    start: 1u64 + MIN_REVENUE_SPLIT_TIME_TO_START, // effective start
+                    duration: DEFAULT_SPLIT_DURATION,
+                },
                 dividends_claimed: DEFAULT_SPLIT_JOY_DIVIDEND,
-                ..
             })
-        ));
+        );
     })
 }
 
