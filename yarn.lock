@@ -2073,20 +2073,6 @@
     yaml "^1.10.0"
     yaml-validator "^3.0.0"
 
-"@joystream/metadata-protobuf@^2.2.0":
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/@joystream/metadata-protobuf/-/metadata-protobuf-2.2.0.tgz#d840eb30743068ac982372a577aa998eecd5a2c1"
-  integrity sha512-jx8nd8+bSEYp6mI2m/L2fYZBm3TrToqAXip3F3yf1ijml2yQssEqj0OTHuCm3nEtBttWSFcW6cZJiGf6Nk57Kg==
-  dependencies:
-    "@types/iso-3166-2" "^1.0.0"
-    "@types/long" "^4.0.1"
-    google-protobuf "^3.14.0"
-    i18n-iso-countries "^6.8.0"
-    iso-3166-2 "^1.0.0"
-    iso-639-1 "^2.1.9"
-    long "^4.0.0"
-    protobufjs "^6.11.2"
-
 "@joystream/warthog@^2.41.4":
   version "2.41.4"
   resolved "https://registry.yarnpkg.com/@joystream/warthog/-/warthog-2.41.4.tgz#4b0a396d9d6eee9e469a36b1ca1c86c3890d56d6"

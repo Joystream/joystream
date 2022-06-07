@@ -339,6 +339,9 @@ type Comment @entity {
   "Total number of reactions to this comment"
   reactionsCount: Int!
 
+  "Sum of replies and reactions"
+  reactionsAndRepliesCount: Int!
+
   "Whether comment has been edited or not"
   isEdited: Boolean!
 
