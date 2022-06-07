@@ -1026,6 +1026,33 @@ fn issuer_transfer_fails_with_non_existing_source() {
 }
 
 #[test]
+fn issuer_transfer_fails_with_non_existing_dst_member() {
+    let token_id = token!(1);
+    let (src_member_id, src_account_id) = member!(1);
+    let (dst, amount) = (member!(9999).0, balance!(100));
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissionless)
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(src_member_id, AccountData::new_with_amount(amount))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::issuer_transfer(
+            token_id,
+            src_member_id,
+            src_account_id,
+            issuer_outputs![(dst, amount, None)],
+        );
+
+        assert_noop!(result, Error::<Test>::TransferDestinationMemberDoesNotExist);
+    })
+}
+
+#[test]
 fn issuer_transfer_fails_with_src_having_insufficient_funds_for_bloat_bond() {
     let token_id = token!(1);
     let token_data = TokenDataBuilder::new_empty()
