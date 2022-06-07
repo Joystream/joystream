@@ -954,7 +954,7 @@ fn issue_token_ok_with_token_info_added() {
                     rate,
                 },
                 sale: None,
-                next_sale_id: 0,
+                next_sale_id: 1,
                 next_revenue_split_id: 0,
                 revenue_split: RevenueSplitState::Inactive,
             }
