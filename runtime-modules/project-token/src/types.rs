@@ -106,6 +106,9 @@ pub struct TokenData<Balance, Hash, BlockNumber, TokenSale, RevenueSplitState> {
     /// Account counter
     pub accounts_number: u64,
 
+    /// Revenue split rate
+    pub revenue_split_rate: Permill,
+
     /// Revenue Split state info
     pub revenue_split: RevenueSplitState,
 
@@ -647,6 +650,9 @@ pub struct TokenIssuanceParameters<Hash, TokenAllocation, TransferPolicyParams, 
 
     /// Initial Patronage rate
     pub patronage_rate: YearlyRate,
+
+    /// Revenue split rate
+    pub revenue_split_rate: Permill,
 }
 
 impl<Hash, MemberId, Balance, VestingScheduleParams, SingleDataObjectUploadParams>
@@ -1204,6 +1210,8 @@ where
             accounts_number: 0,
             revenue_split: RevenueSplitState::Inactive,
             next_revenue_split_id: 0,
+            // TODO: revenue split rate might be subjected to constraints: https://github.com/Joystream/atlas/issues/2728
+            revenue_split_rate: params.revenue_split_rate,
         }
     }
 }
