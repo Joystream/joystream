@@ -528,7 +528,6 @@ declare module '@polkadot/api-base/types/consts' {
        * Exports 'Cancel Working Group Lead Opening' proposal parameters.
        **/
       cancelWorkingGroupLeadOpeningProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
-      createBlogPostProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
        * Exports 'Create Working Group Lead Opening' proposal parameters.
        **/
@@ -537,7 +536,6 @@ declare module '@polkadot/api-base/types/consts' {
        * Exports 'Decrease Working Group Lead Stake' proposal parameters.
        **/
       decreaseWorkingGroupLeadStakeProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
-      editBlogPostProoposalParamters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
        * Exports 'Fill Working Group Lead Opening' proposal parameters.
        **/
@@ -546,7 +544,6 @@ declare module '@polkadot/api-base/types/consts' {
        * Exports 'Funding Request' proposal parameters.
        **/
       fundingRequestProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
-      lockBlogPostProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
        * Exports 'Runtime Upgrade' proposal parameters.
        **/
@@ -590,7 +587,6 @@ declare module '@polkadot/api-base/types/consts' {
        * Exports 'Terminate Working Group Lead' proposal parameters.
        **/
       terminateWorkingGroupLeadProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
-      unlockBlogPostProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       updateChannelPayoutsProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       updateGlobalNftLimitProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
