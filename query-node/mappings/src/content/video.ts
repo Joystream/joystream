@@ -35,6 +35,7 @@ import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import _ from 'lodash'
 import { createNft } from './nft'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
+import { BaseModel } from '@joystream/warthog'
 
 export async function content_VideoCategoryCreated({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
@@ -268,75 +269,49 @@ export async function content_VideoDeleted({ store, event }: EventContext & Stor
 }
 
 async function removeVideoReferencingRelations(store: DatabaseManager, videoId: string): Promise<void> {
-  const loadReferencingEntities = async <T>(store: DatabaseManager, entityType: EntityType<T>, videoId: string) => {
+  const loadReferencingEntities = async <T extends BaseModel>(
+    store: DatabaseManager,
+    entityType: { new (): T },
+    videoId: string
+  ) => {
     return await store.getMany(entityType, {
       where: { video: { id: videoId } },
     })
   }
 
-  /**
-   * Referencing Entities
-   */
-  // get referencing CommentReaction
-  const referencingCommentReactions = await loadReferencingEntities(store, CommentReaction, videoId)
-  // get referencing VideoReaction
-  const referencingVideoReactions = await loadReferencingEntities(store, VideoReaction, videoId)
-  // get referencing VideoReactionsCountByReactionType
-  const referencingVideoReactionsCountByReactionTypes = await loadReferencingEntities(
-    store,
-    VideoReactionsCountByReactionType,
-    videoId
-  )
-  // get referencing CommentReactionsCountByReactionId
-  const referencingCommentReactionsCountByReactionIds = await loadReferencingEntities(
-    store,
-    CommentReactionsCountByReactionId,
-    videoId
-  )
-  // get referencing Comments
-  const referencingComments = await loadReferencingEntities(store, Comment, videoId)
-
-  /**
-   * Referencing Event Entities
-   */
-  // referencing VideoReactedEvent
-  const referencingVideoReactedEvents = await loadReferencingEntities(store, VideoReactedEvent, videoId)
-  // referencing CommentReactedEvent
-  const referencingCommentReactedEvents = await loadReferencingEntities(store, CommentReactedEvent, videoId)
-  // referencing CommentCreatedEvent
-  const referencingCommentCreatedEvents = await loadReferencingEntities(store, CommentCreatedEvent, videoId)
-  // referencing CommentTextUpdatedEvent
-  const referencingCommentTextUpdatedEvents = await loadReferencingEntities(store, CommentTextUpdatedEvent, videoId)
-  // referencing CommentDeletedEvent
-  const referencingCommentDeletedEvents = await loadReferencingEntities(store, CommentDeletedEvent, videoId)
-  // referencing CommentModeratedEvent
-  const referencingCommentModeratedEvents = await loadReferencingEntities(store, CommentModeratedEvent, videoId)
-  // referencing CommentPinnedEvent
-  const referencingCommentPinnedEvents = await loadReferencingEntities(store, CommentPinnedEvent, videoId)
-  // referencing VideoReactionsPreferenceEvent
-  const referencingVideoReactionsPreferenceEvents = await loadReferencingEntities(
-    store,
-    VideoReactionsPreferenceEvent,
-    videoId
-  )
-
   const removeRelations = async <T>(store: DatabaseManager, entities: T[]) => {
     await Promise.all(entities.map(async (r) => await store.remove<T>(r)))
   }
 
-  // remove referencing records
-  await removeRelations(store, referencingCommentReactions)
-  await removeRelations(store, referencingVideoReactions)
-  await removeRelations(store, referencingVideoReactionsCountByReactionTypes)
-  await removeRelations(store, referencingCommentReactionsCountByReactionIds)
-  await removeRelations(store, referencingVideoReactedEvents)
-  await removeRelations(store, referencingCommentReactedEvents)
-  await removeRelations(store, referencingCommentCreatedEvents)
-  await removeRelations(store, referencingCommentTextUpdatedEvents)
-  await removeRelations(store, referencingCommentDeletedEvents)
-  await removeRelations(store, referencingCommentModeratedEvents)
-  await removeRelations(store, referencingCommentPinnedEvents)
-  await removeRelations(store, referencingVideoReactionsPreferenceEvents)
+  // Entities in the list should be removed in the order. i.e. all `Comment` relations
+  // should be removed in the last after all other referencing relations has been removed
+  const referencingEntities: typeof BaseModel[] = [
+    CommentReaction,
+    VideoReaction,
+    VideoReactionsCountByReactionType,
+    CommentReactionsCountByReactionId,
+    VideoReactedEvent,
+    CommentReactedEvent,
+    CommentCreatedEvent,
+    CommentTextUpdatedEvent,
+    CommentDeletedEvent,
+    CommentModeratedEvent,
+    CommentPinnedEvent,
+    VideoReactionsPreferenceEvent,
+    Comment,
+  ]
+
+  const referencingRecords = await Promise.all(
+    referencingEntities.map(async (entity) => await loadReferencingEntities(store, entity as any, videoId))
+  )
+
+  // beacuse of parentComment references among comments, their deletion must be handled saperately
+  const referencingComments = referencingRecords.pop()!
+
+  // remove all referencing records except comments
+  for (const records of referencingRecords) {
+    await removeRelations(store, records)
+  }
 
   // first delete all replies (where parentCommentId!==null), then top level comments
   for (const comment of referencingComments) {
