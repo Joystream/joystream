@@ -93,49 +93,6 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       VestingBalance: AugmentedError<ApiType>;
     };
-    blog: {
-      /**
-       * A non-owner is trying to do a privilegeded action.
-       **/
-      BlogOwnershipError: AugmentedError<ApiType>;
-      /**
-       * Insuficient balance for reply creation
-       **/
-      InsufficientBalanceForReply: AugmentedError<ApiType>;
-      /**
-       * This error represent the invalid state where there is not enough funds in a post
-       * account to pay off its delete
-       **/
-      InsufficientBalanceInPostAccount: AugmentedError<ApiType>;
-      /**
-       * Reaction doesn't exists
-       **/
-      InvalidReactionIndex: AugmentedError<ApiType>;
-      /**
-       * A non-member is trying to participate
-       **/
-      MembershipError: AugmentedError<ApiType>;
-      /**
-       * Number of posts exceeds limits.
-       **/
-      PostLimitReached: AugmentedError<ApiType>;
-      /**
-       * Post is locked for modifications.
-       **/
-      PostLockedError: AugmentedError<ApiType>;
-      /**
-       * Post do not exists.
-       **/
-      PostNotFound: AugmentedError<ApiType>;
-      /**
-       * Reply do no exists.
-       **/
-      ReplyNotFound: AugmentedError<ApiType>;
-      /**
-       * A non-owner of a reply is trying to do a privileged action.
-       **/
-      ReplyOwnershipError: AugmentedError<ApiType>;
-    };
     content: {
       /**
        * Already active auction cannot be cancelled
