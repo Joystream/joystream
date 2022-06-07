@@ -1067,7 +1067,7 @@ impl<T: Config>
     /// Issue a revenue split for the token
     /// Preconditions:
     /// - `token` must exist for `token_id`
-    /// - `allocation_amount > 0`
+    /// - `floor(revenue_split_rate * nominal_allocation_amount) > 0`
     /// - `token` revenue split status must be inactive
     /// - if Some(start) specified: `start - System::block_number() >= MinRevenueSplitTimeToStart`
     /// - `duration` must be >= `MinRevenueSplitDuration`
@@ -1086,16 +1086,18 @@ impl<T: Config>
         start: Option<T::BlockNumber>,
         duration: T::BlockNumber,
         allocation_source: T::AccountId,
-        allocation_amount: JoyBalanceOf<T>,
+        nominal_allocation_amount: JoyBalanceOf<T>,
     ) -> DispatchResult {
+        let token_info = Self::ensure_token_exists(token_id)?;
+        token_info.revenue_split.ensure_inactive::<T>()?;
+
+        let allocation_amount = token_info
+            .revenue_split_rate
+            .mul_floor(nominal_allocation_amount);
         ensure!(
             !allocation_amount.is_zero(),
             Error::<T>::CannotIssueSplitWithZeroAllocationAmount,
         );
-
-        let token_info = Self::ensure_token_exists(token_id)?;
-
-        token_info.revenue_split.ensure_inactive::<T>()?;
 
         ensure!(
             duration >= Self::min_revenue_split_duration(),
