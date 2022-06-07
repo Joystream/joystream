@@ -167,21 +167,15 @@ export function setReactionsAndRepliesCount(
   operation: 'INCREMENT' | 'DECREMENT'
 ): void {
   const eventTime = new Date(event.blockTimestamp)
-  if (operation === 'INCREMENT') {
-    ++reactionsCountByReactionId.count
-    reactionsCountByReactionId.updatedAt = eventTime
+  const change = operation === 'INCREMENT' ? 1 : -1
 
-    ++entity.reactionsCount
-    if (entity instanceof Comment) ++entity.reactionsAndRepliesCount
-    entity.updatedAt = eventTime
-    return
-  }
-
-  --reactionsCountByReactionId.count
+  reactionsCountByReactionId.count += change
   reactionsCountByReactionId.updatedAt = eventTime
 
-  --entity.reactionsCount
-  if (entity instanceof Comment) --entity.reactionsAndRepliesCount
+  entity.reactionsCount += change
+  if (entity instanceof Comment) {
+    entity.reactionsAndRepliesCount += change
+  }
   entity.updatedAt = eventTime
 }
 
