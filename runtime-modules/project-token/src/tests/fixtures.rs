@@ -94,6 +94,7 @@ impl IssueTokenFixture {
                 patronage_rate: yearly_rate!(0),
                 symbol: Hashing::hash_of(b"ABC"),
                 transfer_policy: TransferPolicyParams::Permissionless,
+                revenue_split_rate: DEFAULT_SPLIT_ALLOCATION_RATE,
                 ..Default::default()
             }
             .with_allocation(&member!(1).0, DEFAULT_INITIAL_ISSUANCE, None),
