@@ -1211,7 +1211,7 @@ where
             sale: None,
             transfer_policy: params.transfer_policy.into(),
             patronage_info,
-            next_sale_id: 0,
+            next_sale_id: 1,
             accounts_number: 0,
             revenue_split: RevenueSplitState::Inactive,
             next_revenue_split_id: 0,
