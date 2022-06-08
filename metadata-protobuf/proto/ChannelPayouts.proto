@@ -1,11 +1,11 @@
 syntax = "proto2";
 
-message CreatorPayoutPayload {
+message ChannelPayoutsMetadata {
 /**
  Fields in the payload header are encoded in fixed length 32/64 bits instead of [varint encoding](https://developers.google.com/protocol-buffers/docs/encoding#varints) (uint64/32).
- This allows first calculating and then setting the byte offset of each `CreatorPayout` accurately, e.g. 
- `byte_offset` = `size(Header)` + `position_where_record_for_creator_exists_in_Body`
- If varint encoding is used for header fields, then calculating the byte offset of `CreatorPayout` 
+ This allows first calculating and then setting the byte offset of each `ChannelPayout` accurately, e.g. 
+ `byte_offset` = `size(Header)` + `position_where_record_for_channel_exists_in_Body`
+ If varint encoding is used for header fields, then calculating the byte offset of `ChannelPayout` 
  w.r.t the start of the payload would be improbable since the header size won't be known.
 **/
   message Header {
@@ -18,7 +18,7 @@ message CreatorPayoutPayload {
     // Number of channels
     required fixed32 number_of_channels = 3; 
 
-    message CreatorPayoutByteOffset {
+    message ChannelPayoutByteOffset {
       // Channel id; `c_i`
       required fixed32 channel_id = 1; 
     
@@ -27,15 +27,15 @@ message CreatorPayoutPayload {
     }
 
     // List of byte offsets for all channels
-    repeated CreatorPayoutByteOffset creator_payout_byte_offsets = 4; 
+    repeated ChannelPayoutByteOffset channel_payout_byte_offsets = 4; 
   }
 
-  // Creator payout full body structure, it will not be downloaded by clients in full
+  // Channel payout full body structure, it will not be downloaded by clients in full
   message Body {
-    message CreatorPayout {
+    message ChannelPayout {
       required uint32 channel_id = 1; // `c_i`
     
-      required float cumulative_payout_owed = 2; // `p_i`
+      required float cumulative_reward_earned = 2; // `p_i`
     
       enum Side {
         Left = 0;
@@ -53,8 +53,8 @@ message CreatorPayoutPayload {
       required string payout_rationale = 4; 
     }
     
-    // List of creator payouts
-    repeated CreatorPayout creator_payouts = 1; 
+    // List of channel payouts
+    repeated ChannelPayout channel_payouts = 1; 
   }
 
   required Header header = 1; // Payload header
