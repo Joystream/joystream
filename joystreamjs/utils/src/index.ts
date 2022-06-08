@@ -1,4 +1,4 @@
-import CreatorPayoutPayload from './schemas/json/CreatorPayoutPayload.schema.json'
+import ChannelPayoutsPayload from './schemas/json/ChannelPayoutsPayload.schema.json'
 export * from './InputOutput'
 export * from './serialization'
-export { CreatorPayoutPayload as CreatorPayoutPayloadSchema }
+export { ChannelPayoutsPayload as ChannelPayoutPayloadSchema }

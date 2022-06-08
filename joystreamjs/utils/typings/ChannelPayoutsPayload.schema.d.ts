@@ -6,11 +6,11 @@
  */
 
 export type Side = 0 | 1
-export type CreatorPayoutPayload = CreatorPayout[]
+export type ChannelPayoutsPayload = ChannelPayout[]
 
-export interface CreatorPayout {
+export interface ChannelPayout {
   channelId: number
-  cumulativePayoutOwed: number
+  cumulativePayoutEarned: number
   merkleBranch: ProofElement[]
   payoutRationale: string
 }

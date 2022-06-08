@@ -1,18 +1,18 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "CreatorPayoutPayload",
+  "title": "ChannelPayoutsPayload",
   "items": {
-    "$ref": "#/definitions/CreatorPayout"
+    "$ref": "#/definitions/ChannelPayout"
   },
   "type": "array",
   "definitions": {
-    "CreatorPayout": {
+    "ChannelPayout": {
       "additionalProperties": false,
       "properties": {
         "channelId": {
           "type": "number"
         },
-        "cumulativePayoutOwed": {
+        "cumulativePayoutEarned": {
           "type": "number"
         },
         "merkleBranch": {
@@ -25,7 +25,7 @@
           "type": "string"
         }
       },
-      "required": ["channelId", "cumulativePayoutOwed", "merkleBranch", "payoutRationale"],
+      "required": ["channelId", "cumulativePayoutEarned", "merkleBranch", "payoutRationale"],
       "type": "object"
     },
     "ProofElement": {
