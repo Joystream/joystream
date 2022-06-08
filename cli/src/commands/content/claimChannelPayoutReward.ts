@@ -1,15 +1,15 @@
-import { CreatorPayoutPayload } from '@joystream/metadata-protobuf'
+import { ChannelPayoutsMetadata } from '@joystream/metadata-protobuf'
 import { createType } from '@joystream/types'
 import { ProofElement, PullPayment, Side } from '@joystream/types/content'
-import { creatorPayoutRecord, generateMerkleRootFromCreatorPayout } from '@joystreamjs/content'
+import { channelPayoutRecord, generateCommitmentFromPayload } from '@joystreamjs/content'
 import { Vec } from '@polkadot/types'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import chalk from 'chalk'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import ExitCodes from '../../ExitCodes'
 
-export default class ClaimCreatorPayoutReward extends ContentDirectoryCommandBase {
-  static description = 'Claim creator payout reward for a given channel id.'
+export default class ClaimChannelPayoutReward extends ContentDirectoryCommandBase {
+  static description = 'Claim channel payout reward for a given channel id.'
   static args = [
     {
       name: 'channelId',
@@ -19,39 +19,43 @@ export default class ClaimCreatorPayoutReward extends ContentDirectoryCommandBas
   ]
 
   async run(): Promise<void> {
-    const { channelId } = this.parse(ClaimCreatorPayoutReward).args
+    const { channelId } = this.parse(ClaimChannelPayoutReward).args
 
     // Context
     const channel = await this.getApi().channelById(channelId)
     const [actor, address] = await this.getChannelOwnerActor(channel)
     const keypair = await this.getDecodedPair(address)
 
-    const payoutRecord = await creatorPayoutRecord(channelId)
-    if (payoutRecord.cumulativePayoutOwed > this.getOriginalApi().consts.content.maxRewardAllowed.toNumber()) {
-      this.error('Cumulative payout owed to channel exceeds the max reward allowed', { exit: ExitCodes.InvalidInput })
+    const payoutRecord = await channelPayoutRecord(channelId)
+    const maxCashoutAllowed = (await this.getOriginalApi().query.content.maxCashoutAllowed()).toNumber()
+    const minCashoutAllowed = (await this.getOriginalApi().query.content.minCashoutAllowed()).toNumber()
+    const commitment = await this.getOriginalApi().query.content.commitment()
+
+    if (payoutRecord.cumulativeRewardEarned > maxCashoutAllowed) {
+      this.error('Cumulative payout earned by channel exceeds the max cashout allowed', {
+        exit: ExitCodes.InvalidInput,
+      })
     }
-    if (payoutRecord.cumulativePayoutOwed < this.getOriginalApi().consts.content.minCashoutAllowed.toNumber()) {
+    if (payoutRecord.cumulativeRewardEarned < minCashoutAllowed) {
       this.error('Not sufficient Cashout Amount', { exit: ExitCodes.InvalidInput })
     }
 
-    if (
-      generateMerkleRootFromCreatorPayout(payoutRecord) !== this.getOriginalApi().consts.content.commitment.toString()
-    ) {
+    if (generateCommitmentFromPayload(payoutRecord) !== commitment.toString()) {
       this.error('Not sufficient Cashout Amount', { exit: ExitCodes.InvalidInput })
     }
 
     // Prepare extrinsic arguments
     const pullPayment = createType<PullPayment, 'PullPayment'>('PullPayment', {
       channel_id: channelId,
-      cumulative_payout_claimed: payoutRecord.cumulativePayoutOwed,
+      cumulative_reward_earned: payoutRecord.cumulativeRewardEarned,
       // TODO: double-check which hash function to use: blake2AsU8a vs blake2AsHex
       reason: blake2AsHex(payoutRecord.payoutRationale),
     })
 
-    const merkleProof = [] as unknown as Vec<ProofElement>
+    const merkleProof = ([] as unknown) as Vec<ProofElement>
     payoutRecord.merkleBranch.forEach((m) => {
       const side =
-        m.side === CreatorPayoutPayload.Body.CreatorPayout.Side.Left
+        m.side === ChannelPayoutsMetadata.Body.ChannelPayout.Side.Left
           ? createType<Side, 'Side'>('Side', { Left: null })
           : createType<Side, 'Side'>('Side', { Right: null })
       const proofElement = createType<ProofElement, 'ProofElement'>('ProofElement', { hash: m.hash, side })

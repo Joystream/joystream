@@ -1,7 +1,7 @@
 [
   {
     "channelId": 0,
-    "cumulativePayoutOwed": 20,
+    "cumulativePayoutEarned": 20,
     "merkleBranch": [
       {
         "hash": "qui",
@@ -20,7 +20,7 @@
   },
   {
     "channelId": 1,
-    "cumulativePayoutOwed": 50,
+    "cumulativePayoutEarned": 50,
     "merkleBranch": [
       {
         "hash": "occaecat enim",
@@ -39,7 +39,7 @@
   },
   {
     "channelId": 2,
-    "cumulativePayoutOwed": 34,
+    "cumulativePayoutEarned": 34,
     "merkleBranch": [
       {
         "hash": "qui",
@@ -58,7 +58,7 @@
   },
   {
     "channelId": 3,
-    "cumulativePayoutOwed": 20,
+    "cumulativePayoutEarned": 20,
     "merkleBranch": [
       {
         "hash": "qui",
@@ -77,7 +77,7 @@
   },
   {
     "channelId": 4,
-    "cumulativePayoutOwed": 50,
+    "cumulativePayoutEarned": 50,
     "merkleBranch": [
       {
         "hash": "occaecat enim",
@@ -96,7 +96,7 @@
   },
   {
     "channelId": 5,
-    "cumulativePayoutOwed": 34,
+    "cumulativePayoutEarned": 34,
     "merkleBranch": [
       {
         "hash": "qui",
@@ -115,7 +115,7 @@
   },
   {
     "channelId": 6,
-    "cumulativePayoutOwed": 20,
+    "cumulativePayoutEarned": 20,
     "merkleBranch": [
       {
         "hash": "qui",
@@ -134,7 +134,7 @@
   },
   {
     "channelId": 7,
-    "cumulativePayoutOwed": 50,
+    "cumulativePayoutEarned": 50,
     "merkleBranch": [
       {
         "hash": "occaecat enim",
@@ -153,7 +153,7 @@
   },
   {
     "channelId": 8,
-    "cumulativePayoutOwed": 34,
+    "cumulativePayoutEarned": 34,
     "merkleBranch": [
       {
         "hash": "qui",
@@ -172,7 +172,7 @@
   },
   {
     "channelId": 9,
-    "cumulativePayoutOwed": 20,
+    "cumulativePayoutEarned": 20,
     "merkleBranch": [
       {
         "hash": "qui",
@@ -191,7 +191,7 @@
   },
   {
     "channelId": 10,
-    "cumulativePayoutOwed": 50,
+    "cumulativePayoutEarned": 50,
     "merkleBranch": [
       {
         "hash": "occaecat enim",

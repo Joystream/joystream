@@ -1,30 +1,30 @@
 import { generateSerializedPayload } from '@joystreamjs/content'
-import { CreatorPayoutPayloadSchema } from '@joystreamjs/utils'
-import { CreatorPayoutPayload as CreatorPayoutPayloadInput } from '@joystreamjs/utils/typings/CreatorPayoutPayload.schema'
+import { ChannelPayoutPayloadSchema } from '@joystreamjs/utils'
+import { ChannelPayout } from '@joystreamjs/utils/typings/ChannelPayoutsPayload.schema'
 import { Command, flags } from '@oclif/command'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import chalk from 'chalk'
 import { displayCollapsedRow } from '../../helpers/display'
 import { getInputJson, saveOutputToFile } from '../../helpers/InputOutput'
 
-export default class GenerateCreatorPayoutPayload extends Command {
-  static description = 'Create serialized creator payouts payload from JSON input.'
+export default class GenerateChannelPayoutPayload extends Command {
+  static description = 'Create serialized channel payouts payload from JSON input.'
   static flags = {
     input: flags.string({
       char: 'i',
       required: true,
-      description: `Path to JSON file containing creator payouts`,
+      description: `Path to JSON file containing channel payouts`,
     }),
     out: flags.string({
       char: 'o',
       required: true,
-      description: `Path to file where serialized creator payouts payload will be stored`,
+      description: `Path to file where serialized channel payouts payload will be stored`,
     }),
   }
 
   async run(): Promise<void> {
-    const { input, out } = this.parse(GenerateCreatorPayoutPayload).flags
-    const payloadBodyInput = await getInputJson<CreatorPayoutPayloadInput>(input, CreatorPayoutPayloadSchema)
+    const { input, out } = this.parse(GenerateChannelPayoutPayload).flags
+    const payloadBodyInput = await getInputJson<ChannelPayout[]>(input, ChannelPayoutPayloadSchema)
     const serializedPayload = generateSerializedPayload(payloadBodyInput)
 
     displayCollapsedRow({
@@ -34,6 +34,6 @@ export default class GenerateCreatorPayoutPayload extends Command {
 
     saveOutputToFile(out, serializedPayload)
 
-    this.log(chalk.green(`Creator Payout payload successfully saved to file: ${chalk.cyanBright(out)} !`))
+    this.log(chalk.green(`Channel Payout payload successfully saved to file: ${chalk.cyanBright(out)} !`))
   }
 }

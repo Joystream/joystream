@@ -1,9 +1,9 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { displayCollapsedRow } from '../../helpers/display'
-import { creatorPayoutRecord } from '@joystreamjs/content'
+import { channelPayoutRecord } from '@joystreamjs/content'
 
-export default class CreatorPayoutRecord extends ContentDirectoryCommandBase {
-  static description = 'Show payout information for creator given a channel id.'
+export default class ChannelPayoutRecord extends ContentDirectoryCommandBase {
+  static description = 'Show payout information for channel given a channel id.'
   static args = [
     {
       name: 'channelId',
@@ -13,13 +13,13 @@ export default class CreatorPayoutRecord extends ContentDirectoryCommandBase {
   ]
 
   async run(): Promise<void> {
-    const { channelId } = this.parse(CreatorPayoutRecord).args
-    const payoutRecord = await creatorPayoutRecord(channelId)
+    const { channelId } = this.parse(ChannelPayoutRecord).args
+    const payoutRecord = await channelPayoutRecord(channelId)
 
     if (payoutRecord) {
       displayCollapsedRow({
         'Channel Id': channelId,
-        'Cumulative Payout Owed': payoutRecord.cumulativePayoutOwed,
+        'Cumulative Payout Earned': payoutRecord.cumulativeRewardEarned,
         'Merkle Branch': JSON.stringify(payoutRecord.merkleBranch),
         'Payout Rationale': payoutRecord.payoutRationale,
       })

@@ -1,14 +1,14 @@
-import { creatorPayoutRecordAtByteOffset } from '@joystreamjs/content'
+import { channelPayoutRecordAtByteOffset } from '@joystreamjs/content'
 import { Command, flags } from '@oclif/command'
 import { displayCollapsedRow } from '../../helpers/display'
 
-export default class CreatorPayoutRecordAtByteOffset extends Command {
-  static description = 'Get creator payout record from serialized payload file at given byte.'
+export default class ChannelPayoutRecordAtByteOffset extends Command {
+  static description = 'Get channel payout record from serialized payload file at given byte.'
   static flags = {
     input: flags.string({
       char: 'i',
       required: true,
-      description: `Path to serialized payload file containing creator payouts`,
+      description: `Path to serialized payload file containing channel payouts`,
     }),
   }
 
@@ -21,15 +21,15 @@ export default class CreatorPayoutRecordAtByteOffset extends Command {
   ]
 
   async run(): Promise<void> {
-    const { input } = this.parse(CreatorPayoutRecordAtByteOffset).flags
-    const { btyeOffset } = this.parse(CreatorPayoutRecordAtByteOffset).args
+    const { input } = this.parse(ChannelPayoutRecordAtByteOffset).flags
+    const { btyeOffset } = this.parse(ChannelPayoutRecordAtByteOffset).args
     const start = Number.parseInt(btyeOffset as string)
 
     try {
-      const payoutRecord = await creatorPayoutRecordAtByteOffset(input, start)
+      const payoutRecord = await channelPayoutRecordAtByteOffset(input, start)
       displayCollapsedRow({
         'Channel Id': payoutRecord.channelId,
-        'Cumulative Payout Owed': payoutRecord.cumulativePayoutOwed,
+        'Cumulative Payout Earned': payoutRecord.cumulativeRewardEarned,
         'Merkle Proof Branches': JSON.stringify(payoutRecord.merkleBranch),
         'Payout Rationale': payoutRecord.payoutRationale,
       })

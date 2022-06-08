@@ -14,7 +14,6 @@ import { Reader, Writer } from 'protobufjs'
 const PAYLOAD_CONTEXT = ['Header', 'Body'] as const
 type PayloadContext = typeof PAYLOAD_CONTEXT[number]
 
-type ChannelPayouts = ChannelPayout[]
 export interface ChannelPayout {
   channelId: number
   cumulativePayoutEarned: number
@@ -158,7 +157,7 @@ function lengthOfHeader(numberOfChannels: number): number {
  * @param payloadBodyInput path to JSON file containing channel payouts
  * @returns serialized channel payouts payload
  */
-export function generateSerializedPayload(payloadBodyInput: ChannelPayouts[]): Uint8Array {
+export function generateSerializedPayload(payloadBodyInput: ChannelPayout[]): Uint8Array {
   if (payloadBodyInput.length === 0) throw new Error('payload is empty')
 
   const numberOfChannels = payloadBodyInput.length
