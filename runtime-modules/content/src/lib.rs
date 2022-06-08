@@ -1335,6 +1335,9 @@ decl_module! {
             // Get associated channel
             let channel = Self::get_channel_from_video(&video);
 
+            // block extrinsics during transfers
+            channel.ensure_has_no_active_transfers()?;
+
             // permissions check
             ensure_actor_authorized_to_manage_video_nfts::<T>(&sender, &actor, &channel)?;
 
@@ -1381,6 +1384,10 @@ decl_module! {
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
 
+            // block extrinsics during transfers
+            Self::channel_by_id(video.in_channel).ensure_has_no_active_trasfers()?;
+
+
             // Authorize nft destruction
             ensure_actor_authorized_to_manage_nft::<T>(origin, &actor, &nft.owner, video.in_channel)?;
 
@@ -1413,6 +1420,9 @@ decl_module! {
 
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
+
+            // block extrinsics during transfers
+            Self::channel_by_id(video.in_channel).ensure_has_no_active_trasfers()?;
 
             // Authorize nft owner
             ensure_actor_authorized_to_manage_nft::<T>(
@@ -1467,6 +1477,9 @@ decl_module! {
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
 
+            // block extrinsics during transfers
+            Self::channel_by_id(video.in_channel).ensure_has_no_active_trasfers()?;
+
             // Authorize nft owner
             ensure_actor_authorized_to_manage_nft::<T>(
                 origin,
@@ -1518,6 +1531,9 @@ decl_module! {
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
 
+            // block extrinsics during transfers
+            Self::channel_by_id(video.in_channel).ensure_has_no_active_trasfers()?;
+
             // Authorize nft owner
             ensure_actor_authorized_to_manage_nft::<T>(
                 origin,
@@ -1556,6 +1572,9 @@ decl_module! {
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
 
+            // block extrinsics during transfers
+            Self::channel_by_id(video.in_channel).ensure_has_no_active_trasfers()?;
+
             // Authorize nft owner
             ensure_actor_authorized_to_manage_nft::<T>(
                 origin,
@@ -1593,6 +1612,10 @@ decl_module! {
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
 
+
+            // block extrinsics during transfers
+            Self::channel_by_id(video.in_channel).ensure_has_no_active_trasfers()?;
+
             // Authorize nft owner
             ensure_actor_authorized_to_manage_nft::<T>(
                 origin,
@@ -1628,6 +1651,9 @@ decl_module! {
 
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
+
+            // block extrinsics during transfers
+            Self::channel_by_id(video.in_channel).ensure_has_no_active_trasfers()?;
 
             // Authorize nft owner
             ensure_actor_authorized_to_manage_nft::<T>(
@@ -1665,6 +1691,9 @@ decl_module! {
 
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
+
+            // block extrinsics during transfers
+            Self::channel_by_id(video.in_channel).ensure_has_no_active_trasfers()?;
 
             // Authorize nft owner
             ensure_actor_authorized_to_manage_nft::<T>(
@@ -1999,6 +2028,9 @@ decl_module! {
             // Ensure nft is issued
             let nft = video.ensure_nft_is_issued::<T>()?;
 
+            // block extrinsics during transfers
+            Self::channel_by_id(video.in_channel).ensure_has_no_active_trasfers()?;
+
             // Ensure actor is authorized to accept open auction bid
             ensure_actor_authorized_to_manage_nft::<T>(
                 origin,
@@ -2058,6 +2090,9 @@ decl_module! {
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
 
+            // block extrinsics during transfers
+            Self::channel_by_id(video.in_channel).ensure_has_no_active_trasfers()?;
+
             // Authorize nft owner
             ensure_actor_authorized_to_manage_nft::<T>(
                 origin,
@@ -2100,6 +2135,9 @@ decl_module! {
 
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
+
+            // block extrinsics during transfers
+            Self::channel_by_id(video.in_channel).ensure_has_no_active_trasfers()?;
 
             // Authorize nft owner
             ensure_actor_authorized_to_manage_nft::<T>(
@@ -2181,6 +2219,9 @@ decl_module! {
 
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
+
+            // block extrinsics during transfers
+            Self::channel_by_id(video.in_channel).ensure_has_no_active_trasfers()?;
 
             // Authorize nft owner
             ensure_actor_authorized_to_manage_nft::<T>(
