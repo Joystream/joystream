@@ -1,7 +1,6 @@
 use codec::Codec;
 use frame_support::dispatch::DispatchError;
 use frame_support::Parameter;
-use scale_info::TypeInfo;
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, MaybeSerializeDeserialize, Member};
 

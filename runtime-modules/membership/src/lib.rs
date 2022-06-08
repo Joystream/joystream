@@ -52,7 +52,7 @@ mod tests;
 
 use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchError;
-use frame_support::traits::{Currency, Get, LockIdentifier, WithdrawReason, WithdrawReasons};
+use frame_support::traits::{Currency, Get, LockIdentifier, WithdrawReasons};
 pub use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
 use frame_system::{ensure_root, ensure_signed};
@@ -150,7 +150,7 @@ pub(crate) const DEFAULT_MEMBER_INVITES_COUNT: u32 = 5;
 /// Public membership profile alias.
 pub type Membership<T> = MembershipObject<<T as frame_system::Config>::AccountId>;
 
-#[derive(Encode, PartialEq, Decode, Debug, Default)]
+#[derive(Encode, PartialEq, Decode, Debug, Default, TypeInfo)]
 /// Stored information about a registered user.
 pub struct MembershipObject<AccountId: Ord> {
     /// The hash of the handle chosen by member.
@@ -176,7 +176,7 @@ pub struct MembershipObject<AccountId: Ord> {
 }
 
 // Contain staking account to member binding and its confirmation.
-#[derive(Encode, Decode, Default, Debug, PartialEq)]
+#[derive(Encode, Decode, Default, Debug, PartialEq, TypeInfo)]
 pub struct StakingAccountMemberBinding<MemberId> {
     /// Member id that we bind account to.
     pub member_id: MemberId,
@@ -186,7 +186,7 @@ pub struct StakingAccountMemberBinding<MemberId> {
 }
 
 /// Parameters for the buy_membership extrinsic.
-#[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq, TypeInfo)]
 pub struct BuyMembershipParameters<AccountId, MemberId> {
     /// New member root account.
     pub root_account: AccountId,
@@ -761,7 +761,7 @@ decl_module! {
             T::InvitedMemberStakingHandler::lock_with_reasons(
                 &params.controller_account,
                 invitation_balance,
-                WithdrawReasons::except(WithdrawReason::TransactionPayment)
+                WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT)
             );
 
             // Fire the event.
