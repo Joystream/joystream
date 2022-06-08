@@ -1254,6 +1254,8 @@ decl_module! {
         ) -> DispatchResult {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
+            channel.ensure_has_no_active_transfer::<T>()?;
+
             let reward_account = ContentTreasury::<T>::account_for_channel(channel_id);
             ensure_actor_authorized_to_withdraw_from_channel::<T>(origin, &actor, &channel)?;
 
@@ -2416,6 +2418,8 @@ decl_module! {
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
+            channel.ensure_has_no_active_transfer::<T>()?;
+
             ensure_actor_authorized_to_claim_council_reward::<T>(origin, &channel.owner)?;
 
             ensure_no_channel_transfers::<T>(&channel)?;
@@ -3349,6 +3353,8 @@ impl<T: Trait> Module<T> {
         proof: &[ProofElement<T>],
     ) -> Result<ChannelRewardClaimInfo<T>, DispatchError> {
         let channel = Self::ensure_channel_exists(&item.channel_id)?;
+
+        channel.ensure_has_no_active_transfer::<T>()?;
 
         ensure_actor_authorized_to_claim_payment::<T>(origin.clone(), &actor, &channel)?;
 
