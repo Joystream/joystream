@@ -12,7 +12,9 @@
     "protobufjs": "^6.11.2",
     "long": "^4.0.0",
     "@types/long": "^4.0.1",
-    "@polkadot/util-crypto": "^7.3.1"
+    "@polkadot/util-crypto": "^7.3.1",
+    "merkletreejs": "^0.2.31",
+    "@joystream/types": "^0.19.3"
   },
   "devDependencies": {
     "@joystream/eslint-config": "^1.0.0",

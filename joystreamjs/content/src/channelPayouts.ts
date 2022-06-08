@@ -1,40 +1,57 @@
-import { CreatorPayoutPayload, ICreatorPayoutPayload } from '@joystream/metadata-protobuf'
+import { ChannelPayoutsMetadata, IChannelPayoutsMetadata } from '@joystream/metadata-protobuf'
+import { createType } from '@joystream/types'
+import { Hash } from '@joystream/types/common'
+import { ProofElement, Side } from '@joystream/types/content'
 import { asValidatedMetadata, getByteSequenceFromFile } from '@joystreamjs/utils'
-import { CreatorPayoutPayload as CreatorPayoutPayloadInput } from '@joystreamjs/utils/typings/CreatorPayoutPayload.schema'
+import { ChannelPayoutsVector } from '@joystreamjs/utils/typings/ChannelPayoutsVector.schema'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import axios from 'axios'
 import _ from 'lodash'
 import Long from 'long'
-import { Writer, Reader } from 'protobufjs'
+import { MerkleTree } from 'merkletreejs'
+import { Reader, Writer } from 'protobufjs'
 
 const PAYLOAD_CONTEXT = ['Header', 'Body'] as const
 type PayloadContext = typeof PAYLOAD_CONTEXT[number]
 
+type ChannelPayouts = ChannelPayout[]
+export interface ChannelPayout {
+  channelId: number
+  cumulativePayoutEarned: number
+  merkleBranch: ProofElement[]
+  payoutRationale: string
+}
+
+type MerkleProof = {
+  position: 'left' | 'right'
+  data: Buffer
+}[]
+
 /**
- * Get Payout Record for given channel Id. It uses the `fetchCreatorPayout`
+ * Get Payout Record for given channel Id. It uses the `fetchChannelPayout`
  * function to retrieve the record from remote source
  * @param channelId Id of the channel
  * @returns payout record for given channel Id
  */
-export async function creatorPayoutRecord(channelId: number): Promise<CreatorPayoutPayload.Body.CreatorPayout> {
-  const header = (await fetchCreatorPayout('Header')) as CreatorPayoutPayload.Header
-  if (!header.creatorPayoutByteOffsets.length) {
+export async function channelPayoutRecord(channelId: number): Promise<ChannelPayoutsMetadata.Body.ChannelPayout> {
+  const header = (await fetchChannelPayout('Header')) as ChannelPayoutsMetadata.Header
+  if (!header.channelPayoutByteOffsets.length) {
     throw new Error('No payout record exists')
   }
 
-  const creatorPayoutRecordOffset = header.creatorPayoutByteOffsets.find(
+  const channelPayoutRecordOffset = header.channelPayoutByteOffsets.find(
     (payoutOffset) => payoutOffset.channelId === channelId
   )
-  if (!creatorPayoutRecordOffset) {
+  if (!channelPayoutRecordOffset) {
     throw new Error(`No payout record exists for channel with channel id ${channelId}`)
   }
 
-  const creatorPayoutRecord = (await fetchCreatorPayout(
+  const channelPayoutRecord = (await fetchChannelPayout(
     'Body',
-    creatorPayoutRecordOffset.byteOffset.toNumber()
-  )) as CreatorPayoutPayload.Body.CreatorPayout
+    channelPayoutRecordOffset.byteOffset.toNumber()
+  )) as ChannelPayoutsMetadata.Body.ChannelPayout
 
-  return creatorPayoutRecord
+  return channelPayoutRecord
 }
 
 /**
@@ -96,15 +113,15 @@ export async function serializedPayloadHeader(inputFilePath: string): Promise<Ui
 }
 
 /**
- * Get creator payout record from local serialized payload file.
+ * Get channel payout record from local serialized payload file.
  * @param inputFilePath path to protobuf serialized payload file
- * @param byteOffset byte offset of creator payout record in serialized payload
- * @return creator payout record
+ * @param byteOffset byte offset of channel payout record in serialized payload
+ * @return channel payout record
  **/
-export async function creatorPayoutRecordAtByteOffset(
+export async function channelPayoutRecordAtByteOffset(
   inputFilePath: string,
   byteOffset: number
-): Promise<CreatorPayoutPayload.Body.CreatorPayout> {
+): Promise<ChannelPayoutsMetadata.Body.ChannelPayout> {
   const lengthOfSerializedRecord = await lengthOfSerializedMessage(inputFilePath, byteOffset)
   const lengthOfVarintEncodedRecordSize = lengthOfVarintEncodedMessageSize(lengthOfSerializedRecord)
   const serializedPayoutRecord = await getByteSequenceFromFile(
@@ -113,7 +130,7 @@ export async function creatorPayoutRecordAtByteOffset(
     byteOffset + lengthOfSerializedRecord
   )
 
-  return CreatorPayoutPayload.Body.CreatorPayout.decode(serializedPayoutRecord)
+  return ChannelPayoutsMetadata.Body.ChannelPayout.decode(serializedPayoutRecord)
 }
 
 // calculates byte length of the serialized payload header
@@ -137,17 +154,17 @@ function lengthOfHeader(numberOfChannels: number): number {
 }
 
 /**
- * Generate serialized payload from JSON encoded creator payouts.
- * @param payloadBodyInput path to JSON file containing creator payouts
- * @returns serialized creator payouts payload
+ * Generate serialized payload from JSON encoded channel payouts.
+ * @param payloadBodyInput path to JSON file containing channel payouts
+ * @returns serialized channel payouts payload
  */
-export function generateSerializedPayload(payloadBodyInput: CreatorPayoutPayloadInput): Uint8Array {
+export function generateSerializedPayload(payloadBodyInput: ChannelPayouts[]): Uint8Array {
   if (payloadBodyInput.length === 0) throw new Error('payload is empty')
 
   const numberOfChannels = payloadBodyInput.length
   const headerLengthInBytes = Long.fromNumber(lengthOfHeader(numberOfChannels))
-  const creatorPayoutByteOffsets: CreatorPayoutPayload.Header.ICreatorPayoutByteOffset[] = []
-  const body = asValidatedMetadata(CreatorPayoutPayload.Body, { creatorPayouts: payloadBodyInput })
+  const channelPayoutByteOffsets: ChannelPayoutsMetadata.Header.IChannelPayoutByteOffset[] = []
+  const body = asValidatedMetadata(ChannelPayoutsMetadata.Body, { channelPayouts: payloadBodyInput })
 
   // Length of Header is known prior to serialization since its fields are fixed size, however the
   // length of the COMPLETE payload can only be known after it has been serialized since Body fields
@@ -155,27 +172,27 @@ export function generateSerializedPayload(payloadBodyInput: CreatorPayoutPayload
   // So we cant set payload length & byte offsets, to resolve this issue payload will be serialized
   // with empty payload length & byte offsets, and once serialized both unknowns can be obtained
   // from payload
-  body.creatorPayouts?.forEach(({ channelId }) => {
-    creatorPayoutByteOffsets.push({ channelId, byteOffset: Long.fromNumber(0) })
+  body.channelPayouts?.forEach(({ channelId }) => {
+    channelPayoutByteOffsets.push({ channelId, byteOffset: Long.fromNumber(0) })
   })
-  const payload: ICreatorPayoutPayload = {
+  const payload: IChannelPayoutsMetadata = {
     header: {
       payloadLengthInBytes: Long.fromNumber(0),
       headerLengthInBytes,
       numberOfChannels,
-      creatorPayoutByteOffsets,
+      channelPayoutByteOffsets,
     },
     body,
   }
 
-  const serializedPayloadWithEmptyHeaderFields = Buffer.from(CreatorPayoutPayload.encode(payload).finish())
+  const serializedPayloadWithEmptyHeaderFields = Buffer.from(ChannelPayoutsMetadata.encode(payload).finish())
   const payloadLengthInBytes = Long.fromNumber(serializedPayloadWithEmptyHeaderFields.byteLength)
 
   for (let i = 0; i < numberOfChannels; i++) {
-    const channelPayoutRecord = CreatorPayoutPayload.Body.CreatorPayout.encode(body.creatorPayouts![i]).finish()
+    const channelPayoutRecord = ChannelPayoutsMetadata.Body.ChannelPayout.encode(body.channelPayouts![i]).finish()
     const indexOfChannelPayoutRecord = serializedPayloadWithEmptyHeaderFields.indexOf(channelPayoutRecord)
     // set correct byteOffsets
-    payload.header.creatorPayoutByteOffsets![i].byteOffset = Long.fromNumber(
+    payload.header.channelPayoutByteOffsets![i].byteOffset = Long.fromNumber(
       indexOfChannelPayoutRecord - lengthOfVarintEncodedMessageSize(Buffer.from(channelPayoutRecord).byteLength)
     )
   }
@@ -183,7 +200,7 @@ export function generateSerializedPayload(payloadBodyInput: CreatorPayoutPayload
   // set correct payload length
   payload.header.payloadLengthInBytes = payloadLengthInBytes
   // serialize payload again
-  const serializedPayload = CreatorPayoutPayload.encode(payload).finish()
+  const serializedPayload = ChannelPayoutsMetadata.encode(payload).finish()
   return serializedPayload
 }
 
@@ -192,31 +209,33 @@ export function generateSerializedPayload(payloadBodyInput: CreatorPayoutPayload
  * @param inputFilePath path to protobuf serialized payload file
  * @returns merkle root of the cashout vector
  */
-export async function generateMerkleRoot(inputFilePath: string): Promise<string> {
+export async function generateCommitmentFromPayloadFile(inputFilePath: string): Promise<string> {
   const serializedHeader = await serializedPayloadHeader(inputFilePath)
-  const header = CreatorPayoutPayload.Header.decode(serializedHeader)
+  const header = ChannelPayoutsMetadata.Header.decode(serializedHeader)
 
   // Any payout record can be used to generate the merkle root,
-  // here first record from creator payouts payload is used
-  const recordByteOffset = header.creatorPayoutByteOffsets.shift()!.byteOffset.toNumber()
-  const record = await creatorPayoutRecordAtByteOffset(inputFilePath, recordByteOffset)
-  return generateMerkleRootFromCreatorPayout(record)
+  // here first record from channel payouts payload is used
+  const recordByteOffset = header.channelPayoutByteOffsets.shift()!.byteOffset.toNumber()
+  const record = await channelPayoutRecordAtByteOffset(inputFilePath, recordByteOffset)
+  return generateCommitmentFromPayload(record)
 }
 
 /**
- * Generate merkle root from branch of creator payout record
- * @param creatorPayout create payout record
+ * Generate merkle root from branch of channel payout record
+ * @param channelPayoutsPayload create payout record
  * @returns merkle root of the cashout vector
  */
-export function generateMerkleRootFromCreatorPayout(creatorPayout: CreatorPayoutPayload.Body.CreatorPayout): string {
+export function generateCommitmentFromPayload(
+  channelPayoutsPayload: ChannelPayoutsMetadata.Body.ChannelPayout
+): string {
   // item = c_i||p_i||m_i
   const item =
-    creatorPayout.channelId.toString() +
-    creatorPayout.cumulativePayoutOwed.toString() +
-    blake2AsHex(creatorPayout.payoutRationale)
+    channelPayoutsPayload.channelId.toString() +
+    channelPayoutsPayload.cumulativeRewardEarned.toString() +
+    blake2AsHex(channelPayoutsPayload.payoutRationale)
 
-  const merkleRoot = creatorPayout.merkleBranch.reduce((hashV, el) => {
-    if (el.side === CreatorPayoutPayload.Body.CreatorPayout.Side.Right) {
+  const merkleRoot = channelPayoutsPayload.merkleBranch.reduce((hashV, el) => {
+    if (el.side === ChannelPayoutsMetadata.Body.ChannelPayout.Side.Right) {
       return blake2AsHex(hashV + el.hash)
     } else return blake2AsHex(el.hash + hashV)
   }, blake2AsHex(item))
@@ -224,26 +243,54 @@ export function generateMerkleRootFromCreatorPayout(creatorPayout: CreatorPayout
   return merkleRoot
 }
 
+export function generateJsonPlayloadFromPayoutsVector(channelPayoutsVector: ChannelPayoutsVector): ChannelPayout[] {
+  const leaves = channelPayoutsVector.map(({ channelId, cumulativePayoutEarned, payoutRationale }) =>
+    blake2AsHex(`${channelId}${cumulativePayoutEarned}${blake2AsHex(payoutRationale)}`)
+  )
+  const tree = new MerkleTree(leaves, blake2AsHex)
+
+  const channelPayouts = channelPayoutsVector.map((p, i) => {
+    // merkle proof for each record
+    const merkleProof: MerkleProof = tree.getProof(leaves[i])
+
+    const merkleBranch = merkleProof.map(({ data, position }) => {
+      return createType<ProofElement, 'ProofElement'>('ProofElement', {
+        hash: createType<Hash, 'Hash'>('Hash', data),
+        side: createType<Side, 'Side'>('Side', position === 'left' ? { Left: null } : { Right: null }),
+      })
+    })
+
+    return {
+      channelId: p.channelId,
+      cumulativePayoutEarned: p.cumulativePayoutEarned,
+      merkleBranch,
+      payoutRationale: blake2AsHex(p.payoutRationale),
+    } as ChannelPayout
+  })
+
+  return channelPayouts
+}
+
 /**
- * fetch creator payouts payload from remote source
+ * fetch channel payouts payload from remote source
  * @param context `Header | Body` based on part to be fetch from remote source
  * @param offset If `context` arg is `Body` then offset of payload record must be provided
  **/
-async function fetchCreatorPayout(
+async function fetchChannelPayout(
   context: PayloadContext,
   offset?: number
-): Promise<CreatorPayoutPayload.Header | CreatorPayoutPayload.Body.CreatorPayout> {
+): Promise<ChannelPayoutsMetadata.Header | ChannelPayoutsMetadata.Body.ChannelPayout> {
   // HTTP Url of remote host where payload is stored
-  let url = process.env.CREATOR_PAYOUT_DATA_URL as string
+  let url = process.env.Channel_PAYOUT_DATA_URL as string
   if (_.isEmpty(url)) {
-    throw new Error('cannot fetch creator payouts data, remote url does not exist')
+    throw new Error('cannot fetch channel payouts data, remote url does not exist')
   }
 
   if (context === 'Header') {
     url = `${url}?header`
   } else if (context === 'Body' && offset !== undefined) {
     url = `${url}?offset=${offset}`
-  } else throw new Error('Invalid fetch creator payout parameters')
+  } else throw new Error('Invalid fetch channel payout parameters')
 
   const response = await axios.get(url, {
     headers: {
@@ -251,11 +298,11 @@ async function fetchCreatorPayout(
     },
   })
   if (response.status !== 200) {
-    throw new Error('invalid response while fetching creator payout data')
+    throw new Error('invalid response while fetching channel payout data')
   }
 
   const responseBuffer = Buffer.from(response.data)
   if (context === 'Header') {
-    return CreatorPayoutPayload.Header.decode(responseBuffer)
-  } else return CreatorPayoutPayload.Body.CreatorPayout.decode(responseBuffer)
+    return ChannelPayoutsMetadata.Header.decode(responseBuffer)
+  } else return ChannelPayoutsMetadata.Body.ChannelPayout.decode(responseBuffer)
 }

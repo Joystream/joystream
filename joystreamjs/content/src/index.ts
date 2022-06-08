@@ -1,1 +1,1 @@
-export * from './creatorPayout'
+export * from './channelPayouts'
