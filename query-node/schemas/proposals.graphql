@@ -347,6 +347,11 @@ type VetoProposalDetails @variant {
   proposal: Proposal!
 }
 
+type UpdateChannelPayoutsProposalDetails @variant {
+  "Proposed Channel Payouts Parameters"
+  channelPayoutsParameters: ChannelPayoutsParameters!
+}
+
 union ProposalDetails =
     SignalProposalDetails
   | RuntimeUpgradeProposalDetails
@@ -373,3 +378,4 @@ union ProposalDetails =
   | LockBlogPostProposalDetails
   | UnlockBlogPostProposalDetails
   | VetoProposalDetails
+  | UpdateChannelPayoutsProposalDetails

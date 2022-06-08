@@ -146,7 +146,7 @@ async function getCurrentStageUpdate(store: DatabaseManager): Promise<CouncilSta
 /*
   Returns current elected council record.
 */
-async function getCurrentElectedCouncil(store: DatabaseManager): Promise<ElectedCouncil> {
+export async function getCurrentElectedCouncil(store: DatabaseManager): Promise<ElectedCouncil> {
   const electedCouncil = await store.get(ElectedCouncil, { order: { electedAtBlock: 'DESC' } })
 
   // elected council's existence is guaranteed because one is inserted in `genesis.ts`

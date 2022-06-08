@@ -1,5 +1,5 @@
 import { DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
-import { Bytes } from '@polkadot/types'
+import { Bytes, Option } from '@polkadot/types'
 import { Codec } from '@polkadot/types/types'
 import { WorkingGroup as WGType, WorkerId } from '@joystream/types/augment/all'
 import { Worker, Event, Network, WorkingGroup as WGEntity } from 'query-node/dist/model'
@@ -132,6 +132,10 @@ export function asInt32(value: Codec): number {
 
 export function asBN(value: Codec): BN {
   return new BN(value.toString())
+}
+
+export function unwrap<T extends Codec, R>(value: Option<T>): T | undefined {
+  return value.isSome ? value.unwrap() : undefined
 }
 
 export function hasValuesForProperties<

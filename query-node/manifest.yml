@@ -1,7 +1,7 @@
 version: '3.0'
 description: Joystream query-node manifest file for Olympia
 repository: https://github.com/Joystream/joystream
-hydraVersion: "3"
+hydraVersion: '3'
 dataSource:
   kind: substrate
   chain: joystream
@@ -100,6 +100,9 @@ typegen:
     - content.VideoCensorshipStatusUpdated
     - content.FeaturedVideosSet
     - content.ChannelDeleted
+    - content.ChannelPayoutsUpdated
+    - content.ChannelRewardUpdated
+    - content.ChannelRewardClaimedAndWithdrawn
     # Storage
     - storage.StorageBucketCreated
     - storage.StorageBucketInvitationAccepted
@@ -743,6 +746,14 @@ mappings:
       handler: content_FeaturedVideosSet
     - event: content.ChannelDeleted
       handler: content_ChannelDeleted
+    - event: content.ChannelPayoutsUpdated
+      handler: content_ChannelPayoutsUpdated
+    - event: content.ChannelRewardUpdated
+      handler: content_ChannelRewardUpdated
+    - event: content.ChannelFundsWithdrawn
+      handler: content_ChannelFundsWithdrawn
+    - event: content.ChannelRewardClaimedAndWithdrawn
+      handler: content_ChannelRewardClaimedAndWithdrawn
 
     # content NFTs
     - event: content.OpenAuctionStarted
@@ -947,6 +958,6 @@ mappings:
   preBlockHooks:
     - handler: bootstrapData
       filter:
-        height: "[0,0]" # will be executed only at genesis
+        height: '[0,0]' # will be executed only at genesis
   postBlockHooks:
     - handler: runScheduler

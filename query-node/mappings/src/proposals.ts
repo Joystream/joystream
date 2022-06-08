@@ -2,7 +2,7 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { SubstrateEvent, DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { ProposalDetails as RuntimeProposalDetails } from '@joystream/types/augment/all'
+import { ProposalDetails as RuntimeProposalDetails, UpdateChannelPayoutsParameters } from '@joystream/types/augment/all'
 import BN from 'bn.js'
 import {
   Proposal,
@@ -60,14 +60,18 @@ import {
   ProposalDiscussionThread,
   ProposalDiscussionThreadModeOpen,
   ProposalStatus,
+  UpdateChannelPayoutsProposalDetails,
+  ChannelPayoutsParameters,
 } from 'query-node/dist/model'
 import {
   bytesToString,
+  deterministicEntityId,
   genericEventFields,
   getWorkingGroupModuleName,
   INT32MAX,
   perpareString,
   toNumber,
+  unwrap,
 } from './common'
 import { ProposalsEngine, ProposalsCodex } from '../generated/types'
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
@@ -94,6 +98,35 @@ async function getOrCreateRuntimeWasmBytecode(store: DatabaseManager, bytecode: 
     await store.save<RuntimeWasmBytecode>(wasmBytecode)
   }
   return wasmBytecode
+}
+
+async function saveChannelPayoutsParameters(
+  event: SubstrateEvent,
+  store: DatabaseManager,
+  updateChannelPayoutsParameters: UpdateChannelPayoutsParameters
+): Promise<ChannelPayoutsParameters> {
+  const {
+    commitment,
+    payload,
+    max_cashout_allowed,
+    min_cashout_allowed,
+    channel_cashouts_enabled,
+  } = updateChannelPayoutsParameters
+  const asPayload = unwrap(payload)?.object_creation_params
+
+  const newChannelPayoutsParameters = new ChannelPayoutsParameters({
+    id: deterministicEntityId(event),
+    commitment: commitment.isSome ? Buffer.from(commitment.unwrap()) : undefined, // TODO: .toU8a(true) ?
+    payloadSize: asPayload ? new BN(asPayload.size) : undefined,
+    payloadHash: asPayload ? Buffer.from(asPayload.ipfsContentId) : undefined,
+    minCashoutAllowed: unwrap(min_cashout_allowed),
+    maxCashoutAllowed: unwrap(max_cashout_allowed),
+    channelCashoutsEnabled: unwrap(channel_cashouts_enabled)?.valueOf(),
+    createdAt: new Date(event.blockTimestamp),
+  })
+
+  await store.save<ChannelPayoutsParameters>(newChannelPayoutsParameters)
+  return newChannelPayoutsParameters
 }
 
 async function parseProposalDetails(
@@ -317,6 +350,13 @@ async function parseProposalDetails(
     const details = new VetoProposalDetails()
     const specificDetails = proposalDetails.asVetoProposal
     details.proposalId = specificDetails.toString()
+    return details
+  }
+  // UpdateChannelPayoutsProposalDetails
+  else if (proposalDetails.isUpdateChannelPayouts) {
+    const details = new UpdateChannelPayoutsProposalDetails()
+    const specificDetails = proposalDetails.asUpdateChannelPayouts
+    details.channelPayoutsParametersId = (await saveChannelPayoutsParameters(event, store, specificDetails)).id
     return details
   } else {
     throw new Error(`Unspported proposal details type: ${proposalDetails.type}`)
