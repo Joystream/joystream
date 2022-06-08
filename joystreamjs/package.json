@@ -1,11 +1,24 @@
 {
+  "private": true,
   "name": "joystreamjs",
   "version": "1.0.0",
   "license": "GPL-3.0-only",
-  "scripts": {},
+  "scripts": {
+    "build": "yarn workspace @joystreamjs/utils build && yarn workspace @joystreamjs/content build"
+  },
+  "workspaces": [
+    "content",
+    "utils"
+  ],
   "devDependencies": {
     "eslint": "^7.25.0",
     "@joystream/eslint-config": "^1.0.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "..devops/git-hooks/pre-commit",
+      "pre-push": "..devops/git-hooks/pre-push"
+    }
   },
   "engines": {
     "node": ">=14.0.0",
