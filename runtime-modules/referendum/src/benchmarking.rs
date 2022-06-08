@@ -55,7 +55,7 @@ fn make_multiple_votes_for_multiple_options<
         + membership::Config
         + OptionCreator<
             <T as frame_system::Config>::AccountId,
-            <T as common::membership::Config>::MemberId,
+            <T as common::membership::MembershipTypes>::MemberId,
         >,
     I: Instance,
 >(
@@ -94,7 +94,7 @@ fn vote_for<
         + membership::Config
         + OptionCreator<
             <T as frame_system::Config>::AccountId,
-            <T as common::membership::Config>::MemberId,
+            <T as common::membership::MembershipTypes>::MemberId,
         >,
     I: Instance,
 >(
@@ -145,7 +145,7 @@ fn create_account_and_vote<
         + membership::Config
         + OptionCreator<
             <T as frame_system::Config>::AccountId,
-            <T as common::membership::Config>::MemberId,
+            <T as common::membership::MembershipTypes>::MemberId,
         >,
     I: Instance,
 >(
@@ -259,7 +259,7 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
     T: Config<I>
         + OptionCreator<
             <T as frame_system::Config>::AccountId,
-            <T as common::membership::Config>::MemberId,
+            <T as common::membership::MembershipTypes>::MemberId,
         > + membership::Config,
     I: Instance,
 >(
@@ -336,7 +336,7 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
 benchmarks_instance! {
     where_clause {
         where T: OptionCreator<<T as frame_system::Config>::AccountId,
-        <T as common::membership::Config>::MemberId>,
+        <T as common::membership::MembershipTypes>::MemberId>,
         T: membership::Config
     }
 
@@ -697,12 +697,12 @@ mod tests {
     impl
         OptionCreator<
             <Runtime as frame_system::Config>::AccountId,
-            <Runtime as common::membership::Config>::MemberId,
+            <Runtime as common::membership::MembershipTypes>::MemberId,
         > for Runtime
     {
         fn create_option(
             _: <Runtime as frame_system::Config>::AccountId,
-            _: <Runtime as common::membership::Config>::MemberId,
+            _: <Runtime as common::membership::MembershipTypes>::MemberId,
         ) {
         }
     }

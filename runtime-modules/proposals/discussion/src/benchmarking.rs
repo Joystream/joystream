@@ -71,7 +71,9 @@ fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     assert_eq!(event, &system_event);
 }
 
-fn member_account<T: common::membership::Config + balances::Config + membership::Config>(
+fn member_account<
+    T: common::membership::MembershipTypes + balances::Config + membership::Config,
+>(
     name: &'static str,
     id: u32,
 ) -> (T::AccountId, T::MemberId) {
@@ -264,7 +266,8 @@ benchmarks! {
                 post_id,
                 caller_member_id,
                 thread_id,
-                text
+                text,
+                true,
             ).into()
         );
     }

@@ -1,6 +1,6 @@
 //! # Proposals engine module
 //! Proposals `engine` module for the Joystream platform.
-//! The main component of the proposals system. Provides methods and extrinsics to create and
+//! The main component of the proposals frame_system. Provides methods and extrinsics to create and
 //! vote for proposals, inspired by Parity **Democracy module**.
 //!
 //! ## Overview
@@ -74,7 +74,7 @@
 //! use codec::Encode;
 //! use pallet_proposals_engine::{self as engine, ProposalParameters, ProposalCreationParameters};
 //!
-//! pub trait Config: engine::Config + common::membership::Config {}
+//! pub trait Config: engine::Config + common::membership::MembershipTypes {}
 //!
 //! decl_module! {
 //!     pub struct Module<T: Config> for enum Call where origin: T::Origin {
@@ -95,7 +95,7 @@
 //!                 .to_vec();
 //!             let encoded_proposal_code = <Call<T>>::executable_proposal().encode();
 //!
-//!             <engine::Pallet<T>>::ensure_create_proposal_parameters_are_valid(
+//!             <engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
 //!                 &parameters,
 //!                 &title,
 //!                 &description,
@@ -115,7 +115,7 @@
 //!                 exact_execution_block: None,
 //!             };
 //!
-//!             <engine::Pallet<T>>::create_proposal(creation_parameters)?;
+//!             <engine::Module<T>>::create_proposal(creation_parameters)?;
 //!         }
 //!     }
 //! }
@@ -144,7 +144,7 @@ mod tests;
 use codec::Decode;
 use frame_support::dispatch::{DispatchError, DispatchResult, UnfilteredDispatchable};
 use frame_support::storage::IterableStorageMap;
-use frame_support::traits::Get;
+use frame_support::traits::{Get, LockIdentifier};
 use frame_support::weights::{GetDispatchInfo, Weight};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, Parameter, StorageDoubleMap,
@@ -170,13 +170,17 @@ pub trait WeightInfo {
     fn on_initialize_rejected(i: u32) -> Weight;
     fn on_initialize_slashed(i: u32) -> Weight;
     fn cancel_active_and_pending_proposals(i: u32) -> Weight;
+    fn proposer_remark() -> Weight;
 }
 
 type WeightInfoEngine<T> = <T as Config>::WeightInfo;
 
 /// Proposals engine trait.
 pub trait Config:
-    frame_system::Config + pallet_timestamp::Config + common::membership::Config + balances::Config
+    frame_system::Config
+    + pallet_timestamp::Config
+    + common::membership::MembershipTypes
+    + balances::Config
 {
     /// Engine event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
@@ -202,7 +206,12 @@ pub trait Config:
     type ProposalId: From<u32> + Parameter + Default + Copy;
 
     /// Provides stake logic implementation.
-    type StakingHandler: StakingHandler<Self::AccountId, BalanceOf<Self>, MemberId<Self>>;
+    type StakingHandler: StakingHandler<
+        Self::AccountId,
+        BalanceOf<Self>,
+        MemberId<Self>,
+        LockIdentifier,
+    >;
 
     /// The fee is applied when cancel the proposal. A fee would be slashed (burned).
     type CancellationFee: Get<BalanceOf<Self>>;
@@ -257,11 +266,6 @@ decl_event!(
         MemberId = MemberId<T>,
         <T as frame_system::Config>::BlockNumber,
     {
-        /// Emits on proposal creation.
-        /// Params:
-        /// - Member id of a proposer.
-        /// - Id of a newly created proposal after it was saved in storage.
-        ProposalCreated(MemberId, ProposalId),
 
         /// Emits on proposal creation.
         /// Params:
@@ -294,6 +298,12 @@ decl_event!(
         /// - Member Id of the proposer
         /// - Id of the proposal
         ProposalCancelled(MemberId, ProposalId),
+
+        /// Emits on proposer making a remark
+        /// - proposer id
+        /// - proposal id
+        /// - message
+        ProposerRemarked(MemberId, ProposalId, Vec<u8>),
     }
 );
 
@@ -412,6 +422,9 @@ decl_module! {
 
         /// Exports const -  max simultaneous active proposals number.
         const MaxActiveProposalLimit: u32 = T::MaxActiveProposalLimit::get();
+
+        /// Exports const - staking handler lock id.
+        const StakingHandlerLockId: LockIdentifier = T::StakingHandler::lock_id();
 
         /// Block Initialization. Perform voting period check, vote result tally, approved proposals
         /// grace period checks, and proposal execution.
@@ -546,6 +559,36 @@ decl_module! {
 
             Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Vetoed);
         }
+
+        /// Proposer Remark
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)` doesn't depend on the state or parameters
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoEngine::<T>::proposer_remark()]
+        pub fn proposer_remark(
+            origin,
+            proposal_id: T::ProposalId,
+            proposer_id: MemberId<T>,
+            msg: Vec<u8>,
+        ) {
+            T::ProposerOriginValidator::ensure_member_controller_account_origin(origin, proposer_id)?;
+
+            ensure!(<Proposals<T>>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
+            let proposal = Self::proposals(proposal_id);
+
+            ensure!(proposer_id == proposal.proposer_id, Error::<T>::NotAuthor);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::ProposerRemarked(proposer_id, proposal_id, msg));
+        }
     }
 }
 
@@ -601,11 +644,6 @@ impl<T: Config> Module<T> {
         );
         ProposalCount::put(next_proposal_count_value);
         Self::increase_active_proposal_counter();
-
-        Self::deposit_event(RawEvent::ProposalCreated(
-            creation_params.proposer_id,
-            proposal_id,
-        ));
 
         Ok(proposal_id)
     }
@@ -972,7 +1010,6 @@ impl<T: Config> Module<T> {
         <Proposals<T>>::remove(proposal_id);
         <DispatchableCallCode<T>>::remove(proposal_id);
         <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
-
         Self::decrease_active_proposal_counter();
 
         T::ProposalObserver::proposal_removed(proposal_id);

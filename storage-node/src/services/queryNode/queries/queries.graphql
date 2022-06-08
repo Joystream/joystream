@@ -1,0 +1,116 @@
+# TODO: remove after issue fix: https://github.com/Joystream/joystream/issues/2811
+fragment StorageBucketIds on StorageBucket {
+  id
+}
+
+query getStorageBucketsConnection($limit: Int, $cursor: String) {
+  storageBucketsConnection(
+    first: $limit
+    after: $cursor
+    where: { operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive" } }
+  ) {
+    edges {
+      cursor
+      node {
+        ...StorageBucketIds
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    totalCount
+  }
+}
+
+query getStorageBucketDetailsByWorkerId($workerId: ID, $limit: Int, $cursor: String) {
+  storageBucketsConnection(
+    first: $limit
+    after: $cursor
+    where: { operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive", workerId_eq: $workerId } }
+  ) {
+    edges {
+      cursor
+      node {
+        ...StorageBucketIds
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    totalCount
+  }
+}
+
+fragment StorageBucketDetails on StorageBucket {
+  id
+  operatorMetadata {
+    id
+    nodeEndpoint
+  }
+  operatorStatus {
+    ... on StorageBucketOperatorStatusActive {
+      workerId
+    }
+    ... on StorageBucketOperatorStatusInvited {
+      workerId
+    }
+  }
+}
+
+query getStorageBucketDetails($ids: [ID!], $offset: Int, $limit: Int) {
+  storageBuckets(where: { id_in: $ids }, offset: $offset, limit: $limit) {
+    ...StorageBucketDetails
+  }
+}
+
+fragment StorageBagDetails on StorageBag {
+  id
+  storageBuckets {
+    id
+  }
+}
+
+query getStorageBagDetails($bucketIds: [ID!], $offset: Int, $limit: Int) {
+  storageBags(offset: $offset, limit: $limit, where: { storageBuckets_some: { id_in: $bucketIds } }) {
+    ...StorageBagDetails
+  }
+}
+
+query getBagConnection($bucketIds: [ID!], $limit: Int, $cursor: String) {
+  storageBagsConnection(first: $limit, after: $cursor, where: { storageBuckets_some: { id_in: $bucketIds } }) {
+    edges {
+      cursor
+      node {
+        ...StorageBagDetails
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    totalCount
+  }
+}
+
+fragment DataObjectDetails on StorageDataObject {
+  id
+  storageBagId
+}
+
+query getDataObjectConnection($bagIds: StorageBagWhereInput, $limit: Int, $cursor: String) {
+  storageDataObjectsConnection(first: $limit, after: $cursor, where: { storageBag: $bagIds, isAccepted_eq: true }) {
+    edges {
+      cursor
+      node {
+        ...DataObjectDetails
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    totalCount
+  }
+}

@@ -1,0 +1,28 @@
+syntax = "proto2";
+
+message ChannelMetadata {
+    // Channel Title
+    optional string title = 1;
+
+    // Channel Description
+    optional string description = 2;
+
+    // Wether to display channel to the public
+    optional bool is_public = 3;
+
+    // ISO_639-1 Language [Code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes)
+    optional string language = 4;
+
+    // index into external [assets array](#.Assets)
+    optional uint32 cover_photo = 5;
+    // index into external [assets array](#.Assets)
+    optional uint32 avatar_photo  = 6;
+
+    // Channel Category Id
+    optional uint64 category = 7;
+}
+
+message ChannelCategoryMetadata {
+    // Category Name
+    optional string name = 1;
+}

@@ -1,6 +1,6 @@
 //! # Proposals discussion module
 //! Proposals `discussion` module for the Joystream platform.
-//! It contains discussion subsystem of the proposals.
+//! It contains discussion system of the proposals.
 //!
 //! ## Overview
 //!
@@ -27,7 +27,7 @@
 //! use frame_system::ensure_root;
 //! use pallet_proposals_discussion::{self as discussions, ThreadMode};
 //!
-//! pub trait Config: discussions::Config + common::membership::Config {}
+//! pub trait Config: discussions::Config + common::membership::MembershipTypes {}
 //!
 //! decl_module! {
 //!     pub struct Module<T: Config> for enum Call where origin: T::Origin {
@@ -35,8 +35,8 @@
 //!         pub fn create_discussion(origin, title: Vec<u8>, author_id : T::MemberId) {
 //!             ensure_root(origin)?;
 //!             let thread_mode = ThreadMode::Open;
-//!             <discussions::Pallet<T>>::ensure_can_create_thread(&thread_mode)?;
-//!             <discussions::Pallet<T>>::create_thread(author_id, thread_mode)?;
+//!             <discussions::Module<T>>::ensure_can_create_thread(&thread_mode)?;
+//!             <discussions::Module<T>>::create_thread(author_id, thread_mode)?;
 //!         }
 //!     }
 //! }
@@ -101,7 +101,7 @@ decl_event!(
         ThreadCreated(ThreadId, MemberId),
 
         /// Emits on post creation.
-        PostCreated(PostId, MemberId, ThreadId, Vec<u8>),
+        PostCreated(PostId, MemberId, ThreadId, Vec<u8>, bool),
 
         /// Emits on post update.
         PostUpdated(PostId, MemberId, ThreadId, Vec<u8>),
@@ -120,8 +120,10 @@ pub trait CouncilMembership<AccountId, MemberId> {
     fn is_council_member(account_id: &AccountId, member_id: &MemberId) -> bool;
 }
 
-/// 'Proposal discussion' substrate module Config
-pub trait Config: frame_system::Config + balances::Config + common::membership::Config {
+/// 'Proposal discussion' substrate module Trait
+pub trait Config:
+    frame_system::Config + balances::Config + common::membership::MembershipTypes
+{
     /// Discussion event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
@@ -215,6 +217,15 @@ decl_module! {
         /// Emits an event. Default substrate implementation.
         fn deposit_event() = default;
 
+        /// Exports const - author list size limit for the Closed discussion.
+        const MaxWhiteListSize: u32 = T::MaxWhiteListSize::get();
+
+        /// Exports const - fee for creating a post
+        const PostDeposit: BalanceOf<T> = T::PostDeposit::get();
+
+        /// Exports const - maximum number of blocks before a post can be erased by anyone
+        const PostLifeTime: T::BlockNumber = T::PostLifeTime::get();
+
         /// Adds a post with author origin check.
         ///
         /// <weight>
@@ -275,7 +286,7 @@ decl_module! {
             }
 
             PostCount::put(next_post_count_value);
-            Self::deposit_event(RawEvent::PostCreated(post_id, post_author_id, thread_id, text));
+            Self::deposit_event(RawEvent::PostCreated(post_id, post_author_id, thread_id, text, editable));
        }
 
         /// Remove post from storage, with the last parameter indicating whether to also hide it

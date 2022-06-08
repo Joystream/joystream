@@ -1,0 +1,19 @@
+syntax = "proto2";
+
+message SeriesMetadata {
+    optional string title = 1;
+    optional string description = 2;
+    // index into external [assets array](#.Assets)
+    optional uint32 cover_photo = 3;
+    // Person(s) referenced by PersonId involved in this Series
+    repeated uint64 persons = 4 [packed=true];
+}
+
+message SeasonMetadata {
+    optional string title = 1;
+    optional string description = 2; 
+    // index into external [assets array](#.Assets)
+    optional uint32 cover_photo = 3;
+    // Person(s) referenced by PersonId involved in this Season
+    repeated uint64 persons = 4 [packed=true];
+}

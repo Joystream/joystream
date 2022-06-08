@@ -45,11 +45,11 @@ pub(crate) fn ensure_stake_for_opening_type<T: Config<I>, I: Instance>(
         ensure_origin_is_active_leader::<T, I>(origin)?;
         let lead = crate::Module::<T, I>::worker_by_id(ensure_lead_is_set::<T, I>()?);
 
+        let new_stake = T::LeaderOpeningStake::get()
+            + T::StakingHandler::current_stake(&lead.staking_account_id);
+
         ensure!(
-            T::StakingHandler::is_enough_balance_for_stake(
-                &lead.staking_account_id,
-                T::LeaderOpeningStake::get()
-            ),
+            T::StakingHandler::is_enough_balance_for_stake(&lead.staking_account_id, new_stake),
             Error::<T, I>::InsufficientBalanceToCoverStake
         );
     }
@@ -159,8 +159,8 @@ pub(crate) fn ensure_origin_is_active_leader<T: Config<I>, I: Instance>(
     ensure_is_lead_account::<T, I>(signer)
 }
 
-/// Check worker: ensures the worker was already created.
-pub fn ensure_worker_exists<T: Config<I>, I: Instance>(
+// Check worker: ensures the worker was already created.
+pub(crate) fn ensure_worker_exists<T: Config<I>, I: Instance>(
     worker_id: &WorkerId<T>,
 ) -> Result<Worker<T>, Error<T, I>> {
     ensure!(
@@ -173,8 +173,8 @@ pub fn ensure_worker_exists<T: Config<I>, I: Instance>(
     Ok(worker)
 }
 
-/// Check worker: ensures the origin contains signed account that belongs to existing worker.
-pub fn ensure_worker_signed<T: Config<I>, I: Instance>(
+// Check worker: ensures the origin contains signed account that belongs to existing worker.
+pub(crate) fn ensure_worker_signed<T: Config<I>, I: Instance>(
     origin: T::Origin,
     worker_id: &WorkerId<T>,
 ) -> Result<Worker<T>, DispatchError> {
@@ -221,7 +221,7 @@ pub(crate) fn ensure_valid_stake_policy<T: Config<I>, I: Instance>(
     );
 
     ensure!(
-        stake_policy.leaving_unstaking_period > T::MinUnstakingPeriodLimit::get(),
+        stake_policy.leaving_unstaking_period >= T::MinUnstakingPeriodLimit::get(),
         Error::<T, I>::UnstakingPeriodLessThanMinimum
     );
 
@@ -262,4 +262,15 @@ pub(crate) fn ensure_worker_has_recurring_reward<T: Config<I>, I: Instance>(
     worker
         .reward_per_block
         .map_or(Err(Error::<T, I>::WorkerHasNoReward.into()), |_| Ok(()))
+}
+
+// Validates storage text.
+pub(crate) fn ensure_worker_role_storage_text_is_valid<T: Config<I>, I: Instance>(
+    text: &[u8],
+) -> DispatchResult {
+    ensure!(
+        text.len() as u16 <= <crate::WorkerStorageSize>::get(),
+        Error::<T, I>::WorkerStorageValueTooLong
+    );
+    Ok(())
 }

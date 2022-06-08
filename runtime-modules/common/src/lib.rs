@@ -3,14 +3,54 @@
 
 pub mod constraints;
 pub mod council;
+pub mod currency;
 pub mod membership;
+pub mod storage;
 pub mod working_group;
 
-use codec::{Decode, Encode};
+use codec::{Codec, Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-pub use membership::{ActorId, MemberId, StakingAccountValidator};
+use frame_support::traits::LockIdentifier;
+use frame_support::Parameter;
+pub use membership::{ActorId, MemberId, MembershipTypes, StakingAccountValidator};
+use sp_arithmetic::traits::BaseArithmetic;
+use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_std::collections::btree_set::BTreeSet;
+use sp_std::vec::Vec;
+
+/// HTTP Url string
+pub type Url = Vec<u8>;
+pub type AssetUrls = Vec<Url>;
+
+/// Generic trait for strorage ownership dependent pallets.
+pub trait StorageOwnership {
+    /// Channel id representation.
+    type ChannelId: Parameter
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + Ord
+        + PartialEq;
+
+    /// Content id representation.
+    type ContentId: Parameter + Member + Codec + Default + Copy + MaybeSerialize + Ord + PartialEq;
+
+    /// Data object type id.
+    type DataObjectTypeId: Parameter
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + Ord
+        + PartialEq;
+}
 
 /// Defines time in both block number and substrate time abstraction.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -53,4 +93,10 @@ pub fn current_block_time<T: frame_system::Config + pallet_timestamp::Config>(
         block: <frame_system::Pallet<T>>::block_number(),
         time: <pallet_timestamp::Pallet<T>>::now(),
     }
+}
+
+/// Provides allowed locks combination for the accounts.
+pub trait AllowedLockCombinationProvider {
+    /// Return allowed locks combination set.
+    fn get_allowed_lock_combinations() -> BTreeSet<(LockIdentifier, LockIdentifier)>;
 }

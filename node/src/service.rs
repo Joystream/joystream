@@ -18,15 +18,25 @@
 
 #![allow(clippy::type_complexity)]
 #![warn(unused_extern_crates)]
+// Substrate implementation issue.
+#![allow(clippy::redundant_clone)]
 
 //! Service implementation. Specialized wrapper over substrate service.
 
-use futures::prelude::*;
 use node_primitives::Block;
-use node_runtime::RuntimeApi;
-use sc_client_api::{ExecutorProvider, RemoteBackend};
+
+use crate::node_executor;
+use crate::node_rpc;
 use sc_consensus_babe;
 use sc_executor::native_executor_instance;
+use sc_finality_grandpa as grandpa;
+
+use futures::prelude::*;
+use node_executor::Executor;
+use node_runtime::opaque::Block;
+use node_runtime::RuntimeApi;
+use sc_client_api::{ExecutorProvider, RemoteBackend};
+use sc_finality_grandpa::FinalityProofProvider as GrandpaFinalityProofProvider;
 use sc_network::{Event, NetworkService};
 use sc_service::{config::Configuration, error::Error as ServiceError, RpcHandlers, TaskManager};
 use sc_telemetry::TelemetryConnectionNotifier;
@@ -232,6 +242,8 @@ pub fn new_full_base(
             import_queue,
             on_demand: None,
             block_announce_validator_builder: None,
+            // finality_proof_request_builder: None,
+            // finality_proof_provider: Some(finality_proof_provider.clone()),
         })?;
 
     if config.offchain_worker.enabled {
@@ -267,6 +279,22 @@ pub fn new_full_base(
             network_status_sinks: network_status_sinks.clone(),
             system_rpc_tx,
         })?;
+    // Use this instead?
+    // sc_service::spawn_tasks(sc_service::SpawnTasksParams {
+    //     config,
+    //     backend: backend.clone(),
+    //     client: client.clone(),
+    //     keystore: keystore.clone(),
+    //     network: network.clone(),
+    //     rpc_extensions_builder: Box::new(rpc_extensions_builder),
+    //     transaction_pool: transaction_pool.clone(),
+    //     task_manager: &mut task_manager,
+    //     on_demand: None,
+    //     remote_blockchain: None,
+    //     telemetry_connection_sinks: telemetry_connection_sinks.clone(),
+    //     network_status_sinks: network_status_sinks.clone(),
+    //     system_rpc_tx,
+    // })?;
 
     let (block_import, grandpa_link, babe_link) = import_setup;
 
@@ -442,8 +470,8 @@ pub fn new_light_base(
         babe_block_import,
         Some(Box::new(justification_import)),
         client.clone(),
-        select_chain,
-        inherent_data_providers,
+        select_chain.clone(),
+        inherent_data_providers.clone(),
         &task_manager.spawn_handle(),
         config.prometheus_registry(),
         sp_consensus::NeverCanAuthor,

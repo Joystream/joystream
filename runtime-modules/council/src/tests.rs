@@ -8,7 +8,7 @@ use crate::mock::*;
 use common::council::CouncilBudgetManager;
 use common::council::CouncilOriginValidator;
 use frame_support::traits::Currency;
-use frame_support::StorageValue;
+use frame_support::{assert_err, assert_ok, StorageValue};
 use frame_system::RawOrigin;
 use staking_handler::StakingHandler;
 
@@ -244,7 +244,8 @@ fn council_candidacy_release_candidate_stake() {
     });
 }
 
-// Test that only valid members can candidate.
+// Test that the announcement period is reset in case that not enough candidates
+// to fill the council has announced their candidacy.
 #[test]
 fn council_announcement_reset_on_insufficient_candidates() {
     let config = default_genesis_config();
@@ -274,6 +275,56 @@ fn council_announcement_reset_on_insufficient_candidates() {
         };
 
         Mocks::simulate_council_cycle(params.clone());
+
+        // forward to election-voting period
+        MockUtils::increase_block_number(council_settings.announcing_stage_duration + 1);
+
+        // check announcements were reset
+        Mocks::check_announcing_period(
+            params.cycle_start_block_number + council_settings.announcing_stage_duration,
+            CouncilStageAnnouncing {
+                candidates_count: 0,
+            },
+        );
+    });
+}
+
+// Test that the announcement period is reset in case that not enough candidates
+// to fill the council has announced and not withdrawn their candidacy.
+#[test]
+fn council_announcement_reset_on_insufficient_candidates_after_candidacy_withdrawal() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let council_settings = CouncilSettings::<Runtime>::extract_settings();
+
+        // generate candidates
+        let candidates: Vec<CandidateInfo<Runtime>> = (0..council_settings.min_candidate_count)
+            .map(|i| {
+                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake)
+            })
+            .collect();
+
+        let params = CouncilCycleParams {
+            council_settings: council_settings.clone(),
+            cycle_start_block_number: 0,
+            expected_initial_council_members: vec![],
+            expected_final_council_members: vec![], // not needed in this scenario
+            candidates_announcing: candidates.clone(),
+            expected_candidates: vec![], // not needed in this scenario
+            voters: vec![],              // not needed in this scenario
+
+            // escape before voting
+            interrupt_point: Some(CouncilCycleInterrupt::AfterCandidatesAnnounce),
+        };
+
+        Mocks::simulate_council_cycle(params.clone());
+
+        Mocks::withdraw_candidacy(
+            candidates[0].origin.clone(),
+            candidates[0].account_id.clone(),
+            Ok(()),
+        );
 
         // forward to election-voting period
         MockUtils::increase_block_number(council_settings.announcing_stage_duration + 1);
@@ -1751,6 +1802,88 @@ fn test_council_budget_manager_works_correctlyl() {
         assert_eq!(
             <Module<Runtime> as CouncilBudgetManager<u64>>::get_budget(),
             new_budget
+        );
+    });
+}
+
+#[test]
+fn councilor_remark_successful() {
+    let config = augmented_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = 1;
+        let member_id = 1;
+        let msg = b"test".to_vec();
+        let origin = RawOrigin::Signed(account_id.clone());
+
+        assert_ok!(Council::councilor_remark(origin.into(), member_id, msg));
+    });
+}
+
+#[test]
+fn councilor_remark_unsuccessful_with_invalid_origin() {
+    let config = augmented_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = 21;
+        let member_id = 1;
+        let msg = b"test".to_vec();
+        let origin = RawOrigin::Signed(account_id.clone());
+
+        assert_err!(
+            Council::councilor_remark(origin.into(), member_id, msg),
+            Error::<Runtime>::MemberIdNotMatchAccount,
+        );
+    });
+}
+
+#[test]
+fn councilor_remark_unsuccessful_with_invalid_councilor() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = 2;
+        let member_id = 2;
+        let msg = b"test".to_vec();
+        let origin = RawOrigin::Signed(account_id.clone());
+
+        assert_err!(
+            Council::councilor_remark(origin.into(), member_id, msg),
+            Error::<Runtime>::NotCouncilor,
+        );
+    });
+}
+
+#[test]
+fn candidate_remark_unsuccessful_with_invalid_candidate() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = 2;
+        let member_id = 2;
+        let msg = b"test".to_vec();
+        let origin = RawOrigin::Signed(account_id.clone());
+
+        assert_err!(
+            Council::candidate_remark(origin.into(), member_id, msg),
+            Error::<Runtime>::CandidateDoesNotExist,
+        );
+    });
+}
+
+#[test]
+fn candidate_remark_unsuccessful_with_invalid_origin() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = 21;
+        let member_id = 2;
+        let msg = b"test".to_vec();
+        let origin = RawOrigin::Signed(account_id.clone());
+
+        assert_err!(
+            Council::candidate_remark(origin.into(), member_id, msg),
+            Error::<Runtime>::MemberIdNotMatchAccount,
         );
     });
 }

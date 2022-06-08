@@ -1,5 +1,6 @@
 use crate::{Config, Instance, Module};
 use frame_support::decl_error;
+use sp_std::convert::TryInto;
 
 decl_error! {
     /// Blog module predefined errors

@@ -123,6 +123,9 @@ impl membership::WeightInfo for Weights {
     fn remove_staking_account() -> Weight {
         unimplemented!()
     }
+    fn member_remark() -> Weight {
+        unimplemented!()
+    }
 }
 
 impl balances::Config for Test {
@@ -135,13 +138,17 @@ impl balances::Config for Test {
     type MaxLocks = ();
 }
 
-impl common::membership::Config for Test {
+impl common::membership::MembershipTypes for Test {
     type MemberId = u64;
     type ActorId = u64;
 }
 
+parameter_types! {
+    pub const ScreenedMemberMaxInitialBalance: u64 = 500;
+}
+
 impl membership::Config for Test {
-    type Event = Event;
+    type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = ();
     type WeightInfo = Weights;
@@ -175,7 +182,7 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
 impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     fn ensure_worker_origin(
         _origin: <Test as frame_system::Config>::Origin,
-        _worker_id: &<Test as common::membership::Config>::ActorId,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
@@ -184,7 +191,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Test as common::membership::Config>::MemberId> {
+    fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
         unimplemented!();
     }
 
@@ -194,9 +201,19 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
 
     fn is_worker_account_id(
         _account_id: &<Test as frame_system::Config>::AccountId,
-        _worker_id: &<Test as common::membership::Config>::ActorId,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
         unimplemented!()
+    }
+
+    fn worker_exists(_worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
+        unimplemented!();
+    }
+
+    fn ensure_worker_exists(
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!();
     }
 }
 
@@ -279,7 +296,7 @@ type ReferendumInstance = referendum::Instance1;
 impl council::Config for Test {
     type Event = Event;
 
-    type Referendum = referendum::Pallet<Test, ReferendumInstance>;
+    type Referendum = referendum::Module<Test, ReferendumInstance>;
 
     type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
     type CouncilSize = CouncilSize;
@@ -294,7 +311,7 @@ impl council::Config for Test {
 
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
-    type StakingAccountValidator = membership::Pallet<Test>;
+    type StakingAccountValidator = membership::Module<Test>;
     type WeightInfo = CouncilWeightInfo;
 
     fn new_council_elected(_: &[council::CouncilMemberOf<Self>]) {}
@@ -343,6 +360,12 @@ impl council::WeightInfo for CouncilWeightInfo {
     fn funding_request(_: u32) -> Weight {
         0
     }
+    fn councilor_remark() -> Weight {
+        0
+    }
+    fn candidate_remark() -> Weight {
+        0
+    }
 }
 
 pub struct CouncilMock;
@@ -376,7 +399,7 @@ impl frame_system::Config for Test {
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
-    type PalletInfo = PalletInfo;
+    type PalletInfo = ();
     type SystemWeightInfo = ();
     type SS58Prefix = ();
 }
@@ -431,7 +454,7 @@ impl referendum::Config<ReferendumInstance> for Test {
                 vote_power: item.vote_power.into(),
             })
             .collect();
-        <council::Pallet<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(
+        <council::Module<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(
             tmp_winners.as_slice(),
         );
     }

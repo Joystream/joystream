@@ -48,7 +48,7 @@ pub struct ConstitutionInfo {
 }
 
 decl_storage! {
-    trait Store for Module<T: Config> as Memo {
+    trait Store for Module<T: Config> as Constitution {
         Constitution get(fn constitution) : ConstitutionInfo;
     }
 }

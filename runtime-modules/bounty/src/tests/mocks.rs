@@ -177,9 +177,21 @@ impl crate::WeightInfo for () {
     fn withdraw_work_entrant_funds() -> u64 {
         0
     }
+    fn contributor_remark() -> u64 {
+        0
+    }
+    fn oracle_remark() -> u64 {
+        0
+    }
+    fn entrant_remark() -> u64 {
+        0
+    }
+    fn creator_remark() -> u64 {
+        0
+    }
 }
 
-impl common::membership::Config for Test {
+impl common::membership::MembershipTypes for Test {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -268,6 +280,9 @@ impl membership::WeightInfo for Weights {
     fn remove_staking_account() -> Weight {
         unimplemented!()
     }
+    fn member_remark() -> Weight {
+        unimplemented!()
+    }
 }
 
 impl pallet_timestamp::Config for Test {
@@ -313,7 +328,7 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
 impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     fn ensure_worker_origin(
         _origin: <Test as frame_system::Config>::Origin,
-        _worker_id: &<Test as common::membership::Config>::ActorId,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
@@ -322,7 +337,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Test as common::membership::Config>::MemberId> {
+    fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
         unimplemented!();
     }
 
@@ -332,9 +347,19 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
 
     fn is_worker_account_id(
         _account_id: &<Test as frame_system::Config>::AccountId,
-        _worker_id: &<Test as common::membership::Config>::ActorId,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
         unimplemented!()
+    }
+
+    fn worker_exists(_worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
+        unimplemented!();
+    }
+
+    fn ensure_worker_exists(
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!();
     }
 }
 
@@ -429,6 +454,12 @@ impl council::WeightInfo for CouncilWeightInfo {
     fn funding_request(_: u32) -> Weight {
         0
     }
+    fn councilor_remark() -> Weight {
+        0
+    }
+    fn candidate_remark() -> Weight {
+        0
+    }
 }
 
 parameter_types! {
@@ -474,23 +505,23 @@ impl referendum::Config<ReferendumInstance> for Test {
                 vote_power: item.vote_power.into(),
             })
             .collect();
-        <council::Pallet<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(
+        <council::Module<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(
             tmp_winners.as_slice(),
         );
     }
 
     fn is_valid_option_id(option_index: &u64) -> bool {
-        <council::Pallet<Test> as council::ReferendumConnection<Test>>::is_valid_candidate_id(
+        <council::Module<Test> as council::ReferendumConnection<Test>>::is_valid_candidate_id(
             option_index,
         )
     }
 
     fn get_option_power(option_id: &u64) -> Self::VotePower {
-        <council::Pallet<Test> as council::ReferendumConnection<Test>>::get_option_power(option_id)
+        <council::Module<Test> as council::ReferendumConnection<Test>>::get_option_power(option_id)
     }
 
     fn increase_option_power(option_id: &u64, amount: &Self::VotePower) {
-        <council::Pallet<Test> as council::ReferendumConnection<Test>>::increase_option_power(
+        <council::Module<Test> as council::ReferendumConnection<Test>>::increase_option_power(
             option_id, amount,
         );
     }

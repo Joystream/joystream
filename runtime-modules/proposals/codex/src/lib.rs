@@ -1,10 +1,10 @@
 //! # Proposals codex module
 //! Proposals `codex` module for the Joystream platform.
-//! Component of the proposals system. It contains preset proposal types.
+//! Component of the proposals frame_system. It contains preset proposal types.
 //!
 //! ## Overview
 //!
-//! The proposals codex module serves as a facade and entry point of the proposals system. It uses
+//! The proposals codex module serves as a facade and entry point of the proposals frame_system. It uses
 //! proposals `engine` module to maintain a lifecycle of the proposal and to execute proposals.
 //! During the proposal creation, `codex` also create a discussion thread using the `discussion`
 //! proposals module. `Codex` uses predefined parameters (eg.:`voting_period`) for each proposal and
@@ -68,9 +68,9 @@ pub use types::{
 };
 
 // Max allowed value for 'Funding Request' proposal
-const MAX_SPENDING_PROPOSAL_VALUE: u32 = 5_000_000u32;
+const MAX_SPENDING_PROPOSAL_VALUE: u32 = 50_000_000_u32;
 // Max validator count for the 'Set Max Validator Count' proposal
-const MAX_VALIDATOR_COUNT: u32 = 100;
+const MAX_VALIDATOR_COUNT: u32 = 300;
 // Max number of account that a fund request accept
 const MAX_FUNDING_REQUEST_ACCOUNTS: usize = 100;
 
@@ -106,11 +106,12 @@ pub trait WeightInfo {
 
 type WeightInfoCodex<T> = <T as Config>::WeightInfo;
 
-/// 'Proposals codex' substrate module Config
+/// 'Proposals codex' substrate module Trait
 pub trait Config:
-    proposals_engine::Config
+    frame_system::Config
+    + proposals_engine::Config
     + proposals_discussion::Config
-    + common::membership::Config
+    + common::membership::MembershipTypes
     + staking::Config
     + proposals_engine::Config
 {
@@ -259,12 +260,16 @@ decl_event! {
     pub enum Event<T> where
         GeneralProposalParameters = GeneralProposalParameters<T>,
         ProposalDetailsOf = ProposalDetailsOf<T>,
+        <T as proposals_engine::Config>::ProposalId,
+        <T as proposals_discussion::Config>::ThreadId
     {
         /// A proposal was created
         /// Params:
+        /// - Id of a newly created proposal after it was saved in storage.
         /// - General proposal parameter. Parameters shared by all proposals
         /// - Proposal Details. Parameter of proposal with a variant for each kind of proposal
-        ProposalCreated(GeneralProposalParameters, ProposalDetailsOf),
+        /// - Id of a newly created proposal thread
+        ProposalCreated(ProposalId, GeneralProposalParameters, ProposalDetailsOf, ThreadId),
     }
 }
 
@@ -480,7 +485,7 @@ decl_module! {
                     general_proposal_parameters.member_id
                 )?;
 
-            <proposals_engine::Pallet<T>>::ensure_create_proposal_parameters_are_valid(
+            <proposals_engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
                 &proposal_parameters,
                 &general_proposal_parameters.title,
                 &general_proposal_parameters.description,
@@ -490,9 +495,9 @@ decl_module! {
             )?;
 
             let initial_thread_mode = ThreadMode::Open;
-            <proposals_discussion::Pallet<T>>::ensure_can_create_thread(&initial_thread_mode)?;
+            <proposals_discussion::Module<T>>::ensure_can_create_thread(&initial_thread_mode)?;
 
-            let discussion_thread_id = <proposals_discussion::Pallet<T>>::create_thread(
+            let discussion_thread_id = <proposals_discussion::Module<T>>::create_thread(
                 general_proposal_parameters.member_id,
                 initial_thread_mode,
             )?;
@@ -509,11 +514,11 @@ decl_module! {
             };
 
             let proposal_id =
-                <proposals_engine::Pallet<T>>::create_proposal(proposal_creation_params)?;
+                <proposals_engine::Module<T>>::create_proposal(proposal_creation_params)?;
 
             <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
 
-            Self::deposit_event(RawEvent::ProposalCreated(general_proposal_parameters, proposal_details));
+            Self::deposit_event(RawEvent::ProposalCreated(proposal_id, general_proposal_parameters, proposal_details, discussion_thread_id));
         }
     }
 }

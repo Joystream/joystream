@@ -14,7 +14,7 @@ pub struct CouncilManager<T> {
 impl<T: council::Config> VotersParameters for CouncilManager<T> {
     /// Implement total_voters_count() as council size
     fn total_voters_count() -> u32 {
-        council::Pallet::<T>::council_members()
+        council::Module::<T>::council_members()
             .len()
             .saturated_into()
     }

@@ -1,6 +1,6 @@
 import { Option, bool, u32, Text, Bytes } from '@polkadot/types'
 import { RegistryTypes } from '@polkadot/types/types'
-import { AccountId, MemberId, JoyStructDecorated } from './common'
+import { MemberId, JoyStructDecorated, AccountId } from './common'
 
 export type IMembership = {
   handle_hash: Bytes

@@ -1,4 +1,4 @@
-//! This module contains default parameters for the runtime codex proposals.
+//! This module contains default "production" parameters configuration for the runtime codex proposals.
 
 use crate::{Balance, BlockNumber, ProposalParameters};
 
@@ -19,13 +19,13 @@ pub(crate) fn set_max_validator_count_proposal() -> ProposalParameters<BlockNumb
 // Proposal parameters for the 'Runtime Upgrade' proposal
 pub(crate) fn runtime_upgrade_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
-        voting_period: 72000,
-        grace_period: 72000,
+        voting_period: 28800,
+        grace_period: 14400,
         approval_quorum_percentage: 80,
         approval_threshold_percentage: 100,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(1_000_000),
+        required_stake: Some(10_000_000),
         constitutionality: 1,
     }
 }
@@ -39,7 +39,7 @@ pub(crate) fn signal_proposal() -> ProposalParameters<BlockNumber, Balance> {
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(25000),
+        required_stake: Some(25_000),
         constitutionality: 1,
     }
 }
@@ -48,12 +48,12 @@ pub(crate) fn signal_proposal() -> ProposalParameters<BlockNumber, Balance> {
 pub(crate) fn funding_request_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 72000,
-        grace_period: 14400,
+        grace_period: 0,
         approval_quorum_percentage: 60,
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(25000),
+        required_stake: Some(25_000),
         constitutionality: 1,
     }
 }
@@ -82,7 +82,7 @@ pub(crate) fn fill_working_group_lead_opening_proposal() -> ProposalParameters<B
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(50000),
+        required_stake: Some(50_000),
         constitutionality: 1,
     }
 }
@@ -96,7 +96,7 @@ pub(crate) fn update_working_group_budget_proposal() -> ProposalParameters<Block
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(50000),
+        required_stake: Some(50_000),
         constitutionality: 1,
     }
 }
@@ -111,7 +111,7 @@ pub(crate) fn decrease_working_group_lead_stake_proposal(
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(50000),
+        required_stake: Some(50_000),
         constitutionality: 1,
     }
 }
@@ -125,7 +125,7 @@ pub fn slash_working_group_lead_proposal() -> ProposalParameters<BlockNumber, Ba
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(50000),
+        required_stake: Some(50_000),
         constitutionality: 1,
     }
 }
@@ -139,7 +139,7 @@ pub(crate) fn set_working_group_lead_reward_proposal() -> ProposalParameters<Blo
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(50000),
+        required_stake: Some(50_000),
         constitutionality: 1,
     }
 }
@@ -162,13 +162,13 @@ pub(crate) fn terminate_working_group_lead_proposal() -> ProposalParameters<Bloc
 pub(crate) fn amend_constitution_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 72200,
-        grace_period: 72200,
+        grace_period: 14400,
         approval_quorum_percentage: 80,
         approval_threshold_percentage: 100,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
         required_stake: Some(1_000_000),
-        constitutionality: 1,
+        constitutionality: 2,
     }
 }
 
@@ -182,7 +182,7 @@ pub(crate) fn cancel_working_group_lead_opening_proposal(
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(50000),
+        required_stake: Some(50_000),
         constitutionality: 1,
     }
 }
@@ -191,12 +191,12 @@ pub(crate) fn cancel_working_group_lead_opening_proposal(
 pub(crate) fn set_membership_price_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 43200,
-        grace_period: 14400,
+        grace_period: 0,
         approval_quorum_percentage: 60,
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(50000),
+        required_stake: Some(50_000),
         constitutionality: 1,
     }
 }
@@ -205,7 +205,7 @@ pub(crate) fn set_membership_price_proposal() -> ProposalParameters<BlockNumber,
 pub(crate) fn set_council_budget_increment_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 72000,
-        grace_period: 43200,
+        grace_period: 14400,
         approval_quorum_percentage: 66,
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
@@ -219,13 +219,13 @@ pub(crate) fn set_council_budget_increment_proposal() -> ProposalParameters<Bloc
 pub(crate) fn set_councilor_reward_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 72000,
-        grace_period: 201600, // A council term
+        grace_period: 100800,
         approval_quorum_percentage: 66,
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
         required_stake: Some(200_000),
-        constitutionality: 1,
+        constitutionality: 2,
     }
 }
 
@@ -234,7 +234,7 @@ pub(crate) fn set_initial_invitation_balance_proposal() -> ProposalParameters<Bl
 {
     ProposalParameters {
         voting_period: 72000,
-        grace_period: 43200,
+        grace_period: 0,
         approval_quorum_percentage: 60,
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
@@ -250,7 +250,7 @@ pub(crate) fn set_membership_lead_invitation_quota_proposal(
 ) -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 72000,
-        grace_period: 43200,
+        grace_period: 0,
         approval_quorum_percentage: 60,
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
@@ -264,7 +264,7 @@ pub(crate) fn set_membership_lead_invitation_quota_proposal(
 pub(crate) fn set_referral_cut_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 43200,
-        grace_period: 14400,
+        grace_period: 0,
         approval_quorum_percentage: 60,
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
@@ -278,7 +278,7 @@ pub(crate) fn set_referral_cut_proposal() -> ProposalParameters<BlockNumber, Bal
 pub(crate) fn set_invitation_count_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 72000,
-        grace_period: 43200,
+        grace_period: 0,
         approval_quorum_percentage: 60,
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
@@ -292,12 +292,12 @@ pub(crate) fn set_invitation_count_proposal() -> ProposalParameters<BlockNumber,
 pub(crate) fn create_blog_post_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 72000,
-        grace_period: 14400,
+        grace_period: 0,
         approval_quorum_percentage: 60,
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(25000),
+        required_stake: Some(25_000),
         constitutionality: 1,
     }
 }
@@ -306,12 +306,12 @@ pub(crate) fn create_blog_post_proposal() -> ProposalParameters<BlockNumber, Bal
 pub(crate) fn edit_blog_post_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 72000,
-        grace_period: 14400,
+        grace_period: 0,
         approval_quorum_percentage: 60,
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(25000),
+        required_stake: Some(25_000),
         constitutionality: 1,
     }
 }
@@ -320,12 +320,12 @@ pub(crate) fn edit_blog_post_proposal() -> ProposalParameters<BlockNumber, Balan
 pub(crate) fn lock_blog_post_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 72000,
-        grace_period: 14400,
+        grace_period: 0,
         approval_quorum_percentage: 60,
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(25000),
+        required_stake: Some(25_000),
         constitutionality: 1,
     }
 }
@@ -334,12 +334,12 @@ pub(crate) fn lock_blog_post_proposal() -> ProposalParameters<BlockNumber, Balan
 pub(crate) fn unlock_blog_post_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 72000,
-        grace_period: 14400,
+        grace_period: 0,
         approval_quorum_percentage: 60,
         approval_threshold_percentage: 80,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(25000),
+        required_stake: Some(25_000),
         constitutionality: 1,
     }
 }
@@ -347,7 +347,8 @@ pub(crate) fn unlock_blog_post_proposal() -> ProposalParameters<BlockNumber, Bal
 // Proposal parameters for the 'Veto Proposal' proposal
 pub(crate) fn veto_proposal_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
-        voting_period: 72200, // The longest grace period
+        // Doesn't make sense to be longer than longest grace period of all other proposals?
+        voting_period: 100800,
         grace_period: 0,
         approval_quorum_percentage: 75,
         approval_threshold_percentage: 80,

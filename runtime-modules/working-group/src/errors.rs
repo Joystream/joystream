@@ -86,5 +86,8 @@ decl_error! {
 
         /// Trying to fill opening with an application for other opening
         ApplicationsNotForOpening,
+
+        /// Worker storage text is too long.
+        WorkerStorageValueTooLong,
     }
 }

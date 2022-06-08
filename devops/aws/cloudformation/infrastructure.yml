@@ -1,0 +1,244 @@
+# Deploy inftrastructure required to run a new joystream chain.
+# This is comprised of:
+#   - N validators
+#   - One RPC node
+#   - One Build instance
+
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  EC2InstanceType:
+    Type: String
+    Default: t2.micro
+  ValidatorEC2InstanceType:
+    Type: String
+    Default: t2.micro
+  RPCEC2InstanceType:
+    Type: String
+    Default: t2.micro
+  BuildEC2InstanceType:
+    Type: String
+    Default: t2.micro
+  EC2AMI:
+    Type: String
+    Default: 'ami-09e67e426f25ce0d7'
+  DefaultAMI:
+    Type: String
+    Default: 'ami-09e67e426f25ce0d7'
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    Default: 'joystream-key'
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  NumberOfValidators:
+    Description: Number of validator instances to launch
+    Type: Number
+    Default: 2
+  VolumeSize:
+    Description: Validator and Build instance volume size in GB
+    Type: Number
+    Default: 120
+  RPCVolumeSize:
+    Description: RPC Instance volume size in GB
+    Type: Number
+    Default: 120
+
+Conditions:
+  HasAMIId: !Not [!Equals [!Ref EC2AMI, '']]
+
+Resources:
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub 'Internal Security group for validator nodes ${AWS::StackName}'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 30333
+          ToPort: 30333
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}_validator'
+
+  RPCSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub 'Internal Security group for RPC nodes ${AWS::StackName}'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 9933
+          ToPort: 9933
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 9944
+          ToPort: 9944
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 30333
+          ToPort: 30333
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}_rpc'
+
+  InstanceLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Metadata:
+      AWS::CloudFormation::Init:
+        config:
+          packages:
+            apt:
+              wget: []
+              unzip: []
+    Properties:
+      LaunchTemplateName: !Sub 'LaunchTemplate_${AWS::StackName}'
+      LaunchTemplateData:
+        ImageId: !If [HasAMIId, !Ref EC2AMI, !Ref DefaultAMI]
+        InstanceType: !Ref EC2InstanceType
+        KeyName: !Ref KeyName
+        SecurityGroupIds:
+          - !GetAtt SecurityGroup.GroupId
+        BlockDeviceMappings:
+          - DeviceName: /dev/sda1
+            Ebs:
+              VolumeSize: !Ref VolumeSize
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash -xe
+
+            # send script output to /tmp so we can debug boot failures
+            exec > /tmp/userdata.log 2>&1
+
+            # Update all packages
+            apt-get update -y
+
+            # Prevent interactive prompts that would interrupt the installation
+            export DEBIAN_FRONTEND=noninteractive
+
+            # Install the updates
+            apt-get upgrade -y
+
+            apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
+
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+            apt-get update -y
+
+            apt-get install -y docker-ce docker-ce-cli containerd.io
+
+            usermod -aG docker ubuntu
+
+            # Update docker-compose to 1.28+
+            curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            chmod +x /usr/local/bin/docker-compose
+            ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
+
+            # Get latest cfn scripts and install them;
+            apt-get install -y python3-setuptools
+            mkdir -p /opt/aws/bin
+            wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+            python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
+
+            /opt/aws/bin/cfn-signal -e $? -r "Instance Created" '${WaitHandle}'
+
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      MinSize: '0'
+      MaxSize: '10'
+      DesiredCapacity: !Ref NumberOfValidators
+      AvailabilityZones:
+        Fn::GetAZs:
+          Ref: 'AWS::Region'
+      MixedInstancesPolicy:
+        LaunchTemplate:
+          LaunchTemplateSpecification:
+            LaunchTemplateId: !Ref InstanceLaunchTemplate
+            Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+          Overrides:
+            - InstanceType: !Ref ValidatorEC2InstanceType
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}'
+          PropagateAtLaunch: 'true'
+
+  RPCInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      SecurityGroupIds:
+        - !GetAtt RPCSecurityGroup.GroupId
+      InstanceType: !Ref RPCEC2InstanceType
+      LaunchTemplate:
+        LaunchTemplateId: !Ref InstanceLaunchTemplate
+        Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: !Ref RPCVolumeSize
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}_rpc'
+
+  BuildInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref BuildEC2InstanceType
+      LaunchTemplate:
+        LaunchTemplateId: !Ref InstanceLaunchTemplate
+        Version: !GetAtt InstanceLaunchTemplate.LatestVersionNumber
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}_build'
+
+  WaitHandle:
+    Type: AWS::CloudFormation::WaitConditionHandle
+
+  WaitCondition:
+    Type: AWS::CloudFormation::WaitCondition
+    Properties:
+      Handle: !Ref 'WaitHandle'
+      Timeout: '600'
+      Count: !Ref NumberOfValidators
+
+Outputs:
+  AutoScalingId:
+    Description: The Auto Scaling ID
+    Value: !Ref AutoScalingGroup
+    Export:
+      Name: !Sub '${AWS::StackName}AutoScalingGroup'
+
+  RPCPublicIp:
+    Description: The DNS name for the created instance
+    Value: !Sub '${RPCInstance.PublicIp}'
+    Export:
+      Name: !Sub '${AWS::StackName}RPCPublicIp'
+
+  BuildPublicIp:
+    Description: The DNS name for the created instance
+    Value: !Sub '${BuildInstance.PublicIp}'
+    Export:
+      Name: !Sub '${AWS::StackName}BuildPublicIp'
+
+  BuildInstanceId:
+    Description: Build instance ID
+    Value: !Ref BuildInstance
+    Export:
+      Name: !Sub '${AWS::StackName}BuildInstanceId'

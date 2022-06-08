@@ -15,6 +15,7 @@ use sp_arithmetic::traits::One;
 use sp_arithmetic::Perbill;
 use sp_runtime::traits::Bounded;
 use sp_std::prelude::*;
+use sp_std::vec;
 
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Config>::Balance;
@@ -84,7 +85,8 @@ fn handle_from_id<T: Config>(id: u32) -> Vec<u8> {
 
 benchmarks! {
     where_clause { where T: balances::Config, T: Config, T: MembershipWorkingGroupHelper<<T as
-        frame_system::Config>::AccountId, <T as common::membership::Config>::MemberId, <T as common::membership::Config>::ActorId> }
+        frame_system::Config>::AccountId, <T as common::membership::MembershipTypes>::MemberId, <T as common::membership::MembershipTypes>::ActorId> }
+    _{  }
 
     buy_membership_without_referrer{
 
@@ -674,6 +676,15 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::StakingAccountRemoved(account_id, member_id).into());
     }
+
+    member_remark{
+        let msg = b"test".to_vec();
+        let member_id = 0;
+        let (account_id, member_id) = member_funded_account::<T>("member", member_id);
+    }: _ (RawOrigin::Signed(account_id.clone()), member_id, msg.clone())
+        verify {
+            assert_last_event::<T>(RawEvent::MemberRemarked(member_id, msg).into());
+        }
 }
 
 #[cfg(test)]
@@ -808,6 +819,13 @@ mod tests {
     fn update_profile_verification() {
         build_test_externalities().execute_with(|| {
             assert_ok!(test_benchmark_update_profile_verification::<Test>());
+        });
+    }
+
+    #[test]
+    fn member_remark() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_member_remark::<Test>());
         });
     }
 }

@@ -343,7 +343,7 @@ fn update_category_archival_status_lock_works() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -374,7 +374,7 @@ fn update_category_archival_status_lock_works() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Err(Error::<Runtime>::AncestorCategoryImmutable.into()),
@@ -404,12 +404,12 @@ fn update_category_archival_status_lock_works() {
         );
 
         // can't update thread
-        edit_thread_title_mock(
+        edit_thread_metadata_mock(
             origin.clone(),
             forum_lead,
             category_id,
             thread_id,
-            good_thread_new_title(),
+            good_thread_new_metadata(),
             Err(Error::<Runtime>::AncestorCategoryImmutable.into()),
         );
     });
@@ -738,7 +738,7 @@ fn delete_category_non_empty_threads() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -886,7 +886,7 @@ fn create_thread_origin() {
                 forum_user_ids[index],
                 forum_user_ids[index],
                 category_id,
-                good_thread_title(),
+                good_thread_metadata(),
                 good_thread_text(),
                 None,
                 results[index],
@@ -919,7 +919,7 @@ fn create_thread_balance() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -930,7 +930,7 @@ fn create_thread_balance() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -963,7 +963,7 @@ fn create_thread_poll_timestamp() {
             balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
 
             change_current_time(1);
-            let poll = generate_poll_timestamp_cases(index, expiration_diff);
+            let poll = generate_poll_input_timestamp_cases(index, expiration_diff);
             change_current_time(index as u64 * expiration_diff + 1);
 
             let category_id = create_category_mock(
@@ -979,7 +979,7 @@ fn create_thread_poll_timestamp() {
                 forum_lead,
                 forum_lead,
                 category_id,
-                good_thread_title(),
+                good_thread_metadata(),
                 good_thread_text(),
                 Some(poll),
                 results[index],
@@ -990,7 +990,7 @@ fn create_thread_poll_timestamp() {
 
 #[test]
 // test if author can edit thread's title
-fn edit_thread_title() {
+fn edit_thread_metadata() {
     let forum_users = [NOT_FORUM_LEAD_ORIGIN_ID, NOT_FORUM_LEAD_2_ORIGIN_ID];
     let origins = [NOT_FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_2_ORIGIN];
 
@@ -1021,30 +1021,56 @@ fn edit_thread_title() {
             forum_users[0],
             forum_users[0],
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
         );
 
         // check author can edit text
-        edit_thread_title_mock(
+        edit_thread_metadata_mock(
             origins[0].clone(),
             forum_users[0],
             category_id,
             thread_id,
-            good_thread_new_title(),
+            good_thread_new_metadata(),
             Ok(()),
         );
 
         // check non-author is forbidden from editing text
-        edit_thread_title_mock(
+        edit_thread_metadata_mock(
             origins[1].clone(),
             forum_users[1],
             category_id,
             thread_id,
-            good_thread_new_title(),
+            good_thread_new_metadata(),
             Err(Error::<Runtime>::AccountDoesNotMatchThreadAuthor.into()),
+        );
+    });
+}
+
+#[test]
+fn create_thread_fails_on_non_existing_category() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let initial_balance = 10_000_000;
+
+    with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
+        assert_eq!(
+            balances::Module::<Runtime>::free_balance(&forum_lead),
+            initial_balance
+        );
+        let invalid_category_id = 100;
+        create_thread_mock(
+            FORUM_LEAD_ORIGIN,
+            FORUM_LEAD_ORIGIN_ID,
+            FORUM_LEAD_ORIGIN_ID,
+            invalid_category_id,
+            good_thread_metadata(),
+            good_thread_text(),
+            None,
+            Err(Error::<Runtime>::CategoryDoesNotExist.into()),
         );
     });
 }
@@ -1086,9 +1112,9 @@ fn delete_thread() {
             NOT_FORUM_LEAD_ORIGIN_ID,
             NOT_FORUM_LEAD_ORIGIN_ID,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
-            Some(generate_poll(10)),
+            Some(generate_poll_input(10)),
             Ok(()),
         );
 
@@ -1256,7 +1282,7 @@ fn move_thread_moderator_permissions() {
             forum_lead,
             forum_lead,
             category_id_1,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -1351,6 +1377,126 @@ fn move_thread_moderator_permissions() {
 }
 
 #[test]
+fn category_updated_successfully_on_thread_moving() {
+    let moderator = FORUM_MODERATOR_ORIGIN_ID;
+    let moderator_origin = FORUM_MODERATOR_ORIGIN;
+
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    let initial_balance = 10_000_000;
+    with_test_externalities(|| {
+        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+
+        let category_id_1 = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        let category_id_2 = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        // sanity check
+        assert_ne!(category_id_1, category_id_2);
+
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            forum_lead,
+            category_id_1,
+            good_thread_metadata(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        // set incomplete permissions for first user (only category 1)
+        update_category_membership_of_moderator_mock(
+            moderator_origin.clone(),
+            moderator,
+            category_id_1,
+            true,
+            Ok(()),
+        );
+
+        // give the rest of necessary permissions to the first moderator
+        update_category_membership_of_moderator_mock(
+            moderator_origin.clone(),
+            moderator,
+            category_id_2,
+            true,
+            Ok(()),
+        );
+
+        // check counters of threads in category
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_1).num_direct_threads,
+            1,
+        );
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_2).num_direct_threads,
+            0,
+        );
+
+        // move in one direction
+        move_thread_mock(
+            moderator_origin.clone(),
+            moderator,
+            category_id_1,
+            thread_id,
+            category_id_2,
+            Ok(()),
+        );
+
+        assert_eq!(
+            TestForumModule::thread_by_id(category_id_2, thread_id).category_id,
+            category_id_2
+        );
+
+        // check counters of threads in category
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_1).num_direct_threads,
+            0,
+        );
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_2).num_direct_threads,
+            1,
+        );
+
+        // move in opposite direction
+        move_thread_mock(
+            moderator_origin.clone(),
+            moderator,
+            category_id_2,
+            thread_id,
+            category_id_1,
+            Ok(()),
+        );
+
+        // check counters of threads in category
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_1).num_direct_threads,
+            1,
+        );
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_2).num_direct_threads,
+            0,
+        );
+
+        assert_eq!(
+            TestForumModule::thread_by_id(category_id_1, thread_id).category_id,
+            category_id_1
+        );
+    });
+}
+
+#[test]
 // test if error is thrown when origin and destination category is the same
 fn move_thread_invalid_move() {
     let moderators = [FORUM_MODERATOR_ORIGIN_ID];
@@ -1375,7 +1521,7 @@ fn move_thread_invalid_move() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -1432,9 +1578,9 @@ fn vote_on_poll_origin() {
                 forum_lead,
                 forum_lead,
                 category_id,
-                good_thread_title(),
+                good_thread_metadata(),
                 good_thread_text(),
-                Some(generate_poll(expiration_diff)),
+                Some(generate_poll_input(expiration_diff)),
                 Ok(()),
             );
 
@@ -1471,9 +1617,9 @@ fn vote_on_poll_fails_on_double_voting() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
-            Some(generate_poll(expiration_diff)),
+            Some(generate_poll_input(expiration_diff)),
             Ok(()),
         );
 
@@ -1518,7 +1664,7 @@ fn vote_on_poll_exists() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -1556,9 +1702,9 @@ fn vote_on_poll_expired() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
-            Some(generate_poll(expiration_diff)),
+            Some(generate_poll_input(expiration_diff)),
             Ok(()),
         );
         change_current_time(expiration_diff + 1);
@@ -1606,7 +1752,7 @@ fn moderate_thread_origin_ok() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -1658,7 +1804,7 @@ fn add_post_origin() {
                 forum_lead,
                 forum_lead,
                 category_id,
-                good_thread_title(),
+                good_thread_metadata(),
                 good_thread_text(),
                 None,
                 Ok(()),
@@ -1706,7 +1852,7 @@ fn add_post_balance() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -1782,7 +1928,7 @@ fn edit_post_text() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -1851,7 +1997,7 @@ fn edit_non_editable_post_text() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -1910,7 +2056,7 @@ fn react_post() {
                 forum_lead,
                 forum_lead,
                 category_id,
-                good_thread_title(),
+                good_thread_metadata(),
                 good_thread_text(),
                 None,
                 Ok(()),
@@ -1978,7 +2124,7 @@ fn moderate_post_origin() {
                 forum_lead,
                 forum_lead,
                 category_id,
-                good_thread_title(),
+                good_thread_metadata(),
                 good_thread_text(),
                 None,
                 Ok(()),
@@ -2043,7 +2189,7 @@ fn delete_post_creator() {
             NOT_FORUM_LEAD_ORIGIN_ID,
             NOT_FORUM_LEAD_ORIGIN_ID,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -2197,7 +2343,7 @@ fn delete_post_not_creator() {
             NOT_FORUM_LEAD_ORIGIN_ID,
             NOT_FORUM_LEAD_ORIGIN_ID,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -2335,7 +2481,7 @@ fn set_stickied_threads_ok() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -2353,7 +2499,7 @@ fn set_stickied_threads_ok() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -2406,7 +2552,7 @@ fn set_stickied_threads_fails_with_duplicated_ids() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -2443,7 +2589,7 @@ fn set_stickied_threads_wrong_moderator() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -2486,7 +2632,7 @@ fn set_stickied_threads_thread_not_exists() {
             forum_lead,
             forum_lead,
             category_id,
-            good_thread_title(),
+            good_thread_metadata(),
             good_thread_text(),
             None,
             Ok(()),
@@ -2529,7 +2675,7 @@ fn test_migration_not_done() {
                 mock_origin(origin.clone()),
                 forum_user_id,
                 category_id,
-                good_thread_title(),
+                good_thread_metadata(),
                 good_thread_text(),
                 None,
             ),

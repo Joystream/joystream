@@ -2,6 +2,7 @@
 
 use crate as blog;
 use crate::*;
+use common::MembershipTypes;
 use frame_support::parameter_types;
 use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::weights::Weight;
@@ -130,7 +131,7 @@ impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
 impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
         _origin: <Runtime as frame_system::Config>::Origin,
-        _worker_id: &<Runtime as common::membership::Config>::ActorId,
+        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!()
     }
@@ -139,7 +140,8 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Runtime as common::membership::Config>::MemberId> {
+    fn get_leader_member_id() -> Option<<Runtime as common::membership::MembershipTypes>::MemberId>
+    {
         unimplemented!()
     }
 
@@ -149,8 +151,16 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
 
     fn is_worker_account_id(
         _: &<Runtime as frame_system::Config>::AccountId,
-        _worker_id: &<Runtime as common::membership::Config>::ActorId,
+        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
+        unimplemented!();
+    }
+
+    fn worker_exists(_worker_id: &<Runtime as MembershipTypes>::ActorId) -> bool {
+        unimplemented!();
+    }
+
+    fn ensure_worker_exists(_worker_id: &<Runtime as MembershipTypes>::ActorId) -> DispatchResult {
         unimplemented!();
     }
 }
@@ -209,6 +219,9 @@ impl membership::WeightInfo for Weights {
         unimplemented!()
     }
     fn remove_staking_account() -> Weight {
+        unimplemented!()
+    }
+    fn member_remark() -> Weight {
         unimplemented!()
     }
 }
@@ -284,7 +297,7 @@ impl
     }
 }
 
-impl common::membership::Config for Runtime {
+impl common::membership::MembershipTypes for Runtime {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -295,10 +308,10 @@ pub struct ExtBuilder;
 pub(crate) fn run_to_block(n: u64) {
     while System::block_number() < n {
         <System as OnFinalize<u64>>::on_finalize(System::block_number());
-        <crate::Pallet<Runtime> as OnFinalize<u64>>::on_finalize(System::block_number());
+        <crate::Module<Runtime> as OnFinalize<u64>>::on_finalize(System::block_number());
         System::set_block_number(System::block_number() + 1);
         <System as OnInitialize<u64>>::on_initialize(System::block_number());
-        <crate::Pallet<Runtime> as OnInitialize<u64>>::on_initialize(System::block_number());
+        <crate::Module<Runtime> as OnInitialize<u64>>::on_initialize(System::block_number());
     }
 }
 

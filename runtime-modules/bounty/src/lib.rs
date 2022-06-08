@@ -74,6 +74,10 @@ pub trait WeightInfo {
     fn submit_oracle_judgment_by_member_all_winners(i: u32) -> Weight;
     fn submit_oracle_judgment_by_member_all_rejected(i: u32) -> Weight;
     fn withdraw_work_entrant_funds() -> Weight;
+    fn contributor_remark() -> Weight;
+    fn oracle_remark() -> Weight;
+    fn entrant_remark() -> Weight;
+    fn creator_remark() -> Weight;
 }
 
 type WeightInfoBounty<T> = <T as Config>::WeightInfo;
@@ -86,7 +90,7 @@ use codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::{Currency, ExistenceRequirement, Get};
+use frame_support::traits::{Currency, ExistenceRequirement, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use frame_system::ensure_root;
@@ -104,7 +108,9 @@ use common::membership::{
 use staking_handler::StakingHandler;
 
 /// Main pallet-bounty trait.
-pub trait Config: frame_system::Config + balances::Config + common::membership::Config {
+pub trait Config:
+    frame_system::Config + balances::Config + common::membership::MembershipTypes
+{
     /// Events
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
@@ -127,7 +133,12 @@ pub trait Config: frame_system::Config + balances::Config + common::membership::
     type CouncilBudgetManager: CouncilBudgetManager<BalanceOf<Self>>;
 
     /// Provides stake logic implementation.
-    type StakingHandler: StakingHandler<Self::AccountId, BalanceOf<Self>, MemberId<Self>>;
+    type StakingHandler: StakingHandler<
+        Self::AccountId,
+        BalanceOf<Self>,
+        MemberId<Self>,
+        LockIdentifier,
+    >;
 
     /// Work entry Id type
     type EntryId: From<u32> + Parameter + Default + Copy + Ord + One;
@@ -149,7 +160,7 @@ pub trait Config: frame_system::Config + balances::Config + common::membership::
 pub type BountyCreationParameters<T> = BountyParameters<
     BalanceOf<T>,
     <T as frame_system::Config>::BlockNumber,
-    <T as common::membership::Config>::MemberId,
+    <T as common::membership::MembershipTypes>::MemberId,
 >;
 
 /// Defines who can submit the work.
@@ -322,7 +333,7 @@ impl<BlockNumber: Default> Default for BountyMilestone<BlockNumber> {
 pub type Bounty<T> = BountyRecord<
     BalanceOf<T>,
     <T as frame_system::Config>::BlockNumber,
-    <T as common::membership::Config>::MemberId,
+    <T as common::membership::MembershipTypes>::MemberId,
 >;
 
 /// Crowdfunded bounty record.
@@ -384,7 +395,7 @@ impl<Balance: PartialOrd + Clone, BlockNumber: Clone, MemberId: Ord>
 /// Alias type for the Entry.
 pub type Entry<T> = EntryRecord<
     <T as frame_system::Config>::AccountId,
-    <T as common::membership::Config>::MemberId,
+    <T as common::membership::MembershipTypes>::MemberId,
     <T as frame_system::Config>::BlockNumber,
     BalanceOf<T>,
 >;
@@ -466,7 +477,9 @@ decl_storage! {
         pub BountyCount get(fn bounty_count): u32;
 
         /// Work entry storage map.
-        pub Entries get(fn entries): map hasher(blake2_128_concat) T::EntryId => Entry<T>;
+        pub Entries get(fn entries): double_map
+            hasher(blake2_128_concat) T::BountyId,
+            hasher(blake2_128_concat) T::EntryId => Entry<T>;
 
         /// Count of all work entries that have been created.
         pub EntryCount get(fn entry_count): u32;
@@ -565,7 +578,8 @@ decl_event! {
         /// - bounty ID
         /// - oracle
         /// - judgment data
-        OracleJudgmentSubmitted(BountyId, BountyActor<MemberId>, OracleJudgment),
+        /// - rationale
+        OracleJudgmentSubmitted(BountyId, BountyActor<MemberId>, OracleJudgment, Vec<u8>),
 
         /// Work entry was slashed.
         /// Params:
@@ -573,6 +587,36 @@ decl_event! {
         /// - entry ID
         /// - entrant member ID
         WorkEntrantFundsWithdrawn(BountyId, EntryId, MemberId),
+
+        /// Bounty contributor made a message remark
+        /// Params:
+        /// - contributor
+        /// - bounty id
+        /// - message
+        BountyContributorRemarked(BountyActor<MemberId>, BountyId, Vec<u8>),
+
+        /// Bounty oracle made a message remark
+        /// Params:
+        /// - oracle
+        /// - bounty id
+        /// - message
+        BountyOracleRemarked(BountyActor<MemberId>, BountyId, Vec<u8>),
+
+        /// Bounty entrant made a message remark
+        /// Params:
+        /// - entrant_id
+        /// - bounty id
+        /// - entry id
+        /// - message
+        BountyEntrantRemarked(MemberId, BountyId, EntryId, Vec<u8>),
+
+        /// Bounty entrant made a message remark
+        /// Params:
+        /// - creator
+        /// - bounty id
+        /// - message
+        BountyCreatorRemarked(BountyActor<MemberId>, BountyId, Vec<u8>),
+
     }
 }
 
@@ -680,6 +724,18 @@ decl_error! {
 
         /// Invalid judgment - all winners should have work submissions.
         WinnerShouldHasWorkSubmission,
+
+        /// Bounty contributor not found
+        InvalidContributorActorSpecified,
+
+        /// Bounty oracle not found
+        InvalidOracleActorSpecified,
+
+        /// Member specified is not an entrant worker
+        InvalidEntrantWorkerSpecified,
+
+        /// Invalid Creator Actor for Bounty specified
+        InvalidCreatorActorSpecified,
     }
 }
 
@@ -703,6 +759,9 @@ decl_module! {
 
         /// Exports const - min work entrant stake for a bounty.
         const MinWorkEntrantStake: BalanceOf<T> = T::MinWorkEntrantStake::get();
+
+        /// Exports const - bounty lock id.
+        const BountyLockId: LockIdentifier = T::StakingHandler::lock_id();
 
         /// Creates a bounty. Metadata stored in the transaction log but discarded after that.
         /// <weight>
@@ -1000,7 +1059,7 @@ decl_module! {
                 oracle_judgment_result: None,
             };
 
-            <Entries<T>>::insert(entry_id, entry);
+            <Entries<T>>::insert(bounty_id, entry_id, entry);
             EntryCount::mutate(|count| {
                 *count = next_entry_count_value
             });
@@ -1041,7 +1100,9 @@ decl_module! {
 
             Self::ensure_bounty_stage(current_bounty_stage, BountyStage::WorkSubmission)?;
 
-            let entry = Self::ensure_work_entry_exists(&entry_id)?;
+            let entry = Self::ensure_work_entry_exists(&bounty_id, &entry_id)?;
+
+            Self::ensure_work_entry_ownership(&entry, &member_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1079,14 +1140,16 @@ decl_module! {
 
             Self::ensure_bounty_stage(current_bounty_stage, BountyStage::WorkSubmission)?;
 
-            Self::ensure_work_entry_exists(&entry_id)?;
+            let entry = Self::ensure_work_entry_exists(&bounty_id, &entry_id)?;
+
+            Self::ensure_work_entry_ownership(&entry, &member_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // Update entry
-            <Entries<T>>::mutate(entry_id, |entry| {
+            <Entries<T>>::mutate(bounty_id, entry_id, |entry| {
                 entry.work_submitted = true;
             });
 
@@ -1114,7 +1177,8 @@ decl_module! {
             origin,
             oracle: BountyActor<MemberId<T>>,
             bounty_id: T::BountyId,
-            judgment: OracleJudgment<T::EntryId, BalanceOf<T>>
+            judgment: OracleJudgment<T::EntryId, BalanceOf<T>>,
+            rationale: Vec<u8>,
         ) {
             let bounty_oracle_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
                 origin,
@@ -1131,7 +1195,7 @@ decl_module! {
 
             ensure!(bounty.active_work_entry_count != 0, Error::<T>::NoActiveWorkEntries);
 
-            Self::validate_judgment(&bounty, &judgment)?;
+            Self::validate_judgment(&bounty_id, &bounty, &judgment)?;
 
             // Lookup for any winners in the judgment.
             let successful_bounty = Self::judgment_has_winners(&judgment);
@@ -1156,11 +1220,11 @@ decl_module! {
             for (entry_id, work_entry_judgment) in judgment.iter() {
                 // Update work entries for winners.
                 if matches!(*work_entry_judgment, OracleWorkEntryJudgment::Winner{ .. }) {
-                    <Entries<T>>::mutate(entry_id, |entry| {
+                    <Entries<T>>::mutate(bounty_id, entry_id, |entry| {
                         entry.oracle_judgment_result = Some(*work_entry_judgment);
                     });
                 } else {
-                    let entry = Self::entries(entry_id);
+                    let entry = Self::entries(bounty_id, entry_id);
 
                     Self::slash_work_entry_stake(&entry);
 
@@ -1171,7 +1235,12 @@ decl_module! {
             }
 
             // Fire a judgment event.
-            Self::deposit_event(RawEvent::OracleJudgmentSubmitted(bounty_id, oracle, judgment));
+            Self::deposit_event(RawEvent::OracleJudgmentSubmitted(
+                bounty_id,
+                oracle,
+                judgment,
+                rationale,
+            ));
         }
 
         /// Withdraw work entrant funds.
@@ -1205,7 +1274,9 @@ decl_module! {
                 Self::unexpected_bounty_stage_error(current_bounty_stage)
             );
 
-            let entry = Self::ensure_work_entry_exists(&entry_id)?;
+            let entry = Self::ensure_work_entry_exists(&bounty_id, &entry_id)?;
+
+            Self::ensure_work_entry_ownership(&entry, &member_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1234,6 +1305,137 @@ decl_module! {
                 Self::remove_bounty(&bounty_id);
             }
         }
+
+        /// Bounty Contributor made a remark
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoBounty::<T>::contributor_remark()]
+        pub fn contributor_remark(
+            origin,
+            contributor: BountyActor<MemberId<T>>,
+            bounty_id: T::BountyId,
+            msg: Vec<u8>,
+        ) {
+            let _ = BountyActorManager::<T>::ensure_bounty_actor_manager(origin, contributor.clone())?;
+            ensure!(
+                BountyContributions::<T>::contains_key(&bounty_id, &contributor),
+                Error::<T>::InvalidContributorActorSpecified,
+                );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::BountyContributorRemarked(contributor, bounty_id, msg));
+        }
+
+        /// Bounty Oracle made a remark
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoBounty::<T>::oracle_remark()]
+        pub fn oracle_remark(
+            origin,
+            oracle: BountyActor<MemberId<T>>,
+            bounty_id: T::BountyId,
+            msg: Vec<u8>,
+        ) {
+
+            let _ = BountyActorManager::<T>::ensure_bounty_actor_manager(
+                origin,
+                oracle.clone(),
+            )?;
+
+            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
+            ensure!(
+                bounty.creation_params.oracle == oracle,
+                Error::<T>::InvalidOracleActorSpecified,
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+
+            Self::deposit_event(RawEvent::BountyOracleRemarked(oracle, bounty_id, msg));
+        }
+
+        /// Bounty Entrant Worker made a remark
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoBounty::<T>::entrant_remark()]
+        pub fn entrant_remark(
+            origin,
+            entrant_id: MemberId<T>,
+            bounty_id: T::BountyId,
+            entry_id: T::EntryId,
+            msg: Vec<u8>,
+        ) {
+
+            T::Membership::ensure_member_controller_account_origin(origin, entrant_id)?;
+
+            let entry = Self::ensure_work_entry_exists(&bounty_id, &entry_id)?;
+            Self::ensure_work_entry_ownership(&entry, &entrant_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::BountyEntrantRemarked(entrant_id, bounty_id, entry_id, msg));
+        }
+
+        /// Bounty Oracle made a remark
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoBounty::<T>::creator_remark()]
+        pub fn creator_remark(
+            origin,
+            creator: BountyActor<MemberId<T>>,
+            bounty_id: T::BountyId,
+            msg: Vec<u8>,
+        ) {
+
+            let _ = BountyActorManager::<T>::ensure_bounty_actor_manager(
+                origin,
+                creator.clone(),
+            )?;
+
+            let bounty = Self::ensure_bounty_exists(&bounty_id)?;
+            ensure!(
+                bounty.creation_params.creator == creator,
+                Error::<T>::InvalidCreatorActorSpecified,
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::BountyCreatorRemarked(creator, bounty_id, msg));
+        }
+
     }
 }
 
@@ -1515,15 +1717,31 @@ impl<T: Config> Module<T> {
     }
 
     // Verifies work entry existence and retrieves an entry from the storage.
-    fn ensure_work_entry_exists(entry_id: &T::EntryId) -> Result<Entry<T>, DispatchError> {
+    fn ensure_work_entry_exists(
+        bounty_id: &T::BountyId,
+        entry_id: &T::EntryId,
+    ) -> Result<Entry<T>, DispatchError> {
         ensure!(
-            <Entries<T>>::contains_key(entry_id),
+            <Entries<T>>::contains_key(bounty_id, entry_id),
             Error::<T>::WorkEntryDoesntExist
         );
 
-        let entry = Self::entries(entry_id);
+        let entry = Self::entries(bounty_id, entry_id);
 
         Ok(entry)
+    }
+
+    // Ensures entry record ownership for a member.
+    fn ensure_work_entry_ownership(
+        entry: &Entry<T>,
+        owner_member_id: &MemberId<T>,
+    ) -> DispatchResult {
+        ensure!(
+            entry.member_id == *owner_member_id,
+            Error::<T>::InvalidEntrantWorkerSpecified
+        );
+
+        Ok(())
     }
 
     // Unlocks the work entry stake.
@@ -1582,25 +1800,29 @@ impl<T: Config> Module<T> {
     }
 
     // Validates oracle judgment.
-    fn validate_judgment(bounty: &Bounty<T>, judgment: &OracleJudgmentOf<T>) -> DispatchResult {
+    fn validate_judgment(
+        bounty_id: &T::BountyId,
+        bounty: &Bounty<T>,
+        judgment: &OracleJudgmentOf<T>,
+    ) -> DispatchResult {
         // Total judgment reward accumulator.
         let mut reward_sum_from_judgment: BalanceOf<T> = Zero::zero();
 
         // Validate all work entry judgements.
         for (entry_id, work_entry_judgment) in judgment.iter() {
+            let entry = Self::ensure_work_entry_exists(bounty_id, entry_id)?;
             if let OracleWorkEntryJudgment::Winner { reward } = work_entry_judgment {
                 // Check for zero reward.
                 ensure!(*reward != Zero::zero(), Error::<T>::ZeroWinnerReward);
 
+                // Check winner work submission.
+                ensure!(
+                    entry.work_submitted,
+                    Error::<T>::WinnerShouldHasWorkSubmission
+                );
+
                 reward_sum_from_judgment += *reward;
             }
-
-            // Check winner work submission.
-            let entry = Self::ensure_work_entry_exists(entry_id)?;
-            ensure!(
-                entry.work_submitted,
-                Error::<T>::WinnerShouldHasWorkSubmission
-            );
         }
 
         // Check for invalid total sum for successful bounty.
@@ -1616,7 +1838,7 @@ impl<T: Config> Module<T> {
 
     // Removes the work entry and decrements active entry count in a bounty.
     fn remove_work_entry(bounty_id: &T::BountyId, entry_id: &T::EntryId) {
-        <Entries<T>>::remove(entry_id);
+        <Entries<T>>::remove(bounty_id, entry_id);
 
         // Decrement work entry counter and update bounty record.
         <Bounties<T>>::mutate(bounty_id, |bounty| {

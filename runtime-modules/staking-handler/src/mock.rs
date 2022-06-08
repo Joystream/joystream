@@ -19,6 +19,7 @@ parameter_types! {
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 pub type TestStakingManager = crate::StakingManager<Test, LockId>;
+pub type TestStakingManager2 = crate::StakingManager<Test, LockId2>;
 
 frame_support::construct_runtime!(
     pub enum Test where
@@ -55,6 +56,7 @@ impl frame_system::Config for Test {
     type PalletInfo = PalletInfo;
     type SystemWeightInfo = ();
     type SS58Prefix = ();
+    type PalletInfo = ();
 }
 
 impl pallet_balances::Config for Test {
@@ -67,7 +69,7 @@ impl pallet_balances::Config for Test {
     type MaxLocks = ();
 }
 
-impl common::membership::Config for Test {
+impl common::membership::MembershipTypes for Test {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -89,11 +91,15 @@ impl pallet_timestamp::Config for Test {
     type WeightInfo = ();
 }
 
+pub type Balances = pallet_balances::Pallet<Test>;
+pub type System = frame_system::Pallet<Test>;
+
 parameter_types! {
     pub const RewardPeriod: u32 = 2;
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const MinUnstakingPeriodLimit: u64 = 3;
     pub const LockId: [u8; 8] = [1; 8];
+    pub const LockId2: [u8; 8] = [2; 8];
 }
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {

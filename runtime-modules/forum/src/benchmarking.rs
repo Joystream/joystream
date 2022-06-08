@@ -42,7 +42,7 @@ impl CreateAccountId for sp_core::crypto::AccountId32 {
 pub type ForumWorkingGroupInstance = working_group::Instance1;
 
 // Alias for forum working group
-type ForumGroup<T> = working_group::Pallet<T, ForumWorkingGroupInstance>;
+type ForumGroup<T> = working_group::Module<T, ForumWorkingGroupInstance>;
 
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Config>::Balance;
@@ -150,7 +150,8 @@ where
     )
     .unwrap();
 
-    let actor_id = <T as common::membership::Config>::ActorId::from(id.try_into().unwrap());
+    let actor_id =
+        <T as common::membership::MembershipTypes>::ActorId::from(id.try_into().unwrap());
     assert!(WorkerById::<T, ForumWorkingGroupInstance>::contains_key(
         actor_id
     ));
@@ -186,7 +187,8 @@ where
     ForumGroup::<T>::fill_opening(leader_origin.into(), opening_id, successful_application_ids)
         .unwrap();
 
-    let actor_id = <T as common::membership::Config>::ActorId::from(id.try_into().unwrap());
+    let actor_id =
+        <T as common::membership::MembershipTypes>::ActorId::from(id.try_into().unwrap());
     assert!(WorkerById::<T, ForumWorkingGroupInstance>::contains_key(
         actor_id
     ));
@@ -294,7 +296,7 @@ fn create_new_thread<T: Config>(
     category_id: T::CategoryId,
     title: Vec<u8>,
     text: Vec<u8>,
-    poll: Option<Poll<T::Moment, T::Hash>>,
+    poll: Option<PollInput<T::Moment>>,
 ) -> T::ThreadId {
     Module::<T>::create_thread(
         RawOrigin::Signed(account_id).into(),
@@ -327,30 +329,26 @@ fn add_thread_post<T: Config>(
     Module::<T>::next_post_id() - T::PostId::one()
 }
 
-pub fn good_poll_alternative_text() -> Vec<u8> {
+fn good_poll_alternative_text() -> Vec<u8> {
     b"poll alternative".to_vec()
 }
 
-pub fn good_poll_description() -> Vec<u8> {
+fn good_poll_description() -> Vec<u8> {
     b"poll description".to_vec()
 }
 
-pub fn generate_poll<T: Config>(
+/// Generates poll input
+pub fn generate_poll_input<T: Config>(
     expiration_diff: T::Moment,
     alternatives_number: u32,
-) -> Poll<T::Moment, T::Hash> {
-    Poll {
-        description_hash: T::calculate_hash(good_poll_description().as_slice()),
-        end_time: pallet_timestamp::Pallet::<T>::now() + expiration_diff,
+) -> PollInput<T::Moment> {
+    PollInput {
+        description: good_poll_description(),
+        end_time: pallet_timestamp::Module::<T>::now() + expiration_diff,
         poll_alternatives: {
             let mut alternatives = vec![];
             for _ in 0..alternatives_number {
-                alternatives.push(PollAlternative {
-                    alternative_text_hash: T::calculate_hash(
-                        good_poll_alternative_text().as_slice(),
-                    ),
-                    vote_count: 0,
-                });
+                alternatives.push(good_poll_alternative_text());
             }
             alternatives
         },
@@ -391,7 +389,7 @@ pub fn generate_categories_tree<T: Config>(
                 true,
             )
             .unwrap();
-        };
+        }
     }
 
     assert_eq!(
@@ -926,24 +924,24 @@ benchmarks! {
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
         let mut category = Module::<T>::category_by_id(category_id);
 
-        let title = vec![0u8].repeat(j as usize);
+        let metadata = vec![0u8].repeat(j as usize);
 
         let text = vec![0u8].repeat(k as usize);
 
-        let expiration_diff = 10u32.into();
+        let expiration_diff = 1010u32.into();
 
-        let poll = if z == 1 {
+        let poll_input = if z == 1 {
             None
         } else {
             // min number of poll alternatives is set to 2
-            Some(generate_poll::<T>(expiration_diff, z))
+            Some(generate_poll_input::<T>(expiration_diff, z))
         };
 
         let next_thread_id = Module::<T>::next_thread_id();
         let next_post_id = Module::<T>::next_post_id();
         let initial_balance = Balances::<T>::usable_balance(&caller_id);
 
-    }: _ (RawOrigin::Signed(caller_id.clone()), forum_user_id.saturated_into(), category_id, title.clone(), text.clone(), poll.clone())
+    }: _ (RawOrigin::Signed(caller_id.clone()), forum_user_id.saturated_into(), category_id, metadata.clone(), text.clone(), poll_input.clone())
     verify {
 
         assert_eq!(
@@ -967,9 +965,8 @@ benchmarks! {
         // Ensure new thread created successfully
         let new_thread = Thread {
             category_id,
-            title_hash: T::calculate_hash(&title),
             author_id: forum_user_id.saturated_into(),
-            poll: poll.clone(),
+            poll: poll_input.clone().map(<Module<T>>::from_poll_input),
             cleanup_pay_off: T::ThreadDeposit::get(),
             number_of_posts: 1,
         };
@@ -987,17 +984,18 @@ benchmarks! {
 
         assert_last_event::<T>(
             RawEvent::ThreadCreated(
-                next_thread_id,
-                forum_user_id.saturated_into(),
                 category_id,
-                title,
+                next_thread_id,
+                next_post_id,
+                forum_user_id.saturated_into(),
+                metadata,
                 text,
-                poll,
+                poll_input,
             ).into()
         );
     }
 
-    edit_thread_title {
+    edit_thread_metadata {
         let forum_user_id = 0;
 
         let caller_id =
@@ -1015,21 +1013,20 @@ benchmarks! {
             caller_id.clone(), forum_user_id.saturated_into(), category_id,
             vec![1u8].repeat(MAX_BYTES as usize), vec![1u8].repeat(MAX_BYTES as usize), None
         );
-        let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
+        let thread = Module::<T>::thread_by_id(category_id, thread_id);
 
-        let text = vec![0u8].repeat(j as usize);
+        let new_metadata = vec![0u8].repeat(j as usize);
 
-    }: _ (RawOrigin::Signed(caller_id), forum_user_id.saturated_into(), category_id, thread_id, text.clone())
+    }: _ (RawOrigin::Signed(caller_id), forum_user_id.saturated_into(), category_id, thread_id, new_metadata.clone())
     verify {
-        thread.title_hash = T::calculate_hash(&text);
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
 
         assert_last_event::<T>(
-            RawEvent::ThreadTitleUpdated(
+            RawEvent::ThreadMetadataUpdated(
                 thread_id,
                 forum_user_id.saturated_into(),
                 category_id,
-                text
+                new_metadata
             ).into()
         );
     }
@@ -1048,7 +1045,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1159,7 +1156,10 @@ benchmarks! {
         assert_eq!(Module::<T>::category_by_id(new_category_id), new_category);
 
         assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
-        assert_eq!(Module::<T>::thread_by_id(new_category_id, thread_id), thread);
+        assert_eq!(
+            Module::<T>::thread_by_id(new_category_id, thread_id),
+            Thread { category_id: new_category_id, ..thread}
+        );
 
         assert_last_event::<T>(
             RawEvent::ThreadMoved(
@@ -1233,7 +1233,10 @@ benchmarks! {
         assert_eq!(Module::<T>::category_by_id(new_category_id), new_category);
 
         assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
-        assert_eq!(Module::<T>::thread_by_id(new_category_id, thread_id), thread);
+        assert_eq!(
+            Module::<T>::thread_by_id(new_category_id, thread_id),
+            Thread { category_id: new_category_id, ..thread}
+        );
 
         assert_last_event::<T>(
             RawEvent::ThreadMoved(
@@ -1260,12 +1263,12 @@ benchmarks! {
 
         // Create thread
         let expiration_diff = 10u32.into();
-        let poll = Some(generate_poll::<T>(expiration_diff, j));
+        let poll_input = Some(generate_poll_input::<T>(expiration_diff, j));
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
         let thread_id = create_new_thread::<T>(
             caller_id.clone(), forum_user_id.saturated_into(), category_id,
-            text.clone(), text, poll
+            text.clone(), text, poll_input
         );
 
         let mut thread = Module::<T>::thread_by_id(category_id, thread_id);
@@ -1318,7 +1321,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
 
         let text = vec![1u8].repeat(MAX_BYTES as usize);
@@ -1374,7 +1377,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
 
         let text = vec![1u8].repeat(MAX_BYTES as usize);
@@ -1492,7 +1495,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1533,7 +1536,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1587,7 +1590,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1634,7 +1637,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1690,7 +1693,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1699,20 +1702,21 @@ benchmarks! {
             text.clone(), text.clone(), poll
         );
         let hide = false;
-        let mut posts = Vec::new();
+        let mut posts = BTreeMap::new();
         for _ in 0 .. k {
-            posts.push((
+            posts.insert(
+                ExtendedPostIdObject {
                     category_id,
                     thread_id,
-                    add_thread_post::<T>(
+                    post_id: add_thread_post::<T>(
                         caller_id.clone(),
                         forum_user_id.saturated_into(),
                         category_id,
                         thread_id,
                         vec![0u8],
                     ),
-                    hide
-                )
+                },
+                hide
             );
         }
 
@@ -1739,8 +1743,8 @@ benchmarks! {
         thread.number_of_posts -= k as u64;
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
 
-        for post in posts.clone() {
-            assert!(!<PostById<T>>::contains_key(post.1, post.2));
+        for (extended_post, _) in &posts {
+            assert!(!<PostById<T>>::contains_key(extended_post.thread_id, extended_post.post_id));
         }
 
         assert_last_event::<T>(
@@ -1765,9 +1769,9 @@ benchmarks! {
         let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create threads
-        let expiration_diff = 10u32.into();
+        let expiration_diff = 1010u32.into();
         let poll = Some(
-            generate_poll::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1808,9 +1812,9 @@ benchmarks! {
         let (category_id, parent_category_id) = generate_categories_tree::<T>(caller_id.clone(), i, None);
 
         // Create threads
-        let expiration_diff = 10u32.into();
+        let expiration_diff = 1010u32.into();
         let poll = Some(
-            generate_poll::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1911,9 +1915,9 @@ mod tests {
     }
 
     #[test]
-    fn test_edit_thread_title() {
+    fn test_edit_thread_metadata() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_edit_thread_title::<Runtime>());
+            assert_ok!(test_benchmark_edit_thread_metadata::<Runtime>());
         });
     }
 

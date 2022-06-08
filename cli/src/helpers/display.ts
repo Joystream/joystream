@@ -1,9 +1,9 @@
 import { cli, Table } from 'cli-ux'
 import chalk from 'chalk'
-import { NameValueObj } from '../Types'
+import { MemberDetails, NameValueObj } from '../Types'
 import { AccountId } from '@polkadot/types/interfaces'
 
-export function displayHeader(caption: string, placeholderSign = '_', size = 50) {
+export function displayHeader(caption: string, placeholderSign = '_', size = 50): void {
   const singsPerSide: number = Math.floor((size - (caption.length + 2)) / 2)
   let finalStr = ''
   for (let i = 0; i < singsPerSide; ++i) finalStr += placeholderSign
@@ -13,18 +13,18 @@ export function displayHeader(caption: string, placeholderSign = '_', size = 50)
   process.stdout.write('\n' + chalk.bold.blueBright(finalStr) + '\n\n')
 }
 
-export function displayNameValueTable(rows: NameValueObj[]) {
+export function displayNameValueTable(rows: NameValueObj[]): void {
   cli.table(
     rows,
     {
-      name: { minWidth: 30, get: (row) => chalk.bold.white(row.name) },
-      value: { get: (row) => chalk.white(row.value) },
+      name: { minWidth: 30, get: (row) => chalk.bold.magentaBright(row.name) },
+      value: { get: (row) => chalk.magentaBright(row.value) },
     },
     { 'no-header': true }
   )
 }
 
-export function displayCollapsedRow(row: { [k: string]: string | number }) {
+export function displayCollapsedRow(row: { [k: string]: string | number }): void {
   const collapsedRow: NameValueObj[] = Object.keys(row).map((name) => ({
     name,
     value: typeof row[name] === 'string' ? (row[name] as string) : row[name].toString(),
@@ -33,11 +33,11 @@ export function displayCollapsedRow(row: { [k: string]: string | number }) {
   displayNameValueTable(collapsedRow)
 }
 
-export function displayCollapsedTable(rows: { [k: string]: string | number }[]) {
+export function displayCollapsedTable(rows: { [k: string]: string | number }[]): void {
   for (const row of rows) displayCollapsedRow(row)
 }
 
-export function displayTable(rows: { [k: string]: string | number }[], cellHorizontalPadding = 0) {
+export function displayTable(rows: { [k: string]: string | number }[], cellHorizontalPadding = 0): void {
   if (!rows.length) {
     return
   }
@@ -49,7 +49,7 @@ export function displayTable(rows: { [k: string]: string | number }[], cellHoriz
     }, columnName.length)
   const columnDef = (columnName: string) => ({
     header: columnName,
-    get: (row: typeof rows[number]) => chalk.white(`${row[columnName]}`),
+    get: (row: typeof rows[number]) => chalk.magentaBright(`${row[columnName]}`),
     minWidth: maxLength(columnName) + cellHorizontalPadding,
   })
   const columns: Table.table.Columns<{ [k: string]: string }> = {}
@@ -70,4 +70,8 @@ export function toFixedLength(text: string, length: number, spacesOnLeft = false
 
 export function shortAddress(address: AccountId | string): string {
   return address.toString().substr(0, 6) + '...' + address.toString().substr(-6)
+}
+
+export function memberHandle(member: MemberDetails): string {
+  return member.handle ? member.handle : member.membership.handle_hash.toHex().substr(0, 10) + '... (hash)'
 }

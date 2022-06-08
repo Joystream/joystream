@@ -56,5 +56,6 @@ std = [
     'proposals-discussion/std',
     'constitution/std',
     'council/std',
-    'membership/std'
+    'membership/std',
+    'blog/std',
 ]

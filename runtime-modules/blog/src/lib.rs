@@ -45,6 +45,7 @@ use frame_support::weights::Weight;
 use frame_support::{
     decl_event, decl_module, decl_storage, ensure, traits::Get, Parameter, StorageDoubleMap,
 };
+use scale_info::TypeInfo;
 use sp_arithmetic::traits::{BaseArithmetic, One};
 use sp_runtime::SaturatedConversion;
 use sp_runtime::{
@@ -90,7 +91,7 @@ type BlogWeightInfo<T, I> = <T as Config<I>>::WeightInfo;
 
 // The pallet's configuration trait.
 pub trait Config<I: Instance = DefaultInstance>:
-    frame_system::Config + common::membership::Config + balances::Config
+    frame_system::Config + common::membership::MembershipTypes + balances::Config
 {
     /// Origin from which participant must come.
     type ParticipantEnsureOrigin: MemberOriginValidator<
@@ -131,7 +132,7 @@ pub trait Config<I: Instance = DefaultInstance>:
 }
 
 /// Type, representing blog related post structure
-#[derive(Encode, Decode, Clone)]
+#[derive(Encode, Decode, Clone, TypeInfo)]
 pub struct Post<T: Config<I>, I: Instance> {
     /// Locking status
     locked: bool,

@@ -1,0 +1,122 @@
+fragment VideoCategoryFields on VideoCategory {
+  id
+  name
+}
+
+fragment ChannelCategoryFields on ChannelCategory {
+  id
+  name
+}
+
+fragment DataObjectFields on DataObject {
+  id
+  joystreamContentId
+  size
+  liaisonJudgement
+}
+
+fragment VideoFields on Video {
+  id
+  categoryId
+  title
+  description
+  duration
+  thumbnailPhotoDataObject {
+    ...DataObjectFields
+  }
+  language {
+    iso
+  }
+  hasMarketing
+  publishedBeforeJoystream
+  isPublic
+  isCensored
+  isExplicit
+  license {
+    code
+    attribution
+    customText
+  }
+  mediaDataObject {
+    ...DataObjectFields
+  }
+  mediaMetadata {
+    encoding {
+      codecName
+      container
+      mimeMediaType
+    }
+    pixelWidth
+    pixelHeight
+    size
+  }
+  isFeatured
+  channel {
+    id
+    ownerMember {
+      id
+      controllerAccount
+    }
+  }
+}
+
+fragment ChannelFields on Channel {
+  id
+  ownerMember {
+    id
+    controllerAccount
+  }
+  categoryId
+  rewardAccount
+  title
+  description
+  coverPhotoDataObject {
+    ...DataObjectFields
+  }
+  avatarPhotoDataObject {
+    ...DataObjectFields
+  }
+  isPublic
+  isCensored
+  language {
+    iso
+  }
+  videos {
+    id
+  }
+}
+
+fragment WorkerFields on Worker {
+  id
+  metadata
+}
+
+query getChannelsByIds($ids: [ID!]) {
+  channels(where: { id_in: $ids }, limit: 1000) {
+    ...ChannelFields
+  }
+}
+
+query getVideosByIds($ids: [ID!]) {
+  videos(where: { id_in: $ids }, limit: 1000) {
+    ...VideoFields
+  }
+}
+
+query getVideoCategories {
+  videoCategories {
+    ...VideoCategoryFields
+  }
+}
+
+query getChannelsCategories {
+  channelCategories {
+    ...ChannelCategoryFields
+  }
+}
+
+query getStorageWorkers {
+  workers(where: { type_eq: STORAGE }) {
+    ...WorkerFields
+  }
+}

@@ -15,6 +15,7 @@
 
 //! A list of the different weight modules for our runtime.
 
+// Disable lints for Auto-generated code.
 #![allow(clippy::unnecessary_cast)]
 
 // FRAME pallets

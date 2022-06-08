@@ -62,7 +62,7 @@ parameter_types! {
     pub const BudgetRefillPeriod: u64 = 1000;
 }
 
-impl common::membership::Config for Runtime {
+impl common::membership::MembershipTypes for Runtime {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -70,7 +70,7 @@ impl common::membership::Config for Runtime {
 impl Config for Runtime {
     type Event = Event;
 
-    type Referendum = referendum::Pallet<Runtime, ReferendumInstance>;
+    type Referendum = referendum::Module<Runtime, ReferendumInstance>;
 
     type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
     type CouncilSize = CouncilSize;
@@ -164,6 +164,12 @@ impl WeightInfo for () {
         0
     }
     fn funding_request(_: u32) -> Weight {
+        0
+    }
+    fn councilor_remark() -> Weight {
+        0
+    }
+    fn candidate_remark() -> Weight {
         0
     }
 }
@@ -400,6 +406,9 @@ impl membership::WeightInfo for Weights {
     fn remove_staking_account() -> Weight {
         unimplemented!()
     }
+    fn member_remark() -> Weight {
+        unimplemented!()
+    }
 }
 
 impl balances::Config for Runtime {
@@ -438,12 +447,13 @@ impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
 impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
         _origin: <Runtime as frame_system::Config>::Origin,
-        _worker_id: &<Runtime as common::membership::Config>::ActorId,
+        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
 
-    fn get_leader_member_id() -> Option<<Runtime as common::membership::Config>::MemberId> {
+    fn get_leader_member_id() -> Option<<Runtime as common::membership::MembershipTypes>::MemberId>
+    {
         unimplemented!();
     }
 
@@ -457,9 +467,21 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
 
     fn is_worker_account_id(
         _account_id: &<Runtime as frame_system::Config>::AccountId,
-        _worker_id: &<Runtime as common::membership::Config>::ActorId,
+        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
         unimplemented!()
+    }
+
+    fn worker_exists(
+        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
+    ) -> bool {
+        unimplemented!();
+    }
+
+    fn ensure_worker_exists(
+        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!();
     }
 }
 
@@ -635,9 +657,24 @@ pub fn default_genesis_config() -> council::GenesisConfig<Runtime> {
     }
 }
 
-pub fn build_test_externalities(
-    config: council::GenesisConfig<Runtime>,
-) -> sp_io::TestExternalities {
+pub fn augmented_genesis_config() -> GenesisConfig<Runtime> {
+    GenesisConfig::<Runtime> {
+        stage: CouncilStageUpdate::default(),
+        council_members: vec![CouncilMemberOf::<Runtime> {
+            membership_id: 1,
+            ..Default::default()
+        }],
+        candidates: vec![(2, Default::default())],
+        announcement_period_nr: 0,
+        budget: 0,
+        next_reward_payments: 0,
+        next_budget_refill: <Runtime as Config>::BudgetRefillPeriod::get(),
+        budget_increment: 1,
+        councilor_reward: 100,
+    }
+}
+
+pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> sp_io::TestExternalities {
     let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
@@ -677,7 +714,7 @@ where
 
         for _ in 0..increase {
             <Module<T> as OnFinalize<T::BlockNumber>>::on_finalize(block_number);
-            <referendum::Pallet<Runtime, ReferendumInstance> as OnFinalize<
+            <referendum::Module<Runtime, ReferendumInstance> as OnFinalize<
                 <Runtime as frame_system::Config>::BlockNumber,
             >>::on_finalize(block_number.into());
 
@@ -685,7 +722,7 @@ where
             frame_system::Pallet::<T>::set_block_number(block_number);
 
             <Module<T> as OnInitialize<T::BlockNumber>>::on_initialize(block_number);
-            <referendum::Pallet<Runtime, ReferendumInstance> as OnInitialize<
+            <referendum::Module<Runtime, ReferendumInstance> as OnInitialize<
                 <Runtime as frame_system::Config>::BlockNumber,
             >>::on_initialize(block_number.into());
         }
@@ -752,7 +789,7 @@ where
 
     pub fn vote_commitment(
         account_id: &<T as frame_system::Config>::AccountId,
-        vote_option_index: &<T as common::membership::Config>::MemberId,
+        vote_option_index: &<T as common::membership::MembershipTypes>::MemberId,
         cycle_id: &u64,
     ) -> (T::Hash, Vec<u8>) {
         let salt = Self::generate_salt();

@@ -1,0 +1,35 @@
+fragment CouncilMemberFields on CouncilMember {
+  id
+  member {
+    id
+  }
+}
+
+fragment ElectedCouncilFields on ElectedCouncil {
+  councilMembers {
+    ...CouncilMemberFields
+  }
+}
+
+fragment CandidateFields on Candidate {
+  id
+  member {
+    id
+  }
+}
+
+query getCurrentCouncilMembers {
+  electedCouncils(where: { endedAtBlock_eq: null }) {
+    ...ElectedCouncilFields
+  }
+}
+
+query getReferendumIntermediateWinners($electionRoundCycleId: Int!, $councilSize: Int!) {
+  candidates(
+    where: { electionRound: { cycleId_eq: $electionRoundCycleId }, votePower_gt: 0 }
+    orderBy: [votePower_DESC, lastVoteReceivedAtBlock_ASC, lastVoteReceivedAtEventNumber_ASC]
+    limit: $councilSize
+  ) {
+    ...CandidateFields
+  }
+}

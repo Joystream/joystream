@@ -1,72 +1,28 @@
-import {
-  GenericAccountId,
-  Struct,
-  Option,
-  Text,
-  bool,
-  u16,
-  u32,
-  u64,
-  Null,
-  U8aFixed,
-  BTreeSet,
-  UInt,
-  Compact,
-} from '@polkadot/types'
-import { BlockNumber, Hash as PolkadotHash, Moment } from '@polkadot/types/interfaces'
-import { Codec, Constructor, RegistryTypes } from '@polkadot/types/types'
-import { u8aConcat, u8aToHex } from '@polkadot/util'
+import { Struct, Option, Text, bool, u16, u32, u64, Null, U8aFixed, u128 } from '@polkadot/types'
+import { Hash as PolkadotHash, Moment } from '@polkadot/types/interfaces'
+import { Codec, RegistryTypes } from '@polkadot/types/types'
 // we get 'moment' because it is a dependency of @polkadot/util, via @polkadot/keyring
 import moment from 'moment'
 import { JoyStructCustom, JoyStructDecorated } from './JoyStruct'
 import { JoyEnum } from './JoyEnum'
+import { GenericAccountId } from '@polkadot/types/generic/AccountId'
 
 export { JoyEnum, JoyStructCustom, JoyStructDecorated }
 
-// Adds sorting during BTreeSet toU8a encoding (required by the runtime)
-// Currently only supports values that extend UInt
-// FIXME: Will not cover cases where BTreeSet is part of extrinsic args metadata
-export interface ExtendedBTreeSet<V extends UInt> extends BTreeSet<V> {
-  toArray(): V[]
-}
-
-export function JoyBTreeSet<V extends UInt>(valType: Constructor<V>): Constructor<ExtendedBTreeSet<V>> {
-  return class extends BTreeSet.with(valType) {
-    public toArray(): V[] {
-      return Array.from(this)
-    }
-
-    public toU8a(isBare?: boolean): Uint8Array {
-      const encoded = new Array<Uint8Array>()
-
-      if (!isBare) {
-        encoded.push(Compact.encodeU8a(this.size))
-      }
-
-      const sorted = Array.from(this).sort((a, b) => (a.lt(b) ? -1 : 1))
-
-      sorted.forEach((v: V) => {
-        encoded.push(v.toU8a(isBare))
-      })
-
-      return u8aConcat(...encoded)
-    }
-
-    public toHex(): string {
-      return u8aToHex(this.toU8a())
-    }
-  }
-}
+export class Balance extends u128 {}
+export class BlockNumber extends u32 {}
 
 export class ActorId extends u64 {}
 export class MemberId extends u64 {}
+export class Url extends Text {}
+
+export class ChannelId extends u64 {}
 
 // Indentical type names for Forum and Proposal Discussions modules
 // Ensure they are both configured in runtime to have same type
 export class ThreadId extends u64 {}
 export class PostId extends u64 {}
 
-// Which module uses this?
 export class Hash extends U8aFixed implements PolkadotHash {}
 
 export type BlockAndTimeType = {
@@ -127,12 +83,15 @@ export const WorkingGroupDef = {
   Forum: Null,
   Storage: Null,
   Content: Null,
+  OperationsAlpha: Null,
+  Gateway: Null,
+  Distribution: Null,
+  OperationsBeta: Null,
+  OperationsGamma: Null,
   Membership: Null,
 } as const
 export type WorkingGroupKey = keyof typeof WorkingGroupDef
 export class WorkingGroup extends JoyEnum(WorkingGroupDef) {}
-
-export class MemoText extends Text {}
 
 export class BalanceKind extends JoyEnum({
   Positive: Null,
@@ -144,6 +103,7 @@ export class BalanceKind extends JoyEnum({
 export class AccountId extends GenericAccountId {}
 export class Address extends AccountId {}
 export class LookupSource extends AccountId {}
+export class BalanceOf extends Balance {}
 
 export const commonTypes: RegistryTypes = {
   ActorId,
@@ -153,11 +113,12 @@ export const commonTypes: RegistryTypes = {
   PostId,
   InputValidationLengthConstraint,
   WorkingGroup,
-  MemoText,
   BalanceKind,
   // Customize Address type for joystream chain
   Address,
   LookupSource,
+  ChannelId,
+  Url,
 }
 
 export default commonTypes

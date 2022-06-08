@@ -30,13 +30,13 @@ pub(crate) struct ApplicationInfo<T: crate::Config<I>, I: crate::Instance> {
 
 // WorkerId - Worker - helper struct.
 pub(crate) struct WorkerInfo<
-    T: common::membership::Config + frame_system::Config + balances::Config,
+    T: common::membership::MembershipTypes + frame_system::Config + balances::Config,
 > {
     pub worker_id: WorkerId<T>,
     pub worker: Worker<T>,
 }
 
-impl<T: common::membership::Config + frame_system::Config + balances::Config>
+impl<T: common::membership::MembershipTypes + frame_system::Config + balances::Config>
     From<(WorkerId<T>, Worker<T>)> for WorkerInfo<T>
 {
     fn from((worker_id, worker): (WorkerId<T>, Worker<T>)) -> Self {

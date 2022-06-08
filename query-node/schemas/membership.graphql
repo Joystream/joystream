@@ -1,9 +1,21 @@
+type AvatarObject @variant {
+  "The avatar data object"
+  avatarObject: StorageDataObject!
+}
+
+type AvatarUri @variant {
+  "The avatar URL"
+  avatarUri: String!
+}
+
+union Avatar = AvatarObject | AvatarUri
+
 type MemberMetadata @entity {
   "Member's name"
   name: String
 
   "Avatar data object"
-  avatar: DataObject
+  avatar: Avatar
 
   "Short text chosen by member to share information about themselves"
   about: String
@@ -71,8 +83,59 @@ type Membership @entity {
   "Whether member is founding member."
   isFoundingMember: Boolean!
 
+  "Whether member is elected in the current council."
+  isCouncilMember: Boolean!
+
   "Member's working group roles (current and past)"
   roles: [Worker!] @derivedFrom(field: "membership")
+
+  # Required for ProposalDiscussionWhitelist->members Many-to-Many relationship
+  "List of proposal thread whitelists the member is part of"
+  whitelistedIn: [ProposalDiscussionWhitelist!] @derivedFrom(field: "members")
+
+  # Required for BountyEntrantWhitelist->members Many-to-Many relationship
+  "List of bounty entrant whitelists the member is part of"
+  whitelistedInBounties: [BountyEntrantWhitelist!] @derivedFrom(field: "members")
+
+  "Content channels the member owns"
+  channels: [Channel!] @derivedFrom(field: "ownerMember")
+
+  "List of channels the member has collaborator access to"
+  collaboratorInChannels: [Channel!] @derivedFrom(field: "collaborators")
+
+  # Council & Referendum relations
+
+  #"Council reward payment made received by the member."
+  #budgetPayments: [BudgetPayment!] @derivedFrom(field: "member")
+
+  "Candidacies announced by this member."
+  councilCandidacies: [Candidate!] @derivedFrom(field: "member")
+
+  "Elected councils' memberships of the member."
+  councilMembers: [CouncilMember!] @derivedFrom(field: "member")
+
+  # NFTs & Members relations
+
+  "Auctions in which is this user whitelisted to participate"
+  whitelistedInAuctions: [Auction!]! @derivedFrom(field: "whitelistedMembers")
+
+  "NFTs owned by this member"
+  ownedNfts: [OwnedNft!]! @derivedFrom(field: "ownerMember")
+
+  "NFTs owned by this member in various channels."
+  nftCollectorInChannels: [ChannelNftCollectors!]! @derivedFrom(field: "member")
+
+  # Required for EnglishAuctionSettledEvent->members Many-to-Many relationship
+  "Member as bidder in EnglishAuctionSettledEvent/s."
+  memberEnglishAuctionSettledEvents: [EnglishAuctionSettledEvent!] @derivedFrom(field: "bidders")
+
+  # Required for OpenAuctionBidAcceptedEvent->members Many-to-Many relationship
+  "Member as bidder in OpenAuctionBidAcceptedEvent/s."
+  memberOpenAuctionAcceptedBidEvents: [OpenAuctionBidAcceptedEvent!] @derivedFrom(field: "bidders")
+
+  # Required for BidMadeCompletingAuctionEvent->members Many-to-Many relationship
+  "Member as bidder in BidMadeCompletingAuctionEvent/s."
+  memberBidMadeCompletingAuctionEvents: [BidMadeCompletingAuctionEvent!] @derivedFrom(field: "bidders")
 }
 
 type MembershipSystemSnapshot @entity {

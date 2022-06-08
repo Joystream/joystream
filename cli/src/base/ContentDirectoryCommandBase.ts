@@ -1,114 +1,201 @@
 import ExitCodes from '../ExitCodes'
 import { WorkingGroups } from '../Types'
-import { ReferenceProperty } from '@joystream/cd-schemas/types/extrinsics/AddClassSchema'
-import { FlattenRelations } from '@joystream/cd-schemas/types/utility'
-import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
-import {
-  Class,
-  ClassId,
-  CuratorGroup,
-  CuratorGroupId,
-  Entity,
-  EntityId,
-  Actor,
-  PropertyType,
-  Property,
-} from '@joystream/types/content-directory'
+import { CuratorGroup, CuratorGroupId, ContentActor, Channel } from '@joystream/types/content'
 import { Worker } from '@joystream/types/working-group'
 import { CLIError } from '@oclif/errors'
-import { Codec } from '@polkadot/types/types'
-import AbstractInt from '@polkadot/types/codec/AbstractInt'
-import { AnyJson } from '@polkadot/types/types/helpers'
-import _ from 'lodash'
-import { RolesCommandBase } from './WorkingGroupsCommandBase'
-import { createType } from '@joystream/types'
-import chalk from 'chalk'
 import { flags } from '@oclif/command'
-import { DistinctQuestion } from 'inquirer'
+import { memberHandle } from '../helpers/display'
+import { MemberId } from '@joystream/types/common'
+import { createType } from '@joystream/types'
+import WorkingGroupCommandBase from './WorkingGroupCommandBase'
 
-const CONTEXTS = ['Member', 'Curator', 'Lead'] as const
-type Context = typeof CONTEXTS[number]
+const CHANNEL_CREATION_CONTEXTS = ['Member', 'Curator'] as const
+const CATEGORIES_CONTEXTS = ['Lead', 'Curator'] as const
+const CHANNEL_MANAGEMENT_CONTEXTS = ['Owner', 'Collaborator'] as const
 
-type ParsedPropertyValue = { value: Codec | null; type: PropertyType['type']; subtype: PropertyType['subtype'] }
+type ChannelManagementContext = typeof CHANNEL_MANAGEMENT_CONTEXTS[number]
+type ChannelCreationContext = typeof CHANNEL_CREATION_CONTEXTS[number]
+type CategoriesContext = typeof CATEGORIES_CONTEXTS[number]
 
 /**
  * Abstract base class for commands related to content directory
  */
-export default abstract class ContentDirectoryCommandBase extends RolesCommandBase {
-  group = WorkingGroups.Curators // override group for RolesCommandBase
+export default abstract class ContentDirectoryCommandBase extends WorkingGroupCommandBase {
+  static flags = {
+    ...WorkingGroupCommandBase.flags,
+  }
 
-  static contextFlag = flags.enum({
-    name: 'context',
+  static channelCreationContextFlag = flags.enum({
     required: false,
-    description: `Actor context to execute the command in (${CONTEXTS.join('/')})`,
-    options: [...CONTEXTS],
+    description: `Actor context to execute the command in (${CHANNEL_CREATION_CONTEXTS.join('/')})`,
+    options: [...CHANNEL_CREATION_CONTEXTS],
   })
 
-  async promptForContext(message = 'Choose in which context you wish to execute the command'): Promise<Context> {
+  static channelManagementContextFlag = flags.enum({
+    required: false,
+    description: `Actor context to execute the command in (${CHANNEL_MANAGEMENT_CONTEXTS.join('/')})`,
+    options: [...CHANNEL_MANAGEMENT_CONTEXTS],
+  })
+
+  static categoriesContextFlag = flags.enum({
+    required: false,
+    description: `Actor context to execute the command in (${CATEGORIES_CONTEXTS.join('/')})`,
+    options: [...CATEGORIES_CONTEXTS],
+  })
+
+  async init(): Promise<void> {
+    await super.init()
+    this._group = WorkingGroups.Curators // override group for RolesCommandBase
+  }
+
+  async promptForChannelCreationContext(
+    message = 'Choose in which context you wish to execute the command'
+  ): Promise<ChannelCreationContext> {
     return this.simplePrompt({
       message,
       type: 'list',
-      choices: CONTEXTS.map((c) => ({ name: c, value: c })),
+      choices: CHANNEL_CREATION_CONTEXTS.map((c) => ({ name: c, value: c })),
+    })
+  }
+
+  async promptForCategoriesContext(
+    message = 'Choose in which context you wish to execute the command'
+  ): Promise<CategoriesContext> {
+    return this.simplePrompt({
+      message,
+      type: 'list',
+      choices: CATEGORIES_CONTEXTS.map((c) => ({ name: c, value: c })),
     })
   }
 
   // Use when lead access is required in given command
   async requireLead(): Promise<void> {
-    await this.getRequiredLead()
+    await this.getRequiredLeadContext()
   }
 
-  async getCuratorContext(classNames: string[] = []): Promise<Actor> {
-    const curator = await this.getRequiredWorker()
-    const classes = await Promise.all(classNames.map(async (cName) => (await this.classEntryByNameOrId(cName))[1]))
-    const classMaintainers = classes.map(({ class_permissions: permissions }) => permissions.maintainers.toArray())
+  getCurationActorByChannel(channel: Channel): Promise<[ContentActor, string]> {
+    return channel.owner.isOfType('Curators') ? this.getContentActor('Lead') : this.getContentActor('Curator')
+  }
 
-    const groups = await this.getApi().availableCuratorGroups()
-    const availableGroupIds = groups
-      .filter(
-        ([groupId, group]) =>
-          group.active.valueOf() &&
-          classMaintainers.every((maintainers) => maintainers.some((m) => m.eq(groupId))) &&
-          group.curators.toArray().some((curatorId) => curatorId.eq(curator.workerId))
-      )
-      .map(([id]) => id)
+  async getChannelOwnerActor(channel: Channel): Promise<[ContentActor, string]> {
+    if (channel.owner.isOfType('Curators')) {
+      try {
+        return this.getContentActor('Lead')
+      } catch (e) {
+        return this.getCuratorContext(channel.owner.asType('Curators'))
+      }
+    } else {
+      const { id, membership } = await this.getRequiredMemberContext(false, [channel.owner.asType('Member')])
+      return [
+        createType<ContentActor, 'ContentActor'>('ContentActor', { Member: id }),
+        membership.controller_account.toString(),
+      ]
+    }
+  }
+
+  async getChannelCollaboratorActor(channel: Channel): Promise<[ContentActor, string]> {
+    const { id, membership } = await this.getRequiredMemberContext(false, Array.from(channel.collaborators))
+    return [
+      createType<ContentActor, 'ContentActor'>('ContentActor', { Member: id }),
+      membership.controller_account.toString(),
+    ]
+  }
+
+  isChannelOwner(channel: Channel, actor: ContentActor): boolean {
+    return channel.owner.isOfType('Curators')
+      ? (actor.isOfType('Curator') && actor.asType('Curator')[0].eq(channel.owner.asType('Curators'))) ||
+          actor.isOfType('Lead')
+      : actor.isOfType('Member') && actor.asType('Member').eq(channel.owner.asType('Member'))
+  }
+
+  async getChannelManagementActor(
+    channel: Channel,
+    context: ChannelManagementContext
+  ): Promise<[ContentActor, string]> {
+    if (context && context === 'Owner') {
+      return this.getChannelOwnerActor(channel)
+    }
+    if (context && context === 'Collaborator') {
+      return this.getChannelCollaboratorActor(channel)
+    }
+
+    // Context not set - derive
+
+    try {
+      const owner = await this.getChannelOwnerActor(channel)
+      this.log('Derived context: Channel owner')
+      return owner
+    } catch (e) {
+      // continue
+    }
+
+    try {
+      const collaborator = await this.getChannelCollaboratorActor(channel)
+      this.log('Derived context: Channel collaborator')
+      return collaborator
+    } catch (e) {
+      // continue
+    }
+
+    this.error('No account found with access to manage the provided channel', { exit: ExitCodes.AccessDenied })
+  }
+
+  async getCategoryManagementActor(): Promise<[ContentActor, string]> {
+    try {
+      const lead = await this.getContentActor('Lead')
+      this.log('Derived context: Lead')
+      return lead
+    } catch (e) {
+      // continue
+    }
+    try {
+      const curator = await this.getContentActor('Curator')
+      this.log('Derived context: Curator')
+      return curator
+    } catch (e) {
+      // continue
+    }
+
+    this.error('Lead / Curator Group member permissions are required for this action', { exit: ExitCodes.AccessDenied })
+  }
+
+  async getCuratorContext(requiredGroupId?: CuratorGroupId): Promise<[ContentActor, string]> {
+    const curator = await this.getRequiredWorkerContext()
 
     let groupId: number
-    if (!availableGroupIds.length) {
-      this.error(
-        'You do not have the required maintainer access to at least one of the following classes: ' +
-          classNames.join(', '),
-        { exit: ExitCodes.AccessDenied }
-      )
-    } else if (availableGroupIds.length === 1) {
-      groupId = availableGroupIds[0].toNumber()
+    if (requiredGroupId) {
+      const group = await this.getCuratorGroup(requiredGroupId.toNumber())
+      if (!group.active.valueOf()) {
+        this.error(`Curator group ${requiredGroupId.toString()} is no longer active`, { exit: ExitCodes.AccessDenied })
+      }
+      if (!Array.from(group.curators).some((curatorId) => curatorId.eq(curator.workerId))) {
+        this.error(`You don't belong to required curator group (ID: ${requiredGroupId.toString()})`, {
+          exit: ExitCodes.AccessDenied,
+        })
+      }
+      groupId = requiredGroupId.toNumber()
     } else {
-      groupId = await this.promptForCuratorGroup('Select Curator Group context', availableGroupIds)
+      const groups = await this.getApi().availableCuratorGroups()
+      const availableGroupIds = groups
+        .filter(
+          ([, group]) =>
+            group.active.valueOf() && Array.from(group.curators).some((curatorId) => curatorId.eq(curator.workerId))
+        )
+        .map(([id]) => id)
+
+      if (!availableGroupIds.length) {
+        this.error("You don't belong to any active curator group!", { exit: ExitCodes.AccessDenied })
+      } else if (availableGroupIds.length === 1) {
+        groupId = availableGroupIds[0].toNumber()
+      } else {
+        groupId = await this.promptForCuratorGroup('Select Curator Group context', availableGroupIds)
+      }
     }
 
-    return createType('Actor', { Curator: [groupId, curator.workerId.toNumber()] })
-  }
-
-  async promptForClass(message = 'Select a class'): Promise<Class> {
-    const classes = await this.getApi().availableClasses()
-    const choices = classes.map(([, c]) => ({ name: c.name.toString(), value: c }))
-    if (!choices.length) {
-      this.warn('No classes exist to choose from!')
-      this.exit(ExitCodes.InvalidInput)
-    }
-
-    const selectedClass = await this.simplePrompt({ message, type: 'list', choices })
-
-    return selectedClass
-  }
-
-  async classEntryByNameOrId(classNameOrId: string): Promise<[ClassId, Class]> {
-    const classes = await this.getApi().availableClasses()
-    const foundClass = classes.find(([id, c]) => id.toString() === classNameOrId || c.name.toString() === classNameOrId)
-    if (!foundClass) {
-      this.error(`Class id not found by class name or id: "${classNameOrId}"!`)
-    }
-
-    return foundClass
+    return [
+      createType<ContentActor, 'ContentActor'>('ContentActor', { Curator: [groupId, curator.workerId.toNumber()] }),
+      curator.roleAccount.toString(),
+    ]
   }
 
   private async curatorGroupChoices(ids?: CuratorGroupId[]) {
@@ -119,8 +206,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
         name:
           `Group ${id.toString()} (` +
           `${group.active.valueOf() ? 'Active' : 'Inactive'}, ` +
-          `${group.curators.toArray().length} member(s), ` +
-          `${group.number_of_classes_maintained.toNumber()} classes maintained)`,
+          `${Array.from(group.curators).length} member(s)), `,
         value: id.toNumber(),
       }))
   }
@@ -131,7 +217,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
       this.warn('No Curator Groups to choose from!')
       this.exit(ExitCodes.InvalidInput)
     }
-    const selectedId = await this.simplePrompt({ message, type: 'list', choices })
+    const selectedId = await this.simplePrompt<number>({ message, type: 'list', choices })
 
     return selectedId
   }
@@ -141,15 +227,9 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     if (!choices.length) {
       return []
     }
-    const selectedIds = await this.simplePrompt({ message, type: 'checkbox', choices })
+    const selectedIds = await this.simplePrompt<number[]>({ message, type: 'checkbox', choices })
 
     return selectedIds
-  }
-
-  async promptForClassReference(): Promise<ReferenceProperty['Reference']> {
-    const selectedClass = await this.promptForClass()
-    const sameOwner = await this.simplePrompt({ message: 'Same owner required?', ...BOOL_PROMPT_OPTIONS })
-    return { className: selectedClass.name.toString(), sameOwner }
   }
 
   async promptForCurator(message = 'Choose a Curator', ids?: number[]): Promise<number> {
@@ -157,7 +237,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     const choices = curators
       .filter((c) => (ids ? ids.includes(c.workerId.toNumber()) : true))
       .map((c) => ({
-        name: `${c.profile.handle.toString()} (Worker ID: ${c.workerId})`,
+        name: `${memberHandle(c.profile)} (Worker ID: ${c.workerId})`,
         value: c.workerId.toNumber(),
       }))
 
@@ -166,7 +246,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
       this.exit(ExitCodes.InvalidInput)
     }
 
-    const selectedCuratorId = await this.simplePrompt({
+    const selectedCuratorId = await this.simplePrompt<number>({
       message,
       type: 'list',
       choices,
@@ -207,295 +287,35 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     return group
   }
 
-  async getEntity(
-    id: string | number,
-    requiredClass?: string,
-    ownerMemberId?: number,
-    requireSchema = true
-  ): Promise<Entity> {
-    if (typeof id === 'string') {
-      id = parseInt(id)
+  async getContentActor(
+    context: Exclude<keyof typeof ContentActor.typeDefinitions, 'Collaborator'>
+  ): Promise<[ContentActor, string]> {
+    if (context === 'Member') {
+      const { id, membership } = await this.getRequiredMemberContext()
+      return [
+        createType<ContentActor, 'ContentActor'>('ContentActor', { Member: id }),
+        membership.controller_account.toString(),
+      ]
     }
 
-    const entity = await this.getApi().entityById(id)
-
-    if (!entity) {
-      this.error(`Entity not found by id: ${id}`, { exit: ExitCodes.InvalidInput })
+    if (context === 'Curator') {
+      return this.getCuratorContext()
     }
 
-    if (requiredClass) {
-      const [classId] = await this.classEntryByNameOrId(requiredClass)
-      if (entity.class_id.toNumber() !== classId.toNumber()) {
-        this.error(`Entity of id ${id} is not of class ${requiredClass}!`, { exit: ExitCodes.InvalidInput })
-      }
+    if (context === 'Lead') {
+      const lead = await this.getRequiredLeadContext()
+      return [createType<ContentActor, 'ContentActor'>('ContentActor', { Lead: null }), lead.roleAccount.toString()]
     }
 
-    const { controller } = entity.entity_permissions
-    if (
-      ownerMemberId !== undefined &&
-      (!controller.isOfType('Member') || controller.asType('Member').toNumber() !== ownerMemberId)
-    ) {
-      this.error('Cannot execute this action for specified entity - invalid ownership.', {
-        exit: ExitCodes.AccessDenied,
+    throw new Error(`Unrecognized context: ${context}`)
+  }
+
+  async validateMemberIdsSet(ids: number[] | MemberId[], setName: 'collaborator' | 'moderator'): Promise<void> {
+    const members = await this.getApi().getMembers(ids)
+    if (members.length < ids.length || members.some((m) => m.isEmpty)) {
+      this.error(`Invalid ${setName} set! All ${setName} set members must be existing members!`, {
+        exit: ExitCodes.InvalidInput,
       })
     }
-
-    if (requireSchema && !entity.supported_schemas.toArray().length) {
-      this.error(`${requiredClass || ''} entity of id ${id} has no schema support added!`)
-    }
-
-    return entity
-  }
-
-  async getAndParseKnownEntity<T>(id: string | number, className?: string): Promise<FlattenRelations<T>> {
-    const entity = await this.getEntity(id, className)
-    return this.parseToEntityJson<T>(entity)
-  }
-
-  async entitiesByClassAndOwner(classNameOrId: number | string, ownerMemberId?: number): Promise<[EntityId, Entity][]> {
-    const classId =
-      typeof classNameOrId === 'number' ? classNameOrId : (await this.classEntryByNameOrId(classNameOrId))[0].toNumber()
-
-    return (await this.getApi().entitiesByClassId(classId)).filter(([, entity]) => {
-      const controller = entity.entity_permissions.controller
-      return ownerMemberId !== undefined
-        ? controller.isOfType('Member') && controller.asType('Member').toNumber() === ownerMemberId
-        : true
-    })
-  }
-
-  async promptForEntityEntry(
-    message: string,
-    className: string,
-    propName?: string,
-    ownerMemberId?: number,
-    defaultId?: number | null
-  ): Promise<[EntityId, Entity]> {
-    const [classId, entityClass] = await this.classEntryByNameOrId(className)
-    const entityEntries = await this.entitiesByClassAndOwner(classId.toNumber(), ownerMemberId)
-
-    if (!entityEntries.length) {
-      this.log(`${message}:`)
-      this.error(`No choices available! Exiting...`, { exit: ExitCodes.UnexpectedException })
-    }
-
-    const choosenEntityId = await this.simplePrompt({
-      message,
-      type: 'list',
-      choices: entityEntries.map(([id, entity]) => {
-        const parsedEntityPropertyValues = this.parseEntityPropertyValues(entity, entityClass)
-        return {
-          name: (propName && parsedEntityPropertyValues[propName]?.value?.toString()) || `ID:${id.toString()}`,
-          value: id.toString(), // With numbers there are issues with "default"
-        }
-      }),
-      default: typeof defaultId === 'number' ? defaultId.toString() : undefined,
-    })
-
-    return entityEntries.find(([id]) => choosenEntityId === id.toString())!
-  }
-
-  async promptForEntityId(
-    message: string,
-    className: string,
-    propName?: string,
-    ownerMemberId?: number,
-    defaultId?: number | null
-  ): Promise<number> {
-    return (await this.promptForEntityEntry(message, className, propName, ownerMemberId, defaultId))[0].toNumber()
-  }
-
-  parseStoredPropertyInnerValue(value: Codec | null): AnyJson {
-    if (value === null) {
-      return null
-    }
-
-    if (value instanceof AbstractInt) {
-      return value.toNumber() // Integers (signed ones) are by default converted to hex when using .toJson()
-    }
-
-    return value.toJSON()
-  }
-
-  parseEntityPropertyValues(
-    entity: Entity,
-    entityClass: Class,
-    includedProperties?: string[]
-  ): Record<string, ParsedPropertyValue> {
-    const { properties } = entityClass
-    return Array.from(entity.getField('values').entries()).reduce((columns, [propId, propValue]) => {
-      const prop = properties[propId.toNumber()]
-      const propName = prop.name.toString()
-      const included = !includedProperties || includedProperties.some((p) => p.toLowerCase() === propName.toLowerCase())
-      const { type: propType, subtype: propSubtype } = prop.property_type
-
-      if (included) {
-        columns[propName] = {
-          // If type doesn't match (Boolean(false) for optional fields case) - use "null" as value
-          value: propType !== propValue.type || propSubtype !== propValue.subtype ? null : propValue.getValue(),
-          type: propType,
-          subtype: propSubtype,
-        }
-      }
-      return columns
-    }, {} as Record<string, ParsedPropertyValue>)
-  }
-
-  async parseToEntityJson<T = unknown>(entity: Entity): Promise<FlattenRelations<T>> {
-    const entityClass = (await this.classEntryByNameOrId(entity.class_id.toString()))[1]
-    return (_.mapValues(this.parseEntityPropertyValues(entity, entityClass), (v) =>
-      this.parseStoredPropertyInnerValue(v.value)
-    ) as unknown) as FlattenRelations<T>
-  }
-
-  async createEntityList(
-    className: string,
-    includedProps?: string[],
-    filters: [string, string][] = [],
-    ownerMemberId?: number
-  ): Promise<Record<string, string>[]> {
-    const [classId, entityClass] = await this.classEntryByNameOrId(className)
-    // Create object of default "[not set]" values (prevents breaking the table if entity has no schema support)
-    const defaultValues = entityClass.properties
-      .map((p) => p.name.toString())
-      .reduce((d, propName) => {
-        if (!includedProps || includedProps.includes(propName)) {
-          d[propName] = chalk.grey('[not set]')
-        }
-        return d
-      }, {} as Record<string, string>)
-
-    const entityEntries = await this.entitiesByClassAndOwner(classId.toNumber(), ownerMemberId)
-    const parsedEntities = (await Promise.all(
-      entityEntries.map(([id, entity]) => ({
-        'ID': id.toString(),
-        ...defaultValues,
-        ..._.mapValues(this.parseEntityPropertyValues(entity, entityClass, includedProps), (v) =>
-          v.value === null ? chalk.grey('[not set]') : v.value.toString()
-        ),
-      }))
-    )) as Record<string, string>[]
-
-    return parsedEntities.filter((entity) => filters.every(([pName, pValue]) => entity[pName] === pValue))
-  }
-
-  async getActor(context: typeof CONTEXTS[number], pickedClass: Class) {
-    let actor: Actor
-    if (context === 'Member') {
-      const memberId = await this.getRequiredMemberId()
-      actor = this.createType('Actor', { Member: memberId })
-    } else if (context === 'Curator') {
-      actor = await this.getCuratorContext([pickedClass.name.toString()])
-    } else {
-      await this.getRequiredLead()
-
-      actor = this.createType('Actor', { Lead: null })
-    }
-
-    return actor
-  }
-
-  isActorEntityController(actor: Actor, entity: Entity, isMaintainer: boolean): boolean {
-    const entityController = entity.entity_permissions.controller
-    return (
-      (isMaintainer && entityController.isOfType('Maintainers')) ||
-      (entityController.isOfType('Member') &&
-        actor.isOfType('Member') &&
-        entityController.asType('Member').eq(actor.asType('Member'))) ||
-      (entityController.isOfType('Lead') && actor.isOfType('Lead'))
-    )
-  }
-
-  async isEntityPropertyEditableByActor(entity: Entity, classPropertyId: number, actor: Actor): Promise<boolean> {
-    const [, entityClass] = await this.classEntryByNameOrId(entity.class_id.toString())
-
-    const isActorMaintainer =
-      actor.isOfType('Curator') &&
-      entityClass.class_permissions.maintainers.toArray().some((groupId) => groupId.eq(actor.asType('Curator')[0]))
-
-    const isActorController = this.isActorEntityController(actor, entity, isActorMaintainer)
-
-    const {
-      is_locked_from_controller: isLockedFromController,
-      is_locked_from_maintainer: isLockedFromMaintainer,
-    } = entityClass.properties[classPropertyId].locking_policy
-
-    return (
-      (isActorController && !isLockedFromController.valueOf()) ||
-      (isActorMaintainer && !isLockedFromMaintainer.valueOf())
-    )
-  }
-
-  getQuestionsFromProperties(properties: Property[], defaults?: { [key: string]: unknown }): DistinctQuestion[] {
-    return properties.reduce((previousValue, { name, property_type: propertyType, required }) => {
-      const propertySubtype = propertyType.subtype
-      const questionType = propertySubtype === 'Bool' ? 'list' : 'input'
-      const isSubtypeNumber = propertySubtype.toLowerCase().includes('int')
-      const isSubtypeReference = propertyType.isOfType('Single') && propertyType.asType('Single').isOfType('Reference')
-
-      const validate = async (answer: string | number | null) => {
-        if (answer === null) {
-          return true // Can only happen through "filter" if property is not required
-        }
-
-        if ((isSubtypeNumber || isSubtypeReference) && parseInt(answer.toString()).toString() !== answer.toString()) {
-          return `Expected integer value!`
-        }
-
-        if (isSubtypeReference) {
-          try {
-            await this.getEntity(+answer, propertyType.asType('Single').asType('Reference')[0].toString())
-          } catch (e) {
-            return e.message || JSON.stringify(e)
-          }
-        }
-
-        return true
-      }
-
-      const optionalQuestionProperties = {
-        ...{
-          filter: async (answer: string) => {
-            if (required.isFalse && !answer) {
-              return null
-            }
-
-            // Only cast to number if valid
-            // Prevents inquirer bug not allowing to edit invalid values when casted to number
-            // See: https://github.com/SBoudrias/Inquirer.js/issues/866
-            if ((isSubtypeNumber || isSubtypeReference) && (await validate(answer)) === true) {
-              return parseInt(answer)
-            }
-
-            return answer
-          },
-          validate,
-        },
-        ...(propertySubtype === 'Bool' && {
-          choices: ['true', 'false'],
-          filter: (answer: string) => {
-            return answer === 'true' || false
-          },
-        }),
-      }
-
-      const isQuestionOptional = propertySubtype === 'Bool' ? '' : required.isTrue ? '(required)' : '(optional)'
-      const classId = isSubtypeReference
-        ? ` [Class Id: ${propertyType.asType('Single').asType('Reference')[0].toString()}]`
-        : ''
-
-      return [
-        ...previousValue,
-        {
-          name: name.toString(),
-          message: `${name} - ${propertySubtype}${classId} ${isQuestionOptional}`,
-          type: questionType,
-          ...optionalQuestionProperties,
-          ...(defaults && {
-            default: propertySubtype === 'Bool' ? JSON.stringify(defaults[name.toString()]) : defaults[name.toString()],
-          }),
-        },
-      ]
-    }, [] as DistinctQuestion[])
   }
 }

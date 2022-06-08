@@ -30,6 +30,11 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
+// TODO after Olympia-master (Sumer) merge:
+// - change module comment
+// - benchmark new extrinsics
+// - fix `ensure_worker_role_storage_text_is_valid` incorrect cast
+
 pub mod benchmarking;
 
 mod checks;
@@ -38,7 +43,7 @@ mod errors;
 mod tests;
 mod types;
 
-use frame_support::traits::{Currency, Get};
+use frame_support::traits::{Currency, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::IterableStorageMap;
 use frame_support::{decl_event, decl_module, decl_storage, ensure, StorageValue};
@@ -54,8 +59,6 @@ pub use types::{
     OpeningType, RewardPaymentType, StakeParameters, StakePolicy, Worker, WorkerId,
 };
 use types::{ApplicationInfo, WorkerInfo};
-
-pub use checks::{ensure_worker_exists, ensure_worker_signed};
 
 use common::membership::MemberOriginValidator;
 use common::{MemberId, StakingAccountValidator};
@@ -89,11 +92,13 @@ pub trait WeightInfo {
     fn set_budget() -> Weight;
     fn add_opening(i: u32) -> Weight;
     fn leave_role(i: u32) -> Weight;
+    fn lead_remark() -> Weight;
+    fn worker_remark() -> Weight;
 }
 
-/// The _Group_ main _Trait_
+/// The _Group_ main _Config_
 pub trait Config<I: Instance = DefaultInstance>:
-    frame_system::Config + balances::Config + common::membership::Config
+    frame_system::Config + balances::Config + common::membership::MembershipTypes
 {
     /// _Administration_ event type.
     type Event: From<Event<Self, I>> + Into<<Self as frame_system::Config>::Event>;
@@ -102,12 +107,17 @@ pub trait Config<I: Instance = DefaultInstance>:
     type MaxWorkerNumberLimit: Get<u32>;
 
     /// Stakes and balance locks handler.
-    type StakingHandler: StakingHandler<Self::AccountId, BalanceOf<Self>, MemberId<Self>>;
+    type StakingHandler: StakingHandler<
+        Self::AccountId,
+        BalanceOf<Self>,
+        MemberId<Self>,
+        LockIdentifier,
+    >;
 
     /// Validates staking account ownership for a member.
     type StakingAccountValidator: common::StakingAccountValidator<Self>;
 
-    /// Validates member id and origin combination
+    /// Validates member id and origin combination.
     type MemberOriginValidator: MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
     /// Defines min unstaking period in the group.
@@ -119,7 +129,7 @@ pub trait Config<I: Instance = DefaultInstance>:
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
 
-    /// Minimum stake required for applying into an opening
+    /// Minimum stake required for applying into an opening.
     type MinimumApplicationStake: Get<Self::Balance>;
 
     /// Stake needed to create an opening
@@ -275,6 +285,23 @@ decl_event!(
         /// - Worker ID.
         /// - Missed reward (optional). None means 'no missed reward'.
         NewMissedRewardLevelReached(WorkerId, Option<Balance>),
+
+        /// Emits on updating the worker storage role.
+        /// Params:
+        /// - Id of the worker.
+        /// - Raw storage field.
+        WorkerStorageUpdated(WorkerId, Vec<u8>),
+
+        /// Emits on Lead making a remark message
+        /// Params:
+        /// - message
+        LeadRemarked(Vec<u8>),
+
+        /// Emits on Lead making a remark message
+        /// Params:
+        /// - worker
+        /// - message
+        WorkerRemarked(WorkerId, Vec<u8>),
     }
 );
 
@@ -312,6 +339,13 @@ decl_storage! {
 
         /// Status text hash.
         pub StatusTextHash get(fn status_text_hash) : Vec<u8>;
+
+        /// Maps identifier to corresponding worker storage.
+        pub WorkerStorage get(fn worker_storage): map hasher(blake2_128_concat)
+            WorkerId<T> => Vec<u8>;
+
+        /// Worker storage size upper bound.
+        pub WorkerStorageSize get(fn worker_storage_size) : u16 = default_storage_size_constraint();
     }
 }
 
@@ -324,8 +358,25 @@ decl_module! {
         /// Predefined errors
         type Error = Error<T, I>;
 
-        /// Exports const -  max simultaneous active worker number.
+        /// Exports const
+
+        /// Max simultaneous active worker number.
         const MaxWorkerNumberLimit: u32 = T::MaxWorkerNumberLimit::get();
+
+        /// Defines min unstaking period in the group.
+        const MinUnstakingPeriodLimit: T::BlockNumber = T::MinUnstakingPeriodLimit::get();
+
+        /// Minimum stake required for applying into an opening.
+        const MinimumApplicationStake: T::Balance = T::MinimumApplicationStake::get();
+
+        /// Stake needed to create an opening.
+        const LeaderOpeningStake: T::Balance = T::LeaderOpeningStake::get();
+
+        /// Defines the period every worker gets paid in blocks.
+        const RewardPeriod: u32 = T::RewardPeriod::get();
+
+        /// Staking handler lock id.
+        const StakingHandlerLockId: LockIdentifier = T::StakingHandler::lock_id();
 
         /// # <weight>
         ///
@@ -1105,6 +1156,72 @@ decl_module! {
             // Trigger event
             Self::deposit_event(RawEvent::BudgetSpending(account_id, amount, rationale));
         }
+
+        /// Update the associated role storage.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_role_storage(
+            origin,
+            worker_id: WorkerId<T>,
+            storage: Vec<u8>
+        ) {
+
+            // Ensure there is a signer which matches role account of worker corresponding to provided id.
+            checks::ensure_worker_signed::<T,I>(origin, &worker_id)?;
+
+            // Ensure valid text.
+            checks::ensure_worker_role_storage_text_is_valid::<T,I>(&storage)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Complete the role storage update
+            WorkerStorage::<T, I>::insert(worker_id, storage.clone());
+
+            // Trigger event
+            Self::deposit_event(RawEvent::WorkerStorageUpdated(worker_id, storage));
+        }
+
+        /// Lead remark message
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T,I>::lead_remark()]
+        pub fn lead_remark(origin, msg: Vec<u8>) {
+            let _ = checks::ensure_origin_is_active_leader::<T, I>(origin);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::LeadRemarked(msg));
+        }
+
+        /// Worker remark message
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T,I>::worker_remark()]
+        pub fn worker_remark(origin, worker_id: WorkerId<T>,msg: Vec<u8>) {
+            let _ = checks::ensure_worker_signed::<T, I>(origin, &worker_id).map(|_| ());
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::WorkerRemarked(worker_id, msg));
+        }
+
     }
 }
 
@@ -1499,6 +1616,16 @@ impl<T: Config<I>, I: Instance> common::working_group::WorkingGroupAuthenticator
             .map(|worker| worker.role_account_id == account_id.clone())
             .unwrap_or(false)
     }
+
+    fn worker_exists(worker_id: &T::ActorId) -> bool {
+        checks::ensure_worker_exists::<T, I>(worker_id).is_ok()
+    }
+
+    fn ensure_worker_exists(worker_id: &WorkerId<T>) -> DispatchResult {
+        checks::ensure_worker_exists::<T, I>(worker_id)
+            .map(|_| ())
+            .map_err(|err| err.into())
+    }
 }
 
 impl<T: Config<I>, I: Instance> common::working_group::WorkingGroupBudgetHandler<T>
@@ -1511,4 +1638,9 @@ impl<T: Config<I>, I: Instance> common::working_group::WorkingGroupBudgetHandler
     fn set_budget(new_value: BalanceOf<T>) {
         Self::set_working_group_budget(new_value);
     }
+}
+
+// Creates default storage size constraint.
+pub(crate) fn default_storage_size_constraint() -> u16 {
+    2048
 }

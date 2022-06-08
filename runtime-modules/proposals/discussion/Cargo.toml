@@ -51,4 +51,5 @@ std = [
     'council/std',
     'membership/std',
     'scale-info/std',
+    'sp-runtime/std'
 ]

@@ -1,7 +1,0 @@
-{
-  "name": "UserDefinedLicense",
-  "description": "Custom license defined by the user",
-  "maximum_entities_count": 5000,
-  "default_entity_creation_voucher_upper_bound": 100,
-  "class_permissions": { "any_member": true }
-}

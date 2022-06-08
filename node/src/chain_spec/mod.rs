@@ -18,6 +18,8 @@
 // Disable it because we use such syntax for a code readability.
 // Example:  voting_period: 1 * DAY
 #![allow(clippy::identity_op)]
+// Remove after the Antioch release.
+#![allow(clippy::unnecessary_wraps)]
 
 pub mod council_config;
 pub mod forum_config;
@@ -43,13 +45,23 @@ use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_babe::AuthorityId as BabeId;
 use sp_core::{crypto::UncheckedInto, sr25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
-use sp_runtime::{
-    traits::{IdentifyAccount, Verify},
-    Perbill,
+use sp_runtime::traits::{IdentifyAccount, Verify};
+use sp_runtime::Perbill;
+
+use node_runtime::{
+    membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
+    ContentConfig, ForumConfig, GrandpaConfig, ImOnlineConfig, MembersConfig, SessionConfig,
+    SessionKeys, Signature, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
 };
 
-pub use node_primitives::{AccountId, Balance, Signature};
-pub use node_runtime::GenesisConfig;
+// Exported to be used by chain-spec-builder
+pub use node_runtime::{AccountId, GenesisConfig};
+
+pub mod content_config;
+pub mod council_config;
+pub mod forum_config;
+pub mod initial_balances;
+pub mod initial_members;
 
 type AccountPublic = <Signature as Verify>::Signer;
 
@@ -280,6 +292,7 @@ impl Alternative {
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                         vec![],
+                        content_config::testing_config(),
                     )
                 },
                 Vec::new(),
@@ -303,6 +316,7 @@ impl Alternative {
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                         vec![],
+                        content_config::testing_config(),
                     )
                 },
                 Vec::new(),
@@ -344,6 +358,7 @@ pub fn testnet_genesis(
     members: Vec<membership::genesis::Member<u64, AccountId>>,
     forum_config: ForumConfig,
     initial_balances: Vec<(AccountId, Balance)>,
+    content_config: ContentConfig,
 ) -> GenesisConfig {
     let mut endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(|| {
         vec![
@@ -388,7 +403,7 @@ pub fn testnet_genesis(
                 .collect(),
         }),
         pallet_staking: Some(StakingConfig {
-            validator_count: 20,
+            validator_count: 100,
             minimum_validator_count: initial_authorities.len() as u32,
             stakers: initial_authorities
                 .iter()
@@ -424,22 +439,7 @@ pub fn testnet_genesis(
         council: Some(council_config::create_council_config()),
         membership: Some(MembersConfig { members }),
         forum: Some(forum_config),
-        data_object_type_registry: Some(DataObjectTypeRegistryConfig {
-            first_data_object_type_id: 1,
-        }),
-        data_object_storage_registry: Some(DataObjectStorageRegistryConfig {
-            first_relationship_id: 1,
-        }),
-        content_directory: Some({
-            ContentDirectoryConfig {
-                class_by_id: vec![],
-                entity_by_id: vec![],
-                curator_group_by_id: vec![],
-                next_class_id: 1,
-                next_entity_id: 1,
-                next_curator_group_id: 1,
-            }
-        }),
+        content: Some(content_config),
     }
 }
 
@@ -509,10 +509,18 @@ pub(crate) mod tests {
         testnet_genesis(
             vec![get_authority_keys_from_seed("Alice")],
             get_account_id_from_seed::<sr25519::Public>("Alice"),
-            None,
+            vec![
+                get_authority_keys_from_seed("Alice").0,
+                get_authority_keys_from_seed("Bob").0,
+                get_authority_keys_from_seed("Charlie").0,
+                get_authority_keys_from_seed("Alice").1,
+                get_authority_keys_from_seed("Bob").1,
+                get_authority_keys_from_seed("Charlie").1,
+            ],
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
             vec![],
+            content_config::testing_config(),
         )
     }
 
@@ -528,6 +536,24 @@ pub(crate) mod tests {
             None,
             None,
             Default::default(),
+        )
+    }
+
+    fn local_testnet_genesis() -> GenesisConfig {
+        testnet_genesis(
+            vec![
+                get_authority_keys_from_seed("Alice"),
+                get_authority_keys_from_seed("Bob"),
+            ],
+            get_account_id_from_seed::<sr25519::Public>("Alice"),
+            vec![
+                get_authority_keys_from_seed("Alice").0,
+                get_authority_keys_from_seed("Bob").0,
+            ],
+            initial_members::none(),
+            forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
+            vec![],
+            content_config::testing_config(),
         )
     }
 

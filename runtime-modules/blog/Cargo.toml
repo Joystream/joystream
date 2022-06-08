@@ -1,6 +1,6 @@
 [package]
 name = 'pallet-blog'
-version = '4.0.0'
+version = '5.0.0'
 authors = ['Joystream contributors']
 edition = '2018'
 
@@ -41,5 +41,5 @@ std = [
     'sp-arithmetic/std',
     'balances/std',
 	'membership/std',
-	'scale-info/std',
+	'scale-info/std'
 ]

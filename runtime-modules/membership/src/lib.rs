@@ -52,10 +52,11 @@ mod tests;
 
 use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchError;
-use frame_support::traits::{Currency, Get, WithdrawReasons};
+use frame_support::traits::{Currency, Get, LockIdentifier, WithdrawReason, WithdrawReasons};
 pub use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
 use frame_system::{ensure_root, ensure_signed};
+use scale_info::TypeInfo;
 use sp_arithmetic::traits::{One, Zero};
 use sp_arithmetic::Perbill;
 use sp_runtime::traits::{Hash, Saturating};
@@ -96,10 +97,14 @@ pub trait WeightInfo {
     fn add_staking_account_candidate() -> Weight;
     fn confirm_staking_account() -> Weight;
     fn remove_staking_account() -> Weight;
+    fn member_remark() -> Weight;
 }
 
 pub trait Config:
-    frame_system::Config + balances::Config + pallet_timestamp::Config + common::membership::Config
+    frame_system::Config
+    + balances::Config
+    + pallet_timestamp::Config
+    + common::membership::MembershipTypes
 {
     /// Membership module event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
@@ -122,6 +127,7 @@ pub trait Config:
         Self::AccountId,
         BalanceOf<Self>,
         Self::MemberId,
+        LockIdentifier,
     >;
 
     /// Staking handler used for staking candidate.
@@ -129,6 +135,7 @@ pub trait Config:
         Self::AccountId,
         BalanceOf<Self>,
         Self::MemberId,
+        LockIdentifier,
     >;
 
     /// Weight information for extrinsics in this pallet.
@@ -198,7 +205,7 @@ pub struct BuyMembershipParameters<AccountId, MemberId> {
 }
 
 /// Parameters for the invite_member extrinsic.
-#[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq, TypeInfo)]
 pub struct InviteMembershipParameters<AccountId, MemberId> {
     /// Inviting member id.
     pub inviting_member_id: MemberId,
@@ -326,7 +333,7 @@ decl_storage! {
                     &member.controller_account,
                     handle_hash,
                     Zero::zero(),
-                ).expect("Importing Member Failed");
+                );
 
                 // ensure imported member id matches assigned id
                 assert_eq!(member_id, member.member_id, "Import Member Failed: MemberId Incorrect");
@@ -337,17 +344,17 @@ decl_storage! {
 
 decl_event! {
     pub enum Event<T> where
-      <T as common::membership::Config>::MemberId,
+      <T as common::membership::MembershipTypes>::MemberId,
       Balance = BalanceOf<T>,
       <T as frame_system::Config>::AccountId,
       BuyMembershipParameters = BuyMembershipParameters<
           <T as frame_system::Config>::AccountId,
-          <T as common::membership::Config>::MemberId,
+          <T as common::membership::MembershipTypes>::MemberId,
         >,
-      <T as common::membership::Config>::ActorId,
+      <T as common::membership::MembershipTypes>::ActorId,
       InviteMembershipParameters = InviteMembershipParameters<
           <T as frame_system::Config>::AccountId,
-          <T as common::membership::Config>::MemberId,
+          <T as common::membership::MembershipTypes>::MemberId,
         >,
     {
         MemberInvited(MemberId, InviteMembershipParameters),
@@ -368,6 +375,7 @@ decl_event! {
         StakingAccountAdded(AccountId, MemberId),
         StakingAccountRemoved(AccountId, MemberId),
         StakingAccountConfirmed(AccountId, MemberId),
+        MemberRemarked(MemberId, Vec<u8>),
     }
 }
 
@@ -387,6 +395,15 @@ decl_module! {
         /// Exports const - default balance for the invited member.
         const DefaultInitialInvitationBalance: BalanceOf<T> =
             T::DefaultInitialInvitationBalance::get();
+
+        /// Exports const - Stake needed to candidate as staking account.
+        const CandidateStake: BalanceOf<T> = T::CandidateStake::get();
+
+        /// Exports const - invited member lock id.
+        const InvitedMemberLockId: LockIdentifier = T::InvitedMemberStakingHandler::lock_id();
+
+        /// Exports const - staking candidate lock id.
+        const StakingCandidateLockId: LockIdentifier = T::StakingCandidateStakingHandler::lock_id();
 
         /// Non-members can buy membership.
         ///
@@ -436,7 +453,7 @@ decl_module! {
                 &params.controller_account,
                 handle_hash,
                 Self::initial_invitation_count(),
-            )?;
+            );
 
             // Collect membership fee (just burn it).
             let _ = balances::Pallet::<T>::slash(&who, fee);
@@ -505,13 +522,9 @@ decl_module! {
                 });
 
                 <MemberIdByHandleHash<T>>::insert(new_handle_hash, member_id);
-
-                Self::deposit_event(RawEvent::MemberProfileUpdated(
-                        member_id,
-                        handle,
-                        metadata,
-                    ));
             }
+
+            Self::deposit_event(RawEvent::MemberProfileUpdated(member_id, handle, metadata));
         }
 
         /// Updates member root or controller accounts. No effect if both new accounts are empty.
@@ -703,10 +716,10 @@ decl_module! {
             )?;
 
             let current_wg_budget = T::WorkingGroup::get_budget();
-            let default_invitation_balance = T::DefaultInitialInvitationBalance::get();
+            let invitation_balance = Self::initial_invitation_balance();
 
             ensure!(
-                default_invitation_balance <= current_wg_budget,
+                invitation_balance <= current_wg_budget,
                 Error::<T>::WorkingGroupBudgetIsNotSufficientForInviting
             );
 
@@ -722,37 +735,37 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let member_id = Self::insert_member(
+            let invited_member_id = Self::insert_member(
                 &params.root_account,
                 &params.controller_account,
                 handle_hash,
                 Zero::zero(),
-            )?;
+            );
 
             // Save the updated profile.
-            <MembershipById<T>>::mutate(&member_id, |membership| {
+            <MembershipById<T>>::mutate(&params.inviting_member_id, |membership| {
                 membership.invites = membership.invites.saturating_sub(1);
             });
 
             // Decrease the working group balance.
-            let new_wg_budget = current_wg_budget.saturating_sub(default_invitation_balance);
+            let new_wg_budget = current_wg_budget.saturating_sub(invitation_balance);
             T::WorkingGroup::set_budget(new_wg_budget);
 
             // Create default balance for the invited member.
             let _ = balances::Pallet::<T>::deposit_creating(
                 &params.controller_account,
-                default_invitation_balance
+                invitation_balance
             );
 
             // Lock invitation balance. Allow only transaction payments.
             T::InvitedMemberStakingHandler::lock_with_reasons(
                 &params.controller_account,
-                default_invitation_balance,
-                WithdrawReasons::FEE,
+                invitation_balance,
+                WithdrawReasons::except(WithdrawReason::TransactionPayment)
             );
 
             // Fire the event.
-            Self::deposit_event(RawEvent::MemberInvited(member_id, params));
+            Self::deposit_event(RawEvent::MemberInvited(invited_member_id, params));
         }
 
         /// Updates membership price. Requires root origin.
@@ -979,6 +992,27 @@ decl_module! {
 
             Self::deposit_event(RawEvent::StakingAccountConfirmed(staking_account_id, member_id));
         }
+
+        /// Member makes a remark
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoMembership::<T>::member_remark()]
+        pub fn member_remark(origin, member_id: T::MemberId, msg: Vec<u8>) {
+            let sender = ensure_signed(origin)?;
+            Self::ensure_is_controller_account_for_member(&member_id, &sender)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::MemberRemarked(member_id, msg));
+        }
     }
 }
 
@@ -1021,7 +1055,7 @@ impl<T: Config> Module<T> {
     }
 
     /// Provided that the member_id exists return its membership. Returns error otherwise.
-    fn ensure_membership(member_id: T::MemberId) -> Result<Membership<T>, Error<T>> {
+    pub fn ensure_membership(member_id: T::MemberId) -> Result<Membership<T>, Error<T>> {
         Self::ensure_membership_with_error(member_id, Error::<T>::MemberProfileNotFound)
     }
 
@@ -1071,7 +1105,7 @@ impl<T: Config> Module<T> {
         controller_account: &T::AccountId,
         handle_hash: Vec<u8>,
         allowed_invites: u32,
-    ) -> Result<T::MemberId, Error<T>> {
+    ) -> T::MemberId {
         let new_member_id = Self::members_created();
 
         let membership: Membership<T> = MembershipObject {
@@ -1086,7 +1120,8 @@ impl<T: Config> Module<T> {
         <MemberIdByHandleHash<T>>::insert(handle_hash, new_member_id);
 
         <NextMemberId<T>>::put(new_member_id + One::one());
-        Ok(new_member_id)
+
+        new_member_id
     }
 
     // Ensure origin corresponds to the controller account of the member.
@@ -1198,5 +1233,65 @@ impl<T: Config> MembershipInfoProvider<T> for Module<T> {
         let membership = Self::ensure_membership(member_id)?;
 
         Ok(membership.controller_account)
+    }
+}
+
+impl WeightInfo for () {
+    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn update_profile(_: u32) -> Weight {
+        0
+    }
+    fn update_accounts_none() -> Weight {
+        0
+    }
+    fn update_accounts_root() -> Weight {
+        0
+    }
+    fn update_accounts_controller() -> Weight {
+        0
+    }
+    fn update_accounts_both() -> Weight {
+        0
+    }
+    fn set_referral_cut() -> Weight {
+        0
+    }
+    fn transfer_invites() -> Weight {
+        0
+    }
+    fn invite_member(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn set_membership_price() -> Weight {
+        0
+    }
+    fn update_profile_verification() -> Weight {
+        0
+    }
+    fn set_leader_invitation_quota() -> Weight {
+        0
+    }
+    fn set_initial_invitation_balance() -> Weight {
+        0
+    }
+    fn set_initial_invitation_count() -> Weight {
+        0
+    }
+    fn add_staking_account_candidate() -> Weight {
+        0
+    }
+    fn confirm_staking_account() -> Weight {
+        0
+    }
+    fn remove_staking_account() -> Weight {
+        0
+    }
+    fn member_remark() -> Weight {
+        0
     }
 }

@@ -724,7 +724,7 @@ dependencies = [
 
 [[package]]
 name = "chain-spec-builder"
-version = "5.0.0"
+version = "6.6.0"
 dependencies = [
  "ansi_term",
  "async-std",
@@ -2293,7 +2293,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "5.0.0"
+version = "7.1.0"
 dependencies = [
  "async-std",
  "frame-benchmarking",
@@ -2359,7 +2359,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "9.0.0"
+version = "11.20.0"
 dependencies = [
  "frame-benchmarking",
  "frame-executive",
@@ -2379,13 +2379,12 @@ dependencies = [
  "pallet-bounty",
  "pallet-common",
  "pallet-constitution",
- "pallet-content-directory",
+ "pallet-content",
  "pallet-council",
  "pallet-forum",
  "pallet-grandpa",
  "pallet-im-online",
  "pallet-membership",
- "pallet-memo",
  "pallet-offences",
  "pallet-offences-benchmarking",
  "pallet-proposals-codex",
@@ -2393,7 +2392,6 @@ dependencies = [
  "pallet-proposals-engine",
  "pallet-randomness-collective-flip",
  "pallet-referendum",
- "pallet-service-discovery",
  "pallet-session",
  "pallet-session-benchmarking",
  "pallet-staking",
@@ -3926,7 +3924,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-blog"
-version = "4.0.0"
+version = "5.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -3978,16 +3976,18 @@ dependencies = [
  "pallet-balances",
  "pallet-timestamp",
  "parity-scale-codec 3.1.2",
+ "scale-info",
  "serde",
  "sp-arithmetic",
  "sp-runtime",
+ "sp-std",
  "strum 0.19.5",
  "strum_macros 0.19.4",
 ]
 
 [[package]]
 name = "pallet-constitution"
-version = "2.0.0"
+version = "5.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4002,14 +4002,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-content-directory"
-version = "5.0.0"
+name = "pallet-content"
+version = "3.2.0"
 dependencies = [
  "frame-support",
  "frame-system",
+ "pallet-balances",
  "pallet-common",
+ "pallet-membership",
+ "pallet-randomness-collective-flip",
+ "pallet-staking-handler",
+ "pallet-storage",
+ "pallet-timestamp",
+ "pallet-working-group",
  "parity-scale-codec 3.1.2",
- "scale-info",
  "serde",
  "sp-arithmetic",
  "sp-core",
@@ -4020,7 +4026,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-council"
-version = "2.0.0"
+version = "5.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4126,19 +4132,6 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-memo"
-version = "4.0.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-balances",
- "parity-scale-codec 3.1.2",
- "scale-info",
- "sp-arithmetic",
  "sp-std",
 ]
 
@@ -4276,7 +4269,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-referendum"
-version = "2.0.0"
+version = "5.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4288,27 +4281,6 @@ dependencies = [
  "pallet-timestamp",
  "parity-scale-codec 3.1.2",
  "rand 0.7.3",
- "serde",
- "sp-arithmetic",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-service-discovery"
-version = "5.0.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-balances",
- "pallet-common",
- "pallet-membership",
- "pallet-staking-handler",
- "pallet-timestamp",
- "pallet-working-group",
- "parity-scale-codec 3.1.2",
  "serde",
  "sp-arithmetic",
  "sp-core",
@@ -4410,11 +4382,13 @@ dependencies = [
 name = "pallet-storage"
 version = "5.0.0"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",
  "pallet-common",
  "pallet-membership",
+ "pallet-randomness-collective-flip",
  "pallet-staking-handler",
  "pallet-timestamp",
  "pallet-working-group",
@@ -4668,12 +4642,6 @@ name = "parity-wasm"
 version = "0.42.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be5e13c266502aadf83426d87d81a0f5d1ef45b8027f5a471c360abfe4bfae92"
-
-[[package]]
-name = "parity-wasm"
-version = "0.45.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1ad0aff30c1da14b1254fcb2af73e1fa9a28670e584a626f53a369d0e157304"
 
 [[package]]
 name = "parking"
@@ -8215,11 +8183,11 @@ dependencies = [
 
 [[package]]
 name = "tracing-core"
-version = "0.1.26"
+version = "0.1.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f54c8ca710e81886d498c2fd3331b56c93aa248d49de2222ad2742247c60072f"
+checksum = "7709595b8878a4965ce5e87ebf880a7d39c9afc6837721b21a5a816a8117d921"
 dependencies = [
- "lazy_static",
+ "once_cell",
  "valuable",
 ]
 
@@ -8644,11 +8612,11 @@ dependencies = [
 
 [[package]]
 name = "wasm-instrument"
-version = "0.1.2"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a5728bf206e1c487a57128a102cb632cfee04a778b735a90de876fd63e7b3add"
+checksum = "962e5b0401bbb6c887f54e69b8c496ea36f704df65db73e81fd5ff8dc3e63a9f"
 dependencies = [
- "parity-wasm 0.45.0",
+ "parity-wasm 0.42.2",
 ]
 
 [[package]]

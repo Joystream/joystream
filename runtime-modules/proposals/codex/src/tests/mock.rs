@@ -1,4 +1,5 @@
 #![cfg(test)]
+// Internal substrate warning.
 #![allow(non_fmt_panic)]
 
 use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
@@ -56,7 +57,39 @@ parameter_types! {
     pub const CandidateStake: u64 = 100;
 }
 
-impl common::membership::Config for Test {
+mod proposals_codex_mod {
+    pub use crate::Event;
+}
+
+impl_outer_event! {
+    pub enum TestEvent for Test {
+        proposals_codex_mod<T>,
+        frame_system<T>,
+        balances<T>,
+        staking<T>,
+        council<T>,
+        proposals_discussion<T>,
+        proposals_engine<T>,
+        referendum Instance0 <T>,
+        membership<T>,
+        working_group Instance0 <T>,
+        working_group Instance1 <T>,
+        working_group Instance2 <T>,
+        working_group Instance3 <T>,
+        working_group Instance4 <T>,
+    }
+}
+
+impl_outer_dispatch! {
+    pub enum Call for Test where origin: Origin {
+        codex::ProposalCodex,
+        proposals::ProposalsEngine,
+        staking::Staking,
+        frame_system::System,
+    }
+}
+
+impl common::membership::MembershipTypes for Test {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -118,6 +151,9 @@ impl membership::WeightInfo for Weights {
     fn remove_staking_account() -> Weight {
         unimplemented!()
     }
+    fn member_remark() -> Weight {
+        unimplemented!()
+    }
 }
 
 impl membership::Config for Test {
@@ -146,7 +182,7 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
 impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     fn ensure_worker_origin(
         _origin: <Test as frame_system::Config>::Origin,
-        _worker_id: &<Test as common::membership::Config>::ActorId,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
@@ -155,7 +191,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Test as common::membership::Config>::MemberId> {
+    fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
         unimplemented!();
     }
 
@@ -165,9 +201,19 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
 
     fn is_worker_account_id(
         _account_id: &<Test as frame_system::Config>::AccountId,
-        _worker_id: &<Test as common::membership::Config>::ActorId,
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
         unimplemented!()
+    }
+
+    fn worker_exists(_worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
+        unimplemented!();
+    }
+
+    fn ensure_worker_exists(
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!();
     }
 }
 
@@ -211,7 +257,7 @@ impl proposals_engine::Config for Test {
     type DescriptionMaxLength = DescriptionMaxLength;
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
     type DispatchableCallCode = crate::Call<Test>;
-    type ProposalObserver = crate::Pallet<Test>;
+    type ProposalObserver = crate::Module<Test>;
     type WeightInfo = MockProposalsEngineWeight;
     type StakingAccountValidator = ();
 }
@@ -258,6 +304,10 @@ impl proposals_engine::WeightInfo for MockProposalsEngineWeight {
     }
 
     fn cancel_active_and_pending_proposals(_: u32) -> u64 {
+        0
+    }
+
+    fn proposer_remark() -> u64 {
         0
     }
 }
@@ -441,6 +491,12 @@ impl working_group::WeightInfo for WorkingGroupWeightInfo {
     fn leave_role(_: u32) -> Weight {
         0
     }
+    fn lead_remark() -> Weight {
+        0
+    }
+    fn worker_remark() -> Weight {
+        0
+    }
 }
 
 impl working_group::Config<StorageWorkingGroupInstance> for Test {
@@ -615,7 +671,7 @@ pub type ReferendumInstance = referendum::Instance0;
 impl council::Config for Test {
     type Event = Event;
 
-    type Referendum = referendum::Pallet<Test, ReferendumInstance>;
+    type Referendum = referendum::Module<Test, ReferendumInstance>;
 
     type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
     type CouncilSize = CouncilSize;
@@ -679,6 +735,12 @@ impl council::WeightInfo for CouncilWeightInfo {
     fn funding_request(_: u32) -> Weight {
         0
     }
+    fn councilor_remark() -> Weight {
+        0
+    }
+    fn candidate_remark() -> Weight {
+        0
+    }
 }
 
 parameter_types! {
@@ -731,23 +793,23 @@ impl referendum::Config<ReferendumInstance> for Test {
                 vote_power: item.vote_power.into(),
             })
             .collect();
-        <council::Pallet<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(
+        <council::Module<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(
             tmp_winners.as_slice(),
         );
     }
 
     fn is_valid_option_id(option_index: &u64) -> bool {
-        <council::Pallet<Test> as council::ReferendumConnection<Test>>::is_valid_candidate_id(
+        <council::Module<Test> as council::ReferendumConnection<Test>>::is_valid_candidate_id(
             option_index,
         )
     }
 
     fn get_option_power(option_id: &u64) -> Self::VotePower {
-        <council::Pallet<Test> as council::ReferendumConnection<Test>>::get_option_power(option_id)
+        <council::Module<Test> as council::ReferendumConnection<Test>>::get_option_power(option_id)
     }
 
     fn increase_option_power(option_id: &u64, amount: &Self::VotePower) {
-        <council::Pallet<Test> as council::ReferendumConnection<Test>>::increase_option_power(
+        <council::Module<Test> as council::ReferendumConnection<Test>>::increase_option_power(
             option_id, amount,
         );
     }
@@ -885,7 +947,7 @@ impl frame_system::Config for Test {
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
-    type PalletInfo = PalletInfo;
+    type PalletInfo = ();
     type SystemWeightInfo = ();
     type SS58Prefix = ();
 }

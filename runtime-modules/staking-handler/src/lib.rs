@@ -7,6 +7,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
+use frame_support::ensure;
 use frame_support::traits::{Currency, Get, LockIdentifier, LockableCurrency, WithdrawReasons};
 use sp_arithmetic::traits::Zero;
 use sp_std::marker::PhantomData;
@@ -26,7 +27,7 @@ pub trait LockComparator<Balance> {
 /// Defines abstract staking handler to manage user stakes for different activities
 /// like adding a proposal. Implementation should use built-in LockableCurrency
 /// and LockIdentifier to lock balance consistently with pallet_staking.
-pub trait StakingHandler<AccountId, Balance, MemberId> {
+pub trait StakingHandler<AccountId, Balance, MemberId, LockIdentifier> {
     /// Locks the specified balance on the account using specific lock identifier.
     /// It locks for all withdraw reasons.
     fn lock(account_id: &AccountId, amount: Balance);
@@ -54,6 +55,9 @@ pub trait StakingHandler<AccountId, Balance, MemberId> {
     /// is 'already locked funds' + 'usable funds'.
     fn is_enough_balance_for_stake(account_id: &AccountId, amount: Balance) -> bool;
 
+    /// Returns lock identifier
+    fn lock_id() -> LockIdentifier;
+
     /// Returns the current stake on the account.
     fn current_stake(account_id: &AccountId) -> Balance;
 }
@@ -62,7 +66,7 @@ pub trait StakingHandler<AccountId, Balance, MemberId> {
 pub struct StakingManager<
     T: frame_system::Config
         + pallet_balances::Config
-        + common::membership::Config
+        + common::membership::MembershipTypes
         + LockComparator<<T as pallet_balances::Config>::Balance>,
     LockId: Get<LockIdentifier>,
 > {
@@ -73,14 +77,15 @@ pub struct StakingManager<
 impl<
         T: frame_system::Config
             + pallet_balances::Config
-            + common::membership::Config
+            + common::membership::MembershipTypes
             + LockComparator<<T as pallet_balances::Config>::Balance>,
         LockId: Get<LockIdentifier>,
     >
     StakingHandler<
         <T as frame_system::Config>::AccountId,
         <T as pallet_balances::Config>::Balance,
-        <T as common::membership::Config>::MemberId,
+        <T as common::membership::MembershipTypes>::MemberId,
+        LockIdentifier,
     > for StakingManager<T, LockId>
 {
     fn lock(
@@ -148,11 +153,10 @@ impl<
             return Ok(());
         }
 
-        let usable_balance = <pallet_balances::Pallet<T>>::usable_balance(account_id);
-
-        if new_stake > current_stake + usable_balance {
-            return Err(DispatchError::Other("Not enough balance for a new stake."));
-        }
+        ensure!(
+            Self::is_enough_balance_for_stake(account_id, new_stake),
+            DispatchError::Other("Not enough balance for a new stake.")
+        );
 
         Self::lock(account_id, new_stake);
 
@@ -171,7 +175,11 @@ impl<
         account_id: &<T as frame_system::Config>::AccountId,
         amount: <T as pallet_balances::Config>::Balance,
     ) -> bool {
-        <pallet_balances::Pallet<T>>::usable_balance(account_id) >= amount
+        <pallet_balances::Pallet<T>>::free_balance(account_id) >= amount
+    }
+
+    fn lock_id() -> LockIdentifier {
+        LockId::get()
     }
 
     fn current_stake(

@@ -1,0 +1,3 @@
+## path Type
+
+`string`

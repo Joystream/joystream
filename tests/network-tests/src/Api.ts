@@ -1,71 +1,94 @@
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
-import { Bytes, Option, u32, Vec, StorageKey } from '@polkadot/types'
-import { ISubmittableResult } from '@polkadot/types/types'
+import { u32, BTreeSet } from '@polkadot/types'
+import { ISubmittableResult, Codec } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { AccountId, MemberId } from '@joystream/types/common'
-import {
-  Application,
-  ApplicationId,
-  ApplicationIdToWorkerIdMap,
-  Worker,
-  WorkerId,
-  Opening as WorkingGroupOpening,
-  OpeningId,
-  StakePolicy,
-} from '@joystream/types/working-group'
+import { AccountId, ChannelId, MemberId } from '@joystream/types/common'
 
-import { AccountInfo, Balance, Event, EventRecord } from '@polkadot/types/interfaces'
+import { AccountInfo, Balance, EventRecord, BlockNumber, BlockHash, LockIdentifier } from '@polkadot/types/interfaces'
+import { Worker, WorkerId, Opening, OpeningId } from '@joystream/types/working-group'
+import { DataObjectId, StorageBucketId } from '@joystream/types/storage'
+
 import BN from 'bn.js'
-import { QueryableConsts, QueryableStorage, SubmittableExtrinsic, SubmittableExtrinsics } from '@polkadot/api/types'
+import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Sender, LogLevel } from './sender'
 import { Utils } from './utils'
 import { types } from '@joystream/types'
 
-import { ProposalId } from '@joystream/types/proposals'
-import { v4 as uuid } from 'uuid'
-import { ChannelEntity } from '@joystream/cd-schemas/types/entities/ChannelEntity'
-import { VideoEntity } from '@joystream/cd-schemas/types/entities/VideoEntity'
-import { initializeContentDir, InputParser } from '@joystream/cd-schemas'
-import { OperationType } from '@joystream/types/content-directory'
-import { ContentId, DataObject } from '@joystream/types/media'
-import Debugger from 'debug'
-import { CouncilMemberOf } from '@joystream/types/council'
+import { extendDebug } from './Debugger'
 import { DispatchError } from '@polkadot/types/interfaces/system'
+import {
+  EventDetails,
+  EventSection,
+  EventMethod,
+  EventType,
+  KeyGenInfo,
+  WorkingGroupModuleName,
+  ProposalType,
+  FaucetInfo,
+} from './types'
 
-export enum WorkingGroups {
-  StorageWorkingGroup = 'storageWorkingGroup',
-  ContentDirectoryWorkingGroup = 'contentDirectoryWorkingGroup',
-  MembershipWorkingGroup = 'membershipWorkingGroup',
-  ForumWorkingGroup = 'forumWorkingGroup',
-}
+import { ProposalParameters } from '@joystream/types/proposals'
+import {
+  BLOCKTIME,
+  KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE,
+  proposalTypeToProposalParamsKey,
+  workingGroupNameByModuleName,
+} from './consts'
+
+import { VideoId, VideoCategoryId, EnglishAuctionParams, OpenAuctionParams } from '@joystream/types/content'
+
+import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
+
+import { PERBILL_ONE_PERCENT } from '../../../query-node/mappings/src/temporaryConstants'
 
 export class ApiFactory {
   private readonly api: ApiPromise
   private readonly keyring: Keyring
+  // number used as part of key derivation path
+  private keyId = 0
+  // stores names of the created custom keys
+  private customKeys: string[] = []
+  // mapping from account address to key id.
+  // To be able to re-derive keypair externally when mini-secret is known.
+  readonly addressesToKeyId: Map<string, number> = new Map()
+  // mapping from account address to suri.
+  // To be able to get the suri of a known key for the purpose of, for example, interacting with the CLIs
+  readonly addressesToSuri: Map<string, string>
+  // mini secret used in SURI key derivation path
+  private readonly miniSecret: string
+
   // source of funds for all new accounts
   private readonly treasuryAccount: string
+
+  // faucet details
+  public faucetInfo: FaucetInfo
 
   public static async create(
     provider: WsProvider,
     treasuryAccountUri: string,
-    sudoAccountUri: string
+    sudoAccountUri: string,
+    miniSecret: string
   ): Promise<ApiFactory> {
-    const debug = Debugger('api-factory')
+    const debug = extendDebug('api-factory')
     let connectAttempts = 0
     while (true) {
       connectAttempts++
       debug(`Connecting to chain, attempt ${connectAttempts}..`)
       try {
-        const api = await ApiPromise.create({ provider, types })
+        const api = new ApiPromise({ provider, types })
 
         // Wait for api to be connected and ready
-        await api.isReady
+        await api.isReadyOrError
 
         // If a node was just started up it might take a few seconds to start producing blocks
         // Give it a few seconds to be ready.
         await Utils.wait(5000)
 
-        return new ApiFactory(api, treasuryAccountUri, sudoAccountUri)
+        // Log runtime version
+        const version = await api.rpc.state.getRuntimeVersion()
+        console.log(`Runtime Version: ${version.authoringVersion}.${version.specVersion}.${version.implVersion}`)
+
+        return new ApiFactory(api, treasuryAccountUri, sudoAccountUri, miniSecret)
       } catch (err) {
         if (connectAttempts === 3) {
           throw new Error('Unable to connect to chain')
@@ -75,50 +98,114 @@ export class ApiFactory {
     }
   }
 
-  constructor(api: ApiPromise, treasuryAccountUri: string, sudoAccountUri: string) {
+  constructor(api: ApiPromise, treasuryAccountUri: string, sudoAccountUri: string, miniSecret: string) {
     this.api = api
     this.keyring = new Keyring({ type: 'sr25519' })
     this.treasuryAccount = this.keyring.addFromUri(treasuryAccountUri).address
     this.keyring.addFromUri(sudoAccountUri)
+    this.miniSecret = miniSecret
+    this.addressesToKeyId = new Map()
+    this.addressesToSuri = new Map()
+    this.keyId = 0
+    this.faucetInfo = { suri: '', memberId: 0 }
   }
 
   public getApi(label: string): Api {
-    return new Api(this.api, this.treasuryAccount, this.keyring, label)
+    return new Api(this, this.api, this.treasuryAccount, this.keyring, label)
   }
 
-  public close(): void {
-    this.api.disconnect()
+  public setFaucetInfo(info: FaucetInfo): void {
+    this.faucetInfo = info
+  }
+
+  public createKeyPairs(n: number): { key: KeyringPair; id: number }[] {
+    const keys: { key: KeyringPair; id: number }[] = []
+    for (let i = 0; i < n; i++) {
+      const id = this.keyId++
+      const key = this.createKeyPair(`${id}`)
+      keys.push({ key, id })
+      this.addressesToKeyId.set(key.address, id)
+    }
+    return keys
+  }
+
+  private createKeyPair(suriPath: string, isCustom = false, isFinalPath = false): KeyringPair {
+    if (isCustom) {
+      this.customKeys.push(suriPath)
+    }
+    const uri = isFinalPath ? suriPath : `${this.miniSecret}//testing//${suriPath}`
+    const pair = this.keyring.addFromUri(uri)
+    this.addressesToSuri.set(pair.address, uri)
+    return pair
+  }
+
+  public createCustomKeyPair(customPath: string, isFinalPath: boolean): KeyringPair {
+    return this.createKeyPair(customPath, true, isFinalPath)
+  }
+
+  public keyGenInfo(): KeyGenInfo {
+    const start = 0
+    const final = this.keyId
+    return {
+      start,
+      final,
+      custom: this.customKeys,
+    }
+  }
+
+  public getAllGeneratedAccounts(): { [k: string]: number } {
+    return Object.fromEntries(this.addressesToKeyId)
+  }
+
+  public getKeypair(address: AccountId | string): KeyringPair {
+    return this.keyring.getPair(address)
+  }
+
+  public getSuri(address: AccountId | string): string {
+    const suri = this.addressesToSuri.get(address.toString())
+    if (!suri) {
+      throw new Error(`Suri for address ${address} not available!`)
+    }
+    return suri
   }
 }
 
 export class Api {
+  private readonly factory: ApiFactory
   private readonly api: ApiPromise
   private readonly sender: Sender
-  private readonly keyring: Keyring
   // source of funds for all new accounts
   private readonly treasuryAccount: string
 
-  constructor(api: ApiPromise, treasuryAccount: string, keyring: Keyring, label: string) {
+  constructor(factory: ApiFactory, api: ApiPromise, treasuryAccount: string, keyring: Keyring, label: string) {
+    this.factory = factory
     this.api = api
-    this.keyring = keyring
     this.treasuryAccount = treasuryAccount
     this.sender = new Sender(api, keyring, label)
   }
 
-  public get tx(): SubmittableExtrinsics<'promise'> {
-    return this.api.tx
-  }
-
-  public get query(): QueryableStorage<'promise'> {
+  public get query(): ApiPromise['query'] {
     return this.api.query
   }
 
-  public get consts(): QueryableConsts<'promise'> {
+  public get consts(): ApiPromise['consts'] {
     return this.api.consts
   }
 
-  public get derive() {
+  public get tx(): ApiPromise['tx'] {
+    return this.api.tx
+  }
+
+  public get derive(): ApiPromise['derive'] {
     return this.api.derive
+  }
+
+  public get rpc(): ApiPromise['rpc'] {
+    return this.api.rpc
+  }
+
+  public get createType(): ApiPromise['createType'] {
+    return this.api.createType.bind(this.api)
   }
 
   public async signAndSend(
@@ -126,6 +213,47 @@ export class Api {
     sender: AccountId | string
   ): Promise<ISubmittableResult> {
     return this.sender.signAndSend(tx, sender)
+  }
+
+  public getAddressFromSuri(suri: string): string {
+    return new Keyring({ type: 'sr25519' }).createFromUri(suri).address
+  }
+
+  public getKeypair(address: string | AccountId): KeyringPair {
+    return this.factory.getKeypair(address)
+  }
+
+  public getSuri(address: string | AccountId): string {
+    return this.factory.getSuri(address)
+  }
+
+  public async sendExtrinsicsAndGetResults(
+    // Extrinsics can be separated into batches in order to makes sure they are processed in specified order
+    // (each batch will only be processed after the previous one has been fully executed)
+    txs: SubmittableExtrinsic<'promise'>[] | SubmittableExtrinsic<'promise'>[][],
+    sender: AccountId | string | AccountId[] | string[],
+    // Including decremental tip allows ensuring that the submitted transactions within a batch are processed in the expected order
+    // even when we're using different accounts
+    decrementalTipAmount = 0
+  ): Promise<ISubmittableResult[]> {
+    let results: ISubmittableResult[] = []
+    const batches = (Array.isArray(txs[0]) ? txs : [txs]) as SubmittableExtrinsic<'promise'>[][]
+    for (const i in batches) {
+      const batch = batches[i]
+      results = results.concat(
+        await Promise.all(
+          batch.map((tx, j) => {
+            const tip = Array.isArray(sender) ? decrementalTipAmount * (batch.length - 1 - j) : 0
+            return this.sender.signAndSend(
+              tx,
+              Array.isArray(sender) ? sender[parseInt(i) * batch.length + j] : sender,
+              tip
+            )
+          })
+        )
+      )
+    }
+    return results
   }
 
   public async makeSudoCall(tx: SubmittableExtrinsic<'promise'>): Promise<ISubmittableResult> {
@@ -141,35 +269,28 @@ export class Api {
     this.sender.setLogLevel(LogLevel.Verbose)
   }
 
-  // Create new keys and store them in the shared keyring
-  public createKeyPairs(n: number): KeyringPair[] {
-    const nKeyPairs: KeyringPair[] = []
-    for (let i = 0; i < n; i++) {
-      // What are risks of generating duplicate keys this way?
-      // Why not use a deterministic /TestKeys/N and increment N
-      nKeyPairs.push(this.keyring.addFromUri(i + uuid().substring(0, 8)))
+  public async createKeyPairs(n: number, withExistentialDeposit = true): Promise<{ key: KeyringPair; id: number }[]> {
+    const pairs = this.factory.createKeyPairs(n)
+    if (withExistentialDeposit) {
+      await Promise.all(pairs.map(({ key }) => this.treasuryTransferBalance(key.address, this.existentialDeposit())))
     }
-    return nKeyPairs
+    return pairs
   }
 
-  // Well known WorkingGroup enum defined in runtime
-  public getWorkingGroupString(workingGroup: WorkingGroups): string {
-    switch (workingGroup) {
-      case WorkingGroups.StorageWorkingGroup:
-        return 'Storage'
-      case WorkingGroups.ContentDirectoryWorkingGroup:
-        return 'Content'
-      case WorkingGroups.ForumWorkingGroup:
-        return 'Forum'
-      case WorkingGroups.MembershipWorkingGroup:
-        return 'Membership'
-      default:
-        throw new Error(`Invalid working group string representation: ${workingGroup}`)
-    }
+  public createCustomKeyPair(path: string, finalPath = false): KeyringPair {
+    return this.factory.createCustomKeyPair(path, finalPath)
+  }
+
+  public keyGenInfo(): KeyGenInfo {
+    return this.factory.keyGenInfo()
+  }
+
+  public getAllGeneratedAccounts(): { [k: string]: number } {
+    return this.factory.getAllGeneratedAccounts()
   }
 
   public getBlockDuration(): BN {
-    return this.api.createType('Moment', this.api.consts.babe.expectedBlockTime)
+    return this.api.consts.babe.expectedBlockTime
   }
 
   public durationInMsFromBlocks(durationInBlocks: number): number {
@@ -180,12 +301,12 @@ export class Api {
     return this.api.query.staking.validatorCount<u32>()
   }
 
-  public getMemberIds(controllerAddress: string): Promise<MemberId[]> {
-    return this.api.query.members.memberIdsByControllerAccountId<Vec<MemberId>>(controllerAddress)
-  }
-
   public getBestBlock(): Promise<BN> {
     return this.api.derive.chain.bestNumber()
+  }
+
+  public async getBlockHash(blockNumber: number | BlockNumber): Promise<BlockHash> {
+    return this.api.rpc.chain.getBlockHash(blockNumber)
   }
 
   public async getControllerAccountOfMember(id: MemberId): Promise<string> {
@@ -195,6 +316,15 @@ export class Api {
   public async getBalance(address: string): Promise<Balance> {
     const accountData: AccountInfo = await this.api.query.system.account<AccountInfo>(address)
     return accountData.data.free
+  }
+
+  public async getStakedBalance(address: string | AccountId, lockId?: LockIdentifier | string): Promise<BN> {
+    const locks = await this.api.query.balances.locks(address)
+    if (lockId) {
+      const foundLock = locks.find((l) => l.id.eq(lockId))
+      return foundLock ? foundLock.amount : new BN(0)
+    }
+    return locks.reduce((sum, lock) => sum.add(lock.amount), new BN(0))
   }
 
   public async transferBalance({
@@ -209,6 +339,14 @@ export class Api {
     return this.sender.signAndSend(this.api.tx.balances.transfer(to, amount), from)
   }
 
+  public async grantTreasuryWorkingBalance(): Promise<ISubmittableResult> {
+    return this.sudoSetBalance(this.treasuryAccount, new BN(100000000), new BN(0))
+  }
+
+  public async sudoSetBalance(who: string, free: BN, reserved: BN): Promise<ISubmittableResult> {
+    return this.makeSudoCall(this.api.tx.balances.setBalance(who, free, reserved))
+  }
+
   public async treasuryTransferBalance(to: string, amount: BN): Promise<ISubmittableResult> {
     return this.transferBalance({ from: this.treasuryAccount, to, amount })
   }
@@ -219,446 +357,120 @@ export class Api {
     )
   }
 
+  public async prepareAccountsForFeeExpenses(
+    accountOrAccounts: string | string[],
+    extrinsics: SubmittableExtrinsic<'promise'>[],
+    // Including decremental tip allows ensuring that the submitted transactions are processed in the expected order
+    // even when we're using different accounts
+    decrementalTipAmount = 0
+  ): Promise<void> {
+    const fees = await Promise.all(
+      extrinsics.map((tx, i) =>
+        this.estimateTxFee(tx, Array.isArray(accountOrAccounts) ? accountOrAccounts[i] : accountOrAccounts)
+      )
+    )
+
+    if (Array.isArray(accountOrAccounts)) {
+      await Promise.all(
+        fees.map((fee, i) =>
+          this.treasuryTransferBalance(
+            accountOrAccounts[i],
+            fee.addn(decrementalTipAmount * (accountOrAccounts.length - 1 - i))
+          )
+        )
+      )
+    } else {
+      await this.treasuryTransferBalance(
+        accountOrAccounts,
+        fees.reduce((a, b) => a.add(b), new BN(0))
+      )
+    }
+  }
+
   public async getMembershipFee(): Promise<BN> {
     return this.api.query.members.membershipPrice()
   }
 
-  // This method does not take into account weights and the runtime weight to fees computation!
-  private estimateTxFee(tx: SubmittableExtrinsic<'promise'>): BN {
-    const byteFee: BN = this.api.createType('BalanceOf', this.api.consts.transactionPayment.transactionByteFee)
-    return Utils.calcTxLength(tx).mul(byteFee)
+  public async estimateTxFee(tx: SubmittableExtrinsic<'promise'>, account: string): Promise<Balance> {
+    const paymentInfo = await tx.paymentInfo(account)
+    return paymentInfo.partialFee
   }
 
-  // The estimation methods here serve to allow fixtures to estimate fees ahead of
-  // constructing transactions which may have dependencies on other transactions finalizing
-
-  public estimateBuyMembershipFee(account: string, handle: string): BN {
-    return this.estimateTxFee(
-      this.api.tx.members.buyMembership({ root_account: account, controller_account: account, handle })
-    )
+  public existentialDeposit(): Balance {
+    return this.api.consts.balances.existentialDeposit
   }
 
-  public estimateApplyForCouncilFee(membershipId: number | MemberId, account: string, stake: BN): BN {
-    return this.estimateTxFee(this.api.tx.council.announceCandidacy(membershipId, account, account, stake))
+  public findEvent<S extends EventSection, M extends EventMethod<S>>(
+    result: ISubmittableResult | EventRecord[],
+    section: S,
+    method: M
+  ): EventType<S, M> | undefined {
+    if (Array.isArray(result)) {
+      return result.find(({ event }) => event.section === section && event.method === method)?.event as
+        | EventType<S, M>
+        | undefined
+    }
+    return result.findRecord(section, method)?.event as EventType<S, M> | undefined
   }
 
-  public estimateVoteForCouncilFee(memberId: string, salt: string, stake: BN): BN {
-    const hashedVote: string = Utils.hashVote(memberId, salt)
-    return this.estimateTxFee(this.api.tx.referendum.vote(hashedVote, stake))
-  }
-
-  public estimateRevealVoteFee(memberId: string, salt: string): BN {
-    return this.estimateTxFee(this.api.tx.referendum.revealVote(salt, memberId))
-  }
-
-  public estimateVoteForProposalFee(): BN {
-    return this.estimateTxFee(
-      this.api.tx.proposalsEngine.vote(
-        this.api.createType('MemberId', 0),
-        this.api.createType('ProposalId', 0),
-        'Approve',
-        'rationale-text'
+  public getEvent<S extends EventSection, M extends EventMethod<S>>(
+    result: ISubmittableResult | EventRecord[],
+    section: S,
+    method: M
+  ): EventType<S, M> {
+    const event = this.findEvent(result, section, method)
+    if (!event) {
+      throw new Error(
+        `Cannot find expected ${section}.${method} event in result: ${JSON.stringify(
+          Array.isArray(result) ? result.map((e) => e.toHuman()) : result.toHuman()
+        )}`
       )
-    )
+    }
+    return event
   }
 
-  public estimateProposeRuntimeUpgradeFee(title: string, description: string, runtime: Bytes | string): BN {
-    return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: 0,
-          title,
-          description,
-          staking_account_id: null,
-          exact_execution_block: null,
-        },
-        {
-          RuntimeUpgrade: runtime,
-        }
+  public findEvents<S extends EventSection, M extends EventMethod<S>>(
+    result: ISubmittableResult | EventRecord[],
+    section: S,
+    method: M,
+    expectedCount?: number
+  ): EventType<S, M>[] {
+    const events = Array.isArray(result)
+      ? result.filter(({ event }) => event.section === section && event.method === method).map(({ event }) => event)
+      : result.filterRecords(section, method).map((r) => r.event)
+    if (expectedCount && events.length !== expectedCount) {
+      throw new Error(
+        `Unexpected count of ${section}.${method} events in result: ${JSON.stringify(
+          Array.isArray(result) ? result.map((e) => e.toHuman()) : result.toHuman()
+        )}. ` + `Expected: ${expectedCount}, Got: ${events.length}`
       )
+    }
+    return (events.sort((a, b) => new BN(a.index).cmp(new BN(b.index))) as unknown) as EventType<S, M>[]
+  }
+
+  public async getEventDetails<S extends EventSection, M extends EventMethod<S>>(
+    result: ISubmittableResult,
+    section: S,
+    method: M
+  ): Promise<EventDetails<EventType<S, M>>> {
+    const { status } = result
+    const event = this.getEvent(result, section, method)
+
+    const blockHash = (status.isInBlock ? status.asInBlock : status.asFinalized).toString()
+    const blockNumber = (await this.api.rpc.chain.getHeader(blockHash)).number.toNumber()
+    const blockTimestamp = (await this.api.query.timestamp.now.at(blockHash)).toNumber()
+    const blockEvents = await this.api.query.system.events.at(blockHash)
+    const indexInBlock = blockEvents.findIndex(({ event: blockEvent }) =>
+      blockEvent.hash.eq((event as EventType<S, M> & Codec).hash)
     )
-  }
 
-  public estimateProposeTextFee(title: string, description: string, text: string): BN {
-    return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: 0,
-          title,
-          description,
-          staking_account_id: null,
-          exact_execution_block: null,
-        },
-        {
-          Text: text,
-        }
-      )
-    )
-  }
-
-  public estimateProposeSpendingFee(title: string, description: string, balance: BN, destination: string): BN {
-    return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: 0,
-          title,
-          description,
-          staking_account_id: null,
-          exact_execution_block: null,
-        },
-        {
-          Spending: [balance, destination],
-        }
-      )
-    )
-  }
-
-  public estimateProposeValidatorCountFee(title: string, description: string): BN {
-    return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: 0,
-          title,
-          description,
-          staking_account_id: null,
-          exact_execution_block: null,
-        },
-        {
-          SetValidatorCount: 1,
-        }
-      )
-    )
-  }
-
-  public estimateAddOpeningFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(this.api.tx[module].addOpening('Human readable text', 'Regular', null, null))
-  }
-
-  public estimateApplyOnOpeningFee(account: string, module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      this.api.tx[module].applyOnOpening({
-        member_id: this.api.createType('MemberId', 0),
-        opening_id: this.api.createType('OpeningId', 0),
-        role_account_id: account,
-        reward_account_id: account,
-        description:
-          'Some testing text used for estimation purposes which is longer than text expected during the test',
-        stake_parameters: null,
-      })
-    )
-  }
-
-  public estimateFillOpeningFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(this.api.tx[module].fillOpening(0, this.api.createType('ApplicationIdSet', [0])))
-  }
-
-  public estimateIncreaseStakeFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(this.api.tx[module].increaseStake(this.api.createType('WorkerId', 0), 0))
-  }
-
-  public estimateDecreaseStakeFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(this.api.tx[module].decreaseStake(this.api.createType('WorkerId', 0), 0))
-  }
-
-  public estimateUpdateRoleAccountFee(address: string, module: WorkingGroups): BN {
-    return this.estimateTxFee(this.api.tx[module].updateRoleAccount(this.api.createType('WorkerId', 0), address))
-  }
-
-  public estimateUpdateRewardAccountFee(address: string, module: WorkingGroups): BN {
-    return this.estimateTxFee(this.api.tx[module].updateRewardAccount(this.api.createType('WorkerId', 0), address))
-  }
-
-  public estimateLeaveRoleFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(this.api.tx[module].leaveRole(this.api.createType('WorkerId', 0)))
-  }
-
-  public estimateWithdrawApplicationFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(this.api.tx[module].withdrawApplication(this.api.createType('ApplicationId', 0)))
-  }
-
-  public estimateSlashStakeFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      this.api.tx[module].slashStake(this.api.createType('WorkerId', 0), {
-        slashing_text: 'some-slash-reason-text',
-        slashing_amount: 100,
-      })
-    )
-  }
-
-  public estimateTerminateRoleFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      this.api.tx[module].terminateRole(this.api.createType('WorkerId', 0), {
-        slashing_text: 'termination-reason-text',
-        slashing_amount: 100,
-      })
-    )
-  }
-
-  public estimateProposeCreateWorkingGroupLeaderOpeningFee(): BN {
-    return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: 0,
-          title: 'storage-lead-opening',
-          description: 'long description for lead opening',
-          staking_account_id: null,
-          exact_execution_block: null,
-        },
-        {
-          AddWorkingGroupLeaderOpening: {
-            description: 'long description of opening details',
-            stake_policy: null, // Option.with(StakePolicy),
-            reward_per_block: null, // Option.with(u128),
-            working_group: 'Storage',
-          },
-        }
-      )
-    )
-  }
-
-  public estimateProposeFillLeaderOpeningFee(): BN {
-    const fillOpeningParameters = this.api.createType('FillOpeningParameters', {
-      opening_id: this.api.createType('OpeningId', 0),
-      successful_application_id: this.api.createType('ApplicationId', 0),
-      working_group: 'Storage',
-    })
-
-    return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: 0, // should we be doing this.api.createType('MemberId', 0) instead?
-          title: 'storage-lead-fill-opening',
-          description: 'long description for filling lead opening',
-          staking_account_id: null,
-          exact_execution_block: null,
-        },
-        {
-          FillWorkingGroupLeaderOpening: fillOpeningParameters,
-        }
-      )
-    )
-  }
-
-  public estimateProposeTerminateLeaderRoleFee(): BN {
-    const terminateRoleParameters = this.api.createType('TerminateRoleParameters', {
-      worker_id: this.api.createType('WorkerId', 0),
-      penalty: this.api.createType('Penalty', {
-        slashing_text: 'reason for slashing',
-        slashing_amount: 100,
-      }),
-      working_group: 'Storage',
-    })
-
-    return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: 0, // should we be doing this.api.createType('MemberId', 0) instead?
-          title: 'terminate-lead',
-          description: 'long description for terminating lead',
-          staking_account_id: null,
-          exact_execution_block: null,
-        },
-        {
-          TerminateWorkingGroupLeaderRole: terminateRoleParameters,
-        }
-      )
-    )
-  }
-
-  public estimateProposeLeaderRewardFee(): BN {
-    return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: 0, // should we be doing this.api.createType('MemberId', 0) instead?
-          title: 'storage-lead-opening',
-          description: 'long description for lead opening',
-          staking_account_id: null,
-          exact_execution_block: null,
-        },
-        {
-          SetWorkingGroupLeaderReward: [this.api.createType('WorkerId', 1), 1000, 'Storage'],
-        }
-      )
-    )
-  }
-
-  public estimateProposeDecreaseLeaderStakeFee(): BN {
-    return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: 0, // should we be doing this.api.createType('MemberId', 0) instead?
-          title: 'storage-lead-opening',
-          description: 'long description for lead opening',
-          staking_account_id: null,
-          exact_execution_block: null,
-        },
-        {
-          DecreaseWorkingGroupLeaderStake: [this.api.createType('WorkerId', 1), 1000, 'Storage'],
-        }
-      )
-    )
-  }
-
-  public estimateProposeSlashLeaderStakeFee(): BN {
-    return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: 0, // should we be doing this.api.createType('MemberId', 0) instead?
-          title: 'storage-lead-opening',
-          description: 'long description for lead opening',
-          staking_account_id: null,
-          exact_execution_block: null,
-        },
-        {
-          SlashWorkingGroupLeaderStake: [
-            this.api.createType('WorkerId', 1),
-            {
-              slashing_text: 'reason for slashing',
-              slashing_amount: 100,
-            },
-            'Storage',
-          ],
-        }
-      )
-    )
-  }
-
-  // rename this to estimateProposeWorkingGroupBudgetFee
-  public estimateProposeWorkingGroupMintCapacityFee(): BN {
-    return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: 0, // should we be doing this.api.createType('MemberId', 0) instead?
-          title: 'storage-lead-opening',
-          description: 'long description for lead opening',
-          staking_account_id: null,
-          exact_execution_block: null,
-        },
-        {
-          SetWorkingGroupBudgetCapacity: [1000, 'Storage'],
-        }
-      )
-    )
-  }
-
-  // Council and elections
-
-  // Move into fixture
-  private applyForCouncilElection(
-    membershipId: MemberId | number,
-    account: string,
-    amount: BN
-  ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(
-      this.api.tx.council.announceCandidacy(membershipId, account, account, amount),
-      account
-    )
-  }
-
-  public batchApplyForCouncilElection(
-    membershipIds: number[], // would be better to pass Map<membershipId, account>
-    accounts: string[], //
-    amount: BN
-  ): Promise<ISubmittableResult[]> {
-    return Promise.all(
-      accounts.map(async (account, ix) => this.applyForCouncilElection(membershipIds[ix], account, amount))
-    )
-  }
-
-  /*
-    We can't manually control the election stages anymore.
-
-    Tests must take these constants into account:
-    Council:
-      AnnouncingPeriodDuration: BlockNumber = 15;
-      IdlePeriodDuration: BlockNumber = 27;
-    Referendum:
-      VoteStageDuration: BlockNumber = 5;
-      RevealStageDuration: BlockNumber = 7;
-      MinimumVotingStake: u64 = 10000;
-
-  public async getAnnouncingPeriod(): Promise<BN> {
-    return this.api.query.councilElection.announcingPeriod<BlockNumber>()
-  }
-
-  public async getVotingPeriod(): Promise<BN> {
-    return this.api.query.councilElection.votingPeriod<BlockNumber>()
-  }
-
-  public async getRevealingPeriod(): Promise<BN> {
-    return this.api.query.councilElection.revealingPeriod<BlockNumber>()
-  }
-
-  public async getCouncilSize(): Promise<BN> {
-    return this.api.query.councilElection.councilSize<u32>()
-  }
-
-  public async getCandidacyLimit(): Promise<BN> {
-    return this.api.query.councilElection.candidacyLimit<u32>()
-  }
-
-  public async getNewTermDuration(): Promise<BN> {
-    return this.api.query.councilElection.newTermDuration<BlockNumber>()
-  }
-
-  public async getMinCouncilStake(): Promise<BN> {
-    return this.api.query.councilElection.minCouncilStake<BalanceOf>()
-  }
-
-  public async getMinVotingStake(): Promise<BN> {
-    return this.api.query.councilElection.minVotingStake<BalanceOf>()
-  }
-  */
-
-  private voteForCouncilMember(
-    voterAccountId: string,
-    nominee: string, // FIXME: -> MemberId | number,
-    salt: string,
-    stake: BN
-  ): Promise<ISubmittableResult> {
-    const hashedVote: string = Utils.hashVote(nominee, salt)
-    return this.sender.signAndSend(this.api.tx.referendum.vote(hashedVote, stake), voterAccountId)
-  }
-
-  public batchVoteForCouncilMember(
-    accounts: string[],
-    nominees: string[],
-    salts: string[],
-    stake: BN
-  ): Promise<ISubmittableResult[]> {
-    return Promise.all(
-      accounts.map(async (account, index) => this.voteForCouncilMember(account, nominees[index], salts[index], stake))
-    )
-  }
-
-  private revealVote(account: string, nominee: string, salt: string): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx.referendum.revealVote(salt, nominee), account)
-  }
-
-  public batchRevealVote(voterAccountIds: string[], nominees: string[], salt: string[]): Promise<ISubmittableResult[]> {
-    return Promise.all(
-      voterAccountIds.map(async (account, index) => {
-        return this.revealVote(account, nominees[index], salt[index])
-      })
-    )
-  }
-
-  public sudoSetCouncilBudget(capacity: BN): Promise<ISubmittableResult> {
-    return this.makeSudoCall(this.api.tx.council.setBudget(capacity))
-  }
-
-  public getCouncilMembers(): Promise<CouncilMemberOf[]> {
-    return this.api.query.council.councilMembers()
-  }
-
-  public async getCouncilControllerAccounts(): Promise<string[]> {
-    const council = await this.getCouncilMembers()
-    const memberIds = council.map((member) => member.membership_id)
-    return Promise.all(memberIds.map((id) => this.getControllerAccountOfMember(id)))
-  }
-
-  public findEventRecord(events: EventRecord[], section: string, method: string): EventRecord | undefined {
-    return events.find((record) => record.event.section === section && record.event.method === method)
+    return {
+      event,
+      blockNumber,
+      blockHash,
+      blockTimestamp,
+      indexInBlock,
+    }
   }
 
   public getErrorNameFromExtrinsicFailedRecord(result: ISubmittableResult): string | undefined {
@@ -681,777 +493,716 @@ export class Api {
     }
   }
 
-  public findMemberRegisteredEvent(events: EventRecord[]): MemberId | undefined {
-    const record = this.findEventRecord(events, 'members', 'MemberRegistered')
-    if (record) {
-      return record.event.data[0] as MemberId
+  public async getOpening(group: WorkingGroupModuleName, id: OpeningId): Promise<Opening> {
+    const opening = await this.api.query[group].openingById(id)
+    if (opening.isEmpty) {
+      throw new Error(`Opening by id ${id} not found!`)
     }
+    return opening
   }
 
-  public findProposalCreatedEvent(events: EventRecord[]): ProposalId | undefined {
-    const record = this.findEventRecord(events, 'proposalsEngine', 'ProposalCreated')
-    if (record) {
-      return record.event.data[1] as ProposalId
+  public async getLeader(group: WorkingGroupModuleName): Promise<[WorkerId, Worker]> {
+    const leadId = await this.api.query[group].currentLead()
+    if (leadId.isNone) {
+      throw new Error(`Cannot get ${group} lead: Lead not hired!`)
     }
+    return [leadId.unwrap(), await this.api.query[group].workerById(leadId.unwrap())]
   }
 
-  public findOpeningAddedEvent(events: EventRecord[], workingGroup: WorkingGroups): OpeningId | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'OpeningAdded')
-    if (record) {
-      // Event data is not a tuple, so shouldn't this just be: return (record.event.data as unknown) as OpeningId
-      return record.event.data[0] as OpeningId
+  public async getActiveWorkerIds(group: WorkingGroupModuleName): Promise<WorkerId[]> {
+    return (await this.api.query[group].workerById.entries<Worker>()).map(
+      ([
+        {
+          args: [id],
+        },
+      ]) => id
+    )
+  }
+
+  public async getWorkerRoleAccounts(workerIds: WorkerId[], module: WorkingGroupModuleName): Promise<string[]> {
+    const workers = await this.api.query[module].workerById.multi<Worker>(workerIds)
+
+    return workers.map((worker) => {
+      return worker.role_account_id.toString()
+    })
+  }
+
+  public async getLeadRoleKey(group: WorkingGroupModuleName): Promise<string> {
+    return (await this.getLeader(group))[1].role_account_id.toString()
+  }
+
+  public async getLeaderStakingKey(group: WorkingGroupModuleName): Promise<string> {
+    return (await this.getLeader(group))[1].staking_account_id.toString()
+  }
+
+  public async getMemberSigners(inputs: { asMember: MemberId }[]): Promise<string[]> {
+    return await Promise.all(
+      inputs.map(async ({ asMember }) => {
+        const membership = await this.query.members.membershipById(asMember)
+        return membership.controller_account.toString()
+      })
+    )
+  }
+
+  public async untilBlock(blockNumber: number, intervalMs = BLOCKTIME, timeoutMs = 180000): Promise<void> {
+    await Utils.until(
+      `blocknumber ${blockNumber}`,
+      async ({ debug }) => {
+        const best = await this.getBestBlock()
+        debug(`Current block: ${best.toNumber()}`)
+        return best.gten(blockNumber)
+      },
+      intervalMs,
+      timeoutMs
+    )
+  }
+
+  public async untilProposalsCanBeCreated(
+    numberOfProposals = 1,
+    intervalMs = BLOCKTIME,
+    timeoutMs = 180000
+  ): Promise<void> {
+    await Utils.until(
+      `${numberOfProposals} proposals can be created`,
+      async ({ debug }) => {
+        const { maxActiveProposalLimit } = this.consts.proposalsEngine
+        const activeProposalsN = await this.query.proposalsEngine.activeProposalCount()
+        debug(`Currently active proposals: ${activeProposalsN.toNumber()}/${maxActiveProposalLimit.toNumber()}`)
+        return maxActiveProposalLimit.sub(activeProposalsN).toNumber() >= numberOfProposals
+      },
+      intervalMs,
+      timeoutMs
+    )
+  }
+
+  public async untilCouncilStage(
+    targetStage: 'Announcing' | 'Voting' | 'Revealing' | 'Idle',
+    announcementPeriodNr: number | null = null,
+    blocksReserve = 4,
+    intervalMs = BLOCKTIME
+  ): Promise<void> {
+    await Utils.until(
+      `council stage ${targetStage} (+${blocksReserve} blocks reserve)`,
+      async ({ debug }) => {
+        const currentCouncilStage = await this.query.council.stage()
+        const currentElectionStage = await this.query.referendum.stage()
+        const currentStage = currentCouncilStage.stage.isOfType('Election')
+          ? (currentElectionStage.type as 'Voting' | 'Revealing')
+          : (currentCouncilStage.stage.type as 'Announcing' | 'Idle')
+        const currentStageStartedAt = currentCouncilStage.stage.isOfType('Election')
+          ? currentElectionStage.asType(currentElectionStage.type as 'Voting' | 'Revealing').started
+          : currentCouncilStage.changed_at
+
+        const currentBlock = await this.getBestBlock()
+        const { announcingPeriodDuration, idlePeriodDuration } = this.consts.council
+        const { voteStageDuration, revealStageDuration } = this.consts.referendum
+        const durationByStage = {
+          'Announcing': announcingPeriodDuration,
+          'Voting': voteStageDuration,
+          'Revealing': revealStageDuration,
+          'Idle': idlePeriodDuration,
+        } as const
+
+        const currentStageEndsIn = currentStageStartedAt.add(durationByStage[currentStage]).sub(currentBlock)
+
+        const currentAnnouncementPeriodNr =
+          announcementPeriodNr === null ? null : (await this.api.query.council.announcementPeriodNr()).toNumber()
+
+        debug(`Current stage: ${currentStage}, blocks left: ${currentStageEndsIn.toNumber()}`)
+
+        return (
+          currentStage === targetStage &&
+          currentStageEndsIn.gten(blocksReserve) &&
+          announcementPeriodNr === currentAnnouncementPeriodNr
+        )
+      },
+      intervalMs
+    )
+  }
+
+  public proposalParametersByType(type: ProposalType): ProposalParameters {
+    return this.api.consts.proposalsCodex[proposalTypeToProposalParamsKey[type]]
+  }
+
+  lockIdByGroup(group: WorkingGroupModuleName): LockIdentifier {
+    return this.api.consts[group].stakingHandlerLockId
+  }
+
+  async getMemberControllerAccount(memberId: number): Promise<string | undefined> {
+    return (await this.api.query.members.membershipById(memberId))?.controller_account.toString()
+  }
+
+  public async getNumberOfOutstandingVideos(): Promise<number> {
+    return (await this.api.query.content.videoById.entries<VideoId>()).length
+  }
+
+  public async getNumberOfOutstandingChannels(): Promise<number> {
+    return (await this.api.query.content.channelById.entries<ChannelId>()).length
+  }
+
+  public async getNumberOfOutstandingVideoCategories(): Promise<number> {
+    return (await this.api.query.content.videoCategoryById.entries<VideoCategoryId>()).length
+  }
+
+  // Create a mock channel, throws on failure
+  async createMockChannel(memberId: number, memberControllerAccount?: string): Promise<ChannelId> {
+    memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
+
+    if (!memberControllerAccount) {
+      throw new Error('invalid member id')
     }
-  }
 
-  public findLeaderSetEvent(events: EventRecord[], workingGroup: WorkingGroups): WorkerId | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'LeaderSet')
-    if (record) {
-      return (record.event.data as unknown) as WorkerId
-    }
-  }
-
-  public findTerminatedLeaderEvent(events: EventRecord[], workingGroup: WorkingGroups): EventRecord | undefined {
-    return this.findEventRecord(events, workingGroup, 'TerminatedLeader')
-  }
-
-  public findWorkerRewardAmountUpdatedEvent(
-    events: EventRecord[],
-    workingGroup: WorkingGroups,
-    workerId: WorkerId
-  ): WorkerId | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'WorkerRewardAmountUpdated')
-    if (record) {
-      const id = (record.event.data[0] as unknown) as WorkerId
-      if (id.eq(workerId)) {
-        return workerId
+    // Create a channel without any assets
+    const tx = this.api.tx.content.createChannel(
+      { Member: memberId },
+      {
+        assets: null,
+        meta: null,
+        reward_account: null,
       }
+    )
+
+    const result = await this.sender.signAndSend(tx, memberControllerAccount)
+
+    const event = this.getEvent(result.events, 'content', 'ChannelCreated')
+    return event.data[1]
+  }
+
+  // Create a mock video, throws on failure
+  async createMockVideo(memberId: number, channelId: number, memberControllerAccount?: string): Promise<VideoId> {
+    memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
+
+    if (!memberControllerAccount) {
+      throw new Error('invalid member id')
     }
-  }
 
-  public findStakeDecreasedEvent(events: EventRecord[], workingGroup: WorkingGroups): EventRecord | undefined {
-    return this.findEventRecord(events, workingGroup, 'StakeDecreased')
-  }
-
-  public findStakeSlashedEvent(events: EventRecord[], workingGroup: WorkingGroups): EventRecord | undefined {
-    return this.findEventRecord(events, workingGroup, 'StakeSlashed')
-  }
-
-  public findBudgetSetEvent(events: EventRecord[], workingGroup: WorkingGroups): BN | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'BudgetSet')
-    if (record) {
-      return (record.event.data[0] as unknown) as BN
-    }
-  }
-
-  // Resolves to true when proposal finalized and executed successfully
-  // Resolved to false when proposal finalized and execution fails
-  public waitForProposalToFinalize(id: ProposalId): Promise<[boolean, EventRecord[]]> {
-    return new Promise(async (resolve) => {
-      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
-        events.forEach((record) => {
-          if (
-            record.event.method &&
-            record.event.method.toString() === 'ProposalStatusUpdated' &&
-            record.event.data[0].eq(id) &&
-            record.event.data[1].toString().includes('Executed')
-          ) {
-            unsubscribe()
-            resolve([true, events])
-          } else if (
-            record.event.method &&
-            record.event.method.toString() === 'ProposalStatusUpdated' &&
-            record.event.data[0].eq(id) &&
-            record.event.data[1].toString().includes('ExecutionFailed')
-          ) {
-            unsubscribe()
-            resolve([false, events])
-          }
-        })
-      })
+    // Create a video without any assets
+    const tx = this.api.tx.content.createVideo({ Member: memberId }, channelId, {
+      assets: null,
+      meta: null,
     })
+
+    const result = await this.sender.signAndSend(tx, memberControllerAccount)
+
+    const event = this.getEvent(result.events, 'content', 'VideoCreated')
+    return event.data[2]
   }
 
-  public findOpeningFilledEvent(
-    events: EventRecord[],
-    workingGroup: WorkingGroups
-  ): ApplicationIdToWorkerIdMap | undefined {
-    const record = this.findEventRecord(events, workingGroup, 'OpeningFilled')
-    if (record) {
-      return (record.event.data[1] as unknown) as ApplicationIdToWorkerIdMap
-    }
-  }
+  async createChannelCategoryAsLead(name: string): Promise<ISubmittableResult> {
+    const [, lead] = await this.getLeader('contentWorkingGroup')
 
-  // Looks for the first occurance of an expected event, and resolves.
-  // Use this when the event we are expecting is not particular to a specific extrinsic
-  // that is being tracked. So these would be events emitted when on_finalize, on_initialize
-  // on_runtime_upgrade.
-  public waitForSystemEvent(eventName: string): Promise<Event> {
-    return new Promise(async (resolve) => {
-      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
-        events.forEach((record) => {
-          if (record.event.method && record.event.method.toString() === eventName) {
-            unsubscribe()
-            resolve(record.event)
-          }
-        })
-      })
+    const account = lead.role_account_id
+    const meta = new ChannelCategoryMetadata({
+      name,
     })
-  }
 
-  public async getWorkingGroupBudget(module: WorkingGroups): Promise<BN> {
-    return this.api.query[module].budget()
-  }
-
-  /* Move proposeX methods into fixtures
-
-  public async proposeRuntime(
-    account: string,
-    title: string,
-    description: string,
-    runtime: Bytes | string
-  ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: memberId,
-          title,
-          description,
-          staking_account_id: account,
-          exact_execution_block: null,
-        },
-        {
-          RuntimeUpgrade: runtime,
-        }
+      this.api.tx.content.createChannelCategory(
+        { Lead: null },
+        { meta: Utils.metadataToBytes(ChannelCategoryMetadata, meta) }
       ),
-      account
+      account?.toString()
     )
   }
 
-  public async proposeText(
-    account: string,
-    title: string,
-    description: string,
-    text: string
-  ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
+  async createVideoCategoryAsLead(name: string): Promise<ISubmittableResult> {
+    const [, lead] = await this.getLeader('contentWorkingGroup')
+
+    const account = lead.role_account_id
+    const meta = new VideoCategoryMetadata({
+      name,
+    })
+
     return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: memberId,
-          title,
-          description,
-          staking_account_id: account,
-          exact_execution_block: null,
-        },
-        {
-          Text: text,
-        }
+      this.api.tx.content.createVideoCategory(
+        { Lead: null },
+        { meta: Utils.metadataToBytes(VideoCategoryMetadata, meta) }
       ),
-      account
+      account?.toString()
     )
   }
 
-  public async proposeSpending(
-    account: string,
-    title: string,
-    description: string,
-    balance: BN,
-    destination: string
-  ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
-    return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: memberId,
-          title,
-          description,
-          staking_account_id: account,
-          exact_execution_block: null,
-        },
-        {
-          Spending: [balance, destination],
-        }
-      ),
-      account
-    )
-  }
-
-  public async proposeValidatorCount(
-    account: string,
-    title: string,
-    description: string,
-    validatorCount: BN
-  ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
-    return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: memberId,
-          title,
-          description,
-          staking_account_id: account,
-          exact_execution_block: null,
-        },
-        {
-          SetValidatorCount: validatorCount,
-        }
-      ),
-      account
-    )
-  }
-
-  public async proposeCreateWorkingGroupLeaderOpening(
-    account: string,
-    title: string,
-    description: string,
-    workingGroup: WorkingGroups
-  ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
-    return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createProposal(
-        {
-          member_id: memberId,
-          title,
-          description,
-          staking_account_id: account,
-          exact_execution_block: null,
-        },
-        {
-          AddWorkingGroupLeaderOpening: {
-            description,
-            stake_policy: null, // Option.with(StakePolicy),
-            reward_per_block: null, // Option.with(u128),
-            working_group: workingGroup,
-          },
-        }
-      ),
-      account
-    )
-  }
-
-  public async proposeFillLeaderOpening(fillOpening: {
+  async assignWorkerRoleAccount(
+    group: WorkingGroupModuleName,
+    workerId: WorkerId,
     account: string
-    title: string
-    description: string
-    proposalStake: BN
-    openingId: OpeningId
-    successfulApplicationId: ApplicationId
-    amountPerPayout: BN
-    nextPaymentAtBlock: BN
-    payoutInterval: BN
-    workingGroup: string
-  }): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(fillOpening.account))[0]
+  ): Promise<ISubmittableResult> {
+    const worker = await this.api.query[group].workerById(workerId)
+    if (worker.isEmpty) {
+      throw new Error(`Worker not found by id: ${workerId}!`)
+    }
 
-    const fillOpeningParameters: FillOpeningParameters = this.api.createType('FillOpeningParameters', {
-      opening_id: fillOpening.openingId,
-      successful_application_id: fillOpening.successfulApplicationId,
-      reward_policy: this.api.createType('Option<RewardPolicy>', {
-        amount_per_payout: fillOpening.amountPerPayout as Balance,
-        next_payment_at_block: fillOpening.nextPaymentAtBlock as BlockNumber,
-        payout_interval: this.api.createType('Option<u32>', fillOpening.payoutInterval),
-      }),
-      working_group: this.api.createType('WorkingGroup', fillOpening.workingGroup),
+    const memberController = await this.getControllerAccountOfMember(worker.member_id)
+    // there cannot be a worker associated with member that does not exist
+    if (!memberController) {
+      throw new Error('Member controller not found')
+    }
+
+    // Expect membercontroller key is already added to keyring
+    // Is is responsibility of caller to ensure this is the case!
+
+    const updateRoleAccountCall = this.api.tx[group].updateRoleAccount(workerId, account)
+    await this.prepareAccountsForFeeExpenses(memberController, [updateRoleAccountCall])
+    return this.sender.signAndSend(updateRoleAccountCall, memberController)
+  }
+
+  async assignWorkerWellknownAccount(
+    group: WorkingGroupModuleName,
+    workerId: WorkerId,
+    initialBalance = KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE
+  ): Promise<ISubmittableResult[]> {
+    // path to append to base SURI
+    const uri = `worker//${workingGroupNameByModuleName[group]}//${workerId.toNumber()}`
+    const account = this.createCustomKeyPair(uri).address
+    return Promise.all([
+      this.assignWorkerRoleAccount(group, workerId, account),
+      this.treasuryTransferBalance(account, initialBalance),
+    ])
+  }
+
+  // Storage
+
+  async createStorageBucket(
+    accountFrom: string, // group leader
+    sizeLimit: number,
+    objectsLimit: number,
+    workerId?: WorkerId
+  ): Promise<ISubmittableResult> {
+    return this.sender.signAndSend(
+      this.api.tx.storage.createStorageBucket(workerId || null, true, sizeLimit, objectsLimit),
+      accountFrom
+    )
+  }
+
+  async acceptStorageBucketInvitation(accountFrom: string, workerId: WorkerId, storageBucketId: StorageBucketId) {
+    return this.sender.signAndSend(
+      this.api.tx.storage.acceptStorageBucketInvitation(workerId, storageBucketId, accountFrom),
+      accountFrom
+    )
+  }
+
+  async updateStorageBucketsForBag(
+    accountFrom: string, // group leader
+    channelId: string,
+    addStorageBuckets: StorageBucketId[]
+  ) {
+    return this.sender.signAndSend(
+      this.api.tx.storage.updateStorageBucketsForBag(
+        this.api.createType('BagId', { Dynamic: { Channel: channelId } }),
+        this.api.createType('BTreeSet<StorageBucketId>', [addStorageBuckets.map((item) => item.toString())]),
+        this.api.createType('BTreeSet<StorageBucketId>', [])
+      ),
+      accountFrom
+    )
+  }
+
+  async updateStorageBucketsPerBagLimit(
+    accountFrom: string, // group leader
+    limit: number
+  ) {
+    return this.sender.signAndSend(this.api.tx.storage.updateStorageBucketsPerBagLimit(limit), accountFrom)
+  }
+
+  async updateStorageBucketsVoucherMaxLimits(
+    accountFrom: string, // group leader
+    sizeLimit: number,
+    objectLimit: number
+  ) {
+    return this.sender.signAndSend(
+      this.api.tx.storage.updateStorageBucketsVoucherMaxLimits(sizeLimit, objectLimit),
+      accountFrom
+    )
+  }
+
+  async acceptPendingDataObjects(
+    accountFrom: string,
+    workerId: WorkerId,
+    storageBucketId: StorageBucketId,
+    channelId: string,
+    dataObjectIds: string[]
+  ): Promise<ISubmittableResult> {
+    const bagId = { Dynamic: { Channel: channelId } }
+    const encodedDataObjectIds = new BTreeSet<DataObjectId>(this.api.registry, 'DataObjectId', dataObjectIds)
+
+    return this.sender.signAndSend(
+      this.api.tx.storage.acceptPendingDataObjects(workerId, storageBucketId, bagId, encodedDataObjectIds),
+      accountFrom
+    )
+  }
+
+  async issueNft(
+    accountFrom: string,
+    memberId: number,
+    videoId: number,
+    metadata = '',
+    royaltyPercentage?: number,
+    toMemberId?: number | null
+  ): Promise<ISubmittableResult> {
+    const royalty = this.api.createType(
+      'Option<Royalty>',
+      royaltyPercentage ? royaltyPercentage * PERBILL_ONE_PERCENT : null
+    )
+    // TODO: find proper way to encode metadata (should they be raw string, hex string or some object?)
+    // const encodedMetadata = this.api.createType('Metadata', metadata)
+    // const encodedMetadata = this.api.createType('Metadata', metadata).toU8a() // invalid type passed to Metadata constructor
+    // const encodedMetadata = this.api.createType('Vec<u8>', metadata)
+    // const encodedMetadata = this.api.createType('Vec<u8>', 'someNonEmptyText') // decodeU8a: failed at 0x736f6d654e6f6e45… on magicNumber: u32:: MagicNumber mismatch: expected 0x6174656d, found 0x656d6f73
+    // const encodedMetadata = this.api.createType('Bytes', 'someNonEmptyText') // decodeU8a: failed at 0x736f6d654e6f6e45… on magicNumber: u32:: MagicNumber mismatch: expected 0x6174656d, found 0x656d6f73
+    // const encodedMetadata = this.api.createType('Metadata', {})
+    // const encodedMetadata = this.api.createType('Bytes', '0x') // error
+    // const encodedMetadata = this.api.createType('NftMetadata', 'someNonEmptyText')
+    // const encodedMetadata = this.api.createType('NftMetadata', 'someNonEmptyText').toU8a() // createType(NftMetadata) // Vec length 604748352930462863646034177481338223 exceeds 65536
+    const encodedMetadata = this.api.createType('NftMetadata', '').toU8a() // THIS IS OK!!! but only for empty string :-\
+    // try this later on // const encodedMetadata = this.api.createType('Vec<u8>', 'someNonEmptyText').toU8a()
+    // const encodedMetadata = this.api.createType('Vec<u8>', 'someNonEmptyText').toU8a() // throws error in QN when decoding this (but mb QN error)
+
+    const encodedToAccount = this.api.createType('Option<MemberId>', toMemberId || memberId)
+
+    const issuanceParameters = this.api.createType('NftIssuanceParameters', {
+      royalty,
+      nft_metadata: encodedMetadata,
+      non_channel_owner: encodedToAccount,
+      init_transactional_status: this.api.createType('InitTransactionalStatus', { Idle: null }),
     })
 
-    return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createFillWorkingGroupLeaderOpeningProposal(
-        memberId,
-        fillOpening.title,
-        fillOpening.description,
-        fillOpening.proposalStake,
-        fillOpeningParameters
-      ),
-      fillOpening.account
+    return await this.sender.signAndSend(
+      this.api.tx.content.issueNft({ Member: memberId }, videoId, issuanceParameters),
+      accountFrom
     )
   }
 
-  public async proposeTerminateLeaderRole(
-    account: string,
-    title: string,
-    description: string,
-    proposalStake: BN,
-    leadWorkerId: WorkerId,
-    rationale: string,
-    slash: boolean,
-    workingGroup: string
-  ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
-    return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createTerminateWorkingGroupLeaderRoleProposal(
-        memberId,
-        title,
-        description,
-        proposalStake,
-        {
-          'worker_id': leadWorkerId,
-          rationale,
-          slash,
-          'working_group': workingGroup,
-        }
-      ),
-      account
-    )
-  }
-
-  public async proposeLeaderReward(
-    account: string,
-    title: string,
-    description: string,
-    proposalStake: BN,
-    workerId: WorkerId,
-    rewardAmount: BN,
-    workingGroup: string
-  ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
-    return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createSetWorkingGroupLeaderRewardProposal(
-        memberId,
-        title,
-        description,
-        proposalStake,
-        workerId,
-        rewardAmount,
-        this.api.createType('WorkingGroup', workingGroup)
-      ),
-      account
-    )
-  }
-
-  public async proposeDecreaseLeaderStake(
-    account: string,
-    title: string,
-    description: string,
-    proposalStake: BN,
-    workerId: WorkerId,
-    rewardAmount: BN,
-    workingGroup: string
-  ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
-    return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createDecreaseWorkingGroupLeaderStakeProposal(
-        memberId,
-        title,
-        description,
-        proposalStake,
-        workerId,
-        rewardAmount,
-        this.api.createType('WorkingGroup', workingGroup)
-      ),
-      account
-    )
-  }
-
-  public async proposeSlashLeaderStake(
-    account: string,
-    title: string,
-    description: string,
-    proposalStake: BN,
-    workerId: WorkerId,
-    rewardAmount: BN,
-    workingGroup: string
-  ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
-    return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createSlashWorkingGroupLeaderStakeProposal(
-        memberId,
-        title,
-        description,
-        proposalStake,
-        workerId,
-        rewardAmount,
-        this.api.createType('WorkingGroup', workingGroup)
-      ),
-      account
-    )
-  }
-
-  public async proposeWorkingGroupMintCapacity(
-    account: string,
-    title: string,
-    description: string,
-    proposalStake: BN,
-    mintCapacity: BN,
-    workingGroup: string
-  ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
-    return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createSetWorkingGroupMintCapacityProposal(
-        memberId,
-        title,
-        description,
-        proposalStake,
-        mintCapacity,
-        this.api.createType('WorkingGroup', workingGroup)
-      ),
-      account
-    )
-  }
-  */
-
-  // Council member votes Approve on proposal
-  public async approveProposal(councilMemberId: MemberId, proposal: ProposalId): Promise<ISubmittableResult> {
-    const controllerAccount = await this.getControllerAccountOfMember(councilMemberId)
-    return this.sender.signAndSend(
-      this.api.tx.proposalsEngine.vote(councilMemberId, proposal, 'Approve', 'rationale'),
-      controllerAccount
-    )
-  }
-
-  // Make each council member vote 'Approve' on the proposal
-  public async batchApproveProposal(proposalId: ProposalId): Promise<ISubmittableResult[]> {
-    const councilMemberIds = (await this.getCouncilMembers()).map((member) => member.membership_id)
-    return Promise.all(
-      councilMemberIds.map(async (memberId) => {
-        return this.approveProposal(memberId, proposalId)
-      })
-    )
-  }
-
-  // Working Groups
-
-  // Call by lead to create a worker 'Regular' opening
-  public async addRegularWorkerOpening(
-    module: WorkingGroups,
-    leaderRoleAccount: string,
-    description: string,
-    stakePolicy?: StakePolicy,
-    rewardPerBlock?: number
-  ): Promise<ISubmittableResult> {
-    const reward = this.api.createType('Option<Balance>', rewardPerBlock)
-    const policy = this.api.createType('Option<StakePolicy>', stakePolicy)
-    return this.sender.signAndSend(
-      this.api.tx[module].addOpening(description, 'Regular', policy, reward),
-      leaderRoleAccount
-    )
-  }
-
-  // Sudo call to create a lead opening
-  public async addLeaderOpening(
-    module: WorkingGroups,
-    description: string,
-    stakePolicy?: StakePolicy,
-    rewardPerBlock?: number
-  ): Promise<ISubmittableResult> {
-    const reward = this.api.createType('Option<Balance>', rewardPerBlock)
-    const policy = this.api.createType('Option<StakePolicy>', stakePolicy)
-    return this.makeSudoCall(this.api.tx[module].addOpening(description, 'Leader', policy, reward))
-  }
-
-  public async applyOnOpening(
-    account: string,
-    roleAccountAddress: string,
-    openingId: OpeningId,
-    stake: BN,
-    text: string,
-    module: WorkingGroups
-  ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account))[0]
-    return this.sender.signAndSend(
-      this.api.tx[module].applyOnOpening({
-        member_id: memberId,
-        opening_id: openingId,
-        role_account_id: roleAccountAddress,
-        reward_account_id: roleAccountAddress,
-        description: text,
-        stake_parameters: {
-          stake,
-          staking_account_id: account,
-        },
-      }),
-      account
-    )
-  }
-
-  public async batchApplyOnOpening(
-    accounts: string[],
-    openingId: OpeningId,
-    stake: BN,
-    text: string,
-    module: WorkingGroups
-  ): Promise<ISubmittableResult[]> {
-    return Promise.all(
-      accounts.map(async (account) => this.applyOnOpening(account, account, openingId, stake, text, module))
-    )
-  }
-
-  // Leader fills openning
-  public async fillOpening(
-    leaderRoleAccount: string,
-    openingId: OpeningId,
-    applicationIds: ApplicationId[],
-    module: WorkingGroups
-  ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(
-      this.api.tx[module].fillOpening(openingId, this.api.createType('ApplicationIdSet', applicationIds)),
-      leaderRoleAccount
-    )
-  }
-
-  public async sudoFillOpening(
-    openingId: OpeningId,
-    applicationIds: ApplicationId[],
-    module: WorkingGroups
-  ): Promise<ISubmittableResult> {
-    return this.makeSudoCall(
-      this.api.tx[module].fillOpening(openingId, this.api.createType('ApplicationIdSet', applicationIds))
-    )
-  }
-
-  public async increaseStake(
-    workerRoleAccount: string,
-    workerId: WorkerId,
-    amount: BN,
-    module: WorkingGroups
-  ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].increaseStake(workerId, amount), workerRoleAccount)
-  }
-
-  public async decreaseStake(
-    leader: string,
-    workerId: WorkerId,
-    amount: BN,
-    module: WorkingGroups
-  ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].decreaseStake(workerId, amount), leader)
-  }
-
-  public async slashStake(
-    leader: string,
-    workerId: WorkerId,
-    amount: BN,
-    module: WorkingGroups
-  ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(
-      this.api.tx[module].slashStake(workerId, {
-        slashing_text: 'slash reason',
-        slashing_amount: amount,
-      }),
-      leader
-    )
-  }
-
-  public async updateRoleAccount(
-    worker: string,
-    workerId: WorkerId,
-    newRoleAccount: string,
-    module: WorkingGroups
-  ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].updateRoleAccount(workerId, newRoleAccount), worker)
-  }
-
-  public async updateRewardAccount(
-    worker: string,
-    workerId: WorkerId,
-    newRewardAccount: string,
-    module: WorkingGroups
-  ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].updateRewardAccount(workerId, newRewardAccount), worker)
-  }
-
-  public async withdrawApplication(
-    account: string,
-    applicationId: ApplicationId,
-    module: WorkingGroups
-  ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].withdrawApplication(applicationId), account)
-  }
-
-  public async batchWithdrawActiveApplications(
-    applicationIds: ApplicationId[],
-    module: WorkingGroups
-  ): Promise<ISubmittableResult[]> {
-    const entries: [StorageKey, Application][] = await this.api.query[module].applicationById.entries<Application>()
-
-    return Promise.all(
-      entries
-        .filter(([idKey]) => {
-          return applicationIds.includes(idKey.args[0] as ApplicationId)
-        })
-        .map(([idKey, application]) => ({
-          id: idKey.args[0] as ApplicationId,
-          account: application.role_account_id.toString(),
-        }))
-        .map(({ id, account }) => this.withdrawApplication(account, id, module))
-    )
-  }
-
-  public async terminateRole(leader: string, workerId: WorkerId, module: WorkingGroups): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].terminateRole(workerId, null), leader)
-  }
-
-  public async leaveRole(account: string, workerId: WorkerId, module: WorkingGroups): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(this.api.tx[module].leaveRole(workerId), account)
-  }
-
-  public async batchLeaveRole(workerIds: WorkerId[], module: WorkingGroups): Promise<ISubmittableResult[]> {
-    return Promise.all(
-      workerIds.map(async (workerId) => {
-        // get role_account of worker
-        const worker = await this.getWorkerById(workerId, module)
-        return this.leaveRole(worker.role_account_id.toString(), workerId, module)
-      })
-    )
-  }
-
-  public async getWorkingGroupOpening(id: OpeningId, group: WorkingGroups): Promise<WorkingGroupOpening> {
-    return await this.api.query[group].openingById<WorkingGroupOpening>(id)
-  }
-
-  public async getWorkers(module: WorkingGroups): Promise<Worker[]> {
-    return (await this.api.query[module].workerById.entries<Worker>()).map((workerWithId) => workerWithId[1])
-  }
-
-  public async getWorkerById(id: WorkerId, module: WorkingGroups): Promise<Worker> {
-    return await this.api.query[module].workerById<Worker>(id)
-  }
-
-  public async isWorker(workerId: WorkerId, module: WorkingGroups): Promise<boolean> {
-    const workersAndIds: [StorageKey, Worker][] = await this.api.query[module].workerById.entries<Worker>()
-    const index: number = workersAndIds.findIndex((workersAndId) => workersAndId[0].args[0].eq(workerId))
-    return index !== -1
-  }
-
-  public async getApplicationsIdsByRoleAccount(address: string, module: WorkingGroups): Promise<ApplicationId[]> {
-    const applicationsAndIds = await this.api.query[module].applicationById.entries<Application>()
-    return applicationsAndIds
-      .map((applicationWithId) => {
-        const application: Application = applicationWithId[1]
-        return application.role_account_id.toString() === address
-          ? (applicationWithId[0].args[0] as ApplicationId)
-          : undefined
-      })
-      .filter((id) => id !== undefined) as ApplicationId[]
-  }
-
-  public async getApplicationById(id: ApplicationId, module: WorkingGroups): Promise<Application> {
-    return this.api.query[module].applicationById<Application>(id)
-  }
-
-  // Note: some applications for closed openings might still be returned if
-  // applicantion was not yet withdrawn
-  public async getApplicantRoleAccounts(filterActiveIds: ApplicationId[], module: WorkingGroups): Promise<string[]> {
-    const entries: [StorageKey, Application][] = await this.api.query[module].applicationById.entries<Application>()
-
-    const applications = entries
-      .filter(([idKey]) => {
-        return filterActiveIds.includes(idKey.args[0] as ApplicationId)
-      })
-      .map(([, application]) => application)
-
-    return applications.map((application) => application.role_account_id.toString())
-  }
-
-  public async getWorkerRoleAccounts(workerIds: WorkerId[], module: WorkingGroups): Promise<string[]> {
-    const entries: [StorageKey, Worker][] = await this.api.query[module].workerById.entries<Worker>()
-
-    return entries
-      .filter(([idKey]) => {
-        return workerIds.includes(idKey.args[0] as WorkerId)
-      })
-      .map(([, worker]) => worker.role_account_id.toString())
-  }
-
-  public async getWorkerStakeAmount(workerId: WorkerId, module: WorkingGroups): Promise<BN> {
-    // const stakingAccount = (await this.api.query[module].workerById(workerId)).staking_account_id
-    // read lock information on the account to determine how much is staked
-    return new BN(0)
-  }
-
-  public async getWorkerRewardAccount(workerId: WorkerId, module: WorkingGroups): Promise<string> {
-    return (await this.api.query[module].workerById(workerId)).reward_account_id.toString()
-  }
-
-  public async getLeadWorkerId(module: WorkingGroups): Promise<WorkerId | undefined> {
-    return (await this.api.query[module].currentLead<Option<WorkerId>>()).unwrapOr(undefined)
-  }
-
-  public async getGroupLead(module: WorkingGroups): Promise<Worker | undefined> {
-    const leadId = await this.getLeadWorkerId(module)
-    return leadId ? this.getWorkerById(leadId, module) : undefined
-  }
-
-  public async getActiveWorkersCount(module: WorkingGroups): Promise<BN> {
-    return this.api.query[module].activeWorkerCount<u32>()
-  }
-
-  public getMaxWorkersCount(module: WorkingGroups): BN {
-    return this.api.createType('u32', this.api.consts[module].maxWorkerNumberLimit)
-  }
-
-  async sendContentDirectoryTransaction(operations: OperationType[]): Promise<ISubmittableResult> {
-    const transaction = this.api.tx.contentDirectory.transaction(
-      { Lead: null }, // We use member with id 0 as actor (in this case we assume this is Alice)
-      operations // We provide parsed operations as second argument
-    )
-    const lead = (await this.getGroupLead(WorkingGroups.ContentDirectoryWorkingGroup)) as Worker
-    return this.sender.signAndSend(transaction, lead.role_account_id)
-  }
-
-  public async createChannelEntity(channel: ChannelEntity): Promise<ISubmittableResult> {
-    // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
-    const parser = InputParser.createWithKnownSchemas(
-      this.api,
-      // The second argument is an array of entity batches, following standard entity batch syntax ({ className, entries }):
-      [
-        {
-          className: 'Channel',
-          entries: [channel], // We could specify multiple entries here, but in this case we only need one
-        },
-      ]
-    )
-    // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
-    const operations = await parser.getEntityBatchOperations()
-    return this.sendContentDirectoryTransaction(operations)
-  }
-
-  public async createVideoEntity(video: VideoEntity): Promise<ISubmittableResult> {
-    // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
-    const parser = InputParser.createWithKnownSchemas(
-      this.api,
-      // The second argument is an array of entity batches, following standard entity batch syntax ({ className, entries }):
-      [
-        {
-          className: 'Video',
-          entries: [video], // We could specify multiple entries here, but in this case we only need one
-        },
-      ]
-    )
-    // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
-    const operations = await parser.getEntityBatchOperations()
-    return this.sendContentDirectoryTransaction(operations)
-  }
-
-  public async updateChannelEntity(
-    channelUpdateInput: Record<string, any>,
-    uniquePropValue: Record<string, any>
-  ): Promise<ISubmittableResult> {
-    // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
-    const parser = InputParser.createWithKnownSchemas(this.api)
-
-    // We can reuse InputParser's `findEntityIdByUniqueQuery` method to find entityId of the channel we
-    // created in ./createChannel.ts example (normally we would probably use some other way to do it, ie.: query node)
-    const CHANNEL_ID = await parser.findEntityIdByUniqueQuery(uniquePropValue, 'Channel') // Use getEntityUpdateOperations to parse the update input
-    const updateOperations = await parser.getEntityUpdateOperations(
-      channelUpdateInput,
-      'Channel', // Class name
-      CHANNEL_ID // Id of the entity we want to update
-    )
-    return this.sendContentDirectoryTransaction(updateOperations)
-  }
-
-  async getDataObjectByContentId(contentId: ContentId): Promise<DataObject | null> {
-    const dataObject = await this.api.query.dataDirectory.dataObjectByContentId<Option<DataObject>>(contentId)
-    return dataObject.unwrapOr(null)
-  }
-
-  public async initializeContentDirectory(): Promise<void> {
-    const lead = await this.getGroupLead(WorkingGroups.ContentDirectoryWorkingGroup)
-    if (!lead) {
-      throw new Error('No Lead is set for storage wokring group')
+  private async getAuctionParametersBoundaries() {
+    const boundaries = {
+      extensionPeriod: {
+        min: await this.api.query.content.minAuctionExtensionPeriod(),
+        max: await this.api.query.content.maxAuctionExtensionPeriod(),
+      },
+      auctionDuration: {
+        min: await this.api.query.content.minAuctionDuration(),
+        max: await this.api.query.content.maxAuctionDuration(),
+      },
+      bidLockDuration: {
+        min: await this.api.query.content.minBidLockDuration(),
+        max: await this.api.query.content.maxBidLockDuration(),
+      },
+      startingPrice: {
+        min: await this.api.query.content.minStartingPrice(),
+        max: await this.api.query.content.maxStartingPrice(),
+      },
+      bidStep: {
+        min: await this.api.query.content.minBidStep(),
+        max: await this.api.query.content.maxBidStep(),
+      },
     }
-    const leadKeyPair = this.keyring.getPair(lead.role_account_id.toString())
-    return initializeContentDir(this.api, leadKeyPair)
+
+    return boundaries
+  }
+
+  async createOpenAuctionParameters(
+    whitelist: string[] = []
+  ): Promise<{
+    auctionParams: OpenAuctionParams
+    startingPrice: BN
+    minimalBidStep: BN
+    bidLockDuration: BN
+  }> {
+    const boundaries = await this.getAuctionParametersBoundaries()
+
+    const bidLockDuration = boundaries.bidLockDuration.min
+
+    const auctionParams = this.api.createType('OpenAuctionParams', {
+      starting_price: this.api.createType('u128', boundaries.startingPrice.min),
+      buy_now_price: this.api.createType('Option<BlockNumber>', null),
+      whitelist: this.api.createType('BTreeSet<MemberId>', whitelist),
+      bid_lock_duration: this.api.createType('BlockNumber', bidLockDuration),
+    })
+
+    return {
+      auctionParams,
+      startingPrice: boundaries.startingPrice.min,
+      minimalBidStep: boundaries.bidStep.min,
+      bidLockDuration: bidLockDuration,
+    }
+  }
+
+  async createEnglishAuctionParameters(
+    whitelist: string[] = []
+  ): Promise<{
+    auctionParams: EnglishAuctionParams
+    startingPrice: BN
+    minimalBidStep: BN
+    extensionPeriod: BN
+    auctionDuration: BN
+  }> {
+    const boundaries = await this.getAuctionParametersBoundaries()
+
+    // auction duration must be larger than extension period (enforced in runtime)
+    const auctionDuration = BN.max(boundaries.auctionDuration.min, boundaries.extensionPeriod.min)
+
+    const startingPrice = boundaries.startingPrice.min
+    const minimalBidStep = boundaries.bidStep.min
+    const extensionPeriod = boundaries.extensionPeriod.min
+
+    const auctionParams = this.api.createType('EnglishAuctionParams', {
+      starting_price: this.api.createType('u128', startingPrice),
+      buy_now_price: this.api.createType('Option<Balance>', null),
+      whitelist: this.api.createType('BTreeSet<MemberId>', whitelist),
+      starts_at: this.api.createType('Option<BlockNumber>', null),
+      duration: auctionDuration,
+      extension_period: extensionPeriod,
+      min_bid_step: this.api.createType('u128', minimalBidStep),
+    })
+
+    return {
+      auctionParams,
+      startingPrice,
+      minimalBidStep,
+      extensionPeriod,
+      auctionDuration,
+    }
+  }
+
+  async startOpenAuction(
+    accountFrom: string,
+    memberId: number,
+    videoId: number,
+    auctionParams: OpenAuctionParams
+  ): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(
+      this.api.tx.content.startOpenAuction({ Member: memberId }, videoId, auctionParams),
+      accountFrom
+    )
+  }
+
+  async startEnglishAuction(
+    accountFrom: string,
+    memberId: number,
+    videoId: number,
+    auctionParams: EnglishAuctionParams
+  ): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(
+      this.api.tx.content.startEnglishAuction({ Member: memberId }, videoId, auctionParams),
+      accountFrom
+    )
+  }
+
+  async bidInOpenAuction(
+    accountFrom: string,
+    memberId: number,
+    videoId: number,
+    bidAmount: BN
+  ): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(
+      this.api.tx.content.makeOpenAuctionBid(memberId, videoId, bidAmount),
+      accountFrom
+    )
+  }
+
+  async bidInEnglishAuction(
+    accountFrom: string,
+    memberId: number,
+    videoId: number,
+    bidAmount: BN
+  ): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(
+      this.api.tx.content.makeEnglishAuctionBid(memberId, videoId, bidAmount),
+      accountFrom
+    )
+  }
+
+  async settleEnglishAuction(accountFrom: string, memberId: number, videoId: number): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(this.api.tx.content.settleEnglishAuction(videoId), accountFrom)
+  }
+
+  async pickOpenAuctionWinner(
+    accountFrom: string,
+    ownerMemberId: number,
+    videoId: number,
+    winnerMemberId: number,
+    commitBalance: BN
+  ): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(
+      this.api.tx.content.pickOpenAuctionWinner({ Member: ownerMemberId }, videoId, winnerMemberId, commitBalance),
+      accountFrom
+    )
+  }
+
+  async cancelOpenAuctionBid(accountFrom: string, participantId: number, videoId: number): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(this.api.tx.content.cancelOpenAuctionBid(participantId, videoId), accountFrom)
+  }
+
+  async cancelOpenAuction(accountFrom: string, ownerId: number, videoId: number): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(
+      this.api.tx.content.cancelOpenAuction({ Member: ownerId }, videoId),
+      accountFrom
+    )
+  }
+
+  async sellNft(accountFrom: string, videoId: number, ownerId: number, price: BN): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(this.api.tx.content.sellNft(videoId, { Member: ownerId }, price), accountFrom)
+  }
+
+  async buyNft(accountFrom: string, videoId: number, participantId: number, price: BN): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(this.api.tx.content.buyNft(videoId, participantId, price), accountFrom)
+  }
+
+  async updateBuyNowPrice(
+    accountFrom: string,
+    ownerId: number,
+    videoId: number,
+    price: BN
+  ): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(
+      this.api.tx.content.updateBuyNowPrice({ Member: ownerId }, videoId, price),
+      accountFrom
+    )
+  }
+
+  async offerNft(
+    accountFrom: string,
+    videoId: number,
+    ownerId: number,
+    toMemberId: number,
+    price: BN | null = null
+  ): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(
+      this.api.tx.content.offerNft(videoId, { Member: ownerId }, toMemberId, price),
+      accountFrom
+    )
+  }
+
+  async acceptIncomingOffer(accountFrom: string, videoId: number): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(this.api.tx.content.acceptIncomingOffer(videoId), accountFrom)
+  }
+
+  async createVideoWithNft(
+    accountFrom: string,
+    ownerId: number,
+    channelId: number,
+    auctionParams?: OpenAuctionParams | EnglishAuctionParams
+  ): Promise<ISubmittableResult> {
+    const initTransactionalStatus = this.api.createType(
+      'InitTransactionalStatus',
+      auctionParams
+        ? auctionParams instanceof OpenAuctionParams
+          ? { OpenAuction: auctionParams }
+          : { EnglishAuction: auctionParams }
+        : { Idle: null }
+    )
+
+    const createParameters = this.createType('VideoCreationParameters', {
+      assets: null,
+      meta: null,
+      enable_comments: false,
+      auto_issue_nft: this.api.createType('NftIssuanceParameters', {
+        royalty: null,
+        nft_metadata: this.api.createType('NftMetadata', '').toU8a(),
+        non_channel_owner: ownerId,
+        init_transactional_status: initTransactionalStatus,
+      }),
+    })
+
+    return await this.sender.signAndSend(
+      this.api.tx.content.createVideo({ Member: ownerId }, channelId, createParameters),
+      accountFrom
+    )
+  }
+
+  async createVideoWithNftBuyNow(
+    accountFrom: string,
+    ownerId: number,
+    channelId: number,
+    price: BN
+  ): Promise<ISubmittableResult> {
+    const createParameters = this.createType('VideoCreationParameters', {
+      assets: null,
+      meta: null,
+      enable_comments: false,
+      auto_issue_nft: this.api.createType('NftIssuanceParameters', {
+        royalty: null,
+        nft_metadata: this.api.createType('NftMetadata', '').toU8a(),
+        non_channel_owner: ownerId,
+        init_transactional_status: this.api.createType('InitTransactionalStatus', {
+          BuyNow: this.api.createType('Balance', price.toString()),
+        }),
+      }),
+    })
+
+    return await this.sender.signAndSend(
+      this.api.tx.content.createVideo({ Member: ownerId }, channelId, createParameters),
+      accountFrom
+    )
+  }
+
+  async updateVideoWithNftAuction(
+    accountFrom: string,
+    ownerId: number,
+    videoId: number,
+    auctionParams: OpenAuctionParams | EnglishAuctionParams
+  ): Promise<ISubmittableResult> {
+    const initTransactionalStatus = this.api.createType(
+      'InitTransactionalStatus',
+      auctionParams instanceof OpenAuctionParams ? { OpenAuction: auctionParams } : { EnglishAuction: auctionParams }
+    )
+
+    const updateParameters = this.createType('VideoCreationParameters', {
+      assets_to_upload: null,
+      new_meta: null,
+      assets_to_remove: this.api.createType('BTreeSet<DataObjectId>', []),
+      enable_comments: null,
+      auto_issue_nft: this.api.createType('NftIssuanceParameters', {
+        royalty: null,
+        nft_metadata: this.api.createType('NftMetadata', '').toU8a(),
+        non_channel_owner: ownerId,
+        init_transactional_status: this.api.createType('InitTransactionalStatus', { Auction: auctionParams }),
+      }),
+    })
+
+    return await this.sender.signAndSend(
+      this.api.tx.content.updateVideo({ Member: ownerId }, videoId, updateParameters),
+      accountFrom
+    )
+  }
+
+  async updateVideoForNftCreation(
+    accountFrom: string,
+    ownerId: number,
+    videoId: number,
+    auctionParams?: OpenAuctionParams | EnglishAuctionParams
+  ): Promise<ISubmittableResult> {
+    const initTransactionalStatus = this.api.createType(
+      'InitTransactionalStatus',
+      auctionParams
+        ? auctionParams instanceof OpenAuctionParams
+          ? { OpenAuction: auctionParams }
+          : { EnglishAuction: auctionParams }
+        : { Idle: null }
+    )
+
+    const updateParameters = this.createType('VideoUpdateParameters', {
+      assets_to_upload: null,
+      new_meta: null,
+      assets_to_remove: this.api.createType('BTreeSet<DataObjectId>', []),
+      enable_comments: false,
+      auto_issue_nft: this.api.createType('NftIssuanceParameters', {
+        royalty: null,
+        nft_metadata: this.api.createType('NftMetadata', '').toU8a(),
+        non_channel_owner: ownerId,
+        init_transactional_status: initTransactionalStatus,
+      }),
+    })
+
+    return await this.sender.signAndSend(
+      this.api.tx.content.updateVideo({ Member: ownerId }, videoId, updateParameters),
+      accountFrom
+    )
+  }
+
+  public setFaucetInfo(info: FaucetInfo): void {
+    this.factory.setFaucetInfo(info)
+  }
+
+  public getFaucetInfo(): FaucetInfo {
+    return this.factory.faucetInfo
   }
 }

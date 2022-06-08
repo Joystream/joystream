@@ -85,7 +85,7 @@ impl balances::Config for Test {
     type MaxLocks = ();
 }
 
-impl common::membership::Config for Test {
+impl common::membership::MembershipTypes for Test {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -145,6 +145,9 @@ impl membership::WeightInfo for Weights {
         unimplemented!()
     }
     fn remove_staking_account() -> Weight {
+        unimplemented!()
+    }
+    fn member_remark() -> Weight {
         unimplemented!()
     }
 }
@@ -263,6 +266,12 @@ impl crate::WeightInfo for () {
     fn leave_role(_: u32) -> Weight {
         0
     }
+    fn lead_remark() -> Weight {
+        0
+    }
+    fn worker_remark() -> Weight {
+        0
+    }
 }
 
 pub const ACTOR_ORIGIN_ERROR: &'static str = "Invalid membership";
@@ -286,6 +295,9 @@ impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
     }
 }
 
+pub type TestWorkingGroup = Module<Test, DefaultInstance>;
+
+pub const DEFAULT_WORKER_ACCOUNT_ID: u64 = 2;
 pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u64 = 222;
 pub const STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES: u64 = 333;
 

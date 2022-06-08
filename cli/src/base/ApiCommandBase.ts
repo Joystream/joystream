@@ -2,20 +2,34 @@ import ExitCodes from '../ExitCodes'
 import { CLIError } from '@oclif/errors'
 import StateAwareCommandBase from './StateAwareCommandBase'
 import Api from '../Api'
-import { getTypeDef, Option, Tuple, TypeRegistry } from '@polkadot/types'
-import { Registry, Codec, CodecArg, TypeDef, TypeDefInfo } from '@polkadot/types/types'
-
+import {
+  EventSection,
+  EventMethod,
+  EventType,
+  EventDetails,
+  ApiMethodArg,
+  ApiMethodNamedArgs,
+  ApiParamsOptions,
+  ApiParamOptions,
+  UnaugmentedApiPromise,
+} from '../Types'
+import { getTypeDef, Option, Tuple } from '@polkadot/types'
+import { Registry, Codec, TypeDef, TypeDefInfo, DetectCodec, ISubmittableResult } from '@polkadot/types/types'
 import { Vec, Struct, Enum } from '@polkadot/types/codec'
-import { ApiPromise, WsProvider } from '@polkadot/api'
+import { SubmittableResult, WsProvider, ApiPromise } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import chalk from 'chalk'
 import { InterfaceTypes } from '@polkadot/types/types/registry'
-import { ApiMethodArg, ApiMethodNamedArgs, ApiParamsOptions, ApiParamOptions } from '../Types'
 import { createParamOptions } from '../helpers/promptOptions'
-import { SubmittableExtrinsic } from '@polkadot/api/types'
+import { AugmentedSubmittables, SubmittableExtrinsic } from '@polkadot/api/types'
 import { DistinctQuestion } from 'inquirer'
 import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
 import { DispatchError } from '@polkadot/types/interfaces/system'
+import QueryNodeApi from '../QueryNodeApi'
+import { formatBalance } from '@polkadot/util'
+import cli from 'cli-ux'
+import BN from 'bn.js'
+import _ from 'lodash'
 
 export class ExtrinsicFailedError extends Error {}
 
@@ -23,59 +37,111 @@ export class ExtrinsicFailedError extends Error {}
  * Abstract base class for commands that require access to the API.
  */
 export default abstract class ApiCommandBase extends StateAwareCommandBase {
-  private api: Api | null = null
-  forceSkipApiUriPrompt = false
+  private api: Api | undefined
+  private queryNodeApi: QueryNodeApi | null | undefined
+
+  // Command configuration
+  protected requiresApiConnection = true
+  protected requiresQueryNode = false
 
   getApi(): Api {
-    if (!this.api) throw new CLIError('Tried to get API before initialization.', { exit: ExitCodes.ApiError })
+    if (!this.api) {
+      throw new CLIError('Tried to access API before initialization.', { exit: ExitCodes.ApiError })
+    }
     return this.api
   }
 
-  // Get original api for lower-level api calls
+  getQNApi(): QueryNodeApi {
+    if (this.queryNodeApi === undefined) {
+      throw new CLIError('Tried to access QueryNodeApi before initialization.', { exit: ExitCodes.QueryNodeError })
+    }
+    if (this.queryNodeApi === null) {
+      throw new CLIError('Query node endpoint uri is required in order to run this command!', {
+        exit: ExitCodes.QueryNodeError,
+      })
+    }
+    return this.queryNodeApi
+  }
+
+  // Shortcuts
   getOriginalApi(): ApiPromise {
     return this.getApi().getOriginalApi()
+  }
+
+  getUnaugmentedApi(): UnaugmentedApiPromise {
+    return this.getApi().getUnaugmentedApi()
   }
 
   getTypesRegistry(): Registry {
     return this.getOriginalApi().registry
   }
 
-  createType<K extends keyof InterfaceTypes>(typeName: K, value?: unknown): InterfaceTypes[K] {
-    return this.getOriginalApi().createType(typeName, value)
+  createType<T extends Codec = Codec, TN extends string = string>(typeName: TN, value?: unknown): DetectCodec<T, TN> {
+    return this.getOriginalApi().createType<T, TN>(typeName, value)
   }
 
-  async init() {
+  isQueryNodeUriSet(): boolean {
+    const { queryNodeUri } = this.getPreservedState()
+    return !!queryNodeUri
+  }
+
+  async init(): Promise<void> {
     await super.init()
-    let apiUri: string = this.getPreservedState().apiUri
-    if (!apiUri) {
-      this.warn("You haven't provided a node/endpoint for the CLI to connect to yet!")
-      apiUri = await this.promptForApiUri()
-    }
+    if (this.requiresApiConnection) {
+      let apiUri: string = this.getPreservedState().apiUri
 
-    const { metadataCache } = this.getPreservedState()
-    this.api = await Api.create(apiUri, metadataCache)
+      if (!apiUri) {
+        this.warn("You haven't provided a Joystream node websocket api uri for the CLI to connect to yet!")
+        apiUri = await this.promptForApiUri()
+      }
 
-    const { genesisHash, runtimeVersion } = this.getOriginalApi()
-    const metadataKey = `${genesisHash}-${runtimeVersion.specVersion}`
-    if (!metadataCache[metadataKey]) {
-      // Add new entry to metadata cache
-      metadataCache[metadataKey] = await this.getOriginalApi().runtimeMetadata.toJSON()
-      await this.setPreservedState({ metadataCache })
+      // Query node api
+      let queryNodeUri: string | null | undefined = this.getPreservedState().queryNodeUri
+      if (this.requiresQueryNode && !queryNodeUri) {
+        this.warn('Query node endpoint uri is required in order to run this command!')
+        queryNodeUri = await this.promptForQueryNodeUri(true)
+      } else if (queryNodeUri === undefined) {
+        this.warn("You haven't provided a Joystream query node uri for the CLI to connect to yet!")
+        queryNodeUri = await this.promptForQueryNodeUri()
+      }
+      if (queryNodeUri) {
+        cli.action.start(`Initializing the query node connection (${queryNodeUri})...`)
+        this.queryNodeApi = new QueryNodeApi(queryNodeUri, (err) => {
+          this.warn(`Query node error: ${err.networkError?.message || err.graphQLErrors?.join('\n')}`)
+        })
+        cli.action.stop()
+      } else {
+        this.queryNodeApi = null
+      }
+
+      // Substrate api
+      cli.action.start(`Initializing the api connection (${apiUri})...`)
+      const { metadataCache } = this.getPreservedState()
+      this.api = await Api.create(apiUri, metadataCache, this.queryNodeApi || undefined)
+
+      const { genesisHash, runtimeVersion } = this.getOriginalApi()
+      const metadataKey = `${genesisHash}-${runtimeVersion.specVersion}`
+      if (!metadataCache[metadataKey]) {
+        // Add new entry to metadata cache
+        metadataCache[metadataKey] = await this.getOriginalApi().runtimeMetadata.toJSON()
+        await this.setPreservedState({ metadataCache })
+      }
+      cli.action.stop()
     }
   }
 
   async promptForApiUri(): Promise<string> {
-    let selectedNodeUri = await this.simplePrompt({
+    let selectedNodeUri = await this.simplePrompt<string>({
       type: 'list',
-      message: 'Choose a node/endpoint:',
+      message: 'Choose a node websocket api uri:',
       choices: [
         {
           name: 'Local node (ws://localhost:9944)',
           value: 'ws://localhost:9944',
         },
         {
-          name: 'Current Testnet official Joystream node (wss://rome-rpc-endpoint.joystream.org:9944/)',
-          value: 'wss://rome-rpc-endpoint.joystream.org:9944/',
+          name: 'Current Testnet official Joystream node (wss://rpc.joystream.org:9944/)',
+          value: 'wss://rpc.joystream.org:9944/',
         },
         {
           name: 'Custom endpoint',
@@ -101,7 +167,53 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return selectedNodeUri
   }
 
-  isApiUriValid(uri: string) {
+  async promptForQueryNodeUri(isRequired = false): Promise<string | null> {
+    const choices = [
+      {
+        name: 'Local query node (http://localhost:8081/graphql)',
+        value: 'http://localhost:8081/graphql',
+      },
+      {
+        name: 'Jsgenesis-hosted query node (https://query.joystream.org/graphql)',
+        value: 'https://query.joystream.org/graphql',
+      },
+      {
+        name: 'Custom endpoint',
+        value: '',
+      },
+    ]
+    if (!isRequired) {
+      choices.push({
+        name: "No endpoint (if you don't use query node some features will not be available)",
+        value: 'none',
+      })
+    }
+    let selectedUri: string = await this.simplePrompt({
+      type: 'list',
+      message: 'Choose a query node endpoint:',
+      choices,
+    })
+
+    if (!selectedUri) {
+      do {
+        selectedUri = await this.simplePrompt({
+          type: 'input',
+          message: 'Provide a query node endpoint',
+        })
+        if (!this.isQueryNodeUriValid(selectedUri)) {
+          this.warn('Provided uri seems incorrect! Please try again...')
+        }
+      } while (!this.isQueryNodeUriValid(selectedUri))
+    }
+
+    const queryNodeUri = selectedUri === 'none' ? null : selectedUri
+
+    await this.setPreservedState({ queryNodeUri })
+
+    return queryNodeUri
+  }
+
+  isApiUriValid(uri: string): boolean {
     try {
       // eslint-disable-next-line no-new
       new WsProvider(uri)
@@ -111,27 +223,38 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return true
   }
 
+  isQueryNodeUriValid(uri: string): boolean {
+    let url: URL
+    try {
+      url = new URL(uri)
+    } catch (_) {
+      return false
+    }
+
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  }
+
   // This is needed to correctly handle some structs, enums etc.
   // Where the main typeDef doesn't provide enough information
-  protected getRawTypeDef(type: keyof InterfaceTypes) {
+  protected getRawTypeDef(type: keyof InterfaceTypes): TypeDef {
     const instance = this.createType(type)
     return getTypeDef(instance.toRawType())
   }
 
   // Prettifier for type names which are actually JSON strings
-  protected prettifyJsonTypeName(json: string) {
+  protected prettifyJsonTypeName(json: string): string {
     const obj = JSON.parse(json) as { [key: string]: string }
     return (
       '{\n' +
       Object.keys(obj)
-        .map((prop) => `  ${prop}${chalk.white(':' + obj[prop])}`)
+        .map((prop) => `  ${prop}${chalk.magentaBright(':' + obj[prop])}`)
         .join('\n') +
       '\n}'
     )
   }
 
   // Get param name based on TypeDef object
-  protected paramName(typeDef: TypeDef) {
+  protected paramName(typeDef: TypeDef): string {
     return chalk.green(
       typeDef.displayName ||
         typeDef.name ||
@@ -178,10 +301,10 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         createParamOptions(subtype.name, defaultValue?.unwrapOr(undefined))
       )
       this.closeIndentGroup()
-      return this.createType(`Option<${subtype.type}>` as any, value)
+      return this.createType<Option<Codec>>(`Option<${subtype.type}>`, value)
     }
 
-    return this.createType(`Option<${subtype.type}>` as any, null)
+    return this.createType<Option<Codec>>(`Option<${subtype.type}>`, null)
   }
 
   // Prompt for Tuple
@@ -202,7 +325,11 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     }
     this.closeIndentGroup()
 
-    return new Tuple(this.getTypesRegistry(), subtypes.map((subtype) => subtype.type) as any, result)
+    return new Tuple(
+      this.getTypesRegistry(),
+      subtypes.map((subtype) => subtype.type),
+      result
+    )
   }
 
   // Prompt for Struct
@@ -229,7 +356,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     }
     this.closeIndentGroup()
 
-    return this.createType(structType as any, structValues)
+    return this.createType(structType, structValues)
   }
 
   // Prompt for Vec
@@ -257,7 +384,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     } while (addAnother)
     this.closeIndentGroup()
 
-    return this.createType(`Vec<${subtype.type}>` as any, entries)
+    return this.createType<Vec<Codec>>(`Vec<${subtype.type}>`, entries)
   }
 
   // Prompt for Enum
@@ -282,12 +409,12 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
     if (enumSubtype.type !== 'Null') {
       const subtypeOptions = createParamOptions(enumSubtype.name, defaultValue?.value)
-      return this.createType(enumType as any, {
+      return this.createType<Enum>(enumType, {
         [enumSubtype.name!]: await this.promptForParam(enumSubtype.type, subtypeOptions),
       })
     }
 
-    return this.createType(enumType as any, enumSubtype.name)
+    return this.createType<Enum>(enumType, enumSubtype.name)
   }
 
   // Prompt for param based on "paramType" string (ie. Option<MemeberId>)
@@ -323,7 +450,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
   }
 
   // More typesafe version
-  async promptForType(type: keyof InterfaceTypes, options?: ApiParamOptions) {
+  async promptForType(type: keyof InterfaceTypes, options?: ApiParamOptions): Promise<Codec> {
     return await this.promptForParam(type, options)
   }
 
@@ -332,7 +459,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     method: string,
     paramsOptions?: ApiParamsOptions
   ): Promise<ApiMethodArg[]> {
-    const extrinsicMethod = this.getOriginalApi().tx[module][method]
+    const extrinsicMethod = (await this.getUnaugmentedApi().tx)[module][method]
     const values: ApiMethodArg[] = []
 
     this.openIndentGroup()
@@ -350,11 +477,10 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return values
   }
 
-  sendExtrinsic(account: KeyringPair, tx: SubmittableExtrinsic<'promise'>) {
+  sendExtrinsic(account: KeyringPair, tx: SubmittableExtrinsic<'promise'>): Promise<SubmittableResult> {
     return new Promise((resolve, reject) => {
       let unsubscribe: () => void
       tx.signAndSend(account, {}, (result) => {
-        // Implementation loosely based on /pioneer/packages/react-signer/src/Modal.tsx
         if (!result || !result.status) {
           return
         }
@@ -369,12 +495,8 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
                 let errorMsg = dispatchError.toString()
                 if (dispatchError.isModule) {
                   try {
-                    // Need to assert that registry is of TypeRegistry type, since Registry intefrace
-                    // seems outdated and doesn't include DispatchErrorModule as possible argument for "findMetaError"
-                    const { name, documentation } = (this.getOriginalApi().registry as TypeRegistry).findMetaError(
-                      dispatchError.asModule
-                    )
-                    errorMsg = `${name} (${documentation})`
+                    const { name, docs } = this.getOriginalApi().registry.findMetaError(dispatchError.asModule)
+                    errorMsg = `${name} (${docs.join(', ')})`
                   } catch (e) {
                     // This probably means we don't have this error in the metadata
                     // In this case - continue (we'll just display dispatchError.toString())
@@ -382,7 +504,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
                 }
                 reject(new ExtrinsicFailedError(`Extrinsic execution error: ${errorMsg}`))
               } else if (event.method === 'ExtrinsicSuccess') {
-                resolve()
+                resolve(result)
               }
             })
         } else if (result.isError) {
@@ -396,20 +518,29 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     })
   }
 
-  async sendAndFollowTx(
-    account: KeyringPair,
-    tx: SubmittableExtrinsic<'promise'>,
-    warnOnly = false // If specified - only warning will be displayed in case of failure (instead of error beeing thrown)
-  ): Promise<boolean> {
+  async sendAndFollowTx(account: KeyringPair, tx: SubmittableExtrinsic<'promise'>): Promise<SubmittableResult> {
+    this.log(
+      chalk.magentaBright(
+        `\nSending ${tx.method.section}.${tx.method.method} extrinsic from ${
+          account.meta.name ? account.meta.name : account.address
+        }...`
+      )
+    )
+    this.log('Tx params:', this.humanize(tx.args))
+
+    // Calculate fee and ask for confirmation
+    const fee = await this.getApi().estimateFee(account, tx)
+
+    await this.requireConfirmation(
+      `Tx fee of ${chalk.cyan(formatBalance(fee))} will be deduced from you account, do you confirm the transfer?`
+    )
+
     try {
-      await this.sendExtrinsic(account, tx)
+      const res = await this.sendExtrinsic(account, tx)
       this.log(chalk.green(`Extrinsic successful!`))
-      return true
+      return res
     } catch (e) {
-      if (e instanceof ExtrinsicFailedError && warnOnly) {
-        this.warn(`Extrinsic failed! ${e.message}`)
-        return false
-      } else if (e instanceof ExtrinsicFailedError) {
+      if (e instanceof ExtrinsicFailedError) {
         throw new CLIError(`Extrinsic failed! ${e.message}`, { exit: ExitCodes.ApiError })
       } else {
         throw e
@@ -417,27 +548,87 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     }
   }
 
-  async sendAndFollowNamedTx(
-    account: KeyringPair,
-    module: string,
-    method: string,
-    params: CodecArg[],
-    warnOnly = false
-  ): Promise<boolean> {
-    this.log(chalk.white(`\nSending ${module}.${method} extrinsic...`))
-    const tx = await this.getOriginalApi().tx[module][method](...params)
-    return await this.sendAndFollowTx(account, tx, warnOnly)
+  private humanize(p: unknown): any {
+    if (Array.isArray(p)) {
+      return p.map((v) => this.humanize(v))
+    } else if (typeof p === 'object' && p !== null) {
+      if ((p as any).toHuman) {
+        return (p as Codec).toHuman()
+      } else if (p instanceof BN) {
+        return p.toString()
+      } else {
+        return _.mapValues(p, this.humanize.bind(this))
+      }
+    }
+
+    return p
   }
 
-  async buildAndSendExtrinsic(
+  async sendAndFollowNamedTx<
+    Module extends keyof AugmentedSubmittables<'promise'>,
+    Method extends keyof AugmentedSubmittables<'promise'>[Module] & string,
+    Submittable extends AugmentedSubmittables<'promise'>[Module][Method]
+  >(
     account: KeyringPair,
-    module: string,
-    method: string,
-    paramsOptions?: ApiParamsOptions,
-    warnOnly = false // If specified - only warning will be displayed (instead of error beeing thrown)
-  ): Promise<ApiMethodArg[]> {
+    module: Module,
+    method: Method,
+    params: Submittable extends (...args: any[]) => any ? Parameters<Submittable> : []
+  ): Promise<SubmittableResult> {
+    // TODO: Replace all usages with "sendAndFollowTx"
+    const tx = await this.getUnaugmentedApi().tx[module][method](...params)
+    return this.sendAndFollowTx(account, tx)
+  }
+
+  public findEvent<S extends EventSection, M extends EventMethod<S>, E = EventType<S, M>>(
+    result: SubmittableResult,
+    section: S,
+    method: M
+  ): E | undefined {
+    return result.findRecord(section, method)?.event as E | undefined
+  }
+
+  public getEvent<S extends EventSection, M extends EventMethod<S>, E = EventType<S, M>>(
+    result: SubmittableResult,
+    section: S,
+    method: M
+  ): E {
+    const event = this.findEvent<S, M, E>(result, section, method)
+    if (!event) {
+      throw new Error(`Event ${section}.${method} not found in tx result: ${JSON.stringify(result.toHuman())}`)
+    }
+    return event
+  }
+
+  async getEventDetails<S extends EventSection, M extends EventMethod<S>>(
+    result: ISubmittableResult,
+    section: S,
+    method: M
+  ): Promise<EventDetails<EventType<S, M>>> {
+    const api = this.getOriginalApi()
+    const { status } = result
+    const event = this.getEvent(result, section, method)
+
+    const blockHash = (status.isInBlock ? status.asInBlock : status.asFinalized).toString()
+    const blockNumber = (await api.rpc.chain.getHeader(blockHash)).number.toNumber()
+    const blockTimestamp = (await api.query.timestamp.now.at(blockHash)).toNumber()
+    const blockEvents = await api.query.system.events.at(blockHash)
+    const indexInBlock = blockEvents.findIndex(({ event: blockEvent }) => blockEvent.hash.eq(event.hash))
+
+    return {
+      event,
+      blockNumber,
+      blockHash,
+      blockTimestamp,
+      indexInBlock,
+    }
+  }
+
+  async buildAndSendExtrinsic<
+    Module extends keyof AugmentedSubmittables<'promise'>,
+    Method extends keyof AugmentedSubmittables<'promise'>[Module] & string
+  >(account: KeyringPair, module: Module, method: Method, paramsOptions?: ApiParamsOptions): Promise<ApiMethodArg[]> {
     const params = await this.promptForExtrinsicParams(module, method, paramsOptions)
-    await this.sendAndFollowNamedTx(account, module, method, params, warnOnly)
+    await this.sendAndFollowNamedTx(account, module, method, params as any)
 
     return params
   }
@@ -445,7 +636,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
   extrinsicArgsFromDraft(module: string, method: string, draftFilePath: string): ApiMethodNamedArgs {
     let draftJSONObj
     const parsedArgs: ApiMethodNamedArgs = []
-    const extrinsicMethod = this.getOriginalApi().tx[module][method]
+    const extrinsicMethod = this.getUnaugmentedApi().tx[module][method]
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       draftJSONObj = require(draftFilePath)
@@ -459,7 +650,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
       const argName = arg.name.toString()
       const argType = arg.type.toString()
       try {
-        parsedArgs.push({ name: argName, value: this.createType(argType as any, draftJSONObj[parseInt(index)]) })
+        parsedArgs.push({ name: argName, value: this.createType(argType, draftJSONObj[parseInt(index)]) })
       } catch (e) {
         throw new CLIError(`Couldn't parse ${argName} value from draft at ${draftFilePath}!`, {
           exit: ExitCodes.InvalidFile,

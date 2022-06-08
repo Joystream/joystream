@@ -4,7 +4,7 @@ edition = '2018'
 name = 'joystream-node-runtime'
 # Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
 # {Authoring}.{Spec}.{Impl} of the RuntimeVersion
-version = '9.0.0'
+version = '11.20.0'
 
 [dependencies]
 # Third-party dependencies
@@ -64,22 +64,20 @@ hex-literal = { optional = true, version = '0.3.1' }
 
 # Joystream
 common = { package = 'pallet-common', default-features = false, path = '../runtime-modules/common'}
-memo = { package = 'pallet-memo', default-features = false, path = '../runtime-modules/memo'}
 forum = { package = 'pallet-forum', default-features = false, path = '../runtime-modules/forum'}
 membership = { package = 'pallet-membership', default-features = false, path = '../runtime-modules/membership'}
 referendum = { package = 'pallet-referendum', default-features = false, path = '../runtime-modules/referendum'}
 council = { package = 'pallet-council', default-features = false, path = '../runtime-modules/council'}
 working-group = { package = 'pallet-working-group', default-features = false, path = '../runtime-modules/working-group'}
 storage = { package = 'pallet-storage', default-features = false, path = '../runtime-modules/storage'}
-service-discovery = { package = 'pallet-service-discovery', default-features = false, path = '../runtime-modules/service-discovery'}
 proposals-engine = { package = 'pallet-proposals-engine', default-features = false, path = '../runtime-modules/proposals/engine'}
 proposals-discussion = { package = 'pallet-proposals-discussion', default-features = false, path = '../runtime-modules/proposals/discussion'}
 proposals-codex = { package = 'pallet-proposals-codex', default-features = false, path = '../runtime-modules/proposals/codex'}
-content-directory = { package = 'pallet-content-directory', default-features = false, path = '../runtime-modules/content-directory' }
 pallet-constitution = { package = 'pallet-constitution', default-features = false, path = '../runtime-modules/constitution' }
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../runtime-modules/staking-handler'}
 bounty = { package = 'pallet-bounty', default-features = false, path = '../runtime-modules/bounty'}
 blog = { package = 'pallet-blog', default-features = false, path = '../runtime-modules/blog'}
+content = { package = 'pallet-content', default-features = false, path = '../runtime-modules/content'}
 joystream-utility = { package = 'pallet-utility', default-features = false, path = '../runtime-modules/utility'}
 
 [dev-dependencies]
@@ -139,36 +137,38 @@ std = [
 
     # Joystream
     'common/std',
-    'memo/std',
     'forum/std',
     'membership/std',
     'council/std',
     'referendum/std',
     'working-group/std',
     'storage/std',
-    'service-discovery/std',
     'proposals-engine/std',
     'proposals-discussion/std',
     'proposals-codex/std',
-    'content-directory/std',
     'pallet-constitution/std',
     'staking-handler/std',
     'bounty/std',
     'blog/std',
-    'joystream-utility/std'
+    'joystream-utility/std',
+    'content/std',
 ]
 runtime-benchmarks = [
-    "frame-system/runtime-benchmarks",
+    "hex-literal",
     "frame-support/runtime-benchmarks",
     "sp-runtime/runtime-benchmarks",
+    "frame-benchmarking",
+    "frame-system-benchmarking",
+    "frame-system/runtime-benchmarks",
+    "pallet-offences-benchmarking",
+    "pallet-session-benchmarking",
     "pallet-balances/runtime-benchmarks",
     "pallet-im-online/runtime-benchmarks",
     "pallet-staking/runtime-benchmarks",
     "pallet-timestamp/runtime-benchmarks",
-    "frame-benchmarking",
-    "frame-system-benchmarking",
-    "pallet-session-benchmarking",
     "substrate-utility/runtime-benchmarks",
+
+    # Joystream
     "proposals-discussion/runtime-benchmarks",
     "proposals-engine/runtime-benchmarks",
     "proposals-codex/runtime-benchmarks",
@@ -180,8 +180,13 @@ runtime-benchmarks = [
     "council/runtime-benchmarks",
     "referendum/runtime-benchmarks",
     "bounty/runtime-benchmarks",
+    'storage/runtime-benchmarks',       
     "blog/runtime-benchmarks",
-    "hex-literal",
 ]
 
-
+# Staging and testing configurations
+# configuration suitable for staging networks and playground
+staging_runtime = []
+playground_runtime = ['staging_runtime']
+# configuration suitable for integration testing
+testing_runtime = []

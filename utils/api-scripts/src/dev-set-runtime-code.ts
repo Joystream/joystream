@@ -32,8 +32,8 @@ async function main() {
   let retry = 6
   while (true) {
     try {
-      api = await ApiPromise.create({ provider, types })
-      await api.isReady
+      api = new ApiPromise({ provider, types })
+      await api.isReadyOrError
       break
     } catch (err) {
       // failed to connect to node
@@ -80,8 +80,8 @@ async function main() {
             const err = result.asError
             console.log('Error:', err.toHuman())
             if (err.isModule) {
-              const { name, documentation } = (api.registry as TypeRegistry).findMetaError(err.asModule)
-              console.log(`${name}\n${documentation}`)
+              const { name } = (api.registry as TypeRegistry).findMetaError(err.asModule)
+              console.log(`${name}\n`)
             }
             process.exit(5)
           } else {

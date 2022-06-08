@@ -159,7 +159,15 @@ fn create_proposal_verify<T: Config>(
         "Active proposal count not updated"
     );
 
-    assert_last_event::<T>(RawEvent::ProposalCreated(proposal_parameters, proposal_details).into());
+    assert_last_event::<T>(
+        RawEvent::ProposalCreated(
+            proposal_id,
+            proposal_parameters,
+            proposal_details,
+            thread_id,
+        )
+        .into(),
+    );
 
     assert!(
         ThreadIdByProposalId::<T>::contains_key(proposal_id),
@@ -233,7 +241,7 @@ benchmarks! {
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
 
-        council::Pallet::<T>::set_budget(
+        council::Module::<T>::set_budget(
             RawOrigin::Root.into(),
             council::Balance::<T>::max_value()
         ).unwrap();

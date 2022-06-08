@@ -1,0 +1,26 @@
+syntax = "proto2";
+
+// The enum must be wrapped inside "message", otherwide it breaks protobufjs
+message ForumPostReaction {
+  enum Reaction {
+    CANCEL = 0; // This means cancelling any previous reaction
+    LIKE = 1;
+  }
+}
+
+message ForumPostMetadata {
+  optional string text = 1; // Post text content (md-formatted)
+  optional uint32 repliesTo = 2; // Id of the post that given post replies to (if any)
+}
+
+
+message ForumThreadMetadata {
+  optional string title = 1; // Thread title
+  /**
+   * Tags accociated with the thread.
+   * Any update overrides all current tags.
+   * Only the first {MAX_TAGS_PER_FORUM_THREAD} (const exposed via @joystream/metadata-protobuf/consts) tags are taken into account.
+   * In order to unset current tags, [''] (array with empty string) must be provided as value.
+   */
+  repeated string tags = 2;
+}

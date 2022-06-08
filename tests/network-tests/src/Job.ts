@@ -1,4 +1,4 @@
-import Debugger from 'debug'
+import { Debugger, extendDebug } from './Debugger'
 import { EventEmitter } from 'events'
 import { ApiFactory } from './Api'
 import { QueryNodeApi } from './QueryNodeApi'
@@ -6,7 +6,11 @@ import { Flow } from './Flow'
 import { InvertedPromise } from './InvertedPromise'
 import { ResourceManager } from './Resources'
 
-export type JobProps = { apiFactory: ApiFactory; env: NodeJS.ProcessEnv; query: QueryNodeApi }
+export type JobProps = {
+  apiFactory: ApiFactory
+  env: NodeJS.ProcessEnv
+  query: QueryNodeApi
+}
 
 export enum JobOutcome {
   Succeeded = 'Succeeded',
@@ -30,7 +34,7 @@ export class Job {
     this._flows = flows
     this._outcome = new InvertedPromise<JobOutcome>()
     this._manager.on('run', this.run.bind(this))
-    this.debug = Debugger(`job:${this._label}`)
+    this.debug = extendDebug(`job:${this._label}`)
   }
 
   // Depend on another job to complete successfully

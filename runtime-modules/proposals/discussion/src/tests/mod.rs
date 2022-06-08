@@ -467,7 +467,13 @@ fn update_post_call_succeeds() {
 
         EventFixture::assert_events(vec![
             RawEvent::ThreadCreated(1, 1),
-            RawEvent::PostCreated(1, 1, post_fixture.thread_id, post_fixture.text.clone()),
+            RawEvent::PostCreated(
+                1,
+                1,
+                post_fixture.thread_id,
+                post_fixture.text.clone(),
+                post_fixture.editable,
+            ),
             RawEvent::PostUpdated(1, 1, post_fixture.thread_id, post_fixture.text.clone()),
         ]);
     });

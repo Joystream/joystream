@@ -1,0 +1,37 @@
+name: storage-node
+runtime: nodejs
+description: A Pulumi program to deploy storage node to Kubernetes
+template:
+  config:
+    aws:profile:
+      default: joystream-user
+    aws:region:
+      default: us-east-1
+    isMinikube:
+      description: Whether you are deploying to minikube
+      default: false
+    wsProviderEndpointURI:
+      description: Chain RPC endpoint
+    isLoadBalancerReady:
+      description: Whether the load balancer service is ready and has been assigned an IP
+      default: false
+    colossusPort:
+      description: Port that is exposed for the colossus container
+      default: 3333
+    storage:
+      description: Amount of storage in gigabytes for ipfs volume
+      default: 40
+    keyFile:
+      description: Key file for the account
+    passphrase:
+      description: Optional passphrase to use to decrypt the key-file
+      secret: true
+    colossusImage:
+      description: The colossus image to use for running the storage node
+      default: joystream/colossus:latest
+    queryNodeEndpoint:
+      description: Full URL for Query node endpoint
+    workerId:
+      description: ID of the node operator (distribution working group worker)
+    accountURI:
+      description: Account URI

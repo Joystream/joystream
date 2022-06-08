@@ -406,7 +406,6 @@ fn proposal_execution_succeeds() {
         run_to_block(2);
 
         EventFixture::assert_events(vec![
-            RawEvent::ProposalCreated(1, proposal_id),
             RawEvent::Voted(1, proposal_id, VoteKind::Approve, Vec::new()),
             RawEvent::Voted(2, proposal_id, VoteKind::Approve, Vec::new()),
             RawEvent::Voted(3, proposal_id, VoteKind::Approve, Vec::new()),
@@ -458,7 +457,6 @@ fn proposal_execution_failed() {
         assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
 
         EventFixture::assert_events(vec![
-            RawEvent::ProposalCreated(1, proposal_id),
             RawEvent::Voted(1, proposal_id, VoteKind::Approve, Vec::new()),
             RawEvent::Voted(2, proposal_id, VoteKind::Approve, Vec::new()),
             RawEvent::Voted(3, proposal_id, VoteKind::Approve, Vec::new()),
@@ -509,7 +507,6 @@ fn voting_results_calculation_succeeds() {
         run_to_block(block_number);
 
         EventFixture::assert_events(vec![
-            RawEvent::ProposalCreated(1, proposal_id),
             RawEvent::Voted(1, proposal_id, VoteKind::Approve, Vec::new()),
             RawEvent::Voted(2, proposal_id, VoteKind::Approve, Vec::new()),
             RawEvent::Voted(3, proposal_id, VoteKind::Reject, Vec::new()),
@@ -871,15 +868,13 @@ fn veto_proposal_fails_with_insufficient_rights() {
 }
 
 #[test]
-fn create_proposal_event_emitted() {
+fn create_proposal() {
     initial_test_ext().execute_with(|| {
         // Events start only from 1 first block. No events on block zero.
         run_to_block_and_finalize(1);
 
         let dummy_proposal = DummyProposalFixture::default();
         dummy_proposal.create_proposal_and_assert(Ok(1));
-
-        EventFixture::assert_events(vec![RawEvent::ProposalCreated(1, 1)]);
     });
 }
 
@@ -895,10 +890,10 @@ fn veto_proposal_event_emitted() {
         let veto_proposal = VetoProposalFixture::new(proposal_id);
         veto_proposal.veto_and_assert(Ok(()));
 
-        EventFixture::assert_events(vec![
-            RawEvent::ProposalCreated(1, proposal_id),
-            RawEvent::ProposalDecisionMade(proposal_id, ProposalDecision::Vetoed),
-        ]);
+        EventFixture::assert_events(vec![RawEvent::ProposalDecisionMade(
+            proposal_id,
+            ProposalDecision::Vetoed,
+        )]);
     });
 }
 
@@ -918,7 +913,6 @@ fn cancel_proposal_event_emitted() {
         cancel_proposal.cancel_and_assert(Ok(()));
 
         EventFixture::assert_events(vec![
-            RawEvent::ProposalCreated(1, proposal_id),
             RawEvent::ProposalDecisionMade(proposal_id, ProposalDecision::Canceled),
             RawEvent::ProposalCancelled(dummy_proposal.account_id, proposal_id),
         ]);
@@ -937,10 +931,7 @@ fn vote_proposal_event_emitted() {
         let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
 
-        EventFixture::assert_events(vec![
-            RawEvent::ProposalCreated(1, 1),
-            RawEvent::Voted(1, 1, VoteKind::Approve, Vec::new()),
-        ]);
+        EventFixture::assert_events(vec![RawEvent::Voted(1, 1, VoteKind::Approve, Vec::new())]);
     });
 }
 
@@ -961,15 +952,14 @@ fn create_proposal_and_expire_it() {
         run_to_block_and_finalize(expected_expriration_block - 1);
 
         assert!(<crate::Proposals<Test>>::contains_key(proposal_id));
-        EventFixture::assert_last_crate_event(RawEvent::ProposalCreated(1, proposal_id));
 
         run_to_block_and_finalize(expected_expriration_block);
 
         assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
-        EventFixture::assert_events(vec![
-            RawEvent::ProposalCreated(1, proposal_id),
-            RawEvent::ProposalDecisionMade(proposal_id, ProposalDecision::Expired),
-        ]);
+        EventFixture::assert_events(vec![RawEvent::ProposalDecisionMade(
+            proposal_id,
+            ProposalDecision::Expired,
+        )]);
     });
 }
 
@@ -1091,8 +1081,6 @@ fn cancel_active_and_pending_execution_proposal_by_runtime() {
         ProposalsEngine::cancel_active_and_pending_proposals();
 
         EventFixture::assert_events(vec![
-            RawEvent::ProposalCreated(1, pending_execution_proposal_id),
-            RawEvent::ProposalCreated(1, active_proposal_id),
             RawEvent::Voted(
                 1,
                 pending_execution_proposal_id,
@@ -1186,7 +1174,6 @@ fn cancel_pending_constitutionality_proposal_by_runtime() {
         ProposalsEngine::cancel_active_and_pending_proposals();
 
         EventFixture::assert_events(vec![
-            RawEvent::ProposalCreated(1, proposal_id),
             RawEvent::Voted(1, proposal_id, VoteKind::Approve, Vec::new()),
             RawEvent::Voted(2, proposal_id, VoteKind::Approve, Vec::new()),
             RawEvent::Voted(3, proposal_id, VoteKind::Approve, Vec::new()),
@@ -1849,7 +1836,6 @@ fn proposal_with_pending_constitutionality_succeeds() {
         run_to_block_and_finalize(2);
 
         EventFixture::assert_events(vec![
-            RawEvent::ProposalCreated(1, proposal_id),
             RawEvent::Voted(1, proposal_id, VoteKind::Approve, Vec::new()),
             RawEvent::Voted(2, proposal_id, VoteKind::Approve, Vec::new()),
             RawEvent::Voted(3, proposal_id, VoteKind::Approve, Vec::new()),
@@ -1912,7 +1898,6 @@ fn proposal_with_pending_constitutionality_reactivation_succeeds() {
         run_to_block_and_finalize(2);
 
         EventFixture::assert_events(vec![
-            RawEvent::ProposalCreated(1, proposal_id),
             RawEvent::Voted(1, proposal_id, VoteKind::Approve, Vec::new()),
             RawEvent::Voted(2, proposal_id, VoteKind::Approve, Vec::new()),
             RawEvent::Voted(3, proposal_id, VoteKind::Approve, Vec::new()),
@@ -2008,10 +1993,9 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
 
         // first chain of event from the creation to the approval
         EventFixture::assert_global_events(vec![
-            Event::frame_system(frame_system::Event::NewAccount(1)), // because of token transfer
-            Event::balances(balances::Event::Endowed(1, total_balance)), // because of token transfer
-            Event::engine(RawEvent::ProposalCreated(1, proposal_id)),
-            Event::engine(RawEvent::Voted(
+            TestEvent::frame_system(frame_system::RawEvent::NewAccount(1)), // because of token transfer
+            TestEvent::balances(balances::RawEvent::Endowed(1, total_balance)), // because of token transfer
+            TestEvent::engine(RawEvent::Voted(
                 1,
                 proposal_id,
                 VoteKind::Approve,
@@ -2107,10 +2091,9 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
 
         EventFixture::assert_global_events(vec![
             // first chain of event from the creation to the approval
-            Event::frame_system(frame_system::Event::NewAccount(1)), // because of token transfer
-            Event::balances(balances::Event::Endowed(1, total_balance)), // because of token transfer
-            Event::engine(RawEvent::ProposalCreated(1, proposal_id)),
-            Event::engine(RawEvent::Voted(
+            TestEvent::frame_system(frame_system::RawEvent::NewAccount(1)), // because of token transfer
+            TestEvent::balances(balances::RawEvent::Endowed(1, total_balance)), // because of token transfer
+            TestEvent::engine(RawEvent::Voted(
                 1,
                 proposal_id,
                 VoteKind::Approve,
@@ -2196,12 +2179,12 @@ fn proposal_early_rejection_succeeds() {
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
-        vote_generator.vote_and_assert_ok(VoteKind::Abstain);
-        vote_generator.vote_and_assert_ok(VoteKind::Abstain);
+        vote_generator.vote_and_assert_ok(VoteKind::Reject);
+        vote_generator.vote_and_assert_ok(VoteKind::Reject);
 
         assert_eq!(
             <VoteExistsByProposalByVoter<Test>>::get(&proposal_id, &2),
-            VoteKind::Abstain
+            VoteKind::Reject
         );
 
         run_to_block_and_finalize(1);
@@ -2547,6 +2530,7 @@ fn proposal_status_resolution_approval_quorum_works_correctly() {
         total_voters_count: 500,
         approvals: 3,
         slashes: 3,
+        abstentions: 0,
     };
 
     assert!(!no_approval_proposal_status_resolution.is_approval_quorum_reached());
@@ -2576,6 +2560,7 @@ fn proposal_status_resolution_slashing_quorum_works_correctly() {
         total_voters_count: 500,
         approvals: 3,
         slashes: 3,
+        abstentions: 0,
     };
 
     assert!(!no_slashing_proposal_status_resolution.is_slashing_quorum_reached());
@@ -2605,6 +2590,7 @@ fn proposal_status_resolution_approval_threshold_works_correctly() {
         total_voters_count: 600,
         approvals: 314,
         slashes: 3,
+        abstentions: 0,
     };
 
     assert!(!no_approval_proposal_status_resolution.is_approval_threshold_reached());
@@ -2634,6 +2620,7 @@ fn proposal_status_resolution_slashing_threshold_works_correctly() {
         total_voters_count: 600,
         approvals: 3,
         slashes: 314,
+        abstentions: 0,
     };
 
     assert!(!no_slashing_proposal_status_resolution.is_slashing_threshold_reached());
@@ -2682,6 +2669,7 @@ fn proposal_status_resolution_approval_achievable_works_correctly() {
         total_voters_count: 600,
         approvals: 1,
         slashes: 0,
+        abstentions: 0,
     };
 
     assert!(!not_achievable_proposal_status_resolution.is_approval_threshold_achievable());
@@ -2713,6 +2701,7 @@ fn proposal_status_resolution_is_slashing_achievable_works_correctly() {
         total_voters_count: 600,
         approvals: 0,
         slashes: 1,
+        abstentions: 0,
     };
 
     assert!(!not_achievable_proposal_status_resolution.is_approval_threshold_achievable());
@@ -2725,4 +2714,124 @@ fn proposal_status_resolution_is_slashing_achievable_works_correctly() {
 
     assert!(slashing_threshold_achievable_resolution.is_slashing_threshold_achievable());
     assert!(!slashing_threshold_achievable_resolution.is_rejection_imminent());
+}
+
+#[test]
+fn proposal_status_resolution_slashing_threshold_works_correctly_with_abstentions() {
+    let no_slashing_threshold_proposal: Proposal<u64, u64, u64, u64> = Proposal {
+        parameters: ProposalParameters {
+            slashing_threshold_percentage: 63,
+            approval_threshold_percentage: 63,
+            ..ProposalParameters::default()
+        },
+        ..Proposal::default()
+    };
+    let no_slashing_proposal_status_resolution = ProposalStatusResolution {
+        proposal: &no_slashing_threshold_proposal,
+        now: 20,
+        votes_count: 500,
+        total_voters_count: 600,
+        approvals: 3,
+        slashes: 314,
+        abstentions: 1,
+    };
+
+    assert!(!no_slashing_proposal_status_resolution.is_slashing_threshold_reached());
+
+    let slashing_threshold_proposal_status_resolution = ProposalStatusResolution {
+        abstentions: 2,
+        ..no_slashing_proposal_status_resolution
+    };
+
+    assert!(slashing_threshold_proposal_status_resolution.is_slashing_threshold_reached());
+}
+
+#[test]
+fn proposal_status_resolution_approval_threshold_works_correctly_with_abstentions() {
+    let no_approval_threshold_proposal: Proposal<u64, u64, u64, u64> = Proposal {
+        parameters: ProposalParameters {
+            slashing_threshold_percentage: 63,
+            approval_threshold_percentage: 63,
+            ..ProposalParameters::default()
+        },
+        ..Proposal::default()
+    };
+    let no_approval_proposal_status_resolution = ProposalStatusResolution {
+        proposal: &no_approval_threshold_proposal,
+        now: 20,
+        votes_count: 500,
+        total_voters_count: 600,
+        approvals: 314,
+        slashes: 3,
+        abstentions: 1,
+    };
+
+    assert!(!no_approval_proposal_status_resolution.is_approval_threshold_reached());
+
+    let approval_threshold_proposal_status_resolution = ProposalStatusResolution {
+        abstentions: 2,
+        ..no_approval_proposal_status_resolution
+    };
+
+    assert!(approval_threshold_proposal_status_resolution.is_approval_threshold_reached());
+}
+
+#[test]
+fn proposal_status_resolution_slashing_quorum_works_correctly_with_abstentions() {
+    let no_slashing_quorum_proposal: Proposal<u64, u64, u64, u64> = Proposal {
+        parameters: ProposalParameters {
+            approval_quorum_percentage: 63,
+            slashing_quorum_percentage: 63,
+            ..ProposalParameters::default()
+        },
+        ..Proposal::default()
+    };
+    let no_slashing_proposal_status_resolution = ProposalStatusResolution {
+        proposal: &no_slashing_quorum_proposal,
+        now: 20,
+        votes_count: 315,
+        total_voters_count: 500,
+        approvals: 3,
+        slashes: 3,
+        abstentions: 1,
+    };
+
+    assert!(!no_slashing_proposal_status_resolution.is_slashing_quorum_reached());
+
+    let slashing_quorum_proposal_status_resolution = ProposalStatusResolution {
+        votes_count: 316,
+        ..no_slashing_proposal_status_resolution
+    };
+
+    assert!(slashing_quorum_proposal_status_resolution.is_slashing_quorum_reached());
+}
+
+#[test]
+fn proposal_status_resolution_approval_quorum_works_correctly_with_abstentions() {
+    let no_approval_quorum_proposal: Proposal<u64, u64, u64, u64> = Proposal {
+        parameters: ProposalParameters {
+            approval_quorum_percentage: 63,
+            slashing_threshold_percentage: 63,
+            ..ProposalParameters::default()
+        },
+        ..Proposal::default()
+    };
+    let no_approval_proposal_status_resolution = ProposalStatusResolution {
+        proposal: &no_approval_quorum_proposal,
+        now: 20,
+        votes_count: 315,
+        total_voters_count: 500,
+        approvals: 3,
+        slashes: 3,
+        abstentions: 1,
+    };
+
+    assert!(!no_approval_proposal_status_resolution.is_approval_quorum_reached());
+
+    let approval_quorum_proposal_status_resolution = ProposalStatusResolution {
+        votes_count: 316,
+        ..no_approval_proposal_status_resolution
+    };
+
+    assert!(approval_quorum_proposal_status_resolution.is_approval_quorum_reached());
 }

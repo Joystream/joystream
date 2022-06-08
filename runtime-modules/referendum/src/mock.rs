@@ -218,6 +218,9 @@ impl membership::WeightInfo for Weights {
     fn remove_staking_account() -> Weight {
         unimplemented!()
     }
+    fn member_remark() -> Weight {
+        unimplemented!()
+    }
 }
 
 parameter_types! {
@@ -262,7 +265,7 @@ impl common::working_group::WorkingGroupBudgetHandler<Runtime> for () {
 impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn ensure_worker_origin(
         _origin: <Runtime as frame_system::Config>::Origin,
-        _worker_id: &<Runtime as common::membership::Config>::ActorId,
+        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!()
     }
@@ -271,7 +274,8 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
         unimplemented!()
     }
 
-    fn get_leader_member_id() -> Option<<Runtime as common::membership::Config>::MemberId> {
+    fn get_leader_member_id() -> Option<<Runtime as common::membership::MembershipTypes>::MemberId>
+    {
         unimplemented!()
     }
 
@@ -281,13 +285,25 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
 
     fn is_worker_account_id(
         _account_id: &<Runtime as frame_system::Config>::AccountId,
-        _worker_id: &<Runtime as common::membership::Config>::ActorId,
+        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
         true
     }
+
+    fn worker_exists(
+        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
+    ) -> bool {
+        unimplemented!();
+    }
+
+    fn ensure_worker_exists(
+        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
+        unimplemented!();
+    }
 }
 
-impl common::membership::Config for Runtime {
+impl common::membership::MembershipTypes for Runtime {
     type MemberId = u64;
     type ActorId = u64;
 }
@@ -476,7 +492,7 @@ where
 
     pub fn calculate_commitment(
         account_id: &<T as frame_system::Config>::AccountId,
-        vote_option_index: &<T as common::membership::Config>::MemberId,
+        vote_option_index: &<T as common::membership::MembershipTypes>::MemberId,
         cycle_id: &u64,
     ) -> (T::Hash, Vec<u8>) {
         Self::calculate_commitment_for_cycle(account_id, &cycle_id, vote_option_index, None)
@@ -484,7 +500,7 @@ where
 
     pub fn calculate_commitment_custom_salt(
         account_id: &<T as frame_system::Config>::AccountId,
-        vote_option_index: &<T as common::membership::Config>::MemberId,
+        vote_option_index: &<T as common::membership::MembershipTypes>::MemberId,
         custom_salt: &[u8],
         cycle_id: &u64,
     ) -> (T::Hash, Vec<u8>) {
@@ -505,7 +521,7 @@ where
     pub fn calculate_commitment_for_cycle(
         account_id: &<T as frame_system::Config>::AccountId,
         cycle_id: &u64,
-        vote_option_index: &<T as common::membership::Config>::MemberId,
+        vote_option_index: &<T as common::membership::MembershipTypes>::MemberId,
         custom_salt: Option<&[u8]>,
     ) -> (T::Hash, Vec<u8>) {
         let salt = match custom_salt {
@@ -517,7 +533,7 @@ where
             <Module<T, I> as ReferendumManager<
                 <T as frame_system::Config>::Origin,
                 <T as frame_system::Config>::AccountId,
-                <T as common::membership::Config>::MemberId,
+                <T as common::membership::MembershipTypes>::MemberId,
                 <T as frame_system::Config>::Hash,
             >>::calculate_commitment(account_id, &salt, cycle_id, vote_option_index),
             salt.to_vec(),
@@ -586,7 +602,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
             <Module::<Runtime> as ReferendumManager<
                 <Runtime as frame_system::Config>::Origin,
                 <Runtime as frame_system::Config>::AccountId,
-                <Runtime as common::membership::Config>::MemberId,
+                <Runtime as common::membership::MembershipTypes>::MemberId,
                 <Runtime as frame_system::Config>::Hash,
             >>::start_referendum(
                 InstanceMockUtils::<Runtime, DefaultInstance>::mock_origin(OriginType::Root),
@@ -606,7 +622,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         <Module<Runtime> as ReferendumManager<
             <Runtime as frame_system::Config>::Origin,
             <Runtime as frame_system::Config>::AccountId,
-            <Runtime as common::membership::Config>::MemberId,
+            <Runtime as common::membership::MembershipTypes>::MemberId,
             <Runtime as frame_system::Config>::Hash,
         >>::force_start(extra_winning_target_count, cycle_id);
     }
@@ -669,7 +685,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
     pub fn check_revealing_finished(
         expected_winners: Vec<
             OptionResult<
-                <Runtime as common::membership::Config>::MemberId,
+                <Runtime as common::membership::MembershipTypes>::MemberId,
                 <Runtime as Config>::VotePower,
             >,
         >,

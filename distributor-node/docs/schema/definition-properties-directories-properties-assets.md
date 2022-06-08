@@ -1,0 +1,3 @@
+## assets Type
+
+`string`

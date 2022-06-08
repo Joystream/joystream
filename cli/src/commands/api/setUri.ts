@@ -5,6 +5,8 @@ import ExitCodes from '../../ExitCodes'
 type ApiSetUriArgs = { uri: string }
 
 export default class ApiSetUri extends ApiCommandBase {
+  protected requiresApiConnection = false
+
   static description = 'Set api WS provider uri'
   static args = [
     {
@@ -14,12 +16,7 @@ export default class ApiSetUri extends ApiCommandBase {
     },
   ]
 
-  async init() {
-    this.forceSkipApiUriPrompt = true
-    await super.init()
-  }
-
-  async run() {
+  async run(): Promise<void> {
     const args: ApiSetUriArgs = this.parse(ApiSetUri).args as ApiSetUriArgs
     let newUri = ''
     if (args.uri) {
@@ -32,6 +29,6 @@ export default class ApiSetUri extends ApiCommandBase {
     } else {
       newUri = await this.promptForApiUri()
     }
-    this.log(chalk.greenBright('Api uri successfuly changed! New uri: ') + chalk.white(newUri))
+    this.log(chalk.greenBright('Api uri successfuly changed! New uri: ') + chalk.magentaBright(newUri))
   }
 }

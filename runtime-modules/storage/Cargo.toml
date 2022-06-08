@@ -15,6 +15,8 @@ sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://
 pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 working-group = { package = 'pallet-working-group', default-features = false, path = '../working-group'}
 common = { package = 'pallet-common', default-features = false, path = '../common'}
+# Benchmarking
+frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596', optional = true}
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
@@ -22,18 +24,27 @@ sp-core = { package = 'sp-core', default-features = false, git = 'https://github
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../staking-handler'}
 membership = { package = 'pallet-membership', default-features = false, path = '../membership'}
-
+randomness-collective-flip = { package = 'pallet-randomness-collective-flip', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
+working-group = { package = 'pallet-working-group', default-features = false, path = '../working-group'}
+    
 [features]
 default = ['std']
-std = [
-	'serde',
-	'codec/std',
-	'sp-std/std',
-	'frame-support/std',
-	'frame-system/std',
-	'sp-arithmetic/std',
-	'sp-runtime/std',
-	'pallet-timestamp/std',
-	'working-group/std',
-	'common/std',
+runtime-benchmarks = [
+    "frame-benchmarking",
+    "sp-runtime/runtime-benchmarks",
 ]
+std = [
+    'serde',
+    'codec/std',
+    'sp-std/std',
+    'frame-support/std',
+    'frame-system/std',
+    'sp-arithmetic/std',
+    'balances/std',
+    'pallet-timestamp/std',
+    'sp-runtime/std',
+    'common/std',
+    'membership/std',
+	'staking-handler/std',    
+]
+

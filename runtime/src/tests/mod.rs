@@ -1,23 +1,27 @@
 //! The Joystream Substrate Node runtime integration tests.
-
 #![cfg(test)]
+
 #[macro_use]
-
 mod proposals_integration;
-mod fee_tests;
-mod storage_integration;
 
+mod locks;
+
+// Temporary commented for Olympia: https://github.com/Joystream/joystream/issues/3237
+// TODO: Restore after the Olympia release
+//mod fee_tests;
+
+use crate::primitives::MemberId;
 use crate::{BlockNumber, ReferendumInstance, Runtime};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::RawOrigin;
 use referendum::ReferendumManager;
 use sp_runtime::{AccountId32, BuildStorage};
 
-type Membership = membership::Pallet<Runtime>;
+type Membership = membership::Module<Runtime>;
 type System = frame_system::Pallet<Runtime>;
-type ProposalsEngine = proposals_engine::Pallet<Runtime>;
-type Council = council::Pallet<Runtime>;
-type Referendum = referendum::Pallet<Runtime, ReferendumInstance>;
+type ProposalsEngine = proposals_engine::Module<Runtime>;
+type Council = council::Module<Runtime>;
+type Referendum = referendum::Module<Runtime, ReferendumInstance>;
 
 pub(crate) fn initial_test_ext() -> sp_io::TestExternalities {
     let mut t = frame_system::GenesisConfig::default()
@@ -34,30 +38,51 @@ pub(crate) fn initial_test_ext() -> sp_io::TestExternalities {
     t.into()
 }
 
-fn get_account_membership(account: AccountId32, i: usize) -> u64 {
-    let member_id = i as u64;
-    if Membership::membership(member_id).controller_account != account {
-        insert_member(account.clone());
-        set_staking_account(account.clone(), account, member_id);
-    }
-
-    member_id
+// Simple unique account derived from member id
+pub(crate) fn account_from_member_id(member_id: MemberId) -> AccountId32 {
+    let b1: u8 = ((member_id >> 24) & 0xff) as u8;
+    let b2: u8 = ((member_id >> 16) & 0xff) as u8;
+    let b3: u8 = ((member_id >> 8) & 0xff) as u8;
+    let b4: u8 = (member_id & 0xff) as u8;
+    let mut account: [u8; 32] = AccountId32::default().into();
+    account[0] = b1;
+    account[1] = b2;
+    account[2] = b3;
+    account[3] = b4;
+    account.into()
 }
 
-pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
-    let mut voters = Vec::<AccountId32>::new();
+// Create a new set of members
+pub(crate) fn create_new_members(count: u64) -> Vec<MemberId> {
+    // get next member id (u64)
+    let first_member_id = Membership::members_created();
 
+    (0..count)
+        .map(|i| {
+            let member_id = first_member_id + i as u64;
+            let account_id = account_from_member_id(member_id);
+            insert_member(account_id.clone());
+            set_staking_account(account_id.clone(), account_id, member_id);
+            member_id
+        })
+        .collect()
+}
+
+pub(crate) fn setup_new_council(cycle_id: u64) {
+    let council_size = <Runtime as council::Config>::CouncilSize::get();
+    let num_extra_candidates = <Runtime as council::Config>::MinNumberOfExtraCandidates::get() + 1;
     let councilor_stake: u128 = <Runtime as council::Config>::MinCandidateStake::get().into();
-    let extra_candidates = <Runtime as council::Config>::MinNumberOfExtraCandidates::get() + 1;
-    let mut council_member_ids = Vec::new();
 
-    for (i, councilor) in council.iter().enumerate() {
-        increase_total_balance_issuance_using_account_id(
-            councilor.clone().into(),
-            councilor_stake + 1,
-        );
+    // council members that will be elected
+    let council_member_ids = create_new_members(council_size);
+    // one new voter for each candidate that will be elected
+    let voter_ids = create_new_members(council_size);
+    // additional candidates that will receive no votes
+    let extra_candidate_ids = create_new_members(num_extra_candidates);
 
-        let member_id = get_account_membership(councilor.clone(), i);
+    for member_id in council_member_ids.clone() {
+        let councilor = account_from_member_id(member_id);
+        increase_total_balance_issuance_using_account_id(councilor.clone(), councilor_stake + 1);
 
         Council::announce_candidacy(
             RawOrigin::Signed(councilor.clone()).into(),
@@ -67,29 +92,15 @@ pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
             councilor_stake,
         )
         .unwrap();
-        // Make sure to use different voters in each election cycle to prevent problems with
-        // staking
-        voters.push(
-            [(council.len() as u8 + extra_candidates as u8) * (cycle_id as u8 + 1) + i as u8; 32]
-                .into(),
-        );
-        council_member_ids.push(member_id);
     }
 
-    for i in council.len()..(council.len() + extra_candidates as usize) {
-        let extra_councilor: AccountId32 = [i as u8; 32].into();
+    for member_id in extra_candidate_ids.clone() {
+        let extra_councilor = account_from_member_id(member_id);
 
-        let member_id = get_account_membership(extra_councilor.clone(), i);
-        Council::release_candidacy_stake(
-            RawOrigin::Signed(extra_councilor.clone()).into(),
-            member_id,
-        )
-        .unwrap_or_else(|err| assert_eq!(err, council::Error::NoStake));
         increase_total_balance_issuance_using_account_id(
-            extra_councilor.clone().into(),
+            extra_councilor.clone(),
             councilor_stake + 1,
         );
-
         Council::announce_candidacy(
             RawOrigin::Signed(extra_councilor.clone()).into(),
             member_id,
@@ -105,14 +116,16 @@ pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
 
     let voter_stake: u128 =
         <Runtime as referendum::Config<ReferendumInstance>>::MinimumStake::get().into();
-    for (i, voter) in voters.iter().enumerate() {
-        increase_total_balance_issuance_using_account_id(voter.clone().into(), voter_stake + 1);
+
+    for (i, member_id) in voter_ids.clone().iter().enumerate() {
+        let voter = account_from_member_id(*member_id);
+        increase_total_balance_issuance_using_account_id(voter.clone(), voter_stake + 1);
 
         let commitment = Referendum::calculate_commitment(
-            voter.into(),
+            &voter,
             &[0u8],
             &cycle_id,
-            &council_member_ids[i],
+            &council_member_ids[i as usize],
         );
 
         Referendum::vote(
@@ -129,11 +142,12 @@ pub(crate) fn elect_council(council: Vec<AccountId32>, cycle_id: u64) {
             + <Runtime as referendum::Config<ReferendumInstance>>::VoteStageDuration::get(),
     );
 
-    for (i, voter) in voters.iter().enumerate() {
+    for (i, member_id) in voter_ids.iter().enumerate() {
+        let voter = account_from_member_id(*member_id);
         Referendum::reveal_vote(
             RawOrigin::Signed(voter.clone()).into(),
             vec![0u8],
-            council_member_ids[i].clone(),
+            council_member_ids[i as usize].clone(),
         )
         .unwrap();
     }
@@ -234,4 +248,58 @@ pub(crate) fn increase_total_balance_issuance_using_account_id(
         let _ = Balances::deposit_creating(&account_id, balance);
     }
     assert_eq!(Balances::total_issuance(), initial_balance + balance);
+}
+
+pub(crate) fn max_proposal_stake() -> u128 {
+    let mut stakes = vec![];
+    stakes.push(<Runtime as proposals_codex::Config>::SetMaxValidatorCountProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Config>::RuntimeUpgradeProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Config>::SignalProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Config>::FundingRequestProposalParameters::get());
+    stakes.push(
+        <Runtime as proposals_codex::Config>::CreateWorkingGroupLeadOpeningProposalParameters::get(),
+    );
+    stakes.push(
+        <Runtime as proposals_codex::Config>::FillWorkingGroupLeadOpeningProposalParameters::get(),
+    );
+    stakes.push(
+        <Runtime as proposals_codex::Config>::UpdateWorkingGroupBudgetProposalParameters::get(),
+    );
+    stakes.push(
+        <Runtime as proposals_codex::Config>::DecreaseWorkingGroupLeadStakeProposalParameters::get(),
+    );
+    stakes
+        .push(<Runtime as proposals_codex::Config>::SlashWorkingGroupLeadProposalParameters::get());
+    stakes.push(
+        <Runtime as proposals_codex::Config>::SetWorkingGroupLeadRewardProposalParameters::get(),
+    );
+    stakes.push(
+        <Runtime as proposals_codex::Config>::TerminateWorkingGroupLeadProposalParameters::get(),
+    );
+    stakes.push(<Runtime as proposals_codex::Config>::AmendConstitutionProposalParameters::get());
+    stakes.push(
+        <Runtime as proposals_codex::Config>::CancelWorkingGroupLeadOpeningProposalParameters::get(),
+    );
+    stakes.push(<Runtime as proposals_codex::Config>::SetMembershipPriceProposalParameters::get());
+    stakes.push(
+        <Runtime as proposals_codex::Config>::SetCouncilBudgetIncrementProposalParameters::get(),
+    );
+    stakes.push(<Runtime as proposals_codex::Config>::SetCouncilorRewardProposalParameters::get());
+    stakes.push(
+        <Runtime as proposals_codex::Config>::SetInitialInvitationBalanceProposalParameters::get(),
+    );
+    stakes.push(<Runtime as proposals_codex::Config>::SetInvitationCountProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Config>::SetMembershipLeadInvitationQuotaProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Config>::SetReferralCutProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Config>::CreateBlogPostProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Config>::EditBlogPostProoposalParamters::get());
+    stakes.push(<Runtime as proposals_codex::Config>::LockBlogPostProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Config>::UnlockBlogPostProposalParameters::get());
+    stakes.push(<Runtime as proposals_codex::Config>::VetoProposalProposalParameters::get());
+
+    stakes
+        .iter()
+        .map(|p| p.required_stake.unwrap_or(0))
+        .max_by(|s1, s2| s1.cmp(s2))
+        .unwrap()
 }

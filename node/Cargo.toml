@@ -3,7 +3,7 @@ authors = ['Joystream contributors']
 build = 'build.rs'
 edition = '2018'
 name = 'joystream-node'
-version = '5.0.0'
+version = '7.1.0'
 default-run = "joystream-node"
 
 [[bin]]
@@ -77,8 +77,8 @@ frame-benchmarking-cli = { package = 'frame-benchmarking-cli', git = 'https://gi
 node-inspect = { package = 'node-inspect', git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596', optional = true }
 
 # WASM-specific dependencies
-wasm-bindgen = { version = "0.2.57", optional = true }
-wasm-bindgen-futures = { version = "0.4.18", optional = true }
+wasm-bindgen = { version = "0.2.80", optional = true }
+wasm-bindgen-futures = { version = "0.4.30", optional = true }
 
 [dev-dependencies]
 tempfile = "3.1.0"

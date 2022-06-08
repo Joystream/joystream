@@ -2,22 +2,37 @@ import fs from 'fs'
 import chalk from 'chalk'
 import ExitCodes from '../../ExitCodes'
 import AccountsCommandBase from '../../base/AccountsCommandBase'
-import { NamedKeyringPair } from '../../Types'
+import { flags } from '@oclif/command'
 
-export default class AccountForget extends AccountsCommandBase {
+export default class AccountForgetCommand extends AccountsCommandBase {
   static description = 'Forget (remove) account from the list of available accounts'
 
-  async run() {
-    const accounts: NamedKeyringPair[] = this.fetchAccounts()
+  static flags = {
+    address: flags.string({
+      required: false,
+      description: 'Address of the account to remove',
+      exclusive: ['name'],
+    }),
+    name: flags.string({
+      required: false,
+      description: 'Name of the account to remove',
+      exclusive: ['address'],
+    }),
+  }
 
-    if (!accounts.length) {
-      this.error('No accounts found!', { exit: ExitCodes.NoAccountFound })
+  async run(): Promise<void> {
+    let { address, name } = this.parse(AccountForgetCommand).flags
+
+    if (!address && !name) {
+      address = await this.promptForAccount('Select an account to forget', false, false)
+    } else if (name) {
+      address = await this.getPairByName(name).address
     }
 
-    const choosenAccount: NamedKeyringPair = await this.promptForAccount(accounts, null, 'Select an account to forget')
-    await this.requireConfirmation('Are you sure you want this account to be forgotten?')
+    await this.requireConfirmation('Are you sure you want to PERMANENTLY FORGET this account?')
 
-    const accountFilePath: string = this.getAccountFilePath(choosenAccount)
+    const accountFilePath = this.getAccountFilePath(this.getPair(address || '').meta.name)
+
     try {
       fs.unlinkSync(accountFilePath)
     } catch (e) {

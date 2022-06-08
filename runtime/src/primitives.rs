@@ -14,6 +14,9 @@ pub type TransactionPriority = u64;
 /// Alias for ContentId, used in various places.
 pub type ContentId = sp_core::H256;
 
+/// Alias for DataObjectTypeId, used in various places.
+pub type DataObjectTypeId = u64;
+
 /// An index to a block.
 pub type BlockNumber = u32;
 
@@ -40,8 +43,29 @@ pub type Hash = sp_core::H256;
 /// Moment type
 pub type Moment = u64;
 
-/// Credential type
-pub type Credential = u64;
+/// Content Directory Channel identifier.
+pub type ChannelId = u64;
+
+/// Content Directory Channel Category identifier.
+pub type ChannelCategoryId = u64;
+
+/// Content Directory Video identifier.
+pub type VideoId = u64;
+
+/// Content Directory Open Auction identifier.
+pub type OpenAuctionId = u64;
+
+/// Content Directory Video Category identifier.
+pub type VideoCategoryId = u64;
+
+/// Curator group identifier.
+pub type CuratorGroupId = u64;
+
+/// Content Directory Reaction Identifier
+pub type ReactionId = u64;
+
+/// Represent a Video Post in the content module
+pub type VideoPostId = u64;
 
 /// Represents a thread identifier for both Forum and Proposals Discussion
 ///
@@ -64,6 +88,22 @@ pub type ActorId = u64;
 
 /// Represent an member in membership group, which is the same in the working groups.
 pub type MemberId = u64;
+
+/// Represent a data object from the storage pallet.
+pub type DataObjectId = u64;
+
+/// Represent a storage bucket from the storage pallet.
+pub type StorageBucketId = u64;
+
+/// Represent a distribution bucket index within the distribution bucket family from the
+/// storage pallet.
+pub type DistributionBucketIndex = u64;
+
+/// Represent a distribution bucket family from the storage pallet.
+pub type DistributionBucketFamilyId = u64;
+
+/// Represent relationships between distribution buckets and distribution working group workers.
+pub type DistributionBucketOperatorId = u64;
 
 /// App-specific crypto used for reporting equivocation/misbehavior in BABE and
 /// GRANDPA. Any rewards for misbehavior reporting will be paid out to this

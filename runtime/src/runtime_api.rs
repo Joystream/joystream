@@ -1,4 +1,5 @@
 use frame_support::inherent::{CheckInherentsResult, InherentData};
+use frame_support::storage::StorageValue;
 use frame_support::traits::{KeyOwnerProofSystem, OnRuntimeUpgrade, Randomness};
 use frame_support::unsigned::{TransactionSource, TransactionValidity};
 use pallet_grandpa::fg_primitives;
@@ -11,6 +12,7 @@ use sp_runtime::{generic, ApplyExtrinsicResult};
 use sp_std::vec::Vec;
 
 use crate::constants::PRIMARY_PROBABILITY;
+
 use crate::{
     AccountId, AuthorityDiscoveryId, Balance, BlockNumber, EpochDuration, GrandpaAuthorityList,
     GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
@@ -19,6 +21,7 @@ use crate::{
     AllModules, AuthorityDiscovery, Babe, Balances, Call, Grandpa, Historical, InherentDataExt,
     ProposalsEngine, RandomnessCollectiveFlip, Runtime, SessionKeys, System, TransactionPayment,
 };
+
 use frame_support::weights::Weight;
 
 /// Struct that handles the conversion of Balance -> `u64`. This is used for staking's election
@@ -73,7 +76,12 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signatu
 pub struct CustomOnRuntimeUpgrade;
 impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
     fn on_runtime_upgrade() -> Weight {
-        ProposalsEngine::cancel_active_and_pending_proposals()
+        ProposalsEngine::cancel_active_and_pending_proposals();
+        // Set NFT values
+        <content::MaxStartingPrice<Runtime>>::put(Balance::from(1_000_000_000_000u64));
+        <content::MaxBidStep<Runtime>>::put(Balance::from(1_000_000_000_000u64));
+
+        10_000_000 // TODO: adjust weight
     }
 }
 
@@ -289,7 +297,7 @@ impl_runtime_apis! {
             use crate::Constitution;
             use crate::Forum;
             use crate::Members;
-            use crate::ContentDirectoryWorkingGroup;
+            use crate::ContentWorkingGroup;
             use crate::Utility;
             use crate::Timestamp;
             use crate::ImOnline;
@@ -299,6 +307,7 @@ impl_runtime_apis! {
             use crate::Blog;
             use crate::JoystreamUtility;
             use crate::Staking;
+            use crate::Storage;
 
 
             // Trying to add benchmarks directly to the Session Module caused cyclic dependency issues.
@@ -306,8 +315,8 @@ impl_runtime_apis! {
             // we need these two lines below.
             impl pallet_session_benchmarking::Config for Runtime {}
             impl frame_system_benchmarking::Config for Runtime {}
-            impl referendum::OptionCreator<<Runtime as frame_system::Config>::AccountId, <Runtime as common::membership::Config>::MemberId> for Runtime {
-                fn create_option(account_id: <Runtime as frame_system::Config>::AccountId, member_id: <Runtime as common::membership::Config>::MemberId) {
+            impl referendum::OptionCreator<<Runtime as frame_system::Config>::AccountId, <Runtime as common::membership::MembershipTypes>::MemberId> for Runtime {
+                fn create_option(account_id: <Runtime as frame_system::Config>::AccountId, member_id: <Runtime as common::membership::MembershipTypes>::MemberId) {
                     crate::council::Module::<Runtime>::announce_candidacy(
                         RawOrigin::Signed(account_id.clone()).into(),
                         member_id,
@@ -324,15 +333,15 @@ impl_runtime_apis! {
 
             impl membership::MembershipWorkingGroupHelper<
                 <Runtime as frame_system::Config>::AccountId,
-                <Runtime as common::membership::Config>::MemberId,
-                <Runtime as common::membership::Config>::ActorId,
-                    > for Runtime
+                <Runtime as common::membership::MembershipTypes>::MemberId,
+                <Runtime as common::membership::MembershipTypes>::ActorId,
+            > for Runtime
             {
                 fn insert_a_lead(
                     opening_id: u32,
                     caller_id: &<Runtime as frame_system::Config>::AccountId,
-                    member_id: <Runtime as common::membership::Config>::MemberId,
-                ) -> <Runtime as common::membership::Config>::ActorId {
+                    member_id: <Runtime as common::membership::MembershipTypes>::MemberId,
+                ) -> <Runtime as common::membership::MembershipTypes>::ActorId {
                     working_group::benchmarking::complete_opening::<Runtime, crate::MembershipWorkingGroupInstance>(
                         working_group::OpeningType::Leader,
                         opening_id,
@@ -386,12 +395,13 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, membership, Members);
             add_benchmark!(params, batches, forum, Forum);
             add_benchmark!(params, batches, pallet_constitution, Constitution);
-            add_benchmark!(params, batches, working_group, ContentDirectoryWorkingGroup);
+            add_benchmark!(params, batches, working_group, ContentWorkingGroup);
             add_benchmark!(params, batches, referendum, Referendum);
             add_benchmark!(params, batches, council, Council);
             add_benchmark!(params, batches, bounty, Bounty);
             add_benchmark!(params, batches, blog, Blog);
             add_benchmark!(params, batches, joystream_utility, JoystreamUtility);
+            add_benchmark!(params, batches, storage, Storage);
 
             if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
             Ok(batches)

@@ -1,17 +1,18 @@
 use codec::Codec;
 use frame_support::dispatch::DispatchError;
 use frame_support::Parameter;
+use scale_info::TypeInfo;
 use sp_arithmetic::traits::BaseArithmetic;
-use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_runtime::traits::{MaybeSerialize, MaybeSerializeDeserialize, Member};
 
 /// Member id type alias
-pub type MemberId<T> = <T as Config>::MemberId;
+pub type MemberId<T> = <T as MembershipTypes>::MemberId;
 
 /// Actor id type alias
-pub type ActorId<T> = <T as Config>::ActorId;
+pub type ActorId<T> = <T as MembershipTypes>::ActorId;
 
 /// Generic trait for membership dependent pallets.
-pub trait Config: frame_system::Config {
+pub trait MembershipTypes: frame_system::Config {
     /// Describes the common type for the members.
     type MemberId: Parameter
         + Member
@@ -31,12 +32,13 @@ pub trait Config: frame_system::Config {
         + Default
         + Copy
         + MaybeSerialize
+        + MaybeSerializeDeserialize
         + Ord
         + PartialEq;
 }
 
 /// Validates staking account ownership for a member.
-pub trait StakingAccountValidator<T: Config> {
+pub trait StakingAccountValidator<T: MembershipTypes> {
     /// Verifies that staking account bound to the member.
     fn is_member_staking_account(member_id: &MemberId<T>, account_id: &T::AccountId) -> bool;
 }
@@ -54,7 +56,7 @@ pub trait MemberOriginValidator<Origin, MemberId, AccountId> {
 }
 
 /// Gives access to some membership information.
-pub trait MembershipInfoProvider<T: Config> {
+pub trait MembershipInfoProvider<T: MembershipTypes> {
     /// Returns current controller account for a member.
     fn controller_account_id(member_id: MemberId<T>) -> Result<T::AccountId, DispatchError>;
 }
