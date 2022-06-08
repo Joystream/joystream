@@ -2498,6 +2498,8 @@ decl_module! {
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
+            channel.ensure_has_no_active_transfer::<T>()?;
+
             // Permissions check
             let sender = ensure_actor_authorized_to_issue_creator_token::<T>(
                 origin,
@@ -2538,6 +2540,8 @@ decl_module! {
             params: TokenSaleParamsOf<T>,
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            channel.ensure_has_no_active_transfer::<T>()?;
 
             // Permissions check
             let (sender, _) = ensure_actor_authorized_to_init_and_manage_creator_token_sale::<T>(
@@ -2654,6 +2658,8 @@ decl_module! {
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
+            channel.ensure_has_no_active_transfer::<T>()?;
+
             // Permissions check
             ensure_actor_authorized_to_make_creator_token_permissionless::<T>(
                 origin,
@@ -2678,6 +2684,8 @@ decl_module! {
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
+            channel.ensure_has_no_active_transfer::<T>()?;
+
             // Permissions check
             ensure_actor_authorized_to_reduce_creator_token_patronage_rate::<T>(
                 origin,
@@ -2700,6 +2708,8 @@ decl_module! {
             channel_id: T::ChannelId
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            channel.ensure_has_no_active_transfers(self)
 
             // Permissions check
             ensure_actor_authorized_to_claim_creator_token_patronage::<T>(
@@ -2737,6 +2747,8 @@ decl_module! {
             duration: T::BlockNumber
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            channel.ensure_has_no_active_transfers(self)
 
             // Permissions check
             ensure_actor_authorized_to_manage_revenue_splits::<T>(
