@@ -84,9 +84,10 @@ fn handle_from_id<T: Config>(id: u32) -> Vec<u8> {
 }
 
 benchmarks! {
-    where_clause { where T: balances::Config, T: Config, T: MembershipWorkingGroupHelper<<T as
-        frame_system::Config>::AccountId, <T as common::membership::MembershipTypes>::MemberId, <T as common::membership::MembershipTypes>::ActorId> }
-    _{  }
+    where_clause {
+        where T: balances::Config, T: Config, T: MembershipWorkingGroupHelper<<T as
+            frame_system::Config>::AccountId, <T as common::membership::MembershipTypes>::MemberId, <T as common::membership::MembershipTypes>::ActorId>
+    }
 
     buy_membership_without_referrer{
 
@@ -139,7 +140,7 @@ benchmarks! {
 
         assert_eq!(MemberIdByHandleHash::<T>::get(&handle_hash), member_id);
 
-        assert_eq!(MembershipById::<T>::get(member_id), membership);
+        assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
 
         assert_last_event::<T>(RawEvent::MembershipBought(member_id, params).into());
     }
@@ -213,7 +214,7 @@ benchmarks! {
 
         assert_eq!(MemberIdByHandleHash::<T>::get(second_handle_hash), second_member_id);
 
-        assert_eq!(MembershipById::<T>::get(second_member_id), membership);
+        assert_eq!(MembershipById::<T>::get(second_member_id), Some(membership));
 
         assert_last_event::<T>(RawEvent::MembershipBought(second_member_id, params).into());
     }
@@ -296,7 +297,7 @@ benchmarks! {
             invites: 5,
         };
 
-        assert_eq!(MembershipById::<T>::get(member_id), membership);
+        assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
 
         assert_last_event::<T>(RawEvent::MemberAccountsUpdated(
                 member_id,
@@ -332,7 +333,7 @@ benchmarks! {
             invites: 5,
         };
 
-        assert_eq!(MembershipById::<T>::get(member_id), membership);
+        assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
 
         assert_last_event::<T>(RawEvent::MemberAccountsUpdated(
                 member_id,
@@ -370,7 +371,7 @@ benchmarks! {
             invites: 5,
         };
 
-        assert_eq!(MembershipById::<T>::get(member_id), membership);
+        assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
 
         assert_last_event::<T>(RawEvent::MemberAccountsUpdated(
                 member_id,
@@ -433,9 +434,9 @@ benchmarks! {
             invites: 10,
         };
 
-        assert_eq!(MembershipById::<T>::get(first_member_id), first_membership);
+        assert_eq!(MembershipById::<T>::get(first_member_id), Some(first_membership));
 
-        assert_eq!(MembershipById::<T>::get(second_member_id), second_membership);
+        assert_eq!(MembershipById::<T>::get(second_member_id), Some(second_membership));
 
         assert_last_event::<T>(RawEvent::InvitesTransferred(first_member_id, second_member_id, number_of_invites).into());
     }
@@ -492,7 +493,7 @@ benchmarks! {
 
         assert_eq!(MemberIdByHandleHash::<T>::get(&handle_hash), invited_member_id);
 
-        assert_eq!(MembershipById::<T>::get(invited_member_id), invited_membership);
+        assert_eq!(MembershipById::<T>::get(invited_member_id), Some(invited_membership));
 
         assert_last_event::<T>(RawEvent::MemberInvited(invited_member_id, invite_params).into());
 
@@ -548,7 +549,7 @@ benchmarks! {
             invites: 5,
         };
 
-        assert_eq!(MembershipById::<T>::get(member_id), membership);
+        assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
 
         assert_last_event::<T>(RawEvent::MemberVerificationStatusUpdated(
                 member_id,
@@ -588,7 +589,7 @@ benchmarks! {
     verify {
         // Ensure leader invitation quota is successfully updated
 
-        assert_eq!(MembershipById::<T>::get(leader_member_id.unwrap()).invites, invitation_quota);
+        assert_eq!(MembershipById::<T>::get(leader_member_id.unwrap()).unwrap().invites, invitation_quota);
 
         assert_last_event::<T>(RawEvent::LeaderInvitationQuotaUpdated(invitation_quota).into());
     }
@@ -685,147 +686,11 @@ benchmarks! {
         verify {
             assert_last_event::<T>(RawEvent::MemberRemarked(member_id, msg).into());
         }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::tests::*;
-    use frame_support::assert_ok;
-
-    #[test]
-    fn buy_membership_with_referrer() {
-        build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_buy_membership_with_referrer::<Test>());
-        });
-    }
-
-    #[test]
-    fn buy_membership_without_referrer() {
-        build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_buy_membership_without_referrer::<Test>());
-        });
-    }
-
-    #[test]
-    fn update_profile() {
-        build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_profile::<Test>());
-        });
-    }
-
-    #[test]
-    fn update_accounts_none() {
-        build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_accounts_none::<Test>());
-        });
-    }
-
-    #[test]
-    fn update_accounts_root() {
-        build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_accounts_root::<Test>());
-        });
-    }
-
-    #[test]
-    fn update_accounts_controller() {
-        build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_accounts_controller::<Test>());
-        });
-    }
-
-    #[test]
-    fn update_accounts_both() {
-        build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_accounts_both::<Test>());
-        });
-    }
-
-    #[test]
-    fn set_referral_cut() {
-        build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_set_referral_cut::<Test>());
-        });
-    }
-
-    #[test]
-    fn transfer_invites() {
-        build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_transfer_invites::<Test>());
-        });
-    }
-
-    #[test]
-    fn set_membership_price() {
-        build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_set_membership_price::<Test>());
-        });
-    }
-
-    #[test]
-    fn set_leader_invitation_quota() {
-        TestExternalitiesBuilder::<Test>::default()
-            .with_lead()
-            .build()
-            .execute_with(|| {
-                assert_ok!(test_benchmark_set_leader_invitation_quota::<Test>());
-            });
-    }
-
-    #[test]
-    fn invite_member() {
-        build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_invite_member::<Test>());
-        });
-    }
-
-    #[test]
-    fn set_initial_invitation_balance() {
-        build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_set_initial_invitation_balance::<Test>());
-        });
-    }
-
-    #[test]
-    fn set_initial_invitation_count() {
-        build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_set_initial_invitation_count::<Test>());
-        });
-    }
-
-    #[test]
-    fn add_staking_account_candidate() {
-        build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_add_staking_account_candidate::<Test>());
-        });
-    }
-
-    #[test]
-    fn confirm_staking_account() {
-        build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_confirm_staking_account::<Test>());
-        });
-    }
-
-    #[test]
-    fn remove_staking_account() {
-        build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_remove_staking_account::<Test>());
-        });
-    }
-
-    #[test]
-    fn update_profile_verification() {
-        build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_profile_verification::<Test>());
-        });
-    }
-
-    #[test]
-    fn member_remark() {
-        build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_member_remark::<Test>());
-        });
-    }
+    // impl_benchmark_test_suite!(Module, tests::mock::build_test_externalities(), tests::mock::Test)
+    impl_benchmark_test_suite!(
+        Module,
+        tests::mock::TestExternalitiesBuilder::<tests::mock::Test>::default().with_lead().build(),
+        tests::mock::Test
+    )
 }
