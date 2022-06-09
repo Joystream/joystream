@@ -1,11 +1,8 @@
 #![cfg(test)]
-use crate::tests::fixtures::{
-    create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
-    increase_account_balance_helper,
-};
+use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_ok, assert_noop};
 const NEW_NFT_PRICE: u64 = DEFAULT_NFT_PRICE + 10;
 
 #[test]
@@ -238,6 +235,27 @@ fn update_buy_now_price_not_in_auction_state() {
         assert_err!(
             update_buy_now_price_result,
             Error::<Test>::NftNotInBuyNowState
+        );
+    })
+}
+
+#[test]
+fn update_buy_now_price_fails_during_channel_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::default().with_video_nft_status(NftTransactionalStatusType::BuyNow).setup();
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(SECOND_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::update_buy_now_price(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                1u64,
+                Content::min_starting_price() + 1,
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
         );
     })
 }

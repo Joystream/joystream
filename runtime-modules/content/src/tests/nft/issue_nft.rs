@@ -1,12 +1,8 @@
 #![cfg(test)]
-use crate::tests::fixtures::{
-    create_data_objects_helper, create_default_member_owned_channel_with_video,
-    create_initial_storage_buckets_helper, increase_account_balance_helper, ContentTest,
-    CreateVideoFixture,
-};
+use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_noop, assert_ok};
 
 #[test]
 fn issue_nft() {
@@ -514,5 +510,26 @@ fn nft_counters_increment_works_as_expected() {
         assert_eq!(channel.weekly_nft_counter.counter, 2);
         assert_eq!(Content::global_daily_nft_counter().counter, 1);
         assert_eq!(Content::global_weekly_nft_counter().counter, 2);
+    })
+}
+
+#[test]
+fn issue_nft_fails_with_pending_channel_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::with_member_channel().with_video().setup();
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(SECOND_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::issue_nft(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                1u64,
+                NftIssuanceParameters::<Test>::default(),
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
+        );
     })
 }

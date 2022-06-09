@@ -1,12 +1,8 @@
 #![cfg(test)]
-use crate::tests::fixtures::{
-    channel_reward_account_balance, create_default_member_owned_channel_with_video,
-    create_initial_storage_buckets_helper, increase_account_balance_helper,
-    make_content_module_account_existential_deposit, ContentTest,
-};
+use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_ok, assert_noop};
 
 const NEXT_BID_OFFSET: u64 = 10;
 const AUCTION_DURATION: u64 = 10;
@@ -641,5 +637,27 @@ fn pick_open_auction_winner_ok_with_nft_owner_curator_channel_correctly_credited
         ));
 
         assert_eq!(channel_reward_account_balance(1u64), bid - platform_fee);
+    })
+}
+
+#[test]
+fn pick_open_auction_fails_during_channel_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::default().with_nft_open_auction_bid().setup();
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::pick_open_auction_winner(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                1u64,
+                SECOND_MEMBER_ID,
+                Content::min_starting_price(),
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
+        );
     })
 }
