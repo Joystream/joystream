@@ -310,6 +310,7 @@ export async function storage_DataObjectsDeleted({ event, store }: EventContext 
     ...videoRelationsForCounters.map((item) => `videoThumbnail.${item}`),
     'videoMedia',
     ...videoRelationsForCounters.map((item) => `videoMedia.${item}`),
+    'playlistThumbnail',
   ])
 
   await Promise.all(

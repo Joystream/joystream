@@ -33,6 +33,11 @@ fragment DataObjectInfo on StorageDataObject {
         id
       }
     }
+    ... on DataObjectTypePlaylistThumbnail {
+      playlist {
+        id
+      }
+    }
     ... on DataObjectTypeChannelAvatar {
       channel {
         id
@@ -60,6 +65,12 @@ query getDataObjectsByChannelId($channelId: ID) {
 
 query getDataObjectsByVideoId($videoId: ID) {
   storageDataObjects(where: { type_json: { videoId_eq: $videoId } }) {
+    ...DataObjectInfo
+  }
+}
+
+query getDataObjectsByPlaylistId($playlistId: ID) {
+  storageDataObjects(where: { type_json: { playlistId_eq: $playlistId } }) {
     ...DataObjectInfo
   }
 }

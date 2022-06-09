@@ -31,6 +31,8 @@ export type DataObjectInfoFragment = {
     | { __typename: 'DataObjectTypeChannelCoverPhoto'; channel?: Types.Maybe<{ id: string }> }
     | { __typename: 'DataObjectTypeVideoMedia'; video?: Types.Maybe<{ id: string }> }
     | { __typename: 'DataObjectTypeVideoThumbnail'; video?: Types.Maybe<{ id: string }> }
+    | { __typename: 'DataObjectTypePlaylistThumbnail'; playlist?: Types.Maybe<{ id: string }> }
+    | { __typename: 'DataObjectTypeVideoSubtitle' }
     | { __typename: 'DataObjectTypeUnknown' }
 }
 
@@ -51,6 +53,12 @@ export type GetDataObjectsByVideoIdQueryVariables = Types.Exact<{
 }>
 
 export type GetDataObjectsByVideoIdQuery = { storageDataObjects: Array<DataObjectInfoFragment> }
+
+export type GetDataObjectsByPlaylistIdQueryVariables = Types.Exact<{
+  playlistId?: Types.Maybe<Types.Scalars['ID']>
+}>
+
+export type GetDataObjectsByPlaylistIdQuery = { storageDataObjects: Array<DataObjectInfoFragment> }
 
 export type WorkingGroupOpeningMetadataFieldsFragment = {
   description?: Types.Maybe<string>
@@ -158,6 +166,11 @@ export const DataObjectInfo = gql`
           id
         }
       }
+      ... on DataObjectTypePlaylistThumbnail {
+        playlist {
+          id
+        }
+      }
       ... on DataObjectTypeChannelAvatar {
         channel {
           id
@@ -256,6 +269,14 @@ export const GetDataObjectsByChannelId = gql`
 export const GetDataObjectsByVideoId = gql`
   query getDataObjectsByVideoId($videoId: ID) {
     storageDataObjects(where: { type_json: { videoId_eq: $videoId } }) {
+      ...DataObjectInfo
+    }
+  }
+  ${DataObjectInfo}
+`
+export const GetDataObjectsByPlaylistId = gql`
+  query getDataObjectsByPlaylistId($playlistId: ID) {
+    storageDataObjects(where: { type_json: { playlistId_eq: $playlistId } }) {
       ...DataObjectInfo
     }
   }

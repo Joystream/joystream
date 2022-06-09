@@ -6,6 +6,7 @@ import {
   ILicense,
   IMediaType,
   IChannelMetadata,
+  IPlaylistMetadata,
 } from '@joystream/metadata-protobuf'
 import { integrateMeta, isSet, isValidLanguageCode } from '@joystream/metadata-protobuf/utils'
 import { invalidMetadata, inconsistentState, logger, deterministicEntityId } from '../common'
@@ -33,12 +34,17 @@ import {
   ContentActorMember,
   ContentActor as ContentActorVariant,
   Curator,
+  Playlist,
+  DataObjectTypePlaylistThumbnail,
+  PlaylistVideo,
 } from 'query-node/dist/model'
 // Joystream types
 import { ContentActor, StorageAssets } from '@joystream/types/augment'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import BN from 'bn.js'
 import { getMostRecentlyCreatedDataObjects } from '../storage/utils'
+import { VideoId } from '@joystream/types/content'
+import _ from 'lodash'
 
 const ASSET_TYPES = {
   channel: [
@@ -61,6 +67,13 @@ const ASSET_TYPES = {
     },
     {
       DataObjectTypeConstructor: DataObjectTypeVideoThumbnail,
+      metaFieldName: 'thumbnailPhoto',
+      schemaFieldName: 'thumbnailPhoto',
+    },
+  ],
+  playlist: [
+    {
+      DataObjectTypeConstructor: DataObjectTypePlaylistThumbnail,
       metaFieldName: 'thumbnailPhoto',
       schemaFieldName: 'thumbnailPhoto',
     },
@@ -126,6 +139,34 @@ async function processVideoAssets(
   )
 }
 
+async function processPlaylistAssets(
+  { event, store }: EventContext & StoreContext,
+  assets: StorageDataObject[],
+  playlist: Playlist,
+  meta: DecodedMetadataObject<IPlaylistMetadata>
+) {
+  await Promise.all(
+    ASSET_TYPES.playlist.map(async ({ metaFieldName, schemaFieldName, DataObjectTypeConstructor }) => {
+      const newAssetIndex = meta[metaFieldName]
+      const currentAsset = playlist[schemaFieldName]
+      if (isSet(newAssetIndex)) {
+        const asset = findAssetByIndex(assets, newAssetIndex)
+        if (asset) {
+          if (currentAsset) {
+            currentAsset.unsetAt = new Date(event.blockTimestamp)
+            await store.save<StorageDataObject>(currentAsset)
+          }
+          const dataObjectType = new DataObjectTypeConstructor()
+          dataObjectType.playlistId = playlist.id
+          asset.type = dataObjectType
+          playlist[schemaFieldName] = asset
+          await store.save<StorageDataObject>(asset)
+        }
+      }
+    })
+  )
+}
+
 export async function processChannelMetadata(
   ctx: EventContext & StoreContext,
   channel: Channel,
@@ -157,11 +198,26 @@ export async function processVideoMetadata(
   meta: DecodedMetadataObject<IVideoMetadata>,
   assetsParams?: StorageAssets
 ): Promise<Video> {
+  const { store } = ctx
   const assets = assetsParams ? await processNewAssets(ctx, assetsParams) : []
 
   integrateMeta(video, meta, ['title', 'description', 'duration', 'hasMarketing', 'isExplicit', 'isPublic'])
 
   await processVideoAssets(ctx, assets, video, meta)
+
+  if (isSet(meta.thumbnailPhoto)) {
+    // If this video is first video in Playlist/s, and video thumbnail
+    //  gets changed, update the thumbnail of all those Playlist/s
+    const asFirstVideoInPlaylists = await store.getMany<PlaylistVideo>(PlaylistVideo, {
+      where: { video: { id: video.id }, position: 0 },
+      relations: ['playlist'],
+    })
+
+    for (const { playlist } of asFirstVideoInPlaylists) {
+      playlist.thumbnailPhoto = video.thumbnailPhoto
+      await store.save<Playlist>(playlist)
+    }
+  }
 
   // prepare video category if needed
   if (meta.category) {
@@ -194,6 +250,28 @@ export async function processVideoMetadata(
   }
 
   return video
+}
+
+export async function processPlaylistMetadata(
+  ctx: EventContext & StoreContext,
+  playlist: Playlist,
+  meta: DecodedMetadataObject<IPlaylistMetadata>,
+  assetsParams?: StorageAssets
+): Promise<Playlist> {
+  const { store } = ctx
+  const assets = assetsParams ? await processNewAssets(ctx, assetsParams) : []
+
+  integrateMeta(playlist, meta, ['title', 'description', 'isPublic'])
+
+  await processPlaylistAssets(ctx, assets, playlist, meta)
+
+  if (meta.videoIds) {
+    playlist.videos = await processPlaylistVideos(store, playlist, meta)
+    playlist.publicUncensoredVideosCount = _.sumBy(playlist.videos, ({ video }) => Number(!video.isCensored))
+    playlist.publicUncensoredVideosDuration = _.sumBy(playlist.videos, ({ video }) => video.duration || 0)
+  }
+
+  return playlist
 }
 
 function findAssetByIndex(assets: StorageDataObject[], index: number, name?: string): StorageDataObject | null {
@@ -522,6 +600,7 @@ async function processChannelCategory(
 export async function unsetAssetRelations(store: DatabaseManager, dataObject: StorageDataObject): Promise<void> {
   const channelAssets = ['avatarPhoto', 'coverPhoto'] as const
   const videoAssets = ['thumbnailPhoto', 'media'] as const
+  const playlistAssets = ['thumbnailPhoto'] as const
 
   // NOTE: we don't need to retrieve multiple channels/videos via `store.getMany()` because dataObject
   // is allowed to be associated only with one channel/video in runtime
@@ -540,6 +619,14 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
       },
     })),
     relations: [...videoRelationsForCounters],
+  })
+  const playlist = await store.get(Playlist, {
+    where: playlistAssets.map((assetName) => ({
+      [assetName]: {
+        id: dataObject.id,
+      },
+    })),
+    relations: [...playlistAssets],
   })
 
   if (channel) {
@@ -572,6 +659,65 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
     })
   }
 
+  if (playlist) {
+    playlistAssets.forEach((assetName) => {
+      if (playlist[assetName] && playlist[assetName]?.id === dataObject.id) {
+        playlist[assetName] = null as any
+      }
+    })
+    await store.save<Playlist>(playlist)
+
+    // emit log event
+    logger.info('Content has been disconnected from Playlist', {
+      playlistId: playlist.id.toString(),
+      dataObjectId: dataObject.id,
+    })
+  }
+
   // remove data object
   await store.remove<StorageDataObject>(dataObject)
+}
+
+export async function processPlaylistVideos(
+  store: DatabaseManager,
+  playlist: Playlist,
+  meta: DecodedMetadataObject<IPlaylistMetadata>
+): Promise<PlaylistVideo[]> {
+  const { videoIds, thumbnailPhoto: thumbnailPhotoIndex } = meta
+
+  const videos = (
+    await Promise.all(
+      videoIds!.map((videoId) => store.get(Video, { where: { id: videoId }, relations: ['thumbnailPhoto'] }))
+    )
+  ).filter((video, i) => {
+    if (!video) {
+      invalidMetadata('Non-existing video requested to be the part of playlist', videoIds![i])
+    }
+    return video !== undefined
+  }) as Video[]
+
+  // set thumbnail of first video as playlist thumbnail if its not already set
+  if (thumbnailPhotoIndex === null || thumbnailPhotoIndex === undefined) {
+    playlist.thumbnailPhoto = videos[0].thumbnailPhoto
+  }
+
+  // save playlist; playlist record should exist in DB
+  // before creating PlaylistVideo<->Playlist relation
+  await store.save<Playlist>(playlist)
+
+  const playlistVideos = await Promise.all(
+    videos.map(async (video, i) => {
+      const v = new PlaylistVideo({
+        id: `${playlist.id}-${video.id}`,
+        video,
+        playlist,
+        position: i,
+      })
+
+      await store.save<PlaylistVideo>(v)
+      return v
+    })
+  )
+
+  return playlistVideos
 }

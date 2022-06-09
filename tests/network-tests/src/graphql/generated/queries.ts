@@ -21,6 +21,11 @@ type DataObjectTypeFields_DataObjectTypeVideoThumbnail_Fragment = {
   video?: Types.Maybe<{ id: string }>
 }
 
+type DataObjectTypeFields_DataObjectTypePlaylistThumbnail_Fragment = {
+  __typename: 'DataObjectTypePlaylistThumbnail'
+  playlist?: Types.Maybe<{ id: string }>
+}
+
 type DataObjectTypeFields_DataObjectTypeUnknown_Fragment = { __typename: 'DataObjectTypeUnknown' }
 
 export type DataObjectTypeFieldsFragment =
@@ -28,6 +33,7 @@ export type DataObjectTypeFieldsFragment =
   | DataObjectTypeFields_DataObjectTypeChannelCoverPhoto_Fragment
   | DataObjectTypeFields_DataObjectTypeVideoMedia_Fragment
   | DataObjectTypeFields_DataObjectTypeVideoThumbnail_Fragment
+  | DataObjectTypeFields_DataObjectTypePlaylistThumbnail_Fragment
   | DataObjectTypeFields_DataObjectTypeUnknown_Fragment
 
 export type StorageDataObjectFieldsFragment = {
@@ -43,6 +49,7 @@ export type StorageDataObjectFieldsFragment = {
     | DataObjectTypeFields_DataObjectTypeChannelCoverPhoto_Fragment
     | DataObjectTypeFields_DataObjectTypeVideoMedia_Fragment
     | DataObjectTypeFields_DataObjectTypeVideoThumbnail_Fragment
+    | DataObjectTypeFields_DataObjectTypePlaylistThumbnail_Fragment
     | DataObjectTypeFields_DataObjectTypeUnknown_Fragment
 }
 
@@ -122,6 +129,17 @@ export type ChannelNftCollectorFieldsFragment = {
   curatorGroup?: Types.Maybe<{ id: string }>
 }
 
+export type PlaylistFieldsFragment = {
+  id: string
+  title: string
+  description: string
+  publicUncensoredVideosCount?: Types.Maybe<number>
+  publicUncensoredVideosDuration?: Types.Maybe<number>
+  isPublic?: Types.Maybe<boolean>
+  channel: ChannelFieldsFragment
+  videos: Array<{ position: number; video: { id: string } }>
+}
+
 export type GetChannelByIdQueryVariables = Types.Exact<{
   id: Types.Scalars['ID']
 }>
@@ -156,6 +174,12 @@ export type GetBidsByMemberIdQuery = { bids: Array<BidFieldsFragment> }
 export type GetChannelNftCollectorsQueryVariables = Types.Exact<{ [key: string]: never }>
 
 export type GetChannelNftCollectorsQuery = { channelNftCollectors: Array<ChannelNftCollectorFieldsFragment> }
+
+export type GetPlaylistByIdQueryVariables = Types.Exact<{
+  id: Types.Scalars['ID']
+}>
+
+export type GetPlaylistByIdQuery = { playlistByUniqueInput?: Types.Maybe<PlaylistFieldsFragment> }
 
 export type EnglishAuctionStartedEventFieldsFragment = {
   video: { id: string }
@@ -2119,76 +2143,6 @@ export type GetBudgetSpendingEventsByEventIdsQueryVariables = Types.Exact<{
 
 export type GetBudgetSpendingEventsByEventIdsQuery = { budgetSpendingEvents: Array<BudgetSpendingEventFieldsFragment> }
 
-export const DataObjectTypeFields = gql`
-  fragment DataObjectTypeFields on DataObjectType {
-    __typename
-    ... on DataObjectTypeChannelAvatar {
-      channel {
-        id
-      }
-    }
-    ... on DataObjectTypeChannelCoverPhoto {
-      channel {
-        id
-      }
-    }
-    ... on DataObjectTypeVideoThumbnail {
-      video {
-        id
-      }
-    }
-    ... on DataObjectTypeVideoMedia {
-      video {
-        id
-      }
-    }
-  }
-`
-export const StorageDataObjectFields = gql`
-  fragment StorageDataObjectFields on StorageDataObject {
-    id
-    ipfsHash
-    isAccepted
-    size
-    type {
-      ...DataObjectTypeFields
-    }
-    deletionPrize
-    unsetAt
-    storageBagId
-  }
-  ${DataObjectTypeFields}
-`
-export const ChannelFields = gql`
-  fragment ChannelFields on Channel {
-    id
-    activeVideosCounter
-    title
-    description
-    isPublic
-    language {
-      iso
-    }
-    rewardAccount
-    isCensored
-    ownerMember {
-      id
-    }
-    ownerCuratorGroup {
-      id
-    }
-    category {
-      name
-    }
-    avatarPhoto {
-      ...StorageDataObjectFields
-    }
-    coverPhoto {
-      ...StorageDataObjectFields
-    }
-  }
-  ${StorageDataObjectFields}
-`
 export const ChannelCategoryFields = gql`
   fragment ChannelCategoryFields on ChannelCategory {
     id
@@ -2298,6 +2252,101 @@ export const ChannelNftCollectorFields = gql`
     amount
     lastIncreaseAt
   }
+`
+export const DataObjectTypeFields = gql`
+  fragment DataObjectTypeFields on DataObjectType {
+    __typename
+    ... on DataObjectTypeChannelAvatar {
+      channel {
+        id
+      }
+    }
+    ... on DataObjectTypeChannelCoverPhoto {
+      channel {
+        id
+      }
+    }
+    ... on DataObjectTypeVideoThumbnail {
+      video {
+        id
+      }
+    }
+    ... on DataObjectTypeVideoMedia {
+      video {
+        id
+      }
+    }
+    ... on DataObjectTypePlaylistThumbnail {
+      playlist {
+        id
+      }
+    }
+  }
+`
+export const StorageDataObjectFields = gql`
+  fragment StorageDataObjectFields on StorageDataObject {
+    id
+    ipfsHash
+    isAccepted
+    size
+    type {
+      ...DataObjectTypeFields
+    }
+    deletionPrize
+    unsetAt
+    storageBagId
+  }
+  ${DataObjectTypeFields}
+`
+export const ChannelFields = gql`
+  fragment ChannelFields on Channel {
+    id
+    activeVideosCounter
+    title
+    description
+    isPublic
+    language {
+      iso
+    }
+    rewardAccount
+    isCensored
+    ownerMember {
+      id
+    }
+    ownerCuratorGroup {
+      id
+    }
+    category {
+      name
+    }
+    avatarPhoto {
+      ...StorageDataObjectFields
+    }
+    coverPhoto {
+      ...StorageDataObjectFields
+    }
+  }
+  ${StorageDataObjectFields}
+`
+export const PlaylistFields = gql`
+  fragment PlaylistFields on Playlist {
+    id
+    channel {
+      ...ChannelFields
+    }
+    title
+    description
+    videos {
+      video {
+        id
+      }
+      position
+    }
+    publicUncensoredVideosCount
+    publicUncensoredVideosDuration
+    isPublic
+  }
+  ${ChannelFields}
 `
 export const EnglishAuctionStartedEventFields = gql`
   fragment EnglishAuctionStartedEventFields on EnglishAuctionStartedEvent {
@@ -4164,6 +4213,14 @@ export const GetChannelNftCollectors = gql`
     }
   }
   ${ChannelNftCollectorFields}
+`
+export const GetPlaylistById = gql`
+  query getPlaylistById($id: ID!) {
+    playlistByUniqueInput(where: { id: $id }) {
+      ...PlaylistFields
+    }
+  }
+  ${PlaylistFields}
 `
 export const GetEnglishAuctionStartedEventsByEventIds = gql`
   query getEnglishAuctionStartedEventsByEventIds($eventIds: [ID!]) {

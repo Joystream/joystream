@@ -8,6 +8,7 @@ import {
   ChannelUpdateInputParameters,
   ChannelCategoryInputParameters,
   VideoCategoryInputParameters,
+  PlaylistInputParameters,
 } from '@joystream/cli/src/Types'
 import ExitCodes from '@joystream/cli/src/ExitCodes'
 
@@ -15,8 +16,14 @@ const CLI_ROOT_PATH = path.resolve(__dirname, '../../../../cli')
 
 type Modify<T, R> = Omit<T, keyof R> & R
 
+// ICreatedContentData
 export interface ICreatedVideoData {
   videoId: number
+  assetContentIds: string[]
+}
+
+export interface ICreatedPlaylistData {
+  playlistId: number
   assetContentIds: string[]
 }
 
@@ -226,6 +233,63 @@ export class JoystreamCLI extends CLI {
     if (exitCode && !this.isErrorDueToNoStorage(exitCode)) {
       // ignore warnings
       throw new Error(`Unexpected CLI failure on creating video category: "${stderr}"`)
+    }
+  }
+
+  /**
+    Creates a new video.
+  */
+  async createPlaylist(
+    channelId: number,
+    playlist: PlaylistInputParameters,
+    canOmitUpload = true
+  ): Promise<ICreatedPlaylistData> {
+    const jsonFile = this.tmpFileManager.jsonFile(playlist)
+
+    const { stdout, stderr, exitCode } = await this.run(
+      'content:createPlaylist',
+      ['--input', jsonFile, '--channelId', channelId.toString()],
+      undefined,
+      !canOmitUpload
+    )
+
+    // prevent error from CLI that create
+    if (canOmitUpload && exitCode && !this.isErrorDueToNoStorage(exitCode)) {
+      // ignore warnings
+      throw new Error(`Unexpected CLI failure on creating playlist: "${stderr}"`)
+    }
+
+    const playlistId = this.parseCreatedIdFromOutput(stderr)
+    const assetContentIds = Array.from(stdout.matchAll(/ objectId: '([a-z0-9]+)'/g)).map((item) => item[1])
+
+    return {
+      playlistId,
+      assetContentIds,
+    }
+  }
+
+  /**
+    Updates an existing video.
+  */
+  async updatePlaylist(playlistId: number, playlist: VideoInputParameters): Promise<void> {
+    const jsonFile = this.tmpFileManager.jsonFile(playlist)
+
+    const { stderr, exitCode } = await this.run('content:updatePlaylist', ['--input', jsonFile, playlistId.toString()])
+
+    if (exitCode && !this.isErrorDueToNoStorage(exitCode)) {
+      // ignore warnings
+      throw new Error(`Unexpected CLI on updating playlist: "${stderr}"`)
+    }
+  }
+
+  /**
+    Delete an existing playlist.
+  */
+  async deletePlaylist(playlistId: number): Promise<void> {
+    const { stderr, exitCode } = await this.run('content:deletePlaylist', ['-p', playlistId.toString(), '-f'])
+
+    if (exitCode) {
+      throw new Error(`Unexpected CLI failure on deleting playlist: "${stderr}"`)
     }
   }
 }

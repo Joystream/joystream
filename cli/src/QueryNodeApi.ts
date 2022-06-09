@@ -46,6 +46,9 @@ import {
   UpcomingWorkingGroupOpeningsByGroupQuery,
   UpcomingWorkingGroupOpeningsByGroupQueryVariables,
   UpcomingWorkingGroupOpeningsByGroup,
+  GetDataObjectsByPlaylistIdQuery,
+  GetDataObjectsByPlaylistIdQueryVariables,
+  GetDataObjectsByPlaylistId,
 } from './graphql/generated/queries'
 import { URL } from 'url'
 import fetch from 'cross-fetch'
@@ -109,6 +112,14 @@ export default class QueryNodeApi {
     return this.multipleEntitiesQuery<GetDataObjectsByVideoIdQuery, GetDataObjectsByVideoIdQueryVariables>(
       GetDataObjectsByVideoId,
       { videoId },
+      'storageDataObjects'
+    )
+  }
+
+  async dataObjectsByPlaylistId(playlistId: string): Promise<DataObjectInfoFragment[]> {
+    return this.multipleEntitiesQuery<GetDataObjectsByPlaylistIdQuery, GetDataObjectsByPlaylistIdQueryVariables>(
+      GetDataObjectsByPlaylistId,
+      { playlistId },
       'storageDataObjects'
     )
   }

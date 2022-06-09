@@ -1,0 +1,9 @@
+{
+  "title": "Example Joystream Playlist [UPDATED!]",
+  "description": "This is an playlist of awesome videos!",
+  "thumbnailPhotoPath": "./avatar-photo-2.png",
+  "language": "en",
+  "isPublic": true,
+  "videoIds": [],
+  "enableComments": true
+}

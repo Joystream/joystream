@@ -336,6 +336,10 @@ import {
   GetBidsByMemberIdQuery,
   GetBidsByMemberIdQueryVariables,
   GetBidsByMemberId,
+  PlaylistFieldsFragment,
+  GetPlaylistByIdQuery,
+  GetPlaylistByIdQueryVariables,
+  GetPlaylistById,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1198,5 +1202,13 @@ export class QueryNodeApi {
       GetEnglishAuctionSettledEventsByEventIdsQuery,
       GetEnglishAuctionSettledEventsByEventIdsQueryVariables
     >(GetEnglishAuctionSettledEventsByEventIds, { eventIds }, 'englishAuctionSettledEvents')
+  }
+
+  public async playlistById(id: string): Promise<Maybe<PlaylistFieldsFragment>> {
+    return this.uniqueEntityQuery<GetPlaylistByIdQuery, GetPlaylistByIdQueryVariables>(
+      GetPlaylistById,
+      { id },
+      'playlistByUniqueInput'
+    )
   }
 }

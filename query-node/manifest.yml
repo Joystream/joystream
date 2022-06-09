@@ -732,11 +732,11 @@ mappings:
     - event: content.VideoCategoryDeleted
       handler: content_VideoCategoryDeleted
     - event: content.VideoCreated
-      handler: content_VideoCreated
+      handler: content_ContentCreated
     - event: content.VideoUpdated
-      handler: content_VideoUpdated
+      handler: content_ContentUpdated
     - event: content.VideoDeleted
-      handler: content_VideoDeleted
+      handler: content_ContentDeleted
     - event: content.VideoCensorshipStatusUpdated
       handler: content_VideoCensorshipStatusUpdated
     - event: content.FeaturedVideosSet

@@ -1,5 +1,7 @@
 syntax = "proto2";
 
+import "proto/Playlist.proto";
+
 // Publication status before joystream
 message PublishedBeforeJoystream {
     // Was video published before joystream platform
@@ -85,4 +87,16 @@ message VideoMetadata {
 message VideoCategoryMetadata {
     // Category name
     optional string name = 1;
+}
+
+message ContentMetadata {
+    oneof content_metadata {
+        // For backward compatibility reasons, apps that deserialize metadata (e.g. Query Node) 
+        // need to handle the deserialization of `VideoMetadata` message both as independent
+        // message and as a variant of  `ContentMetadata`. Though, apps that serialize protobuf
+        // messages (mostly frontend apps) are advised to use `ContentMetadata` message for all 
+        // new videos & playlists
+        VideoMetadata video_metadata = 1;
+        PlaylistMetadata playlist_metadata = 2;
+    }
 }
