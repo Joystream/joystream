@@ -4,12 +4,12 @@ use crate::{
     BuyMembershipParameters, Config, InviteMembershipParameters, MemberIdByHandleHash, Membership,
     MembershipById, MembershipObject, StakingAccountIdMemberStatus, StakingAccountMemberBinding,
 };
-use balances::Module as Balances;
+use balances::Pallet as Balances;
 use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks};
 use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;
-use frame_system::Module as System;
+use frame_system::Pallet as System;
 use frame_system::{EventRecord, RawOrigin};
 use sp_arithmetic::traits::One;
 use sp_arithmetic::Perbill;
