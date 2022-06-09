@@ -469,7 +469,10 @@ impl SetLeaderInvitationQuotaFixture {
         assert_eq!(expected_result, actual_result);
 
         if actual_result.is_ok() {
-            assert_eq!(Membership::membership(ALICE_MEMBER_ID).unwrap().invites, self.quota);
+            assert_eq!(
+                Membership::membership(ALICE_MEMBER_ID).unwrap().invites,
+                self.quota
+            );
         }
     }
 
@@ -574,7 +577,7 @@ impl Default for AddStakingAccountFixture {
             origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
             member_id: ALICE_MEMBER_ID,
             staking_account_id: ALICE_ACCOUNT_ID,
-            initial_balance: <Test as Config>::CandidateStake::get()
+            initial_balance: <Test as Config>::CandidateStake::get(),
         }
     }
 }
