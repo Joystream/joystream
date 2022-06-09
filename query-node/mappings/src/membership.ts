@@ -4,8 +4,16 @@ eslint-disable @typescript-eslint/naming-convention
 import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
 import { Members } from '../generated/types'
 import { MemberId, BuyMembershipParameters, InviteMembershipParameters } from '@joystream/types/augment/all'
-import { MembershipMetadata } from '@joystream/metadata-protobuf'
-import { bytesToString, deserializeMetadata, genericEventFields, getWorker, toNumber } from './common'
+import { MembershipMetadata, MemberRemarked } from '@joystream/metadata-protobuf'
+import {
+  bytesToString,
+  deserializeMetadata,
+  genericEventFields,
+  getWorker,
+  inconsistentState,
+  toNumber,
+  updateMetaprotocolTransactionStatus,
+} from './common'
 import {
   Membership,
   MembershipEntryMethod,
@@ -29,7 +37,19 @@ import {
   MembershipEntryInvited,
   AvatarUri,
   WorkingGroup,
+  MetaprotocolTransactionStatusEvent,
+  MetaprotocolTransactionPending,
+  MetaprotocolTransactionErrored,
+  MetaprotocolTransactionSuccessful,
 } from 'query-node/dist/model'
+import {
+  processReactVideoMessage,
+  processReactCommentMessage,
+  processCreateCommentMessage,
+  processEditCommentMessage,
+  processDeleteCommentMessage,
+} from './content'
+import { BaseModel } from '@joystream/warthog'
 
 async function getMemberById(store: DatabaseManager, id: MemberId): Promise<Membership> {
   const member = await store.get(Membership, { where: { id: id.toString() }, relations: ['metadata'] })
@@ -494,4 +514,52 @@ export async function members_LeaderInvitationQuotaUpdated({
   })
 
   await store.save<LeaderInvitationQuotaUpdatedEvent>(leaderInvitationQuotaUpdatedEvent)
+}
+
+export async function members_MemberRemarked(ctx: EventContext & StoreContext): Promise<void> {
+  const { event, store } = ctx
+  const [memberId, message] = new Members.MemberRemarkedEvent(event).params
+
+  const genericFields = genericEventFields(event)
+  // unique identifier for metaprotocol tx
+  const { id: metaprotocolTxIdentifier } = genericFields as BaseModel
+
+  const metaprotocolTxStatusEvent = new MetaprotocolTransactionStatusEvent({
+    ...genericFields,
+    status: new MetaprotocolTransactionPending(),
+  })
+
+  // save metaprotocol tx status event
+  await store.save<MetaprotocolTransactionStatusEvent>(metaprotocolTxStatusEvent)
+
+  try {
+    const decodedMessage = MemberRemarked.decode(message.toU8a(true))
+    const messageType = decodedMessage.memberRemarked
+
+    // update MetaprotocolTransactionStatusEvent
+    const statusSuccessful = new MetaprotocolTransactionSuccessful()
+
+    if (!messageType) {
+      inconsistentState('Unsupported message type in member_remark action')
+    } else if (messageType === 'reactVideo') {
+      await processReactVideoMessage(ctx, memberId, decodedMessage.reactVideo!)
+    } else if (messageType === 'reactComment') {
+      await processReactCommentMessage(ctx, memberId, decodedMessage.reactComment!)
+    } else if (messageType === 'createComment') {
+      const comment = await processCreateCommentMessage(ctx, memberId, decodedMessage.createComment!)
+      statusSuccessful.commentCreatedId = comment.id
+    } else if (messageType === 'editComment') {
+      const comment = await processEditCommentMessage(ctx, memberId, decodedMessage.editComment!)
+      statusSuccessful.commentEditedId = comment.id
+    } else if (messageType === 'deleteComment') {
+      const comment = await processDeleteCommentMessage(ctx, memberId, decodedMessage.deleteComment!)
+      statusSuccessful.commentDeletedId = comment.id
+    }
+
+    await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
+  } catch (e) {
+    // update MetaprotocolTransactionStatusEvent
+    const statusErrored = new MetaprotocolTransactionErrored()
+    await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusErrored, e)
+  }
 }
