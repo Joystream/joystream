@@ -150,7 +150,7 @@ pub(crate) const DEFAULT_MEMBER_INVITES_COUNT: u32 = 5;
 /// Public membership profile alias.
 pub type Membership<T> = MembershipObject<<T as frame_system::Config>::AccountId>;
 
-#[derive(Encode, PartialEq, Decode, Debug, Default, TypeInfo)]
+#[derive(Encode, PartialEq, Decode, Debug, TypeInfo, Clone)]
 /// Stored information about a registered user.
 pub struct MembershipObject<AccountId: Ord> {
     /// The hash of the handle chosen by member.
@@ -186,7 +186,7 @@ pub struct StakingAccountMemberBinding<MemberId> {
 }
 
 /// Parameters for the buy_membership extrinsic.
-#[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]
 pub struct BuyMembershipParameters<AccountId, MemberId> {
     /// New member root account.
     pub root_account: AccountId,
@@ -205,7 +205,7 @@ pub struct BuyMembershipParameters<AccountId, MemberId> {
 }
 
 /// Parameters for the invite_member extrinsic.
-#[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]
 pub struct InviteMembershipParameters<AccountId, MemberId> {
     /// Inviting member id.
     pub inviting_member_id: MemberId,
@@ -294,7 +294,7 @@ decl_storage! {
 
         /// Mapping of member's id to their membership profile.
         pub MembershipById get(fn membership) : map hasher(blake2_128_concat)
-            T::MemberId => Membership<T>;
+            T::MemberId => Option<Membership<T>>;
 
         /// Registered unique handles hash and their mapping to their owner.
         pub MemberIdByHandleHash get(fn handles) : map hasher(blake2_128_concat)
@@ -503,7 +503,7 @@ decl_module! {
 
             Self::ensure_member_controller_account_origin_signed(origin, &member_id)?;
 
-            let membership = Self::ensure_membership(member_id)?;
+            let mut membership = Self::ensure_membership(member_id)?;
 
             let new_handle_hash = handle.clone()
                 .map(|handle| Self::get_handle_hash(&Some(handle)))
@@ -513,13 +513,12 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            if let Some(new_handle_hash) = new_handle_hash{
+            if let Some(new_handle_hash) = new_handle_hash {
                 // remove old handle hash
                 <MemberIdByHandleHash<T>>::remove(&membership.handle_hash);
 
-                <MembershipById<T>>::mutate(&member_id, |membership| {
-                    membership.handle_hash = new_handle_hash.clone();
-                });
+                membership.handle_hash = new_handle_hash.clone();
+                <MembershipById<T>>::insert(&member_id, membership);
 
                 <MemberIdByHandleHash<T>>::insert(new_handle_hash, member_id);
             }
@@ -593,15 +592,14 @@ decl_module! {
         ) {
             T::WorkingGroup::ensure_worker_origin(origin, &worker_id)?;
 
-            Self::ensure_membership(target_member_id)?;
+            let mut membership = Self::ensure_membership(target_member_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            <MembershipById<T>>::mutate(&target_member_id, |membership| {
-                    membership.verified = is_verified;
-            });
+            membership.verified = is_verified;
+            <MembershipById<T>>::insert(&target_member_id, membership);
 
             Self::deposit_event(
                 RawEvent::MemberVerificationStatusUpdated(target_member_id, is_verified, worker_id)
@@ -653,8 +651,8 @@ decl_module! {
         ) {
             Self::ensure_member_controller_account_origin_signed(origin, &source_member_id)?;
 
-            let source_membership = Self::ensure_membership(source_member_id)?;
-            Self::ensure_membership_with_error(
+            let mut source_membership = Self::ensure_membership(source_member_id)?;
+            let mut target_membership = Self::ensure_membership_with_error(
                 target_member_id,
                 Error::<T>::CannotTransferInvitesForNotMember
             )?;
@@ -666,14 +664,12 @@ decl_module! {
             //
 
             // Decrease source member invite number.
-            <MembershipById<T>>::mutate(&source_member_id, |membership| {
-                membership.invites = membership.invites.saturating_sub(number_of_invites);
-            });
+            source_membership.invites = source_membership.invites.saturating_sub(number_of_invites);
+            <MembershipById<T>>::insert(&source_member_id, source_membership);
 
             // Increase target member invite number.
-            <MembershipById<T>>::mutate(&target_member_id, |membership| {
-                membership.invites = membership.invites.saturating_add(number_of_invites);
-            });
+            target_membership.invites = target_membership.invites.saturating_add(number_of_invites);
+            <MembershipById<T>>::insert(&target_member_id, target_membership);
 
             Self::deposit_event(RawEvent::InvitesTransferred(
                 source_member_id,
@@ -704,7 +700,7 @@ decl_module! {
             origin,
             params: InviteMembershipParameters<T::AccountId, T::MemberId>
         ) {
-            let membership = Self::ensure_member_controller_account_origin_signed(
+            let mut membership = Self::ensure_member_controller_account_origin_signed(
                 origin,
                 &params.inviting_member_id
             )?;
@@ -743,9 +739,8 @@ decl_module! {
             );
 
             // Save the updated profile.
-            <MembershipById<T>>::mutate(&params.inviting_member_id, |membership| {
-                membership.invites = membership.invites.saturating_sub(1);
-            });
+            membership.invites = membership.invites.saturating_sub(1);
+            <MembershipById<T>>::insert(&params.inviting_member_id, membership);
 
             // Decrease the working group balance.
             let new_wg_budget = current_wg_budget.saturating_sub(invitation_balance);
@@ -805,19 +800,22 @@ decl_module! {
 
             let leader_member_id = T::WorkingGroup::get_leader_member_id();
 
-            ensure!(leader_member_id.is_some(), Error::<T>::WorkingGroupLeaderNotSet);
+            // ensure!(leader_member_id.is_some(), Error::<T>::WorkingGroupLeaderNotSet);
+
+            let member_id = leader_member_id.ok_or(Error::<T>::WorkingGroupLeaderNotSet)?;
+
+            // Membership must exist!
+            // let mut membership = Self::membership(member_id).ok_or(Error::<T>::MemberProfileNotFound)?;
+            let mut membership = Self::ensure_membership(member_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            if let Some(member_id) = leader_member_id {
-                <MembershipById<T>>::mutate(&member_id, |membership| {
-                        membership.invites = invitation_quota;
-                });
+            membership.invites = invitation_quota;
+            <MembershipById<T>>::insert(member_id, membership);
 
-                Self::deposit_event(RawEvent::LeaderInvitationQuotaUpdated(invitation_quota));
-            }
+            Self::deposit_event(RawEvent::LeaderInvitationQuotaUpdated(invitation_quota));
         }
 
         /// Updates initial invitation balance for a invited member. Requires root origin.
@@ -1064,11 +1062,7 @@ impl<T: Config> Module<T> {
         id: T::MemberId,
         error: Error<T>,
     ) -> Result<Membership<T>, Error<T>> {
-        if <MembershipById<T>>::contains_key(&id) {
-            Ok(Self::membership(&id))
-        } else {
-            Err(error)
-        }
+        Self::membership(id).ok_or(error)
     }
 
     // Ensure possible member handle hash is unique.
@@ -1140,12 +1134,7 @@ impl<T: Config> Module<T> {
         member_id: &T::MemberId,
         account: &T::AccountId,
     ) -> Result<Membership<T>, Error<T>> {
-        ensure!(
-            MembershipById::<T>::contains_key(member_id),
-            Error::<T>::MemberProfileNotFound
-        );
-
-        let membership = MembershipById::<T>::get(member_id);
+        let membership = Self::ensure_membership(*member_id)?;
 
         ensure!(
             membership.controller_account == *account,
