@@ -391,8 +391,8 @@ fn transfer_invites_succeeds() {
 
         tranfer_invites_fixture.call_and_assert(Ok(()));
 
-        let alice = Membership::membership(ALICE_MEMBER_ID);
-        let bob = Membership::membership(bob_member_id);
+        let alice = Membership::membership(ALICE_MEMBER_ID).unwrap();
+        let bob = Membership::membership(bob_member_id).unwrap();
 
         assert_eq!(alice.invites, tranfer_invites_fixture.invites);
         assert_eq!(
@@ -564,7 +564,7 @@ fn invite_member_succeeds_with_additional_checks() {
         // Working group budget reduced.
         assert_eq!(
             WORKING_GROUP_BUDGET - initial_invitation_balance,
-            <Test as Trait>::WorkingGroup::get_budget()
+            <Test as Config>::WorkingGroup::get_budget()
         );
 
         // Invited member account filled.

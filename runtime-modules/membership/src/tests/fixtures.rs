@@ -21,7 +21,7 @@ pub fn run_to_block(n: u64) {
 pub struct EventFixture;
 impl EventFixture {
     pub fn assert_last_crate_event(expected_raw_event: crate::Event<Test>) {
-        let converted_event = Event::membership(expected_raw_event);
+        let converted_event = Event::Membership(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
     }
@@ -39,7 +39,7 @@ impl EventFixture {
 
 pub fn get_membership_by_id(member_id: u64) -> crate::Membership<Test> {
     if <crate::MembershipById<Test>>::contains_key(member_id) {
-        Membership::membership(member_id)
+        Membership::membership(member_id).unwrap()
     } else {
         panic!("member profile not created");
     }
@@ -469,7 +469,7 @@ impl SetLeaderInvitationQuotaFixture {
         assert_eq!(expected_result, actual_result);
 
         if actual_result.is_ok() {
-            assert_eq!(Membership::membership(ALICE_MEMBER_ID).invites, self.quota);
+            assert_eq!(Membership::membership(ALICE_MEMBER_ID).unwrap().invites, self.quota);
         }
     }
 
@@ -574,7 +574,7 @@ impl Default for AddStakingAccountFixture {
             origin: RawOrigin::Signed(ALICE_ACCOUNT_ID),
             member_id: ALICE_MEMBER_ID,
             staking_account_id: ALICE_ACCOUNT_ID,
-            initial_balance: <Test as Config>::CandidateStake::get(),
+            initial_balance: <Test as Config>::CandidateStake::get()
         }
     }
 }
