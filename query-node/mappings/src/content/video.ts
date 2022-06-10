@@ -2,9 +2,9 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { In, getManager } from 'typeorm'
+import { In, FindOptionsWhere } from 'typeorm'
 import { Content } from '../../generated/types'
-import { deserializeMetadata, EntityType, genericEventFields, inconsistentState, logger } from '../common'
+import { deserializeMetadata, genericEventFields, inconsistentState, logger } from '../common'
 import {
   processVideoMetadata,
   videoRelationsForCounters,
@@ -269,13 +269,13 @@ export async function content_VideoDeleted({ store, event }: EventContext & Stor
 }
 
 async function removeVideoReferencingRelations(store: DatabaseManager, videoId: string): Promise<void> {
-  const loadReferencingEntities = async <T extends BaseModel>(
+  const loadReferencingEntities = async <T extends BaseModel & { video: Partial<Video> }>(
     store: DatabaseManager,
     entityType: { new (): T },
     videoId: string
   ) => {
     return await store.getMany(entityType, {
-      where: { video: { id: videoId } },
+      where: { video: { id: videoId } } as FindOptionsWhere<T>,
     })
   }
 
