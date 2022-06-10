@@ -605,3 +605,71 @@ fn auction_proceeds_are_burned_in_case_of_curator_owned_channel_is_auctioneer() 
         assert_eq!(Balances::<Test>::total_issuance(), issuance_pre - bid);
     })
 }
+
+#[test]
+fn auction_proceeds_ok_in_case_of_member_owned_channel_with_no_reward_account_is_auctioneer() {
+    with_default_mock_builder(|| {
+        let video_id = Content::next_video_id();
+        CreateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call();
+        CreateVideoFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call();
+
+        assert_ok!(Content::issue_nft(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            NftIssuanceParameters::<Test>::default(),
+        ));
+
+        let bid_lock_duration = Content::min_bid_lock_duration();
+
+        let auction_params = OpenAuctionParams::<Test> {
+            starting_price: Content::min_starting_price(),
+            buy_now_price: None,
+            bid_lock_duration,
+            starts_at: None,
+            whitelist: BTreeSet::new(),
+        };
+
+        // Start nft auction
+        assert_ok!(Content::start_open_auction(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            auction_params.clone(),
+        ));
+
+        // deposit initial balance
+        let bid = Content::min_starting_price();
+        let platform_fee = Content::platform_fee_percentage().mul_floor(bid);
+
+        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+
+        // Make nft auction bid
+        assert_ok!(Content::make_open_auction_bid(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            SECOND_MEMBER_ID,
+            video_id,
+            bid,
+        ));
+
+        // Pick open auction winner
+        assert_ok!(Content::pick_open_auction_winner(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            SECOND_MEMBER_ID,
+            bid,
+        ));
+
+        assert_eq!(
+            Balances::<Test>::usable_balance(DEFAULT_MEMBER_ACCOUNT_ID),
+            bid - platform_fee
+        );
+    })
+}

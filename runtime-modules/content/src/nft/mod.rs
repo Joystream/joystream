@@ -363,12 +363,12 @@ impl<T: Config> Module<T> {
 
     pub(crate) fn complete_auction(
         nft: Nft<T>,
-        in_channel: T::ChannelId,
+        video: &Video<T>,
         royalty_payment: Option<(Royalty, T::AccountId)>,
         winner_id: T::MemberId,
         amount: BalanceOf<T>,
     ) -> Nft<T> {
-        let account_deposit_into = Self::ensure_owner_account_id(in_channel, &nft).ok();
+        let account_deposit_into = Self::ensure_nft_owner_has_beneficiary_account(video, &nft).ok();
         let account_withdraw_from = ContentTreasury::<T>::module_account_id();
 
         Self::complete_payment(
@@ -382,15 +382,25 @@ impl<T: Config> Module<T> {
             .with_member_owner(winner_id)
     }
 
-    pub(crate) fn ensure_owner_account_id(
-        channel_id: T::ChannelId,
+    /// NFT owned by:
+    /// - Member: member controller account is used
+    /// - Channel: then if reward account is:
+    ///    - `Some(acc)` -> use `acc` as reward account
+    ///    - `None` -> then if channel owner is:
+    ///      - `Member` -> use member controller account
+    ///      - `CuratorGroup` -> Error
+    /// In order to statically guarantee that `video.in_channel` exists, by leveraging the
+    /// Runtime invariant: `video` exists => `video.in_channel` exists
+    pub(crate) fn ensure_nft_owner_has_beneficiary_account(
+        video: &Video<T>,
         nft: &Nft<T>,
     ) -> Result<T::AccountId, DispatchError> {
         match nft.owner {
             NftOwner::Member(member_id) => T::MemberAuthenticator::controller_account_id(member_id),
-            NftOwner::ChannelOwner => Self::channel_by_id(channel_id)
-                .reward_account
-                .ok_or_else(|| Error::<T>::RewardAccountIsNotSet.into()),
+            NftOwner::ChannelOwner => {
+                let channel = Self::channel_by_id(&video.in_channel);
+                Self::ensure_channel_has_beneficiary_account(&channel)
+            }
         }
     }
 
@@ -462,20 +472,9 @@ impl<T: Config> Module<T> {
         // payment is none if there is no royalty
         if let Some(royalty) = creator_royalty {
             let channel = Self::channel_by_id(&video.in_channel);
-            // use reward account if specified
-            if let Some(creator_reward_account) = channel.reward_account {
-                Some((royalty, creator_reward_account))
-            } else {
-                // otherwise resort to controller account for member owned channels
-                if let ChannelOwner::Member(member_id) = channel.owner {
-                    T::MemberAuthenticator::controller_account_id(member_id)
-                        .ok()
-                        .map(|reward_account| (royalty, reward_account))
-                } else {
-                    // no royalty paid for curator owned channel with unspecified reward account
-                    None
-                }
-            }
+            Self::ensure_channel_has_beneficiary_account(&channel)
+                .ok()
+                .map(|reward_acc| (royalty, reward_acc))
         } else {
             None
         }

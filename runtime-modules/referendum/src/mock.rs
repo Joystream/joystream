@@ -35,6 +35,8 @@ pub const USER_REGULAR: u64 = 2;
 pub const USER_REGULAR_POWER_VOTES: u64 = 3;
 pub const USER_REGULAR_2: u64 = 4;
 pub const USER_REGULAR_3: u64 = 5;
+pub const USER_REGULAR_4: u64 = 6;
+pub const USER_REGULAR_5: u64 = 7;
 
 pub const POWER_VOTE_STRENGTH: u64 = 10;
 
@@ -425,6 +427,8 @@ pub fn build_test_externalities(
         topup_account(USER_REGULAR, amount);
         topup_account(USER_REGULAR_2, amount);
         topup_account(USER_REGULAR_3, amount);
+        topup_account(USER_REGULAR_4, amount);
+        topup_account(USER_REGULAR_5, amount);
         topup_account(USER_REGULAR_POWER_VOTES, amount);
 
         InstanceMockUtils::<Runtime, DefaultInstance>::increase_block_number(1)
@@ -691,6 +695,18 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         >,
         expected_referendum_result: BTreeMap<u64, <Runtime as Config>::VotePower>,
     ) {
+        Self::check_revealing_finished_winners(expected_winners);
+        Self::check_revealing_finished_referendum_results(expected_referendum_result);
+    }
+
+    pub fn check_revealing_finished_winners(
+        expected_winners: Vec<
+            OptionResult<
+                <Runtime as common::membership::MembershipTypes>::MemberId,
+                <Runtime as Trait>::VotePower,
+            >,
+        >,
+    ) {
         assert_eq!(
             Stage::<Runtime, DefaultInstance>::get(),
             ReferendumStage::Inactive,
@@ -703,6 +719,15 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .unwrap()
                 .event,
             Event::referendum(RawEvent::ReferendumFinished(expected_winners,))
+        );
+    }
+
+    pub fn check_revealing_finished_referendum_results(
+        expected_referendum_result: BTreeMap<u64, <Runtime as Trait>::VotePower>,
+    ) {
+        assert_eq!(
+            Stage::<Runtime, DefaultInstance>::get(),
+            ReferendumStage::Inactive,
         );
 
         INTERMEDIATE_RESULTS.with(|value| assert_eq!(*value.borrow(), expected_referendum_result,));

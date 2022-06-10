@@ -724,7 +724,7 @@ dependencies = [
 
 [[package]]
 name = "chain-spec-builder"
-version = "6.6.0"
+version = "6.8.0"
 dependencies = [
  "ansi_term",
  "async-std",
