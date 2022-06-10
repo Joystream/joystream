@@ -811,8 +811,8 @@ fn correct_candidates_make_it_into_winners_list() {
     let config = default_genesis_config();
 
     build_test_externalities(config).execute_with(|| {
-        let voting_stage_duration = <Runtime as Trait>::VoteStageDuration::get();
-        let reveal_stage_duration = <Runtime as Trait>::RevealStageDuration::get();
+        let voting_stage_duration = <Runtime as Config>::VoteStageDuration::get();
+        let reveal_stage_duration = <Runtime as Config>::RevealStageDuration::get();
         let account_superuser = USER_ADMIN;
         let account_id1 = USER_REGULAR;
         let account_id2 = USER_REGULAR_2;
@@ -832,7 +832,7 @@ fn correct_candidates_make_it_into_winners_list() {
         let option_to_vote_for1 = 0;
         let option_to_vote_for2 = 1;
         let option_to_vote_for3 = 2;
-        let stake = <Runtime as Trait>::MinimumStake::get();
+        let stake = <Runtime as Config>::MinimumStake::get();
         let (commitment1, salt1) =
             MockUtils::calculate_commitment(&account_id1, &option_to_vote_for1, &cycle_id);
         let (commitment2, salt2) =
@@ -961,8 +961,8 @@ fn correct_orderding_of_winners() {
     let config = default_genesis_config();
 
     build_test_externalities(config).execute_with(|| {
-        let voting_stage_duration = <Runtime as Trait>::VoteStageDuration::get();
-        let reveal_stage_duration = <Runtime as Trait>::RevealStageDuration::get();
+        let voting_stage_duration = <Runtime as Config>::VoteStageDuration::get();
+        let reveal_stage_duration = <Runtime as Config>::RevealStageDuration::get();
         let account_superuser = USER_ADMIN;
         let account_id1 = USER_REGULAR;
         let account_id2 = USER_REGULAR_2;
@@ -982,7 +982,7 @@ fn correct_orderding_of_winners() {
         let option_to_vote_for2 = 1;
         let option_to_vote_for3 = 2;
         let option_to_vote_for4 = 3;
-        let stake = <Runtime as Trait>::MinimumStake::get();
+        let stake = <Runtime as Config>::MinimumStake::get();
         let (commitment1, salt1) =
             MockUtils::calculate_commitment(&account_id1, &option_to_vote_for1, &cycle_id);
         let (commitment2, salt2) =

@@ -42,9 +42,11 @@ use frame_support::{
     StorageValue,
 };
 use frame_system::ensure_signed;
+use scale_info::TypeInfo;
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_runtime::SaturatedConversion;
+use sp_std::convert::TryInto;
 use sp_std::vec;
 use sp_std::vec::Vec;
 
@@ -66,7 +68,7 @@ mod tests;
 
 /// Possible referendum states.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, TypeInfo)]
 pub enum ReferendumStage<BlockNumber, MemberId, VotePower> {
     /// The referendum is dormant and waiting to be started by external source.
     Inactive,
@@ -86,7 +88,7 @@ impl<BlockNumber, MemberId, VotePower: Encode + Decode> Default
 
 /// Representation for voting stage state.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo)]
 pub struct ReferendumStageVoting<BlockNumber> {
     pub started: BlockNumber,      // block in which referendum started
     pub winning_target_count: u64, // target number of winners
@@ -95,7 +97,7 @@ pub struct ReferendumStageVoting<BlockNumber> {
 
 /// Representation for revealing stage state.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo)]
 pub struct ReferendumStageRevealing<BlockNumber, MemberId, VotePower> {
     // block in which referendum started
     pub started: BlockNumber,
@@ -108,7 +110,7 @@ pub struct ReferendumStageRevealing<BlockNumber, MemberId, VotePower> {
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone, TypeInfo)]
 pub struct OptionResult<MemberId, VotePower> {
     pub option_id: MemberId,
     pub vote_power: VotePower,
@@ -116,7 +118,7 @@ pub struct OptionResult<MemberId, VotePower> {
 
 /// Vote cast in referendum. Vote target is concealed until user reveals commitment's proof.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo)]
 pub struct CastVote<Hash, Currency, MemberId> {
     // A commitment that a user submits in the voting stage before revealing what this vote is
     // actually for
@@ -334,6 +336,7 @@ decl_event! {
 
 decl_error! {
     /// Referendum errors
+    #[derive(PartialEq)]
     pub enum Error for Module<T: Config<I>, I: Instance> {
         /// Origin is invalid
         BadOrigin,
@@ -373,12 +376,6 @@ decl_error! {
 
         /// Unstaking has been forbidden for the user (at least for now)
         UnstakingForbidden,
-    }
-}
-
-impl<T: Config<I>, I: Instance> PartialEq for Error<T, I> {
-    fn eq(&self, other: &Self) -> bool {
-        self.as_u8() == other.as_u8()
     }
 }
 

@@ -4,7 +4,7 @@ use super::*;
 use frame_benchmarking::{account, benchmarks_instance, Zero};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::EventRecord;
-use frame_system::Module as System;
+use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use membership::Module as Membership;
 use sp_runtime::traits::{Bounded, One};
@@ -711,7 +711,7 @@ mod tests {
     fn test_vote() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_vote::<Runtime>());
+            assert_ok!(Module::<Runtime>::test_benchmark_vote());
         })
     }
 
@@ -719,7 +719,7 @@ mod tests {
     fn test_reveal_vote_space_for_new_winner() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_reveal_vote_space_for_new_winner::<Runtime>());
+            assert_ok!(Module::<Runtime>::test_benchmark_reveal_vote_space_for_new_winner());
         })
     }
 
@@ -727,7 +727,7 @@ mod tests {
     fn test_reveal_vote_space_not_in_winners() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_reveal_vote_space_not_in_winners::<Runtime>());
+            assert_ok!(Module::<Runtime>::test_benchmark_reveal_vote_space_not_in_winners());
         })
     }
 
@@ -735,7 +735,7 @@ mod tests {
     fn test_reveal_vote_already_existing() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_reveal_vote_already_existing::<Runtime>());
+            assert_ok!(Module::<Runtime>::test_benchmark_reveal_vote_already_existing());
         })
     }
 
@@ -743,9 +743,7 @@ mod tests {
     fn test_reveal_vote_space_replace_last_winner() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_reveal_vote_space_replace_last_winner::<
-                Runtime,
-            >());
+            assert_ok!(Module::<Runtime>::test_benchmark_reveal_vote_space_replace_last_winner());
         })
     }
 
@@ -753,7 +751,7 @@ mod tests {
     fn test_release_vote_stake() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_release_vote_stake::<Runtime>());
+            assert_ok!(Module::<Runtime>::test_benchmark_release_vote_stake());
         })
     }
 
@@ -761,7 +759,7 @@ mod tests {
     fn test_on_initialize_voting() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_on_initialize_voting::<Runtime>());
+            assert_ok!(Module::<Runtime>::test_benchmark_on_initialize_voting());
         })
     }
 
@@ -769,7 +767,7 @@ mod tests {
     fn test_on_initialize_revealing() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_on_initialize_revealing::<Runtime>());
+            assert_ok!(Module::<Runtime>::test_benchmark_on_initialize_revealing());
         })
     }
 }

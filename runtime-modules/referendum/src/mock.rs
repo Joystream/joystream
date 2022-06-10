@@ -10,10 +10,12 @@ use crate::{
 pub use crate::DefaultInstance;
 
 use frame_support::dispatch::DispatchResult;
-use frame_support::traits::{Currency, LockIdentifier, OnFinalize, OnInitialize};
+use frame_support::traits::{
+    ConstU16, ConstU32, Currency, LockIdentifier, OnFinalize, OnInitialize,
+};
 use frame_support::weights::Weight;
-use frame_support::{parameter_types, StorageMap, StorageValue};
-use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
+use frame_support::{parameter_types, traits::EnsureOneOf, StorageMap, StorageValue};
+use frame_system::{EnsureRoot, EnsureSigned, RawOrigin};
 use rand::Rng;
 use sp_core::H256;
 use sp_runtime::traits::One;
@@ -21,6 +23,7 @@ use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
 };
+use sp_std::convert::{TryFrom, TryInto};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::iter::FromIterator;
@@ -72,8 +75,7 @@ impl Config for Runtime {
     type MaxSaltLength = MaxSaltLength;
 
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
-    type ManagerOrigin =
-        EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
     type VotePower = u64;
 
@@ -317,12 +319,14 @@ parameter_types! {
 
 impl balances::Config for Runtime {
     type Balance = u64;
-    type Event = Event;
     type DustRemoval = ();
+    type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
-    type AccountStore = frame_system::Pallet<Self>;
+    type AccountStore = System;
+    type MaxLocks = ();
+    type MaxReserves = ConstU32<2>;
+    type ReserveIdentifier = [u8; 8];
     type WeightInfo = ();
-    type MaxLocks = MaxLocks;
 }
 
 impl Runtime {
@@ -350,11 +354,11 @@ frame_support::construct_runtime!(
         NodeBlock = Block,
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
-        System: frame_system::{Module, Call, Storage, Event<T>},
-        Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
-        Membership: membership::{Module, Call, Storage, Event<T>},
-        Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
-        Referendum: referendum::{Module, Call, Storage, Event<T>},
+        System: frame_system::{Pallet, Call, Storage, Event<T>},
+        Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+        Membership: membership::{Pallet, Call, Storage, Event<T>},
+        Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+        Referendum: referendum::{Pallet, Call, Storage, Event<T>},
     }
 );
 
@@ -364,9 +368,10 @@ parameter_types! {
 }
 
 impl frame_system::Config for Runtime {
-    type BaseCallFilter = ();
+    type BaseCallFilter = frame_support::traits::Everything;
     type BlockWeights = ();
     type BlockLength = ();
+    type DbWeight = ();
     type Origin = Origin;
     type Call = Call;
     type Index = u64;
@@ -377,15 +382,16 @@ impl frame_system::Config for Runtime {
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
     type Event = Event;
-    type BlockHashCount = BlockHashCount;
-    type DbWeight = ();
+    type BlockHashCount = BlockHashCount; // ConstU64<250>;
     type Version = ();
+    type PalletInfo = PalletInfo;
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
-    type PalletInfo = PalletInfo;
     type SystemWeightInfo = ();
-    type SS58Prefix = ();
+    type SS58Prefix = ConstU16<42>;
+    type OnSetCode = ();
+    type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
 /////////////////// Data structures ////////////////////////////////////////////
@@ -440,7 +446,7 @@ pub fn build_test_externalities(
 // topup currency to the account
 fn topup_account(account_id: u64, amount: u64) {
     let account_id = account_id;
-    let _ = balances::Module::<Runtime>::deposit_creating(&account_id, amount);
+    let _ = balances::Pallet::<Runtime>::deposit_creating(&account_id, amount);
 }
 
 pub struct InstanceMockUtils<T: Config<I>, I: Instance> {
@@ -641,7 +647,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         }
 
         let winning_target_count = extra_winning_target_count + 1;
-        let block_number = frame_system::Module::<Runtime>::block_number();
+        let block_number = frame_system::Pallet::<Runtime>::block_number();
 
         assert_eq!(
             Stage::<Runtime, DefaultInstance>::get(),
@@ -655,7 +661,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         InstanceMockUtils::<Runtime, DefaultInstance>::increase_block_number(1);
 
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
@@ -664,7 +670,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
     }
 
     pub fn check_voting_finished(winning_target_count: u64, cycle_id: u64) {
-        let block_number = frame_system::Module::<Runtime>::block_number();
+        let block_number = frame_system::Pallet::<Runtime>::block_number();
 
         assert_eq!(
             Stage::<Runtime, DefaultInstance>::get(),
@@ -678,11 +684,11 @@ impl InstanceMocks<Runtime, DefaultInstance> {
 
         // check event was emitted
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            Event::referendum(RawEvent::RevealingStageStarted())
+            Event::Referendum(RawEvent::RevealingStageStarted())
         );
     }
 
@@ -703,7 +709,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         expected_winners: Vec<
             OptionResult<
                 <Runtime as common::membership::MembershipTypes>::MemberId,
-                <Runtime as Trait>::VotePower,
+                <Runtime as Config>::VotePower,
             >,
         >,
     ) {
@@ -714,16 +720,16 @@ impl InstanceMocks<Runtime, DefaultInstance> {
 
         // check event was emitted
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            Event::referendum(RawEvent::ReferendumFinished(expected_winners,))
+            Event::Referendum(RawEvent::ReferendumFinished(expected_winners,))
         );
     }
 
     pub fn check_revealing_finished_referendum_results(
-        expected_referendum_result: BTreeMap<u64, <Runtime as Trait>::VotePower>,
+        expected_referendum_result: BTreeMap<u64, <Runtime as Config>::VotePower>,
     ) {
         assert_eq!(
             Stage::<Runtime, DefaultInstance>::get(),
@@ -767,11 +773,11 @@ impl InstanceMocks<Runtime, DefaultInstance> {
 
         // check event was emitted
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            Event::referendum(RawEvent::VoteCast(account_id, commitment, stake))
+            Event::Referendum(RawEvent::VoteCast(account_id, commitment, stake))
         );
     }
 
@@ -798,11 +804,11 @@ impl InstanceMocks<Runtime, DefaultInstance> {
 
         // check event was emitted
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            Event::referendum(RawEvent::VoteRevealed(account_id, vote_option_index, salt))
+            Event::Referendum(RawEvent::VoteRevealed(account_id, vote_option_index, salt))
         );
     }
 
@@ -825,11 +831,11 @@ impl InstanceMocks<Runtime, DefaultInstance> {
 
         // check event was emitted
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            Event::referendum(RawEvent::StakeReleased(account_id))
+            Event::Referendum(RawEvent::StakeReleased(account_id))
         );
     }
 }
