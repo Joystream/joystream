@@ -118,3 +118,16 @@ fn successful_reduce_curator_channel_creator_token_patronage_rate_by_lead() {
             .call_and_assert(Ok(()));
     })
 }
+
+#[test]
+fn reduce_creator_token_patronage_rate_fails_during_transfer() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Ok(()));
+        ReduceCreatorTokenPatronageRateFixture::default()
+            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
+    })
+}
