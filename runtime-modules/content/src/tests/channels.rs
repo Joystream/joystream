@@ -3041,6 +3041,20 @@ fn claim_council_reward_succeeded() {
 }
 
 #[test]
+fn claim_council_reward_fails_during_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::with_member_channel().with_video().setup();
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(SECOND_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        ClaimCouncilRewardFixture::default()
+            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
+    })
+}
+
+#[test]
 fn claim_council_reward_failed_with_invalid_channel() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -3054,28 +3068,6 @@ fn claim_council_reward_failed_with_invalid_channel() {
             .with_origin(RawOrigin::Signed(LEAD_ACCOUNT_ID))
             .with_channel_id(invalid_channel_id)
             .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()));
-    })
-}
-
-#[test]
-fn claim_council_reward_failed_with_invalid_channel_transfer_status() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_STATE_BLOAT_BOND, &[]);
-
-        // Change channel transfer status.
-        let channel_id = ChannelId::one();
-        <crate::ChannelById<Test>>::mutate(channel_id, |channel| {
-            channel.transfer_status =
-                ChannelTransferStatus::PendingTransfer(PendingTransfer::default())
-        });
-
-        ClaimCouncilRewardFixture::default()
-            .with_origin(RawOrigin::Signed(LEAD_ACCOUNT_ID))
-            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
     })
 }
 

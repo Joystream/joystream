@@ -2303,8 +2303,7 @@ decl_module! {
         pub fn channel_owner_remark(origin, channel_id: T::ChannelId, msg: Vec<u8>) {
             let sender = ensure_signed(origin)?;
             let channel = Self::ensure_channel_exists(&channel_id)?;
-
-
+            channel.ensure_has_no_active_transfer::<T>()?;
             ensure_is_authorized_to_act_as_channel_owner::<T>(&sender, &channel.owner)?;
 
             //

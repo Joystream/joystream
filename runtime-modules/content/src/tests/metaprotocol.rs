@@ -2,7 +2,8 @@
 use super::fixtures::*;
 use super::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_ok, assert_noop};
+use sp_std::iter::FromIterator;
 
 #[test]
 fn successful_agent_remark() {
@@ -357,6 +358,73 @@ fn unsuccessful_nft_owner_with_invalid_acount() {
                 msg
             ),
             Error::<Test>::MemberAuthFailed
+        );
+    })
+}
+
+#[test]
+fn unsuccessful_nft_rewark_during_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        run_to_block(1);
+
+        ContentTest::default().with_video_nft().setup();
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(SECOND_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::nft_owner_remark(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                1u64,
+                b"test".to_vec(),
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
+        );
+    })
+}
+
+#[test]
+fn unsuccessful_channel_owner_remark_during_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        ContentTest::with_member_channel().setup();
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(SECOND_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::channel_owner_remark(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                1u64,
+                b"test".to_vec(),
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
+        );
+    })
+}
+
+#[test]
+fn unsuccessful_channel_agent_rewark_during_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::with_member_channel()
+            .with_collaborators(&[(COLLABORATOR_MEMBER_ID, BTreeSet::from_iter(vec![ChannelActionPermission::AgentRemark]))])
+            .setup();
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(SECOND_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::channel_agent_remark(
+                Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(COLLABORATOR_MEMBER_ID),
+                1u64,
+                b"test".to_vec(),
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
         );
     })
 }
