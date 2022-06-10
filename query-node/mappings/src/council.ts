@@ -355,8 +355,9 @@ export async function council_AnnouncingPeriodStarted({ event, store }: EventCon
 
   // specific event processing
 
+  // Get last cycleId
+  const { cycleId } = await getCurrentElectionRound(store)
   // restart elections
-  const { cycleId } = await concludeElectionRound(store, event)
   await startNextElectionRound(store, event, cycleId + 1)
 }
 
@@ -512,8 +513,8 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
     electedAtBlock: event.blockNumber,
     electedAtTime: new Date(event.blockTimestamp),
     electedAtNetwork: CURRENT_NETWORK,
-    councilElections: oldElectedCouncil?.nextCouncilElections || [], // always empty ?
-    nextCouncilElections: [], // always empty ?
+    councilElections: [],
+    nextCouncilElections: [],
     isResigned: false,
   })
 

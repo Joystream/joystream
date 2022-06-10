@@ -192,6 +192,10 @@ export async function processVideoMetadata(
     )
   }
 
+  if (isSet(meta.enableComments)) {
+    video.isCommentSectionEnabled = meta.enableComments
+  }
+
   return video
 }
 
