@@ -503,7 +503,7 @@ decl_module! {
 
             Self::ensure_member_controller_account_origin_signed(origin, &member_id)?;
 
-            let mut membership = Self::ensure_membership(member_id)?;
+            let membership = Self::ensure_membership(member_id)?;
 
             let new_handle_hash = handle.clone()
                 .map(|handle| Self::get_handle_hash(&Some(handle)))
@@ -517,12 +517,15 @@ decl_module! {
                 // remove old handle hash
                 <MemberIdByHandleHash<T>>::remove(&membership.handle_hash);
 
-                membership.handle_hash = new_handle_hash.clone();
-                <MembershipById<T>>::insert(&member_id, membership);
+                <MemberIdByHandleHash<T>>::insert(new_handle_hash.clone(), member_id);
 
-                <MemberIdByHandleHash<T>>::insert(new_handle_hash, member_id);
+                <MembershipById<T>>::insert(&member_id, Membership::<T> {
+                    handle_hash: new_handle_hash,
+                    ..membership
+                });
             }
 
+            // handle may not have been updated if not unique!
             Self::deposit_event(RawEvent::MemberProfileUpdated(member_id, handle, metadata));
         }
 
@@ -550,7 +553,7 @@ decl_module! {
             }
 
             let sender = ensure_signed(origin)?;
-            let mut membership = Self::ensure_membership(member_id)?;
+            let membership = Self::ensure_membership(member_id)?;
 
             ensure!(membership.root_account == sender, Error::<T>::RootAccountRequired);
 
@@ -558,20 +561,17 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            if let Some(root_account) = new_root_account.clone() {
-                membership.root_account = root_account;
-            }
+            <MembershipById<T>>::insert(member_id, Membership::<T> {
+                root_account: new_root_account.clone().unwrap_or(membership.root_account),
+                controller_account: new_controller_account.clone().unwrap_or(membership.controller_account),
+                ..membership
+            });
 
-            if let Some(controller_account) = new_controller_account.clone() {
-                membership.controller_account = controller_account;
-            }
-
-            <MembershipById<T>>::insert(member_id, membership);
             Self::deposit_event(RawEvent::MemberAccountsUpdated(
-                    member_id,
-                    new_root_account,
-                    new_controller_account
-                ));
+                member_id,
+                new_root_account,
+                new_controller_account
+            ));
         }
 
         /// Updates member profile verification status. Requires working group member origin.
@@ -592,14 +592,16 @@ decl_module! {
         ) {
             T::WorkingGroup::ensure_worker_origin(origin, &worker_id)?;
 
-            let mut membership = Self::ensure_membership(target_member_id)?;
+            let membership = Self::ensure_membership(target_member_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            membership.verified = is_verified;
-            <MembershipById<T>>::insert(&target_member_id, membership);
+            <MembershipById<T>>::insert(&target_member_id, Membership::<T> {
+                verified: is_verified,
+                ..membership
+            });
 
             Self::deposit_event(
                 RawEvent::MemberVerificationStatusUpdated(target_member_id, is_verified, worker_id)
@@ -651,8 +653,8 @@ decl_module! {
         ) {
             Self::ensure_member_controller_account_origin_signed(origin, &source_member_id)?;
 
-            let mut source_membership = Self::ensure_membership(source_member_id)?;
-            let mut target_membership = Self::ensure_membership_with_error(
+            let source_membership = Self::ensure_membership(source_member_id)?;
+            let target_membership = Self::ensure_membership_with_error(
                 target_member_id,
                 Error::<T>::CannotTransferInvitesForNotMember
             )?;
@@ -664,12 +666,16 @@ decl_module! {
             //
 
             // Decrease source member invite number.
-            source_membership.invites = source_membership.invites.saturating_sub(number_of_invites);
-            <MembershipById<T>>::insert(&source_member_id, source_membership);
+            <MembershipById<T>>::insert(&source_member_id, Membership::<T> {
+                invites: source_membership.invites.saturating_sub(number_of_invites),
+                ..source_membership
+            });
 
             // Increase target member invite number.
-            target_membership.invites = target_membership.invites.saturating_add(number_of_invites);
-            <MembershipById<T>>::insert(&target_member_id, target_membership);
+            <MembershipById<T>>::insert(&target_member_id, Membership::<T> {
+                invites: target_membership.invites.saturating_add(number_of_invites),
+                ..target_membership
+            });
 
             Self::deposit_event(RawEvent::InvitesTransferred(
                 source_member_id,
@@ -700,7 +706,7 @@ decl_module! {
             origin,
             params: InviteMembershipParameters<T::AccountId, T::MemberId>
         ) {
-            let mut membership = Self::ensure_member_controller_account_origin_signed(
+            let membership = Self::ensure_member_controller_account_origin_signed(
                 origin,
                 &params.inviting_member_id
             )?;
@@ -739,8 +745,10 @@ decl_module! {
             );
 
             // Save the updated profile.
-            membership.invites = membership.invites.saturating_sub(1);
-            <MembershipById<T>>::insert(&params.inviting_member_id, membership);
+            <MembershipById<T>>::insert(&params.inviting_member_id, Membership::<T> {
+                invites: membership.invites.saturating_sub(1),
+                ..membership
+            });
 
             // Decrease the working group balance.
             let new_wg_budget = current_wg_budget.saturating_sub(invitation_balance);
@@ -805,15 +813,16 @@ decl_module! {
             let member_id = leader_member_id.ok_or(Error::<T>::WorkingGroupLeaderNotSet)?;
 
             // Membership must exist!
-            // let mut membership = Self::membership(member_id).ok_or(Error::<T>::MemberProfileNotFound)?;
-            let mut membership = Self::ensure_membership(member_id)?;
+            let membership = Self::ensure_membership(member_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            membership.invites = invitation_quota;
-            <MembershipById<T>>::insert(member_id, membership);
+            <MembershipById<T>>::insert(member_id, Membership::<T> {
+                invites: invitation_quota,
+                ..membership
+            });
 
             Self::deposit_event(RawEvent::LeaderInvitationQuotaUpdated(invitation_quota));
         }
