@@ -31,5 +31,6 @@ std = [
 	'frame-support/std',
 	'frame-system/std',
 	'pallet-timestamp/std',
-	'balances/std'
+	'balances/std',
+	'scale-info/std',
 ]

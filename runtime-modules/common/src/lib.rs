@@ -19,6 +19,7 @@ use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
+use scale_info::TypeInfo;
 
 /// HTTP Url string
 pub type Url = Vec<u8>;
@@ -65,7 +66,7 @@ pub struct BlockAndTime<BlockNumber, Moment> {
 
 /// Parameters for the 'Funding Request' proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]
 pub struct FundingRequestParameters<Balance, AccountId> {
     /// Single reciever account of funding request
     pub account: AccountId,

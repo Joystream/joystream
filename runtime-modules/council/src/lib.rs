@@ -54,6 +54,8 @@ use frame_system::ensure_root;
 use serde::{Deserialize, Serialize};
 use sp_runtime::traits::{Hash, SaturatedConversion, Saturating, Zero};
 use sp_std::vec::Vec;
+use sp_std::convert::TryInto;
+use scale_info::TypeInfo;
 
 use common::council::CouncilOriginValidator;
 use common::membership::MemberOriginValidator;
@@ -70,7 +72,7 @@ mod tests;
 
 /// Information about council's current state and when it changed the last time.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo)]
 pub struct CouncilStageUpdate<BlockNumber> {
     stage: CouncilStage,
     changed_at: BlockNumber,
@@ -78,7 +80,7 @@ pub struct CouncilStageUpdate<BlockNumber> {
 
 /// Possible council states.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, TypeInfo)]
 pub enum CouncilStage {
     /// Candidacy announcement period.
     Announcing(CouncilStageAnnouncing),
@@ -98,21 +100,21 @@ impl Default for CouncilStage {
 
 /// Representation for announcing candidacy stage state.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo)]
 pub struct CouncilStageAnnouncing {
     candidates_count: u64,
 }
 
 /// Representation for new council members election stage state.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, TypeInfo)]
 pub struct CouncilStageElection {
     candidates_count: u64,
 }
 
 /// Candidate representation.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Clone, TypeInfo)]
 pub struct Candidate<AccountId, Balance, Hash, VotePower> {
     staking_account_id: AccountId,
     reward_account_id: AccountId,
@@ -124,7 +126,7 @@ pub struct Candidate<AccountId, Balance, Hash, VotePower> {
 
 /// Council member representation.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Clone, TypeInfo)]
 pub struct CouncilMember<AccountId, MemberId, Balance, BlockNumber> {
     staking_account_id: AccountId,
     reward_account_id: AccountId,
@@ -325,7 +327,7 @@ decl_storage! {
 
         /// Map of all candidates that ever candidated and haven't unstake yet.
         pub Candidates get(fn candidates) config(): map hasher(blake2_128_concat)
-            T::MemberId => Candidate<T::AccountId, Balance<T>, T::Hash, VotePowerOf::<T>>;
+            T::MemberId => Option<Candidate<T::AccountId, Balance<T>, T::Hash, VotePowerOf::<T>>>;
 
         /// Index of the current candidacy period. It is incremented everytime announcement period
         /// starts.
@@ -414,6 +416,7 @@ decl_event! {
 
 decl_error! {
     /// Council errors
+    #[derive(PartialEq)]
     pub enum Error for Module<T: Config> {
         /// Origin is invalid.
         BadOrigin,
@@ -476,12 +479,6 @@ decl_error! {
 
         /// Candidate id not found
         CandidateDoesNotExist,
-    }
-}
-
-impl<T: Config> PartialEq for Error<T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.as_u8() == other.as_u8()
     }
 }
 
@@ -1007,14 +1004,13 @@ impl<T: Config> Module<T> {
         // prepare candidates that got elected
         let elected_members: Vec<CouncilMemberOf<T>> = winners
             .iter()
-            .map(|item| {
+            .filter_map(|item| {
                 let membership_id = item.option_id;
-                let candidate = Candidates::<T>::get(membership_id);
-
-                // clear candidate record and unlock their candidacy stake
-                Mutations::<T>::clear_candidate(&membership_id, &candidate);
-
-                (candidate, membership_id, now, Zero::zero()).into()
+                Candidates::<T>::get(membership_id).map(|candidate| {
+                    // clear candidate record and unlock their candidacy stake
+                    Mutations::<T>::clear_candidate(&membership_id, &candidate);
+                    (candidate, membership_id, now, Zero::zero()).into()
+                })
             })
             .collect();
         // prepare council users for event
@@ -1214,33 +1210,26 @@ impl<T: Config> ReferendumConnection<T> for Module<T> {
 
     // Checks that user is indeed candidating.
     fn is_valid_candidate_id(membership_id: &T::MemberId) -> bool {
-        if !Candidates::<T>::contains_key(membership_id) {
-            return false;
-        }
-
-        let candidate = Candidates::<T>::get(membership_id);
-
-        candidate.cycle_id == AnnouncementPeriodNr::get()
+        Candidates::<T>::get(membership_id).map_or(false, |candidate| {
+            candidate.cycle_id == AnnouncementPeriodNr::get()
+        })
     }
 
     // Return current voting power for a selected candidate.
     fn get_option_power(membership_id: &T::MemberId) -> VotePowerOf<T> {
-        if !Candidates::<T>::contains_key(membership_id) {
-            return 0.into();
-        }
-
-        let candidate = Candidates::<T>::get(membership_id);
-
-        candidate.vote_power
+        Candidates::<T>::get(membership_id).map_or(Zero::zero(), |candidate| {
+            candidate.vote_power
+        })
     }
 
     // Recieve vote (power) for a selected candidate.
     fn increase_option_power(membership_id: &T::MemberId, amount: &VotePowerOf<T>) {
-        if !Candidates::<T>::contains_key(membership_id) {
-            return;
+        if let Some(candidate) = Candidates::<T>::get(membership_id) {
+            Candidates::<T>::insert(membership_id, Candidate { 
+                vote_power: candidate.vote_power + *amount,
+                ..candidate
+            });
         }
-
-        Candidates::<T>::mutate(membership_id, |candidate| candidate.vote_power += *amount);
     }
 }
 
@@ -1425,7 +1414,12 @@ impl<T: Config> Mutations<T> {
 
     // Set a new candidacy note for a candidate in the current election.
     fn set_candidacy_note(membership_id: &T::MemberId, note_hash: &T::Hash) {
-        Candidates::<T>::mutate(membership_id, |value| value.note_hash = Some(*note_hash));
+        if let Some(candidate) = Candidates::<T>::get(membership_id) {
+            Candidates::<T>::insert(membership_id, Candidate {
+                note_hash: Some(*note_hash),
+                ..candidate
+            });
+        }
     }
 
     // Removes member's candidacy record.
@@ -1548,9 +1542,7 @@ impl<T: Config> EnsureChecks<T> {
         // when previous candidacy record is present, ensure user is not candidating twice &
         // prepare old stake for unlocking
         let mut existing_staking_account_id = None;
-        if Candidates::<T>::contains_key(membership_id) {
-            let candidate = Candidates::<T>::get(membership_id);
-
+        if let Some(candidate) = Candidates::<T>::get(membership_id) {
             // prevent user from candidating twice in the same election
             if candidate.cycle_id == AnnouncementPeriodNr::get() {
                 return Err(Error::CantCandidateTwice);
@@ -1582,21 +1574,16 @@ impl<T: Config> EnsureChecks<T> {
         // ensure user's membership
         Self::ensure_user_membership(origin, membership_id)?;
 
-        // escape when no previous candidacy stake is present
-        if !Candidates::<T>::contains_key(membership_id) {
-            return Err(Error::NoStake);
-        }
+        Candidates::<T>::get(membership_id).map_or(Err(Error::NoStake), |candidate| {
+            // prevent user from releasing candidacy stake during election
+            if candidate.cycle_id == AnnouncementPeriodNr::get()
+                && !matches!(Stage::<T>::get().stage, CouncilStage::Idle)
+            {
+                return Err(Error::StakeStillNeeded);
+            }
 
-        let candidate = Candidates::<T>::get(membership_id);
-
-        // prevent user from releasing candidacy stake during election
-        if candidate.cycle_id == AnnouncementPeriodNr::get()
-            && !matches!(Stage::<T>::get().stage, CouncilStage::Idle)
-        {
-            return Err(Error::StakeStillNeeded);
-        }
-
-        Ok(candidate.staking_account_id)
+            Ok(candidate.staking_account_id)
+        })
     }
 
     // Ensures there is no problem in withdrawing already announced candidacy.
@@ -1607,27 +1594,22 @@ impl<T: Config> EnsureChecks<T> {
         // ensure user's membership
         Self::ensure_user_membership(origin, membership_id)?;
 
-        // escape when no previous candidacy stake is present
-        if !Candidates::<T>::contains_key(membership_id) {
-            return Err(Error::NotCandidatingNow);
-        }
+        Candidates::<T>::get(membership_id).map_or(Err(Error::NotCandidatingNow), |candidate| {
+            // ensure candidacy announcing period is running now
+            let stage_data = match Stage::<T>::get().stage {
+                CouncilStage::Announcing(stage_data) => {
+                    // ensure candidacy was announced in current election cycle
+                    if candidate.cycle_id != AnnouncementPeriodNr::get() {
+                        return Err(Error::NotCandidatingNow);
+                    }
 
-        let candidate = Candidates::<T>::get(membership_id);
-
-        // ensure candidacy announcing period is running now
-        let stage_data = match Stage::<T>::get().stage {
-            CouncilStage::Announcing(stage_data) => {
-                // ensure candidacy was announced in current election cycle
-                if candidate.cycle_id != AnnouncementPeriodNr::get() {
-                    return Err(Error::NotCandidatingNow);
+                    stage_data
                 }
+                _ => return Err(Error::CantWithdrawCandidacyNow),
+            };
 
-                stage_data
-            }
-            _ => return Err(Error::CantWithdrawCandidacyNow),
-        };
-
-        Ok((stage_data, candidate))
+            Ok((stage_data, candidate))
+        })
     }
 
     // Ensures there is no problem in setting new note for the candidacy.
@@ -1638,24 +1620,19 @@ impl<T: Config> EnsureChecks<T> {
         // ensure user's membership
         Self::ensure_user_membership(origin, membership_id)?;
 
-        // escape when no previous candidacy stake is present
-        if !Candidates::<T>::contains_key(membership_id) {
-            return Err(Error::NotCandidatingNow);
-        }
+        Candidates::<T>::get(membership_id).map_or(Err(Error::NotCandidatingNow), |candidate| {
+            // ensure candidacy was announced in current election cycle
+            if candidate.cycle_id != AnnouncementPeriodNr::get() {
+                return Err(Error::NotCandidatingNow);
+            }
 
-        let candidate = Candidates::<T>::get(membership_id);
+            // ensure election hasn't ended yet
+            if let CouncilStage::Idle = Stage::<T>::get().stage {
+                return Err(Error::NotCandidatingNow);
+            }
 
-        // ensure candidacy was announced in current election cycle
-        if candidate.cycle_id != AnnouncementPeriodNr::get() {
-            return Err(Error::NotCandidatingNow);
-        }
-
-        // ensure election hasn't ended yet
-        if let CouncilStage::Idle = Stage::<T>::get().stage {
-            return Err(Error::NotCandidatingNow);
-        }
-
-        Ok(())
+            Ok(())
+        })
     }
 
     // Ensures there is no problem in setting the budget balance.
