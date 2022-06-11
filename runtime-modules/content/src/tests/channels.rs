@@ -581,6 +581,18 @@ fn unsuccessful_channel_deletion_with_invalid_bag_size() {
     })
 }
 
+#[test]
+fn unsuccessful_channel_deletion_with_creator_token_issued() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+
+        DeleteChannelFixture::default()
+            .call_and_assert(Err(Error::<Test>::CreatorTokenAlreadyIssued.into()));
+    })
+}
+
 ///////////////////////////////////////////////////////////////////////
 ////////////////////// Channel moderation actions /////////////////////
 ///////////////////////////////////////////////////////////////////////

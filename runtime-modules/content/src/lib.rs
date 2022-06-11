@@ -644,6 +644,9 @@ decl_module! {
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
+            // ensure no creator token is issued for the channel
+            channel.ensure_creator_token_not_issued::<T>()?;
+
             // permissions check
             ensure_actor_authorized_to_delete_channel::<T>(&sender, &actor, &channel)?;
 
@@ -2431,8 +2434,6 @@ decl_module! {
             channel.ensure_has_no_active_transfer::<T>()?;
 
             ensure_actor_authorized_to_claim_council_reward::<T>(origin, &channel.owner)?;
-
-            ensure_no_channel_transfers::<T>(&channel)?;
 
             let channel_account_id = ContentTreasury::<T>::account_for_channel(channel_id);
             let reward: BalanceOf<T> = Balances::<T>::usable_balance(&channel_account_id);
