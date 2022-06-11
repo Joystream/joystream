@@ -36,8 +36,8 @@ use frame_system::{ensure_root, ensure_signed};
 use sp_arithmetic::traits::Zero;
 use sp_runtime::traits::Saturating;
 use sp_runtime::SaturatedConversion;
-use sp_std::vec::Vec;
 use sp_std::convert::TryInto;
+use sp_std::vec::Vec;
 
 type BalanceOf<T> = <T as balances::Config>::Balance;
 type Balances<T> = balances::Pallet<T>;
