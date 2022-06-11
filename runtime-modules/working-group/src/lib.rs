@@ -1515,10 +1515,13 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
         worker: Worker<T>,
         new_missed_reward: Option<BalanceOf<T>>,
     ) {
-        WorkerById::<T, I>::insert(worker_id, Worker::<T> {
-            missed_reward: new_missed_reward,
-            ..worker
-        });
+        WorkerById::<T, I>::insert(
+            worker_id,
+            Worker::<T> {
+                missed_reward: new_missed_reward,
+                ..worker
+            },
+        );
 
         Self::deposit_event(RawEvent::NewMissedRewardLevelReached(
             *worker_id,

@@ -43,7 +43,8 @@ pub(crate) fn ensure_stake_for_opening_type<T: Config<I>, I: Instance>(
         // just to make this future proof for any change in
         // `ensure_origin_for_opening_type`
         ensure_origin_is_active_leader::<T, I>(origin)?;
-        let lead = crate::Module::<T, I>::worker_by_id(ensure_lead_is_set::<T, I>()?).ok_or(Error::<T, I>::WorkerDoesNotExist)?;
+        let lead = crate::Module::<T, I>::worker_by_id(ensure_lead_is_set::<T, I>()?)
+            .ok_or(Error::<T, I>::WorkerDoesNotExist)?;
 
         let new_stake = T::LeaderOpeningStake::get()
             + T::StakingHandler::current_stake(&lead.staking_account_id);
@@ -75,7 +76,8 @@ pub(crate) fn ensure_opening_exists<T: Config<I>, I: Instance>(
 pub(crate) fn ensure_application_exists<T: Config<I>, I: Instance>(
     application_id: &ApplicationId,
 ) -> Result<ApplicationInfo<T, I>, Error<T, I>> {
-    let application = <crate::ApplicationById<T, I>>::get(application_id).ok_or(Error::<T, I>::WorkerApplicationDoesNotExist)?;
+    let application = <crate::ApplicationById<T, I>>::get(application_id)
+        .ok_or(Error::<T, I>::WorkerApplicationDoesNotExist)?;
 
     Ok(ApplicationInfo {
         application_id: *application_id,
@@ -135,7 +137,8 @@ pub(crate) fn ensure_is_lead_account<T: Config<I>, I: Instance>(
 ) -> DispatchResult {
     let leader_worker_id = ensure_lead_is_set::<T, I>()?;
 
-    let leader = <crate::WorkerById<T, I>>::get(leader_worker_id).ok_or(Error::<T, I>::IsNotLeadAccount)?;
+    let leader =
+        <crate::WorkerById<T, I>>::get(leader_worker_id).ok_or(Error::<T, I>::IsNotLeadAccount)?;
 
     if leader.role_account_id != lead_account_id {
         return Err(Error::<T, I>::IsNotLeadAccount.into());
