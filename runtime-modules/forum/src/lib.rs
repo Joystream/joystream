@@ -11,15 +11,17 @@ pub use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, ExistenceRequirement};
 use frame_support::weights::Weight;
 use frame_support::{
-    decl_error, decl_event, decl_module, decl_storage, ensure, traits::Get, Parameter,
+    decl_error, decl_event, decl_module, decl_storage, ensure, traits::Get, PalletId, Parameter,
 };
 use frame_system::ensure_signed;
+use scale_info::TypeInfo;
 use sp_arithmetic::traits::{BaseArithmetic, One};
 pub use sp_io::storage::clear_prefix;
 use sp_runtime::traits::{AccountIdConversion, MaybeSerialize, Member};
-use sp_runtime::{ModuleId, SaturatedConversion};
+use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
+use sp_std::convert::TryInto;
 use sp_std::fmt::Debug;
 use sp_std::prelude::*;
 
@@ -59,14 +61,14 @@ pub type ExtendedPostId<T> =
 
 /// Extended post id representation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, TypeInfo)]
 pub struct ExtendedPostIdObject<CategoryId, ThreadId, PostId> {
     pub category_id: CategoryId,
     pub thread_id: ThreadId,
     pub post_id: PostId,
 }
 
-type Balances<T> = balances::Module<T>;
+type Balances<T> = balances::Pallet<T>;
 
 /// pallet_forum WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -169,7 +171,7 @@ pub trait Config:
     type MapLimits: StorageLimits;
 
     /// The forum module Id, used to derive the account Id to hold the thread bounty
-    type ModuleId: Get<ModuleId>;
+    type ModuleId: Get<PalletId>;
 
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
@@ -206,7 +208,7 @@ pub trait StorageLimits {
 
 /// Represents all poll alternative text hashes and vote count for each one
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct PollAlternative<Hash> {
     /// hash of alternative description
     pub alternative_text_hash: Hash,
@@ -217,7 +219,7 @@ pub struct PollAlternative<Hash> {
 
 /// Represents a poll input
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct PollInput<Timestamp> {
     /// description
     pub description: Vec<u8>,
@@ -231,7 +233,7 @@ pub struct PollInput<Timestamp> {
 
 /// Represents a poll
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct Poll<Timestamp, Hash> {
     /// hash of description
     pub description_hash: Hash,
@@ -245,7 +247,7 @@ pub struct Poll<Timestamp, Hash> {
 
 /// Represents a thread post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, TypeInfo)]
 pub struct Post<ForumUserId, ThreadId, Hash, Balance, BlockNumber> {
     /// Id of thread to which this post corresponds.
     pub thread_id: ThreadId,
@@ -265,7 +267,7 @@ pub struct Post<ForumUserId, ThreadId, Hash, Balance, BlockNumber> {
 
 /// Represents a thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq, TypeInfo)]
 pub struct Thread<ForumUserId, CategoryId, Moment, Hash, Balance> {
     /// Category in which this thread lives
     pub category_id: CategoryId,
@@ -285,7 +287,7 @@ pub struct Thread<ForumUserId, CategoryId, Moment, Hash, Balance> {
 
 /// Represents a category
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct Category<CategoryId, ThreadId, Hash> {
     /// Title
     pub title_hash: Hash,
@@ -311,7 +313,8 @@ pub struct Category<CategoryId, ThreadId, Hash> {
     pub sticky_thread_ids: Vec<ThreadId>,
 }
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, TypeInfo)]
+#[scale_info(skip_type_params(T))]
 pub enum PrivilegedActor<T: Config> {
     Lead,
     Moderator(ModeratorId<T>),
@@ -610,7 +613,7 @@ decl_module! {
         fn update_category_membership_of_moderator(origin, moderator_id: ModeratorId<T>, category_id: T::CategoryId, new_value: bool) -> DispatchResult {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
-            clear_prefix(b"Forum ForumUserById");
+            clear_prefix(b"Forum ForumUserById", None);
 
             let account_id = ensure_signed(origin)?;
 
@@ -1608,7 +1611,7 @@ impl<T: Config> Module<T> {
     }
 
     fn slash_thread_account(thread_id: T::ThreadId, amount: BalanceOf<T>) {
-        let thread_account_id = T::ModuleId::get().into_sub_account(thread_id);
+        let thread_account_id = T::ModuleId::get().into_sub_account_truncating(thread_id);
         let _ = Balances::<T>::slash(&thread_account_id, amount);
     }
 
@@ -1617,7 +1620,8 @@ impl<T: Config> Module<T> {
         amount: BalanceOf<T>,
         account_id: &T::AccountId,
     ) -> DispatchResult {
-        let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(thread_id);
+        let state_cleanup_treasury_account =
+            T::ModuleId::get().into_sub_account_truncating(thread_id);
         <Balances<T> as Currency<T::AccountId>>::transfer(
             &state_cleanup_treasury_account,
             account_id,
@@ -1631,7 +1635,8 @@ impl<T: Config> Module<T> {
         thread_id: T::ThreadId,
         account_id: &T::AccountId,
     ) -> DispatchResult {
-        let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(thread_id);
+        let state_cleanup_treasury_account =
+            T::ModuleId::get().into_sub_account_truncating(thread_id);
         <Balances<T> as Currency<T::AccountId>>::transfer(
             account_id,
             &state_cleanup_treasury_account,
@@ -1680,7 +1685,7 @@ impl<T: Config> Module<T> {
         <ThreadById<T>>::remove(category_id, thread_id);
 
         // Remove all thread poll votes.
-        <PollVotes<T>>::remove_prefix(thread_id);
+        <PollVotes<T>>::remove_prefix(thread_id, None);
 
         // decrease category's thread counter
         <CategoryById<T>>::mutate(category_id, |category| category.num_direct_threads -= 1);
