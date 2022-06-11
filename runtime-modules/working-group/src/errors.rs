@@ -2,9 +2,11 @@
 
 use crate::{Config, Instance, Module};
 use frame_support::decl_error;
+use sp_std::convert::TryInto;
 
 decl_error! {
     /// Discussion module predefined errors
+    // #[derive(PartialEq)]
     pub enum Error for Module<T: Config<I>, I: Instance>{
         /// Provided stake balance cannot be zero.
         StakeBalanceCannotBeZero,

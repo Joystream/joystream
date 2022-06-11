@@ -15,11 +15,11 @@ use serde::{Deserialize, Serialize};
 use frame_support::traits::LockIdentifier;
 use frame_support::Parameter;
 pub use membership::{ActorId, MemberId, MembershipTypes, StakingAccountValidator};
+use scale_info::TypeInfo;
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec::Vec;
-use scale_info::TypeInfo;
 
 /// HTTP Url string
 pub type Url = Vec<u8>;
@@ -77,7 +77,7 @@ pub struct FundingRequestParameters<Balance, AccountId> {
 
 /// Kind of Balance for `Update Working Group Budget`.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Debug, Eq)]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Debug, Eq, TypeInfo)]
 pub enum BalanceKind {
     /// Increasing Working Group budget decreasing Council budget
     Positive,

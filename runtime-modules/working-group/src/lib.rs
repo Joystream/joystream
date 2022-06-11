@@ -319,7 +319,7 @@ decl_storage! {
 
         /// Maps identifier to worker application on opening.
         pub ApplicationById get(fn application_by_id) : map hasher(blake2_128_concat)
-            ApplicationId => Application<T>;
+            ApplicationId => Option<Application<T>>;
 
         /// Next identifier value for new worker application.
         pub NextApplicationId get(fn next_application_id) : ApplicationId;
@@ -329,7 +329,7 @@ decl_storage! {
 
         /// Maps identifier to corresponding worker.
         pub WorkerById get(fn worker_by_id) : map hasher(blake2_128_concat)
-            WorkerId<T> => Worker<T>;
+            WorkerId<T> => Option<Worker<T>>;
 
         /// Current group lead.
         pub CurrentLead get(fn current_lead) : Option<WorkerId<T>>;
@@ -448,7 +448,7 @@ decl_module! {
             if opening_type == OpeningType::Regular {
                 // Lead must be set for ensure_origin_for_openig_type in the
                 // case of regular.
-                let lead = Self::worker_by_id(checks::ensure_lead_is_set::<T, I>()?);
+                let lead = crate::Module::<T, I>::worker_by_id(checks::ensure_lead_is_set::<T, I>()?).ok_or(Error::<T, I>::WorkerDoesNotExist)?;
                 let current_stake = T::StakingHandler::current_stake(&lead.staking_account_id);
                 creation_stake = T::LeaderOpeningStake::get();
                 T::StakingHandler::set_stake(
@@ -630,7 +630,7 @@ decl_module! {
             if opening.opening_type == OpeningType::Regular {
                 // Lead must be set for ensure_origin_for_openig_type in the
                 // case of regular.
-                let lead = Self::worker_by_id(checks::ensure_lead_is_set::<T, I>()?);
+                let lead = crate::Module::<T, I>::worker_by_id(checks::ensure_lead_is_set::<T, I>()?).ok_or(Error::<T, I>::WorkerDoesNotExist)?;
                 let current_stake = T::StakingHandler::current_stake(&lead.staking_account_id);
                 T::StakingHandler::set_stake(
                     &lead.staking_account_id,
@@ -684,8 +684,9 @@ decl_module! {
             //
 
             // Update role account
-            WorkerById::<T, I>::mutate(worker_id, |worker| {
-                worker.role_account_id = new_role_account_id.clone()
+            WorkerById::<T, I>::insert(worker_id, Worker::<T> {
+                role_account_id: new_role_account_id.clone(),
+                ..worker
             });
 
             // Trigger event
@@ -716,8 +717,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            WorkerById::<T, I>::mutate(worker_id, |worker| {
-                worker.started_leaving_at = Some(Self::current_block())
+            WorkerById::<T, I>::insert(worker_id, Worker::<T> {
+                started_leaving_at: Some(Self::current_block()),
+                ..worker
             });
 
             // Trigger event
@@ -964,7 +966,7 @@ decl_module! {
             if opening.opening_type == OpeningType::Regular {
                 // Lead must be set for ensure_origin_for_openig_type in the
                 // case of regular.
-                let lead = Self::worker_by_id(checks::ensure_lead_is_set::<T, I>()?);
+                let lead = crate::Module::<T, I>::worker_by_id(checks::ensure_lead_is_set::<T, I>()?).ok_or(Error::<T, I>::WorkerDoesNotExist)?;
                 let current_stake = T::StakingHandler::current_stake(&lead.staking_account_id);
                 T::StakingHandler::set_stake(
                     &lead.staking_account_id,
@@ -1033,8 +1035,9 @@ decl_module! {
             //
 
             // Update worker reward account.
-            WorkerById::<T, I>::mutate(worker_id, |worker| {
-                worker.reward_account_id = new_reward_account_id.clone();
+            WorkerById::<T, I>::insert(worker_id, Worker::<T> {
+                reward_account_id: new_reward_account_id.clone(),
+                ..worker
             });
 
             // Trigger event
@@ -1061,15 +1064,16 @@ decl_module! {
             checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
 
             // Ensuring worker actually exists
-            checks::ensure_worker_exists::<T,I>(&worker_id)?;
+            let worker = checks::ensure_worker_exists::<T,I>(&worker_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // Update worker reward amount.
-            WorkerById::<T, I>::mutate(worker_id, |worker| {
-                worker.reward_per_block = reward_per_block;
+            WorkerById::<T, I>::insert(worker_id, Worker::<T> {
+                reward_per_block: reward_per_block,
+                ..worker
             });
 
             // Trigger event
@@ -1500,7 +1504,7 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
                     None
                 };
 
-                Self::update_worker_missed_reward(worker_id, new_missed_reward);
+                Self::update_worker_missed_reward(worker_id, worker.clone(), new_missed_reward);
             }
         }
     }
@@ -1508,10 +1512,12 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
     // Update worker missed reward.
     fn update_worker_missed_reward(
         worker_id: &WorkerId<T>,
+        worker: Worker<T>,
         new_missed_reward: Option<BalanceOf<T>>,
     ) {
-        WorkerById::<T, I>::mutate(worker_id, |worker| {
-            worker.missed_reward = new_missed_reward;
+        WorkerById::<T, I>::insert(worker_id, Worker::<T> {
+            missed_reward: new_missed_reward,
+            ..worker
         });
 
         Self::deposit_event(RawEvent::NewMissedRewardLevelReached(
@@ -1527,7 +1533,7 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
 
         let new_missed_reward = missed_reward_so_far + reward;
 
-        Self::update_worker_missed_reward(worker_id, Some(new_missed_reward));
+        Self::update_worker_missed_reward(worker_id, worker.clone(), Some(new_missed_reward));
     }
 
     // Returns allowed payment by the group budget and possible missed payment
@@ -1603,8 +1609,8 @@ impl<T: Config<I>, I: Instance> common::working_group::WorkingGroupAuthenticator
     fn get_leader_member_id() -> Option<T::MemberId> {
         checks::ensure_lead_is_set::<T, I>()
             .map(Self::worker_by_id)
+            .unwrap_or(None)
             .map(|worker| worker.member_id)
-            .ok()
     }
 
     fn is_leader_account_id(account_id: &T::AccountId) -> bool {

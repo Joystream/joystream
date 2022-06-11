@@ -2,6 +2,7 @@
 
 use codec::{Decode, Encode};
 use sp_std::vec::Vec;
+use scale_info::TypeInfo;
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -58,7 +59,7 @@ pub type BalanceOf<T> = <T as balances::Config>::Balance;
 /// Job opening for the normal or leader position.
 /// An opening represents the process of hiring one or more new actors into some available role.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Encode, Decode, Debug, Default, Clone, PartialEq, Eq, TypeInfo)]
 pub struct Opening<BlockNumber: Ord, Balance> {
     /// Defines opening type: Leader or worker.
     pub opening_type: OpeningType,
@@ -81,7 +82,7 @@ pub struct Opening<BlockNumber: Ord, Balance> {
 
 /// Defines type of the opening: regular working group fellow or group leader.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Clone, PartialEq, Eq, Copy)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq, Eq, Copy, TypeInfo)]
 pub enum OpeningType {
     /// Group leader.
     Leader,
@@ -100,7 +101,7 @@ impl Default for OpeningType {
 
 /// An application for the regular worker/lead role opening.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq, TypeInfo)]
 pub struct JobApplication<AccountId, MemberId> {
     /// Account used to authenticate in this role.
     pub role_account_id: AccountId,
@@ -144,7 +145,7 @@ impl<AccountId: Clone, MemberId: Clone> JobApplication<AccountId, MemberId> {
 
 /// Working group participant: regular worker or lead.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq, TypeInfo)]
 pub struct GroupWorker<AccountId, MemberId, BlockNumber, Balance> {
     /// Member id related to the worker/lead.
     pub member_id: MemberId,
@@ -210,7 +211,7 @@ impl<AccountId: Clone, MemberId: Clone, BlockNumber, Balance>
 
 /// Stake policy for the job opening.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Encode, Decode, Debug, Clone, Default, PartialEq, Eq, TypeInfo)]
 pub struct StakePolicy<BlockNumber, Balance> {
     /// Stake amount for applicants.
     pub stake_amount: Balance,
@@ -221,7 +222,7 @@ pub struct StakePolicy<BlockNumber, Balance> {
 
 /// Parameters container for the apply_on_opening extrinsic.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq, Eq, TypeInfo)]
 pub struct ApplyOnOpeningParams<MemberId, OpeningId, AccountId, Balance> {
     /// Applying member id.
     pub member_id: MemberId,
@@ -244,7 +245,7 @@ pub struct ApplyOnOpeningParams<MemberId, OpeningId, AccountId, Balance> {
 
 /// Contains information for the stakes when applying for opening.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq, Eq, TypeInfo)]
 pub struct StakeParameters<AccountId, Balance> {
     /// Stake balance.
     pub stake: Balance,
@@ -263,7 +264,7 @@ pub type ApplyOnOpeningParameters<T> = ApplyOnOpeningParams<
 
 /// Reward payment type enum.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Clone, PartialEq, Eq, Copy)]
+#[derive(Encode, Decode, Debug, Clone, PartialEq, Eq, Copy, TypeInfo)]
 pub enum RewardPaymentType {
     /// The reward was missed.
     MissedReward,
