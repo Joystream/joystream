@@ -1259,6 +1259,9 @@ decl_module! {
             let reward_account = ContentTreasury::<T>::account_for_channel(channel_id);
             ensure_actor_authorized_to_withdraw_from_channel::<T>(origin, &actor, &channel)?;
 
+            // Ensure cannot transfer fund feature is pasued
+            channel.ensure_feature_not_paused::<T>(PausableChannelFeature::ChannelFundsTransfer)?;
+
             ensure!(
                 !amount.is_zero(),
                 Error::<T>::WithdrawFromChannelAmountIsZero
@@ -1300,6 +1303,10 @@ decl_module! {
         ) -> DispatchResult {
             let (channel, reward_account, amount) =
                 Self::ensure_can_claim_channel_reward(&origin, &actor, &item, &proof)?;
+
+            // Ensure features are not paused
+            channel.ensure_feature_not_paused::<T>(PausableChannelFeature::ChannelFundsTransfer)?;
+            channel.ensure_feature_not_paused::<T>(PausableChannelFeature::CreatorCashout)?;
 
             ensure_actor_authorized_to_withdraw_from_channel::<T>(origin, &actor, &channel)?;
 
@@ -2505,7 +2512,11 @@ decl_module! {
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
+            // Ensure channel is not in transfer status
             channel.ensure_has_no_active_transfer::<T>()?;
+
+            // Ensure issue creator token feature is not paused
+            channel.ensure_feature_not_paused::<T>(PausableChannelFeature::CreatorTokenIssuance)?;
 
             // Permissions check
             let sender = ensure_actor_authorized_to_issue_creator_token::<T>(

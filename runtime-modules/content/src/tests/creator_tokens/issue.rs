@@ -122,3 +122,14 @@ fn issue_token_fails_during_transfer() {
         );
     })
 }
+
+#[test]
+fn issue_token_fails_with_creator_token_issuance_feature_paused() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        pause_channel_feature(1u64, PausableChannelFeature::CreatorTokenIssuance);
+
+        IssueCreatorTokenFixture::default()
+            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
+    })
+}

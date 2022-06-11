@@ -344,10 +344,10 @@ impl<
 {
     pub fn ensure_feature_not_paused<T: Trait>(
         &self,
-        channel_feautre: PausableChannelFeature,
+        channel_feature: PausableChannelFeature,
     ) -> DispatchResult {
         ensure!(
-            !self.paused_features.contains(&channel_feautre),
+            !self.paused_features.contains(&channel_feature),
             Error::<T>::ChannelFeaturePaused
         );
         Ok(())
