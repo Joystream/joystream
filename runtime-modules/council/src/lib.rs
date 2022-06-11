@@ -50,12 +50,12 @@ use frame_support::traits::{Currency, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin};
 use frame_system::ensure_root;
+use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::traits::{Hash, SaturatedConversion, Saturating, Zero};
-use sp_std::vec::Vec;
 use sp_std::convert::TryInto;
-use scale_info::TypeInfo;
+use sp_std::vec::Vec;
 
 use common::council::CouncilOriginValidator;
 use common::membership::MemberOriginValidator;
@@ -1217,18 +1217,19 @@ impl<T: Config> ReferendumConnection<T> for Module<T> {
 
     // Return current voting power for a selected candidate.
     fn get_option_power(membership_id: &T::MemberId) -> VotePowerOf<T> {
-        Candidates::<T>::get(membership_id).map_or(Zero::zero(), |candidate| {
-            candidate.vote_power
-        })
+        Candidates::<T>::get(membership_id).map_or(Zero::zero(), |candidate| candidate.vote_power)
     }
 
     // Recieve vote (power) for a selected candidate.
     fn increase_option_power(membership_id: &T::MemberId, amount: &VotePowerOf<T>) {
         if let Some(candidate) = Candidates::<T>::get(membership_id) {
-            Candidates::<T>::insert(membership_id, Candidate { 
-                vote_power: candidate.vote_power + *amount,
-                ..candidate
-            });
+            Candidates::<T>::insert(
+                membership_id,
+                Candidate {
+                    vote_power: candidate.vote_power + *amount,
+                    ..candidate
+                },
+            );
         }
     }
 }
@@ -1415,10 +1416,13 @@ impl<T: Config> Mutations<T> {
     // Set a new candidacy note for a candidate in the current election.
     fn set_candidacy_note(membership_id: &T::MemberId, note_hash: &T::Hash) {
         if let Some(candidate) = Candidates::<T>::get(membership_id) {
-            Candidates::<T>::insert(membership_id, Candidate {
-                note_hash: Some(*note_hash),
-                ..candidate
-            });
+            Candidates::<T>::insert(
+                membership_id,
+                Candidate {
+                    note_hash: Some(*note_hash),
+                    ..candidate
+                },
+            );
         }
     }
 
