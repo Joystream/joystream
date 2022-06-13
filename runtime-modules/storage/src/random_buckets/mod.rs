@@ -44,7 +44,7 @@ impl<T: Config, Id: BucketId> Iterator for RandomBucketIdIterator<T, Id> {
 
     fn next(&mut self) -> Option<Self::Item> {
         // Cannot create randomness in the initial block (Substrate error).
-        if <frame_system::Module<T>>::block_number() == Zero::zero() {
+        if <frame_system::Pallet<T>>::block_number() == Zero::zero() {
             return None;
         }
 
@@ -55,7 +55,7 @@ impl<T: Config, Id: BucketId> Iterator for RandomBucketIdIterator<T, Id> {
         let random_bucket_id = self.random_bucket_id();
 
         self.current_iteration += 1;
-        self.current_seed = T::Randomness::random(self.current_seed.as_ref());
+        self.current_seed = T::Randomness::random(self.current_seed.as_ref()).0;
 
         Some(random_bucket_id)
     }
