@@ -732,7 +732,7 @@ impl<T: Config<I>, I: Instance> Mutations<T, I> {
         cast_vote: CastVoteOf<T>,
     ) {
         // prepare new values
-        let vote_power = T::calculate_vote_power(&account_id, &cast_vote.stake);
+        let vote_power = T::calculate_vote_power(account_id, &cast_vote.stake);
         let total_vote_power = T::get_option_power(option_id) + vote_power;
         let option_result = OptionResult {
             option_id: *option_id,

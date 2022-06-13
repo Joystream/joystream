@@ -1094,7 +1094,7 @@ impl<T: Config> Module<T> {
             return Err(Error::<T>::HandleMustBeProvidedDuringRegistration);
         }
 
-        let hashed = T::Hashing::hash(&handle);
+        let hashed = T::Hashing::hash(handle);
         let handle_hash = hashed.as_ref().to_vec();
 
         Self::ensure_unique_handle_hash(handle_hash.clone())?;
