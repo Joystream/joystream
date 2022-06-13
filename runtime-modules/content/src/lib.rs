@@ -2436,7 +2436,7 @@ decl_module! {
 
             ensure_actor_authorized_to_claim_council_reward::<T>(origin, &channel.owner)?;
 
-            let channel_account_id = ContentTreasury::<T>::account_for _channel(channel_id);
+            let channel_account_id = ContentTreasury::<T>::account_for_channel(channel_id);
             let reward: BalanceOf<T> = Balances::<T>::usable_balance(&channel_account_id);
 
             ensure!(!reward.is_zero(), Error::<T>::ZeroReward);
