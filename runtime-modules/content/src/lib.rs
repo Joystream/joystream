@@ -17,6 +17,7 @@ pub use errors::*;
 pub use nft::*;
 pub use permissions::*;
 pub use types::*;
+use scale_info::TypeInfo;
 
 use codec::Codec;
 use codec::{Decode, Encode};
@@ -36,6 +37,7 @@ use frame_support::{
     ensure,
     traits::{Currency, ExistenceRequirement, Get},
     Parameter,
+    PalletId,
 };
 
 use frame_system::ensure_signed;
@@ -47,8 +49,7 @@ use sp_arithmetic::{
     Perbill,
 };
 use sp_runtime::{
-    traits::{AccountIdConversion, Hash, MaybeSerializeDeserialize, Member},
-    ModuleId,
+    traits::{AccountIdConversion, Hash, MaybeSerializeDeserialize, Member}
 };
 use sp_std::{borrow::ToOwned, collections::btree_set::BTreeSet, vec::Vec};
 
@@ -101,7 +102,7 @@ pub trait Config:
     type CleanupCost: Get<<Self as balances::Config>::Balance>;
 
     /// Content Module Id
-    type ModuleId: Get<ModuleId>;
+    type ModuleId: Get<PalletId>;
 
     /// Refund cap during cleanup
     type BloatBondCap: Get<u32>;
@@ -884,7 +885,7 @@ decl_module! {
             VideoById::<T>::remove(video_id);
 
             // Remove all comments related
-            <VideoPostById<T>>::remove_prefix(video_id);
+            <VideoPostById<T>>::remove_prefix(video_id, None);
 
             // Update corresponding channel
             // Remove recently deleted video from the channel
@@ -1173,7 +1174,9 @@ decl_module! {
                         VideoPostById::<T>::insert(&video_id, &parent_id, parent_post);
                     }
                 }
-                VideoPostType::<T>::Description => VideoPostById::<T>::remove_prefix(&video_id),
+                VideoPostType::<T>::Description => {
+                    VideoPostById::<T>::remove_prefix(&video_id, None);
+                }
             }
 
             // deposit event
@@ -1388,7 +1391,7 @@ decl_module! {
 
             // Create new auction
             let new_nonce = nft.open_auctions_nonce.saturating_add(One::one());
-            let current_block = <frame_system::Module<T>>::block_number();
+            let current_block = <frame_system::Pallet<T>>::block_number();
             let auction = OpenAuction::<T>::new(auction_params.clone(), new_nonce, current_block);
 
             // Update the video
@@ -1433,7 +1436,7 @@ decl_module! {
             //
 
             // Create new auction
-            let current_block = <frame_system::Module<T>>::block_number();
+            let current_block = <frame_system::Pallet<T>>::block_number();
             let auction = EnglishAuction::<T>::new(auction_params.clone(), current_block);
 
             // Update the video
@@ -1638,7 +1641,7 @@ decl_module! {
             open_auction.ensure_whitelisted_participant::<T>(participant_id)?;
 
             // ensure auction started
-            let current_block = <frame_system::Module<T>>::block_number();
+            let current_block = <frame_system::Pallet<T>>::block_number();
             open_auction.ensure_auction_started::<T>(current_block)?;
 
             // ensure bid can be made
@@ -1733,7 +1736,7 @@ decl_module! {
             )?;
 
             // Ensure auction is not expired
-            let current_block = <frame_system::Module<T>>::block_number();
+            let current_block = <frame_system::Pallet<T>>::block_number();
             eng_auction.ensure_auction_is_not_expired::<T>(current_block)?;
 
             // ensure auctio started
@@ -1832,7 +1835,7 @@ decl_module! {
             if let Ok(open_auction) = Self::ensure_in_open_auction_state(&nft) {
 
                 // ensure conditions for canceling a bid are met
-                let current_block = <frame_system::Module<T>>::block_number();
+                let current_block = <frame_system::Pallet<T>>::block_number();
                 open_auction.ensure_bid_can_be_canceled::<T>(current_block, &old_bid)?;
             } // else old bid
 
@@ -1871,7 +1874,7 @@ decl_module! {
             let top_bidder_id = top_bid.bidder_id;
 
             // Ensure auction expired
-            let current_block = <frame_system::Module<T>>::block_number();
+            let current_block = <frame_system::Pallet<T>>::block_number();
             english_auction.ensure_auction_can_be_completed::<T>(current_block)?;
 
             //
@@ -2283,13 +2286,13 @@ impl<T: Config> Module<T> {
                 if bloat_bond > cap {
                     let diff = bloat_bond.saturating_sub(cap);
                     ContentTreasury::<T>::withdraw(sender, cap)?;
-                    let _ = balances::Module::<T>::burn(diff);
+                    let _ = balances::Pallet::<T>::burn(diff);
                 } else {
                     ContentTreasury::<T>::withdraw(sender, bloat_bond)?;
                 }
             }
             _ => {
-                let _ = balances::Module::<T>::burn(bloat_bond);
+                let _ = balances::Pallet::<T>::burn(bloat_bond);
             }
         }
         Ok(())
@@ -2309,14 +2312,14 @@ impl<T: Config> Module<T> {
             }
             InitTransactionalStatus::<T>::EnglishAuction(ref params) => {
                 Self::validate_english_auction_params(params)?;
-                let current_block = <frame_system::Module<T>>::block_number();
+                let current_block = <frame_system::Pallet<T>>::block_number();
                 Ok(TransactionalStatus::<T>::EnglishAuction(
                     EnglishAuction::<T>::new(params.clone(), current_block),
                 ))
             }
             InitTransactionalStatus::<T>::OpenAuction(ref params) => {
                 Self::validate_open_auction_params(params)?;
-                let current_block = <frame_system::Module<T>>::block_number();
+                let current_block = <frame_system::Pallet<T>>::block_number();
                 Ok(TransactionalStatus::<T>::OpenAuction(
                     OpenAuction::<T>::new(params.clone(), T::OpenAuctionId::zero(), current_block),
                 ))

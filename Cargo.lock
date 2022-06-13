@@ -4016,6 +4016,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-working-group",
  "parity-scale-codec 3.1.2",
+ "scale-info",
  "serde",
  "sp-arithmetic",
  "sp-core",

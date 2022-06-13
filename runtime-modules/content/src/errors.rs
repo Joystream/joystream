@@ -1,5 +1,6 @@
 use crate::*;
 use frame_support::decl_error;
+use sp_std::convert::TryInto;
 
 decl_error! {
     /// Content directory errors

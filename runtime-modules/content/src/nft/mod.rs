@@ -115,13 +115,13 @@ impl<T: Config> Module<T> {
         starts_at: T::BlockNumber,
     ) -> DispatchResult {
         ensure!(
-            starts_at >= <frame_system::Module<T>>::block_number(),
+            starts_at >= <frame_system::Pallet<T>>::block_number(),
             Error::<T>::StartsAtLowerBoundExceeded
         );
 
         ensure!(
             starts_at
-                <= <frame_system::Module<T>>::block_number() + Self::auction_starts_at_max_delta(),
+                <= <frame_system::Pallet<T>>::block_number() + Self::auction_starts_at_max_delta(),
             Error::<T>::StartsAtUpperBoundExceeded
         );
 

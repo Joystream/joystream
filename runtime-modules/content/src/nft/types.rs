@@ -1,4 +1,5 @@
 use super::*;
+use scale_info::TypeInfo;
 
 /// Metadata for NFT issuance
 pub type NftMetadata = Vec<u8>;
@@ -8,7 +9,7 @@ pub type Royalty = Perbill;
 
 /// Nft transactional status
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub enum TransactionalStatusRecord<MemberId, Balance, EnglishAuctionType, OpenAuctionType> {
     Idle,
     InitiatedOfferToMember(MemberId, Option<Balance>),
@@ -27,7 +28,7 @@ impl<MemberId, Balance, EnglishAuction, OpenAuction> Default
 
 /// Owned Nft representation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct OwnedNft<TransactionalStatus, MemberId, AuctionId> {
     pub owner: NftOwner<MemberId>,
     pub transactional_status: TransactionalStatus,
@@ -78,7 +79,7 @@ impl<TransactionalStatus, MemberId, AuctionId: BaseArithmetic>
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub enum NftOwner<MemberId> {
     ChannelOwner,
     Member(MemberId),
@@ -92,7 +93,7 @@ impl<MemberId> Default for NftOwner<MemberId> {
 
 /// Parameters used to issue a nft
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct NftIssuanceParametersRecord<MemberId, InitTransactionalStatus> {
     /// Royalty used for the author
     pub royalty: Option<Royalty>,
@@ -111,7 +112,7 @@ pub type NftIssuanceParameters<T> = NftIssuanceParametersRecord<
 
 /// Initial Transactional status for the Nft: See InitialTransactionalStatusRecord above
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub enum InitTransactionalStatusRecord<EnglishAuctionParams, OpenAuctionParams, MemberId, Balance> {
     Idle,
     BuyNow(Balance),
@@ -130,7 +131,7 @@ impl<EnglishAuctionParams, OpenAuctionParams, MemberId, Balance> Default
 
 /// English Auction
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct EnglishAuctionRecord<BlockNumber, Balance, MemberId: Ord> {
     pub starting_price: Balance,
     pub buy_now_price: Option<Balance>,
@@ -260,7 +261,7 @@ impl<
 
 /// Open Auction
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct OpenAuctionRecord<BlockNumber, AuctionId, Balance, MemberId: Ord> {
     pub starting_price: Balance,
     pub buy_now_price: Option<Balance>,
@@ -385,7 +386,7 @@ impl<
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct OpenAuctionBidRecord<Balance, BlockNumber, AuctionId> {
     pub amount: Balance,
     pub made_at_block: BlockNumber,
@@ -432,7 +433,7 @@ impl<
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct EnglishAuctionBid<Balance, MemberId> {
     pub amount: Balance,
     pub bidder_id: MemberId,
@@ -441,7 +442,7 @@ pub struct EnglishAuctionBid<Balance, MemberId> {
 /// English Auction Init Params:
 /// auction is started IMMEDIATELY after it is created with extr: `start_open_auction`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId: Ord> {
     pub starting_price: Balance,
     pub buy_now_price: Option<Balance>,
@@ -454,7 +455,7 @@ pub struct EnglishAuctionParamsRecord<BlockNumber, Balance, MemberId: Ord> {
 
 /// Open Auction Init Params
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct OpenAuctionParamsRecord<BlockNumber, Balance, MemberId: Ord> {
     pub starting_price: Balance,
     pub buy_now_price: Option<Balance>,

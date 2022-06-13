@@ -14,7 +14,7 @@ use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 
 /// Enum, representing all possible `Actor`s
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Copy, Debug)]
+#[derive(Encode, Decode, Eq, PartialEq, Clone, Copy, Debug, TypeInfo)]
 pub enum ContentActor<
     CuratorGroupId: Default + Clone + Copy,
     CuratorId: Default + Clone + Copy,
