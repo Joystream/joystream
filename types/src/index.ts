@@ -11,13 +11,14 @@ import referendum from './referendum'
 import constitution from './constitution'
 import bounty from './bounty'
 import content from './content'
+import project_token from './project_token'
 import { TypeRegistry, Text, UInt, Null, bool, Option, Vec, BTreeSet, BTreeMap, Tuple } from '@polkadot/types'
 import { ExtendedEnum } from './JoyEnum'
 import { ExtendedStruct } from './JoyStruct'
 
 import BN from 'bn.js'
 
-export { common, members, council, forum, workingGroup, proposals, content }
+export { common, members, council, forum, workingGroup, proposals, content, project_token }
 
 export const types: RegistryTypes = {
   ...common,
@@ -32,6 +33,7 @@ export const types: RegistryTypes = {
   ...constitution,
   ...bounty,
   ...content,
+  ...project_token,
   // https://github.com/polkadot-js/api/blob/master/CHANGELOG.md#351-jan-18-2020
   AccountInfo: 'AccountInfoWithRefCount',
   // Required for compatibility with @polkadot/api version >= 6.0
