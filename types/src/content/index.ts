@@ -14,6 +14,7 @@ export class VideoCategoryId extends u64 {}
 export class MaxNumber extends u32 {}
 export class IsCensored extends bool {}
 export class ChannelPrivilegeLevel extends u8 {}
+export class TokenId extends u64 {}
 
 // NFT types
 
@@ -141,6 +142,14 @@ export class ChannelActionPermission extends JoyEnum({
   TransferChannel: Null,
   ClaimChannelReward: Null,
   WithdrawFromChannelBalance: Null,
+  IssueCreatorToken: Null,
+  ClaimCreatorTokenPatronage: Null,
+  InitAndManageCreatorTokenSale: Null,
+  CreatorTokenIssuerTransfer: Null,
+  MakeCreatorTokenPermissionless: Null,
+  ReduceCreatorTokenPatronageRate: Null,
+  ManageRevenueSplits: Null,
+  DeissueCreatorToken: Null,
 }) {}
 
 export class ChannelAgentPermissions extends BTreeSet.with(ChannelActionPermission) {}
@@ -240,6 +249,7 @@ export class Channel extends JoyStructDecorated({
   weekly_nft_limit: LimitPerPeriod,
   daily_nft_counter: NftCounter,
   weekly_nft_counter: NftCounter,
+  creator_token_id: Option.with(TokenId),
 }) {}
 
 export class ChannelCreationParameters extends JoyStructDecorated({
