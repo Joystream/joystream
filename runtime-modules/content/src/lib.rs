@@ -16,8 +16,8 @@ use sp_std::mem::size_of;
 pub use errors::*;
 pub use nft::*;
 pub use permissions::*;
-pub use types::*;
 use scale_info::TypeInfo;
+pub use types::*;
 
 use codec::Codec;
 use codec::{Decode, Encode};
@@ -36,8 +36,7 @@ use frame_support::{
     dispatch::{DispatchError, DispatchResult},
     ensure,
     traits::{Currency, ExistenceRequirement, Get},
-    Parameter,
-    PalletId,
+    PalletId, Parameter,
 };
 
 use frame_system::ensure_signed;
@@ -48,9 +47,7 @@ use sp_arithmetic::{
     traits::{BaseArithmetic, One, Saturating, Zero},
     Perbill,
 };
-use sp_runtime::{
-    traits::{AccountIdConversion, Hash, MaybeSerializeDeserialize, Member}
-};
+use sp_runtime::traits::{AccountIdConversion, Hash, MaybeSerializeDeserialize, Member};
 use sp_std::{borrow::ToOwned, collections::btree_set::BTreeSet, vec::Vec};
 
 /// Module configuration trait for Content Directory Module

@@ -3400,16 +3400,17 @@ impl<T: Config> Module<T> {
     ) {
         for bucket_id in bucket_ids.iter() {
             <StorageBucketById<T>>::get(bucket_id)
-            .map(|bucket| {
-                StorageBucket::<T> {
+                .map(|bucket| StorageBucket::<T> {
                     voucher: voucher_update.get_updated_voucher(&bucket.voucher, voucher_operation),
                     ..bucket
-                }
-            })
-            .map(|bucket| {
-                <StorageBucketById<T>>::insert(bucket_id, bucket.clone());
-                Self::deposit_event(RawEvent::VoucherChanged(*bucket_id, bucket.voucher.clone()));
-            });
+                })
+                .map(|bucket| {
+                    <StorageBucketById<T>>::insert(bucket_id, bucket.clone());
+                    Self::deposit_event(RawEvent::VoucherChanged(
+                        *bucket_id,
+                        bucket.voucher.clone(),
+                    ));
+                });
         }
     }
 
@@ -3572,7 +3573,8 @@ impl<T: Config> Module<T> {
         voucher_update: &VoucherUpdate,
     ) -> DispatchResult {
         for bucket_id in bucket_ids.iter() {
-            let bucket = Self::storage_bucket_by_id(bucket_id).ok_or(Error::<T>::StorageBucketDoesntExist)?;
+            let bucket = Self::storage_bucket_by_id(bucket_id)
+                .ok_or(Error::<T>::StorageBucketDoesntExist)?;
 
             // Total object number limit is not exceeded.
             ensure!(

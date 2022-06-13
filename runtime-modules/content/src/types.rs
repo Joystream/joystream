@@ -1,6 +1,6 @@
 use crate::*;
-use scale_info::TypeInfo;
 use frame_support::PalletId;
+use scale_info::TypeInfo;
 
 /// Specifies how a new asset will be provided on creating and updating
 /// Channels, Videos, Series and Person
@@ -91,7 +91,9 @@ pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance> {
     pub cumulative_payout_earned: Balance,
 }
 
-impl<MemberId: Ord + Default, CuratorGroupId, AccountId, Balance: Default> Default for ChannelRecord<MemberId, CuratorGroupId, AccountId, Balance> {
+impl<MemberId: Ord + Default, CuratorGroupId, AccountId, Balance: Default> Default
+    for ChannelRecord<MemberId, CuratorGroupId, AccountId, Balance>
+{
     fn default() -> Self {
         Self {
             owner: ChannelOwner::Member(Default::default()),
