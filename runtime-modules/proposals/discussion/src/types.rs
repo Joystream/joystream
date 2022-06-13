@@ -4,10 +4,11 @@ use codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_std::vec::Vec;
+use scale_info::TypeInfo;
 
 /// Represents a discussion thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, TypeInfo)]
 pub struct DiscussionThread<ThreadAuthorId, BlockNumber, MemberId> {
     /// When thread was established.
     pub activated_at: BlockNumber,
@@ -21,7 +22,7 @@ pub struct DiscussionThread<ThreadAuthorId, BlockNumber, MemberId> {
 
 /// Post for the discussion thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, TypeInfo)]
 pub struct DiscussionPost<PostAuthorId, Balance, BlockNumber> {
     /// Author of the post.
     pub author_id: PostAuthorId,
@@ -35,7 +36,7 @@ pub struct DiscussionPost<PostAuthorId, Balance, BlockNumber> {
 
 /// Discussion thread permission modes.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub enum ThreadMode<MemberId> {
     /// Every member can post on the thread.
     Open,
