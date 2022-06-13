@@ -151,6 +151,7 @@ use frame_support::{
 };
 use frame_system::{ensure_root, RawOrigin};
 use sp_arithmetic::traits::{SaturatedConversion, Saturating, Zero};
+use sp_std::convert::TryInto;
 use sp_std::vec::Vec;
 
 use common::council::CouncilOriginValidator;
@@ -798,7 +799,7 @@ impl<T: Config> Module<T> {
                 None
             })
             .for_each(|(proposal_id, proposal)| {
-                <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
+                <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id, None);
                 <Proposals<T>>::insert(proposal_id, proposal.clone());
 
                 // fire the proposal status update event
@@ -996,11 +997,7 @@ impl<T: Config> Module<T> {
     fn parse_dispatch_error(error: DispatchError) -> &'static str {
         match error {
             DispatchError::Other(msg) => msg,
-            DispatchError::Module {
-                index: _,
-                error: _,
-                message: msg,
-            } => msg.unwrap_or("Dispatch error."),
+            DispatchError::Module(module) => module.message.unwrap_or("Dispatch error."),
             _ => error.into(),
         }
     }
@@ -1009,7 +1006,7 @@ impl<T: Config> Module<T> {
     fn remove_proposal_data(proposal_id: &T::ProposalId) {
         <Proposals<T>>::remove(proposal_id);
         <DispatchableCallCode<T>>::remove(proposal_id);
-        <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
+        <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id, None);
         Self::decrease_active_proposal_counter();
 
         T::ProposalObserver::proposal_removed(proposal_id);

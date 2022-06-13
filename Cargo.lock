@@ -4246,6 +4246,7 @@ dependencies = [
  "pallet-staking-handler",
  "pallet-timestamp",
  "parity-scale-codec 3.1.2",
+ "scale-info",
  "serde",
  "sp-arithmetic",
  "sp-core",
