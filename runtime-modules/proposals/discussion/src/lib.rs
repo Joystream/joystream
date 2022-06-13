@@ -59,12 +59,12 @@ use frame_support::sp_runtime::SaturatedConversion;
 use frame_support::traits::Get;
 use frame_support::traits::{Currency, ExistenceRequirement};
 use frame_support::{
-    decl_error, decl_event, decl_module, decl_storage, ensure, weights::Weight, Parameter, PalletId
+    decl_error, decl_event, decl_module, decl_storage, ensure, weights::Weight, PalletId, Parameter,
 };
 use sp_runtime::traits::{AccountIdConversion, Saturating};
 use sp_std::clone::Clone;
-use sp_std::vec::Vec;
 use sp_std::convert::TryInto;
+use sp_std::vec::Vec;
 
 use common::council::CouncilOriginValidator;
 use common::membership::MemberOriginValidator;
@@ -498,7 +498,8 @@ impl<T: Config> Module<T> {
         amount: BalanceOf<T>,
         account_id: &T::AccountId,
     ) -> DispatchResult {
-        let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account_truncating(thread_id);
+        let state_cleanup_treasury_account =
+            T::ModuleId::get().into_sub_account_truncating(thread_id);
         <Balances<T> as Currency<T::AccountId>>::transfer(
             &state_cleanup_treasury_account,
             account_id,
@@ -512,7 +513,8 @@ impl<T: Config> Module<T> {
         thread_id: T::ThreadId,
         account_id: &T::AccountId,
     ) -> DispatchResult {
-        let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account_truncating(thread_id);
+        let state_cleanup_treasury_account =
+            T::ModuleId::get().into_sub_account_truncating(thread_id);
         <Balances<T> as Currency<T::AccountId>>::transfer(
             account_id,
             &state_cleanup_treasury_account,
