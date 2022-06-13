@@ -73,7 +73,7 @@ pub struct ChannelCategoryUpdateParameters {
 
 /// Type representing an owned channel which videos, playlists, and series can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance> {
     /// The owner of a channel
     pub owner: ChannelOwner<MemberId, CuratorGroupId>,
@@ -89,6 +89,20 @@ pub struct ChannelRecord<MemberId: Ord, CuratorGroupId, AccountId, Balance> {
     pub moderators: BTreeSet<MemberId>,
     /// Cumulative cashout
     pub cumulative_payout_earned: Balance,
+}
+
+impl<MemberId: Ord + Default, CuratorGroupId, AccountId, Balance: Default> Default for ChannelRecord<MemberId, CuratorGroupId, AccountId, Balance> {
+    fn default() -> Self {
+        Self {
+            owner: ChannelOwner::Member(Default::default()),
+            num_videos: 0,
+            is_censored: false,
+            reward_account: None,
+            collaborators: BTreeSet::new(),
+            moderators: BTreeSet::new(),
+            cumulative_payout_earned: Default::default(),
+        }
+    }
 }
 
 impl<MemberId: Ord, CuratorGroupId, AccountId, Balance>

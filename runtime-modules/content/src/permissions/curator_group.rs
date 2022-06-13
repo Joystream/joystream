@@ -4,6 +4,7 @@ use scale_info::TypeInfo;
 /// A group, that consists of `curators` set
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug, TypeInfo)]
+#[scale_info(skip_type_params(T))]
 pub struct CuratorGroup<T: Config>
 where
     T: common::membership::MembershipTypes,
