@@ -43,15 +43,13 @@ pub use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{Currency, ExistenceRequirement};
 use frame_support::weights::Weight;
 use frame_support::{
-    decl_event, decl_module, decl_storage, ensure, traits::Get, Parameter, StorageDoubleMap,
+    decl_event, decl_module, decl_storage, ensure, traits::Get, PalletId, Parameter,
+    StorageDoubleMap,
 };
 use scale_info::TypeInfo;
 use sp_arithmetic::traits::{BaseArithmetic, One};
+use sp_runtime::traits::{AccountIdConversion, Hash, MaybeSerialize, Member, Saturating};
 use sp_runtime::SaturatedConversion;
-use sp_runtime::{
-    traits::{AccountIdConversion, Hash, MaybeSerialize, Member, Saturating},
-    ModuleId,
-};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::prelude::*;
 
@@ -125,7 +123,7 @@ pub trait Config<I: Instance = DefaultInstance>:
     type ReplyDeposit: Get<Self::Balance>;
 
     /// The forum module Id, used to derive the account Id to hold the thread bounty
-    type ModuleId: Get<ModuleId>;
+    type ModuleId: Get<PalletId>;
 
     /// Time a reply can live until it can be deleted by anyone
     type ReplyLifetime: Get<Self::BlockNumber>;
@@ -133,6 +131,7 @@ pub trait Config<I: Instance = DefaultInstance>:
 
 /// Type, representing blog related post structure
 #[derive(Encode, Decode, Clone, TypeInfo)]
+#[scale_info(skip_type_params(T, I))]
 pub struct Post<T: Config<I>, I: Instance> {
     /// Locking status
     locked: bool,
@@ -233,7 +232,7 @@ impl<T: Config<I>, I: Instance> Post<T, I> {
 }
 
 /// Enum variant, representing either reply or post id
-#[derive(Encode, Decode, Clone, PartialEq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, TypeInfo)]
 pub enum ParentId<ReplyId, PostId: Default> {
     Reply(ReplyId),
     Post(PostId),
@@ -247,7 +246,8 @@ impl<ReplyId, PostId: Default> Default for ParentId<ReplyId, PostId> {
 }
 
 /// Type, representing either root post reply or direct reply to reply
-#[derive(Encode, Decode, Clone)]
+#[derive(Encode, Decode, Clone, TypeInfo)]
+#[scale_info(skip_type_params(T, I))]
 pub struct Reply<T: Config<I>, I: Instance> {
     /// Reply text hash
     text_hash: T::Hash,
@@ -336,7 +336,7 @@ impl<T: Config<I>, I: Instance> Reply<T, I> {
 }
 
 /// Represents a single reply that will be deleted by `delete_replies`
-#[derive(Encode, Decode, Clone, Debug, Default, PartialEq)]
+#[derive(Encode, Decode, Clone, Debug, Default, PartialEq, TypeInfo)]
 pub struct ReplyToDelete<ReplyId> {
     /// Id of the post corresponding to the reply that will be deleted
     post_id: PostId,
@@ -727,7 +727,7 @@ decl_module! {
 
 impl<T: Config<I>, I: Instance> Module<T, I> {
     fn get_treasury_account(post_id: PostId) -> T::AccountId {
-        T::ModuleId::get().into_sub_account(post_id)
+        T::ModuleId::get().into_sub_account_truncating(post_id)
     }
 
     fn pay_off(post_id: PostId, amount: BalanceOf<T>, account_id: &T::AccountId) -> DispatchResult {
