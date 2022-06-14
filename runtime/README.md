@@ -18,7 +18,7 @@ Deploying the compiled runtime on a live system can be done in one of two ways:
 
 1. By creating a proposal for upgrading the Joystream runtime, which will then be voted on by the council. If the proposal is approved, the upgrade will go through after a grace period. When the Joystream platform is live, this will be the only way to upgrade the chain's runtime code.
 
-2. By creating  an extrinsic (transaction) signed with the sudo key invoking `system::setCode()`. This can be done either from the [Pioneer](/pioneer) extrinsics tab, or directly with an admin script. This way of upgrading the runtime code is intended for development and testnet phases only.
+2. By creating  an extrinsic (transaction) signed with the sudo key invoking `system::setCode()`. This can be done either from the [polkadot-js/apps](https://polkadot.js.org/apps/) extrinsics tab, or directly with an admin script. This way of upgrading the runtime code is intended for development and testnet phases only.
 
 ### Versioning the runtime
 

@@ -136,6 +136,9 @@ impl membership::WeightInfo for Weights {
     fn remove_staking_account() -> Weight {
         unimplemented!()
     }
+    fn member_remark() -> Weight {
+        unimplemented!()
+    }
 }
 
 impl membership::Trait for Test {
@@ -189,6 +192,12 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     }
 
     fn worker_exists(_worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
+        unimplemented!();
+    }
+
+    fn ensure_worker_exists(
+        _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> DispatchResult {
         unimplemented!();
     }
 }
@@ -280,6 +289,10 @@ impl proposals_engine::WeightInfo for MockProposalsEngineWeight {
     }
 
     fn cancel_active_and_pending_proposals(_: u32) -> u64 {
+        0
+    }
+
+    fn proposer_remark() -> u64 {
         0
     }
 }
@@ -463,6 +476,15 @@ impl working_group::WeightInfo for WorkingGroupWeightInfo {
     fn leave_role(_: u32) -> Weight {
         0
     }
+    fn fund_working_group_budget() -> Weight {
+        0
+    }
+    fn lead_remark() -> Weight {
+        0
+    }
+    fn worker_remark() -> Weight {
+        0
+    }
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Test {
@@ -615,6 +637,7 @@ impl crate::Trait for Test {
     type LockBlogPostProposalParameters = DefaultProposalParameters;
     type UnlockBlogPostProposalParameters = DefaultProposalParameters;
     type VetoProposalProposalParameters = DefaultProposalParameters;
+    type UpdateGlobalNftLimitProposalParameters = DefaultProposalParameters;
 }
 
 parameter_types! {
@@ -698,6 +721,15 @@ impl council::WeightInfo for CouncilWeightInfo {
         0
     }
     fn funding_request(_: u32) -> Weight {
+        0
+    }
+    fn fund_council_budget() -> Weight {
+        0
+    }
+    fn councilor_remark() -> Weight {
+        0
+    }
+    fn candidate_remark() -> Weight {
         0
     }
 }
@@ -876,6 +908,9 @@ impl crate::WeightInfo for () {
         0
     }
     fn create_proposal_veto_proposal(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn create_proposal_update_global_nft_limit(_: u32, _: u32) -> Weight {
         0
     }
 }

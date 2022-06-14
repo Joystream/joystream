@@ -4,6 +4,7 @@ export default class DeleteChannelCategoryCommand extends ContentDirectoryComman
   static description = 'Delete channel category.'
   static flags = {
     context: ContentDirectoryCommandBase.categoriesContextFlag,
+    ...ContentDirectoryCommandBase.flags,
   }
 
   static args = [
@@ -14,7 +15,7 @@ export default class DeleteChannelCategoryCommand extends ContentDirectoryComman
     },
   ]
 
-  async run() {
+  async run(): Promise<void> {
     const { context } = this.parse(DeleteChannelCategoryCommand).flags
 
     const { channelCategoryId } = this.parse(DeleteChannelCategoryCommand).args

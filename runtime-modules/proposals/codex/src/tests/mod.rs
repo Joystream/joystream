@@ -1,5 +1,6 @@
 mod mock;
 
+use content::NftLimitPeriod;
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;
@@ -1922,6 +1923,73 @@ fn create_set_referral_cut_common_checks_succeed() {
                 )
             },
             proposal_parameters: <Test as crate::Trait>::SetReferralCutProposalParameters::get(),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_update_global_nft_limit_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+            exact_execution_block: None,
+        };
+
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
+            exact_execution_block: None,
+        };
+
+        let proposal_details = ProposalDetails::UpdateGlobalNftLimit(NftLimitPeriod::Daily, 100);
+
+        let proposal_fixture = ProposalTestFixture {
+            general_proposal_parameters: general_proposal_parameters.clone(),
+            proposal_details: proposal_details.clone(),
+            insufficient_rights_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::None.into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            invalid_stake_account_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_incorrect_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            proposal_parameters: <Test as crate::Trait>::SetInvitationCountProposalParameters::get(
+            ),
         };
         proposal_fixture.check_all();
     });

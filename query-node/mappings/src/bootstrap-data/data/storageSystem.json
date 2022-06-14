@@ -1,0 +1,11 @@
+{
+  "id": "1",
+  "blacklist": [],
+  "storageBucketsPerBagLimit": 0,
+  "distributionBucketsPerBagLimit": 0,
+  "uploadingBlocked": false,
+  "dataObjectFeePerMb": 0,
+  "storageBucketMaxObjectsCountLimit": 0,
+  "storageBucketMaxObjectsSizeLimit": 0,
+  "nextDataObjectId": 0
+}

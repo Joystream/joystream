@@ -2,11 +2,11 @@ import { flags } from '@oclif/command'
 import { CLIError } from '@oclif/errors'
 import { displayNameValueTable } from '../../helpers/display'
 import { Codec } from '@polkadot/types/types'
+import { ConstantCodec } from '@polkadot/types/metadata/decorate/types'
 import ExitCodes from '../../ExitCodes'
 import chalk from 'chalk'
 import { NameValueObj, ApiMethodArg, UnaugmentedApiPromise } from '../../Types'
 import ApiCommandBase from '../../base/ApiCommandBase'
-import { AugmentedConst } from '@polkadot/api/types'
 
 // Command flags type
 type ApiInspectFlags = {
@@ -80,7 +80,7 @@ export default class ApiInspect extends ApiCommandBase {
       return this.getUnaugmentedApi().query[apiModule][apiMethod].creator.meta
     } else {
       // Currently the only other optoin is api.consts
-      const method = (this.getUnaugmentedApi().consts[apiModule][apiMethod] as unknown) as AugmentedConst<'promise'>
+      const method = this.getUnaugmentedApi().consts[apiModule][apiMethod] as ConstantCodec
       return method.meta
     }
   }

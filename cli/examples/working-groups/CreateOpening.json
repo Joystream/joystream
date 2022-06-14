@@ -1,0 +1,17 @@
+{
+  "applicationDetails": "- Detail 1\n- Detail 2\n- Detail 3",
+  "expectedEndingTimestamp": 1893499200,
+  "hiringLimit": 10,
+  "shortDescription": "Example opening short description",
+  "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin sodales ligula purus, vel malesuada urna dignissim et. Vestibulum tincidunt gravida diam ac ultrices. Vivamus et dolor non turpis egestas cursus quis non sapien. Praesent eros ligula, faucibus id viverra nec, feugiat vel lacus. Etiam eget magna ipsum. In ac dolor hendrerit, sodales enim vel, lobortis neque. Sed feugiat egestas turpis non ultrices. Sed sed purus neque. Vestibulum feugiat elementum finibus. Vivamus eget pulvinar eros. Curabitur non dapibus turpis, nec egestas erat.",
+  "applicationFormQuestions": [
+    { "question": "What's your name?", "type": "TEXT" },
+    { "question": "How old are you?", "type": "TEXT" },
+    { "question": "Why are you a good candidate?", "type": "TEXTAREA" }
+  ],
+  "stakingPolicy": {
+    "amount": 2000,
+    "unstakingPeriod": 100800
+  },
+  "rewardPerBlock": 100
+}

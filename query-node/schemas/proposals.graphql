@@ -106,7 +106,7 @@ type Proposal @entity {
   title: String! @fulltext(query: "proposalsByTitle")
 
   "Proposal description"
-  description: String! @fulltext(query: "proposalsByDescription")
+  description: String!
 
   "Proposal details depending on proposal type"
   details: ProposalDetails!

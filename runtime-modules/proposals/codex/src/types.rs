@@ -9,6 +9,7 @@ use common::working_group::WorkingGroup;
 use common::BalanceKind;
 use common::FundingRequestParameters;
 
+use content::NftLimitPeriod;
 use working_group::StakePolicy;
 
 /// Encodes proposal using its details information.
@@ -111,6 +112,9 @@ pub enum ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId, P
 
     /// `Veto Proposal` proposal
     VetoProposal(ProposalId),
+
+    /// `Update global NFT limit` proposal
+    UpdateGlobalNftLimit(NftLimitPeriod, u64),
 }
 
 impl<Balance, BlockNumber, AccountId, WorkerId, OpeningId, PostId, ProposalId> Default

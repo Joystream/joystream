@@ -2,6 +2,7 @@ enum Network {
   BABYLON
   ALEXANDRIA
   ROME
+  GIZA
   OLYMPIA
 }
 

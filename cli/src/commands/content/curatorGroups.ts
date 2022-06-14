@@ -4,8 +4,11 @@ import { displayTable } from '../../helpers/display'
 
 export default class CuratorGroupsCommand extends ContentDirectoryCommandBase {
   static description = 'List existing Curator Groups.'
+  static flags = {
+    ...ContentDirectoryCommandBase.flags,
+  }
 
-  async run() {
+  async run(): Promise<void> {
     const groups = await this.getApi().availableCuratorGroups()
 
     if (groups.length) {

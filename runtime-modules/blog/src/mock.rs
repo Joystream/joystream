@@ -165,6 +165,10 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for () {
     fn worker_exists(_worker_id: &<Runtime as MembershipTypes>::ActorId) -> bool {
         unimplemented!();
     }
+
+    fn ensure_worker_exists(_worker_id: &<Runtime as MembershipTypes>::ActorId) -> DispatchResult {
+        unimplemented!();
+    }
 }
 
 pub struct Weights;
@@ -221,6 +225,9 @@ impl membership::WeightInfo for Weights {
         unimplemented!()
     }
     fn remove_staking_account() -> Weight {
+        unimplemented!()
+    }
+    fn member_remark() -> Weight {
         unimplemented!()
     }
 }

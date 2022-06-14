@@ -1,0 +1,3 @@
+## mnemonic Type
+
+`string`

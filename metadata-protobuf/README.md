@@ -1,6 +1,6 @@
-## Joystream Content Directory Metadata Library
+## Joystream Metadata Library
 
-This package contains protobuf message definitions compiled to Javascript/Typescript used for creating and updating various metadata blobs in the joystream content directory.
+This package contains protobuf message definitions compiled to Javascript/Typescript used for creating and updating various metadata blobs in Joystream.
 
 ### Message Specs
 
@@ -27,12 +27,10 @@ useful npm package https://www.npmjs.com/package/iso-639-1
 
 ### Building the package
 
-Building will compile the protofiles and build the library from source.
-
-- pre-requisists for compiling protofiles:
-    - [protoc](https://github.com/protocolbuffers/protobuf/releases)
+Building will compile the protofiles using [protobufjs](https://www.npmjs.com/package/protobufjs) and build the library from source.
 
 - pre-requisists for generating documentation:
+    - [protoc](https://github.com/protocolbuffers/protobuf/releases)
     - [golang](https://golang.org/)
     - [protoc-gen-doc](https://github.com/pseudomuto/protoc-gen-doc) to generate docs
 

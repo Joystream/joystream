@@ -1,0 +1,5 @@
+- [`joystream-distributor help` command](./help.md)
+- [`joystream-distributor start` command](./start.md)
+- [`joystream-distributor leader:*` commands](./leader.md)
+- [`joystream-distributor operator:*` commands](./operator.md)
+- [`joystream-distributor dev:*` commands](./dev.md)

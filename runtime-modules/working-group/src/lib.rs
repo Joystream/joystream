@@ -22,6 +22,7 @@
 //! - [update_reward_amount](./struct.Module.html#method.update_reward_amount) -  Update the reward amount of the regular worker/lead.
 //! - [set_status_text](./struct.Module.html#method.set_status_text) - Sets the working group status.
 //! - [spend_from_budget](./struct.Module.html#method.spend_from_budget) - Spend tokens from the group budget.
+//! - [fund_working_group_budget](./struct.Module.html#method.fund_working_group_budget) - Fund the group budget by a member.
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -63,6 +64,7 @@ use common::membership::MemberOriginValidator;
 use common::{MemberId, StakingAccountValidator};
 use frame_support::dispatch::DispatchResult;
 use staking_handler::StakingHandler;
+type Balances<T> = balances::Module<T>;
 
 type WeightInfoWorkingGroup<T, I> = <T as Trait<I>>::WeightInfo;
 
@@ -91,6 +93,9 @@ pub trait WeightInfo {
     fn set_budget() -> Weight;
     fn add_opening(i: u32) -> Weight;
     fn leave_role(i: u32) -> Weight;
+    fn fund_working_group_budget() -> Weight;
+    fn lead_remark() -> Weight;
+    fn worker_remark() -> Weight;
 }
 
 /// The _Group_ main _Trait_
@@ -137,15 +142,16 @@ decl_event!(
     /// _Group_ events
     pub enum Event<T, I = DefaultInstance>
     where
-       OpeningId = OpeningId,
-       ApplicationId = ApplicationId,
-       ApplicationIdToWorkerIdMap = BTreeMap<ApplicationId, WorkerId<T>>,
-       WorkerId = WorkerId<T>,
-       <T as frame_system::Trait>::AccountId,
-       Balance = BalanceOf<T>,
-       OpeningType = OpeningType,
-       StakePolicy = StakePolicy<<T as frame_system::Trait>::BlockNumber, BalanceOf<T>>,
-       ApplyOnOpeningParameters = ApplyOnOpeningParameters<T>,
+        OpeningId = OpeningId,
+        ApplicationId = ApplicationId,
+        ApplicationIdToWorkerIdMap = BTreeMap<ApplicationId, WorkerId<T>>,
+        WorkerId = WorkerId<T>,
+        <T as frame_system::Trait>::AccountId,
+        Balance = BalanceOf<T>,
+        OpeningType = OpeningType,
+        StakePolicy = StakePolicy<<T as frame_system::Trait>::BlockNumber, BalanceOf<T>>,
+        ApplyOnOpeningParameters = ApplyOnOpeningParameters<T>,
+        MemberId = MemberId<T>
     {
         /// Emits on adding new job opening.
         /// Params:
@@ -288,6 +294,24 @@ decl_event!(
         /// - Id of the worker.
         /// - Raw storage field.
         WorkerStorageUpdated(WorkerId, Vec<u8>),
+
+        /// Fund the working group budget.
+        /// Params:
+        /// - Member ID
+        /// - Amount of balance
+        /// - Rationale
+        WorkingGroupBudgetFunded(MemberId, Balance, Vec<u8>),
+
+        /// Emits on Lead making a remark message
+        /// Params:
+        /// - message
+        LeadRemarked(Vec<u8>),
+
+        /// Emits on Lead making a remark message
+        /// Params:
+        /// - worker
+        /// - message
+        WorkerRemarked(WorkerId, Vec<u8>),
     }
 );
 
@@ -1167,6 +1191,90 @@ decl_module! {
             // Trigger event
             Self::deposit_event(RawEvent::WorkerStorageUpdated(worker_id, storage));
         }
+
+        /// Fund working group budget by a member.
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)` Doesn't depend on the state or parameters
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T, I>::fund_working_group_budget()]
+        pub fn fund_working_group_budget(
+            origin,
+            member_id: MemberId<T>,
+            amount: BalanceOf<T>,
+            rationale: Vec<u8>,
+        ) {
+            let account_id =
+                T::MemberOriginValidator::ensure_member_controller_account_origin(origin, member_id)?;
+
+            let wg_budget = Self::budget();
+
+            ensure!(amount > Zero::zero(), Error::<T, I>::ZeroTokensFunding);
+            ensure!(
+                Balances::<T>::can_slash(&account_id, amount),
+                Error::<T, I>::InsufficientTokensForFunding
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::set_working_group_budget(wg_budget.saturating_add(amount));
+
+            let _ = Balances::<T>::slash(&account_id, amount);
+
+            Self::deposit_event(
+                RawEvent::WorkingGroupBudgetFunded(
+                    member_id,
+                    amount,
+                    rationale
+                )
+            );
+        }
+
+        /// Lead remark message
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T,I>::lead_remark()]
+        pub fn lead_remark(origin, msg: Vec<u8>) {
+            let _ = checks::ensure_origin_is_active_leader::<T, I>(origin);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::LeadRemarked(msg));
+        }
+
+        /// Worker remark message
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T,I>::worker_remark()]
+        pub fn worker_remark(origin, worker_id: WorkerId<T>,msg: Vec<u8>) {
+            let _ = checks::ensure_worker_signed::<T, I>(origin, &worker_id).map(|_| ());
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::WorkerRemarked(worker_id, msg));
+        }
+
     }
 }
 
@@ -1564,6 +1672,12 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupAuthenticator<
 
     fn worker_exists(worker_id: &T::ActorId) -> bool {
         checks::ensure_worker_exists::<T, I>(worker_id).is_ok()
+    }
+
+    fn ensure_worker_exists(worker_id: &WorkerId<T>) -> DispatchResult {
+        checks::ensure_worker_exists::<T, I>(worker_id)
+            .map(|_| ())
+            .map_err(|err| err.into())
     }
 }
 

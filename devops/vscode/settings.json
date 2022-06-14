@@ -1,10 +1,10 @@
 {
   "eslint.workingDirectories": [
     "./cli",
-    "./pioneer",
     "./tests/network-tests",
     "./types",
     "./storage-node",
-    "./atlas"
+    "./atlas",
+    "./distributor-node"
   ]
 }

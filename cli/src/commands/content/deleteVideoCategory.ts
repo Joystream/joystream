@@ -4,6 +4,7 @@ export default class DeleteVideoCategoryCommand extends ContentDirectoryCommandB
   static description = 'Delete video category.'
   static flags = {
     context: ContentDirectoryCommandBase.categoriesContextFlag,
+    ...ContentDirectoryCommandBase.flags,
   }
 
   static args = [
@@ -14,7 +15,7 @@ export default class DeleteVideoCategoryCommand extends ContentDirectoryCommandB
     },
   ]
 
-  async run() {
+  async run(): Promise<void> {
     const { context } = this.parse(DeleteVideoCategoryCommand).flags
 
     const { videoCategoryId } = this.parse(DeleteVideoCategoryCommand).args

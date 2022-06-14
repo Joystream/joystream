@@ -24,6 +24,7 @@ pub mod pallet_balances;
 pub mod pallet_session;
 pub mod pallet_staking;
 pub mod pallet_timestamp;
+pub mod pallet_vesting;
 pub mod substrate_utility;
 
 // Joystream pallets
@@ -38,4 +39,5 @@ pub mod proposals_codex;
 pub mod proposals_discussion;
 pub mod proposals_engine;
 pub mod referendum;
+pub mod storage;
 pub mod working_group;

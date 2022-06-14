@@ -8,7 +8,6 @@ members = [
 	"runtime-modules/council",
 	"runtime-modules/forum",
 	"runtime-modules/membership",
-	"runtime-modules/memo",
 	"runtime-modules/referendum",
 	"runtime-modules/storage",
 	"runtime-modules/working-group",

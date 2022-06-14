@@ -1,0 +1,3 @@
+## queryNode Type
+
+`string`

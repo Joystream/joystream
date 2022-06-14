@@ -495,6 +495,13 @@ impl Default for SetInitialInvitationBalanceFixture {
 }
 
 impl SetInitialInvitationBalanceFixture {
+    pub fn with_initial_balance(self, new_initial_balance: u64) -> Self {
+        Self {
+            new_initial_balance,
+            ..self
+        }
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Membership::set_initial_invitation_balance(
             self.origin.clone().into(),

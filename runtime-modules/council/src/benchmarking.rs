@@ -114,7 +114,7 @@ where
 }
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
-    ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
+    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
 // Method to generate a distintic valid handle
@@ -367,7 +367,7 @@ benchmarks! {
         let winners = candidates_id.iter().map(|candidate_id| {
             let option_id: T::MemberId = *candidate_id;
             OptionResult {
-                option_id: option_id.into(),
+                option_id,
                 vote_power: Zero::zero(),
             }
         }).collect::<Vec<_>>();
@@ -384,7 +384,7 @@ benchmarks! {
             CouncilMember{
                 staking_account_id: accounts_id[idx].clone(),
                 reward_account_id: accounts_id[idx].clone(),
-                membership_id: member_id.clone(),
+                membership_id: *member_id,
                 stake: T::MinCandidateStake::get(),
                 last_payment_block: Zero::zero(),
                 unpaid_reward: Zero::zero(),
@@ -660,7 +660,7 @@ benchmarks! {
             RawEvent::NewCandidate(
                 member_id,
                 account_id.clone(),
-                account_id.clone(),
+                account_id,
                 T::MinCandidateStake::get()
             ).into()
         );
@@ -734,6 +734,75 @@ benchmarks! {
             "Budget refill not updated correctly"
         );
         assert_last_event::<T>(RawEvent::BudgetRefillPlanned(One::one()).into());
+    }
+
+    fund_council_budget {
+        let amount: Balance<T> = 100u32.into();
+
+        let (account_id, member_id) = member_funded_account::<T>(0);
+
+    }: _ (RawOrigin::Signed(account_id.clone()), member_id, amount, Vec::new())
+    verify {
+        assert_eq!(Council::<T>::budget(), amount, "Budget not updated");
+        assert_last_event::<T>(
+            RawEvent::CouncilBudgetFunded(member_id, amount, Vec::new()).into()
+        );
+    }
+
+    candidate_remark {
+        let msg = b"test".to_vec();
+        let (account_id, member_id) = start_period_announce_candidacy::<T>(0);
+    }: _(RawOrigin::Signed(account_id.clone()), member_id, msg.clone())
+    verify {
+        assert_last_event::<T>(RawEvent::CandidateRemarked(member_id, msg).into());
+    }
+
+    councilor_remark {
+        // periods easier to calculate
+        let current_block_number = Zero::zero();
+        System::<T>::set_block_number(current_block_number);
+        assert_eq!(System::<T>::block_number(), current_block_number, "Block number not updated");
+
+        // Worst case we have a council elected
+        let (accounts_id, candidates_id) = start_period_announce_multiple_candidates::<T>(
+            T::CouncilSize::get().try_into().unwrap()
+        );
+
+        let winners = candidates_id.iter().map(|candidate_id| {
+            let option_id: T::MemberId = *candidate_id;
+            OptionResult {
+                option_id,
+                vote_power: Zero::zero(),
+            }
+        }).collect::<Vec<_>>();
+
+        Council::<T>::end_announcement_period(
+            CouncilStageAnnouncing {
+                candidates_count: T::CouncilSize::get(),
+            }
+        );
+
+        Council::<T>::end_election_period(&winners[..]);
+
+        let council = candidates_id.iter().enumerate().map(|(idx, member_id)|
+            CouncilMember{
+                staking_account_id: accounts_id[idx].clone(),
+                reward_account_id: accounts_id[idx].clone(),
+                membership_id: *member_id,
+                stake: T::MinCandidateStake::get(),
+                last_payment_block: Zero::zero(),
+                unpaid_reward: Zero::zero(),
+            }).collect::<Vec<_>>();
+
+        assert_eq!(
+            Council::<T>::council_members(),
+            council,
+            "Council not updated"
+        );
+        let msg = b"test".to_vec();
+    }: _(RawOrigin::Signed(accounts_id[0].clone()), candidates_id[0], msg.clone())
+    verify {
+        assert_last_event::<T>(RawEvent::CouncilorRemarked(candidates_id[0], msg).into());
     }
 }
 
@@ -823,6 +892,30 @@ mod tests {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
             assert_ok!(test_benchmark_funding_request::<Runtime>());
+        })
+    }
+
+    #[test]
+    fn test_fund_council_budget() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(test_benchmark_fund_council_budget::<Runtime>());
+        })
+    }
+
+    #[test]
+    fn test_councilor_remark() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(test_benchmark_councilor_remark::<Runtime>());
+        })
+    }
+
+    #[test]
+    fn test_candidate_remark() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(test_benchmark_candidate_remark::<Runtime>());
         })
     }
 }

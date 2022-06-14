@@ -48,7 +48,7 @@ export default class AccountExport extends AccountsCommandBase {
     return destFilePath
   }
 
-  async run() {
+  async run(): Promise<void> {
     const { destPath } = this.parse(AccountExport).args as AccountExportArgs
     let { name, all } = this.parse(AccountExport).flags
     const accounts = this.fetchAccounts()
@@ -56,20 +56,24 @@ export default class AccountExport extends AccountsCommandBase {
     if (all) {
       const exportPath: string = path.join(destPath, AccountExport.MULTI_EXPORT_FOLDER_NAME)
       try {
-        if (!fs.existsSync(exportPath)) fs.mkdirSync(exportPath)
+        if (!fs.existsSync(exportPath)) {
+          fs.mkdirSync(exportPath, { recursive: true })
+        }
       } catch (e) {
         this.error(`Failed to create the export folder (${exportPath})`, { exit: ExitCodes.FsOperationFailed })
       }
       for (const acc of accounts) {
         this.exportAccount(acc.meta.name, exportPath)
       }
-      this.log(chalk.greenBright(`All accounts succesfully exported to: ${chalk.magentaBright(exportPath)}!`))
+      this.log(chalk.greenBright(`All accounts successfully exported to: ${chalk.magentaBright(exportPath)}!`))
     } else {
       if (!name) {
-        name = await this.promptForAccount()
+        const key = await this.promptForAccount('Select an account to export', false, false)
+        const { meta } = this.getPair(key)
+        name = meta.name
       }
       const exportedFilePath: string = this.exportAccount(name, destPath)
-      this.log(chalk.greenBright(`Account succesfully exported to: ${chalk.magentaBright(exportedFilePath)}`))
+      this.log(chalk.greenBright(`Account successfully exported to: ${chalk.magentaBright(exportedFilePath)}`))
     }
   }
 }

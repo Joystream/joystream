@@ -1,12 +1,12 @@
 import BN from 'bn.js'
-import { types } from '@joystream/types/'
+import { createType, types } from '@joystream/types'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { SubmittableExtrinsic, AugmentedQuery } from '@polkadot/api/types'
 import { formatBalance } from '@polkadot/util'
-import { Balance } from '@polkadot/types/interfaces'
+import { Balance, LockIdentifier } from '@polkadot/types/interfaces'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { Codec, Observable } from '@polkadot/types/types'
-import { UInt, Bytes } from '@polkadot/types'
+import { UInt } from '@polkadot/types'
 import {
   AccountSummary,
   WorkingGroups,
@@ -19,17 +19,9 @@ import {
 } from './Types'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { CLIError } from '@oclif/errors'
-import {
-  Worker,
-  WorkerId,
-  OpeningId,
-  Application,
-  ApplicationId,
-  StorageProviderId,
-  Opening,
-} from '@joystream/types/working-group'
+import { Worker, WorkerId, OpeningId, Application, ApplicationId, Opening } from '@joystream/types/working-group'
 import { Membership, StakingAccountMemberBinding } from '@joystream/types/members'
-import { MemberId, ChannelId, AccountId } from '@joystream/types/common'
+import { MemberId, ChannelId, AccountId, ThreadId, PostId } from '@joystream/types/common'
 import {
   Channel,
   Video,
@@ -37,56 +29,41 @@ import {
   VideoId,
   CuratorGroupId,
   CuratorGroup,
-  ChannelCategory,
   VideoCategoryId,
-  VideoCategory,
 } from '@joystream/types/content'
-import { ContentId, DataObject } from '@joystream/types/storage'
-import { ApolloClient, InMemoryCache, HttpLink, NormalizedCacheObject, DocumentNode } from '@apollo/client/core'
-import fetch from 'cross-fetch'
-import { Maybe } from './graphql/generated/schema'
-import {
-  GetMemberById,
-  GetMemberByIdQuery,
-  GetMemberByIdQueryVariables,
-  MembershipFieldsFragment,
-} from './graphql/generated/queries'
+import { BagId, DataObject, DataObjectId } from '@joystream/types/storage'
+import QueryNodeApi from './QueryNodeApi'
+import { MembershipFieldsFragment } from './graphql/generated/queries'
+import { blake2AsHex } from '@polkadot/util-crypto'
+import { Category, CategoryId, Post, Thread } from '@joystream/types/forum'
+import chalk from 'chalk'
+import _ from 'lodash'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
 
 // Mapping of working group to api module
 export const apiModuleByGroup = {
   [WorkingGroups.StorageProviders]: 'storageWorkingGroup',
-  [WorkingGroups.Curators]: 'contentDirectoryWorkingGroup',
+  [WorkingGroups.Curators]: 'contentWorkingGroup',
   [WorkingGroups.Forum]: 'forumWorkingGroup',
   [WorkingGroups.Membership]: 'membershipWorkingGroup',
-  [WorkingGroups.Operations]: 'operationsWorkingGroup',
   [WorkingGroups.Gateway]: 'gatewayWorkingGroup',
+  [WorkingGroups.OperationsAlpha]: 'operationsWorkingGroupAlpha',
+  [WorkingGroups.OperationsBeta]: 'operationsWorkingGroupBeta',
+  [WorkingGroups.OperationsGamma]: 'operationsWorkingGroupGamma',
+  [WorkingGroups.Distribution]: 'distributionWorkingGroup',
 } as const
-
-export const lockIdByWorkingGroup: { [K in WorkingGroups]: string } = {
-  [WorkingGroups.StorageProviders]: '0x0606060606060606',
-  [WorkingGroups.Curators]: '0x0707070707070707',
-  [WorkingGroups.Forum]: '0x0808080808080808',
-  [WorkingGroups.Membership]: '0x0909090909090909',
-  [WorkingGroups.Operations]: '0x0d0d0d0d0d0d0d0d',
-  [WorkingGroups.Gateway]: '0x0e0e0e0e0e0e0e0e',
-}
 
 // Api wrapper for handling most common api calls and allowing easy API implementation switch in the future
 export default class Api {
   private _api: ApiPromise
-  private _queryNode?: ApolloClient<NormalizedCacheObject>
+  private _qnApi: QueryNodeApi | undefined
   public isDevelopment = false
 
-  private constructor(
-    originalApi: ApiPromise,
-    isDevelopment: boolean,
-    queryNodeClient?: ApolloClient<NormalizedCacheObject>
-  ) {
+  private constructor(originalApi: ApiPromise, isDevelopment: boolean, qnApi?: QueryNodeApi) {
     this.isDevelopment = isDevelopment
     this._api = originalApi
-    this._queryNode = queryNodeClient
+    this._qnApi = qnApi
   }
 
   public getOriginalApi(): ApiPromise {
@@ -103,7 +80,6 @@ export default class Api {
     const api = new ApiPromise({ provider: wsProvider, types, metadata: metadataCache })
     await api.isReadyOrError
 
-    // Initializing some api params based on pioneer/packages/react-api/Api.tsx
     const [properties, chainType] = await Promise.all([api.rpc.system.properties(), api.rpc.system.chainType()])
 
     const tokenSymbol = properties.tokenSymbol.unwrap()[0].toString()
@@ -118,63 +94,13 @@ export default class Api {
     return { api, properties, chainType }
   }
 
-  private static async createQueryNodeClient(uri: string) {
-    return new ApolloClient({
-      link: new HttpLink({ uri, fetch }),
-      cache: new InMemoryCache(),
-      defaultOptions: { query: { fetchPolicy: 'no-cache', errorPolicy: 'all' } },
-    })
-  }
-
   static async create(
     apiUri = DEFAULT_API_URI,
     metadataCache: Record<string, any>,
-    queryNodeUri?: string
+    qnApi?: QueryNodeApi
   ): Promise<Api> {
     const { api, chainType } = await Api.initApi(apiUri, metadataCache)
-    const queryNodeClient = queryNodeUri ? await this.createQueryNodeClient(queryNodeUri) : undefined
-    return new Api(api, chainType.isDevelopment || chainType.isLocal, queryNodeClient)
-  }
-
-  // Query-node: get entity by unique input
-  protected async uniqueEntityQuery<
-    QueryT extends { [k: string]: Maybe<Record<string, unknown>> | undefined },
-    VariablesT extends Record<string, unknown>
-  >(
-    query: DocumentNode,
-    variables: VariablesT,
-    resultKey: keyof QueryT
-  ): Promise<Required<QueryT>[keyof QueryT] | null | undefined> {
-    if (!this._queryNode) {
-      return
-    }
-    return (await this._queryNode.query<QueryT, VariablesT>({ query, variables })).data[resultKey] || null
-  }
-
-  // Query-node: get entities by "non-unique" input and return first result
-  protected async firstEntityQuery<
-    QueryT extends { [k: string]: unknown[] },
-    VariablesT extends Record<string, unknown>
-  >(
-    query: DocumentNode,
-    variables: VariablesT,
-    resultKey: keyof QueryT
-  ): Promise<QueryT[keyof QueryT][number] | null | undefined> {
-    if (!this._queryNode) {
-      return
-    }
-    return (await this._queryNode.query<QueryT, VariablesT>({ query, variables })).data[resultKey][0] || null
-  }
-
-  // Query-node: get multiple entities
-  protected async multipleEntitiesQuery<
-    QueryT extends { [k: string]: unknown[] },
-    VariablesT extends Record<string, unknown>
-  >(query: DocumentNode, variables: VariablesT, resultKey: keyof QueryT): Promise<QueryT[keyof QueryT] | undefined> {
-    if (!this._queryNode) {
-      return
-    }
-    return (await this._queryNode.query<QueryT, VariablesT>({ query, variables })).data[resultKey]
+    return new Api(api, chainType.isDevelopment || chainType.isLocal, qnApi)
   }
 
   async bestNumber(): Promise<number> {
@@ -203,15 +129,9 @@ export default class Api {
     return paymentInfo.partialFee
   }
 
-  createTransferTx(recipient: string, amount: BN) {
-    return this._api.tx.balances.transfer(recipient, amount)
-  }
-
   // Working groups
-  // TODO: This is a lot of repeated logic from "/pioneer/joy-utils/transport"
-  // It will be refactored to "joystream-js" soon
   async entriesByIds<IDType extends UInt, ValueType extends Codec>(
-    apiMethod: AugmentedQuery<'promise', (key: IDType) => Observable<ValueType>>
+    apiMethod: AugmentedQuery<'promise', (key: IDType) => Observable<ValueType>, [IDType]>
   ): Promise<[IDType, ValueType][]> {
     const entries: [IDType, ValueType][] = (await apiMethod.entries()).map(([storageKey, value]) => [
       storageKey.args[0] as IDType,
@@ -233,44 +153,61 @@ export default class Api {
     return new Date(blockTime.toNumber())
   }
 
-  protected workingGroupApiQuery(group: WorkingGroups) {
+  protected workingGroupApiQuery<T extends WorkingGroups>(group: T): ApiPromise['query'][typeof apiModuleByGroup[T]] {
     const module = apiModuleByGroup[group]
     return this._api.query[module]
   }
 
-  protected async fetchMemberQueryNodeData(memberId: MemberId): Promise<MembershipFieldsFragment | null | undefined> {
-    return this.uniqueEntityQuery<GetMemberByIdQuery, GetMemberByIdQueryVariables>(
-      GetMemberById,
-      {
-        id: memberId.toString(),
-      },
-      'membershipByUniqueInput'
+  async membersDetails(entries: [MemberId, Membership][]): Promise<MemberDetails[]> {
+    const membersQnData: MembershipFieldsFragment[] | undefined = await this._qnApi?.membersByIds(
+      entries.map(([id]) => id)
     )
-  }
+    const memberQnDataById = new Map<string, MembershipFieldsFragment>()
+    membersQnData?.forEach((m) => {
+      memberQnDataById.set(m.id, m)
+    })
 
-  async memberDetails(memberId: MemberId, membership: Membership): Promise<MemberDetails> {
-    const memberData = await this.fetchMemberQueryNodeData(memberId)
-
-    return {
+    return entries.map(([memberId, membership]) => ({
       id: memberId,
-      name: memberData?.metadata.name,
-      handle: memberData?.handle,
+      handle: memberQnDataById.get(memberId.toString())?.handle,
+      meta: memberQnDataById.get(memberId.toString())?.metadata,
       membership,
-    }
+    }))
   }
 
-  protected async membershipById(memberId: MemberId): Promise<MemberDetails | null> {
+  // TODO: Try to avoid fetching members "one-by-one" whenever possible
+  async memberDetails(memberId: MemberId, membership: Membership): Promise<MemberDetails> {
+    const [memberDetails] = await this.membersDetails([[memberId, membership]])
+    return memberDetails
+  }
+
+  async memberDetailsById(memberId: MemberId | number): Promise<MemberDetails | null> {
     const membership = await this._api.query.members.membershipById(memberId)
-    return membership.isEmpty ? null : await this.memberDetails(memberId, membership)
+    return membership.isEmpty ? null : await this.memberDetails(createType('MemberId', memberId), membership)
   }
 
-  protected async expectedMembershipById(memberId: MemberId): Promise<MemberDetails> {
-    const member = await this.membershipById(memberId)
+  async expectedMemberDetailsById(memberId: MemberId | number): Promise<MemberDetails> {
+    const member = await this.memberDetailsById(memberId)
     if (!member) {
       throw new CLIError(`Expected member was not found by id: ${memberId.toString()}`)
     }
 
     return member
+  }
+
+  async getMembers(ids: MemberId[] | number[]): Promise<Membership[]> {
+    return this._api.query.members.membershipById.multi(ids)
+  }
+
+  async membersDetailsByIds(ids: MemberId[] | number[]): Promise<MemberDetails[]> {
+    const memberships = await this.getMembers(ids)
+    const entries: [MemberId, Membership][] = ids.map((id, i) => [createType('MemberId', id), memberships[i]])
+    return this.membersDetails(entries)
+  }
+
+  async allMembersDetails(): Promise<MemberDetails[]> {
+    const entries = await this.entriesByIds(this._api.query.members.membershipById)
+    return this.membersDetails(entries)
   }
 
   async groupLead(group: WorkingGroups): Promise<GroupMember | null> {
@@ -287,12 +224,10 @@ export default class Api {
   }
 
   protected async fetchStake(account: AccountId | string, group: WorkingGroups): Promise<Balance> {
+    const groupLockId = this._api.consts[apiModuleByGroup[group]].stakingHandlerLockId
     return this._api.createType(
       'Balance',
-      new BN(
-        (await this._api.query.balances.locks(account)).find((lock) => lock.id.eq(lockIdByWorkingGroup[group]))
-          ?.amount || 0
-      )
+      new BN((await this._api.query.balances.locks(account)).find((lock) => lock.id.eq(groupLockId))?.amount || 0)
     )
   }
 
@@ -301,11 +236,7 @@ export default class Api {
     const stakingAccount = worker.staking_account_id
     const memberId = worker.member_id
 
-    const profile = await this.membershipById(memberId)
-
-    if (!profile) {
-      throw new Error(`Group member profile not found! (member id: ${memberId.toNumber()})`)
-    }
+    const profile = await this.expectedMemberDetailsById(memberId)
 
     const stake = await this.fetchStake(worker.staking_account_id, group)
 
@@ -325,24 +256,17 @@ export default class Api {
     }
   }
 
-  async workerByWorkerId(group: WorkingGroups, workerId: number): Promise<Worker> {
-    const nextId = await this.workingGroupApiQuery(group).nextWorkerId<WorkerId>()
-
-    // This is chain specfic, but if next id is still 0, it means no workers have been added yet
-    if (workerId < 0 || workerId >= nextId.toNumber()) {
-      throw new CLIError('Invalid worker id!')
-    }
-
-    const worker = await this.workingGroupApiQuery(group).workerById<Worker>(workerId)
+  async workerByWorkerId(group: WorkingGroups, workerId: WorkerId | number): Promise<Worker> {
+    const worker = await this.workingGroupApiQuery(group).workerById(workerId)
 
     if (worker.isEmpty) {
-      throw new CLIError('This worker is not active anymore')
+      throw new CLIError(`Worker ${chalk.magentaBright(workerId)} does not exist!`)
     }
 
     return worker
   }
 
-  async groupMember(group: WorkingGroups, workerId: number) {
+  async groupMember(group: WorkingGroups, workerId: number): Promise<GroupMember> {
     const worker = await this.workerByWorkerId(group, workerId)
     return await this.parseGroupMember(group, this._api.createType('WorkerId', workerId), worker)
   }
@@ -358,7 +282,7 @@ export default class Api {
   }
 
   groupWorkers(group: WorkingGroups): Promise<[WorkerId, Worker][]> {
-    return this.entriesByIds<WorkerId, Worker>(this.workingGroupApiQuery(group).workerById)
+    return this.entriesByIds(this.workingGroupApiQuery(group).workerById)
   }
 
   async openingsByGroup(group: WorkingGroups): Promise<OpeningDetails[]> {
@@ -384,23 +308,26 @@ export default class Api {
   }
 
   protected async fetchApplicationDetails(
+    group: WorkingGroups,
     applicationId: number,
     application: Application
   ): Promise<ApplicationDetails> {
+    const qnData = await this._qnApi?.applicationDetailsById(group, applicationId)
     return {
       applicationId,
-      member: await this.expectedMembershipById(application.member_id),
+      member: await this.expectedMemberDetailsById(application.member_id),
       roleAccout: application.role_account_id,
       rewardAccount: application.reward_account_id,
       stakingAccount: application.staking_account_id,
       descriptionHash: application.description_hash.toString(),
       openingId: application.opening_id.toNumber(),
+      answers: qnData?.answers,
     }
   }
 
   async groupApplication(group: WorkingGroups, applicationId: number): Promise<ApplicationDetails> {
     const application = await this.applicationById(group, applicationId)
-    return await this.fetchApplicationDetails(applicationId, application)
+    return await this.fetchApplicationDetails(group, applicationId, application)
   }
 
   protected async groupOpeningApplications(group: WorkingGroups, openingId: number): Promise<ApplicationDetails[]> {
@@ -411,7 +338,7 @@ export default class Api {
     return Promise.all(
       applicationEntries
         .filter(([, application]) => application.opening_id.eqn(openingId))
-        .map(([id, application]) => this.fetchApplicationDetails(id.toNumber(), application))
+        .map(([id, application]) => this.fetchApplicationDetails(group, id.toNumber(), application))
     )
   }
 
@@ -432,6 +359,7 @@ export default class Api {
   }
 
   async fetchOpeningDetails(group: WorkingGroups, opening: Opening, openingId: number): Promise<OpeningDetails> {
+    const qnData = await this._qnApi?.openingDetailsById(group, openingId)
     const applications = await this.groupOpeningApplications(group, openingId)
     const type = opening.opening_type
     const stake = {
@@ -446,6 +374,7 @@ export default class Api {
       stake,
       createdAtBlock: opening.created.toNumber(),
       rewardPerBlock: opening.reward_per_block.unwrapOr(undefined),
+      metadata: qnData?.metadata || undefined,
     }
   }
 
@@ -460,15 +389,15 @@ export default class Api {
 
   // Content directory
   async availableChannels(): Promise<[ChannelId, Channel][]> {
-    return await this.entriesByIds<ChannelId, Channel>(this._api.query.content.channelById)
+    return await this.entriesByIds(this._api.query.content.channelById)
   }
 
   async availableVideos(): Promise<[VideoId, Video][]> {
-    return await this.entriesByIds<VideoId, Video>(this._api.query.content.videoById)
+    return await this.entriesByIds(this._api.query.content.videoById)
   }
 
   availableCuratorGroups(): Promise<[CuratorGroupId, CuratorGroup][]> {
-    return this.entriesByIds<CuratorGroupId, CuratorGroup>(this._api.query.content.curatorGroupById)
+    return this.entriesByIds(this._api.query.content.curatorGroupById)
   }
 
   async curatorGroupById(id: number): Promise<CuratorGroup | null> {
@@ -491,19 +420,6 @@ export default class Api {
     return channel
   }
 
-  async videosByChannelId(channelId: ChannelId | number | string): Promise<[VideoId, Video][]> {
-    const channel = await this.channelById(channelId)
-    if (channel) {
-      return Promise.all(
-        channel.videos.map(
-          async (videoId) => [videoId, await this._api.query.content.videoById(videoId)] as [VideoId, Video]
-        )
-      )
-    } else {
-      return []
-    }
-  }
-
   async videoById(videoId: VideoId | number | string): Promise<Video> {
     const video = await this._api.query.content.videoById(videoId)
     if (video.isEmpty) {
@@ -513,44 +429,135 @@ export default class Api {
     return video
   }
 
+  async dataObjectsByIds(bagId: BagId, ids: DataObjectId[]): Promise<DataObject[]> {
+    return this._api.query.storage.dataObjectsById.multi(ids.map((id) => [bagId, id]))
+  }
+
   async channelCategoryIds(): Promise<ChannelCategoryId[]> {
     // There is currently no way to differentiate between unexisting and existing category
     // other than fetching all existing category ids (event the .size() trick does not work, as the object is empty)
-    return (
-      await this.entriesByIds<ChannelCategoryId, ChannelCategory>(this._api.query.content.channelCategoryById)
-    ).map(([id]) => id)
+    return (await this.entriesByIds(this._api.query.content.channelCategoryById)).map(([id]) => id)
   }
 
   async videoCategoryIds(): Promise<VideoCategoryId[]> {
     // There is currently no way to differentiate between unexisting and existing category
     // other than fetching all existing category ids (event the .size() trick does not work, as the object is empty)
-    return (await this.entriesByIds<VideoCategoryId, VideoCategory>(this._api.query.content.videoCategoryById)).map(
-      ([id]) => id
-    )
+    return (await this.entriesByIds(this._api.query.content.videoCategoryById)).map(([id]) => id)
   }
 
-  async dataObjectsByContentIds(contentIds: ContentId[]): Promise<DataObject[]> {
-    const dataObjects = await this._api.query.dataDirectory.dataByContentId.multi<DataObject>(contentIds)
-    const notFoundIndex = dataObjects.findIndex((o) => o.isEmpty)
-    if (notFoundIndex !== -1) {
-      throw new CLIError(`DataObject not found by id ${contentIds[notFoundIndex].toString()}`)
-    }
-    return dataObjects
-  }
-
-  async storageProviderEndpoint(storageProviderId: StorageProviderId | number): Promise<string> {
-    const value = await this._api.query.storageWorkingGroup.workerStorage(storageProviderId)
-    return this._api.createType('Text', value).toString()
-  }
-
-  async allStorageProviderEndpoints(): Promise<string[]> {
-    const workerIds = (await this.groupWorkers(WorkingGroups.StorageProviders)).map(([id]) => id)
-    const workerStorages = await this._api.query.storageWorkingGroup.workerStorage.multi<Bytes>(workerIds)
-    return workerStorages.map((storage) => this._api.createType('Text', storage).toString())
+  async dataObjectsInBag(bagId: BagId): Promise<[DataObjectId, DataObject][]> {
+    return (await this._api.query.storage.dataObjectsById.entries(bagId)).map(([{ args: [, dataObjectId] }, value]) => [
+      dataObjectId,
+      value,
+    ])
   }
 
   async stakingAccountStatus(account: string): Promise<StakingAccountMemberBinding | null> {
-    const status = await this.getOriginalApi().query.members.stakingAccountIdMemberStatus(account)
+    const status = await this._api.query.members.stakingAccountIdMemberStatus(account)
     return status.isEmpty ? null : status
+  }
+
+  async isHandleTaken(handle: string): Promise<boolean> {
+    const handleHash = blake2AsHex(handle)
+    const existingMeber = await this._api.query.members.memberIdByHandleHash(handleHash)
+    return !existingMeber.isEmpty
+  }
+
+  nonRivalrousLocks(): LockIdentifier[] {
+    const votingLockId = this._api.consts.referendum.stakingHandlerLockId
+    const boundStakingAccountLockId = this._api.consts.members.stakingCandidateLockId
+    const invitedMemberLockId = this._api.consts.members.invitedMemberLockId
+    const vestigLockId = this._api.createType('LockIdentifier', 'vesting ')
+
+    return [votingLockId, boundStakingAccountLockId, invitedMemberLockId, vestigLockId]
+  }
+
+  isLockRivalrous(lockId: LockIdentifier): boolean {
+    const nonRivalrousLocks = this.nonRivalrousLocks()
+    return !nonRivalrousLocks.some((nonRivalrousLockId) => nonRivalrousLockId.eq(lockId))
+  }
+
+  async areAccountLocksCompatibleWith(account: AccountId | string, lockId: LockIdentifier): Promise<boolean> {
+    const accountLocks = await this._api.query.balances.locks(account)
+    const accountHasRivalrousLock = accountLocks.some(({ id }) => this.isLockRivalrous(id))
+
+    return !this.isLockRivalrous(lockId) || !accountHasRivalrousLock
+  }
+
+  async forumCategoryExists(categoryId: CategoryId | number): Promise<boolean> {
+    const size = await this._api.query.forum.categoryById.size(categoryId)
+    return size.gtn(0)
+  }
+
+  async forumThreadExists(categoryId: CategoryId | number, threadId: ThreadId | number): Promise<boolean> {
+    const size = await this._api.query.forum.threadById.size(categoryId, threadId)
+    return size.gtn(0)
+  }
+
+  async forumPostExists(threadId: ThreadId | number, postId: PostId | number): Promise<boolean> {
+    const size = await this._api.query.forum.postById.size(threadId, postId)
+    return size.gtn(0)
+  }
+
+  async forumCategoryAncestors(categoryId: CategoryId | number): Promise<[CategoryId, Category][]> {
+    const ancestors: [CategoryId, Category][] = []
+    let category = await this._api.query.forum.categoryById(categoryId)
+    while (category.parent_category_id.isSome) {
+      const parentCategoryId = category.parent_category_id.unwrap()
+      category = await this._api.query.forum.categoryById(parentCategoryId)
+      ancestors.push([parentCategoryId, category])
+    }
+    return ancestors
+  }
+
+  async forumCategoryModerators(categoryId: CategoryId | number): Promise<[CategoryId, WorkerId][]> {
+    const categoryAncestors = await this.forumCategoryAncestors(categoryId)
+
+    const moderatorIds = _.uniqWith(
+      _.flatten(
+        await Promise.all(
+          categoryAncestors
+            .map(([id]) => id as CategoryId | number)
+            .reverse()
+            .concat([categoryId])
+            .map(async (id) => {
+              const storageKeys = await this._api.query.forum.categoryByModerator.keys(id)
+              return storageKeys.map((k) => k.args)
+            })
+        )
+      ),
+      (a, b) => a[1].eq(b[1])
+    )
+
+    return moderatorIds
+  }
+
+  async getForumCategory(categoryId: CategoryId | number): Promise<Category> {
+    const category = await this._api.query.forum.categoryById(categoryId)
+    return category
+  }
+
+  async getForumThread(categoryId: CategoryId | number, threadId: ThreadId | number): Promise<Thread> {
+    const thread = await this._api.query.forum.threadById(categoryId, threadId)
+    return thread
+  }
+
+  async getForumPost(threadId: ThreadId | number, postId: PostId | number): Promise<Post> {
+    const post = await this._api.query.forum.postById(threadId, postId)
+    return post
+  }
+
+  async forumCategories(): Promise<[CategoryId, Category][]> {
+    return this.entriesByIds(this._api.query.forum.categoryById)
+  }
+
+  async forumThreads(categoryId: CategoryId | number): Promise<[ThreadId, Thread][]> {
+    const entries = await this._api.query.forum.threadById.entries(categoryId)
+    return entries.map(([storageKey, thread]) => [storageKey.args[1], thread])
+  }
+
+  async forumPosts(threadId: ThreadId | number): Promise<[PostId, Post][]> {
+    const entries = await this._api.query.forum.postById.entries(threadId)
+    return entries.map(([storageKey, thread]) => [storageKey.args[1], thread])
   }
 }

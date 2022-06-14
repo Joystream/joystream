@@ -1,0 +1,18 @@
+[Unit]
+Description=Joystream Node
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/
+ExecStart={{ template_binary_path }} \
+        --chain {{ template_remote_chain_spec_path }} \
+        --pruning archive \
+        --log runtime,txpool,transaction-pool,trace=sync
+Restart=on-failure
+RestartSec=3
+LimitNOFILE=10000
+
+[Install]
+WantedBy=multi-user.target

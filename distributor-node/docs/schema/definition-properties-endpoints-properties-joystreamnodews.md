@@ -1,0 +1,3 @@
+## joystreamNodeWs Type
+
+`string`

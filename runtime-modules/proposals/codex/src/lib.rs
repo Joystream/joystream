@@ -101,6 +101,7 @@ pub trait WeightInfo {
     fn create_proposal_lock_blog_post(t: u32, d: u32) -> Weight;
     fn create_proposal_unlock_blog_post(t: u32, d: u32) -> Weight;
     fn create_proposal_veto_proposal(t: u32, d: u32) -> Weight;
+    fn create_proposal_update_global_nft_limit(t: u32, d: u32) -> Weight;
 }
 
 type WeightInfoCodex<T> = <T as Trait>::WeightInfo;
@@ -246,6 +247,11 @@ pub trait Trait:
 
     /// `Veto Proposal` proposal parameters
     type VetoProposalProposalParameters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
+
+    /// `Update Nft limit` proposal parameters
+    type UpdateGlobalNftLimitProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
 }
 
 /// Specialized alias of GeneralProposalParams
@@ -443,6 +449,9 @@ decl_module! {
 
         const VetoProposalProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::VetoProposalProposalParameters::get();
+
+        const UpdateGlobalNftLimitProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateGlobalNftLimitProposalParameters::get();
 
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
@@ -646,6 +655,9 @@ impl<T: Trait> Module<T> {
             ProposalDetails::VetoProposal(..) => {
                 // Note: No checks for this proposal for now
             }
+            ProposalDetails::UpdateGlobalNftLimit(..) => {
+                // Note: No checks for this proposal for now
+            }
         }
 
         Ok(())
@@ -711,6 +723,9 @@ impl<T: Trait> Module<T> {
             ProposalDetails::LockBlogPost(..) => T::LockBlogPostProposalParameters::get(),
             ProposalDetails::UnlockBlogPost(..) => T::UnlockBlogPostProposalParameters::get(),
             ProposalDetails::VetoProposal(..) => T::VetoProposalProposalParameters::get(),
+            ProposalDetails::UpdateGlobalNftLimit(..) => {
+                T::UpdateGlobalNftLimitProposalParameters::get()
+            }
         }
     }
 
@@ -873,6 +888,13 @@ impl<T: Trait> Module<T> {
             }
             ProposalDetails::VetoProposal(..) => {
                 WeightInfoCodex::<T>::create_proposal_veto_proposal(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
+                .saturated_into()
+            }
+            ProposalDetails::UpdateGlobalNftLimit(..) => {
+                WeightInfoCodex::<T>::create_proposal_update_global_nft_limit(
                     title_length.saturated_into(),
                     description_length.saturated_into(),
                 )

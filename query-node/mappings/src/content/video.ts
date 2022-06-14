@@ -5,10 +5,18 @@ import { EventContext, StoreContext } from '@joystream/hydra-common'
 import { In } from 'typeorm'
 import { Content } from '../../generated/types'
 import { deserializeMetadata, inconsistentState, logger } from '../common'
-import { processVideoMetadata } from './utils'
-import { AssetNone, Channel, Video, VideoCategory } from 'query-node/dist/model'
+import {
+  processVideoMetadata,
+  getVideoActiveStatus,
+  updateVideoActiveCounters,
+  videoRelationsForCountersBare,
+  videoRelationsForCounters,
+} from './utils'
+import { Channel, Video, VideoCategory } from 'query-node/dist/model'
 import { VideoMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
+import _ from 'lodash'
+import { createNft } from './nft'
 
 export async function content_VideoCategoryCreated({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
@@ -23,6 +31,8 @@ export async function content_VideoCategoryCreated({ store, event }: EventContex
     id: videoCategoryId.toString(),
     videos: [],
     createdInBlock: event.blockNumber,
+    activeVideosCounter: 0,
+
     // fill in auto-generated fields
     createdAt: new Date(event.blockTimestamp),
     updatedAt: new Date(event.blockTimestamp),
@@ -93,7 +103,10 @@ export async function content_VideoCreated(ctx: EventContext & StoreContext): Pr
   const [, channelId, videoId, videoCreationParameters] = new Content.VideoCreatedEvent(event).params
 
   // load channel
-  const channel = await store.get(Channel, { where: { id: channelId.toString() } })
+  const channel = await store.get(Channel, {
+    where: { id: channelId.toString() },
+    relations: ['category'],
+  })
 
   // ensure channel exists
   if (!channel) {
@@ -106,17 +119,29 @@ export async function content_VideoCreated(ctx: EventContext & StoreContext): Pr
     isCensored: false,
     isFeatured: false,
     createdInBlock: event.blockNumber,
-    thumbnailPhoto: new AssetNone(),
-    media: new AssetNone(),
     createdAt: new Date(event.blockTimestamp),
     updatedAt: new Date(event.blockTimestamp),
   })
   // deserialize & process metadata
-  const metadata = deserializeMetadata(VideoMetadata, videoCreationParameters.meta) || {}
-  await processVideoMetadata(ctx, channel, video, metadata, videoCreationParameters.assets)
+  if (videoCreationParameters.meta.isSome) {
+    const metadata = deserializeMetadata(VideoMetadata, videoCreationParameters.meta.unwrap()) || {}
+    await processVideoMetadata(ctx, video, metadata, videoCreationParameters.assets.unwrapOr(undefined))
+  }
 
   // save video
   await store.save<Video>(video)
+
+  if (videoCreationParameters.auto_issue_nft.isSome) {
+    const issuanceParameters = videoCreationParameters.auto_issue_nft.unwrap()
+
+    await createNft(store, video, issuanceParameters, event.blockNumber)
+  }
+
+  // update video active counters (if needed)
+  const videoActiveStatus = getVideoActiveStatus(video)
+  if (videoActiveStatus.isFullyActive) {
+    await updateVideoActiveCounters(store, undefined, videoActiveStatus)
+  }
 
   // emit log event
   logger.info('Video has been created', { id: videoId })
@@ -130,7 +155,7 @@ export async function content_VideoUpdated(ctx: EventContext & StoreContext): Pr
   // load video
   const video = await store.get(Video, {
     where: { id: videoId.toString() },
-    relations: ['channel', 'license'],
+    relations: [...videoRelationsForCounters, 'license'],
   })
 
   // ensure video exists
@@ -138,13 +163,16 @@ export async function content_VideoUpdated(ctx: EventContext & StoreContext): Pr
     return inconsistentState('Non-existing video update requested', videoId)
   }
 
+  // remember if video is fully active before update
+  const initialVideoActiveStatus = getVideoActiveStatus(video)
+
   // prepare changed metadata
   const newMetadataBytes = videoUpdateParameters.new_meta.unwrapOr(null)
 
   // update metadata if it was changed
   if (newMetadataBytes) {
     const newMetadata = deserializeMetadata(VideoMetadata, newMetadataBytes) || {}
-    await processVideoMetadata(ctx, video.channel, video, newMetadata, videoUpdateParameters.assets.unwrapOr([]))
+    await processVideoMetadata(ctx, video, newMetadata, videoUpdateParameters.assets_to_upload.unwrapOr(undefined))
   }
 
   // set last update time
@@ -152,6 +180,9 @@ export async function content_VideoUpdated(ctx: EventContext & StoreContext): Pr
 
   // save video
   await store.save<Video>(video)
+
+  // update video active counters
+  await updateVideoActiveCounters(store, initialVideoActiveStatus, getVideoActiveStatus(video))
 
   // emit log event
   logger.info('Video has been updated', { id: videoId })
@@ -162,15 +193,26 @@ export async function content_VideoDeleted({ store, event }: EventContext & Stor
   const [, videoId] = new Content.VideoDeletedEvent(event).params
 
   // load video
-  const video = await store.get(Video, { where: { id: videoId.toString() } })
+  const video = await store.get(Video, {
+    where: { id: videoId.toString() },
+    relations: [...videoRelationsForCountersBare],
+  })
 
   // ensure video exists
   if (!video) {
     return inconsistentState('Non-existing video deletion requested', videoId)
   }
 
+  // remember if video is fully active before update
+  const initialVideoActiveStatus = getVideoActiveStatus(video)
+
   // remove video
   await store.remove<Video>(video)
+
+  // update video active counters (if needed)
+  if (initialVideoActiveStatus.isFullyActive) {
+    await updateVideoActiveCounters(store, initialVideoActiveStatus, undefined)
+  }
 
   // emit log event
   logger.info('Video has been deleted', { id: videoId })
@@ -184,12 +226,18 @@ export async function content_VideoCensorshipStatusUpdated({
   const [, videoId, isCensored] = new Content.VideoCensorshipStatusUpdatedEvent(event).params
 
   // load video
-  const video = await store.get(Video, { where: { id: videoId.toString() } })
+  const video = await store.get(Video, {
+    where: { id: videoId.toString() },
+    relations: [...videoRelationsForCounters],
+  })
 
   // ensure video exists
   if (!video) {
     return inconsistentState('Non-existing video censoring requested', videoId)
   }
+
+  // remember if video is fully active before update
+  const initialVideoActiveStatus = getVideoActiveStatus(video)
 
   // update video
   video.isCensored = isCensored.isTrue
@@ -199,6 +247,9 @@ export async function content_VideoCensorshipStatusUpdated({
 
   // save video
   await store.save<Video>(video)
+
+  // update video active counters
+  await updateVideoActiveCounters(store, initialVideoActiveStatus, getVideoActiveStatus(video))
 
   // emit log event
   logger.info('Video censorship status has been updated', { id: videoId, isCensored: isCensored.isTrue })
@@ -233,7 +284,7 @@ export async function content_FeaturedVideosSet({ store, event }: EventContext &
     })
   )
 
-  // read videos previously not-featured videos that are meant to be featured
+  // read previously not-featured videos that are meant to be featured
   const videosToAdd = await store.getMany(Video, {
     where: {
       id: In(videoIdsToAdd.map((item) => item.toString())),
@@ -241,9 +292,13 @@ export async function content_FeaturedVideosSet({ store, event }: EventContext &
   })
 
   if (videosToAdd.length !== videoIdsToAdd.length) {
-    return inconsistentState(
-      'At least one non-existing video featuring requested',
-      videosToAdd.map((v) => v.id)
+    // Do not throw, as this is not validated by the runtime
+    console.warn(
+      'Non-existing video(s) in featuredVideos set:',
+      _.difference(
+        videoIdsToAdd.map((v) => v.toString()),
+        videosToAdd.map((v) => v.id)
+      )
     )
   }
 
@@ -260,7 +315,7 @@ export async function content_FeaturedVideosSet({ store, event }: EventContext &
   )
 
   // emit log event
-  const newFeaturedVideoIds = videoIds.map((id) => id.toString())
-  const removedFeaturedVideosIds = videosToRemove.map((v) => v.id)
-  logger.info('New featured videos have been set', { newFeaturedVideoIds, removedFeaturedVideosIds })
+  const addedVideoIds = videosToAdd.map((v) => v.id)
+  const removedVideoIds = videosToRemove.map((v) => v.id)
+  logger.info('Featured videos have been updated', { addedVideoIds, removedVideoIds })
 }

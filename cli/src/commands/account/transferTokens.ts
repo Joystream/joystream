@@ -22,7 +22,7 @@ export default class AccountTransferTokens extends AccountsCommandBase {
     }),
   }
 
-  async run() {
+  async run(): Promise<void> {
     let { from, to, amount } = this.parse(AccountTransferTokens).flags
 
     if (!isValidBalance(amount)) {

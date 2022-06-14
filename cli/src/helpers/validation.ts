@@ -20,7 +20,7 @@ export function checkBalance(accBalances: DeriveBalancesAll, requiredBalance: BN
   }
 }
 
-// We assume balance can be bigger than JavaScript integer
+// We assume balance to be u128, which is bigger than JavaScript integer
 export function isValidBalance(balance: string): boolean {
-  return /^[1-9][0-9]{0,38}$/.test(balance)
+  return /^[1-9][0-9]{0,37}$/.test(balance)
 }

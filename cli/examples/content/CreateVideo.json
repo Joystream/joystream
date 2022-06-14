@@ -7,7 +7,7 @@
   "hasMarketing": false,
   "isPublic": true,
   "isExplicit": false,
-  "personsList": [],
+  "persons": [],
   "category": 1,
   "license": {
     "code": 1001,
@@ -16,5 +16,6 @@
   "publishedBeforeJoystream": {
     "isPublished": true,
     "date": "2020-01-01"
-  }
+  },
+  "enableComments": true
 }

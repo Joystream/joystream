@@ -30,6 +30,16 @@
     - [SeasonMetadata](#.SeasonMetadata)
     - [SeriesMetadata](#.SeriesMetadata)
   
+- [proto/Storage.proto](#proto/Storage.proto)
+    - [DistributionBucketFamilyMetadata](#.DistributionBucketFamilyMetadata)
+    - [DistributionBucketOperatorMetadata](#.DistributionBucketOperatorMetadata)
+    - [GeoCoordiantes](#.GeoCoordiantes)
+    - [GeographicalArea](#.GeographicalArea)
+    - [NodeLocationMetadata](#.NodeLocationMetadata)
+    - [StorageBucketOperatorMetadata](#.StorageBucketOperatorMetadata)
+  
+    - [GeographicalArea.Continent](#.GeographicalArea.Continent)
+  
 - [proto/Video.proto](#proto/Video.proto)
     - [License](#.License)
     - [MediaType](#.MediaType)
@@ -354,6 +364,141 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 
 
  
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="proto/Storage.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## proto/Storage.proto
+
+
+
+<a name=".DistributionBucketFamilyMetadata"></a>
+
+### DistributionBucketFamilyMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| region | [string](#string) | optional | ID / name of the region covered by the distribution family (ie. us-east-1). Should be unique. |
+| description | [string](#string) | optional | Additional, more specific description of the region |
+| areas | [GeographicalArea](#GeographicalArea) | repeated | Standarized geographical areas covered by the family (providing [{}] will unset the current value) |
+| latency_test_targets | [string](#string) | repeated | List of targets (hosts/ips) best suited latency measurements for this family |
+
+
+
+
+
+
+<a name=".DistributionBucketOperatorMetadata"></a>
+
+### DistributionBucketOperatorMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| endpoint | [string](#string) | optional | Root distribution node endpoint (ie. https://example.com/distribution) |
+| location | [NodeLocationMetadata](#NodeLocationMetadata) | optional | Information about node&#39;s phisical location (providing {} will unset current value) |
+| extra | [string](#string) | optional | Additional information about the node / node operator |
+
+
+
+
+
+
+<a name=".GeoCoordiantes"></a>
+
+### GeoCoordiantes
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| latitude | [float](#float) | optional |  |
+| longitude | [float](#float) | optional |  |
+
+
+
+
+
+
+<a name=".GeographicalArea"></a>
+
+### GeographicalArea
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| continent | [GeographicalArea.Continent](#GeographicalArea.Continent) | optional |  |
+| country_code | [string](#string) | optional | ISO 3166-1 alpha-2 country code |
+| subdivision_code | [string](#string) | optional | ISO 3166-2 subdivision code |
+
+
+
+
+
+
+<a name=".NodeLocationMetadata"></a>
+
+### NodeLocationMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| country_code | [string](#string) | optional | ISO 3166-1 alpha-2 country code (2 letters) |
+| city | [string](#string) | optional | City name |
+| coordinates | [GeoCoordiantes](#GeoCoordiantes) | optional | Geographic coordinates (providing {} will unset current value) |
+
+
+
+
+
+
+<a name=".StorageBucketOperatorMetadata"></a>
+
+### StorageBucketOperatorMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| endpoint | [string](#string) | optional | Root storage node endpoint (ie. https://example.com/storage) |
+| location | [NodeLocationMetadata](#NodeLocationMetadata) | optional | Information about node&#39;s phisical location (providing {} will unset current value) |
+| extra | [string](#string) | optional | Additional information about the node / node operator |
+
+
+
+
+
+ 
+
+
+<a name=".GeographicalArea.Continent"></a>
+
+### GeographicalArea.Continent
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| AF | 1 |  |
+| NA | 2 |  |
+| OC | 3 |  |
+| AN | 4 |  |
+| AS | 5 |  |
+| EU | 6 |  |
+| SA | 7 |  |
+
 
  
 

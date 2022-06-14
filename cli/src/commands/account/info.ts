@@ -5,6 +5,7 @@ import { NameValueObj } from '../../Types'
 import { displayHeader, displayNameValueTable } from '../../helpers/display'
 import { formatBalance } from '@polkadot/util'
 import moment from 'moment'
+import { DEFAULT_DATE_FORMAT } from '../../Consts'
 
 export default class AccountInfo extends AccountsCommandBase {
   static description = 'Display detailed information about specified account'
@@ -13,7 +14,7 @@ export default class AccountInfo extends AccountsCommandBase {
     { name: 'address', required: false, description: 'An address to inspect (can also be provided interavtively)' },
   ]
 
-  async run() {
+  async run(): Promise<void> {
     let { address } = this.parse(AccountInfo).args
 
     if (!address) {
@@ -31,7 +32,7 @@ export default class AccountInfo extends AccountsCommandBase {
       accountRows.push({ name: 'Account name', value: pair.meta.name })
       accountRows.push({ name: 'Type', value: pair.type })
       const creationDate = pair.meta.whenCreated
-        ? moment(pair.meta.whenCreated as string | number).format('YYYY-MM-DD HH:mm:ss')
+        ? moment(pair.meta.whenCreated as string | number).format(DEFAULT_DATE_FORMAT)
         : null
       if (creationDate) {
         accountRows.push({ name: 'Creation date', value: creationDate })

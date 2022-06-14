@@ -10,7 +10,7 @@ export default class WorkingGroupsUpdateRewardAccount extends WorkingGroupsComma
     {
       name: 'address',
       required: false,
-      description: 'New reward account address (if omitted, one of the existing CLI accounts can be selected)',
+      description: 'New reward account address (if omitted, can be provided interactivel)',
     },
   ]
 
@@ -18,7 +18,7 @@ export default class WorkingGroupsUpdateRewardAccount extends WorkingGroupsComma
     ...WorkingGroupsCommandBase.flags,
   }
 
-  async run() {
+  async run(): Promise<void> {
     let { address } = this.parse(WorkingGroupsUpdateRewardAccount).args
 
     // Worker-only gate
@@ -35,12 +35,12 @@ export default class WorkingGroupsUpdateRewardAccount extends WorkingGroupsComma
     }
 
     await this.sendAndFollowNamedTx(
-      await this.getDecodedPair(worker.roleAccount.toString()),
+      await this.getDecodedPair(worker.roleAccount),
       apiModuleByGroup[this.group],
       'updateRewardAccount',
       [worker.workerId, address]
     )
 
-    this.log(chalk.green(`Succesfully updated the reward account to: ${chalk.magentaBright(address)})`))
+    this.log(chalk.green(`Successfully updated the reward account to: ${chalk.magentaBright(address)})`))
   }
 }

@@ -328,6 +328,9 @@ impl membership::WeightInfo for Weights {
     fn remove_staking_account() -> Weight {
         unimplemented!()
     }
+    fn member_remark() -> u64 {
+        unimplemented!()
+    }
 }
 
 impl pallet_timestamp::Trait for Test {
@@ -399,6 +402,12 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
 
     fn worker_exists(_worker_id: &<Test as common::membership::MembershipTypes>::ActorId) -> bool {
         unimplemented!();
+    }
+
+    fn ensure_worker_exists(
+        _: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> Result<(), DispatchError> {
+        unimplemented!()
     }
 }
 
@@ -491,6 +500,15 @@ impl council::WeightInfo for CouncilWeightInfo {
         0
     }
     fn funding_request(_: u32) -> Weight {
+        0
+    }
+    fn fund_council_budget() -> u64 {
+        0
+    }
+    fn councilor_remark() -> u64 {
+        0
+    }
+    fn candidate_remark() -> u64 {
         0
     }
 }

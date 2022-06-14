@@ -1,7 +1,10 @@
-import { Text, u32, Tuple, u8, u128, Vec, Option, Null, Bytes } from '@polkadot/types'
+// TODO: FIXME: Use Bytes instead of Text to avoid issues with type decoding (ie. 0x909090)
+// (or investigate ways of mitigating this by creating a PR to @polkadot/api library)
+import { Text, u32, Tuple, u8, u128, Vec, Option, Null, Bytes, u64 } from '@polkadot/types'
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
 import { Constructor, ITuple } from '@polkadot/types/types'
 import { MemberId, WorkingGroup, JoyEnum, JoyStructDecorated, BalanceKind, PostId, AccountId } from './common'
+import { NftLimitPeriod } from './content'
 import { ApplicationId, OpeningId, StakePolicy, WorkerId } from './working-group'
 
 export type IVotingResults = {
@@ -269,6 +272,9 @@ const CreateBlogPost = (Tuple.with([Text, Text]) as unknown) as Constructor<ITup
 const EditBlogPost = (Tuple.with([PostId, 'Option<Text>', 'Option<Text>']) as unknown) as Constructor<
   ITuple<[PostId, Option<Text>, Option<Text>]>
 >
+const UpdateGlobalNftLimit = (Tuple.with([NftLimitPeriod, u64]) as unknown) as Constructor<
+  ITuple<[NftLimitPeriod, u64]>
+>
 
 export class ProposalDetails extends JoyEnum({
   Signal: Text,
@@ -296,6 +302,7 @@ export class ProposalDetails extends JoyEnum({
   LockBlogPost: PostId,
   UnlockBlogPost: PostId,
   VetoProposal: ProposalId,
+  UpdateGlobalNftLimit,
 } as const) {}
 
 // Discussions

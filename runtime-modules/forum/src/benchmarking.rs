@@ -1152,7 +1152,10 @@ benchmarks! {
         assert_eq!(Module::<T>::category_by_id(new_category_id), new_category);
 
         assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
-        assert_eq!(Module::<T>::thread_by_id(new_category_id, thread_id), thread);
+        assert_eq!(
+            Module::<T>::thread_by_id(new_category_id, thread_id),
+            Thread { category_id: new_category_id, ..thread}
+        );
 
         assert_last_event::<T>(
             RawEvent::ThreadMoved(
@@ -1226,7 +1229,10 @@ benchmarks! {
         assert_eq!(Module::<T>::category_by_id(new_category_id), new_category);
 
         assert!(!<ThreadById<T>>::contains_key(category_id, thread_id));
-        assert_eq!(Module::<T>::thread_by_id(new_category_id, thread_id), thread);
+        assert_eq!(
+            Module::<T>::thread_by_id(new_category_id, thread_id),
+            Thread { category_id: new_category_id, ..thread}
+        );
 
         assert_last_event::<T>(
             RawEvent::ThreadMoved(
@@ -1733,7 +1739,7 @@ benchmarks! {
         thread.number_of_posts -= k as u64;
         assert_eq!(Module::<T>::thread_by_id(category_id, thread_id), thread);
 
-        for (extended_post, _) in &posts {
+        for extended_post in posts.keys() {
             assert!(!<PostById<T>>::contains_key(extended_post.thread_id, extended_post.post_id));
         }
 

@@ -1,0 +1,3 @@
+## keyfile Type
+
+`string`

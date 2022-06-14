@@ -19,7 +19,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use ansi_term::Style;
 use rand::{distributions::Alphanumeric, rngs::OsRng, Rng};
 use structopt::StructOpt;
 
@@ -86,9 +85,6 @@ enum ChainSpecBuilder {
         /// The path to an initial forum data
         #[structopt(long, short)]
         initial_forum_path: Option<PathBuf>,
-        /// The path to an initial content directory data file
-        #[structopt(long, short)]
-        initial_content_path: Option<PathBuf>,
         /// The path to an initial balances file
         #[structopt(long, short)]
         initial_balances_path: Option<PathBuf>,
@@ -121,9 +117,6 @@ enum ChainSpecBuilder {
         /// The path to an initial forum data
         #[structopt(long, short)]
         initial_forum_path: Option<PathBuf>,
-        /// The path to an initial content directory data file
-        #[structopt(long, short)]
-        initial_content_path: Option<PathBuf>,
         /// The path to an initial balances file
         #[structopt(long, short)]
         initial_balances_path: Option<PathBuf>,
@@ -186,20 +179,6 @@ impl ChainSpecBuilder {
         }
     }
 
-    /// Returns the path to load initial platform content from
-    fn initial_content_path(&self) -> &Option<PathBuf> {
-        match self {
-            ChainSpecBuilder::New {
-                initial_content_path,
-                ..
-            } => initial_content_path,
-            ChainSpecBuilder::Generate {
-                initial_content_path,
-                ..
-            } => initial_content_path,
-        }
-    }
-
     /// Returns the chain deployment
     fn chain_deployment(&self) -> ChainDeployment {
         match self {
@@ -217,13 +196,12 @@ impl ChainSpecBuilder {
 // as more args will likely be needed
 #[allow(clippy::too_many_arguments)]
 fn genesis_constructor(
-    _deployment: &ChainDeployment,
+    deployment: &ChainDeployment,
     authority_seeds: &[String],
     endowed_accounts: &[AccountId],
     sudo_account: &AccountId,
     initial_members_path: &Option<PathBuf>,
     initial_forum_path: &Option<PathBuf>,
-    initial_content_path: &Option<PathBuf>,
     initial_balances_path: &Option<PathBuf>,
 ) -> chain_spec::GenesisConfig {
     let authorities = authority_seeds
@@ -242,18 +220,15 @@ fn genesis_constructor(
         .map(|path| forum_config::from_json(sudo_account.clone(), path.as_path()))
         .unwrap_or_else(|| forum_config::empty(sudo_account.clone()));
 
-    let data_directory_config = if let Some(path) = initial_content_path {
-        let path = path.as_path();
-
-        content_config::data_directory_config_from_json(path)
-    } else {
-        content_config::empty_data_directory_config()
-    };
-
     let initial_account_balances = initial_balances_path
         .as_ref()
         .map(|path| initial_balances::from_json(path.as_path()))
         .unwrap_or_else(Vec::new);
+
+    let content_config = match deployment {
+        ChainDeployment::live => content_config::production_config(),
+        _ => content_config::testing_config(),
+    };
 
     chain_spec::testnet_genesis(
         authorities,
@@ -262,7 +237,7 @@ fn genesis_constructor(
         members,
         forum_cfg,
         initial_account_balances,
-        data_directory_config,
+        content_config,
     )
 }
 
@@ -276,7 +251,6 @@ fn generate_chain_spec(
     sudo_account: String,
     initial_members_path: Option<PathBuf>,
     initial_forum_path: Option<PathBuf>,
-    initial_content_path: Option<PathBuf>,
     initial_balances_path: Option<PathBuf>,
 ) -> Result<String, String> {
     let parse_account = |address: &String| {
@@ -310,7 +284,6 @@ fn generate_chain_spec(
                 &sudo_account,
                 &initial_members_path,
                 &initial_forum_path,
-                &initial_content_path,
                 &initial_balances_path,
             )
         },
@@ -355,28 +328,25 @@ fn generate_authority_keys_and_store(seeds: &[String], keystore_path: &Path) -> 
 }
 
 fn print_seeds(authority_seeds: &[String], endowed_seeds: &[String], sudo_seed: &str) {
-    let header = Style::new().bold().underline();
-    let entry = Style::new().bold();
-
-    println!("{}", header.paint("Authority seeds"));
+    println!("# Authority seeds");
 
     for (n, seed) in authority_seeds.iter().enumerate() {
-        println!("{} //{}", entry.paint(format!("auth-{}:", n)), seed,);
+        println!("{}//{}", format!("auth_{}=", n), seed);
     }
 
     println!();
 
     if !endowed_seeds.is_empty() {
-        println!("{}", header.paint("Endowed seeds"));
+        println!("# Endowed seeds");
         for (n, seed) in endowed_seeds.iter().enumerate() {
-            println!("{} //{}", entry.paint(format!("endowed-{}:", n)), seed,);
+            println!("{}//{}", format!("endowed_{}=", n), seed);
         }
 
         println!();
     }
 
-    println!("{}", header.paint("Sudo seed"));
-    println!("//{}", sudo_seed);
+    println!("# Sudo seed");
+    println!("sudo=//{}", sudo_seed);
 }
 
 fn main() -> Result<(), String> {
@@ -392,7 +362,6 @@ fn main() -> Result<(), String> {
     let initial_members_path = builder.initial_members_path().clone();
     let initial_forum_path = builder.initial_forum_path().clone();
     let initial_balances_path = builder.initial_balances_path().clone();
-    let initial_content_path = builder.initial_content_path().clone();
     let deployment = builder.chain_deployment();
 
     let (authority_seeds, endowed_accounts, sudo_account) = match builder {
@@ -443,7 +412,6 @@ fn main() -> Result<(), String> {
         sudo_account,
         initial_members_path,
         initial_forum_path,
-        initial_content_path,
         initial_balances_path,
     )?;
 

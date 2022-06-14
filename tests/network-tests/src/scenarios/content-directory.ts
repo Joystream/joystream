@@ -1,6 +1,10 @@
-import leaderSetup from '../flows/workingGroup/leaderSetup'
+import leadOpening from '../flows/working-groups/leadOpening'
+import activeVideoCounters from '../flows/content/activeVideoCounters'
+import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
 import { scenario } from '../Scenario'
 
-scenario(async ({ job }) => {
-  job('setup content lead', leaderSetup.content)
+scenario('Content directory', async ({ job }) => {
+  const leadSetupJob = job('Set content working group leads', leadOpening(true, ['contentWorkingGroup']))
+  const videoCountersJob = job('check active video counters', activeVideoCounters).requires(leadSetupJob)
+  job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
 })

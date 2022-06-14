@@ -16,7 +16,16 @@ import {
   WorkingGroupMetadataAction,
 } from '@joystream/metadata-protobuf'
 import { Bytes } from '@polkadot/types'
-import { deserializeMetadata, bytesToString, genericEventFields, getWorker, WorkingGroupModuleName } from './common'
+import {
+  deserializeMetadata,
+  bytesToString,
+  genericEventFields,
+  getWorker,
+  WorkingGroupModuleName,
+  toNumber,
+  INT32MAX,
+  getWorkingGroupByName,
+} from './common'
 import BN from 'bn.js'
 import {
   WorkingGroupOpening,
@@ -84,12 +93,8 @@ async function getWorkingGroup(
   relations: string[] = []
 ): Promise<WorkingGroup> {
   const [groupName] = event.name.split('.')
-  const group = await store.get(WorkingGroup, { where: { name: groupName }, relations })
-  if (!group) {
-    throw new Error(`Working group ${groupName} not found!`)
-  }
 
-  return group
+  return getWorkingGroupByName(store, groupName as WorkingGroupModuleName, relations)
 }
 
 async function getOpening(
@@ -167,6 +172,7 @@ export async function createWorkingGroupOpeningMetadata(
     expectedEndingTimestamp,
     hiringLimit,
     shortDescription,
+    title,
   } = metadata
 
   const openingMetadata = new WorkingGroupOpeningMetadata({
@@ -174,10 +180,11 @@ export async function createWorkingGroupOpeningMetadata(
     updatedAt: eventTime,
     originallyValid,
     applicationDetails: applicationDetails || undefined,
+    title: title || undefined,
     description: description || undefined,
     shortDescription: shortDescription || undefined,
     hiringLimit: hiringLimit || undefined,
-    expectedEnding: expectedEndingTimestamp ? new Date(expectedEndingTimestamp) : undefined,
+    expectedEnding: expectedEndingTimestamp ? new Date(expectedEndingTimestamp * 1000) : undefined,
     applicationFormQuestions: [],
   })
 
@@ -249,7 +256,7 @@ async function handleAddUpcomingOpeningAction(
     metadata: openingMeta,
     group,
     rewardPerBlock: isSet(rewardPerBlock) && parseInt(rewardPerBlock) ? new BN(rewardPerBlock) : undefined,
-    expectedStart: expectedStart ? new Date(expectedStart) : undefined,
+    expectedStart: expectedStart ? new Date(expectedStart * 1000) : undefined,
     stakeAmount: isSet(minApplicationStake) && parseInt(minApplicationStake) ? new BN(minApplicationStake) : undefined,
     createdInEvent: statusChangedEvent,
   })
@@ -338,7 +345,7 @@ async function handleWorkingGroupMetadataAction(
 async function handleTerminatedWorker({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, optPenalty, optRationale] = new WorkingGroups.TerminatedWorkerEvent(event).params
   const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
+  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId, ['application'])
   const eventTime = new Date(event.blockTimestamp)
 
   const EventConstructor = worker.isLead ? TerminatedLeaderEvent : TerminatedWorkerEvent
@@ -359,6 +366,7 @@ async function handleTerminatedWorker({ store, event }: EventContext & StoreCont
   worker.stake = new BN(0)
   worker.rewardPerBlock = new BN(0)
   worker.updatedAt = eventTime
+  worker.isActive = isWorkerActive(worker)
 
   await store.save<Worker>(worker)
 }
@@ -371,6 +379,14 @@ export async function findLeaderSetEventByTxHash(store: DatabaseManager, txHash?
   }
 
   return leaderSetEvent
+}
+
+// expects `worker.application` to be available
+function isWorkerActive(worker: Worker): boolean {
+  return (
+    worker.application.status.isTypeOf === 'ApplicationStatusAccepted' &&
+    worker.status.isTypeOf === 'WorkerStatusActive'
+  )
 }
 
 // Mapping functions
@@ -394,7 +410,7 @@ export async function workingGroups_OpeningAdded({ store, event }: EventContext 
     group,
     rewardPerBlock: optRewardPerBlock.unwrapOr(new BN(0)),
     stakeAmount: stakePolicy.stake_amount,
-    unstakingPeriod: stakePolicy.leaving_unstaking_period.toNumber(),
+    unstakingPeriod: toNumber(stakePolicy.leaving_unstaking_period, INT32MAX),
     status: new OpeningStatusOpen(),
     type: openingType.isLeader ? WorkingGroupOpeningType.LEADER : WorkingGroupOpeningType.REGULAR,
   })
@@ -536,6 +552,7 @@ export async function workingGroups_OpeningFilled({ store, event }: EventContext
               entry: openingFilledEvent,
               rewardPerBlock: opening.rewardPerBlock,
             })
+            worker.isActive = isWorkerActive(worker)
             await store.save<Worker>(worker)
             return worker
           }
@@ -787,7 +804,7 @@ export async function workingGroups_NewMissedRewardLevelReached({
 export async function workingGroups_WorkerExited({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId] = new WorkingGroups.WorkerExitedEvent(event).params
   const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
+  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId, ['application'])
   const eventTime = new Date(event.blockTimestamp)
 
   const workerExitedEvent = new WorkerExitedEvent({
@@ -807,6 +824,7 @@ export async function workingGroups_WorkerExited({ store, event }: EventContext 
   worker.rewardPerBlock = new BN(0)
   worker.missingRewardAmount = undefined
   worker.updatedAt = eventTime
+  worker.isActive = isWorkerActive(worker)
 
   await store.save<Worker>(worker)
 }
@@ -907,7 +925,7 @@ export async function workingGroups_StakeDecreased({ store, event }: EventContex
 export async function workingGroups_WorkerStartedLeaving({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, optRationale] = new WorkingGroups.WorkerStartedLeavingEvent(event).params
   const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
+  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId, ['application'])
   const eventTime = new Date(event.blockTimestamp)
 
   const workerStartedLeavingEvent = new WorkerStartedLeavingEvent({
@@ -923,6 +941,7 @@ export async function workingGroups_WorkerStartedLeaving({ store, event }: Event
   status.workerStartedLeavingEventId = workerStartedLeavingEvent.id
   worker.status = status
   worker.updatedAt = eventTime
+  worker.isActive = isWorkerActive(worker)
 
   await store.save<Worker>(worker)
 }

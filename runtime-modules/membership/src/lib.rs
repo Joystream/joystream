@@ -94,6 +94,7 @@ pub trait WeightInfo {
     fn add_staking_account_candidate() -> Weight;
     fn confirm_staking_account() -> Weight;
     fn remove_staking_account() -> Weight;
+    fn member_remark() -> Weight;
 }
 
 pub trait Trait:
@@ -144,6 +145,7 @@ pub trait Trait:
 pub(crate) const DEFAULT_MEMBER_INVITES_COUNT: u32 = 5;
 
 /// Public membership profile alias.
+
 pub type Membership<T> = MembershipObject<<T as frame_system::Trait>::AccountId>;
 
 #[derive(Encode, PartialEq, Decode, Debug, Default)]
@@ -371,6 +373,7 @@ decl_event! {
         StakingAccountAdded(AccountId, MemberId),
         StakingAccountRemoved(AccountId, MemberId),
         StakingAccountConfirmed(AccountId, MemberId),
+        MemberRemarked(MemberId, Vec<u8>),
     }
 }
 
@@ -711,10 +714,10 @@ decl_module! {
             )?;
 
             let current_wg_budget = T::WorkingGroup::get_budget();
-            let default_invitation_balance = T::DefaultInitialInvitationBalance::get();
+            let invitation_balance = Self::initial_invitation_balance();
 
             ensure!(
-                default_invitation_balance <= current_wg_budget,
+                invitation_balance <= current_wg_budget,
                 Error::<T>::WorkingGroupBudgetIsNotSufficientForInviting
             );
 
@@ -730,7 +733,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let member_id = Self::insert_member(
+            let invited_member_id = Self::insert_member(
                 &params.root_account,
                 &params.controller_account,
                 handle_hash,
@@ -738,29 +741,29 @@ decl_module! {
             );
 
             // Save the updated profile.
-            <MembershipById<T>>::mutate(&member_id, |membership| {
+            <MembershipById<T>>::mutate(&params.inviting_member_id, |membership| {
                 membership.invites = membership.invites.saturating_sub(1);
             });
 
             // Decrease the working group balance.
-            let new_wg_budget = current_wg_budget.saturating_sub(default_invitation_balance);
+            let new_wg_budget = current_wg_budget.saturating_sub(invitation_balance);
             T::WorkingGroup::set_budget(new_wg_budget);
 
             // Create default balance for the invited member.
             let _ = balances::Module::<T>::deposit_creating(
                 &params.controller_account,
-                default_invitation_balance
+                invitation_balance
             );
 
             // Lock invitation balance. Allow only transaction payments.
             T::InvitedMemberStakingHandler::lock_with_reasons(
                 &params.controller_account,
-                default_invitation_balance,
+                invitation_balance,
                 WithdrawReasons::except(WithdrawReason::TransactionPayment)
             );
 
             // Fire the event.
-            Self::deposit_event(RawEvent::MemberInvited(member_id, params));
+            Self::deposit_event(RawEvent::MemberInvited(invited_member_id, params));
         }
 
         /// Updates membership price. Requires root origin.
@@ -987,6 +990,27 @@ decl_module! {
 
             Self::deposit_event(RawEvent::StakingAccountConfirmed(staking_account_id, member_id));
         }
+
+        /// Member makes a remark
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoMembership::<T>::member_remark()]
+        pub fn member_remark(origin, member_id: T::MemberId, msg: Vec<u8>) {
+            let sender = ensure_signed(origin)?;
+            Self::ensure_is_controller_account_for_member(&member_id, &sender)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deposit_event(RawEvent::MemberRemarked(member_id, msg));
+        }
     }
 }
 
@@ -1029,7 +1053,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Provided that the member_id exists return its membership. Returns error otherwise.
-    fn ensure_membership(member_id: T::MemberId) -> Result<Membership<T>, Error<T>> {
+    pub fn ensure_membership(member_id: T::MemberId) -> Result<Membership<T>, Error<T>> {
         Self::ensure_membership_with_error(member_id, Error::<T>::MemberProfileNotFound)
     }
 
@@ -1207,5 +1231,65 @@ impl<T: Trait> MembershipInfoProvider<T> for Module<T> {
         let membership = Self::ensure_membership(member_id)?;
 
         Ok(membership.controller_account)
+    }
+}
+
+impl WeightInfo for () {
+    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn update_profile(_: u32) -> Weight {
+        0
+    }
+    fn update_accounts_none() -> Weight {
+        0
+    }
+    fn update_accounts_root() -> Weight {
+        0
+    }
+    fn update_accounts_controller() -> Weight {
+        0
+    }
+    fn update_accounts_both() -> Weight {
+        0
+    }
+    fn set_referral_cut() -> Weight {
+        0
+    }
+    fn transfer_invites() -> Weight {
+        0
+    }
+    fn invite_member(_: u32, _: u32) -> Weight {
+        0
+    }
+    fn set_membership_price() -> Weight {
+        0
+    }
+    fn update_profile_verification() -> Weight {
+        0
+    }
+    fn set_leader_invitation_quota() -> Weight {
+        0
+    }
+    fn set_initial_invitation_balance() -> Weight {
+        0
+    }
+    fn set_initial_invitation_count() -> Weight {
+        0
+    }
+    fn add_staking_account_candidate() -> Weight {
+        0
+    }
+    fn confirm_staking_account() -> Weight {
+        0
+    }
+    fn remove_staking_account() -> Weight {
+        0
+    }
+    fn member_remark() -> Weight {
+        0
     }
 }

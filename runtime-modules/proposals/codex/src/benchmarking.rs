@@ -1,9 +1,13 @@
 #![cfg(feature = "runtime-benchmarks")]
+// Substrate macro issue:
+#![allow(clippy::no_effect)]
+
 use super::*;
 use crate::Module as Codex;
 use balances::Module as Balances;
 use common::working_group::WorkingGroup;
 use common::BalanceKind;
+use content::NftLimitPeriod;
 use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::sp_runtime::traits::Bounded;
 use frame_support::traits::Currency;
@@ -24,7 +28,7 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     let events = System::<T>::events();
     let system_event: <T as frame_system::Trait>::Event = generic_event.into();
     assert!(
-        events.len() > 0,
+        !events.is_empty(),
         "If you are checking for last event there must be at least 1 event"
     );
     let EventRecord { event, .. } = &events[events.len() - 1];
@@ -32,7 +36,7 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
 }
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
-    ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
+    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
 // Method to generate a distintic valid handle
@@ -72,12 +76,12 @@ fn member_funded_account<T: Trait + membership::Trait>(
     let member_id = T::MemberId::from(id.try_into().unwrap());
     Membership::<T>::add_staking_account_candidate(
         RawOrigin::Signed(account_id.clone()).into(),
-        member_id.clone(),
+        member_id,
     )
     .unwrap();
     Membership::<T>::confirm_staking_account(
         RawOrigin::Signed(account_id.clone()).into(),
-        member_id.clone(),
+        member_id,
         account_id.clone(),
     )
     .unwrap();
@@ -807,6 +811,30 @@ benchmarks! {
         );
     }
 
+    create_proposal_update_global_nft_limit {
+        let t in ...;
+        let d in ...;
+
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::UpdateGlobalNftLimit(
+            NftLimitPeriod::Daily,
+            100
+        );
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
+    verify {
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
+    }
 }
 
 #[cfg(test)]
@@ -984,6 +1012,13 @@ mod tests {
     fn test_create_proposal_veto_proposal() {
         initial_test_ext().execute_with(|| {
             assert_ok!(test_benchmark_create_proposal_veto_proposal::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_update_global_nft_limit_proposal() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_create_proposal_update_global_nft_limit::<Test>());
         });
     }
 }

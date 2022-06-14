@@ -1,0 +1,11 @@
+{
+  "name": "pulumi-common",
+  "version": "1.0.0",
+  "devDependencies": {
+    "@types/node": "^10.0.0"
+  },
+  "dependencies": {
+    "@pulumi/kubernetes": "^3.0.0",
+    "@pulumi/pulumi": "^3.0.0"
+  }
+}

@@ -1,13 +1,17 @@
-# Location that will be mounted as the /data volume in containers
-# This is how we access the initial members and balances files from
-# the containers and where generated chainspec files will be located.
-DATA_PATH="test-data"
+#!/usr/bin/env bash
+set -e
+
+SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
+cd $SCRIPT_PATH
+
+# Location used to store chain data, generated spec file and initial members
+# and balances for the test chain.
+DATA_PATH=./data
 
 # Initial account balance for Alice
 # Alice is the source of funds for all new accounts that are created in the tests.
 ALICE_INITIAL_BALANCE=100000000
 
-rm -Rf ${DATA_PATH}
 mkdir -p ${DATA_PATH}
 
 echo "{
@@ -48,12 +52,12 @@ function cleanup() {
 trap cleanup EXIT
 
 # Create a chain spec file
-./target/release/chain-spec-builder new -a Alice \
+../../target/release/chain-spec-builder new -a Alice \
   --chain-spec-path ${DATA_PATH}/chain-spec.json \
   --initial-balances-path ${DATA_PATH}/initial-balances.json \
   --initial-members-path ${DATA_PATH}/initial-members.json \
   --deployment dev \
   --sudo-account 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY
 
-./target/release/joystream-node --base-path ${DATA_PATH}/alice \
+../../target/release/joystream-node --base-path ${DATA_PATH}/alice \
   --validator --chain ${DATA_PATH}/chain-spec.json --alice --unsafe-ws-external --rpc-cors all

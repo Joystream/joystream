@@ -19,7 +19,7 @@ export default class WorkingGroupsIncreaseStake extends WorkingGroupsCommandBase
     ...WorkingGroupsCommandBase.flags,
   }
 
-  async run() {
+  async run(): Promise<void> {
     // Worker-only gate
     const worker = await this.getRequiredWorkerContext()
 

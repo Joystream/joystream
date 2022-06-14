@@ -4,10 +4,10 @@
 //! to be the integration tests.
 //!
 //! The whole parameter set is initialized only once by deserializing JSON from the environment variable
-//! "ALL_PROPOSALS_PARAMETERS_JSON". If it doesn't exists or contains invalid or empty JSON then
-//! the default parameters are returned. If some proposal section of the JSON file contains only
-//! partial object definition - default values are returned as missing fields.
-//!
+//! "ALL_PROPOSALS_PARAMETERS_JSON". If it doesn't exists the default parameters are returned.
+//! If some proposal section of the JSON file contains only
+//! partial object definition - default values are returned for missing fields.
+//! If passed JSON is invalid or expected numeric value is not a number it will panic!
 
 use crate::{Balance, BlockNumber, ProposalParameters};
 use frame_support::dispatch::Vec;
@@ -63,6 +63,8 @@ parameter_types! {
         ALL_PROPOSALS_PARAMETERS.unlock_blog_post_proposal;
     pub VetoProposalProposalParameters: ProposalParameters<BlockNumber, Balance> =
         ALL_PROPOSALS_PARAMETERS.veto_proposal_proposal;
+    pub UpdateGlobalNftLimitProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        ALL_PROPOSALS_PARAMETERS.update_global_nft_limit_proposal;
 }
 
 ///////////
@@ -93,6 +95,7 @@ struct AllProposalsParameters {
     pub lock_blog_post_proposal: ProposalParameters<BlockNumber, Balance>,
     pub unlock_blog_post_proposal: ProposalParameters<BlockNumber, Balance>,
     pub veto_proposal_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub update_global_nft_limit_proposal: ProposalParameters<BlockNumber, Balance>,
 }
 
 // to initialize parameters only once.
@@ -105,17 +108,20 @@ lazy_static! {
 #[allow(clippy::match_wild_err_arm)]
 // Composes AllProposalsParameters object from the JSON string.
 // It gets the JSON string from the environment variable and tries to parse it.
-// On error and any missing values it gets default values.
+// On error it will panic!
 fn get_all_proposals_parameters_objects() -> AllProposalsParameters {
     let json_str: Option<&'static str> = option_env!("ALL_PROPOSALS_PARAMETERS_JSON");
+
+    // Handle undefined variable (null) and variable set to empty string the same to work cross platform.
+    if json_str.map_or(true, str::is_empty) {
+        return default_parameters();
+    }
 
     json_str
         .map(lite_json::parse_json)
         .map(|res| match res {
             Ok(json) => Some(json),
-            Err(_) => {
-                panic!("Invalid JSON with proposals parameters provided.");
-            }
+            Err(_) => panic!("Invalid JSON with proposals parameters provided."),
         })
         .flatten()
         .map(convert_json_object_to_proposal_parameters)
@@ -193,7 +199,8 @@ fn convert_json_object_to_proposal_parameters(
         init_proposal_parameter_object!(params, jo.clone(), edit_blog_post_proposal);
         init_proposal_parameter_object!(params, jo.clone(), lock_blog_post_proposal);
         init_proposal_parameter_object!(params, jo.clone(), unlock_blog_post_proposal);
-        init_proposal_parameter_object!(params, jo, veto_proposal_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), veto_proposal_proposal);
+        init_proposal_parameter_object!(params, jo, update_global_nft_limit_proposal);
     }
 
     params
@@ -278,7 +285,7 @@ fn extract_proposal_parameters(
     params
 }
 
-// Extracts a specific numeric parameter from the parsed JSON object.
+// Extracts a specific numeric parameter from the parsed JSON object. Will panic if expected value is not numeric.
 fn extract_numeric_parameter(
     json_object: &JsonValue,
     parameter_name: &'static str,
@@ -331,5 +338,6 @@ fn default_parameters() -> AllProposalsParameters {
         lock_blog_post_proposal: defaults::lock_blog_post_proposal(),
         unlock_blog_post_proposal: defaults::unlock_blog_post_proposal(),
         veto_proposal_proposal: defaults::veto_proposal_proposal(),
+        update_global_nft_limit_proposal: defaults::update_global_nft_limit_proposal(),
     }
 }

@@ -21,7 +21,7 @@ type ReferendumInstance = referendum::Instance1;
 const SEED: u32 = 0;
 
 fn get_byte(num: u32, byte_number: u8) -> u8 {
-    ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
+    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
 // Method to generate a distintic valid handle
@@ -46,7 +46,7 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     let events = System::<T>::events();
     let system_event: <T as frame_system::Trait>::Event = generic_event.into();
     assert!(
-        events.len() > 0,
+        !events.is_empty(),
         "If you are checking for last event there must be at least 1 event"
     );
     let EventRecord { event, .. } = &events[events.len() - 1];
@@ -58,7 +58,7 @@ fn assert_in_events<T: Trait>(generic_event: <T as Trait>::Event) {
     let system_event: <T as frame_system::Trait>::Event = generic_event.into();
 
     assert!(
-        events.len() > 0,
+        !events.is_empty(),
         "If you are checking for last event there must be at least 1 event"
     );
 
@@ -149,7 +149,7 @@ fn create_proposal<T: Trait + membership::Trait>(
 
     let proposal_creation_parameters = ProposalCreationParameters {
         account_id: account_id.clone(),
-        proposer_id: member_id.clone(),
+        proposer_id: member_id,
         proposal_parameters,
         title: vec![0u8],
         description: vec![0u8],
@@ -217,11 +217,17 @@ fn run_to_block<T: Trait + council::Trait + referendum::Trait<ReferendumInstance
     }
 }
 
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+struct CouncilCandidate<T: Trait> {
+    pub account_id: T::AccountId,
+    pub member_id: T::MemberId,
+}
+
 fn elect_council<
     T: Trait + membership::Trait + council::Trait + referendum::Trait<ReferendumInstance>,
 >(
     start_id: u32,
-) -> (Vec<(T::AccountId, T::MemberId)>, u32) {
+) -> (Vec<CouncilCandidate<T>>, u32) {
     let council_size = <T as council::Trait>::CouncilSize::get();
     let number_of_extra_candidates = <T as council::Trait>::MinNumberOfExtraCandidates::get();
 
@@ -244,7 +250,10 @@ fn elect_council<
         )
         .unwrap();
 
-        candidates.push((account_id, member_id));
+        candidates.push(CouncilCandidate {
+            account_id,
+            member_id,
+        });
         voters.push(member_funded_account::<T>(
             "voter",
             (council_size + number_of_extra_candidates + i as u64)
@@ -264,7 +273,7 @@ fn elect_council<
             &voters[i].0,
             &[0u8],
             &0,
-            &candidates[i].1,
+            &candidates[i].member_id,
         );
         Referendum::<T, ReferendumInstance>::vote(
             RawOrigin::Signed(voters[i].0.clone()).into(),
@@ -283,7 +292,7 @@ fn elect_council<
         Referendum::<T, ReferendumInstance>::reveal_vote(
             RawOrigin::Signed(voters[i].0.clone()).into(),
             vec![0u8],
-            candidates[i].1.clone(),
+            candidates[i].member_id,
         )
         .unwrap();
     }
@@ -299,7 +308,7 @@ fn elect_council<
             .iter()
             .map(|m| *m.member_id())
             .collect::<Vec<_>>(),
-        council.iter().map(|c| c.1).collect::<Vec<_>>()
+        council.iter().map(|c| c.member_id).collect::<Vec<_>>()
     );
 
     (
@@ -319,7 +328,7 @@ fn create_multiple_finalized_proposals<
     total_voters: u32,
     grace_period: u32,
 ) -> (Vec<T::AccountId>, Vec<T::ProposalId>) {
-    let (council, last_id): (Vec<(T::AccountId, _)>, _) = elect_council::<T>(0);
+    let (council, last_id): (Vec<CouncilCandidate<T>>, _) = elect_council::<T>(0);
 
     let mut proposers = Vec::new();
     let mut proposals = Vec::new();
@@ -333,10 +342,11 @@ fn create_multiple_finalized_proposals<
         proposers.push(proposer_account_id);
         proposals.push(proposal_id);
 
-        for (voter_id, member_id) in council[0..total_voters.try_into().unwrap()].iter() {
+        for councilor in council[0..total_voters.try_into().unwrap()].iter() {
+            let (voter_id, member_id) = (councilor.account_id.clone(), councilor.member_id);
             ProposalsEngine::<T>::vote(
                 RawOrigin::Signed(voter_id.clone()).into(),
-                *member_id,
+                member_id,
                 proposal_id,
                 vote_kind.clone(),
                 vec![0u8],
@@ -362,7 +372,8 @@ benchmarks! {
         let i in 0 .. MAX_BYTES;
 
         let (council, last_id) = elect_council::<T>(1);
-        let (account_voter_id, member_voter_id) = council[0].clone();
+        let voter = council[0].clone();
+        let (account_voter_id, member_voter_id) = (voter.account_id, voter.member_id);
         let (_, _, proposal_id) = create_proposal::<T>(last_id + 1, 1, 0, 0);
         let rationale = vec![0u8; i.try_into().unwrap()];
     }: _ (
@@ -400,14 +411,8 @@ benchmarks! {
     }
 
     cancel_proposal {
-        let i in 1 .. T::MaxLocks::get();
 
         let (account_id, member_id, proposal_id) = create_proposal::<T>(0, 1, 0, 0);
-
-        for lock_number in 1 .. i {
-            let (locked_account_id, _) = member_funded_account::<T>("locked_member", lock_number);
-            <T as Trait>::StakingHandler::set_stake(&locked_account_id, One::one()).unwrap();
-        }
 
     }: _ (RawOrigin::Signed(account_id.clone()), member_id, proposal_id)
     verify {
@@ -455,6 +460,16 @@ benchmarks! {
         );
     }
 
+    proposer_remark {
+        let msg = b"test".to_vec();
+        let (proposer_account_id, proposer_id, proposal_id) = create_proposal::<T>(0, 1, 0, 0);
+    }: _ (RawOrigin::Signed(proposer_account_id.clone()), proposal_id, proposer_id, msg.clone())
+    verify {
+        assert_last_event::<T>(
+            RawEvent::ProposerRemarked(proposer_id, proposal_id, msg).into()
+        );
+    }
+
     // We use that branches for decode failing, failing and passing are very similar
     // without any different DB access in each. To use the failing/passing branch
     // we need to include the EncodeProposal trait from codex which depends on engine
@@ -470,7 +485,7 @@ benchmarks! {
             0,
         );
 
-    }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number().into()) }
+    }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number()) }
     verify {
         for proposer_account_id in proposers {
             assert_eq!(
@@ -501,7 +516,7 @@ benchmarks! {
         for proposal_id in proposals.iter() {
             assert_in_events::<T>(
                 RawEvent::ProposalExecuted(
-                    proposal_id.clone(),
+                    *proposal_id,
                     ExecutionStatus::failed_execution("Decoding error")).into()
             );
         }
@@ -567,7 +582,7 @@ benchmarks! {
         for proposal_id in proposals.iter() {
             assert_in_events::<T>(
                 RawEvent::ProposalExecuted(
-                    proposal_id.clone(),
+                    *proposal_id,
                     ExecutionStatus::failed_execution("Decoding error")).into()
             );
         }
@@ -584,7 +599,7 @@ benchmarks! {
             1,
         );
 
-    }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number().into()) }
+    }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number()) }
     verify {
         for proposer_account_id in proposers {
             assert_ne!(
@@ -608,7 +623,7 @@ benchmarks! {
             assert_eq!(proposal.status, status);
             assert_eq!(proposal.nr_of_council_confirmations, 1);
             assert_in_events::<T>(
-                RawEvent::ProposalStatusUpdated(proposal_id.clone(), status).into()
+                RawEvent::ProposalStatusUpdated(*proposal_id, status).into()
             );
         }
     }
@@ -623,7 +638,7 @@ benchmarks! {
             max(T::CouncilSize::get().try_into().unwrap(), 1),
             0,
         );
-    }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number().into()) }
+    }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number()) }
     verify {
         for proposal_id in proposals.iter() {
             assert!(
@@ -637,7 +652,7 @@ benchmarks! {
             );
 
             assert_in_events::<T>(
-                RawEvent::ProposalDecisionMade(proposal_id.clone(), ProposalDecision::Rejected)
+                RawEvent::ProposalDecisionMade(*proposal_id, ProposalDecision::Rejected)
                     .into()
             );
         }
@@ -667,7 +682,7 @@ benchmarks! {
             max(T::CouncilSize::get().try_into().unwrap(), 1),
             0,
         );
-    }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number().into()) }
+    }: { ProposalsEngine::<T>::on_initialize(System::<T>::block_number()) }
     verify {
         for proposer_account_id in proposers {
             assert_eq!(
@@ -695,10 +710,7 @@ benchmarks! {
             );
 
             assert_in_events::<T>(
-                RawEvent::ProposalDecisionMade(
-                    proposal_id.clone(),
-                    ProposalDecision::Slashed
-                ).into()
+                RawEvent::ProposalDecisionMade(*proposal_id, ProposalDecision::Slashed).into()
             );
         }
 
@@ -733,7 +745,7 @@ benchmarks! {
             );
 
             assert_in_events::<T>(
-                RawEvent::ProposalDecisionMade(proposal_id.clone(), ProposalDecision::CanceledByRuntime)
+                RawEvent::ProposalDecisionMade(*proposal_id, ProposalDecision::CanceledByRuntime)
                     .into()
             );
         }
@@ -820,6 +832,13 @@ mod tests {
     fn test_cancel_active_and_pending_proposals() {
         initial_test_ext().execute_with(|| {
             assert_ok!(test_benchmark_cancel_active_and_pending_proposals::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_proposer_remark() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_proposer_remark::<Test>());
         });
     }
 }
