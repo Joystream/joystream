@@ -6,7 +6,7 @@
 //Substrate internal issues.
 #![allow(clippy::large_enum_variant)]
 #![allow(clippy::unnecessary_mut_passed)]
-#![allow(non_fmt_panic)]
+#![allow(non_fmt_panics)]
 #![allow(clippy::from_over_into)]
 
 // Mutually exclusive feature check
@@ -32,15 +32,15 @@ mod weights; // Runtime integration tests
 #[macro_use]
 extern crate lazy_static; // for proposals_configuration module
 
-use frame_support::traits::{Currency, KeyOwnerProofSystem, LockIdentifier, OnUnbalanced};
+use frame_support::traits::{Currency, KeyOwnerProofSystem, LockIdentifier, OnUnbalanced, EnsureOneOf};
 use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
     DispatchClass, Weight,
 };
 use frame_support::weights::{WeightToFeeCoefficients, WeightToFeePolynomial};
-use frame_support::{construct_runtime, parameter_types};
+use frame_support::{construct_runtime, parameter_types, PalletId};
 use frame_system::limits::{BlockLength, BlockWeights};
-use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned};
+use frame_system::{EnsureRoot, EnsureSigned};
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_session::historical as pallet_session_historical;
@@ -49,9 +49,11 @@ use sp_core::crypto::KeyTypeId;
 use sp_core::Hasher;
 use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::traits::{AccountIdLookup, BlakeTwo256, OpaqueKeys};
-use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, ModuleId, Perbill};
+use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, Perbill};
 use sp_std::boxed::Box;
 use sp_std::vec::Vec;
+use sp_std::convert::{TryFrom, TryInto};
+
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
@@ -93,6 +95,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
+    state_version: 1,
 };
 
 /// The version information used to identify this runtime when compiled natively.
@@ -342,6 +345,7 @@ impl OnUnbalanced<NegativeImbalance> for Author {
 pub struct NoWeights;
 impl WeightToFeePolynomial for NoWeights {
     type Balance = Balance;
+}
 
 impl pallet_transaction_payment::Config for Runtime {
     type OnChargeTransaction = pallet_transaction_payment::CurrencyAdapter<Balances, ()>;
@@ -494,7 +498,7 @@ parameter_types! {
     pub const CleanupMargin: u32 = 3;    // TODO: update
     pub const CleanupCost: u32 = 1; // TODO: update
     pub const PricePerByte: u32 = 2; // TODO: update
-    pub const ContentModuleId: ModuleId = ModuleId(*b"mContent"); // module content
+    pub const ContentModuleId: PalletId = PalletId(*b"mContent"); // module content
     pub const BloatBondCap: u32 = 1000;  // TODO: update
 }
 
@@ -604,7 +608,7 @@ impl referendum::Config<ReferendumInstance> for Runtime {
     type MaxSaltLength = MaxSaltLength;
     type StakingHandler = VotingStakingManager;
     type ManagerOrigin =
-        EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+        EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
     type VotePower = Balance;
     type VoteStageDuration = VoteStageDuration;
     type RevealStageDuration = RevealStageDuration;
@@ -683,7 +687,7 @@ parameter_types! {
     pub const BlacklistSizeLimit: u64 = 10000; //TODO: adjust value
     pub const MaxRandomIterationNumber: u64 = 10; //TODO: adjust value
     pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 20; //TODO: adjust value
-    pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
+    pub const StorageModuleId: PalletId = PalletId(*b"mstorage"); // module storage
     pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
         storage::StorageBucketsPerBagValueConstraint {min: 5, max_min_diff: 15}; //TODO: adjust value
     pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 5; //TODO: adjust value
@@ -756,7 +760,7 @@ parameter_types! {
     pub const MaxPollAlternativesNumber: u64 = 20;
     pub const ThreadDeposit: u64 = 30;
     pub const PostDeposit: u64 = 10;
-    pub const ForumModuleId: ModuleId = ModuleId(*b"mo:forum"); // module : forum
+    pub const ForumModuleId: PalletId = PalletId(*b"mo:forum"); // module : forum
     pub const PostLifeTime: BlockNumber = 3600;
 }
 
@@ -1028,7 +1032,7 @@ parameter_types! {
     pub const MaxWhiteListSize: u32 = 20;
     pub const ProposalsPostDeposit: Balance = 2000;
     // module : proposals_discussion
-    pub const ProposalsDiscussionModuleId: ModuleId = ModuleId(*b"mo:prdis");
+    pub const ProposalsDiscussionModuleId: PalletId = PalletId(*b"mo:prdis");
     pub const ForumPostLifeTime: BlockNumber = 3600;
 }
 
@@ -1123,7 +1127,7 @@ impl pallet_constitution::Config for Runtime {
 }
 
 // parameter_types! {
-//     pub const BountyModuleId: ModuleId = ModuleId(*b"m:bounty"); // module : bounty
+//     pub const BountyModuleId: PalletId = PalletId(*b"m:bounty"); // module : bounty
 //     pub const ClosedContractSizeLimit: u32 = 50;
 //     pub const MinCherryLimit: Balance = 1000;
 //     pub const MinFundingLimit: Balance = 1000;
@@ -1149,7 +1153,7 @@ parameter_types! {
     pub const PostsMaxNumber: u64 = 20;
     pub const RepliesMaxNumber: u64 = 100;
     pub const ReplyDeposit: Balance = 2000;
-    pub const BlogModuleId: ModuleId = ModuleId(*b"mod:blog"); // module : forum
+    pub const BlogModuleId: PalletId = PalletId(*b"mod:blog"); // module : forum
     pub const ReplyLifetime: BlockNumber = 43_200;
 }
 
@@ -1192,46 +1196,46 @@ construct_runtime!(
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
         // Substrate
-        System: frame_system::{Module, Call, Storage, Config, Event<T>},
-        Utility: substrate_utility::{Module, Call, Event},
-        Babe: pallet_babe::{Module, Call, Storage, Config, Inherent, ValidateUnsigned},
-        Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
-        Authorship: pallet_authorship::{Module, Call, Storage, Inherent},
-        Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
-        TransactionPayment: pallet_transaction_payment::{Module, Storage},
-        Staking: pallet_staking::{Module, Call, Config<T>, Storage, Event<T>, ValidateUnsigned},
-        Session: pallet_session::{Module, Call, Storage, Event, Config<T>},
-        Historical: pallet_session_historical::{Module},
-        Grandpa: pallet_grandpa::{Module, Call, Storage, Config, Event},
-        AuthorityDiscovery: pallet_authority_discovery::{Module, Call, Config},
-        ImOnline: pallet_im_online::{Module, Call, Event<T>, Storage, ValidateUnsigned, Config<T>},
-        Offences: pallet_offences::{Module, Call, Storage, Event},
-        RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
-        Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
+        System: frame_system,
+        Utility: substrate_utility,
+        Babe: pallet_babe,
+        Timestamp: pallet_timestamp,
+        Authorship: pallet_authorship,
+        Balances: pallet_balances,
+        TransactionPayment: pallet_transaction_payment,
+        Staking: pallet_staking,
+        Session: pallet_session,
+        Historical: pallet_session_historical,
+        Grandpa: pallet_grandpa,
+        AuthorityDiscovery: pallet_authority_discovery,
+        ImOnline: pallet_im_online,
+        Offences: pallet_offences,
+        RandomnessCollectiveFlip: pallet_randomness_collective_flip,
+        Sudo: pallet_sudo,
         // Joystream
-        Council: council::{Module, Call, Storage, Event<T>, Config<T>},
-        Referendum: referendum::<Instance1>::{Module, Call, Storage, Event<T>, Config<T>},
-        Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
-        Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
-        Constitution: pallet_constitution::{Module, Call, Storage, Event},
-        // Bounty: bounty::{Module, Call, Storage, Event<T>},
-        Blog: blog::<Instance1>::{Module, Call, Storage, Event<T>},
-        JoystreamUtility: joystream_utility::{Module, Call, Event<T>},
-        Content: content::{Module, Call, Storage, Event<T>, Config<T>},
-        Storage: storage::{Module, Call, Storage, Event<T>},
+        Council: council::{Pallet, Call, Storage, Event<T>, Config<T>},
+        Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>, Config<T>},
+        Members: membership::{Pallet, Call, Storage, Event<T>, Config<T>},
+        Forum: forum::{Pallet, Call, Storage, Event<T>, Config<T>},
+        Constitution: pallet_constitution::{Pallet, Call, Storage, Event},
+        // Bounty: bounty::{Pallet, Call, Storage, Event<T>},
+        Blog: blog::<Instance1>::{Pallet, Call, Storage, Event<T>},
+        JoystreamUtility: joystream_utility::{Pallet, Call, Event<T>},
+        Content: content::{Pallet, Call, Storage, Event<T>, Config<T>},
+        Storage: storage::{Pallet, Call, Storage, Event<T>},
         // --- Proposals
-        ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
-        ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
-        ProposalsCodex: proposals_codex::{Module, Call, Storage, Event<T>},
+        ProposalsEngine: proposals_engine::{Pallet, Call, Storage, Event<T>},
+        ProposalsDiscussion: proposals_discussion::{Pallet, Call, Storage, Event<T>},
+        ProposalsCodex: proposals_codex::{Pallet, Call, Storage, Event<T>},
         // --- Working groups
-        ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
-        StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Event<T>},
-        ContentWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Event<T>},
-        OperationsWorkingGroupAlpha: working_group::<Instance4>::{Module, Call, Storage, Event<T>},
-        GatewayWorkingGroup: working_group::<Instance5>::{Module, Call, Storage, Event<T>},
-        MembershipWorkingGroup: working_group::<Instance6>::{Module, Call, Storage, Event<T>},
-        OperationsWorkingGroupBeta: working_group::<Instance7>::{Module, Call, Storage, Event<T>},
-        OperationsWorkingGroupGamma: working_group::<Instance8>::{Module, Call, Storage, Event<T>},
-        DistributionWorkingGroup: working_group::<Instance9>::{Module, Call, Storage, Event<T>},
+        ForumWorkingGroup: working_group::<Instance1>::{Pallet, Call, Storage, Event<T>},
+        StorageWorkingGroup: working_group::<Instance2>::{Pallet, Call, Storage, Event<T>},
+        ContentWorkingGroup: working_group::<Instance3>::{Pallet, Call, Storage, Event<T>},
+        OperationsWorkingGroupAlpha: working_group::<Instance4>::{Pallet, Call, Storage, Event<T>},
+        GatewayWorkingGroup: working_group::<Instance5>::{Pallet, Call, Storage, Event<T>},
+        MembershipWorkingGroup: working_group::<Instance6>::{Pallet, Call, Storage, Event<T>},
+        OperationsWorkingGroupBeta: working_group::<Instance7>::{Pallet, Call, Storage, Event<T>},
+        OperationsWorkingGroupGamma: working_group::<Instance8>::{Pallet, Call, Storage, Event<T>},
+        DistributionWorkingGroup: working_group::<Instance9>::{Pallet, Call, Storage, Event<T>},
     }
 );

@@ -7,6 +7,7 @@ use sp_runtime::{
     traits::{IdentifyAccount, Verify},
     MultiSignature,
 };
+use sp_std::convert::{TryFrom, TryInto};
 
 /// Priority for a transaction. Additive. Higher is better.
 pub type TransactionPriority = u64;

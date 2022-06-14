@@ -2405,6 +2405,7 @@ dependencies = [
  "pallet-utility 4.0.0-dev",
  "pallet-working-group",
  "parity-scale-codec 3.1.5",
+ "scale-info",
  "serde",
  "smallvec",
  "sp-api",

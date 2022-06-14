@@ -9,6 +9,7 @@ use sp_core::OpaqueMetadata;
 use sp_runtime::traits::{BlakeTwo256, Block as BlockT, Convert, NumberFor};
 use sp_runtime::{generic, ApplyExtrinsicResult};
 use sp_std::vec::Vec;
+use sp_std::convert::{TryFrom, TryInto};
 
 use crate::constants::PRIMARY_PROBABILITY;
 
