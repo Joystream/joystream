@@ -1122,28 +1122,28 @@ impl pallet_constitution::Config for Runtime {
     type WeightInfo = weights::pallet_constitution::WeightInfo;
 }
 
-parameter_types! {
-    pub const BountyModuleId: ModuleId = ModuleId(*b"m:bounty"); // module : bounty
-    pub const ClosedContractSizeLimit: u32 = 50;
-    pub const MinCherryLimit: Balance = 1000;
-    pub const MinFundingLimit: Balance = 1000;
-    pub const MinWorkEntrantStake: Balance = 1000;
-}
+// parameter_types! {
+//     pub const BountyModuleId: ModuleId = ModuleId(*b"m:bounty"); // module : bounty
+//     pub const ClosedContractSizeLimit: u32 = 50;
+//     pub const MinCherryLimit: Balance = 1000;
+//     pub const MinFundingLimit: Balance = 1000;
+//     pub const MinWorkEntrantStake: Balance = 1000;
+// }
 
-impl bounty::Config for Runtime {
-    type Event = Event;
-    type ModuleId = BountyModuleId;
-    type BountyId = u64;
-    type Membership = Members;
-    type WeightInfo = weights::bounty::WeightInfo;
-    type CouncilBudgetManager = Council;
-    type StakingHandler = staking_handler::StakingManager<Self, BountyLockId>;
-    type EntryId = u64;
-    type ClosedContractSizeLimit = ClosedContractSizeLimit;
-    type MinCherryLimit = MinCherryLimit;
-    type MinFundingLimit = MinFundingLimit;
-    type MinWorkEntrantStake = MinWorkEntrantStake;
-}
+// impl bounty::Config for Runtime {
+//     type Event = Event;
+//     type ModuleId = BountyModuleId;
+//     type BountyId = u64;
+//     type Membership = Members;
+//     type WeightInfo = weights::bounty::WeightInfo;
+//     type CouncilBudgetManager = Council;
+//     type StakingHandler = staking_handler::StakingManager<Self, BountyLockId>;
+//     type EntryId = u64;
+//     type ClosedContractSizeLimit = ClosedContractSizeLimit;
+//     type MinCherryLimit = MinCherryLimit;
+//     type MinFundingLimit = MinFundingLimit;
+//     type MinWorkEntrantStake = MinWorkEntrantStake;
+// }
 
 parameter_types! {
     pub const PostsMaxNumber: u64 = 20;
@@ -1214,7 +1214,7 @@ construct_runtime!(
         Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
         Constitution: pallet_constitution::{Module, Call, Storage, Event},
-        Bounty: bounty::{Module, Call, Storage, Event<T>},
+        // Bounty: bounty::{Module, Call, Storage, Event<T>},
         Blog: blog::<Instance1>::{Module, Call, Storage, Event<T>},
         JoystreamUtility: joystream_utility::{Module, Call, Event<T>},
         Content: content::{Module, Call, Storage, Event<T>, Config<T>},
