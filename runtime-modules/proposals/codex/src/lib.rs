@@ -55,6 +55,7 @@ use sp_arithmetic::traits::Zero;
 use sp_runtime::SaturatedConversion;
 use sp_std::clone::Clone;
 use sp_std::collections::btree_set::BTreeSet;
+use sp_std::convert::TryInto;
 
 use common::membership::MemberOriginValidator;
 use common::MemberId;

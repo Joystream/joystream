@@ -4,6 +4,7 @@ use codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_std::vec::Vec;
+use scale_info::TypeInfo;
 
 use common::working_group::WorkingGroup;
 use common::BalanceKind;
@@ -30,7 +31,7 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
 
 /// Proposal details provide voters the information required for the perceived voting.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]
 pub enum ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId, PostId, ProposalId> {
     /// The signal of the `Signal` proposal
     Signal(Vec<u8>),
@@ -123,7 +124,7 @@ impl<Balance, BlockNumber, AccountId, WorkerId, OpeningId, PostId, ProposalId> D
 
 /// Proposal parameters common to all proposals
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Encode, Decode, Debug, Default, Clone, PartialEq, Eq, TypeInfo)]
 pub struct GeneralProposalParams<MemberId, AccountId, BlockNumber> {
     /// Member ID of proposer
     pub member_id: MemberId,
@@ -143,7 +144,7 @@ pub struct GeneralProposalParams<MemberId, AccountId, BlockNumber> {
 
 /// Parameters for the 'terminate the leader position' proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]
 pub struct TerminateRoleParameters<WorkerId, Balance> {
     /// Worker identifier.
     pub worker_id: WorkerId,
@@ -157,7 +158,7 @@ pub struct TerminateRoleParameters<WorkerId, Balance> {
 
 /// Parameters for the 'Fill Working Group Lead' proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]
 pub struct FillOpeningParameters {
     /// Identifier for opening in group.
     pub opening_id: working_group::OpeningId,
@@ -171,7 +172,7 @@ pub struct FillOpeningParameters {
 
 /// Parameters for the 'Create Working Group Lead Opening' proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]
 pub struct CreateOpeningParameters<BlockNumber, Balance> {
     /// Opening description.
     pub description: Vec<u8>,
