@@ -1,34 +1,34 @@
-import { Null, u32, u64, bool, Option, BTreeSet, BTreeMap } from '@polkadot/types'
+import { Null, u8, u32, u64, bool, Vec, BTreeSet, BTreeMap, UInt } from '@polkadot/types'
 import { JoyEnum, JoyStructDecorated, MemberId, AccountId, Balance, BlockNumber } from './common'
 
 export class BountyId extends u64 {}
 export class EntryId extends u64 {}
+export class Perbill extends UInt.with(32, 'Perbill') {}
 
 export class BountyActor extends JoyEnum({
   Council: Null,
   Member: MemberId,
 }) {}
 
-export class AssuranceContractType_Closed extends BTreeSet.with(MemberId) {}
+export class AssuranceContractTypeClosed extends BTreeSet.with(MemberId) {}
 
 export class AssuranceContractType extends JoyEnum({
   Open: Null,
-  Closed: AssuranceContractType_Closed,
+  Closed: AssuranceContractTypeClosed,
 }) {}
 
-export class FundingType_Perpetual extends JoyStructDecorated({
+export class FundingTypePerpetual extends JoyStructDecorated({
   target: Balance,
 }) {}
 
-export class FundingType_Limited extends JoyStructDecorated({
-  min_funding_amount: Balance,
-  max_funding_amount: Balance,
+export class FundingTypeLimited extends JoyStructDecorated({
+  target: Balance,
   funding_period: BlockNumber,
 }) {}
 
 export class FundingType extends JoyEnum({
-  Perpetual: FundingType_Perpetual,
-  Limited: FundingType_Limited,
+  Perpetual: FundingTypePerpetual,
+  Limited: FundingTypeLimited,
 }) {}
 
 export class BountyCreationParameters extends JoyStructDecorated({
@@ -36,19 +36,23 @@ export class BountyCreationParameters extends JoyStructDecorated({
   contract_type: AssuranceContractType,
   creator: BountyActor,
   cherry: Balance,
+  oracle_reward: Balance,
   entrant_stake: Balance,
   funding_type: FundingType,
-  work_period: BlockNumber,
-  judging_period: BlockNumber,
 }) {}
 
-export class OracleWorkEntryJudgment_Winner extends JoyStructDecorated({
+export class OracleWorkEntryJudgmentWinner extends JoyStructDecorated({
   reward: Balance,
 }) {}
 
+export class OracleWorkEntryJudgmentRejected extends JoyStructDecorated({
+  slashing_share: Perbill,
+  action_justification: Vec.with(u8),
+}) {}
+
 export class OracleWorkEntryJudgment extends JoyEnum({
-  Winner: OracleWorkEntryJudgment_Winner,
-  Rejected: Null,
+  Winner: OracleWorkEntryJudgmentWinner,
+  Rejected: OracleWorkEntryJudgmentRejected,
 }) {}
 
 export class OracleJudgment extends BTreeMap.with(EntryId, OracleWorkEntryJudgment) {}
@@ -58,31 +62,36 @@ export class Entry extends JoyStructDecorated({
   staking_account_id: AccountId,
   submitted_at: BlockNumber,
   work_submitted: bool,
-  oracle_judgment_result: Option.with(OracleWorkEntryJudgment),
 }) {}
 
-export class BountyMilestone_Created extends JoyStructDecorated({
+export class BountyStageFunding extends JoyStructDecorated({
+  has_contribution: bool,
+}) {}
+
+export class BountyStage extends JoyStructDecorated({
+  Funding: BountyStageFunding,
+  NoFundingContributed: Null,
+  WorkSubmission: Null,
+  Judgment: Null,
+  SuccessfulBountyWithdrawal: Null,
+  FailedBountyWithdrawal: Null,
+}) {}
+
+export class BountyMilestoneCreated extends JoyStructDecorated({
   created_at: BlockNumber,
   has_contributions: bool,
 }) {}
 
-export class BountyMilestone_BountyMaxFundingReached extends JoyStructDecorated({
-  max_funding_reached_at: BlockNumber,
-}) {}
-
-export class BountyMilestone_WorkSubmitted extends JoyStructDecorated({
-  work_period_started_at: BlockNumber,
-}) {}
-
-export class BountyMilestone_JudgmentSubmitted extends JoyStructDecorated({
+export class BountyMilestoneJudgmentSubmitted extends JoyStructDecorated({
   successful_bounty: bool,
 }) {}
 
 export class BountyMilestone extends JoyEnum({
-  Created: BountyMilestone_Created,
-  BountyMaxFundingReached: BountyMilestone_BountyMaxFundingReached,
-  WorkSubmitted: BountyMilestone_WorkSubmitted,
-  JudgmentSubmitted: BountyMilestone_JudgmentSubmitted,
+  Created: BountyMilestoneCreated,
+  BountyMaxFundingReached: Null,
+  WorkSubmitted: Null,
+  Terminated: Null,
+  JudgmentSubmitted: BountyMilestoneJudgmentSubmitted,
 }) {}
 
 export class Bounty extends JoyStructDecorated({
@@ -90,28 +99,32 @@ export class Bounty extends JoyStructDecorated({
   total_funding: Balance,
   milestone: BountyMilestone,
   active_work_entry_count: u32,
+  has_unpaid_oracle_reward: bool,
+}) {}
+
+export class Contribution extends JoyStructDecorated({
+  amount: Balance,
+  funder_state_bloat_bond_amount: Balance,
 }) {}
 
 export const bountyTypes = {
   BountyId,
   EntryId,
   BountyActor,
-  AssuranceContractType_Closed,
+  Contribution,
   AssuranceContractType,
-  FundingType_Limited,
-  FundingType_Perpetual,
+  AssuranceContractTypeClosed,
   FundingType,
   BountyCreationParameters,
-  OracleWorkEntryJudgment_Winner,
+  OracleWorkEntryJudgmentWinner,
+  OracleWorkEntryJudgmentRejected,
   OracleWorkEntryJudgment,
   OracleJudgment,
   Entry,
-  BountyMilestone_Created,
-  BountyMilestone_BountyMaxFundingReached,
-  BountyMilestone_WorkSubmitted,
-  BountyMilestone_JudgmentSubmitted,
   BountyMilestone,
   Bounty,
+  BountyStage,
+  BountyStageFunding,
 }
 
 export default bountyTypes

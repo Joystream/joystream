@@ -7,9 +7,9 @@
     },
     "ThreadId": "u64",
     "PostId": "u64",
-    "InputValidationLengthConstraintU64": {
-        "min": "u64",
-        "max_min_diff": "u64"
+    "InputValidationLengthConstraint": {
+        "min": "u16",
+        "max_min_diff": "u16"
     },
     "WorkingGroup": {
         "_enum": [
@@ -232,6 +232,14 @@
         ]
     },
     "StorageBucketId": "u64",
+    "StorageBucketsPerBagValueConstraint": {
+        "min": "u64",
+        "max_min_diff": "u64"
+    },
+    "DistributionBucketsPerBagValueConstraint": {
+        "min": "u64",
+        "max_min_diff": "u64"
+    },
     "DataObjectId": "u64",
     "DynamicBagId": {
         "_enum": {
@@ -255,9 +263,18 @@
         "numberOfStorageBuckets": "u64",
         "families": "BTreeMap<DistributionBucketFamilyId,u32>"
     },
+    "DynamicBagDeletionPrize": {
+        "account_id": "GenericAccountId",
+        "prize": "u128"
+    },
+    "DynamicBagDeletionPrizeRecord": {
+        "account_id": "GenericAccountId",
+        "prize": "u128"
+    },
     "Bag": {
         "stored_by": "BTreeSet<StorageBucketId>",
         "distributed_by": "BTreeSet<DistributionBucketId>",
+        "deletion_prize": "Option<u128>",
         "objects_total_size": "u64",
         "objects_number": "u64"
     },
@@ -304,11 +321,10 @@
     "UploadParameters": {
         "bagId": "BagId",
         "objectCreationList": "Vec<DataObjectCreationParameters>",
-        "stateBloatBondSourceAccountId": "GenericAccountId",
+        "deletionPrizeSourceAccountId": "GenericAccountId",
         "expectedDataSizeFee": "u128",
-        "expectedDataObjectStateBloatBond": "u128",
-        "storageBuckets": "BTreeSet<StorageBucketId>",
-        "distributionBuckets": "BTreeSet<DistributionBucketId>"
+        "expectedDynamicBagDeletionPrize": "u128",
+        "expectedDataObjectDeletionPrize": "u128"
     },
     "StorageBucketIdSet": "BTreeSet<StorageBucketId>",
     "DataObjectIdSet": "BTreeSet<DataObjectId>",
@@ -323,7 +339,7 @@
     },
     "DataObject": {
         "accepted": "bool",
-        "state_bloat_bond": "u128",
+        "deletion_prize": "u128",
         "size": "u64",
         "ipfsContentId": "Bytes"
     },
@@ -343,20 +359,12 @@
     "DistributionBucketFamily": {
         "next_distribution_bucket_index": "DistributionBucketIndex"
     },
-    "StorageBucketsPerBagValueConstraint": {
-        "min": "u64",
-        "max_min_diff": "u64"
-    },
-    "DistributionBucketsPerBagValueConstraint": {
-        "min": "u64",
-        "max_min_diff": "u64"
-    },
     "DataObjectIdMap": "BTreeMap<DataObjectId,DataObject>",
     "DistributionBucketIndexSet": "BTreeSet<DistributionBucketIndex>",
     "DynBagCreationParameters": {
         "bagId": "DynamicBagId",
         "objectCreationList": "Vec<DataObjectCreationParameters>",
-        "stateBloatBondSourceAccountId": "GenericAccountId",
+        "deletionPrizeSourceAccountId": "GenericAccountId",
         "expectedDataSizeFee": "u128"
     },
     "DynamicBagCreationPolicyDistributorFamiliesMap": "BTreeMap<DistributionBucketFamilyId,u32>",
@@ -419,8 +427,7 @@
             "EditBlogPost": "(PostId,Option<Text>,Option<Text>)",
             "LockBlogPost": "PostId",
             "UnlockBlogPost": "PostId",
-            "VetoProposal": "ProposalId",
-            "UpdateGlobalNftLimit": "(NftLimitPeriod,u64)"
+            "VetoProposal": "ProposalId"
         }
     },
     "ProposalDetailsOf": {
@@ -449,8 +456,7 @@
             "EditBlogPost": "(PostId,Option<Text>,Option<Text>)",
             "LockBlogPost": "PostId",
             "UnlockBlogPost": "PostId",
-            "VetoProposal": "ProposalId",
-            "UpdateGlobalNftLimit": "(NftLimitPeriod,u64)"
+            "VetoProposal": "ProposalId"
         }
     },
     "VotingResults": {
@@ -579,25 +585,21 @@
             "Member": "MemberId"
         }
     },
-    "AssuranceContractType_Closed": "BTreeSet<MemberId>",
+    "Contribution": {
+        "amount": "u128",
+        "funder_state_bloat_bond_amount": "u128"
+    },
     "AssuranceContractType": {
         "_enum": {
             "Open": "Null",
-            "Closed": "AssuranceContractType_Closed"
+            "Closed": "AssuranceContractTypeClosed"
         }
     },
-    "FundingType_Limited": {
-        "min_funding_amount": "u128",
-        "max_funding_amount": "u128",
-        "funding_period": "u32"
-    },
-    "FundingType_Perpetual": {
-        "target": "u128"
-    },
+    "AssuranceContractTypeClosed": "BTreeSet<MemberId>",
     "FundingType": {
         "_enum": {
-            "Perpetual": "FundingType_Perpetual",
-            "Limited": "FundingType_Limited"
+            "Perpetual": "{\"target\":\"u128\"}",
+            "Limited": "{\"target\":\"u128\",\"funding_period\":\"u32\"}"
         }
     },
     "BountyCreationParameters": {
@@ -605,18 +607,21 @@
         "contract_type": "AssuranceContractType",
         "creator": "BountyActor",
         "cherry": "u128",
+        "oracle_reward": "u128",
         "entrant_stake": "u128",
-        "funding_type": "FundingType",
-        "work_period": "u32",
-        "judging_period": "u32"
+        "funding_type": "FundingType"
     },
-    "OracleWorkEntryJudgment_Winner": {
+    "OracleWorkEntryJudgmentWinner": {
         "reward": "u128"
+    },
+    "OracleWorkEntryJudgmentRejected": {
+        "slashing_share": "Perbill",
+        "action_justification": "Vec<u8>"
     },
     "OracleWorkEntryJudgment": {
         "_enum": {
-            "Winner": "OracleWorkEntryJudgment_Winner",
-            "Rejected": "Null"
+            "Winner": "OracleWorkEntryJudgmentWinner",
+            "Rejected": "OracleWorkEntryJudgmentRejected"
         }
     },
     "OracleJudgment": "BTreeMap<EntryId,OracleWorkEntryJudgment>",
@@ -624,40 +629,39 @@
         "member_id": "MemberId",
         "staking_account_id": "AccountId",
         "submitted_at": "u32",
-        "work_submitted": "bool",
-        "oracle_judgment_result": "Option<OracleWorkEntryJudgment>"
-    },
-    "BountyMilestone_Created": {
-        "created_at": "u32",
-        "has_contributions": "bool"
-    },
-    "BountyMilestone_BountyMaxFundingReached": {
-        "max_funding_reached_at": "u32"
-    },
-    "BountyMilestone_WorkSubmitted": {
-        "work_period_started_at": "u32"
-    },
-    "BountyMilestone_JudgmentSubmitted": {
-        "successful_bounty": "bool"
+        "work_submitted": "bool"
     },
     "BountyMilestone": {
         "_enum": {
-            "Created": "BountyMilestone_Created",
-            "BountyMaxFundingReached": "BountyMilestone_BountyMaxFundingReached",
-            "WorkSubmitted": "BountyMilestone_WorkSubmitted",
-            "JudgmentSubmitted": "BountyMilestone_JudgmentSubmitted"
+            "Created": "{\"created_at\":\"u32\",\"has_contributions\":\"bool\"}",
+            "BountyMaxFundingReached": "Null",
+            "WorkSubmitted": "Null",
+            "Terminated": "Null",
+            "JudgmentSubmitted": "{\"successful_bounty\":\"bool\"}"
         }
     },
     "Bounty": {
         "creation_params": "BountyCreationParameters",
         "total_funding": "u128",
         "milestone": "BountyMilestone",
-        "active_work_entry_count": "u32"
+        "active_work_entry_count": "u32",
+        "has_unpaid_oracle_reward": "bool"
+    },
+    "BountyStage": {
+        "Funding": "BountyStageFunding",
+        "NoFundingContributed": "Null",
+        "WorkSubmission": "Null",
+        "Judgment": "Null",
+        "SuccessfulBountyWithdrawal": "Null",
+        "FailedBountyWithdrawal": "Null"
+    },
+    "BountyStageFunding": {
+        "has_contribution": "bool"
     },
     "CuratorId": "u64",
     "CuratorGroupId": "u64",
     "CuratorGroup": {
-        "curators": "BTreeMap<CuratorId,ChannelAgentPermissions>",
+        "curators": "BTreeSet<CuratorId>",
         "active": "bool",
         "permissions_by_level": "ModerationPermissionsByLevel"
     },
@@ -675,16 +679,13 @@
     "Channel": {
         "owner": "ChannelOwner",
         "num_videos": "u64",
-        "collaborators": "BTreeMap<MemberId,ChannelAgentPermissions>",
+        "collaborators": "BTreeSet<MemberId>",
+        "moderators": "BTreeSet<MemberId>",
         "cumulative_payout_earned": "u128",
         "privilege_level": "ChannelPrivilegeLevel",
         "paused_features": "BTreeSet<PausableChannelFeature>",
         "transfer_status": "ChannelTransferStatus",
-        "data_objects": "BTreeSet<DataObjectId>",
-        "daily_nft_limit": "LimitPerPeriod",
-        "weekly_nft_limit": "LimitPerPeriod",
-        "daily_nft_counter": "NftCounter",
-        "weekly_nft_counter": "NftCounter"
+        "data_objects": "BTreeSet<DataObjectId>"
     },
     "ChannelOwner": {
         "_enum": {
@@ -703,20 +704,22 @@
     "ChannelCreationParameters": {
         "assets": "Option<StorageAssets>",
         "meta": "Option<Bytes>",
-        "collaborators": "BTreeMap<MemberId,ChannelAgentPermissions>",
-        "storage_buckets": "BTreeSet<u64>",
-        "distribution_Bucket": "BTreeSet<u64>",
-        "expected_data_object_state_bloat_bond": "u128"
+        "collaborators": "BTreeSet<MemberId>",
+        "moderators": "BTreeSet<MemberId>",
+        "expected_dynamic_bag_deletion_prize": "u128",
+        "expected_data_object_deletion_prize": "u128"
     },
     "ChannelUpdateParameters": {
         "assets_to_upload": "Option<StorageAssets>",
         "new_meta": "Option<Bytes>",
         "assets_to_remove": "BTreeSet<DataObjectId>",
-        "collaborators": "Option<BTreeMap<MemberId,ChannelAgentPermissions>>",
-        "expected_data_object_state_bloat_bond": "u128"
+        "collaborators": "Option<BTreeSet<MemberId>>",
+        "expected_data_object_deletion_prize": "u128"
     },
     "Video": {
         "in_channel": "ChannelId",
+        "enable_comments": "bool",
+        "video_post_id": "Option<VideoPostId>",
         "nft_status": "Option<OwnedNft>",
         "data_objects": "BTreeSet<DataObjectId>"
     },
@@ -732,18 +735,35 @@
     "VideoCreationParameters": {
         "assets": "Option<StorageAssets>",
         "meta": "Option<Bytes>",
+        "enable_comments": "bool",
         "auto_issue_nft": "Option<NftIssuanceParameters>",
-        "expected_data_object_state_bloat_bond": "u128"
+        "expected_data_object_deletion_prize": "u128"
     },
     "VideoUpdateParameters": {
         "assets_to_upload": "Option<StorageAssets>",
         "new_meta": "Option<Bytes>",
         "assets_to_remove": "BTreeSet<DataObjectId>",
+        "enable_comments": "Option<bool>",
         "auto_issue_nft": "Option<NftIssuanceParameters>",
-        "expected_data_object_state_bloat_bond": "u128"
+        "expected_data_object_deletion_prize": "u128"
     },
     "MaxNumber": "u32",
     "IsCensored": "bool",
+    "VideoPostId": "u64",
+    "ReactionId": "u64",
+    "VideoPostType": {
+        "_enum": {
+            "Description": "Null",
+            "Comment": "VideoPostId"
+        }
+    },
+    "VideoPost": {
+        "author": "ContentActor",
+        "bloat_bond": "u128",
+        "replies_count": "VideoPostId",
+        "post_type": "VideoPostType",
+        "video_reference": "VideoId"
+    },
     "Side": {
         "_enum": [
             "Left",
@@ -754,11 +774,20 @@
         "hash": "Hash",
         "side": "Side"
     },
+    "VideoPostCreationParameters": {
+        "post_type": "VideoPostType",
+        "video_reference": "VideoId"
+    },
+    "VideoPostDeletionParameters": {
+        "witness": "Option<Hash>",
+        "rationale": "Option<Bytes>"
+    },
     "PullPayment": {
         "channel_id": "ChannelId",
         "cumulative_payout_claimed": "u128",
         "reason": "Hash"
     },
+    "ModeratorSet": "BTreeSet<MemberId>",
     "Royalty": "Perbill",
     "EnglishAuctionParams": {
         "starting_price": "u128",
@@ -778,19 +807,18 @@
     "EnglishAuction": {
         "starting_price": "u128",
         "buy_now_price": "Option<u128>",
+        "top_bid": "Option<EnglishAuctionBid>",
         "whitelist": "BTreeSet<MemberId>",
-        "end": "u32",
-        "auction_duration": "u32",
         "extension_period": "u32",
+        "auction_duration": "u32",
         "min_bid_step": "u128",
-        "top_bid": "Option<EnglishAuctionBid>"
+        "end": "u32"
     },
     "OpenAuction": {
         "starting_price": "u128",
         "buy_now_price": "Option<u128>",
         "whitelist": "BTreeSet<MemberId>",
-        "bid_lock_duration": "u32",
-        "auction_id": "OpenAuctionId"
+        "bid_lock_duration": "u32"
     },
     "OpenAuctionBid": {
         "amount": "u128",
@@ -859,14 +887,13 @@
             "DeleteVideo": "Null",
             "DeleteChannel": "Null",
             "DeleteVideoAssets": "bool",
-            "DeleteNonVideoChannelAssets": "Null",
-            "UpdateChannelNftLimits": "Null"
+            "DeleteNonVideoChannelAssets": "Null"
         }
     },
     "ContentModerationActionsSet": "BTreeSet<ContentModerationAction>",
     "ModerationPermissionsByLevel": "BTreeMap<ChannelPrivilegeLevel,ContentModerationActionsSet>",
     "TransferParameters": {
-        "new_collaborators": "BTreeMap<MemberId,ChannelAgentPermissions>",
+        "new_collaborators": "BTreeSet<MemberId>",
         "price": "u128"
     },
     "ChannelTransferStatus_PendingTransfer": {
@@ -878,46 +905,6 @@
             "NoActiveTransfer": "Null",
             "PendingTransfer": "ChannelTransferStatus_PendingTransfer"
         }
-    },
-    "ChannelActionPermission": {
-        "_enum": [
-            "UpdateChannelMetadata",
-            "ManageNonVideoChannelAssets",
-            "ManageChannelCollaborators",
-            "UpdateVideoMetadata",
-            "AddVideo",
-            "ManageVideoAssets",
-            "DeleteChannel",
-            "DeleteVideo",
-            "ManageVideoNfts",
-            "AgentRemark",
-            "TransferChannel",
-            "ClaimChannelReward",
-            "WithdrawFromChannelBalance"
-        ]
-    },
-    "ChannelAgentPermissions": "BTreeSet<ChannelActionPermission>",
-    "NftLimitPeriod": {
-        "_enum": [
-            "Daily",
-            "Weekly"
-        ]
-    },
-    "NftLimitId": {
-        "_enum": {
-            "GlobalDaily": "Null",
-            "GlobalWeekly": "Null",
-            "ChannelDaily": "ChannelId",
-            "ChannelWeekly": "ChannelId"
-        }
-    },
-    "LimitPerPeriod": {
-        "limit": "u64",
-        "block_number_period": "u32"
-    },
-    "NftCounter": {
-        "counter": "u64",
-        "last_updated": "u32"
     },
     "AccountInfo": "AccountInfoWithRefCount"
 }

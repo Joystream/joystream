@@ -1,7 +1,7 @@
 // Auto-generated via `yarn polkadot-types-from-defs`, do not edit
 /* eslint-disable */
 
-import type { BTreeMap, BTreeSet, Bytes, Enum, GenericAccountId, Option, Struct, Text, Vec, bool, u128, u32, u64, u8 } from '@polkadot/types';
+import type { BTreeMap, BTreeSet, Bytes, Enum, GenericAccountId, Null, Option, Struct, Text, Vec, bool, u128, u16, u32, u64, u8 } from '@polkadot/types';
 import type { ITuple } from '@polkadot/types/types';
 import type { AccountId, Balance, Hash, Perbill } from '@polkadot/types/interfaces/runtime';
 import type { AccountInfoWithRefCount } from '@polkadot/types/interfaces/system';
@@ -60,16 +60,17 @@ export interface Approved extends Enum {
 export interface AssuranceContractType extends Enum {
   readonly isOpen: boolean;
   readonly isClosed: boolean;
-  readonly asClosed: AssuranceContractType_Closed;
+  readonly asClosed: AssuranceContractTypeClosed;
 }
 
-/** @name AssuranceContractType_Closed */
-export interface AssuranceContractType_Closed extends BTreeSet<MemberId> {}
+/** @name AssuranceContractTypeClosed */
+export interface AssuranceContractTypeClosed extends BTreeSet<MemberId> {}
 
 /** @name Bag */
 export interface Bag extends Struct {
   readonly stored_by: BTreeSet<StorageBucketId>;
   readonly distributed_by: BTreeSet<DistributionBucketId>;
+  readonly deletion_prize: Option<u128>;
   readonly objects_total_size: u64;
   readonly objects_number: u64;
 }
@@ -108,6 +109,7 @@ export interface Bounty extends Struct {
   readonly total_funding: u128;
   readonly milestone: BountyMilestone;
   readonly active_work_entry_count: u32;
+  readonly has_unpaid_oracle_reward: bool;
 }
 
 /** @name BountyActor */
@@ -123,10 +125,9 @@ export interface BountyCreationParameters extends Struct {
   readonly contract_type: AssuranceContractType;
   readonly creator: BountyActor;
   readonly cherry: u128;
+  readonly oracle_reward: u128;
   readonly entrant_stake: u128;
   readonly funding_type: FundingType;
-  readonly work_period: u32;
-  readonly judging_period: u32;
 }
 
 /** @name BountyId */
@@ -135,34 +136,32 @@ export interface BountyId extends u64 {}
 /** @name BountyMilestone */
 export interface BountyMilestone extends Enum {
   readonly isCreated: boolean;
-  readonly asCreated: BountyMilestone_Created;
+  readonly asCreated: {
+    readonly created_at: u32;
+    readonly has_contributions: bool;
+  } & Struct;
   readonly isBountyMaxFundingReached: boolean;
-  readonly asBountyMaxFundingReached: BountyMilestone_BountyMaxFundingReached;
   readonly isWorkSubmitted: boolean;
-  readonly asWorkSubmitted: BountyMilestone_WorkSubmitted;
+  readonly isTerminated: boolean;
   readonly isJudgmentSubmitted: boolean;
-  readonly asJudgmentSubmitted: BountyMilestone_JudgmentSubmitted;
+  readonly asJudgmentSubmitted: {
+    readonly successful_bounty: bool;
+  } & Struct;
 }
 
-/** @name BountyMilestone_BountyMaxFundingReached */
-export interface BountyMilestone_BountyMaxFundingReached extends Struct {
-  readonly max_funding_reached_at: u32;
+/** @name BountyStage */
+export interface BountyStage extends Struct {
+  readonly Funding: BountyStageFunding;
+  readonly NoFundingContributed: Null;
+  readonly WorkSubmission: Null;
+  readonly Judgment: Null;
+  readonly SuccessfulBountyWithdrawal: Null;
+  readonly FailedBountyWithdrawal: Null;
 }
 
-/** @name BountyMilestone_Created */
-export interface BountyMilestone_Created extends Struct {
-  readonly created_at: u32;
-  readonly has_contributions: bool;
-}
-
-/** @name BountyMilestone_JudgmentSubmitted */
-export interface BountyMilestone_JudgmentSubmitted extends Struct {
-  readonly successful_bounty: bool;
-}
-
-/** @name BountyMilestone_WorkSubmitted */
-export interface BountyMilestone_WorkSubmitted extends Struct {
-  readonly work_period_started_at: u32;
+/** @name BountyStageFunding */
+export interface BountyStageFunding extends Struct {
+  readonly has_contribution: bool;
 }
 
 /** @name BuyMembershipParameters */
@@ -211,37 +210,14 @@ export interface CategoryId extends u64 {}
 export interface Channel extends Struct {
   readonly owner: ChannelOwner;
   readonly num_videos: u64;
-  readonly collaborators: BTreeMap<MemberId, ChannelAgentPermissions>;
+  readonly collaborators: BTreeSet<MemberId>;
+  readonly moderators: BTreeSet<MemberId>;
   readonly cumulative_payout_earned: u128;
   readonly privilege_level: ChannelPrivilegeLevel;
   readonly paused_features: BTreeSet<PausableChannelFeature>;
   readonly transfer_status: ChannelTransferStatus;
   readonly data_objects: BTreeSet<DataObjectId>;
-  readonly daily_nft_limit: LimitPerPeriod;
-  readonly weekly_nft_limit: LimitPerPeriod;
-  readonly daily_nft_counter: NftCounter;
-  readonly weekly_nft_counter: NftCounter;
 }
-
-/** @name ChannelActionPermission */
-export interface ChannelActionPermission extends Enum {
-  readonly isUpdateChannelMetadata: boolean;
-  readonly isManageNonVideoChannelAssets: boolean;
-  readonly isManageChannelCollaborators: boolean;
-  readonly isUpdateVideoMetadata: boolean;
-  readonly isAddVideo: boolean;
-  readonly isManageVideoAssets: boolean;
-  readonly isDeleteChannel: boolean;
-  readonly isDeleteVideo: boolean;
-  readonly isManageVideoNfts: boolean;
-  readonly isAgentRemark: boolean;
-  readonly isTransferChannel: boolean;
-  readonly isClaimChannelReward: boolean;
-  readonly isWithdrawFromChannelBalance: boolean;
-}
-
-/** @name ChannelAgentPermissions */
-export interface ChannelAgentPermissions extends BTreeSet<ChannelActionPermission> {}
 
 /** @name ChannelCategory */
 export interface ChannelCategory extends Struct {}
@@ -263,10 +239,10 @@ export interface ChannelCategoryUpdateParameters extends Struct {
 export interface ChannelCreationParameters extends Struct {
   readonly assets: Option<StorageAssets>;
   readonly meta: Option<Bytes>;
-  readonly collaborators: BTreeMap<MemberId, ChannelAgentPermissions>;
-  readonly storage_buckets: BTreeSet<u64>;
-  readonly distribution_Bucket: BTreeSet<u64>;
-  readonly expected_data_object_state_bloat_bond: u128;
+  readonly collaborators: BTreeSet<MemberId>;
+  readonly moderators: BTreeSet<MemberId>;
+  readonly expected_dynamic_bag_deletion_prize: u128;
+  readonly expected_data_object_deletion_prize: u128;
 }
 
 /** @name ChannelId */
@@ -301,8 +277,8 @@ export interface ChannelUpdateParameters extends Struct {
   readonly assets_to_upload: Option<StorageAssets>;
   readonly new_meta: Option<Bytes>;
   readonly assets_to_remove: BTreeSet<DataObjectId>;
-  readonly collaborators: Option<BTreeMap<MemberId, ChannelAgentPermissions>>;
-  readonly expected_data_object_state_bloat_bond: u128;
+  readonly collaborators: Option<BTreeSet<MemberId>>;
+  readonly expected_data_object_deletion_prize: u128;
 }
 
 /** @name Cid */
@@ -336,11 +312,16 @@ export interface ContentModerationAction extends Enum {
   readonly isDeleteVideoAssets: boolean;
   readonly asDeleteVideoAssets: bool;
   readonly isDeleteNonVideoChannelAssets: boolean;
-  readonly isUpdateChannelNftLimits: boolean;
 }
 
 /** @name ContentModerationActionsSet */
 export interface ContentModerationActionsSet extends BTreeSet<ContentModerationAction> {}
+
+/** @name Contribution */
+export interface Contribution extends Struct {
+  readonly amount: u128;
+  readonly funder_state_bloat_bond_amount: u128;
+}
 
 /** @name CouncilMemberOf */
 export interface CouncilMemberOf extends Struct {
@@ -387,7 +368,7 @@ export interface CreateOpeningParameters extends Struct {
 
 /** @name CuratorGroup */
 export interface CuratorGroup extends Struct {
-  readonly curators: BTreeMap<CuratorId, ChannelAgentPermissions>;
+  readonly curators: BTreeSet<CuratorId>;
   readonly active: bool;
   readonly permissions_by_level: ModerationPermissionsByLevel;
 }
@@ -401,7 +382,7 @@ export interface CuratorId extends u64 {}
 /** @name DataObject */
 export interface DataObject extends Struct {
   readonly accepted: bool;
-  readonly state_bloat_bond: u128;
+  readonly deletion_prize: u128;
   readonly ipfsContentId: Bytes;
 }
 
@@ -483,6 +464,18 @@ export interface DynamicBagCreationPolicy extends Struct {
 /** @name DynamicBagCreationPolicyDistributorFamiliesMap */
 export interface DynamicBagCreationPolicyDistributorFamiliesMap extends BTreeMap<DistributionBucketFamilyId, u32> {}
 
+/** @name DynamicBagDeletionPrize */
+export interface DynamicBagDeletionPrize extends Struct {
+  readonly account_id: GenericAccountId;
+  readonly prize: u128;
+}
+
+/** @name DynamicBagDeletionPrizeRecord */
+export interface DynamicBagDeletionPrizeRecord extends Struct {
+  readonly account_id: GenericAccountId;
+  readonly prize: u128;
+}
+
 /** @name DynamicBagId */
 export interface DynamicBagId extends Enum {
   readonly isMember: boolean;
@@ -501,7 +494,7 @@ export interface DynamicBagType extends Enum {
 export interface DynBagCreationParameters extends Struct {
   readonly bagId: DynamicBagId;
   readonly objectCreationList: Vec<DataObjectCreationParameters>;
-  readonly stateBloatBondSourceAccountId: GenericAccountId;
+  readonly deletionPrizeSourceAccountId: GenericAccountId;
   readonly expectedDataSizeFee: u128;
 }
 
@@ -509,12 +502,12 @@ export interface DynBagCreationParameters extends Struct {
 export interface EnglishAuction extends Struct {
   readonly starting_price: u128;
   readonly buy_now_price: Option<u128>;
-  readonly whitelist: BTreeSet<MemberId>;
-  readonly end: u32;
-  readonly auction_duration: u32;
-  readonly extension_period: u32;
-  readonly min_bid_step: u128;
   readonly top_bid: Option<EnglishAuctionBid>;
+  readonly whitelist: BTreeSet<MemberId>;
+  readonly extension_period: u32;
+  readonly auction_duration: u32;
+  readonly min_bid_step: u128;
+  readonly end: u32;
 }
 
 /** @name EnglishAuctionBid */
@@ -540,7 +533,6 @@ export interface Entry extends Struct {
   readonly staking_account_id: AccountId;
   readonly submitted_at: u32;
   readonly work_submitted: bool;
-  readonly oracle_judgment_result: Option<OracleWorkEntryJudgment>;
 }
 
 /** @name EntryId */
@@ -584,21 +576,14 @@ export interface FundingRequestParameters extends Struct {
 /** @name FundingType */
 export interface FundingType extends Enum {
   readonly isPerpetual: boolean;
-  readonly asPerpetual: FundingType_Perpetual;
+  readonly asPerpetual: {
+    readonly target: u128;
+  } & Struct;
   readonly isLimited: boolean;
-  readonly asLimited: FundingType_Limited;
-}
-
-/** @name FundingType_Limited */
-export interface FundingType_Limited extends Struct {
-  readonly min_funding_amount: u128;
-  readonly max_funding_amount: u128;
-  readonly funding_period: u32;
-}
-
-/** @name FundingType_Perpetual */
-export interface FundingType_Perpetual extends Struct {
-  readonly target: u128;
+  readonly asLimited: {
+    readonly target: u128;
+    readonly funding_period: u32;
+  } & Struct;
 }
 
 /** @name GeneralProposalParameters */
@@ -623,10 +608,10 @@ export interface InitTransactionalStatus extends Enum {
   readonly asOpenAuction: OpenAuctionParams;
 }
 
-/** @name InputValidationLengthConstraintU64 */
-export interface InputValidationLengthConstraintU64 extends Struct {
-  readonly min: u64;
-  readonly max_min_diff: u64;
+/** @name InputValidationLengthConstraint */
+export interface InputValidationLengthConstraint extends Struct {
+  readonly min: u16;
+  readonly max_min_diff: u16;
 }
 
 /** @name InviteMembershipParameters */
@@ -640,12 +625,6 @@ export interface InviteMembershipParameters extends Struct {
 
 /** @name IsCensored */
 export interface IsCensored extends bool {}
-
-/** @name LimitPerPeriod */
-export interface LimitPerPeriod extends Struct {
-  readonly limit: u64;
-  readonly block_number_period: u32;
-}
 
 /** @name LookupSource */
 export interface LookupSource extends AccountId {}
@@ -671,11 +650,8 @@ export interface ModerationPermissionsByLevel extends BTreeMap<ChannelPrivilegeL
 /** @name ModeratorId */
 export interface ModeratorId extends u64 {}
 
-/** @name NftCounter */
-export interface NftCounter extends Struct {
-  readonly counter: u64;
-  readonly last_updated: u32;
-}
+/** @name ModeratorSet */
+export interface ModeratorSet extends BTreeSet<MemberId> {}
 
 /** @name NftIssuanceParameters */
 export interface NftIssuanceParameters extends Struct {
@@ -683,22 +659,6 @@ export interface NftIssuanceParameters extends Struct {
   readonly nft_metadata: Bytes;
   readonly non_channel_owner: Option<MemberId>;
   readonly init_transactional_status: InitTransactionalStatus;
-}
-
-/** @name NftLimitId */
-export interface NftLimitId extends Enum {
-  readonly isGlobalDaily: boolean;
-  readonly isGlobalWeekly: boolean;
-  readonly isChannelDaily: boolean;
-  readonly asChannelDaily: ChannelId;
-  readonly isChannelWeekly: boolean;
-  readonly asChannelWeekly: ChannelId;
-}
-
-/** @name NftLimitPeriod */
-export interface NftLimitPeriod extends Enum {
-  readonly isDaily: boolean;
-  readonly isWeekly: boolean;
 }
 
 /** @name NftMetadata */
@@ -717,7 +677,6 @@ export interface OpenAuction extends Struct {
   readonly buy_now_price: Option<u128>;
   readonly whitelist: BTreeSet<MemberId>;
   readonly bid_lock_duration: u32;
-  readonly auction_id: OpenAuctionId;
 }
 
 /** @name OpenAuctionBid */
@@ -769,12 +728,19 @@ export interface OracleJudgment extends BTreeMap<EntryId, OracleWorkEntryJudgmen
 /** @name OracleWorkEntryJudgment */
 export interface OracleWorkEntryJudgment extends Enum {
   readonly isWinner: boolean;
-  readonly asWinner: OracleWorkEntryJudgment_Winner;
+  readonly asWinner: OracleWorkEntryJudgmentWinner;
   readonly isRejected: boolean;
+  readonly asRejected: OracleWorkEntryJudgmentRejected;
 }
 
-/** @name OracleWorkEntryJudgment_Winner */
-export interface OracleWorkEntryJudgment_Winner extends Struct {
+/** @name OracleWorkEntryJudgmentRejected */
+export interface OracleWorkEntryJudgmentRejected extends Struct {
+  readonly slashing_share: Perbill;
+  readonly action_justification: Bytes;
+}
+
+/** @name OracleWorkEntryJudgmentWinner */
+export interface OracleWorkEntryJudgmentWinner extends Struct {
   readonly reward: u128;
 }
 
@@ -917,8 +883,6 @@ export interface ProposalDetails extends Enum {
   readonly asUnlockBlogPost: PostId;
   readonly isVetoProposal: boolean;
   readonly asVetoProposal: ProposalId;
-  readonly isUpdateGlobalNftLimit: boolean;
-  readonly asUpdateGlobalNftLimit: ITuple<[NftLimitPeriod, u64]>;
 }
 
 /** @name ProposalDetailsOf */
@@ -973,8 +937,6 @@ export interface ProposalDetailsOf extends Enum {
   readonly asUnlockBlogPost: PostId;
   readonly isVetoProposal: boolean;
   readonly asVetoProposal: ProposalId;
-  readonly isUpdateGlobalNftLimit: boolean;
-  readonly asUpdateGlobalNftLimit: ITuple<[NftLimitPeriod, u64]>;
 }
 
 /** @name ProposalId */
@@ -1018,6 +980,9 @@ export interface PullPayment extends Struct {
   readonly cumulative_payout_claimed: u128;
   readonly reason: Hash;
 }
+
+/** @name ReactionId */
+export interface ReactionId extends u64 {}
 
 /** @name ReferendumStage */
 export interface ReferendumStage extends Enum {
@@ -1201,7 +1166,7 @@ export interface TransactionalStatus extends Enum {
 
 /** @name TransferParameters */
 export interface TransferParameters extends Struct {
-  readonly new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions>;
+  readonly new_collaborators: BTreeSet<MemberId>;
   readonly price: u128;
 }
 
@@ -1215,11 +1180,10 @@ export interface UpdatedTitle extends Option<Text> {}
 export interface UploadParameters extends Struct {
   readonly bagId: BagId;
   readonly objectCreationList: Vec<DataObjectCreationParameters>;
-  readonly stateBloatBondSourceAccountId: GenericAccountId;
+  readonly deletionPrizeSourceAccountId: GenericAccountId;
   readonly expectedDataSizeFee: u128;
-  readonly expectedDataObjectStateBloatBond: u128;
-  readonly storageBuckets: BTreeSet<StorageBucketId>;
-  readonly distributionBuckets: BTreeSet<DistributionBucketId>;
+  readonly expectedDynamicBagDeletionPrize: u128;
+  readonly expectedDataObjectDeletionPrize: u128;
 }
 
 /** @name Url */
@@ -1228,6 +1192,8 @@ export interface Url extends Text {}
 /** @name Video */
 export interface Video extends Struct {
   readonly in_channel: ChannelId;
+  readonly enable_comments: bool;
+  readonly video_post_id: Option<VideoPostId>;
   readonly nft_status: Option<OwnedNft>;
   readonly data_objects: BTreeSet<DataObjectId>;
 }
@@ -1252,20 +1218,53 @@ export interface VideoCategoryUpdateParameters extends Struct {
 export interface VideoCreationParameters extends Struct {
   readonly assets: Option<StorageAssets>;
   readonly meta: Option<Bytes>;
+  readonly enable_comments: bool;
   readonly auto_issue_nft: Option<NftIssuanceParameters>;
-  readonly expected_data_object_state_bloat_bond: u128;
+  readonly expected_data_object_deletion_prize: u128;
 }
 
 /** @name VideoId */
 export interface VideoId extends u64 {}
+
+/** @name VideoPost */
+export interface VideoPost extends Struct {
+  readonly author: ContentActor;
+  readonly bloat_bond: u128;
+  readonly replies_count: VideoPostId;
+  readonly post_type: VideoPostType;
+  readonly video_reference: VideoId;
+}
+
+/** @name VideoPostCreationParameters */
+export interface VideoPostCreationParameters extends Struct {
+  readonly post_type: VideoPostType;
+  readonly video_reference: VideoId;
+}
+
+/** @name VideoPostDeletionParameters */
+export interface VideoPostDeletionParameters extends Struct {
+  readonly witness: Option<Hash>;
+  readonly rationale: Option<Bytes>;
+}
+
+/** @name VideoPostId */
+export interface VideoPostId extends u64 {}
+
+/** @name VideoPostType */
+export interface VideoPostType extends Enum {
+  readonly isDescription: boolean;
+  readonly isComment: boolean;
+  readonly asComment: VideoPostId;
+}
 
 /** @name VideoUpdateParameters */
 export interface VideoUpdateParameters extends Struct {
   readonly assets_to_upload: Option<StorageAssets>;
   readonly new_meta: Option<Bytes>;
   readonly assets_to_remove: BTreeSet<DataObjectId>;
+  readonly enable_comments: Option<bool>;
   readonly auto_issue_nft: Option<NftIssuanceParameters>;
-  readonly expected_data_object_state_bloat_bond: u128;
+  readonly expected_data_object_deletion_prize: u128;
 }
 
 /** @name VoteKind */
