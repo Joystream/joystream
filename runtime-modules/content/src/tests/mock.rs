@@ -477,8 +477,8 @@ impl Default for ExtBuilder {
             max_bid_lock_duration: 10,
             min_starting_price: 10,
             max_starting_price: 1000,
-            min_creator_royalty: Perbill::from_percent(1),
-            max_creator_royalty: Perbill::from_percent(5),
+            min_creator_royalty: Perbill::zero(), // in order to test edge cases
+            max_creator_royalty: Perbill::one(), // in order to test edge cases
             min_bid_step: 10,
             max_bid_step: 100,
             platform_fee_percentage: Perbill::from_percent(1),

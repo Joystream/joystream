@@ -70,6 +70,60 @@ fn buy_nft_ok_with_royalty_account() {
 }
 
 #[test]
+fn buy_nft_ok_with_royalty_edge_case_account() {
+    with_default_mock_builder(|| {
+        // Run to block one to see emitted events
+        run_to_block(1);
+
+        let video_id = NextVideoId::<Test>::get();
+        let channel_id = NextChannelId::<Test>::get();
+
+        // deposit balance to second member
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
+
+        let platform_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE);
+        let royalty_pct = Perbill::one();
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+
+        // Issue nft
+        assert_ok!(Content::issue_nft(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            NftIssuanceParameters::<Test> {
+                royalty: Some(royalty_pct),
+                non_channel_owner: Some(COLLABORATOR_MEMBER_ID),
+                ..Default::default()
+            }
+        ));
+
+        // Sell nft
+        assert_ok!(Content::sell_nft(
+            Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
+            video_id,
+            ContentActor::Member(COLLABORATOR_MEMBER_ID),
+            DEFAULT_NFT_PRICE,
+        ));
+
+        assert_ok!(Content::buy_nft(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            video_id,
+            SECOND_MEMBER_ID,
+            DEFAULT_NFT_PRICE,
+        ));
+
+        // DEFAULT_NFT_PRICE * min(100%, 100% - platform %) = DEFAULT_NFT_PRICE - platform_fee
+        assert_eq!(
+            channel_reward_account_balance(channel_id),
+            DEFAULT_NFT_PRICE - platform_fee,
+        );
+    })
+}
+
+#[test]
 fn buy_nft() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
