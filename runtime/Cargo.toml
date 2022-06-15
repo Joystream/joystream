@@ -33,12 +33,18 @@ sp-api = { package = 'sp-api', default-features = false, git = 'https://github.c
 sp-version = { package = 'sp-version', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 sp-staking = { package = 'sp-staking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 sp-application-crypto = { package = 'sp-application-crypto', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
+sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 
 # Frame
 frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 frame-executive = { package = 'frame-executive', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 frame-system-rpc-runtime-api = { package = 'frame-system-rpc-runtime-api', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
+frame-election-provider-support = { package = 'frame-election-provider-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
+pallet-election-provider-support-benchmarking = { package = 'pallet-election-provider-support-benchmarking', default-features = false, optional = true, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
+pallet-election-provider-multi-phase = { package = 'pallet-election-provider-multi-phase', default-features = false, optional = true, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
+pallet-elections-phragmen = { package = 'pallet-elections-phragmen', default-features = false, optional = true, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
+pallet-bags-list = { pacakge = 'pallet-bags-list', default-features = false, optional = true, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 
 # Pallets
 pallet-grandpa = { package = 'pallet-grandpa', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
@@ -113,12 +119,14 @@ std = [
     'sp-session/std',
     'sp-staking/std',
     'sp-application-crypto/std',
+    'sp-io/std',
 
     # Frame
     'frame-support/std',
     'frame-executive/std',
     'frame-system-rpc-runtime-api/std',
     'frame-system/std',
+    'frame-election-provider-support/std',
 
     # Pallets
     'pallet-timestamp/std',
@@ -132,11 +140,14 @@ std = [
     'pallet-authorship/std',
     'pallet-randomness-collective-flip/std',
     'pallet-staking/std',
-#    'pallet-staking-reward-curve/std', // don't have 'std' features
     'pallet-sudo/std',
     'pallet-im-online/std',
     'pallet-offences/std',
     'substrate-utility/std',
+    'pallet-bags-list/std',
+    'pallet-election-provider-support-benchmarking/std',
+    'pallet-election-provider-multi-phase/std',
+    'pallet-elections-phragmen/std',
 
     # Joystream
     'common/std',

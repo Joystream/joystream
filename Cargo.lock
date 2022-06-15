@@ -2362,6 +2362,7 @@ name = "joystream-node-runtime"
 version = "11.20.0"
 dependencies = [
  "frame-benchmarking",
+ "frame-election-provider-support",
  "frame-executive",
  "frame-support",
  "frame-system",
@@ -2375,12 +2376,16 @@ dependencies = [
  "pallet-authority-discovery",
  "pallet-authorship",
  "pallet-babe",
+ "pallet-bags-list",
  "pallet-balances",
  "pallet-blog",
  "pallet-common",
  "pallet-constitution",
  "pallet-content",
  "pallet-council",
+ "pallet-election-provider-multi-phase",
+ "pallet-election-provider-support-benchmarking",
+ "pallet-elections-phragmen",
  "pallet-forum",
  "pallet-grandpa",
  "pallet-im-online",
@@ -3910,6 +3915,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-bags-list"
+version = "4.0.0-dev"
+source = "git+https://github.com/paritytech/substrate.git?rev=6cbe1772bf258793fa9845daa8f43ea0cadee596#6cbe1772bf258793fa9845daa8f43ea0cadee596"
+dependencies = [
+ "frame-election-provider-support",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec 3.1.5",
+ "scale-info",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-balances"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate.git?rev=6cbe1772bf258793fa9845daa8f43ea0cadee596#6cbe1772bf258793fa9845daa8f43ea0cadee596"
@@ -4024,6 +4044,59 @@ dependencies = [
  "sp-arithmetic",
  "sp-core",
  "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-election-provider-multi-phase"
+version = "4.0.0-dev"
+source = "git+https://github.com/paritytech/substrate.git?rev=6cbe1772bf258793fa9845daa8f43ea0cadee596#6cbe1772bf258793fa9845daa8f43ea0cadee596"
+dependencies = [
+ "frame-benchmarking",
+ "frame-election-provider-support",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec 3.1.5",
+ "rand 0.7.3",
+ "scale-info",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-npos-elections",
+ "sp-runtime",
+ "sp-std",
+ "static_assertions",
+ "strum 0.23.0",
+]
+
+[[package]]
+name = "pallet-election-provider-support-benchmarking"
+version = "4.0.0-dev"
+source = "git+https://github.com/paritytech/substrate.git?rev=6cbe1772bf258793fa9845daa8f43ea0cadee596#6cbe1772bf258793fa9845daa8f43ea0cadee596"
+dependencies = [
+ "frame-benchmarking",
+ "frame-election-provider-support",
+ "frame-system",
+ "parity-scale-codec 3.1.5",
+ "sp-npos-elections",
+ "sp-runtime",
+]
+
+[[package]]
+name = "pallet-elections-phragmen"
+version = "5.0.0-dev"
+source = "git+https://github.com/paritytech/substrate.git?rev=6cbe1772bf258793fa9845daa8f43ea0cadee596#6cbe1772bf258793fa9845daa8f43ea0cadee596"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec 3.1.5",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-npos-elections",
  "sp-runtime",
  "sp-std",
 ]
