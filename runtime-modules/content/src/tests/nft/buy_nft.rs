@@ -50,6 +50,7 @@ fn buy_nft_ok_with_royalty_account() {
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
 
         let platform_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE);
+        let royalty_fee = Perbill::from_percent(DEFAULT_ROYALTY).mul_floor(DEFAULT_NFT_PRICE);
         setup_nft_on_sale_scenario();
 
         let balance_pre = channel_reward_account_balance(1u64);
@@ -63,7 +64,7 @@ fn buy_nft_ok_with_royalty_account() {
 
         assert_eq!(
             channel_reward_account_balance(1u64),
-            balance_pre + DEFAULT_NFT_PRICE - platform_fee,
+            balance_pre + DEFAULT_NFT_PRICE - platform_fee - royalty_fee,
         );
     })
 }
