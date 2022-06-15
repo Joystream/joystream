@@ -6,6 +6,7 @@ import { Constructor, ITuple } from '@polkadot/types/types'
 import { MemberId, WorkingGroup, JoyEnum, JoyStructDecorated, BalanceKind, PostId, AccountId } from './common'
 import { NftLimitPeriod } from './content'
 import { ApplicationId, OpeningId, StakePolicy, WorkerId } from './working-group'
+import { UpdateChannelPayoutsParameters } from './content'
 
 export type IVotingResults = {
   abstensions: u32
@@ -303,6 +304,7 @@ export class ProposalDetails extends JoyEnum({
   UnlockBlogPost: PostId,
   VetoProposal: ProposalId,
   UpdateGlobalNftLimit,
+  UpdateChannelPayouts: UpdateChannelPayoutsParameters,
 } as const) {}
 
 // Discussions

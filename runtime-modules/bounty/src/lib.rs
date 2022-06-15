@@ -129,7 +129,7 @@ pub trait Trait:
     type WeightInfo: WeightInfo;
 
     /// Provides an access for the council budget.
-    type CouncilBudgetManager: CouncilBudgetManager<BalanceOf<Self>>;
+    type CouncilBudgetManager: CouncilBudgetManager<Self::AccountId, BalanceOf<Self>>;
 
     /// Provides stake logic implementation.
     type StakingHandler: StakingHandler<
@@ -735,7 +735,6 @@ decl_error! {
 
         /// Invalid Creator Actor for Bounty specified
         InvalidCreatorActorSpecified,
-
     }
 }
 
@@ -1102,6 +1101,8 @@ decl_module! {
 
             let entry = Self::ensure_work_entry_exists(&bounty_id, &entry_id)?;
 
+            Self::ensure_work_entry_ownership(&entry, &member_id)?;
+
             //
             // == MUTATION SAFE ==
             //
@@ -1138,7 +1139,9 @@ decl_module! {
 
             Self::ensure_bounty_stage(current_bounty_stage, BountyStage::WorkSubmission)?;
 
-            Self::ensure_work_entry_exists(&bounty_id, &entry_id)?;
+            let entry = Self::ensure_work_entry_exists(&bounty_id, &entry_id)?;
+
+            Self::ensure_work_entry_ownership(&entry, &member_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1272,6 +1275,8 @@ decl_module! {
 
             let entry = Self::ensure_work_entry_exists(&bounty_id, &entry_id)?;
 
+            Self::ensure_work_entry_ownership(&entry, &member_id)?;
+
             //
             // == MUTATION SAFE ==
             //
@@ -1386,10 +1391,7 @@ decl_module! {
             T::Membership::ensure_member_controller_account_origin(origin, entrant_id)?;
 
             let entry = Self::ensure_work_entry_exists(&bounty_id, &entry_id)?;
-            ensure!(
-                entry.member_id == entrant_id,
-                Error::<T>::InvalidEntrantWorkerSpecified,
-            );
+            Self::ensure_work_entry_ownership(&entry, &entrant_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1726,6 +1728,19 @@ impl<T: Trait> Module<T> {
         let entry = Self::entries(bounty_id, entry_id);
 
         Ok(entry)
+    }
+
+    // Ensures entry record ownership for a member.
+    fn ensure_work_entry_ownership(
+        entry: &Entry<T>,
+        owner_member_id: &MemberId<T>,
+    ) -> DispatchResult {
+        ensure!(
+            entry.member_id == *owner_member_id,
+            Error::<T>::InvalidEntrantWorkerSpecified
+        );
+
+        Ok(())
     }
 
     // Unlocks the work entry stake.

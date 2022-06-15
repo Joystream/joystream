@@ -4,7 +4,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use sp_runtime::{
-    traits::{IdentifyAccount, Verify},
+    traits::{Convert, IdentifyAccount, Verify},
     MultiSignature,
 };
 
@@ -98,6 +98,18 @@ pub type DistributionBucketOperatorId = u64;
 
 /// Privilege level of a channel in the content directory.
 pub type ChannelPrivilegeLevel = u8;
+
+/// Represents creator token id
+pub type TokenId = u64;
+
+/// BlockNumber to Balance converter
+pub struct BlockNumberToBalance;
+
+impl Convert<BlockNumber, Balance> for BlockNumberToBalance {
+    fn convert(block: BlockNumber) -> Balance {
+        block as Balance
+    }
+}
 
 /// App-specific crypto used for reporting equivocation/misbehavior in BABE and
 /// GRANDPA. Any rewards for misbehavior reporting will be paid out to this

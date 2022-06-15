@@ -195,11 +195,40 @@ pub enum ChannelActionPermission {
     /// Allows updating channel transfer status through `update_channel_transfer_status` tx
     TransferChannel,
     /// Allows claiming channel reward through `claim_channel_reward` tx
-    // TODO: or `claim_and_withdraw_channel_reward` tx (provided `WithdrawFromChannelBalance` permission is also granted)
+    // or `claim_and_withdraw_channel_reward` tx (provided `WithdrawFromChannelBalance` permission is also granted)
     ClaimChannelReward,
-    // TODO: Allows withdrawing channel balance through `withdraw_from_channel_balance` tx
+    // Allows the agent to withdraw channel balance through `withdraw_from_channel_balance` tx
     // or `claim_and_withdraw_channel_reward` tx (provided `ClaimChannelReward` permission is also granted)
+    // into AGENT'S ACCOUNT(!)
     WithdrawFromChannelBalance,
+    /// Allows issuing channel's creator token through `issue_creator_token` extrinsic.
+    IssueCreatorToken,
+    /// Allows the agent to claim creator token patronage into AGENT'S MEMBERSHIP(!).
+    /// Affected extrinsics:
+    /// - `claim_creator_token_patronage_credit`
+    ClaimCreatorTokenPatronage,
+    /// Allows initializing and managing channel's creator token sale.
+    /// Included actions:
+    /// - `init_creator_token_sale` (CRT source: AGENT'S MEMBERSHIP, JOY dest: AGENT'S ACCOUNT / None)
+    /// - `update_upcoming_creator_token_sale` (only if initialized by AGENT in question)
+    /// - `finalize_creator_token_sale` (only if initialized by AGENT in question)
+    InitAndManageCreatorTokenSale,
+    /// Allows performing creator token issuer transfer (CRT source: AGENT'S MEMBERSHIP) through:
+    /// - `creator_token_issuer_transfer`
+    CreatorTokenIssuerTransfer,
+    /// Allows changing creator token transfer policy to permissionless through:
+    /// - `make_creator_token_permissionless`
+    MakeCreatorTokenPermissionless,
+    /// Allows reducing creator token patronage rate through:
+    /// - `reduce_creator_token_patronage_rate_to`
+    ReduceCreatorTokenPatronageRate,
+    /// Allows issuing and finalizing revenue splits. Affected extrinsics:
+    /// - `issue_revenue_split`
+    /// - `finalize_revenue_split`
+    ManageRevenueSplits,
+    /// Allows deissuing a creator token (provided it has 0 supply)
+    /// - `deissue_creator_token`
+    DeissueCreatorToken,
 }
 
 pub type ChannelAgentPermissions = BTreeSet<ChannelActionPermission>;
@@ -214,6 +243,7 @@ pub struct ChannelRecord<
     ChannelPrivilegeLevel,
     DataObjectId: Ord,
     BlockNumber: BaseArithmetic + Copy,
+    TokenId,
 > {
     /// The owner of a channel
     pub owner: ChannelOwner<MemberId, CuratorGroupId>,
@@ -222,7 +252,7 @@ pub struct ChannelRecord<
     /// Map from collaborator's MemberId to collaborator's ChannelAgentPermissions
     pub collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
     /// Cumulative cashout
-    pub cumulative_payout_earned: Balance,
+    pub cumulative_reward_claimed: Balance,
     /// Privilege level (curators will have different moderation permissions w.r.t. this channel depending on this value)
     pub privilege_level: ChannelPrivilegeLevel,
     /// List of channel features that have been paused by a curator
@@ -239,6 +269,8 @@ pub struct ChannelRecord<
     pub daily_nft_counter: NftCounter<BlockNumber>,
     /// Channel weekly NFT counter.
     pub weekly_nft_counter: NftCounter<BlockNumber>,
+    /// Id of the channel's creator token (if issued)
+    pub creator_token_id: Option<TokenId>,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -298,6 +330,7 @@ impl<
         ChannelPrivilegeLevel,
         DataObjectId: Ord,
         BlockNumber: BaseArithmetic + Copy,
+        TokenId: Clone,
     >
     ChannelRecord<
         MemberId,
@@ -306,14 +339,15 @@ impl<
         ChannelPrivilegeLevel,
         DataObjectId,
         BlockNumber,
+        TokenId,
     >
 {
     pub fn ensure_feature_not_paused<T: Trait>(
         &self,
-        channel_feautre: PausableChannelFeature,
+        channel_feature: PausableChannelFeature,
     ) -> DispatchResult {
         ensure!(
-            !self.paused_features.contains(&channel_feautre),
+            !self.paused_features.contains(&channel_feature),
             Error::<T>::ChannelFeaturePaused
         );
         Ok(())
@@ -350,6 +384,20 @@ impl<
         self.weekly_nft_counter
             .update_for_current_period(current_block, self.weekly_nft_limit.block_number_period);
     }
+
+    pub fn ensure_creator_token_issued<T: Trait>(&self) -> Result<TokenId, DispatchError> {
+        self.creator_token_id
+            .clone()
+            .ok_or_else(|| Error::<T>::CreatorTokenNotIssued.into())
+    }
+
+    pub fn ensure_creator_token_not_issued<T: Trait>(&self) -> DispatchResult {
+        ensure!(
+            self.creator_token_id.is_none(),
+            Error::<T>::CreatorTokenAlreadyIssued
+        );
+        Ok(())
+    }
 }
 
 // Channel alias type for simplification.
@@ -360,6 +408,7 @@ pub type Channel<T> = ChannelRecord<
     <T as Trait>::ChannelPrivilegeLevel,
     DataObjectId<T>,
     <T as frame_system::Trait>::BlockNumber,
+    <T as project_token::Trait>::TokenId,
 >;
 
 /// A request to buy a channel by a new ChannelOwner.
@@ -563,7 +612,7 @@ pub type ProofElement<T> = ProofElementRecord<<T as frame_system::Trait>::Hash, 
 #[derive(Encode, Decode, Default, Copy, Clone, PartialEq, Eq, Debug)]
 pub struct PullPaymentElement<ChannelId, Balance, Hash> {
     pub channel_id: ChannelId,
-    pub cumulative_payout_claimed: Balance,
+    pub cumulative_reward_earned: Balance,
     pub reason: Hash,
 }
 
@@ -601,6 +650,48 @@ impl<ChannelId: Clone, OwnedNft: Clone, DataObjectId: Ord>
         self.nft_status = None;
     }
 }
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
+pub struct ChannelPayoutsPayloadParametersRecord<AccountId, Balance> {
+    pub uploader_account: AccountId,
+    pub object_creation_params: DataObjectCreationParameters,
+    pub expected_data_size_fee: Balance,
+    pub expected_data_object_state_bloat_bond: Balance,
+}
+
+pub type ChannelPayoutsPayloadParameters<T> =
+    ChannelPayoutsPayloadParametersRecord<<T as frame_system::Trait>::AccountId, BalanceOf<T>>;
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
+pub struct UpdateChannelPayoutsParametersRecord<ChannelPayoutsPayloadParameters, Balance, Hash> {
+    pub commitment: Option<Hash>,
+    pub payload: Option<ChannelPayoutsPayloadParameters>,
+    pub min_cashout_allowed: Option<Balance>,
+    pub max_cashout_allowed: Option<Balance>,
+    pub channel_cashouts_enabled: Option<bool>,
+}
+
+impl<ChannelPayoutsPayloadParameters, Balance, Hash> Default
+    for UpdateChannelPayoutsParametersRecord<ChannelPayoutsPayloadParameters, Balance, Hash>
+{
+    fn default() -> Self {
+        Self {
+            commitment: None,
+            payload: None,
+            min_cashout_allowed: None,
+            max_cashout_allowed: None,
+            channel_cashouts_enabled: None,
+        }
+    }
+}
+
+pub type UpdateChannelPayoutsParameters<T> = UpdateChannelPayoutsParametersRecord<
+    ChannelPayoutsPayloadParameters<T>,
+    BalanceOf<T>,
+    <T as frame_system::Trait>::Hash,
+>;
 
 /// Operations with local pallet account.
 pub trait ModuleAccount<T: Trait> {
@@ -650,11 +741,6 @@ pub trait ModuleAccount<T: Trait> {
     fn usable_balance() -> BalanceOf<T> {
         <Balances<T>>::usable_balance(&Self::module_account_id())
     }
-
-    /// Mints the reward into the destination account provided
-    fn transfer_reward(dest_account_id: &T::AccountId, amount: BalanceOf<T>) {
-        let _ = <Balances<T> as Currency<T::AccountId>>::deposit_creating(dest_account_id, amount);
-    }
 }
 
 /// Implementation of the ModuleAccountHandler.
@@ -677,6 +763,11 @@ pub type BalanceOf<T> = <Balances<T> as Currency<<T as frame_system::Trait>::Acc
 pub type DynBagId<T> =
     DynamicBagIdType<<T as common::MembershipTypes>::MemberId, <T as storage::Trait>::ChannelId>;
 pub type Storage<T> = storage::Module<T>;
+pub type ChannelRewardClaimInfo<T> = (
+    Channel<T>,
+    <T as frame_system::Trait>::AccountId,
+    BalanceOf<T>,
+);
 
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;

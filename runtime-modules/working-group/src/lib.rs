@@ -1660,6 +1660,12 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupAuthenticator<
             .ok()
     }
 
+    fn get_worker_member_id(worker_id: &WorkerId<T>) -> Option<T::MemberId> {
+        checks::ensure_worker_exists::<T, I>(worker_id)
+            .map(|worker| worker.member_id)
+            .ok()
+    }
+
     fn is_leader_account_id(account_id: &T::AccountId) -> bool {
         checks::ensure_is_lead_account::<T, I>(account_id.clone()).is_ok()
     }
@@ -1681,8 +1687,8 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupAuthenticator<
     }
 }
 
-impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupBudgetHandler<T>
-    for Module<T, I>
+impl<T: Trait<I>, I: Instance>
+    common::working_group::WorkingGroupBudgetHandler<T::AccountId, BalanceOf<T>> for Module<T, I>
 {
     fn get_budget() -> BalanceOf<T> {
         Self::budget()
@@ -1690,6 +1696,23 @@ impl<T: Trait<I>, I: Instance> common::working_group::WorkingGroupBudgetHandler<
 
     fn set_budget(new_value: BalanceOf<T>) {
         Self::set_working_group_budget(new_value);
+    }
+
+    fn try_withdraw(account_id: &T::AccountId, amount: BalanceOf<T>) -> DispatchResult {
+        ensure!(
+            Self::get_budget() >= amount,
+            Error::<T, I>::InsufficientBalanceForTransfer
+        );
+
+        let _ = Balances::<T>::deposit_creating(account_id, amount);
+
+        let current_budget = Self::get_budget();
+        let new_budget = current_budget.saturating_sub(amount);
+        <Self as common::working_group::WorkingGroupBudgetHandler<T::AccountId, BalanceOf<T>>>::set_budget(
+            new_budget,
+        );
+
+        Ok(())
     }
 }
 

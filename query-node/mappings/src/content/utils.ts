@@ -28,6 +28,11 @@ import {
   DataObjectTypeChannelCoverPhoto,
   DataObjectTypeVideoMedia,
   DataObjectTypeVideoThumbnail,
+  ContentActorLead,
+  ContentActorCurator,
+  ContentActorMember,
+  ContentActor as ContentActorVariant,
+  Curator,
 } from 'query-node/dist/model'
 // Joystream types
 import { ContentActor, StorageAssets } from '@joystream/types/augment'
@@ -62,10 +67,8 @@ const ASSET_TYPES = {
   ],
 } as const
 
-// all relations that need to be loaded for updating active video counters when deleting content
-export const videoRelationsForCountersBare = ['channel', 'channel.category', 'category']
 // all relations that need to be loaded for full evalution of video active status to work
-export const videoRelationsForCounters = [...videoRelationsForCountersBare, 'thumbnailPhoto', 'media']
+export const videoRelationsForCounters = ['channel', 'channel.category', 'category', 'thumbnailPhoto', 'media']
 
 async function processChannelAssets(
   { event, store }: EventContext & StoreContext,
@@ -254,7 +257,7 @@ async function processVideoMediaMetadata(
   return videoMedia
 }
 
-export async function convertContentActorToChannelOwner(
+export async function convertContentActorToChannelOrNftOwner(
   store: DatabaseManager,
   contentActor: ContentActor
 ): Promise<{
@@ -294,6 +297,50 @@ export async function convertContentActorToChannelOwner(
   }
 
   // TODO: contentActor.isLead
+
+  logger.error('Not implemented ContentActor type', { contentActor: contentActor.toString() })
+  throw new Error('Not-implemented ContentActor type used')
+}
+
+export async function convertContentActor(
+  store: DatabaseManager,
+  contentActor: ContentActor
+): Promise<typeof ContentActorVariant> {
+  if (contentActor.isMember) {
+    const memberId = contentActor.asMember.toNumber()
+    const member = await store.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
+
+    // ensure member exists
+    if (!member) {
+      return inconsistentState(`Actor is non-existing member`, memberId)
+    }
+
+    const result = new ContentActorMember()
+    result.member = member
+
+    return result
+  }
+
+  if (contentActor.isCurator) {
+    const curatorId = contentActor.asCurator[1].toNumber()
+    const curator = await store.get(Curator, {
+      where: { id: curatorId.toString() } as FindConditions<Curator>,
+    })
+
+    // ensure curator group exists
+    if (!curator) {
+      return inconsistentState('Actor is non-existing curator group', curatorId)
+    }
+
+    const result = new ContentActorCurator()
+    result.curator = curator
+
+    return result
+  }
+
+  if (contentActor.isLead) {
+    return new ContentActorLead()
+  }
 
   logger.error('Not implemented ContentActor type', { contentActor: contentActor.toString() })
   throw new Error('Not-implemented ContentActor type used')
@@ -492,11 +539,8 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
         id: dataObject.id,
       },
     })),
-    relations: [...videoAssets, ...videoRelationsForCountersBare],
+    relations: [...videoRelationsForCounters],
   })
-
-  // remember if video is fully active before update
-  const wasFullyActive = video && getVideoActiveStatus(video)
 
   if (channel) {
     channelAssets.forEach((assetName) => {
@@ -521,9 +565,6 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
     })
     await store.save<Video>(video)
 
-    // update video active counters
-    await updateVideoActiveCounters(store, wasFullyActive, undefined)
-
     // emit log event
     logger.info('Content has been disconnected from Video', {
       videoId: video.id.toString(),
@@ -533,122 +574,4 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
 
   // remove data object
   await store.remove<StorageDataObject>(dataObject)
-}
-
-export interface IVideoActiveStatus {
-  isFullyActive: boolean
-  video: Video
-  videoCategory: VideoCategory | undefined
-  channel: Channel
-  channelCategory: ChannelCategory | undefined
-}
-
-export function getVideoActiveStatus(video: Video): IVideoActiveStatus {
-  const isFullyActive =
-    !!video.isPublic && !video.isCensored && !!video.thumbnailPhoto?.isAccepted && !!video.media?.isAccepted
-
-  const videoCategory = video.category
-  const channel = video.channel
-  const channelCategory = channel.category
-
-  return {
-    isFullyActive,
-    video,
-    videoCategory,
-    channel,
-    channelCategory,
-  }
-}
-
-export async function updateVideoActiveCounters(
-  store: DatabaseManager,
-  initialActiveStatus: IVideoActiveStatus | null | undefined,
-  activeStatus: IVideoActiveStatus | null | undefined
-): Promise<void> {
-  async function updateSingleEntity<Entity extends VideoCategory | Channel>(
-    entity: Entity,
-    counterChange: number
-  ): Promise<void> {
-    entity.activeVideosCounter += counterChange
-
-    await store.save(entity)
-  }
-
-  async function reflectUpdate<Entity extends VideoCategory | Channel>(
-    oldEntity: Entity | undefined,
-    newEntity: Entity | undefined,
-    initFullyActive: boolean,
-    nowFullyActive: boolean
-  ): Promise<void> {
-    if (!oldEntity && !newEntity) {
-      return
-    }
-
-    const didEntityChange = oldEntity?.id.toString() !== newEntity?.id.toString()
-    const didFullyActiveChange = initFullyActive !== nowFullyActive
-
-    // escape if nothing changed
-    if (!didEntityChange && !didFullyActiveChange) {
-      return
-    }
-
-    if (!didEntityChange) {
-      // && didFullyActiveChange
-      const counterChange = nowFullyActive ? 1 : -1
-
-      await updateSingleEntity(newEntity as Entity, counterChange)
-
-      return
-    }
-
-    // didEntityChange === true
-
-    if (oldEntity && initFullyActive) {
-      // if video was fully active before, prepare to decrease counter
-      const counterChange = -1
-
-      await updateSingleEntity(oldEntity, counterChange)
-    }
-
-    if (newEntity && nowFullyActive) {
-      // if video is fully active now, prepare to increase counter
-      const counterChange = 1
-
-      await updateSingleEntity(newEntity, counterChange)
-    }
-  }
-
-  const items = ['videoCategory', 'channel', 'channelCategory']
-  const promises = items.map(
-    async (item) =>
-      await reflectUpdate(
-        initialActiveStatus?.[item],
-        activeStatus?.[item],
-        initialActiveStatus?.isFullyActive || false,
-        activeStatus?.isFullyActive || false
-      )
-  )
-  await Promise.all(promises)
-}
-
-export async function updateChannelCategoryVideoActiveCounter(
-  store: DatabaseManager,
-  originalCategory: ChannelCategory | undefined,
-  newCategory: ChannelCategory | undefined,
-  videosCount: number
-): Promise<void> {
-  // escape if no counter change needed
-  if (!videosCount || originalCategory === newCategory) {
-    return
-  }
-
-  if (originalCategory) {
-    originalCategory.activeVideosCounter -= videosCount
-    await store.save<ChannelCategory>(originalCategory)
-  }
-
-  if (newCategory) {
-    newCategory.activeVideosCounter += videosCount
-    await store.save<ChannelCategory>(newCategory)
-  }
 }

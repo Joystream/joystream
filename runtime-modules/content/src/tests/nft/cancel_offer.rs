@@ -1,11 +1,8 @@
 #![cfg(test)]
-use crate::tests::fixtures::{
-    create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
-    increase_account_balance_helper,
-};
+use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_noop, assert_ok};
 
 #[test]
 fn cancel_offer() {
@@ -225,5 +222,27 @@ fn cancel_offer_not_in_auction_state() {
 
         // Failure checked
         assert_err!(cancel_offer_result, Error::<Test>::PendingOfferDoesNotExist);
+    })
+}
+
+#[test]
+fn cancel_nft_offer_fails_during_channel_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::default()
+            .with_video_nft_status(NftTransactionalStatusType::Offer)
+            .setup();
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(SECOND_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::cancel_offer(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                1u64,
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
+        );
     })
 }

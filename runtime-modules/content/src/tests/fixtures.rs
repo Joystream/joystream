@@ -4,13 +4,20 @@ use derive_new::new;
 use super::curators;
 use super::mock::*;
 use crate::*;
-use frame_support::assert_ok;
+use common::council::CouncilBudgetManager;
 use frame_support::traits::Currency;
+use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
+use project_token::types::TransferPolicyParamsOf;
+use project_token::types::{
+    PaymentWithVestingOf, TokenAllocationOf, TokenIssuanceParametersOf, Transfers,
+};
+use sp_runtime::Permill;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::FromIterator;
 use sp_std::iter::{IntoIterator, Iterator};
 use storage::DynamicBagType;
+use storage::{ModuleAccount as StorageModuleAccount, StorageTreasury};
 use strum::IntoEnumIterator;
 
 // Index which indentifies the item in the commitment set we want the proof for
@@ -143,7 +150,7 @@ impl CreateChannelFixture {
     ) -> Self {
         Self {
             params: ChannelCreationParameters::<Test> {
-                collaborators: collaborators,
+                collaborators,
                 ..self.params
             },
             ..self
@@ -207,7 +214,7 @@ impl CreateChannelFixture {
                         owner: self.channel_owner.clone(),
                         collaborators: self.params.collaborators.clone(),
                         num_videos: Zero::zero(),
-                        cumulative_payout_earned: Zero::zero(),
+                        cumulative_reward_claimed: Zero::zero(),
                         privilege_level: Zero::zero(),
                         paused_features: BTreeSet::new(),
                         data_objects: BTreeSet::from_iter(beg_obj_id..end_obj_id),
@@ -216,6 +223,7 @@ impl CreateChannelFixture {
                         weekly_nft_limit: DefaultChannelWeeklyNftLimit::get(),
                         daily_nft_counter: Default::default(),
                         weekly_nft_counter: Default::default(),
+                        creator_token_id: None,
                     },
                     self.params.clone(),
                 ))
@@ -285,6 +293,19 @@ impl CreateVideoFixture {
         }
     }
 
+    pub fn with_nft_in_sale(self, nft_price: u64) -> Self {
+        Self {
+            params: VideoCreationParameters::<Test> {
+                auto_issue_nft: Some(NftIssuanceParameters::<Test> {
+                    init_transactional_status: InitTransactionalStatus::<Test>::BuyNow(nft_price),
+                    ..Default::default()
+                }),
+                ..self.params
+            },
+            ..self
+        }
+    }
+
     pub fn with_sender(self, sender: AccountId) -> Self {
         Self { sender, ..self }
     }
@@ -325,6 +346,16 @@ impl CreateVideoFixture {
             },
             ..self
         }
+    }
+
+    pub fn call(self) {
+        let origin = Origin::signed(self.sender.clone());
+        assert_ok!(Content::create_video(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.params.clone(),
+        ));
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -810,6 +841,10 @@ impl UpdateVideoFixture {
                 assert!(!self.params.assets_to_remove.iter().any(|obj_id| {
                     storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, obj_id)
                 }));
+
+                if self.params.auto_issue_nft.is_some() {
+                    assert!(video_post.nft_status.is_some())
+                }
             }
             Err(err) => {
                 assert_eq!(video_pre, video_post);
@@ -1617,123 +1652,177 @@ impl VideoDeletion for DeleteVideoAsModeratorFixture {
     }
 }
 
-pub struct UpdateMaximumRewardFixture {
-    sender: AccountId,
-    new_amount: BalanceOf<Test>,
+pub struct UpdateChannelPayoutsFixture {
+    origin: Origin,
+    params: UpdateChannelPayoutsParameters<Test>,
 }
 
-impl UpdateMaximumRewardFixture {
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UpdateChannelPayoutsFixtureStateSnapshot {
+    pub commitment: HashOutput,
+    pub min_cashout_allowed: BalanceOf<Test>,
+    pub max_cashout_allowed: BalanceOf<Test>,
+    pub cashouts_enabled: bool,
+    pub uploader_account_balance: BalanceOf<Test>,
+    pub next_object_id: DataObjectId<Test>,
+}
+
+impl UpdateChannelPayoutsFixture {
     pub fn default() -> Self {
         Self {
-            sender: LEAD_ACCOUNT_ID,
-            new_amount: BalanceOf::<Test>::zero(),
+            origin: Origin::root(),
+            params: UpdateChannelPayoutsParameters::<Test>::default(),
         }
     }
 
-    pub fn with_sender(self, sender: AccountId) -> Self {
-        Self { sender, ..self }
+    pub fn with_origin(self, origin: Origin) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_commitment(self, commitment: Option<HashOutput>) -> Self {
+        let params = UpdateChannelPayoutsParameters::<Test> {
+            commitment,
+            ..self.params
+        };
+        Self { params, ..self }
+    }
+
+    pub fn with_payload(self, payload: Option<ChannelPayoutsPayloadParameters<Test>>) -> Self {
+        let params = UpdateChannelPayoutsParameters::<Test> {
+            payload,
+            ..self.params
+        };
+        Self { params, ..self }
+    }
+
+    pub fn with_min_cashout_allowed(self, min_cashout_allowed: Option<BalanceOf<Test>>) -> Self {
+        let params = UpdateChannelPayoutsParameters::<Test> {
+            min_cashout_allowed,
+            ..self.params
+        };
+        Self { params, ..self }
+    }
+
+    pub fn with_max_cashout_allowed(self, max_cashout_allowed: Option<BalanceOf<Test>>) -> Self {
+        let params = UpdateChannelPayoutsParameters::<Test> {
+            max_cashout_allowed,
+            ..self.params
+        };
+        Self { params, ..self }
+    }
+
+    pub fn with_channel_cashouts_enabled(self, channel_cashouts_enabled: Option<bool>) -> Self {
+        let params = UpdateChannelPayoutsParameters::<Test> {
+            channel_cashouts_enabled,
+            ..self.params
+        };
+        Self { params, ..self }
+    }
+
+    fn get_state_snapshot(&self) -> UpdateChannelPayoutsFixtureStateSnapshot {
+        UpdateChannelPayoutsFixtureStateSnapshot {
+            commitment: Content::commitment(),
+            min_cashout_allowed: Content::min_cashout_allowed(),
+            max_cashout_allowed: Content::max_cashout_allowed(),
+            cashouts_enabled: Content::channel_cashouts_enabled(),
+            uploader_account_balance: self
+                .params
+                .payload
+                .as_ref()
+                .map_or(0, |p| Balances::<Test>::usable_balance(p.uploader_account)),
+            next_object_id: storage::NextDataObjectId::<Test>::get(),
+        }
+    }
+
+    fn verify_success_state(
+        &self,
+        snapshot_pre: &UpdateChannelPayoutsFixtureStateSnapshot,
+        snapshot_post: &UpdateChannelPayoutsFixtureStateSnapshot,
+    ) {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::content(RawEvent::ChannelPayoutsUpdated(
+                self.params.clone(),
+                self.params
+                    .payload
+                    .as_ref()
+                    .map(|_| snapshot_pre.next_object_id)
+            ))
+        );
+        if let Some(commitment) = self.params.commitment {
+            assert_eq!(snapshot_post.commitment, commitment);
+        } else {
+            assert_eq!(snapshot_post.commitment, snapshot_pre.commitment);
+        }
+
+        if let Some(min_cashout_allowed) = self.params.min_cashout_allowed {
+            assert_eq!(snapshot_post.min_cashout_allowed, min_cashout_allowed);
+        } else {
+            assert_eq!(
+                snapshot_post.min_cashout_allowed,
+                snapshot_pre.min_cashout_allowed
+            );
+        }
+
+        if let Some(max_cashout_allowed) = self.params.max_cashout_allowed {
+            assert_eq!(snapshot_post.max_cashout_allowed, max_cashout_allowed);
+        } else {
+            assert_eq!(
+                snapshot_post.max_cashout_allowed,
+                snapshot_pre.max_cashout_allowed
+            );
+        }
+
+        if let Some(cashouts_enabled) = self.params.channel_cashouts_enabled {
+            assert_eq!(snapshot_post.cashouts_enabled, cashouts_enabled);
+        } else {
+            assert_eq!(
+                snapshot_post.cashouts_enabled,
+                snapshot_pre.cashouts_enabled
+            );
+        }
+
+        if self.params.payload.is_some() {
+            assert_eq!(
+                snapshot_post.next_object_id,
+                snapshot_pre.next_object_id.saturating_add(One::one())
+            );
+            assert_eq!(
+                snapshot_post.uploader_account_balance,
+                snapshot_pre
+                    .uploader_account_balance
+                    .saturating_sub(Storage::<Test>::data_object_state_bloat_bond_value())
+            );
+        } else {
+            assert_eq!(snapshot_post.next_object_id, snapshot_pre.next_object_id);
+            assert_eq!(
+                snapshot_post.uploader_account_balance,
+                snapshot_pre.uploader_account_balance
+            );
+        }
+    }
+
+    fn verify_error_state(
+        &self,
+        snapshot_pre: &UpdateChannelPayoutsFixtureStateSnapshot,
+        snapshot_post: &UpdateChannelPayoutsFixtureStateSnapshot,
+    ) {
+        assert_eq!(snapshot_post, snapshot_pre);
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender.clone());
-        let max_reward_pre = Content::max_reward_allowed();
+        let snapshot_pre = self.get_state_snapshot();
 
-        let actual_result = Content::update_max_reward_allowed(origin, self.new_amount.clone());
+        let actual_result =
+            Content::update_channel_payouts(self.origin.clone(), self.params.clone());
 
-        let max_reward_post = Content::max_reward_allowed();
-
-        assert_eq!(actual_result, expected_result);
-        if actual_result.is_ok() {
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::MaxRewardUpdated(self.new_amount.clone()))
-            );
-            assert_eq!(max_reward_post, self.new_amount);
-        } else {
-            assert_eq!(max_reward_post, max_reward_pre);
-        }
-    }
-}
-
-pub struct UpdateMinCashoutFixture {
-    sender: AccountId,
-    new_amount: BalanceOf<Test>,
-}
-
-impl UpdateMinCashoutFixture {
-    pub fn default() -> Self {
-        Self {
-            sender: LEAD_ACCOUNT_ID,
-            new_amount: BalanceOf::<Test>::zero(),
-        }
-    }
-
-    pub fn with_sender(self, sender: AccountId) -> Self {
-        Self { sender, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender.clone());
-        let min_cashout_pre = Content::min_cashout_allowed();
-
-        let actual_result = Content::update_min_cashout_allowed(origin, self.new_amount.clone());
-
-        let min_cashout_post = Content::min_cashout_allowed();
+        let snapshot_post = self.get_state_snapshot();
 
         assert_eq!(actual_result, expected_result);
         if actual_result.is_ok() {
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::MinCashoutUpdated(self.new_amount.clone()))
-            );
-            assert_eq!(min_cashout_post, self.new_amount);
+            self.verify_success_state(&snapshot_pre, &snapshot_post);
         } else {
-            assert_eq!(min_cashout_post, min_cashout_pre);
-        }
-    }
-}
-
-pub struct UpdateCommitmentValueFixture {
-    sender: AccountId,
-    new_commitment: HashOutput,
-}
-
-impl UpdateCommitmentValueFixture {
-    pub fn default() -> Self {
-        Self {
-            sender: LEAD_ACCOUNT_ID,
-            new_commitment: Hashing::hash_of(&PullPayment::<Test>::default()),
-        }
-    }
-
-    pub fn with_sender(self, sender: AccountId) -> Self {
-        Self { sender, ..self }
-    }
-
-    pub fn with_commit(self, new_commitment: HashOutput) -> Self {
-        Self {
-            new_commitment,
-            ..self
-        }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender.clone());
-        let commitment_pre = Content::commitment();
-
-        let actual_result = Content::update_commitment(origin, self.new_commitment.clone());
-
-        let commitment_post = Content::commitment();
-
-        assert_eq!(actual_result, expected_result);
-        if actual_result.is_ok() {
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::CommitmentUpdated(self.new_commitment))
-            );
-            assert_eq!(commitment_post, self.new_commitment);
-        } else {
-            assert_eq!(commitment_post, commitment_pre);
+            self.verify_error_state(&snapshot_pre, &snapshot_post);
         }
     }
 }
@@ -1753,7 +1842,7 @@ impl ClaimChannelRewardFixture {
             payments: create_some_pull_payments_helper(),
             item: PullPayment::<Test> {
                 channel_id: ChannelId::one(),
-                cumulative_payout_claimed: BalanceOf::<Test>::from(DEFAULT_PAYOUT_CLAIMED),
+                cumulative_reward_earned: BalanceOf::<Test>::from(DEFAULT_PAYOUT_CLAIMED),
                 reason: Hashing::hash_of(&b"reason".to_vec()),
             },
         }
@@ -1777,10 +1866,9 @@ impl ClaimChannelRewardFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
-        let reward_account = ContentTreasury::<Test>::account_for_channel(self.item.channel_id);
-        let balance_pre = Balances::<Test>::usable_balance(&reward_account);
-        let payout_earned_pre =
-            Content::channel_by_id(self.item.channel_id).cumulative_payout_earned;
+        let channel_pre = Content::channel_by_id(self.item.channel_id);
+        let channel_balance_pre = channel_reward_account_balance(self.item.channel_id);
+        let council_budget_pre = <Test as Trait>::CouncilBudgetManager::get_budget();
 
         let proof = if self.payments.is_empty() {
             vec![]
@@ -1791,32 +1879,829 @@ impl ClaimChannelRewardFixture {
         let actual_result =
             Content::claim_channel_reward(origin, self.actor.clone(), proof, self.item.clone());
 
-        let balance_post = Balances::<Test>::usable_balance(&reward_account);
-        let payout_earned_post =
-            Content::channel_by_id(self.item.channel_id).cumulative_payout_earned;
+        let channel_post = Content::channel_by_id(self.item.channel_id);
+        let channel_balance_post = channel_reward_account_balance(self.item.channel_id);
+        let council_budget_post = <Test as Trait>::CouncilBudgetManager::get_budget();
 
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            let cashout = payout_earned_post.saturating_sub(payout_earned_pre);
-            assert_eq!(balance_post.saturating_sub(balance_pre), cashout);
-            assert_eq!(payout_earned_post, self.item.cumulative_payout_claimed);
+            let cashout = self
+                .item
+                .cumulative_reward_earned
+                .saturating_sub(channel_pre.cumulative_reward_claimed);
+            assert_eq!(
+                channel_balance_post.saturating_sub(channel_balance_pre),
+                cashout
+            );
+            assert_eq!(
+                channel_post.cumulative_reward_claimed,
+                self.item.cumulative_reward_earned
+            );
+            assert_eq!(
+                council_budget_post,
+                council_budget_pre.saturating_sub(cashout)
+            );
             assert_eq!(
                 System::events().last().unwrap().event,
                 MetaEvent::content(RawEvent::ChannelRewardUpdated(
-                    self.item.cumulative_payout_claimed,
+                    self.item.cumulative_reward_earned,
                     self.item.channel_id
                 ))
             );
         } else {
-            assert_eq!(balance_post, balance_pre);
-            assert_eq!(payout_earned_post, payout_earned_pre);
+            assert_eq!(council_budget_post, council_budget_pre);
+            assert_eq!(channel_balance_post, channel_balance_pre);
+            assert_eq!(channel_post, channel_pre);
+        }
+    }
+}
+
+pub struct WithdrawFromChannelBalanceFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    amount: BalanceOf<Test>,
+    destination: AccountId,
+}
+
+impl WithdrawFromChannelBalanceFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+            amount: DEFAULT_PAYOUT_EARNED,
+            destination: DEFAULT_CHANNEL_REWARD_WITHDRAWAL_ACCOUNT_ID,
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
+
+    pub fn with_amount(self, amount: BalanceOf<Test>) -> Self {
+        Self { amount, ..self }
+    }
+
+    pub fn with_destination(self, destination: AccountId) -> Self {
+        Self {
+            destination,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let dest_balance_pre = Balances::<Test>::usable_balance(self.destination);
+        let channel_pre = Content::channel_by_id(self.channel_id);
+        let channel_balance_pre = channel_reward_account_balance(self.channel_id);
+
+        let actual_result = Content::withdraw_from_channel_balance(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.amount,
+            self.destination.clone(),
+        );
+
+        let dest_balance_post = Balances::<Test>::usable_balance(&self.destination);
+        let channel_post = Content::channel_by_id(self.channel_id);
+        let channel_balance_post = channel_reward_account_balance(self.channel_id);
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                dest_balance_post,
+                dest_balance_pre.saturating_add(self.amount)
+            );
+            assert_eq!(
+                channel_balance_post,
+                channel_balance_pre.saturating_sub(self.amount)
+            );
+            assert_eq!(channel_post, channel_pre);
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::ChannelFundsWithdrawn(
+                    self.actor.clone(),
+                    self.channel_id,
+                    self.amount,
+                    self.destination.clone(),
+                ))
+            );
+        } else {
+            assert_eq!(channel_balance_post, channel_balance_pre);
+            assert_eq!(dest_balance_post, dest_balance_pre);
+            assert_eq!(channel_post, channel_pre);
+        }
+    }
+}
+
+pub struct ClaimAndWithdrawChannelRewardFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    payments: Vec<PullPayment<Test>>,
+    item: PullPayment<Test>,
+    destination: AccountId,
+}
+
+impl ClaimAndWithdrawChannelRewardFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            payments: create_some_pull_payments_helper(),
+            item: PullPayment::<Test> {
+                channel_id: ChannelId::one(),
+                cumulative_reward_earned: BalanceOf::<Test>::from(DEFAULT_PAYOUT_CLAIMED),
+                reason: Hashing::hash_of(&b"reason".to_vec()),
+            },
+            destination: DEFAULT_CHANNEL_REWARD_WITHDRAWAL_ACCOUNT_ID,
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_payments(self, payments: Vec<PullPayment<Test>>) -> Self {
+        Self { payments, ..self }
+    }
+
+    pub fn with_item(self, item: PullPayment<Test>) -> Self {
+        Self { item, ..self }
+    }
+
+    pub fn with_destination(self, destination: AccountId) -> Self {
+        Self {
+            destination,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let dest_balance_pre = Balances::<Test>::usable_balance(&self.destination);
+        let channel_pre = Content::channel_by_id(&self.item.channel_id);
+        let channel_balance_pre = channel_reward_account_balance(self.item.channel_id);
+        let council_budget_pre = <Test as Trait>::CouncilBudgetManager::get_budget();
+
+        let proof = if self.payments.is_empty() {
+            vec![]
+        } else {
+            build_merkle_path_helper(&self.payments, DEFAULT_PROOF_INDEX)
+        };
+
+        let actual_result = Content::claim_and_withdraw_channel_reward(
+            origin,
+            self.actor.clone(),
+            proof.clone(),
+            self.item.clone(),
+            self.destination.clone(),
+        );
+
+        let dest_balance_post = Balances::<Test>::usable_balance(&self.destination);
+        let channel_post = Content::channel_by_id(&self.item.channel_id);
+        let channel_balance_post = channel_reward_account_balance(self.item.channel_id);
+        let council_budget_post = <Test as Trait>::CouncilBudgetManager::get_budget();
+
+        assert_eq!(actual_result, expected_result);
+
+        let amount_claimed = self
+            .item
+            .cumulative_reward_earned
+            .saturating_sub(channel_pre.cumulative_reward_claimed);
+
+        if actual_result.is_ok() {
+            assert_eq!(
+                channel_post.cumulative_reward_claimed,
+                self.item.cumulative_reward_earned
+            );
+            assert_eq!(
+                dest_balance_post,
+                dest_balance_pre.saturating_add(amount_claimed)
+            );
+            assert_eq!(channel_balance_post, channel_balance_pre);
+            assert_eq!(
+                council_budget_post,
+                council_budget_pre.saturating_sub(amount_claimed)
+            );
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::ChannelRewardClaimedAndWithdrawn(
+                    self.actor.clone(),
+                    self.item.channel_id,
+                    amount_claimed,
+                    self.destination.clone(),
+                ))
+            );
+        } else {
+            assert_eq!(council_budget_post, council_budget_pre);
+            assert_eq!(channel_balance_post, channel_balance_pre);
+            assert_eq!(dest_balance_post, dest_balance_pre);
+            assert_eq!(channel_post, channel_pre);
+        }
+    }
+}
+
+pub struct IssueCreatorTokenFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    params: TokenIssuanceParametersOf<Test>,
+}
+
+impl IssueCreatorTokenFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+            params: TokenIssuanceParametersOf::<Test> {
+                symbol: Hashing::hash_of(b"CRT"),
+                patronage_rate: DEFAULT_PATRONAGE_RATE,
+                ..Default::default()
+            },
+        }
+        .with_initial_allocation_to(DEFAULT_MEMBER_ID)
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_initial_allocation_to(self, member_id: MemberId) -> Self {
+        Self {
+            params: TokenIssuanceParametersOf::<Test> {
+                initial_allocation: [(
+                    member_id,
+                    TokenAllocationOf::<Test> {
+                        amount: DEFAULT_CREATOR_TOKEN_ISSUANCE,
+                        vesting_schedule_params: None,
+                    },
+                )]
+                .iter()
+                .cloned()
+                .collect(),
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_initial_allocation(
+        self,
+        initial_allocation: BTreeMap<MemberId, TokenAllocationOf<Test>>,
+    ) -> Self {
+        Self {
+            params: TokenIssuanceParametersOf::<Test> {
+                initial_allocation,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_transfer_policy(self, transfer_policy: TransferPolicyParamsOf<Test>) -> Self {
+        Self {
+            params: TokenIssuanceParametersOf::<Test> {
+                transfer_policy,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let expected_token_id = project_token::Module::<Test>::next_token_id();
+        let channel_pre = Content::channel_by_id(self.channel_id);
+
+        let actual_result = Content::issue_creator_token(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.params.clone(),
+        );
+
+        let channel_post = Content::channel_by_id(self.channel_id);
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+            assert_eq!(
+                channel_post,
+                Channel::<Test> {
+                    creator_token_id: Some(expected_token_id),
+                    ..channel_pre
+                }
+            );
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::CreatorTokenIssued(
+                    self.actor.clone(),
+                    self.channel_id,
+                    expected_token_id
+                ))
+            );
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+
+pub struct InitCreatorTokenSaleFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    params: TokenSaleParamsOf<Test>,
+}
+
+impl InitCreatorTokenSaleFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+            params: TokenSaleParamsOf::<Test> {
+                unit_price: DEFAULT_CREATOR_TOKEN_SALE_UNIT_PRICE,
+                upper_bound_quantity: DEFAULT_CREATOR_TOKEN_ISSUANCE,
+                starts_at: None,
+                duration: DEFAULT_CREATOR_TOKEN_SALE_DURATION,
+                vesting_schedule_params: None,
+                cap_per_member: None,
+                metadata: None,
+            },
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_start_block(self, start_block: u64) -> Self {
+        Self {
+            params: TokenSaleParamsOf::<Test> {
+                starts_at: Some(start_block),
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let actual_result = Content::init_creator_token_sale(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.params.clone(),
+        );
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+
+pub struct UpdateUpcomingCreatorTokenSaleFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    new_start_block: Option<u64>,
+    new_duration: Option<u64>,
+}
+
+impl UpdateUpcomingCreatorTokenSaleFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+            new_start_block: Some(123),
+            new_duration: Some(DEFAULT_CREATOR_TOKEN_SALE_DURATION + 1),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let actual_result = Content::update_upcoming_creator_token_sale(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.new_start_block,
+            self.new_duration,
+        );
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+
+pub struct CreatorTokenIssuerTransferFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    outputs: TransfersWithVestingOf<Test>,
+}
+
+impl CreatorTokenIssuerTransferFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+            outputs: Transfers(
+                [(
+                    SECOND_MEMBER_ID,
+                    PaymentWithVestingOf::<Test> {
+                        amount: DEFAULT_ISSUER_TRANSFER_AMOUNT,
+                        vesting_schedule: None,
+                        remark: Vec::new(),
+                    },
+                )]
+                .iter()
+                .cloned()
+                .collect(),
+            ),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let actual_result = Content::creator_token_issuer_transfer(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.outputs.clone(),
+        );
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+
+pub struct ReduceCreatorTokenPatronageRateFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    target_rate: YearlyRate,
+}
+
+impl ReduceCreatorTokenPatronageRateFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+            target_rate: YearlyRate(
+                DEFAULT_PATRONAGE_RATE
+                    .0
+                    .saturating_sub(Permill::from_perthousand(5)),
+            ),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let actual_result = Content::reduce_creator_token_patronage_rate_to(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.target_rate,
+        );
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+
+pub struct ClaimCreatorTokenPatronageCreditFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+}
+
+impl ClaimCreatorTokenPatronageCreditFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let actual_result = Content::claim_creator_token_patronage_credit(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+        );
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+
+pub struct MakeCreatorTokenPermissionlessFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+}
+
+impl MakeCreatorTokenPermissionlessFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let actual_result =
+            Content::make_creator_token_permissionless(origin, self.actor.clone(), self.channel_id);
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+
+pub struct IssueRevenueSplitFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    start: Option<u64>,
+    duration: u64,
+}
+
+impl IssueRevenueSplitFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+            start: None,
+            duration: DEFAULT_REVENUE_SPLIT_DURATION,
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let actual_result = Content::issue_revenue_split(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.start,
+            self.duration,
+        );
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+
+pub struct FinalizeRevenueSplitFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+}
+
+impl FinalizeRevenueSplitFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let actual_result =
+            Content::finalize_revenue_split(origin, self.actor.clone(), self.channel_id);
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+
+pub struct FinalizeCreatorTokenSaleFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+}
+
+impl FinalizeCreatorTokenSaleFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let council_budget_pre = <Test as Trait>::CouncilBudgetManager::get_budget();
+        let channel = Content::channel_by_id(self.channel_id);
+        let joy_collected = channel.creator_token_id.map_or(0, |t_id| {
+            project_token::Module::<Test>::token_info_by_id(t_id)
+                .sale
+                .map_or(0, |s| s.funds_collected)
+        });
+
+        let actual_result =
+            Content::finalize_creator_token_sale(origin, self.actor.clone(), self.channel_id);
+
+        let council_budget_post = <Test as Trait>::CouncilBudgetManager::get_budget();
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+            if let ChannelOwner::CuratorGroup(_) = channel.owner {
+                assert_eq!(
+                    council_budget_post,
+                    council_budget_pre.saturating_add(joy_collected)
+                );
+            } else {
+                assert_eq!(council_budget_post, council_budget_pre);
+            }
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+
+pub struct DeissueCreatorTokenFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+}
+
+impl DeissueCreatorTokenFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+
+        let channel_pre = Content::channel_by_id(self.channel_id);
+
+        let actual_result =
+            Content::deissue_creator_token(origin, self.actor.clone(), self.channel_id);
+
+        let channel_post = Content::channel_by_id(self.channel_id);
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+
+            assert_eq!(
+                channel_post,
+                Channel::<Test> {
+                    creator_token_id: None,
+                    ..channel_pre
+                }
+            );
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
         }
     }
 }
 
 pub struct UpdateChannelTransferStatusFixture {
-    origin: RawOrigin<u64>,
+    origin: RawOrigin<u128>,
     channel_id: u64,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     transfer_status: ChannelTransferStatus<MemberId, CuratorGroupId, BalanceOf<Test>>,
@@ -1839,7 +2724,7 @@ impl UpdateChannelTransferStatusFixture {
         }
     }
 
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
         Self { origin, ..self }
     }
 
@@ -1971,7 +2856,7 @@ impl UpdateChannelTransferStatusFixture {
 }
 
 pub struct AcceptChannelTransferFixture {
-    origin: RawOrigin<u64>,
+    origin: RawOrigin<u128>,
     channel_id: u64,
     params: TransferParameters<MemberId, BalanceOf<Test>>,
 }
@@ -1985,7 +2870,7 @@ impl AcceptChannelTransferFixture {
         }
     }
 
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
         Self { origin, ..self }
     }
 
@@ -2060,7 +2945,7 @@ impl AcceptChannelTransferFixture {
 }
 
 pub struct ClaimCouncilRewardFixture {
-    origin: RawOrigin<u64>,
+    origin: RawOrigin<u128>,
     channel_id: u64,
     expected_reward: BalanceOf<Test>,
 }
@@ -2074,7 +2959,7 @@ impl ClaimCouncilRewardFixture {
         }
     }
 
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
         Self { origin, ..self }
     }
 
@@ -2165,13 +3050,16 @@ impl IssueNftFixture {
                 TransactionalStatus::<Test>::BuyNow(balance)
             }
             InitTransactionalStatus::<Test>::EnglishAuction(params) => {
-                TransactionalStatus::<Test>::EnglishAuction(EnglishAuction::<Test>::new(params))
+                TransactionalStatus::<Test>::EnglishAuction(EnglishAuction::<Test>::new(
+                    params,
+                    System::block_number(),
+                ))
             }
-            // FIXME: Impossible currently!
             InitTransactionalStatus::<Test>::OpenAuction(params) => {
                 TransactionalStatus::<Test>::OpenAuction(OpenAuction::<Test>::new(
                     params,
-                    One::one(),
+                    Zero::zero(),
+                    System::block_number(),
                 ))
             }
         };
@@ -2219,6 +3107,7 @@ impl StartOpenAuctionFixture {
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id: VideoId::one(),
             params: OpenAuctionParams::<Test> {
+                starts_at: None,
                 starting_price: Content::min_starting_price(),
                 buy_now_price: None,
                 bid_lock_duration: Content::min_bid_lock_duration(),
@@ -2271,7 +3160,8 @@ impl StartOpenAuctionFixture {
                         Test,
                     >::new(
                         self.params.clone(),
-                        pre_nft_status.open_auctions_nonce.saturating_add(1)
+                        pre_nft_status.open_auctions_nonce.saturating_add(1),
+                        System::block_number()
                     )),
                     open_auctions_nonce: pre_nft_status.open_auctions_nonce.saturating_add(1),
                     ..pre_nft_status
@@ -2309,9 +3199,9 @@ impl StartEnglishAuctionFixture {
                 starting_price: Content::min_starting_price(),
                 buy_now_price: None,
                 extension_period: Content::min_auction_extension_period(),
-                auction_duration: Content::min_auction_duration(),
+                duration: Content::min_auction_duration(),
                 min_bid_step: Content::min_bid_step(),
-                end: 10,
+                starts_at: None,
                 whitelist: BTreeSet::new(),
             },
         }
@@ -2358,7 +3248,7 @@ impl StartEnglishAuctionFixture {
                 nft_status,
                 Nft::<Test> {
                     transactional_status: TransactionalStatus::<Test>::EnglishAuction(
-                        EnglishAuction::<Test>::new(self.params.clone(),)
+                        EnglishAuction::<Test>::new(self.params.clone(), System::block_number())
                     ),
                     ..pre_nft_status
                 }
@@ -2503,11 +3393,11 @@ impl MakeOpenAuctionBidFixture {
     pub fn create_auction_state_snapshot(&self) -> NftAuctionStateSnapshot {
         let video = Content::video_by_id(self.video_id);
         let winner_account =
-            MemberInfoProvider::controller_account_id(self.member_id).map_or(None, |a| Some(a));
+            TestMemberships::controller_account_id(self.member_id).map_or(None, |a| Some(a));
         let channel_account = ContentTreasury::<Test>::account_for_channel(video.in_channel);
         let owner_account = video.nft_status.as_ref().map(|s| match s.owner {
             NftOwner::Member(member_id) => {
-                MemberInfoProvider::controller_account_id(member_id).unwrap()
+                TestMemberships::controller_account_id(member_id).unwrap()
             }
             NftOwner::ChannelOwner => {
                 ContentTreasury::<Test>::account_for_channel(video.in_channel)
@@ -2516,8 +3406,8 @@ impl MakeOpenAuctionBidFixture {
 
         NftAuctionStateSnapshot {
             video: Content::video_by_id(self.video_id),
-            winner_reserved_balance: winner_account.map(|a| Balances::<Test>::reserved_balance(a)),
-            winner_total_balance: winner_account.map(|a| Balances::<Test>::total_balance(&a)),
+            winner_balance: winner_account.map(|a| Balances::<Test>::usable_balance(&a)),
+            treasury_balance: ContentTreasury::<Test>::usable_balance(),
             owner_balance: owner_account.map(|a| Balances::<Test>::usable_balance(a)),
             channel_balance: Balances::<Test>::usable_balance(channel_account),
         }
@@ -2554,6 +3444,7 @@ impl MakeOpenAuctionBidFixture {
                                 self.member_id,
                                 self.video_id,
                                 self.bid,
+                                None
                             ))
                         );
                     } else {
@@ -2570,6 +3461,7 @@ impl MakeOpenAuctionBidFixture {
                             MetaEvent::content(RawEvent::BidMadeCompletingAuction(
                                 self.member_id,
                                 self.video_id,
+                                None
                             ))
                         );
                     }
@@ -2628,13 +3520,13 @@ impl PickOpenAuctionWinnerFixture {
     pub fn create_auction_state_snapshot(&self) -> NftAuctionStateSnapshot {
         let video = Content::video_by_id(self.video_id);
         let winner_account =
-            MemberInfoProvider::controller_account_id(self.winner_id).map_or(None, |a| Some(a));
+            TestMemberships::controller_account_id(self.winner_id).map_or(None, |a| Some(a));
         let channel_account = ContentTreasury::<Test>::account_for_channel(video.in_channel);
 
         NftAuctionStateSnapshot {
             video: Content::video_by_id(self.video_id),
-            winner_reserved_balance: winner_account.map(|a| Balances::<Test>::reserved_balance(a)),
-            winner_total_balance: winner_account.map(|a| Balances::<Test>::total_balance(&a)),
+            winner_balance: winner_account.map(|a| Balances::<Test>::usable_balance(&a)),
+            treasury_balance: ContentTreasury::<Test>::usable_balance(),
             owner_balance: Some(Balances::<Test>::usable_balance(self.sender)),
             channel_balance: Balances::<Test>::usable_balance(channel_account),
         }
@@ -2669,7 +3561,8 @@ impl PickOpenAuctionWinnerFixture {
                 MetaEvent::content(RawEvent::OpenAuctionBidAccepted(
                     self.actor.clone(),
                     self.video_id,
-                    self.commitment,
+                    self.winner_id,
+                    self.commitment
                 ))
             );
         } else {
@@ -2852,8 +3745,8 @@ pub struct NftAuctionStateSnapshot {
     video: Video<Test>,
     owner_balance: Option<BalanceOf<Test>>,
     channel_balance: BalanceOf<Test>,
-    winner_reserved_balance: Option<BalanceOf<Test>>,
-    winner_total_balance: Option<BalanceOf<Test>>,
+    winner_balance: Option<BalanceOf<Test>>,
+    treasury_balance: BalanceOf<Test>,
 }
 
 fn assert_auction_completed_successfuly(
@@ -2871,10 +3764,8 @@ fn assert_auction_completed_successfuly(
     assert!(snapshot_post.video.nft_status.is_some());
     assert!(snapshot_pre.owner_balance.is_some());
     assert!(snapshot_post.owner_balance.is_some());
-    assert!(snapshot_pre.winner_total_balance.is_some());
-    assert!(snapshot_post.winner_total_balance.is_some());
-    assert!(snapshot_pre.winner_reserved_balance.is_some());
-    assert!(snapshot_post.winner_reserved_balance.is_some());
+    assert!(snapshot_pre.winner_balance.is_some());
+    assert!(snapshot_post.winner_balance.is_some());
     let pre_nft_status = snapshot_pre.video.nft_status.unwrap();
     let post_nft_status = snapshot_post.video.nft_status.unwrap();
     assert_eq!(
@@ -2913,23 +3804,19 @@ fn assert_auction_completed_successfuly(
             );
         }
     }
-    if !was_new_bid {
+    if was_new_bid {
+        // If new bid immediately completed auction - expect winner balance decreased
         assert_eq!(
-            snapshot_post.winner_reserved_balance.unwrap(),
-            snapshot_pre
-                .winner_reserved_balance
-                .unwrap()
-                .saturating_sub(amount)
+            snapshot_post.winner_balance.unwrap(),
+            snapshot_pre.winner_balance.unwrap().saturating_sub(amount)
+        );
+    } else {
+        // If already existing bid was chosen as a winner - expect treasury balance decreased
+        assert_eq!(
+            snapshot_post.treasury_balance,
+            snapshot_pre.treasury_balance.saturating_sub(amount)
         );
     }
-
-    assert_eq!(
-        snapshot_post.winner_total_balance.unwrap(),
-        snapshot_pre
-            .winner_total_balance
-            .unwrap()
-            .saturating_sub(amount)
-    );
 }
 
 pub struct SellNftFixture {
@@ -3545,11 +4432,11 @@ pub fn assert_group_has_permissions_for_actions(
     }
 }
 
-pub fn increase_account_balance_helper(account_id: u64, balance: u64) {
+pub fn increase_account_balance_helper(account_id: u128, balance: u64) {
     let _ = Balances::<Test>::deposit_creating(&account_id, balance.into());
 }
 
-pub fn slash_account_balance_helper(account_id: u64) {
+pub fn slash_account_balance_helper(account_id: u128) {
     let _ = Balances::<Test>::slash(&account_id, Balances::<Test>::total_balance(&account_id));
 }
 
@@ -3779,7 +4666,7 @@ pub fn create_default_member_owned_channel_with_video_with_storage_buckets(
             object_creation_list: create_data_objects_helper(),
         })
         .with_channel_id(NextChannelId::<Test>::get() - 1)
-        .call_and_assert(Ok(()));
+        .call();
 }
 
 pub fn create_default_curator_owned_channel_with_video(
@@ -3795,7 +4682,7 @@ pub fn create_default_curator_owned_channel_with_video(
             object_creation_list: create_data_objects_helper(),
         })
         .with_channel_id(NextChannelId::<Test>::get() - 1)
-        .call_and_assert(Ok(()));
+        .call();
 }
 
 pub fn pause_channel_feature(channel_id: ChannelId, feature: PausableChannelFeature) {
@@ -3845,7 +4732,7 @@ fn index_path_helper(len: usize, index: usize) -> Vec<IndexItem> {
     return path;
 }
 
-fn generate_merkle_root_helper<E: Encode>(collection: &[E]) -> Vec<HashOutput> {
+pub fn generate_merkle_root_helper<E: Encode>(collection: &[E]) -> Vec<HashOutput> {
     // generates merkle root from the ordered sequence collection.
     // The resulting vector is structured as follows: elements in range
     // [0..collection.len()) will be the tree leaves (layer 0), elements in range
@@ -3901,23 +4788,58 @@ fn build_merkle_path_helper<E: Encode + Clone>(
 }
 
 // generate some payments claims
-pub fn create_some_pull_payments_helper() -> Vec<PullPayment<Test>> {
+pub fn create_some_pull_payments_helper_with_rewards(
+    cumulative_reward_earned: u64,
+) -> Vec<PullPayment<Test>> {
     let mut payments = Vec::new();
     for i in 0..PAYMENTS_NUMBER {
         payments.push(PullPayment::<Test> {
             channel_id: ChannelId::from(i % 2),
-            cumulative_payout_claimed: BalanceOf::<Test>::from(DEFAULT_PAYOUT_EARNED),
+            cumulative_reward_earned: BalanceOf::<Test>::from(cumulative_reward_earned),
             reason: Hashing::hash_of(&b"reason".to_vec()),
         });
     }
     payments
 }
 
+pub fn create_some_pull_payments_helper() -> Vec<PullPayment<Test>> {
+    create_some_pull_payments_helper_with_rewards(DEFAULT_PAYOUT_EARNED)
+}
+
 pub fn update_commit_value_with_payments_helper(payments: &[PullPayment<Test>]) {
     let commit = generate_merkle_root_helper(payments).pop().unwrap();
-    UpdateCommitmentValueFixture::default()
-        .with_commit(commit)
+    UpdateChannelPayoutsFixture::default()
+        .with_commitment(Some(commit))
         .call_and_assert(Ok(()));
+}
+
+pub fn channel_reward_account_balance(channel_id: ChannelId) -> u64 {
+    let reward_account = ContentTreasury::<Test>::account_for_channel(channel_id);
+    Balances::<Test>::usable_balance(&reward_account)
+}
+
+// TODO: Should not be required after https://github.com/Joystream/joystream/issues/3511
+pub fn make_channel_account_existential_deposit(channel_id: ChannelId) {
+    increase_account_balance_helper(
+        ContentTreasury::<Test>::account_for_channel(channel_id),
+        <Test as balances::Trait>::ExistentialDeposit::get().into(),
+    );
+}
+
+// TODO: Should not be required after https://github.com/Joystream/joystream/issues/3510
+pub fn make_storage_module_account_existential_deposit() {
+    increase_account_balance_helper(
+        StorageTreasury::<Test>::module_account_id(),
+        <Test as balances::Trait>::ExistentialDeposit::get().into(),
+    );
+}
+
+// TODO: Should not be required afer https://github.com/Joystream/joystream/issues/3508
+pub fn make_content_module_account_existential_deposit() {
+    increase_account_balance_helper(
+        ContentTreasury::<Test>::module_account_id(),
+        <Test as balances::Trait>::ExistentialDeposit::get().into(),
+    );
 }
 
 pub fn default_curator_actor() -> ContentActor<CuratorGroupId, CuratorId, MemberId> {
@@ -4074,6 +4996,7 @@ impl ContentTest {
         if self.claimable_reward {
             let payments = create_some_pull_payments_helper();
             update_commit_value_with_payments_helper(&payments);
+            <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
         }
 
         // Set channel collaborators (optionally)
@@ -4360,13 +5283,65 @@ pub fn run_all_fixtures_with_contexts(
             .with_sender(sender)
             .with_actor(actor)
             .call_and_assert(expected_err.clone());
+        WithdrawFromChannelBalanceFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        ClaimAndWithdrawChannelRewardFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        IssueCreatorTokenFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        InitCreatorTokenSaleFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        UpdateUpcomingCreatorTokenSaleFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        FinalizeCreatorTokenSaleFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        CreatorTokenIssuerTransferFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        MakeCreatorTokenPermissionlessFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        ReduceCreatorTokenPatronageRateFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        ClaimCreatorTokenPatronageCreditFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        IssueRevenueSplitFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        FinalizeRevenueSplitFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+        DeissueCreatorTokenFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
     }
 }
 
 #[derive(Fixture, new)]
 pub struct UpdateGlobalNftLimitFixture {
     #[new(value = "RawOrigin::Signed(LEAD_ACCOUNT_ID)")]
-    origin: RawOrigin<u64>,
+    origin: RawOrigin<u128>,
 
     #[new(default)]
     period: NftLimitPeriod,
@@ -4413,7 +5388,7 @@ impl UpdateGlobalNftLimitFixture {
 #[derive(Fixture, new)]
 pub struct UpdateChannelNftLimitFixture {
     #[new(value = "RawOrigin::Signed(DEFAULT_CURATOR_ACCOUNT_ID)")]
-    origin: RawOrigin<u64>,
+    origin: RawOrigin<u128>,
 
     #[new(value = "default_curator_actor()")]
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,

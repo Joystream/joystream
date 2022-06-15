@@ -9,6 +9,10 @@
 #![allow(non_fmt_panic)]
 #![allow(clippy::from_over_into)]
 
+// Mutually exclusive feature check
+#[cfg(all(feature = "staging_runtime", feature = "testing_runtime"))]
+compile_error!("feature \"staging_runtime\" and feature \"testing_runtime\" cannot be enabled at the same time");
+
 // Make the WASM binary available.
 // This is required only by the node build.
 // A dummy wasm_binary.rs will be built for the IDE.
@@ -98,7 +102,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 10,
-    spec_version: 3,
+    spec_version: 6,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -354,7 +358,7 @@ impl pallet_session::historical::Trait for Runtime {
 pallet_staking_reward_curve::build! {
     const REWARD_CURVE: PiecewiseLinear<'static> = curve!(
         min_inflation: 0_050_000,
-        max_inflation: 0_750_000,
+        max_inflation: 0_180_000,
         ideal_stake: 0_300_000,
         falloff: 0_050_000,
         max_piece_count: 100,
@@ -440,10 +444,6 @@ impl pallet_finality_tracker::Trait for Runtime {
     type ReportLatency = ReportLatency;
 }
 
-impl common::currency::GovernanceCurrency for Runtime {
-    type Currency = pallet_balances::Module<Self>;
-}
-
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
     pub const PricePerByte: u32 = 2; // TODO: update
@@ -486,6 +486,27 @@ impl content::Trait for Runtime {
     type DefaultGlobalWeeklyNftLimit = DefaultGlobalWeeklyNftLimit;
     type DefaultChannelDailyNftLimit = DefaultChannelDailyNftLimit;
     type DefaultChannelWeeklyNftLimit = DefaultChannelWeeklyNftLimit;
+    type ProjectToken = ProjectToken;
+}
+
+parameter_types! {
+    pub const ProjectTokenModuleId: ModuleId = ModuleId(*b"mo:token"); // module: token
+    pub const MaxVestingSchedulesPerAccountPerToken: u8 = 5; // TODO: adjust
+    pub const BlocksPerYear: u32 = 5259600; // 365,25 * 24 * 60 * 60 / 6
+}
+
+impl project_token::Trait for Runtime {
+    type Event = Event;
+    type Balance = Balance;
+    type TokenId = TokenId;
+    type BlockNumberToBalance = BlockNumberToBalance;
+    type DataObjectStorage = Storage;
+    type ModuleId = ProjectTokenModuleId;
+    type MaxVestingBalancesPerAccountPerToken = MaxVestingSchedulesPerAccountPerToken;
+    type JoyExistentialDeposit = ExistentialDeposit;
+    type BlocksPerYear = BlocksPerYear;
+    type MemberOriginValidator = Members;
+    type MembershipInfoProvider = Members;
 }
 
 // The referendum instance alias.
@@ -493,6 +514,30 @@ pub type ReferendumInstance = referendum::Instance1;
 pub type ReferendumModule = referendum::Module<Runtime, ReferendumInstance>;
 pub type CouncilModule = council::Module<Runtime>;
 
+// Production coucil and elections configuration
+#[cfg(not(any(feature = "staging_runtime", feature = "testing_runtime")))]
+parameter_types! {
+    // referendum parameters
+    pub const MaxSaltLength: u64 = 32;
+    pub const VoteStageDuration: BlockNumber = 14400;
+    pub const RevealStageDuration: BlockNumber = 14400;
+    pub const MinimumVotingStake: u64 = 10000;
+
+    // council parameteres
+    pub const MinNumberOfExtraCandidates: u64 = 1;
+    pub const AnnouncingPeriodDuration: BlockNumber = 14400;
+    pub const IdlePeriodDuration: BlockNumber = 57600;
+    pub const CouncilSize: u64 = 5;
+    pub const MinCandidateStake: u64 = 11000;
+    pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
+    pub const DefaultBudgetIncrement: u64 = 5000000;
+    pub const BudgetRefillPeriod: BlockNumber = 14400;
+    pub const MaxWinnerTargetCount: u64 = 10; // should be greater than council size
+}
+
+// Common staging and playground coucil and elections configuration
+// CouncilSize is defined separately
+#[cfg(feature = "staging_runtime")]
 parameter_types! {
     // referendum parameters
     pub const MaxSaltLength: u64 = 32;
@@ -504,11 +549,45 @@ parameter_types! {
     pub const MinNumberOfExtraCandidates: u64 = 1;
     pub const AnnouncingPeriodDuration: BlockNumber = 200;
     pub const IdlePeriodDuration: BlockNumber = 400;
+    pub const MinCandidateStake: u64 = 11000;
+    pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
+    pub const DefaultBudgetIncrement: u64 = 10000000;
+    pub const BudgetRefillPeriod: BlockNumber = 1000;
+    pub const MaxWinnerTargetCount: u64 = 10;
+}
+
+// Staging council size
+#[cfg(feature = "staging_runtime")]
+#[cfg(not(feature = "playground_runtime"))]
+parameter_types! {
+    pub const CouncilSize: u64 = 5;
+}
+
+// Playground council size
+#[cfg(feature = "staging_runtime")]
+#[cfg(feature = "playground_runtime")]
+parameter_types! {
+    pub const CouncilSize: u64 = 1;
+}
+
+// Testing config
+#[cfg(feature = "testing_runtime")]
+parameter_types! {
+    // referendum parameters
+    pub const MaxSaltLength: u64 = 32;
+    pub const VoteStageDuration: BlockNumber = 20;
+    pub const RevealStageDuration: BlockNumber = 20;
+    pub const MinimumVotingStake: u64 = 10000;
+
+    // council parameteres
+    pub const MinNumberOfExtraCandidates: u64 = 1;
+    pub const AnnouncingPeriodDuration: BlockNumber = 20;
+    pub const IdlePeriodDuration: BlockNumber = 20;
     pub const CouncilSize: u64 = 5;
     pub const MinCandidateStake: u64 = 11000;
     pub const ElectedMemberRewardPeriod: BlockNumber = 14400;
     pub const DefaultBudgetIncrement: u64 = 10000000;
-    pub const BudgetRefillPeriod: BlockNumber = 14400;
+    pub const BudgetRefillPeriod: BlockNumber = 1000;
     pub const MaxWinnerTargetCount: u64 = 10;
 }
 
@@ -658,11 +737,11 @@ impl membership::Trait for Runtime {
 
 parameter_types! {
     pub const MaxCategoryDepth: u64 = 6;
-    pub const MaxSubcategories: u64 = 20;
+    pub const MaxSubcategories: u64 = 40;
     pub const MaxThreadsInCategory: u64 = 20;
     pub const MaxPostsInThread: u64 = 20;
     pub const MaxModeratorsForCategory: u64 = 20;
-    pub const MaxCategories: u64 = 20;
+    pub const MaxCategories: u64 = 40;
     pub const MaxPollAlternativesNumber: u64 = 20;
     pub const ThreadDeposit: u64 = 30;
     pub const PostDeposit: u64 = 10;
@@ -945,15 +1024,15 @@ parameter_types! {
 macro_rules! call_wg {
     ($working_group:ident, $function:ident $(,$x:expr)*) => {{
         match $working_group {
-            WorkingGroup::Content => <ContentWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
-            WorkingGroup::Storage => <StorageWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
-            WorkingGroup::Forum => <ForumWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
-            WorkingGroup::Membership => <MembershipWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
-            WorkingGroup::Gateway => <GatewayWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
-            WorkingGroup::Distribution => <DistributionWorkingGroup as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
-            WorkingGroup::OperationsAlpha => <OperationsWorkingGroupAlpha as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
-            WorkingGroup::OperationsBeta => <OperationsWorkingGroupBeta as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
-            WorkingGroup::OperationsGamma => <OperationsWorkingGroupGamma as WorkingGroupBudgetHandler<Runtime>>::$function($($x,)*),
+            WorkingGroup::Content => <ContentWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
+            WorkingGroup::Storage => <StorageWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
+            WorkingGroup::Forum => <ForumWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
+            WorkingGroup::Membership => <MembershipWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
+            WorkingGroup::Gateway => <GatewayWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
+            WorkingGroup::Distribution => <DistributionWorkingGroup as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
+            WorkingGroup::OperationsAlpha => <OperationsWorkingGroupAlpha as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
+            WorkingGroup::OperationsBeta => <OperationsWorkingGroupBeta as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
+            WorkingGroup::OperationsGamma => <OperationsWorkingGroupGamma as WorkingGroupBudgetHandler<AccountId, Balance>>::$function($($x,)*),
         }
     }};
 }
@@ -1025,6 +1104,7 @@ impl proposals_codex::Trait for Runtime {
     type UnlockBlogPostProposalParameters = UnlockBlogPostProposalParameters;
     type VetoProposalProposalParameters = VetoProposalProposalParameters;
     type UpdateGlobalNftLimitProposalParameters = UpdateGlobalNftLimitProposalParameters;
+    type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;
     type WeightInfo = weights::proposals_codex::WeightInfo;
 }
 
@@ -1036,9 +1116,9 @@ impl pallet_constitution::Trait for Runtime {
 parameter_types! {
     pub const BountyModuleId: ModuleId = ModuleId(*b"m:bounty"); // module : bounty
     pub const ClosedContractSizeLimit: u32 = 50;
-    pub const MinCherryLimit: Balance = 10;
-    pub const MinFundingLimit: Balance = 10;
-    pub const MinWorkEntrantStake: Balance = 100;
+    pub const MinCherryLimit: Balance = 1000;
+    pub const MinFundingLimit: Balance = 1000;
+    pub const MinWorkEntrantStake: Balance = 1000;
 }
 
 impl bounty::Trait for Runtime {
@@ -1144,6 +1224,7 @@ construct_runtime!(
         JoystreamUtility: joystream_utility::{Module, Call, Event<T>},
         Content: content::{Module, Call, Storage, Event<T>, Config<T>},
         Storage: storage::{Module, Call, Storage, Event<T>, Config},
+        ProjectToken: project_token::{Module, Call, Storage, Event<T>},
         // --- Proposals
         ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},

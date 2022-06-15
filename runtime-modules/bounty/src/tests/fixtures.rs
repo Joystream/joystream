@@ -26,11 +26,11 @@ pub fn run_to_block(n: u64) {
 }
 
 pub fn set_council_budget(new_budget: u64) {
-    <super::mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::set_budget(new_budget);
+    <super::mocks::CouncilBudgetManager as CouncilBudgetManager<u128, u64>>::set_budget(new_budget);
 }
 
 pub fn get_council_budget() -> u64 {
-    <super::mocks::CouncilBudgetManager as CouncilBudgetManager<u64>>::get_budget()
+    <super::mocks::CouncilBudgetManager as CouncilBudgetManager<u128, u64>>::get_budget()
 }
 
 pub fn increase_total_balance_issuance_using_account_id(account_id: u128, balance: u64) {

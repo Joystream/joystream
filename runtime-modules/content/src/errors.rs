@@ -157,6 +157,9 @@ decl_error! {
         /// Auction starts at upper bound exceeded
         StartsAtUpperBoundExceeded,
 
+        /// Auction did not started
+        AuctionDidNotStart,
+
         /// Nft is not in auction state
         NotInAuctionState,
 
@@ -232,14 +235,25 @@ decl_error! {
         /// Payment Proof verification failed
         PaymentProofVerificationFailed,
 
-        /// Total reward too high
-        TotalRewardLimitExceeded,
+        /// Channel cashout amount is too high to be claimed
+        CashoutAmountExceedsMaximumAmount,
 
-        /// Cashout amount too small
-        UnsufficientCashoutAmount,
+        /// Channel cashout amount is too low to be claimed
+        CashoutAmountBelowMinimumAmount,
 
-        /// Reward account is none
-        RewardAccountNotFoundInChannel,
+        /// An attempt to withdraw funds from channel account failed, because the specified amount
+        /// exceeds the account's balance minus ExistantialDeposit
+        WithdrawFromChannelAmountExceedsBalanceMinusExistentialDeposit,
+        /// An attempt to withdraw funds from channel account failed, because the specified amount
+        /// is zero
+        WithdrawFromChannelAmountIsZero,
+
+        /// Channel cashouts are currently disabled
+        ChannelCashoutsDisabled,
+
+        /// New values for min_cashout_allowed/max_cashout_allowed are invalid
+        /// min_cashout_allowed cannot exceed max_cashout_allowed
+        MinCashoutAllowedExceedsMaxCashoutAllowed,
 
         /// Curator does not have permissions to perform given moderation action
         CuratorModerationActionNotAllowed,
@@ -295,5 +309,24 @@ decl_error! {
 
         // Can't issue more NFTs: channel weekly limit exceeded.
         ChannelNftWeeklyLimitExceeded,
+
+        // Creator Tokens
+        // ---------------------
+
+        /// Creator token was already issued for this channel
+        CreatorTokenAlreadyIssued,
+
+        /// Creator token wasn't issued for this channel
+        CreatorTokenNotIssued,
+
+        /// Member id could not be derived from the provided ContentActor context
+        MemberIdCouldNotBeDerivedFromActor,
+
+        /// Cannot directly withdraw funds from a channel account when the channel has
+        /// a creator token issued
+        CannotWithdrawFromChannelWithCreatorTokenIssued,
+
+        /// Patronage can only be claimed if channel is owned by a member
+        PatronageCanOnlyBeClaimedForMemberOwnedChannels,
     }
 }

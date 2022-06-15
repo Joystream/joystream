@@ -78,6 +78,12 @@ pub trait ContentActorAuthenticator: frame_system::Trait + common::MembershipTyp
 
     /// Ensure member id is valid
     fn validate_member_id(member_id: &Self::MemberId) -> bool;
+
+    /// Get leader member id
+    fn get_leader_member_id() -> Option<Self::MemberId>;
+
+    /// Get worker member id
+    fn get_curator_member_id(curator_id: &Self::CuratorId) -> Option<Self::MemberId>;
 }
 
 pub fn ensure_is_valid_curator_id<T: Trait>(curator_id: &T::CuratorId) -> DispatchResult {
@@ -474,6 +480,21 @@ pub fn ensure_actor_authorized_to_claim_payment<T: Trait>(
     )
 }
 
+pub fn ensure_actor_authorized_to_withdraw_from_channel<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel: &Channel<T>,
+) -> Result<Option<ChannelAgentPermissions>, DispatchError> {
+    let sender = ensure_signed(origin)?;
+    ensure_actor_auth_success::<T>(&sender, actor)?;
+    ensure_actor_has_channel_permissions::<T>(
+        &sender,
+        &actor,
+        &channel,
+        &[ChannelActionPermission::WithdrawFromChannelBalance],
+    )
+}
+
 // authorized account can update payouts vector commitment
 pub fn ensure_authorized_to_update_commitment<T: Trait>(sender: &T::AccountId) -> DispatchResult {
     ensure_lead_auth_success::<T>(sender)
@@ -566,4 +587,109 @@ pub fn ensure_actor_authorized_to_update_channel_nft_limits<T: Trait>(
         &[ContentModerationAction::UpdateChannelNftLimits],
         channel.privilege_level,
     )
+}
+
+// Creator tokens
+pub fn get_member_id_of_actor<T: Trait>(
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+) -> Result<T::MemberId, DispatchError> {
+    let opt_member_id = match actor {
+        ContentActor::Member(member_id) => Some(*member_id),
+        ContentActor::Curator(_, curator_id) => T::get_curator_member_id(curator_id),
+        ContentActor::Lead => T::get_leader_member_id(),
+    };
+    opt_member_id.ok_or_else(|| Error::<T>::MemberIdCouldNotBeDerivedFromActor.into())
+}
+
+pub fn ensure_actor_authorized_to_issue_creator_token<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel: &Channel<T>,
+) -> Result<T::AccountId, DispatchError> {
+    let sender = ensure_signed(origin)?;
+    let required_permissions = vec![ChannelActionPermission::IssueCreatorToken];
+    ensure_actor_has_channel_permissions::<T>(&sender, &actor, &channel, &required_permissions)?;
+    Ok(sender)
+}
+
+pub fn ensure_actor_authorized_to_claim_creator_token_patronage<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel: &Channel<T>,
+) -> Result<T::AccountId, DispatchError> {
+    let sender = ensure_signed(origin)?;
+    let required_permissions = vec![ChannelActionPermission::ClaimCreatorTokenPatronage];
+    ensure_actor_has_channel_permissions::<T>(&sender, &actor, &channel, &required_permissions)?;
+    Ok(sender)
+}
+
+pub fn ensure_actor_authorized_to_init_and_manage_creator_token_sale<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel: &Channel<T>,
+) -> Result<(T::AccountId, Option<ChannelAgentPermissions>), DispatchError> {
+    let sender = ensure_signed(origin)?;
+    let required_permissions = vec![ChannelActionPermission::InitAndManageCreatorTokenSale];
+    let permissions = ensure_actor_has_channel_permissions::<T>(
+        &sender,
+        &actor,
+        &channel,
+        &required_permissions,
+    )?;
+    Ok((sender, permissions))
+}
+
+pub fn ensure_actor_authorized_to_perform_creator_token_issuer_transfer<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel: &Channel<T>,
+) -> Result<T::AccountId, DispatchError> {
+    let sender = ensure_signed(origin)?;
+    let required_permissions = vec![ChannelActionPermission::CreatorTokenIssuerTransfer];
+    ensure_actor_has_channel_permissions::<T>(&sender, &actor, &channel, &required_permissions)?;
+    Ok(sender)
+}
+
+pub fn ensure_actor_authorized_to_make_creator_token_permissionless<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel: &Channel<T>,
+) -> Result<T::AccountId, DispatchError> {
+    let sender = ensure_signed(origin)?;
+    let required_permissions = vec![ChannelActionPermission::MakeCreatorTokenPermissionless];
+    ensure_actor_has_channel_permissions::<T>(&sender, &actor, &channel, &required_permissions)?;
+    Ok(sender)
+}
+
+pub fn ensure_actor_authorized_to_reduce_creator_token_patronage_rate<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel: &Channel<T>,
+) -> Result<T::AccountId, DispatchError> {
+    let sender = ensure_signed(origin)?;
+    let required_permissions = vec![ChannelActionPermission::ReduceCreatorTokenPatronageRate];
+    ensure_actor_has_channel_permissions::<T>(&sender, &actor, &channel, &required_permissions)?;
+    Ok(sender)
+}
+
+pub fn ensure_actor_authorized_to_manage_revenue_splits<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel: &Channel<T>,
+) -> Result<T::AccountId, DispatchError> {
+    let sender = ensure_signed(origin)?;
+    let required_permissions = vec![ChannelActionPermission::ManageRevenueSplits];
+    ensure_actor_has_channel_permissions::<T>(&sender, &actor, &channel, &required_permissions)?;
+    Ok(sender)
+}
+
+pub fn ensure_actor_authorized_to_deissue_creator_token<T: Trait>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel: &Channel<T>,
+) -> Result<T::AccountId, DispatchError> {
+    let sender = ensure_signed(origin)?;
+    let required_permissions = vec![ChannelActionPermission::DeissueCreatorToken];
+    ensure_actor_has_channel_permissions::<T>(&sender, &actor, &channel, &required_permissions)?;
+    Ok(sender)
 }

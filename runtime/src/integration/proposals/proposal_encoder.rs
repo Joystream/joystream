@@ -152,6 +152,9 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::UpdateGlobalNftLimit(period, limit) => {
                 Call::Content(content::Call::update_global_nft_limit(period, limit))
             }
+            ProposalDetails::UpdateChannelPayouts(params) => {
+                Call::Content(content::Call::update_channel_payouts(params))
+            }
         };
 
         call.encode()

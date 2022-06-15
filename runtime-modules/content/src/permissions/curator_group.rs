@@ -6,11 +6,13 @@ use strum_macros::EnumIter;
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord)]
 pub enum PausableChannelFeature {
-    // TODO: Will affect `withdraw_from_channel_balance` and `claim_and_withdraw_channel_reward` after https://github.com/Joystream/joystream/pull/3444
+    // Affects:
+    // -`withdraw_from_channel_balance`
+    // -`claim_and_withdraw_channel_reward`
     ChannelFundsTransfer,
     // Affects:
     // - `claim_channel_reward`
-    // TODO: Will affect `claim_and_withdraw_channel_reward`
+    // - `claim_and_withdraw_channel_reward`
     CreatorCashout,
     // Affects:
     // - `issue_nft`
@@ -26,7 +28,8 @@ pub enum PausableChannelFeature {
     // Affects:
     // - `update_channel`
     ChannelUpdate,
-    // TODO: Will affect extrinsics depending on creator tokens implementation (https://github.com/Joystream/joystream/issues/2362)
+    // Affects:
+    // - `issue_creator_token`
     CreatorTokenIssuance,
 }
 

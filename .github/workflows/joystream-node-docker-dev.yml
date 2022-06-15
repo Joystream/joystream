@@ -1,0 +1,63 @@
+# Development builds of joystream-node (staging, testing, playground)
+# Only built for amd64 on ubuntu
+name: joystream-node-docker(dev)
+
+on: push
+
+env:
+  REPOSITORY: joystream/node
+
+jobs:
+  ubuntu:
+    name: Build joystream/node Docker image for amd64
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        runtime_profile: ['STAGING', 'PLAYGROUND', 'TESTING']
+        include:
+          - runtime_profile: 'STAGING'
+            cargo_features: 'staging_runtime'
+          - runtime_profile: 'PLAYGROUND'
+            cargo_features: 'playground_runtime'
+          - runtime_profile: 'TESTING'
+            cargo_features: 'testing_runtime'
+    env:
+      RUNTIME_PROFILE: ${{ matrix.runtime_profile }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '14.x'
+
+      - id: compute_shasum
+        name: Compute runtime code shasum
+        run: |
+          export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
+          echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Check if we have pre-built image on Dockerhub
+        id: compute_image_exists
+        # Will output 0 if image exists and 1 if does not exists
+        run: |
+          export IMAGE_EXISTS=$(docker manifest inspect ${{ env.REPOSITORY }}:${{ steps.compute_shasum.outputs.shasum }} > /dev/null ; echo $?)
+          echo "::set-output name=image_exists::${IMAGE_EXISTS}"
+
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: joystream-node.Dockerfile
+          platforms: linux/amd64
+          build-args: CARGO_FEATURES=${{ matrix.cargo_features }}
+          push: true
+          tags: ${{ env.REPOSITORY }}:${{ steps.compute_shasum.outputs.shasum }}
+        if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}

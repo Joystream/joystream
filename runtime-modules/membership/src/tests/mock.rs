@@ -2,8 +2,9 @@
 
 pub use crate::{GenesisConfig, Trait, Weight, WeightInfo};
 
+use frame_support::dispatch::{DispatchError, DispatchResult};
 pub use frame_support::traits::{Currency, LockIdentifier};
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use frame_support::{ensure, impl_outer_event, impl_outer_origin, parameter_types};
 use sp_std::cell::RefCell;
 use staking_handler::LockComparator;
 
@@ -14,7 +15,7 @@ use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    DispatchError, DispatchResult, Perbill,
+    Perbill,
 };
 
 pub(crate) type MembershipWorkingGroupInstance = working_group::Instance4;
@@ -317,7 +318,7 @@ impl Trait for Test {
     type Event = TestEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
-    type WorkingGroup = ();
+    type WorkingGroup = Wg;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type StakingCandidateStakingHandler =
@@ -333,7 +334,8 @@ thread_local! {
     pub static LEAD_SET: RefCell<bool> = RefCell::new(bool::default());
 }
 
-impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
+pub struct Wg;
+impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
     fn get_budget() -> u64 {
         WG_BUDGET.with(|val| *val.borrow())
     }
@@ -343,9 +345,26 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
             *val.borrow_mut() = new_value;
         });
     }
+
+    fn try_withdraw(account_id: &u64, amount: u64) -> DispatchResult {
+        ensure!(
+            Self::get_budget() >= amount,
+            DispatchError::Other("Invalid balance")
+        );
+
+        let _ = Balances::deposit_creating(account_id, amount);
+
+        let current_budget = Self::get_budget();
+        let new_budget = current_budget.saturating_sub(amount);
+        <Self as common::working_group::WorkingGroupBudgetHandler<u64, u64>>::set_budget(
+            new_budget,
+        );
+
+        Ok(())
+    }
 }
 
-impl common::working_group::WorkingGroupAuthenticator<Test> for () {
+impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     fn ensure_worker_origin(
         origin: <Test as frame_system::Trait>::Origin,
         worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
@@ -376,6 +395,12 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
                 None
             }
         })
+    }
+
+    fn get_worker_member_id(
+        _: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
     }
 
     fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {

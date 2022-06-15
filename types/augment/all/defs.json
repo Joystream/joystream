@@ -420,7 +420,8 @@
             "LockBlogPost": "PostId",
             "UnlockBlogPost": "PostId",
             "VetoProposal": "ProposalId",
-            "UpdateGlobalNftLimit": "(NftLimitPeriod,u64)"
+            "UpdateGlobalNftLimit": "(NftLimitPeriod,u64)",
+            "UpdateChannelPayouts": "UpdateChannelPayoutsParameters"
         }
     },
     "ProposalDetailsOf": {
@@ -450,7 +451,8 @@
             "LockBlogPost": "PostId",
             "UnlockBlogPost": "PostId",
             "VetoProposal": "ProposalId",
-            "UpdateGlobalNftLimit": "(NftLimitPeriod,u64)"
+            "UpdateGlobalNftLimit": "(NftLimitPeriod,u64)",
+            "UpdateChannelPayouts": "UpdateChannelPayoutsParameters"
         }
     },
     "VotingResults": {
@@ -676,7 +678,7 @@
         "owner": "ChannelOwner",
         "num_videos": "u64",
         "collaborators": "BTreeMap<MemberId,ChannelAgentPermissions>",
-        "cumulative_payout_earned": "u128",
+        "cumulative_reward_claimed": "u128",
         "privilege_level": "ChannelPrivilegeLevel",
         "paused_features": "BTreeSet<PausableChannelFeature>",
         "transfer_status": "ChannelTransferStatus",
@@ -684,7 +686,8 @@
         "daily_nft_limit": "LimitPerPeriod",
         "weekly_nft_limit": "LimitPerPeriod",
         "daily_nft_counter": "NftCounter",
-        "weekly_nft_counter": "NftCounter"
+        "weekly_nft_counter": "NftCounter",
+        "creator_token_id": "Option<u64>"
     },
     "ChannelOwner": {
         "_enum": {
@@ -756,7 +759,7 @@
     },
     "PullPayment": {
         "channel_id": "ChannelId",
-        "cumulative_payout_claimed": "u128",
+        "cumulative_reward_earned": "u128",
         "reason": "Hash"
     },
     "Royalty": "Perbill",
@@ -764,14 +767,15 @@
         "starting_price": "u128",
         "buy_now_price": "Option<u128>",
         "whitelist": "BTreeSet<MemberId>",
-        "end": "u32",
-        "auction_duration": "u32",
+        "starts_at": "Option<u32>",
+        "duration": "u32",
         "extension_period": "u32",
         "min_bid_step": "u128"
     },
     "OpenAuctionParams": {
         "starting_price": "u128",
         "buy_now_price": "Option<u128>",
+        "starts_at": "Option<u32>",
         "whitelist": "BTreeSet<MemberId>",
         "bid_lock_duration": "u32"
     },
@@ -780,7 +784,7 @@
         "buy_now_price": "Option<u128>",
         "whitelist": "BTreeSet<MemberId>",
         "end": "u32",
-        "auction_duration": "u32",
+        "start": "u32",
         "extension_period": "u32",
         "min_bid_step": "u128",
         "top_bid": "Option<EnglishAuctionBid>"
@@ -790,7 +794,8 @@
         "buy_now_price": "Option<u128>",
         "whitelist": "BTreeSet<MemberId>",
         "bid_lock_duration": "u32",
-        "auction_id": "OpenAuctionId"
+        "auction_id": "OpenAuctionId",
+        "start": "u32"
     },
     "OpenAuctionBid": {
         "amount": "u128",
@@ -893,7 +898,15 @@
             "AgentRemark",
             "TransferChannel",
             "ClaimChannelReward",
-            "WithdrawFromChannelBalance"
+            "WithdrawFromChannelBalance",
+            "IssueCreatorToken",
+            "ClaimCreatorTokenPatronage",
+            "InitAndManageCreatorTokenSale",
+            "CreatorTokenIssuerTransfer",
+            "MakeCreatorTokenPermissionless",
+            "ReduceCreatorTokenPatronageRate",
+            "ManageRevenueSplits",
+            "DeissueCreatorToken"
         ]
     },
     "ChannelAgentPermissions": "BTreeSet<ChannelActionPermission>",
@@ -919,5 +932,126 @@
         "counter": "u64",
         "last_updated": "u32"
     },
-    "AccountInfo": "AccountInfoWithRefCount"
+    "ChannelPayoutsPayloadParameters": {
+        "uploader_account": "AccountId",
+        "object_creation_params": "DataObjectCreationParameters",
+        "expected_data_size_fee": "u128"
+    },
+    "UpdateChannelPayoutsParameters": {
+        "commitment": "Option<Hash>",
+        "payload": "Option<ChannelPayoutsPayloadParameters>",
+        "min_cashout_allowed": "Option<u128>",
+        "max_cashout_allowed": "Option<u128>",
+        "channel_cashouts_enabled": "Option<bool>"
+    },
+    "VestingSource": {
+        "_enum": {
+            "InitialIssuance": "Null",
+            "Salet": "TokenSaleId",
+            "IssuerTransfer": "u64"
+        }
+    },
+    "VestingSchedule": {
+        "linear_vesting_start_block": "u32",
+        "linear_vesting_duration": "u32",
+        "cliff_amount": "u128",
+        "post_cliff_total_amount": "u128",
+        "burned_amount": "u128"
+    },
+    "VestingScheduleParams": {
+        "linear_vesting_starting_block": "u32",
+        "linear_vesting_duration": "u32",
+        "cliff_amount": "u128",
+        "burned_amount": "u128"
+    },
+    "TokenSaleId": "u32",
+    "TokenSale": {
+        "unit_price": "JoyBalance",
+        "quantity_left": "u128",
+        "funds_collected": "JoyBalance",
+        "token_source": "MemberId",
+        "earnings_destination": "Option<AccountId>",
+        "start_block": "u32",
+        "vesting_schedule_params": "Option<VestingScheduleParams>",
+        "cap_per_member": "Option<u128>",
+        "auto_finalize": "bool"
+    },
+    "TokenSaleParams": {
+        "unit_price": "JoyBalance",
+        "upper_bound_quantity": "u128",
+        "starts_at": "Option<u32>",
+        "duration": "u32",
+        "vesting_schedule_params": "Option<VestingScheduleParams>",
+        "cap_per_member": "Option<u128>",
+        "metadata": "Option<Vec<u8>>"
+    },
+    "TokenAllocation": {
+        "amount": "u128",
+        "vesting_schedule_params": "Option<VestingScheduleParams>"
+    },
+    "TokenId": "u64",
+    "TokenIssuanceParams": {
+        "initial_allocation": "BTreeMap<MemberId,TokenAllocation>",
+        "symbol": "Hash",
+        "transfer_policy": "TransferPolicyParams",
+        "patronage_rate": "YearlyRate"
+    },
+    "OfferingState": {
+        "_enum": {
+            "Idle": "Null",
+            "UpcomingSale": "TokenSale",
+            "Sale": "TokenSale",
+            "BondingCurve": "Null"
+        }
+    },
+    "JoyBalance": "u128",
+    "YearlyRate": "Permill",
+    "BlockRate": "Perquintill",
+    "Payment": {
+        "remark": "Vec<u8>",
+        "amount": "u128"
+    },
+    "PaymentWithVesting": {
+        "remark": "Vec<u8>",
+        "amount": "u128",
+        "vesting_schedule": "Option<VestingScheduleParams>"
+    },
+    "MerkleProof": "Vec<([u8;32],MerkleSide)>",
+    "MerkleSide": {
+        "_enum": [
+            "Right",
+            "Left"
+        ]
+    },
+    "ValidatedPayment": {
+        "payment": "PaymentWithVesting",
+        "vesting_cleanup_candidate": "Option<VestingSource>"
+    },
+    "TransferPolicy": {
+        "_enum": {
+            "Permissionless": "Null",
+            "Permissioned": "Hash"
+        }
+    },
+    "TransferPolicyParams": {
+        "_enum": {
+            "Permissionless": "Null",
+            "Permissioned": "WhitelistParams"
+        }
+    },
+    "WhitelistParams": {
+        "commitment": "Hash",
+        "payload": "Option<SingleDataObjectUploadParams>"
+    },
+    "UploadContent": {
+        "upload_account": "AccountId",
+        "bag_id": "BagId"
+    },
+    "SingleDataObjectUploadParams": {
+        "object_creation_params": "DataObjectCreationParameters",
+        "expeted_data_size_fee": "JoyBalance",
+        "expected_data_object_state_bloat_bond": "JoyBalance"
+    },
+    "AccountInfo": "AccountInfoWithRefCount",
+    "ValidatorPrefs": "ValidatorPrefsWithCommission"
 }

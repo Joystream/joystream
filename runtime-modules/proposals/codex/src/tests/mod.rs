@@ -6,7 +6,9 @@ use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;
 use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_system::{EventRecord, RawOrigin};
+use sp_core::Hasher;
 use sp_std::convert::TryInto;
+use sp_std::iter::FromIterator;
 
 use common::working_group::WorkingGroup;
 use common::BalanceKind;
@@ -127,6 +129,7 @@ where
                 proposal_id,
                 self.general_proposal_parameters.clone(),
                 self.proposal_details.clone(),
+                thread_id,
             )
             .into(),
         );
@@ -1988,9 +1991,127 @@ fn create_update_global_nft_limit_proposal_common_checks_succeed() {
                     proposal_details.clone(),
                 )
             },
-            proposal_parameters: <Test as crate::Trait>::SetInvitationCountProposalParameters::get(
-            ),
+            proposal_parameters:
+                <Test as crate::Trait>::UpdateGlobalNftLimitProposalParameters::get(),
         };
         proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_update_channel_payouts_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+            exact_execution_block: None,
+        };
+
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
+            exact_execution_block: None,
+        };
+
+        let proposal_details = ProposalDetails::UpdateChannelPayouts(
+            content::UpdateChannelPayoutsParameters::<Test> {
+                commitment: Some(<Test as frame_system::Trait>::Hashing::hash(
+                    &b"commitment".to_vec(),
+                )),
+                payload: Some(content::ChannelPayoutsPayloadParametersRecord {
+                    uploader_account: <Test as frame_system::Trait>::AccountId::default(),
+                    object_creation_params: content::DataObjectCreationParameters {
+                        size: u64::MAX,
+                        ipfs_content_id: Vec::from_iter((0..46).map(|_| u8::MAX)),
+                    },
+                    expected_data_size_fee: u128::MAX.saturated_into::<BalanceOf<Test>>(),
+                    expected_data_object_state_bloat_bond: u128::MAX
+                        .saturated_into::<BalanceOf<Test>>(),
+                }),
+                min_cashout_allowed: Some(u128::MAX.saturated_into::<BalanceOf<Test>>()),
+                max_cashout_allowed: Some(u128::MAX.saturated_into::<BalanceOf<Test>>()),
+                channel_cashouts_enabled: Some(true),
+            },
+        );
+
+        let proposal_fixture = ProposalTestFixture {
+            proposal_details: proposal_details.clone(),
+            general_proposal_parameters: general_proposal_parameters.clone(),
+            insufficient_rights_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::None.into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            invalid_stake_account_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_incorrect_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            proposal_parameters:
+                <Test as crate::Trait>::UpdateChannelPayoutsProposalParameters::get(),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_update_channel_payouts_proposal_fails_when_min_cashout_exceeds_max_cashout() {
+    initial_test_ext().execute_with(|| {
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        let details = ProposalDetailsOf::<Test>::UpdateChannelPayouts(
+            content::UpdateChannelPayoutsParameters::<Test> {
+                min_cashout_allowed: Some(2u64),
+                max_cashout_allowed: Some(1u64),
+                commitment: None,
+                payload: None,
+                channel_cashouts_enabled: None,
+            },
+        );
+
+        assert_eq!(
+            ProposalCodex::create_proposal(
+                RawOrigin::Signed(1).into(),
+                general_proposal_parameters.clone(),
+                details,
+            ),
+            Err(Error::<Test>::InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout.into())
+        );
     });
 }

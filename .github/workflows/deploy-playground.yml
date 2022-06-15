@@ -11,10 +11,9 @@ on:
         description: 'Branch to deploy'
         required: false
         default: 'master'
-      keyName:
-        description: 'SSH key pair on AWS'
+      sshPubKey:
+        description: 'SSH pubkey eg. `ssh-rsa AAAAB3NzaC1yc2EA....0hc3GND8IR mysshkey`'
         required: false
-        default: 'joystream-github-action-key-new'
       instanceType:
         description: 'AWS EC2 instance type (t2.micro, t2.large)'
         required: false
@@ -27,14 +26,10 @@ on:
         description: 'Optionally skip running newChainSetup script (true or false)'
         required: true
         default: 'false'
-      proposalParameters:
-        description: 'Proposal Parameters (refer to runtime/src/proposals_configuration/sample_proposal_parameters.json for sample)'
+      runtimeProfile:
+        description: 'STAGING | PLAYGROUND | TESTING - leave balnk for production'
         required: false
-      # TODO: customDomain instead of ip_address.nip.io
-      # customDomain:
-      #   description: 'DNS hostname to use for deployment'
-      #   required: false
-      #   default: ''
+
 defaults:
   run:
     working-directory: devops/aws
@@ -76,7 +71,7 @@ jobs:
           name: ${{ env.STACK_NAME }}
           template: devops/aws/cloudformation/single-instance-docker.yml
           no-fail-on-empty-changeset: '1'
-          parameter-overrides: 'KeyName=${{ github.event.inputs.keyName }},EC2InstanceType=${{ github.event.inputs.instanceType }}'
+          parameter-overrides: 'KeyName=joystream-github-action-key-new,EC2InstanceType=${{ github.event.inputs.instanceType }}'
 
       - name: Run playbook
         uses: dawidd6/action-ansible-playbook@v2
@@ -93,7 +88,8 @@ jobs:
                           branch_name=${{ github.event.inputs.branchName }} \
                           skip_chain_setup=${{ github.event.inputs.skipChainSetup }} \
                           stack_name=${{ env.STACK_NAME }} \
-                          proposal_parameters=${{ github.event.inputs.proposalParameters }}"
+                          runtime_profile=${{ github.event.inputs.runtimeProfile }} \
+                          ssh_pub_key='${{ github.event.inputs.sshPubKey }}'"
 
       - name: Save the endpoints file as an artifact
         uses: actions/upload-artifact@v2

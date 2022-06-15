@@ -55,9 +55,9 @@ export enum WorkingGroups {
   Curators = 'curators',
   Forum = 'forum',
   Membership = 'membership',
-  OperationsAlpha = 'operationsAlpha',
-  OperationsBeta = 'operationsBeta',
-  OperationsGamma = 'operationsGamma',
+  Builders = 'builders',
+  HumanResources = 'humanResources',
+  Marketing = 'marketing',
   Gateway = 'gateway',
   Distribution = 'distributors',
 }
@@ -68,9 +68,9 @@ export const AvailableGroups: readonly WorkingGroups[] = [
   WorkingGroups.Forum,
   WorkingGroups.Membership,
   WorkingGroups.Gateway,
-  WorkingGroups.OperationsAlpha,
-  WorkingGroups.OperationsBeta,
-  WorkingGroups.OperationsGamma,
+  WorkingGroups.Builders,
+  WorkingGroups.HumanResources,
+  WorkingGroups.Marketing,
   WorkingGroups.Distribution,
 ] as const
 
