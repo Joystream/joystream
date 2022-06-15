@@ -2,7 +2,7 @@
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok, assert_noop};
+use frame_support::{assert_err, assert_noop, assert_ok};
 const NEW_NFT_PRICE: u64 = DEFAULT_NFT_PRICE + 10;
 
 #[test]
@@ -243,7 +243,9 @@ fn update_buy_now_price_not_in_auction_state() {
 fn update_buy_now_price_fails_during_channel_transfer() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        ContentTest::default().with_video_nft_status(NftTransactionalStatusType::BuyNow).setup();
+        ContentTest::default()
+            .with_video_nft_status(NftTransactionalStatusType::BuyNow)
+            .setup();
         UpdateChannelTransferStatusFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Ok(()));

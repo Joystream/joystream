@@ -2,7 +2,7 @@
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok, assert_noop};
+use frame_support::{assert_err, assert_noop, assert_ok};
 
 #[test]
 fn offer_nft() {

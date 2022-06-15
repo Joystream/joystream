@@ -358,9 +358,8 @@ fn unsuccessful_channel_balance_withdrawal_during_transfer() {
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
 
-        WithdrawFromChannelBalanceFixture::default().call_and_assert(Err(
-            Error::<Test>::InvalidChannelTransferStatus.into(),
-        ));
+        WithdrawFromChannelBalanceFixture::default()
+            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
     })
 }
 
@@ -577,7 +576,6 @@ fn successful_curator_channel_balance_withdrawal_by_lead() {
     })
 }
 
-
 #[test]
 fn unsuccessful_channel_balance_withdrawal_with_fund_transfer_feature_paused() {
     with_default_mock_builder(|| {
@@ -586,12 +584,13 @@ fn unsuccessful_channel_balance_withdrawal_with_fund_transfer_feature_paused() {
         increase_account_balance_helper(
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
             DEFAULT_PAYOUT_EARNED
-            // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
+                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
                 .saturating_add(<Test as balances::Trait>::ExistentialDeposit::get().into()),
         );
         pause_channel_feature(1u64, PausableChannelFeature::ChannelFundsTransfer);
 
-        WithdrawFromChannelBalanceFixture::default().call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
+        WithdrawFromChannelBalanceFixture::default()
+            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
     })
 }
 
@@ -880,7 +879,8 @@ fn unsuccessful_member_claim_and_withdraw_with_cashout_feature_paused() {
             .setup();
         pause_channel_feature(channel_id, PausableChannelFeature::CreatorCashout);
 
-        ClaimAndWithdrawChannelRewardFixture::default().call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
+        ClaimAndWithdrawChannelRewardFixture::default()
+            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
     })
 }
 
@@ -893,7 +893,8 @@ fn unsuccessful_member_claim_and_withdraw_with_transfer_fund_feature_paused() {
             .setup();
         pause_channel_feature(channel_id, PausableChannelFeature::ChannelFundsTransfer);
 
-        ClaimAndWithdrawChannelRewardFixture::default().call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
+        ClaimAndWithdrawChannelRewardFixture::default()
+            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
     })
 }
 

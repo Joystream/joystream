@@ -2,7 +2,7 @@
 use super::fixtures::*;
 use super::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok, assert_noop};
+use frame_support::{assert_err, assert_noop, assert_ok};
 use sp_std::iter::FromIterator;
 
 #[test]
@@ -411,7 +411,10 @@ fn unsuccessful_channel_agent_rewark_during_transfer() {
     with_default_mock_builder(|| {
         run_to_block(1);
         ContentTest::with_member_channel()
-            .with_collaborators(&[(COLLABORATOR_MEMBER_ID, BTreeSet::from_iter(vec![ChannelActionPermission::AgentRemark]))])
+            .with_collaborators(&[(
+                COLLABORATOR_MEMBER_ID,
+                BTreeSet::from_iter(vec![ChannelActionPermission::AgentRemark]),
+            )])
             .setup();
         UpdateChannelTransferStatusFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)

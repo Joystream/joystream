@@ -2,7 +2,7 @@
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok, assert_noop};
+use frame_support::{assert_err, assert_noop, assert_ok};
 
 const AUCTION_DURATION: u64 = 10;
 #[test]
@@ -296,7 +296,9 @@ fn cancel_nft_auction_english_auction_with_bids() {
 fn cancel_open_auction_fails_during_channel_transfer() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        ContentTest::default().with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::Open)).setup();
+        ContentTest::default()
+            .with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::Open))
+            .setup();
         UpdateChannelTransferStatusFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
@@ -316,7 +318,9 @@ fn cancel_open_auction_fails_during_channel_transfer() {
 fn cancel_english_auction_fails_during_channel_transfer() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        ContentTest::default().with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::English)).setup();
+        ContentTest::default()
+            .with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::English))
+            .setup();
         UpdateChannelTransferStatusFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));

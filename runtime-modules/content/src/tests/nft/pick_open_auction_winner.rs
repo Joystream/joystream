@@ -2,7 +2,7 @@
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok, assert_noop};
+use frame_support::{assert_err, assert_noop, assert_ok};
 
 const NEXT_BID_OFFSET: u64 = 10;
 const AUCTION_DURATION: u64 = 10;

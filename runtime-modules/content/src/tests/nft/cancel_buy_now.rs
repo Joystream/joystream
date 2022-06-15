@@ -2,7 +2,7 @@
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok, assert_noop};
+use frame_support::{assert_err, assert_noop, assert_ok};
 
 #[test]
 fn cancel_buy_now() {
@@ -228,7 +228,9 @@ fn cancel_buy_now_not_in_auction_state() {
 fn cancel_buy_now_fails_during_channel_transfer() {
     with_default_mock_builder(|| {
         run_to_block(1);
-        ContentTest::default().with_video_nft_status(NftTransactionalStatusType::BuyNow).setup();
+        ContentTest::default()
+            .with_video_nft_status(NftTransactionalStatusType::BuyNow)
+            .setup();
         UpdateChannelTransferStatusFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));

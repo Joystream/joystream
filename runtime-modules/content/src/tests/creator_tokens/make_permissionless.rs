@@ -2,8 +2,8 @@
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use project_token::types::{TransferPolicyParamsOf, WhitelistParamsOf};
 use frame_support::assert_noop;
+use project_token::types::{TransferPolicyParamsOf, WhitelistParamsOf};
 
 #[test]
 fn unsuccessful_make_creator_token_permissionless_non_existing_channel() {
