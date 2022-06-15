@@ -2,6 +2,7 @@ mod types;
 use sp_runtime::traits::CheckedSub;
 use sp_std::borrow::ToOwned;
 pub use types::*;
+use sp_std::cmp::min;
 
 use crate::*;
 
@@ -336,9 +337,12 @@ impl<T: Trait> Module<T> {
         sender_account_id: T::AccountId,
         receiver_account_id: Option<T::AccountId>,
     ) {
+        // slash sender full amount
         let _ = Balances::<T>::slash(&sender_account_id, amount);
 
-        let platform_fee = Self::platform_fee_percentage().mul_floor(amount);
+        let platform_fee_percentage = Self::platform_fee_percentage();
+        let platform_fee = platform_fee_percentage.mul_floor(amount);
+
         let amount_after_platform_fee = amount.saturating_sub(platform_fee);
         let royalty_fee = royalty_payment
             .as_ref()
@@ -356,10 +360,28 @@ impl<T: Trait> Module<T> {
             }
         }
 
+<<<<<<< HEAD
         if let Some((_, ref royalty_reward_account)) = royalty_payment {
             if !royalty_fee.is_zero() {
                 let _ = Balances::<T>::deposit_creating(royalty_reward_account, royalty_fee);
             }
+=======
+        let net_amount = if let Some(creator_royalty) = creator_royalty {
+            // min(creator_royalty, 100% - platform_fee_percentage) is used to avoid underflow
+            let royalty_fee_pct = min(creator_royalty, Perbill::one().saturating_sub(platform_fee_percentage));
+            let royalty = royalty_fee_pct.mul_floor(amount);
+
+            // deposit to creator account
+            ContentTreasury::<T>::deposit_to_channel_account(in_channel, royalty);
+            amount.saturating_sub(platform_fee).saturating_sub(royalty)
+        } else {
+            // Deposit amount, exluding auction fee into receiver account
+            amount.saturating_sub(platform_fee)
+        };
+
+        if let Some(ref nft_owner_account) = receiver_account_id {
+            let _ = Balances::<T>::deposit_creating(nft_owner_account, net_amount);
+>>>>>>> ad4cf5043a (simplify complete payment)
         }
     }
 
