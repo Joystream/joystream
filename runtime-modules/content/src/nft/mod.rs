@@ -350,8 +350,7 @@ impl<T: Trait> Module<T> {
             let royalty = effective_royalty_pct.mul_floor(amount);
 
             // deposit to creator account
-            println!("transferring royalty");
-            let _ = ContentTreasury::<T>::withdraw(&creator_account, royalty);
+            let _ = Balances::<T>::deposit_creating(&creator_account, royalty);
 
             amount.saturating_sub(platform_fee).saturating_sub(royalty)
         } else {

@@ -477,8 +477,8 @@ impl Default for ExtBuilder {
             max_bid_lock_duration: 10,
             min_starting_price: 10,
             max_starting_price: 1000,
-            min_creator_royalty: Perbill::zero(), // in order to test edge cases
-            max_creator_royalty: Perbill::one(), // in order to test edge cases
+            min_creator_royalty: Perbill::from_percent(1), // in order to test edge cases
+            max_creator_royalty: Perbill::from_percent(5), // in order to test edge cases
             min_bid_step: 10,
             max_bid_step: 100,
             platform_fee_percentage: Perbill::from_percent(1),
@@ -489,6 +489,13 @@ impl Default for ExtBuilder {
 }
 
 impl ExtBuilder {
+    pub fn with_creator_royalty_pct_bounds(self, min_creator_royalty: Perbill, max_creator_royalty: Perbill) -> Self {
+        Self {
+            min_creator_royalty,
+            max_creator_royalty,
+            ..self
+        }
+    }
     pub fn build(self) -> sp_io::TestExternalities {
         let mut t = frame_system::GenesisConfig::default()
             .build_storage::<Test>()
