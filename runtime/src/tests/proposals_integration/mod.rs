@@ -498,7 +498,9 @@ where
             if self.set_member_lead {
                 let lead_account_id = account_from_member_id(self.lead_id);
 
-                let min_stake = <Runtime as working_group::Config<MembershipWorkingGroupInstance>>::MinimumApplicationStake::get();
+                let min_stake = <Runtime as working_group::Config<
+                    MembershipWorkingGroupInstance,
+                >>::MinimumApplicationStake::get();
 
                 increase_total_balance_issuance_using_account_id(
                     lead_account_id.clone(),
@@ -1099,7 +1101,8 @@ fn set_budget_increment_proposal_succeds() {
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
         let params =
-            <Runtime as proposals_codex::Config>::SetCouncilBudgetIncrementProposalParameters::get();
+            <Runtime as proposals_codex::Config>::SetCouncilBudgetIncrementProposalParameters::get(
+            );
         run_to_block(System::block_number() + params.grace_period + 1);
 
         assert_eq!(Council::budget_increment(), budget_increment);

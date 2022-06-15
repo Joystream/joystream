@@ -252,12 +252,14 @@ pub(crate) fn increase_total_balance_issuance_using_account_id(
 
 pub(crate) fn max_proposal_stake() -> u128 {
     let mut stakes = vec![];
-    stakes.push(<Runtime as proposals_codex::Config>::SetMaxValidatorCountProposalParameters::get());
+    stakes
+        .push(<Runtime as proposals_codex::Config>::SetMaxValidatorCountProposalParameters::get());
     stakes.push(<Runtime as proposals_codex::Config>::RuntimeUpgradeProposalParameters::get());
     stakes.push(<Runtime as proposals_codex::Config>::SignalProposalParameters::get());
     stakes.push(<Runtime as proposals_codex::Config>::FundingRequestProposalParameters::get());
     stakes.push(
-        <Runtime as proposals_codex::Config>::CreateWorkingGroupLeadOpeningProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::CreateWorkingGroupLeadOpeningProposalParameters::get(
+        ),
     );
     stakes.push(
         <Runtime as proposals_codex::Config>::FillWorkingGroupLeadOpeningProposalParameters::get(),
@@ -266,7 +268,8 @@ pub(crate) fn max_proposal_stake() -> u128 {
         <Runtime as proposals_codex::Config>::UpdateWorkingGroupBudgetProposalParameters::get(),
     );
     stakes.push(
-        <Runtime as proposals_codex::Config>::DecreaseWorkingGroupLeadStakeProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::DecreaseWorkingGroupLeadStakeProposalParameters::get(
+        ),
     );
     stakes
         .push(<Runtime as proposals_codex::Config>::SlashWorkingGroupLeadProposalParameters::get());
@@ -278,7 +281,8 @@ pub(crate) fn max_proposal_stake() -> u128 {
     );
     stakes.push(<Runtime as proposals_codex::Config>::AmendConstitutionProposalParameters::get());
     stakes.push(
-        <Runtime as proposals_codex::Config>::CancelWorkingGroupLeadOpeningProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::CancelWorkingGroupLeadOpeningProposalParameters::get(
+        ),
     );
     stakes.push(<Runtime as proposals_codex::Config>::SetMembershipPriceProposalParameters::get());
     stakes.push(

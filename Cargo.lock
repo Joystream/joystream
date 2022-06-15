@@ -2371,6 +2371,7 @@ dependencies = [
  "hex-literal",
  "lazy_static",
  "lite-json",
+ "log",
  "pallet-authority-discovery",
  "pallet-authorship",
  "pallet-babe",
@@ -2423,6 +2424,7 @@ dependencies = [
  "sp-std",
  "sp-transaction-pool",
  "sp-version",
+ "static_assertions",
  "strum 0.19.5",
  "substrate-wasm-builder",
 ]

@@ -34,6 +34,7 @@ pub(crate) fn create_transaction<
         .saturating_sub(1);
     let tip = 0;
     let extra: SignedExtra = (
+        frame_system::CheckNonZeroSender::<Runtime>::new(),
         frame_system::CheckSpecVersion::<Runtime>::new(),
         frame_system::CheckTxVersion::<Runtime>::new(),
         frame_system::CheckGenesis::<Runtime>::new(),
@@ -44,7 +45,7 @@ pub(crate) fn create_transaction<
     );
     let raw_payload = SignedPayload::new(call, extra)
         .map_err(|e| {
-            debug::warn!("Unable to create signed payload: {:?}", e);
+            log::warn!("Unable to create signed payload: {:?}", e);
         })
         .ok()?;
     let signature = raw_payload.using_encoded(|payload| C::sign(payload, public))?;

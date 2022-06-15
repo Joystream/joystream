@@ -637,8 +637,7 @@ fn run_create_fill_working_group_leader_opening_proposal_execution_succeeds<
                             staking_account_id: account_id.into(),
                         },
                 },
-            },
-        );
+            );
 
         assert_eq!(apply_result, Ok(()));
 
