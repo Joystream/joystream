@@ -581,6 +581,18 @@ fn unsuccessful_channel_deletion_with_invalid_bag_size() {
     })
 }
 
+#[test]
+fn unsuccessful_channel_deletion_with_creator_token_issued() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+
+        DeleteChannelFixture::default()
+            .call_and_assert(Err(Error::<Test>::CreatorTokenAlreadyIssued.into()));
+    })
+}
+
 ///////////////////////////////////////////////////////////////////////
 ////////////////////// Channel moderation actions /////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -3009,98 +3021,8 @@ fn successful_channel_transfer_by_owner_member() {
 }
 
 //////////////////////////////////////////////////////////////////////
-/////// Channel agent / owner permissions - ClaimChannelReward ///////
+/////////////// END OF CHANNEL AGENT PERMISSIONS TESTS ///////////////
 //////////////////////////////////////////////////////////////////////
-
-// Curator channels
-
-#[test]
-fn unsuccessful_channel_reward_claim_by_curator_agent_without_permissions() {
-    with_default_mock_builder(|| {
-        ContentTest::with_curator_channel()
-            .with_claimable_reward()
-            .with_all_agent_permissions_except(&[ChannelActionPermission::ClaimChannelReward])
-            .setup();
-        ClaimChannelRewardFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(default_curator_actor())
-            .call_and_assert(Err(
-                Error::<Test>::ChannelAgentInsufficientPermissions.into()
-            ));
-    })
-}
-
-#[test]
-fn successful_channel_reward_claim_by_curator_agent() {
-    with_default_mock_builder(|| {
-        ContentTest::with_curator_channel()
-            .with_claimable_reward()
-            .with_agent_permissions(&[ChannelActionPermission::ClaimChannelReward])
-            .setup();
-        ClaimChannelRewardFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(default_curator_actor())
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn successful_channel_reward_claim_by_lead() {
-    with_default_mock_builder(|| {
-        ContentTest::with_curator_channel()
-            .with_claimable_reward()
-            .setup();
-        ClaimChannelRewardFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            .call_and_assert(Ok(()));
-    })
-}
-
-// Member channels
-
-#[test]
-fn unsuccessful_channel_reward_claim_by_collaborator_without_permissions() {
-    with_default_mock_builder(|| {
-        ContentTest::with_member_channel()
-            .with_claimable_reward()
-            .with_all_agent_permissions_except(&[ChannelActionPermission::ClaimChannelReward])
-            .setup();
-        ClaimChannelRewardFixture::default()
-            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .call_and_assert(Err(
-                Error::<Test>::ChannelAgentInsufficientPermissions.into()
-            ));
-    })
-}
-
-#[test]
-fn successful_channel_reward_claim_by_collaborator() {
-    with_default_mock_builder(|| {
-        ContentTest::with_member_channel()
-            .with_claimable_reward()
-            .with_agent_permissions(&[ChannelActionPermission::ClaimChannelReward])
-            .setup();
-        ClaimChannelRewardFixture::default()
-            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn successful_channel_reward_claim_by_owner_member() {
-    with_default_mock_builder(|| {
-        ContentTest::with_member_channel()
-            .with_claimable_reward()
-            .setup();
-        ClaimChannelRewardFixture::default()
-            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .call_and_assert(Ok(()));
-    })
-}
 
 #[test]
 fn claim_council_reward_succeeded() {
@@ -3131,6 +3053,20 @@ fn claim_council_reward_succeeded() {
 }
 
 #[test]
+fn claim_council_reward_fails_during_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::with_member_channel().with_video().setup();
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(SECOND_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        ClaimCouncilRewardFixture::default()
+            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
+    })
+}
+
+#[test]
 fn claim_council_reward_failed_with_invalid_channel() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -3144,28 +3080,6 @@ fn claim_council_reward_failed_with_invalid_channel() {
             .with_origin(RawOrigin::Signed(LEAD_ACCOUNT_ID))
             .with_channel_id(invalid_channel_id)
             .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()));
-    })
-}
-
-#[test]
-fn claim_council_reward_failed_with_invalid_channel_transfer_status() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_STATE_BLOAT_BOND, &[]);
-
-        // Change channel transfer status.
-        let channel_id = ChannelId::one();
-        <crate::ChannelById<Test>>::mutate(channel_id, |channel| {
-            channel.transfer_status =
-                ChannelTransferStatus::PendingTransfer(PendingTransfer::default())
-        });
-
-        ClaimCouncilRewardFixture::default()
-            .with_origin(RawOrigin::Signed(LEAD_ACCOUNT_ID))
-            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
     })
 }
 

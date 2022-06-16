@@ -1,6 +1,6 @@
 import { Vec, Option, Tuple, BTreeSet, UInt, BTreeMap } from '@polkadot/types'
 import { bool, u8, u32, u64, Null, Bytes } from '@polkadot/types/primitive'
-import { JoyStructDecorated, JoyEnum, ChannelId, MemberId, Balance, Hash, BlockNumber } from '../common'
+import { JoyStructDecorated, JoyEnum, ChannelId, MemberId, Balance, Hash, BlockNumber, AccountId } from '../common'
 import { DataObjectId, DataObjectCreationParameters } from '../storage'
 
 export class DistributionBucketId extends u64 {}
@@ -14,6 +14,7 @@ export class VideoCategoryId extends u64 {}
 export class MaxNumber extends u32 {}
 export class IsCensored extends bool {}
 export class ChannelPrivilegeLevel extends u8 {}
+export class TokenId extends u64 {}
 
 // NFT types
 
@@ -35,7 +36,7 @@ export class EnglishAuction extends JoyStructDecorated({
   buy_now_price: Option.with(Balance),
   whitelist: BTreeSet.with(MemberId),
   end: BlockNumber,
-  auction_duration: BlockNumber,
+  start: BlockNumber,
   extension_period: BlockNumber,
   min_bid_step: Balance,
   top_bid: Option.with(EnglishAuctionBid),
@@ -47,6 +48,7 @@ export class OpenAuction extends JoyStructDecorated({
   whitelist: BTreeSet.with(MemberId),
   bid_lock_duration: BlockNumber,
   auction_id: OpenAuctionId,
+  start: BlockNumber,
 }) {}
 
 export class TransactionalStatus extends JoyEnum({
@@ -73,8 +75,8 @@ export class EnglishAuctionParams extends JoyStructDecorated({
   starting_price: Balance,
   buy_now_price: Option.with(Balance),
   whitelist: BTreeSet.with(MemberId),
-  end: BlockNumber,
-  auction_duration: BlockNumber,
+  starts_at: Option.with(BlockNumber),
+  duration: BlockNumber,
   extension_period: BlockNumber,
   min_bid_step: Balance,
 }) {}
@@ -82,6 +84,7 @@ export class EnglishAuctionParams extends JoyStructDecorated({
 export class OpenAuctionParams extends JoyStructDecorated({
   starting_price: Balance,
   buy_now_price: Option.with(Balance),
+  starts_at: Option.with(BlockNumber),
   whitelist: BTreeSet.with(MemberId),
   bid_lock_duration: BlockNumber,
 }) {}
@@ -139,6 +142,14 @@ export class ChannelActionPermission extends JoyEnum({
   TransferChannel: Null,
   ClaimChannelReward: Null,
   WithdrawFromChannelBalance: Null,
+  IssueCreatorToken: Null,
+  ClaimCreatorTokenPatronage: Null,
+  InitAndManageCreatorTokenSale: Null,
+  CreatorTokenIssuerTransfer: Null,
+  MakeCreatorTokenPermissionless: Null,
+  ReduceCreatorTokenPatronageRate: Null,
+  ManageRevenueSplits: Null,
+  DeissueCreatorToken: Null,
 }) {}
 
 export class ChannelAgentPermissions extends BTreeSet.with(ChannelActionPermission) {}
@@ -229,7 +240,7 @@ export class Channel extends JoyStructDecorated({
   owner: ChannelOwner,
   num_videos: u64,
   collaborators: BTreeMap.with(MemberId, ChannelAgentPermissions),
-  cumulative_payout_earned: Balance,
+  cumulative_reward_claimed: Balance,
   privilege_level: ChannelPrivilegeLevel,
   paused_features: BTreeSet.with(PausableChannelFeature),
   transfer_status: ChannelTransferStatus,
@@ -238,6 +249,7 @@ export class Channel extends JoyStructDecorated({
   weekly_nft_limit: LimitPerPeriod,
   daily_nft_counter: NftCounter,
   weekly_nft_counter: NftCounter,
+  creator_token_id: Option.with(TokenId),
 }) {}
 
 export class ChannelCreationParameters extends JoyStructDecorated({
@@ -322,8 +334,22 @@ export class ProofElement extends JoyStructDecorated({
 
 export class PullPayment extends JoyStructDecorated({
   channel_id: ChannelId,
-  cumulative_payout_claimed: Balance,
+  cumulative_reward_earned: Balance,
   reason: Hash,
+}) {}
+
+export class ChannelPayoutsPayloadParameters extends JoyStructDecorated({
+  uploader_account: AccountId,
+  object_creation_params: DataObjectCreationParameters,
+  expected_data_size_fee: Balance,
+}) {}
+
+export class UpdateChannelPayoutsParameters extends JoyStructDecorated({
+  commitment: Option.with(Hash),
+  payload: Option.with(ChannelPayoutsPayloadParameters),
+  min_cashout_allowed: Option.with(Balance),
+  max_cashout_allowed: Option.with(Balance),
+  channel_cashouts_enabled: Option.with(bool),
 }) {}
 
 export const contentTypes = {
@@ -387,6 +413,9 @@ export const contentTypes = {
   NftLimitId,
   LimitPerPeriod,
   NftCounter,
+  // Channel payouts
+  ChannelPayoutsPayloadParameters,
+  UpdateChannelPayoutsParameters,
 }
 
 export default contentTypes

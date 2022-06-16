@@ -51,8 +51,20 @@
 
 - name: Save output of chain spec to local file
   copy:
-    content: '{{ chain_spec_output.stdout | regex_replace("\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]", "") }}'
+    content: '{{ chain_spec_output.stdout }}'
     dest: '{{ remote_data_path }}/chain_spec_output.txt'
+  delegate_to: '{{ build_instance }}'
+  run_once: true
+
+- name: Format chain spec output
+  set_fact:
+    chain_spec_output_formatted: '{{ chain_spec_output.stdout | regex_replace("=", ": ") | from_yaml }}'
+  run_once: true
+
+- name: Extract keys from chain spec output
+  set_fact:
+    sudo_key: '{{ chain_spec_output_formatted.sudo }}'
+    endowed_key: '{{ chain_spec_output_formatted.endowed_0 }}'
   delegate_to: '{{ build_instance }}'
   run_once: true
 

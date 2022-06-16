@@ -465,6 +465,26 @@ fn unsuccessful_video_creation_with_max_object_size_limits_exceeded() {
 }
 
 #[test]
+fn successful_video_update_by_member_with_nft() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        create_default_member_owned_channel_with_video();
+
+        UpdateVideoFixture::default()
+            .with_nft_issuance(NftIssuanceParameters::<Test> {
+                royalty: None,
+                nft_metadata: b"test_nft_metadata".to_vec(),
+                non_channel_owner: Some(SECOND_MEMBER_ID),
+                init_transactional_status: Default::default(),
+            })
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
 fn successful_video_update_by_member_with_assets_upload() {
     with_default_mock_builder(|| {
         run_to_block(1);
@@ -1076,7 +1096,7 @@ fn unsuccessful_video_deletion_by_member_with_auth_failure() {
 
         DeleteVideoFixture::default()
             .with_sender(UNAUTHORIZED_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ACCOUNT_ID))
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
             .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()));
     })
 }

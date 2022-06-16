@@ -182,12 +182,13 @@ typegen:
     - bounty.OracleJudgmentSubmitted
     - bounty.WorkEntrantFundsWithdrawn
     # content NFTs
-    - content.AuctionStarted
+    - content.OpenAuctionStarted
+    - content.EnglishAuctionStarted
     - content.NftIssued
     - content.AuctionBidMade
     - content.AuctionBidCanceled
     - content.AuctionCanceled
-    - content.EnglishAuctionCompleted
+    - content.EnglishAuctionSettled
     - content.BidMadeCompletingAuction
     - content.OpenAuctionBidAccepted
     - content.OfferStarted
@@ -196,12 +197,10 @@ typegen:
     - content.NftSellOrderMade
     - content.NftBought
     - content.BuyNowCanceled
+    - content.BuyNowPriceUpdated
+    - content.NftSlingedBackToTheOriginalArtist
     # Utility
     - joystreamUtility.UpdatedWorkingGroupBudget
-
-  calls:
-    # Proposals discussion
-    - proposalsDiscussion.addPost
   outDir: ./mappings/generated/types
   customTypes:
     lib: '@joystream/types/augment/all/types'
@@ -662,8 +661,6 @@ mappings:
     - event: proposalsEngine.ProposalCancelled
       handler: proposalsEngine_ProposalCancelled
     # Proposals discussion
-    - event: proposalsDiscussion.ThreadCreated
-      handler: proposalsDiscussion_ThreadCreated
     - event: proposalsDiscussion.PostCreated
       handler: proposalsDiscussion_PostCreated
     - event: proposalsDiscussion.PostUpdated
@@ -748,8 +745,10 @@ mappings:
       handler: content_ChannelDeleted
 
     # content NFTs
-    - event: content.AuctionStarted
-      handler: contentNft_AuctionStarted
+    - event: content.OpenAuctionStarted
+      handler: contentNft_OpenAuctionStarted
+    - event: content.EnglishAuctionStarted
+      handler: contentNft_EnglishAuctionStarted
     - event: content.NftIssued
       handler: contentNft_NftIssued
     - event: content.AuctionBidMade
@@ -758,8 +757,8 @@ mappings:
       handler: contentNft_AuctionBidCanceled
     - event: content.AuctionCanceled
       handler: contentNft_AuctionCanceled
-    - event: content.EnglishAuctionCompleted
-      handler: contentNft_EnglishAuctionCompleted
+    - event: content.EnglishAuctionSettled
+      handler: contentNft_EnglishAuctionSettled
     - event: content.BidMadeCompletingAuction
       handler: contentNft_BidMadeCompletingAuction
     - event: content.OpenAuctionBidAccepted
@@ -776,6 +775,10 @@ mappings:
       handler: contentNft_NftBought
     - event: content.BuyNowCanceled
       handler: contentNft_BuyNowCanceled
+    - event: content.BuyNowPriceUpdated
+      handler: contentNft_BuyNowPriceUpdated
+    - event: content.NftSlingedBackToTheOriginalArtist
+      handler: contentNft_NftSlingedBackToTheOriginalArtist
 
     # storage v2
     - event: storage.StorageBucketCreated

@@ -448,10 +448,10 @@ pub trait Trait: frame_system::Trait + balances::Trait + common::MembershipTypes
 
     /// Storage working group pallet integration.
     type StorageWorkingGroup: common::working_group::WorkingGroupAuthenticator<Self>
-        + common::working_group::WorkingGroupBudgetHandler<Self>;
+        + common::working_group::WorkingGroupBudgetHandler<Self::AccountId, BalanceOf<Self>>;
 
     type DistributionWorkingGroup: common::working_group::WorkingGroupAuthenticator<Self>
-        + common::working_group::WorkingGroupBudgetHandler<Self>;
+        + common::working_group::WorkingGroupBudgetHandler<Self::AccountId, BalanceOf<Self>>;
 
     /// Module account initial balance (existential deposit).
     type ModuleAccountInitialBalance: Get<BalanceOf<Self>>;

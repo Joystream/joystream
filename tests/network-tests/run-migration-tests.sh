@@ -9,7 +9,7 @@ cd $SCRIPT_PATH
 # The joystream/node docker image tag which contains WASM runtime to upgrade chain with
 TARGET_RUNTIME_TAG=${TARGET_RUNTIME_TAG:=$(../../scripts/runtime-code-shasum.sh)}
 # The joystream/node docker image tag to start the chain with
-RUNTIME_TAG=${RUNTIME_TAG:=sumer}
+RUNTIME_TAG=${RUNTIME_TAG:=6740a4ae2bf40fe7c670fb49943cbbe290277601}
 # Post migration assertions by means of typescript scenarios required
 POST_MIGRATION_ASYNC_ASSERTIONS=${POST_MIGRATION_ASYNC_ASSERTIONS:=$true}
 # source common function used for node setup
@@ -74,14 +74,15 @@ function main {
     echo "***** STARTING NODE WITH FORKED STATE *****"
     CONTAINER_ID=$(start_node)
 
+    trap cleanup EXIT
+
     if ( $POST_MIGRATION_ASYNC_ASSERTIONS ); then
         sleep 120
         # verify assertion using typsecript
         echo "***** POST MIGRATION TYPESCRIPT *****"
-        yarn workspace network-tests node-ts-strict src/scenarios/post-migration.ts
+        ./run-test-scenario.sh postRuntimeUpdate
     fi
 }
 
 # main entrypoint
-main || :
-cleanup
+main

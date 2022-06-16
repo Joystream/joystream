@@ -95,5 +95,8 @@ decl_error! {
 
         /// Trying to fund with zero tokens
         ZeroTokensFunding,
+
+        /// Cannot withdraw: insufficient budget balance.
+        InsufficientBalanceForTransfer,
     }
 }

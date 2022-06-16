@@ -27,12 +27,22 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
     working_group::OpeningId,
     blog::PostId,
     <T as proposals_engine::Trait>::ProposalId,
+    content::UpdateChannelPayoutsParameters<T>,
 >;
 
 /// Proposal details provide voters the information required for the perceived voting.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
-pub enum ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId, PostId, ProposalId> {
+pub enum ProposalDetails<
+    Balance,
+    BlockNumber,
+    AccountId,
+    WorkerId,
+    OpeningId,
+    PostId,
+    ProposalId,
+    UpdateChannelPayoutsParameters,
+> {
     /// The signal of the `Signal` proposal
     Signal(Vec<u8>),
 
@@ -115,10 +125,31 @@ pub enum ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId, P
 
     /// `Update global NFT limit` proposal
     UpdateGlobalNftLimit(NftLimitPeriod, u64),
+
+    /// `Update Channel Payouts` proposal
+    UpdateChannelPayouts(UpdateChannelPayoutsParameters),
 }
 
-impl<Balance, BlockNumber, AccountId, WorkerId, OpeningId, PostId, ProposalId> Default
-    for ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId, PostId, ProposalId>
+impl<
+        Balance,
+        BlockNumber,
+        AccountId,
+        WorkerId,
+        OpeningId,
+        PostId,
+        ProposalId,
+        UpdateChannelPayoutsParameters,
+    > Default
+    for ProposalDetails<
+        Balance,
+        BlockNumber,
+        AccountId,
+        WorkerId,
+        OpeningId,
+        PostId,
+        ProposalId,
+        UpdateChannelPayoutsParameters,
+    >
 {
     fn default() -> Self {
         ProposalDetails::Signal(b"invalid proposal details".to_vec())

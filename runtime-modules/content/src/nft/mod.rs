@@ -1,36 +1,75 @@
 mod types;
+use sp_runtime::traits::CheckedSub;
 use sp_std::borrow::ToOwned;
 pub use types::*;
 
 use crate::*;
 
 impl<T: Trait> Module<T> {
-    /// Ensure auction participant has sufficient balance to make bid
-    pub(crate) fn ensure_has_sufficient_balance(
+    pub(crate) fn ensure_has_sufficient_balance_for_bid(
         participant: &T::AccountId,
         bid: BalanceOf<T>,
+        old_bid: Option<BalanceOf<T>>,
     ) -> DispatchResult {
+        let old_bid = old_bid.unwrap_or_else(Zero::zero);
+
         ensure!(
-            Balances::<T>::can_reserve(participant, bid),
+            Balances::<T>::usable_balance(participant) >= bid.saturating_sub(old_bid),
             Error::<T>::InsufficientBalance
         );
         Ok(())
+    }
+
+    /// Make bid transfer to the treasury account or get refunded if the old bid is greater than a new one.
+    pub(crate) fn transfer_bid_to_treasury(
+        participant: &T::AccountId,
+        bid: BalanceOf<T>,
+        old_bid: Option<BalanceOf<T>>,
+    ) -> DispatchResult {
+        if let Some(old_bid) = old_bid {
+            if bid >= old_bid {
+                // Deposit the difference to the module account.
+                let bid_diff_amount = bid.saturating_sub(old_bid);
+                ContentTreasury::<T>::deposit(&participant, bid_diff_amount)
+            } else {
+                // Withdraw the difference from the module account.
+                let bid_diff_amount = old_bid.saturating_sub(bid);
+                ContentTreasury::<T>::withdraw(&participant, bid_diff_amount)
+            }
+        } else {
+            ContentTreasury::<T>::deposit(&participant, bid)
+        }
+    }
+
+    /// Withdraw the bid from the treasury account.
+    pub(crate) fn withdraw_bid_payment(
+        participant: &T::AccountId,
+        bid: BalanceOf<T>,
+    ) -> DispatchResult {
+        ContentTreasury::<T>::withdraw(&participant, bid)
     }
 
     /// Safety/bound checks for english auction parameters
     pub(crate) fn validate_english_auction_params(
         auction_params: &EnglishAuctionParams<T>,
     ) -> DispatchResult {
-        Self::ensure_auction_duration_bounds_satisfied(auction_params.auction_duration)?;
+        // infere auction duration from params & current block
+        let auction_duration = auction_params.duration;
+        Self::ensure_auction_duration_bounds_satisfied(auction_duration)?;
         Self::ensure_extension_period_bounds_satisfied(auction_params.extension_period)?;
 
         Self::ensure_bid_step_bounds_satisfied(auction_params.min_bid_step)?;
 
         // Ensure auction_duration of English auction is >= extension_period
         ensure!(
-            auction_params.auction_duration >= auction_params.extension_period,
+            auction_duration >= auction_params.extension_period,
             Error::<T>::ExtensionPeriodIsGreaterThenAuctionDuration
         );
+
+        // validate forward start limits
+        if let Some(starts_at) = auction_params.starts_at {
+            Self::ensure_starts_at_delta_bounds_satisfied(starts_at)?;
+        }
 
         Self::ensure_starting_price_bounds_satisfied(auction_params.starting_price)?;
 
@@ -56,12 +95,35 @@ impl<T: Trait> Module<T> {
 
         Self::ensure_whitelist_bounds_satisfied(&auction_params.whitelist)?;
 
+        // validate forward start limits
+        if let Some(starts_at) = auction_params.starts_at {
+            Self::ensure_starts_at_delta_bounds_satisfied(starts_at)?;
+        }
+
         if let Some(buy_now_price) = auction_params.buy_now_price {
             ensure!(
                 buy_now_price > auction_params.starting_price,
                 Error::<T>::BuyNowIsLessThenStartingPrice
             );
         }
+
+        Ok(())
+    }
+
+    /// Ensure starts at bounds satisfied
+    pub(crate) fn ensure_starts_at_delta_bounds_satisfied(
+        starts_at: T::BlockNumber,
+    ) -> DispatchResult {
+        ensure!(
+            starts_at >= <frame_system::Module<T>>::block_number(),
+            Error::<T>::StartsAtLowerBoundExceeded
+        );
+
+        ensure!(
+            starts_at
+                <= <frame_system::Module<T>>::block_number() + Self::auction_starts_at_max_delta(),
+            Error::<T>::StartsAtUpperBoundExceeded
+        );
 
         Ok(())
     }
@@ -221,36 +283,30 @@ impl<T: Trait> Module<T> {
 
     /// Buy nft
     pub(crate) fn buy_now(
-        in_channel: T::ChannelId,
-        mut nft: Nft<T>,
-        owner_account_id: T::AccountId,
+        nft: Nft<T>,
+        royalty_payment: Option<(Royalty, T::AccountId)>,
+        old_owner_account_id: Option<T::AccountId>,
         new_owner_account_id: T::AccountId,
         new_owner: T::MemberId,
     ) -> Nft<T> {
         if let TransactionalStatus::<T>::BuyNow(price) = &nft.transactional_status {
             Self::complete_payment(
-                in_channel,
-                nft.creator_royalty,
-                *price,
+                royalty_payment,
+                price.to_owned(),
                 new_owner_account_id,
-                Some(owner_account_id),
-                false,
+                old_owner_account_id,
             );
-
-            nft.owner = NftOwner::Member(new_owner);
         }
 
-        Nft::<T> {
-            transactional_status: TransactionalStatus::<T>::Idle,
-            ..nft
-        }
+        nft.with_transactional_status(TransactionalStatus::<T>::Idle)
+            .with_member_owner(new_owner)
     }
 
     /// Completes nft offer
     pub(crate) fn complete_nft_offer(
-        in_channel: T::ChannelId,
         mut nft: Nft<T>,
-        owner_account_id: T::AccountId,
+        royalty_payment: Option<(Royalty, T::AccountId)>,
+        owner_account_id: Option<T::AccountId>,
         new_owner_account_id: T::AccountId,
     ) -> Nft<T> {
         if let TransactionalStatus::<T>::InitiatedOfferToMember(to, price) =
@@ -258,15 +314,12 @@ impl<T: Trait> Module<T> {
         {
             if let Some(price) = price {
                 Self::complete_payment(
-                    in_channel,
-                    nft.creator_royalty,
+                    royalty_payment,
                     *price,
                     new_owner_account_id,
-                    Some(owner_account_id),
-                    false,
+                    owner_account_id,
                 );
             }
-
             nft.owner = NftOwner::Member(*to);
         }
 
@@ -278,73 +331,59 @@ impl<T: Trait> Module<T> {
 
     /// Complete payment, either auction related or buy now/offer
     pub(crate) fn complete_payment(
-        in_channel: T::ChannelId,
-        creator_royalty: Option<Royalty>,
+        royalty_payment: Option<(Royalty, T::AccountId)>,
         amount: BalanceOf<T>,
         sender_account_id: T::AccountId,
         receiver_account_id: Option<T::AccountId>,
-        // for auction related payments
-        is_auction: bool,
     ) {
-        let auction_fee = Self::platform_fee_percentage() * amount;
+        let _ = Balances::<T>::slash(&sender_account_id, amount);
 
-        // Slash amount from sender
-        if is_auction {
-            let _ = Balances::<T>::slash_reserved(&sender_account_id, amount);
-        } else {
-            let _ = Balances::<T>::slash(&sender_account_id, amount);
+        let platform_fee = Self::platform_fee_percentage().mul_floor(amount);
+        let amount_after_platform_fee = amount.saturating_sub(platform_fee);
+        let royalty_fee = royalty_payment
+            .as_ref()
+            .map_or(<T as balances::Trait>::Balance::zero(), |(r, _)| {
+                r.mul_floor(amount)
+            });
+
+        let amount_for_receiver = amount_after_platform_fee
+            .checked_sub(&royalty_fee)
+            .unwrap_or(amount_after_platform_fee);
+
+        if let Some(ref receiver_account) = receiver_account_id {
+            if !amount_for_receiver.is_zero() {
+                let _ = Balances::<T>::deposit_creating(receiver_account, amount_for_receiver);
+            }
         }
 
-        if let Some(creator_royalty) = creator_royalty {
-            let royalty = creator_royalty * amount;
-
-            // Deposit amount, exluding royalty and platform fee into receiver account
-            match receiver_account_id {
-                Some(receiver_account_id) if amount > royalty + auction_fee => {
-                    let _ = Balances::<T>::deposit_creating(
-                        &receiver_account_id,
-                        amount - royalty - auction_fee,
-                    );
-                }
-                Some(receiver_account_id) => {
-                    let _ =
-                        Balances::<T>::deposit_creating(&receiver_account_id, amount - auction_fee);
-                }
-                _ => (),
-            };
-
-            // deposit to creator account
-            ContentTreasury::<T>::deposit_to_channel_account(in_channel, royalty);
-        } else if let Some(receiver_account_id) = receiver_account_id {
-            // Deposit amount, exluding auction fee into receiver account
-            let _ = Balances::<T>::deposit_creating(&receiver_account_id, amount - auction_fee);
+        if let Some((_, ref royalty_reward_account)) = royalty_payment {
+            if !royalty_fee.is_zero() {
+                let _ = Balances::<T>::deposit_creating(royalty_reward_account, royalty_fee);
+            }
         }
     }
 
     pub(crate) fn complete_auction(
         nft: Nft<T>,
         in_channel: T::ChannelId,
-        src_account_id: T::AccountId,
+        royalty_payment: Option<(Royalty, T::AccountId)>,
         winner_id: T::MemberId,
         amount: BalanceOf<T>,
     ) -> Nft<T> {
-        let dest_account_id = Self::ensure_owner_account_id(in_channel, &nft).ok();
+        let account_deposit_into = Self::ensure_owner_account_id(in_channel, &nft).ok();
+        let account_withdraw_from = ContentTreasury::<T>::module_account_id();
 
         Self::complete_payment(
-            in_channel,
-            nft.creator_royalty,
+            royalty_payment,
             amount,
-            src_account_id,
-            dest_account_id,
-            true,
+            account_withdraw_from,
+            account_deposit_into,
         );
 
         nft.with_transactional_status(TransactionalStatus::<T>::Idle)
             .with_member_owner(winner_id)
     }
 
-    // fetches the desginated nft owner account, preconditions:
-    // 1. Self::ensure_channel_exist(channel_id).is_ok()
     pub(crate) fn ensure_owner_account_id(
         channel_id: T::ChannelId,
         nft: &Nft<T>,
@@ -414,5 +453,18 @@ impl<T: Trait> Module<T> {
             Error::<T>::NftNotInBuyNowState
         );
         Ok(())
+    }
+
+    pub(crate) fn build_royalty_payment(
+        video: &Video<T>,
+        creator_royalty: Option<Royalty>,
+    ) -> Option<(Royalty, T::AccountId)> {
+        // payment is none if there is no royalty
+        if let Some(royalty) = creator_royalty {
+            let reward_account = ContentTreasury::<T>::account_for_channel(video.in_channel);
+            Some((royalty, reward_account))
+        } else {
+            None
+        }
     }
 }

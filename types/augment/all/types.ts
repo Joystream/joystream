@@ -1,9 +1,10 @@
 // Auto-generated via `yarn polkadot-types-from-defs`, do not edit
 /* eslint-disable */
 
-import type { BTreeMap, BTreeSet, Bytes, Enum, GenericAccountId, Option, Struct, Text, Vec, bool, u128, u32, u64, u8 } from '@polkadot/types';
+import type { BTreeMap, BTreeSet, Bytes, Enum, GenericAccountId, Option, Struct, Text, U8aFixed, Vec, bool, u128, u32, u64, u8 } from '@polkadot/types';
 import type { ITuple } from '@polkadot/types/types';
-import type { AccountId, Balance, Hash, Perbill } from '@polkadot/types/interfaces/runtime';
+import type { AccountId, Balance, Hash, Perbill, Permill, Perquintill } from '@polkadot/types/interfaces/runtime';
+import type { ValidatorPrefsWithCommission } from '@polkadot/types/interfaces/staking';
 import type { AccountInfoWithRefCount } from '@polkadot/types/interfaces/system';
 
 /** @name AccountInfo */
@@ -101,6 +102,9 @@ export interface BlockAndTime extends Struct {
   readonly block: u32;
   readonly time: u64;
 }
+
+/** @name BlockRate */
+export interface BlockRate extends Perquintill {}
 
 /** @name Bounty */
 export interface Bounty extends Struct {
@@ -212,7 +216,7 @@ export interface Channel extends Struct {
   readonly owner: ChannelOwner;
   readonly num_videos: u64;
   readonly collaborators: BTreeMap<MemberId, ChannelAgentPermissions>;
-  readonly cumulative_payout_earned: u128;
+  readonly cumulative_reward_claimed: u128;
   readonly privilege_level: ChannelPrivilegeLevel;
   readonly paused_features: BTreeSet<PausableChannelFeature>;
   readonly transfer_status: ChannelTransferStatus;
@@ -221,6 +225,7 @@ export interface Channel extends Struct {
   readonly weekly_nft_limit: LimitPerPeriod;
   readonly daily_nft_counter: NftCounter;
   readonly weekly_nft_counter: NftCounter;
+  readonly creator_token_id: Option<u64>;
 }
 
 /** @name ChannelActionPermission */
@@ -238,6 +243,14 @@ export interface ChannelActionPermission extends Enum {
   readonly isTransferChannel: boolean;
   readonly isClaimChannelReward: boolean;
   readonly isWithdrawFromChannelBalance: boolean;
+  readonly isIssueCreatorToken: boolean;
+  readonly isClaimCreatorTokenPatronage: boolean;
+  readonly isInitAndManageCreatorTokenSale: boolean;
+  readonly isCreatorTokenIssuerTransfer: boolean;
+  readonly isMakeCreatorTokenPermissionless: boolean;
+  readonly isReduceCreatorTokenPatronageRate: boolean;
+  readonly isManageRevenueSplits: boolean;
+  readonly isDeissueCreatorToken: boolean;
 }
 
 /** @name ChannelAgentPermissions */
@@ -278,6 +291,13 @@ export interface ChannelOwner extends Enum {
   readonly asMember: MemberId;
   readonly isCurators: boolean;
   readonly asCurators: CuratorGroupId;
+}
+
+/** @name ChannelPayoutsPayloadParameters */
+export interface ChannelPayoutsPayloadParameters extends Struct {
+  readonly uploader_account: AccountId;
+  readonly object_creation_params: DataObjectCreationParameters;
+  readonly expected_data_size_fee: u128;
 }
 
 /** @name ChannelPrivilegeLevel */
@@ -511,7 +531,7 @@ export interface EnglishAuction extends Struct {
   readonly buy_now_price: Option<u128>;
   readonly whitelist: BTreeSet<MemberId>;
   readonly end: u32;
-  readonly auction_duration: u32;
+  readonly start: u32;
   readonly extension_period: u32;
   readonly min_bid_step: u128;
   readonly top_bid: Option<EnglishAuctionBid>;
@@ -528,8 +548,8 @@ export interface EnglishAuctionParams extends Struct {
   readonly starting_price: u128;
   readonly buy_now_price: Option<u128>;
   readonly whitelist: BTreeSet<MemberId>;
-  readonly end: u32;
-  readonly auction_duration: u32;
+  readonly starts_at: Option<u32>;
+  readonly duration: u32;
   readonly extension_period: u32;
   readonly min_bid_step: u128;
 }
@@ -641,6 +661,9 @@ export interface InviteMembershipParameters extends Struct {
 /** @name IsCensored */
 export interface IsCensored extends bool {}
 
+/** @name JoyBalance */
+export interface JoyBalance extends u128 {}
+
 /** @name LimitPerPeriod */
 export interface LimitPerPeriod extends Struct {
   readonly limit: u64;
@@ -663,6 +686,15 @@ export interface Membership extends Struct {
   readonly controller_account: AccountId;
   readonly verified: bool;
   readonly invites: u32;
+}
+
+/** @name MerkleProof */
+export interface MerkleProof extends Vec<ITuple<[U8aFixed, MerkleSide]>> {}
+
+/** @name MerkleSide */
+export interface MerkleSide extends Enum {
+  readonly isRight: boolean;
+  readonly isLeft: boolean;
 }
 
 /** @name ModerationPermissionsByLevel */
@@ -711,6 +743,16 @@ export interface NftOwner extends Enum {
   readonly asMember: MemberId;
 }
 
+/** @name OfferingState */
+export interface OfferingState extends Enum {
+  readonly isIdle: boolean;
+  readonly isUpcomingSale: boolean;
+  readonly asUpcomingSale: TokenSale;
+  readonly isSale: boolean;
+  readonly asSale: TokenSale;
+  readonly isBondingCurve: boolean;
+}
+
 /** @name OpenAuction */
 export interface OpenAuction extends Struct {
   readonly starting_price: u128;
@@ -718,6 +760,7 @@ export interface OpenAuction extends Struct {
   readonly whitelist: BTreeSet<MemberId>;
   readonly bid_lock_duration: u32;
   readonly auction_id: OpenAuctionId;
+  readonly start: u32;
 }
 
 /** @name OpenAuctionBid */
@@ -734,6 +777,7 @@ export interface OpenAuctionId extends u64 {}
 export interface OpenAuctionParams extends Struct {
   readonly starting_price: u128;
   readonly buy_now_price: Option<u128>;
+  readonly starts_at: Option<u32>;
   readonly whitelist: BTreeSet<MemberId>;
   readonly bid_lock_duration: u32;
 }
@@ -798,6 +842,19 @@ export interface PausableChannelFeature extends Enum {
   readonly isVideoUpdate: boolean;
   readonly isChannelUpdate: boolean;
   readonly isCreatorTokenIssuance: boolean;
+}
+
+/** @name Payment */
+export interface Payment extends Struct {
+  readonly remark: Bytes;
+  readonly amount: u128;
+}
+
+/** @name PaymentWithVesting */
+export interface PaymentWithVesting extends Struct {
+  readonly remark: Bytes;
+  readonly amount: u128;
+  readonly vesting_schedule: Option<VestingScheduleParams>;
 }
 
 /** @name Penalty */
@@ -919,6 +976,8 @@ export interface ProposalDetails extends Enum {
   readonly asVetoProposal: ProposalId;
   readonly isUpdateGlobalNftLimit: boolean;
   readonly asUpdateGlobalNftLimit: ITuple<[NftLimitPeriod, u64]>;
+  readonly isUpdateChannelPayouts: boolean;
+  readonly asUpdateChannelPayouts: UpdateChannelPayoutsParameters;
 }
 
 /** @name ProposalDetailsOf */
@@ -975,6 +1034,8 @@ export interface ProposalDetailsOf extends Enum {
   readonly asVetoProposal: ProposalId;
   readonly isUpdateGlobalNftLimit: boolean;
   readonly asUpdateGlobalNftLimit: ITuple<[NftLimitPeriod, u64]>;
+  readonly isUpdateChannelPayouts: boolean;
+  readonly asUpdateChannelPayouts: UpdateChannelPayoutsParameters;
 }
 
 /** @name ProposalId */
@@ -1015,7 +1076,7 @@ export interface ProposalStatus extends Enum {
 /** @name PullPayment */
 export interface PullPayment extends Struct {
   readonly channel_id: ChannelId;
-  readonly cumulative_payout_claimed: u128;
+  readonly cumulative_reward_earned: u128;
   readonly reason: Hash;
 }
 
@@ -1076,6 +1137,13 @@ export interface SetLeadParams extends ITuple<[MemberId, AccountId]> {}
 export interface Side extends Enum {
   readonly isLeft: boolean;
   readonly isRight: boolean;
+}
+
+/** @name SingleDataObjectUploadParams */
+export interface SingleDataObjectUploadParams extends Struct {
+  readonly object_creation_params: DataObjectCreationParameters;
+  readonly expeted_data_size_fee: JoyBalance;
+  readonly expected_data_object_state_bloat_bond: JoyBalance;
 }
 
 /** @name StakeParameters */
@@ -1186,6 +1254,50 @@ export interface ThreadOf extends Struct {
 /** @name Title */
 export interface Title extends Text {}
 
+/** @name TokenAllocation */
+export interface TokenAllocation extends Struct {
+  readonly amount: u128;
+  readonly vesting_schedule_params: Option<VestingScheduleParams>;
+}
+
+/** @name TokenId */
+export interface TokenId extends u64 {}
+
+/** @name TokenIssuanceParams */
+export interface TokenIssuanceParams extends Struct {
+  readonly initial_allocation: BTreeMap<MemberId, TokenAllocation>;
+  readonly symbol: Hash;
+  readonly transfer_policy: TransferPolicyParams;
+  readonly patronage_rate: YearlyRate;
+}
+
+/** @name TokenSale */
+export interface TokenSale extends Struct {
+  readonly unit_price: JoyBalance;
+  readonly quantity_left: u128;
+  readonly funds_collected: JoyBalance;
+  readonly token_source: MemberId;
+  readonly earnings_destination: Option<AccountId>;
+  readonly start_block: u32;
+  readonly vesting_schedule_params: Option<VestingScheduleParams>;
+  readonly cap_per_member: Option<u128>;
+  readonly auto_finalize: bool;
+}
+
+/** @name TokenSaleId */
+export interface TokenSaleId extends u32 {}
+
+/** @name TokenSaleParams */
+export interface TokenSaleParams extends Struct {
+  readonly unit_price: JoyBalance;
+  readonly upper_bound_quantity: u128;
+  readonly starts_at: Option<u32>;
+  readonly duration: u32;
+  readonly vesting_schedule_params: Option<VestingScheduleParams>;
+  readonly cap_per_member: Option<u128>;
+  readonly metadata: Option<Bytes>;
+}
+
 /** @name TransactionalStatus */
 export interface TransactionalStatus extends Enum {
   readonly isIdle: boolean;
@@ -1205,11 +1317,40 @@ export interface TransferParameters extends Struct {
   readonly price: u128;
 }
 
+/** @name TransferPolicy */
+export interface TransferPolicy extends Enum {
+  readonly isPermissionless: boolean;
+  readonly isPermissioned: boolean;
+  readonly asPermissioned: Hash;
+}
+
+/** @name TransferPolicyParams */
+export interface TransferPolicyParams extends Enum {
+  readonly isPermissionless: boolean;
+  readonly isPermissioned: boolean;
+  readonly asPermissioned: WhitelistParams;
+}
+
+/** @name UpdateChannelPayoutsParameters */
+export interface UpdateChannelPayoutsParameters extends Struct {
+  readonly commitment: Option<Hash>;
+  readonly payload: Option<ChannelPayoutsPayloadParameters>;
+  readonly min_cashout_allowed: Option<u128>;
+  readonly max_cashout_allowed: Option<u128>;
+  readonly channel_cashouts_enabled: Option<bool>;
+}
+
 /** @name UpdatedBody */
 export interface UpdatedBody extends Option<Text> {}
 
 /** @name UpdatedTitle */
 export interface UpdatedTitle extends Option<Text> {}
+
+/** @name UploadContent */
+export interface UploadContent extends Struct {
+  readonly upload_account: AccountId;
+  readonly bag_id: BagId;
+}
 
 /** @name UploadParameters */
 export interface UploadParameters extends Struct {
@@ -1224,6 +1365,41 @@ export interface UploadParameters extends Struct {
 
 /** @name Url */
 export interface Url extends Text {}
+
+/** @name ValidatedPayment */
+export interface ValidatedPayment extends Struct {
+  readonly payment: PaymentWithVesting;
+  readonly vesting_cleanup_candidate: Option<VestingSource>;
+}
+
+/** @name ValidatorPrefs */
+export interface ValidatorPrefs extends ValidatorPrefsWithCommission {}
+
+/** @name VestingSchedule */
+export interface VestingSchedule extends Struct {
+  readonly linear_vesting_start_block: u32;
+  readonly linear_vesting_duration: u32;
+  readonly cliff_amount: u128;
+  readonly post_cliff_total_amount: u128;
+  readonly burned_amount: u128;
+}
+
+/** @name VestingScheduleParams */
+export interface VestingScheduleParams extends Struct {
+  readonly linear_vesting_starting_block: u32;
+  readonly linear_vesting_duration: u32;
+  readonly cliff_amount: u128;
+  readonly burned_amount: u128;
+}
+
+/** @name VestingSource */
+export interface VestingSource extends Enum {
+  readonly isInitialIssuance: boolean;
+  readonly isSalet: boolean;
+  readonly asSalet: TokenSaleId;
+  readonly isIssuerTransfer: boolean;
+  readonly asIssuerTransfer: u64;
+}
 
 /** @name Video */
 export interface Video extends Struct {
@@ -1295,6 +1471,12 @@ export interface Voucher extends Struct {
   readonly objectsUsed: u64;
 }
 
+/** @name WhitelistParams */
+export interface WhitelistParams extends Struct {
+  readonly commitment: Hash;
+  readonly payload: Option<SingleDataObjectUploadParams>;
+}
+
 /** @name Worker */
 export interface Worker extends Struct {
   readonly member_id: MemberId;
@@ -1329,5 +1511,8 @@ export interface WorkingGroup extends Enum {
   readonly isOperationsGamma: boolean;
   readonly isMembership: boolean;
 }
+
+/** @name YearlyRate */
+export interface YearlyRate extends Permill {}
 
 export type PHANTOM_ALL = 'all';
