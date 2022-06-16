@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use std::collections::BTreeMap;
-use std::iter::FromIterator;
+//use std::iter::FromIterator;
 
 use super::fixtures::*;
 use super::mock::{CuratorGroupId, CuratorId, Event, *};

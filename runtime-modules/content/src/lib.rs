@@ -3204,7 +3204,7 @@ impl<T: Config> Module<T> {
             .collect::<BTreeSet<_>>()
     }
 
-    fn ensure_sufficient_balance_for_channel_transfer(
+    fn _ensure_sufficient_balance_for_channel_transfer(
         owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
         transfer_cost: BalanceOf<T>,
     ) -> DispatchResult {
@@ -3226,28 +3226,30 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
-    // Validates channel transfer acceptance parameters: commitment params, new owner balance.
-    fn _validate_channel_transfer_acceptance(
-        commitment_params: &TransferParameters<T::MemberId, BalanceOf<T>>,
-        params: &PendingTransfer<T::MemberId, T::CuratorGroupId, BalanceOf<T>>,
-    ) -> DispatchResult {
-        ensure!(
-            params.transfer_params == *commitment_params,
-            Error::<T>::InvalidChannelTransferCommitmentParams
-        );
+    // TODO: enable after enabling channel transfer
+    // // Validates channel transfer acceptance parameters: commitment params, new owner balance.
+    // fn _validate_channel_transfer_acceptance(
+    //     commitment_params: &TransferParameters<T::MemberId, BalanceOf<T>>,
+    //     params: &PendingTransfer<T::MemberId, T::CuratorGroupId, BalanceOf<T>>,
+    // ) -> DispatchResult {
+    //     ensure!(
+    //         params.transfer_params == *commitment_params,
+    //         Error::<T>::InvalidChannelTransferCommitmentParams
+    //     );
 
-        // Check for new owner balance only if the transfer is not free.
-        if !params.transfer_params.is_free_of_charge() {
-            Self::ensure_sufficient_balance_for_channel_transfer(
-                &params.new_owner,
-                params.transfer_params.price,
-            )?;
-        }
+    //     // Check for new owner balance only if the transfer is not free.
+    //     if !params.transfer_params.is_free_of_charge() {
+    //         Self::ensure_sufficient_balance_for_channel_transfer(
+    //             &params.new_owner,
+    //             params.transfer_params.price,
+    //         )?;
+    //     }
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
+
     // Transfers balance from the new channel owner to the old channel owner.
-    fn pay_for_channel_swap(
+    fn _pay_for_channel_swap(
         old_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
         new_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
         price: BalanceOf<T>,
@@ -3342,7 +3344,7 @@ impl<T: Config> Module<T> {
     }
 
     // Checks generic NFT-limit.
-    fn check_generic_nft_limit(
+    fn _check_generic_nft_limit(
         nft_limit: &LimitPerPeriod<T::BlockNumber>,
         nft_counter: &NftCounter<T::BlockNumber>,
         error: Error<T>,

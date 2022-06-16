@@ -4417,7 +4417,7 @@ impl SuccessfulChannelCollaboratorsManagementFlow {
 }
 
 // helper functions
-pub fn assert_group_has_permissions_for_actions(
+pub fn __assert_group_has_permissions_for_actions(
     group: &CuratorGroup<Test>,
     privilege_level: <Test as Config>::ChannelPrivilegeLevel,
     allowed_actions: &Vec<ContentModerationAction>,

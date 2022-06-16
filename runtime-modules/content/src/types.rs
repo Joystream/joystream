@@ -313,7 +313,7 @@ pub struct TransferParameters<MemberId: Ord, Balance: Zero> {
 
 impl<MemberId: Ord, Balance: Zero> TransferParameters<MemberId, Balance> {
     // Defines whether the transfer is free.
-    pub(crate) fn is_free_of_charge(&self) -> bool {
+    pub(crate) fn _is_free_of_charge(&self) -> bool {
         self.price.is_zero()
     }
 }
