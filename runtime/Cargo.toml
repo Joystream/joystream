@@ -44,7 +44,7 @@ frame-election-provider-support = { package = 'frame-election-provider-support',
 pallet-election-provider-support-benchmarking = { package = 'pallet-election-provider-support-benchmarking', default-features = false, optional = true, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
 pallet-election-provider-multi-phase = { package = 'pallet-election-provider-multi-phase', default-features = false, optional = true, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
 pallet-elections-phragmen = { package = 'pallet-elections-phragmen', default-features = false, optional = true, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
-pallet-bags-list = { pacakge = 'pallet-bags-list', default-features = false, optional = true, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
+pallet-bags-list = { package = 'pallet-bags-list', default-features = false, optional = true, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 
 # Pallets
 pallet-grandpa = { package = 'pallet-grandpa', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}

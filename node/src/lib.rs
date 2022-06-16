@@ -1,6 +1,8 @@
 pub mod chain_spec;
-pub mod cli;
+mod cli;
 #[macro_use]
-pub mod service;
+mod service;
 pub mod command;
-pub mod node_rpc;
+mod command_helper;
+mod node_executor;
+mod node_rpc;

@@ -21,47 +21,35 @@
 // Remove after the Antioch release.
 #![allow(clippy::unnecessary_wraps)]
 
+pub mod content_config;
 pub mod council_config;
 pub mod forum_config;
 pub mod initial_balances;
 pub mod initial_members;
 
+use grandpa_primitives::AuthorityId as GrandpaId;
 use hex_literal::hex;
-use node_runtime::constants::currency::*;
-use node_runtime::Block;
 use node_runtime::{
-    membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, BalancesConfig,
-    ContentDirectoryConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
-    ForumConfig, GrandpaConfig, ImOnlineConfig, MembersConfig, SessionConfig, SessionKeys,
-    StakerStatus, StakingConfig, SudoConfig, SystemConfig,
+    constants::currency::*, membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig,
+    BalancesConfig, Block, ContentConfig, CouncilConfig, ForumConfig, GrandpaConfig,
+    ImOnlineConfig, MaxNominations, MembersConfig, ReferendumConfig, SessionConfig, SessionKeys,
+    StakerStatus, StakingConfig, SudoConfig, SystemConfig, TransactionPaymentConfig,
 };
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_chain_spec::ChainSpecExtension;
 use sc_service::ChainType;
 use sc_telemetry::TelemetryEndpoints;
 use serde::{Deserialize, Serialize};
-use serde_json as json;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_babe::AuthorityId as BabeId;
 use sp_core::{crypto::UncheckedInto, sr25519, Pair, Public};
-use sp_finality_grandpa::AuthorityId as GrandpaId;
-use sp_runtime::traits::{IdentifyAccount, Verify};
-use sp_runtime::Perbill;
-
-use node_runtime::{
-    membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
-    ContentConfig, ForumConfig, GrandpaConfig, ImOnlineConfig, MembersConfig, SessionConfig,
-    SessionKeys, Signature, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
+use sp_runtime::{
+    traits::{IdentifyAccount, Verify},
+    Perbill,
 };
 
-// Exported to be used by chain-spec-builder
-pub use node_runtime::{AccountId, GenesisConfig};
-
-pub mod content_config;
-pub mod council_config;
-pub mod forum_config;
-pub mod initial_balances;
-pub mod initial_members;
+pub use node_runtime::primitives::{AccountId, Balance, Signature};
+pub use node_runtime::GenesisConfig;
 
 type AccountPublic = <Signature as Verify>::Signer;
 
@@ -78,20 +66,25 @@ pub struct Extensions {
     pub fork_blocks: sc_client_api::ForkBlocks<Block>,
     /// Known bad block hashes.
     pub bad_blocks: sc_client_api::BadBlocks<Block>,
+    /// The light sync state extension used by the sync-state rpc.
+    pub light_sync_state: sc_sync_state_rpc::LightSyncStateExtension,
 }
 
 /// Specialized `ChainSpec`.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
 
-/// The chain specification option. This is expected to come in from the CLI and
-/// is little more than one of a number of alternatives which can easily be converted
-/// from a string (`--chain=...`) into a `ChainSpec`.
-#[derive(Clone, Debug)]
-pub enum Alternative {
-    /// Whatever the current runtime is, with just Alice as an auth.
-    Development,
-    /// Whatever the current runtime is, with simple Alice/Bob auths.
-    LocalTestnet,
+fn session_keys(
+    grandpa: GrandpaId,
+    babe: BabeId,
+    im_online: ImOnlineId,
+    authority_discovery: AuthorityDiscoveryId,
+) -> SessionKeys {
+    SessionKeys {
+        grandpa,
+        babe,
+        im_online,
+        authority_discovery,
+    }
 }
 
 /// Helper function to generate a crypto pair from seed
@@ -110,7 +103,7 @@ where
 }
 
 /// Helper function to generate stash, controller and session key from seed
-pub fn get_authority_keys_from_seed(
+pub fn authority_keys_from_seed(
     seed: &str,
 ) -> (
     AccountId,
@@ -130,220 +123,25 @@ pub fn get_authority_keys_from_seed(
     )
 }
 
-fn session_keys(
-    grandpa: GrandpaId,
-    babe: BabeId,
-    im_online: ImOnlineId,
-    authority_discovery: AuthorityDiscoveryId,
-) -> SessionKeys {
-    SessionKeys {
-        grandpa,
-        babe,
-        im_online,
-        authority_discovery,
-    }
-}
-
-fn staging_testnet_config_genesis() -> GenesisConfig {
-    // stash, controller, session-key
-    // generated with secret:
-    // for i in 1 2 3 4 ; do for j in stash controller; do subkey inspect "$secret"/fir/$j/$i; done; done
-    // and
-    // for i in 1 2 3 4 ; do for j in session; do subkey --ed25519 inspect "$secret"//fir//$j//$i; done; done
-
-    let initial_authorities: Vec<(
-        AccountId,
-        AccountId,
-        GrandpaId,
-        BabeId,
-        ImOnlineId,
-        AuthorityDiscoveryId,
-    )> = vec![
-        (
-            // 5Fbsd6WXDGiLTxunqeK5BATNiocfCqu9bS1yArVjCgeBLkVy
-            hex!["9c7a2ee14e565db0c69f78c7b4cd839fbf52b607d867e9e9c5a79042898a0d12"].into(),
-            // 5EnCiV7wSHeNhjW3FSUwiJNkcc2SBkPLn5Nj93FmbLtBjQUq
-            hex!["781ead1e2fa9ccb74b44c19d29cb2a7a4b5be3972927ae98cd3877523976a276"].into(),
-            // 5Fb9ayurnxnaXj56CjmyQLBiadfRCqUbL2VWNbbe1nZU6wiC
-            hex!["9becad03e6dcac03cee07edebca5475314861492cdfc96a2144a67bbe9699332"]
-                .unchecked_into(),
-            // 5EZaeQ8djPcq9pheJUhgerXQZt9YaHnMJpiHMRhwQeinqUW8
-            hex!["6e7e4eb42cbd2e0ab4cae8708ce5509580b8c04d11f6758dbf686d50fe9f9106"]
-                .unchecked_into(),
-            // 5EZaeQ8djPcq9pheJUhgerXQZt9YaHnMJpiHMRhwQeinqUW8
-            hex!["6e7e4eb42cbd2e0ab4cae8708ce5509580b8c04d11f6758dbf686d50fe9f9106"]
-                .unchecked_into(),
-            // 5EZaeQ8djPcq9pheJUhgerXQZt9YaHnMJpiHMRhwQeinqUW8
-            hex!["6e7e4eb42cbd2e0ab4cae8708ce5509580b8c04d11f6758dbf686d50fe9f9106"]
-                .unchecked_into(),
-        ),
-        (
-            // 5ERawXCzCWkjVq3xz1W5KGNtVx2VdefvZ62Bw1FEuZW4Vny2
-            hex!["68655684472b743e456907b398d3a44c113f189e56d1bbfd55e889e295dfde78"].into(),
-            // 5Gc4vr42hH1uDZc93Nayk5G7i687bAQdHHc9unLuyeawHipF
-            hex!["c8dc79e36b29395413399edaec3e20fcca7205fb19776ed8ddb25d6f427ec40e"].into(),
-            // 5EockCXN6YkiNCDjpqqnbcqd4ad35nU4RmA1ikM4YeRN4WcE
-            hex!["7932cff431e748892fa48e10c63c17d30f80ca42e4de3921e641249cd7fa3c2f"]
-                .unchecked_into(),
-            // 5DhLtiaQd1L1LU9jaNeeu9HJkP6eyg3BwXA7iNMzKm7qqruQ
-            hex!["482dbd7297a39fa145c570552249c2ca9dd47e281f0c500c971b59c9dcdcd82e"]
-                .unchecked_into(),
-            // 5DhLtiaQd1L1LU9jaNeeu9HJkP6eyg3BwXA7iNMzKm7qqruQ
-            hex!["482dbd7297a39fa145c570552249c2ca9dd47e281f0c500c971b59c9dcdcd82e"]
-                .unchecked_into(),
-            // 5DhLtiaQd1L1LU9jaNeeu9HJkP6eyg3BwXA7iNMzKm7qqruQ
-            hex!["482dbd7297a39fa145c570552249c2ca9dd47e281f0c500c971b59c9dcdcd82e"]
-                .unchecked_into(),
-        ),
-        (
-            // 5DyVtKWPidondEu8iHZgi6Ffv9yrJJ1NDNLom3X9cTDi98qp
-            hex!["547ff0ab649283a7ae01dbc2eb73932eba2fb09075e9485ff369082a2ff38d65"].into(),
-            // 5FeD54vGVNpFX3PndHPXJ2MDakc462vBCD5mgtWRnWYCpZU9
-            hex!["9e42241d7cd91d001773b0b616d523dd80e13c6c2cab860b1234ef1b9ffc1526"].into(),
-            // 5E1jLYfLdUQKrFrtqoKgFrRvxM3oQPMbf6DfcsrugZZ5Bn8d
-            hex!["5633b70b80a6c8bb16270f82cca6d56b27ed7b76c8fd5af2986a25a4788ce440"]
-                .unchecked_into(),
-            // 5DhKqkHRkndJu8vq7pi2Q5S3DfftWJHGxbEUNH43b46qNspH
-            hex!["482a3389a6cf42d8ed83888cfd920fec738ea30f97e44699ada7323f08c3380a"]
-                .unchecked_into(),
-            // 5DhKqkHRkndJu8vq7pi2Q5S3DfftWJHGxbEUNH43b46qNspH
-            hex!["482a3389a6cf42d8ed83888cfd920fec738ea30f97e44699ada7323f08c3380a"]
-                .unchecked_into(),
-            // 5DhKqkHRkndJu8vq7pi2Q5S3DfftWJHGxbEUNH43b46qNspH
-            hex!["482a3389a6cf42d8ed83888cfd920fec738ea30f97e44699ada7323f08c3380a"]
-                .unchecked_into(),
-        ),
-        (
-            // 5HYZnKWe5FVZQ33ZRJK1rG3WaLMztxWrrNDb1JRwaHHVWyP9
-            hex!["f26cdb14b5aec7b2789fd5ca80f979cef3761897ae1f37ffb3e154cbcc1c2663"].into(),
-            // 5EPQdAQ39WQNLCRjWsCk5jErsCitHiY5ZmjfWzzbXDoAoYbn
-            hex!["66bc1e5d275da50b72b15de072a2468a5ad414919ca9054d2695767cf650012f"].into(),
-            // 5DMa31Hd5u1dwoRKgC4uvqyrdK45RHv3CpwvpUC1EzuwDit4
-            hex!["3919132b851ef0fd2dae42a7e734fe547af5a6b809006100f48944d7fae8e8ef"]
-                .unchecked_into(),
-            // 5C4vDQxA8LTck2xJEy4Yg1hM9qjDt4LvTQaMo4Y8ne43aU6x
-            hex!["00299981a2b92f878baaf5dbeba5c18d4e70f2a1fcd9c61b32ea18daf38f4378"]
-                .unchecked_into(),
-            // 5C4vDQxA8LTck2xJEy4Yg1hM9qjDt4LvTQaMo4Y8ne43aU6x
-            hex!["00299981a2b92f878baaf5dbeba5c18d4e70f2a1fcd9c61b32ea18daf38f4378"]
-                .unchecked_into(),
-            // 5C4vDQxA8LTck2xJEy4Yg1hM9qjDt4LvTQaMo4Y8ne43aU6x
-            hex!["00299981a2b92f878baaf5dbeba5c18d4e70f2a1fcd9c61b32ea18daf38f4378"]
-                .unchecked_into(),
-        ),
-    ];
-
-    // generated with secret: subkey inspect "$secret"/fir
-    let root_key: AccountId = hex![
-        // 5Ff3iXP75ruzroPWRP2FYBHWnmGGBSb63857BgnzCoXNxfPo
-        "9ee5e5bdc0ec239eb164f865ecc345ce4c88e76ee002e0f7e318097347471809"
+// Accounts to endow on dev and local test networks
+fn development_endowed_accounts() -> Vec<AccountId> {
+    vec![
+        get_account_id_from_seed::<sr25519::Public>("Alice"),
+        get_account_id_from_seed::<sr25519::Public>("Bob"),
+        get_account_id_from_seed::<sr25519::Public>("Charlie"),
+        get_account_id_from_seed::<sr25519::Public>("Dave"),
+        get_account_id_from_seed::<sr25519::Public>("Eve"),
+        get_account_id_from_seed::<sr25519::Public>("Ferdie"),
+        get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
+        get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
+        get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
+        get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
+        get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
+        get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
     ]
-    .into();
-
-    let endowed_accounts: Vec<AccountId> = vec![root_key.clone()];
-
-    testnet_genesis(
-        initial_authorities,
-        root_key,
-        Some(endowed_accounts),
-        initial_members::none(),
-        forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-        vec![],
-    )
 }
 
-/// Staging testnet config.
-pub fn staging_testnet_config() -> ChainSpec {
-    let boot_nodes = vec![];
-    ChainSpec::from_genesis(
-        "Staging Testnet",
-        "staging_testnet",
-        ChainType::Live,
-        staging_testnet_config_genesis,
-        boot_nodes,
-        Some(
-            TelemetryEndpoints::new(vec![(STAGING_TELEMETRY_URL.to_string(), 0)])
-                .expect("Staging telemetry url is valid; qed"),
-        ),
-        None,
-        None,
-        Default::default(),
-    )
-}
-
-impl Alternative {
-    /// Get an actual chain config from one of the alternatives.
-    pub(crate) fn load(self) -> Result<ChainSpec, String> {
-        Ok(match self {
-            Alternative::Development => ChainSpec::from_genesis(
-                "Development",
-                "dev",
-                ChainType::Development,
-                || {
-                    testnet_genesis(
-                        vec![get_authority_keys_from_seed("Alice")],
-                        get_account_id_from_seed::<sr25519::Public>("Alice"),
-                        Some(vec![
-                            get_account_id_from_seed::<sr25519::Public>("Alice"),
-                            get_account_id_from_seed::<sr25519::Public>("Bob"),
-                            get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-                            get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-                        ]),
-                        initial_members::none(),
-                        forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-                        vec![],
-                        content_config::testing_config(),
-                    )
-                },
-                Vec::new(),
-                None,
-                None,
-                Some(chain_spec_properties()),
-                Default::default(),
-            ),
-            Alternative::LocalTestnet => ChainSpec::from_genesis(
-                "Local Testnet",
-                "local_testnet",
-                ChainType::Local,
-                || {
-                    testnet_genesis(
-                        vec![
-                            get_authority_keys_from_seed("Alice"),
-                            get_authority_keys_from_seed("Bob"),
-                        ],
-                        get_account_id_from_seed::<sr25519::Public>("Alice"),
-                        None,
-                        initial_members::none(),
-                        forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-                        vec![],
-                        content_config::testing_config(),
-                    )
-                },
-                Vec::new(),
-                None,
-                None,
-                Some(chain_spec_properties()),
-                Default::default(),
-            ),
-        })
-    }
-}
-
-pub fn chain_spec_properties() -> json::map::Map<String, json::Value> {
-    let mut properties: json::map::Map<String, json::Value> = json::map::Map::new();
-    properties.insert(
-        String::from("tokenDecimals"),
-        json::Value::Number(json::Number::from(0)),
-    );
-    properties.insert(
-        String::from("tokenSymbol"),
-        json::Value::String(String::from("JOY")),
-    );
-    properties
-}
-// This method should be refactored after Alexandria to reduce number of arguments
-// as more args will likely be needed
-#[allow(clippy::too_many_arguments)]
+/// Helper function to create GenesisConfig for testing
 pub fn testnet_genesis(
     initial_authorities: Vec<(
         AccountId,
@@ -353,77 +151,71 @@ pub fn testnet_genesis(
         ImOnlineId,
         AuthorityDiscoveryId,
     )>,
+    initial_nominators: Vec<AccountId>,
     root_key: AccountId,
-    endowed_accounts: Option<Vec<AccountId>>,
+    mut endowed_accounts: Vec<AccountId>,
     members: Vec<membership::genesis::Member<u64, AccountId>>,
-    forum_config: ForumConfig,
-    initial_balances: Vec<(AccountId, Balance)>,
-    content_config: ContentConfig,
+    forum_cfg: ForumConfig,
+    genesis_balances: Vec<(AccountId, Balance)>,
+    content_cfg: ContentConfig,
 ) -> GenesisConfig {
-    let mut endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(|| {
-        vec![
-            get_account_id_from_seed::<sr25519::Public>("Alice"),
-            get_account_id_from_seed::<sr25519::Public>("Bob"),
-            get_account_id_from_seed::<sr25519::Public>("Charlie"),
-            get_account_id_from_seed::<sr25519::Public>("Dave"),
-            get_account_id_from_seed::<sr25519::Public>("Eve"),
-            get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-            get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-            get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-            get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-            get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
-            get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
-            get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
-        ]
-    });
-    initial_authorities.iter().for_each(|x| {
-        if !endowed_accounts.contains(&x.0) {
-            endowed_accounts.push(x.0.clone())
-        }
-    });
+    // endow all authorities and nominators.
+    initial_authorities
+        .iter()
+        .map(|x| &x.0)
+        .chain(initial_nominators.iter())
+        .for_each(|x| {
+            if !endowed_accounts.contains(x) {
+                endowed_accounts.push(x.clone())
+            }
+        });
+
+    // stakers: all validators and nominators.
+    let mut rng = rand::thread_rng();
+    let stakers = initial_authorities
+        .iter()
+        .map(|x| (x.0.clone(), x.1.clone(), STASH, StakerStatus::Validator))
+        .chain(initial_nominators.iter().map(|x| {
+            use rand::{seq::SliceRandom, Rng};
+            let limit = (MaxNominations::get() as usize).min(initial_authorities.len());
+            let count = rng.gen::<usize>() % limit;
+            let nominations = initial_authorities
+                .as_slice()
+                .choose_multiple(&mut rng, count)
+                .into_iter()
+                .map(|choice| choice.0.clone())
+                .collect::<Vec<_>>();
+            (
+                x.clone(),
+                x.clone(),
+                STASH,
+                StakerStatus::Nominator(nominations),
+            )
+        }))
+        .collect::<Vec<_>>();
+
+    let num_endowed_accounts = endowed_accounts.len();
 
     const ENDOWMENT: Balance = 10_000_000 * DOLLARS;
     const STASH: Balance = ENDOWMENT / 1000;
 
     GenesisConfig {
-        frame_system: Some(SystemConfig {
+        system: SystemConfig {
             code: wasm_binary_unwrap().to_vec(),
-            changes_trie_config: Default::default(),
-        }),
-        pallet_balances: Some(BalancesConfig {
+        },
+        balances: BalancesConfig {
             balances: endowed_accounts
                 .iter()
                 .cloned()
                 .map(|x| (x, ENDOWMENT))
                 .chain(
-                    initial_balances
+                    genesis_balances
                         .iter()
                         .map(|(account, balance)| (account.clone(), *balance)),
                 )
                 .collect(),
-        }),
-        pallet_staking: Some(StakingConfig {
-            validator_count: 100,
-            minimum_validator_count: initial_authorities.len() as u32,
-            stakers: initial_authorities
-                .iter()
-                .map(|x| (x.0.clone(), x.1.clone(), STASH, StakerStatus::Validator))
-                .collect(),
-            invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
-            slash_reward_fraction: Perbill::from_percent(10),
-            history_depth: 336,
-            ..Default::default()
-        }),
-        pallet_sudo: Some(SudoConfig { key: root_key }),
-        pallet_babe: Some(BabeConfig {
-            authorities: vec![],
-        }),
-        pallet_im_online: Some(ImOnlineConfig { keys: vec![] }),
-        pallet_authority_discovery: Some(AuthorityDiscoveryConfig { keys: vec![] }),
-        pallet_grandpa: Some(GrandpaConfig {
-            authorities: vec![],
-        }),
-        pallet_session: Some(SessionConfig {
+        },
+        session: SessionConfig {
             keys: initial_authorities
                 .iter()
                 .map(|x| {
@@ -434,23 +226,46 @@ pub fn testnet_genesis(
                     )
                 })
                 .collect::<Vec<_>>(),
-        }),
-        referendum_Instance1: Some(council_config::create_referendum_config()),
-        council: Some(council_config::create_council_config()),
-        membership: Some(MembersConfig { members }),
-        forum: Some(forum_config),
-        content: Some(content_config),
+        },
+        staking: StakingConfig {
+            validator_count: initial_authorities.len() as u32,
+            minimum_validator_count: initial_authorities.len() as u32,
+            invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
+            slash_reward_fraction: Perbill::from_percent(10),
+            stakers,
+            ..Default::default()
+        },
+        sudo: SudoConfig {
+            key: Some(root_key),
+        },
+        babe: BabeConfig {
+            authorities: vec![],
+            epoch_config: Some(node_runtime::BABE_GENESIS_EPOCH_CONFIG),
+        },
+        im_online: ImOnlineConfig { keys: vec![] },
+        authority_discovery: AuthorityDiscoveryConfig { keys: vec![] },
+        grandpa: GrandpaConfig {
+            authorities: vec![],
+        },
+        transaction_payment: TransactionPaymentConfig {},
+        council: council_config::create_council_config(),
+        members: MembersConfig { members },
+        forum: forum_cfg,
+        content: content_cfg,
+        referendum: council_config::create_referendum_config(),
     }
 }
 
 fn development_config_genesis() -> GenesisConfig {
     testnet_genesis(
-        vec![get_authority_keys_from_seed("Alice")],
+        vec![authority_keys_from_seed("Alice")],
+        vec![],
         get_account_id_from_seed::<sr25519::Public>("Alice"),
-        None,
+        development_endowed_accounts(),
         initial_members::none(),
         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
         vec![],
+        content_config::testing_config(),
     )
 }
 
@@ -465,6 +280,7 @@ pub fn development_config() -> ChainSpec {
         None,
         None,
         None,
+        None,
         Default::default(),
     )
 }
@@ -472,14 +288,16 @@ pub fn development_config() -> ChainSpec {
 fn local_testnet_genesis() -> GenesisConfig {
     testnet_genesis(
         vec![
-            get_authority_keys_from_seed("Alice"),
-            get_authority_keys_from_seed("Bob"),
+            authority_keys_from_seed("Alice"),
+            authority_keys_from_seed("Bob"),
         ],
+        vec![],
         get_account_id_from_seed::<sr25519::Public>("Alice"),
-        None,
+        development_endowed_accounts(),
         initial_members::none(),
         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
         vec![],
+        content_config::testing_config(),
     )
 }
 
@@ -494,6 +312,7 @@ pub fn local_testnet_config() -> ChainSpec {
         None,
         None,
         None,
+        None,
         Default::default(),
     )
 }
@@ -501,26 +320,16 @@ pub fn local_testnet_config() -> ChainSpec {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use crate::service::{new_full_base, new_light_base, NewFullBase};
+    use crate::service::{new_full_base, NewFullBase};
     use sc_service_test;
     use sp_runtime::BuildStorage;
 
     fn local_testnet_genesis_instant_single() -> GenesisConfig {
         testnet_genesis(
-            vec![get_authority_keys_from_seed("Alice")],
-            get_account_id_from_seed::<sr25519::Public>("Alice"),
-            vec![
-                get_authority_keys_from_seed("Alice").0,
-                get_authority_keys_from_seed("Bob").0,
-                get_authority_keys_from_seed("Charlie").0,
-                get_authority_keys_from_seed("Alice").1,
-                get_authority_keys_from_seed("Bob").1,
-                get_authority_keys_from_seed("Charlie").1,
-            ],
-            initial_members::none(),
-            forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
+            vec![authority_keys_from_seed("Alice")],
             vec![],
-            content_config::testing_config(),
+            get_account_id_from_seed::<sr25519::Public>("Alice"),
+            None,
         )
     }
 
@@ -535,25 +344,8 @@ pub(crate) mod tests {
             None,
             None,
             None,
+            None,
             Default::default(),
-        )
-    }
-
-    fn local_testnet_genesis() -> GenesisConfig {
-        testnet_genesis(
-            vec![
-                get_authority_keys_from_seed("Alice"),
-                get_authority_keys_from_seed("Bob"),
-            ],
-            get_account_id_from_seed::<sr25519::Public>("Alice"),
-            vec![
-                get_authority_keys_from_seed("Alice").0,
-                get_authority_keys_from_seed("Bob").0,
-            ],
-            initial_members::none(),
-            forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
-            vec![],
-            content_config::testing_config(),
         )
     }
 
@@ -568,6 +360,7 @@ pub(crate) mod tests {
             None,
             None,
             None,
+            None,
             Default::default(),
         )
     }
@@ -575,33 +368,23 @@ pub(crate) mod tests {
     #[test]
     #[ignore]
     fn test_connectivity() {
-        sc_service_test::connectivity(
-            integration_test_config_with_two_authorities(),
-            |config| {
-                let NewFullBase {
-                    task_manager,
-                    client,
-                    network,
-                    transaction_pool,
-                    ..
-                } = new_full_base(config, |_, _| ())?;
-                Ok(sc_service_test::TestNetComponents::new(
-                    task_manager,
-                    client,
-                    network,
-                    transaction_pool,
-                ))
-            },
-            |config| {
-                let (keep_alive, _, _, client, network, transaction_pool) = new_light_base(config)?;
-                Ok(sc_service_test::TestNetComponents::new(
-                    keep_alive,
-                    client,
-                    network,
-                    transaction_pool,
-                ))
-            },
-        );
+        sp_tracing::try_init_simple();
+
+        sc_service_test::connectivity(integration_test_config_with_two_authorities(), |config| {
+            let NewFullBase {
+                task_manager,
+                client,
+                network,
+                transaction_pool,
+                ..
+            } = new_full_base(config, false, |_, _| ())?;
+            Ok(sc_service_test::TestNetComponents::new(
+                task_manager,
+                client,
+                network,
+                transaction_pool,
+            ))
+        });
     }
 
     #[test]
@@ -612,10 +395,5 @@ pub(crate) mod tests {
     #[test]
     fn test_create_local_testnet_chain_spec() {
         local_testnet_config().build_storage().unwrap();
-    }
-
-    #[test]
-    fn test_staging_test_net_chain_spec() {
-        staging_testnet_config().build_storage().unwrap();
     }
 }

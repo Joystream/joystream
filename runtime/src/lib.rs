@@ -19,6 +19,16 @@ compile_error!("feature \"staging_runtime\" and feature \"testing_runtime\" cann
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+/// Wasm binary unwrapped. If built with `SKIP_WASM_BUILD`, the function panics.
+#[cfg(feature = "std")]
+pub fn wasm_binary_unwrap() -> &'static [u8] {
+    WASM_BINARY.expect(
+        "Development wasm binary is not available. This means the client is built with \
+		 `SKIP_WASM_BUILD` flag and it is only usable for production chains. Please rebuild with \
+		 the flag disabled.",
+    )
+}
+
 pub mod constants;
 mod integration;
 pub mod primitives;
@@ -73,6 +83,16 @@ use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 use static_assertions::const_assert;
 
+#[cfg(any(feature = "std", test))]
+pub use frame_system::Call as SystemCall;
+#[cfg(any(feature = "std", test))]
+pub use pallet_balances::Call as BalancesCall;
+pub use pallet_staking::StakerStatus;
+#[cfg(any(feature = "std", test))]
+pub use pallet_sudo::Call as SudoCall;
+#[cfg(any(feature = "std", test))]
+pub use sp_runtime::BuildStorage;
+
 pub use constants::*;
 pub use primitives::*;
 pub use proposals_configuration::*;
@@ -91,9 +111,6 @@ pub use council;
 pub use forum;
 pub use membership;
 
-#[cfg(any(feature = "std", test))]
-pub use pallet_balances::Call as BalancesCall;
-pub use pallet_staking::StakerStatus;
 pub use proposals_engine::ProposalParameters;
 pub use referendum;
 pub use working_group;
