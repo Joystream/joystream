@@ -775,6 +775,7 @@ decl_module! {
         /// # </weight>
         #[weight = Module::<T>::create_bounty_weight(&params, &metadata)]
         pub fn create_bounty(origin, params: BountyCreationParameters<T>, metadata: Vec<u8>) {
+            todo!();
             let bounty_creator_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
                 origin,
                 params.creator.clone()
