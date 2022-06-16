@@ -1229,16 +1229,15 @@ impl SetChannelPausedFeaturesAsModeratorFixture {
 
         if actual_result.is_ok() {
             assert_eq!(channel_post.paused_features, self.new_paused_features);
-            // TODO: enable after enabling pause_channel_feature_as_moderator
-            // assert_eq!(
-            //     System::events().last().unwrap().event,
-            //     MetaEvent::content(RawEvent::ChannelPausedFeaturesUpdatedByModerator(
-            //         self.actor.clone(),
-            //         self.channel_id,
-            //         self.new_paused_features.clone(),
-            //         self.rationale.clone(),
-            //     ))
-            // );
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::ChannelPausedFeaturesUpdatedByModerator(
+                    self.actor.clone(),
+                    self.channel_id,
+                    self.new_paused_features.clone(),
+                    self.rationale.clone(),
+                ))
+            );
         } else {
             assert_eq!(channel_post, channel_pre);
         }
@@ -2844,15 +2843,14 @@ impl UpdateChannelTransferStatusFixture {
         let new_channel = Content::channel_by_id(self.channel_id);
         if actual_result.is_ok() {
             assert_eq!(new_channel.transfer_status, self.transfer_status.clone());
-            // TODO: enable after Carthage
-            // assert_eq!(
-            //     System::events().last().unwrap().event,
-            //     MetaEvent::content(RawEvent::UpdateChannelTransferStatus(
-            //         self.channel_id,
-            //         self.actor.clone(),
-            //         self.transfer_status.clone()
-            //     ))
-            // );
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::UpdateChannelTransferStatus(
+                    self.channel_id,
+                    self.actor.clone(),
+                    self.transfer_status.clone()
+                ))
+            );
         } else {
             assert_eq!(new_channel.transfer_status, old_channel.transfer_status,);
         }
@@ -3713,11 +3711,10 @@ impl DestroyNftFixture {
 
         if actual_result.is_ok() {
             assert!(video_post.nft_status.is_none());
-            // TODO: enable after enabling destroy_nft
-            // assert_eq!(
-            //     System::events().last().unwrap().event,
-            //     MetaEvent::content(RawEvent::NftDestroyed(self.actor.clone(), self.video_id))
-            // );
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::NftDestroyed(self.actor.clone(), self.video_id))
+            );
         } else {
             assert_eq!(video_post, video_pre);
         }
@@ -5420,11 +5417,10 @@ impl UpdateGlobalNftLimitFixture {
                 },
                 new_limit
             );
-            // TODO: enable after Carthage
-            // assert_eq!(
-            //     System::events().last().unwrap().event,
-            //     MetaEvent::content(RawEvent::GlobalNftLimitUpdated(self.period, self.limit))
-            // );
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::GlobalNftLimitUpdated(self.period, self.limit))
+            );
         } else {
             assert_eq!(old_limit, new_limit);
         }
@@ -5478,17 +5474,15 @@ impl UpdateChannelNftLimitFixture {
                 },
                 new_limit
             );
-
-            // TODO: enable after Carthage
-            // assert_eq!(
-            //     System::events().last().unwrap().event,
-            //     MetaEvent::content(RawEvent::ChannelNftLimitUpdated(
-            //         self.actor,
-            //         self.period,
-            //         self.channel_id,
-            //         self.limit
-            //     ))
-            // );
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::content(RawEvent::ChannelNftLimitUpdated(
+                    self.actor,
+                    self.period,
+                    self.channel_id,
+                    self.limit
+                ))
+            );
         } else {
             assert_eq!(old_limit, new_limit);
         }

@@ -498,6 +498,8 @@ fn unsuccessful_channel_update_with_no_bucket_with_sufficient_object_number_limi
 /////////////////// Channel privilege level tests ///////////////////
 /////////////////////////////////////////////////////////////////////
 
+// TODO: enable after enabling `update_channel_privilege_level`
+#[ignore]
 #[test]
 fn unsuccessful_channel_privilege_level_update_with_curator_origin() {
     with_default_mock_builder(|| {
@@ -513,6 +515,8 @@ fn unsuccessful_channel_privilege_level_update_with_curator_origin() {
     })
 }
 
+// TODO: enable after enabling `update_channel_privilege_level`
+#[ignore]
 #[test]
 fn unsuccessful_channel_privilege_level_update_with_invalid_channel_id() {
     with_default_mock_builder(|| {
@@ -528,6 +532,8 @@ fn unsuccessful_channel_privilege_level_update_with_invalid_channel_id() {
     })
 }
 
+// TODO: enable after enabling `update_channel_privilege_level`
+#[ignore]
 #[test]
 fn successful_channel_privilege_level_update_with_lead_origin() {
     with_default_mock_builder(|| {

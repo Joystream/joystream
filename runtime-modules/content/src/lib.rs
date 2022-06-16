@@ -314,29 +314,31 @@ decl_module! {
         /// Update existing curator group's permissions
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_curator_group_permissions(
-            origin,
-            curator_group_id: T::CuratorGroupId,
-            permissions_by_level: ModerationPermissionsByLevel<T>
+            _origin,
+            _curator_group_id: T::CuratorGroupId,
+            _permissions_by_level: ModerationPermissionsByLevel<T>
         ) {
-            let sender = ensure_signed(origin)?;
-            // Ensure given origin is lead
-            ensure_lead_auth_success::<T>(&sender)?;
-            // Ensure curator group under provided curator_group_id already exist
-            Self::ensure_curator_group_under_given_id_exists(&curator_group_id)?;
-            // Ensure permissions_by_level map max. allowed size is not exceeded
-            Self::ensure_permissions_by_level_map_size_not_exceeded(&permissions_by_level)?;
+            todo!()
+            // TODO: enable after Carthage
+            // let sender = ensure_signed(origin)?;
+            // // Ensure given origin is lead
+            // ensure_lead_auth_success::<T>(&sender)?;
+            // // Ensure curator group under provided curator_group_id already exist
+            // Self::ensure_curator_group_under_given_id_exists(&curator_group_id)?;
+            // // Ensure permissions_by_level map max. allowed size is not exceeded
+            // Self::ensure_permissions_by_level_map_size_not_exceeded(&permissions_by_level)?;
 
-            //
-            // == MUTATION SAFE ==
-            //
+            // //
+            // // == MUTATION SAFE ==
+            // //
 
-            // Set `permissions` for curator group under given `curator_group_id`
-            <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
-                curator_group.set_permissions_by_level(&permissions_by_level)
-            });
+            // // Set `permissions` for curator group under given `curator_group_id`
+            // <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
+            //     curator_group.set_permissions_by_level(&permissions_by_level)
+            // });
 
-            // Trigger event
-            Self::deposit_event(RawEvent::CuratorGroupPermissionsUpdated(curator_group_id, permissions_by_level))
+            // // Trigger event
+            // Self::deposit_event(RawEvent::CuratorGroupPermissionsUpdated(curator_group_id, permissions_by_level))
         }
 
         /// Set `is_active` status for curator group under given `curator_group_id`
@@ -574,25 +576,27 @@ decl_module! {
         // Extrinsic for updating channel privilege level (requires lead access)
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_channel_privilege_level(
-            origin,
-            channel_id: T::ChannelId,
-            new_privilege_level: T::ChannelPrivilegeLevel,
+            _origin,
+            _channel_id: T::ChannelId,
+            _new_privilege_level: T::ChannelPrivilegeLevel,
         ) {
-            let sender = ensure_signed(origin)?;
+            todo!()
+            // TODO: enable after Carthage
+            // let sender = ensure_signed(origin)?;
 
-            ensure_lead_auth_success::<T>(&sender)?;
+            // ensure_lead_auth_success::<T>(&sender)?;
 
-            // check that channel exists
-            Self::ensure_channel_exists(&channel_id)?;
+            // // check that channel exists
+            // Self::ensure_channel_exists(&channel_id)?;
 
-            //
-            // == MUTATION SAFE ==
-            //
+            // //
+            // // == MUTATION SAFE ==
+            // //
 
-            // Update the channel
-            ChannelById::<T>::mutate(channel_id, |channel| { channel.privilege_level = new_privilege_level });
+            // // Update the channel
+            // ChannelById::<T>::mutate(channel_id, |channel| { channel.privilege_level = new_privilege_level });
 
-            Self::deposit_event(RawEvent::ChannelPrivilegeLevelUpdated(channel_id, new_privilege_level));
+            // Self::deposit_event(RawEvent::ChannelPrivilegeLevelUpdated(channel_id, new_privilege_level));
         }
 
         // extrinsics for pausing/re-enabling channel features
@@ -3528,13 +3532,12 @@ decl_event!(
             bool,
             Vec<u8>, /* rationale */
         ),
-        // TODO: enable after enabling pause_channel_feature_as_moderator
-        // ChannelPausedFeaturesUpdatedByModerator(
-        //     ContentActor,
-        //     ChannelId,
-        //     BTreeSet<PausableChannelFeature>,
-        //     Vec<u8>, /* rationale */
-        // ),
+        ChannelPausedFeaturesUpdatedByModerator(
+            ContentActor,
+            ChannelId,
+            BTreeSet<PausableChannelFeature>,
+            Vec<u8>, /* rationale */
+        ),
         ChannelAssetsDeletedByModerator(
             ContentActor,
             ChannelId,
@@ -3587,8 +3590,7 @@ decl_event!(
         EnglishAuctionStarted(ContentActor, VideoId, EnglishAuctionParams),
         OpenAuctionStarted(ContentActor, VideoId, OpenAuctionParams, OpenAuctionId),
         NftIssued(ContentActor, VideoId, NftIssuanceParameters),
-        // TODO: enable after Carthage
-        //NftDestroyed(ContentActor, VideoId),
+        NftDestroyed(ContentActor, VideoId),
         AuctionBidMade(MemberId, VideoId, Balance, Option<MemberId>),
         AuctionBidCanceled(MemberId, VideoId),
         AuctionCanceled(ContentActor, VideoId),
@@ -3609,15 +3611,13 @@ decl_event!(
         ChannelAgentRemarked(ContentActor, ChannelId, Vec<u8>),
         NftOwnerRemarked(ContentActor, VideoId, Vec<u8>),
 
-        // TODO: enable after Carthage
         // Channel transfer
-        // UpdateChannelTransferStatus(ChannelId, ContentActor, ChannelTransferStatus),
-        // ChannelTransferAccepted(ChannelId, TransferParameters),
+        UpdateChannelTransferStatus(ChannelId, ContentActor, ChannelTransferStatus),
+        ChannelTransferAccepted(ChannelId, TransferParameters),
 
-        // TODO: enable after Carthage
         // Nft limits
-        // GlobalNftLimitUpdated(NftLimitPeriod, u64),
-        // ChannelNftLimitUpdated(ContentActor, NftLimitPeriod, ChannelId, u64),
+        GlobalNftLimitUpdated(NftLimitPeriod, u64),
+        ChannelNftLimitUpdated(ContentActor, NftLimitPeriod, ChannelId, u64),
 
         // Creator tokens
         CreatorTokenIssued(ContentActor, ChannelId, TokenId),

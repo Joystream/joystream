@@ -38,6 +38,7 @@ fn destroy_nft() {
         assert!(matches!(Content::video_by_id(video_id).nft_status, None));
 
         // TODO: enable after Carthage
+        // let number_of_events_before_call = System::events().len();
         // Last event checked
         // assert_event(
         //     MetaEvent::content(RawEvent::NftDestroyed(
