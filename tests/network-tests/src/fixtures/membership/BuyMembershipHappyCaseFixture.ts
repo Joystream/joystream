@@ -1,6 +1,6 @@
 import { Api } from '../../Api'
 import { assert } from 'chai'
-import { generateParamsFromAccountId } from './utils'
+import { asMembershipExternalResource, generateParamsFromAccountId } from './utils'
 import { MemberId } from '@joystream/types/common'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { Membership } from '@joystream/types/members'
@@ -56,7 +56,7 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
         handle,
         rootAccount,
         controllerAccount,
-        metadata: { name, about },
+        metadata: { name, about, avatar, externalResources },
         isVerified,
         entry,
         inviteCount,
@@ -68,7 +68,11 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
       assert.equal(name, metadata.name)
       assert.equal(about, metadata.about)
       assert.equal(inviteCount, this.defaultInviteCount)
-      // TODO: avatar
+      assert.equal(avatar?.avatarUri, metadata.avatarUri || undefined)
+      assert.includeDeepMembers(
+        externalResources ?? [],
+        metadata.externalResources?.map(asMembershipExternalResource) ?? []
+      )
       assert.equal(isVerified, false)
       Utils.assert(entry.__typename === 'MembershipEntryPaid', 'Query node: Invalid membership entry method')
       Utils.assert(entry.membershipBoughtEvent)
@@ -85,9 +89,14 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
     assert.equal(qEvent.handle, txParams.handle)
     assert.equal(qEvent.rootAccount, txParams.root_account)
     assert.equal(qEvent.controllerAccount, txParams.controller_account)
+
     assert.equal(qEvent.metadata.name, metadata.name || null)
     assert.equal(qEvent.metadata.about, metadata.about || null)
-    // TODO: avatar
+    assert.equal(qEvent.metadata.avatar?.avatarUri, metadata.avatarUri || undefined)
+    assert.includeDeepMembers(
+      qEvent.metadata.externalResources ?? [],
+      metadata.externalResources?.map(asMembershipExternalResource) ?? []
+    )
   }
 
   protected async loadDefaultInviteCount() {
