@@ -494,7 +494,7 @@ decl_module! {
                 collaborators: params.collaborators.clone(),
                 cumulative_reward_claimed: BalanceOf::<T>::zero(),
                 transfer_status: ChannelTransferStatus::NoActiveTransfer,
-                privilege_level: Zero::zero(),
+                privilege_level: Zero::zero(), // start with lowes privilege level
                 paused_features: BTreeSet::new(),
                 data_objects: data_objects_ids,
                 daily_nft_limit: T::DefaultChannelDailyNftLimit::get(),
