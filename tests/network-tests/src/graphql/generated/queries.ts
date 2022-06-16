@@ -60,11 +60,46 @@ export type ChannelFieldsFragment = {
   category?: Types.Maybe<{ name?: Types.Maybe<string> }>
   avatarPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
   coverPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
+  bannedMembers: Array<{ id: string }>
 }
 
 export type ChannelCategoryFieldsFragment = { id: string; activeVideosCounter: number }
 
 export type VideoCategoryFieldsFragment = { id: string; activeVideosCounter: number }
+
+export type VideoReactionFieldsFragment = {
+  id: string
+  reaction: Types.VideoReactionOptions
+  member: { id: string }
+  video: { id: string }
+}
+
+export type CommentReactionFieldsFragment = {
+  id: string
+  reactionId: number
+  member: { id: string }
+  comment: { id: string }
+}
+
+export type CommentFieldsFragment = {
+  id: string
+  text: string
+  status: Types.CommentStatus
+  isEdited: boolean
+  author: { id: string }
+  video: { id: string }
+  reactions: Array<CommentReactionFieldsFragment>
+}
+
+export type VideoFieldsFragment = {
+  id: string
+  commentsCount: number
+  reactionsCount: number
+  isCommentSectionEnabled: boolean
+  comments: Array<CommentFieldsFragment>
+  reactions: Array<VideoReactionFieldsFragment>
+  pinnedComment?: Types.Maybe<{ id: string }>
+}
 
 export type BidFieldsFragment = {
   id: string
@@ -128,6 +163,12 @@ export type GetChannelByIdQueryVariables = Types.Exact<{
 
 export type GetChannelByIdQuery = { channelByUniqueInput?: Types.Maybe<ChannelFieldsFragment> }
 
+export type GetChannelsByIdsQueryVariables = Types.Exact<{
+  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetChannelsByIdsQuery = { channels: Array<ChannelFieldsFragment> }
+
 export type GetChannelCategoryByIdQueryVariables = Types.Exact<{
   id: Types.Scalars['ID']
 }>
@@ -146,6 +187,18 @@ export type GetOwnedNftByVideoIdQueryVariables = Types.Exact<{
 
 export type GetOwnedNftByVideoIdQuery = { ownedNfts: Array<OwnedNftFieldsFragment> }
 
+export type GetCommentsByIdsQueryVariables = Types.Exact<{
+  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetCommentsByIdsQuery = { comments: Array<CommentFieldsFragment> }
+
+export type GetVideosByIdsQueryVariables = Types.Exact<{
+  ids?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetVideosByIdsQuery = { videos: Array<VideoFieldsFragment> }
+
 export type GetBidsByMemberIdQueryVariables = Types.Exact<{
   videoId: Types.Scalars['ID']
   memberId: Types.Scalars['ID']
@@ -156,6 +209,169 @@ export type GetBidsByMemberIdQuery = { bids: Array<BidFieldsFragment> }
 export type GetChannelNftCollectorsQueryVariables = Types.Exact<{ [key: string]: never }>
 
 export type GetChannelNftCollectorsQuery = { channelNftCollectors: Array<ChannelNftCollectorFieldsFragment> }
+
+export type CommentCreatedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  text: string
+  comment: { id: string }
+}
+
+export type CommentDeletedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  comment: { id: string; status: Types.CommentStatus }
+}
+
+export type CommentTextUpdatedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  newText: string
+  comment: { id: string; status: Types.CommentStatus }
+}
+
+export type CommentModeratedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  rationale: string
+  comment: { id: string; status: Types.CommentStatus }
+}
+
+export type CommentPinnedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  action: boolean
+  comment: { id: string; video: { id: string } }
+}
+
+export type VideoReactedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  reactionResult: Types.VideoReactionOptions
+  video: { id: string }
+  reactingMember: { id: string }
+}
+
+export type CommentReactedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  reactionResult: number
+  comment: { id: string }
+  reactingMember: { id: string }
+}
+
+export type MemberBannedFromChannelEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  action: boolean
+  channel: { id: string }
+  member: { id: string }
+}
+
+export type VideoReactionsPreferenceEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  reactionsStatus: boolean
+  video: { id: string }
+}
+
+export type GetCommentCreatedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetCommentCreatedEventsByEventIdsQuery = { commentCreatedEvents: Array<CommentCreatedEventFieldsFragment> }
+
+export type GetCommentDeletedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetCommentDeletedEventsByEventIdsQuery = { commentDeletedEvents: Array<CommentDeletedEventFieldsFragment> }
+
+export type GetCommentModeratedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetCommentModeratedEventsByEventIdsQuery = {
+  commentModeratedEvents: Array<CommentModeratedEventFieldsFragment>
+}
+
+export type GetCommentEditedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetCommentEditedEventsByEventIdsQuery = {
+  commentTextUpdatedEvents: Array<CommentTextUpdatedEventFieldsFragment>
+}
+
+export type GetCommentPinnedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetCommentPinnedEventsByEventIdsQuery = { commentPinnedEvents: Array<CommentPinnedEventFieldsFragment> }
+
+export type GetVideoReactedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetVideoReactedEventsByEventIdsQuery = { videoReactedEvents: Array<VideoReactedEventFieldsFragment> }
+
+export type GetCommentReactedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetCommentReactedEventsByEventIdsQuery = { commentReactedEvents: Array<CommentReactedEventFieldsFragment> }
+
+export type GetMemberBannedFromChannelEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetMemberBannedFromChannelEventsByEventIdsQuery = {
+  memberBannedFromChannelEvents: Array<MemberBannedFromChannelEventFieldsFragment>
+}
+
+export type GetVideoReactionsPreferenceEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetVideoReactionsPreferenceEventsByEventIdsQuery = {
+  videoReactionsPreferenceEvents: Array<VideoReactionsPreferenceEventFieldsFragment>
+}
 
 export type EnglishAuctionStartedEventFieldsFragment = {
   video: { id: string }
@@ -2191,6 +2407,9 @@ export const ChannelFields = gql`
     coverPhoto {
       ...StorageDataObjectFields
     }
+    bannedMembers {
+      id
+    }
   }
   ${StorageDataObjectFields}
 `
@@ -2205,6 +2424,67 @@ export const VideoCategoryFields = gql`
     id
     activeVideosCounter
   }
+`
+export const CommentReactionFields = gql`
+  fragment CommentReactionFields on CommentReaction {
+    id
+    reactionId
+    member {
+      id
+    }
+    comment {
+      id
+    }
+  }
+`
+export const CommentFields = gql`
+  fragment CommentFields on Comment {
+    id
+    author {
+      id
+    }
+    video {
+      id
+    }
+    text
+    status
+    isEdited
+    reactions {
+      ...CommentReactionFields
+    }
+  }
+  ${CommentReactionFields}
+`
+export const VideoReactionFields = gql`
+  fragment VideoReactionFields on VideoReaction {
+    id
+    reaction
+    member {
+      id
+    }
+    video {
+      id
+    }
+  }
+`
+export const VideoFields = gql`
+  fragment VideoFields on Video {
+    id
+    commentsCount
+    reactionsCount
+    comments {
+      ...CommentFields
+    }
+    reactions {
+      ...VideoReactionFields
+    }
+    isCommentSectionEnabled
+    pinnedComment {
+      id
+    }
+  }
+  ${CommentFields}
+  ${VideoReactionFields}
 `
 export const BidFields = gql`
   fragment BidFields on Bid {
@@ -2302,6 +2582,146 @@ export const ChannelNftCollectorFields = gql`
     }
     amount
     lastIncreaseAt
+  }
+`
+export const CommentCreatedEventFields = gql`
+  fragment CommentCreatedEventFields on CommentCreatedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    comment {
+      id
+    }
+    text
+  }
+`
+export const CommentDeletedEventFields = gql`
+  fragment CommentDeletedEventFields on CommentDeletedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    comment {
+      id
+      status
+    }
+  }
+`
+export const CommentTextUpdatedEventFields = gql`
+  fragment CommentTextUpdatedEventFields on CommentTextUpdatedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    comment {
+      id
+      status
+    }
+    newText
+  }
+`
+export const CommentModeratedEventFields = gql`
+  fragment CommentModeratedEventFields on CommentModeratedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    comment {
+      id
+      status
+    }
+    rationale
+  }
+`
+export const CommentPinnedEventFields = gql`
+  fragment CommentPinnedEventFields on CommentPinnedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    comment {
+      id
+      video {
+        id
+      }
+    }
+    action
+  }
+`
+export const VideoReactedEventFields = gql`
+  fragment VideoReactedEventFields on VideoReactedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    video {
+      id
+    }
+    reactionResult
+    reactingMember {
+      id
+    }
+  }
+`
+export const CommentReactedEventFields = gql`
+  fragment CommentReactedEventFields on CommentReactedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    comment {
+      id
+    }
+    reactionResult
+    reactingMember {
+      id
+    }
+  }
+`
+export const MemberBannedFromChannelEventFields = gql`
+  fragment MemberBannedFromChannelEventFields on MemberBannedFromChannelEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    channel {
+      id
+    }
+    member {
+      id
+    }
+    action
+  }
+`
+export const VideoReactionsPreferenceEventFields = gql`
+  fragment VideoReactionsPreferenceEventFields on VideoReactionsPreferenceEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    video {
+      id
+    }
+    reactionsStatus
   }
 `
 export const EnglishAuctionStartedEventFields = gql`
@@ -4139,6 +4559,14 @@ export const GetChannelById = gql`
   }
   ${ChannelFields}
 `
+export const GetChannelsByIds = gql`
+  query getChannelsByIds($ids: [ID!]) {
+    channels(where: { id_in: $ids }) {
+      ...ChannelFields
+    }
+  }
+  ${ChannelFields}
+`
 export const GetChannelCategoryById = gql`
   query getChannelCategoryById($id: ID!) {
     channelCategoryByUniqueInput(where: { id: $id }) {
@@ -4163,6 +4591,22 @@ export const GetOwnedNftByVideoId = gql`
   }
   ${OwnedNftFields}
 `
+export const GetCommentsByIds = gql`
+  query getCommentsByIds($ids: [ID!]) {
+    comments(where: { id_in: $ids }) {
+      ...CommentFields
+    }
+  }
+  ${CommentFields}
+`
+export const GetVideosByIds = gql`
+  query getVideosByIds($ids: [ID!]) {
+    videos(where: { id_in: $ids }) {
+      ...VideoFields
+    }
+  }
+  ${VideoFields}
+`
 export const GetBidsByMemberId = gql`
   query getBidsByMemberId($videoId: ID!, $memberId: ID!) {
     bids(where: { nft: { id_eq: $videoId }, bidder: { id_eq: $memberId } }) {
@@ -4178,6 +4622,78 @@ export const GetChannelNftCollectors = gql`
     }
   }
   ${ChannelNftCollectorFields}
+`
+export const GetCommentCreatedEventsByEventIds = gql`
+  query getCommentCreatedEventsByEventIds($eventIds: [ID!]) {
+    commentCreatedEvents(where: { id_in: $eventIds }) {
+      ...CommentCreatedEventFields
+    }
+  }
+  ${CommentCreatedEventFields}
+`
+export const GetCommentDeletedEventsByEventIds = gql`
+  query getCommentDeletedEventsByEventIds($eventIds: [ID!]) {
+    commentDeletedEvents(where: { id_in: $eventIds }) {
+      ...CommentDeletedEventFields
+    }
+  }
+  ${CommentDeletedEventFields}
+`
+export const GetCommentModeratedEventsByEventIds = gql`
+  query getCommentModeratedEventsByEventIds($eventIds: [ID!]) {
+    commentModeratedEvents(where: { id_in: $eventIds }) {
+      ...CommentModeratedEventFields
+    }
+  }
+  ${CommentModeratedEventFields}
+`
+export const GetCommentEditedEventsByEventIds = gql`
+  query getCommentEditedEventsByEventIds($eventIds: [ID!]) {
+    commentTextUpdatedEvents(where: { id_in: $eventIds }) {
+      ...CommentTextUpdatedEventFields
+    }
+  }
+  ${CommentTextUpdatedEventFields}
+`
+export const GetCommentPinnedEventsByEventIds = gql`
+  query getCommentPinnedEventsByEventIds($eventIds: [ID!]) {
+    commentPinnedEvents(where: { id_in: $eventIds }) {
+      ...CommentPinnedEventFields
+    }
+  }
+  ${CommentPinnedEventFields}
+`
+export const GetVideoReactedEventsByEventIds = gql`
+  query getVideoReactedEventsByEventIds($eventIds: [ID!]) {
+    videoReactedEvents(where: { id_in: $eventIds }) {
+      ...VideoReactedEventFields
+    }
+  }
+  ${VideoReactedEventFields}
+`
+export const GetCommentReactedEventsByEventIds = gql`
+  query getCommentReactedEventsByEventIds($eventIds: [ID!]) {
+    commentReactedEvents(where: { id_in: $eventIds }) {
+      ...CommentReactedEventFields
+    }
+  }
+  ${CommentReactedEventFields}
+`
+export const GetMemberBannedFromChannelEventsByEventIds = gql`
+  query getMemberBannedFromChannelEventsByEventIds($eventIds: [ID!]) {
+    memberBannedFromChannelEvents(where: { id_in: $eventIds }) {
+      ...MemberBannedFromChannelEventFields
+    }
+  }
+  ${MemberBannedFromChannelEventFields}
+`
+export const GetVideoReactionsPreferenceEventsByEventIds = gql`
+  query getVideoReactionsPreferenceEventsByEventIds($eventIds: [ID!]) {
+    videoReactionsPreferenceEvents(where: { id_in: $eventIds }) {
+      ...VideoReactionsPreferenceEventFields
+    }
+  }
+  ${VideoReactionsPreferenceEventFields}
 `
 export const GetEnglishAuctionStartedEventsByEventIds = gql`
   query getEnglishAuctionStartedEventsByEventIds($eventIds: [ID!]) {
