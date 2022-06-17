@@ -80,6 +80,9 @@ message VideoMetadata {
 
     // Video Category Id
     optional uint64 category = 16;
+
+    // Enable/Disable the comment section
+    optional bool enable_comments = 18;
 }
 
 message VideoCategoryMetadata {

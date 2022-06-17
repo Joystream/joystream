@@ -28,7 +28,7 @@ DESCRIPTION
   Requires the invited distribution group worker role key.
 ```
 
-_See code: [src/commands/operator/accept-invitation.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/operator/accept-invitation.ts)_
+_See code: [src/commands/operator/accept-invitation.ts](https://github.com/Joystream/joystream/blob/v0.1.2/src/commands/operator/accept-invitation.ts)_
 
 ## `joystream-distributor operator:set-metadata`
 
@@ -56,4 +56,4 @@ DESCRIPTION
   Requires active distribution bucket operator worker role key.
 ```
 
-_See code: [src/commands/operator/set-metadata.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/operator/set-metadata.ts)_
+_See code: [src/commands/operator/set-metadata.ts](https://github.com/Joystream/joystream/blob/v0.1.2/src/commands/operator/set-metadata.ts)_
