@@ -119,7 +119,7 @@ async function saveMembershipMetadata(
 ): Promise<MemberMetadata> {
   const metadata = metadataBytes && deserializeMetadata(MembershipMetadata, metadataBytes)
 
-  const avatar = !!(from.avatar || metadata?.avatarUri) ? new AvatarUri() : undefined
+  const avatar = from.avatar || metadata?.avatarUri ? new AvatarUri() : undefined
   if (avatar) {
     avatar.avatarUri = from.avatar && 'avatarUri' in from.avatar ? from.avatar.avatarUri : metadata?.avatarUri || ''
   }
