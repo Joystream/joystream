@@ -9,12 +9,12 @@ version = '6.8.0'
 enum-utils = "0.1.2"
 async-std = {version = "1.9.0", features = ["attributes"]}
 futures-util = "0.3.15"
-ansi_term = "0.12.1"
-rand = "0.7.2"
-structopt = "0.3.8"
+clap = { version = "3.1.18", features = ["derive"] }
+rand = "0.8"
 sc-keystore = { git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
 sc-telemetry = { git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
 sc-chain-spec = { git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
 sp-core = { git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
 sp-keystore = { git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
 joystream-node = { path = "../../node" }
+serde_json = "1.0.79"

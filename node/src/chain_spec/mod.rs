@@ -53,8 +53,6 @@ pub use node_runtime::GenesisConfig;
 
 type AccountPublic = <Signature as Verify>::Signer;
 
-const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
-
 /// Node `ChainSpec` extensions.
 ///
 /// Additional parameters for some Substrate core modules,
@@ -193,8 +191,6 @@ pub fn testnet_genesis(
             )
         }))
         .collect::<Vec<_>>();
-
-    let num_endowed_accounts = endowed_accounts.len();
 
     const ENDOWMENT: Balance = 10_000_000 * DOLLARS;
     const STASH: Balance = ENDOWMENT / 1000;
