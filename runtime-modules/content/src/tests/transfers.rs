@@ -8,6 +8,7 @@ use sp_core::sp_std::iter::FromIterator;
 use sp_std::collections::btree_map::BTreeMap;
 use strum::IntoEnumIterator;
 
+// TODO: enable after enabling channel transfers
 #[ignore]
 #[test]
 fn update_channel_transfer_status_succeeds() {
@@ -22,6 +23,7 @@ fn update_channel_transfer_status_succeeds() {
     })
 }
 
+// TODO: enable after enabling channel transfers
 #[ignore]
 #[test]
 fn update_channel_transfer_status_fails_with_invalid_channel_id() {
@@ -40,6 +42,7 @@ fn update_channel_transfer_status_fails_with_invalid_channel_id() {
     })
 }
 
+// TODO: enable after enabling channel transfers
 #[ignore]
 #[test]
 fn update_channel_transfer_status_fails_with_invalid_origin() {
@@ -56,6 +59,7 @@ fn update_channel_transfer_status_fails_with_invalid_origin() {
     })
 }
 
+// TODO: enable after enabling channel transfers
 #[ignore]
 #[test]
 fn update_channel_transfer_status_fails_with_member_actor() {
@@ -73,6 +77,7 @@ fn update_channel_transfer_status_fails_with_member_actor() {
     })
 }
 
+// TODO: enable after enabling channel transfers
 #[ignore]
 #[test]
 fn update_channel_transfer_status_fails_with_invalid_collaborators() {
@@ -93,6 +98,7 @@ fn update_channel_transfer_status_fails_with_invalid_collaborators() {
     })
 }
 
+// TODO: enable after enabling channel transfers
 #[ignore]
 #[test]
 fn update_channel_transfer_status_fails_with_non_channel_owner() {
@@ -114,6 +120,7 @@ fn update_channel_transfer_status_fails_with_non_channel_owner() {
     })
 }
 
+// TODO: enable after enabling channel transfers
 #[ignore]
 #[test]
 fn accept_transfer_status_fails_with_invalid_origin() {
@@ -134,6 +141,7 @@ fn accept_transfer_status_fails_with_invalid_origin() {
     })
 }
 
+// TODO: enable after enabling channel transfers
 #[ignore]
 #[test]
 fn accept_transfer_status_succeeds() {
@@ -158,6 +166,7 @@ fn accept_transfer_status_succeeds() {
     })
 }
 
+// TODO: enable after enabling channel transfers
 #[ignore]
 #[test]
 fn accept_transfer_status_fails_with_invalid_commitment_params() {
@@ -184,6 +193,7 @@ fn accept_transfer_status_fails_with_invalid_commitment_params() {
     })
 }
 
+// TODO: enable after enabling channel transfers
 #[ignore]
 #[test]
 fn accept_transfer_status_fails_with_invalid_channel_id() {
@@ -202,6 +212,7 @@ fn accept_transfer_status_fails_with_invalid_channel_id() {
     })
 }
 
+// TODO: enable after enabling channel transfers
 #[ignore]
 #[test]
 fn accept_transfer_status_fails_with_invalid_status() {
@@ -217,6 +228,7 @@ fn accept_transfer_status_fails_with_invalid_status() {
     })
 }
 
+// TODO: enable after enabling channel transfers
 #[ignore]
 #[test]
 fn accept_transfer_status_fails_with_non_channel_owner() {
@@ -241,6 +253,7 @@ fn accept_transfer_status_fails_with_non_channel_owner() {
     })
 }
 
+// TODO: enable after enabling channel transfers
 #[ignore]
 #[test]
 fn accept_transfer_status_fails_with_invalid_balance_for_members() {
@@ -266,6 +279,7 @@ fn accept_transfer_status_fails_with_invalid_balance_for_members() {
     })
 }
 
+// TODO: enable after enabling channel transfers
 #[ignore]
 #[test]
 fn accept_transfer_status_fails_with_invalid_balance_for_curator_groups() {
@@ -294,6 +308,7 @@ fn accept_transfer_status_fails_with_invalid_balance_for_curator_groups() {
     })
 }
 
+// TODO: enable after enabling channel transfers
 #[ignore]
 #[test]
 fn accept_transfer_status_succeeds_for_members_with_price() {
@@ -330,6 +345,7 @@ fn accept_transfer_status_succeeds_for_members_with_price() {
     })
 }
 
+// TODO: enable after enabling channel transfers
 #[ignore]
 #[test]
 fn accept_transfer_status_succeeds_for_curators_to_members_with_price() {
@@ -368,6 +384,7 @@ fn accept_transfer_status_succeeds_for_curators_to_members_with_price() {
     })
 }
 
+// TODO: enable after enabling channel transfers
 #[ignore]
 #[test]
 fn accept_transfer_status_succeeds_for_members_to_curators_with_price() {
