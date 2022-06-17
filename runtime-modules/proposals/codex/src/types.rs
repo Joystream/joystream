@@ -32,7 +32,15 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
 /// Proposal details provide voters the information required for the perceived voting.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
-pub enum ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId, ProposalId, UpdateChannelPayoutsParameters> {
+pub enum ProposalDetails<
+    Balance,
+    BlockNumber,
+    AccountId,
+    WorkerId,
+    OpeningId,
+    ProposalId,
+    UpdateChannelPayoutsParameters,
+> {
     /// The signal of the `Signal` proposal
     Signal(Vec<u8>),
 
@@ -108,8 +116,24 @@ pub enum ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId, P
     UpdateChannelPayouts(UpdateChannelPayoutsParameters),
 }
 
-impl<Balance, BlockNumber, AccountId, WorkerId, OpeningId, ProposalId, UpdateChannelPayoutsParameters> Default
-    for ProposalDetails<Balance, BlockNumber, AccountId, WorkerId, OpeningId, ProposalId, UpdateChannelPayoutsParameters>
+impl<
+        Balance,
+        BlockNumber,
+        AccountId,
+        WorkerId,
+        OpeningId,
+        ProposalId,
+        UpdateChannelPayoutsParameters,
+    > Default
+    for ProposalDetails<
+        Balance,
+        BlockNumber,
+        AccountId,
+        WorkerId,
+        OpeningId,
+        ProposalId,
+        UpdateChannelPayoutsParameters,
+    >
 {
     fn default() -> Self {
         ProposalDetails::Signal(b"invalid proposal details".to_vec())
