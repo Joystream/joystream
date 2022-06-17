@@ -590,10 +590,10 @@ mod tests {
     use crate::service::{new_full_base, NewFullBase};
     use codec::Encode;
     use node_runtime::{
-        constants::{currency::CENTS, time::SLOT_DURATION},
+        constants::{currency::CENTS, SLOT_DURATION},
         Address, BalancesCall, Call, UncheckedExtrinsic,
     };
-    use node_runtime::{Block, DigestItem, Signature};
+    use node_runtime::{opaque::Block, DigestItem, Signature};
     use sc_client_api::BlockBackend;
     use sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy};
     use sc_consensus_babe::{BabeIntermediate, CompatibleDigestItem, INTERMEDIATE_KEY};
@@ -614,6 +614,7 @@ mod tests {
     };
     use sp_timestamp;
     use std::{borrow::Cow, sync::Arc};
+    use std::convert::TryInto;
 
     type AccountPublic = <Signature as Verify>::Signer;
 

@@ -1,10 +1,10 @@
 #![warn(missing_docs)]
 
 use codec::{Decode, Encode};
+use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_std::vec::Vec;
-use scale_info::TypeInfo;
 
 use common::working_group::WorkingGroup;
 use common::BalanceKind;

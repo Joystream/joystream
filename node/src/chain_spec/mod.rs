@@ -329,7 +329,11 @@ pub(crate) mod tests {
             vec![authority_keys_from_seed("Alice")],
             vec![],
             get_account_id_from_seed::<sr25519::Public>("Alice"),
-            None,
+            development_endowed_accounts(),
+            vec![],
+            forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
+            vec![],
+            content_config::testing_config(),
         )
     }
 
