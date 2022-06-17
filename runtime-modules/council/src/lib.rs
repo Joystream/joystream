@@ -933,14 +933,14 @@ impl<T: Trait> Module<T> {
         match Stage::<T>::get().stage {
             CouncilStage::Announcing(stage_data) => {
                 let number_of_candidates = stage_data.candidates_count;
-                if now == Stage::<T>::get().changed_at + T::AnnouncingPeriodDuration::get() {
+                if now >= Stage::<T>::get().changed_at + T::AnnouncingPeriodDuration::get() {
                     Self::end_announcement_period(stage_data);
                 }
 
                 Some(number_of_candidates)
             }
             CouncilStage::Idle => {
-                if now == Stage::<T>::get().changed_at + T::IdlePeriodDuration::get() {
+                if now >= Stage::<T>::get().changed_at + T::IdlePeriodDuration::get() {
                     Self::end_idle_period();
                 }
 
