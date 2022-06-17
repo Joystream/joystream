@@ -85,137 +85,6 @@ pub type Executive = frame_executive::Executive<
 /// Export of the private const generated within the macro.
 pub const EXPORTED_RUNTIME_API_VERSIONS: sp_version::ApisVec = RUNTIME_API_VERSIONS;
 
-/*
-    #[cfg(feature = "runtime-benchmarks")]
-    impl frame_benchmarking::Benchmark<Block> for Runtime {
-        fn dispatch_benchmark(
-            config: frame_benchmarking::BenchmarkConfig
-        ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
-            use sp_std::vec;
-            use frame_benchmarking::{Benchmarking, BenchmarkBatch, add_benchmark, TrackedStorageKey};
-
-            use pallet_session_benchmarking::Module as SessionBench;
-            use frame_system_benchmarking::Module as SystemBench;
-            use frame_system::RawOrigin;
-            use crate::ProposalsDiscussion;
-            use crate::ProposalsEngine;
-            use crate::ProposalsCodex;
-            use crate::Constitution;
-            use crate::Forum;
-            use crate::Members;
-            use crate::ContentWorkingGroup;
-            use crate::Utility;
-            use crate::Timestamp;
-            use crate::ImOnline;
-            use crate::Council;
-            use crate::Referendum;
-            use crate::Bounty;
-            use crate::Blog;
-            use crate::JoystreamUtility;
-            use crate::Staking;
-            use crate::Storage;
-
-
-            // Trying to add benchmarks directly to the Session Module caused cyclic dependency issues.
-            // To get around that, we separated the Session benchmarks into its own crate, which is why
-            // we need these two lines below.
-            impl pallet_session_benchmarking::Config for Runtime {}
-            impl frame_system_benchmarking::Config for Runtime {}
-            impl referendum::OptionCreator<<Runtime as frame_system::Config>::AccountId, <Runtime as common::membership::MembershipTypes>::MemberId> for Runtime {
-                fn create_option(account_id: <Runtime as frame_system::Config>::AccountId, member_id: <Runtime as common::membership::MembershipTypes>::MemberId) {
-                    crate::council::Module::<Runtime>::announce_candidacy(
-                        RawOrigin::Signed(account_id.clone()).into(),
-                        member_id,
-                        account_id.clone(),
-                        account_id,
-                        <Runtime as council::Config>::MinCandidateStake::get().into(),
-                    ).expect(
-                        "Should pass a valid member associated to the account and the account
-                        should've enough
-                        free balance to stake the minimum for a council candidate."
-                    );
-                }
-            }
-
-            impl membership::MembershipWorkingGroupHelper<
-                <Runtime as frame_system::Config>::AccountId,
-                <Runtime as common::membership::MembershipTypes>::MemberId,
-                <Runtime as common::membership::MembershipTypes>::ActorId,
-            > for Runtime
-            {
-                fn insert_a_lead(
-                    opening_id: u32,
-                    caller_id: &<Runtime as frame_system::Config>::AccountId,
-                    member_id: <Runtime as common::membership::MembershipTypes>::MemberId,
-                ) -> <Runtime as common::membership::MembershipTypes>::ActorId {
-                    working_group::benchmarking::complete_opening::<Runtime, crate::MembershipWorkingGroupInstance>(
-                        working_group::OpeningType::Leader,
-                        opening_id,
-                        None,
-                        &caller_id,
-                        member_id,
-                    )
-                }
-            }
-
-            let whitelist: Vec<TrackedStorageKey> = vec![
-                // Block Number
-                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef702a5c1b19ab7a04f536c519aca4983ac").to_vec().into(),
-                // Total Issuance
-                hex_literal::hex!("c2261276cc9d1f8598ea4b6a74b15c2f57c875e4cff74148e4628f264b974c80").to_vec().into(),
-                // Execution Phase
-                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef7ff553b5a9862a516939d82b3d3d8661a").to_vec().into(),
-                // Event Count
-                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef70a98fdbe9ce6c55837576c60c7af3850").to_vec().into(),
-                // System Events
-                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7").to_vec().into(),
-                // Caller 0 Account
-                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da946c154ffd9992e395af90b5b13cc6f295c77033fce8a9045824a6690bbf99c6db269502f0a8d1d2a008542d5690a0749").to_vec().into(),
-                // Treasury Account
-                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da95ecffd7b6c0f78751baa9d281e0bfa3a6d6f646c70792f74727372790000000000000000000000000000000000000000").to_vec().into(),
-            ];
-
-            let mut batches = Vec::<BenchmarkBatch>::new();
-            let params = (&config, &whitelist);
-
-            // Note: For benchmarking Stake and Balances we need to change ExistentialDeposit to
-            // a non-zero value.
-            // For now, due to the complexity grandpa and babe aren't benchmarked automatically
-            // we should use the default manually created weights.
-            // Finally, pallet_offences have no `WeightInfo` so there's no need to benchmark it
-            // the benchmark is only for illustrative pourpuses.
-
-            // Frame benchmarks
-            add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
-            add_benchmark!(params, batches, substrate_utility, Utility);
-            add_benchmark!(params, batches, pallet_timestamp, Timestamp);
-            add_benchmark!(params, batches, pallet_session, SessionBench::<Runtime>);
-            add_benchmark!(params, batches, pallet_im_online, ImOnline);
-            add_benchmark!(params, batches, pallet_balances, Balances);
-            add_benchmark!(params, batches, pallet_staking, Staking);
-
-            // Joystream Benchmarks
-            add_benchmark!(params, batches, proposals_discussion, ProposalsDiscussion);
-            add_benchmark!(params, batches, proposals_codex, ProposalsCodex);
-            add_benchmark!(params, batches, proposals_engine, ProposalsEngine);
-            add_benchmark!(params, batches, membership, Members);
-            add_benchmark!(params, batches, forum, Forum);
-            add_benchmark!(params, batches, pallet_constitution, Constitution);
-            add_benchmark!(params, batches, working_group, ContentWorkingGroup);
-            add_benchmark!(params, batches, referendum, Referendum);
-            add_benchmark!(params, batches, council, Council);
-            add_benchmark!(params, batches, bounty, Bounty);
-            add_benchmark!(params, batches, blog, Blog);
-            add_benchmark!(params, batches, joystream_utility, JoystreamUtility);
-            add_benchmark!(params, batches, storage, Storage);
-
-            if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
-            Ok(batches)
-        }
-    }
-}
-*/
-
 #[cfg(feature = "runtime-benchmarks")]
 #[macro_use]
 extern crate frame_benchmarking;
@@ -224,47 +93,33 @@ extern crate frame_benchmarking;
 mod benches {
     define_benchmarks!(
         [frame_benchmarking, BaselineBench::<Runtime>]
-        [pallet_assets, Assets]
         [pallet_babe, Babe]
         [pallet_bags_list, BagsList]
         [pallet_balances, Balances]
-        [pallet_bounties, Bounties]
-        [pallet_child_bounties, ChildBounties]
-        [pallet_collective, Council]
-        [pallet_conviction_voting, ConvictionVoting]
-        [pallet_contracts, Contracts]
-        [pallet_democracy, Democracy]
         [pallet_election_provider_multi_phase, ElectionProviderMultiPhase]
         [pallet_election_provider_support_benchmarking, EPSBench::<Runtime>]
-        [pallet_elections_phragmen, Elections]
-        [pallet_gilt, Gilt]
         [pallet_grandpa, Grandpa]
-        [pallet_identity, Identity]
         [pallet_im_online, ImOnline]
-        [pallet_indices, Indices]
-        [pallet_lottery, Lottery]
-        [pallet_membership, TechnicalMembership]
-        [pallet_multisig, Multisig]
-        [pallet_nomination_pools, NominationPoolsBench::<Runtime>]
         [pallet_offences, OffencesBench::<Runtime>]
-        [pallet_preimage, Preimage]
-        [pallet_proxy, Proxy]
-        [pallet_referenda, Referenda]
-        [pallet_recovery, Recovery]
-        [pallet_remark, Remark]
-        [pallet_scheduler, Scheduler]
         [pallet_session, SessionBench::<Runtime>]
         [pallet_staking, Staking]
-        [pallet_state_trie_migration, StateTrieMigration]
         [frame_system, SystemBench::<Runtime>]
         [pallet_timestamp, Timestamp]
-        [pallet_tips, Tips]
-        [pallet_transaction_storage, TransactionStorage]
-        [pallet_treasury, Treasury]
-        [pallet_uniques, Uniques]
-        [pallet_utility, Utility]
+        [substrate_utility, Utility]
         [pallet_vesting, Vesting]
-        [pallet_whitelist, Whitelist]
+        [proposals_discussion, ProposalsDiscussion]
+        [proposals_codex, ProposalsCodex]
+        [proposals_engine, ProposalsEngine]
+        [membership, Members]
+        [forum, Forum]
+        [pallet_constitution, Constitution]
+        [working_group, ContentWorkingGroup]
+        [referendum, Referendum]
+        [council, Council]
+        // [bounty, Bounty]
+        [blog, Blog]
+        [joystream_utility, JoystreamUtility]
+        [storage, Storage]
     );
 }
 
@@ -505,12 +360,68 @@ impl_runtime_apis! {
             use baseline::Pallet as BaselineBench;
             use pallet_nomination_pools_benchmarking::Pallet as NominationPoolsBench;
 
+            use frame_system::RawOrigin;
+            use crate::ProposalsDiscussion;
+            use crate::ProposalsEngine;
+            use crate::ProposalsCodex;
+            use crate::Constitution;
+            use crate::Forum;
+            use crate::Members;
+            use crate::ContentWorkingGroup;
+            use crate::Utility;
+            use crate::Timestamp;
+            use crate::ImOnline;
+            use crate::Council;
+            use crate::Referendum;
+            // use crate::Bounty;
+            use crate::Blog;
+            use crate::JoystreamUtility;
+            use crate::Staking;
+            use crate::Storage;
+
             impl pallet_session_benchmarking::Config for Runtime {}
             impl pallet_offences_benchmarking::Config for Runtime {}
             impl pallet_election_provider_support_benchmarking::Config for Runtime {}
             impl frame_system_benchmarking::Config for Runtime {}
             impl baseline::Config for Runtime {}
             impl pallet_nomination_pools_benchmarking::Config for Runtime {}
+
+            impl referendum::OptionCreator<<Runtime as frame_system::Config>::AccountId, <Runtime as common::membership::MembershipTypes>::MemberId> for Runtime {
+                fn create_option(account_id: <Runtime as frame_system::Config>::AccountId, member_id: <Runtime as common::membership::MembershipTypes>::MemberId) {
+                    crate::council::Module::<Runtime>::announce_candidacy(
+                        RawOrigin::Signed(account_id.clone()).into(),
+                        member_id,
+                        account_id.clone(),
+                        account_id,
+                        <Runtime as council::Config>::MinCandidateStake::get().into(),
+                    ).expect(
+                        "Should pass a valid member associated to the account and the account
+                        should've enough
+                        free balance to stake the minimum for a council candidate."
+                    );
+                }
+            }
+
+            impl membership::MembershipWorkingGroupHelper<
+                <Runtime as frame_system::Config>::AccountId,
+                <Runtime as common::membership::MembershipTypes>::MemberId,
+                <Runtime as common::membership::MembershipTypes>::ActorId,
+            > for Runtime
+            {
+                fn insert_a_lead(
+                    opening_id: u32,
+                    caller_id: &<Runtime as frame_system::Config>::AccountId,
+                    member_id: <Runtime as common::membership::MembershipTypes>::MemberId,
+                ) -> <Runtime as common::membership::MembershipTypes>::ActorId {
+                    working_group::benchmarking::complete_opening::<Runtime, crate::MembershipWorkingGroupInstance>(
+                        working_group::OpeningType::Leader,
+                        opening_id,
+                        None,
+                        &caller_id,
+                        member_id,
+                    )
+                }
+            }
 
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number
@@ -531,6 +442,7 @@ impl_runtime_apis! {
 
             let mut batches = Vec::<BenchmarkBatch>::new();
             let params = (&config, &whitelist);
+            // defined benchmarks (in define_benchmarks!) will be added to the batches vec
             add_benchmarks!(params, batches);
 
             Ok(batches)
