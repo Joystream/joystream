@@ -13,6 +13,7 @@ frame-support = { package = 'frame-support', default-features = false, git = 'ht
 frame_system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596', optional = true}
+pallet-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596', optional = true }
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
@@ -28,5 +29,6 @@ std = [
     'frame-support/std',
     'frame_system/std',
     'sp-runtime/std',
-    "scale-info/std",
+    'scale-info/std',
+    'pallet-balances/std',
 ]
