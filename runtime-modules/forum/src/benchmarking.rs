@@ -1,11 +1,11 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
-use balances::Module as Balances;
+use balances::Pallet as Balances;
 use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks};
 use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;
-use frame_system::Module as System;
+use frame_system::Pallet as System;
 use frame_system::{EventRecord, RawOrigin};
 use membership::Module as Membership;
 use sp_runtime::traits::Bounded;
@@ -344,7 +344,7 @@ pub fn generate_poll_input<T: Config>(
 ) -> PollInput<T::Moment> {
     PollInput {
         description: good_poll_description(),
-        end_time: pallet_timestamp::Module::<T>::now() + expiration_diff,
+        end_time: pallet_timestamp::Pallet::<T>::now() + expiration_diff,
         poll_alternatives: {
             let mut alternatives = vec![];
             for _ in 0..alternatives_number {
@@ -1337,7 +1337,7 @@ benchmarks! {
     }: moderate_thread(RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id, thread_id, rationale.clone())
     verify {
         // Thread balance was correctly slashed
-        let thread_account_id = T::ModuleId::get().into_sub_account(thread_id);
+        let thread_account_id = T::ModuleId::get().into_sub_account_truncating(thread_id);
         assert_eq!(
            Balances::<T>::free_balance(&thread_account_id),
            T::PostDeposit::get()
@@ -1400,7 +1400,7 @@ benchmarks! {
     }: moderate_thread(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id, thread_id, rationale.clone())
     verify {
         // Thread balance was correctly slashed
-        let thread_account_id = T::ModuleId::get().into_sub_account(thread_id);
+        let thread_account_id = T::ModuleId::get().into_sub_account_truncating(thread_id);
         assert_eq!(
            Balances::<T>::free_balance(&thread_account_id),
            T::PostDeposit::get()
@@ -1859,193 +1859,193 @@ mod tests {
     #[test]
     fn test_create_category() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_create_category::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_create_category());
         });
     }
 
     #[test]
     fn test_update_category_membership_of_moderator_new() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_update_category_membership_of_moderator_new::<Runtime>());
+            assert_ok!(
+                TestForumModule::test_benchmark_update_category_membership_of_moderator_new()
+            );
         });
     }
 
     #[test]
     fn test_update_category_membership_of_moderator_old() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_update_category_membership_of_moderator_old::<Runtime>());
+            assert_ok!(
+                TestForumModule::test_benchmark_update_category_membership_of_moderator_old()
+            );
         });
     }
 
     #[test]
     fn test_update_category_archival_status_lead() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_update_category_archival_status_lead::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_update_category_archival_status_lead());
         });
     }
 
     #[test]
     fn test_update_category_archival_status_moderator() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_update_category_archival_status_moderator::<
-                Runtime,
-            >());
+            assert_ok!(TestForumModule::test_benchmark_update_category_archival_status_moderator());
         });
     }
 
     #[test]
     fn test_delete_category_lead() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_delete_category_lead::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_delete_category_lead());
         });
     }
 
     #[test]
     fn test_delete_category_moderator() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_delete_category_moderator::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_delete_category_moderator());
         });
     }
 
     #[test]
     fn test_create_thread() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_create_thread::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_create_thread());
         });
     }
 
     #[test]
     fn test_edit_thread_metadata() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_edit_thread_metadata::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_edit_thread_metadata());
         });
     }
 
     #[test]
     fn test_delete_thread() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_delete_thread::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_delete_thread());
         });
     }
 
     #[test]
     fn test_move_thread_to_category_lead() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_move_thread_to_category_lead::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_move_thread_to_category_lead());
         });
     }
 
     #[test]
     fn test_move_thread_to_category_moderator() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_move_thread_to_category_moderator::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_move_thread_to_category_moderator());
         });
     }
 
     #[test]
     fn test_vote_on_poll() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_vote_on_poll::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_vote_on_poll());
         });
     }
 
     #[test]
     fn test_moderate_thread_lead() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_moderate_thread_lead::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_moderate_thread_lead());
         });
     }
 
     #[test]
     fn test_moderate_thread_moderator() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_moderate_thread_moderator::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_moderate_thread_moderator());
         });
     }
 
     #[test]
     fn test_add_post() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_add_post::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_add_post());
         });
     }
 
     #[test]
     fn test_react_post() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_react_post::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_react_post());
         });
     }
 
     #[test]
     fn test_edit_post_text() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_edit_post_text::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_edit_post_text());
         });
     }
 
     #[test]
     fn test_moderate_post_lead() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_moderate_post_lead::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_moderate_post_lead());
         });
     }
 
     #[test]
     fn test_moderate_post_moderator() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_moderate_post_moderator::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_moderate_post_moderator());
         });
     }
 
     #[test]
     fn test_set_stickied_threads_moderator() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_set_stickied_threads_moderator::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_set_stickied_threads_moderator());
         });
     }
 
     #[test]
     fn test_set_stickied_threads_lead() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_set_stickied_threads_lead::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_set_stickied_threads_lead());
         });
     }
 
     #[test]
     fn test_update_category_title_lead() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_update_category_title_lead::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_update_category_title_lead());
         });
     }
 
     #[test]
     fn test_update_category_title_moderator() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_update_category_title_moderator::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_update_category_title_moderator());
         });
     }
 
     #[test]
     fn test_update_category_description_lead() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_update_category_description_lead::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_update_category_description_lead());
         });
     }
 
     #[test]
     fn test_update_category_description_moderator() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_update_category_description_moderator::<
-                Runtime,
-            >());
+            assert_ok!(TestForumModule::test_benchmark_update_category_description_moderator());
         });
     }
 
     #[test]
     fn test_delete_posts() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_delete_posts::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_delete_posts());
         });
     }
 }
