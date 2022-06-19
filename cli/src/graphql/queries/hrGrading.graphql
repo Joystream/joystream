@@ -1,0 +1,51 @@
+fragment AllBountiesFields on Bounty {
+  id
+  stage
+  entrantWhitelist {
+    members {
+      ...MembershipOnWorkerFields
+    }
+  }
+  creator {
+    ...MembershipOnWorkerFields
+  }
+  oracle {
+    ...MembershipOnWorkerFields
+  }
+  totalFunding
+  isTerminated
+  createdInEvent {
+    inBlock
+  }
+  contributions {
+    amount
+    withdrawnInEvent {
+      inBlock
+    }
+    contributor {
+      ...MembershipOnWorkerFields
+    }
+    bountyFundedEvents {
+      inBlock
+    }
+  }
+  maxFundingReachedEvent {
+    inBlock
+  }
+  judgment {
+    rationale
+  }
+  removedInEvent {
+    inBlock
+  }
+}
+
+query AllBounties {
+	bounties (
+    limit:1000000,
+    orderBy: createdAt_ASC
+  ) {
+    ...AllBountiesFields
+  }
+}
+

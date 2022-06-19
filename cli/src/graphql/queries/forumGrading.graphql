@@ -1,0 +1,315 @@
+fragment AllForumPostsFields on ForumPost {
+  id
+  deletedInEventId
+  forumthreadinitialPost {
+    categoryId
+  }
+  postaddedeventpost {
+    inBlock
+    isEditable
+  }
+  deletedInEvent {
+    inBlock
+    rationale
+    actorId
+  }
+  postmoderatedeventpost {
+    inBlock
+    rationale
+    actorId
+  }
+}
+
+fragment AllForumCategoriesFields on ForumCategory {
+  id
+  updatedAt
+  title
+  description
+  createdInEvent {
+    inBlock
+  }
+  categorydeletedeventcategory {
+    inBlock
+  }
+}
+
+fragment AllForumThreadsFields on ForumThread {
+	id
+  category {
+    title
+    id
+  }
+  createdInEvent {
+    inBlock
+  }
+  status {
+    __typename
+    ...on ThreadStatusLocked {
+      threadDeletedEvent {
+        inBlock
+        thread {
+          id
+        }
+      }
+    }
+    ...on ThreadStatusModerated {
+      threadModeratedEvent {
+        inBlock
+        rationale
+        actorId
+      }
+    }
+    ...on ThreadStatusRemoved {
+      threadDeletedEvent {
+        inBlock
+      }
+    }
+  }
+}
+
+query AllForumPosts {
+  forumPosts (
+    limit:1000000,
+    orderBy: createdAt_DESC
+  ) {
+    ...AllForumPostsFields
+  }
+}
+
+query AllForumCategories {
+  forumCategories (
+    limit:1000000,
+  ) {
+    ...AllForumCategoriesFields
+  }
+}
+
+
+query AllForumThreads {
+  forumThreads (
+    limit:1000000,
+    orderBy: createdAt_DESC
+  ) {
+    ...AllForumThreadsFields
+  }
+}
+
+
+fragment PostAddedEventsBetweenBlocksFields on PostAddedEvent {
+  inBlock
+  id
+  isEditable
+  post {
+    authorId
+    isVisible
+    origin {
+      __typename
+    }
+    thread {
+      id
+      categoryId
+    }
+    edits {
+      inBlock
+    }
+    status {
+      __typename
+    }
+  }
+}
+
+query PostAddedEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
+  postAddedEvents (
+    limit:1000000,
+    orderBy: inBlock_ASC,
+    where: {
+      inBlock_gt: $startBlock,
+      inBlock_lte: $endBlock
+    }
+  ) {
+		...PostAddedEventsBetweenBlocksFields
+  }
+}
+
+fragment PostDeletedEventsBetweenBlocksFields on PostDeletedEvent {
+  inBlock
+  posts {
+    id
+    threadId
+  }
+  actorId
+  rationale
+}
+
+
+
+query PostDeletedEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
+  postDeletedEvents (
+    limit:1000000,
+    orderBy: inBlock_ASC,
+    where: {
+      inBlock_gt: $startBlock,
+      inBlock_lte: $endBlock
+    }
+  ) {
+		...PostDeletedEventsBetweenBlocksFields
+  }
+}
+
+fragment PostModeratedEventsBetweenBlocksFields on PostModeratedEvent {
+  inBlock
+  postId
+  actorId
+  rationale
+}
+
+query PostModeratedEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
+  postModeratedEvents (
+    limit:1000000,
+    orderBy: inBlock_ASC,
+    where: {
+      inBlock_gt: $startBlock,
+      inBlock_lte: $endBlock
+    }
+  ) {
+		...PostModeratedEventsBetweenBlocksFields
+  }
+}
+
+fragment PostReactedEventsBetweenBlocksFields on PostReactedEvent {
+  inBlock
+  postId
+  reactingMemberId
+  reactionResult {
+    __typename
+  }
+}
+
+
+query PostReactedEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
+  postReactedEvents (
+    limit:1000000,
+    orderBy: inBlock_ASC,
+    where: {
+      inBlock_gt: $startBlock,
+      inBlock_lte: $endBlock
+    }
+  ) {
+		...PostReactedEventsBetweenBlocksFields
+  }
+}
+
+
+fragment ThreadCreatedEventsBetweenBlocksFields on ThreadCreatedEvent {
+  inBlock
+  id
+  thread {
+    authorId
+    isVisible
+    id
+    categoryId
+    status {
+      __typename
+    }
+  }
+}
+
+query ThreadCreatedEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
+  threadCreatedEvents (
+    limit:1000000,
+    orderBy: inBlock_ASC,
+    where: {
+      inBlock_gt: $startBlock,
+      inBlock_lte: $endBlock
+    }
+  ) {
+		...ThreadCreatedEventsBetweenBlocksFields
+  }
+}
+
+fragment ThreadMetadataUpdatedEventsBetweenBlocksFields on ThreadMetadataUpdatedEvent {
+  inBlock
+  threadId
+  updatedById
+  newTitle
+}
+
+
+query ThreadMetadataUpdatedEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
+  threadMetadataUpdatedEvents (
+    limit:1000000,
+    orderBy: inBlock_ASC,
+    where: {
+      inBlock_gt: $startBlock,
+      inBlock_lte: $endBlock
+    }
+  ) {
+		...ThreadMetadataUpdatedEventsBetweenBlocksFields
+  }
+}
+
+fragment ThreadMovedEventsBetweenBlocksFields on ThreadMovedEvent {
+  inBlock
+  threadId
+  actorId
+  oldCategoryId
+  newCategoryId
+}
+
+query ThreadMovedEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
+  threadMovedEvents (
+    limit:1000000,
+    orderBy: inBlock_ASC,
+    where: {
+      inBlock_gt: $startBlock,
+      inBlock_lte: $endBlock
+    }
+  ) {
+		...ThreadMovedEventsBetweenBlocksFields
+  }
+}
+
+
+fragment ThreadDeletedEventsBetweenBlocksFields on ThreadDeletedEvent {
+  inBlock
+  threadId
+}
+
+
+
+query ThreadDeletedEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
+  threadDeletedEvents (
+    limit:1000000,
+    orderBy: inBlock_ASC,
+    where: {
+      inBlock_gt: $startBlock,
+      inBlock_lte: $endBlock
+    }
+  ) {
+		...ThreadDeletedEventsBetweenBlocksFields
+  }
+}
+
+fragment ThreadModeratedEventsBetweenBlocksFields on ThreadModeratedEvent {
+  inBlock
+  threadId
+  actorId
+  rationale
+}
+
+
+query ThreadModeratedEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
+  threadModeratedEvents (
+    limit:1000000,
+    orderBy: inBlock_ASC,
+    where: {
+      inBlock_gt: $startBlock,
+      inBlock_lte: $endBlock
+    }
+  ) {
+		...ThreadModeratedEventsBetweenBlocksFields
+  }
+}
+
+
+

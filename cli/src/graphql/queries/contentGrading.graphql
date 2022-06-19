@@ -1,0 +1,132 @@
+fragment AllVideosFields on Video {
+  id
+  isCensored
+  createdAt
+  updatedAt
+  updatedById
+  nftId
+  category {
+    id
+    name
+  }
+  createdInBlock
+  thumbnailPhoto {
+    id
+    size
+    isAccepted
+  }
+  media {
+    id
+    size
+    isAccepted
+  }
+}
+
+fragment AllChannelsFields on Channel {
+  id
+  isCensored
+  createdAt
+  updatedAt
+  updatedById
+  category {
+    id
+    name
+  }
+  createdInBlock
+  coverPhoto {
+    id
+    size
+    isAccepted
+  }
+  avatarPhoto {
+    id
+    size
+    isAccepted
+  }
+}
+
+query AllVideos {
+  videos (
+    limit:1000000,
+    orderBy: createdAt_DESC
+  ) {
+    ...AllVideosFields
+  }
+}
+
+query AllChannels {
+  channels (
+    limit:1000000,
+    orderBy: createdAt_DESC
+  ) {
+    ...AllChannelsFields
+  }
+}
+
+
+query ChannelsCreatedBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
+  channels (
+    limit:1000000,
+    orderBy: createdInBlock_ASC,
+    where: {
+      createdInBlock_gt: $startBlock,
+      createdInBlock_lte: $endBlock
+    }
+  ) {
+    ...AllChannelsFields
+  }
+}
+
+
+query VideosCreatedBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
+  videos (
+    limit:1000000,
+    where: {
+      createdInBlock_gt: $startBlock,
+      createdInBlock_lte: $endBlock
+    }
+  ) {
+    ...AllVideosFields
+  }
+}
+
+fragment NftBoughtEventsBetweenBlocksFields on NftBoughtEvent {
+  inBlock
+  videoId
+  price
+  ownerMemberId
+}
+
+
+query NftBoughtEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
+  nftBoughtEvents (
+    limit:1000000,
+    orderBy: inBlock_ASC,
+    where: {
+      inBlock_gt: $startBlock,
+      inBlock_lte: $endBlock
+    }
+  ) {
+		...NftBoughtEventsBetweenBlocksFields
+  }
+}
+
+fragment NftIssuedEventsBetweenBlocksFields on NftIssuedEvent {
+  inBlock
+  videoId
+  royalty
+  ownerMemberId
+}
+
+query NftIssuedEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
+  nftIssuedEvents (
+    limit:1000000,
+    orderBy: inBlock_ASC,
+    where: {
+      inBlock_gt: $startBlock,
+      inBlock_lte: $endBlock
+    }
+  ) {
+		...NftIssuedEventsBetweenBlocksFields
+  }
+}

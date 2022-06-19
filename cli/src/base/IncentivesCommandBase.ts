@@ -1,24 +1,102 @@
 import WorkingGroupsCommandBase from './WorkingGroupsCommandBase'
 import { WorkingGroups, AvailableGroups } from '../Types'
-import { Worker} from '@joystream/types/working-group'
+import { Worker, WorkerId} from '@joystream/types/working-group'
 import { apiModuleByGroup } from '../Api'
+import { DynamicBagCreationPolicy } from '@joystream/types/storage'
+import { AllWorkerHistoryFieldsFragment, BountiesCreatedBetweenBlocksFieldsFragment, WorkingGroupOpeningsFieldsFragment, RewardPaidEventFieldsFragment, AllBountiesFieldsFragment } from 'src/graphql/generated/queries'
+import axios from 'axios'
 
 
 export interface BudgetStatus {
   startAmount: number,
   endAmount: number,
   refill: number,
-  spent: number,
+  totalSpentOnRewards: number,
+  totalSpentOnOther: number,
   groups: string[],
   apiModuleGroupNames: string[],
   groupStart: number[],
   groupEnd: number[],
   groupRefills: number[][],
-  groupSpent: number[][],
+  rewardSpending: number[][],
+  groupDiscretionarySpending: number[][],
   workersRewards: WorkerRewarded[][],
   allWorkers: number[][],
   workersHiredDuringTerm: number[][],
   workersLeftDuringTerm: number[][],
+}
+
+export interface GroupByScoringPeriod {
+  group: string,
+  apiModuleGroupName: string,
+  workersInPeriods: WorkersInPeriod[]
+}
+
+export interface ApplicantsForOpening {
+  memberId: number,
+  memberHandle: string,
+  applicationId: number,
+  appliedInBlock: number,
+  workerId?: number,
+}
+
+export interface OpeningKeyNumbers {
+  id: number,
+  created: number,
+  closed: number|undefined,
+  status: string,
+  applicants: ApplicantsForOpening[],
+}
+
+export interface GroupsOpeningsStatus {
+  group: string,
+  apiModuleGroupName: string,
+  workersHired: number,
+  keyOpeningData: OpeningKeyNumbers[],
+  activeOpenings: WorkingGroupOpeningsFieldsFragment[]
+}
+
+export interface RewardPaidEventFieldsFragmentByGroup {
+  group: string,
+  apiModuleGroupName: string,
+  rewards: RewardPaidEventFieldsFragment[]
+}
+
+export interface WorkersInPeriod {
+  scoringPeriod: number,
+  blockStart: number,
+  blockEnd: number,
+  workersAtStart: WorkerStatus[],
+  workersAtEnd: WorkerStatus[],
+  workersHiredInPeriod: WorkerStatus[],
+  workersFiredInPeriod: WorkerStatus[],
+  workersPaidInPeriod: number[],
+  paymentsInPeriod: number[][],
+}
+
+export interface GroupWorkerStatus {
+  group: string,
+  apiModuleGroupName: string,
+  workers: WorkerStatus[]
+}
+
+export interface StorageBucketData {
+  bucketId: number,
+  status: Object,
+  workerId: undefined|number,
+  isAccepting: boolean,
+  endpointUrl: string,
+  nodeVersion: string,
+  voucher: any,
+  assignedBags: number
+}
+
+export interface WorkerStatus {
+  memberId: number,
+  memberHandle: string,
+  workerId: number,
+  startRange: number,
+  endRange: number
 }
 
 
@@ -102,7 +180,7 @@ export interface CouncilSpending {
   startAmount: number,
   endAmount: number,
   refill: number,
-  spent: number,
+  totalSpentOnRewards: number,
   groupBudgetSpending: number,
   councilorRewardSpending: number,
   fundingRequestProposalSpending: number
@@ -114,6 +192,12 @@ export interface EligibleEarnerByContext {
   account: string,
   earnings: number,
   notes: string
+}
+
+export interface GroupWorkerStatus {
+  group: string,
+  apiModuleGroupName: string,
+  workers: WorkerStatus[]
 }
 
 export interface WorkerStatus {
@@ -174,6 +258,35 @@ export default abstract class InternalCommandBase extends WorkingGroupsCommandBa
     return [activeEraStart,activeEraEnd]
   }
 
+  async getStorageWorkersAt(hash: string): Promise<StorageBucketData[]> {
+    const activeWorkersAt = await this.getOriginalApi().query.storage.storageBucketById.entriesAt(hash)
+    const data:StorageBucketData[] = []
+    for (let i=0; i<activeWorkersAt.length; i++) {
+      const bucketId = activeWorkersAt[i][0].args[0].toNumber()
+      const bucket = activeWorkersAt[i][1]
+      const status: Object = JSON.parse(bucket.operator_status.toString())
+      let workerId = undefined
+      if (bucket.operator_status.isOfType("InvitedStorageWorker")) {
+        workerId = bucket.operator_status.asType("InvitedStorageWorker").toNumber()
+      } else if  (bucket.operator_status.isOfType("StorageWorker")) {
+        workerId = (bucket.operator_status.asType("StorageWorker")[0] as WorkerId).toNumber()
+      }
+      const voucher = JSON.parse(bucket.voucher.toString())
+      const assignedBags = bucket.assigned_bags.toNumber()
+      data.push({
+        bucketId,
+        status,
+        workerId,
+        isAccepting: bucket.accepting_new_bags.isTrue,
+        endpointUrl: "",
+        nodeVersion: "",
+        voucher,
+        assignedBags,
+      })
+    }
+    return data
+  }
+
   async getLeadOfGroupAt(hash: string, group: WorkingGroups): Promise<number | undefined> {
     const leadId = await this.getApi().unprotectedWorkingGroupApiQuery(group).currentLead.at(hash)
     return leadId.unwrapOr(undefined)?.toNumber()
@@ -182,6 +295,14 @@ export default abstract class InternalCommandBase extends WorkingGroupsCommandBa
   async getBlockHash(block: number): Promise<string> {
     const hashOf = await this.getApi().unprotecedBlockHash(block)
     return hashOf
+  }
+  
+  async getTimestamps(block: number): Promise<Date> {
+    const hashOf = await this.getBlockHash(block)
+    const getBlock = await this.getOriginalApi().rpc.chain.getBlock(hashOf)
+    const timestamp = getBlock.block.extrinsics[0].method.args[0].toString()
+    const timestampQN = new Date(parseInt(timestamp))
+    return timestampQN
   }
 
   async getBudgetAtBlockHash(group: WorkingGroups, hash: string): Promise<number> {
@@ -203,32 +324,134 @@ export default abstract class InternalCommandBase extends WorkingGroupsCommandBa
     return workerById
   }
 
-  async getAllBudgetStatusInRange(budgetSpending:BudgetStatus, startBlockHash: string, endBlockHash: string): Promise<BudgetStatus> {
+  async getAllBudgetStatusInRange(budgetSpending:BudgetStatus, startBlockHashPlusOne: string, endBlockHash: string): Promise<BudgetStatus> {
     const allWorkingGroups = AvailableGroups
     for (let workingGroup of allWorkingGroups) {
       const apiModuleGroupName = apiModuleByGroup[workingGroup]
       budgetSpending.groups.push(workingGroup.toString())
       budgetSpending.apiModuleGroupNames.push(apiModuleGroupName.toString())
-      budgetSpending.groupStart.push(await this.getBudgetAtBlockHash(workingGroup, startBlockHash))
+      budgetSpending.groupStart.push(await this.getBudgetAtBlockHash(workingGroup, startBlockHashPlusOne))
       budgetSpending.groupEnd.push(await this.getBudgetAtBlockHash(workingGroup, endBlockHash))
       budgetSpending.groupRefills.push([])
-      budgetSpending.groupSpent.push([])
+      budgetSpending.rewardSpending.push([])
+      budgetSpending.groupDiscretionarySpending.push([])
       budgetSpending.workersRewards.push([])
       budgetSpending.allWorkers.push([])
       budgetSpending.workersHiredDuringTerm.push([])
       budgetSpending.workersLeftDuringTerm.push([])
     }
     budgetSpending.groups.push("council")
-    budgetSpending.groupStart.push(await this.getCouncilBudgetAtBlockHash(startBlockHash))
+    budgetSpending.groupStart.push(await this.getCouncilBudgetAtBlockHash(startBlockHashPlusOne))
     budgetSpending.groupEnd.push(await this.getCouncilBudgetAtBlockHash(endBlockHash))
     budgetSpending.groupRefills.push([])
-    budgetSpending.groupSpent.push([])
+    budgetSpending.rewardSpending.push([])
+    budgetSpending.groupDiscretionarySpending.push([])
     budgetSpending.workersRewards.push([])
     budgetSpending.allWorkers.push([])
     budgetSpending.workersHiredDuringTerm.push([])
     budgetSpending.workersLeftDuringTerm.push([])
     return budgetSpending
   }
+
+
+  async getColossusData(url: string, specificOutput?: string): Promise<any> {
+    let appendUrl = 'api/v1/'
+    if (specificOutput) {
+      appendUrl = appendUrl+specificOutput
+    } else {
+      appendUrl = appendUrl+'state/data'
+    }
+    let apiUrl = ""
+    if (url.slice(-1) != "/") {
+      apiUrl = url+'/'+appendUrl
+    } else {
+      apiUrl = url+appendUrl
+    }
+    try {
+      const info = await axios.get(`${apiUrl}`, {
+        headers: {
+          connection: 'close',
+        },
+      })
+      return info.data
+    } catch (err) {
+      return "not reachable"
+    }
+  }
+
+  async getArgusData(url: string): Promise<any> {
+    let appendUrl = 'api/v1/status'
+    let apiUrl = ""
+    if (url.slice(-1) != "/") {
+      apiUrl = url+'/'+appendUrl
+    } else {
+      apiUrl = url+appendUrl
+    }
+    try {
+      const info = await axios.get(`${apiUrl}`, {
+        headers: {
+          connection: 'close',
+        },
+      })
+      return info.data
+    } catch (err) {
+      return "not reachable"
+    }
+  }
+
+  async getWorkersStats(): Promise<GroupWorkerStatus[]> {
+    const allWorkingGroups = AvailableGroups
+    const apiModuleGroupName: string[] = []
+    const groupWorkerStatus: GroupWorkerStatus[] = []
+    for (let workingGroup of allWorkingGroups) {
+      apiModuleGroupName.push(apiModuleByGroup[workingGroup].toString())
+      groupWorkerStatus.push({
+        group: workingGroup.toString(),
+        apiModuleGroupName: apiModuleByGroup[workingGroup].toString(),
+        workers: []
+      })
+    }
+    const workerHistory = await this.getQNApi().workerHistory()
+    for (let worker of workerHistory) {
+      const groupIndex = apiModuleGroupName.indexOf(worker.groupId)
+      if (groupIndex != -1) {
+        const workerInGroup:WorkerStatus = {
+          memberId: parseInt(worker.membership.id),
+          memberHandle: worker.membership.handle,
+          workerId: worker.runtimeId,
+          startRange: worker.entry.inBlock,
+          endRange: 0
+        }
+      workerInGroup.endRange = await this.getWorkerLeftBlock(worker)
+      groupWorkerStatus[groupIndex].workers.push(workerInGroup)
+      }
+    }
+    return groupWorkerStatus
+  }
+
+  async getWorkerLeftBlock(worker: AllWorkerHistoryFieldsFragment): Promise<number> {
+    let leftBlock = 0
+    if (worker.leaderunseteventleader) {
+      if (worker.leaderunseteventleader.length > 0 ) {
+        leftBlock = worker.leaderunseteventleader[0].inBlock
+      }
+    }
+    if (worker.status.__typename === "WorkerStatusTerminated") {
+      if (worker.status.terminatedWorkerEvent) {
+        leftBlock = worker.status.terminatedWorkerEvent.inBlock
+      }
+    } else if (worker.status.__typename === "WorkerStatusLeft") {
+      if (worker.status.workerExitedEvent) {
+        leftBlock = worker.status.workerExitedEvent.inBlock
+      }
+    } else if (worker.status.__typename === "WorkerStatusLeaving") {
+      if (worker.status.workerStartedLeavingEvent) {
+        leftBlock = worker.status.workerStartedLeavingEvent.inBlock
+      }
+    }
+    return leftBlock
+  }
+
 
   async getWorkersInGroup(spend: BudgetStatus, startBlock: number, endBlock: number): Promise<BudgetStatus> {
     const workerHistory = await this.getQNApi().workerHistory()
@@ -336,18 +559,24 @@ export default abstract class InternalCommandBase extends WorkingGroupsCommandBa
           }
         }
       }
-      const hrWorker: WorkerStatus = {
+      const workerInGroup: WorkerStatus = {
         memberId: parseInt(worker.membership.id),
         memberHandle: worker.membership.handle,
         workerId: worker.runtimeId,
         startRange: worker.entry.inBlock,
         endRange
       }
-      groupWorkersAtBlock.push(hrWorker)
+      groupWorkersAtBlock.push(workerInGroup)
     }
     groupWorkersAtBlock.sort((a,b) => a.workerId-b.workerId)
     return groupWorkersAtBlock
   }
+
+  async getDynamicBagCreationPoliciesAt(hash: string, bagType: "Channel"|"Member"):Promise<DynamicBagCreationPolicy> {
+    const policy = await this.getOriginalApi().query.storage.dynamicBagCreationPolicies.at(hash,bagType)
+    return policy
+  }
+    
 
   async getEraResults(eraIndex: number, blockHash:string): Promise<EraOverview> {
     const eraRewardPoints = await this.getOriginalApi().query.staking.erasRewardPoints.at(blockHash,eraIndex)
@@ -404,6 +633,7 @@ export default abstract class InternalCommandBase extends WorkingGroupsCommandBa
         val.slashedAmount += unwrappedValidatorSlashInEra[1].toNumber()
         totalBalancesOfSlashesApplied += unwrappedValidatorSlashInEra[1].toNumber()
         slashesIncurred.push(unwrappedValidatorSlashInEra[1].toNumber())
+        this.log(`Slashing of validator ${val.stash} in era ${eraIndex} - amount: ${val.slashedAmount}`)
       } else {
         slashesIncurred.push(0)
       }
@@ -412,6 +642,7 @@ export default abstract class InternalCommandBase extends WorkingGroupsCommandBa
         
       nominatorSlashInEra.forEach((a) => {
         const slash = a[1].unwrap().toNumber()
+        this.log(`Slashing of nominator in era ${eraIndex} - amount: ${slash}`)
         totalBalancesOfSlashesApplied += slash
       })
     const validatorControllers: string[] = []
@@ -449,16 +680,17 @@ export default abstract class InternalCommandBase extends WorkingGroupsCommandBa
     for (let proposal of proposalExecutedEventsBetweenBlocks) {
       if (proposal.proposal.details.__typename === "FundingRequestProposalDetails" && proposal.proposal.details.destinationsList) {
         for (let recipient of proposal.proposal.details.destinationsList.destinations) {
-          proposalEarners.earnings += recipient.amount
-          proposalEarners.eligibleEarnings += recipient.amount
+          const amountPaid = parseInt(recipient.amount) ?? 0
+          proposalEarners.earnings += amountPaid
+          proposalEarners.eligibleEarnings += amountPaid
           const recipientRootIsMember = await this.getQNApi().membersByRootAccounts([recipient.account])
           if (recipientRootIsMember.length == 1) {
             const proposalEarner:EligibleEarnerByContext = {
               memberId: parseInt(recipientRootIsMember[0].id),
               memberHandle: recipientRootIsMember[0].handle,
               account: recipient.account,
-              earnings: recipient.amount,
-              notes: `Awarded ${recipient.amount} in proposal ${proposal.proposal.id}`
+              earnings: amountPaid,
+              notes: `Awarded ${amountPaid} in proposal ${proposal.proposal.id}`
             }
             proposalEarners.eligibleEarner.push(proposalEarner)
           } else {
@@ -524,15 +756,18 @@ export default abstract class InternalCommandBase extends WorkingGroupsCommandBa
           const bountyWinners = bounty.bounty.entries
           if (bountyWinners) {
             for (let winner of bountyWinners) {
-              bountyEarners.earnings += winner.status.reward
-              bountyEarners.eligibleEarnings += winner.status.reward
-              bountyEarners.eligibleEarner.push({
-                memberId: parseInt(winner.worker.id),
-                memberHandle: winner.worker.handle,
-                account: winner.stakingAccount?? "na",
-                earnings: winner.status.reward,
-                notes: `BountyId: ${bounty.bounty.id}. Created by ${createdByHR} in block ${bounty.bounty.createdInEvent.inBlock} Paid in block: ${bounty.inBlock}`
-              })
+              const reward = winner.status.reward
+              if (reward) {
+                bountyEarners.earnings += winner.status.reward
+                bountyEarners.eligibleEarnings += winner.status.reward
+                bountyEarners.eligibleEarner.push({
+                  memberId: parseInt(winner.worker.id),
+                  memberHandle: winner.worker.handle,
+                  account: winner.stakingAccount ?? "na",
+                  earnings: winner.status.reward,
+                  notes: `BountyId: ${bounty.bounty.id}. Created by memberId ${createdByHR[0]} with workerId ${createdByHR[1]} in block ${bounty.bounty.createdInEvent.inBlock} Paid in block: ${bounty.inBlock}`
+                })
+              }
             }
           }
         }
@@ -541,12 +776,54 @@ export default abstract class InternalCommandBase extends WorkingGroupsCommandBa
     return bountyEarners
   }
 
-  async filterBounties(startBlock: number, endBlock: number): Promise<string> {
-    //const groupId = "operationsWorkingGroupBeta"
-    //const workerHistory = await this.getRelevantWorkers(endBlock, operationsWorkingGroupBeta)
-    //const bountiesCreatedByHrInRange = await this.getQNApi().allBounties()
-    console.log(startBlock,endBlock)
-    //for (let bounty of bountiesCreatedByHrInRange) {}
-    return "TODO!"
+  async getBountiesCreated(startBlock: number, endBlock: number): Promise<BountiesCreatedBetweenBlocksFieldsFragment[]> {
+    const hrGroup = apiModuleByGroup[WorkingGroups.HumanResources]
+    const hrWorkers = await this.getRelevantWorkers(endBlock,hrGroup)
+    const bountiesCreated = await this.getQNApi().bountiesCreatedBetweenBlocks(startBlock,endBlock)
+    const workerIds:number[] = []
+    const workerRange:[number,number][] = []
+    const bountiesCreatedByHR: BountiesCreatedBetweenBlocksFieldsFragment[] = []
+    for (let worker of hrWorkers) {
+      workerIds.push(worker.memberId)
+      workerRange.push([worker.startRange,worker.endRange])
+    }
+    for (let bounty of bountiesCreated) {
+      const creator = bounty.bounty.creator
+      if (creator) {
+        const createdAtBlockHash = await this.getBlockHash(bounty.inBlock)
+        const bountyWorkersAt = await this.getOriginalApi().query.operationsWorkingGroupBeta.workerById.entriesAt(createdAtBlockHash)
+        bountyWorkersAt.forEach(([a,b]) => {
+          const workerMember = b.member_id.toNumber()
+          if (workerMember == parseInt(creator.id)) {
+            bountiesCreatedByHR.push(bounty)
+          }
+        })
+      }
+    }
+    return bountiesCreatedByHR
+  }
+
+  async getAllBountyData(startBlock: number, endBlock: number) {
+    const allBounties = await this.getQNApi().allBounties()
+    console.log(allBounties)
+    const bountiesCreatedByHR: AllBountiesFieldsFragment[] = []
+    for (let bounty of allBounties) {
+      if (bounty.createdInEvent.inBlock > startBlock && bounty.createdInEvent.inBlock < endBlock) {
+        const creator = bounty.creator
+        if (creator) {
+          const createdAtBlockHash = await this.getBlockHash(bounty.createdInEvent.inBlock)
+          const bountyWorkersAt = await this.getOriginalApi().query.operationsWorkingGroupBeta.workerById.entriesAt(createdAtBlockHash)
+          bountyWorkersAt.forEach((a) => {
+            //const workerId = a.args[0].toNumber()
+            const workerMember = a[1].member_id.toNumber()
+            if (workerMember == parseInt(creator.id)) {
+              bountiesCreatedByHR.push(bounty)
+            }
+          })
+        }
+      }
+    }
+    //for (let bounty of bountiesCreatedByHR) {
+    //}
   }
 }

@@ -1,0 +1,101 @@
+fragment StorageBagStorageReplicationFields on StorageBag {
+  id
+  createdAt
+  updatedAt
+  storageBuckets {
+    id
+    acceptingNewBags
+  }
+}
+
+fragment StorageBagDistributionStatusFields on StorageBag {
+  id
+  distributionBuckets {
+    familyId
+    bucketIndex
+    distributing
+  }
+}
+
+fragment StorageBucketsDataFields on StorageBucket {
+  id
+  acceptingNewBags
+  dataObjectsSizeLimit
+  dataObjectCountLimit
+  dataObjectsCount
+  dataObjectsSize
+  operatorStatus {
+    ... on StorageBucketOperatorStatusActive {
+      workerId
+      transactorAccountId
+    }
+    ... on StorageBucketOperatorStatusInvited {
+      workerId
+    }
+    ... on StorageBucketOperatorStatusMissing {
+      phantom
+    }
+  }
+  operatorMetadata {
+    nodeEndpoint
+  }
+}
+
+fragment FailedUploadsBetweenTimestampsFields on StorageDataObject {
+  id
+  isAccepted
+  size
+  ipfsHash
+  createdAt
+  updatedAt
+  storageBag {
+    id
+    storageBuckets {
+      id
+    }
+  }
+}
+
+
+
+
+
+query StorageBagStorageReplication {
+  storageBags (
+    limit: 1000000
+    orderBy: createdAt_DESC
+  ) {
+    ...StorageBagStorageReplicationFields
+  }
+}
+
+query StorageBagDistributionStatus {
+  storageBags (
+    limit: 1000000
+    orderBy: createdAt_DESC
+  ) {
+    ...StorageBagDistributionStatusFields
+  }
+}
+
+
+
+query FailedUploadsBetweenTimestamps ($startDate: DateTime!, $endDate: DateTime!) {
+  storageDataObjects (
+    limit:1000000,
+    where: {
+      createdAt_gte: $startDate,
+      createdAt_lt: $endDate
+    }
+  ) {
+    ...FailedUploadsBetweenTimestampsFields
+  }
+}
+
+query StorageBucketsData {
+  storageBuckets (
+    limit: 1000000
+  ) {
+    ...StorageBucketsDataFields
+  }
+}

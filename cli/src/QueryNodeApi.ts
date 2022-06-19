@@ -9,7 +9,7 @@ import {
   ApolloLink,
 } from '@apollo/client/core'
 import { ErrorLink, onError } from '@apollo/client/link/error'
-import { Maybe } from './graphql/generated/schema'
+import { Maybe, Scalars } from './graphql/generated/schema'
 import {
   GetStorageNodesInfoByBagId,
   GetStorageNodesInfoByBagIdQuery,
@@ -134,6 +134,124 @@ import {
   MembersByRootAccounts,
   MembersByRootAccountsQuery,
   MembersByRootAccountsQueryVariables,
+
+  FailedUploadsBetweenTimestamps,
+  FailedUploadsBetweenTimestampsQuery,
+  FailedUploadsBetweenTimestampsQueryVariables,
+  FailedUploadsBetweenTimestampsFieldsFragment,
+
+  OpeningAddedEventsBetweenBlocks,
+  OpeningAddedEventsBetweenBlocksQuery,
+  OpeningAddedEventsBetweenBlocksQueryVariables,
+  OpeningAddedEventsBetweenBlocksFieldsFragment,
+
+  WorkingGroupOpenings,
+  WorkingGroupOpeningsQuery,
+  WorkingGroupOpeningsQueryVariables,
+  WorkingGroupOpeningsFieldsFragment,
+
+  AllForumPosts,
+  AllForumPostsQuery,
+  AllForumPostsQueryVariables,
+  AllForumPostsFieldsFragment,
+
+  AllForumCategories,
+  AllForumCategoriesQuery,
+  AllForumCategoriesQueryVariables,
+  AllForumCategoriesFieldsFragment,
+
+  AllForumThreads,
+  AllForumThreadsQuery,
+  AllForumThreadsQueryVariables,
+  AllForumThreadsFieldsFragment,
+
+  AllVideos,
+  AllVideosQuery,
+  AllVideosQueryVariables,
+  AllVideosFieldsFragment,
+
+  AllChannels,
+  AllChannelsQuery,
+  AllChannelsQueryVariables,
+  AllChannelsFieldsFragment,
+
+  VideosCreatedBetweenBlocks,
+  VideosCreatedBetweenBlocksQuery,
+  VideosCreatedBetweenBlocksQueryVariables,
+
+  ChannelsCreatedBetweenBlocks,
+  ChannelsCreatedBetweenBlocksQuery,
+  ChannelsCreatedBetweenBlocksQueryVariables,
+
+  BudgetSpendingEvent,
+  BudgetSpendingEventQuery,
+  BudgetSpendingEventQueryVariables,
+  BudgetSpendingEventFieldsFragment,
+
+  DistributionBucketsDataFieldsFragment,
+  DistributionBucketsDataQuery,
+  DistributionBucketsDataQueryVariables,
+  DistributionBucketsData,
+
+  DistributionBucketFamilyDataFieldsFragment,
+  DistributionBucketFamilyDataQuery,
+  DistributionBucketFamilyDataQueryVariables,
+  DistributionBucketFamilyData,
+
+  PostAddedEventsBetweenBlocksFieldsFragment,
+  PostAddedEventsBetweenBlocksQuery,
+  PostAddedEventsBetweenBlocksQueryVariables,
+  PostAddedEventsBetweenBlocks,
+
+  ThreadCreatedEventsBetweenBlocksFieldsFragment,
+  ThreadCreatedEventsBetweenBlocksQuery,
+  ThreadCreatedEventsBetweenBlocksQueryVariables,
+  ThreadCreatedEventsBetweenBlocks,
+
+  PostDeletedEventsBetweenBlocksFieldsFragment,
+  PostDeletedEventsBetweenBlocksQuery,
+  PostDeletedEventsBetweenBlocksQueryVariables,
+  PostDeletedEventsBetweenBlocks,
+
+  ThreadDeletedEventsBetweenBlocksFieldsFragment,
+  ThreadDeletedEventsBetweenBlocksQuery,
+  ThreadDeletedEventsBetweenBlocksQueryVariables,
+  ThreadDeletedEventsBetweenBlocks,
+
+  PostModeratedEventsBetweenBlocksFieldsFragment,
+  PostModeratedEventsBetweenBlocksQuery,
+  PostModeratedEventsBetweenBlocksQueryVariables,
+  PostModeratedEventsBetweenBlocks,
+
+  ThreadModeratedEventsBetweenBlocksFieldsFragment,
+  ThreadModeratedEventsBetweenBlocksQuery,
+  ThreadModeratedEventsBetweenBlocksQueryVariables,
+  ThreadModeratedEventsBetweenBlocks,
+
+  PostReactedEventsBetweenBlocksFieldsFragment,
+  PostReactedEventsBetweenBlocksQuery,
+  PostReactedEventsBetweenBlocksQueryVariables,
+  PostReactedEventsBetweenBlocks,
+
+  ThreadMetadataUpdatedEventsBetweenBlocksFieldsFragment,
+  ThreadMetadataUpdatedEventsBetweenBlocksQuery,
+  ThreadMetadataUpdatedEventsBetweenBlocksQueryVariables,
+  ThreadMetadataUpdatedEventsBetweenBlocks,
+
+  ThreadMovedEventsBetweenBlocksFieldsFragment,
+  ThreadMovedEventsBetweenBlocksQuery,
+  ThreadMovedEventsBetweenBlocksQueryVariables,
+  ThreadMovedEventsBetweenBlocks,
+
+  NftBoughtEventsBetweenBlocksFieldsFragment,
+  NftBoughtEventsBetweenBlocksQuery,
+  NftBoughtEventsBetweenBlocksQueryVariables,
+  NftBoughtEventsBetweenBlocks,
+
+  NftIssuedEventsBetweenBlocksFieldsFragment,
+  NftIssuedEventsBetweenBlocksQuery,
+  NftIssuedEventsBetweenBlocksQueryVariables,
+  NftIssuedEventsBetweenBlocks,
 
 } from './graphql/generated/queries'
 import { URL } from 'url'
@@ -462,4 +580,239 @@ export default class QueryNodeApi {
     MembersByRootAccountsQueryVariables
     >(MembersByRootAccounts, { rootAccounts }, 'memberships')
   }
+
+  async failedUploadsBetweenTimestamps(
+    startDate: Scalars["DateTime"],
+    endDate: Scalars["DateTime"]
+  ): Promise<FailedUploadsBetweenTimestampsFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+      FailedUploadsBetweenTimestampsQuery,
+      FailedUploadsBetweenTimestampsQueryVariables
+    >(FailedUploadsBetweenTimestamps, { startDate, endDate }, 'storageDataObjects')
+  }
+
+  async failedUploadsBetweenTimestamps2(
+    startDate: string,
+    endDate: string
+  ): Promise<FailedUploadsBetweenTimestampsFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+      FailedUploadsBetweenTimestampsQuery,
+      FailedUploadsBetweenTimestampsQueryVariables
+    >(FailedUploadsBetweenTimestamps, { startDate, endDate }, 'storageDataObjects')
+  }
+
+  async getAllOpeningsInRange(
+    startBlock: number,
+    endBlock: number
+  ): Promise<OpeningAddedEventsBetweenBlocksFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+      OpeningAddedEventsBetweenBlocksQuery,
+      OpeningAddedEventsBetweenBlocksQueryVariables
+      >(OpeningAddedEventsBetweenBlocks, { startBlock, endBlock }, 'openingAddedEvents')
+  }
+
+  async allWorkingGroupOpenings(
+    ): Promise<WorkingGroupOpeningsFieldsFragment[]> {
+      return this.multipleEntitiesQuery<
+      WorkingGroupOpeningsQuery,
+      WorkingGroupOpeningsQueryVariables
+      >(WorkingGroupOpenings, { }, 'workingGroupOpenings')
+  }
+
+  async allForumPosts(
+    ): Promise<AllForumPostsFieldsFragment[]> {
+      return this.multipleEntitiesQuery<
+      AllForumPostsQuery,
+      AllForumPostsQueryVariables
+      >(AllForumPosts, { }, 'forumPosts')
+  }
+
+  async allForumCategories(
+    ): Promise<AllForumCategoriesFieldsFragment[]> {
+      return this.multipleEntitiesQuery<
+      AllForumCategoriesQuery,
+      AllForumCategoriesQueryVariables
+      >(AllForumCategories, { }, 'forumCategories')
+  }
+
+  async allForumThreads(
+    ): Promise<AllForumThreadsFieldsFragment[]> {
+      return this.multipleEntitiesQuery<
+      AllForumThreadsQuery,
+      AllForumThreadsQueryVariables
+      >(AllForumThreads, { }, 'forumThreads')
+  }
+
+  async allVideos(
+    ): Promise<AllVideosFieldsFragment[]> {
+      return this.multipleEntitiesQuery<
+      AllVideosQuery,
+      AllVideosQueryVariables
+      >(AllVideos, { }, 'videos')
+  }
+
+  async allChannels(
+    ): Promise<AllChannelsFieldsFragment[]> {
+      return this.multipleEntitiesQuery<
+      AllChannelsQuery,
+      AllChannelsQueryVariables
+      >(AllChannels, { }, 'channels')
+  }
+
+  async videosCreatedBetweenBlocks(
+    startBlock: number,
+    endBlock: number
+    ): Promise<AllVideosFieldsFragment[]> {
+      return this.multipleEntitiesQuery<
+      VideosCreatedBetweenBlocksQuery,
+      VideosCreatedBetweenBlocksQueryVariables
+      >(VideosCreatedBetweenBlocks, { startBlock, endBlock }, 'videos')
+  }
+
+  async channelsCreatedBetweenBlocks(
+    startBlock: number,
+    endBlock: number
+    ): Promise<AllChannelsFieldsFragment[]> {
+      return this.multipleEntitiesQuery<
+      ChannelsCreatedBetweenBlocksQuery,
+      ChannelsCreatedBetweenBlocksQueryVariables
+      >(ChannelsCreatedBetweenBlocks, { startBlock, endBlock}, 'channels')
+  }
+
+  async allBudgetSpendingEvents(
+    ): Promise<BudgetSpendingEventFieldsFragment[]> {
+      return this.multipleEntitiesQuery<
+      BudgetSpendingEventQuery,
+      BudgetSpendingEventQueryVariables
+      >(BudgetSpendingEvent, { }, 'budgetSpendingEvents')
+  }
+
+  async distributionBucketsData(
+    ): Promise<DistributionBucketsDataFieldsFragment[]> {
+      return this.multipleEntitiesQuery<
+      DistributionBucketsDataQuery,
+      DistributionBucketsDataQueryVariables
+      >(DistributionBucketsData, { }, 'distributionBuckets')
+    }
+
+    async distributionBucketFamilyData(
+    ): Promise<DistributionBucketFamilyDataFieldsFragment[]> {
+      return this.multipleEntitiesQuery<
+      DistributionBucketFamilyDataQuery,
+      DistributionBucketFamilyDataQueryVariables
+      >(DistributionBucketFamilyData, { }, 'distributionBucketFamilies')
+    }
+
+    async postAddedEventsBetweenBlocks(
+      startBlock: number,
+      endBlock: number
+    ): Promise<PostAddedEventsBetweenBlocksFieldsFragment[]> {
+      return this.multipleEntitiesQuery<
+      PostAddedEventsBetweenBlocksQuery,
+      PostAddedEventsBetweenBlocksQueryVariables
+      >(PostAddedEventsBetweenBlocks, { startBlock, endBlock }, 'postAddedEvents')
+    }
+
+
+    async threadCreatedEventsBetweenBlocks(
+      startBlock: number,
+      endBlock: number
+    ): Promise<ThreadCreatedEventsBetweenBlocksFieldsFragment[]> {
+      return this.multipleEntitiesQuery<
+      ThreadCreatedEventsBetweenBlocksQuery,
+      ThreadCreatedEventsBetweenBlocksQueryVariables
+      >(ThreadCreatedEventsBetweenBlocks, { startBlock, endBlock }, 'threadCreatedEvents')
+    }
+
+    async postDeletedEventsBetweenBlocks(
+      startBlock: number,
+      endBlock: number
+    ): Promise<PostDeletedEventsBetweenBlocksFieldsFragment[]> {
+      return this.multipleEntitiesQuery<
+      PostDeletedEventsBetweenBlocksQuery,
+      PostDeletedEventsBetweenBlocksQueryVariables
+      >(PostDeletedEventsBetweenBlocks, { startBlock, endBlock }, 'postDeletedEvents')
+    }
+
+
+    async threadDeletedEventsBetweenBlocks(
+      startBlock: number,
+      endBlock: number
+    ): Promise<ThreadDeletedEventsBetweenBlocksFieldsFragment[]> {
+      return this.multipleEntitiesQuery<
+      ThreadDeletedEventsBetweenBlocksQuery,
+      ThreadDeletedEventsBetweenBlocksQueryVariables
+      >(ThreadDeletedEventsBetweenBlocks, { startBlock, endBlock }, 'threadDeletedEvents')
+    }
+
+
+    async postModeratedEventsBetweenBlocks(
+      startBlock: number,
+      endBlock: number
+    ): Promise<PostModeratedEventsBetweenBlocksFieldsFragment[]> {
+      return this.multipleEntitiesQuery<
+      PostModeratedEventsBetweenBlocksQuery,
+      PostModeratedEventsBetweenBlocksQueryVariables
+      >(PostModeratedEventsBetweenBlocks, { startBlock, endBlock }, 'postModeratedEvents')
+    }
+
+    async threadModeratedEventsBetweenBlocks(
+      startBlock: number,
+      endBlock: number
+    ): Promise<ThreadModeratedEventsBetweenBlocksFieldsFragment[]> {
+      return this.multipleEntitiesQuery<
+      ThreadModeratedEventsBetweenBlocksQuery,
+      ThreadModeratedEventsBetweenBlocksQueryVariables
+      >(ThreadModeratedEventsBetweenBlocks, { startBlock, endBlock }, 'threadModeratedEvents')
+    }
+    async postReactedEventsBetweenBlocks(
+      startBlock: number,
+      endBlock: number
+    ): Promise<PostReactedEventsBetweenBlocksFieldsFragment[]> {
+      return this.multipleEntitiesQuery<
+      PostReactedEventsBetweenBlocksQuery,
+      PostReactedEventsBetweenBlocksQueryVariables
+      >(PostReactedEventsBetweenBlocks, { startBlock, endBlock }, 'postReactedEvents')
+    }
+
+    async threadMetadataUpdatedEventsBetweenBlocks(
+      startBlock: number,
+      endBlock: number
+    ): Promise<ThreadMetadataUpdatedEventsBetweenBlocksFieldsFragment[]> {
+      return this.multipleEntitiesQuery<
+      ThreadMetadataUpdatedEventsBetweenBlocksQuery,
+      ThreadMetadataUpdatedEventsBetweenBlocksQueryVariables
+      >(ThreadMetadataUpdatedEventsBetweenBlocks, { startBlock, endBlock }, 'threadMetadataUpdatedEvents')
+    }
+
+    async threadMovedEventsBetweenBlocks(
+      startBlock: number,
+      endBlock: number
+    ): Promise<ThreadMovedEventsBetweenBlocksFieldsFragment[]> {
+      return this.multipleEntitiesQuery<
+      ThreadMovedEventsBetweenBlocksQuery,
+      ThreadMovedEventsBetweenBlocksQueryVariables
+      >(ThreadMovedEventsBetweenBlocks, { startBlock, endBlock }, 'threadMovedEvents')
+    }
+    async nftIssuedEventsBetweenBlocks(
+      startBlock: number,
+      endBlock: number
+    ): Promise<NftIssuedEventsBetweenBlocksFieldsFragment[]> {
+      return this.multipleEntitiesQuery<
+      NftIssuedEventsBetweenBlocksQuery,
+      NftIssuedEventsBetweenBlocksQueryVariables
+      >(NftIssuedEventsBetweenBlocks, { startBlock, endBlock }, 'nftIssuedEvents')
+    }
+
+    async nftBoughtEventsBetweenBlocks(
+      startBlock: number,
+      endBlock: number
+    ): Promise<NftBoughtEventsBetweenBlocksFieldsFragment[]> {
+      return this.multipleEntitiesQuery<
+      NftBoughtEventsBetweenBlocksQuery,
+      NftBoughtEventsBetweenBlocksQueryVariables
+      >(NftBoughtEventsBetweenBlocks, { startBlock, endBlock }, 'nftBoughtEvents')
+    }
 }
+
+

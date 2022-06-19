@@ -115,6 +115,11 @@ fragment AllWorkerHistoryFields on Worker {
         inBlock
       }
     }
+    ... on WorkerStatusLeaving {
+      workerStartedLeavingEvent {
+        inBlock
+      }
+    }
   }
   entry {
     inBlock
@@ -190,83 +195,86 @@ fragment BountiesFundedBetweenBlocksFields on BountyFundedEvent {
 }
 
 
-fragment AllBountiesFields on Bounty {
-  id
-  stage
-  entrantWhitelist {
-    members {
-      ...MembershipOnWorkerFields
+
+
+fragment OpeningAddedEventsBetweenBlocksFields on OpeningAddedEvent {
+inBlock
+  groupId
+  openingId
+  opening {
+    status {
+      __typename
+    }
+    metadata {
+      originallyValid
+      title
+      shortDescription
+      description
+      hiringLimit
+      expectedEnding
+      applicationDetails
+      applicationFormQuestions {
+        question
+      }
     }
   }
-  creator {
-    ...MembershipOnWorkerFields
-  }
-  oracle {
-    ...MembershipOnWorkerFields
-  }
-  totalFunding
-  isTerminated
+}
+
+fragment WorkingGroupOpeningsFields on WorkingGroupOpening {
+  groupId
+  runtimeId
+  type
   createdInEvent {
     inBlock
+    groupId
   }
-  contributions {
-    amount
-    withdrawnInEvent {
+    applications {
+    createdInEvent {
       inBlock
     }
-    contributor {
-      ...MembershipOnWorkerFields
-    }
-    bountyFundedEvents {
-      inBlock
-    }
-  }
-  maxFundingReachedEvent {
-    inBlock
-  }
-  judgment {
-    rationale
-  }
-  removedInEvent {
-    inBlock
-  }
-}
-
-
-fragment StorageBagStorageReplicationFields on StorageBag {
-  id
-  storageBuckets {
-    id
-  }
-}
-
-fragment StorageBagDistributionStatusFields on StorageBag {
-  id
-  distributionBuckets {
-    familyId
-    bucketIndex
-    distributing
-  }
-}
-
-fragment StorageBucketsDataFields on StorageBucket {
-  id
-  acceptingNewBags
-  dataObjectsSizeLimit
-  dataObjectCountLimit
-  dataObjectsCount
-  dataObjectsSize
-  operatorStatus {
-    ... on StorageBucketOperatorStatusActive {
-      workerId
+    runtimeId
+    applicant {
+      id
+      handle
     }
   }
-  operatorMetadata {
-    nodeEndpoint
+  status {
+    __typename
+    ...on OpeningStatusOpen {
+      phantom
+    }
+    ...on OpeningStatusFilled {
+      openingFilledEvent {
+        inBlock
+        workersHired {
+          applicationId
+          runtimeId
+          membership {
+            handle
+            id
+          }
+        }
+      }
+    }
+    ...on OpeningStatusCancelled {
+      openingCanceledEvent {
+        inBlock
+      }
+    }
+  }
+  metadata {
+    originallyValid
+    title
+    shortDescription
+    description
+    hiringLimit
+    expectedEnding
+    applicationDetails
+    applicationFormQuestions {
+      question
+    }
   }
 }
-
-
 
 
 query BudgetUpdatedEventsBetweenDates($startDate: DateTime!, $endDate: DateTime!) {
@@ -274,8 +282,8 @@ query BudgetUpdatedEventsBetweenDates($startDate: DateTime!, $endDate: DateTime!
     limit:1000,
     orderBy: inBlock_ASC,
     where: {
-      updatedAt_gte: $startDate,
-      updatedAt_lt: $endDate
+      updatedAt_gt: $startDate,
+      updatedAt_lte: $endDate
     }
   ) {
 		...BudgetUpdatedEventFields
@@ -287,8 +295,8 @@ query BudgetUpdatedEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
     limit:1000,
     orderBy: inBlock_ASC,
     where: {
-      inBlock_gte: $startBlock,
-      inBlock_lt: $endBlock
+      inBlock_gt: $startBlock,
+      inBlock_lte: $endBlock
     }
   ) {
 		...BudgetUpdatedEventFields
@@ -300,8 +308,8 @@ query BudgetRefillEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
     limit:1000,
     orderBy: inBlock_ASC,
     where: {
-      inBlock_gte: $startBlock,
-      inBlock_lt: $endBlock
+      inBlock_gt: $startBlock,
+      inBlock_lte: $endBlock
     }
   ) {
     ...BudgetRefillEventFields
@@ -314,8 +322,8 @@ query RewardPaidEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
     limit:1000, 
     orderBy: inBlock_ASC,
     where: {
-      inBlock_gte: $startBlock,
-      inBlock_lt: $endBlock
+      inBlock_gt: $startBlock,
+      inBlock_lte: $endBlock
     }
   ) {
     ...RewardPaidEventFields
@@ -328,8 +336,8 @@ query ProposalExecutedEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
     limit:1000, 
     orderBy: inBlock_ASC,
     where: {
-      inBlock_gte: $startBlock,
-      inBlock_lt: $endBlock
+      inBlock_gt: $startBlock,
+      inBlock_lte: $endBlock
     }
   ) {
     ...ProposalExecutedEventFields
@@ -360,8 +368,8 @@ query ProposalsDecisionMadeEventsBetweenBlocks($startBlock: Int!, $endBlock: Int
     limit:1000, 
     orderBy: inBlock_ASC,
     where: {
-      inBlock_gte: $startBlock,
-      inBlock_lt: $endBlock
+      inBlock_gt: $startBlock,
+      inBlock_lte: $endBlock
     }
   ) {
     ...ProposalsDecisionMadeEventsFields
@@ -374,21 +382,11 @@ query MemberInvitedEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
     limit:1000, 
     orderBy: inBlock_ASC,
     where: {
-      inBlock_gte: $startBlock,
-      inBlock_lt: $endBlock
+      inBlock_gt: $startBlock,
+      inBlock_lte: $endBlock
     }
   ) {
     ...MemberInvitedEventsFields
-  }
-}
-
-
-query AllBounties {
-	bounties (
-    limit:1000000,
-    orderBy: createdAt_ASC
-  ) {
-    ...AllBountiesFields
   }
 }
 
@@ -397,8 +395,8 @@ query BountiesFundedBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
     limit:1000000,
     orderBy: inBlock_ASC
     where: {
-      inBlock_gte: $startBlock,
-      inBlock_lt: $endBlock
+      inBlock_gt: $startBlock,
+      inBlock_lte: $endBlock
     }
   ) {
     ...BountiesFundedBetweenBlocksFields
@@ -410,38 +408,11 @@ query BountiesCreatedBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
     limit:1000000,
     orderBy: createdAt_DESC
     where: {
-      inBlock_gte: $startBlock,
-      inBlock_lt: $endBlock
+      inBlock_gt: $startBlock,
+      inBlock_lte: $endBlock
     }
   ) {
     ...BountiesCreatedBetweenBlocksFields
-  }
-}
-
-
-query StorageBagStorageReplication {
-  storageBags (
-    limit: 1000000
-    orderBy: createdAt_DESC
-  ) {
-    ...StorageBagStorageReplicationFields
-  }
-}
-
-query StorageBagDistributionStatus {
-  storageBags (
-    limit: 1000000
-    orderBy: createdAt_DESC
-  ) {
-    ...StorageBagDistributionStatusFields
-  }
-}
-
-query StorageBucketsData {
-  storageBuckets (
-    limit: 1000000
-  ) {
-    ...StorageBucketsDataFields
   }
 }
 
@@ -472,11 +443,50 @@ query OracleJudgmentSubmittedEventsBetweenBlocks($startBlock: Int!, $endBlock: I
     limit:1000000,
     orderBy: inBlock_ASC
     where: {
-      inBlock_gte: $startBlock,
-      inBlock_lt: $endBlock
+      inBlock_gt: $startBlock,
+      inBlock_lte: $endBlock
     }
   ) {
     ...OracleJudgmentSubmittedEventsBetweenBlocksFields
   }
 }
 
+
+query OpeningAddedEventsBetweenBlocks($startBlock: Int!, $endBlock: Int!) {
+  openingAddedEvents (
+    limit:1000000,
+    orderBy: createdAt_DESC
+    where: {
+      inBlock_gt: $startBlock,
+      inBlock_lte: $endBlock
+    }
+  ) {
+    ...OpeningAddedEventsBetweenBlocksFields
+  }
+}
+
+query WorkingGroupOpenings {
+  workingGroupOpenings (
+    limit:1000000,
+    orderBy: createdAt_DESC
+  ) {
+    ...WorkingGroupOpeningsFields
+  }
+}
+
+fragment BudgetSpendingEventFields on BudgetSpendingEvent {
+  inBlock
+  groupId
+  reciever
+  amount
+  rationale
+}
+
+query BudgetSpendingEvent {
+  budgetSpendingEvents (
+    limit:1000000,
+    orderBy: createdAt_DESC
+  ) {
+    ...BudgetSpendingEventFields
+  }
+}

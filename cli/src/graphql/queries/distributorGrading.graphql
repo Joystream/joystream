@@ -1,0 +1,42 @@
+fragment DistributionBucketsDataFields on DistributionBucket {
+  id
+  bucketIndex
+  familyId
+  acceptingNewBags
+  distributing
+  bags {
+    id
+  }
+  operators {
+    workerId
+    metadata {
+      nodeEndpoint
+    }
+  }
+}
+
+fragment DistributionBucketFamilyDataFields on DistributionBucketFamily {
+  id
+  buckets {
+    ...DistributionBucketsDataFields
+  }
+}
+
+
+query DistributionBucketsData {
+  distributionBuckets (
+    limit: 1000000
+  ) {
+    ...DistributionBucketsDataFields
+  }
+}
+
+
+
+query DistributionBucketFamilyData {
+  distributionBucketFamilies (
+    limit: 1000000
+  ) {
+    ...DistributionBucketFamilyDataFields
+  }
+}

@@ -13,12 +13,12 @@ export default class GetOpportunitiesScoreCommand extends IncentivesCommandBase 
     termStart: flags.integer({
       char: 's',
       required: true,
-      description: 'The blockheight of the first scoring period',
+      description: 'The blockheight of the start first scoring period, eg. 43200',
     }),
     termEnd: flags.integer({
       char: 'e',
       required: true,
-      description: 'The length of each term (assuming equal), in blocks',
+      description: 'The blockheight where the last period ended',
     }),
     termLength: flags.integer({
       char: 'l',
@@ -33,14 +33,14 @@ export default class GetOpportunitiesScoreCommand extends IncentivesCommandBase 
     groupsCounted: flags.string({
       char: 'c',
       required: true,
-      description: 'Comma list of the groups that "counts" for the term',
+      description: 'Comma seperated list of the groups that "counts" for the term',
     }),
     ...IncentivesCommandBase.flags,
   }
   async run(): Promise<void> {
     let { termStart,termLength,termEnd,groupsCounted, groupTargets } = this.parse(GetOpportunitiesScoreCommand).flags
     
-    const targets:number[] = [] 
+    const targets:number[] = []
     groupTargets.split(",").forEach((a) => {
       targets.push(100-parseInt(a))
     })
@@ -77,6 +77,9 @@ with:`)
         const apiModuleGroupName = apiModuleByGroup[workingGroup]
         const target = targets[indexOfGroup]
         const allWorkersByGroup = await this.getRelevantWorkers(termEnd,apiModuleGroupName)
+        const hires = allWorkersByGroup.filter((a) => a.startRange > periods[periods.length-2])
+        const firings = allWorkersByGroup.filter((a) => (a.endRange > periods[periods.length-2] && a.endRange < periods[periods.length-1]))
+        console.log("Group: Hires/Fires",workingGroup.toString(),hires.length,firings.length)
         const workersByGroup = allWorkersByGroup.filter((a) => a.endRange > periods[periods.length-2])
         const leadAtEnd = await this.getLeadOfGroupAt(endBlockHash,workingGroup)
         const workersInGroup: [number,number,number,number,number][] = []
