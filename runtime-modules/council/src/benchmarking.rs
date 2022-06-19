@@ -1,10 +1,10 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
-use balances::Module as Balances;
+use balances::Pallet as Balances;
 use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::EventRecord;
-use frame_system::Module as System;
+use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use membership::Module as Membership;
 use sp_runtime::traits::{Bounded, One};
@@ -201,14 +201,14 @@ where
 
     assert_eq!(
         Council::<T>::candidates(member_id),
-        Candidate {
+        Some(Candidate {
             staking_account_id: account_id.clone(),
             cycle_id: 1,
             stake: T::MinCandidateStake::get(),
             note_hash: None,
             reward_account_id: account_id.clone(),
             vote_power: Council::<T>::get_option_power(&member_id),
-        },
+        }),
         "Candidacy hasn't been announced"
     );
 
@@ -631,14 +631,14 @@ benchmarks! {
         let candidate = Council::<T>::candidates(member_id);
         assert_eq!(
             candidate,
-            Candidate {
+            Some(Candidate {
                 staking_account_id: account_id.clone(),
                 cycle_id: 2,
                 stake: T::MinCandidateStake::get(),
                 note_hash: None,
                 reward_account_id: account_id.clone(),
                 vote_power: Council::<T>::get_option_power(&member_id),
-            },
+            }),
             "Candidacy hasn't been announced"
         );
 
@@ -688,14 +688,14 @@ benchmarks! {
     verify {
         assert_eq!(
             Council::<T>::candidates(member_id),
-            Candidate {
+            Some(Candidate {
                 staking_account_id: account_id.clone(),
                 cycle_id: 1,
                 stake: T::MinCandidateStake::get(),
                 note_hash: Some(T::Hashing::hash(&note)),
                 reward_account_id: account_id.clone(),
                 vote_power: Council::<T>::get_option_power(&member_id),
-            },
+            }),
             "Note not set"
         );
 
@@ -803,7 +803,7 @@ mod tests {
     fn test_announce_candidacy() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_announce_candidacy::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_announce_candidacy());
         })
     }
 
@@ -811,7 +811,7 @@ mod tests {
     fn test_release_candidacy() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_release_candidacy_stake::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_release_candidacy_stake());
         })
     }
 
@@ -819,7 +819,7 @@ mod tests {
     fn test_withdraw_candidacy() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_withdraw_candidacy::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_withdraw_candidacy());
         })
     }
 
@@ -827,9 +827,7 @@ mod tests {
     fn test_try_progress_stage_announcing_restart() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_try_progress_stage_announcing_restart::<
-                Runtime,
-            >());
+            assert_ok!(Council::<Runtime>::test_benchmark_try_progress_stage_announcing_restart());
         })
     }
 
@@ -837,7 +835,9 @@ mod tests {
     fn test_try_progress_stage_announcing_start_election() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_try_progress_stage_announcing_start_election::<Runtime>());
+            assert_ok!(
+                Council::<Runtime>::test_benchmark_try_progress_stage_announcing_start_election()
+            );
         })
     }
 
@@ -845,7 +845,7 @@ mod tests {
     fn test_try_progress_stage_idle() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_try_progress_stage_idle::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_try_progress_stage_idle());
         })
     }
 
@@ -853,7 +853,7 @@ mod tests {
     fn test_try_process_budget() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_try_process_budget::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_try_process_budget());
         })
     }
 
@@ -861,7 +861,7 @@ mod tests {
     fn test_set_budget_increment() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_set_budget_increment::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_set_budget_increment());
         })
     }
 
@@ -869,7 +869,7 @@ mod tests {
     fn test_set_councilor_reward() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_set_councilor_reward::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_set_councilor_reward());
         })
     }
 
@@ -877,7 +877,7 @@ mod tests {
     fn test_funding_request() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_funding_request::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_funding_request());
         })
     }
 
@@ -885,7 +885,7 @@ mod tests {
     fn test_councilor_remark() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_councilor_remark::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_councilor_remark());
         })
     }
 
@@ -893,7 +893,7 @@ mod tests {
     fn test_candidate_remark() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_candidate_remark::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_candidate_remark());
         })
     }
 }

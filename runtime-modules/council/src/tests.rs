@@ -1202,7 +1202,7 @@ fn council_budget_refill_can_be_planned() {
 
         Mocks::plan_budget_refill(origin.clone(), next_refill, Ok(()));
 
-        let current_block = frame_system::Module::<Runtime>::block_number();
+        let current_block = frame_system::Pallet::<Runtime>::block_number();
 
         assert_eq!(current_block, 1);
 
@@ -1210,7 +1210,7 @@ fn council_budget_refill_can_be_planned() {
         MockUtils::increase_block_number(next_refill - current_block - 1);
 
         assert_eq!(
-            frame_system::Module::<Runtime>::block_number(),
+            frame_system::Pallet::<Runtime>::block_number(),
             next_refill - 1
         );
 
@@ -1220,7 +1220,7 @@ fn council_budget_refill_can_be_planned() {
         // forward to after block refill
         MockUtils::increase_block_number(1);
 
-        assert_eq!(frame_system::Module::<Runtime>::block_number(), next_refill);
+        assert_eq!(frame_system::Pallet::<Runtime>::block_number(), next_refill);
 
         // check budget was increased
         Mocks::check_budget_refill(
@@ -1242,7 +1242,7 @@ fn council_budget_increment_can_be_upddated() {
 
         Mocks::set_budget_increment(origin.clone(), budget_increment, Ok(()));
 
-        let current_block = frame_system::Module::<Runtime>::block_number();
+        let current_block = frame_system::Pallet::<Runtime>::block_number();
 
         assert_eq!(current_block, 1);
 
@@ -1275,7 +1275,7 @@ fn council_budget_increment_can_be_updated() {
 
         Mocks::set_budget_increment(origin.clone(), budget_increment, Ok(()));
 
-        let current_block = frame_system::Module::<Runtime>::block_number();
+        let current_block = frame_system::Pallet::<Runtime>::block_number();
 
         assert_eq!(current_block, 1);
 
@@ -1372,7 +1372,7 @@ fn councilor_reward_can_be_set() {
             .iter()
             .for_each(|council_member| {
                 assert_eq!(
-                    balances::Module::<Runtime>::free_balance(council_member.reward_account_id),
+                    balances::Pallet::<Runtime>::free_balance(council_member.reward_account_id),
                     current_council_balance
                 )
             });
@@ -1497,7 +1497,7 @@ fn council_budget_auto_refill() {
         // Note: initial block is 1 so current_block + budget_refill_period - 2 = budget_refill_period - 1
         MockUtils::increase_block_number(council_settings.budget_refill_period - 2);
         assert_eq!(
-            frame_system::Module::<Runtime>::block_number(),
+            frame_system::Pallet::<Runtime>::block_number(),
             council_settings.budget_refill_period - 1
         );
 
@@ -1811,7 +1811,7 @@ fn council_many_cycle_rewards() {
                 % <Runtime as Config>::ElectedMemberRewardPeriod::get());
 
         assert_eq!(
-            balances::Module::<Runtime>::total_balance(&council_members[0].staking_account_id),
+            balances::Pallet::<Runtime>::total_balance(&council_members[0].staking_account_id),
             num_blocks_elected * Council::councilor_reward() + num_iterations * auto_topup_amount
         );
     });

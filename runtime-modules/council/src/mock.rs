@@ -3,18 +3,21 @@
 /////////////////// Configuration //////////////////////////////////////////////
 use crate as council;
 use crate::{
-    AnnouncementPeriodNr, Balance, Budget, BudgetIncrement, CandidateOf, Candidates, Config,
-    CouncilMemberOf, CouncilMembers, CouncilStage, CouncilStageAnnouncing, CouncilStageElection,
-    CouncilStageUpdate, CouncilStageUpdateOf, CouncilorReward, Error, Module, NextBudgetRefill,
-    RawEvent, ReferendumConnection, Stage, WeightInfo,
+    AnnouncementPeriodNr, Balance, Budget, BudgetIncrement, Candidate, CandidateOf, Candidates,
+    Config, CouncilMemberOf, CouncilMembers, CouncilStage, CouncilStageAnnouncing,
+    CouncilStageElection, CouncilStageUpdate, CouncilStageUpdateOf, CouncilorReward, Error, Module,
+    NextBudgetRefill, RawEvent, ReferendumConnection, Stage, WeightInfo,
 };
 
 use balances;
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::{Currency, Get, LockIdentifier, OnFinalize, OnInitialize};
+use frame_support::traits::{
+    ConstU16, ConstU32, ConstU64, Currency, EnsureOneOf, Get, LockIdentifier, OnFinalize,
+    OnInitialize,
+};
 use frame_support::weights::Weight;
 use frame_support::{ensure, parameter_types, StorageMap, StorageValue};
-use frame_system::{ensure_signed, EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
+use frame_system::{ensure_signed, EnsureRoot, EnsureSigned, RawOrigin};
 use rand::Rng;
 use referendum::{
     CastVote, OptionResult, ReferendumManager, ReferendumStage, ReferendumStageRevealing,
@@ -30,6 +33,7 @@ use staking_handler::{LockComparator, StakingManager};
 use std::boxed::Box;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
+use std::convert::{TryFrom, TryInto};
 use std::marker::PhantomData;
 
 pub const USER_REGULAR_POWER_VOTES: u64 = 0;
@@ -185,11 +189,11 @@ frame_support::construct_runtime!(
         NodeBlock = Block,
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
-        System: frame_system::{Module, Call, Config, Storage, Event<T>},
-        Council: council::{Module, Call, Storage, Event<T>},
-        Membership: membership::{Module, Call, Storage, Event<T>},
-        Referendum: referendum::<Instance0>::{Module, Call, Storage, Event<T>, Config<T>},
-        Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
+        System: frame_system, // ::{Module, Call, Config, Storage, Event<T>},
+        Council: council::{Pallet, Call, Storage, Event<T>},
+        Membership: membership::{Pallet, Call, Storage, Event<T>},
+        Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>, Config<T>},
+        Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
     }
 );
 
@@ -198,9 +202,10 @@ parameter_types! {
 }
 
 impl frame_system::Config for Runtime {
-    type BaseCallFilter = ();
+    type BaseCallFilter = frame_support::traits::Everything;
     type BlockWeights = ();
     type BlockLength = ();
+    type DbWeight = ();
     type Origin = Origin;
     type Call = Call;
     type Index = u64;
@@ -211,20 +216,21 @@ impl frame_system::Config for Runtime {
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
     type Event = Event;
-    type BlockHashCount = BlockHashCount;
-    type DbWeight = ();
+    type BlockHashCount = ConstU64<250>;
     type Version = ();
+    type PalletInfo = PalletInfo;
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
-    type PalletInfo = PalletInfo;
     type SystemWeightInfo = ();
-    type SS58Prefix = ();
+    type SS58Prefix = ConstU16<42>;
+    type OnSetCode = ();
+    type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
 /////////////////// Election module ////////////////////////////////////////////
 
-pub type ReferendumInstance = referendum::Instance0;
+pub type ReferendumInstance = referendum::Instance1;
 
 thread_local! {
     // global switch for stake locking features; use it to simulate lock fails
@@ -255,8 +261,7 @@ impl referendum::Config<ReferendumInstance> for Runtime {
 
     type MaxSaltLength = MaxSaltLength;
 
-    type ManagerOrigin =
-        EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
     type VotePower = u64;
 
@@ -413,12 +418,14 @@ impl membership::WeightInfo for Weights {
 
 impl balances::Config for Runtime {
     type Balance = u64;
-    type Event = Event;
     type DustRemoval = ();
+    type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
+    type MaxLocks = ();
+    type MaxReserves = ConstU32<2>;
+    type ReserveIdentifier = [u8; 8];
     type WeightInfo = ();
-    type MaxLocks = MaxLocks;
 }
 
 impl membership::Config for Runtime {
@@ -658,14 +665,28 @@ pub fn default_genesis_config() -> council::GenesisConfig<Runtime> {
     }
 }
 
-pub fn augmented_genesis_config() -> GenesisConfig<Runtime> {
-    GenesisConfig::<Runtime> {
+pub fn augmented_genesis_config() -> council::GenesisConfig<Runtime> {
+    council::GenesisConfig::<Runtime> {
         stage: CouncilStageUpdate::default(),
         council_members: vec![CouncilMemberOf::<Runtime> {
             membership_id: 1,
-            ..Default::default()
+            staking_account_id: 0,
+            reward_account_id: 0,
+            stake: 0,
+            last_payment_block: 0,
+            unpaid_reward: 0,
         }],
-        candidates: vec![(2, Default::default())],
+        candidates: vec![(
+            2,
+            Candidate {
+                staking_account_id: 1,
+                reward_account_id: 1,
+                cycle_id: 0,
+                stake: 0,
+                vote_power: 0,
+                note_hash: None,
+            },
+        )],
         announcement_period_nr: 0,
         budget: 0,
         next_reward_payments: 0,
@@ -675,7 +696,9 @@ pub fn augmented_genesis_config() -> GenesisConfig<Runtime> {
     }
 }
 
-pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> sp_io::TestExternalities {
+pub fn build_test_externalities(
+    config: council::GenesisConfig<Runtime>,
+) -> sp_io::TestExternalities {
     let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
@@ -731,7 +754,7 @@ where
 
     // topup currency to the account
     fn topup_account(account_id: u64, amount: Balance<T>) {
-        let _ = balances::Module::<Runtime>::deposit_creating(&account_id, amount.into());
+        let _ = balances::Pallet::<Runtime>::deposit_creating(&account_id, amount.into());
     }
 
     pub fn generate_candidate(index: u64, stake: Balance<T>) -> CandidateInfo<T> {
@@ -908,15 +931,22 @@ where
         for (key, value) in intermediate_results {
             let membership_id: T::MemberId = key.into();
 
-            assert!(Candidates::<T>::contains_key(membership_id));
-            assert_eq!(Candidates::<T>::get(membership_id).vote_power, value);
+            assert_eq!(
+                Candidates::<T>::get(membership_id)
+                    .expect("Candidate Must Exist")
+                    .vote_power,
+                value
+            );
         }
     }
 
     pub fn check_announcing_stake(membership_id: &T::MemberId, amount: Balance<T>) {
-        assert_eq!(Candidates::<T>::contains_key(membership_id), true);
-
-        assert_eq!(Candidates::<T>::get(membership_id).stake, amount);
+        assert_eq!(
+            Candidates::<T>::get(membership_id)
+                .expect("Candidate Must Exist")
+                .stake,
+            amount
+        );
     }
 
     pub fn check_candidacy_note(membership_id: &T::MemberId, note: Option<&[u8]>) {
@@ -927,7 +957,12 @@ where
             None => None,
         };
 
-        assert_eq!(Candidates::<T>::get(membership_id).note_hash, note_hash,);
+        assert_eq!(
+            Candidates::<T>::get(membership_id)
+                .expect("Candidate Must Exist")
+                .note_hash,
+            note_hash,
+        );
     }
 
     pub fn check_budget_refill(expected_balance: Balance<T>, expected_next_refill: T::BlockNumber) {
@@ -966,11 +1001,11 @@ where
             return;
         }
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            Event::council(RawEvent::CandidacyNoteSet(
+            Event::Council(RawEvent::CandidacyNoteSet(
                 membership_id.into(),
                 note.into()
             )),
@@ -1021,11 +1056,11 @@ where
         }
 
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            Event::council(RawEvent::NewCandidate(
+            Event::Council(RawEvent::NewCandidate(
                 member_id.into(),
                 staking_account_id.into(),
                 reward_account_id.into(),
@@ -1050,11 +1085,11 @@ where
         }
 
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            Event::council(RawEvent::CandidacyWithdraw(member_id.into(),)),
+            Event::Council(RawEvent::CandidacyWithdraw(member_id.into(),)),
         );
     }
 
@@ -1077,11 +1112,11 @@ where
         }
 
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            Event::council(RawEvent::CandidacyStakeRelease(member_id.into(),)),
+            Event::Council(RawEvent::CandidacyStakeRelease(member_id.into(),)),
         );
     }
 
@@ -1154,11 +1189,11 @@ where
         assert_eq!(Budget::<T>::get(), amount,);
 
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            Event::council(RawEvent::BudgetBalanceSet(amount.into())),
+            Event::Council(RawEvent::BudgetBalanceSet(amount.into())),
         );
     }
 
@@ -1183,10 +1218,10 @@ where
         }
 
         for funding_request in &funding_requests {
-            assert!(frame_system::Module::<Runtime>::events()
+            assert!(frame_system::Pallet::<Runtime>::events()
                 .iter()
                 .any(|ev| ev.event
-                    == Event::council(RawEvent::RequestFunded(
+                    == Event::Council(RawEvent::RequestFunded(
                         funding_request.account.clone().into(),
                         funding_request.amount.into(),
                     ))));
@@ -1228,11 +1263,11 @@ where
         assert_eq!(NextBudgetRefill::<T>::get(), next_refill,);
 
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            Event::council(RawEvent::BudgetRefillPlanned(next_refill.into())),
+            Event::Council(RawEvent::BudgetRefillPlanned(next_refill.into())),
         );
     }
 
@@ -1258,11 +1293,11 @@ where
         assert_eq!(CouncilorReward::<T>::get(), councilor_reward);
 
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            Event::council(RawEvent::CouncilorRewardUpdated(councilor_reward.into())),
+            Event::Council(RawEvent::CouncilorRewardUpdated(councilor_reward.into())),
         );
     }
 
@@ -1288,11 +1323,11 @@ where
         assert_eq!(BudgetIncrement::<T>::get(), budget_increment,);
 
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            Event::council(RawEvent::BudgetIncrementUpdated(budget_increment.into())),
+            Event::Council(RawEvent::BudgetIncrementUpdated(budget_increment.into())),
         );
     }
 
@@ -1438,7 +1473,7 @@ where
         // we might need to move to desired start block, which is expected to be the begining of the
         // announcing stage.
         if start_block_number.into() > 0 {
-            let current_block_number = frame_system::Module::<Runtime>::block_number();
+            let current_block_number = frame_system::Pallet::<Runtime>::block_number();
             if current_block_number > start_block_number.into() + 1 {
                 panic!("start_block_number is in the past!");
             }
