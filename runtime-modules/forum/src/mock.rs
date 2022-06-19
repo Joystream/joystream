@@ -7,7 +7,9 @@ pub use frame_support::assert_err;
 use sp_core::H256;
 
 use crate::Config;
-use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
+use frame_support::traits::{
+    ConstU16, ConstU32, ConstU64, LockIdentifier, OnFinalize, OnInitialize,
+};
 use sp_std::cell::RefCell;
 use staking_handler::LockComparator;
 
@@ -17,6 +19,7 @@ use sp_runtime::{
     traits::{BlakeTwo256, Hash, IdentityLookup},
     DispatchError,
 };
+use sp_std::convert::{TryFrom, TryInto};
 
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
@@ -35,19 +38,20 @@ frame_support::construct_runtime!(
         NodeBlock = Block,
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
-        System: frame_system::{Module, Call, Config, Storage, Event<T>},
-        Membership: membership::{Module, Call, Storage, Event<T>},
-        Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
-        Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
-        TestForumModule: forum::{Module, Call, Storage, Event<T>, Config<T>},
-        ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
+        System: frame_system,
+        Membership: membership::{Pallet, Call, Storage, Event<T>},
+        Balances: balances,
+        Timestamp: pallet_timestamp,
+        TestForumModule: forum::{Pallet, Call, Storage, Event<T>, Config<T>},
+        ForumWorkingGroup: working_group::<Instance1>::{Pallet, Call, Storage, Event<T>},
     }
 );
 
 impl frame_system::Config for Runtime {
-    type BaseCallFilter = ();
+    type BaseCallFilter = frame_support::traits::Everything;
     type BlockWeights = ();
     type BlockLength = ();
+    type DbWeight = ();
     type Origin = Origin;
     type Call = Call;
     type Index = u64;
@@ -58,16 +62,16 @@ impl frame_system::Config for Runtime {
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
     type Event = Event;
-    type BlockHashCount = BlockHashCount;
-    type DbWeight = ();
+    type BlockHashCount = ConstU64<250>;
     type Version = ();
+    type PalletInfo = PalletInfo;
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
-    type PalletInfo = PalletInfo;
     type SystemWeightInfo = ();
-    type SS58Prefix = ();
-    type PalletInfo = ();
+    type SS58Prefix = ConstU16<42>;
+    type OnSetCode = ();
+    type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -83,8 +87,10 @@ impl balances::Config for Runtime {
     type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
-    type WeightInfo = ();
     type MaxLocks = ();
+    type MaxReserves = ConstU32<2>;
+    type ReserveIdentifier = [u8; 8];
+    type WeightInfo = ();
 }
 
 impl common::membership::MembershipTypes for Runtime {
@@ -326,7 +332,7 @@ parameter_types! {
     pub const MaxPollAlternativesNumber: u64 = 20;
     pub const ThreadDeposit: u64 = 100;
     pub const PostDeposit: u64 = 10;
-    pub const ForumModuleId: ModuleId = ModuleId(*b"m0:forum"); // module : forum
+    pub const ForumModuleId: PalletId = PalletId(*b"m0:forum"); // module : forum
 }
 
 pub struct MapLimits;
@@ -671,7 +677,7 @@ pub fn create_category_mock(
         assert_eq!(TestForumModule::next_category_id(), category_id + 1);
         assert_eq!(
             System::events().last().unwrap().event,
-            Event::forum(RawEvent::CategoryCreated(
+            Event::TestForumModule(RawEvent::CategoryCreated(
                 category_id,
                 parent,
                 title.clone(),
@@ -694,7 +700,7 @@ pub fn create_thread_mock(
     result: DispatchResult,
 ) -> <Runtime as Config>::ThreadId {
     let thread_id = TestForumModule::next_thread_id();
-    let initial_balance = balances::Module::<Runtime>::free_balance(&account_id);
+    let initial_balance = balances::Pallet::<Runtime>::free_balance(&account_id);
 
     assert_eq!(
         TestForumModule::create_thread(
@@ -711,7 +717,7 @@ pub fn create_thread_mock(
         assert_eq!(TestForumModule::next_thread_id(), thread_id + 1);
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ThreadCreated(
+            Event::TestForumModule(RawEvent::ThreadCreated(
                 category_id,
                 thread_id,
                 TestForumModule::next_thread_id() - 1,
@@ -723,14 +729,14 @@ pub fn create_thread_mock(
         );
 
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&account_id),
+            balances::Pallet::<Runtime>::free_balance(&account_id),
             initial_balance
                 - <Runtime as Config>::ThreadDeposit::get()
                 - <Runtime as Config>::PostDeposit::get()
         );
     } else {
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&account_id),
+            balances::Pallet::<Runtime>::free_balance(&account_id),
             initial_balance
         );
     }
@@ -759,7 +765,7 @@ pub fn edit_thread_metadata_mock(
     if result.is_ok() {
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ThreadMetadataUpdated(
+            Event::TestForumModule(RawEvent::ThreadMetadataUpdated(
                 thread_id,
                 forum_user_id,
                 category_id,
@@ -779,7 +785,7 @@ pub fn delete_thread_mock(
     thread_id: <Runtime as Config>::ThreadId,
     result: DispatchResult,
 ) {
-    let initial_balance = balances::Module::<Runtime>::free_balance(&account_id);
+    let initial_balance = balances::Pallet::<Runtime>::free_balance(&account_id);
     let hide = false;
 
     let num_direct_threads = match <CategoryById<Runtime>>::contains_key(category_id) {
@@ -805,7 +811,7 @@ pub fn delete_thread_mock(
         );
         assert_eq!(
             System::events().last().unwrap().event,
-            Event::forum(RawEvent::ThreadDeleted(
+            Event::TestForumModule(RawEvent::ThreadDeleted(
                 thread_id,
                 forum_user_id,
                 category_id,
@@ -814,12 +820,12 @@ pub fn delete_thread_mock(
         );
 
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&account_id),
+            balances::Pallet::<Runtime>::free_balance(&account_id),
             initial_balance + thread_payment
         );
     } else {
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&account_id),
+            balances::Pallet::<Runtime>::free_balance(&account_id),
             initial_balance
         );
     }
@@ -836,7 +842,7 @@ pub fn delete_post_mock(
     result: DispatchResult,
     hide: bool,
 ) {
-    let initial_balance = balances::Module::<Runtime>::free_balance(&account_id);
+    let initial_balance = balances::Pallet::<Runtime>::free_balance(&account_id);
     let number_of_posts = <ThreadById<Runtime>>::get(category_id, thread_id).number_of_posts;
     let mut deleted_posts = BTreeMap::new();
     let extended_post_id = ExtendedPostIdObject {
@@ -867,7 +873,7 @@ pub fn delete_post_mock(
         }
         assert_eq!(
             System::events().last().unwrap().event,
-            Event::forum(RawEvent::PostDeleted(
+            Event::TestForumModule(RawEvent::PostDeleted(
                 vec![0u8],
                 forum_user_id,
                 deleted_posts.clone()
@@ -875,12 +881,12 @@ pub fn delete_post_mock(
         );
 
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&account_id),
+            balances::Pallet::<Runtime>::free_balance(&account_id),
             initial_balance + <Runtime as Config>::PostDeposit::get()
         );
     } else {
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&account_id),
+            balances::Pallet::<Runtime>::free_balance(&account_id),
             initial_balance
         );
     }
@@ -912,7 +918,7 @@ pub fn move_thread_mock(
         ),);
         assert_eq!(
             System::events().last().unwrap().event,
-            Event::forum(RawEvent::ThreadMoved(
+            Event::TestForumModule(RawEvent::ThreadMoved(
                 thread_id,
                 new_category_id,
                 PrivilegedActor::Moderator(moderator_id),
@@ -934,7 +940,7 @@ pub fn create_post_mock(
     result: DispatchResult,
 ) -> <Runtime as Config>::PostId {
     let post_id = TestForumModule::next_post_id();
-    let initial_balance = balances::Module::<Runtime>::free_balance(account_id);
+    let initial_balance = balances::Pallet::<Runtime>::free_balance(account_id);
     assert_eq!(
         TestForumModule::add_post(
             mock_origin(origin.clone()),
@@ -951,7 +957,7 @@ pub fn create_post_mock(
         assert_eq!(TestForumModule::next_post_id(), post_id + 1);
         assert_eq!(
             System::events().last().unwrap().event,
-            Event::forum(RawEvent::PostAdded(
+            Event::TestForumModule(RawEvent::PostAdded(
                 post_id,
                 forum_user_id,
                 category_id,
@@ -963,14 +969,14 @@ pub fn create_post_mock(
 
         if editable {
             assert_eq!(
-                balances::Module::<Runtime>::free_balance(&account_id),
+                balances::Pallet::<Runtime>::free_balance(&account_id),
                 initial_balance - <Runtime as Config>::PostDeposit::get()
             );
 
             assert!(<PostById<Runtime>>::contains_key(thread_id, post_id));
         } else {
             assert_eq!(
-                balances::Module::<Runtime>::free_balance(&account_id),
+                balances::Pallet::<Runtime>::free_balance(&account_id),
                 initial_balance
             );
 
@@ -978,7 +984,7 @@ pub fn create_post_mock(
         }
     } else {
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&account_id),
+            balances::Pallet::<Runtime>::free_balance(&account_id),
             initial_balance
         );
     };
@@ -1012,7 +1018,7 @@ pub fn edit_post_text_mock(
         assert_eq!(post.text_hash, Runtime::calculate_hash(new_text.as_slice()),);
         assert_eq!(
             System::events().last().unwrap().event,
-            Event::forum(RawEvent::PostTextUpdated(
+            Event::TestForumModule(RawEvent::PostTextUpdated(
                 post_id,
                 forum_user_id,
                 category_id,
@@ -1054,7 +1060,7 @@ pub fn update_category_membership_of_moderator_mock(
 
         assert_eq!(
             System::events().last().unwrap().event,
-            Event::forum(RawEvent::CategoryMembershipOfModeratorUpdated(
+            Event::TestForumModule(RawEvent::CategoryMembershipOfModeratorUpdated(
                 moderator_id,
                 category_id,
                 new_value
@@ -1095,7 +1101,7 @@ pub fn vote_on_poll_mock(
         );
         assert_eq!(
             System::events().last().unwrap().event,
-            Event::forum(RawEvent::VoteOnPoll(
+            Event::TestForumModule(RawEvent::VoteOnPoll(
                 thread_id,
                 index,
                 forum_user_id,
@@ -1130,7 +1136,7 @@ pub fn update_category_archival_status_mock(
     if result.is_ok() {
         assert_eq!(
             System::events().last().unwrap().event,
-            Event::forum(RawEvent::CategoryArchivalStatusUpdated(
+            Event::TestForumModule(RawEvent::CategoryArchivalStatusUpdated(
                 category_id,
                 new_archival_status,
                 actor
@@ -1160,7 +1166,7 @@ pub fn update_category_title_mock(
     if result.is_ok() {
         assert_eq!(
             System::events().last().unwrap().event,
-            Event::forum(RawEvent::CategoryTitleUpdated(
+            Event::TestForumModule(RawEvent::CategoryTitleUpdated(
                 category_id,
                 new_title_hash,
                 actor
@@ -1190,7 +1196,7 @@ pub fn update_category_description_mock(
     if result.is_ok() {
         assert_eq!(
             System::events().last().unwrap().event,
-            Event::forum(RawEvent::CategoryDescriptionUpdated(
+            Event::TestForumModule(RawEvent::CategoryDescriptionUpdated(
                 category_id,
                 new_description_hash,
                 actor
@@ -1214,7 +1220,7 @@ pub fn delete_category_mock(
         assert!(!<CategoryById<Runtime>>::contains_key(category_id));
         assert_eq!(
             System::events().last().unwrap().event,
-            Event::forum(RawEvent::CategoryDeleted(category_id, moderator_id))
+            Event::TestForumModule(RawEvent::CategoryDeleted(category_id, moderator_id))
         );
     }
 }
@@ -1228,7 +1234,8 @@ pub fn moderate_thread_mock(
     rationale: Vec<u8>,
     result: DispatchResult,
 ) -> <Runtime as Config>::ThreadId {
-    let thread_account_id = <Runtime as Config>::ModuleId::get().into_sub_account(thread_id);
+    let thread_account_id =
+        <Runtime as Config>::ModuleId::get().into_sub_account_truncating(thread_id);
     assert_eq!(
         TestForumModule::moderate_thread(
             mock_origin(origin),
@@ -1243,7 +1250,7 @@ pub fn moderate_thread_mock(
         assert!(!<ThreadById<Runtime>>::contains_key(category_id, thread_id));
         assert_eq!(
             System::events().last().unwrap().event,
-            Event::forum(RawEvent::ThreadModerated(
+            Event::TestForumModule(RawEvent::ThreadModerated(
                 thread_id,
                 rationale,
                 PrivilegedActor::Moderator(moderator_id),
@@ -1254,7 +1261,7 @@ pub fn moderate_thread_mock(
         // If we moderate a thread with no extra post, only the initial post deposit
         // should remain
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&thread_account_id),
+            balances::Pallet::<Runtime>::free_balance(&thread_account_id),
             <Runtime as Config>::PostDeposit::get()
         );
     }
@@ -1271,7 +1278,7 @@ pub fn moderate_post_mock(
     rationale: Vec<u8>,
     result: DispatchResult,
 ) -> <Runtime as Config>::PostId {
-    let initial_balance = balances::Module::<Runtime>::free_balance(moderator_id);
+    let initial_balance = balances::Pallet::<Runtime>::free_balance(moderator_id);
     assert_eq!(
         TestForumModule::moderate_post(
             mock_origin(origin),
@@ -1287,7 +1294,7 @@ pub fn moderate_post_mock(
         assert!(!<PostById<Runtime>>::contains_key(thread_id, post_id));
         assert_eq!(
             System::events().last().unwrap().event,
-            Event::forum(RawEvent::PostModerated(
+            Event::TestForumModule(RawEvent::PostModerated(
                 post_id,
                 rationale,
                 PrivilegedActor::Moderator(moderator_id),
@@ -1297,12 +1304,12 @@ pub fn moderate_post_mock(
         );
 
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&moderator_id),
+            balances::Pallet::<Runtime>::free_balance(&moderator_id),
             initial_balance
         );
     } else {
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&moderator_id),
+            balances::Pallet::<Runtime>::free_balance(&moderator_id),
             initial_balance
         );
     };
@@ -1334,7 +1341,7 @@ pub fn set_stickied_threads_mock(
         );
         assert_eq!(
             System::events().last().unwrap().event,
-            Event::forum(RawEvent::CategoryStickyThreadUpdate(
+            Event::TestForumModule(RawEvent::CategoryStickyThreadUpdate(
                 category_id,
                 stickied_ids.clone(),
                 PrivilegedActor::Moderator(moderator_id)
@@ -1368,7 +1375,7 @@ pub fn react_post_mock(
     if result.is_ok() {
         assert_eq!(
             System::events().last().unwrap().event,
-            Event::forum(RawEvent::PostReacted(
+            Event::TestForumModule(RawEvent::PostReacted(
                 forum_user_id,
                 post_id,
                 post_reaction_id,
@@ -1380,18 +1387,18 @@ pub fn react_post_mock(
 }
 
 /// Create default genesis config
-pub fn default_genesis_config() -> GenesisConfig<Runtime> {
+pub fn default_genesis_config() -> forum::GenesisConfig<Runtime> {
     create_genesis_config(true)
 }
 
 /// Create config without data migration
-pub fn migration_not_done_config() -> GenesisConfig<Runtime> {
+pub fn migration_not_done_config() -> forum::GenesisConfig<Runtime> {
     create_genesis_config(false)
 }
 
 /// Create genesis config
-pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime> {
-    GenesisConfig::<Runtime> {
+pub fn create_genesis_config(data_migration_done: bool) -> forum::GenesisConfig<Runtime> {
+    forum::GenesisConfig::<Runtime> {
         category_by_id: vec![],
         next_category_id: 1,
         category_counter: 0,
@@ -1447,12 +1454,3 @@ pub fn run_to_block(n: u64) {
         <TestForumModule as OnInitialize<u64>>::on_initialize(System::block_number());
     }
 }
-
-/// System module on a test runtime
-pub type System = frame_system::Module<Runtime>;
-
-/// Timestamp module on a test runtime
-pub type Timestamp = pallet_timestamp::Module<Runtime>;
-
-/// Export forum module on a test runtime
-pub type TestForumModule = Module<Runtime>;

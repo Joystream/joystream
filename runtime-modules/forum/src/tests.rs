@@ -328,7 +328,7 @@ fn update_category_archival_status_lock_works() {
     let initial_balance = 10_000_000;
     let origin = OriginType::Signed(forum_lead);
     with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
 
         let category_id = create_category_mock(
             origin.clone(),
@@ -724,7 +724,7 @@ fn delete_category_non_empty_threads() {
     let initial_balance = 10_000_000;
     let origin = OriginType::Signed(forum_lead);
     with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
 
         let category_id = create_category_mock(
             origin.clone(),
@@ -868,10 +868,10 @@ fn create_thread_origin() {
         let origin = OriginType::Signed(forum_lead);
         let initial_balance = 10_000_000;
         with_test_externalities(|| {
-            balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+            balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
 
             assert_eq!(
-                balances::Module::<Runtime>::free_balance(&forum_lead),
+                balances::Pallet::<Runtime>::free_balance(&forum_lead),
                 initial_balance
             );
             let category_id = create_category_mock(
@@ -901,7 +901,7 @@ fn create_thread_balance() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
     with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(
+        balances::Pallet::<Runtime>::make_free_balance_be(
             &forum_lead,
             BalanceOf::<Runtime>::max_value(),
         );
@@ -937,9 +937,9 @@ fn create_thread_balance() {
         );
 
         let first_state_cleanup_treasury_account: <Runtime as frame_system::Config>::AccountId =
-            <Runtime as Config>::ModuleId::get().into_sub_account(first_thread_id);
+            <Runtime as Config>::ModuleId::get().into_sub_account_truncating(first_thread_id);
         let second_state_cleanup_treasury_account: <Runtime as frame_system::Config>::AccountId =
-            <Runtime as Config>::ModuleId::get().into_sub_account(second_thread_id);
+            <Runtime as Config>::ModuleId::get().into_sub_account_truncating(second_thread_id);
 
         assert_ne!(
             first_state_cleanup_treasury_account,
@@ -960,7 +960,7 @@ fn create_thread_poll_timestamp() {
         let origin = OriginType::Signed(forum_lead);
 
         with_test_externalities(|| {
-            balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+            balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
 
             change_current_time(1);
             let poll = generate_poll_input_timestamp_cases(index, expiration_diff);
@@ -998,12 +998,12 @@ fn edit_thread_metadata() {
     let origin = OriginType::Signed(forum_lead);
     let initial_balance = 10_000_000;
     with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
-        balances::Module::<Runtime>::make_free_balance_be(
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        balances::Pallet::<Runtime>::make_free_balance_be(
             &NOT_FORUM_LEAD_ORIGIN_ID,
             initial_balance,
         );
-        balances::Module::<Runtime>::make_free_balance_be(
+        balances::Pallet::<Runtime>::make_free_balance_be(
             &NOT_FORUM_LEAD_2_ORIGIN_ID,
             initial_balance,
         );
@@ -1055,10 +1055,10 @@ fn create_thread_fails_on_non_existing_category() {
     let initial_balance = 10_000_000;
 
     with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
 
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&forum_lead),
+            balances::Pallet::<Runtime>::free_balance(&forum_lead),
             initial_balance
         );
         let invalid_category_id = 100;
@@ -1086,8 +1086,8 @@ fn delete_thread() {
     let origin = OriginType::Signed(forum_lead);
     let initial_balance = 10_000_000;
     with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
-        balances::Module::<Runtime>::make_free_balance_be(
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        balances::Pallet::<Runtime>::make_free_balance_be(
             &NOT_FORUM_LEAD_ORIGIN_ID,
             initial_balance,
         );
@@ -1095,7 +1095,7 @@ fn delete_thread() {
         let mut current_balance = initial_balance;
 
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&forum_lead),
+            balances::Pallet::<Runtime>::free_balance(&forum_lead),
             current_balance
         );
 
@@ -1122,7 +1122,7 @@ fn delete_thread() {
         current_balance -= <Runtime as Config>::PostDeposit::get();
 
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
+            balances::Pallet::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
             current_balance
         );
 
@@ -1149,7 +1149,7 @@ fn delete_thread() {
         current_balance -= <Runtime as Config>::PostDeposit::get();
 
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
+            balances::Pallet::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
             current_balance
         );
 
@@ -1235,7 +1235,7 @@ fn delete_thread() {
         current_balance += <Runtime as Config>::ThreadDeposit::get();
 
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
+            balances::Pallet::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
             current_balance
         );
 
@@ -1257,7 +1257,7 @@ fn move_thread_moderator_permissions() {
     let origin = OriginType::Signed(forum_lead);
     let initial_balance = 10_000_000;
     with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
 
         let category_id_1 = create_category_mock(
             origin.clone(),
@@ -1385,7 +1385,7 @@ fn category_updated_successfully_on_thread_moving() {
     let origin = OriginType::Signed(forum_lead);
     let initial_balance = 10_000_000;
     with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
 
         let category_id_1 = create_category_mock(
             origin.clone(),
@@ -1506,7 +1506,7 @@ fn move_thread_invalid_move() {
     let origin = OriginType::Signed(forum_lead);
     let initial_balance = 10_000_000;
     with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
 
         let category_id = create_category_mock(
             origin.clone(),
@@ -1565,7 +1565,7 @@ fn vote_on_poll_origin() {
         let origin = OriginType::Signed(forum_lead);
         let initial_balance = 10_000_000;
         with_test_externalities(|| {
-            balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+            balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
             let category_id = create_category_mock(
                 origin.clone(),
                 None,
@@ -1650,7 +1650,7 @@ fn vote_on_poll_exists() {
     let origin = OriginType::Signed(forum_lead);
     let initial_balance = 10_000_000;
     with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
 
         let category_id = create_category_mock(
             origin.clone(),
@@ -1688,7 +1688,7 @@ fn vote_on_poll_expired() {
     let expiration_diff = 10;
     let initial_balance = 10_000_000;
     with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
 
         let category_id = create_category_mock(
             origin.clone(),
@@ -1730,7 +1730,7 @@ fn moderate_thread_origin_ok() {
     let origin = OriginType::Signed(forum_lead);
     let initial_balance = 10_000_000;
     with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
 
         let moderator_id = forum_lead;
         let category_id = create_category_mock(
@@ -1786,8 +1786,8 @@ fn add_post_origin() {
         let origin = OriginType::Signed(forum_lead);
         let initial_balance = 10_000_000;
         with_test_externalities(|| {
-            balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
-            balances::Module::<Runtime>::make_free_balance_be(
+            balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+            balances::Pallet::<Runtime>::make_free_balance_be(
                 &NOT_FORUM_MEMBER_ORIGIN_ID,
                 initial_balance,
             );
@@ -1833,7 +1833,7 @@ fn add_post_balance() {
             + <Runtime as Config>::ThreadDeposit::get()
             + <Runtime as balances::Config>::ExistentialDeposit::get();
 
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -1843,7 +1843,7 @@ fn add_post_balance() {
         );
 
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&forum_lead),
+            balances::Pallet::<Runtime>::free_balance(&forum_lead),
             initial_balance
         );
 
@@ -1859,11 +1859,11 @@ fn add_post_balance() {
         );
 
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&forum_lead),
+            balances::Pallet::<Runtime>::free_balance(&forum_lead),
             <Runtime as balances::Config>::ExistentialDeposit::get()
         );
 
-        balances::Module::<Runtime>::make_free_balance_be(
+        balances::Pallet::<Runtime>::make_free_balance_be(
             &forum_lead,
             <Runtime as Config>::PostDeposit::get() - 1,
         );
@@ -1905,12 +1905,12 @@ fn edit_post_text() {
 
     let initial_balance = 10_000_000;
     with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
-        balances::Module::<Runtime>::make_free_balance_be(
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        balances::Pallet::<Runtime>::make_free_balance_be(
             &NOT_FORUM_LEAD_ORIGIN_ID,
             initial_balance,
         );
-        balances::Module::<Runtime>::make_free_balance_be(
+        balances::Pallet::<Runtime>::make_free_balance_be(
             &NOT_FORUM_LEAD_2_ORIGIN_ID,
             initial_balance,
         );
@@ -1978,8 +1978,8 @@ fn edit_non_editable_post_text() {
 
     let initial_balance = 10_000_000;
     with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
-        balances::Module::<Runtime>::make_free_balance_be(
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        balances::Pallet::<Runtime>::make_free_balance_be(
             &NOT_FORUM_LEAD_ORIGIN_ID,
             initial_balance,
         );
@@ -2042,7 +2042,7 @@ fn react_post() {
         let initial_balance = 10_000_000;
 
         with_test_externalities(|| {
-            balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+            balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
             let category_id = create_category_mock(
                 origin.clone(),
                 None,
@@ -2101,7 +2101,7 @@ fn moderate_post_origin() {
         let origin = OriginType::Signed(forum_lead);
         let initial_balance = 10_000_000;
         with_test_externalities(|| {
-            balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+            balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
             let moderator_id = forum_lead;
 
             let category_id = create_category_mock(
@@ -2163,8 +2163,8 @@ fn delete_post_creator() {
     let origin = OriginType::Signed(forum_lead);
     let initial_balance = 10_000_000;
     with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
-        balances::Module::<Runtime>::make_free_balance_be(
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        balances::Pallet::<Runtime>::make_free_balance_be(
             &NOT_FORUM_LEAD_ORIGIN_ID,
             initial_balance,
         );
@@ -2172,7 +2172,7 @@ fn delete_post_creator() {
         let mut current_balance = initial_balance;
 
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&forum_lead),
+            balances::Pallet::<Runtime>::free_balance(&forum_lead),
             current_balance
         );
 
@@ -2199,7 +2199,7 @@ fn delete_post_creator() {
         current_balance -= <Runtime as Config>::PostDeposit::get();
 
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
+            balances::Pallet::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
             current_balance
         );
 
@@ -2217,7 +2217,7 @@ fn delete_post_creator() {
         current_balance -= <Runtime as Config>::PostDeposit::get();
 
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
+            balances::Pallet::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
             current_balance
         );
 
@@ -2304,7 +2304,7 @@ fn delete_post_creator() {
         current_balance += <Runtime as Config>::PostDeposit::get();
 
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
+            balances::Pallet::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
             current_balance
         );
     });
@@ -2317,8 +2317,8 @@ fn delete_post_not_creator() {
     let origin = OriginType::Signed(forum_lead);
     let initial_balance = 10_000_000;
     with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
-        balances::Module::<Runtime>::make_free_balance_be(
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        balances::Pallet::<Runtime>::make_free_balance_be(
             &NOT_FORUM_LEAD_ORIGIN_ID,
             initial_balance,
         );
@@ -2326,7 +2326,7 @@ fn delete_post_not_creator() {
         let mut current_balance = initial_balance;
 
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&forum_lead),
+            balances::Pallet::<Runtime>::free_balance(&forum_lead),
             current_balance
         );
 
@@ -2353,7 +2353,7 @@ fn delete_post_not_creator() {
         current_balance -= <Runtime as Config>::PostDeposit::get();
 
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
+            balances::Pallet::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
             current_balance
         );
 
@@ -2371,7 +2371,7 @@ fn delete_post_not_creator() {
         current_balance -= <Runtime as Config>::PostDeposit::get();
 
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
+            balances::Pallet::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
             current_balance
         );
 
@@ -2407,7 +2407,7 @@ fn delete_post_not_creator() {
         current_balance += <Runtime as Config>::ThreadDeposit::get();
 
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
+            balances::Pallet::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
             current_balance
         );
 
@@ -2415,7 +2415,7 @@ fn delete_post_not_creator() {
         run_to_block(current_block + <Runtime as Config>::PostLifeTime::get());
 
         let not_creator_balance =
-            balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_2_ORIGIN_ID);
+            balances::Pallet::<Runtime>::free_balance(&NOT_FORUM_LEAD_2_ORIGIN_ID);
 
         // not post creator wil not be able to delete hiding the post
         delete_post_mock(
@@ -2442,12 +2442,12 @@ fn delete_post_not_creator() {
         );
 
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
+            balances::Pallet::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
             current_balance
         );
 
         assert_eq!(
-            balances::Module::<Runtime>::free_balance(&NOT_FORUM_LEAD_2_ORIGIN_ID),
+            balances::Pallet::<Runtime>::free_balance(&NOT_FORUM_LEAD_2_ORIGIN_ID),
             not_creator_balance + <Runtime as Config>::PostDeposit::get()
         );
     });
@@ -2459,7 +2459,7 @@ fn set_stickied_threads_ok() {
     let origin = OriginType::Signed(forum_lead);
     let initial_balance = 10_000_000;
     with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
 
         let moderator_id = forum_lead;
         let category_id = create_category_mock(
@@ -2573,7 +2573,7 @@ fn set_stickied_threads_wrong_moderator() {
     let origin = OriginType::Signed(forum_lead);
     let initial_balance = 10_000_000;
     with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
 
         let moderator_id = forum_lead;
         let category_id = create_category_mock(
@@ -2610,7 +2610,7 @@ fn set_stickied_threads_thread_not_exists() {
     let origin = OriginType::Signed(forum_lead);
     let initial_balance = 10_000_000;
     with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
 
         let moderator_id = forum_lead;
         let category_id = create_category_mock(
@@ -2728,7 +2728,7 @@ fn storage_limit_checks() {
 
     // test MaxSubcategories and MaxThreadsInCategory
     with_test_externalities(|| {
-        balances::Module::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
+        balances::Pallet::<Runtime>::make_free_balance_be(&forum_lead, initial_balance);
 
         let category_id = create_category_mock(
             origin.clone(),
