@@ -78,7 +78,7 @@ export default class CreateChannelCommand extends UploadCommandBase {
         ),
         distribution_buckets: createType<BTreeSet<DistributionBucketId>, 'BTreeSet<DistributionBucketId>'>(
           'BTreeSet<DistributionBucketId>',
-          distributionBuckets // [{ distribution_bucket_family_id: 0, distribution_bucket_index: 0 }]
+          distributionBuckets
         ),
       }
     )

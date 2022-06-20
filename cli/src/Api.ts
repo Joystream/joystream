@@ -23,14 +23,7 @@ import { Worker, WorkerId, OpeningId, Application, ApplicationId, Opening } from
 import { Membership, StakingAccountMemberBinding } from '@joystream/types/members'
 import { MemberId, ChannelId, AccountId, ThreadId, PostId } from '@joystream/types/common'
 import { Channel, Video, ChannelCategoryId, VideoId, CuratorGroupId, CuratorGroup } from '@joystream/types/content'
-import {
-  BagId,
-  DataObject,
-  DataObjectId,
-  DistributionBucketFamilyId,
-  DistributionBucketId,
-  DistributionBucketIndex,
-} from '@joystream/types/storage'
+import { BagId, DataObject, DataObjectId, DistributionBucketFamilyId } from '@joystream/types/storage'
 import QueryNodeApi from './QueryNodeApi'
 import { MembershipFieldsFragment } from './graphql/generated/queries'
 import { blake2AsHex } from '@polkadot/util-crypto'
@@ -457,44 +450,43 @@ export default class Api {
 
   async selectStorageBucketsForNewChannel(): Promise<number[]> {
     const storageBuckets = await this._qnApi?.storageBucketsForNewChannel()
-    const { numberOfStorageBuckets } = await this._api.query.storage.dynamicBagCreationPolicies('Channel')
+    const { numberOfStorageBuckets: storageBucketsPolicy } = await this._api.query.storage.dynamicBagCreationPolicies(
+      'Channel'
+    )
 
-    if (!storageBuckets || storageBuckets.length < numberOfStorageBuckets.toNumber()) {
+    if (!storageBuckets || storageBuckets.length < storageBucketsPolicy.toNumber()) {
       throw new CLIError(`Storage buckets policy constraint unsatifified. Not enough storage buckets exist`)
     }
 
     // TODO: curretly it selects first `n` buckets, improve by uniform bucket selection for each channel
-    return storageBuckets.map((b) => Number(b.id)).slice(0, numberOfStorageBuckets.toNumber())
+    return storageBuckets.map((b) => Number(b.id)).slice(0, storageBucketsPolicy.toNumber())
   }
 
-  async selectDistributionBucketsForNewChannel(): Promise<DistributionBucketId[]> {
-    const { families } = await this._api.query.storage.dynamicBagCreationPolicies('Channel')
+  async selectDistributionBucketsForNewChannel(): Promise<
+    { distribution_bucket_family_id: number; distribution_bucket_index: number }[]
+  > {
+    const { families: distributionBucketFamiliesPolicy } = await this._api.query.storage.dynamicBagCreationPolicies(
+      'Channel'
+    )
 
-    const distributionBucketIds: DistributionBucketId[] = []
+    const families = await this._qnApi?.distributionBucketsForNewChannel()
+    const distributionBucketIds = []
 
-    // TODO: curretly it selects first `n` buckets, improve by uniform bucket selection for each channel
-    for (const [familyId, count] of families) {
-      const { next_distribution_bucket_index: nextIndex } = await this._api.query.storage.distributionBucketFamilyById(
-        familyId
-      )
-
-      if (count.toNumber() < nextIndex.toNumber()) {
+    for (const { id, buckets } of families || []) {
+      const bucketsCountPolicy = distributionBucketFamiliesPolicy.get((id as unknown) as DistributionBucketFamilyId)
+      if (bucketsCountPolicy && bucketsCountPolicy.toNumber() < buckets.length) {
         throw new CLIError(`Distribution buckets policy constraint unsatifified. Not enough distribution buckets exist`)
       }
 
       distributionBucketIds.push(
-        ...[...Array(nextIndex.toNumber())].map((_, i) =>
-          createType<DistributionBucketId, 'DistributionBucketId'>('DistributionBucketId', {
-            distribution_bucket_family_id: createType<DistributionBucketFamilyId, 'DistributionBucketFamilyId'>(
-              'DistributionBucketFamilyId',
-              familyId
-            ),
-            distribution_bucket_index: createType<DistributionBucketIndex, 'DistributionBucketIndex'>(
-              'DistributionBucketIndex',
-              i
-            ),
+        ...buckets
+          .map(({ bucketIndex }) => {
+            return {
+              distribution_bucket_family_id: Number(id),
+              distribution_bucket_index: bucketIndex,
+            }
           })
-        )
+          .slice(0, bucketsCountPolicy?.toNumber())
       )
     }
     return distributionBucketIds

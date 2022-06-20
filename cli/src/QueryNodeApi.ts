@@ -50,6 +50,10 @@ import {
   GetStorageBucketsQueryVariables,
   GetStorageBuckets,
   StorageNodeInfoFragment,
+  DistributionBucketFamilyFieldsFragment,
+  GetDistributionFamiliesAdndBucketsQuery,
+  GetDistributionFamiliesAdndBucketsQueryVariables,
+  GetDistributionFamiliesAdndBuckets,
 } from './graphql/generated/queries'
 import { URL } from 'url'
 import fetch from 'cross-fetch'
@@ -158,6 +162,13 @@ export default class QueryNodeApi {
       {},
       'storageBuckets'
     )
+  }
+
+  async distributionBucketsForNewChannel(): Promise<DistributionBucketFamilyFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetDistributionFamiliesAdndBucketsQuery,
+      GetDistributionFamiliesAdndBucketsQueryVariables
+    >(GetDistributionFamiliesAdndBuckets, {}, 'distributionBucketFamilies')
   }
 
   async membersByIds(ids: MemberId[] | string[]): Promise<MembershipFieldsFragment[]> {

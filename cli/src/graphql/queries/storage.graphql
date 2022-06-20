@@ -23,6 +23,20 @@ query getStorageBuckets {
   }
 }
 
+fragment DistributionBucketFamilyFields on DistributionBucketFamily {
+  id
+  buckets {
+    id
+    bucketIndex
+  }
+}
+
+query getDistributionFamiliesAdndBuckets {
+  distributionBucketFamilies {
+    ...DistributionBucketFamilyFields
+  }
+}
+
 fragment DataObjectInfo on StorageDataObject {
   id
   size

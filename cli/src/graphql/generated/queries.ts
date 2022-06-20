@@ -26,6 +26,14 @@ export type GetStorageBucketsQueryVariables = Types.Exact<{ [key: string]: never
 
 export type GetStorageBucketsQuery = { storageBuckets: Array<StorageNodeInfoFragment> }
 
+export type DistributionBucketFamilyFieldsFragment = { id: string; buckets: Array<{ id: string; bucketIndex: number }> }
+
+export type GetDistributionFamiliesAdndBucketsQueryVariables = Types.Exact<{ [key: string]: never }>
+
+export type GetDistributionFamiliesAdndBucketsQuery = {
+  distributionBucketFamilies: Array<DistributionBucketFamilyFieldsFragment>
+}
+
 export type DataObjectInfoFragment = {
   id: string
   size: any
@@ -145,6 +153,15 @@ export const StorageNodeInfo = gql`
     }
   }
 `
+export const DistributionBucketFamilyFields = gql`
+  fragment DistributionBucketFamilyFields on DistributionBucketFamily {
+    id
+    buckets {
+      id
+      bucketIndex
+    }
+  }
+`
 export const DataObjectInfo = gql`
   fragment DataObjectInfo on StorageDataObject {
     id
@@ -248,6 +265,14 @@ export const GetStorageBuckets = gql`
     }
   }
   ${StorageNodeInfo}
+`
+export const GetDistributionFamiliesAdndBuckets = gql`
+  query getDistributionFamiliesAdndBuckets {
+    distributionBucketFamilies {
+      ...DistributionBucketFamilyFields
+    }
+  }
+  ${DistributionBucketFamilyFields}
 `
 export const GetDataObjectsByBagId = gql`
   query getDataObjectsByBagId($bagId: ID) {
