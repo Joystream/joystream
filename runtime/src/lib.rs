@@ -70,7 +70,7 @@ use sp_core::crypto::KeyTypeId;
 use sp_core::Hasher;
 use sp_io;
 use sp_runtime::curve::PiecewiseLinear;
-use sp_runtime::traits::{AccountIdLookup, BlakeTwo256, OpaqueKeys, Saturating};
+use sp_runtime::traits::{AccountIdLookup, BlakeTwo256, ConvertInto, OpaqueKeys, Saturating};
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys, FixedPointNumber, Perbill, Perquintill,
 };
@@ -714,12 +714,12 @@ impl content::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ProjectTokenModuleId: ModuleId = ModuleId(*b"mo:token"); // module: token
+    pub const ProjectTokenModuleId: PalletId = PalletId(*b"mo:token"); // module: token
     pub const MaxVestingSchedulesPerAccountPerToken: u8 = 5; // TODO: adjust
     pub const BlocksPerYear: u32 = 5259600; // 365,25 * 24 * 60 * 60 / 6
 }
 
-impl project_token::Trait for Runtime {
+impl project_token::Config for Runtime {
     type Event = Event;
     type Balance = Balance;
     type TokenId = TokenId;
@@ -1383,15 +1383,18 @@ impl blog::Config<BlogInstance> for Runtime {
 pub type CategoryId = u64;
 
 parameter_types! {
-    pub const MinVestedTransfer: Balance = 100; // TODO: adjust value
+    pub const MinVestedTransfer: Balance = 100; // TODO: Adjust value
 }
 
-impl pallet_vesting::Trait for Runtime {
+impl pallet_vesting::Config for Runtime {
     type Event = Event;
     type Currency = Balances;
     type BlockNumberToBalance = ConvertInto;
     type MinVestedTransfer = MinVestedTransfer;
-    type WeightInfo = weights::pallet_vesting::WeightInfo;
+    type WeightInfo = pallet_vesting::weights::SubstrateWeight<Runtime>;
+    // `VestingInfo` encode length is 36bytes. 28 schedules gets encoded as 1009 bytes, which is the
+    // highest number of schedules that encodes less than 2^10.
+    const MAX_VESTING_SCHEDULES: u32 = 28;
 }
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
@@ -1448,7 +1451,7 @@ construct_runtime!(
         JoystreamUtility: joystream_utility::{Pallet, Call, Event<T>},
         Content: content::{Pallet, Call, Storage, Event<T>, Config<T>},
         Storage: storage::{Pallet, Call, Storage, Event<T>},
-        ProjectToken: project_token::{Pallet, Call, Storage, Event<T>},
+        ProjectToken: project_token::{Pallet, Call, Storage, Event<T>, Config<T>},
         // --- Proposals
         ProposalsEngine: proposals_engine::{Pallet, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Pallet, Call, Storage, Event<T>},

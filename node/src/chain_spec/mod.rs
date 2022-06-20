@@ -244,7 +244,7 @@ pub fn testnet_genesis(
             authorities: vec![],
         },
         transaction_payment: TransactionPaymentConfig {},
-        pallet_vesting: Default::default(),
+        vesting: Default::default(),
         council: council_config::create_council_config(),
         members: MembersConfig { members },
         forum: forum_cfg,

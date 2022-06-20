@@ -158,11 +158,14 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::VetoProposal(proposal_id) => {
                 Call::ProposalsEngine(proposals_engine::Call::veto_proposal { proposal_id })
             }
-            ProposalDetails::UpdateGlobalNftLimit(period, limit) => {
-                Call::Content(content::Call::update_global_nft_limit(period, limit))
+            ProposalDetails::UpdateGlobalNftLimit(nft_limit_period, limit) => {
+                Call::Content(content::Call::update_global_nft_limit {
+                    nft_limit_period,
+                    limit,
+                })
             }
             ProposalDetails::UpdateChannelPayouts(params) => {
-                Call::Content(content::Call::update_channel_payouts(params))
+                Call::Content(content::Call::update_channel_payouts { params })
             }
         };
 
