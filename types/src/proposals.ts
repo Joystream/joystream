@@ -3,7 +3,7 @@
 import { Text, u32, Tuple, u8, u128, Vec, Option, Null, Bytes, u64 } from '@polkadot/types'
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
 import { Constructor, ITuple } from '@polkadot/types/types'
-import { MemberId, WorkingGroup, JoyEnum, JoyStructDecorated, BalanceKind, PostId, AccountId } from './common'
+import { MemberId, WorkingGroup, JoyEnum, JoyStructDecorated, BalanceKind, AccountId } from './common'
 import { NftLimitPeriod } from './content'
 import { ApplicationId, OpeningId, StakePolicy, WorkerId } from './working-group'
 import { UpdateChannelPayoutsParameters } from './content'
