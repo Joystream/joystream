@@ -93,11 +93,7 @@ fn apply_on_opening_helper<T: Config<I>, I: Instance>(
     application_id
 }
 
-<<<<<<< HEAD
-fn add_opening_and_apply_with_multiple_ids<T: Trait<I> + membership::Trait, I: Instance>(
-=======
 fn add_opening_and_apply_with_multiple_ids<T: Config<I> + membership::Config, I: Instance>(
->>>>>>> rhodes-substrate-v3-update
     ids: &[u32],
     add_opening_origin: &T::Origin,
     job_opening_type: &OpeningType,
@@ -588,11 +584,7 @@ benchmarks_instance! {
 
         let (opening_id, successful_application_ids, _) =
             add_opening_and_apply_with_multiple_ids::<T, I>(
-<<<<<<< HEAD
                 &(1..=i).collect::<Vec<_>>(),
-=======
-                &(1..i).collect::<Vec<_>>(),
->>>>>>> rhodes-substrate-v3-update
                 &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
                 &OpeningType::Regular
             );

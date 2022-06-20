@@ -4320,11 +4320,14 @@ impl<T: Config> Module<T> {
 
         // remove objects: no-op if list.is_empty() or during bag creation
         match &bag_op.params {
-            BagOperationParams::<T>::Delete => DataObjectsById::<T>::remove_prefix(&bag_op.bag_id),
-            BagOperationParams::<T>::Update(_, list) => list
-                .iter()
-                .for_each(|id| DataObjectsById::<T>::remove(&bag_op.bag_id, id)),
-            _ => (),
+            BagOperationParams::<T>::Delete => {
+                DataObjectsById::<T>::remove_prefix(&bag_op.bag_id, None);
+            }
+            BagOperationParams::<T>::Update(_, list) => {
+                list.iter()
+                    .for_each(|id| DataObjectsById::<T>::remove(&bag_op.bag_id, id));
+            }
+            _ => {}
         }
 
         // add objects: no-op if list is_empty() or during bag deletion

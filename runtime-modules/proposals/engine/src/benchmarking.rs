@@ -228,15 +228,9 @@ fn elect_council<
     T: Config + membership::Config + council::Config + referendum::Config<ReferendumInstance>,
 >(
     start_id: u32,
-<<<<<<< HEAD
 ) -> (Vec<CouncilCandidate<T>>, u32) {
     let council_size = <T as council::Trait>::CouncilSize::get();
     let number_of_extra_candidates = <T as council::Trait>::MinNumberOfExtraCandidates::get();
-=======
-) -> (Vec<(T::AccountId, T::MemberId)>, u32) {
-    let council_size = <T as council::Config>::CouncilSize::get();
-    let number_of_extra_candidates = <T as council::Config>::MinNumberOfExtraCandidates::get();
->>>>>>> rhodes-substrate-v3-update
 
     let councilor_stake = <T as council::Config>::MinCandidateStake::get();
 
@@ -299,11 +293,7 @@ fn elect_council<
         Referendum::<T, ReferendumInstance>::reveal_vote(
             RawOrigin::Signed(voters[i].0.clone()).into(),
             vec![0u8],
-<<<<<<< HEAD
             candidates[i].member_id,
-=======
-            candidates[i].1,
->>>>>>> rhodes-substrate-v3-update
         )
         .unwrap();
     }
@@ -719,14 +709,7 @@ benchmarks! {
             );
 
             assert_in_events::<T>(
-<<<<<<< HEAD
                 RawEvent::ProposalDecisionMade(*proposal_id, ProposalDecision::Slashed).into()
-=======
-                RawEvent::ProposalDecisionMade(
-                    *proposal_id,
-                    ProposalDecision::Slashed
-                ).into()
->>>>>>> rhodes-substrate-v3-update
             );
         }
 

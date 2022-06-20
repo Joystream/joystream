@@ -1746,13 +1746,9 @@ impl<T: Config + common::membership::MembershipTypes>
     }
 }
 
-<<<<<<< HEAD
-impl<T: Trait + balances::Trait> common::council::CouncilBudgetManager<T::AccountId, Balance<T>>
+impl<T: Config + balances::Config> common::council::CouncilBudgetManager<T::AccountId, Balance<T>>
     for Module<T>
 {
-=======
-impl<T: Config + balances::Config> common::council::CouncilBudgetManager<Balance<T>> for Module<T> {
->>>>>>> rhodes-substrate-v3-update
     fn get_budget() -> Balance<T> {
         Self::budget()
     }

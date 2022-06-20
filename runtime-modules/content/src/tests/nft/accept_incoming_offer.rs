@@ -2,8 +2,8 @@
 use crate::tests::curators;
 use crate::tests::fixtures::{
     channel_reward_account_balance, create_default_member_owned_channel_with_video,
-    create_initial_storage_buckets_helper, ContentTest,
-    UpdateChannelFixture, CreateChannelFixture, CreateVideoFixture
+    create_initial_storage_buckets_helper, ContentTest, CreateChannelFixture, CreateVideoFixture,
+    UpdateChannelFixture,
 };
 use crate::tests::mock::*;
 use crate::*;

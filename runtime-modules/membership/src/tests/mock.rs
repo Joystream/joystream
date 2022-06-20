@@ -16,7 +16,7 @@ use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill
+    Perbill,
 };
 use sp_std::cell::RefCell;
 use sp_std::convert::{TryFrom, TryInto};
