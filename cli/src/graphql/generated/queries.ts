@@ -22,6 +22,10 @@ export type GetStorageNodesInfoByBagIdQueryVariables = Types.Exact<{
 
 export type GetStorageNodesInfoByBagIdQuery = { storageBuckets: Array<StorageNodeInfoFragment> }
 
+export type GetStorageBucketsQueryVariables = Types.Exact<{ [key: string]: never }>
+
+export type GetStorageBucketsQuery = { storageBuckets: Array<StorageNodeInfoFragment> }
+
 export type DataObjectInfoFragment = {
   id: string
   size: any
@@ -232,6 +236,14 @@ export const GetStorageNodesInfoByBagId = gql`
         operatorMetadata: { nodeEndpoint_contains: "http" }
       }
     ) {
+      ...StorageNodeInfo
+    }
+  }
+  ${StorageNodeInfo}
+`
+export const GetStorageBuckets = gql`
+  query getStorageBuckets {
+    storageBuckets(where: { acceptingNewBags_eq: true }) {
       ...StorageNodeInfo
     }
   }

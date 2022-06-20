@@ -62,6 +62,32 @@ export enum WorkingGroups {
   Distribution = 'distributors',
 }
 
+export enum ChannelActionPermission {
+  UpdateChannelMetadata = 'UpdateChannelMetadata',
+  ManageNonVideoChannelAssets = 'ManageNonVideoChannelAssets',
+  ManageChannelCollaborators = 'ManageChannelCollaborators',
+  UpdateVideoMetadata = 'UpdateVideoMetadata',
+  AddVideo = 'AddVideo',
+  ManageVideoAssets = 'ManageVideoAssets',
+  DeleteChannel = 'DeleteChannel',
+  DeleteVideo = 'DeleteVideo',
+  ManageVideoNfts = 'ManageVideoNfts',
+  AgentRemark = 'AgentRemark',
+  TransferChannel = 'TransferChannel',
+  ClaimChannelReward = 'ClaimChannelReward',
+  WithdrawFromChannelBalance = 'WithdrawFromChannelBalance',
+  IssueCreatorToken = 'IssueCreatorToken',
+  ClaimCreatorTokenPatronage = 'ClaimCreatorTokenPatronage',
+  InitAndManageCreatorTokenSale = 'InitAndManageCreatorTokenSale',
+  CreatorTokenIssuerTransfer = 'CreatorTokenIssuerTransfer',
+  MakeCreatorTokenPermissionless = 'MakeCreatorTokenPermissionless',
+  ReduceCreatorTokenPatronageRate = 'ReduceCreatorTokenPatronageRate',
+  ManageRevenueSplits = 'ManageRevenueSplits',
+  DeissueCreatorToken = 'DeissueCreatorToken',
+}
+
+export type ChannelAgentPermissions = ChannelActionPermission[]
+
 export const AvailableGroups: readonly WorkingGroups[] = [
   WorkingGroups.StorageProviders,
   WorkingGroups.Curators,
@@ -203,9 +229,8 @@ export type VideoInputParameters = Omit<IVideoMetadata, 'video' | 'thumbnailPhot
 export type ChannelCreationInputParameters = Omit<IChannelMetadata, 'coverPhoto' | 'avatarPhoto'> & {
   coverPhotoPath?: string
   avatarPhotoPath?: string
-  rewardAccount?: string
-  collaborators?: number[]
-  moderators?: number[]
+  collaborators?: [number, string[]][]
+  privilegeLevel?: number
 }
 
 export type ChannelUpdateInputParameters = Omit<ChannelCreationInputParameters, 'moderators'>

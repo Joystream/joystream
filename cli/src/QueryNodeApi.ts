@@ -46,6 +46,10 @@ import {
   UpcomingWorkingGroupOpeningsByGroupQuery,
   UpcomingWorkingGroupOpeningsByGroupQueryVariables,
   UpcomingWorkingGroupOpeningsByGroup,
+  GetStorageBucketsQuery,
+  GetStorageBucketsQueryVariables,
+  GetStorageBuckets,
+  StorageNodeInfoFragment,
 } from './graphql/generated/queries'
 import { URL } from 'url'
 import fetch from 'cross-fetch'
@@ -146,6 +150,14 @@ export default class QueryNodeApi {
       }
     }
     return validNodesInfo
+  }
+
+  async storageBucketsForNewChannel(): Promise<StorageNodeInfoFragment[]> {
+    return this.multipleEntitiesQuery<GetStorageBucketsQuery, GetStorageBucketsQueryVariables>(
+      GetStorageBuckets,
+      {},
+      'storageBuckets'
+    )
   }
 
   async membersByIds(ids: MemberId[] | string[]): Promise<MembershipFieldsFragment[]> {

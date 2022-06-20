@@ -17,6 +17,12 @@ query getStorageNodesInfoByBagId($bagId: ID) {
   }
 }
 
+query getStorageBuckets {
+  storageBuckets(where: { acceptingNewBags_eq: true }) {
+    ...StorageNodeInfo
+  }
+}
+
 fragment DataObjectInfo on StorageDataObject {
   id
   size
