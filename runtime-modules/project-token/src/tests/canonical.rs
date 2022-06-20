@@ -12,7 +12,7 @@ use crate::types::{
 };
 use crate::{
     account, assert_approx_eq, balance, block, joy, last_event_eq, member, merkle_proof,
-    merkle_root, origin, token, yearly_rate, Error, RawEvent, TokenDataOf, Trait,
+    merkle_root, origin, token, yearly_rate, Config, Error, RawEvent, TokenDataOf,
 };
 use frame_support::traits::Currency;
 use sp_runtime::DispatchError;
@@ -787,7 +787,7 @@ fn issue_token_fails_with_insufficient_balance_for_bloat_bond() {
     .with_allocation(&mem1, 0, None)
     .with_allocation(&mem2, 0, None);
 
-    let required_joy_balance: JoyBalance = <Test as crate::Trait>::JoyExistentialDeposit::get()
+    let required_joy_balance: JoyBalance = <Test as crate::Config>::JoyExistentialDeposit::get()
         .saturating_add(bloat_bond.saturating_mul(3u32.into()));
 
     let config = GenesisConfigBuilder::new_empty()
@@ -815,7 +815,7 @@ fn issue_token_ok_with_bloat_bond_transferred() {
     .with_allocation(&mem1, 0, None)
     .with_allocation(&mem2, 0, None);
 
-    let required_joy_balance: JoyBalance = <Test as crate::Trait>::JoyExistentialDeposit::get()
+    let required_joy_balance: JoyBalance = <Test as crate::Config>::JoyExistentialDeposit::get()
         .saturating_add(bloat_bond.saturating_mul(3u32.into()));
 
     let config = GenesisConfigBuilder::new_empty()
@@ -1185,7 +1185,7 @@ fn burn_fails_with_active_revenue_split() {
         config,
         vec![(
             split_allocation_src,
-            <Test as Trait>::JoyExistentialDeposit::get() + split_allocation_amount,
+            <Test as Config>::JoyExistentialDeposit::get() + split_allocation_amount,
         )],
     )
     .execute_with(|| {
@@ -1293,7 +1293,7 @@ fn burn_ok_with_vesting_and_staked_tokens_burned_first() {
     let vesting_schedule = default_vesting_schedule();
     let init_vesting_amount = vesting_schedule
         .total_amount()
-        .saturating_mul(<Test as Trait>::MaxVestingBalancesPerAccountPerToken::get().into());
+        .saturating_mul(<Test as Config>::MaxVestingBalancesPerAccountPerToken::get().into());
     let init_staked_amount = init_vesting_amount + 300;
     let account_data = AccountData::new_with_amount(1000)
         .with_max_vesting_schedules(vesting_schedule.clone())

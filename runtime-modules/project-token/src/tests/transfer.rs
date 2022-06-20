@@ -5,7 +5,7 @@ use crate::tests::mock::*;
 use crate::tests::test_utils::{default_vesting_schedule, TokenDataBuilder};
 use crate::traits::PalletToken;
 use crate::types::{TransferPolicyOf, Transfers, Validated, VestingSource};
-use crate::Trait;
+use crate::Config;
 use crate::{balance, joy, last_event_eq, member, merkle_root, origin, token, Error, RawEvent};
 use sp_runtime::{traits::Hash, DispatchError, Permill};
 
@@ -1282,7 +1282,7 @@ fn issuer_permissioned_token_transfer_ok() {
 
 #[test]
 fn issuer_multiple_permissioned_token_transfers_ok_with_vesting_cleanup_executed() {
-    let max_vesting_schedules = <Test as Trait>::MaxVestingBalancesPerAccountPerToken::get();
+    let max_vesting_schedules = <Test as Config>::MaxVestingBalancesPerAccountPerToken::get();
     let token_id = token!(1);
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(Hashing::hash_of(b"default")))
