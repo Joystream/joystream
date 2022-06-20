@@ -3,7 +3,7 @@ eslint-disable @typescript-eslint/naming-convention
 */
 import { EventContext, StoreContext } from '@joystream/hydra-common'
 import { Content } from '../../generated/types'
-import { convertContentActorToChannelOrNftOwner, processChannelMetadata, unsetAssetRelations } from './utils'
+import { convertChannelOwnerToMemberOrCuratorGroup, processChannelMetadata, unsetAssetRelations } from './utils'
 import { Channel, ChannelCategory, StorageDataObject, Membership } from 'query-node/dist/model'
 import { deserializeMetadata, inconsistentState, logger } from '../common'
 import { ChannelCategoryMetadata, ChannelMetadata } from '@joystream/metadata-protobuf'
@@ -14,7 +14,7 @@ import { getAllManagers } from '../derivedPropertiesManager/applications'
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
   // read event data
-  const [contentActor, channelId, , channelCreationParameters] = new Content.ChannelCreatedEvent(event).params
+  const [channelId, { owner }, channelCreationParameters] = new Content.ChannelCreatedEvent(event).params
 
   // create entity
   const channel = new Channel({
@@ -23,7 +23,6 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     isCensored: false,
     videos: [],
     createdInBlock: event.blockNumber,
-    rewardAccount: channelCreationParameters.reward_account.unwrapOr(undefined)?.toString(),
     activeVideosCounter: 0,
 
     // fill in auto-generated fields
@@ -31,7 +30,7 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     updatedAt: new Date(event.blockTimestamp),
 
     // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
-    ...(await convertContentActorToChannelOrNftOwner(store, contentActor)),
+    ...(await convertChannelOwnerToMemberOrCuratorGroup(store, owner)),
 
     collaborators: Array.from(channelCreationParameters.collaborators).map(
       (id) => new Membership({ id: id.toString() })
@@ -54,7 +53,7 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
 export async function content_ChannelUpdated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
   // read event data
-  const [, channelId, , channelUpdateParameters] = new Content.ChannelUpdatedEvent(event).params
+  const [, channelId, channelUpdateParameters] = new Content.ChannelUpdatedEvent(event).params
 
   // load channel
   const channel = await store.get(Channel, {
@@ -79,14 +78,6 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
       newMetadata,
       channelUpdateParameters.assets_to_upload.unwrapOr(undefined)
     )
-  }
-
-  // prepare changed reward account
-  const newRewardAccount = channelUpdateParameters.reward_account.unwrapOr(null)
-  // reward account change happened?
-  if (newRewardAccount) {
-    // this will change the `channel`!
-    channel.rewardAccount = newRewardAccount.unwrapOr(undefined)?.toString()
   }
 
   const newCollaborators = channelUpdateParameters.collaborators.unwrapOr(undefined)
@@ -116,36 +107,6 @@ export async function content_ChannelAssetsRemoved({ store, event }: EventContex
   })
   await Promise.all(assets.map((a) => unsetAssetRelations(store, a)))
   logger.info('Channel assets have been removed', { ids: dataObjectIds.toJSON() })
-}
-
-export async function content_ChannelCensorshipStatusUpdated({
-  store,
-  event,
-}: EventContext & StoreContext): Promise<void> {
-  // read event data
-  const [, channelId, isCensored] = new Content.ChannelCensorshipStatusUpdatedEvent(event).params
-
-  // load event
-  const channel = await store.get(Channel, { where: { id: channelId.toString() } })
-
-  // ensure channel exists
-  if (!channel) {
-    return inconsistentState('Non-existing channel censoring requested', channelId)
-  }
-
-  // update channel
-  channel.isCensored = isCensored.isTrue
-
-  // set last update time
-  channel.updatedAt = new Date(event.blockTimestamp)
-
-  await getAllManagers(store).channels.onMainEntityUpdate(channel)
-
-  // save channel
-  await store.save<Channel>(channel)
-
-  // emit log event
-  logger.info('Channel censorship status has been updated', { id: channelId, isCensored: isCensored.isTrue })
 }
 
 /// //////////////// ChannelCategory ////////////////////////////////////////////

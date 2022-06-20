@@ -35,7 +35,7 @@ import {
   Curator,
 } from 'query-node/dist/model'
 // Joystream types
-import { ContentActor, StorageAssets } from '@joystream/types/augment'
+import { ChannelOwner, ContentActor, StorageAssets } from '@joystream/types/augment'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import BN from 'bn.js'
 import { getMostRecentlyCreatedDataObjects } from '../storage/utils'
@@ -255,6 +255,44 @@ async function processVideoMediaMetadata(
   await store.save<VideoMediaMetadata>(videoMedia)
 
   return videoMedia
+}
+
+export async function convertChannelOwnerToMemberOrCuratorGroup(
+  store: DatabaseManager,
+  channelOwner: ChannelOwner
+): Promise<{
+  ownerMember?: Membership
+  ownerCuratorGroup?: CuratorGroup
+}> {
+  if (channelOwner.isMember) {
+    const member = await store.get(Membership, {
+      where: { id: channelOwner.asMember.toString() } as FindConditions<Membership>,
+    })
+
+    // ensure member exists
+    if (!member) {
+      return inconsistentState(`Channel owner is non-existing member`, channelOwner.asMember)
+    }
+
+    return {
+      ownerMember: member,
+      ownerCuratorGroup: undefined,
+    }
+  }
+
+  const curatorGroup = await store.get(CuratorGroup, {
+    where: { id: channelOwner.asCuratorGroup.toString() } as FindConditions<CuratorGroup>,
+  })
+
+  // ensure curator group exists
+  if (!curatorGroup) {
+    return inconsistentState('Channel owner is non-existing curator group', channelOwner.asCuratorGroup)
+  }
+
+  return {
+    ownerMember: undefined,
+    ownerCuratorGroup: curatorGroup,
+  }
 }
 
 export async function convertContentActorToChannelOrNftOwner(
