@@ -87,9 +87,6 @@ typegen:
     - content.ChannelCreated
     - content.ChannelUpdated
     - content.ChannelAssetsRemoved
-    - content.ChannelCategoryCreated
-    - content.ChannelCategoryUpdated
-    - content.ChannelCategoryDeleted
     - content.VideoCreated
     - content.VideoUpdated
     - content.VideoDeleted
@@ -711,12 +708,6 @@ mappings:
       handler: content_ChannelUpdated
     - event: content.ChannelAssetsRemoved
       handler: content_ChannelAssetsRemoved
-    - event: content.ChannelCategoryCreated
-      handler: content_ChannelCategoryCreated
-    - event: content.ChannelCategoryUpdated
-      handler: content_ChannelCategoryUpdated
-    - event: content.ChannelCategoryDeleted
-      handler: content_ChannelCategoryDeleted
     - event: content.VideoCreated
       handler: content_VideoCreated
     - event: content.VideoUpdated
