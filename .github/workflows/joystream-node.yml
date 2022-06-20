@@ -3,6 +3,7 @@ on:
   pull_request:
 
 jobs:
+  # test runtime benchmarks code correctness
   benchmarking:
     name: Benchmarking
     runs-on: ubuntu-latest
@@ -15,6 +16,7 @@ jobs:
         with:
           PREFIX_FILTER: |
             node
+            runtime
             runtime-modules
             utils/chain-spec-builder
           SUFFIX_FILTER: |
@@ -34,17 +36,15 @@ jobs:
 
       - name: Build
         run: |
-          pushd node
-          WASM_BUILD_TOOLCHAIN=nightly-2021-02-20 cargo +nightly-2021-02-20 build --release --features runtime-benchmarks
-          popd
+          WASM_BUILD_TOOLCHAIN=nightly-2022-05-11 cargo +nightly-2022-05-11 test --release --features runtime-benchmarks
         if: env.GIT_DIFF
 
-      - name: Generate Weights
-        run: |
-          ./scripts/generate-weights.sh 5 2
-          # Show any changes in computed weights
-          git diff
-        if: env.GIT_DIFF
+      # - name: Generate Weights
+      #   run: |
+      #     ./scripts/generate-weights.sh 5 2
+      #     # Show any changes in computed weights
+      #     git diff
+      #   if: env.GIT_DIFF
 
   # Build and test joystream-node with all runtime profiles
   runtime_profiles:
@@ -59,6 +59,7 @@ jobs:
         with:
           PREFIX_FILTER: |
             node
+            runtime
             runtime-modules
             utils/chain-spec-builder
           SUFFIX_FILTER: |

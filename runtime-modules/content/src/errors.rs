@@ -1,9 +1,10 @@
 use crate::*;
 use frame_support::decl_error;
+use sp_std::convert::TryInto;
 
 decl_error! {
     /// Content directory errors
-    pub enum Error for Module<T: Trait> {
+    pub enum Error for Module<T: Config> {
         /// Feature Not Implemented
         FeatureNotImplemented,
 

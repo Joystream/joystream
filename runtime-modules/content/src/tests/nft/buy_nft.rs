@@ -426,16 +426,17 @@ fn buy_now_ok_with_nft_owner_curator_channel_correctly_credited() {
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
         let platform_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE);
 
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, 100u64);
         assert_ok!(Content::buy_nft(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             SECOND_MEMBER_ID,
-            DEFAULT_NFT_PRICE,
+            100u64,
         ));
 
         assert_eq!(
             channel_reward_account_balance(1u64),
-            // balance_pre - platform fee (since channel owner it retains royalty)
+            // Default price - platform fee (since channel owner it retains royalty)
             DEFAULT_NFT_PRICE - platform_fee,
         )
     })

@@ -1,7 +1,7 @@
 {
   "name": "@joystream/distributor-cli",
   "description": "Joystream distributor node CLI",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "author": "Joystream contributors",
   "bin": {
     "joystream-distributor": "./bin/run"
@@ -10,7 +10,7 @@
   "dependencies": {
     "@apollo/client": "^3.2.5",
     "@elastic/ecs-winston-format": "^1.1.0",
-    "@joystream/metadata-protobuf": "^2.1.0",
+    "@joystream/metadata-protobuf": "^2.2.0",
     "@joystream/types": "^0.19.3",
     "@oclif/command": "^1",
     "@oclif/config": "^1",
@@ -36,7 +36,6 @@
     "node-cleanup": "^2.1.2",
     "proper-lockfile": "^4.1.2",
     "queue": "^6.0.2",
-    "read-chunk": "^3.2.0",
     "send": "^0.17.1",
     "tslib": "^1",
     "winston": "^3.3.3",

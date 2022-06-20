@@ -1,5 +1,5 @@
 use crate::{
-    ApplicationId, BalanceOf, Instance, Opening, OpeningId, OpeningType, StakePolicy, Trait,
+    ApplicationId, BalanceOf, Config, Instance, Opening, OpeningId, OpeningType, StakePolicy,
     Worker, WorkerId,
 };
 
@@ -17,7 +17,7 @@ use staking_handler::StakingHandler;
 use crate::types::{ApplicationInfo, StakeParameters};
 
 // Check opening: verifies origin and opening type compatibility.
-pub(crate) fn ensure_origin_for_opening_type<T: Trait<I>, I: Instance>(
+pub(crate) fn ensure_origin_for_opening_type<T: Config<I>, I: Instance>(
     origin: T::Origin,
     opening_type: OpeningType,
 ) -> DispatchResult {
@@ -33,7 +33,7 @@ pub(crate) fn ensure_origin_for_opening_type<T: Trait<I>, I: Instance>(
     }
 }
 
-pub(crate) fn ensure_stake_for_opening_type<T: Trait<I>, I: Instance>(
+pub(crate) fn ensure_stake_for_opening_type<T: Config<I>, I: Instance>(
     origin: T::Origin,
     opening_type: OpeningType,
 ) -> DispatchResult {
@@ -43,7 +43,8 @@ pub(crate) fn ensure_stake_for_opening_type<T: Trait<I>, I: Instance>(
         // just to make this future proof for any change in
         // `ensure_origin_for_opening_type`
         ensure_origin_is_active_leader::<T, I>(origin)?;
-        let lead = crate::Module::<T, I>::worker_by_id(ensure_lead_is_set::<T, I>()?);
+        let lead = crate::Module::<T, I>::worker_by_id(ensure_lead_is_set::<T, I>()?)
+            .ok_or(Error::<T, I>::WorkerDoesNotExist)?;
 
         let new_stake = T::LeaderOpeningStake::get()
             + T::StakingHandler::current_stake(&lead.staking_account_id);
@@ -58,7 +59,7 @@ pub(crate) fn ensure_stake_for_opening_type<T: Trait<I>, I: Instance>(
 }
 
 // Check opening: returns the opening by id if it is exists.
-pub(crate) fn ensure_opening_exists<T: Trait<I>, I: Instance>(
+pub(crate) fn ensure_opening_exists<T: Config<I>, I: Instance>(
     opening_id: OpeningId,
 ) -> Result<Opening<T::BlockNumber, BalanceOf<T>>, Error<T, I>> {
     ensure!(
@@ -72,15 +73,11 @@ pub(crate) fn ensure_opening_exists<T: Trait<I>, I: Instance>(
 }
 
 // Check application: returns applicationId and application tuple if exists.
-pub(crate) fn ensure_application_exists<T: Trait<I>, I: Instance>(
+pub(crate) fn ensure_application_exists<T: Config<I>, I: Instance>(
     application_id: &ApplicationId,
 ) -> Result<ApplicationInfo<T, I>, Error<T, I>> {
-    ensure!(
-        <crate::ApplicationById::<T, I>>::contains_key(application_id),
-        Error::<T, I>::WorkerApplicationDoesNotExist
-    );
-
-    let application = <crate::ApplicationById<T, I>>::get(application_id);
+    let application = <crate::ApplicationById<T, I>>::get(application_id)
+        .ok_or(Error::<T, I>::WorkerApplicationDoesNotExist)?;
 
     Ok(ApplicationInfo {
         application_id: *application_id,
@@ -90,7 +87,7 @@ pub(crate) fn ensure_application_exists<T: Trait<I>, I: Instance>(
 }
 
 // Check application: returns applicationId and application tuple if exists.
-pub(crate) fn ensure_succesful_applications_exist<T: Trait<I>, I: Instance>(
+pub(crate) fn ensure_succesful_applications_exist<T: Config<I>, I: Instance>(
     successful_application_ids: &BTreeSet<ApplicationId>,
 ) -> Result<Vec<ApplicationInfo<T, I>>, Error<T, I>> {
     // Check for non-empty set of application ids.
@@ -124,7 +121,7 @@ pub(crate) fn ensure_succesful_applications_exist<T: Trait<I>, I: Instance>(
 }
 
 // Check leader: ensures that group leader was hired.
-pub(crate) fn ensure_lead_is_set<T: Trait<I>, I: Instance>() -> Result<WorkerId<T>, Error<T, I>> {
+pub(crate) fn ensure_lead_is_set<T: Config<I>, I: Instance>() -> Result<WorkerId<T>, Error<T, I>> {
     let leader_worker_id = <crate::CurrentLead<T, I>>::get();
 
     if let Some(leader_worker_id) = leader_worker_id {
@@ -135,12 +132,13 @@ pub(crate) fn ensure_lead_is_set<T: Trait<I>, I: Instance>() -> Result<WorkerId<
 }
 
 // Check leader: verifies that provided lead account id belongs to the current working group leader.
-pub(crate) fn ensure_is_lead_account<T: Trait<I>, I: Instance>(
+pub(crate) fn ensure_is_lead_account<T: Config<I>, I: Instance>(
     lead_account_id: T::AccountId,
 ) -> DispatchResult {
     let leader_worker_id = ensure_lead_is_set::<T, I>()?;
 
-    let leader = <crate::WorkerById<T, I>>::get(leader_worker_id);
+    let leader =
+        <crate::WorkerById<T, I>>::get(leader_worker_id).ok_or(Error::<T, I>::IsNotLeadAccount)?;
 
     if leader.role_account_id != lead_account_id {
         return Err(Error::<T, I>::IsNotLeadAccount.into());
@@ -150,7 +148,7 @@ pub(crate) fn ensure_is_lead_account<T: Trait<I>, I: Instance>(
 }
 
 // Check leader: ensures origin is signed by the leader.
-pub(crate) fn ensure_origin_is_active_leader<T: Trait<I>, I: Instance>(
+pub(crate) fn ensure_origin_is_active_leader<T: Config<I>, I: Instance>(
     origin: T::Origin,
 ) -> DispatchResult {
     // Ensure is signed
@@ -160,21 +158,14 @@ pub(crate) fn ensure_origin_is_active_leader<T: Trait<I>, I: Instance>(
 }
 
 // Check worker: ensures the worker was already created.
-pub(crate) fn ensure_worker_exists<T: Trait<I>, I: Instance>(
+pub(crate) fn ensure_worker_exists<T: Config<I>, I: Instance>(
     worker_id: &WorkerId<T>,
 ) -> Result<Worker<T>, Error<T, I>> {
-    ensure!(
-        <crate::WorkerById::<T, I>>::contains_key(worker_id),
-        Error::<T, I>::WorkerDoesNotExist
-    );
-
-    let worker = <crate::WorkerById<T, I>>::get(worker_id);
-
-    Ok(worker)
+    <crate::WorkerById<T, I>>::get(worker_id).ok_or(Error::<T, I>::WorkerDoesNotExist)
 }
 
 // Check worker: ensures the origin contains signed account that belongs to existing worker.
-pub(crate) fn ensure_worker_signed<T: Trait<I>, I: Instance>(
+pub(crate) fn ensure_worker_signed<T: Config<I>, I: Instance>(
     origin: T::Origin,
     worker_id: &WorkerId<T>,
 ) -> Result<Worker<T>, DispatchError> {
@@ -194,7 +185,7 @@ pub(crate) fn ensure_worker_signed<T: Trait<I>, I: Instance>(
 }
 
 // Check worker: verifies proper origin for the worker operation. Returns whether the origin is sudo.
-pub(crate) fn ensure_origin_for_worker_operation<T: Trait<I>, I: Instance>(
+pub(crate) fn ensure_origin_for_worker_operation<T: Config<I>, I: Instance>(
     origin: T::Origin,
     worker_id: WorkerId<T>,
 ) -> Result<bool, DispatchError> {
@@ -212,7 +203,7 @@ pub(crate) fn ensure_origin_for_worker_operation<T: Trait<I>, I: Instance>(
 }
 
 // Check opening: verifies stake policy for the opening.
-pub(crate) fn ensure_valid_stake_policy<T: Trait<I>, I: Instance>(
+pub(crate) fn ensure_valid_stake_policy<T: Config<I>, I: Instance>(
     stake_policy: &StakePolicy<T::BlockNumber, BalanceOf<T>>,
 ) -> Result<(), DispatchError> {
     ensure!(
@@ -229,7 +220,7 @@ pub(crate) fn ensure_valid_stake_policy<T: Trait<I>, I: Instance>(
 }
 
 // Check opening: verifies reward per block for the opening.
-pub(crate) fn ensure_valid_reward_per_block<T: Trait<I>, I: Instance>(
+pub(crate) fn ensure_valid_reward_per_block<T: Config<I>, I: Instance>(
     reward_per_block: &Option<BalanceOf<T>>,
 ) -> Result<(), DispatchError> {
     if let Some(reward_per_block) = reward_per_block {
@@ -243,7 +234,7 @@ pub(crate) fn ensure_valid_reward_per_block<T: Trait<I>, I: Instance>(
 }
 
 // Check application: verifies that proposed stake is enough for the opening.
-pub(crate) fn ensure_application_stake_match_opening<T: Trait<I>, I: Instance>(
+pub(crate) fn ensure_application_stake_match_opening<T: Config<I>, I: Instance>(
     opening: &Opening<T::BlockNumber, BalanceOf<T>>,
     stake_parameters: &StakeParameters<T::AccountId, BalanceOf<T>>,
 ) -> DispatchResult {
@@ -256,7 +247,7 @@ pub(crate) fn ensure_application_stake_match_opening<T: Trait<I>, I: Instance>(
 }
 
 // Check worker: verifies that worker has recurring rewards.
-pub(crate) fn ensure_worker_has_recurring_reward<T: Trait<I>, I: Instance>(
+pub(crate) fn ensure_worker_has_recurring_reward<T: Config<I>, I: Instance>(
     worker: &Worker<T>,
 ) -> DispatchResult {
     worker
@@ -265,7 +256,7 @@ pub(crate) fn ensure_worker_has_recurring_reward<T: Trait<I>, I: Instance>(
 }
 
 // Validates storage text.
-pub(crate) fn ensure_worker_role_storage_text_is_valid<T: Trait<I>, I: Instance>(
+pub(crate) fn ensure_worker_role_storage_text_is_valid<T: Config<I>, I: Instance>(
     text: &[u8],
 ) -> DispatchResult {
     ensure!(

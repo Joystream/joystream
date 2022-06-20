@@ -2,6 +2,7 @@ import { DistributorNodeConfiguration as ConfigJson } from './generated/ConfigJs
 import { DeepReadonly } from './common'
 
 export type Config = Omit<ConfigJson, 'limits'> & {
+  version: string
   limits: Omit<ConfigJson['limits'], 'storage' | 'maxCachedItemSize'> & {
     storage: number
     maxCachedItemSize?: number

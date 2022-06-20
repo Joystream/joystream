@@ -1,9 +1,10 @@
+#![allow(clippy::type_complexity)]
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use frame_benchmarking::{account, benchmarks_instance, Zero};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::EventRecord;
-use frame_system::Module as System;
+use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use membership::Module as Membership;
 use sp_runtime::traits::{Bounded, One};
@@ -21,15 +22,15 @@ pub trait OptionCreator<AccountId, MemberId> {
     fn create_option(account_id: AccountId, member_id: MemberId);
 }
 
-fn assert_last_event<T: Trait<I>, I: Instance>(generic_event: <T as Trait<I>>::Event) {
+fn assert_last_event<T: Config<I>, I: Instance>(generic_event: <T as Config<I>>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1];
     assert_eq!(event, &system_event);
 }
 
-fn start_voting_cycle<T: Trait<I>, I: Instance>(winning_target_count: u32) {
+fn start_voting_cycle<T: Config<I>, I: Instance>(winning_target_count: u32) {
     Referendum::<T, I>::force_start(winning_target_count.into(), 0);
     assert_eq!(
         Stage::<T, I>::get(),
@@ -42,9 +43,9 @@ fn start_voting_cycle<T: Trait<I>, I: Instance>(winning_target_count: u32) {
     );
 }
 
-fn funded_account<T: Trait<I>, I: Instance>(name: &'static str, id: u32) -> T::AccountId {
+fn funded_account<T: Config<I>, I: Instance>(name: &'static str, id: u32) -> T::AccountId {
     let account_id = account::<T::AccountId>(name, id, SEED);
-    balances::Module::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
+    balances::Pallet::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
     account_id
 }
@@ -65,10 +66,10 @@ struct MultipleVotes<T: Trait<I>, I: Instance> {
 }
 
 fn make_multiple_votes_for_multiple_options<
-    T: Trait<I>
-        + membership::Trait
+    T: Config<I>
+        + membership::Config
         + OptionCreator<
-            <T as frame_system::Trait>::AccountId,
+            <T as frame_system::Config>::AccountId,
             <T as common::membership::MembershipTypes>::MemberId,
         >,
     I: Instance,
@@ -110,10 +111,10 @@ fn make_multiple_votes_for_multiple_options<
 }
 
 fn vote_for<
-    T: Trait<I>
-        + membership::Trait
+    T: Config<I>
+        + membership::Config
         + OptionCreator<
-            <T as frame_system::Trait>::AccountId,
+            <T as frame_system::Config>::AccountId,
             <T as common::membership::MembershipTypes>::MemberId,
         >,
     I: Instance,
@@ -161,10 +162,10 @@ fn vote_for<
 }
 
 fn create_account_and_vote<
-    T: Trait<I>
-        + membership::Trait
+    T: Config<I>
+        + membership::Config
         + OptionCreator<
-            <T as frame_system::Trait>::AccountId,
+            <T as frame_system::Config>::AccountId,
             <T as common::membership::MembershipTypes>::MemberId,
         >,
     I: Instance,
@@ -181,7 +182,7 @@ fn create_account_and_vote<
     vote_for::<T, I>(name, voter_id, member_option, cycle_id, extra_stake)
 }
 
-fn move_to_block<T: Trait<I>, I: Instance>(
+fn move_to_block<T: Config<I>, I: Instance>(
     target_block: T::BlockNumber,
     target_stage: ReferendumStage<T::BlockNumber, T::MemberId, T::VotePower>,
 ) {
@@ -199,7 +200,7 @@ fn move_to_block<T: Trait<I>, I: Instance>(
     assert_eq!(Stage::<T, I>::get(), target_stage, "Stage not reached");
 }
 
-fn move_to_block_before_initialize<T: Trait<I>, I: Instance>(
+fn move_to_block_before_initialize<T: Config<I>, I: Instance>(
     target_block: T::BlockNumber,
     target_stage: ReferendumStage<T::BlockNumber, T::MemberId, T::VotePower>,
 ) {
@@ -228,7 +229,7 @@ fn get_byte(num: u32, byte_number: u8) -> u8 {
 
 // Method to generate a distintic valid handle
 // for a membership. For each index.
-fn handle_from_id<T: Trait<I> + membership::Trait, I: Instance>(id: u32) -> Vec<u8> {
+fn handle_from_id<T: Config<I> + membership::Config, I: Instance>(id: u32) -> Vec<u8> {
     let mut handle = vec![];
 
     for i in 0..4 {
@@ -238,7 +239,7 @@ fn handle_from_id<T: Trait<I> + membership::Trait, I: Instance>(id: u32) -> Vec<
     handle
 }
 
-fn member_funded_account<T: Trait<I> + membership::Trait, I: Instance>(
+fn member_funded_account<T: Config<I> + membership::Config, I: Instance>(
     id: u32,
 ) -> (T::AccountId, T::MemberId) {
     let account_id = funded_account::<T, I>("account", id);
@@ -257,7 +258,7 @@ fn member_funded_account<T: Trait<I> + membership::Trait, I: Instance>(
 
     Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
-    balances::Module::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
+    balances::Pallet::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
     Membership::<T>::add_staking_account_candidate(
         RawOrigin::Signed(account_id.clone()).into(),
@@ -285,11 +286,11 @@ struct MultipleVotesWithExtraVote<T: Trait<I>, I: Instance> {
 }
 
 fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
-    T: Trait<I>
+    T: Config<I>
         + OptionCreator<
-            <T as frame_system::Trait>::AccountId,
+            <T as frame_system::Config>::AccountId,
             <T as common::membership::MembershipTypes>::MemberId,
-        > + membership::Trait,
+        > + membership::Config,
     I: Instance,
 >(
     target_winners: u32,
@@ -369,11 +370,10 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
 
 benchmarks_instance! {
     where_clause {
-        where T: OptionCreator<<T as frame_system::Trait>::AccountId,
+        where T: OptionCreator<<T as frame_system::Config>::AccountId,
         <T as common::membership::MembershipTypes>::MemberId>,
-        T: membership::Trait
+        T: membership::Config
     }
-    _ { }
 
     on_initialize_revealing {
         let i in 0 .. (T::MaxWinnerTargetCount::get() - 1) as u32;
@@ -774,12 +774,12 @@ mod tests {
 
     impl
         OptionCreator<
-            <Runtime as frame_system::Trait>::AccountId,
+            <Runtime as frame_system::Config>::AccountId,
             <Runtime as common::membership::MembershipTypes>::MemberId,
         > for Runtime
     {
         fn create_option(
-            _: <Runtime as frame_system::Trait>::AccountId,
+            _: <Runtime as frame_system::Config>::AccountId,
             _: <Runtime as common::membership::MembershipTypes>::MemberId,
         ) {
         }
@@ -789,7 +789,7 @@ mod tests {
     fn test_vote() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_vote::<Runtime>());
+            assert_ok!(Module::<Runtime>::test_benchmark_vote());
         })
     }
 
@@ -797,7 +797,7 @@ mod tests {
     fn test_reveal_vote_space_for_new_winner() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_reveal_vote_space_for_new_winner::<Runtime>());
+            assert_ok!(Module::<Runtime>::test_benchmark_reveal_vote_space_for_new_winner());
         })
     }
 
@@ -805,7 +805,7 @@ mod tests {
     fn test_reveal_vote_space_not_in_winners() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_reveal_vote_space_not_in_winners::<Runtime>());
+            assert_ok!(Module::<Runtime>::test_benchmark_reveal_vote_space_not_in_winners());
         })
     }
 
@@ -813,7 +813,7 @@ mod tests {
     fn test_reveal_vote_already_existing() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_reveal_vote_already_existing::<Runtime>());
+            assert_ok!(Module::<Runtime>::test_benchmark_reveal_vote_already_existing());
         })
     }
 
@@ -821,9 +821,7 @@ mod tests {
     fn test_reveal_vote_space_replace_last_winner() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_reveal_vote_space_replace_last_winner::<
-                Runtime,
-            >());
+            assert_ok!(Module::<Runtime>::test_benchmark_reveal_vote_space_replace_last_winner());
         })
     }
 
@@ -831,7 +829,7 @@ mod tests {
     fn test_release_vote_stake() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_release_vote_stake::<Runtime>());
+            assert_ok!(Module::<Runtime>::test_benchmark_release_vote_stake());
         })
     }
 
@@ -839,7 +837,7 @@ mod tests {
     fn test_on_initialize_voting() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_on_initialize_voting::<Runtime>());
+            assert_ok!(Module::<Runtime>::test_benchmark_on_initialize_voting());
         })
     }
 
@@ -847,7 +845,7 @@ mod tests {
     fn test_on_initialize_revealing() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_on_initialize_revealing::<Runtime>());
+            assert_ok!(Module::<Runtime>::test_benchmark_on_initialize_revealing());
         })
     }
 }

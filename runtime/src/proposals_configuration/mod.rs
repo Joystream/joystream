@@ -1,6 +1,8 @@
 //! This module defines a set of the parameters for each proposal in the runtime like
 //! _SetValidatorCountProposalParameters_.
 
+#![allow(clippy::field_reassign_with_default)]
+
 use crate::{Balance, BlockNumber, ProposalParameters};
 use frame_support::parameter_types;
 

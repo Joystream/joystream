@@ -17,9 +17,9 @@ use membership::Module as Membership;
 const SEED: u32 = 0;
 const MAX_BYTES: u32 = 16384;
 
-fn assert_last_event<T: Trait<I>, I: Instance>(generic_event: <T as Trait<I>>::Event) {
+fn assert_last_event<T: Config<I>, I: Instance>(generic_event: <T as Config<I>>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1];
     assert_eq!(event, &system_event);
@@ -29,7 +29,7 @@ fn get_byte(num: u32, byte_number: u8) -> u8 {
     ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
-fn add_opening_helper<T: Trait<I>, I: Instance>(
+fn add_opening_helper<T: Config<I>, I: Instance>(
     id: u32,
     add_opening_origin: &T::Origin,
     job_opening_type: &OpeningType,
@@ -58,7 +58,7 @@ fn add_opening_helper<T: Trait<I>, I: Instance>(
     opening_id
 }
 
-fn apply_on_opening_helper<T: Trait<I>, I: Instance>(
+fn apply_on_opening_helper<T: Config<I>, I: Instance>(
     id: u32,
     applicant_id: &T::AccountId,
     member_id: &T::MemberId,
@@ -93,7 +93,11 @@ fn apply_on_opening_helper<T: Trait<I>, I: Instance>(
     application_id
 }
 
+<<<<<<< HEAD
 fn add_opening_and_apply_with_multiple_ids<T: Trait<I> + membership::Trait, I: Instance>(
+=======
+fn add_opening_and_apply_with_multiple_ids<T: Config<I> + membership::Config, I: Instance>(
+>>>>>>> rhodes-substrate-v3-update
     ids: &[u32],
     add_opening_origin: &T::Origin,
     job_opening_type: &OpeningType,
@@ -120,7 +124,7 @@ fn add_opening_and_apply_with_multiple_ids<T: Trait<I> + membership::Trait, I: I
     (opening_id, successful_application_ids, account_ids)
 }
 
-fn add_and_apply_opening<T: Trait<I>, I: Instance>(
+fn add_and_apply_opening<T: Config<I>, I: Instance>(
     id: u32,
     add_opening_origin: &T::Origin,
     applicant_id: &T::AccountId,
@@ -136,7 +140,7 @@ fn add_and_apply_opening<T: Trait<I>, I: Instance>(
 
 // Method to generate a distintic valid handle
 // for a membership. For each index.
-fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
+fn handle_from_id<T: membership::Config>(id: u32) -> Vec<u8> {
     let min_handle_length = 1;
 
     let mut handle = vec![];
@@ -152,7 +156,7 @@ fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
     handle
 }
 
-fn member_funded_account<T: Trait<I> + membership::Trait, I: Instance>(
+fn member_funded_account<T: Config<I> + membership::Config, I: Instance>(
     name: &'static str,
     id: u32,
 ) -> (T::AccountId, T::MemberId) {
@@ -189,7 +193,7 @@ fn member_funded_account<T: Trait<I> + membership::Trait, I: Instance>(
     (account_id, member_id)
 }
 
-fn force_missed_reward<T: Trait<I>, I: Instance>() {
+fn force_missed_reward<T: Config<I>, I: Instance>() {
     let curr_block_number =
         System::<T>::block_number().saturating_add(T::RewardPeriod::get().into());
     System::<T>::set_block_number(curr_block_number);
@@ -197,7 +201,7 @@ fn force_missed_reward<T: Trait<I>, I: Instance>() {
     WorkingGroup::<T, _>::on_initialize(curr_block_number);
 }
 
-pub fn insert_a_worker<T: Trait<I> + membership::Trait, I: Instance>(
+pub fn insert_a_worker<T: Config<I> + membership::Config, I: Instance>(
     job_opening_type: OpeningType,
     id: u32,
     lead_id: Option<T::AccountId>,
@@ -212,7 +216,7 @@ where
     (caller_id, worker_id)
 }
 
-pub fn complete_opening<T: Trait<I> + membership::Trait, I: Instance>(
+pub fn complete_opening<T: Config<I> + membership::Config, I: Instance>(
     job_opening_type: OpeningType,
     id: u32,
     lead_id: Option<T::AccountId>,
@@ -254,10 +258,8 @@ pub fn complete_opening<T: Trait<I> + membership::Trait, I: Instance>(
 
 benchmarks_instance! {
     where_clause {
-        where T: membership::Trait
+        where T: membership::Config
     }
-
-    _ { }
 
     on_initialize_leaving {
         let i in 2 .. T::MaxWorkerNumberLimit::get();
@@ -577,7 +579,7 @@ benchmarks_instance! {
     }
 
     fill_opening_worker {
-        let i in 1 .. T::MaxWorkerNumberLimit::get() - 1;
+        let i in 2 .. T::MaxWorkerNumberLimit::get();
         let (lead_id, lead_worker_id) = insert_a_worker::<T, I>(
             OpeningType::Leader,
             0,
@@ -586,7 +588,11 @@ benchmarks_instance! {
 
         let (opening_id, successful_application_ids, _) =
             add_opening_and_apply_with_multiple_ids::<T, I>(
+<<<<<<< HEAD
                 &(1..=i).collect::<Vec<_>>(),
+=======
+                &(1..i).collect::<Vec<_>>(),
+>>>>>>> rhodes-substrate-v3-update
                 &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
                 &OpeningType::Regular
             );

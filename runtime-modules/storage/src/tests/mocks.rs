@@ -44,7 +44,7 @@ parameter_types! {
     pub const ExistentialDeposit: u32 = 1;
 }
 
-impl balances::Trait for Test {
+impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
     type Event = TestEvent;
@@ -92,7 +92,8 @@ pub const DEFAULT_STORAGE_BUCKET_SIZE_LIMIT: u64 = 100;
 pub const DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT: u64 = 10;
 pub const DEFAULT_STORAGE_BUCKETS_NUMBER: u64 = 3;
 pub const ONE_MB: u64 = 1_048_576;
-impl crate::Trait for Test {
+
+impl crate::Config for Test {
     type Event = TestEvent;
     type DataObjectId = u64;
     type StorageBucketId = u64;
@@ -131,7 +132,7 @@ impl common::MembershipTypes for Test {
     type ActorId = u64;
 }
 
-impl pallet_timestamp::Trait for Test {
+impl pallet_timestamp::Config for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -146,7 +147,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
 }
 
-impl frame_system::Trait for Test {
+impl frame_system::Config for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -526,7 +527,7 @@ pub struct DistributionWG;
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
     fn ensure_worker_origin(
-        origin: <Test as frame_system::Trait>::Origin,
+        origin: <Test as frame_system::Config>::Origin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
@@ -543,7 +544,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
         }
     }
 
-    fn ensure_leader_origin(origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
         ensure!(
             account_id == STORAGE_WG_LEADER_ACCOUNT_ID,
@@ -567,7 +568,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
     }
 
     fn is_worker_account_id(
-        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _account_id: &<Test as frame_system::Config>::AccountId,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
         unimplemented!()
@@ -597,7 +598,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
     fn ensure_worker_origin(
-        origin: <Test as frame_system::Trait>::Origin,
+        origin: <Test as frame_system::Config>::Origin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
@@ -615,7 +616,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
         }
     }
 
-    fn ensure_leader_origin(origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
 
         ensure!(
@@ -640,7 +641,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
     }
 
     fn is_worker_account_id(
-        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _account_id: &<Test as frame_system::Config>::AccountId,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
         unimplemented!()

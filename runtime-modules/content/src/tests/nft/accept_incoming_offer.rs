@@ -1,8 +1,9 @@
 #![cfg(test)]
+use crate::tests::curators;
 use crate::tests::fixtures::{
     channel_reward_account_balance, create_default_member_owned_channel_with_video,
-    create_initial_storage_buckets_helper, increase_account_balance_helper, ContentTest,
-    UpdateChannelFixture,
+    create_initial_storage_buckets_helper, ContentTest,
+    UpdateChannelFixture, CreateChannelFixture, CreateVideoFixture
 };
 use crate::tests::mock::*;
 use crate::*;
@@ -182,21 +183,20 @@ fn accept_incoming_offer_no_incoming_offers() {
 
 #[test]
 fn accept_incoming_offer_with_nft_owner_being_a_member_channel() {
+    let video_id = 1u64;
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
-
-        let video_id = NextVideoId::<Test>::get();
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
-
-        UpdateChannelFixture::default()
+        // channel with no reward account
+        CreateChannelFixture::default()
+            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call();
+        CreateVideoFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
             .call_and_assert(Ok(()));
 
-        // Issue nft
         assert_ok!(Content::issue_nft(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
@@ -204,21 +204,28 @@ fn accept_incoming_offer_with_nft_owner_being_a_member_channel() {
             NftIssuanceParameters::<Test>::default(),
         ));
 
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
+
         // Offer nft
         assert_ok!(Content::offer_nft(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             SECOND_MEMBER_ID,
-            None,
+            Some(100u64), // price
         ));
 
         // Make an attempt to accept incoming nft offer if sender is owner and reward account is not set
-        let accept_incoming_offer_result =
-            Content::accept_incoming_offer(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
+        assert_ok!(Content::accept_incoming_offer(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            video_id
+        ));
 
-        // Failure checked
-        assert_ok!(accept_incoming_offer_result,);
+        // check owner balance increased by net profit
+        assert_eq!(
+            Balances::<Test>::usable_balance(DEFAULT_MEMBER_ACCOUNT_ID),
+            100u64 - (Content::platform_fee_percentage() * 100u64)
+        );
     })
 }
 
@@ -229,6 +236,7 @@ fn accept_incoming_offer_reward_account_ok_with_curator_owner_channel_account_co
         let channel_id = NextChannelId::<Test>::get();
         ContentTest::with_curator_channel().with_video_nft().setup();
 
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
         // Offer nft
         assert_ok!(Content::offer_nft(
             Origin::signed(LEAD_ACCOUNT_ID),

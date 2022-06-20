@@ -3,7 +3,7 @@
 //!
 //! The Blog module provides functionality for handling blogs
 //!
-//! - [`timestamp::Trait`](./trait.Trait.html)
+//! - [`timestamp::Config`](./trait.Config.html)
 //! - [`Call`](./enum.Call.html)
 //! - [`Module`](./struct.Module.html)
 //!
@@ -34,6 +34,7 @@
 //! - [delete_replies](./struct.Module.html#method.delete_replies)
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
 
 use codec::{Codec, Decode, Encode};
 use common::membership::MemberOriginValidator;
@@ -42,14 +43,13 @@ pub use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{Currency, ExistenceRequirement};
 use frame_support::weights::Weight;
 use frame_support::{
-    decl_event, decl_module, decl_storage, ensure, traits::Get, Parameter, StorageDoubleMap,
+    decl_event, decl_module, decl_storage, ensure, traits::Get, PalletId, Parameter,
+    StorageDoubleMap,
 };
+use scale_info::TypeInfo;
 use sp_arithmetic::traits::{BaseArithmetic, One};
+use sp_runtime::traits::{AccountIdConversion, Hash, MaybeSerialize, Member, Saturating};
 use sp_runtime::SaturatedConversion;
-use sp_runtime::{
-    traits::{AccountIdConversion, Hash, MaybeSerialize, Member, Saturating},
-    ModuleId,
-};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::prelude::*;
 
@@ -68,9 +68,9 @@ pub type PostId = u64;
 pub type ParticipantId<T> = common::MemberId<T>;
 
 /// Balance alias for `balances` module.
-pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
-type Balances<T> = balances::Module<T>;
+type Balances<T> = balances::Pallet<T>;
 
 /// blog WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -85,11 +85,11 @@ pub trait WeightInfo {
     fn delete_replies(i: u32) -> Weight;
 }
 
-type BlogWeightInfo<T, I> = <T as Trait<I>>::WeightInfo;
+type BlogWeightInfo<T, I> = <T as Config<I>>::WeightInfo;
 
 // The pallet's configuration trait.
-pub trait Trait<I: Instance = DefaultInstance>:
-    frame_system::Trait + common::membership::MembershipTypes + balances::Trait
+pub trait Config<I: Instance = DefaultInstance>:
+    frame_system::Config + common::membership::MembershipTypes + balances::Config
 {
     /// Origin from which participant must come.
     type ParticipantEnsureOrigin: MemberOriginValidator<
@@ -99,7 +99,7 @@ pub trait Trait<I: Instance = DefaultInstance>:
     >;
 
     /// The overarching event type.
-    type Event: From<Event<Self, I>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self, I>> + Into<<Self as frame_system::Config>::Event>;
 
     /// The maximum number of posts in a blog.
     type PostsMaxNumber: Get<MaxNumber>;
@@ -123,15 +123,16 @@ pub trait Trait<I: Instance = DefaultInstance>:
     type ReplyDeposit: Get<Self::Balance>;
 
     /// The forum module Id, used to derive the account Id to hold the thread bounty
-    type ModuleId: Get<ModuleId>;
+    type ModuleId: Get<PalletId>;
 
     /// Time a reply can live until it can be deleted by anyone
     type ReplyLifetime: Get<Self::BlockNumber>;
 }
 
 /// Type, representing blog related post structure
-#[derive(Encode, Decode, Clone)]
-pub struct Post<T: Trait<I>, I: Instance> {
+#[derive(Encode, Decode, Clone, TypeInfo)]
+#[scale_info(skip_type_params(T, I))]
+pub struct Post<T: Config<I>, I: Instance> {
     /// Locking status
     locked: bool,
     title_hash: T::Hash,
@@ -143,7 +144,7 @@ pub struct Post<T: Trait<I>, I: Instance> {
 // Note: we derive it by hand because the derive isn't working because of a Rust problem
 // where the generic parameters need to comply with the bounds instead of the associated traits
 // see: https://github.com/rust-lang/rust/issues/26925
-impl<T: Trait<I>, I: Instance> sp_std::fmt::Debug for Post<T, I> {
+impl<T: Config<I>, I: Instance> sp_std::fmt::Debug for Post<T, I> {
     fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
         f.debug_struct("Post")
             .field("locked", &self.locked)
@@ -157,7 +158,7 @@ impl<T: Trait<I>, I: Instance> sp_std::fmt::Debug for Post<T, I> {
 // Note: we derive it by hand because the derive isn't working because of a Rust problem
 // where the generic parameters need to comply with the bounds instead of the associated traits
 // see: https://github.com/rust-lang/rust/issues/26925
-impl<T: Trait<I>, I: Instance> PartialEq for Post<T, I> {
+impl<T: Config<I>, I: Instance> PartialEq for Post<T, I> {
     fn eq(&self, other: &Post<T, I>) -> bool {
         self.locked == other.locked
             && self.title_hash == other.title_hash
@@ -170,7 +171,7 @@ impl<T: Trait<I>, I: Instance> PartialEq for Post<T, I> {
 // Note: we derive it by hand because the derive isn't working because of a Rust problem
 // where the generic parameters need to comply with the bounds instead of the associated traits
 // see: https://github.com/rust-lang/rust/issues/26925
-impl<T: Trait<I>, I: Instance> Default for Post<T, I> {
+impl<T: Config<I>, I: Instance> Default for Post<T, I> {
     fn default() -> Self {
         Post {
             locked: Default::default(),
@@ -181,7 +182,7 @@ impl<T: Trait<I>, I: Instance> Default for Post<T, I> {
     }
 }
 
-impl<T: Trait<I>, I: Instance> Post<T, I> {
+impl<T: Config<I>, I: Instance> Post<T, I> {
     /// Create a new post with given title and body
     pub fn new(title: &[u8], body: &[u8]) -> Self {
         Self {
@@ -231,7 +232,7 @@ impl<T: Trait<I>, I: Instance> Post<T, I> {
 }
 
 /// Enum variant, representing either reply or post id
-#[derive(Encode, Decode, Clone, PartialEq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, TypeInfo)]
 pub enum ParentId<ReplyId, PostId: Default> {
     Reply(ReplyId),
     Post(PostId),
@@ -245,8 +246,9 @@ impl<ReplyId, PostId: Default> Default for ParentId<ReplyId, PostId> {
 }
 
 /// Type, representing either root post reply or direct reply to reply
-#[derive(Encode, Decode, Clone)]
-pub struct Reply<T: Trait<I>, I: Instance> {
+#[derive(Encode, Decode, Clone, TypeInfo)]
+#[scale_info(skip_type_params(T, I))]
+pub struct Reply<T: Config<I>, I: Instance> {
     /// Reply text hash
     text_hash: T::Hash,
     /// Participant id, associated with a reply owner
@@ -262,7 +264,7 @@ pub struct Reply<T: Trait<I>, I: Instance> {
 // Note: we derive it by hand because the derive isn't working because of a Rust problem
 // where the generic parameters need to comply with the bounds instead of the associated traits
 // see: https://github.com/rust-lang/rust/issues/26925
-impl<T: Trait<I>, I: Instance> sp_std::fmt::Debug for Reply<T, I> {
+impl<T: Config<I>, I: Instance> sp_std::fmt::Debug for Reply<T, I> {
     fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
         f.debug_struct("Reply")
             .field("text_hash", &self.text_hash)
@@ -278,7 +280,7 @@ impl<T: Trait<I>, I: Instance> sp_std::fmt::Debug for Reply<T, I> {
 // Note: we derive it by hand because the derive isn't working because of a Rust problem
 // where the generic parameters need to comply with the bounds instead of the associated traits
 // see: https://github.com/rust-lang/rust/issues/26925
-impl<T: Trait<I>, I: Instance> PartialEq for Reply<T, I> {
+impl<T: Config<I>, I: Instance> PartialEq for Reply<T, I> {
     fn eq(&self, other: &Reply<T, I>) -> bool {
         self.text_hash == other.text_hash
             && self.owner == other.owner
@@ -292,7 +294,7 @@ impl<T: Trait<I>, I: Instance> PartialEq for Reply<T, I> {
 // Note: we derive it by hand because the derive isn't working because of a Rust problem
 // where the generic parameters need to comply with the bounds instead of the associated traits
 // see: https://github.com/rust-lang/rust/issues/26925
-impl<T: Trait<I>, I: Instance> Default for Reply<T, I> {
+impl<T: Config<I>, I: Instance> Default for Reply<T, I> {
     fn default() -> Self {
         Reply {
             text_hash: Default::default(),
@@ -304,7 +306,7 @@ impl<T: Trait<I>, I: Instance> Default for Reply<T, I> {
     }
 }
 
-impl<T: Trait<I>, I: Instance> Reply<T, I> {
+impl<T: Config<I>, I: Instance> Reply<T, I> {
     /// Create new reply with given text and owner id
     fn new(
         text: Vec<u8>,
@@ -317,7 +319,7 @@ impl<T: Trait<I>, I: Instance> Reply<T, I> {
             owner,
             parent_id,
             cleanup_pay_off,
-            last_edited: frame_system::Module::<T>::block_number(),
+            last_edited: frame_system::Pallet::<T>::block_number(),
         }
     }
 
@@ -329,12 +331,12 @@ impl<T: Trait<I>, I: Instance> Reply<T, I> {
     /// Update reply`s text
     fn update(&mut self, new_text: Vec<u8>) {
         self.text_hash = T::Hashing::hash(&new_text);
-        self.last_edited = frame_system::Module::<T>::block_number()
+        self.last_edited = frame_system::Pallet::<T>::block_number()
     }
 }
 
 /// Represents a single reply that will be deleted by `delete_replies`
-#[derive(Encode, Decode, Clone, Debug, Default, PartialEq)]
+#[derive(Encode, Decode, Clone, Debug, Default, PartialEq, TypeInfo)]
 pub struct ReplyToDelete<ReplyId> {
     /// Id of the post corresponding to the reply that will be deleted
     post_id: PostId,
@@ -346,7 +348,7 @@ pub struct ReplyToDelete<ReplyId> {
 
 // Blog`s pallet storage items.
 decl_storage! {
-    trait Store for Module<T: Trait<I>, I: Instance=DefaultInstance> as BlogModule {
+    trait Store for Module<T: Config<I>, I: Instance=DefaultInstance> as BlogModule {
 
         /// Maps, representing id => item relationship for blogs, posts and replies related structures
 
@@ -364,7 +366,7 @@ decl_storage! {
 
 // Blog`s pallet dispatchable functions.
 decl_module! {
-    pub struct Module<T: Trait<I>, I: Instance=DefaultInstance> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config<I>, I: Instance=DefaultInstance> for enum Call where origin: T::Origin {
 
         /// Setup events
         fn deposit_event() = default;
@@ -680,7 +682,7 @@ decl_module! {
                 let reply = Self::ensure_reply_exists(post_id, reply_id)?;
 
                 // Ensure reply -> owner relation exists if post lifetime hasn't ran out
-                if (frame_system::Module::<T>::block_number().saturating_sub(reply.last_edited)) <
+                if (frame_system::Pallet::<T>::block_number().saturating_sub(reply.last_edited)) <
                     T::ReplyLifetime::get()
                 {
                     Self::ensure_reply_ownership(&reply, &participant_id)?;
@@ -723,9 +725,9 @@ decl_module! {
     }
 }
 
-impl<T: Trait<I>, I: Instance> Module<T, I> {
+impl<T: Config<I>, I: Instance> Module<T, I> {
     fn get_treasury_account(post_id: PostId) -> T::AccountId {
-        T::ModuleId::get().into_sub_account(post_id)
+        T::ModuleId::get().into_sub_account_truncating(post_id)
     }
 
     fn pay_off(post_id: PostId, amount: BalanceOf<T>, account_id: &T::AccountId) -> DispatchResult {
@@ -839,7 +841,7 @@ decl_event!(
     where
         ParticipantId = ParticipantId<T>,
         PostId = PostId,
-        ReplyId = <T as Trait<I>>::ReplyId,
+        ReplyId = <T as Config<I>>::ReplyId,
         Title = Vec<u8>,
         Text = Vec<u8>,
         UpdatedTitle = Option<Vec<u8>>,

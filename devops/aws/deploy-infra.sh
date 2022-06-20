@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 
@@ -28,7 +28,7 @@ echo -e "\n\n=========== Deploying main.yml ==========="
 aws cloudformation deploy \
   --region $REGION \
   --profile $CLI_PROFILE \
-  --stack-name $NEW_STACK_NAME \
+  --stack-name $STACK_NAME \
   --template-file cloudformation/infrastructure.yml \
   --no-fail-on-empty-changeset \
   --capabilities CAPABILITY_NAMED_IAM \
@@ -48,7 +48,7 @@ if [ $? -eq 0 ]; then
   # Install additional Ansible roles from requirements
   ansible-galaxy install -r requirements.yml
 
-  ASG=$(get_aws_export $NEW_STACK_NAME "AutoScalingGroup")
+  ASG=$(get_aws_export $STACK_NAME "AutoScalingGroup")
 
   VALIDATORS=""
 
@@ -61,11 +61,11 @@ if [ $? -eq 0 ]; then
     VALIDATORS+="$IP\n"
   done
 
-  RPC_NODES=$(get_aws_export $NEW_STACK_NAME "RPCPublicIp")
+  RPC_NODES=$(get_aws_export $STACK_NAME "RPCPublicIp")
 
-  BUILD_SERVER=$(get_aws_export $NEW_STACK_NAME "BuildPublicIp")
+  BUILD_SERVER=$(get_aws_export $STACK_NAME "BuildPublicIp")
 
-  BUILD_INSTANCE_ID=$(get_aws_export $NEW_STACK_NAME "BuildInstanceId")
+  BUILD_INSTANCE_ID=$(get_aws_export $STACK_NAME "BuildInstanceId")
 
   mkdir -p $DATA_PATH
 
@@ -98,5 +98,4 @@ if [ $? -eq 0 ]; then
   echo -e "\n\n=========== Delete Build instance ==========="
   DELETE_RESULT=$(aws ec2 terminate-instances --instance-ids $BUILD_INSTANCE_ID --profile $CLI_PROFILE)
   echo $DELETE_RESULT
-
 fi

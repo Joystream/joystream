@@ -5,7 +5,7 @@ pub use types::*;
 
 use crate::*;
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     pub(crate) fn ensure_has_sufficient_balance_for_bid(
         participant: &T::AccountId,
         bid: BalanceOf<T>,
@@ -115,13 +115,13 @@ impl<T: Trait> Module<T> {
         starts_at: T::BlockNumber,
     ) -> DispatchResult {
         ensure!(
-            starts_at >= <frame_system::Module<T>>::block_number(),
+            starts_at >= <frame_system::Pallet<T>>::block_number(),
             Error::<T>::StartsAtLowerBoundExceeded
         );
 
         ensure!(
             starts_at
-                <= <frame_system::Module<T>>::block_number() + Self::auction_starts_at_max_delta(),
+                <= <frame_system::Pallet<T>>::block_number() + Self::auction_starts_at_max_delta(),
             Error::<T>::StartsAtUpperBoundExceeded
         );
 
@@ -365,12 +365,12 @@ impl<T: Trait> Module<T> {
 
     pub(crate) fn complete_auction(
         nft: Nft<T>,
-        in_channel: T::ChannelId,
+        video: &Video<T>,
         royalty_payment: Option<(Royalty, T::AccountId)>,
         winner_id: T::MemberId,
         amount: BalanceOf<T>,
     ) -> Nft<T> {
-        let account_deposit_into = Self::ensure_owner_account_id(in_channel, &nft).ok();
+        let account_deposit_into = Self::ensure_nft_owner_has_beneficiary_account(video, &nft).ok();
         let account_withdraw_from = ContentTreasury::<T>::module_account_id();
 
         Self::complete_payment(
@@ -384,8 +384,17 @@ impl<T: Trait> Module<T> {
             .with_member_owner(winner_id)
     }
 
-    pub(crate) fn ensure_owner_account_id(
-        channel_id: T::ChannelId,
+    /// NFT owned by:
+    /// - Member: member controller account is used
+    /// - Channel: then if reward account is:
+    ///    - `Some(acc)` -> use `acc` as reward account
+    ///    - `None` -> then if channel owner is:
+    ///      - `Member` -> use member controller account
+    ///      - `CuratorGroup` -> Error
+    /// In order to statically guarantee that `video.in_channel` exists, by leveraging the
+    /// Runtime invariant: `video` exists => `video.in_channel` exists
+    pub(crate) fn ensure_nft_owner_has_beneficiary_account(
+        video: &Video<T>,
         nft: &Nft<T>,
     ) -> Result<T::AccountId, DispatchError> {
         match nft.owner {

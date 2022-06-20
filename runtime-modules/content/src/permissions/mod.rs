@@ -14,7 +14,7 @@ use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 
 /// Enum, representing all possible `Actor`s
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Copy, Debug)]
+#[derive(Encode, Decode, Eq, PartialEq, Clone, Copy, Debug, TypeInfo)]
 pub enum ContentActor<
     CuratorGroupId: Default + Clone + Copy,
     CuratorId: Default + Clone + Copy,
@@ -37,7 +37,7 @@ impl<
 }
 
 /// Model of authentication manager.
-pub trait ContentActorAuthenticator: frame_system::Trait + common::MembershipTypes {
+pub trait ContentActorAuthenticator: frame_system::Config + common::MembershipTypes {
     /// Curator identifier
     type CuratorId: Parameter
         + Member
@@ -86,7 +86,7 @@ pub trait ContentActorAuthenticator: frame_system::Trait + common::MembershipTyp
     fn get_curator_member_id(curator_id: &Self::CuratorId) -> Option<Self::MemberId>;
 }
 
-pub fn ensure_is_valid_curator_id<T: Trait>(curator_id: &T::CuratorId) -> DispatchResult {
+pub fn ensure_is_valid_curator_id<T: Config>(curator_id: &T::CuratorId) -> DispatchResult {
     ensure!(
         T::is_valid_curator_id(curator_id),
         Error::<T>::CuratorIdInvalid
@@ -97,7 +97,7 @@ pub fn ensure_is_valid_curator_id<T: Trait>(curator_id: &T::CuratorId) -> Dispat
 /// AUTHENTICATION PRIMITIVES
 
 // Ensure curator authorization performed succesfully
-pub fn ensure_curator_auth_success<T: Trait>(
+pub fn ensure_curator_auth_success<T: Config>(
     curator_id: &T::CuratorId,
     account_id: &T::AccountId,
 ) -> DispatchResult {
@@ -109,7 +109,7 @@ pub fn ensure_curator_auth_success<T: Trait>(
 }
 
 // Ensure member authorization performed succesfully
-pub fn ensure_member_auth_success<T: Trait>(
+pub fn ensure_member_auth_success<T: Config>(
     account_id: &T::AccountId,
     member_id: &T::MemberId,
 ) -> DispatchResult {
@@ -121,13 +121,13 @@ pub fn ensure_member_auth_success<T: Trait>(
 }
 
 // Ensure lead authorization performed succesfully
-pub fn ensure_lead_auth_success<T: Trait>(account_id: &T::AccountId) -> DispatchResult {
+pub fn ensure_lead_auth_success<T: Config>(account_id: &T::AccountId) -> DispatchResult {
     ensure!(T::is_lead(account_id), Error::<T>::LeadAuthFailed);
     Ok(())
 }
 
 // authenticate actor
-pub fn ensure_actor_auth_success<T: Trait>(
+pub fn ensure_actor_auth_success<T: Config>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
 ) -> DispatchResult {
@@ -143,7 +143,7 @@ pub fn ensure_actor_auth_success<T: Trait>(
 /// CHANNEL CORE FIELDS MANAGEMENT PERMISSIONS
 
 // Ensure sender is authorized to act as channel owner
-pub fn ensure_is_authorized_to_act_as_channel_owner<T: Trait>(
+pub fn ensure_is_authorized_to_act_as_channel_owner<T: Config>(
     sender: &T::AccountId,
     channel_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
 ) -> DispatchResult {
@@ -154,7 +154,7 @@ pub fn ensure_is_authorized_to_act_as_channel_owner<T: Trait>(
 }
 
 /// Ensure actor is authorized to delete channel
-pub fn ensure_actor_authorized_to_delete_channel<T: Trait>(
+pub fn ensure_actor_authorized_to_delete_channel<T: Config>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
@@ -167,7 +167,7 @@ pub fn ensure_actor_authorized_to_delete_channel<T: Trait>(
 }
 
 /// Ensure actor is authorized to perform channel update with given params
-pub fn ensure_actor_authorized_to_perform_channel_update<T: Trait>(
+pub fn ensure_actor_authorized_to_perform_channel_update<T: Config>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
@@ -232,7 +232,7 @@ pub fn ensure_actor_authorized_to_perform_channel_update<T: Trait>(
 }
 
 /// Ensure actor is authorized to create video with given params
-pub fn ensure_actor_authorized_to_create_video<T: Trait>(
+pub fn ensure_actor_authorized_to_create_video<T: Config>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
@@ -249,7 +249,7 @@ pub fn ensure_actor_authorized_to_create_video<T: Trait>(
 }
 
 /// Ensure actor is authorized to perform video update with given params
-pub fn ensure_actor_authorized_to_perform_video_update<T: Trait>(
+pub fn ensure_actor_authorized_to_perform_video_update<T: Config>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
@@ -317,7 +317,7 @@ pub fn ensure_actor_authorized_to_send_channel_agent_remark<T: Trait>(
 /// CHANNEL ASSET MANAGEMENT PERMISSIONS
 
 // Ensure channel is owned by curators
-pub fn ensure_channel_is_owned_by_curators<T: Trait>(channel: &Channel<T>) -> DispatchResult {
+pub fn ensure_channel_is_owned_by_curators<T: Config>(channel: &Channel<T>) -> DispatchResult {
     if let ChannelOwner::CuratorGroup(_) = channel.owner {
         return Ok(());
     };
@@ -325,7 +325,7 @@ pub fn ensure_channel_is_owned_by_curators<T: Trait>(channel: &Channel<T>) -> Di
 }
 
 // Ensure channel is owned by specified member
-pub fn ensure_channel_is_owned_by_member<T: Trait>(
+pub fn ensure_channel_is_owned_by_member<T: Config>(
     channel: &Channel<T>,
     member_id: &T::MemberId,
 ) -> DispatchResult {
@@ -337,7 +337,7 @@ pub fn ensure_channel_is_owned_by_member<T: Trait>(
 }
 
 // Ensure channel is owned by specified group
-pub fn ensure_channel_is_owned_by_curator_group<T: Trait>(
+pub fn ensure_channel_is_owned_by_curator_group<T: Config>(
     channel: &Channel<T>,
     group_id: &T::CuratorGroupId,
 ) -> DispatchResult {
@@ -346,21 +346,6 @@ pub fn ensure_channel_is_owned_by_curator_group<T: Trait>(
         Error::<T>::ActorNotAuthorized
     );
     Ok(())
-}
-
-pub fn ensure_actor_authorized_to_act_as_channel_owner<T: Trait>(
-    sender: &T::AccountId,
-    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    channel: &Channel<T>,
-) -> DispatchResult {
-    ensure_actor_auth_success::<T>(&sender, actor)?;
-    match actor {
-        ContentActor::Lead => ensure_channel_is_owned_by_curators::<T>(&channel),
-        ContentActor::Member(member_id) => {
-            ensure_channel_is_owned_by_member::<T>(channel, member_id)
-        }
-        _ => Err(Error::<T>::ActorNotAuthorized.into()),
-    }
 }
 
 pub fn ensure_actor_has_channel_permissions<T: Trait>(
@@ -415,7 +400,7 @@ fn ensure_agent_has_required_permissions<T: Trait>(
 /// SET FEATURED VIDEOS & CATEGORIES MANAGEMENT PERMISSION
 
 /// Ensure actor can manage nft
-pub fn ensure_actor_authorized_to_manage_nft<T: Trait>(
+pub fn ensure_actor_authorized_to_manage_nft<T: Config>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     nft_owner: &NftOwner<T::MemberId>,
@@ -437,7 +422,7 @@ pub fn ensure_actor_authorized_to_manage_nft<T: Trait>(
 }
 
 // Ensure actor can manage categories
-pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
+pub fn ensure_actor_authorized_to_manage_categories<T: Config>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
 ) -> DispatchResult {
@@ -450,7 +435,7 @@ pub fn ensure_actor_authorized_to_manage_categories<T: Trait>(
     Ok(())
 }
 
-pub fn actor_to_channel_owner<T: Trait>(
+pub fn actor_to_channel_owner<T: Config>(
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
 ) -> Result<ChannelOwner<T::MemberId, T::CuratorGroupId>, DispatchError> {
     match actor {
@@ -496,21 +481,21 @@ pub fn ensure_actor_authorized_to_withdraw_from_channel<T: Trait>(
 }
 
 // authorized account can update payouts vector commitment
-pub fn ensure_authorized_to_update_commitment<T: Trait>(sender: &T::AccountId) -> DispatchResult {
+pub fn ensure_authorized_to_update_commitment<T: Config>(sender: &T::AccountId) -> DispatchResult {
     ensure_lead_auth_success::<T>(sender)
 }
 
-pub fn ensure_authorized_to_update_max_reward<T: Trait>(sender: &T::AccountId) -> DispatchResult {
+pub fn ensure_authorized_to_update_max_reward<T: Config>(sender: &T::AccountId) -> DispatchResult {
     ensure_lead_auth_success::<T>(sender)
 }
 
-pub fn ensure_authorized_to_update_min_cashout<T: Trait>(sender: &T::AccountId) -> DispatchResult {
+pub fn ensure_authorized_to_update_min_cashout<T: Config>(sender: &T::AccountId) -> DispatchResult {
     ensure_lead_auth_success::<T>(sender)
 }
 
 /// Moderation actions (curator/lead)
 
-pub fn ensure_actor_authorized_to_perform_moderation_actions<T: Trait>(
+pub fn ensure_actor_authorized_to_perform_moderation_actions<T: Config>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     actions: &[ContentModerationAction],
@@ -535,7 +520,7 @@ pub fn ensure_actor_authorized_to_perform_moderation_actions<T: Trait>(
 /// Transfer channels permissions
 
 // Transfer channel check.
-pub fn ensure_actor_authorized_to_transfer_channel<T: Trait>(
+pub fn ensure_actor_authorized_to_transfer_channel<T: Config>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
@@ -565,7 +550,7 @@ pub fn ensure_actor_authorized_to_claim_council_reward<T: Trait>(
 }
 
 // Validates that there are no pending channel transfers.
-pub fn ensure_no_channel_transfers<T: Trait>(channel: &Channel<T>) -> DispatchResult {
+pub fn ensure_no_channel_transfers<T: Config>(channel: &Channel<T>) -> DispatchResult {
     ensure!(
         channel.transfer_status == ChannelTransferStatus::NoActiveTransfer,
         Error::<T>::InvalidChannelTransferStatus
@@ -601,7 +586,7 @@ pub fn get_member_id_of_actor<T: Trait>(
     opt_member_id.ok_or_else(|| Error::<T>::MemberIdCouldNotBeDerivedFromActor.into())
 }
 
-pub fn ensure_actor_authorized_to_issue_creator_token<T: Trait>(
+pub fn ensure_actor_authorized_to_issue_creator_token<T: Config>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
@@ -612,7 +597,7 @@ pub fn ensure_actor_authorized_to_issue_creator_token<T: Trait>(
     Ok(sender)
 }
 
-pub fn ensure_actor_authorized_to_claim_creator_token_patronage<T: Trait>(
+pub fn ensure_actor_authorized_to_claim_creator_token_patronage<T: Config>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
@@ -623,7 +608,7 @@ pub fn ensure_actor_authorized_to_claim_creator_token_patronage<T: Trait>(
     Ok(sender)
 }
 
-pub fn ensure_actor_authorized_to_init_and_manage_creator_token_sale<T: Trait>(
+pub fn ensure_actor_authorized_to_init_and_manage_creator_token_sale<T: Config>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
@@ -639,7 +624,7 @@ pub fn ensure_actor_authorized_to_init_and_manage_creator_token_sale<T: Trait>(
     Ok((sender, permissions))
 }
 
-pub fn ensure_actor_authorized_to_perform_creator_token_issuer_transfer<T: Trait>(
+pub fn ensure_actor_authorized_to_perform_creator_token_issuer_transfer<T: Config>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
@@ -650,7 +635,7 @@ pub fn ensure_actor_authorized_to_perform_creator_token_issuer_transfer<T: Trait
     Ok(sender)
 }
 
-pub fn ensure_actor_authorized_to_make_creator_token_permissionless<T: Trait>(
+pub fn ensure_actor_authorized_to_make_creator_token_permissionless<T: Config>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,

@@ -24,6 +24,7 @@ export function getVideoDefaults(index: number, cliExamplesFolderPath: string) {
       code: 1001,
       attribution: 'by Joystream Contributors',
     },
+    enableComments: true,
   }
 }
 

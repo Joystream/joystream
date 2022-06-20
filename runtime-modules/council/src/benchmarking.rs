@@ -1,10 +1,10 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
-use balances::Module as Balances;
+use balances::Pallet as Balances;
 use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::EventRecord;
-use frame_system::Module as System;
+use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use membership::Module as Membership;
 use sp_runtime::traits::{Bounded, One};
@@ -40,9 +40,9 @@ impl CreateAccountId for sp_core::crypto::AccountId32 {
     }
 }
 
-fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
 
     assert!(!events.is_empty(), "There are no events in event queue");
 
@@ -51,9 +51,9 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     assert_eq!(event, &system_event);
 }
 
-fn assert_in_events<T: Trait>(generic_event: <T as Trait>::Event) {
+fn assert_in_events<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
 
     assert!(!events.is_empty(), "There are no events in event queue");
 
@@ -66,11 +66,11 @@ fn assert_in_events<T: Trait>(generic_event: <T as Trait>::Event) {
     );
 }
 
-fn make_free_balance_be<T: Trait>(account_id: &T::AccountId, balance: Balance<T>) {
+fn make_free_balance_be<T: Config>(account_id: &T::AccountId, balance: Balance<T>) {
     Balances::<T>::make_free_balance_be(&account_id, balance);
 }
 
-fn start_announcing_period<T: Trait>() {
+fn start_announcing_period<T: Config>() {
     Mutations::<T>::start_announcing_period();
 
     let current_state = CouncilStageAnnouncing {
@@ -94,7 +94,7 @@ fn start_announcing_period<T: Trait>() {
     );
 }
 
-fn start_period_announce_multiple_candidates<T: Trait + membership::Trait>(
+fn start_period_announce_multiple_candidates<T: Config + membership::Config>(
     number_of_candidates: u32,
 ) -> (Vec<T::AccountId>, Vec<T::MemberId>)
 where
@@ -119,7 +119,7 @@ fn get_byte(num: u32, byte_number: u8) -> u8 {
 
 // Method to generate a distintic valid handle
 // for a membership. For each index.
-fn handle_from_id<T: Trait + membership::Trait>(id: u32) -> Vec<u8> {
+fn handle_from_id<T: Config + membership::Config>(id: u32) -> Vec<u8> {
     let mut handle = vec![];
 
     for i in 0..4 {
@@ -129,7 +129,7 @@ fn handle_from_id<T: Trait + membership::Trait>(id: u32) -> Vec<u8> {
     handle
 }
 
-fn member_funded_account<T: Trait + membership::Trait>(id: u32) -> (T::AccountId, T::MemberId)
+fn member_funded_account<T: Config + membership::Config>(id: u32) -> (T::AccountId, T::MemberId)
 where
     T::AccountId: CreateAccountId,
     T::MemberId: From<u32>,
@@ -175,7 +175,7 @@ where
     (account_id, member_id)
 }
 
-fn announce_candidate<T: Trait + membership::Trait>(id: u32) -> (T::AccountId, T::MemberId)
+fn announce_candidate<T: Config + membership::Config>(id: u32) -> (T::AccountId, T::MemberId)
 where
     T::AccountId: CreateAccountId,
     T::MemberId: From<u32>,
@@ -201,21 +201,21 @@ where
 
     assert_eq!(
         Council::<T>::candidates(member_id),
-        Candidate {
+        Some(Candidate {
             staking_account_id: account_id.clone(),
             cycle_id: 1,
             stake: T::MinCandidateStake::get(),
             note_hash: None,
             reward_account_id: account_id.clone(),
             vote_power: Council::<T>::get_option_power(&member_id),
-        },
+        }),
         "Candidacy hasn't been announced"
     );
 
     (account_id, member_id)
 }
 
-fn start_period_announce_candidacy<T: Trait + membership::Trait>(
+fn start_period_announce_candidacy<T: Config + membership::Config>(
     id: u32,
 ) -> (T::AccountId, T::MemberId)
 where
@@ -227,7 +227,7 @@ where
     announce_candidate::<T>(id)
 }
 
-fn start_period_announce_candidacy_and_restart_period<T: Trait + membership::Trait>(
+fn start_period_announce_candidacy_and_restart_period<T: Config + membership::Config>(
 ) -> (T::AccountId, T::MemberId)
 where
     T::AccountId: CreateAccountId,
@@ -255,7 +255,7 @@ where
     (account_id, member_id)
 }
 
-fn finalize_block<T: Trait>(block: T::BlockNumber) {
+fn finalize_block<T: Config>(block: T::BlockNumber) {
     System::<T>::on_finalize(block);
     Council::<T>::on_finalize(block);
 
@@ -263,7 +263,7 @@ fn finalize_block<T: Trait>(block: T::BlockNumber) {
     System::<T>::set_block_number(block);
 }
 
-fn move_to_block<T: Trait>(target_block: T::BlockNumber) {
+fn move_to_block<T: Config>(target_block: T::BlockNumber) {
     let mut current_block_number = System::<T>::block_number();
 
     Council::<T>::set_budget(RawOrigin::Root.into(), Balance::<T>::max_value()).unwrap();
@@ -278,7 +278,7 @@ fn move_to_block<T: Trait>(target_block: T::BlockNumber) {
     }
 }
 
-fn move_to_block_before_initialize_assert_stage<T: Trait>(
+fn move_to_block_before_initialize_assert_stage<T: Config>(
     target_block: T::BlockNumber,
     target_stage: CouncilStageUpdate<T::BlockNumber>,
 ) {
@@ -295,9 +295,8 @@ const MAX_FUNDING_REQUESTS: u32 = 100;
 
 benchmarks! {
     where_clause {
-        where T::AccountId: CreateAccountId, T::MemberId: From<u32>, T: membership::Trait
+        where T::AccountId: CreateAccountId, T::MemberId: From<u32>, T: membership::Config
     }
-    _ { }
 
     set_budget_increment {
     }: _(RawOrigin::Root, One::one())
@@ -632,14 +631,14 @@ benchmarks! {
         let candidate = Council::<T>::candidates(member_id);
         assert_eq!(
             candidate,
-            Candidate {
+            Some(Candidate {
                 staking_account_id: account_id.clone(),
                 cycle_id: 2,
                 stake: T::MinCandidateStake::get(),
                 note_hash: None,
                 reward_account_id: account_id.clone(),
                 vote_power: Council::<T>::get_option_power(&member_id),
-            },
+            }),
             "Candidacy hasn't been announced"
         );
 
@@ -689,14 +688,14 @@ benchmarks! {
     verify {
         assert_eq!(
             Council::<T>::candidates(member_id),
-            Candidate {
+            Some(Candidate {
                 staking_account_id: account_id.clone(),
                 cycle_id: 1,
                 stake: T::MinCandidateStake::get(),
                 note_hash: Some(T::Hashing::hash(&note)),
                 reward_account_id: account_id.clone(),
                 vote_power: Council::<T>::get_option_power(&member_id),
-            },
+            }),
             "Note not set"
         );
 
@@ -817,7 +816,7 @@ mod tests {
     fn test_announce_candidacy() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_announce_candidacy::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_announce_candidacy());
         })
     }
 
@@ -825,7 +824,7 @@ mod tests {
     fn test_release_candidacy() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_release_candidacy_stake::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_release_candidacy_stake());
         })
     }
 
@@ -833,7 +832,7 @@ mod tests {
     fn test_withdraw_candidacy() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_withdraw_candidacy::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_withdraw_candidacy());
         })
     }
 
@@ -841,9 +840,7 @@ mod tests {
     fn test_try_progress_stage_announcing_restart() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_try_progress_stage_announcing_restart::<
-                Runtime,
-            >());
+            assert_ok!(Council::<Runtime>::test_benchmark_try_progress_stage_announcing_restart());
         })
     }
 
@@ -851,7 +848,9 @@ mod tests {
     fn test_try_progress_stage_announcing_start_election() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_try_progress_stage_announcing_start_election::<Runtime>());
+            assert_ok!(
+                Council::<Runtime>::test_benchmark_try_progress_stage_announcing_start_election()
+            );
         })
     }
 
@@ -859,7 +858,7 @@ mod tests {
     fn test_try_progress_stage_idle() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_try_progress_stage_idle::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_try_progress_stage_idle());
         })
     }
 
@@ -867,7 +866,7 @@ mod tests {
     fn test_try_process_budget() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_try_process_budget::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_try_process_budget());
         })
     }
 
@@ -875,7 +874,7 @@ mod tests {
     fn test_set_budget_increment() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_set_budget_increment::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_set_budget_increment());
         })
     }
 
@@ -883,7 +882,7 @@ mod tests {
     fn test_set_councilor_reward() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_set_councilor_reward::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_set_councilor_reward());
         })
     }
 
@@ -891,7 +890,7 @@ mod tests {
     fn test_funding_request() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_funding_request::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_funding_request());
         })
     }
 
@@ -907,7 +906,7 @@ mod tests {
     fn test_councilor_remark() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_councilor_remark::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_councilor_remark());
         })
     }
 
@@ -915,7 +914,7 @@ mod tests {
     fn test_candidate_remark() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_candidate_remark::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_candidate_remark());
         })
     }
 }

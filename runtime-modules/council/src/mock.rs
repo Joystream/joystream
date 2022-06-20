@@ -1,23 +1,23 @@
 #![cfg(test)]
 
 /////////////////// Configuration //////////////////////////////////////////////
+use crate as council;
 use crate::{
-    AnnouncementPeriodNr, Balance, Budget, BudgetIncrement, CandidateOf, Candidates,
-    CouncilMemberOf, CouncilMembers, CouncilStage, CouncilStageAnnouncing, CouncilStageElection,
-    CouncilStageUpdate, CouncilStageUpdateOf, CouncilorReward, Error, GenesisConfig, Module,
-    NextBudgetRefill, RawEvent, ReferendumConnection, Stage, Trait, WeightInfo,
+    AnnouncementPeriodNr, Balance, Budget, BudgetIncrement, Candidate, CandidateOf, Candidates,
+    Config, CouncilMemberOf, CouncilMembers, CouncilStage, CouncilStageAnnouncing,
+    CouncilStageElection, CouncilStageUpdate, CouncilStageUpdateOf, CouncilorReward, Error, Module,
+    NextBudgetRefill, RawEvent, ReferendumConnection, Stage, WeightInfo,
 };
 
 use balances;
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::{Currency, Get, LockIdentifier, OnFinalize, OnInitialize};
+use frame_support::traits::{
+    ConstU16, ConstU32, ConstU64, Currency, EnsureOneOf, Get, LockIdentifier, OnFinalize,
+    OnInitialize,
+};
 use frame_support::weights::Weight;
-use frame_support::{
-    ensure, impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
-};
-use frame_system::{
-    ensure_signed, EnsureOneOf, EnsureRoot, EnsureSigned, EventRecord, Phase, RawOrigin,
-};
+use frame_support::{ensure, parameter_types, StorageMap, StorageValue};
+use frame_system::{ensure_signed, EnsureRoot, EnsureSigned, EventRecord, Phase, RawOrigin};
 use rand::Rng;
 use referendum::{
     CastVote, OptionResult, ReferendumManager, ReferendumStage, ReferendumStageRevealing,
@@ -28,12 +28,12 @@ use sp_runtime::traits::Hash;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup, Zero},
-    Perbill,
 };
 use staking_handler::{LockComparator, StakingManager};
 use std::boxed::Box;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
+use std::convert::{TryFrom, TryInto};
 use std::marker::PhantomData;
 
 pub const USER_REGULAR_POWER_VOTES: u64 = 0;
@@ -47,11 +47,6 @@ pub const VOTER_CANDIDATE_OFFSET: u64 = 1000;
 
 // multiplies topup value so that candidate/voter can candidate/vote multiple times
 pub const TOPUP_MULTIPLIER: u64 = 10;
-
-/////////////////// Runtime and Instances //////////////////////////////////////
-// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Runtime;
 
 thread_local! {
     // new council elected recieved by `new_council_elected hook`
@@ -76,8 +71,8 @@ impl common::membership::MembershipTypes for Runtime {
     type ActorId = u64;
 }
 
-impl Trait for Runtime {
-    type Event = TestEvent;
+impl Config for Runtime {
+    type Event = Event;
 
     type Referendum = referendum::Module<Runtime, ReferendumInstance>;
 
@@ -188,71 +183,57 @@ impl WeightInfo for () {
 
 /////////////////// Module implementation //////////////////////////////////////
 
-impl_outer_origin! {
-    pub enum Origin for Runtime {}
-}
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
+type Block = frame_system::mocking::MockBlock<Runtime>;
 
-mod event_mod {
-    pub use crate::Event;
-}
-
-mod referendum_mod {
-    pub use referendum::Event;
-    pub use referendum::Instance0;
-}
-
-mod membership_mod {
-    pub use membership::Event;
-}
-
-impl_outer_event! {
-    pub enum TestEvent for Runtime {
-        event_mod<T>,
-        frame_system<T>,
-        referendum_mod Instance0 <T>,
-        balances_mod<T>,
-        membership_mod<T>,
+frame_support::construct_runtime!(
+    pub enum Runtime where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system, // ::{Module, Call, Config, Storage, Event<T>},
+        Council: council::{Pallet, Call, Storage, Event<T>},
+        Membership: membership::{Pallet, Call, Storage, Event<T>},
+        Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>, Config<T>},
+        Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
     }
-}
+);
 
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
-    pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
 }
 
-impl frame_system::Trait for Runtime {
-    type BaseCallFilter = ();
+impl frame_system::Config for Runtime {
+    type BaseCallFilter = frame_support::traits::Everything;
+    type BlockWeights = ();
+    type BlockLength = ();
+    type DbWeight = ();
     type Origin = Origin;
+    type Call = Call;
     type Index = u64;
     type BlockNumber = u64;
-    type Call = ();
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = TestEvent;
-    type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
-    type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
+    type Event = Event;
+    type BlockHashCount = ConstU64<250>;
     type Version = ();
-    type PalletInfo = ();
+    type PalletInfo = PalletInfo;
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
+    type SS58Prefix = ConstU16<42>;
+    type OnSetCode = ();
+    type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
 /////////////////// Election module ////////////////////////////////////////////
 
-pub type ReferendumInstance = referendum::Instance0;
+pub type ReferendumInstance = referendum::Instance1;
 
 thread_local! {
     // global switch for stake locking features; use it to simulate lock fails
@@ -278,17 +259,12 @@ parameter_types! {
     pub const ReferralCutMaximumPercent: u8 = 50;
 }
 
-mod balances_mod {
-    pub use balances::Event;
-}
-
-impl referendum::Trait<ReferendumInstance> for Runtime {
-    type Event = TestEvent;
+impl referendum::Config<ReferendumInstance> for Runtime {
+    type Event = Event;
 
     type MaxSaltLength = MaxSaltLength;
 
-    type ManagerOrigin =
-        EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
     type VotePower = u64;
 
@@ -302,7 +278,7 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     type MaxWinnerTargetCount = MaxWinnerTargetCount;
 
     fn calculate_vote_power(
-        account_id: &<Self as frame_system::Trait>::AccountId,
+        account_id: &<Self as frame_system::Config>::AccountId,
         stake: &Balance<Self>,
     ) -> Self::VotePower {
         let stake: u64 = u64::from(*stake);
@@ -443,18 +419,20 @@ impl membership::WeightInfo for Weights {
     }
 }
 
-impl balances::Trait for Runtime {
+impl balances::Config for Runtime {
     type Balance = u64;
-    type Event = TestEvent;
     type DustRemoval = ();
+    type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
-    type AccountStore = frame_system::Module<Self>;
+    type AccountStore = System;
+    type MaxLocks = ();
+    type MaxReserves = ConstU32<2>;
+    type ReserveIdentifier = [u8; 8];
     type WeightInfo = ();
-    type MaxLocks = MaxLocks;
 }
 
-impl membership::Trait for Runtime {
-    type Event = TestEvent;
+impl membership::Config for Runtime {
+    type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = Wg;
     type WeightInfo = Weights;
@@ -483,7 +461,7 @@ impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
 
 impl common::working_group::WorkingGroupAuthenticator<Runtime> for Wg {
     fn ensure_worker_origin(
-        _origin: <Runtime as frame_system::Trait>::Origin,
+        _origin: <Runtime as frame_system::Config>::Origin,
         _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
@@ -504,12 +482,12 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for Wg {
         unimplemented!()
     }
 
-    fn is_leader_account_id(_account_id: &<Runtime as frame_system::Trait>::AccountId) -> bool {
+    fn is_leader_account_id(_account_id: &<Runtime as frame_system::Config>::AccountId) -> bool {
         unimplemented!()
     }
 
     fn is_worker_account_id(
-        _account_id: &<Runtime as frame_system::Trait>::AccountId,
+        _account_id: &<Runtime as frame_system::Config>::AccountId,
         _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
         unimplemented!()
@@ -528,7 +506,7 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for Wg {
     }
 }
 
-impl pallet_timestamp::Trait for Runtime {
+impl pallet_timestamp::Config for Runtime {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -548,7 +526,7 @@ parameter_types! {
     pub const MaxLocks: u32 = 50;
 }
 
-impl LockComparator<<Runtime as balances::Trait>::Balance> for Runtime {
+impl LockComparator<<Runtime as balances::Config>::Balance> for Runtime {
     fn are_locks_conflicting(
         _new_lock: &LockIdentifier,
         _existing_locks: &[LockIdentifier],
@@ -568,7 +546,7 @@ pub enum OriginType<AccountId> {
 }
 
 #[derive(Clone)]
-pub struct CandidateInfo<T: Trait> {
+pub struct CandidateInfo<T: Config> {
     pub origin: OriginType<T::AccountId>,
     pub account_id: T::MemberId,
     pub membership_id: T::MemberId,
@@ -577,7 +555,7 @@ pub struct CandidateInfo<T: Trait> {
 }
 
 #[derive(Clone)]
-pub struct VoterInfo<T: Trait> {
+pub struct VoterInfo<T: Config> {
     pub origin: OriginType<T::AccountId>,
     pub account_id: T::AccountId,
     pub commitment: T::Hash,
@@ -587,7 +565,7 @@ pub struct VoterInfo<T: Trait> {
 }
 
 #[derive(Clone)]
-pub struct CouncilSettings<T: Trait> {
+pub struct CouncilSettings<T: Config> {
     pub council_size: u64,
     pub min_candidate_count: u64,
     pub min_candidate_stake: Balance<T>,
@@ -600,7 +578,7 @@ pub struct CouncilSettings<T: Trait> {
     pub budget_refill_period: T::BlockNumber,
 }
 
-impl<T: Trait> CouncilSettings<T>
+impl<T: Config> CouncilSettings<T>
 where
     T::BlockNumber: From<u64>,
 {
@@ -608,20 +586,20 @@ where
         let council_size = T::CouncilSize::get();
 
         let reveal_stage_duration =
-            <Runtime as referendum::Trait<ReferendumInstance>>::RevealStageDuration::get().into();
-        let announcing_stage_duration = <T as Trait>::AnnouncingPeriodDuration::get();
+            <Runtime as referendum::Config<ReferendumInstance>>::RevealStageDuration::get().into();
+        let announcing_stage_duration = <T as Config>::AnnouncingPeriodDuration::get();
         let voting_stage_duration =
-            <Runtime as referendum::Trait<ReferendumInstance>>::VoteStageDuration::get().into();
-        let idle_stage_duration = <T as Trait>::IdlePeriodDuration::get();
+            <Runtime as referendum::Config<ReferendumInstance>>::VoteStageDuration::get().into();
+        let idle_stage_duration = <T as Config>::IdlePeriodDuration::get();
 
         CouncilSettings {
             council_size,
-            min_candidate_count: council_size + <T as Trait>::MinNumberOfExtraCandidates::get(),
+            min_candidate_count: council_size + <T as Config>::MinNumberOfExtraCandidates::get(),
             min_candidate_stake: T::MinCandidateStake::get(),
             announcing_stage_duration,
             voting_stage_duration,
             reveal_stage_duration,
-            idle_stage_duration: <T as Trait>::IdlePeriodDuration::get(),
+            idle_stage_duration: <T as Config>::IdlePeriodDuration::get(),
 
             election_duration: reveal_stage_duration
                 + announcing_stage_duration
@@ -631,7 +609,7 @@ where
                 + voting_stage_duration
                 + idle_stage_duration,
 
-            budget_refill_period: <T as Trait>::BudgetRefillPeriod::get(),
+            budget_refill_period: <T as Config>::BudgetRefillPeriod::get(),
         }
     }
 }
@@ -644,10 +622,11 @@ pub enum CouncilCycleInterrupt {
     AfterVoting,
     BeforeRevealing,
     AfterRevealing,
+    AfterElectionComplete,
 }
 
 #[derive(Clone)]
-pub struct CouncilCycleParams<T: Trait> {
+pub struct CouncilCycleParams<T: Config> {
     pub council_settings: CouncilSettings<T>,
     pub cycle_start_block_number: T::BlockNumber,
 
@@ -686,38 +665,54 @@ macro_rules! escape_checkpoint {
 
 /////////////////// Utility mocks //////////////////////////////////////////////
 
-pub fn default_genesis_config() -> GenesisConfig<Runtime> {
-    GenesisConfig::<Runtime> {
+pub fn default_genesis_config() -> council::GenesisConfig<Runtime> {
+    council::GenesisConfig::<Runtime> {
         stage: CouncilStageUpdate::default(),
         council_members: vec![],
         candidates: vec![],
         announcement_period_nr: 0,
         budget: 0,
         next_reward_payments: 0,
-        next_budget_refill: <Runtime as Trait>::BudgetRefillPeriod::get(),
+        next_budget_refill: <Runtime as Config>::BudgetRefillPeriod::get(),
         budget_increment: 1,
         councilor_reward: 100,
     }
 }
 
-pub fn augmented_genesis_config() -> GenesisConfig<Runtime> {
-    GenesisConfig::<Runtime> {
+pub fn augmented_genesis_config() -> council::GenesisConfig<Runtime> {
+    council::GenesisConfig::<Runtime> {
         stage: CouncilStageUpdate::default(),
         council_members: vec![CouncilMemberOf::<Runtime> {
             membership_id: 1,
-            ..Default::default()
+            staking_account_id: 0,
+            reward_account_id: 0,
+            stake: 0,
+            last_payment_block: 0,
+            unpaid_reward: 0,
         }],
-        candidates: vec![(2, Default::default())],
+        candidates: vec![(
+            2,
+            Candidate {
+                staking_account_id: 1,
+                reward_account_id: 1,
+                cycle_id: 0,
+                stake: 0,
+                vote_power: 0,
+                note_hash: None,
+            },
+        )],
         announcement_period_nr: 0,
         budget: 0,
         next_reward_payments: 0,
-        next_budget_refill: <Runtime as Trait>::BudgetRefillPeriod::get(),
+        next_budget_refill: <Runtime as Config>::BudgetRefillPeriod::get(),
         budget_increment: 1,
         councilor_reward: 100,
     }
 }
 
-pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> sp_io::TestExternalities {
+pub fn build_test_externalities(
+    config: council::GenesisConfig<Runtime>,
+) -> sp_io::TestExternalities {
     let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
@@ -733,11 +728,11 @@ pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> sp_io::TestEx
     result
 }
 
-pub struct InstanceMockUtils<T: Trait> {
+pub struct InstanceMockUtils<T: Config> {
     _dummy: PhantomData<T>, // 0-sized data meant only to bound generic parameters
 }
 
-impl<T: Trait> InstanceMockUtils<T>
+impl<T: Config> InstanceMockUtils<T>
 where
     T::AccountId: From<u64>,
     T::MemberId: From<u64>,
@@ -753,27 +748,27 @@ where
     }
 
     pub fn increase_block_number(increase: u64) -> () {
-        let mut block_number = frame_system::Module::<T>::block_number();
+        let mut block_number = frame_system::Pallet::<T>::block_number();
 
         for _ in 0..increase {
             <Module<T> as OnFinalize<T::BlockNumber>>::on_finalize(block_number);
             <referendum::Module<Runtime, ReferendumInstance> as OnFinalize<
-                <Runtime as frame_system::Trait>::BlockNumber,
+                <Runtime as frame_system::Config>::BlockNumber,
             >>::on_finalize(block_number.into());
 
             block_number = block_number + 1.into();
-            frame_system::Module::<T>::set_block_number(block_number);
+            frame_system::Pallet::<T>::set_block_number(block_number);
 
             <Module<T> as OnInitialize<T::BlockNumber>>::on_initialize(block_number);
             <referendum::Module<Runtime, ReferendumInstance> as OnInitialize<
-                <Runtime as frame_system::Trait>::BlockNumber,
+                <Runtime as frame_system::Config>::BlockNumber,
             >>::on_initialize(block_number.into());
         }
     }
 
     // topup currency to the account
     fn topup_account(account_id: u64, amount: Balance<T>) {
-        let _ = balances::Module::<Runtime>::deposit_creating(&account_id, amount.into());
+        let _ = balances::Pallet::<Runtime>::deposit_creating(&account_id, amount.into());
     }
 
     pub fn generate_candidate(index: u64, stake: Balance<T>) -> CandidateInfo<T> {
@@ -831,7 +826,7 @@ where
     }
 
     pub fn vote_commitment(
-        account_id: &<T as frame_system::Trait>::AccountId,
+        account_id: &<T as frame_system::Config>::AccountId,
         vote_option_index: &<T as common::membership::MembershipTypes>::MemberId,
         cycle_id: &u64,
     ) -> (T::Hash, Vec<u8>) {
@@ -846,21 +841,21 @@ where
 
 /////////////////// Mocks of Module's actions //////////////////////////////////
 
-pub struct InstanceMocks<T: Trait> {
+pub struct InstanceMocks<T: Config> {
     _dummy: PhantomData<T>, // 0-sized data meant only to bound generic parameters
 }
 
-impl<T: Trait> InstanceMocks<T>
+impl<T: Config> InstanceMocks<T>
 where
     T::AccountId: From<u64> + Into<u64>,
     T::MemberId: From<u64> + Into<u64>,
     T::BlockNumber: From<u64> + Into<u64>,
     Balance<T>: From<u64> + Into<u64>,
 
-    T::Hash:
-        From<<Runtime as frame_system::Trait>::Hash> + Into<<Runtime as frame_system::Trait>::Hash>,
-    T::Origin: From<<Runtime as frame_system::Trait>::Origin>
-        + Into<<Runtime as frame_system::Trait>::Origin>,
+    T::Hash: From<<Runtime as frame_system::Config>::Hash>
+        + Into<<Runtime as frame_system::Config>::Hash>,
+    T::Origin: From<<Runtime as frame_system::Config>::Origin>
+        + Into<<Runtime as frame_system::Config>::Origin>,
     <T::Referendum as ReferendumManager<T::Origin, T::AccountId, T::MemberId, T::Hash>>::VotePower:
         From<u64> + Into<u64>,
     T::MemberId: Into<T::AccountId>,
@@ -950,15 +945,22 @@ where
         for (key, value) in intermediate_results {
             let membership_id: T::MemberId = key.into();
 
-            assert!(Candidates::<T>::contains_key(membership_id));
-            assert_eq!(Candidates::<T>::get(membership_id).vote_power, value);
+            assert_eq!(
+                Candidates::<T>::get(membership_id)
+                    .expect("Candidate Must Exist")
+                    .vote_power,
+                value
+            );
         }
     }
 
     pub fn check_announcing_stake(membership_id: &T::MemberId, amount: Balance<T>) {
-        assert_eq!(Candidates::<T>::contains_key(membership_id), true);
-
-        assert_eq!(Candidates::<T>::get(membership_id).stake, amount);
+        assert_eq!(
+            Candidates::<T>::get(membership_id)
+                .expect("Candidate Must Exist")
+                .stake,
+            amount
+        );
     }
 
     pub fn check_candidacy_note(membership_id: &T::MemberId, note: Option<&[u8]>) {
@@ -969,7 +971,12 @@ where
             None => None,
         };
 
-        assert_eq!(Candidates::<T>::get(membership_id).note_hash, note_hash,);
+        assert_eq!(
+            Candidates::<T>::get(membership_id)
+                .expect("Candidate Must Exist")
+                .note_hash,
+            note_hash,
+        );
     }
 
     pub fn check_budget_refill(expected_balance: Balance<T>, expected_next_refill: T::BlockNumber) {
@@ -1008,11 +1015,11 @@ where
             return;
         }
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod(RawEvent::CandidacyNoteSet(
+            Event::Council(RawEvent::CandidacyNoteSet(
                 membership_id.into(),
                 note.into()
             )),
@@ -1063,11 +1070,11 @@ where
         }
 
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod(RawEvent::NewCandidate(
+            Event::Council(RawEvent::NewCandidate(
                 member_id.into(),
                 staking_account_id.into(),
                 reward_account_id.into(),
@@ -1092,11 +1099,11 @@ where
         }
 
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod(RawEvent::CandidacyWithdraw(member_id.into(),)),
+            Event::Council(RawEvent::CandidacyWithdraw(member_id.into(),)),
         );
     }
 
@@ -1119,11 +1126,11 @@ where
         }
 
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod(RawEvent::CandidacyStakeRelease(member_id.into(),)),
+            Event::Council(RawEvent::CandidacyStakeRelease(member_id.into(),)),
         );
     }
 
@@ -1165,7 +1172,7 @@ where
     }
 
     pub fn release_vote_stake(
-        origin: OriginType<<Runtime as frame_system::Trait>::AccountId>,
+        origin: OriginType<<Runtime as frame_system::Config>::AccountId>,
         expected_result: Result<(), ()>,
     ) -> () {
         // check method returns expected result
@@ -1196,11 +1203,11 @@ where
         assert_eq!(Budget::<T>::get(), amount,);
 
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod(RawEvent::BudgetBalanceSet(amount.into())),
+            Event::Council(RawEvent::BudgetBalanceSet(amount.into())),
         );
     }
 
@@ -1225,16 +1232,16 @@ where
         }
 
         for funding_request in &funding_requests {
-            assert!(frame_system::Module::<Runtime>::events()
+            assert!(frame_system::Pallet::<Runtime>::events()
                 .iter()
                 .any(|ev| ev.event
-                    == TestEvent::event_mod(RawEvent::RequestFunded(
+                    == Event::Council(RawEvent::RequestFunded(
                         funding_request.account.clone().into(),
                         funding_request.amount.into(),
                     ))));
 
             assert_eq!(
-                balances::Module::<T>::free_balance(funding_request.account.clone()),
+                balances::Pallet::<T>::free_balance(funding_request.account.clone()),
                 funding_request.amount
             );
         }
@@ -1270,11 +1277,11 @@ where
         assert_eq!(NextBudgetRefill::<T>::get(), next_refill,);
 
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod(RawEvent::BudgetRefillPlanned(next_refill.into())),
+            Event::Council(RawEvent::BudgetRefillPlanned(next_refill.into())),
         );
     }
 
@@ -1300,11 +1307,11 @@ where
         assert_eq!(CouncilorReward::<T>::get(), councilor_reward);
 
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod(RawEvent::CouncilorRewardUpdated(councilor_reward.into())),
+            Event::Council(RawEvent::CouncilorRewardUpdated(councilor_reward.into())),
         );
     }
 
@@ -1330,11 +1337,11 @@ where
         assert_eq!(BudgetIncrement::<T>::get(), budget_increment,);
 
         assert_eq!(
-            frame_system::Module::<Runtime>::events()
+            frame_system::Pallet::<Runtime>::events()
                 .last()
                 .unwrap()
                 .event,
-            TestEvent::event_mod(RawEvent::BudgetIncrementUpdated(budget_increment.into())),
+            Event::Council(RawEvent::BudgetIncrementUpdated(budget_increment.into())),
         );
     }
 
@@ -1447,7 +1454,11 @@ where
         );
         Self::check_council_members(params.expected_final_council_members.clone());
 
-        // finish idle period
+        escape_checkpoint!(
+            params.interrupt_point.clone(),
+            Some(CouncilCycleInterrupt::AfterElectionComplete)
+        );
+
         InstanceMockUtils::<T>::increase_block_number(settings.idle_stage_duration.into());
     }
 
@@ -1458,8 +1469,36 @@ where
         expected_initial_council_members: &[CouncilMemberOf<T>],
         users_offset: u64,
     ) -> CouncilCycleParams<T> {
+        Self::run_council_cycle_with_interrupt(
+            start_block_number,
+            expected_initial_council_members,
+            users_offset,
+            None,
+        )
+    }
+
+    pub fn run_council_cycle_with_interrupt(
+        start_block_number: T::BlockNumber,
+        expected_initial_council_members: &[CouncilMemberOf<T>],
+        users_offset: u64,
+        interrupt_point: Option<CouncilCycleInterrupt>,
+    ) -> CouncilCycleParams<T> {
+        // If a prior call was made with an interrupt,
+        // we might need to move to desired start block, which is expected to be the begining of the
+        // announcing stage.
+        if start_block_number.into() > 0 {
+            let current_block_number = frame_system::Pallet::<Runtime>::block_number();
+            if current_block_number > start_block_number.into() + 1 {
+                panic!("start_block_number is in the past!");
+            }
+
+            InstanceMockUtils::<Runtime>::increase_block_number(
+                start_block_number.into() - current_block_number + 1,
+            );
+        }
+
         let council_settings = CouncilSettings::<T>::extract_settings();
-        let vote_stake = <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+        let vote_stake = <Runtime as referendum::Config<ReferendumInstance>>::MinimumStake::get();
 
         // generate candidates
         let candidates: Vec<CandidateInfo<T>> = (0..(council_settings.min_candidate_count + 1)
@@ -1525,7 +1564,7 @@ where
             expected_candidates,
             voters,
 
-            interrupt_point: None,
+            interrupt_point,
         };
 
         InstanceMocks::<T>::simulate_council_cycle(params.clone());
@@ -1533,8 +1572,6 @@ where
         params
     }
 }
-
-pub type Council = crate::Module<Runtime>;
 
 pub const DEFAULT_ACCOUNT_ID: u64 = 1u64;
 pub const DEFAULT_MEMBER_ID: u64 = 1u64;

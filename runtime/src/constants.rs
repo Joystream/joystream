@@ -105,7 +105,7 @@ pub mod fees {
             smallvec![WeightToFeeCoefficient {
                 degree: 1,
                 negative: false,
-                coeff_frac: Perbill::from_rational_approximation(p % q, q),
+                coeff_frac: Perbill::from_rational(p % q, q),
                 coeff_integer: p / q,
             }]
         }
@@ -168,7 +168,7 @@ pub mod currency {
 mod tests {
     use super::currency::{CENTS, DOLLARS};
     use super::fees::WeightToFee;
-    use crate::{ExtrinsicBaseWeight, MaximumBlockWeight};
+    use crate::{ExtrinsicBaseWeight, MAXIMUM_BLOCK_WEIGHT};
     use frame_support::weights::WeightToFeePolynomial;
     use pallet_balances::WeightInfo;
 
@@ -188,7 +188,7 @@ mod tests {
     fn full_block_fee_is_correct() {
         // A full block should cost 16 DOLLARS
         println!("Base: {}", ExtrinsicBaseWeight::get());
-        let x = WeightToFee::calc(&MaximumBlockWeight::get());
+        let x = WeightToFee::calc(&MAXIMUM_BLOCK_WEIGHT);
         let y = 16 * DOLLARS;
         assert!(x.max(y) - x.min(y) < 1);
     }

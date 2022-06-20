@@ -20,6 +20,7 @@ use sp_std::vec;
 pub use errors::*;
 pub use nft::*;
 pub use permissions::*;
+use scale_info::TypeInfo;
 pub use types::*;
 
 use codec::Codec;
@@ -41,7 +42,7 @@ use frame_support::{
     dispatch::{DispatchError, DispatchResult},
     ensure,
     traits::{Currency, ExistenceRequirement, Get},
-    Parameter,
+    PalletId, Parameter,
 };
 
 use frame_system::{ensure_root, ensure_signed};
@@ -52,24 +53,21 @@ use sp_arithmetic::{
     traits::{BaseArithmetic, One, Saturating, Zero},
     Perbill,
 };
-use sp_runtime::{
-    traits::{AccountIdConversion, Hash, MaybeSerializeDeserialize, Member},
-    ModuleId,
-};
+use sp_runtime::traits::{AccountIdConversion, Hash, MaybeSerializeDeserialize, Member};
 use sp_std::{borrow::ToOwned, collections::btree_set::BTreeSet, vec::Vec};
 
 /// Module configuration trait for Content Directory Module
-pub trait Trait:
-    frame_system::Trait
+pub trait Config:
+    frame_system::Config
     + ContentActorAuthenticator
     + Clone
-    + membership::Trait
-    + balances::Trait
-    + storage::Trait
-    + project_token::Trait
+    + membership::Config
+    + balances::Config
+    + storage::Config
+    + project_token::Config
 {
     /// The overarching event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
     /// Type of identifier for Videos
     type VideoId: NumericIdentifier;
@@ -87,10 +85,10 @@ pub trait Trait:
     type DataObjectStorage: storage::DataObjectStorage<Self>;
 
     /// Price per byte
-    type PricePerByte: Get<<Self as balances::Trait>::Balance>;
+    type PricePerByte: Get<<Self as balances::Config>::Balance>;
 
     /// Content Module Id
-    type ModuleId: Get<ModuleId>;
+    type ModuleId: Get<PalletId>;
 
     /// Type in order to retrieve controller account from channel member owner
     type MemberAuthenticator: MembershipInfoProvider<Self>;
@@ -144,7 +142,7 @@ pub trait Trait:
 }
 
 decl_storage! {
-    trait Store for Module<T: Trait> as Content {
+    trait Store for Module<T: Config> as Content {
         pub ChannelById get(fn channel_by_id):
         map hasher(blake2_128_concat) T::ChannelId => Channel<T>;
 
@@ -164,7 +162,7 @@ decl_storage! {
         pub CuratorGroupById get(fn curator_group_by_id):
         map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
 
-        pub Commitment get(fn commitment): <T as frame_system::Trait>::Hash;
+        pub Commitment get(fn commitment): <T as frame_system::Config>::Hash;
 
         pub MaxCashoutAllowed get(fn max_cashout_allowed) config(): BalanceOf<T>;
 
@@ -251,7 +249,7 @@ decl_storage! {
 }
 
 decl_module! {
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -1512,7 +1510,7 @@ decl_module! {
             //
 
             // Create new auction
-            let current_block = <frame_system::Module<T>>::block_number();
+            let current_block = <frame_system::Pallet<T>>::block_number();
             let auction = EnglishAuction::<T>::new(auction_params.clone(), current_block);
 
             // Update the video
@@ -1765,7 +1763,7 @@ decl_module! {
             open_auction.ensure_whitelisted_participant::<T>(participant_id)?;
 
             // ensure auction started
-            let current_block = <frame_system::Module<T>>::block_number();
+            let current_block = <frame_system::Pallet<T>>::block_number();
             open_auction.ensure_auction_started::<T>(current_block)?;
 
             // ensure bid can be made
@@ -1789,7 +1787,7 @@ decl_module! {
                     let royalty_payment = Self::build_royalty_payment(&video, nft.creator_royalty);
                     let updated_nft = Self::complete_auction(
                         nft,
-                        video.in_channel,
+                        &video,
                         royalty_payment,
                         participant_id,
                         buy_now_price,
@@ -1860,7 +1858,7 @@ decl_module! {
             )?;
 
             // Ensure auction is not expired
-            let current_block = <frame_system::Module<T>>::block_number();
+            let current_block = <frame_system::Pallet<T>>::block_number();
             eng_auction.ensure_auction_is_not_expired::<T>(current_block)?;
 
             // ensure auctio started
@@ -1897,7 +1895,7 @@ decl_module! {
                     let royalty_payment = Self::build_royalty_payment(&video, nft.creator_royalty);
                     let updated_nft = Self::complete_auction(
                         nft,
-                        video.in_channel,
+                        &video,
                         royalty_payment,
                         participant_id,
                         buy_now_price,
@@ -1960,7 +1958,7 @@ decl_module! {
             if let Ok(open_auction) = Self::ensure_in_open_auction_state(&nft) {
 
                 // ensure conditions for canceling a bid are met
-                let current_block = <frame_system::Module<T>>::block_number();
+                let current_block = <frame_system::Pallet<T>>::block_number();
                 open_auction.ensure_bid_can_be_canceled::<T>(current_block, &old_bid)?;
             } // else old bid
 
@@ -1999,7 +1997,7 @@ decl_module! {
             let top_bidder_id = top_bid.bidder_id;
 
             // Ensure auction expired
-            let current_block = <frame_system::Module<T>>::block_number();
+            let current_block = <frame_system::Pallet<T>>::block_number();
             english_auction.ensure_auction_can_be_completed::<T>(current_block)?;
 
             //
@@ -2010,7 +2008,7 @@ decl_module! {
             let royalty_payment = Self::build_royalty_payment(&video, nft.creator_royalty);
             let updated_nft = Self::complete_auction(
                 nft,
-                video.in_channel,
+                &video,
                 royalty_payment,
                 top_bidder_id,
                 top_bid.amount
@@ -2071,7 +2069,7 @@ decl_module! {
             let royalty_payment = Self::build_royalty_payment(&video, nft.creator_royalty);
             let updated_nft = Self::complete_auction(
                 nft,
-                video.in_channel,
+                &video,
                 royalty_payment,
                 winner_id,
                 bid.amount,
@@ -2198,7 +2196,7 @@ decl_module! {
             Self::ensure_new_pending_offer_available_to_proceed(&nft, &receiver_account_id)?;
 
             // account_id where the nft offer price is deposited
-            let nft_owner_account = Self::ensure_owner_account_id(video.in_channel, &nft).ok();
+            let nft_owner_account = Self::ensure_nft_owner_has_beneficiary_account(&video, &nft).ok();
             //
             // == MUTATION SAFE ==
             //
@@ -2287,7 +2285,7 @@ decl_module! {
             Self::ensure_can_buy_now(&nft, &participant_account_id, price_commit)?;
 
             // seller account
-            let old_nft_owner_account_id = Self::ensure_owner_account_id(video.in_channel, &nft).ok();
+            let old_nft_owner_account_id = Self::ensure_nft_owner_has_beneficiary_account(&video, &nft).ok();
 
             //
             // == MUTATION SAFE ==
@@ -2790,7 +2788,7 @@ decl_module! {
                 start,
                 duration,
                 reward_account,
-                reward_account_balance.saturating_sub(<T as balances::Trait>::ExistentialDeposit::get())
+                reward_account_balance.saturating_sub(<T as balances::Config>::ExistentialDeposit::get())
             )?;
         }
 
@@ -2902,7 +2900,7 @@ decl_module! {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     /// Ensure `CuratorGroup` under given id exists
     fn ensure_curator_group_under_given_id_exists(
         curator_group_id: &T::CuratorGroupId,
@@ -2973,14 +2971,14 @@ impl<T: Trait> Module<T> {
             }
             InitTransactionalStatus::<T>::EnglishAuction(ref params) => {
                 Self::validate_english_auction_params(params)?;
-                let current_block = <frame_system::Module<T>>::block_number();
+                let current_block = <frame_system::Pallet<T>>::block_number();
                 Ok(TransactionalStatus::<T>::EnglishAuction(
                     EnglishAuction::<T>::new(params.clone(), current_block),
                 ))
             }
             InitTransactionalStatus::<T>::OpenAuction(ref params) => {
                 Self::validate_open_auction_params(params)?;
-                let current_block = <frame_system::Module<T>>::block_number();
+                let current_block = <frame_system::Pallet<T>>::block_number();
                 Ok(TransactionalStatus::<T>::OpenAuction(
                     OpenAuction::<T>::new(params.clone(), T::OpenAuctionId::zero(), current_block),
                 ))
@@ -3050,10 +3048,10 @@ impl<T: Trait> Module<T> {
 
     fn verify_proof(proof: &[ProofElement<T>], item: &PullPayment<T>) -> DispatchResult {
         let candidate_root = proof.iter().fold(
-            <T as frame_system::Trait>::Hashing::hash_of(item),
+            <T as frame_system::Config>::Hashing::hash_of(item),
             |hash_v, el| match el.side {
-                Side::Right => <T as frame_system::Trait>::Hashing::hash_of(&[hash_v, el.hash]),
-                Side::Left => <T as frame_system::Trait>::Hashing::hash_of(&[el.hash, hash_v]),
+                Side::Right => <T as frame_system::Config>::Hashing::hash_of(&[hash_v, el.hash]),
+                Side::Left => <T as frame_system::Config>::Hashing::hash_of(&[el.hash, hash_v]),
             },
         );
         ensure!(
@@ -3098,7 +3096,7 @@ impl<T: Trait> Module<T> {
         let dynamic_bag_id = storage::DynamicBagId::<T>::Channel(channel_id);
         let bag_id = storage::BagIdType::from(dynamic_bag_id);
 
-        if let Ok(bag) = <T as Trait>::DataObjectStorage::ensure_bag_exists(&bag_id) {
+        if let Ok(bag) = <T as Config>::DataObjectStorage::ensure_bag_exists(&bag_id) {
             // channel has a dynamic bag associated
             // ensure that bag size provided is valid
             ensure!(
@@ -3456,21 +3454,21 @@ decl_event!(
         MemberId = <T as common::MembershipTypes>::MemberId,
         CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
         CuratorId = <T as ContentActorAuthenticator>::CuratorId,
-        VideoId = <T as Trait>::VideoId,
-        ChannelId = <T as storage::Trait>::ChannelId,
-        ChannelCategoryId = <T as Trait>::ChannelCategoryId,
+        VideoId = <T as Config>::VideoId,
+        ChannelId = <T as storage::Config>::ChannelId,
+        ChannelCategoryId = <T as Config>::ChannelCategoryId,
         Channel = Channel<T>,
         DataObjectId = DataObjectId<T>,
         EnglishAuctionParams = EnglishAuctionParams<T>,
         OpenAuctionParams = OpenAuctionParams<T>,
-        OpenAuctionId = <T as Trait>::OpenAuctionId,
+        OpenAuctionId = <T as Config>::OpenAuctionId,
         NftIssuanceParameters = NftIssuanceParameters<T>,
         Balance = BalanceOf<T>,
         ChannelCreationParameters = ChannelCreationParameters<T>,
         ChannelUpdateParameters = ChannelUpdateParameters<T>,
         VideoCreationParameters = VideoCreationParameters<T>,
         VideoUpdateParameters = VideoUpdateParameters<T>,
-        ChannelPrivilegeLevel = <T as Trait>::ChannelPrivilegeLevel,
+        ChannelPrivilegeLevel = <T as Config>::ChannelPrivilegeLevel,
         ModerationPermissionsByLevel = ModerationPermissionsByLevel<T>,
         ChannelTransferStatus = ChannelTransferStatus<
             <T as common::MembershipTypes>::MemberId,
@@ -3479,9 +3477,9 @@ decl_event!(
         >,
         TransferParameters =
             TransferParameters<<T as common::MembershipTypes>::MemberId, BalanceOf<T>>,
-        AccountId = <T as frame_system::Trait>::AccountId,
+        AccountId = <T as frame_system::Config>::AccountId,
         UpdateChannelPayoutsParameters = UpdateChannelPayoutsParameters<T>,
-        TokenId = <T as project_token::Trait>::TokenId,
+        TokenId = <T as project_token::Config>::TokenId,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),

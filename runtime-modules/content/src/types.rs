@@ -96,11 +96,13 @@ impl<BlockNumber: BaseArithmetic + Copy> NftCounter<BlockNumber> {
         self.last_updated = current_block;
     }
 }
+use frame_support::PalletId;
+use scale_info::TypeInfo;
 
 /// Specifies how a new asset will be provided on creating and updating
 /// Channels, Videos, Series and Person
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub enum NewAsset<ContentParameters> {
     /// Upload to the storage frame_system
     Upload(ContentParameters),
@@ -111,7 +113,7 @@ pub enum NewAsset<ContentParameters> {
 /// The owner of a channel, is the authorized "actor" that can update
 /// or delete or transfer a channel and its contents.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub enum ChannelOwner<MemberId, CuratorGroupId> {
     /// A Member owns the channel
     Member(MemberId),
@@ -129,14 +131,14 @@ impl<MemberId: Default, CuratorGroupId> Default for ChannelOwner<MemberId, Curat
 
 /// A category which channels can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct ChannelCategory {
     // No runtime information is currently stored for a Category.
 }
 
 /// Information on the category being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct ChannelCategoryCreationParameters {
     /// Metadata for the category.
     meta: Vec<u8>,
@@ -144,7 +146,7 @@ pub struct ChannelCategoryCreationParameters {
 
 /// Information on the category being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct ChannelCategoryUpdateParameters {
     // as this is the only field it is not an Option
     /// Metadata update for the category.
@@ -235,7 +237,7 @@ pub type ChannelAgentPermissions = BTreeSet<ChannelActionPermission>;
 
 /// Type representing an owned channel which videos, playlists, and series can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct ChannelRecord<
     MemberId: Ord + PartialEq,
     CuratorGroupId: PartialEq,
@@ -342,7 +344,7 @@ impl<
         TokenId,
     >
 {
-    pub fn ensure_feature_not_paused<T: Trait>(
+    pub fn ensure_feature_not_paused<T: Config>(
         &self,
         channel_feature: PausableChannelFeature,
     ) -> DispatchResult {
@@ -354,7 +356,7 @@ impl<
     }
 
     /// Ensures that the channel has no active transfers.
-    pub fn ensure_has_no_active_transfer<T: Trait>(&self) -> DispatchResult {
+    pub fn ensure_has_no_active_transfer<T: Config>(&self) -> DispatchResult {
         ensure!(
             !self.has_active_transfer(),
             Error::<T>::InvalidChannelTransferStatus
@@ -368,7 +370,7 @@ impl<
         self.transfer_status != ChannelTransferStatus::NoActiveTransfer
     }
 
-    pub fn get_existing_collaborator_permissions<T: Trait>(
+    pub fn get_existing_collaborator_permissions<T: Config>(
         &self,
         member_id: &MemberId,
     ) -> Result<&ChannelAgentPermissions, DispatchError> {
@@ -385,13 +387,13 @@ impl<
             .update_for_current_period(current_block, self.weekly_nft_limit.block_number_period);
     }
 
-    pub fn ensure_creator_token_issued<T: Trait>(&self) -> Result<TokenId, DispatchError> {
+    pub fn ensure_creator_token_issued<T: Config>(&self) -> Result<TokenId, DispatchError> {
         self.creator_token_id
             .clone()
             .ok_or_else(|| Error::<T>::CreatorTokenNotIssued.into())
     }
 
-    pub fn ensure_creator_token_not_issued<T: Trait>(&self) -> DispatchResult {
+    pub fn ensure_creator_token_not_issued<T: Config>(&self) -> DispatchResult {
         ensure!(
             self.creator_token_id.is_none(),
             Error::<T>::CreatorTokenAlreadyIssued
@@ -405,10 +407,10 @@ pub type Channel<T> = ChannelRecord<
     <T as common::MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
     BalanceOf<T>,
-    <T as Trait>::ChannelPrivilegeLevel,
+    <T as Config>::ChannelPrivilegeLevel,
     DataObjectId<T>,
-    <T as frame_system::Trait>::BlockNumber,
-    <T as project_token::Trait>::TokenId,
+    <T as frame_system::Config>::BlockNumber,
+    <T as project_token::Config>::TokenId,
 >;
 
 /// A request to buy a channel by a new ChannelOwner.
@@ -422,7 +424,7 @@ pub struct ChannelOwnershipTransferRequestRecord<ChannelId, MemberId, CuratorGro
 
 // ChannelOwnershipTransferRequest type alias for simplification.
 pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRecord<
-    <T as storage::Trait>::ChannelId,
+    <T as storage::Config>::ChannelId,
     <T as common::MembershipTypes>::MemberId,
     <T as ContentActorAuthenticator>::CuratorGroupId,
     BalanceOf<T>,
@@ -455,7 +457,7 @@ pub struct ChannelCreationParametersRecord<
 pub type ChannelCreationParameters<T> = ChannelCreationParametersRecord<
     StorageAssets<T>,
     <T as common::MembershipTypes>::MemberId,
-    <T as storage::Trait>::StorageBucketId,
+    <T as storage::Config>::StorageBucketId,
     storage::DistributionBucketId<T>,
     BalanceOf<T>,
 >;
@@ -485,14 +487,14 @@ pub type ChannelUpdateParameters<T> = ChannelUpdateParametersRecord<
 
 /// A category that videos can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct VideoCategory {
     // No runtime information is currently stored for a Category.
 }
 
 /// Information about the video category being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct VideoCategoryCreationParameters {
     /// Metadata about the video category.
     meta: Vec<u8>,
@@ -500,7 +502,7 @@ pub struct VideoCategoryCreationParameters {
 
 /// Information about the video category being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct VideoCategoryUpdateParameters {
     // Because it is the only field it is not an Option
     /// Metadata update for the video category.
@@ -509,7 +511,7 @@ pub struct VideoCategoryUpdateParameters {
 
 /// Information regarding the content being uploaded
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, Default, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, Default, PartialEq, Eq, Debug, TypeInfo)]
 pub struct StorageAssetsRecord<Balance> {
     /// Data object parameters.
     pub object_creation_list: Vec<DataObjectCreationParameters>,
@@ -539,7 +541,7 @@ pub type VideoCreationParameters<T> =
 
 /// Information about the video being updated
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct VideoUpdateParametersRecord<
     StorageAssets,
     DataObjectId: Ord,
@@ -567,7 +569,7 @@ pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<
 
 /// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct VideoRecord<ChannelId, OwnedNft, DataObjectId: Ord> {
     pub in_channel: ChannelId,
     /// Whether nft for this video have been issued.
@@ -576,13 +578,13 @@ pub struct VideoRecord<ChannelId, OwnedNft, DataObjectId: Ord> {
     pub data_objects: BTreeSet<DataObjectId>,
 }
 
-pub type Video<T> = VideoRecord<<T as storage::Trait>::ChannelId, Nft<T>, DataObjectId<T>>;
+pub type Video<T> = VideoRecord<<T as storage::Config>::ChannelId, Nft<T>, DataObjectId<T>>;
 
-pub type DataObjectId<T> = <T as storage::Trait>::DataObjectId;
+pub type DataObjectId<T> = <T as storage::Config>::DataObjectId;
 
 /// Side used to construct hash values during merkle proof verification
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, TypeInfo)]
 pub enum Side {
     Left,
     Right,
@@ -595,7 +597,7 @@ impl Default for Side {
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 /// Element used in for channel payout
 pub struct ProofElementRecord<Hash, Side> {
     // Node hash
@@ -605,11 +607,11 @@ pub struct ProofElementRecord<Hash, Side> {
 }
 
 // alias for the proof element
-pub type ProofElement<T> = ProofElementRecord<<T as frame_system::Trait>::Hash, Side>;
+pub type ProofElement<T> = ProofElementRecord<<T as frame_system::Config>::Hash, Side>;
 
 /// Payment claim by a channel
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Copy, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct PullPaymentElement<ChannelId, Balance, Hash> {
     pub channel_id: ChannelId,
     pub cumulative_reward_earned: Balance,
@@ -617,22 +619,22 @@ pub struct PullPaymentElement<ChannelId, Balance, Hash> {
 }
 
 pub type PullPayment<T> = PullPaymentElement<
-    <T as storage::Trait>::ChannelId,
+    <T as storage::Config>::ChannelId,
     BalanceOf<T>,
-    <T as frame_system::Trait>::Hash,
+    <T as frame_system::Config>::Hash,
 >;
 
 impl<ChannelId: Clone, OwnedNft: Clone, DataObjectId: Ord>
     VideoRecord<ChannelId, OwnedNft, DataObjectId>
 {
     /// Ensure nft is not issued
-    pub fn ensure_nft_is_not_issued<T: Trait>(&self) -> DispatchResult {
+    pub fn ensure_nft_is_not_issued<T: Config>(&self) -> DispatchResult {
         ensure!(self.nft_status.is_none(), Error::<T>::NftAlreadyExists);
         Ok(())
     }
 
     /// Ensure nft is issued
-    pub fn ensure_nft_is_issued<T: Trait>(&self) -> Result<OwnedNft, Error<T>> {
+    pub fn ensure_nft_is_issued<T: Config>(&self) -> Result<OwnedNft, Error<T>> {
         if let Some(owned_nft) = &self.nft_status {
             Ok(owned_nft.clone())
         } else {
@@ -661,7 +663,7 @@ pub struct ChannelPayoutsPayloadParametersRecord<AccountId, Balance> {
 }
 
 pub type ChannelPayoutsPayloadParameters<T> =
-    ChannelPayoutsPayloadParametersRecord<<T as frame_system::Trait>::AccountId, BalanceOf<T>>;
+    ChannelPayoutsPayloadParametersRecord<<T as frame_system::Config>::AccountId, BalanceOf<T>>;
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
@@ -690,22 +692,22 @@ impl<ChannelPayoutsPayloadParameters, Balance, Hash> Default
 pub type UpdateChannelPayoutsParameters<T> = UpdateChannelPayoutsParametersRecord<
     ChannelPayoutsPayloadParameters<T>,
     BalanceOf<T>,
-    <T as frame_system::Trait>::Hash,
+    <T as frame_system::Config>::Hash,
 >;
 
 /// Operations with local pallet account.
-pub trait ModuleAccount<T: Trait> {
+pub trait ModuleAccount<T: Config> {
     /// The module id, used for deriving its sovereign account ID.
-    type ModuleId: Get<ModuleId>;
+    type ModuleId: Get<PalletId>;
 
     /// The account ID of the module account.
     fn account_for_channel(channel_id: T::ChannelId) -> T::AccountId {
-        Self::ModuleId::get().into_sub_account(("CHANNEL", channel_id))
+        Self::ModuleId::get().into_sub_account_truncating(("CHANNEL", channel_id))
     }
 
     /// The account ID of the module account.
     fn module_account_id() -> T::AccountId {
-        Self::ModuleId::get().into_sub_account("TREASURY")
+        Self::ModuleId::get().into_sub_account_truncating("TREASURY")
     }
 
     /// Transfer tokens from the module account to the destination account (spends from
@@ -744,7 +746,7 @@ pub trait ModuleAccount<T: Trait> {
 }
 
 /// Implementation of the ModuleAccountHandler.
-pub struct ModuleAccountHandler<T: balances::Trait, ModId: Get<ModuleId>> {
+pub struct ModuleAccountHandler<T: balances::Config, ModId: Get<PalletId>> {
     /// Phantom marker for the trait.
     trait_marker: PhantomData<T>,
 
@@ -752,20 +754,20 @@ pub struct ModuleAccountHandler<T: balances::Trait, ModId: Get<ModuleId>> {
     module_id_marker: PhantomData<ModId>,
 }
 
-impl<T: Trait, ModId: Get<ModuleId>> ModuleAccount<T> for ModuleAccountHandler<T, ModId> {
+impl<T: Config, ModId: Get<PalletId>> ModuleAccount<T> for ModuleAccountHandler<T, ModId> {
     type ModuleId = ModId;
 }
 
 /// Type Aliases
-pub type ContentTreasury<T> = ModuleAccountHandler<T, <T as Trait>::ModuleId>;
+pub type ContentTreasury<T> = ModuleAccountHandler<T, <T as Config>::ModuleId>;
 pub type Balances<T> = balances::Module<T>;
-pub type BalanceOf<T> = <Balances<T> as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
+pub type BalanceOf<T> = <Balances<T> as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 pub type DynBagId<T> =
-    DynamicBagIdType<<T as common::MembershipTypes>::MemberId, <T as storage::Trait>::ChannelId>;
+    DynamicBagIdType<<T as common::MembershipTypes>::MemberId, <T as storage::Config>::ChannelId>;
 pub type Storage<T> = storage::Module<T>;
 pub type ChannelRewardClaimInfo<T> = (
     Channel<T>,
-    <T as frame_system::Trait>::AccountId,
+    <T as frame_system::Config>::AccountId,
     BalanceOf<T>,
 );
 
