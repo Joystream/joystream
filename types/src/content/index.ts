@@ -1,10 +1,8 @@
 import { Vec, Option, Tuple, BTreeSet, UInt, BTreeMap } from '@polkadot/types'
 import { bool, u8, u32, u64, Null, Bytes } from '@polkadot/types/primitive'
 import { JoyStructDecorated, JoyEnum, ChannelId, MemberId, Balance, Hash, BlockNumber, AccountId } from '../common'
-import { DataObjectId, DataObjectCreationParameters } from '../storage'
+import { DataObjectId, DataObjectCreationParameters, DistributionBucketId, StorageBucketId } from '../storage'
 
-export class DistributionBucketId extends u64 {}
-export class StorageBucketId extends u64 {}
 export class OpenAuctionId extends u64 {}
 export class CuratorId extends u64 {}
 export class CuratorGroupId extends u64 {}
@@ -123,7 +121,7 @@ export class ContentActor extends JoyEnum({
 
 export class ChannelOwner extends JoyEnum({
   Member: MemberId,
-  Curators: CuratorGroupId,
+  CuratorGroup: CuratorGroupId,
 }) {}
 
 // Agent permissions
@@ -257,7 +255,7 @@ export class ChannelCreationParameters extends JoyStructDecorated({
   meta: Option.with(Bytes),
   collaborators: BTreeMap.with(MemberId, ChannelAgentPermissions),
   storage_buckets: BTreeSet.with(StorageBucketId),
-  distribution_Bucket: BTreeSet.with(DistributionBucketId),
+  distribution_buckets: BTreeSet.with(DistributionBucketId),
   expected_data_object_state_bloat_bond: Balance,
 }) {}
 

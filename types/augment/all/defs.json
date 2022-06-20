@@ -692,7 +692,7 @@
     "ChannelOwner": {
         "_enum": {
             "Member": "MemberId",
-            "Curators": "CuratorGroupId"
+            "CuratorGroup": "CuratorGroupId"
         }
     },
     "ChannelCategoryId": "u64",
@@ -707,8 +707,8 @@
         "assets": "Option<StorageAssets>",
         "meta": "Option<Bytes>",
         "collaborators": "BTreeMap<MemberId,ChannelAgentPermissions>",
-        "storage_buckets": "BTreeSet<u64>",
-        "distribution_Bucket": "BTreeSet<u64>",
+        "storage_buckets": "BTreeSet<StorageBucketId>",
+        "distribution_buckets": "BTreeSet<DistributionBucketId>",
         "expected_data_object_state_bloat_bond": "u128"
     },
     "ChannelUpdateParameters": {
@@ -985,12 +985,28 @@
         "cap_per_member": "Option<u128>",
         "metadata": "Option<Vec<u8>>"
     },
+    "TokenSaleParamsOf": {
+        "unit_price": "JoyBalance",
+        "upper_bound_quantity": "u128",
+        "starts_at": "Option<u32>",
+        "duration": "u32",
+        "vesting_schedule_params": "Option<VestingScheduleParams>",
+        "cap_per_member": "Option<u128>",
+        "metadata": "Option<Vec<u8>>"
+    },
+    "RevenueSplitId": "u32",
     "TokenAllocation": {
         "amount": "u128",
         "vesting_schedule_params": "Option<VestingScheduleParams>"
     },
     "TokenId": "u64",
-    "TokenIssuanceParams": {
+    "TokenIssuanceParameters": {
+        "initial_allocation": "BTreeMap<MemberId,TokenAllocation>",
+        "symbol": "Hash",
+        "transfer_policy": "TransferPolicyParams",
+        "patronage_rate": "YearlyRate"
+    },
+    "TokenIssuanceParametersOf": {
         "initial_allocation": "BTreeMap<MemberId,TokenAllocation>",
         "symbol": "Hash",
         "transfer_policy": "TransferPolicyParams",
@@ -1005,6 +1021,10 @@
         }
     },
     "JoyBalance": "u128",
+    "JoyBalanceOf": "u128",
+    "TokenBalanceOf": "u64",
+    "TokenDataOf": {},
+    "AccountDataOf": {},
     "YearlyRate": "Permill",
     "BlockRate": "Perquintill",
     "Payment": {
@@ -1017,6 +1037,7 @@
         "vesting_schedule": "Option<VestingScheduleParams>"
     },
     "MerkleProof": "Vec<([u8;32],MerkleSide)>",
+    "MerkleProofOf": "Vec<([u8;32],MerkleSide)>",
     "MerkleSide": {
         "_enum": [
             "Right",
@@ -1043,6 +1064,9 @@
         "commitment": "Hash",
         "payload": "Option<SingleDataObjectUploadParams>"
     },
+    "TransfersOf": {},
+    "ValidatedTransfers": {},
+    "TransfersWithVestingOf": {},
     "UploadContent": {
         "upload_account": "AccountId",
         "bag_id": "BagId"

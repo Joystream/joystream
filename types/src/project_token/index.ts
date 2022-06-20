@@ -4,7 +4,9 @@ import { JoyStructDecorated, JoyEnum, MemberId, Balance, Hash, BlockNumber, Acco
 import { DataObjectCreationParameters, BagId } from '../storage'
 
 export class TokenSaleId extends u32 {}
+export class RevenueSplitId extends u32 {}
 export class TokenId extends u64 {}
+export class TokenBalanceOf extends u64 {}
 export class JoyBalance extends Balance {}
 export class YearlyRate extends UInt.with(32, 'Permill') {}
 export class BlockRate extends UInt.with(64, 'Perquintill') {}
@@ -90,7 +92,7 @@ export class TokenAllocation extends JoyStructDecorated({
   vesting_schedule_params: Option.with(VestingScheduleParams),
 }) {}
 
-export class TokenIssuanceParams extends JoyStructDecorated({
+export class TokenIssuanceParameters extends JoyStructDecorated({
   initial_allocation: BTreeMap.with(MemberId, TokenAllocation),
   symbol: Hash,
   transfer_policy: TransferPolicyParams,
@@ -120,6 +122,12 @@ export class ValidatedPayment extends JoyStructDecorated({
   vesting_cleanup_candidate: Option.with(VestingSource),
 }) {}
 
+export class Transfers extends JoyStructDecorated({}) {}
+
+export class TokenData extends JoyStructDecorated({}) {}
+
+export class AccountData extends JoyStructDecorated({}) {}
+
 export const projectTokenTypes = {
   // --- Vesting ------------------------------------
   VestingSource,
@@ -129,12 +137,19 @@ export const projectTokenTypes = {
   TokenSaleId,
   TokenSale,
   TokenSaleParams,
+  TokenSaleParamsOf: TokenSaleParams,
+  RevenueSplitId,
   // --- Token Basics ---------------------------------
   TokenAllocation,
   TokenId,
-  TokenIssuanceParams,
+  TokenIssuanceParameters,
+  TokenIssuanceParametersOf: TokenIssuanceParameters,
   OfferingState,
   JoyBalance,
+  JoyBalanceOf: JoyBalance,
+  TokenBalanceOf,
+  TokenDataOf: TokenData,
+  AccountDataOf: AccountData,
   // --- Patronage ------------------------------------
   YearlyRate,
   BlockRate,
@@ -142,12 +157,16 @@ export const projectTokenTypes = {
   Payment,
   PaymentWithVesting,
   MerkleProof,
+  MerkleProofOf: MerkleProof,
   MerkleSide,
   ValidatedPayment,
   // --- Transfers ------------------------------------
   TransferPolicy,
   TransferPolicyParams,
   WhitelistParams,
+  TransfersOf: Transfers,
+  ValidatedTransfers: Transfers,
+  TransfersWithVestingOf: Transfers,
   // --- Storage ---------------------------------------
   UploadContent,
   SingleDataObjectUploadParams,

@@ -7,6 +7,9 @@ import type { AccountId, Balance, Hash, Perbill, Permill, Perquintill } from '@p
 import type { ValidatorPrefsWithCommission } from '@polkadot/types/interfaces/staking';
 import type { AccountInfoWithRefCount } from '@polkadot/types/interfaces/system';
 
+/** @name AccountDataOf */
+export interface AccountDataOf extends Struct {}
+
 /** @name AccountInfo */
 export interface AccountInfo extends AccountInfoWithRefCount {}
 
@@ -277,8 +280,8 @@ export interface ChannelCreationParameters extends Struct {
   readonly assets: Option<StorageAssets>;
   readonly meta: Option<Bytes>;
   readonly collaborators: BTreeMap<MemberId, ChannelAgentPermissions>;
-  readonly storage_buckets: BTreeSet<u64>;
-  readonly distribution_Bucket: BTreeSet<u64>;
+  readonly storage_buckets: BTreeSet<StorageBucketId>;
+  readonly distribution_buckets: BTreeSet<DistributionBucketId>;
   readonly expected_data_object_state_bloat_bond: u128;
 }
 
@@ -289,8 +292,8 @@ export interface ChannelId extends u64 {}
 export interface ChannelOwner extends Enum {
   readonly isMember: boolean;
   readonly asMember: MemberId;
-  readonly isCurators: boolean;
-  readonly asCurators: CuratorGroupId;
+  readonly isCuratorGroup: boolean;
+  readonly asCuratorGroup: CuratorGroupId;
 }
 
 /** @name ChannelPayoutsPayloadParameters */
@@ -664,6 +667,9 @@ export interface IsCensored extends bool {}
 /** @name JoyBalance */
 export interface JoyBalance extends u128 {}
 
+/** @name JoyBalanceOf */
+export interface JoyBalanceOf extends u128 {}
+
 /** @name LimitPerPeriod */
 export interface LimitPerPeriod extends Struct {
   readonly limit: u64;
@@ -690,6 +696,9 @@ export interface Membership extends Struct {
 
 /** @name MerkleProof */
 export interface MerkleProof extends Vec<ITuple<[U8aFixed, MerkleSide]>> {}
+
+/** @name MerkleProofOf */
+export interface MerkleProofOf extends Vec<ITuple<[U8aFixed, MerkleSide]>> {}
 
 /** @name MerkleSide */
 export interface MerkleSide extends Enum {
@@ -1121,6 +1130,9 @@ export interface ReplyToDelete extends Struct {
   readonly hide: bool;
 }
 
+/** @name RevenueSplitId */
+export interface RevenueSplitId extends u32 {}
+
 /** @name RewardPaymentType */
 export interface RewardPaymentType extends Enum {
   readonly isMissedReward: boolean;
@@ -1260,11 +1272,25 @@ export interface TokenAllocation extends Struct {
   readonly vesting_schedule_params: Option<VestingScheduleParams>;
 }
 
+/** @name TokenBalanceOf */
+export interface TokenBalanceOf extends u64 {}
+
+/** @name TokenDataOf */
+export interface TokenDataOf extends Struct {}
+
 /** @name TokenId */
 export interface TokenId extends u64 {}
 
-/** @name TokenIssuanceParams */
-export interface TokenIssuanceParams extends Struct {
+/** @name TokenIssuanceParameters */
+export interface TokenIssuanceParameters extends Struct {
+  readonly initial_allocation: BTreeMap<MemberId, TokenAllocation>;
+  readonly symbol: Hash;
+  readonly transfer_policy: TransferPolicyParams;
+  readonly patronage_rate: YearlyRate;
+}
+
+/** @name TokenIssuanceParametersOf */
+export interface TokenIssuanceParametersOf extends Struct {
   readonly initial_allocation: BTreeMap<MemberId, TokenAllocation>;
   readonly symbol: Hash;
   readonly transfer_policy: TransferPolicyParams;
@@ -1289,6 +1315,17 @@ export interface TokenSaleId extends u32 {}
 
 /** @name TokenSaleParams */
 export interface TokenSaleParams extends Struct {
+  readonly unit_price: JoyBalance;
+  readonly upper_bound_quantity: u128;
+  readonly starts_at: Option<u32>;
+  readonly duration: u32;
+  readonly vesting_schedule_params: Option<VestingScheduleParams>;
+  readonly cap_per_member: Option<u128>;
+  readonly metadata: Option<Bytes>;
+}
+
+/** @name TokenSaleParamsOf */
+export interface TokenSaleParamsOf extends Struct {
   readonly unit_price: JoyBalance;
   readonly upper_bound_quantity: u128;
   readonly starts_at: Option<u32>;
@@ -1331,6 +1368,12 @@ export interface TransferPolicyParams extends Enum {
   readonly asPermissioned: WhitelistParams;
 }
 
+/** @name TransfersOf */
+export interface TransfersOf extends Struct {}
+
+/** @name TransfersWithVestingOf */
+export interface TransfersWithVestingOf extends Struct {}
+
 /** @name UpdateChannelPayoutsParameters */
 export interface UpdateChannelPayoutsParameters extends Struct {
   readonly commitment: Option<Hash>;
@@ -1371,6 +1414,9 @@ export interface ValidatedPayment extends Struct {
   readonly payment: PaymentWithVesting;
   readonly vesting_cleanup_candidate: Option<VestingSource>;
 }
+
+/** @name ValidatedTransfers */
+export interface ValidatedTransfers extends Struct {}
 
 /** @name ValidatorPrefs */
 export interface ValidatorPrefs extends ValidatorPrefsWithCommission {}

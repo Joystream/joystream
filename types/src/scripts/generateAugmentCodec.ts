@@ -20,6 +20,7 @@ import constitution from '../constitution'
 import blog from '../blog'
 import bounty from '../bounty'
 import content from '../content'
+import projectToken from '../project_token'
 
 const AUGMENT_INTERFACES_PATH = path.join(__dirname, '../../augment')
 const AUGMENT_CODEC_PATH = path.join(__dirname, '../../augment-codec')
@@ -39,6 +40,7 @@ const typesByModule = {
   'blog': blog,
   'bounty': bounty,
   'content': content,
+  'project_token': projectToken,
 }
 
 type Imports = { [moduleName: string]: string[] }
