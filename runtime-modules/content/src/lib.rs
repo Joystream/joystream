@@ -1455,7 +1455,7 @@ decl_module! {
 
             // Create new auction
             let new_nonce = nft.open_auctions_nonce.saturating_add(One::one());
-            let current_block = <frame_system::Module<T>>::block_number();
+            let current_block = <frame_system::Pallet<T>>::block_number();
             let auction = OpenAuction::<T>::new(auction_params.clone(), new_nonce, current_block);
 
             // Update the video
@@ -3275,12 +3275,12 @@ impl<T: Config> Module<T> {
     // Increment NFT numbers for a channel and global counters.
     fn increment_nft_counters(channel: &mut Channel<T>) {
         Self::increment_global_nft_counters();
-        channel.increment_channel_nft_counters(frame_system::Module::<T>::block_number());
+        channel.increment_channel_nft_counters(frame_system::Pallet::<T>::block_number());
     }
 
     // Increment global NFT counters (daily and weekly).
     fn increment_global_nft_counters() {
-        let current_block = frame_system::Module::<T>::block_number();
+        let current_block = frame_system::Pallet::<T>::block_number();
 
         let daily_limit = Self::global_daily_nft_limit();
         GlobalDailyNftCounter::<T>::mutate(|nft_counter| {
@@ -3334,7 +3334,7 @@ impl<T: Config> Module<T> {
     ) -> DispatchResult {
         ensure!(!nft_limit.limit.is_zero(), error);
 
-        let current_block = frame_system::Module::<T>::block_number();
+        let current_block = frame_system::Pallet::<T>::block_number();
         if nft_counter.is_current_period(current_block, nft_limit.block_number_period) {
             ensure!(nft_counter.counter < nft_limit.limit, error);
         }

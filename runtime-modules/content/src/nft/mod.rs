@@ -342,7 +342,7 @@ impl<T: Config> Module<T> {
         let amount_after_platform_fee = amount.saturating_sub(platform_fee);
         let royalty_fee = royalty_payment
             .as_ref()
-            .map_or(<T as balances::Trait>::Balance::zero(), |(r, _)| {
+            .map_or(<T as balances::Config>::Balance::zero(), |(r, _)| {
                 r.mul_floor(amount)
             });
 
@@ -399,7 +399,9 @@ impl<T: Config> Module<T> {
     ) -> Result<T::AccountId, DispatchError> {
         match nft.owner {
             NftOwner::Member(member_id) => T::MemberAuthenticator::controller_account_id(member_id),
-            NftOwner::ChannelOwner => Ok(ContentTreasury::<T>::account_for_channel(channel_id)),
+            NftOwner::ChannelOwner => {
+                Ok(ContentTreasury::<T>::account_for_channel(video.in_channel))
+            }
         }
     }
 

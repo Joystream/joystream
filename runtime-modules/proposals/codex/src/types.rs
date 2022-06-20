@@ -33,7 +33,7 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
 
 /// Proposal details provide voters the information required for the perceived voting.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]
 pub enum ProposalDetails<
     Balance,
     BlockNumber,

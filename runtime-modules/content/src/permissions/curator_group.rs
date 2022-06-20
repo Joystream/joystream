@@ -4,7 +4,7 @@ use sp_std::collections::btree_map::BTreeMap;
 use strum_macros::EnumIter;
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord)]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord, TypeInfo)]
 pub enum PausableChannelFeature {
     // Affects:
     // -`withdraw_from_channel_balance`
@@ -40,7 +40,7 @@ impl Default for PausableChannelFeature {
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord, TypeInfo)]
 pub enum ContentModerationAction {
     // Related extrinsics:
     // - `set_video_visibility_as_moderator`
@@ -73,7 +73,7 @@ pub enum ContentModerationAction {
 }
 
 pub type ModerationPermissionsByLevel<T> =
-    BTreeMap<<T as Trait>::ChannelPrivilegeLevel, BTreeSet<ContentModerationAction>>;
+    BTreeMap<<T as Config>::ChannelPrivilegeLevel, BTreeSet<ContentModerationAction>>;
 use scale_info::TypeInfo;
 
 /// A group, that consists of `curators` set

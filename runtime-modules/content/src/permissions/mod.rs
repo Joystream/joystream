@@ -273,7 +273,7 @@ pub fn ensure_actor_authorized_to_perform_video_update<T: Config>(
 }
 
 /// Ensure actor is authorized to delete video
-pub fn ensure_actor_authorized_to_delete_video<T: Trait>(
+pub fn ensure_actor_authorized_to_delete_video<T: Config>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
@@ -287,7 +287,7 @@ pub fn ensure_actor_authorized_to_delete_video<T: Trait>(
 }
 
 /// Ensure actor is authorized to manage video nfts
-pub fn ensure_actor_authorized_to_manage_video_nfts<T: Trait>(
+pub fn ensure_actor_authorized_to_manage_video_nfts<T: Config>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
@@ -301,7 +301,7 @@ pub fn ensure_actor_authorized_to_manage_video_nfts<T: Trait>(
 }
 
 // Ensure actor is authorized to send channel_agent_remark
-pub fn ensure_actor_authorized_to_send_channel_agent_remark<T: Trait>(
+pub fn ensure_actor_authorized_to_send_channel_agent_remark<T: Config>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
@@ -348,7 +348,7 @@ pub fn ensure_channel_is_owned_by_curator_group<T: Config>(
     Ok(())
 }
 
-pub fn ensure_actor_has_channel_permissions<T: Trait>(
+pub fn ensure_actor_has_channel_permissions<T: Config>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
@@ -382,7 +382,7 @@ pub fn ensure_actor_has_channel_permissions<T: Trait>(
     }
 }
 
-fn ensure_agent_has_required_permissions<T: Trait>(
+fn ensure_agent_has_required_permissions<T: Config>(
     agent_permissions: &ChannelAgentPermissions,
     required_permissions: &[ChannelActionPermission],
 ) -> Result<ChannelAgentPermissions, DispatchError> {
@@ -451,7 +451,7 @@ pub fn actor_to_channel_owner<T: Config>(
 /// PAYOUTS-RELATED PERMISSIONS
 
 // authorize actor and claim payment
-pub fn ensure_actor_authorized_to_claim_payment<T: Trait>(
+pub fn ensure_actor_authorized_to_claim_payment<T: Config>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
@@ -465,7 +465,7 @@ pub fn ensure_actor_authorized_to_claim_payment<T: Trait>(
     )
 }
 
-pub fn ensure_actor_authorized_to_withdraw_from_channel<T: Trait>(
+pub fn ensure_actor_authorized_to_withdraw_from_channel<T: Config>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
@@ -535,7 +535,7 @@ pub fn ensure_actor_authorized_to_transfer_channel<T: Config>(
 }
 
 // Council reward
-pub fn ensure_actor_authorized_to_claim_council_reward<T: Trait>(
+pub fn ensure_actor_authorized_to_claim_council_reward<T: Config>(
     origin: T::Origin,
     owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
 ) -> DispatchResult {
@@ -560,7 +560,7 @@ pub fn ensure_no_channel_transfers<T: Config>(channel: &Channel<T>) -> DispatchR
 }
 
 // Nft limits
-pub fn ensure_actor_authorized_to_update_channel_nft_limits<T: Trait>(
+pub fn ensure_actor_authorized_to_update_channel_nft_limits<T: Config>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
@@ -575,7 +575,7 @@ pub fn ensure_actor_authorized_to_update_channel_nft_limits<T: Trait>(
 }
 
 // Creator tokens
-pub fn get_member_id_of_actor<T: Trait>(
+pub fn get_member_id_of_actor<T: Config>(
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
 ) -> Result<T::MemberId, DispatchError> {
     let opt_member_id = match actor {
@@ -646,7 +646,7 @@ pub fn ensure_actor_authorized_to_make_creator_token_permissionless<T: Config>(
     Ok(sender)
 }
 
-pub fn ensure_actor_authorized_to_reduce_creator_token_patronage_rate<T: Trait>(
+pub fn ensure_actor_authorized_to_reduce_creator_token_patronage_rate<T: Config>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
@@ -657,7 +657,7 @@ pub fn ensure_actor_authorized_to_reduce_creator_token_patronage_rate<T: Trait>(
     Ok(sender)
 }
 
-pub fn ensure_actor_authorized_to_manage_revenue_splits<T: Trait>(
+pub fn ensure_actor_authorized_to_manage_revenue_splits<T: Config>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
@@ -668,7 +668,7 @@ pub fn ensure_actor_authorized_to_manage_revenue_splits<T: Trait>(
     Ok(sender)
 }
 
-pub fn ensure_actor_authorized_to_deissue_creator_token<T: Trait>(
+pub fn ensure_actor_authorized_to_deissue_creator_token<T: Config>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,

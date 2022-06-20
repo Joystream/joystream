@@ -29,7 +29,7 @@ impl<ChannelId> Default for NftLimitId<ChannelId> {
 
 /// All periods that nft limits apply to
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Copy, TypeInfo)]
 pub enum NftLimitPeriod {
     Daily,
     Weekly,
@@ -44,7 +44,7 @@ impl Default for NftLimitPeriod {
 
 /// Defines limit for object for a defined period.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default, Copy)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default, Copy, TypeInfo)]
 pub struct LimitPerPeriod<BlockNumber> {
     /// Limit for objects.
     pub limit: u64,
@@ -55,7 +55,7 @@ pub struct LimitPerPeriod<BlockNumber> {
 
 /// Defines limit for object for a defined period.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, Default, TypeInfo)]
 pub struct NftCounter<BlockNumber: BaseArithmetic + Copy> {
     /// Counter for objects.
     pub counter: u64,
@@ -154,7 +154,7 @@ pub struct ChannelCategoryUpdateParameters {
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord)]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord, TypeInfo)]
 pub enum ChannelActionPermission {
     /// Allows updating channel metadata through `update_channel` tx
     UpdateChannelMetadata,
@@ -276,7 +276,7 @@ pub struct ChannelRecord<
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 /// Defines whether a channel is being transferred. No transfer by the default.
 pub enum ChannelTransferStatus<
     MemberId: Ord + PartialEq,
@@ -299,7 +299,7 @@ impl<MemberId: Ord + PartialEq, CuratorGroupId: PartialEq, Balance: PartialEq + 
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 /// Contains parameters for the pending transfer.
 pub struct PendingTransfer<MemberId: Ord, CuratorGroupId, Balance: Zero> {
     /// New channel owner.
@@ -309,7 +309,7 @@ pub struct PendingTransfer<MemberId: Ord, CuratorGroupId, Balance: Zero> {
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 /// Contains parameters for the pending transfer.
 pub struct TransferParameters<MemberId: Ord, Balance: Zero> {
     /// Channel's new collaborators along with their respective permissions
@@ -432,7 +432,7 @@ pub type ChannelOwnershipTransferRequest<T> = ChannelOwnershipTransferRequestRec
 
 /// Information about channel being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct ChannelCreationParametersRecord<
     StorageAssets,
     MemberId: Ord,
@@ -464,7 +464,7 @@ pub type ChannelCreationParameters<T> = ChannelCreationParametersRecord<
 
 /// Information about channel being updated.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct ChannelUpdateParametersRecord<StorageAssets, DataObjectId: Ord, MemberId: Ord, Balance> {
     /// Asset collection for the channel, referenced by metadata
     pub assets_to_upload: Option<StorageAssets>,
@@ -524,7 +524,7 @@ pub type StorageAssets<T> = StorageAssetsRecord<BalanceOf<T>>;
 
 /// Information about the video being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct VideoCreationParametersRecord<StorageAssets, NftIssuanceParameters, Balance> {
     /// Asset collection for the video
     pub assets: Option<StorageAssets>,
@@ -654,7 +654,7 @@ impl<ChannelId: Clone, OwnedNft: Clone, DataObjectId: Ord>
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]
 pub struct ChannelPayoutsPayloadParametersRecord<AccountId, Balance> {
     pub uploader_account: AccountId,
     pub object_creation_params: DataObjectCreationParameters,
@@ -666,7 +666,7 @@ pub type ChannelPayoutsPayloadParameters<T> =
     ChannelPayoutsPayloadParametersRecord<<T as frame_system::Config>::AccountId, BalanceOf<T>>;
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]
 pub struct UpdateChannelPayoutsParametersRecord<ChannelPayoutsPayloadParameters, Balance, Hash> {
     pub commitment: Option<Hash>,
     pub payload: Option<ChannelPayoutsPayloadParameters>,
@@ -760,7 +760,7 @@ impl<T: Config, ModId: Get<PalletId>> ModuleAccount<T> for ModuleAccountHandler<
 
 /// Type Aliases
 pub type ContentTreasury<T> = ModuleAccountHandler<T, <T as Config>::ModuleId>;
-pub type Balances<T> = balances::Module<T>;
+pub type Balances<T> = balances::Pallet<T>;
 pub type BalanceOf<T> = <Balances<T> as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 pub type DynBagId<T> =
     DynamicBagIdType<<T as common::MembershipTypes>::MemberId, <T as storage::Config>::ChannelId>;
