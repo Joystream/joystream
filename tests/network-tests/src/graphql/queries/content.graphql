@@ -44,7 +44,6 @@ fragment ChannelFields on Channel {
   language {
     iso
   }
-  rewardAccount
   isCensored
   ownerMember {
     id

@@ -100,6 +100,8 @@ export const proposalTypeToProposalParamsKey = {
   'UnlockBlogPost': 'unlockBlogPostProposalParameters',
   'UpdateWorkingGroupBudget': 'updateWorkingGroupBudgetProposalParameters',
   'VetoProposal': 'vetoProposalProposalParameters',
+  'UpdateGlobalNftLimit': 'updateGlobalNftLimitProposalParameters',
+  'UpdateChannelPayouts': 'updateChannelPayoutsProposalParameters',
 } as const
 
 type ProposalTypeToProposalParamsKeyMap = { [K in ProposalType]: keyof AugmentedConsts<'promise'>['proposalsCodex'] }

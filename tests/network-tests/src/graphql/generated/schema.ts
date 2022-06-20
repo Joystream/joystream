@@ -6091,8 +6091,6 @@ export type Channel = BaseGraphQlObject & {
   ownerCuratorGroupId?: Maybe<Scalars['String']>
   category?: Maybe<ChannelCategory>
   categoryId?: Maybe<Scalars['String']>
-  /** Reward account where revenue is sent if set. */
-  rewardAccount?: Maybe<Scalars['String']>
   /** The title of the Channel */
   title?: Maybe<Scalars['String']>
   /** The description of a Channel */
@@ -6245,7 +6243,6 @@ export type ChannelCreateInput = {
   ownerMember?: Maybe<Scalars['ID']>
   ownerCuratorGroup?: Maybe<Scalars['ID']>
   category?: Maybe<Scalars['ID']>
-  rewardAccount?: Maybe<Scalars['String']>
   title?: Maybe<Scalars['String']>
   description?: Maybe<Scalars['String']>
   activeVideosCounter: Scalars['Float']
@@ -6389,8 +6386,6 @@ export enum ChannelOrderByInput {
   OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
   CategoryAsc = 'category_ASC',
   CategoryDesc = 'category_DESC',
-  RewardAccountAsc = 'rewardAccount_ASC',
-  RewardAccountDesc = 'rewardAccount_DESC',
   TitleAsc = 'title_ASC',
   TitleDesc = 'title_DESC',
   DescriptionAsc = 'description_ASC',
@@ -6415,7 +6410,6 @@ export type ChannelUpdateInput = {
   ownerMember?: Maybe<Scalars['ID']>
   ownerCuratorGroup?: Maybe<Scalars['ID']>
   category?: Maybe<Scalars['ID']>
-  rewardAccount?: Maybe<Scalars['String']>
   title?: Maybe<Scalars['String']>
   description?: Maybe<Scalars['String']>
   activeVideosCounter?: Maybe<Scalars['Float']>
@@ -6452,11 +6446,6 @@ export type ChannelWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
-  rewardAccount_eq?: Maybe<Scalars['String']>
-  rewardAccount_contains?: Maybe<Scalars['String']>
-  rewardAccount_startsWith?: Maybe<Scalars['String']>
-  rewardAccount_endsWith?: Maybe<Scalars['String']>
-  rewardAccount_in?: Maybe<Array<Scalars['String']>>
   title_eq?: Maybe<Scalars['String']>
   title_contains?: Maybe<Scalars['String']>
   title_startsWith?: Maybe<Scalars['String']>
