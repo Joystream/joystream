@@ -24,7 +24,8 @@ use std::{
 };
 
 use joystream_node::chain_spec::{
-    self, content_config, forum_config, initial_balances, initial_members, AccountId,
+    self, content_config, forum_config, initial_balances, initial_members,
+    joy_chain_spec_properties, AccountId,
 };
 
 use sc_chain_spec::ChainType;
@@ -45,19 +46,6 @@ enum ChainDeployment {
     local,
     staging,
     live,
-}
-
-fn joy_chain_spec_properties() -> json::map::Map<String, json::Value> {
-    let mut properties: json::map::Map<String, json::Value> = json::map::Map::new();
-    properties.insert(
-        String::from("tokenDecimals"),
-        json::Value::Number(json::Number::from(0)),
-    );
-    properties.insert(
-        String::from("tokenSymbol"),
-        json::Value::String(String::from("JOY")),
-    );
-    properties
 }
 
 #[allow(clippy::from_over_into)]

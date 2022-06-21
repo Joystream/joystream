@@ -50,6 +50,9 @@ pub const WEEKS: BlockNumber = DAYS * 7;
 // 1 in 4 blocks (on average, not counting collisions) will be primary babe blocks.
 pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
 
+// ss58 Encoding address prefix for Joystream
+pub const JOY_ADDRESS_PREFIX: u16 = 126;
+
 /// This module is based on https://w3f-research.readthedocs.io/en/latest/polkadot/economics/1-token-economics.html#relay-chain-transaction-fees-and-per-block-transaction-limits
 /// It was copied from Polkadot's implementation
 pub mod fees {

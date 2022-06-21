@@ -30,16 +30,18 @@ pub mod initial_members;
 use grandpa_primitives::AuthorityId as GrandpaId;
 use hex_literal::hex;
 use node_runtime::{
-    constants::currency::*, membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig,
-    BalancesConfig, Block, ContentConfig, CouncilConfig, ForumConfig, GrandpaConfig,
-    ImOnlineConfig, MaxNominations, MembersConfig, ReferendumConfig, SessionConfig, SessionKeys,
-    StakerStatus, StakingConfig, SudoConfig, SystemConfig, TransactionPaymentConfig,
+    constants::currency::*, constants::JOY_ADDRESS_PREFIX, membership, wasm_binary_unwrap,
+    AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, Block, ContentConfig, CouncilConfig,
+    ForumConfig, GrandpaConfig, ImOnlineConfig, MaxNominations, MembersConfig, ReferendumConfig,
+    SessionConfig, SessionKeys, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
+    TransactionPaymentConfig,
 };
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_chain_spec::ChainSpecExtension;
 use sc_service::ChainType;
 use sc_telemetry::TelemetryEndpoints;
 use serde::{Deserialize, Serialize};
+use serde_json as json;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_babe::AuthorityId as BabeId;
 use sp_core::{crypto::UncheckedInto, sr25519, Pair, Public};
@@ -137,6 +139,23 @@ fn development_endowed_accounts() -> Vec<AccountId> {
         get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
         get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
     ]
+}
+
+pub fn joy_chain_spec_properties() -> json::map::Map<String, json::Value> {
+    let mut properties: json::map::Map<String, json::Value> = json::map::Map::new();
+    properties.insert(
+        String::from("tokenDecimals"),
+        json::Value::Number(json::Number::from(10)),
+    );
+    properties.insert(
+        String::from("tokenSymbol"),
+        json::Value::String(String::from("JOY")),
+    );
+    properties.insert(
+        String::from("ss58Format"),
+        json::Value::Number(json::Number::from(JOY_ADDRESS_PREFIX)),
+    );
+    properties
 }
 
 /// Helper function to create GenesisConfig for testing
@@ -278,7 +297,7 @@ pub fn development_config() -> ChainSpec {
         None,
         None,
         None,
-        None,
+        Some(joy_chain_spec_properties()),
         Default::default(),
     )
 }
@@ -310,7 +329,7 @@ pub fn local_testnet_config() -> ChainSpec {
         None,
         None,
         None,
-        None,
+        Some(joy_chain_spec_properties()),
         Default::default(),
     )
 }
@@ -346,7 +365,7 @@ pub(crate) mod tests {
             None,
             None,
             None,
-            None,
+            Some(joy_chain_spec_properties()),
             Default::default(),
         )
     }
@@ -362,7 +381,7 @@ pub(crate) mod tests {
             None,
             None,
             None,
-            None,
+            Some(joy_chain_spec_properties()),
             Default::default(),
         )
     }
