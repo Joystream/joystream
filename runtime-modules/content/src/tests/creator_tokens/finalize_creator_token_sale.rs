@@ -3,6 +3,7 @@ use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
 use common::BudgetManager;
+use frame_support::assert_noop;
 
 fn purchase_tokens_on_sale(amount: u64) {
     let existential_deposit: u64 = <Test as balances::Config>::ExistentialDeposit::get().into();
@@ -210,6 +211,34 @@ fn successful_finalize_curator_channel_creator_token_sale_by_lead() {
             council_budget_pre.saturating_add(
                 DEFAULT_CREATOR_TOKEN_ISSUANCE * DEFAULT_CREATOR_TOKEN_SALE_UNIT_PRICE
             )
+        );
+    })
+}
+
+#[test]
+fn unsuccessful_finalize_token_sale_during_channel_transfer() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+        increase_account_balance_helper(
+            ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
+            DEFAULT_PAYOUT_EARNED
+                .saturating_add(<Test as balances::Trait>::ExistentialDeposit::get().into()),
+        );
+        InitCreatorTokenSaleFixture::default().call_and_assert(Ok(()));
+        purchase_tokens_on_sale(DEFAULT_CREATOR_TOKEN_ISSUANCE);
+        run_to_block(1 + DEFAULT_CREATOR_TOKEN_SALE_DURATION);
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::finalize_creator_token_sale(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                1u64,
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
         );
     })
 }

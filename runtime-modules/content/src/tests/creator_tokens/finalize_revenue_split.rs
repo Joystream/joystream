@@ -2,6 +2,7 @@
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
+use frame_support::assert_noop;
 use project_token::Module as Token;
 
 #[test]
@@ -157,5 +158,35 @@ fn successful_finalize_curator_channel_revenue_split_by_lead() {
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
             .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn unsuccesful_finalize_revenue_split_during_transfer() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+        increase_account_balance_helper(
+            ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
+            DEFAULT_PAYOUT_EARNED
+                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
+                .saturating_add(<Test as balances::Trait>::ExistentialDeposit::get().into()),
+        );
+        IssueRevenueSplitFixture::default().call_and_assert(Ok(()));
+        run_to_block(
+            1 + Token::<Test>::min_revenue_split_time_to_start() + DEFAULT_REVENUE_SPLIT_DURATION,
+        );
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::finalize_revenue_split(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                ChannelId::one(),
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
+        );
     })
 }

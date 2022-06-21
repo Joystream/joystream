@@ -2,7 +2,7 @@
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_ok, assert_noop};
 
 #[test]
 fn accept_incoming_offer() {
@@ -260,6 +260,26 @@ fn accept_incoming_offer_insufficient_balance() {
         assert_err!(
             accept_incoming_offer_result,
             Error::<Test>::InsufficientBalance
+        );
+    })
+}
+
+#[test]
+fn accept_incoming_offer_fails_during_channel_transfer() {
+    with_default_mock_builder(|| {
+        ContentTest::default()
+            .with_video_nft_status(NftTransactionalStatusType::Offer)
+            .setup();
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::accept_incoming_offer(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                VideoId::one(),
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
         );
     })
 }

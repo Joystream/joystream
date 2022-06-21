@@ -2,6 +2,7 @@
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
+use frame_support::assert_noop;
 
 #[test]
 fn unsuccessful_update_creator_token_sale_non_existing_channel() {
@@ -179,5 +180,28 @@ fn successful_update_upcoming_curator_channel_creator_token_sale_by_lead() {
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
             .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn unsuccessful_update_upcoming_creator_channel_creator_token_sale_during_channel_transfer() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+        InitCreatorTokenSaleFixture::default().call_and_assert(Ok(()));
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::update_upcoming_creator_token_sale(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                1u64,
+                Some(1u64),
+                Some(10u64),
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
+        );
     })
 }

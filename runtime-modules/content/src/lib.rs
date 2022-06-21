@@ -1952,7 +1952,7 @@ decl_module! {
             ensure_member_auth_success::<T>(&participant_account_id, &participant_id)?;
 
             // block during channel transfers
-            let video = Self::ensure_video_exists(video_id)?;
+            let video = Self::ensure_video_exists(&video_id)?;
             Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
 
             // ensure nft exists
