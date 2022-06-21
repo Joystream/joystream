@@ -813,7 +813,9 @@ fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
         let leader_worker_id = WorkingGroupInstance::<T, I>::current_lead().unwrap();
 
         assert_eq!(
-            WorkingGroupInstance::<T, I>::worker_by_id(leader_worker_id).staking_account_id,
+            WorkingGroupInstance::<T, I>::worker_by_id(leader_worker_id)
+                .expect("Worker Must Exist")
+                .staking_account_id,
             staking_account_id.into()
         );
 
@@ -1429,7 +1431,8 @@ fn run_create_set_group_leader_reward_proposal_execution_succeeds<
             working_group,
         );
 
-        let worker = WorkingGroupInstance::<T, I>::worker_by_id(leader_worker_id);
+        let worker = WorkingGroupInstance::<T, I>::worker_by_id(leader_worker_id)
+            .expect("Worker Must Exist");
 
         assert_eq!(worker.reward_per_block, Some(new_reward_amount.into()));
     });

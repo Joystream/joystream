@@ -111,8 +111,11 @@ impl Default for DummyProposalFixture {
     fn default() -> Self {
         let title = b"title".to_vec();
         let description = b"description".to_vec();
-        let dummy_proposal =
-            joystream_utility::Call::<Runtime>::execute_signal_proposal(b"signal".to_vec());
+        let dummy_proposal = joystream_utility::Call::<Runtime>::execute_signal_proposal {
+            signal: b"signal".to_vec(),
+        };
+        let proposer_id = 1;
+        let account_id = account_from_member_id(proposer_id);
 
         DummyProposalFixture {
             parameters: ProposalParameters {
@@ -125,8 +128,8 @@ impl Default for DummyProposalFixture {
                 required_stake: None,
                 constitutionality: 1,
             },
-            account_id: <Runtime as frame_system::Config>::AccountId::default(),
-            proposer_id: 0,
+            account_id,
+            proposer_id,
             proposal_code: dummy_proposal.encode(),
             title,
             description,
@@ -205,17 +208,25 @@ struct CancelProposalFixture {
 
 impl CancelProposalFixture {
     fn new(proposal_id: u32) -> Self {
-        let account_id = <Runtime as frame_system::Config>::AccountId::default();
+        let proposer_id = 0;
+        let account_id = account_from_member_id(proposer_id);
         CancelProposalFixture {
             proposal_id,
             origin: RawOrigin::Signed(account_id),
-            proposer_id: 0,
+            proposer_id,
         }
     }
 
     fn with_proposer(self, proposer_id: u64) -> Self {
         CancelProposalFixture {
             proposer_id,
+            ..self
+        }
+    }
+
+    fn with_account_id(self, account_id: AccountId32) -> Self {
+        CancelProposalFixture {
+            origin: RawOrigin::Signed(account_id),
             ..self
         }
     }
@@ -293,8 +304,9 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
 
         assert_eq!(proposal, expected_proposal);
 
-        let cancel_proposal_fixture =
-            CancelProposalFixture::new(proposal_id).with_proposer(member_id);
+        let cancel_proposal_fixture = CancelProposalFixture::new(proposal_id)
+            .with_proposer(member_id)
+            .with_account_id(account_id.clone());
 
         cancel_proposal_fixture.cancel_and_assert(Ok(()));
 
@@ -542,7 +554,7 @@ fn text_proposal_execution_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone()).into(),
                 general_proposal_parameters,
                 ProposalDetails::Signal(b"signal".to_vec()),
@@ -578,7 +590,7 @@ fn funding_request_proposal_execution_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone()).into(),
                 general_proposal_parameters,
                 ProposalDetails::FundingRequest(vec![common::FundingRequestParameters {
@@ -620,7 +632,7 @@ fn create_blog_post_proposal_execution_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone()).into(),
                 general_proposal_parameters,
                 ProposalDetails::CreateBlogPost(vec![0u8], vec![0u8]),
@@ -659,7 +671,7 @@ fn edit_blog_post_proposal_execution_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone()).into(),
                 general_proposal_parameters,
                 ProposalDetails::EditBlogPost(post_id, Some(vec![1u8]), None),
@@ -696,7 +708,7 @@ fn lock_blog_post_proposal_execution_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone()).into(),
                 general_proposal_parameters,
                 ProposalDetails::LockBlogPost(post_id),
@@ -736,7 +748,7 @@ fn unlock_blog_post_proposal_execution_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone()).into(),
                 general_proposal_parameters,
                 ProposalDetails::UnlockBlogPost(post_id),
@@ -772,7 +784,7 @@ fn veto_proposal_proposal_execution_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone()).into(),
                 general_proposal_parameters,
                 ProposalDetails::AmendConstitution(vec![0u8]),
@@ -797,7 +809,7 @@ fn veto_proposal_proposal_execution_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone()).into(),
                 general_proposal_parameters,
                 ProposalDetails::VetoProposal(proposal_id),
@@ -824,7 +836,7 @@ fn set_validator_count_proposal_execution_succeeds() {
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
 
-        let new_validator_count = <pallet_staking::ValidatorCount>::get() + 8;
+        let new_validator_count = <pallet_staking::ValidatorCount<Runtime>>::get() + 8;
 
         setup_new_council(0);
         increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
@@ -846,7 +858,7 @@ fn set_validator_count_proposal_execution_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone()).into(),
                 general_proposal_parameters,
                 ProposalDetails::SetMaxValidatorCount(new_validator_count),
@@ -859,7 +871,10 @@ fn set_validator_count_proposal_execution_succeeds() {
             <Runtime as proposals_codex::Config>::SetMaxValidatorCountProposalParameters::get();
         run_to_block(System::block_number() + params.grace_period + 1);
 
-        assert_eq!(<pallet_staking::ValidatorCount>::get(), new_validator_count);
+        assert_eq!(
+            <pallet_staking::ValidatorCount<Runtime>>::get(),
+            new_validator_count
+        );
     });
 }
 
@@ -878,7 +893,7 @@ fn amend_constitution_proposal_execution_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone()).into(),
                 general_proposal_parameters,
                 ProposalDetails::AmendConstitution(b"Constitution text".to_vec()),
@@ -912,7 +927,7 @@ fn set_membership_price_proposal_execution_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone()).into(),
                 general_proposal_parameters,
                 ProposalDetails::SetMembershipPrice(membership_price),
@@ -946,7 +961,7 @@ fn set_initial_invitation_balance_proposal_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone()).into(),
                 general_proposal_parameters,
                 ProposalDetails::SetInitialInvitationBalance(initial_invitation_balance),
@@ -984,7 +999,7 @@ fn set_initial_invitation_count_proposal_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone()).into(),
                 general_proposal_parameters,
                 ProposalDetails::SetInitialInvitationCount(new_default_invite_count),
@@ -1011,7 +1026,7 @@ fn set_membership_leader_invitation_quota_proposal_succeeds() {
         let member_id = create_new_members(1)[0];
         let account_id = account_from_member_id(member_id);
         let lead_id = create_new_members(1)[0];
-        let new_invite_count = Membership::membership(lead_id).invites + 30;
+        let new_invite_count = Membership::membership(lead_id).expect("Member Must Exist").invites + 30;
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
             let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
@@ -1022,7 +1037,7 @@ fn set_membership_leader_invitation_quota_proposal_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone()).into(),
                 general_proposal_parameters,
                 ProposalDetails::SetMembershipLeadInvitationQuota(new_invite_count),
@@ -1038,7 +1053,7 @@ fn set_membership_leader_invitation_quota_proposal_succeeds() {
             <Runtime as proposals_codex::Config>::SetMembershipLeadInvitationQuotaProposalParameters::get();
         run_to_block(System::block_number() + params.grace_period + 1);
 
-        assert_eq!(Membership::membership(lead_id).invites, new_invite_count);
+        assert_eq!(Membership::membership(lead_id).expect("Member Must Exist").invites, new_invite_count);
     });
 }
 
@@ -1058,7 +1073,7 @@ fn set_referral_cut_proposal_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone()).into(),
                 general_proposal_parameters,
                 ProposalDetails::SetReferralCut(referral_cut),
@@ -1091,7 +1106,7 @@ fn set_budget_increment_proposal_succeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone()).into(),
                 general_proposal_parameters,
                 ProposalDetails::SetCouncilBudgetIncrement(budget_increment),
@@ -1110,8 +1125,8 @@ fn set_budget_increment_proposal_succeds() {
     });
 }
 
-// We ignore this test because running until the relevant block
-// take too long
+// We ignore this test because it needs to be re-written to take into account
+// that constitutionality > 1
 #[ignore]
 #[test]
 fn set_councilor_reward_proposal_succeds() {
@@ -1129,7 +1144,7 @@ fn set_councilor_reward_proposal_succeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone()).into(),
                 general_proposal_parameters,
                 ProposalDetails::SetCouncilorReward(councilor_reward),
@@ -1227,7 +1242,7 @@ fn update_global_nft_limit_proposal_succeeds() {
                 exact_execution_block: None,
             };
 
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone()).into(),
                 general_proposal_parameters,
                 ProposalDetails::UpdateGlobalNftLimit(period, new_limit),
@@ -1238,7 +1253,7 @@ fn update_global_nft_limit_proposal_succeeds() {
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
         let params =
-            <Runtime as proposals_codex::Trait>::UpdateGlobalNftLimitProposalParameters::get();
+            <Runtime as proposals_codex::Config>::UpdateGlobalNftLimitProposalParameters::get();
         run_to_block(System::block_number() + params.grace_period + 1);
 
         assert_eq!(
