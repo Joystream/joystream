@@ -360,21 +360,6 @@
         "expectedDataSizeFee": "u128"
     },
     "DynamicBagCreationPolicyDistributorFamiliesMap": "BTreeMap<DistributionBucketFamilyId,u32>",
-    "ParticipantId": "u64",
-    "Title": "Text",
-    "UpdatedTitle": "Option<Text>",
-    "UpdatedBody": "Option<Text>",
-    "ReplyId": "u64",
-    "Reply": {
-        "text_hash": "Hash",
-        "owner": "ParticipantId",
-        "parent_id": "PostId"
-    },
-    "ReplyToDelete": {
-        "post_id": "PostId",
-        "reply_id": "ReplyId",
-        "hide": "bool"
-    },
     "ProposalId": "u32",
     "ProposalStatus": {
         "_enum": {
