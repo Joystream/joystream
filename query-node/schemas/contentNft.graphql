@@ -45,6 +45,7 @@ type CuratorGroup @entity {
 
   "NFTs owned by this member in various channels."
   nftCollectorInChannels: [ChannelNftCollectors!]! @derivedFrom(field: "curatorGroup")
+  # permissionsByLevel: ModerationPermissionsByLevel<T>,
 }
 
 type Curator @entity {

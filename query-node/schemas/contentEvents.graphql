@@ -1,0 +1,158 @@
+type VideoDeletedEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}."
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted."
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in."
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Actor that deleted the video."
+  actor: ContentActor!
+
+  "ID  of the deleted video"
+  videoId: Int!
+}
+
+type VideoDeletedByModeratorEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}."
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted."
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in."
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Actor that deleted the video."
+  actor: ContentActor!
+
+  "ID  of the deleted video"
+  videoId: Int!
+
+  "Why the video was deleted"
+  rationale: Bytes!
+}
+
+type ChannelAssetsDeletedByModeratorEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}."
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted."
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in."
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Actor that deleted the channel assets."
+  actor: ContentActor!
+
+  "Channel whose assets are deleted"
+  channel: Channel!
+
+  "ID  of the deleted video"
+  assetIds: [Int!]
+
+  "why the channel assets were deleted"
+  rationale: Bytes!
+}
+
+type VideoAssetsDeletedByModeratorEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}."
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted."
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in."
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Actor that deleted the channel assets."
+  actor: ContentActor!
+
+  "Video whose assets are being deleted"
+  video: Video!
+
+  "Does deleted video assets belongs to NFT"
+  are_nft_assets: Boolean
+
+  "ID  of the deleted video"
+  assetIds: [Int!]
+
+  "why the channel assets were deleted"
+  rationale: Bytes!
+}
+
+type VideoVisibilitySetByModeratorEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}."
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted."
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in."
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Actor that deleted the channel assets."
+  actor: ContentActor!
+
+  "Video whose visiblity/censorship status is changed"
+  video: Video!
+
+  "Is video being censored/hidden (yes if true)"
+  isHidden: Boolean!
+
+  "Why video's visibality status was set"
+  rationale: Bytes!
+}
