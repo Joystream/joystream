@@ -59,7 +59,7 @@ fn cancel_buy_now() {
 
         // Last event checked
         assert_event(
-            MetaEvent::content(RawEvent::BuyNowCanceled(
+            MetaEvent::Content(RawEvent::BuyNowCanceled(
                 video_id,
                 ContentActor::Member(DEFAULT_MEMBER_ID),
             )),

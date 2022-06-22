@@ -5,7 +5,7 @@ use crate::*;
 use common::BudgetManager;
 
 fn purchase_tokens_on_sale(amount: u64) {
-    let existential_deposit: u64 = <Test as balances::Trait>::ExistentialDeposit::get().into();
+    let existential_deposit: u64 = <Test as balances::Config>::ExistentialDeposit::get().into();
     increase_account_balance_helper(
         SECOND_MEMBER_ACCOUNT_ID,
         existential_deposit + DEFAULT_CREATOR_TOKEN_SALE_UNIT_PRICE * amount,
@@ -169,12 +169,12 @@ fn successful_finalize_curator_channel_creator_token_sale_by_curator() {
             .call_and_assert(Ok(()));
         purchase_tokens_on_sale(DEFAULT_CREATOR_TOKEN_ISSUANCE);
         run_to_block(1 + DEFAULT_CREATOR_TOKEN_SALE_DURATION);
-        let council_budget_pre = <Test as Trait>::CouncilBudgetManager::get_budget();
+        let council_budget_pre = <Test as Config>::CouncilBudgetManager::get_budget();
         FinalizeCreatorTokenSaleFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
             .with_actor(default_curator_actor())
             .call_and_assert(Ok(()));
-        let council_budget_post = <Test as Trait>::CouncilBudgetManager::get_budget();
+        let council_budget_post = <Test as Config>::CouncilBudgetManager::get_budget();
         assert_eq!(
             council_budget_post,
             council_budget_pre.saturating_add(
@@ -199,12 +199,12 @@ fn successful_finalize_curator_channel_creator_token_sale_by_lead() {
             .call_and_assert(Ok(()));
         purchase_tokens_on_sale(DEFAULT_CREATOR_TOKEN_ISSUANCE);
         run_to_block(1 + DEFAULT_CREATOR_TOKEN_SALE_DURATION);
-        let council_budget_pre = <Test as Trait>::CouncilBudgetManager::get_budget();
+        let council_budget_pre = <Test as Config>::CouncilBudgetManager::get_budget();
         FinalizeCreatorTokenSaleFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
             .call_and_assert(Ok(()));
-        let council_budget_post = <Test as Trait>::CouncilBudgetManager::get_budget();
+        let council_budget_post = <Test as Config>::CouncilBudgetManager::get_budget();
         assert_eq!(
             council_budget_post,
             council_budget_pre.saturating_add(

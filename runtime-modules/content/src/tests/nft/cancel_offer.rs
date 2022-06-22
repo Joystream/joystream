@@ -58,7 +58,7 @@ fn cancel_offer() {
 
         // Last event checked
         assert_event(
-            MetaEvent::content(RawEvent::OfferCanceled(
+            MetaEvent::Content(RawEvent::OfferCanceled(
                 video_id,
                 ContentActor::Member(DEFAULT_MEMBER_ID),
             )),

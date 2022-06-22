@@ -54,7 +54,7 @@ fn offer_nft() {
 
         // Last event checked
         assert_event(
-            MetaEvent::content(RawEvent::OfferStarted(
+            MetaEvent::Content(RawEvent::OfferStarted(
                 video_id,
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 SECOND_MEMBER_ID,

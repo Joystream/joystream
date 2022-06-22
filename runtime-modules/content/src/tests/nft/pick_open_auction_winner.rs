@@ -51,7 +51,7 @@ fn pick_open_auction_winner() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_open_auction_bid(
@@ -88,7 +88,7 @@ fn pick_open_auction_winner() {
 
         // Last event checked
         assert_event(
-            MetaEvent::content(RawEvent::OpenAuctionBidAccepted(
+            MetaEvent::Content(RawEvent::OpenAuctionBidAccepted(
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 video_id,
                 SECOND_MEMBER_ID,
@@ -140,7 +140,7 @@ fn pick_open_auction_winner_auth_failed() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_open_auction_bid(
@@ -211,7 +211,7 @@ fn pick_open_auction_winner_actor_not_authorized() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_open_auction_bid(
@@ -373,7 +373,7 @@ fn pick_open_auction_winner_is_not_open_auction_type() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_english_auction_bid(
@@ -501,7 +501,7 @@ fn pick_open_auction_winner_fails_with_invalid_bid_commit() {
         let low_bid = Content::min_starting_price();
         let high_bid = low_bid.saturating_add(NEXT_BID_OFFSET);
 
-        let _ = balances::Module::<Test>::deposit_creating(
+        let _ = balances::Pallet::<Test>::deposit_creating(
             &SECOND_MEMBER_ACCOUNT_ID,
             high_bid + low_bid,
         );
@@ -566,7 +566,7 @@ fn pick_open_auction_winner_ok_with_nft_owner_member_channel_correctly_credited(
         let bid = Content::min_starting_price();
         let platform_fee = Content::platform_fee_percentage().mul_floor(bid);
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_open_auction_bid(
@@ -617,7 +617,7 @@ fn pick_open_auction_winner_ok_with_nft_owner_curator_channel_correctly_credited
         let bid = Content::min_starting_price();
         let platform_fee = Content::platform_fee_percentage().mul_floor(bid);
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_open_auction_bid(
@@ -668,8 +668,8 @@ fn auction_proceeds_ok_in_case_of_member_owned_channel_with_no_reward_account_is
         let video_id = Content::next_video_id();
         CreateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .call();
+            //.with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
+            .call_and_assert(Ok(()));
         CreateVideoFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
@@ -704,7 +704,7 @@ fn auction_proceeds_ok_in_case_of_member_owned_channel_with_no_reward_account_is
         let bid = Content::min_starting_price();
         let platform_fee = Content::platform_fee_percentage().mul_floor(bid);
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make nft auction bid
         assert_ok!(Content::make_open_auction_bid(

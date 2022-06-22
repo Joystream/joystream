@@ -2,7 +2,7 @@
 use crate::tests::fixtures::{
     channel_reward_account_balance, create_default_member_owned_channel_with_video,
     create_initial_storage_buckets_helper, increase_account_balance_helper, ContentTest,
-    CreateVideoFixture, UpdateChannelFixture,
+    CreateVideoFixture, MetaEvent, UpdateChannelFixture,
 };
 use crate::tests::mock::*;
 use crate::*;
@@ -91,7 +91,7 @@ fn buy_nft() {
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
 
         let reward_account = ContentTreasury::<Test>::account_for_channel(channel_id);
-        let balance_pre = balances::Module::<Test>::free_balance(reward_account);
+        let balance_pre = balances::Pallet::<Test>::free_balance(reward_account);
 
         // Sell nft
         assert_ok!(Content::sell_nft(
@@ -114,11 +114,11 @@ fn buy_nft() {
         ));
 
         // Runtime tested state after call
-        let balance_post = balances::Module::<Test>::free_balance(reward_account);
+        let balance_post = balances::Pallet::<Test>::free_balance(reward_account);
 
         // Ensure buyer balance was succesfully slashed after nft had been bought
         assert_eq!(
-            balances::Module::<Test>::free_balance(SECOND_MEMBER_ACCOUNT_ID),
+            balances::Pallet::<Test>::free_balance(SECOND_MEMBER_ACCOUNT_ID),
             0
         );
 
@@ -140,7 +140,7 @@ fn buy_nft() {
 
         // Last event checked
         assert_event(
-            MetaEvent::content(RawEvent::NftBought(video_id, SECOND_MEMBER_ID)),
+            MetaEvent::Content(RawEvent::NftBought(video_id, SECOND_MEMBER_ID)),
             // 4 events: KilledAccount (SECOND_MEMBER_ACCOUNT_ID), NewAccount (channel reward acc), Endowed (channel reward acc), NFTBought
             number_of_events_before_call + 4,
         );

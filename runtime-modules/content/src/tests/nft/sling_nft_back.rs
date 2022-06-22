@@ -59,7 +59,7 @@ fn sling_nft_back() {
 
         // Last event checked
         assert_event(
-            MetaEvent::content(RawEvent::NftSlingedBackToTheOriginalArtist(
+            MetaEvent::Content(RawEvent::NftSlingedBackToTheOriginalArtist(
                 video_id,
                 ContentActor::Member(SECOND_MEMBER_ID),
             )),

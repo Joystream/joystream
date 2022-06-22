@@ -43,7 +43,7 @@ fn destroy_nft() {
 
         // Last event checked
         assert_event(
-            MetaEvent::content(RawEvent::NftDestroyed(
+            MetaEvent::Content(RawEvent::NftDestroyed(
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 video_id,
             )),

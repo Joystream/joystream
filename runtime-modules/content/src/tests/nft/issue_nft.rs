@@ -45,7 +45,7 @@ fn issue_nft() {
         // Last event checked
         let nft_issue_params = NftIssuanceParameters::<Test>::default();
         assert_event(
-            MetaEvent::content(RawEvent::NftIssued(
+            MetaEvent::Content(RawEvent::NftIssued(
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 video_id,
                 nft_issue_params,

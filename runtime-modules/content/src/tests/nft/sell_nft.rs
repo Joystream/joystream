@@ -1,7 +1,7 @@
 #![cfg(test)]
 use crate::tests::fixtures::{
     create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
-    increase_account_balance_helper,
+    increase_account_balance_helper, MetaEvent,
 };
 use crate::tests::mock::*;
 use crate::*;
@@ -55,7 +55,7 @@ fn sell_nft() {
 
         // Last event checked
         assert_event(
-            MetaEvent::content(RawEvent::NftSellOrderMade(
+            MetaEvent::Content(RawEvent::NftSellOrderMade(
                 video_id,
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 DEFAULT_NFT_PRICE,

@@ -1,7 +1,7 @@
 #![cfg(test)]
 use crate::tests::fixtures::{
     create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
-    increase_account_balance_helper, make_content_module_account_existential_deposit,
+    increase_account_balance_helper, make_content_module_account_existential_deposit, MetaEvent,
 };
 use crate::tests::mock::*;
 use crate::*;
@@ -46,7 +46,7 @@ fn setup_open_auction_scenario_with_bid() {
     // deposit initial balance
     let bid = Content::min_starting_price();
 
-    let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+    let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
     // Make nft auction bid
     assert_ok!(Content::make_open_auction_bid(
@@ -64,7 +64,7 @@ fn cancel_open_auction_bid() {
         run_to_block(1);
 
         let video_id = Content::next_video_id();
-        let existential_deposit: u64 = <Test as balances::Trait>::ExistentialDeposit::get().into();
+        let existential_deposit: u64 = <Test as balances::Config>::ExistentialDeposit::get().into();
         // TODO: Should not be required afer https://github.com/Joystream/joystream/issues/3508
         make_content_module_account_existential_deposit();
         setup_open_auction_scenario_with_bid();
@@ -107,7 +107,7 @@ fn cancel_open_auction_bid() {
 
         // Last event checked
         assert_event(
-            MetaEvent::content(RawEvent::AuctionBidCanceled(SECOND_MEMBER_ID, video_id)),
+            MetaEvent::Content(RawEvent::AuctionBidCanceled(SECOND_MEMBER_ID, video_id)),
             // 4 events: NewAccount(SECOND_MEMBER_ACCOUNT_ID), Endowed(SECOND_MEMBER_ACCOUNT_ID),
             // Transfer(module acc, SECOND_MEMBER_ACCOUNT_ID), AuctionBidCanceled
             number_of_events_before_call + 4,

@@ -2,8 +2,8 @@
 use crate::tests::curators;
 use crate::tests::fixtures::{
     channel_reward_account_balance, create_default_member_owned_channel_with_video,
-    create_initial_storage_buckets_helper, ContentTest, CreateChannelFixture, CreateVideoFixture,
-    UpdateChannelFixture,
+    create_initial_storage_buckets_helper, increase_account_balance_helper, ContentTest,
+    CreateChannelFixture, CreateVideoFixture, MetaEvent, UpdateChannelFixture,
 };
 use crate::tests::mock::*;
 use crate::*;
@@ -62,7 +62,7 @@ fn accept_incoming_offer() {
 
         // Last event checked
         assert_event(
-            MetaEvent::content(RawEvent::OfferAccepted(video_id)),
+            MetaEvent::Content(RawEvent::OfferAccepted(video_id)),
             number_of_events_before_call + 1,
         );
     })
@@ -190,8 +190,7 @@ fn accept_incoming_offer_with_nft_owner_being_a_member_channel() {
         // channel with no reward account
         CreateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .call();
+            .call_and_assert(Ok(()));
         CreateVideoFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
