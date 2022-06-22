@@ -7,7 +7,8 @@ use crate::tests::fixtures::ALICE_MEMBER_ID;
 pub use balances;
 pub use frame_support::traits::{Currency, LockIdentifier};
 use frame_support::{
-    parameter_types,
+    dispatch::{DispatchError, DispatchResult},
+    ensure, parameter_types,
     traits::{ConstU16, ConstU32, ConstU64},
 };
 pub use frame_system;
@@ -16,7 +17,6 @@ use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
 };
 use sp_std::cell::RefCell;
 use sp_std::convert::{TryFrom, TryInto};
@@ -226,7 +226,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
         unimplemented!()
     }
 
-    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Config>::AccountId) -> bool {
         unimplemented!()
     }
 
