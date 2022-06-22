@@ -1331,7 +1331,8 @@ impl proposals_codex::Config for Runtime {
     type UnlockBlogPostProposalParameters = UnlockBlogPostProposalParameters;
     type VetoProposalProposalParameters = VetoProposalProposalParameters;
     type UpdateGlobalNftLimitProposalParameters = UpdateGlobalNftLimitProposalParameters;
-    type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;
+    // TODO: enable after Carthage
+    // type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;
     type WeightInfo = weights::proposals_codex::WeightInfo;
 }
 
