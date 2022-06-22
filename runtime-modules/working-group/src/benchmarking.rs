@@ -4,14 +4,14 @@ use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks_instance, Zero};
 use frame_support::traits::OnInitialize;
 use frame_system::EventRecord;
-use frame_system::Module as System;
+use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use sp_runtime::traits::Bounded;
 use sp_std::prelude::*;
 
 use crate::types::StakeParameters;
 use crate::Module as WorkingGroup;
-use balances::Module as Balances;
+use balances::Pallet as Balances;
 use membership::Module as Membership;
 
 const SEED: u32 = 0;
