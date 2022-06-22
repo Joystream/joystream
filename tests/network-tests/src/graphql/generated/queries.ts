@@ -156,6 +156,85 @@ export type GetChannelNftCollectorsQueryVariables = Types.Exact<{ [key: string]:
 
 export type GetChannelNftCollectorsQuery = { channelNftCollectors: Array<ChannelNftCollectorFieldsFragment> }
 
+export type VideoDeletedByModeratorEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  videoId: number
+  rationale: any
+}
+
+export type GetVideoDeletedByModeratorEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetVideoDeletedByModeratorEventsByEventIdsQuery = {
+  videoDeletedByModeratorEvents: Array<VideoDeletedByModeratorEventFieldsFragment>
+}
+
+export type ChannelAssetsDeletedByModeratorEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  rationale: any
+  assetIds: Array<number>
+  channel: { id: string }
+}
+
+export type GetChannelAssetsDeletedByModeratorEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetChannelAssetsDeletedByModeratorEventsByEventIdsQuery = {
+  channelAssetsDeletedByModeratorEvents: Array<ChannelAssetsDeletedByModeratorEventFieldsFragment>
+}
+
+export type VideoAssetsDeletedByModeratorEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  assetIds: Array<number>
+  rationale: any
+  video: { id: string }
+}
+
+export type GetVideoAssetsDeletedByModeratorEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetVideoAssetsDeletedByModeratorEventsByEventIdsQuery = {
+  videoAssetsDeletedByModeratorEvents: Array<VideoAssetsDeletedByModeratorEventFieldsFragment>
+}
+
+export type VideoVisibilitySetByModeratorEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  isHidden: boolean
+  rationale: any
+  video: { id: string }
+}
+
+export type GetVideoVisibilitySetByModeratorEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetVideoVisibilitySetByModeratorEventsByEventIdsQuery = {
+  videoVisibilitySetByModeratorEvents: Array<VideoVisibilitySetByModeratorEventFieldsFragment>
+}
+
 export type EnglishAuctionStartedEventFieldsFragment = {
   video: { id: string }
   auction: { id: string }
@@ -2297,6 +2376,63 @@ export const ChannelNftCollectorFields = gql`
     lastIncreaseAt
   }
 `
+export const VideoDeletedByModeratorEventFields = gql`
+  fragment VideoDeletedByModeratorEventFields on VideoDeletedByModeratorEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    videoId
+    rationale
+  }
+`
+export const ChannelAssetsDeletedByModeratorEventFields = gql`
+  fragment ChannelAssetsDeletedByModeratorEventFields on ChannelAssetsDeletedByModeratorEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    channel {
+      id
+    }
+    rationale
+    assetIds
+  }
+`
+export const VideoAssetsDeletedByModeratorEventFields = gql`
+  fragment VideoAssetsDeletedByModeratorEventFields on VideoAssetsDeletedByModeratorEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    video {
+      id
+    }
+    assetIds
+    rationale
+  }
+`
+export const VideoVisibilitySetByModeratorEventFields = gql`
+  fragment VideoVisibilitySetByModeratorEventFields on VideoVisibilitySetByModeratorEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    video {
+      id
+    }
+    isHidden
+    rationale
+  }
+`
 export const EnglishAuctionStartedEventFields = gql`
   fragment EnglishAuctionStartedEventFields on EnglishAuctionStartedEvent {
     video {
@@ -4162,6 +4298,38 @@ export const GetChannelNftCollectors = gql`
     }
   }
   ${ChannelNftCollectorFields}
+`
+export const GetVideoDeletedByModeratorEventsByEventIds = gql`
+  query getVideoDeletedByModeratorEventsByEventIds($eventIds: [ID!]) {
+    videoDeletedByModeratorEvents(where: { id_in: $eventIds }) {
+      ...VideoDeletedByModeratorEventFields
+    }
+  }
+  ${VideoDeletedByModeratorEventFields}
+`
+export const GetChannelAssetsDeletedByModeratorEventsByEventIds = gql`
+  query getChannelAssetsDeletedByModeratorEventsByEventIds($eventIds: [ID!]) {
+    channelAssetsDeletedByModeratorEvents(where: { id_in: $eventIds }) {
+      ...ChannelAssetsDeletedByModeratorEventFields
+    }
+  }
+  ${ChannelAssetsDeletedByModeratorEventFields}
+`
+export const GetVideoAssetsDeletedByModeratorEventsByEventIds = gql`
+  query getVideoAssetsDeletedByModeratorEventsByEventIds($eventIds: [ID!]) {
+    videoAssetsDeletedByModeratorEvents(where: { id_in: $eventIds }) {
+      ...VideoAssetsDeletedByModeratorEventFields
+    }
+  }
+  ${VideoAssetsDeletedByModeratorEventFields}
+`
+export const GetVideoVisibilitySetByModeratorEventsByEventIds = gql`
+  query getVideoVisibilitySetByModeratorEventsByEventIds($eventIds: [ID!]) {
+    videoVisibilitySetByModeratorEvents(where: { id_in: $eventIds }) {
+      ...VideoVisibilitySetByModeratorEventFields
+    }
+  }
+  ${VideoVisibilitySetByModeratorEventFields}
 `
 export const GetEnglishAuctionStartedEventsByEventIds = gql`
   query getEnglishAuctionStartedEventsByEventIds($eventIds: [ID!]) {
