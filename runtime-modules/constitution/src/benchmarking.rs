@@ -5,6 +5,7 @@ use frame_benchmarking::benchmarks;
 use frame_system::Pallet as System;
 use frame_system::{EventRecord, RawOrigin};
 use sp_runtime::traits::Hash;
+use sp_std::vec;
 
 fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
