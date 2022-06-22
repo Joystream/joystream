@@ -2,9 +2,9 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { In, getManager } from 'typeorm'
+import { In } from 'typeorm'
 import { Content } from '../../generated/types'
-import { deserializeMetadata, EntityType, genericEventFields, inconsistentState, logger } from '../common'
+import { deserializeMetadata, genericEventFields, inconsistentState, logger } from '../common'
 import {
   processVideoMetadata,
   videoRelationsForCounters,
@@ -15,7 +15,6 @@ import {
   Channel,
   NftIssuedEvent,
   Video,
-  VideoCategory,
   CommentReaction,
   Comment,
   VideoReaction,
@@ -30,89 +29,11 @@ import {
   CommentPinnedEvent,
   VideoReactionsPreferenceEvent,
 } from 'query-node/dist/model'
-import { VideoMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
-import { integrateMeta } from '@joystream/metadata-protobuf/utils'
+import { VideoMetadata } from '@joystream/metadata-protobuf'
 import _ from 'lodash'
 import { createNft } from './nft'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
 import { BaseModel } from '@joystream/warthog'
-
-export async function content_VideoCategoryCreated({ store, event }: EventContext & StoreContext): Promise<void> {
-  // read event data
-  const [, videoCategoryId, videoCategoryCreationParameters] = new Content.VideoCategoryCreatedEvent(event).params
-
-  // read metadata
-  const metadata = (await deserializeMetadata(VideoCategoryMetadata, videoCategoryCreationParameters.meta)) || {}
-
-  // create new video category
-  const videoCategory = new VideoCategory({
-    // main data
-    id: videoCategoryId.toString(),
-    videos: [],
-    createdInBlock: event.blockNumber,
-    activeVideosCounter: 0,
-
-    // fill in auto-generated fields
-    createdAt: new Date(event.blockTimestamp),
-    updatedAt: new Date(event.blockTimestamp),
-  })
-  integrateMeta(videoCategory, metadata, ['name'])
-
-  // save video category
-  await store.save<VideoCategory>(videoCategory)
-
-  // emit log event
-  logger.info('Video category has been created', { id: videoCategoryId })
-}
-
-export async function content_VideoCategoryUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
-  // read event data
-  const [, videoCategoryId, videoCategoryUpdateParameters] = new Content.VideoCategoryUpdatedEvent(event).params
-
-  // load video category
-  const videoCategory = await store.get(VideoCategory, {
-    where: { id: videoCategoryId.toString() },
-  })
-
-  // ensure video category exists
-  if (!videoCategory) {
-    return inconsistentState('Non-existing video category update requested', videoCategoryId)
-  }
-
-  // read metadata
-  const newMeta = deserializeMetadata(VideoCategoryMetadata, videoCategoryUpdateParameters.new_meta) || {}
-  integrateMeta(videoCategory, newMeta, ['name'])
-
-  // set last update time
-  videoCategory.updatedAt = new Date(event.blockTimestamp)
-
-  // save video category
-  await store.save<VideoCategory>(videoCategory)
-
-  // emit log event
-  logger.info('Video category has been updated', { id: videoCategoryId })
-}
-
-export async function content_VideoCategoryDeleted({ store, event }: EventContext & StoreContext): Promise<void> {
-  // read event data
-  const [, videoCategoryId] = new Content.VideoCategoryDeletedEvent(event).params
-
-  // load video category
-  const videoCategory = await store.get(VideoCategory, {
-    where: { id: videoCategoryId.toString() },
-  })
-
-  // ensure video category exists
-  if (!videoCategory) {
-    return inconsistentState('Non-existing video category deletion requested', videoCategoryId)
-  }
-
-  // remove video category
-  await store.remove<VideoCategory>(videoCategory)
-
-  // emit log event
-  logger.info('Video category has been deleted', { id: videoCategoryId })
-}
 
 /// //////////////// Video //////////////////////////////////////////////////////
 
@@ -124,7 +45,7 @@ export async function content_VideoCreated(ctx: EventContext & StoreContext): Pr
   // load channel
   const channel = await store.get(Channel, {
     where: { id: channelId.toString() },
-    relations: ['category', 'ownerMember', 'ownerCuratorGroup'],
+    relations: ['ownerMember', 'ownerCuratorGroup'],
   })
 
   // ensure channel exists

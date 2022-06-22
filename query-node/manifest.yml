@@ -50,6 +50,7 @@ typegen:
     - storageWorkingGroup.BudgetSpending
     - storageWorkingGroup.RewardPaid
     - storageWorkingGroup.NewMissedRewardLevelReached
+    - storageWorkingGroup.LeadRemarked
     # Proposals
     - proposalsCodex.ProposalCreated
     - proposalsEngine.ProposalStatusUpdated
@@ -89,12 +90,6 @@ typegen:
     - content.ChannelUpdated
     - content.ChannelAssetsRemoved
     - content.ChannelCensorshipStatusUpdated
-    - content.ChannelCategoryCreated
-    - content.ChannelCategoryUpdated
-    - content.ChannelCategoryDeleted
-    - content.VideoCategoryCreated
-    - content.VideoCategoryUpdated
-    - content.VideoCategoryDeleted
     - content.VideoCreated
     - content.VideoUpdated
     - content.VideoDeleted
@@ -427,6 +422,8 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: contentWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
+    - event: contentWorkingGroup.LeadRemarked
+      handler: workingGroups_content_LeadRemarked
     # Operations working group alpha
     - event: operationsWorkingGroupAlpha.OpeningAdded
       handler: workingGroups_OpeningAdded
@@ -724,18 +721,6 @@ mappings:
       handler: content_ChannelAssetsRemoved
     - event: content.ChannelCensorshipStatusUpdated
       handler: content_ChannelCensorshipStatusUpdated
-    - event: content.ChannelCategoryCreated
-      handler: content_ChannelCategoryCreated
-    - event: content.ChannelCategoryUpdated
-      handler: content_ChannelCategoryUpdated
-    - event: content.ChannelCategoryDeleted
-      handler: content_ChannelCategoryDeleted
-    - event: content.VideoCategoryCreated
-      handler: content_VideoCategoryCreated
-    - event: content.VideoCategoryUpdated
-      handler: content_VideoCategoryUpdated
-    - event: content.VideoCategoryDeleted
-      handler: content_VideoCategoryDeleted
     - event: content.VideoCreated
       handler: content_VideoCreated
     - event: content.VideoUpdated

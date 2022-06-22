@@ -302,14 +302,13 @@ import {
   GetChannelsByIds,
   GetChannelsByIdsQuery,
   GetChannelsByIdsQueryVariables,
-  ChannelCategoryFieldsFragment,
-  GetChannelCategoryByIdQuery,
-  GetChannelCategoryByIdQueryVariables,
-  GetChannelCategoryById,
   VideoCategoryFieldsFragment,
   GetVideoCategoryByIdQuery,
   GetVideoCategoryByIdQueryVariables,
   GetVideoCategoryById,
+  GetVideoCategoriesQuery,
+  GetVideoCategoriesQueryVariables,
+  GetVideoCategories,
   OwnedNftFieldsFragment,
   GetOwnedNftByVideoId,
   GetOwnedNftByVideoIdQuery,
@@ -1180,19 +1179,19 @@ export class QueryNodeApi {
     )
   }
 
-  public async channelCategoryById(id: string): Promise<Maybe<ChannelCategoryFieldsFragment>> {
-    return this.uniqueEntityQuery<GetChannelCategoryByIdQuery, GetChannelCategoryByIdQueryVariables>(
-      GetChannelCategoryById,
-      { id },
-      'channelCategoryByUniqueInput'
-    )
-  }
-
   public async videoCategoryById(id: string): Promise<Maybe<VideoCategoryFieldsFragment>> {
     return this.uniqueEntityQuery<GetVideoCategoryByIdQuery, GetVideoCategoryByIdQueryVariables>(
       GetVideoCategoryById,
       { id },
       'videoCategoryByUniqueInput'
+    )
+  }
+
+  public async getVideoCategories(): Promise<VideoCategoryFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetVideoCategoriesQuery, GetVideoCategoriesQueryVariables>(
+      GetVideoCategories,
+      {},
+      'videoCategories'
     )
   }
 

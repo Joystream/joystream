@@ -84,8 +84,3 @@ message VideoMetadata {
     // Enable/Disable the comment section
     optional bool enable_comments = 18;
 }
-
-message VideoCategoryMetadata {
-    // Category name
-    optional string name = 1;
-}

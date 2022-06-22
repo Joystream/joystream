@@ -94,9 +94,10 @@ scenario('Full', async ({ job, env }) => {
   job('forum moderation', moderation).requires(sudoHireLead)
 
   // Content directory
+  // following jobs must be run sequentially due to some QN queries that could interfere
   const videoCountersJob = job('check active video counters', activeVideoCounters).requires(sudoHireLead)
-  job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
-  job('video comments and reactions', commentsAndReactions).after(videoCountersJob)
+  const nftAuctionAndOffersJob = job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
+  job('video comments and reactions', commentsAndReactions).after(nftAuctionAndOffersJob)
 
   // CLIs:
   const createChannelJob = job('create channel via CLI', createChannel).after(videoCountersJob)

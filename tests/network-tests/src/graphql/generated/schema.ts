@@ -6076,475 +6076,6 @@ export type CategoryStickyThreadUpdateEventWhereUniqueInput = {
   id: Scalars['ID']
 }
 
-export type Channel = BaseGraphQlObject & {
-  id: Scalars['ID']
-  createdAt: Scalars['DateTime']
-  createdById: Scalars['String']
-  updatedAt?: Maybe<Scalars['DateTime']>
-  updatedById?: Maybe<Scalars['String']>
-  deletedAt?: Maybe<Scalars['DateTime']>
-  deletedById?: Maybe<Scalars['String']>
-  version: Scalars['Int']
-  ownerMember?: Maybe<Membership>
-  ownerMemberId?: Maybe<Scalars['String']>
-  ownerCuratorGroup?: Maybe<CuratorGroup>
-  ownerCuratorGroupId?: Maybe<Scalars['String']>
-  category?: Maybe<ChannelCategory>
-  categoryId?: Maybe<Scalars['String']>
-  /** Reward account where revenue is sent if set. */
-  rewardAccount?: Maybe<Scalars['String']>
-  /** The title of the Channel */
-  title?: Maybe<Scalars['String']>
-  /** The description of a Channel */
-  description?: Maybe<Scalars['String']>
-  /** Count of channel's videos with an uploaded asset that are public and not censored. */
-  activeVideosCounter: Scalars['Int']
-  coverPhoto?: Maybe<StorageDataObject>
-  coverPhotoId?: Maybe<Scalars['String']>
-  avatarPhoto?: Maybe<StorageDataObject>
-  avatarPhotoId?: Maybe<Scalars['String']>
-  /** Flag signaling whether a channel is public. */
-  isPublic?: Maybe<Scalars['Boolean']>
-  /** Flag signaling whether a channel is censored. */
-  isCensored: Scalars['Boolean']
-  language?: Maybe<Language>
-  languageId?: Maybe<Scalars['String']>
-  videos: Array<Video>
-  /** Number of the block the channel was created in */
-  createdInBlock: Scalars['Int']
-  collaborators: Array<Membership>
-  bannedMembers: Array<Membership>
-  channelNftCollectors: Array<ChannelNftCollectors>
-  commentcreatedeventvideoChannel?: Maybe<Array<CommentCreatedEvent>>
-  commentdeletedeventvideoChannel?: Maybe<Array<CommentDeletedEvent>>
-  commentmoderatedeventvideoChannel?: Maybe<Array<CommentModeratedEvent>>
-  commentpinnedeventvideoChannel?: Maybe<Array<CommentPinnedEvent>>
-  commentreactedeventvideoChannel?: Maybe<Array<CommentReactedEvent>>
-  commenttextupdatedeventvideoChannel?: Maybe<Array<CommentTextUpdatedEvent>>
-  memberbannedfromchanneleventchannel?: Maybe<Array<MemberBannedFromChannelEvent>>
-  ownednftcreatorChannel?: Maybe<Array<OwnedNft>>
-  videoreactedeventvideoChannel?: Maybe<Array<VideoReactedEvent>>
-}
-
-export type ChannelCategoriesByNameFtsOutput = {
-  item: ChannelCategoriesByNameSearchResult
-  rank: Scalars['Float']
-  isTypeOf: Scalars['String']
-  highlight: Scalars['String']
-}
-
-export type ChannelCategoriesByNameSearchResult = ChannelCategory
-
-/** Category of media channel */
-export type ChannelCategory = BaseGraphQlObject & {
-  id: Scalars['ID']
-  createdAt: Scalars['DateTime']
-  createdById: Scalars['String']
-  updatedAt?: Maybe<Scalars['DateTime']>
-  updatedById?: Maybe<Scalars['String']>
-  deletedAt?: Maybe<Scalars['DateTime']>
-  deletedById?: Maybe<Scalars['String']>
-  version: Scalars['Int']
-  /** The name of the category */
-  name?: Maybe<Scalars['String']>
-  /** Count of channel's videos with an uploaded asset that are public and not censored. */
-  activeVideosCounter: Scalars['Int']
-  channels: Array<Channel>
-  createdInBlock: Scalars['Int']
-}
-
-export type ChannelCategoryConnection = {
-  totalCount: Scalars['Int']
-  edges: Array<ChannelCategoryEdge>
-  pageInfo: PageInfo
-}
-
-export type ChannelCategoryCreateInput = {
-  name?: Maybe<Scalars['String']>
-  activeVideosCounter: Scalars['Float']
-  createdInBlock: Scalars['Float']
-}
-
-export type ChannelCategoryEdge = {
-  node: ChannelCategory
-  cursor: Scalars['String']
-}
-
-export enum ChannelCategoryOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  NameAsc = 'name_ASC',
-  NameDesc = 'name_DESC',
-  ActiveVideosCounterAsc = 'activeVideosCounter_ASC',
-  ActiveVideosCounterDesc = 'activeVideosCounter_DESC',
-  CreatedInBlockAsc = 'createdInBlock_ASC',
-  CreatedInBlockDesc = 'createdInBlock_DESC',
-}
-
-export type ChannelCategoryUpdateInput = {
-  name?: Maybe<Scalars['String']>
-  activeVideosCounter?: Maybe<Scalars['Float']>
-  createdInBlock?: Maybe<Scalars['Float']>
-}
-
-export type ChannelCategoryWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  name_eq?: Maybe<Scalars['String']>
-  name_contains?: Maybe<Scalars['String']>
-  name_startsWith?: Maybe<Scalars['String']>
-  name_endsWith?: Maybe<Scalars['String']>
-  name_in?: Maybe<Array<Scalars['String']>>
-  activeVideosCounter_eq?: Maybe<Scalars['Int']>
-  activeVideosCounter_gt?: Maybe<Scalars['Int']>
-  activeVideosCounter_gte?: Maybe<Scalars['Int']>
-  activeVideosCounter_lt?: Maybe<Scalars['Int']>
-  activeVideosCounter_lte?: Maybe<Scalars['Int']>
-  activeVideosCounter_in?: Maybe<Array<Scalars['Int']>>
-  createdInBlock_eq?: Maybe<Scalars['Int']>
-  createdInBlock_gt?: Maybe<Scalars['Int']>
-  createdInBlock_gte?: Maybe<Scalars['Int']>
-  createdInBlock_lt?: Maybe<Scalars['Int']>
-  createdInBlock_lte?: Maybe<Scalars['Int']>
-  createdInBlock_in?: Maybe<Array<Scalars['Int']>>
-  channels_none?: Maybe<ChannelWhereInput>
-  channels_some?: Maybe<ChannelWhereInput>
-  channels_every?: Maybe<ChannelWhereInput>
-  AND?: Maybe<Array<ChannelCategoryWhereInput>>
-  OR?: Maybe<Array<ChannelCategoryWhereInput>>
-}
-
-export type ChannelCategoryWhereUniqueInput = {
-  id: Scalars['ID']
-}
-
-export type ChannelConnection = {
-  totalCount: Scalars['Int']
-  edges: Array<ChannelEdge>
-  pageInfo: PageInfo
-}
-
-export type ChannelCreateInput = {
-  ownerMember?: Maybe<Scalars['ID']>
-  ownerCuratorGroup?: Maybe<Scalars['ID']>
-  category?: Maybe<Scalars['ID']>
-  rewardAccount?: Maybe<Scalars['String']>
-  title?: Maybe<Scalars['String']>
-  description?: Maybe<Scalars['String']>
-  activeVideosCounter: Scalars['Float']
-  coverPhoto?: Maybe<Scalars['ID']>
-  avatarPhoto?: Maybe<Scalars['ID']>
-  isPublic?: Maybe<Scalars['Boolean']>
-  isCensored: Scalars['Boolean']
-  language?: Maybe<Scalars['ID']>
-  createdInBlock: Scalars['Float']
-}
-
-export type ChannelEdge = {
-  node: Channel
-  cursor: Scalars['String']
-}
-
-export type ChannelNftCollectors = BaseGraphQlObject & {
-  id: Scalars['ID']
-  createdAt: Scalars['DateTime']
-  createdById: Scalars['String']
-  updatedAt?: Maybe<Scalars['DateTime']>
-  updatedById?: Maybe<Scalars['String']>
-  deletedAt?: Maybe<Scalars['DateTime']>
-  deletedById?: Maybe<Scalars['String']>
-  version: Scalars['Int']
-  channel: Channel
-  channelId: Scalars['String']
-  member?: Maybe<Membership>
-  memberId?: Maybe<Scalars['String']>
-  curatorGroup?: Maybe<CuratorGroup>
-  curatorGroupId?: Maybe<Scalars['String']>
-  /** Amount of NFTs owned in the channel */
-  amount: Scalars['Int']
-  /** Time of last NFT amount increase */
-  lastIncreaseAt: Scalars['DateTime']
-}
-
-export type ChannelNftCollectorsConnection = {
-  totalCount: Scalars['Int']
-  edges: Array<ChannelNftCollectorsEdge>
-  pageInfo: PageInfo
-}
-
-export type ChannelNftCollectorsCreateInput = {
-  channel: Scalars['ID']
-  member?: Maybe<Scalars['ID']>
-  curatorGroup?: Maybe<Scalars['ID']>
-  amount: Scalars['Float']
-  lastIncreaseAt: Scalars['DateTime']
-}
-
-export type ChannelNftCollectorsEdge = {
-  node: ChannelNftCollectors
-  cursor: Scalars['String']
-}
-
-export enum ChannelNftCollectorsOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  ChannelAsc = 'channel_ASC',
-  ChannelDesc = 'channel_DESC',
-  MemberAsc = 'member_ASC',
-  MemberDesc = 'member_DESC',
-  CuratorGroupAsc = 'curatorGroup_ASC',
-  CuratorGroupDesc = 'curatorGroup_DESC',
-  AmountAsc = 'amount_ASC',
-  AmountDesc = 'amount_DESC',
-  LastIncreaseAtAsc = 'lastIncreaseAt_ASC',
-  LastIncreaseAtDesc = 'lastIncreaseAt_DESC',
-}
-
-export type ChannelNftCollectorsUpdateInput = {
-  channel?: Maybe<Scalars['ID']>
-  member?: Maybe<Scalars['ID']>
-  curatorGroup?: Maybe<Scalars['ID']>
-  amount?: Maybe<Scalars['Float']>
-  lastIncreaseAt?: Maybe<Scalars['DateTime']>
-}
-
-export type ChannelNftCollectorsWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  amount_eq?: Maybe<Scalars['Int']>
-  amount_gt?: Maybe<Scalars['Int']>
-  amount_gte?: Maybe<Scalars['Int']>
-  amount_lt?: Maybe<Scalars['Int']>
-  amount_lte?: Maybe<Scalars['Int']>
-  amount_in?: Maybe<Array<Scalars['Int']>>
-  lastIncreaseAt_eq?: Maybe<Scalars['DateTime']>
-  lastIncreaseAt_lt?: Maybe<Scalars['DateTime']>
-  lastIncreaseAt_lte?: Maybe<Scalars['DateTime']>
-  lastIncreaseAt_gt?: Maybe<Scalars['DateTime']>
-  lastIncreaseAt_gte?: Maybe<Scalars['DateTime']>
-  channel?: Maybe<ChannelWhereInput>
-  member?: Maybe<MembershipWhereInput>
-  curatorGroup?: Maybe<CuratorGroupWhereInput>
-  AND?: Maybe<Array<ChannelNftCollectorsWhereInput>>
-  OR?: Maybe<Array<ChannelNftCollectorsWhereInput>>
-}
-
-export type ChannelNftCollectorsWhereUniqueInput = {
-  id: Scalars['ID']
-}
-
-export enum ChannelOrderByInput {
-  CreatedAtAsc = 'createdAt_ASC',
-  CreatedAtDesc = 'createdAt_DESC',
-  UpdatedAtAsc = 'updatedAt_ASC',
-  UpdatedAtDesc = 'updatedAt_DESC',
-  DeletedAtAsc = 'deletedAt_ASC',
-  DeletedAtDesc = 'deletedAt_DESC',
-  OwnerMemberAsc = 'ownerMember_ASC',
-  OwnerMemberDesc = 'ownerMember_DESC',
-  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
-  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
-  CategoryAsc = 'category_ASC',
-  CategoryDesc = 'category_DESC',
-  RewardAccountAsc = 'rewardAccount_ASC',
-  RewardAccountDesc = 'rewardAccount_DESC',
-  TitleAsc = 'title_ASC',
-  TitleDesc = 'title_DESC',
-  DescriptionAsc = 'description_ASC',
-  DescriptionDesc = 'description_DESC',
-  ActiveVideosCounterAsc = 'activeVideosCounter_ASC',
-  ActiveVideosCounterDesc = 'activeVideosCounter_DESC',
-  CoverPhotoAsc = 'coverPhoto_ASC',
-  CoverPhotoDesc = 'coverPhoto_DESC',
-  AvatarPhotoAsc = 'avatarPhoto_ASC',
-  AvatarPhotoDesc = 'avatarPhoto_DESC',
-  IsPublicAsc = 'isPublic_ASC',
-  IsPublicDesc = 'isPublic_DESC',
-  IsCensoredAsc = 'isCensored_ASC',
-  IsCensoredDesc = 'isCensored_DESC',
-  LanguageAsc = 'language_ASC',
-  LanguageDesc = 'language_DESC',
-  CreatedInBlockAsc = 'createdInBlock_ASC',
-  CreatedInBlockDesc = 'createdInBlock_DESC',
-}
-
-export type ChannelUpdateInput = {
-  ownerMember?: Maybe<Scalars['ID']>
-  ownerCuratorGroup?: Maybe<Scalars['ID']>
-  category?: Maybe<Scalars['ID']>
-  rewardAccount?: Maybe<Scalars['String']>
-  title?: Maybe<Scalars['String']>
-  description?: Maybe<Scalars['String']>
-  activeVideosCounter?: Maybe<Scalars['Float']>
-  coverPhoto?: Maybe<Scalars['ID']>
-  avatarPhoto?: Maybe<Scalars['ID']>
-  isPublic?: Maybe<Scalars['Boolean']>
-  isCensored?: Maybe<Scalars['Boolean']>
-  language?: Maybe<Scalars['ID']>
-  createdInBlock?: Maybe<Scalars['Float']>
-}
-
-export type ChannelWhereInput = {
-  id_eq?: Maybe<Scalars['ID']>
-  id_in?: Maybe<Array<Scalars['ID']>>
-  createdAt_eq?: Maybe<Scalars['DateTime']>
-  createdAt_lt?: Maybe<Scalars['DateTime']>
-  createdAt_lte?: Maybe<Scalars['DateTime']>
-  createdAt_gt?: Maybe<Scalars['DateTime']>
-  createdAt_gte?: Maybe<Scalars['DateTime']>
-  createdById_eq?: Maybe<Scalars['ID']>
-  createdById_in?: Maybe<Array<Scalars['ID']>>
-  updatedAt_eq?: Maybe<Scalars['DateTime']>
-  updatedAt_lt?: Maybe<Scalars['DateTime']>
-  updatedAt_lte?: Maybe<Scalars['DateTime']>
-  updatedAt_gt?: Maybe<Scalars['DateTime']>
-  updatedAt_gte?: Maybe<Scalars['DateTime']>
-  updatedById_eq?: Maybe<Scalars['ID']>
-  updatedById_in?: Maybe<Array<Scalars['ID']>>
-  deletedAt_all?: Maybe<Scalars['Boolean']>
-  deletedAt_eq?: Maybe<Scalars['DateTime']>
-  deletedAt_lt?: Maybe<Scalars['DateTime']>
-  deletedAt_lte?: Maybe<Scalars['DateTime']>
-  deletedAt_gt?: Maybe<Scalars['DateTime']>
-  deletedAt_gte?: Maybe<Scalars['DateTime']>
-  deletedById_eq?: Maybe<Scalars['ID']>
-  deletedById_in?: Maybe<Array<Scalars['ID']>>
-  rewardAccount_eq?: Maybe<Scalars['String']>
-  rewardAccount_contains?: Maybe<Scalars['String']>
-  rewardAccount_startsWith?: Maybe<Scalars['String']>
-  rewardAccount_endsWith?: Maybe<Scalars['String']>
-  rewardAccount_in?: Maybe<Array<Scalars['String']>>
-  title_eq?: Maybe<Scalars['String']>
-  title_contains?: Maybe<Scalars['String']>
-  title_startsWith?: Maybe<Scalars['String']>
-  title_endsWith?: Maybe<Scalars['String']>
-  title_in?: Maybe<Array<Scalars['String']>>
-  description_eq?: Maybe<Scalars['String']>
-  description_contains?: Maybe<Scalars['String']>
-  description_startsWith?: Maybe<Scalars['String']>
-  description_endsWith?: Maybe<Scalars['String']>
-  description_in?: Maybe<Array<Scalars['String']>>
-  activeVideosCounter_eq?: Maybe<Scalars['Int']>
-  activeVideosCounter_gt?: Maybe<Scalars['Int']>
-  activeVideosCounter_gte?: Maybe<Scalars['Int']>
-  activeVideosCounter_lt?: Maybe<Scalars['Int']>
-  activeVideosCounter_lte?: Maybe<Scalars['Int']>
-  activeVideosCounter_in?: Maybe<Array<Scalars['Int']>>
-  isPublic_eq?: Maybe<Scalars['Boolean']>
-  isPublic_in?: Maybe<Array<Scalars['Boolean']>>
-  isCensored_eq?: Maybe<Scalars['Boolean']>
-  isCensored_in?: Maybe<Array<Scalars['Boolean']>>
-  createdInBlock_eq?: Maybe<Scalars['Int']>
-  createdInBlock_gt?: Maybe<Scalars['Int']>
-  createdInBlock_gte?: Maybe<Scalars['Int']>
-  createdInBlock_lt?: Maybe<Scalars['Int']>
-  createdInBlock_lte?: Maybe<Scalars['Int']>
-  createdInBlock_in?: Maybe<Array<Scalars['Int']>>
-  ownerMember?: Maybe<MembershipWhereInput>
-  ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
-  category?: Maybe<ChannelCategoryWhereInput>
-  coverPhoto?: Maybe<StorageDataObjectWhereInput>
-  avatarPhoto?: Maybe<StorageDataObjectWhereInput>
-  language?: Maybe<LanguageWhereInput>
-  videos_none?: Maybe<VideoWhereInput>
-  videos_some?: Maybe<VideoWhereInput>
-  videos_every?: Maybe<VideoWhereInput>
-  collaborators_none?: Maybe<MembershipWhereInput>
-  collaborators_some?: Maybe<MembershipWhereInput>
-  collaborators_every?: Maybe<MembershipWhereInput>
-  bannedMembers_none?: Maybe<MembershipWhereInput>
-  bannedMembers_some?: Maybe<MembershipWhereInput>
-  bannedMembers_every?: Maybe<MembershipWhereInput>
-  channelNftCollectors_none?: Maybe<ChannelNftCollectorsWhereInput>
-  channelNftCollectors_some?: Maybe<ChannelNftCollectorsWhereInput>
-  channelNftCollectors_every?: Maybe<ChannelNftCollectorsWhereInput>
-  commentcreatedeventvideoChannel_none?: Maybe<CommentCreatedEventWhereInput>
-  commentcreatedeventvideoChannel_some?: Maybe<CommentCreatedEventWhereInput>
-  commentcreatedeventvideoChannel_every?: Maybe<CommentCreatedEventWhereInput>
-  commentdeletedeventvideoChannel_none?: Maybe<CommentDeletedEventWhereInput>
-  commentdeletedeventvideoChannel_some?: Maybe<CommentDeletedEventWhereInput>
-  commentdeletedeventvideoChannel_every?: Maybe<CommentDeletedEventWhereInput>
-  commentmoderatedeventvideoChannel_none?: Maybe<CommentModeratedEventWhereInput>
-  commentmoderatedeventvideoChannel_some?: Maybe<CommentModeratedEventWhereInput>
-  commentmoderatedeventvideoChannel_every?: Maybe<CommentModeratedEventWhereInput>
-  commentpinnedeventvideoChannel_none?: Maybe<CommentPinnedEventWhereInput>
-  commentpinnedeventvideoChannel_some?: Maybe<CommentPinnedEventWhereInput>
-  commentpinnedeventvideoChannel_every?: Maybe<CommentPinnedEventWhereInput>
-  commentreactedeventvideoChannel_none?: Maybe<CommentReactedEventWhereInput>
-  commentreactedeventvideoChannel_some?: Maybe<CommentReactedEventWhereInput>
-  commentreactedeventvideoChannel_every?: Maybe<CommentReactedEventWhereInput>
-  commenttextupdatedeventvideoChannel_none?: Maybe<CommentTextUpdatedEventWhereInput>
-  commenttextupdatedeventvideoChannel_some?: Maybe<CommentTextUpdatedEventWhereInput>
-  commenttextupdatedeventvideoChannel_every?: Maybe<CommentTextUpdatedEventWhereInput>
-  memberbannedfromchanneleventchannel_none?: Maybe<MemberBannedFromChannelEventWhereInput>
-  memberbannedfromchanneleventchannel_some?: Maybe<MemberBannedFromChannelEventWhereInput>
-  memberbannedfromchanneleventchannel_every?: Maybe<MemberBannedFromChannelEventWhereInput>
-  ownednftcreatorChannel_none?: Maybe<OwnedNftWhereInput>
-  ownednftcreatorChannel_some?: Maybe<OwnedNftWhereInput>
-  ownednftcreatorChannel_every?: Maybe<OwnedNftWhereInput>
-  videoreactedeventvideoChannel_none?: Maybe<VideoReactedEventWhereInput>
-  videoreactedeventvideoChannel_some?: Maybe<VideoReactedEventWhereInput>
-  videoreactedeventvideoChannel_every?: Maybe<VideoReactedEventWhereInput>
-  AND?: Maybe<Array<ChannelWhereInput>>
-  OR?: Maybe<Array<ChannelWhereInput>>
-}
-
-export type ChannelWhereUniqueInput = {
-  id: Scalars['ID']
-}
-
 export type Comment = BaseGraphQlObject & {
   id: Scalars['ID']
   createdAt: Scalars['DateTime']
@@ -6570,20 +6101,17 @@ export type Comment = BaseGraphQlObject & {
   repliesCount: Scalars['Int']
   /** Total number of reactions to this comment */
   reactionsCount: Scalars['Int']
+  /** Sum of replies and reactions */
+  reactionsAndRepliesCount: Scalars['Int']
   /** Whether comment has been edited or not */
   isEdited: Scalars['Boolean']
   edits: Array<CommentTextUpdatedEvent>
   deletedInEvent?: Maybe<CommentDeletedEvent>
-  deletedInEventId?: Maybe<Scalars['String']>
   moderatedInEvent?: Maybe<CommentModeratedEvent>
-  moderatedInEventId?: Maybe<Scalars['String']>
   commentparentComment?: Maybe<Array<Comment>>
   commentcreatedeventcomment?: Maybe<Array<CommentCreatedEvent>>
-  commentdeletedeventcomment?: Maybe<Array<CommentDeletedEvent>>
-  commentmoderatedeventcomment?: Maybe<Array<CommentModeratedEvent>>
   commentpinnedeventcomment?: Maybe<Array<CommentPinnedEvent>>
   commentreactedeventcomment?: Maybe<Array<CommentReactedEvent>>
-  videopinnedComment?: Maybe<Array<Video>>
 }
 
 export type CommentConnection = {
@@ -6755,9 +6283,8 @@ export type CommentCreateInput = {
   parentComment?: Maybe<Scalars['ID']>
   repliesCount: Scalars['Float']
   reactionsCount: Scalars['Float']
+  reactionsAndRepliesCount: Scalars['Float']
   isEdited: Scalars['Boolean']
-  deletedInEvent?: Maybe<Scalars['ID']>
-  moderatedInEvent?: Maybe<Scalars['ID']>
 }
 
 export type CommentDeletedEvent = Event &
@@ -6786,7 +6313,6 @@ export type CommentDeletedEvent = Event &
     videoId: Scalars['String']
     videoChannel: Channel
     videoChannelId: Scalars['String']
-    commentdeletedInEvent?: Maybe<Array<Comment>>
   }
 
 export type CommentDeletedEventConnection = {
@@ -6890,9 +6416,6 @@ export type CommentDeletedEventWhereInput = {
   comment?: Maybe<CommentWhereInput>
   video?: Maybe<VideoWhereInput>
   videoChannel?: Maybe<ChannelWhereInput>
-  commentdeletedInEvent_none?: Maybe<CommentWhereInput>
-  commentdeletedInEvent_some?: Maybe<CommentWhereInput>
-  commentdeletedInEvent_every?: Maybe<CommentWhereInput>
   AND?: Maybe<Array<CommentDeletedEventWhereInput>>
   OR?: Maybe<Array<CommentDeletedEventWhereInput>>
 }
@@ -6936,7 +6459,6 @@ export type CommentModeratedEvent = Event &
     actor: ContentActor
     /** Comment deletion rationale */
     rationale: Scalars['String']
-    commentmoderatedInEvent?: Maybe<Array<Comment>>
   }
 
 export type CommentModeratedEventConnection = {
@@ -7052,9 +6574,6 @@ export type CommentModeratedEventWhereInput = {
   comment?: Maybe<CommentWhereInput>
   video?: Maybe<VideoWhereInput>
   videoChannel?: Maybe<ChannelWhereInput>
-  commentmoderatedInEvent_none?: Maybe<CommentWhereInput>
-  commentmoderatedInEvent_some?: Maybe<CommentWhereInput>
-  commentmoderatedInEvent_every?: Maybe<CommentWhereInput>
   AND?: Maybe<Array<CommentModeratedEventWhereInput>>
   OR?: Maybe<Array<CommentModeratedEventWhereInput>>
 }
@@ -7084,12 +6603,10 @@ export enum CommentOrderByInput {
   RepliesCountDesc = 'repliesCount_DESC',
   ReactionsCountAsc = 'reactionsCount_ASC',
   ReactionsCountDesc = 'reactionsCount_DESC',
+  ReactionsAndRepliesCountAsc = 'reactionsAndRepliesCount_ASC',
+  ReactionsAndRepliesCountDesc = 'reactionsAndRepliesCount_DESC',
   IsEditedAsc = 'isEdited_ASC',
   IsEditedDesc = 'isEdited_DESC',
-  DeletedInEventAsc = 'deletedInEvent_ASC',
-  DeletedInEventDesc = 'deletedInEvent_DESC',
-  ModeratedInEventAsc = 'moderatedInEvent_ASC',
-  ModeratedInEventDesc = 'moderatedInEvent_DESC',
 }
 
 export type CommentPinnedEvent = Event &
@@ -7466,6 +6983,8 @@ export type CommentReactionsCountByReactionId = BaseGraphQlObject & {
   count: Scalars['Int']
   comment: Comment
   commentId: Scalars['String']
+  video: Video
+  videoId: Scalars['String']
 }
 
 export type CommentReactionsCountByReactionIdConnection = {
@@ -7478,6 +6997,7 @@ export type CommentReactionsCountByReactionIdCreateInput = {
   reactionId: Scalars['Float']
   count: Scalars['Float']
   comment: Scalars['ID']
+  video: Scalars['ID']
 }
 
 export type CommentReactionsCountByReactionIdEdge = {
@@ -7498,12 +7018,15 @@ export enum CommentReactionsCountByReactionIdOrderByInput {
   CountDesc = 'count_DESC',
   CommentAsc = 'comment_ASC',
   CommentDesc = 'comment_DESC',
+  VideoAsc = 'video_ASC',
+  VideoDesc = 'video_DESC',
 }
 
 export type CommentReactionsCountByReactionIdUpdateInput = {
   reactionId?: Maybe<Scalars['Float']>
   count?: Maybe<Scalars['Float']>
   comment?: Maybe<Scalars['ID']>
+  video?: Maybe<Scalars['ID']>
 }
 
 export type CommentReactionsCountByReactionIdWhereInput = {
@@ -7544,6 +7067,7 @@ export type CommentReactionsCountByReactionIdWhereInput = {
   count_lte?: Maybe<Scalars['Int']>
   count_in?: Maybe<Array<Scalars['Int']>>
   comment?: Maybe<CommentWhereInput>
+  video?: Maybe<VideoWhereInput>
   AND?: Maybe<Array<CommentReactionsCountByReactionIdWhereInput>>
   OR?: Maybe<Array<CommentReactionsCountByReactionIdWhereInput>>
 }
@@ -7778,9 +7302,8 @@ export type CommentUpdateInput = {
   parentComment?: Maybe<Scalars['ID']>
   repliesCount?: Maybe<Scalars['Float']>
   reactionsCount?: Maybe<Scalars['Float']>
+  reactionsAndRepliesCount?: Maybe<Scalars['Float']>
   isEdited?: Maybe<Scalars['Boolean']>
-  deletedInEvent?: Maybe<Scalars['ID']>
-  moderatedInEvent?: Maybe<Scalars['ID']>
 }
 
 export type CommentWhereInput = {
@@ -7827,6 +7350,12 @@ export type CommentWhereInput = {
   reactionsCount_lt?: Maybe<Scalars['Int']>
   reactionsCount_lte?: Maybe<Scalars['Int']>
   reactionsCount_in?: Maybe<Array<Scalars['Int']>>
+  reactionsAndRepliesCount_eq?: Maybe<Scalars['Int']>
+  reactionsAndRepliesCount_gt?: Maybe<Scalars['Int']>
+  reactionsAndRepliesCount_gte?: Maybe<Scalars['Int']>
+  reactionsAndRepliesCount_lt?: Maybe<Scalars['Int']>
+  reactionsAndRepliesCount_lte?: Maybe<Scalars['Int']>
+  reactionsAndRepliesCount_in?: Maybe<Array<Scalars['Int']>>
   isEdited_eq?: Maybe<Scalars['Boolean']>
   isEdited_in?: Maybe<Array<Scalars['Boolean']>>
   author?: Maybe<MembershipWhereInput>
@@ -7849,21 +7378,12 @@ export type CommentWhereInput = {
   commentcreatedeventcomment_none?: Maybe<CommentCreatedEventWhereInput>
   commentcreatedeventcomment_some?: Maybe<CommentCreatedEventWhereInput>
   commentcreatedeventcomment_every?: Maybe<CommentCreatedEventWhereInput>
-  commentdeletedeventcomment_none?: Maybe<CommentDeletedEventWhereInput>
-  commentdeletedeventcomment_some?: Maybe<CommentDeletedEventWhereInput>
-  commentdeletedeventcomment_every?: Maybe<CommentDeletedEventWhereInput>
-  commentmoderatedeventcomment_none?: Maybe<CommentModeratedEventWhereInput>
-  commentmoderatedeventcomment_some?: Maybe<CommentModeratedEventWhereInput>
-  commentmoderatedeventcomment_every?: Maybe<CommentModeratedEventWhereInput>
   commentpinnedeventcomment_none?: Maybe<CommentPinnedEventWhereInput>
   commentpinnedeventcomment_some?: Maybe<CommentPinnedEventWhereInput>
   commentpinnedeventcomment_every?: Maybe<CommentPinnedEventWhereInput>
   commentreactedeventcomment_none?: Maybe<CommentReactedEventWhereInput>
   commentreactedeventcomment_some?: Maybe<CommentReactedEventWhereInput>
   commentreactedeventcomment_every?: Maybe<CommentReactedEventWhereInput>
-  videopinnedComment_none?: Maybe<VideoWhereInput>
-  videopinnedComment_some?: Maybe<VideoWhereInput>
-  videopinnedComment_every?: Maybe<VideoWhereInput>
   AND?: Maybe<Array<CommentWhereInput>>
   OR?: Maybe<Array<CommentWhereInput>>
 }
@@ -11277,6 +10797,350 @@ export type GeographicalAreaSubdivistion = {
   code?: Maybe<Scalars['String']>
 }
 
+export type Channel = BaseGraphQlObject & {
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['String']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['String']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['String']>
+  version: Scalars['Int']
+  ownerMember?: Maybe<Membership>
+  ownerMemberId?: Maybe<Scalars['String']>
+  ownerCuratorGroup?: Maybe<CuratorGroup>
+  ownerCuratorGroupId?: Maybe<Scalars['String']>
+  /** Reward account where revenue is sent if set. */
+  rewardAccount?: Maybe<Scalars['String']>
+  /** The title of the Channel */
+  title?: Maybe<Scalars['String']>
+  /** The description of a Channel */
+  description?: Maybe<Scalars['String']>
+  /** Count of channel's videos with an uploaded asset that are public and not censored. */
+  activeVideosCounter: Scalars['Int']
+  coverPhoto?: Maybe<StorageDataObject>
+  coverPhotoId?: Maybe<Scalars['String']>
+  avatarPhoto?: Maybe<StorageDataObject>
+  avatarPhotoId?: Maybe<Scalars['String']>
+  /** Flag signaling whether a channel is public. */
+  isPublic?: Maybe<Scalars['Boolean']>
+  /** Flag signaling whether a channel is censored. */
+  isCensored: Scalars['Boolean']
+  language?: Maybe<Language>
+  languageId?: Maybe<Scalars['String']>
+  videos: Array<Video>
+  /** Number of the block the channel was created in */
+  createdInBlock: Scalars['Int']
+  collaborators: Array<Membership>
+  bannedMembers: Array<Membership>
+  channelNftCollectors: Array<ChannelNftCollectors>
+  commentcreatedeventvideoChannel?: Maybe<Array<CommentCreatedEvent>>
+  commentdeletedeventvideoChannel?: Maybe<Array<CommentDeletedEvent>>
+  commentmoderatedeventvideoChannel?: Maybe<Array<CommentModeratedEvent>>
+  commentpinnedeventvideoChannel?: Maybe<Array<CommentPinnedEvent>>
+  commentreactedeventvideoChannel?: Maybe<Array<CommentReactedEvent>>
+  commenttextupdatedeventvideoChannel?: Maybe<Array<CommentTextUpdatedEvent>>
+  memberbannedfromchanneleventchannel?: Maybe<Array<MemberBannedFromChannelEvent>>
+  ownednftcreatorChannel?: Maybe<Array<OwnedNft>>
+  videoreactedeventvideoChannel?: Maybe<Array<VideoReactedEvent>>
+}
+
+export type ChannelConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<ChannelEdge>
+  pageInfo: PageInfo
+}
+
+export type ChannelCreateInput = {
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
+  rewardAccount?: Maybe<Scalars['String']>
+  title?: Maybe<Scalars['String']>
+  description?: Maybe<Scalars['String']>
+  activeVideosCounter: Scalars['Float']
+  coverPhoto?: Maybe<Scalars['ID']>
+  avatarPhoto?: Maybe<Scalars['ID']>
+  isPublic?: Maybe<Scalars['Boolean']>
+  isCensored: Scalars['Boolean']
+  language?: Maybe<Scalars['ID']>
+  createdInBlock: Scalars['Float']
+}
+
+export type ChannelEdge = {
+  node: Channel
+  cursor: Scalars['String']
+}
+
+export type ChannelNftCollectors = BaseGraphQlObject & {
+  id: Scalars['ID']
+  createdAt: Scalars['DateTime']
+  createdById: Scalars['String']
+  updatedAt?: Maybe<Scalars['DateTime']>
+  updatedById?: Maybe<Scalars['String']>
+  deletedAt?: Maybe<Scalars['DateTime']>
+  deletedById?: Maybe<Scalars['String']>
+  version: Scalars['Int']
+  channel: Channel
+  channelId: Scalars['String']
+  member?: Maybe<Membership>
+  memberId?: Maybe<Scalars['String']>
+  curatorGroup?: Maybe<CuratorGroup>
+  curatorGroupId?: Maybe<Scalars['String']>
+  /** Amount of NFTs owned in the channel */
+  amount: Scalars['Int']
+  /** Time of last NFT amount increase */
+  lastIncreaseAt: Scalars['DateTime']
+}
+
+export type ChannelNftCollectorsConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<ChannelNftCollectorsEdge>
+  pageInfo: PageInfo
+}
+
+export type ChannelNftCollectorsCreateInput = {
+  channel: Scalars['ID']
+  member?: Maybe<Scalars['ID']>
+  curatorGroup?: Maybe<Scalars['ID']>
+  amount: Scalars['Float']
+  lastIncreaseAt: Scalars['DateTime']
+}
+
+export type ChannelNftCollectorsEdge = {
+  node: ChannelNftCollectors
+  cursor: Scalars['String']
+}
+
+export enum ChannelNftCollectorsOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  ChannelAsc = 'channel_ASC',
+  ChannelDesc = 'channel_DESC',
+  MemberAsc = 'member_ASC',
+  MemberDesc = 'member_DESC',
+  CuratorGroupAsc = 'curatorGroup_ASC',
+  CuratorGroupDesc = 'curatorGroup_DESC',
+  AmountAsc = 'amount_ASC',
+  AmountDesc = 'amount_DESC',
+  LastIncreaseAtAsc = 'lastIncreaseAt_ASC',
+  LastIncreaseAtDesc = 'lastIncreaseAt_DESC',
+}
+
+export type ChannelNftCollectorsUpdateInput = {
+  channel?: Maybe<Scalars['ID']>
+  member?: Maybe<Scalars['ID']>
+  curatorGroup?: Maybe<Scalars['ID']>
+  amount?: Maybe<Scalars['Float']>
+  lastIncreaseAt?: Maybe<Scalars['DateTime']>
+}
+
+export type ChannelNftCollectorsWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  amount_eq?: Maybe<Scalars['Int']>
+  amount_gt?: Maybe<Scalars['Int']>
+  amount_gte?: Maybe<Scalars['Int']>
+  amount_lt?: Maybe<Scalars['Int']>
+  amount_lte?: Maybe<Scalars['Int']>
+  amount_in?: Maybe<Array<Scalars['Int']>>
+  lastIncreaseAt_eq?: Maybe<Scalars['DateTime']>
+  lastIncreaseAt_lt?: Maybe<Scalars['DateTime']>
+  lastIncreaseAt_lte?: Maybe<Scalars['DateTime']>
+  lastIncreaseAt_gt?: Maybe<Scalars['DateTime']>
+  lastIncreaseAt_gte?: Maybe<Scalars['DateTime']>
+  channel?: Maybe<ChannelWhereInput>
+  member?: Maybe<MembershipWhereInput>
+  curatorGroup?: Maybe<CuratorGroupWhereInput>
+  AND?: Maybe<Array<ChannelNftCollectorsWhereInput>>
+  OR?: Maybe<Array<ChannelNftCollectorsWhereInput>>
+}
+
+export type ChannelNftCollectorsWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
+export enum ChannelOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  OwnerMemberAsc = 'ownerMember_ASC',
+  OwnerMemberDesc = 'ownerMember_DESC',
+  OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
+  OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
+  RewardAccountAsc = 'rewardAccount_ASC',
+  RewardAccountDesc = 'rewardAccount_DESC',
+  TitleAsc = 'title_ASC',
+  TitleDesc = 'title_DESC',
+  DescriptionAsc = 'description_ASC',
+  DescriptionDesc = 'description_DESC',
+  ActiveVideosCounterAsc = 'activeVideosCounter_ASC',
+  ActiveVideosCounterDesc = 'activeVideosCounter_DESC',
+  CoverPhotoAsc = 'coverPhoto_ASC',
+  CoverPhotoDesc = 'coverPhoto_DESC',
+  AvatarPhotoAsc = 'avatarPhoto_ASC',
+  AvatarPhotoDesc = 'avatarPhoto_DESC',
+  IsPublicAsc = 'isPublic_ASC',
+  IsPublicDesc = 'isPublic_DESC',
+  IsCensoredAsc = 'isCensored_ASC',
+  IsCensoredDesc = 'isCensored_DESC',
+  LanguageAsc = 'language_ASC',
+  LanguageDesc = 'language_DESC',
+  CreatedInBlockAsc = 'createdInBlock_ASC',
+  CreatedInBlockDesc = 'createdInBlock_DESC',
+}
+
+export type ChannelUpdateInput = {
+  ownerMember?: Maybe<Scalars['ID']>
+  ownerCuratorGroup?: Maybe<Scalars['ID']>
+  rewardAccount?: Maybe<Scalars['String']>
+  title?: Maybe<Scalars['String']>
+  description?: Maybe<Scalars['String']>
+  activeVideosCounter?: Maybe<Scalars['Float']>
+  coverPhoto?: Maybe<Scalars['ID']>
+  avatarPhoto?: Maybe<Scalars['ID']>
+  isPublic?: Maybe<Scalars['Boolean']>
+  isCensored?: Maybe<Scalars['Boolean']>
+  language?: Maybe<Scalars['ID']>
+  createdInBlock?: Maybe<Scalars['Float']>
+}
+
+export type ChannelWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  rewardAccount_eq?: Maybe<Scalars['String']>
+  rewardAccount_contains?: Maybe<Scalars['String']>
+  rewardAccount_startsWith?: Maybe<Scalars['String']>
+  rewardAccount_endsWith?: Maybe<Scalars['String']>
+  rewardAccount_in?: Maybe<Array<Scalars['String']>>
+  title_eq?: Maybe<Scalars['String']>
+  title_contains?: Maybe<Scalars['String']>
+  title_startsWith?: Maybe<Scalars['String']>
+  title_endsWith?: Maybe<Scalars['String']>
+  title_in?: Maybe<Array<Scalars['String']>>
+  description_eq?: Maybe<Scalars['String']>
+  description_contains?: Maybe<Scalars['String']>
+  description_startsWith?: Maybe<Scalars['String']>
+  description_endsWith?: Maybe<Scalars['String']>
+  description_in?: Maybe<Array<Scalars['String']>>
+  activeVideosCounter_eq?: Maybe<Scalars['Int']>
+  activeVideosCounter_gt?: Maybe<Scalars['Int']>
+  activeVideosCounter_gte?: Maybe<Scalars['Int']>
+  activeVideosCounter_lt?: Maybe<Scalars['Int']>
+  activeVideosCounter_lte?: Maybe<Scalars['Int']>
+  activeVideosCounter_in?: Maybe<Array<Scalars['Int']>>
+  isPublic_eq?: Maybe<Scalars['Boolean']>
+  isPublic_in?: Maybe<Array<Scalars['Boolean']>>
+  isCensored_eq?: Maybe<Scalars['Boolean']>
+  isCensored_in?: Maybe<Array<Scalars['Boolean']>>
+  createdInBlock_eq?: Maybe<Scalars['Int']>
+  createdInBlock_gt?: Maybe<Scalars['Int']>
+  createdInBlock_gte?: Maybe<Scalars['Int']>
+  createdInBlock_lt?: Maybe<Scalars['Int']>
+  createdInBlock_lte?: Maybe<Scalars['Int']>
+  createdInBlock_in?: Maybe<Array<Scalars['Int']>>
+  ownerMember?: Maybe<MembershipWhereInput>
+  ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
+  coverPhoto?: Maybe<StorageDataObjectWhereInput>
+  avatarPhoto?: Maybe<StorageDataObjectWhereInput>
+  language?: Maybe<LanguageWhereInput>
+  videos_none?: Maybe<VideoWhereInput>
+  videos_some?: Maybe<VideoWhereInput>
+  videos_every?: Maybe<VideoWhereInput>
+  collaborators_none?: Maybe<MembershipWhereInput>
+  collaborators_some?: Maybe<MembershipWhereInput>
+  collaborators_every?: Maybe<MembershipWhereInput>
+  bannedMembers_none?: Maybe<MembershipWhereInput>
+  bannedMembers_some?: Maybe<MembershipWhereInput>
+  bannedMembers_every?: Maybe<MembershipWhereInput>
+  channelNftCollectors_none?: Maybe<ChannelNftCollectorsWhereInput>
+  channelNftCollectors_some?: Maybe<ChannelNftCollectorsWhereInput>
+  channelNftCollectors_every?: Maybe<ChannelNftCollectorsWhereInput>
+  commentcreatedeventvideoChannel_none?: Maybe<CommentCreatedEventWhereInput>
+  commentcreatedeventvideoChannel_some?: Maybe<CommentCreatedEventWhereInput>
+  commentcreatedeventvideoChannel_every?: Maybe<CommentCreatedEventWhereInput>
+  commentdeletedeventvideoChannel_none?: Maybe<CommentDeletedEventWhereInput>
+  commentdeletedeventvideoChannel_some?: Maybe<CommentDeletedEventWhereInput>
+  commentdeletedeventvideoChannel_every?: Maybe<CommentDeletedEventWhereInput>
+  commentmoderatedeventvideoChannel_none?: Maybe<CommentModeratedEventWhereInput>
+  commentmoderatedeventvideoChannel_some?: Maybe<CommentModeratedEventWhereInput>
+  commentmoderatedeventvideoChannel_every?: Maybe<CommentModeratedEventWhereInput>
+  commentpinnedeventvideoChannel_none?: Maybe<CommentPinnedEventWhereInput>
+  commentpinnedeventvideoChannel_some?: Maybe<CommentPinnedEventWhereInput>
+  commentpinnedeventvideoChannel_every?: Maybe<CommentPinnedEventWhereInput>
+  commentreactedeventvideoChannel_none?: Maybe<CommentReactedEventWhereInput>
+  commentreactedeventvideoChannel_some?: Maybe<CommentReactedEventWhereInput>
+  commentreactedeventvideoChannel_every?: Maybe<CommentReactedEventWhereInput>
+  commenttextupdatedeventvideoChannel_none?: Maybe<CommentTextUpdatedEventWhereInput>
+  commenttextupdatedeventvideoChannel_some?: Maybe<CommentTextUpdatedEventWhereInput>
+  commenttextupdatedeventvideoChannel_every?: Maybe<CommentTextUpdatedEventWhereInput>
+  memberbannedfromchanneleventchannel_none?: Maybe<MemberBannedFromChannelEventWhereInput>
+  memberbannedfromchanneleventchannel_some?: Maybe<MemberBannedFromChannelEventWhereInput>
+  memberbannedfromchanneleventchannel_every?: Maybe<MemberBannedFromChannelEventWhereInput>
+  ownednftcreatorChannel_none?: Maybe<OwnedNftWhereInput>
+  ownednftcreatorChannel_some?: Maybe<OwnedNftWhereInput>
+  ownednftcreatorChannel_every?: Maybe<OwnedNftWhereInput>
+  videoreactedeventvideoChannel_none?: Maybe<VideoReactedEventWhereInput>
+  videoreactedeventvideoChannel_some?: Maybe<VideoReactedEventWhereInput>
+  videoreactedeventvideoChannel_every?: Maybe<VideoReactedEventWhereInput>
+  AND?: Maybe<Array<ChannelWhereInput>>
+  OR?: Maybe<Array<ChannelWhereInput>>
+}
+
+export type ChannelWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
 export type InitialInvitationBalanceUpdatedEvent = Event &
   BaseGraphQlObject & {
     /** Hash of the extrinsic which caused the event to be emitted */
@@ -14077,15 +13941,7 @@ export type MetaprotocolTransactionErrored = {
   message: Scalars['String']
 }
 
-export type MetaprotocolTransactionPending = {
-  /** Type needs to have at least one non-relation entity. This value is not used. */
-  dummy?: Maybe<Scalars['Int']>
-}
-
-export type MetaprotocolTransactionStatus =
-  | MetaprotocolTransactionPending
-  | MetaprotocolTransactionSuccessful
-  | MetaprotocolTransactionErrored
+export type MetaprotocolTransactionStatus = MetaprotocolTransactionSuccessful | MetaprotocolTransactionErrored
 
 export type MetaprotocolTransactionStatusEvent = Event &
   BaseGraphQlObject & {
@@ -14211,6 +14067,20 @@ export type MetaprotocolTransactionStatusEventWhereUniqueInput = {
 export type MetaprotocolTransactionSuccessful = {
   /** Type needs to have at least one non-relation entity. This value is not used. */
   dummy?: Maybe<Scalars['Int']>
+  /** ID of the created comment (if any) */
+  commentCreated?: Maybe<Comment>
+  /** ID of the edited comment (if any) */
+  commentEdited?: Maybe<Comment>
+  /** ID of the deleted comment (if any) */
+  commentDeleted?: Maybe<Comment>
+  /** ID of the moderated comment (if any) */
+  commentModerated?: Maybe<Comment>
+  /** ID of the created video category (if any) */
+  videoCategoryCreated?: Maybe<Video>
+  /** ID of the updated video category (if any) */
+  videoCategoryUpdated?: Maybe<Video>
+  /** ID of the delete video category (if any) */
+  videoCategoryDeleted?: Maybe<Video>
 }
 
 export enum Network {
@@ -18934,6 +18804,11 @@ export type ProposalDiscussionThreadEdge = {
 
 export type ProposalDiscussionThreadMode = ProposalDiscussionThreadModeOpen | ProposalDiscussionThreadModeClosed
 
+export type ProposalDiscussionThreadModeClosed = {
+  /** Whitelist containing members allowed to participate in the discussion */
+  whitelist?: Maybe<ProposalDiscussionWhitelist>
+}
+
 export type ProposalDiscussionThreadModeChangedEvent = Event &
   BaseGraphQlObject & {
     /** Hash of the extrinsic which caused the event to be emitted */
@@ -19067,11 +18942,6 @@ export type ProposalDiscussionThreadModeChangedEventWhereInput = {
 
 export type ProposalDiscussionThreadModeChangedEventWhereUniqueInput = {
   id: Scalars['ID']
-}
-
-export type ProposalDiscussionThreadModeClosed = {
-  /** Whitelist containing members allowed to participate in the discussion */
-  whitelist?: Maybe<ProposalDiscussionWhitelist>
 }
 
 export type ProposalDiscussionThreadModeOpen = {
@@ -20000,15 +19870,6 @@ export type Query = {
   categoryStickyThreadUpdateEvents: Array<CategoryStickyThreadUpdateEvent>
   categoryStickyThreadUpdateEventByUniqueInput?: Maybe<CategoryStickyThreadUpdateEvent>
   categoryStickyThreadUpdateEventsConnection: CategoryStickyThreadUpdateEventConnection
-  channelCategories: Array<ChannelCategory>
-  channelCategoryByUniqueInput?: Maybe<ChannelCategory>
-  channelCategoriesConnection: ChannelCategoryConnection
-  channelNftCollectors: Array<ChannelNftCollectors>
-  channelNftCollectorsByUniqueInput?: Maybe<ChannelNftCollectors>
-  channelNftCollectorsConnection: ChannelNftCollectorsConnection
-  channels: Array<Channel>
-  channelByUniqueInput?: Maybe<Channel>
-  channelsConnection: ChannelConnection
   commentCreatedEvents: Array<CommentCreatedEvent>
   commentCreatedEventByUniqueInput?: Maybe<CommentCreatedEvent>
   commentCreatedEventsConnection: CommentCreatedEventConnection
@@ -20112,6 +19973,12 @@ export type Query = {
   geoCoordinates: Array<GeoCoordinates>
   geoCoordinatesByUniqueInput?: Maybe<GeoCoordinates>
   geoCoordinatesConnection: GeoCoordinatesConnection
+  channelNftCollectors: Array<ChannelNftCollectors>
+  channelNftCollectorsByUniqueInput?: Maybe<ChannelNftCollectors>
+  channelNftCollectorsConnection: ChannelNftCollectorsConnection
+  channels: Array<Channel>
+  channelByUniqueInput?: Maybe<Channel>
+  channelsConnection: ChannelConnection
   initialInvitationBalanceUpdatedEvents: Array<InitialInvitationBalanceUpdatedEvent>
   initialInvitationBalanceUpdatedEventByUniqueInput?: Maybe<InitialInvitationBalanceUpdatedEvent>
   initialInvitationBalanceUpdatedEventsConnection: InitialInvitationBalanceUpdatedEventConnection
@@ -20286,7 +20153,6 @@ export type Query = {
   proposals: Array<Proposal>
   proposalByUniqueInput?: Maybe<Proposal>
   proposalsConnection: ProposalConnection
-  channelCategoriesByName: Array<ChannelCategoriesByNameFtsOutput>
   commentText: Array<CommentTextFtsOutput>
   membersByHandle: Array<MembersByHandleFtsOutput>
   postsByText: Array<PostsByTextFtsOutput>
@@ -21339,66 +21205,6 @@ export type QueryCategoryStickyThreadUpdateEventsConnectionArgs = {
   orderBy?: Maybe<Array<CategoryStickyThreadUpdateEventOrderByInput>>
 }
 
-export type QueryChannelCategoriesArgs = {
-  offset?: Maybe<Scalars['Int']>
-  limit?: Maybe<Scalars['Int']>
-  where?: Maybe<ChannelCategoryWhereInput>
-  orderBy?: Maybe<Array<ChannelCategoryOrderByInput>>
-}
-
-export type QueryChannelCategoryByUniqueInputArgs = {
-  where: ChannelCategoryWhereUniqueInput
-}
-
-export type QueryChannelCategoriesConnectionArgs = {
-  first?: Maybe<Scalars['Int']>
-  after?: Maybe<Scalars['String']>
-  last?: Maybe<Scalars['Int']>
-  before?: Maybe<Scalars['String']>
-  where?: Maybe<ChannelCategoryWhereInput>
-  orderBy?: Maybe<Array<ChannelCategoryOrderByInput>>
-}
-
-export type QueryChannelNftCollectorsArgs = {
-  offset?: Maybe<Scalars['Int']>
-  limit?: Maybe<Scalars['Int']>
-  where?: Maybe<ChannelNftCollectorsWhereInput>
-  orderBy?: Maybe<Array<ChannelNftCollectorsOrderByInput>>
-}
-
-export type QueryChannelNftCollectorsByUniqueInputArgs = {
-  where: ChannelNftCollectorsWhereUniqueInput
-}
-
-export type QueryChannelNftCollectorsConnectionArgs = {
-  first?: Maybe<Scalars['Int']>
-  after?: Maybe<Scalars['String']>
-  last?: Maybe<Scalars['Int']>
-  before?: Maybe<Scalars['String']>
-  where?: Maybe<ChannelNftCollectorsWhereInput>
-  orderBy?: Maybe<Array<ChannelNftCollectorsOrderByInput>>
-}
-
-export type QueryChannelsArgs = {
-  offset?: Maybe<Scalars['Int']>
-  limit?: Maybe<Scalars['Int']>
-  where?: Maybe<ChannelWhereInput>
-  orderBy?: Maybe<Array<ChannelOrderByInput>>
-}
-
-export type QueryChannelByUniqueInputArgs = {
-  where: ChannelWhereUniqueInput
-}
-
-export type QueryChannelsConnectionArgs = {
-  first?: Maybe<Scalars['Int']>
-  after?: Maybe<Scalars['String']>
-  last?: Maybe<Scalars['Int']>
-  before?: Maybe<Scalars['String']>
-  where?: Maybe<ChannelWhereInput>
-  orderBy?: Maybe<Array<ChannelOrderByInput>>
-}
-
 export type QueryCommentCreatedEventsArgs = {
   offset?: Maybe<Scalars['Int']>
   limit?: Maybe<Scalars['Int']>
@@ -22084,6 +21890,46 @@ export type QueryGeoCoordinatesConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<GeoCoordinatesWhereInput>
   orderBy?: Maybe<Array<GeoCoordinatesOrderByInput>>
+}
+
+export type QueryChannelNftCollectorsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<ChannelNftCollectorsWhereInput>
+  orderBy?: Maybe<Array<ChannelNftCollectorsOrderByInput>>
+}
+
+export type QueryChannelNftCollectorsByUniqueInputArgs = {
+  where: ChannelNftCollectorsWhereUniqueInput
+}
+
+export type QueryChannelNftCollectorsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<ChannelNftCollectorsWhereInput>
+  orderBy?: Maybe<Array<ChannelNftCollectorsOrderByInput>>
+}
+
+export type QueryChannelsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<ChannelWhereInput>
+  orderBy?: Maybe<Array<ChannelOrderByInput>>
+}
+
+export type QueryChannelByUniqueInputArgs = {
+  where: ChannelWhereUniqueInput
+}
+
+export type QueryChannelsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<ChannelWhereInput>
+  orderBy?: Maybe<Array<ChannelOrderByInput>>
 }
 
 export type QueryInitialInvitationBalanceUpdatedEventsArgs = {
@@ -23244,13 +23090,6 @@ export type QueryProposalsConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<ProposalWhereInput>
   orderBy?: Maybe<Array<ProposalOrderByInput>>
-}
-
-export type QueryChannelCategoriesByNameArgs = {
-  whereChannelCategory?: Maybe<ChannelCategoryWhereInput>
-  skip?: Maybe<Scalars['Int']>
-  limit?: Maybe<Scalars['Int']>
-  text: Scalars['String']
 }
 
 export type QueryCommentTextArgs = {
@@ -27131,16 +26970,16 @@ export type StorageBagOwner =
   | StorageBagOwnerChannel
   | StorageBagOwnerDao
 
-export type StorageBagOwnerChannel = {
-  channelId?: Maybe<Scalars['Int']>
-}
-
 export type StorageBagOwnerCouncil = {
   phantom?: Maybe<Scalars['Int']>
 }
 
 export type StorageBagOwnerDao = {
   daoId?: Maybe<Scalars['Int']>
+}
+
+export type StorageBagOwnerChannel = {
+  channelId?: Maybe<Scalars['Int']>
 }
 
 export type StorageBagOwnerMember = {
@@ -29125,7 +28964,6 @@ export type Video = BaseGraphQlObject & {
   /** Is comment section enabled (true if enabled) */
   isCommentSectionEnabled: Scalars['Boolean']
   pinnedComment?: Maybe<Comment>
-  pinnedCommentId?: Maybe<Scalars['String']>
   comments: Array<Comment>
   /** Comments count */
   commentsCount: Scalars['Int']
@@ -29147,6 +28985,7 @@ export type Video = BaseGraphQlObject & {
   commentpinnedeventvideo?: Maybe<Array<CommentPinnedEvent>>
   commentreactedeventvideo?: Maybe<Array<CommentReactedEvent>>
   commentreactionvideo?: Maybe<Array<CommentReaction>>
+  commentreactionscountbyreactionidvideo?: Maybe<Array<CommentReactionsCountByReactionId>>
   commenttextupdatedeventvideo?: Maybe<Array<CommentTextUpdatedEvent>>
   englishauctionsettledeventvideo?: Maybe<Array<EnglishAuctionSettledEvent>>
   englishauctionstartedeventvideo?: Maybe<Array<EnglishAuctionStartedEvent>>
@@ -29182,7 +29021,7 @@ export type VideoCategory = BaseGraphQlObject & {
   deletedById?: Maybe<Scalars['String']>
   version: Scalars['Int']
   /** The name of the category */
-  name?: Maybe<Scalars['String']>
+  name: Scalars['String']
   /** Count of channel's videos with an uploaded asset that are public and not censored. */
   activeVideosCounter: Scalars['Int']
   videos: Array<Video>
@@ -29196,7 +29035,7 @@ export type VideoCategoryConnection = {
 }
 
 export type VideoCategoryCreateInput = {
-  name?: Maybe<Scalars['String']>
+  name: Scalars['String']
   activeVideosCounter: Scalars['Float']
   createdInBlock: Scalars['Float']
 }
@@ -29306,7 +29145,6 @@ export type VideoCreateInput = {
   createdInBlock: Scalars['Float']
   isFeatured: Scalars['Boolean']
   isCommentSectionEnabled: Scalars['Boolean']
-  pinnedComment?: Maybe<Scalars['ID']>
   commentsCount: Scalars['Float']
   isReactionFeatureEnabled: Scalars['Boolean']
   reactionsCount: Scalars['Float']
@@ -29595,8 +29433,6 @@ export enum VideoOrderByInput {
   IsFeaturedDesc = 'isFeatured_DESC',
   IsCommentSectionEnabledAsc = 'isCommentSectionEnabled_ASC',
   IsCommentSectionEnabledDesc = 'isCommentSectionEnabled_DESC',
-  PinnedCommentAsc = 'pinnedComment_ASC',
-  PinnedCommentDesc = 'pinnedComment_DESC',
   CommentsCountAsc = 'commentsCount_ASC',
   CommentsCountDesc = 'commentsCount_DESC',
   IsReactionFeatureEnabledAsc = 'isReactionFeatureEnabled_ASC',
@@ -30105,7 +29941,6 @@ export type VideoUpdateInput = {
   createdInBlock?: Maybe<Scalars['Float']>
   isFeatured?: Maybe<Scalars['Boolean']>
   isCommentSectionEnabled?: Maybe<Scalars['Boolean']>
-  pinnedComment?: Maybe<Scalars['ID']>
   commentsCount?: Maybe<Scalars['Float']>
   isReactionFeatureEnabled?: Maybe<Scalars['Boolean']>
   reactionsCount?: Maybe<Scalars['Float']>
@@ -30243,6 +30078,9 @@ export type VideoWhereInput = {
   commentreactionvideo_none?: Maybe<CommentReactionWhereInput>
   commentreactionvideo_some?: Maybe<CommentReactionWhereInput>
   commentreactionvideo_every?: Maybe<CommentReactionWhereInput>
+  commentreactionscountbyreactionidvideo_none?: Maybe<CommentReactionsCountByReactionIdWhereInput>
+  commentreactionscountbyreactionidvideo_some?: Maybe<CommentReactionsCountByReactionIdWhereInput>
+  commentreactionscountbyreactionidvideo_every?: Maybe<CommentReactionsCountByReactionIdWhereInput>
   commenttextupdatedeventvideo_none?: Maybe<CommentTextUpdatedEventWhereInput>
   commenttextupdatedeventvideo_some?: Maybe<CommentTextUpdatedEventWhereInput>
   commenttextupdatedeventvideo_every?: Maybe<CommentTextUpdatedEventWhereInput>

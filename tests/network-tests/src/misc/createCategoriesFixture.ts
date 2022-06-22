@@ -20,8 +20,6 @@ export class CreateMockCategories extends BaseFixture {
       'Nonprofits & Activism',
     ]
 
-    await Promise.all(categories.map((name) => this.api.createChannelCategoryAsLead(name)))
-
     await Promise.all(categories.map((name) => this.api.createVideoCategoryAsLead(name)))
   }
 }

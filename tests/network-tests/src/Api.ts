@@ -37,7 +37,7 @@ import {
 
 import { VideoId, VideoCategoryId, EnglishAuctionParams, OpenAuctionParams } from '@joystream/types/content'
 
-import { ChannelCategoryMetadata, VideoCategoryMetadata } from '@joystream/metadata-protobuf'
+import { CreateVideoCategory, ModerateVideoCategories, WorkerGroupLeadRemarked } from '@joystream/metadata-protobuf'
 
 import { PERBILL_ONE_PERCENT } from '../../../query-node/mappings/src/temporaryConstants'
 
@@ -688,36 +688,21 @@ export class Api {
     return event.data[2]
   }
 
-  async createChannelCategoryAsLead(name: string): Promise<ISubmittableResult> {
-    const [, lead] = await this.getLeader('contentWorkingGroup')
-
-    const account = lead.role_account_id
-    const meta = new ChannelCategoryMetadata({
-      name,
-    })
-
-    return this.sender.signAndSend(
-      this.api.tx.content.createChannelCategory(
-        { Lead: null },
-        { meta: Utils.metadataToBytes(ChannelCategoryMetadata, meta) }
-      ),
-      account?.toString()
-    )
-  }
-
   async createVideoCategoryAsLead(name: string): Promise<ISubmittableResult> {
     const [, lead] = await this.getLeader('contentWorkingGroup')
 
     const account = lead.role_account_id
-    const meta = new VideoCategoryMetadata({
-      name,
+
+    const meta = new WorkerGroupLeadRemarked({
+      moderateVideoCategories: new ModerateVideoCategories({
+        createCategory: new CreateVideoCategory({
+          name,
+        }),
+      }),
     })
 
     return this.sender.signAndSend(
-      this.api.tx.content.createVideoCategory(
-        { Lead: null },
-        { meta: Utils.metadataToBytes(VideoCategoryMetadata, meta) }
-      ),
+      this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(WorkerGroupLeadRemarked, meta)),
       account?.toString()
     )
   }

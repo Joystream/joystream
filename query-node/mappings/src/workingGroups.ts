@@ -14,6 +14,11 @@ import {
   IWorkingGroupMetadataAction,
   OpeningMetadata,
   WorkingGroupMetadataAction,
+  ICreateVideoCategory,
+  IUpdateVideoCategory,
+  IDeleteVideoCategory,
+  WorkerGroupLeadRemarked,
+  ModerateVideoCategories,
 } from '@joystream/metadata-protobuf'
 import { Bytes } from '@polkadot/types'
 import {
@@ -24,7 +29,11 @@ import {
   WorkingGroupModuleName,
   toNumber,
   INT32MAX,
+  inconsistentState,
   getWorkingGroupByName,
+  saveMetaprotocolTransactionSuccessful,
+  saveMetaprotocolTransactionErrored,
+  logger,
 } from './common'
 import BN from 'bn.js'
 import {
@@ -81,10 +90,13 @@ import {
   BudgetSpendingEvent,
   LeaderSetEvent,
   WorkerStatusLeaving,
+  MetaprotocolTransactionSuccessful,
 } from 'query-node/dist/model'
 import { createType } from '@joystream/types'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { isSet } from '@joystream/metadata-protobuf/utils'
+
+import { createVideoCategory, updateVideoCategory, deleteVideoCategory } from './content/videoCategory'
 
 // Reusable functions
 async function getWorkingGroup(
@@ -104,7 +116,7 @@ async function getOpening(
 ): Promise<WorkingGroupOpening> {
   const opening = await store.get(WorkingGroupOpening, { where: { id: openingstoreId }, relations })
   if (!opening) {
-    throw new Error(`Opening not found by id ${openingstoreId}`)
+    return inconsistentState(`Opening not found by id ${openingstoreId}`)
   }
 
   return opening
@@ -113,7 +125,7 @@ async function getOpening(
 async function getApplication(store: DatabaseManager, applicationstoreId: string): Promise<WorkingGroupApplication> {
   const application = await store.get(WorkingGroupApplication, { where: { id: applicationstoreId } })
   if (!application) {
-    throw new Error(`Application not found by id ${applicationstoreId}`)
+    return inconsistentState(`Application not found by id`, applicationstoreId)
   }
 
   return application
@@ -129,10 +141,10 @@ async function getApplicationFormQuestions(
   ])
 
   if (!openingWithQuestions) {
-    throw new Error(`Opening not found by id: ${openingstoreId}`)
+    return inconsistentState('Opening not found by id', openingstoreId)
   }
   if (!openingWithQuestions.metadata.applicationFormQuestions) {
-    throw new Error(`Application form questions not found for opening: ${openingstoreId}`)
+    return inconsistentState('Application form questions not found for opening', openingstoreId)
   }
   return openingWithQuestions.metadata.applicationFormQuestions
 }
@@ -375,7 +387,7 @@ export async function findLeaderSetEventByTxHash(store: DatabaseManager, txHash?
   const leaderSetEvent = await store.get(LeaderSetEvent, { where: { inExtrinsic: txHash } })
 
   if (!leaderSetEvent) {
-    throw new Error(`LeaderSet event not found by tx hash: ${txHash}`)
+    return inconsistentState(`LeaderSet event not found by tx hash`, txHash)
   }
 
   return leaderSetEvent
@@ -530,8 +542,9 @@ export async function workingGroups_OpeningFilled({ store, event }: EventContext
                 ([applicationRuntimeId]) => applicationRuntimeId.toNumber() === application.runtimeId
               ) || []
             if (!workerRuntimeId) {
-              throw new Error(
-                `Fatal: No worker id found by accepted application id ${application.id} when handling OpeningFilled event!`
+              return inconsistentState(
+                'Fatal: No worker id found by accepted application when handling OpeningFilled event!',
+                application.id
               )
             }
             const worker = new Worker({
@@ -984,4 +997,72 @@ export async function workingGroups_BudgetSpending({ store, event }: EventContex
   group.updatedAt = eventTime
 
   await store.save<WorkingGroup>(group)
+}
+
+export async function workingGroups_content_LeadRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [message] = new WorkingGroups.LeadRemarkedEvent(event).params
+
+  try {
+    const decodedMessage = WorkerGroupLeadRemarked.decode(message.toU8a(true))
+    const messageType = decodedMessage.workerGroupLeadRemarked
+
+    if (messageType !== 'moderateVideoCategories') {
+      logger.error('Not implemented working group lead remark type', { decodedMessage })
+      throw new Error('Not-implemented ContentActor type used')
+    }
+
+    const tmp = decodedMessage.moderateVideoCategories as ModerateVideoCategories
+    const metaTransactionInfo = await processVideoCategoriesModeration(store, event, tmp)
+
+    await saveMetaprotocolTransactionSuccessful(store, event, metaTransactionInfo)
+
+    // emit log event
+    logger.info('Content working group lead remarked', { decodedMessage })
+  } catch (e) {
+    // emit log event
+    logger.info(`Bad metadata for WorkingGroup's LeadRemark`, { e })
+
+    // save metaprotocol info
+    await saveMetaprotocolTransactionErrored(store, event, `Bad metadata for WorkingGroup's LeadRemark`)
+  }
+}
+
+async function processVideoCategoriesModeration(
+  store: DatabaseManager,
+  event: SubstrateEvent,
+  moderationParameters: ModerateVideoCategories
+): Promise<Partial<MetaprotocolTransactionSuccessful>> {
+  const messageType = moderationParameters.videoCategoryModeration
+
+  if (messageType === 'createCategory') {
+    const createParams = moderationParameters.createCategory as ICreateVideoCategory
+
+    const videoCategory = await createVideoCategory(store, event, createParams.name)
+
+    return { videoCategoryCreatedId: videoCategory.id }
+  }
+
+  if (messageType === 'updateCategory') {
+    const updateParams = moderationParameters.createCategory as IUpdateVideoCategory
+
+    const videoCategory = await updateVideoCategory(
+      store,
+      event,
+      updateParams.videoCategoryId.toString(),
+      updateParams.name
+    )
+
+    return { videoCategoryUpdatedId: videoCategory.id }
+  }
+
+  if (messageType === 'deleteCategory') {
+    const deleteParams = moderationParameters.deleteCategory as IDeleteVideoCategory
+
+    const videoCategory = await deleteVideoCategory(store, event, deleteParams.videoCategoryId.toString())
+
+    return { videoCategoryDeletedId: videoCategory.id }
+  }
+
+  // unknown message type
+  return inconsistentState('Unsupported message type in lead_remark action', messageType)
 }

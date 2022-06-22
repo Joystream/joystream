@@ -1,12 +1,11 @@
 import { DerivedPropertiesManager } from '../classes'
 import { IExecutor, IListener, IChangePair } from '../interfaces'
 import { DatabaseManager } from '@joystream/hydra-common'
-import { Channel, ChannelCategory, Video, VideoCategory, StorageDataObject } from 'query-node/dist/model'
+import { Channel, Video, VideoCategory, StorageDataObject } from 'query-node/dist/model'
 import { videoRelationsForCounters } from '../../content/utils'
 
-export type IVideoDerivedEntites = 'channel' | 'channel.category' | 'category'
+export type IVideoDerivedEntites = 'channel' | 'category'
 export type IAvcChange = 1 | -1 | [1 | -1, IVideoDerivedEntites[]]
-export type IAvcChannelChange = number
 
 /*
   Decides if video is considered active.
@@ -60,9 +59,6 @@ function hasVideoChanged(
         -1,
         [
           oldValue.channel && oldValue.channel.id !== newValue.channel?.id && 'channel',
-          oldValue.channel?.category &&
-            oldValue.channel.category?.id !== newValue.channel?.category?.id &&
-            'channel.category',
           oldValue.category && oldValue.category.id !== newValue.category?.id && 'category',
         ].filter((item) => item) as IVideoDerivedEntites[],
       ],
@@ -70,9 +66,6 @@ function hasVideoChanged(
         1,
         [
           newValue.channel && oldValue.channel?.id !== newValue.channel.id && 'channel',
-          newValue.channel?.category &&
-            oldValue.channel?.category?.id !== newValue.channel.category?.id &&
-            'channel.category',
           newValue.category && oldValue.category?.id !== newValue.category.id && 'category',
         ].filter((item) => item) as IVideoDerivedEntites[],
       ],
@@ -104,24 +97,6 @@ class VideoUpdateListener implements IListener<Video, IAvcChange> {
 }
 
 /*
-  Listener for channel's category update.
-*/
-class ChannelsCategoryChangeListener implements IListener<Channel, IAvcChannelChange> {
-  getRelationDependencies(): string[] {
-    return ['category']
-  }
-
-  hasValueChanged(oldValue: Channel | undefined, newValue: Channel): IChangePair<IAvcChannelChange> | undefined
-  hasValueChanged(oldValue: Channel, newValue: Channel | undefined): IChangePair<IAvcChannelChange> | undefined
-  hasValueChanged(oldValue: Channel, newValue: Channel): IChangePair<IAvcChannelChange> | undefined {
-    return {
-      old: -oldValue?.activeVideosCounter || undefined,
-      new: newValue?.activeVideosCounter || undefined,
-    }
-  }
-}
-
-/*
   Listener for thumbnail photo events.
 */
 class StorageDataObjectChangeListener_ThumbnailPhoto implements IListener<StorageDataObject, IAvcChange> {
@@ -132,7 +107,6 @@ class StorageDataObjectChangeListener_ThumbnailPhoto implements IListener<Storag
       'videoThumbnail.media',
       'videoThumbnail.category',
       'videoThumbnail.channel',
-      'videoThumbnail.channel.category',
     ]
   }
 
@@ -159,14 +133,7 @@ class StorageDataObjectChangeListener_ThumbnailPhoto implements IListener<Storag
 */
 class StorageDataObjectChangeListener_Media implements IListener<StorageDataObject, IAvcChange> {
   getRelationDependencies(): string[] {
-    return [
-      'videoMedia',
-      'videoMedia.thumbnailPhoto',
-      'videoMedia.media',
-      'videoMedia.category',
-      'videoMedia.channel',
-      'videoMedia.channel.category',
-    ]
+    return ['videoMedia', 'videoMedia.thumbnailPhoto', 'videoMedia.media', 'videoMedia.category', 'videoMedia.channel']
   }
 
   hasValueChanged(
@@ -199,7 +166,7 @@ interface IAvcExecutorAdapter<Entity> {
 */
 class ActiveVideoCounterExecutor<
   Entity extends Video | StorageDataObject,
-  DerivedEntity extends VideoCategory | Channel | ChannelCategory = VideoCategory | Channel | ChannelCategory
+  DerivedEntity extends VideoCategory | Channel = VideoCategory | Channel
 > implements IExecutor<Entity, IAvcChange, DerivedEntity> {
   private adapter: IAvcExecutorAdapter<Entity>
 
@@ -213,9 +180,7 @@ class ActiveVideoCounterExecutor<
     const targetEntity = this.adapter(entity)
 
     // this expects entity has loaded channel, channel category, and video category
-    return [targetEntity.channel, targetEntity.channel?.category, targetEntity.category].filter(
-      (item) => item
-    ) as DerivedEntity[]
+    return [targetEntity.channel, targetEntity.category].filter((item) => item) as DerivedEntity[]
   }
 
   async saveDerivedEntities(store: DatabaseManager, entities: DerivedEntity[]): Promise<void> {
@@ -244,40 +209,11 @@ class ActiveVideoCounterExecutor<
     const shouldChange =
       false ||
       (entity instanceof Channel && entitiesToChange.includes('channel')) ||
-      (entity instanceof ChannelCategory && entitiesToChange.includes('channel.category')) ||
       (entity instanceof VideoCategory && entitiesToChange.includes('category'))
 
     if (shouldChange) {
       entity.activeVideosCounter += counterChange
     }
-
-    return entity
-  }
-}
-
-/*
-  Executor reflecting changes to channel's category.
-*/
-class ChannelCategoryActiveVideoCounterExecutor implements IExecutor<Channel, IAvcChannelChange, ChannelCategory> {
-  async loadDerivedEntities(store: DatabaseManager, channel: Channel): Promise<ChannelCategory[]> {
-    // TODO: find way to reliably decide if channel, etc. are loaded and throw error if not
-
-    // this expects entity has category
-    return [channel.category].filter((item) => item) as ChannelCategory[]
-  }
-
-  async saveDerivedEntities(store: DatabaseManager, [entity]: ChannelCategory[]): Promise<void> {
-    await store.save(entity)
-  }
-
-  updateOldValue(entity: ChannelCategory, change: IAvcChannelChange): ChannelCategory {
-    entity.activeVideosCounter += change
-
-    return entity
-  }
-
-  updateNewValue(entity: ChannelCategory, change: IAvcChannelChange): ChannelCategory {
-    entity.activeVideosCounter += change
 
     return entity
   }
@@ -294,23 +230,12 @@ export function createVideoManager(store: DatabaseManager): DerivedPropertiesMan
   return manager
 }
 
-export function createChannelManager(store: DatabaseManager): DerivedPropertiesManager<Channel, IAvcChannelChange> {
-  const manager = new DerivedPropertiesManager<Channel, IAvcChannelChange>(store, Channel)
-
-  // listen to change of channel's category
-  const channelListener = new ChannelsCategoryChangeListener()
-  const channelExecutors = [new ChannelCategoryActiveVideoCounterExecutor()]
-  manager.registerListener(channelListener, channelExecutors)
-
-  return manager
-}
-
 export function createStorageDataObjectManager(
   store: DatabaseManager
 ): DerivedPropertiesManager<StorageDataObject, IAvcChange> {
   const manager = new DerivedPropertiesManager<StorageDataObject, IAvcChange>(store, StorageDataObject)
 
-  // listen to change of channel's category
+  // listen to change of video's media file and thumbnail photo
   const storageDataObjectListener1 = new StorageDataObjectChangeListener_ThumbnailPhoto()
   const storageDataObjectListener2 = new StorageDataObjectChangeListener_Media()
   const storageDataObjectExecutors = (adapter) => [new ActiveVideoCounterExecutor<StorageDataObject>(adapter)]

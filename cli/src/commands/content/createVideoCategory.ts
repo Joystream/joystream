@@ -1,3 +1,5 @@
+// TODO: either remove this file / CLI command or rework it into LeadRemark -> ModerateVideoCategories
+
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { getInputJson } from '../../helpers/InputOutput'
 import { VideoCategoryInputParameters } from '../../Types'

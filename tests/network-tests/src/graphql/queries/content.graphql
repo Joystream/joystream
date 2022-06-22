@@ -52,9 +52,6 @@ fragment ChannelFields on Channel {
   ownerCuratorGroup {
     id
   }
-  category {
-    name
-  }
   avatarPhoto {
     ...StorageDataObjectFields
   }
@@ -65,11 +62,6 @@ fragment ChannelFields on Channel {
   bannedMembers {
     id
   }
-}
-
-fragment ChannelCategoryFields on ChannelCategory {
-  id
-  activeVideosCounter
 }
 
 fragment VideoCategoryFields on VideoCategory {
@@ -241,14 +233,14 @@ query getChannelsByIds($ids: [ID!]) {
   }
 }
 
-query getChannelCategoryById($id: ID!) {
-  channelCategoryByUniqueInput(where: { id: $id }) {
-    ...ChannelCategoryFields
+query getVideoCategoryById($id: ID!) {
+  videoCategoryByUniqueInput(where: { id: $id }) {
+    ...VideoCategoryFields
   }
 }
 
-query getVideoCategoryById($id: ID!) {
-  videoCategoryByUniqueInput(where: { id: $id }) {
+query getVideoCategories($order: [VideoCategoryOrderByInput!] = [createdAt_DESC]) {
+  videoCategories(orderBy: $order) {
     ...VideoCategoryFields
   }
 }

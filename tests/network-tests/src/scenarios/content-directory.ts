@@ -6,7 +6,9 @@ import { scenario } from '../Scenario'
 
 scenario('Content directory', async ({ job }) => {
   const leadSetupJob = job('Set content working group leads', leadOpening(true, ['contentWorkingGroup']))
+
+  // following jobs must be run sequentially due to some QN queries that could interfere
   const videoCountersJob = job('check active video counters', activeVideoCounters).requires(leadSetupJob)
-  job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
-  job('video comments and reactions', commentsAndReactions).after(videoCountersJob)
+  const nftAuctionAndOffersJob = job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
+  job('video comments and reactions', commentsAndReactions).after(nftAuctionAndOffersJob)
 })
