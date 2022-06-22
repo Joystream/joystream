@@ -976,8 +976,6 @@ export interface ProposalDetails extends Enum {
   readonly asVetoProposal: ProposalId;
   readonly isUpdateGlobalNftLimit: boolean;
   readonly asUpdateGlobalNftLimit: ITuple<[NftLimitPeriod, u64]>;
-  readonly isUpdateChannelPayouts: boolean;
-  readonly asUpdateChannelPayouts: UpdateChannelPayoutsParameters;
 }
 
 /** @name ProposalDetailsOf */
@@ -1034,8 +1032,6 @@ export interface ProposalDetailsOf extends Enum {
   readonly asVetoProposal: ProposalId;
   readonly isUpdateGlobalNftLimit: boolean;
   readonly asUpdateGlobalNftLimit: ITuple<[NftLimitPeriod, u64]>;
-  readonly isUpdateChannelPayouts: boolean;
-  readonly asUpdateChannelPayouts: UpdateChannelPayoutsParameters;
 }
 
 /** @name ProposalId */

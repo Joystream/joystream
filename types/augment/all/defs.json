@@ -420,8 +420,7 @@
             "LockBlogPost": "PostId",
             "UnlockBlogPost": "PostId",
             "VetoProposal": "ProposalId",
-            "UpdateGlobalNftLimit": "(NftLimitPeriod,u64)",
-            "UpdateChannelPayouts": "UpdateChannelPayoutsParameters"
+            "UpdateGlobalNftLimit": "(NftLimitPeriod,u64)"
         }
     },
     "ProposalDetailsOf": {
@@ -451,8 +450,7 @@
             "LockBlogPost": "PostId",
             "UnlockBlogPost": "PostId",
             "VetoProposal": "ProposalId",
-            "UpdateGlobalNftLimit": "(NftLimitPeriod,u64)",
-            "UpdateChannelPayouts": "UpdateChannelPayoutsParameters"
+            "UpdateGlobalNftLimit": "(NftLimitPeriod,u64)"
         }
     },
     "VotingResults": {
