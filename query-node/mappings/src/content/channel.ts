@@ -1,15 +1,15 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { EventContext, StoreContext } from '@joystream/hydra-common'
-import { Content } from '../../generated/types'
-import { convertChannelOwnerToMemberOrCuratorGroup, processChannelMetadata, unsetAssetRelations } from './utils'
-import { Channel, ChannelCategory, StorageDataObject, Membership } from 'query-node/dist/model'
-import { deserializeMetadata, inconsistentState, logger } from '../common'
-import { ChannelCategoryMetadata, ChannelMetadata } from '@joystream/metadata-protobuf'
-import { integrateMeta } from '@joystream/metadata-protobuf/utils'
+import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
+import { ChannelMetadata } from '@joystream/metadata-protobuf'
+import { DataObjectId } from '@joystream/types/storage'
+import { Channel, ChannelAssetsDeletedByModeratorEvent, Membership, StorageDataObject } from 'query-node/dist/model'
 import { In } from 'typeorm'
+import { Content } from '../../generated/types'
+import { deserializeMetadata, genericEventFields, inconsistentState, logger } from '../common'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
+import { convertChannelOwnerToMemberOrCuratorGroup, processChannelMetadata, unsetAssetRelations } from './utils'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
@@ -105,12 +105,49 @@ export async function content_ChannelAssetsRemoved({ store, event }: EventContex
       id: In(Array.from(dataObjectIds).map((item) => item.toString())),
     },
   })
+
   await Promise.all(assets.map((a) => unsetAssetRelations(store, a)))
   logger.info('Channel assets have been removed', { ids: dataObjectIds.toJSON() })
 }
 
+export async function content_ChannelAssetsDeletedByModerator({
+  store,
+  event,
+}: EventContext & StoreContext): Promise<void> {
+  const [, , dataObjectIds, rationale] = new Content.ChannelAssetsDeletedByModeratorEvent(event).params
+
+  await deleteChannelAssets(store, [...dataObjectIds])
+
+  // common event processing - second
+
+  const channelAssetsDeletedByModeratorEvent = new ChannelAssetsDeletedByModeratorEvent({
+    ...genericEventFields(event),
+
+    assetIds: Array.from(dataObjectIds).map((item) => Number(item)),
+    rationale: Buffer.from(rationale),
+  })
+
+  await store.save<ChannelAssetsDeletedByModeratorEvent>(channelAssetsDeletedByModeratorEvent)
+}
+
+async function deleteChannelAssets(store: DatabaseManager, dataObjectIds: DataObjectId[]) {
+  const assets = await store.getMany(StorageDataObject, {
+    where: {
+      id: In(Array.from(dataObjectIds).map((item) => item.toString())),
+    },
+  })
+  await Promise.all(assets.map((a) => unsetAssetRelations(store, a)))
+  logger.info('Channel assets have been removed', { ids: dataObjectIds })
+}
+
 export async function content_ChannelDeleted({ store, event }: EventContext & StoreContext): Promise<void> {
   const [, channelId] = new Content.ChannelDeletedEvent(event).params
+
+  await store.remove<Channel>(new Channel({ id: channelId.toString() }))
+}
+
+export async function content_ChannelDeletedByModerator({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [, channelId] = new Content.ChannelDeletedByModeratorEvent(event).params
 
   await store.remove<Channel>(new Channel({ id: channelId.toString() }))
 }
