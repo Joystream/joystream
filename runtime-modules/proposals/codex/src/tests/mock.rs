@@ -643,10 +643,6 @@ impl crate::Trait for Test {
     type SetInvitationCountProposalParameters = DefaultProposalParameters;
     type SetMembershipLeadInvitationQuotaProposalParameters = DefaultProposalParameters;
     type SetReferralCutProposalParameters = DefaultProposalParameters;
-    type CreateBlogPostProposalParameters = DefaultProposalParameters;
-    type EditBlogPostProoposalParamters = DefaultProposalParameters;
-    type LockBlogPostProposalParameters = DefaultProposalParameters;
-    type UnlockBlogPostProposalParameters = DefaultProposalParameters;
     type VetoProposalProposalParameters = DefaultProposalParameters;
     type UpdateGlobalNftLimitProposalParameters = DefaultProposalParameters;
     type UpdateChannelPayoutsProposalParameters = DefaultProposalParameters;
@@ -905,18 +901,6 @@ impl crate::WeightInfo for () {
         0
     }
     fn create_proposal_set_referral_cut(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_create_blog_post(_: u32, _: u32, _: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_edit_blog_post(_: u32, _: u32, _: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_lock_blog_post(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_unlock_blog_post(_: u32, _: u32) -> Weight {
         0
     }
     fn create_proposal_veto_proposal(_: u32, _: u32) -> Weight {

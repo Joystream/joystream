@@ -1098,10 +1098,6 @@ impl proposals_codex::Trait for Runtime {
     type SetMembershipLeadInvitationQuotaProposalParameters =
         SetMembershipLeadInvitationQuotaProposalParameters;
     type SetReferralCutProposalParameters = SetReferralCutProposalParameters;
-    type CreateBlogPostProposalParameters = CreateBlogPostProposalParameters;
-    type EditBlogPostProoposalParamters = EditBlogPostProoposalParamters;
-    type LockBlogPostProposalParameters = LockBlogPostProposalParameters;
-    type UnlockBlogPostProposalParameters = UnlockBlogPostProposalParameters;
     type VetoProposalProposalParameters = VetoProposalProposalParameters;
     type UpdateGlobalNftLimitProposalParameters = UpdateGlobalNftLimitProposalParameters;
     type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;
@@ -1140,20 +1136,7 @@ parameter_types! {
     pub const PostsMaxNumber: u64 = 20;
     pub const RepliesMaxNumber: u64 = 100;
     pub const ReplyDeposit: Balance = 2000;
-    pub const BlogModuleId: ModuleId = ModuleId(*b"mod:blog"); // module : forum
     pub const ReplyLifetime: BlockNumber = 43_200;
-}
-
-pub type BlogInstance = blog::Instance1;
-impl blog::Trait<BlogInstance> for Runtime {
-    type Event = Event;
-    type PostsMaxNumber = PostsMaxNumber;
-    type ParticipantEnsureOrigin = Members;
-    type WeightInfo = weights::blog::WeightInfo;
-    type ReplyId = u64;
-    type ReplyDeposit = ReplyDeposit;
-    type ModuleId = BlogModuleId;
-    type ReplyLifetime = ReplyLifetime;
 }
 
 /// Forum identifier for category
@@ -1220,7 +1203,6 @@ construct_runtime!(
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
         Constitution: pallet_constitution::{Module, Call, Storage, Event},
         Bounty: bounty::{Module, Call, Storage, Event<T>},
-        Blog: blog::<Instance1>::{Module, Call, Storage, Event<T>},
         JoystreamUtility: joystream_utility::{Module, Call, Event<T>},
         Content: content::{Module, Call, Storage, Event<T>, Config<T>},
         Storage: storage::{Module, Call, Storage, Event<T>, Config},

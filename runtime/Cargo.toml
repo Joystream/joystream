@@ -77,7 +77,6 @@ proposals-codex = { package = 'pallet-proposals-codex', default-features = false
 pallet-constitution = { package = 'pallet-constitution', default-features = false, path = '../runtime-modules/constitution' }
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../runtime-modules/staking-handler'}
 bounty = { package = 'pallet-bounty', default-features = false, path = '../runtime-modules/bounty'}
-blog = { package = 'pallet-blog', default-features = false, path = '../runtime-modules/blog'}
 content = { package = 'pallet-content', default-features = false, path = '../runtime-modules/content'}
 joystream-utility = { package = 'pallet-utility', default-features = false, path = '../runtime-modules/utility'}
 project-token = { package = 'pallet-project-token', default-features = false, path = '../runtime-modules/project-token'}
@@ -153,7 +152,6 @@ std = [
     'pallet-constitution/std',
     'staking-handler/std',
     'bounty/std',
-    'blog/std',
     'joystream-utility/std',
     'content/std',
     'project-token/std',
@@ -185,8 +183,7 @@ runtime-benchmarks = [
     "council/runtime-benchmarks",
     "referendum/runtime-benchmarks",
     "bounty/runtime-benchmarks",
-    'storage/runtime-benchmarks',       
-    "blog/runtime-benchmarks",
+    'storage/runtime-benchmarks',
 ]
 
 # Staging and testing configurations

@@ -295,7 +295,6 @@ impl_runtime_apis! {
             use crate::Council;
             use crate::Referendum;
             use crate::Bounty;
-            use crate::Blog;
             use crate::JoystreamUtility;
             use crate::Staking;
             use crate::Storage;
@@ -390,7 +389,6 @@ impl_runtime_apis! {
             add_benchmark!(params, batches, referendum, Referendum);
             add_benchmark!(params, batches, council, Council);
             add_benchmark!(params, batches, bounty, Bounty);
-            add_benchmark!(params, batches, blog, Blog);
             add_benchmark!(params, batches, joystream_utility, JoystreamUtility);
             add_benchmark!(params, batches, storage, Storage);
 

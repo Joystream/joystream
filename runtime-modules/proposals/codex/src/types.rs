@@ -25,7 +25,6 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
     <T as frame_system::Trait>::AccountId,
     working_group::WorkerId<T>,
     working_group::OpeningId,
-    blog::PostId,
     <T as proposals_engine::Trait>::ProposalId,
     content::UpdateChannelPayoutsParameters<T>,
 >;
@@ -39,7 +38,6 @@ pub enum ProposalDetails<
     AccountId,
     WorkerId,
     OpeningId,
-    PostId,
     ProposalId,
     UpdateChannelPayoutsParameters,
 > {
@@ -108,18 +106,6 @@ pub enum ProposalDetails<
     /// `Set Referral Cut` proposal
     SetReferralCut(u8),
 
-    /// `Create Blog Post` proposal
-    CreateBlogPost(Vec<u8>, Vec<u8>),
-
-    /// `Edit Blog Post` proposal
-    EditBlogPost(PostId, Option<Vec<u8>>, Option<Vec<u8>>),
-
-    /// `Lock Blog Post` proposal
-    LockBlogPost(PostId),
-
-    /// `Unlock Blog Post` proposal
-    UnlockBlogPost(PostId),
-
     /// `Veto Proposal` proposal
     VetoProposal(ProposalId),
 
@@ -136,7 +122,6 @@ impl<
         AccountId,
         WorkerId,
         OpeningId,
-        PostId,
         ProposalId,
         UpdateChannelPayoutsParameters,
     > Default
@@ -146,7 +131,6 @@ impl<
         AccountId,
         WorkerId,
         OpeningId,
-        PostId,
         ProposalId,
         UpdateChannelPayoutsParameters,
     >

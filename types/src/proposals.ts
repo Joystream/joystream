@@ -3,7 +3,7 @@
 import { Text, u32, Tuple, u8, u128, Vec, Option, Null, Bytes, u64 } from '@polkadot/types'
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
 import { Constructor, ITuple } from '@polkadot/types/types'
-import { MemberId, WorkingGroup, JoyEnum, JoyStructDecorated, BalanceKind, PostId, AccountId } from './common'
+import { MemberId, WorkingGroup, JoyEnum, JoyStructDecorated, BalanceKind, AccountId } from './common'
 import { NftLimitPeriod } from './content'
 import { ApplicationId, OpeningId, StakePolicy, WorkerId } from './working-group'
 import { UpdateChannelPayoutsParameters } from './content'
@@ -269,10 +269,6 @@ const SetWorkingGroupLeadReward = (Tuple.with([WorkerId, 'Option<Balance>', Work
 const CancelWorkingGroupLeadOpening = (Tuple.with([OpeningId, WorkingGroup]) as unknown) as Constructor<
   ITuple<[OpeningId, WorkingGroup]>
 >
-const CreateBlogPost = (Tuple.with([Text, Text]) as unknown) as Constructor<ITuple<[Text, Text]>>
-const EditBlogPost = (Tuple.with([PostId, 'Option<Text>', 'Option<Text>']) as unknown) as Constructor<
-  ITuple<[PostId, Option<Text>, Option<Text>]>
->
 const UpdateGlobalNftLimit = (Tuple.with([NftLimitPeriod, u64]) as unknown) as Constructor<
   ITuple<[NftLimitPeriod, u64]>
 >
@@ -298,10 +294,6 @@ export class ProposalDetails extends JoyEnum({
   SetInitialInvitationCount: u32,
   SetMembershipLeadInvitationQuota: u32,
   SetReferralCut: u8,
-  CreateBlogPost,
-  EditBlogPost,
-  LockBlogPost: PostId,
-  UnlockBlogPost: PostId,
   VetoProposal: ProposalId,
   UpdateGlobalNftLimit,
   UpdateChannelPayouts: UpdateChannelPayoutsParameters,

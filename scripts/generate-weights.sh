@@ -66,6 +66,5 @@ benchmark referendum
 benchmark forum
 benchmark membership
 benchmark bounty
-benchmark blog
 benchmark joystream_utility
 benchmark storage

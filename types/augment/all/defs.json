@@ -360,21 +360,6 @@
         "expectedDataSizeFee": "u128"
     },
     "DynamicBagCreationPolicyDistributorFamiliesMap": "BTreeMap<DistributionBucketFamilyId,u32>",
-    "ParticipantId": "u64",
-    "Title": "Text",
-    "UpdatedTitle": "Option<Text>",
-    "UpdatedBody": "Option<Text>",
-    "ReplyId": "u64",
-    "Reply": {
-        "text_hash": "Hash",
-        "owner": "ParticipantId",
-        "parent_id": "PostId"
-    },
-    "ReplyToDelete": {
-        "post_id": "PostId",
-        "reply_id": "ReplyId",
-        "hide": "bool"
-    },
     "ProposalId": "u32",
     "ProposalStatus": {
         "_enum": {
@@ -415,10 +400,6 @@
             "SetInitialInvitationCount": "u32",
             "SetMembershipLeadInvitationQuota": "u32",
             "SetReferralCut": "u8",
-            "CreateBlogPost": "(Text,Text)",
-            "EditBlogPost": "(PostId,Option<Text>,Option<Text>)",
-            "LockBlogPost": "PostId",
-            "UnlockBlogPost": "PostId",
             "VetoProposal": "ProposalId",
             "UpdateGlobalNftLimit": "(NftLimitPeriod,u64)",
             "UpdateChannelPayouts": "UpdateChannelPayoutsParameters"
@@ -446,10 +427,6 @@
             "SetInitialInvitationCount": "u32",
             "SetMembershipLeadInvitationQuota": "u32",
             "SetReferralCut": "u8",
-            "CreateBlogPost": "(Text,Text)",
-            "EditBlogPost": "(PostId,Option<Text>,Option<Text>)",
-            "LockBlogPost": "PostId",
-            "UnlockBlogPost": "PostId",
             "VetoProposal": "ProposalId",
             "UpdateGlobalNftLimit": "(NftLimitPeriod,u64)",
             "UpdateChannelPayouts": "UpdateChannelPayoutsParameters"

@@ -830,9 +830,6 @@ export interface OwnedNft extends Struct {
   readonly open_auctions_nonce: OpenAuctionId;
 }
 
-/** @name ParticipantId */
-export interface ParticipantId extends u64 {}
-
 /** @name PausableChannelFeature */
 export interface PausableChannelFeature extends Enum {
   readonly isChannelFundsTransfer: boolean;
@@ -964,14 +961,6 @@ export interface ProposalDetails extends Enum {
   readonly asSetMembershipLeadInvitationQuota: u32;
   readonly isSetReferralCut: boolean;
   readonly asSetReferralCut: u8;
-  readonly isCreateBlogPost: boolean;
-  readonly asCreateBlogPost: ITuple<[Text, Text]>;
-  readonly isEditBlogPost: boolean;
-  readonly asEditBlogPost: ITuple<[PostId, Option<Text>, Option<Text>]>;
-  readonly isLockBlogPost: boolean;
-  readonly asLockBlogPost: PostId;
-  readonly isUnlockBlogPost: boolean;
-  readonly asUnlockBlogPost: PostId;
   readonly isVetoProposal: boolean;
   readonly asVetoProposal: ProposalId;
   readonly isUpdateGlobalNftLimit: boolean;
@@ -1022,14 +1011,6 @@ export interface ProposalDetailsOf extends Enum {
   readonly asSetMembershipLeadInvitationQuota: u32;
   readonly isSetReferralCut: boolean;
   readonly asSetReferralCut: u8;
-  readonly isCreateBlogPost: boolean;
-  readonly asCreateBlogPost: ITuple<[Text, Text]>;
-  readonly isEditBlogPost: boolean;
-  readonly asEditBlogPost: ITuple<[PostId, Option<Text>, Option<Text>]>;
-  readonly isLockBlogPost: boolean;
-  readonly asLockBlogPost: PostId;
-  readonly isUnlockBlogPost: boolean;
-  readonly asUnlockBlogPost: PostId;
   readonly isVetoProposal: boolean;
   readonly asVetoProposal: ProposalId;
   readonly isUpdateGlobalNftLimit: boolean;
@@ -1102,23 +1083,6 @@ export interface ReferendumStageVoting extends Struct {
   readonly started: u32;
   readonly winning_target_count: u64;
   readonly current_cycle_id: u64;
-}
-
-/** @name Reply */
-export interface Reply extends Struct {
-  readonly text_hash: Hash;
-  readonly owner: ParticipantId;
-  readonly parent_id: PostId;
-}
-
-/** @name ReplyId */
-export interface ReplyId extends u64 {}
-
-/** @name ReplyToDelete */
-export interface ReplyToDelete extends Struct {
-  readonly post_id: PostId;
-  readonly reply_id: ReplyId;
-  readonly hide: bool;
 }
 
 /** @name RewardPaymentType */
@@ -1251,9 +1215,6 @@ export interface ThreadOf extends Struct {
   readonly number_of_posts: u64;
 }
 
-/** @name Title */
-export interface Title extends Text {}
-
 /** @name TokenAllocation */
 export interface TokenAllocation extends Struct {
   readonly amount: u128;
@@ -1339,12 +1300,6 @@ export interface UpdateChannelPayoutsParameters extends Struct {
   readonly max_cashout_allowed: Option<u128>;
   readonly channel_cashouts_enabled: Option<bool>;
 }
-
-/** @name UpdatedBody */
-export interface UpdatedBody extends Option<Text> {}
-
-/** @name UpdatedTitle */
-export interface UpdatedTitle extends Option<Text> {}
 
 /** @name UploadContent */
 export interface UploadContent extends Struct {
