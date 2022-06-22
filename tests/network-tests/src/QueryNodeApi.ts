@@ -336,6 +336,21 @@ import {
   GetBidsByMemberIdQuery,
   GetBidsByMemberIdQueryVariables,
   GetBidsByMemberId,
+  VideoDeletedByModeratorEventFieldsFragment,
+  GetVideoDeletedByModeratorEventsByEventIdsQuery,
+  GetVideoDeletedByModeratorEventsByEventIdsQueryVariables,
+  GetVideoDeletedByModeratorEventsByEventIds,
+  ChannelAssetsDeletedByModeratorEventFieldsFragment,
+  GetChannelAssetsDeletedByModeratorEventsByEventIdsQuery,
+  GetChannelAssetsDeletedByModeratorEventsByEventIdsQueryVariables,
+  GetChannelAssetsDeletedByModeratorEventsByEventIds,
+  VideoAssetsDeletedByModeratorEventFieldsFragment,
+  GetVideoAssetsDeletedByModeratorEventsByEventIdsQuery,
+  GetVideoAssetsDeletedByModeratorEventsByEventIdsQueryVariables,
+  GetVideoAssetsDeletedByModeratorEventsByEventIds,
+  VideoVisibilitySetByModeratorEventFieldsFragment,
+  GetVideoVisibilitySetByModeratorEventsByEventIdsQuery,
+  GetVideoVisibilitySetByModeratorEventsByEventIdsQueryVariables,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1198,5 +1213,45 @@ export class QueryNodeApi {
       GetEnglishAuctionSettledEventsByEventIdsQuery,
       GetEnglishAuctionSettledEventsByEventIdsQueryVariables
     >(GetEnglishAuctionSettledEventsByEventIds, { eventIds }, 'englishAuctionSettledEvents')
+  }
+
+  public async getVideoDeletedByModeratorEvents(
+    events: EventDetails[]
+  ): Promise<VideoDeletedByModeratorEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetVideoDeletedByModeratorEventsByEventIdsQuery,
+      GetVideoDeletedByModeratorEventsByEventIdsQueryVariables
+    >(GetVideoDeletedByModeratorEventsByEventIds, { eventIds }, 'videoDeletedByModeratorEvents')
+  }
+
+  public async getChannelAssetsDeletedByModeratorEvents(
+    events: EventDetails[]
+  ): Promise<ChannelAssetsDeletedByModeratorEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetChannelAssetsDeletedByModeratorEventsByEventIdsQuery,
+      GetChannelAssetsDeletedByModeratorEventsByEventIdsQueryVariables
+    >(GetChannelAssetsDeletedByModeratorEventsByEventIds, { eventIds }, 'channelAssetsDeletedByModeratorEvents')
+  }
+
+  public async getVideoAssetsDeletedByModeratorEvents(
+    events: EventDetails[]
+  ): Promise<VideoAssetsDeletedByModeratorEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetVideoAssetsDeletedByModeratorEventsByEventIdsQuery,
+      GetVideoAssetsDeletedByModeratorEventsByEventIdsQueryVariables
+    >(GetVideoAssetsDeletedByModeratorEventsByEventIds, { eventIds }, 'videoAssetsDeletedByModeratorEvents')
+  }
+
+  public async getVideoVisibilitySetByModeratorEvents(
+    events: EventDetails[]
+  ): Promise<VideoVisibilitySetByModeratorEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetVideoVisibilitySetByModeratorEventsByEventIdsQuery,
+      GetVideoVisibilitySetByModeratorEventsByEventIdsQueryVariables
+    >(GetVideoAssetsDeletedByModeratorEventsByEventIds, { eventIds }, 'videoVisibilitySetByModeratorEvents')
   }
 }

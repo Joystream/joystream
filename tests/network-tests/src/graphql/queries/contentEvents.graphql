@@ -1,0 +1,76 @@
+fragment VideoDeletedByModeratorEventFields on VideoDeletedByModeratorEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  videoId
+  rationale
+}
+
+query getVideoDeletedByModeratorEventsByEventIds($eventIds: [ID!]) {
+  videoDeletedByModeratorEvents(where: { id_in: $eventIds }) {
+    ...VideoDeletedByModeratorEventFields
+  }
+}
+
+fragment ChannelAssetsDeletedByModeratorEventFields on ChannelAssetsDeletedByModeratorEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  channel {
+    id
+  }
+  rationale
+  assetIds
+}
+
+query getChannelAssetsDeletedByModeratorEventsByEventIds($eventIds: [ID!]) {
+  channelAssetsDeletedByModeratorEvents(where: { id_in: $eventIds }) {
+    ...ChannelAssetsDeletedByModeratorEventFields
+  }
+}
+
+fragment VideoAssetsDeletedByModeratorEventFields on VideoAssetsDeletedByModeratorEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  video {
+    id
+  }
+  assetIds
+  rationale
+}
+
+query getVideoAssetsDeletedByModeratorEventsByEventIds($eventIds: [ID!]) {
+  videoAssetsDeletedByModeratorEvents(where: { id_in: $eventIds }) {
+    ...VideoAssetsDeletedByModeratorEventFields
+  }
+}
+
+fragment VideoVisibilitySetByModeratorEventFields on VideoVisibilitySetByModeratorEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  video {
+    id
+  }
+  isHidden
+  rationale
+}
+
+query getVideoVisibilitySetByModeratorEventsByEventIds($eventIds: [ID!]) {
+  videoVisibilitySetByModeratorEvents(where: { id_in: $eventIds }) {
+    ...VideoVisibilitySetByModeratorEventFields
+  }
+}
