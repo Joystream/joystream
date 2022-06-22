@@ -21,7 +21,6 @@ use proposals_engine::Module as Engine;
 use sp_core::Hasher;
 use sp_runtime::traits::{One, TrailingZeroInput, Zero};
 use sp_std::convert::TryInto;
-use sp_std::iter::FromIterator;
 use sp_std::prelude::*;
 
 const SEED: u32 = 0;
@@ -840,47 +839,47 @@ benchmarks! {
         );
     }
 
+    // TODO: enable after Carthage
+    // create_proposal_update_channel_payouts {
+    //     let t in ...;
+    //     let d in ...;
+    //     let i in 0..MAX_BYTES;
 
-    create_proposal_update_channel_payouts {
-        let i in 1 .. MAX_BYTES;
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
+    //     let (account_id, member_id, general_proposal_paramters) =
+    //         create_proposal_parameters::<T>(t, d);
 
-        let (account_id, member_id, general_proposal_paramters) =
-            create_proposal_parameters::<T>(t, d);
-
-        let commitment = T::Hashing::hash(&b"commitment".to_vec());
-        let payload = content::ChannelPayoutsPayloadParametersRecord {
-            uploader_account: T::AccountId::decode(&mut TrailingZeroInput::zeroes()).unwrap(),
-            object_creation_params: content::DataObjectCreationParameters {
-                size: u64::MAX,
-                ipfs_content_id: Vec::from_iter((0..i).map(|v| u8::MAX))
-            },
-            expected_data_size_fee: u128::MAX.saturated_into::<T::Balance>(),
-            expected_data_object_state_bloat_bond: u128::MAX.saturated_into::<T::Balance>()
-        };
-        let proposal_details = ProposalDetails::UpdateChannelPayouts(
-            content::UpdateChannelPayoutsParameters::<T> {
-                commitment: Some(commitment),
-                payload: Some(payload),
-                min_cashout_allowed: Some(u128::MAX.saturated_into::<T::Balance>()),
-                max_cashout_allowed: Some(u128::MAX.saturated_into::<T::Balance>()),
-                channel_cashouts_enabled: Some(true),
-            }
-        );
-    }: create_proposal(
-        RawOrigin::Signed(account_id.clone()),
-        general_proposal_paramters.clone(),
-        proposal_details.clone()
-    )
-    verify {
-        create_proposal_verify::<T>(
-            account_id,
-            member_id,
-            general_proposal_paramters,
-            proposal_details
-        );
-    }
+    //     let commitment = T::Hashing::hash(&b"commitment".to_vec());
+    //     let payload = content::ChannelPayoutsPayloadParametersRecord {
+    //         uploader_account: T::AccountId::default(),
+    //         object_creation_params: content::DataObjectCreationParameters {
+    //             size: u64::MAX,
+    //             ipfs_content_id: Vec::from_iter((0..i).map(|v| u8::MAX))
+    //         },
+    //         expected_data_size_fee: u128::MAX.saturated_into::<T::Balance>(),
+    //         expected_data_object_state_bloat_bond: u128::MAX.saturated_into::<T::Balance>()
+    //     };
+    //     let proposal_details = ProposalDetails::UpdateChannelPayouts(
+    //         content::UpdateChannelPayoutsParameters::<T> {
+    //             commitment: Some(commitment),
+    //             payload: Some(payload),
+    //             min_cashout_allowed: Some(u128::MAX.saturated_into::<T::Balance>()),
+    //             max_cashout_allowed: Some(u128::MAX.saturated_into::<T::Balance>()),
+    //             channel_cashouts_enabled: Some(true),
+    //         }
+    //     );
+    // }: create_proposal(
+    //     RawOrigin::Signed(account_id.clone()),
+    //     general_proposal_paramters.clone(),
+    //     proposal_details.clone()
+    // )
+    // verify {
+    //     create_proposal_verify::<T>(
+    //         account_id,
+    //         member_id,
+    //         general_proposal_paramters,
+    //         proposal_details
+    //     );
+    // }
 }
 
 #[cfg(test)]
@@ -1086,10 +1085,11 @@ mod tests {
         })
     }
 
-    #[test]
-    fn test_update_channel_payouts_proposal() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_update_channel_payouts());
-        });
-    }
+    // TODO: enable after Carthage
+    // #[test]
+    // fn test_update_channel_payouts_proposal() {
+    //     initial_test_ext().execute_with(|| {
+    //         assert_ok!(test_benchmark_create_proposal_update_channel_payouts::<Test>());
+    //     });
+    // }
 }
