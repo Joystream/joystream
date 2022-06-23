@@ -56,7 +56,7 @@ use sp_std::prelude::*;
 mod benchmarking;
 mod errors;
 mod mock;
-mod tests;
+// mod tests;
 
 // Type for maximum number of posts/replies
 type MaxNumber = u64;

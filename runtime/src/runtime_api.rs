@@ -478,6 +478,7 @@ mod tests {
             .fold(0, |acc, x| acc.checked_add(*x).unwrap());
     }
 
+    #[ignore]
     #[test]
     fn call_size() {
         let size = core::mem::size_of::<Call>();
