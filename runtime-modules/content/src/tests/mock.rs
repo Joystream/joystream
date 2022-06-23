@@ -600,14 +600,6 @@ macro_rules! last_event_eq {
     };
 }
 
-pub fn assert_event(tested_event: Event, number_of_events_after_call: usize) {
-    // Ensure  runtime events length is equal to expected number of events after call
-    assert_eq!(System::events().len(), number_of_events_after_call);
-
-    // Ensure  last emitted event is equal to expected one
-    assert_eq!(System::events().iter().last().unwrap().event, tested_event);
-}
-
 /// Get good params for open auction
 pub fn get_open_auction_params() -> OpenAuctionParams<Test> {
     OpenAuctionParams::<Test> {

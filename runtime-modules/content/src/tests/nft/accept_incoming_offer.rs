@@ -32,11 +32,6 @@ fn accept_incoming_offer() {
             None,
         ));
 
-        // Runtime tested state before call
-
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
-
         // Accept nft offer
         assert_ok!(Content::accept_incoming_offer(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
@@ -56,10 +51,7 @@ fn accept_incoming_offer() {
         ));
 
         // Last event checked
-        assert_event(
-            MetaEvent::Content(RawEvent::OfferAccepted(video_id)),
-            number_of_events_before_call + 1,
-        );
+        last_event_eq!(RawEvent::OfferAccepted(video_id));
     })
 }
 

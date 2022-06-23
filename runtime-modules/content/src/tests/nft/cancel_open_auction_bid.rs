@@ -69,11 +69,6 @@ fn cancel_open_auction_bid() {
         make_content_module_account_existential_deposit();
         setup_open_auction_scenario_with_bid();
 
-        // Runtime tested state before call
-
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
-
         // Run to the block where bid lock duration expires
         let bid_lock_duration = Content::min_bid_lock_duration();
         run_to_block(bid_lock_duration + 1);
@@ -106,12 +101,7 @@ fn cancel_open_auction_bid() {
         ));
 
         // Last event checked
-        assert_event(
-            MetaEvent::Content(RawEvent::AuctionBidCanceled(SECOND_MEMBER_ID, video_id)),
-            // 4 events: NewAccount(SECOND_MEMBER_ACCOUNT_ID), Endowed(SECOND_MEMBER_ACCOUNT_ID),
-            // Transfer(module acc, SECOND_MEMBER_ACCOUNT_ID), AuctionBidCanceled
-            number_of_events_before_call + 4,
-        );
+        last_event_eq!(RawEvent::AuctionBidCanceled(SECOND_MEMBER_ID, video_id));
     })
 }
 

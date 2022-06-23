@@ -77,11 +77,6 @@ fn settle_english_auction() {
             bid + existential_deposit
         );
 
-        // Runtime tested state before call
-
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
-
         // Run to the block where auction expires
         run_to_block(Content::max_auction_duration() + 1);
 
@@ -109,14 +104,11 @@ fn settle_english_auction() {
         ));
 
         // Last event checked
-        assert_event(
-            MetaEvent::Content(RawEvent::EnglishAuctionSettled(
-                SECOND_MEMBER_ID,
-                SECOND_MEMBER_ACCOUNT_ID,
-                video_id,
-            )),
-            number_of_events_before_call + 3,
-        );
+        last_event_eq!(RawEvent::EnglishAuctionSettled(
+            SECOND_MEMBER_ID,
+            SECOND_MEMBER_ACCOUNT_ID,
+            video_id,
+        ));
     })
 }
 

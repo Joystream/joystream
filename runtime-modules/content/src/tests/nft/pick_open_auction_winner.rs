@@ -61,11 +61,6 @@ fn pick_open_auction_winner() {
             bid,
         ));
 
-        // Runtime tested state before call
-
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
-
         // Pick open auction winner
         assert_ok!(Content::pick_open_auction_winner(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
@@ -87,15 +82,12 @@ fn pick_open_auction_winner() {
         ));
 
         // Last event checked
-        assert_event(
-            MetaEvent::Content(RawEvent::OpenAuctionBidAccepted(
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-                video_id,
-                SECOND_MEMBER_ID,
-                bid,
-            )),
-            number_of_events_before_call + 3,
-        );
+        last_event_eq!(RawEvent::OpenAuctionBidAccepted(
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            SECOND_MEMBER_ID,
+            bid,
+        ));
     })
 }
 
