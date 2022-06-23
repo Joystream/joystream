@@ -34,11 +34,6 @@ fn cancel_buy_now() {
             DEFAULT_NFT_PRICE,
         ));
 
-        // Runtime tested state before call
-
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
-
         // Cancel buy now
         assert_ok!(Content::cancel_buy_now(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
@@ -58,13 +53,10 @@ fn cancel_buy_now() {
         ));
 
         // Last event checked
-        assert_event(
-            MetaEvent::Content(RawEvent::BuyNowCanceled(
-                video_id,
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-            )),
-            number_of_events_before_call + 1,
-        );
+        last_event_eq!(RawEvent::BuyNowCanceled(
+            video_id,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+        ));
     })
 }
 

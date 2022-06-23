@@ -33,11 +33,6 @@ fn cancel_nft_auction() {
             get_open_auction_params()
         ));
 
-        // Runtime tested state before call
-
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
-
         // Cancel nft auction
         assert_ok!(Content::cancel_open_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
@@ -57,13 +52,10 @@ fn cancel_nft_auction() {
         ));
 
         // Last event checked
-        assert_event(
-            MetaEvent::Content(RawEvent::AuctionCanceled(
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-                video_id,
-            )),
-            number_of_events_before_call + 1,
-        );
+        last_event_eq!(RawEvent::AuctionCanceled(
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+        ));
     })
 }
 

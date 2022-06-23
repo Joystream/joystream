@@ -24,11 +24,6 @@ fn destroy_nft() {
             NftIssuanceParameters::<Test>::default(),
         ));
 
-        // Runtime tested state before call
-
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
-
         // Sell nft
         assert_ok!(Content::destroy_nft(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
@@ -42,13 +37,10 @@ fn destroy_nft() {
         assert!(matches!(Content::video_by_id(video_id).nft_status, None));
 
         // Last event checked
-        assert_event(
-            MetaEvent::Content(RawEvent::NftDestroyed(
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-                video_id,
-            )),
-            number_of_events_before_call + 1,
-        );
+        last_event_eq!(RawEvent::NftDestroyed(
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+        ));
     })
 }
 

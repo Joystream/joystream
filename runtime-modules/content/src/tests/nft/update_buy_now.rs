@@ -35,11 +35,6 @@ fn update_buy_now_price() {
             DEFAULT_NFT_PRICE,
         ));
 
-        // Runtime tested state before call
-
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
-
         // update buy now price
         assert_ok!(Content::update_buy_now_price(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
@@ -58,14 +53,11 @@ fn update_buy_now_price() {
         ));
 
         // Last event checked
-        assert_event(
-            MetaEvent::Content(RawEvent::BuyNowPriceUpdated(
-                video_id,
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-                NEW_NFT_PRICE,
-            )),
-            number_of_events_before_call + 1,
-        );
+        last_event_eq!(RawEvent::BuyNowPriceUpdated(
+            video_id,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            NEW_NFT_PRICE,
+        ));
     })
 }
 

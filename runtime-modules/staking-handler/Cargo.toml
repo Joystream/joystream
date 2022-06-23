@@ -30,5 +30,4 @@ std = [
     'sp-arithmetic/std',
     'pallet-balances/std',
     'common/std',
-    'scale-info/std',
 ]
