@@ -53,11 +53,6 @@ std = [
     'pallet-timestamp/std',
     'sp-runtime/std',
     'common/std',
-<<<<<<< HEAD
-    'membership/std',
-    'staking-handler/std',
-=======
->>>>>>> ignazio/carthage_substrateV3__update_tests_ignazio
     'scale-info/std',
     'working-group/std',
 ]
