@@ -31,13 +31,13 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
 }
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
-type Block = frame_system::mocking::MockBlock<Test>;
-
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 // The distribution working group instance alias.
 pub type DistributionWorkingGroupInstance = working_group::Instance3;
+
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+type Block = frame_system::mocking::MockBlock<Test>;
 
 frame_support::construct_runtime!(
     pub enum Test where

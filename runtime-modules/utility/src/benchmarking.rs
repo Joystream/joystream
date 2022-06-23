@@ -118,32 +118,33 @@ mod tests {
     use super::*;
     use crate::tests::mocks::{initial_test_ext, Test};
     use frame_support::assert_ok;
+    type Utility = crate::Module<Test>;
 
     #[test]
     fn test_execute_signal_proposal() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_execute_signal_proposal::<Test>());
+            assert_ok!(Utility::test_benchmark_execute_signal_proposal());
         });
     }
 
     #[test]
     fn test_update_working_group_budget_positive() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_update_working_group_budget_positive::<Test>());
+            assert_ok!(Utility::test_benchmark_update_working_group_budget_positive());
         });
     }
 
     #[test]
     fn test_update_working_group_budget_negative() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_update_working_group_budget_negative::<Test>());
+            assert_ok!(Utility::test_benchmark_update_working_group_budget_negative());
         });
     }
 
     #[test]
     fn test_burn_tokens() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_burn_account_tokens::<Test>());
+            assert_ok!(Utility::test_benchmark_burn_account_tokens());
         });
     }
 }
