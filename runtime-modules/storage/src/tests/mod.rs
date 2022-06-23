@@ -60,7 +60,8 @@ fn create_storage_bucket_succeeded() {
             .call_and_assert(Ok(()))
             .unwrap();
 
-        let storage_bucket = Storage::storage_bucket_by_id(bucket_id);
+        let storage_bucket =
+            Storage::storage_bucket_by_id(bucket_id).expect("Storage Bucket Must Exist");
 
         assert_eq!(
             storage_bucket.operator_status,
@@ -111,7 +112,8 @@ fn create_storage_bucket_succeeded_with_invited_member() {
             .call_and_assert(Ok(()))
             .unwrap();
 
-        let storage_bucket = Storage::storage_bucket_by_id(bucket_id);
+        let storage_bucket =
+            Storage::storage_bucket_by_id(bucket_id).expect("Storage Bucket Must Exist");
 
         assert_eq!(
             storage_bucket.operator_status,
@@ -326,7 +328,7 @@ fn update_storage_buckets_for_bags_succeeded_with_additioonal_checks_on_adding_a
         let bag = Storage::bag(&bag_id);
         assert_eq!(bag.stored_by, add_buckets_ids);
 
-        let bucket = Storage::storage_bucket_by_id(&bucket_id);
+        let bucket = Storage::storage_bucket_by_id(&bucket_id).expect("Storage Bucket Must Exist");
         assert_eq!(bucket.assigned_bags, 1);
 
         // ******
@@ -339,7 +341,7 @@ fn update_storage_buckets_for_bags_succeeded_with_additioonal_checks_on_adding_a
         let bag = Storage::bag(&bag_id);
         assert_eq!(bag.stored_by.len(), 0);
 
-        let bucket = Storage::storage_bucket_by_id(&bucket_id);
+        let bucket = Storage::storage_bucket_by_id(&bucket_id).expect("Storage Bucket Must Exist");
         assert_eq!(bucket.assigned_bags, 0);
     });
 }
@@ -447,12 +449,14 @@ fn update_storage_buckets_for_bags_succeeded_with_voucher_usage() {
         assert_eq!(bag.stored_by, new_buckets);
 
         //// Check vouchers
-        let old_bucket = Storage::storage_bucket_by_id(old_bucket_id);
+        let old_bucket =
+            Storage::storage_bucket_by_id(old_bucket_id).expect("Storage Bucket Must Exist");
 
         assert_eq!(old_bucket.voucher.objects_used, 0);
         assert_eq!(old_bucket.voucher.size_used, 0);
 
-        let new_bucket = Storage::storage_bucket_by_id(new_bucket_id);
+        let new_bucket =
+            Storage::storage_bucket_by_id(new_bucket_id).expect("Storage Bucket Must Exist");
         assert_eq!(new_bucket.voucher.objects_used, 1);
         assert_eq!(new_bucket.voucher.size_used, object_creation_list[0].size);
     });
@@ -1037,7 +1041,7 @@ fn upload_succeeded_with_active_storage_bucket_having_voucher() {
 
         //// Check voucher
 
-        let bucket = Storage::storage_bucket_by_id(bucket_id);
+        let bucket = Storage::storage_bucket_by_id(bucket_id).expect("Storage Bucket Must Exist");
 
         assert_eq!(bucket.voucher.objects_used, 1);
         assert_eq!(bucket.voucher.size_used, object_creation_list[0].size);
@@ -2197,8 +2201,10 @@ fn move_data_objects_succeeded_having_voucher() {
         let data_object_id = 0u64;
         let ids = BTreeSet::from_iter(vec![data_object_id]);
 
-        let src_bucket = Storage::storage_bucket_by_id(src_bucket_id);
-        let dest_bucket = Storage::storage_bucket_by_id(dest_bucket_id);
+        let src_bucket =
+            Storage::storage_bucket_by_id(src_bucket_id).expect("Storage Bucket Must Exist");
+        let dest_bucket =
+            Storage::storage_bucket_by_id(dest_bucket_id).expect("Storage Bucket Must Exist");
         assert_eq!(dest_bucket.voucher.objects_used, 0);
         assert_eq!(dest_bucket.voucher.size_used, 0);
 
@@ -2212,8 +2218,10 @@ fn move_data_objects_succeeded_having_voucher() {
             .call_and_assert(Ok(()));
 
         //// Check vouchers
-        let src_bucket = Storage::storage_bucket_by_id(src_bucket_id);
-        let dest_bucket = Storage::storage_bucket_by_id(dest_bucket_id);
+        let src_bucket =
+            Storage::storage_bucket_by_id(src_bucket_id).expect("Storage Bucket Must Exist");
+        let dest_bucket =
+            Storage::storage_bucket_by_id(dest_bucket_id).expect("Storage Bucket Must Exist");
 
         assert_eq!(src_bucket.voucher.objects_used, 0);
         assert_eq!(src_bucket.voucher.size_used, 0);
@@ -2523,7 +2531,7 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
         let data_object_ids = BTreeSet::from_iter(vec![data_object_id]);
 
         //// Pre-check voucher
-        let bucket = Storage::storage_bucket_by_id(bucket_id);
+        let bucket = Storage::storage_bucket_by_id(bucket_id).expect("Storage Bucket Must Exist");
 
         assert_eq!(bucket.voucher.objects_used, 1);
         assert_eq!(bucket.voucher.size_used, object_creation_list[0].size);
@@ -2539,7 +2547,7 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
         ));
 
         //// Post-check voucher
-        let bucket = Storage::storage_bucket_by_id(bucket_id);
+        let bucket = Storage::storage_bucket_by_id(bucket_id).expect("Storage Bucket Must Exist");
 
         assert_eq!(bucket.voucher.objects_used, 0);
         assert_eq!(bucket.voucher.size_used, 0);
@@ -2980,7 +2988,8 @@ fn delete_dynamic_bags_succeeded_with_assigned_storage_buckets() {
 
         let stored_by_bag = bag.stored_by.clone();
         for bucket_id in &stored_by_bag {
-            let bucket = Storage::storage_bucket_by_id(bucket_id);
+            let bucket =
+                Storage::storage_bucket_by_id(bucket_id).expect("Storage Bucket Must Exist");
 
             assert_eq!(bucket.assigned_bags, 1);
         }
@@ -2991,7 +3000,8 @@ fn delete_dynamic_bags_succeeded_with_assigned_storage_buckets() {
             .call_and_assert(Ok(()));
 
         for bucket_id in &stored_by_bag {
-            let bucket = Storage::storage_bucket_by_id(bucket_id);
+            let bucket =
+                Storage::storage_bucket_by_id(bucket_id).expect("Storage Bucket Must Exist");
 
             assert_eq!(bucket.assigned_bags, 0);
         }

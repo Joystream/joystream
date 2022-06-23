@@ -13,7 +13,7 @@ use crate::sp_api_hidden_includes_decl_storage::hidden_include::{
 };
 
 use super::mocks::{
-    create_cid, Balances, CollectiveFlip, Storage, System, Test, TestEvent,
+    create_cid, Balances, CollectiveFlip, Event as TestEvent, Storage, System, Test,
     DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID,
     DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT, DEFAULT_STORAGE_BUCKET_SIZE_LIMIT,
     DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
@@ -147,7 +147,7 @@ impl EventFixture {
             u64,
         >,
     ) {
-        let converted_event = TestEvent::storage(expected_raw_event);
+        let converted_event = TestEvent::Storage(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
     }
@@ -167,7 +167,7 @@ impl EventFixture {
             u64,
         >,
     ) {
-        let converted_event = TestEvent::storage(expected_raw_event);
+        let converted_event = TestEvent::Storage(expected_raw_event);
 
         Self::contains_global_event(converted_event)
     }

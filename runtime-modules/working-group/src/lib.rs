@@ -1652,6 +1652,7 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
     }
 }
 
+//TODO: Impl this in runtime add a type to Config trait "Authenticator", so we can mock it
 impl<T: Config<I>, I: Instance> common::working_group::WorkingGroupAuthenticator<T>
     for Module<T, I>
 {
@@ -1697,6 +1698,7 @@ impl<T: Config<I>, I: Instance> common::working_group::WorkingGroupAuthenticator
     }
 }
 
+//TODO: Impl this in runtime add a type to Config trait "BudgetHandler", so we can mock it
 impl<T: Config<I>, I: Instance>
     common::working_group::WorkingGroupBudgetHandler<T::AccountId, BalanceOf<T>> for Module<T, I>
 {
