@@ -1561,7 +1561,7 @@ mod tests {
     #[test]
     fn update_distribution_buckets_per_bag_limit() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(Storage::test_benchmark_update_distribution_buckets_per_bag_limit::<Test>());
+            assert_ok!(Storage::test_benchmark_update_distribution_buckets_per_bag_limit());
         });
     }
 

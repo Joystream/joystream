@@ -268,8 +268,7 @@ pub struct AcceptStorageBucketInvitationFixture {
 
 impl AcceptStorageBucketInvitationFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let old_bucket =
-            Storage::storage_bucket_by_id(self.storage_bucket_id).expect("Bucket Must Exist");
+        let old_bucket = Storage::storage_bucket_by_id(self.storage_bucket_id);
 
         let actual_result = Storage::accept_storage_bucket_invitation(
             self.origin.clone().into(),
@@ -280,9 +279,9 @@ impl AcceptStorageBucketInvitationFixture {
 
         assert_eq!(actual_result, expected_result);
 
-        let new_bucket =
-            Storage::storage_bucket_by_id(self.storage_bucket_id).expect("Bucket Must Exist");
+        let new_bucket = Storage::storage_bucket_by_id(self.storage_bucket_id);
         if actual_result.is_ok() {
+            let new_bucket = new_bucket.expect("Bucket Must Exist");
             assert_eq!(
                 new_bucket.operator_status,
                 StorageBucketOperatorStatus::StorageWorker(
@@ -349,7 +348,7 @@ impl UploadFixture {
         let buckets_pre = bag_pre
             .stored_by
             .iter()
-            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .map(|id| <crate::StorageBucketById<Test>>::get(id).expect("Storage Bag Must Exist"))
             .clone()
             .collect::<Vec<_>>();
 
@@ -377,7 +376,7 @@ impl UploadFixture {
         let buckets_post = bag_post
             .stored_by
             .iter()
-            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .map(|id| <crate::StorageBucketById<Test>>::get(id).expect("Storage Bag Must Exist"))
             .clone()
             .collect::<Vec<_>>();
         let end_id = Storage::next_data_object_id();
@@ -563,8 +562,7 @@ pub struct CancelStorageBucketInvitationFixture {
 
 impl CancelStorageBucketInvitationFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let old_bucket =
-            Storage::storage_bucket_by_id(self.storage_bucket_id).expect("Bucket Must Exist");
+        let old_bucket = Storage::storage_bucket_by_id(self.storage_bucket_id);
 
         let actual_result = Storage::cancel_storage_bucket_operator_invite(
             self.origin.clone().into(),
@@ -573,9 +571,9 @@ impl CancelStorageBucketInvitationFixture {
 
         assert_eq!(actual_result, expected_result);
 
-        let new_bucket =
-            Storage::storage_bucket_by_id(self.storage_bucket_id).expect("Bucket Must Exist");
+        let new_bucket = Storage::storage_bucket_by_id(self.storage_bucket_id);
         if actual_result.is_ok() {
+            let new_bucket = new_bucket.expect("Bucket Must Exist");
             assert_eq!(
                 new_bucket.operator_status,
                 StorageBucketOperatorStatus::Missing
@@ -600,8 +598,7 @@ pub struct InviteStorageBucketOperatorFixture {
 
 impl InviteStorageBucketOperatorFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let old_bucket =
-            Storage::storage_bucket_by_id(self.storage_bucket_id).expect("Bucket Must Exist");
+        let old_bucket = Storage::storage_bucket_by_id(self.storage_bucket_id);
 
         let actual_result = Storage::invite_storage_bucket_operator(
             self.origin.clone().into(),
@@ -611,9 +608,9 @@ impl InviteStorageBucketOperatorFixture {
 
         assert_eq!(actual_result, expected_result);
 
-        let new_bucket =
-            Storage::storage_bucket_by_id(self.storage_bucket_id).expect("Bucket Must Exist");
+        let new_bucket = Storage::storage_bucket_by_id(self.storage_bucket_id);
         if actual_result.is_ok() {
+            let new_bucket = new_bucket.expect("Bucket Must Exist");
             assert_eq!(
                 new_bucket.operator_status,
                 StorageBucketOperatorStatus::InvitedStorageWorker(self.operator_worker_id)
@@ -688,7 +685,7 @@ impl DeleteDataObjectsFixture {
         let buckets_pre = bag_pre
             .stored_by
             .iter()
-            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .map(|id| <crate::StorageBucketById<Test>>::get(id).expect("Storage Bag Must Exist"))
             .clone()
             .collect::<Vec<_>>();
 
@@ -715,7 +712,7 @@ impl DeleteDataObjectsFixture {
         let buckets_post = bag_post
             .stored_by
             .iter()
-            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .map(|id| <crate::StorageBucketById<Test>>::get(id).expect("Storage Bag Must Exist"))
             .clone()
             .collect::<Vec<_>>();
 
@@ -838,7 +835,7 @@ impl DeleteDynamicBagFixture {
         let s_buckets_pre = bag
             .stored_by
             .iter()
-            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .map(|id| <crate::StorageBucketById<Test>>::get(id).expect("Storage Bag Must Exist"))
             .clone()
             .collect::<Vec<_>>();
 
@@ -871,7 +868,7 @@ impl DeleteDynamicBagFixture {
         let s_buckets_post = bag
             .stored_by
             .iter()
-            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .map(|id| <crate::StorageBucketById<Test>>::get(id).expect("Storage Bag Must Exist"))
             .clone()
             .collect::<Vec<_>>();
 
@@ -958,8 +955,7 @@ pub struct RemoveStorageBucketOperatorFixture {
 
 impl RemoveStorageBucketOperatorFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let old_bucket =
-            Storage::storage_bucket_by_id(self.storage_bucket_id).expect("Bucket Must Exist");
+        let old_bucket = Storage::storage_bucket_by_id(self.storage_bucket_id);
 
         let actual_result = Storage::remove_storage_bucket_operator(
             self.origin.clone().into(),
@@ -968,9 +964,9 @@ impl RemoveStorageBucketOperatorFixture {
 
         assert_eq!(actual_result, expected_result);
 
-        let new_bucket =
-            Storage::storage_bucket_by_id(self.storage_bucket_id).expect("Bucket Must Exist");
+        let new_bucket = Storage::storage_bucket_by_id(self.storage_bucket_id);
         if actual_result.is_ok() {
+            let new_bucket = new_bucket.expect("Bucket Must Exist");
             assert_eq!(
                 new_bucket.operator_status,
                 StorageBucketOperatorStatus::Missing
@@ -1051,9 +1047,8 @@ pub struct SetStorageBucketVoucherLimitsFixture {
 
 impl SetStorageBucketVoucherLimitsFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let old_voucher = Storage::storage_bucket_by_id(self.storage_bucket_id)
-            .expect("Bucket Must Exist")
-            .voucher;
+        let old_voucher = Storage::storage_bucket_by_id(self.storage_bucket_id);
+
         let actual_result = Storage::set_storage_bucket_voucher_limits(
             self.origin.clone().into(),
             self.storage_bucket_id,
@@ -1062,16 +1057,14 @@ impl SetStorageBucketVoucherLimitsFixture {
         );
 
         assert_eq!(actual_result, expected_result);
-        let new_voucher = Storage::storage_bucket_by_id(self.storage_bucket_id)
-            .expect("Bucket Must Exist")
-            .voucher;
+        let new_voucher = Storage::storage_bucket_by_id(self.storage_bucket_id);
 
         if actual_result.is_ok() {
+            let new_voucher = new_voucher.expect("Bucket Must Exist").voucher;
             assert_eq!(self.new_objects_size_limit, new_voucher.size_limit);
             assert_eq!(self.new_objects_number_limit, new_voucher.objects_limit);
         } else {
-            assert_eq!(old_voucher.size_limit, new_voucher.size_limit);
-            assert_eq!(old_voucher.objects_limit, new_voucher.objects_limit);
+            assert_eq!(old_voucher, new_voucher);
         }
     }
 }

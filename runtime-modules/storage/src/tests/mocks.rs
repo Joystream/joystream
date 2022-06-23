@@ -31,15 +31,13 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
 }
 
-// The storage working group instance alias.
-pub type StorageWorkingGroupInstance = working_group::Instance1;
-// The distribution working group instance alias.
-pub type DistributionWorkingGroupInstance = working_group::Instance2;
-// The Membership working group instance alias.
-pub type MembershipWorkingGroupInstance = working_group::Instance3;
-
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
+
+// The storage working group instance alias.
+pub type StorageWorkingGroupInstance = working_group::Instance2;
+// The distribution working group instance alias.
+pub type DistributionWorkingGroupInstance = working_group::Instance3;
 
 frame_support::construct_runtime!(
     pub enum Test where
@@ -53,9 +51,9 @@ frame_support::construct_runtime!(
         Timestamp: pallet_timestamp,
         Membership: membership::{Pallet, Call, Storage, Config<T>, Event<T>},
         Storage: crate::{Pallet, Call, Storage, Config, Event<T>},
-        MembershipWG: working_group::<Instance1>::{Pallet, Call, Storage, Event<T, I>},
-        StorageWG: working_group::<Instance2>::{Pallet, Call, Storage, Event<T, I>},
-        DistributionWG: working_group::<Instance3>::{Pallet, Call, Storage, Event<T, I>},
+        // Need to be added for benchmarks to work
+        Wg2: working_group::<Instance2>::{Pallet, Call, Storage, Event<T, I>},
+        Wg3: working_group::<Instance3>::{Pallet, Call, Storage, Event<T, I>},
     }
 );
 
@@ -194,20 +192,8 @@ parameter_types! {
     pub const LeaderOpeningStake: u32 = 20;
 }
 
+// implemented for benchmarks features to work
 impl working_group::Config<StorageWorkingGroupInstance> for Test {
-    type Event = Event;
-    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingAccountValidator = membership::Module<Test>;
-    type StakingHandler = staking_handler::StakingManager<Self, LockId>;
-    type MemberOriginValidator = ();
-    type MinUnstakingPeriodLimit = ();
-    type RewardPeriod = ();
-    type WeightInfo = Weights;
-    type MinimumApplicationStake = MinimumApplicationStake;
-    type LeaderOpeningStake = LeaderOpeningStake;
-}
-
-impl working_group::Config<DistributionWorkingGroupInstance> for Test {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingAccountValidator = membership::Module<Test>;
@@ -220,7 +206,8 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Test {
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl working_group::Config<MembershipWorkingGroupInstance> for Test {
+// implemented for benchmarks only
+impl working_group::Config<DistributionWorkingGroupInstance> for Test {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingAccountValidator = membership::Module<Test>;
@@ -257,8 +244,8 @@ thread_local! {
     pub static WG_BUDGET: RefCell<u64> = RefCell::new(WORKING_GROUP_BUDGET);
 }
 
-struct MembershipWGBudgetHandler {}
-impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for MembershipWGBudgetHandler {
+pub struct MembershipWG;
+impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for MembershipWG {
     fn get_budget() -> u64 {
         WG_BUDGET.with(|val| *val.borrow())
     }
@@ -274,8 +261,7 @@ impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for MembershipWG
     }
 }
 
-struct MembershipWGAuthenticator {}
-impl common::working_group::WorkingGroupAuthenticator<Test> for MembershipWGAuthenticator {
+impl common::working_group::WorkingGroupAuthenticator<Test> for MembershipWG {
     fn ensure_worker_origin(
         _origin: <Test as frame_system::Config>::Origin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
@@ -329,7 +315,7 @@ impl LockComparator<<Test as balances::Config>::Balance> for Test {
 }
 
 // Weights info stub
-struct Weights; // pub ?
+pub struct Weights;
 impl working_group::WeightInfo for Weights {
     fn on_initialize_leaving(_: u32) -> u64 {
         unimplemented!()
@@ -536,12 +522,10 @@ pub fn build_test_externalities_with_genesis() -> sp_io::TestExternalities {
 }
 
 // working group integration
-struct StorageWGAuthenticator;
-struct DistributionWGAuthenticator;
-struct StorageWGBudgetHandler;
-struct DistributionWGBudgetHandler;
+pub struct StorageWG;
+pub struct DistributionWG;
 
-impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWGAuthenticator {
+impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
     fn ensure_worker_origin(
         origin: <Test as frame_system::Config>::Origin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
@@ -612,7 +596,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWGAuthent
     }
 }
 
-impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWGAuthenticator {
+impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
     fn ensure_worker_origin(
         origin: <Test as frame_system::Config>::Origin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
@@ -685,7 +669,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWGAu
     }
 }
 
-impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for StorageWGBudgetHandler {
+impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for StorageWG {
     fn get_budget() -> u64 {
         unimplemented!()
     }
@@ -699,7 +683,7 @@ impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for StorageWGBud
     }
 }
 
-impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for DistributionWGBudgetHandler {
+impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for DistributionWG {
     fn get_budget() -> u64 {
         unimplemented!()
     }
