@@ -1730,7 +1730,3 @@ impl<T: Config<I>, I: Instance>
 pub(crate) fn default_storage_size_constraint() -> u16 {
     2048
 }
-
-impl<T: Config<I>, I: Instance> frame_support::traits::IntegrityTest for Module<T, I> {
-    fn integrity_test() {}
-}
