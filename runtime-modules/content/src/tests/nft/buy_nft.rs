@@ -135,11 +135,7 @@ fn buy_nft() {
         ));
 
         // Last event checked
-        assert_event(
-            MetaEvent::Content(RawEvent::NftBought(video_id, SECOND_MEMBER_ID)),
-            // 4 events: KilledAccount (SECOND_MEMBER_ACCOUNT_ID), NewAccount (channel reward acc), Endowed (channel reward acc), NFTBought
-            number_of_events_before_call + 4,
-        );
+        last_event_eq!(RawEvent::NftBought(video_id, SECOND_MEMBER_ID));
     })
 }
 
@@ -397,38 +393,7 @@ fn buy_now_ok_with_nft_owner_member_correctly_credited() {
 }
 
 #[test]
-fn buy_now_ok_with_nft_owner_curator_channel_correctly_credited() {
-    with_default_mock_builder(|| {
-        let video_id = 1u64;
-        ContentTest::with_curator_channel().setup();
-
-        CreateVideoFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            .with_nft_in_sale(DEFAULT_NFT_PRICE)
-            .call();
-
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
-        let platform_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE);
-
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, 100u64);
-        assert_ok!(Content::buy_nft(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            video_id,
-            SECOND_MEMBER_ID,
-            100u64,
-        ));
-
-        assert_eq!(
-            channel_reward_account_balance(1u64),
-            // Default price - platform fee (since channel owner it retains royalty)
-            DEFAULT_NFT_PRICE - platform_fee,
-        )
-    })
-}
-
-#[test]
-fn buy_now_ok_with_nft_owner_member_channel_correctly_credited() {
+fn buy_now_ok_with_nft_owner_channel_correctly_credited() {
     with_default_mock_builder(|| {
         let video_id = 1u64;
         ContentTest::with_member_channel().setup();

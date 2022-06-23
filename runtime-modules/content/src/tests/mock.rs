@@ -589,6 +589,13 @@ pub fn run_to_block(n: u64) {
     }
 }
 
+#[macro_export]
+macro_rules! last_event_eq {
+    ($e:expr) => {
+        assert_eq!(System::events().last().unwrap().event, MetaEvent::Content($e))
+    };
+}
+
 pub fn assert_event(tested_event: Event, number_of_events_after_call: usize) {
     // Ensure  runtime events length is equal to expected number of events after call
     assert_eq!(System::events().len(), number_of_events_after_call);
