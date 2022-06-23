@@ -123,7 +123,7 @@ fn member_account<
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
-struct CouncilCandidate<T: Trait> {
+struct CouncilCandidate<T: Config> {
     pub account_id: T::AccountId,
     pub member_id: T::MemberId,
 }
@@ -133,8 +133,8 @@ fn elect_council<
 >(
     start_id: u32,
 ) -> (Vec<CouncilCandidate<T>>, u32) {
-    let council_size = <T as council::Trait>::CouncilSize::get();
-    let number_of_extra_candidates = <T as council::Trait>::MinNumberOfExtraCandidates::get();
+    let council_size = <T as council::Config>::CouncilSize::get();
+    let number_of_extra_candidates = <T as council::Config>::MinNumberOfExtraCandidates::get();
 
     let councilor_stake = <T as council::Config>::MinCandidateStake::get();
 
@@ -395,25 +395,26 @@ mod tests {
     use super::*;
     use crate::tests::{initial_test_ext, Test};
     use frame_support::assert_ok;
+    type Discussions = crate::Module<Test>;
 
     #[test]
     fn test_add_post() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_add_post::<Test>());
+            assert_ok!(Discussions::test_benchmark_add_post());
         });
     }
 
     #[test]
     fn test_update_post() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_update_post::<Test>());
+            assert_ok!(Discussions::test_benchmark_update_post());
         });
     }
 
     #[test]
     fn test_change_thread_mode() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_change_thread_mode::<Test>());
+            assert_ok!(Discussions::test_benchmark_change_thread_mode());
         });
     }
 }
