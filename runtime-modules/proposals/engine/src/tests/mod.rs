@@ -1422,18 +1422,23 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
 
         assert_eq!(proposal, expected_proposal);
 
-        run_to_block_and_finalize(5);
+        System::reset_events();
 
-        EventFixture::assert_last_crate_event(RawEvent::ProposalDecisionMade(
-            proposal_id,
-            ProposalDecision::Expired,
-        ));
+        run_to_block_and_finalize(5);
 
         let rejection_fee = RejectionFee::get();
         assert_eq!(
             Balances::usable_balance(&account_id),
             account_balance - rejection_fee
         );
+
+        EventFixture::assert_global_events(vec![
+            RawEvent::ProposalDecisionMade(proposal_id, ProposalDecision::Expired).into(),
+            TestEvent::Balances(balances::Event::Slashed {
+                who: account_id,
+                amount: rejection_fee,
+            }),
+        ]);
     });
 }
 
@@ -1549,6 +1554,8 @@ fn proposal_slashing_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Slash);
         vote_generator.vote_and_assert_ok(VoteKind::Slash);
 
+        System::reset_events();
+
         run_to_block_and_finalize(2);
 
         assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
@@ -1558,10 +1565,13 @@ fn proposal_slashing_succeeds() {
             initial_balance - stake_amount
         );
 
-        EventFixture::assert_last_crate_event(RawEvent::ProposalDecisionMade(
-            proposal_id,
-            ProposalDecision::Slashed,
-        ));
+        EventFixture::assert_global_events(vec![
+            RawEvent::ProposalDecisionMade(proposal_id, ProposalDecision::Slashed).into(),
+            TestEvent::Balances(balances::Event::Slashed {
+                who: account_id,
+                amount: stake_amount,
+            }),
+        ]);
     });
 }
 
@@ -1995,6 +2005,10 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
 
         // first chain of event from the creation to the approval
         EventFixture::assert_global_events(vec![
+            TestEvent::Balances(balances::Event::Deposit {
+                who: 1,
+                amount: total_balance,
+            }),
             TestEvent::System(frame_system::Event::NewAccount { account: 1 }), // because of token transfer
             TestEvent::Balances(balances::Event::Endowed {
                 account: 1,
@@ -2066,6 +2080,8 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
         let reactivation_block = 5;
         run_to_block(reactivation_block);
 
+        System::reset_events();
+
         ProposalsEngine::reactivate_pending_constitutionality_proposals();
 
         let proposal = <Proposals<Test>>::get(proposal_id);
@@ -2095,44 +2111,6 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
         assert_eq!(Balances::usable_balance(&account_id), total_balance);
 
         EventFixture::assert_global_events(vec![
-            // first chain of event from the creation to the approval
-            TestEvent::System(frame_system::Event::NewAccount { account: 1 }), // because of token transfer
-            TestEvent::Balances(balances::Event::Endowed {
-                account: 1,
-                free_balance: total_balance,
-            }), // because of token transfer
-            TestEvent::ProposalsEngine(RawEvent::Voted(
-                1,
-                proposal_id,
-                VoteKind::Approve,
-                Vec::new(),
-            )),
-            TestEvent::ProposalsEngine(RawEvent::Voted(
-                2,
-                proposal_id,
-                VoteKind::Approve,
-                Vec::new(),
-            )),
-            TestEvent::ProposalsEngine(RawEvent::Voted(
-                3,
-                proposal_id,
-                VoteKind::Approve,
-                Vec::new(),
-            )),
-            TestEvent::ProposalsEngine(RawEvent::Voted(
-                4,
-                proposal_id,
-                VoteKind::Approve,
-                Vec::new(),
-            )),
-            TestEvent::ProposalsEngine(RawEvent::ProposalDecisionMade(
-                proposal_id,
-                ProposalDecision::Approved(ApprovedProposalDecision::PendingConstitutionality),
-            )),
-            TestEvent::ProposalsEngine(RawEvent::ProposalStatusUpdated(
-                proposal_id,
-                ProposalStatus::PendingConstitutionality,
-            )),
             // reactivation of the proposal
             TestEvent::ProposalsEngine(RawEvent::ProposalStatusUpdated(
                 proposal_id,

@@ -69,6 +69,7 @@
 //! ## Usage
 //!
 //! ```
+//! #![feature(more_qualified_paths)]
 //! use frame_support::{decl_module, print};
 //! use frame_system::ensure_signed;
 //! use codec::Encode;
@@ -93,7 +94,7 @@
 //!             let title = b"Spending proposal".to_vec();
 //!             let description = b"We need to spend some tokens to support the working group lead."
 //!                 .to_vec();
-//!             let encoded_proposal_code = <Call<T>>::executable_proposal().encode();
+//!             let encoded_proposal_code = <Call<T>>::executable_proposal {}.encode();
 //!
 //!             <engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
 //!                 &parameters,
