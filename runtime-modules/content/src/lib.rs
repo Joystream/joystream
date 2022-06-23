@@ -77,9 +77,6 @@ pub trait Config:
     /// Type of identifier for TransferId
     type TransferId: NumericIdentifier;
 
-    /// Type of identifier for Channel Categories
-    type ChannelCategoryId: NumericIdentifier;
-
     /// The maximum number of curators per group constraint
     type MaxNumberOfCuratorsPerGroup: Get<MaxNumber>;
 
@@ -148,12 +145,7 @@ decl_storage! {
         pub ChannelById get(fn channel_by_id):
         map hasher(blake2_128_concat) T::ChannelId => Channel<T>;
 
-        pub ChannelCategoryById get(fn channel_category_by_id):
-        map hasher(blake2_128_concat) T::ChannelCategoryId => ();
-
         pub VideoById get(fn video_by_id): map hasher(blake2_128_concat) T::VideoId => Video<T>;
-
-        pub NextChannelCategoryId get(fn next_channel_category_id) config(): T::ChannelCategoryId;
 
         pub NextChannelId get(fn next_channel_id) config(): T::ChannelId;
 
@@ -777,63 +769,6 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelVisibilitySetByModerator(actor, channel_id, is_hidden, rationale));
 
             Ok(())
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_channel_category(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            params: ChannelCategoryCreationParameters,
-        ) {
-            ensure_actor_authorized_to_manage_categories::<T>(
-                origin,
-                &actor
-            )?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            let category_id = Self::next_channel_category_id();
-            NextChannelCategoryId::<T>::mutate(|id| *id += T::ChannelCategoryId::one());
-            ChannelCategoryById::<T>::insert(category_id, ());
-
-            Self::deposit_event(RawEvent::ChannelCategoryCreated(category_id, params));
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_channel_category(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            category_id: T::ChannelCategoryId,
-            params: ChannelCategoryUpdateParameters,
-        ) {
-            ensure_actor_authorized_to_manage_categories::<T>(
-                origin,
-                &actor
-            )?;
-
-            Self::ensure_channel_category_exists(&category_id)?;
-
-            Self::deposit_event(RawEvent::ChannelCategoryUpdated(actor, category_id, params));
-        }
-
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn delete_channel_category(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            category_id: T::ChannelCategoryId,
-        ) {
-            ensure_actor_authorized_to_manage_categories::<T>(
-                origin,
-                &actor
-            )?;
-
-            Self::ensure_channel_category_exists(&category_id)?;
-
-            ChannelCategoryById::<T>::remove(&category_id);
-
-            Self::deposit_event(RawEvent::ChannelCategoryDeleted(actor, category_id));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -2928,16 +2863,6 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
-    fn ensure_channel_category_exists(
-        channel_category_id: &T::ChannelCategoryId,
-    ) -> Result<(), Error<T>> {
-        ensure!(
-            ChannelCategoryById::<T>::contains_key(channel_category_id),
-            Error::<T>::CategoryDoesNotExist
-        );
-        Ok(())
-    }
-
     fn ensure_video_exists(video_id: &T::VideoId) -> Result<Video<T>, Error<T>> {
         ensure!(
             VideoById::<T>::contains_key(video_id),
@@ -3482,9 +3407,8 @@ decl_event!(
         MemberId = <T as common::MembershipTypes>::MemberId,
         CuratorGroupId = <T as ContentActorAuthenticator>::CuratorGroupId,
         CuratorId = <T as ContentActorAuthenticator>::CuratorId,
-        VideoId = <T as Config>::VideoId,
-        ChannelId = <T as storage::Config>::ChannelId,
-        ChannelCategoryId = <T as Config>::ChannelCategoryId,
+        VideoId = <T as Trait>::VideoId,
+        ChannelId = <T as storage::Trait>::ChannelId,
         Channel = Channel<T>,
         DataObjectId = DataObjectId<T>,
         EnglishAuctionParams = EnglishAuctionParams<T>,
@@ -3553,15 +3477,6 @@ decl_event!(
 
         ChannelFundsWithdrawn(ContentActor, ChannelId, Balance, AccountId),
         ChannelRewardClaimedAndWithdrawn(ContentActor, ChannelId, Balance, AccountId),
-
-        // Channel Categories
-        ChannelCategoryCreated(ChannelCategoryId, ChannelCategoryCreationParameters),
-        ChannelCategoryUpdated(
-            ContentActor,
-            ChannelCategoryId,
-            ChannelCategoryUpdateParameters,
-        ),
-        ChannelCategoryDeleted(ContentActor, ChannelCategoryId),
 
         // Videos
         VideoCreated(
