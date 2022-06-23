@@ -99,12 +99,16 @@ fn member_funded_account<T: Config + membership::Config>(
     Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
     assert_eq!(
-        Membership::<T>::membership(member_id).controller_account,
+        Membership::<T>::membership(member_id)
+            .expect("Member Must Exist")
+            .controller_account,
         account_id
     );
 
     assert_eq!(
-        Membership::<T>::membership(member_id).root_account,
+        Membership::<T>::membership(member_id)
+            .expect("Member Must Exist")
+            .root_account,
         account_id
     );
     let _ = Balances::<T>::make_free_balance_be(&account_id, T::Balance::max_value());
@@ -219,7 +223,7 @@ fn run_to_block<T: Config + council::Config + referendum::Config<ReferendumInsta
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
-struct CouncilCandidate<T: Trait> {
+struct CouncilCandidate<T: Config> {
     pub account_id: T::AccountId,
     pub member_id: T::MemberId,
 }
@@ -229,8 +233,8 @@ fn elect_council<
 >(
     start_id: u32,
 ) -> (Vec<CouncilCandidate<T>>, u32) {
-    let council_size = <T as council::Trait>::CouncilSize::get();
-    let number_of_extra_candidates = <T as council::Trait>::MinNumberOfExtraCandidates::get();
+    let council_size = <T as council::Config>::CouncilSize::get();
+    let number_of_extra_candidates = <T as council::Config>::MinNumberOfExtraCandidates::get();
 
     let councilor_stake = <T as council::Config>::MinCandidateStake::get();
 
@@ -770,74 +774,75 @@ mod tests {
     use super::*;
     use crate::tests::mock::{initial_test_ext, Test};
     use frame_support::assert_ok;
+    type Engine = crate::Module<Test>;
 
     #[test]
     fn test_vote() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_vote::<Test>());
+            assert_ok!(Engine::test_benchmark_vote());
         });
     }
 
     #[test]
     fn test_cancel_proposal() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_cancel_proposal::<Test>());
+            assert_ok!(Engine::test_benchmark_cancel_proposal());
         });
     }
 
     #[test]
     fn test_veto_proposal() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_veto_proposal::<Test>());
+            assert_ok!(Engine::test_benchmark_veto_proposal());
         });
     }
 
     #[test]
     fn test_on_initialize_immediate_execution_decode_fails() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_on_initialize_immediate_execution_decode_fails::<Test>());
+            assert_ok!(Engine::test_benchmark_on_initialize_immediate_execution_decode_fails());
         });
     }
 
     #[test]
     fn test_on_initialize_approved_pending_constitutionality() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_on_initialize_approved_pending_constitutionality::<Test>());
+            assert_ok!(Engine::test_benchmark_on_initialize_approved_pending_constitutionality());
         });
     }
 
     #[test]
     fn test_on_initialize_pending_execution_decode_fails() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_on_initialize_pending_execution_decode_fails::<Test>());
+            assert_ok!(Engine::test_benchmark_on_initialize_pending_execution_decode_fails());
         });
     }
 
     #[test]
     fn test_on_initialize_rejected() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_on_initialize_rejected::<Test>());
+            assert_ok!(Engine::test_benchmark_on_initialize_rejected());
         });
     }
 
     #[test]
     fn test_on_initialize_slashed() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_on_initialize_slashed::<Test>());
+            assert_ok!(Engine::test_benchmark_on_initialize_slashed());
         });
     }
 
     #[test]
     fn test_cancel_active_and_pending_proposals() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_cancel_active_and_pending_proposals::<Test>());
+            assert_ok!(Engine::test_benchmark_cancel_active_and_pending_proposals());
         });
     }
 
     #[test]
     fn test_proposer_remark() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_proposer_remark::<Test>());
+            assert_ok!(Engine::test_benchmark_proposer_remark());
         });
     }
 }
