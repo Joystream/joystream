@@ -3017,7 +3017,6 @@ impl IssueNftFixture {
             nft_metadata: self.params.nft_metadata.clone(),
             non_channel_owner: Some(owner),
             royalty: self.params.royalty.clone(),
-
         };
         self.with_params(new_params)
     }
@@ -3039,7 +3038,6 @@ impl IssueNftFixture {
             nft_metadata: self.params.nft_metadata.clone(),
             non_channel_owner: self.params.non_channel_owner.clone(),
             royalty: self.params.royalty.clone(),
-
         };
         self.with_params(new_params)
     }
@@ -3050,7 +3048,6 @@ impl IssueNftFixture {
             nft_metadata: self.params.nft_metadata.clone(),
             non_channel_owner: self.params.non_channel_owner.clone(),
             royalty: Some(royalty_pct),
-
         };
         self.with_params(new_params)
     }

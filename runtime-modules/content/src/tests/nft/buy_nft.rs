@@ -4,8 +4,6 @@ use crate::tests::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
 
-pub const DEFAULT_ROYALTY: u32 = 1;
-
 fn setup_nft_on_sale_scenario() {
     let video_id = NextVideoId::<Test>::get();
 
@@ -96,10 +94,6 @@ fn buy_nft() {
             ContentActor::Member(DEFAULT_MEMBER_ID),
             DEFAULT_NFT_PRICE,
         ));
-
-        // Runtime tested state before call
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
 
         // Buy nft
         assert_ok!(Content::buy_nft(

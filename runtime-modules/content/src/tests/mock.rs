@@ -81,6 +81,7 @@ pub const PAYMENTS_NUMBER: u64 = 10;
 pub const DEFAULT_PAYOUT_CLAIMED: u64 = 100;
 pub const DEFAULT_PAYOUT_EARNED: u64 = 100;
 pub const DEFAULT_NFT_PRICE: u64 = 1000;
+pub const DEFAULT_ROYALTY: u32 = 1;
 
 // Creator tokens
 pub const DEFAULT_CREATOR_TOKEN_ISSUANCE: u64 = 1_000_000_000;
@@ -592,7 +593,10 @@ pub fn run_to_block(n: u64) {
 #[macro_export]
 macro_rules! last_event_eq {
     ($e:expr) => {
-        assert_eq!(System::events().last().unwrap().event, MetaEvent::Content($e))
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::Content($e)
+        )
     };
 }
 
