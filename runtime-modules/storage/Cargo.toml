@@ -52,8 +52,6 @@ std = [
     'pallet-timestamp/std',
     'sp-runtime/std',
     'common/std',
-    'membership/std',
-	'staking-handler/std',
     'scale-info/std',
 ]
 

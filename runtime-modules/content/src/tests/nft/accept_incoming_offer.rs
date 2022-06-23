@@ -1,9 +1,8 @@
 #![cfg(test)]
-use crate::tests::curators;
 use crate::tests::fixtures::{
     channel_reward_account_balance, create_default_member_owned_channel_with_video,
     create_initial_storage_buckets_helper, increase_account_balance_helper, ContentTest,
-    CreateChannelFixture, CreateVideoFixture, MetaEvent, UpdateChannelFixture,
+    CreateChannelFixture, CreateVideoFixture, MetaEvent,
 };
 use crate::tests::mock::*;
 use crate::*;

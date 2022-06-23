@@ -1,6 +1,6 @@
 use crate::Module;
 use frame_support::decl_error;
-use sp_std::convert::{TryFrom, TryInto};
+use sp_std::convert::{TryInto};
 
 decl_error! {
     pub enum Error for Module<T: crate::Config> {

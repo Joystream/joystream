@@ -3011,6 +3011,17 @@ impl IssueNftFixture {
         }
     }
 
+    pub fn with_non_channel_owner(self, owner: MemberId) -> Self {
+        let new_params = NftIssuanceParameters::<Test> {
+            init_transactional_status: self.params.init_transactional_status.clone(),
+            nft_metadata: self.params.nft_metadata.clone(),
+            non_channel_owner: Some(owner),
+            royalty: self.params.royalty.clone(),
+
+        };
+        self.with_params(new_params)
+    }
+
     pub fn with_sender(self, sender: AccountId) -> Self {
         Self { sender, ..self }
     }
@@ -3019,12 +3030,36 @@ impl IssueNftFixture {
         Self { actor, ..self }
     }
 
+    pub fn with_init_status(
+        self,
+        init_transactional_status: InitTransactionalStatus<Test>,
+    ) -> Self {
+        let new_params = NftIssuanceParameters::<Test> {
+            init_transactional_status,
+            nft_metadata: self.params.nft_metadata.clone(),
+            non_channel_owner: self.params.non_channel_owner.clone(),
+            royalty: self.params.royalty.clone(),
+
+        };
+        self.with_params(new_params)
+    }
+
+    pub fn with_royalty(self, royalty_pct: Perbill) -> Self {
+        let new_params = NftIssuanceParameters::<Test> {
+            init_transactional_status: self.params.init_transactional_status.clone(),
+            nft_metadata: self.params.nft_metadata.clone(),
+            non_channel_owner: self.params.non_channel_owner.clone(),
+            royalty: Some(royalty_pct),
+
+        };
+        self.with_params(new_params)
+    }
+
     #[allow(dead_code)]
     pub fn with_video_id(self, video_id: VideoId) -> Self {
         Self { video_id, ..self }
     }
 
-    #[allow(dead_code)]
     pub fn with_params(self, params: NftIssuanceParameters<Test>) -> Self {
         Self { params, ..self }
     }
