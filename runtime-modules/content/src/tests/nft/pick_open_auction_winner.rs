@@ -544,14 +544,13 @@ fn pick_open_auction_winner_ok_with_nft_member_owner_correctly_credited() {
             .with_bid(DEFAULT_NFT_PRICE)
             .call_and_assert(Ok(()));
 
-        assert_ok!(
-            Content::pick_open_auction_winner(
-                Origin::signed(THIRD_MEMBER_ACCOUNT_ID),
-                ContentActor::Member(THIRD_MEMBER_ID),
-                VideoId::one(),
-                SECOND_MEMBER_ID,
-                DEFAULT_NFT_PRICE
-            ));
+        assert_ok!(Content::pick_open_auction_winner(
+            Origin::signed(THIRD_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(THIRD_MEMBER_ID),
+            VideoId::one(),
+            SECOND_MEMBER_ID,
+            DEFAULT_NFT_PRICE
+        ));
 
         // net revenue for member owner : NFT PRICE - ROYALTY - FEE
         assert_eq!(
@@ -565,7 +564,7 @@ fn pick_open_auction_winner_ok_with_nft_member_owner_correctly_credited() {
 fn pick_open_auction_ok_with_channel_owner_correctly_credited() {
     with_default_mock_builder(|| {
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
-         let platform_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE);
+        let platform_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE);
         ContentTest::default().with_video().setup();
         IssueNftFixture::default()
             .with_royalty(Perbill::from_percent(1))
@@ -575,17 +574,19 @@ fn pick_open_auction_ok_with_channel_owner_correctly_credited() {
             .with_bid(DEFAULT_NFT_PRICE)
             .call_and_assert(Ok(()));
 
-        assert_ok!(
-            Content::pick_open_auction_winner(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-                VideoId::one(),
-                SECOND_MEMBER_ID,
-                DEFAULT_NFT_PRICE
-            ));
+        assert_ok!(Content::pick_open_auction_winner(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            VideoId::one(),
+            SECOND_MEMBER_ID,
+            DEFAULT_NFT_PRICE
+        ));
 
         // net revenue for creator owner : NFT PRICE + ROYALTY - ROYALTY - FEE
-        assert_eq!(channel_reward_account_balance(ChannelId::one()), DEFAULT_NFT_PRICE - platform_fee);
+        assert_eq!(
+            channel_reward_account_balance(ChannelId::one()),
+            DEFAULT_NFT_PRICE - platform_fee
+        );
     })
 }
 

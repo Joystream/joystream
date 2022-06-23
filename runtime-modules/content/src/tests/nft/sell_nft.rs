@@ -49,10 +49,10 @@ fn sell_nft() {
 
         // Last event checked
         last_event_eq!(RawEvent::NftSellOrderMade(
-                video_id,
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-                DEFAULT_NFT_PRICE,
-            ));
+            video_id,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            DEFAULT_NFT_PRICE,
+        ));
     })
 }
 

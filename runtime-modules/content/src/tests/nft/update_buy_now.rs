@@ -54,10 +54,10 @@ fn update_buy_now_price() {
 
         // Last event checked
         last_event_eq!(RawEvent::BuyNowPriceUpdated(
-                video_id,
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-                NEW_NFT_PRICE,
-            ));
+            video_id,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            NEW_NFT_PRICE,
+        ));
     })
 }
 

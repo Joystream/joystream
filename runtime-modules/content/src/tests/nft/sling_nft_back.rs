@@ -56,9 +56,9 @@ fn sling_nft_back() {
 
         // Last event checked
         last_event_eq!(RawEvent::NftSlingedBackToTheOriginalArtist(
-                video_id,
-                ContentActor::Member(SECOND_MEMBER_ID),
-            ));
+            video_id,
+            ContentActor::Member(SECOND_MEMBER_ID),
+        ));
     })
 }
 
