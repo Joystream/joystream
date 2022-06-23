@@ -4,21 +4,22 @@
 
 use super::*;
 use crate::Module as Codex;
-use balances::Module as Balances;
+use balances::Pallet as Balances;
+use codec::Decode;
 use common::working_group::WorkingGroup;
 use common::BalanceKind;
 use content::NftLimitPeriod;
-use frame_benchmarking::{account, benchmarks, Zero};
+use frame_benchmarking::{account, benchmarks};
 use frame_support::sp_runtime::traits::Bounded;
 use frame_support::traits::Currency;
 use frame_system::EventRecord;
-use frame_system::Module as System;
+use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use membership::Module as Membership;
 use proposals_discussion::Module as Discussion;
 use proposals_engine::Module as Engine;
 use sp_core::Hasher;
-use sp_runtime::traits::One;
+use sp_runtime::traits::{One, TrailingZeroInput, Zero};
 use sp_std::convert::TryInto;
 use sp_std::iter::FromIterator;
 use sp_std::prelude::*;
@@ -815,8 +816,8 @@ benchmarks! {
     }
 
     create_proposal_update_global_nft_limit {
-        let t in ...;
-        let d in ...;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
@@ -841,16 +842,16 @@ benchmarks! {
 
 
     create_proposal_update_channel_payouts {
-        let t in ...;
-        let d in ...;
-        let i in 0..MAX_BYTES;
+        let i in 1 .. MAX_BYTES;
+        let t in 1 .. T::TitleMaxLength::get();
+        let d in 1 .. T::DescriptionMaxLength::get();
 
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
 
         let commitment = T::Hashing::hash(&b"commitment".to_vec());
         let payload = content::ChannelPayoutsPayloadParametersRecord {
-            uploader_account: T::AccountId::default(),
+            uploader_account: T::AccountId::decode(&mut TrailingZeroInput::zeroes()).unwrap(),
             object_creation_params: content::DataObjectCreationParameters {
                 size: u64::MAX,
                 ipfs_content_id: Vec::from_iter((0..i).map(|v| u8::MAX))
@@ -887,125 +888,142 @@ mod tests {
     use super::*;
     use crate::tests::{initial_test_ext, Test};
     use frame_support::assert_ok;
+    type ProposalsCodex = crate::Module<Test>;
 
     #[test]
     fn test_create_proposal_signal() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_signal::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_signal());
         });
     }
 
     #[test]
     fn test_create_proposal_funding_request() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_funding_request::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_funding_request());
         });
     }
 
     #[test]
     fn test_create_proposal_set_max_validator_count() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_set_max_validator_count::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_set_max_validator_count());
         });
     }
 
     #[test]
     fn test_create_proposal_create_working_group_lead_opening() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_create_working_group_lead_opening::<Test>());
+            assert_ok!(
+                ProposalsCodex::test_benchmark_create_proposal_create_working_group_lead_opening()
+            );
         });
     }
 
     #[test]
     fn test_create_proposal_fill_working_group_lead_opening() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_fill_working_group_lead_opening::<Test>());
+            assert_ok!(
+                ProposalsCodex::test_benchmark_create_proposal_fill_working_group_lead_opening()
+            );
         });
     }
 
     #[test]
     fn test_create_proposal_update_working_group_budget() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_update_working_group_budget::<Test>());
+            assert_ok!(
+                ProposalsCodex::test_benchmark_create_proposal_update_working_group_budget()
+            );
         });
     }
 
     #[test]
     fn test_create_proposal_decrease_working_group_lead_stake() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_decrease_working_group_lead_stake::<Test>());
+            assert_ok!(
+                ProposalsCodex::test_benchmark_create_proposal_decrease_working_group_lead_stake()
+            );
         });
     }
 
     #[test]
     fn test_create_proposal_slash_working_group_lead() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_slash_working_group_lead::<
-                Test,
-            >());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_slash_working_group_lead());
         });
     }
 
     #[test]
     fn test_create_proposal_set_working_group_lead_reward() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_set_working_group_lead_reward::<Test>());
+            assert_ok!(
+                ProposalsCodex::test_benchmark_create_proposal_set_working_group_lead_reward()
+            );
         });
     }
 
     #[test]
     fn test_create_proposal_terminate_working_group_lead() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_terminate_working_group_lead::<Test>());
+            assert_ok!(
+                ProposalsCodex::test_benchmark_create_proposal_terminate_working_group_lead()
+            );
         });
     }
 
     #[test]
     fn test_create_proposal_amend_constitution() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_amend_constitution::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_amend_constitution());
         });
     }
 
     #[test]
     fn test_create_proposal_cancel_working_group_lead_opening() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_amend_constitution::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_amend_constitution());
         });
     }
 
     #[test]
     fn test_create_proposal_set_membership_price() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_set_membership_price::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_set_membership_price());
         });
     }
 
     #[test]
     fn test_create_proposal_set_council_budget_increment() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_set_council_budget_increment::<Test>());
+            assert_ok!(
+                ProposalsCodex::test_benchmark_create_proposal_set_council_budget_increment()
+            );
         });
     }
 
     #[test]
     fn test_create_proposal_set_councior_reward() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_set_councilor_reward::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_set_councilor_reward());
         });
     }
 
     #[test]
     fn test_create_proposal_set_initial_invitation_balance() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_set_initial_invitation_balance::<Test>());
+            assert_ok!(
+                ProposalsCodex::test_benchmark_create_proposal_set_initial_invitation_balance()
+            );
         });
     }
 
     #[test]
     fn test_create_proposal_set_initial_invitation_count() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_set_initial_invitation_count::<Test>());
+            assert_ok!(
+                ProposalsCodex::test_benchmark_create_proposal_set_initial_invitation_count()
+            );
         });
     }
 
@@ -1013,7 +1031,8 @@ mod tests {
     fn test_create_proposal_set_membership_lead_invitation_quota() {
         initial_test_ext().execute_with(|| {
             assert_ok!(
-                test_benchmark_create_proposal_set_membership_lead_invitation_quota::<Test>()
+                ProposalsCodex::test_benchmark_create_proposal_set_membership_lead_invitation_quota(
+                )
             );
         });
     }
@@ -1021,56 +1040,56 @@ mod tests {
     #[test]
     fn test_create_proposal_set_referral_cut() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_set_referral_cut::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_set_referral_cut());
         });
     }
 
     #[test]
     fn test_create_blog_post() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_create_blog_post::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_create_blog_post());
         });
     }
 
     #[test]
     fn test_edit_blog_post() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_edit_blog_post::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_edit_blog_post());
         });
     }
 
     #[test]
     fn test_lock_blog_post() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_lock_blog_post::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_lock_blog_post());
         });
     }
 
     #[test]
     fn test_unlock_blog_post() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_unlock_blog_post::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_unlock_blog_post());
         });
     }
 
     #[test]
     fn test_create_proposal_veto_proposal() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_veto_proposal::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_veto_proposal());
         });
     }
 
     #[test]
     fn test_update_global_nft_limit_proposal() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_update_global_nft_limit::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_update_global_nft_limit());
         })
     }
 
     #[test]
     fn test_update_channel_payouts_proposal() {
         initial_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_create_proposal_update_channel_payouts::<Test>());
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_update_channel_payouts());
         });
     }
 }

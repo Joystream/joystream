@@ -657,7 +657,7 @@ fn create_set_max_validator_count_proposal_failed_with_invalid_validator_count()
         let account_id = 1;
         increase_total_balance_issuance_using_account_id(account_id, 15000000);
 
-        staking::MinimumValidatorCount::put(10);
+        staking::MinimumValidatorCount::<Test>::put(10);
 
         let general_proposal_parameters = GeneralProposalParameters::<Test> {
             member_id: 1,
@@ -1966,35 +1966,35 @@ fn create_update_global_nft_limit_proposal_common_checks_succeed() {
             general_proposal_parameters: general_proposal_parameters.clone(),
             proposal_details: proposal_details.clone(),
             insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             successful_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters.clone(),
                     proposal_details.clone(),
                 )
             },
             proposal_parameters:
-                <Test as crate::Trait>::UpdateGlobalNftLimitProposalParameters::get(),
+                <Test as crate::Config>::UpdateGlobalNftLimitProposalParameters::get(),
         };
         proposal_fixture.check_all();
     });
@@ -2029,11 +2029,11 @@ fn create_update_channel_payouts_common_checks_succeed() {
 
         let proposal_details = ProposalDetails::UpdateChannelPayouts(
             content::UpdateChannelPayoutsParameters::<Test> {
-                commitment: Some(<Test as frame_system::Trait>::Hashing::hash(
+                commitment: Some(<Test as frame_system::Config>::Hashing::hash(
                     &b"commitment".to_vec(),
                 )),
                 payload: Some(content::ChannelPayoutsPayloadParametersRecord {
-                    uploader_account: <Test as frame_system::Trait>::AccountId::default(),
+                    uploader_account: <Test as frame_system::Config>::AccountId::default(),
                     object_creation_params: content::DataObjectCreationParameters {
                         size: u64::MAX,
                         ipfs_content_id: Vec::from_iter((0..46).map(|_| u8::MAX)),
@@ -2052,35 +2052,35 @@ fn create_update_channel_payouts_common_checks_succeed() {
             proposal_details: proposal_details.clone(),
             general_proposal_parameters: general_proposal_parameters.clone(),
             insufficient_rights_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::None.into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             invalid_stake_account_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_incorrect_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             empty_stake_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters_no_staking.clone(),
                     proposal_details.clone(),
                 )
             },
             successful_call: || {
-                ProposalCodex::create_proposal(
+                ProposalsCodex::create_proposal(
                     RawOrigin::Signed(1).into(),
                     general_proposal_parameters.clone(),
                     proposal_details.clone(),
                 )
             },
             proposal_parameters:
-                <Test as crate::Trait>::UpdateChannelPayoutsProposalParameters::get(),
+                <Test as crate::Config>::UpdateChannelPayoutsProposalParameters::get(),
         };
         proposal_fixture.check_all();
     });
@@ -2108,7 +2108,7 @@ fn create_update_channel_payouts_proposal_fails_when_min_cashout_exceeds_max_cas
         );
 
         assert_eq!(
-            ProposalCodex::create_proposal(
+            ProposalsCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
                 general_proposal_parameters.clone(),
                 details,
