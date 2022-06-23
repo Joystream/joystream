@@ -712,7 +712,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T, I>::leave_role_weight(&rationale)]
+        #[weight = Module::<T, I>::leave_role_weight(rationale)]
         pub fn leave_role(
             origin,
             worker_id: WorkerId<T>,
@@ -747,7 +747,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T, I>::terminate_role_weight(&rationale)]
+        #[weight = Module::<T, I>::terminate_role_weight(rationale)]
         pub fn terminate_role(
             origin,
             worker_id: WorkerId<T>,
@@ -789,7 +789,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T, I>::slash_stake_weight(&rationale)]
+        #[weight = Module::<T, I>::slash_stake_weight(rationale)]
         pub fn slash_stake(
             origin,
             worker_id: WorkerId<T>,
@@ -1083,7 +1083,7 @@ decl_module! {
 
             // Update worker reward amount.
             WorkerById::<T, I>::insert(worker_id, Worker::<T> {
-                reward_per_block: reward_per_block,
+                reward_per_block,
                 ..worker
             });
 
@@ -1120,7 +1120,7 @@ decl_module! {
             let status_text_hash = status_text
                 .as_ref()
                 .map(|status_text| {
-                        let hashed = T::Hashing::hash(&status_text);
+                        let hashed = T::Hashing::hash(status_text);
 
                         hashed.as_ref().to_vec()
                     })
@@ -1369,7 +1369,7 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
         successful_applications_info
             .iter()
             .for_each(|application_info| {
-                let new_worker_id = Self::create_worker_by_application(&opening, &application_info);
+                let new_worker_id = Self::create_worker_by_application(opening, application_info);
 
                 application_id_to_worker_id.insert(application_info.application_id, new_worker_id);
 

@@ -35,6 +35,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
+#![allow(clippy::type_complexity)]
 
 use codec::{Codec, Decode, Encode};
 use common::membership::MemberOriginValidator;
@@ -487,7 +488,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T, I>::edit_post_weight(&new_title, &new_body)]
+        #[weight = Module::<T, I>::edit_post_weight(new_title, new_body)]
         pub fn edit_post(
             origin,
             post_id: PostId,

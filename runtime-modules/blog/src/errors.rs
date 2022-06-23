@@ -1,3 +1,4 @@
+#![allow(clippy::enum_variant_names)]
 use crate::{Config, Instance, Module};
 use frame_support::decl_error;
 use sp_std::convert::TryInto;
