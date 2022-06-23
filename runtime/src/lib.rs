@@ -698,7 +698,6 @@ parameter_types! {
 
 impl content::Config for Runtime {
     type Event = Event;
-    type ChannelCategoryId = ChannelCategoryId;
     type VideoId = VideoId;
     type OpenAuctionId = OpenAuctionId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
