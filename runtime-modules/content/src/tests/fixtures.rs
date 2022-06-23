@@ -2,6 +2,8 @@ use derive_fixture::Fixture;
 use derive_new::new;
 
 use super::curators;
+// Importing mock event as MetaEvent to avoid name clash with Event from crate::* glob import
+pub use super::mock::Event as MetaEvent;
 use super::mock::*;
 use crate::*;
 use common::council::CouncilBudgetManager;
@@ -62,7 +64,7 @@ impl CreateCuratorGroupFixture {
         if actual_result.is_ok() {
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::CuratorGroupCreated(new_group_id))
+                MetaEvent::Content(RawEvent::CuratorGroupCreated(new_group_id))
             );
 
             assert!(CuratorGroupById::<Test>::contains_key(new_group_id));
@@ -208,7 +210,7 @@ impl CreateChannelFixture {
             // event correctly deposited
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::ChannelCreated(
+                MetaEvent::Content(RawEvent::ChannelCreated(
                     channel_id,
                     Channel::<Test> {
                         owner: self.channel_owner.clone(),
@@ -387,7 +389,7 @@ impl CreateVideoFixture {
 
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::VideoCreated(
+                MetaEvent::Content(RawEvent::VideoCreated(
                     self.actor,
                     self.channel_id,
                     video_id,
@@ -571,7 +573,7 @@ impl UpdateChannelFixture {
             Ok(()) => {
                 assert_eq!(
                     System::events().last().unwrap().event,
-                    MetaEvent::content(RawEvent::ChannelUpdated(
+                    MetaEvent::Content(RawEvent::ChannelUpdated(
                         self.actor.clone(),
                         self.channel_id,
                         self.params.clone(),
@@ -632,7 +634,7 @@ impl UpdateChannelFixture {
 pub struct UpdateChannelPrivilegeLevelFixture {
     sender: AccountId,
     channel_id: ChannelId,
-    privilege_level: <Test as Trait>::ChannelPrivilegeLevel,
+    privilege_level: <Test as Config>::ChannelPrivilegeLevel,
 }
 
 impl UpdateChannelPrivilegeLevelFixture {
@@ -640,7 +642,7 @@ impl UpdateChannelPrivilegeLevelFixture {
         Self {
             sender: LEAD_ACCOUNT_ID,
             channel_id: ChannelId::one(), // channel index starts at 1
-            privilege_level: <Test as Trait>::ChannelPrivilegeLevel::one(), // default privilege level is 0
+            privilege_level: <Test as Config>::ChannelPrivilegeLevel::one(), // default privilege level is 0
         }
     }
 
@@ -664,7 +666,7 @@ impl UpdateChannelPrivilegeLevelFixture {
                 // Event emitted
                 assert_eq!(
                     System::events().last().unwrap().event,
-                    MetaEvent::content(RawEvent::ChannelPrivilegeLevelUpdated(
+                    MetaEvent::Content(RawEvent::ChannelPrivilegeLevelUpdated(
                         self.channel_id,
                         self.privilege_level,
                     ))
@@ -819,7 +821,7 @@ impl UpdateVideoFixture {
             Ok(()) => {
                 assert_eq!(
                     System::events().last().unwrap().event,
-                    MetaEvent::content(RawEvent::VideoUpdated(
+                    MetaEvent::Content(RawEvent::VideoUpdated(
                         self.actor.clone(),
                         self.video_id,
                         self.params.clone(),
@@ -932,7 +934,7 @@ impl DeleteChannelAssetsAsModeratorFixture {
             Ok(()) => {
                 assert_eq!(
                     System::events().last().unwrap().event,
-                    MetaEvent::content(RawEvent::ChannelAssetsDeletedByModerator(
+                    MetaEvent::Content(RawEvent::ChannelAssetsDeletedByModerator(
                         self.actor.clone(),
                         self.channel_id,
                         self.assets_to_remove.clone(),
@@ -1094,7 +1096,7 @@ impl ChannelDeletion for DeleteChannelFixture {
     }
 
     fn expected_event_on_success(&self) -> MetaEvent {
-        MetaEvent::content(RawEvent::ChannelDeleted(
+        MetaEvent::Content(RawEvent::ChannelDeleted(
             self.actor.clone(),
             self.channel_id,
         ))
@@ -1161,7 +1163,7 @@ impl ChannelDeletion for DeleteChannelAsModeratorFixture {
     }
 
     fn expected_event_on_success(&self) -> MetaEvent {
-        MetaEvent::content(RawEvent::ChannelDeletedByModerator(
+        MetaEvent::Content(RawEvent::ChannelDeletedByModerator(
             self.actor.clone(),
             self.channel_id,
             self.rationale.clone(),
@@ -1229,7 +1231,7 @@ impl SetChannelPausedFeaturesAsModeratorFixture {
             assert_eq!(channel_post.paused_features, self.new_paused_features);
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::ChannelPausedFeaturesUpdatedByModerator(
+                MetaEvent::Content(RawEvent::ChannelPausedFeaturesUpdatedByModerator(
                     self.actor.clone(),
                     self.channel_id,
                     self.new_paused_features.clone(),
@@ -1287,7 +1289,7 @@ impl SetChannelVisibilityAsModeratorFixture {
         if actual_result.is_ok() {
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::ChannelVisibilitySetByModerator(
+                MetaEvent::Content(RawEvent::ChannelVisibilitySetByModerator(
                     self.actor.clone(),
                     self.channel_id,
                     self.is_hidden,
@@ -1343,7 +1345,7 @@ impl SetVideoVisibilityAsModeratorFixture {
         if actual_result.is_ok() {
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::VideoVisibilitySetByModerator(
+                MetaEvent::Content(RawEvent::VideoVisibilitySetByModerator(
                     self.actor.clone(),
                     self.video_id,
                     self.is_hidden,
@@ -1425,7 +1427,7 @@ impl DeleteVideoAssetsAsModeratorFixture {
             Ok(()) => {
                 assert_eq!(
                     System::events().last().unwrap().event,
-                    MetaEvent::content(RawEvent::VideoAssetsDeletedByModerator(
+                    MetaEvent::Content(RawEvent::VideoAssetsDeletedByModerator(
                         self.actor.clone(),
                         self.video_id,
                         self.assets_to_remove.clone(),
@@ -1590,7 +1592,7 @@ impl VideoDeletion for DeleteVideoFixture {
     }
 
     fn expected_event_on_success(&self) -> MetaEvent {
-        MetaEvent::content(RawEvent::VideoDeleted(self.actor.clone(), self.video_id))
+        MetaEvent::Content(RawEvent::VideoDeleted(self.actor.clone(), self.video_id))
     }
 }
 
@@ -1644,7 +1646,7 @@ impl VideoDeletion for DeleteVideoAsModeratorFixture {
     }
 
     fn expected_event_on_success(&self) -> MetaEvent {
-        MetaEvent::content(RawEvent::VideoDeletedByModerator(
+        MetaEvent::Content(RawEvent::VideoDeletedByModerator(
             self.actor.clone(),
             self.video_id,
             self.rationale.clone(),
@@ -1741,7 +1743,7 @@ impl UpdateChannelPayoutsFixture {
     ) {
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::ChannelPayoutsUpdated(
+            MetaEvent::Content(RawEvent::ChannelPayoutsUpdated(
                 self.params.clone(),
                 self.params
                     .payload
@@ -1868,7 +1870,7 @@ impl ClaimChannelRewardFixture {
         let origin = Origin::signed(self.sender.clone());
         let channel_pre = Content::channel_by_id(self.item.channel_id);
         let channel_balance_pre = channel_reward_account_balance(self.item.channel_id);
-        let council_budget_pre = <Test as Trait>::CouncilBudgetManager::get_budget();
+        let council_budget_pre = <Test as Config>::CouncilBudgetManager::get_budget();
 
         let proof = if self.payments.is_empty() {
             vec![]
@@ -1881,7 +1883,7 @@ impl ClaimChannelRewardFixture {
 
         let channel_post = Content::channel_by_id(self.item.channel_id);
         let channel_balance_post = channel_reward_account_balance(self.item.channel_id);
-        let council_budget_post = <Test as Trait>::CouncilBudgetManager::get_budget();
+        let council_budget_post = <Test as Config>::CouncilBudgetManager::get_budget();
 
         assert_eq!(actual_result, expected_result);
 
@@ -1904,7 +1906,7 @@ impl ClaimChannelRewardFixture {
             );
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::ChannelRewardUpdated(
+                MetaEvent::Content(RawEvent::ChannelRewardUpdated(
                     self.item.cumulative_reward_earned,
                     self.item.channel_id
                 ))
@@ -1991,7 +1993,7 @@ impl WithdrawFromChannelBalanceFixture {
             assert_eq!(channel_post, channel_pre);
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::ChannelFundsWithdrawn(
+                MetaEvent::Content(RawEvent::ChannelFundsWithdrawn(
                     self.actor.clone(),
                     self.channel_id,
                     self.amount,
@@ -2057,7 +2059,7 @@ impl ClaimAndWithdrawChannelRewardFixture {
         let dest_balance_pre = Balances::<Test>::usable_balance(&self.destination);
         let channel_pre = Content::channel_by_id(&self.item.channel_id);
         let channel_balance_pre = channel_reward_account_balance(self.item.channel_id);
-        let council_budget_pre = <Test as Trait>::CouncilBudgetManager::get_budget();
+        let council_budget_pre = <Test as Config>::CouncilBudgetManager::get_budget();
 
         let proof = if self.payments.is_empty() {
             vec![]
@@ -2076,7 +2078,7 @@ impl ClaimAndWithdrawChannelRewardFixture {
         let dest_balance_post = Balances::<Test>::usable_balance(&self.destination);
         let channel_post = Content::channel_by_id(&self.item.channel_id);
         let channel_balance_post = channel_reward_account_balance(self.item.channel_id);
-        let council_budget_post = <Test as Trait>::CouncilBudgetManager::get_budget();
+        let council_budget_post = <Test as Config>::CouncilBudgetManager::get_budget();
 
         assert_eq!(actual_result, expected_result);
 
@@ -2101,7 +2103,7 @@ impl ClaimAndWithdrawChannelRewardFixture {
             );
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::ChannelRewardClaimedAndWithdrawn(
+                MetaEvent::Content(RawEvent::ChannelRewardClaimedAndWithdrawn(
                     self.actor.clone(),
                     self.item.channel_id,
                     amount_claimed,
@@ -2215,7 +2217,7 @@ impl IssueCreatorTokenFixture {
             );
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::CreatorTokenIssued(
+                MetaEvent::Content(RawEvent::CreatorTokenIssued(
                     self.actor.clone(),
                     self.channel_id,
                     expected_token_id
@@ -2622,7 +2624,7 @@ impl FinalizeCreatorTokenSaleFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
 
-        let council_budget_pre = <Test as Trait>::CouncilBudgetManager::get_budget();
+        let council_budget_pre = <Test as Config>::CouncilBudgetManager::get_budget();
         let channel = Content::channel_by_id(self.channel_id);
         let joy_collected = channel.creator_token_id.map_or(0, |t_id| {
             project_token::Module::<Test>::token_info_by_id(t_id)
@@ -2633,7 +2635,7 @@ impl FinalizeCreatorTokenSaleFixture {
         let actual_result =
             Content::finalize_creator_token_sale(origin, self.actor.clone(), self.channel_id);
 
-        let council_budget_post = <Test as Trait>::CouncilBudgetManager::get_budget();
+        let council_budget_post = <Test as Config>::CouncilBudgetManager::get_budget();
 
         if expected_result.is_ok() {
             assert_ok!(actual_result);
@@ -2843,7 +2845,7 @@ impl UpdateChannelTransferStatusFixture {
             assert_eq!(new_channel.transfer_status, self.transfer_status.clone());
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::UpdateChannelTransferStatus(
+                MetaEvent::Content(RawEvent::UpdateChannelTransferStatus(
                     self.channel_id,
                     self.actor.clone(),
                     self.transfer_status.clone()
@@ -2933,7 +2935,7 @@ impl AcceptChannelTransferFixture {
             assert_eq!(new_channel.collaborators, self.params.new_collaborators);
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::ChannelTransferAccepted(
+                MetaEvent::Content(RawEvent::ChannelTransferAccepted(
                     self.channel_id,
                     self.params.clone()
                 ))
@@ -2983,7 +2985,7 @@ impl ClaimCouncilRewardFixture {
         if actual_result.is_ok() {
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::CouncilRewardClaimed(
+                MetaEvent::Content(RawEvent::CouncilRewardClaimed(
                     self.channel_id,
                     self.expected_reward
                 ))
@@ -3009,6 +3011,16 @@ impl IssueNftFixture {
         }
     }
 
+    pub fn with_non_channel_owner(self, owner: MemberId) -> Self {
+        let new_params = NftIssuanceParameters::<Test> {
+            init_transactional_status: self.params.init_transactional_status.clone(),
+            nft_metadata: self.params.nft_metadata.clone(),
+            non_channel_owner: Some(owner),
+            royalty: self.params.royalty.clone(),
+        };
+        self.with_params(new_params)
+    }
+
     pub fn with_sender(self, sender: AccountId) -> Self {
         Self { sender, ..self }
     }
@@ -3017,12 +3029,34 @@ impl IssueNftFixture {
         Self { actor, ..self }
     }
 
+    pub fn with_init_status(
+        self,
+        init_transactional_status: InitTransactionalStatus<Test>,
+    ) -> Self {
+        let new_params = NftIssuanceParameters::<Test> {
+            init_transactional_status,
+            nft_metadata: self.params.nft_metadata.clone(),
+            non_channel_owner: self.params.non_channel_owner.clone(),
+            royalty: self.params.royalty.clone(),
+        };
+        self.with_params(new_params)
+    }
+
+    pub fn with_royalty(self, royalty_pct: Perbill) -> Self {
+        let new_params = NftIssuanceParameters::<Test> {
+            init_transactional_status: self.params.init_transactional_status.clone(),
+            nft_metadata: self.params.nft_metadata.clone(),
+            non_channel_owner: self.params.non_channel_owner.clone(),
+            royalty: Some(royalty_pct),
+        };
+        self.with_params(new_params)
+    }
+
     #[allow(dead_code)]
     pub fn with_video_id(self, video_id: VideoId) -> Self {
         Self { video_id, ..self }
     }
 
-    #[allow(dead_code)]
     pub fn with_params(self, params: NftIssuanceParameters<Test>) -> Self {
         Self { params, ..self }
     }
@@ -3077,11 +3111,11 @@ impl IssueNftFixture {
             assert_eq!(nft_status.creator_royalty, self.params.royalty);
             assert_eq!(
                 nft_status.open_auctions_nonce,
-                <Test as Trait>::OpenAuctionId::zero()
+                <Test as Config>::OpenAuctionId::zero()
             );
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::NftIssued(
+                MetaEvent::Content(RawEvent::NftIssued(
                     self.actor.clone(),
                     self.video_id,
                     self.params.clone()
@@ -3169,7 +3203,7 @@ impl StartOpenAuctionFixture {
             );
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::OpenAuctionStarted(
+                MetaEvent::Content(RawEvent::OpenAuctionStarted(
                     self.actor.clone(),
                     self.video_id,
                     self.params.clone(),
@@ -3255,7 +3289,7 @@ impl StartEnglishAuctionFixture {
             );
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::EnglishAuctionStarted(
+                MetaEvent::Content(RawEvent::EnglishAuctionStarted(
                     self.actor.clone(),
                     self.video_id,
                     self.params.clone(),
@@ -3340,7 +3374,7 @@ impl OfferNftFixture {
             );
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::OfferStarted(
+                MetaEvent::Content(RawEvent::OfferStarted(
                     self.video_id,
                     self.actor.clone(),
                     self.to,
@@ -3440,7 +3474,7 @@ impl MakeOpenAuctionBidFixture {
                         assert_eq!(bid_post.auction_id, nft_status_pre.open_auctions_nonce);
                         assert_eq!(
                             System::events().last().unwrap().event,
-                            MetaEvent::content(RawEvent::AuctionBidMade(
+                            MetaEvent::Content(RawEvent::AuctionBidMade(
                                 self.member_id,
                                 self.video_id,
                                 self.bid,
@@ -3458,7 +3492,7 @@ impl MakeOpenAuctionBidFixture {
                         );
                         assert_eq!(
                             System::events().last().unwrap().event,
-                            MetaEvent::content(RawEvent::BidMadeCompletingAuction(
+                            MetaEvent::Content(RawEvent::BidMadeCompletingAuction(
                                 self.member_id,
                                 self.video_id,
                                 None
@@ -3558,7 +3592,7 @@ impl PickOpenAuctionWinnerFixture {
             );
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::OpenAuctionBidAccepted(
+                MetaEvent::Content(RawEvent::OpenAuctionBidAccepted(
                     self.actor.clone(),
                     self.video_id,
                     self.winner_id,
@@ -3619,7 +3653,7 @@ impl NftOwnerRemarkFixture {
         if actual_result.is_ok() {
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::NftOwnerRemarked(
+                MetaEvent::Content(RawEvent::NftOwnerRemarked(
                     self.actor.clone(),
                     self.video_id,
                     self.msg.clone(),
@@ -3674,7 +3708,7 @@ impl DestroyNftFixture {
             assert!(video_post.nft_status.is_none());
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::NftDestroyed(self.actor.clone(), self.video_id))
+                MetaEvent::Content(RawEvent::NftDestroyed(self.actor.clone(), self.video_id))
             );
         } else {
             assert_eq!(video_post, video_pre);
@@ -3730,7 +3764,7 @@ impl ChannelAgentRemarkFixture {
         if actual_result.is_ok() {
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::ChannelAgentRemarked(
+                MetaEvent::Content(RawEvent::ChannelAgentRemarked(
                     self.actor.clone(),
                     self.channel_id,
                     self.msg.clone(),
@@ -3882,7 +3916,7 @@ impl SellNftFixture {
             );
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::NftSellOrderMade(
+                MetaEvent::Content(RawEvent::NftSellOrderMade(
                     self.video_id,
                     self.actor.clone(),
                     self.price
@@ -3962,7 +3996,7 @@ impl CancelAuctionFixture {
             );
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::AuctionCanceled(self.actor.clone(), self.video_id,))
+                MetaEvent::Content(RawEvent::AuctionCanceled(self.actor.clone(), self.video_id,))
             );
         } else {
             assert_eq!(video_post, video_pre);
@@ -4025,7 +4059,7 @@ impl CancelOfferFixture {
             );
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::OfferCanceled(self.video_id, self.actor.clone()))
+                MetaEvent::Content(RawEvent::OfferCanceled(self.video_id, self.actor.clone()))
             );
         } else {
             assert_eq!(video_post, video_pre);
@@ -4088,7 +4122,7 @@ impl CancelBuyNowFixture {
             );
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::BuyNowCanceled(self.video_id, self.actor.clone()))
+                MetaEvent::Content(RawEvent::BuyNowCanceled(self.video_id, self.actor.clone()))
             );
         } else {
             assert_eq!(video_post, video_pre);
@@ -4154,7 +4188,7 @@ impl UpdateBuyNowPriceFixture {
             );
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::BuyNowPriceUpdated(
+                MetaEvent::Content(RawEvent::BuyNowPriceUpdated(
                     self.video_id,
                     self.actor.clone(),
                     self.price
@@ -4379,7 +4413,7 @@ impl SuccessfulChannelCollaboratorsManagementFlow {
 // helper functions
 pub fn assert_group_has_permissions_for_actions(
     group: &CuratorGroup<Test>,
-    privilege_level: <Test as Trait>::ChannelPrivilegeLevel,
+    privilege_level: <Test as Config>::ChannelPrivilegeLevel,
     allowed_actions: &Vec<ContentModerationAction>,
 ) {
     if !allowed_actions.is_empty() {
@@ -4822,7 +4856,7 @@ pub fn channel_reward_account_balance(channel_id: ChannelId) -> u64 {
 pub fn make_channel_account_existential_deposit(channel_id: ChannelId) {
     increase_account_balance_helper(
         ContentTreasury::<Test>::account_for_channel(channel_id),
-        <Test as balances::Trait>::ExistentialDeposit::get().into(),
+        <Test as balances::Config>::ExistentialDeposit::get().into(),
     );
 }
 
@@ -4830,7 +4864,7 @@ pub fn make_channel_account_existential_deposit(channel_id: ChannelId) {
 pub fn make_storage_module_account_existential_deposit() {
     increase_account_balance_helper(
         StorageTreasury::<Test>::module_account_id(),
-        <Test as balances::Trait>::ExistentialDeposit::get().into(),
+        <Test as balances::Config>::ExistentialDeposit::get().into(),
     );
 }
 
@@ -4838,7 +4872,7 @@ pub fn make_storage_module_account_existential_deposit() {
 pub fn make_content_module_account_existential_deposit() {
     increase_account_balance_helper(
         ContentTreasury::<Test>::module_account_id(),
-        <Test as balances::Trait>::ExistentialDeposit::get().into(),
+        <Test as balances::Config>::ExistentialDeposit::get().into(),
     );
 }
 
@@ -4996,7 +5030,7 @@ impl ContentTest {
         if self.claimable_reward {
             let payments = create_some_pull_payments_helper();
             update_commit_value_with_payments_helper(&payments);
-            <Test as Trait>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
+            <Test as Config>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
         }
 
         // Set channel collaborators (optionally)
@@ -5377,7 +5411,7 @@ impl UpdateGlobalNftLimitFixture {
 
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::GlobalNftLimitUpdated(self.period, self.limit))
+                MetaEvent::Content(RawEvent::GlobalNftLimitUpdated(self.period, self.limit))
             );
         } else {
             assert_eq!(old_limit, new_limit);
@@ -5435,7 +5469,7 @@ impl UpdateChannelNftLimitFixture {
 
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::ChannelNftLimitUpdated(
+                MetaEvent::Content(RawEvent::ChannelNftLimitUpdated(
                     self.actor,
                     self.period,
                     self.channel_id,

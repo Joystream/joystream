@@ -24,11 +24,6 @@ fn offer_nft() {
             NftIssuanceParameters::<Test>::default(),
         ));
 
-        // Runtime tested state before call
-
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
-
         // Offer nft
         assert_ok!(Content::offer_nft(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
@@ -53,15 +48,12 @@ fn offer_nft() {
         ));
 
         // Last event checked
-        assert_event(
-            MetaEvent::content(RawEvent::OfferStarted(
-                video_id,
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-                SECOND_MEMBER_ID,
-                None,
-            )),
-            number_of_events_before_call + 1,
-        );
+        last_event_eq!(RawEvent::OfferStarted(
+            video_id,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            SECOND_MEMBER_ID,
+            None,
+        ));
     })
 }
 

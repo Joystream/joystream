@@ -4330,14 +4330,19 @@ name = "pallet-bags-list"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate.git?rev=6cbe1772bf258793fa9845daa8f43ea0cadee596#6cbe1772bf258793fa9845daa8f43ea0cadee596"
 dependencies = [
+ "frame-benchmarking",
  "frame-election-provider-support",
  "frame-support",
  "frame-system",
  "log",
+ "pallet-balances",
  "parity-scale-codec",
  "scale-info",
+ "sp-core",
+ "sp-io",
  "sp-runtime",
  "sp-std",
+ "sp-tracing",
 ]
 
 [[package]]
@@ -4673,8 +4678,11 @@ name = "pallet-proposals-codex"
 version = "5.0.0"
 dependencies = [
  "frame-benchmarking",
+ "frame-election-provider-support",
  "frame-support",
  "frame-system",
+ "pallet-authorship",
+ "pallet-bags-list",
  "pallet-balances",
  "pallet-blog",
  "pallet-common",
@@ -4685,6 +4693,7 @@ dependencies = [
  "pallet-proposals-discussion",
  "pallet-proposals-engine",
  "pallet-referendum",
+ "pallet-session",
  "pallet-staking",
  "pallet-staking-handler",
  "pallet-staking-reward-curve",
@@ -4696,6 +4705,7 @@ dependencies = [
  "sp-arithmetic",
  "sp-core",
  "sp-io",
+ "sp-npos-elections",
  "sp-runtime",
  "sp-staking",
  "sp-std",

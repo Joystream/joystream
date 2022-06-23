@@ -30,7 +30,6 @@ default = ['std']
 std = [
 	'sp-std/std',
 	'sp-io/std',
-	'sp-storage/std',
 	'sp-runtime/std',
 	'frame-support/std',
 	'frame-system/std',

@@ -51,7 +51,7 @@ fn start_open_auction() {
         // Last event checked
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::OpenAuctionStarted(
+            MetaEvent::Content(RawEvent::OpenAuctionStarted(
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 video_id,
                 auction_params,

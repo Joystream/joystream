@@ -51,7 +51,7 @@ fn funded_account<T: Config<I>, I: Instance>(name: &'static str, id: u32) -> T::
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
-struct Vote<T: Trait<I>, I: Instance> {
+struct Vote<T: Config<I>, I: Instance> {
     pub account_id: T::AccountId,
     pub hash: T::Hash,
     pub salt: Vec<u8>,
@@ -60,7 +60,7 @@ struct Vote<T: Trait<I>, I: Instance> {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
-struct MultipleVotes<T: Trait<I>, I: Instance> {
+struct MultipleVotes<T: Config<I>, I: Instance> {
     pub votes: Vec<Vote<T, I>>,
     pub intermediate_winners: Vec<OptionResult<T::MemberId, T::VotePower>>,
 }
@@ -277,7 +277,7 @@ fn member_funded_account<T: Config<I> + membership::Config, I: Instance>(
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
-struct MultipleVotesWithExtraVote<T: Trait<I>, I: Instance> {
+struct MultipleVotesWithExtraVote<T: Config<I>, I: Instance> {
     pub intermediate_winners: Vec<OptionResult<T::MemberId, T::VotePower>>,
     pub account_id: T::AccountId,
     pub member_id: T::MemberId,

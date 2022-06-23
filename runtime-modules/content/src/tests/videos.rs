@@ -922,7 +922,7 @@ fn unsuccessful_video_update_with_max_object_size_limits_exceeded() {
             .with_assets_to_upload(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: vec![DataObjectCreationParameters {
-                    size: <Test as storage::Trait>::MaxDataObjectSize::get() + 1,
+                    size: <Test as storage::Config>::MaxDataObjectSize::get() + 1,
                     ipfs_content_id: vec![1u8],
                 }],
             })

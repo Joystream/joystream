@@ -2,62 +2,113 @@
 
 pub use frame_support::traits::LockIdentifier;
 use frame_support::weights::Weight;
-use frame_support::{ensure, impl_outer_event, impl_outer_origin, parameter_types};
+use frame_support::{
+    ensure, parameter_types,
+    traits::{ConstU16, ConstU32, ConstU64},
+    PalletId,
+};
 use frame_system::ensure_signed;
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    DispatchError, DispatchResult, ModuleId, Perbill,
+    DispatchError, DispatchResult, Perbill,
 };
-use sp_std::cell::RefCell;
+use sp_std::{
+    cell::RefCell,
+    convert::{TryFrom, TryInto},
+};
 use staking_handler::LockComparator;
-
-// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Test;
-
-impl_outer_origin! {
-    pub enum Origin for Test {}
-}
-
-mod storage {
-    pub use crate::Event;
-}
-
-mod membership_mod {
-    pub use membership::Event;
-}
-
-impl_outer_event! {
-    pub enum TestEvent for Test {
-        balances<T>,
-        storage<T>,
-        frame_system<T>,
-        membership_mod<T>,
-        working_group Instance2 <T>,
-        working_group Instance9 <T>,
-    }
-}
 
 parameter_types! {
     pub const ExistentialDeposit: u32 = 1;
+}
+parameter_types! {
+    pub const BlockHashCount: u64 = 250;
+    pub const MaximumBlockWeight: u32 = 1024;
+    pub const MaximumBlockLength: u32 = 2 * 1024;
+    pub const AvailableBlockRatio: Perbill = Perbill::one();
+    pub const MinimumPeriod: u64 = 5;
+}
+
+// The storage working group instance alias.
+pub type StorageWorkingGroupInstance = working_group::Instance2;
+// The distribution working group instance alias.
+pub type DistributionWorkingGroupInstance = working_group::Instance3;
+
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+type Block = frame_system::mocking::MockBlock<Test>;
+
+frame_support::construct_runtime!(
+    pub enum Test where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system,
+        Balances: balances,
+        CollectiveFlip: randomness_collective_flip,
+        Timestamp: pallet_timestamp,
+        Membership: membership::{Pallet, Call, Storage, Config<T>, Event<T>},
+        Storage: crate::{Pallet, Call, Storage, Config, Event<T>},
+        // Need to be added for benchmarks to work
+        Wg2: working_group::<Instance2>::{Pallet, Call, Storage, Event<T, I>},
+        Wg3: working_group::<Instance3>::{Pallet, Call, Storage, Event<T, I>},
+    }
+);
+
+impl frame_system::Config for Test {
+    type BaseCallFilter = frame_support::traits::Everything;
+    type BlockWeights = ();
+    type BlockLength = ();
+    type DbWeight = ();
+    type Origin = Origin;
+    type Call = Call;
+    type Index = u64;
+    type BlockNumber = u64;
+    type Hash = H256;
+    type Hashing = BlakeTwo256;
+    type AccountId = u64;
+    type Lookup = IdentityLookup<Self::AccountId>;
+    type Header = Header;
+    type Event = Event;
+    type BlockHashCount = ConstU64<250>;
+    type Version = ();
+    type PalletInfo = PalletInfo;
+    type AccountData = balances::AccountData<u64>;
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
+    type SystemWeightInfo = ();
+    type SS58Prefix = ConstU16<42>;
+    type OnSetCode = ();
+    type MaxConsumers = frame_support::traits::ConstU32<16>;
+}
+
+impl pallet_timestamp::Config for Test {
+    type Moment = u64;
+    type OnTimestampSet = ();
+    type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
 }
 
 impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = TestEvent;
+    type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
-    type WeightInfo = ();
     type MaxLocks = ();
+    type MaxReserves = ConstU32<2>;
+    type ReserveIdentifier = [u8; 8];
+    type WeightInfo = ();
 }
+
+impl randomness_collective_flip::Config for Test {}
 
 parameter_types! {
     pub const MaxDistributionBucketFamilyNumber: u64 = 80;
     pub const DataObjectStateBloatBond: u64 = 10;
-    pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
+    pub const StorageModuleId: PalletId = PalletId(*b"mstorage"); // module storage
     pub const BlacklistSizeLimit: u64 = 200;
     pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 1;
     pub const StorageBucketsPerBagValueConstraint: crate::StorageBucketsPerBagValueConstraint =
@@ -94,7 +145,7 @@ pub const DEFAULT_STORAGE_BUCKETS_NUMBER: u64 = 3;
 pub const ONE_MB: u64 = 1_048_576;
 
 impl crate::Config for Test {
-    type Event = TestEvent;
+    type Event = Event;
     type DataObjectId = u64;
     type StorageBucketId = u64;
     type DistributionBucketIndex = u64;
@@ -132,65 +183,21 @@ impl common::MembershipTypes for Test {
     type ActorId = u64;
 }
 
-impl pallet_timestamp::Config for Test {
-    type Moment = u64;
-    type OnTimestampSet = ();
-    type MinimumPeriod = MinimumPeriod;
-    type WeightInfo = ();
-}
-
-parameter_types! {
-    pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
-    pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
-    pub const MinimumPeriod: u64 = 5;
-}
-
-impl frame_system::Config for Test {
-    type BaseCallFilter = ();
-    type Origin = Origin;
-    type Call = ();
-    type Index = u64;
-    type BlockNumber = u64;
-    type Hash = H256;
-    type Hashing = BlakeTwo256;
-    type AccountId = u64;
-    type Lookup = IdentityLookup<Self::AccountId>;
-    type Header = Header;
-    type Event = TestEvent;
-    type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
-    type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
-    type Version = ();
-    type AccountData = balances::AccountData<u64>;
-    type OnNewAccount = ();
-    type OnKilledAccount = ();
-    type PalletInfo = ();
-    type SystemWeightInfo = ();
-}
-
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const LockId: [u8; 8] = [9; 8];
     pub const LockId2: [u8; 8] = [10; 8];
+    pub const LockId3: [u8; 8] = [11; 8];
     pub const MinimumApplicationStake: u32 = 50;
     pub const LeaderOpeningStake: u32 = 20;
 }
 
-// The storage working group instance alias.
-pub type StorageWorkingGroupInstance = working_group::Instance2;
-
-impl working_group::Trait<StorageWorkingGroupInstance> for Test {
-    type Event = TestEvent;
+// implemented for benchmarks features to work
+impl working_group::Config<StorageWorkingGroupInstance> for Test {
+    type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingAccountValidator = membership::Module<Test>;
-    type StakingHandler = staking_handler::StakingManager<Self, LockId>;
+    type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
@@ -198,14 +205,13 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
-// The distribution working group instance alias.
-pub type DistributionWorkingGroupInstance = working_group::Instance9;
 
-impl working_group::Trait<DistributionWorkingGroupInstance> for Test {
-    type Event = TestEvent;
+// implemented for benchmarks only
+impl working_group::Config<DistributionWorkingGroupInstance> for Test {
+    type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingAccountValidator = membership::Module<Test>;
-    type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
+    type StakingHandler = staking_handler::StakingManager<Self, LockId3>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
@@ -238,9 +244,8 @@ thread_local! {
     pub static WG_BUDGET: RefCell<u64> = RefCell::new(WORKING_GROUP_BUDGET);
 }
 
-pub struct Wg {}
-
-impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
+pub struct MembershipWG;
+impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for MembershipWG {
     fn get_budget() -> u64 {
         WG_BUDGET.with(|val| *val.borrow())
     }
@@ -256,15 +261,15 @@ impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
     }
 }
 
-impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
+impl common::working_group::WorkingGroupAuthenticator<Test> for MembershipWG {
     fn ensure_worker_origin(
-        _origin: <Test as frame_system::Trait>::Origin,
+        _origin: <Test as frame_system::Config>::Origin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!()
     }
 
-    fn ensure_leader_origin(_origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(_origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
         unimplemented!()
     }
 
@@ -278,12 +283,12 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
         unimplemented!()
     }
 
-    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Config>::AccountId) -> bool {
         true
     }
 
     fn is_worker_account_id(
-        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _account_id: &<Test as frame_system::Config>::AccountId,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
         true
@@ -300,7 +305,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     }
 }
 
-impl LockComparator<<Test as balances::Trait>::Balance> for Test {
+impl LockComparator<<Test as balances::Config>::Balance> for Test {
     fn are_locks_conflicting(
         _new_lock: &LockIdentifier,
         _existing_locks: &[LockIdentifier],
@@ -413,11 +418,11 @@ impl working_group::WeightInfo for Weights {
     }
 }
 
-impl membership::Trait for Test {
-    type Event = TestEvent;
+impl membership::Config for Test {
+    type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
-    type WorkingGroup = Wg;
+    type WorkingGroup = MembershipWG;
     type WeightInfo = Weights;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InviteMemberLockId>;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
@@ -516,11 +521,6 @@ pub fn build_test_externalities_with_genesis() -> sp_io::TestExternalities {
     t.into()
 }
 
-pub type Storage = crate::Module<Test>;
-pub type System = frame_system::Module<Test>;
-pub type Balances = balances::Module<Test>;
-pub type CollectiveFlip = randomness_collective_flip::Module<Test>;
-
 // working group integration
 pub struct StorageWG;
 pub struct DistributionWG;
@@ -563,7 +563,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
         unimplemented!()
     }
 
-    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Config>::AccountId) -> bool {
         unimplemented!()
     }
 
@@ -636,7 +636,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
         unimplemented!()
     }
 
-    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Config>::AccountId) -> bool {
         unimplemented!()
     }
 

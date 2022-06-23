@@ -4,14 +4,15 @@ use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks_instance, Zero};
 use frame_support::traits::OnInitialize;
 use frame_system::EventRecord;
-use frame_system::Module as System;
+use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use sp_runtime::traits::Bounded;
 use sp_std::prelude::*;
+use sp_std::vec;
 
 use crate::types::StakeParameters;
 use crate::Module as WorkingGroup;
-use balances::Module as Balances;
+use balances::Pallet as Balances;
 use membership::Module as Membership;
 
 const SEED: u32 = 0;
@@ -302,10 +303,10 @@ benchmarks_instance! {
         ).unwrap();
 
         for i in 1..successful_application_ids.len() {
-            let worker = WorkerId::<T>::from(i.try_into().unwrap());
-            assert!(WorkerById::<T, I>::contains_key(worker), "Not all workers added");
+            let worker_id = WorkerId::<T>::from(i.try_into().unwrap());
+            let worker = WorkingGroup::<T, _>::worker_by_id(worker_id).expect("Not all workers added");
             assert_eq!(
-                WorkingGroup::<T, _>::worker_by_id(worker).started_leaving_at,
+                worker.started_leaving_at,
                 Some(System::<T>::block_number()),
                 "Worker hasn't started leaving"
             );
@@ -584,7 +585,7 @@ benchmarks_instance! {
 
         let (opening_id, successful_application_ids, _) =
             add_opening_and_apply_with_multiple_ids::<T, I>(
-                &(1..=i).collect::<Vec<_>>(),
+                &(1..i).collect::<Vec<_>>(),
                 &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
                 &OpeningType::Regular
             );
@@ -621,7 +622,7 @@ benchmarks_instance! {
     }: _ (RawOrigin::Signed(lead_id), lead_worker_id, new_account_id.clone())
     verify {
         assert_eq!(
-            WorkingGroup::<T, I>::worker_by_id(lead_worker_id).role_account_id,
+            WorkingGroup::<T, I>::worker_by_id(lead_worker_id).expect("Worker Must Exist").role_account_id,
             new_account_id,
             "Role account notupdated"
         );
@@ -822,7 +823,7 @@ benchmarks_instance! {
     }: _ (RawOrigin::Signed(lead_id.clone()), worker_id, new_reward)
     verify {
         assert_eq!(
-            WorkingGroup::<T, I>::worker_by_id(worker_id).reward_per_block,
+            WorkingGroup::<T, I>::worker_by_id(worker_id).expect("Worker Must Exist").reward_per_block,
             new_reward,
             "Reward not updated"
         );
@@ -862,7 +863,7 @@ benchmarks_instance! {
     }: _ (RawOrigin::Signed(caller_id), worker_id, new_id.clone())
     verify {
         assert_eq!(
-            WorkingGroup::<T, I>::worker_by_id(worker_id).reward_account_id,
+            WorkingGroup::<T, I>::worker_by_id(worker_id).expect("Worker Must Exist").reward_account_id,
             new_id,
             "Reward account not updated"
         );
@@ -928,7 +929,7 @@ benchmarks_instance! {
         )
     verify {
         assert_eq!(
-            WorkingGroup::<T, _>::worker_by_id(caller_worker_id).started_leaving_at,
+            WorkingGroup::<T, _>::worker_by_id(caller_worker_id).expect("Worker Must Exist").started_leaving_at,
             Some(System::<T>::block_number()),
             "Worker hasn't started leaving"
         );
@@ -969,133 +970,136 @@ mod tests {
     #[test]
     fn test_leave_role() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_leave_role::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_leave_role());
         });
     }
 
     #[test]
     fn test_add_opening() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_add_opening::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_add_opening());
         });
     }
 
     #[test]
     fn test_set_budget() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_set_budget::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_set_budget());
         });
     }
 
     #[test]
     fn test_update_reward_account() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_reward_account::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_update_reward_account());
         });
     }
 
     #[test]
     fn test_set_status_text() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_set_status_text::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_set_status_text());
         });
     }
 
     #[test]
     fn test_update_reward_amount() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_reward_amount::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_update_reward_amount());
         });
     }
 
     #[test]
     fn test_spend_from_budget() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_spend_from_budget::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_spend_from_budget());
         });
     }
 
     #[test]
     fn test_decrease_stake() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_decrease_stake::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_decrease_stake());
         });
     }
 
     #[test]
     fn test_increase_stake() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_increase_stake::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_increase_stake());
         });
     }
 
     #[test]
     fn test_terminate_role_lead() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_terminate_role_lead::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_terminate_role_lead());
         });
     }
 
     #[test]
     fn test_terminate_role_worker() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_terminate_role_worker::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_terminate_role_worker());
         });
     }
 
     #[test]
     fn test_slash_stake() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_slash_stake::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_slash_stake());
         });
     }
 
     #[test]
     fn test_withdraw_application() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_withdraw_application::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_withdraw_application());
         });
     }
 
     #[test]
     fn test_cancel_opening() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_cancel_opening::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_cancel_opening());
         });
     }
 
     #[test]
     fn test_update_role_account() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_update_role_account::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_update_role_account());
         });
     }
 
     #[test]
     fn test_fill_opening_worker() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_fill_opening_worker::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_fill_opening_worker());
         });
     }
 
     #[test]
     fn test_fill_opening_lead() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_fill_opening_lead::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_fill_opening_lead());
         });
     }
 
     #[test]
     fn test_apply_on_opening() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_apply_on_opening::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_apply_on_opening());
         });
     }
 
     #[test]
     fn test_on_inintialize_rewarding_without_missing_reward() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_on_initialize_rewarding_without_missing_reward::<Test>());
+            assert_ok!(
+                WorkingGroup::<Test>::test_benchmark_on_initialize_rewarding_without_missing_reward(
+                )
+            );
         });
     }
 
@@ -1103,7 +1107,7 @@ mod tests {
     fn test_on_inintialize_rewarding_with_missing_reward_cant_pay() {
         build_test_externalities().execute_with(|| {
             assert_ok!(
-                test_benchmark_on_initialize_rewarding_with_missing_reward_cant_pay::<Test>()
+                WorkingGroup::<Test>::test_benchmark_on_initialize_rewarding_with_missing_reward_cant_pay()
             );
         });
     }
@@ -1111,35 +1115,37 @@ mod tests {
     #[test]
     fn test_on_inintialize_rewarding_with_missing_reward() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_on_initialize_rewarding_with_missing_reward::<Test>());
+            assert_ok!(
+                WorkingGroup::<Test>::test_benchmark_on_initialize_rewarding_with_missing_reward()
+            );
         });
     }
 
     #[test]
     fn test_on_inintialize_leaving() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_on_initialize_leaving::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_on_initialize_leaving());
         });
     }
 
     #[test]
     fn test_fund_working_group_budget() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_fund_working_group_budget::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_fund_working_group_budget());
         });
     }
 
     #[test]
     fn test_lead_remark() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_lead_remark::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_lead_remark());
         });
     }
 
     #[test]
     fn test_worker_remark() {
         build_test_externalities().execute_with(|| {
-            assert_ok!(test_benchmark_worker_remark::<Test>());
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_worker_remark());
         });
     }
 }

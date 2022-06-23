@@ -12,13 +12,11 @@ use sp_std::convert::{TryFrom, TryInto};
 use sp_std::vec::Vec;
 
 use crate::{
-    AccountId, AuthorityDiscoveryId, Balance, BlockNumber, EpochDuration, GrandpaAuthorityList,
-    GrandpaId, Hash, Index, RuntimeVersion, Signature, BABE_GENESIS_EPOCH_CONFIG, VERSION,
-};
-use crate::{
-    AllPalletsWithSystem, AuthorityDiscovery, Babe, Balances, Call, Grandpa, Historical,
-    InherentDataExt, ProposalsEngine, RandomnessCollectiveFlip, Runtime, SessionKeys, System,
-    TransactionPayment,
+    AccountId, AllPalletsWithSystem, AuthorityDiscovery, AuthorityDiscoveryId, Babe, Balance,
+    Balances, BlockNumber, Call, EpochDuration, Grandpa, GrandpaAuthorityList, GrandpaId, Hash,
+    Historical, Index, InherentDataExt, MaxNominations, ProposalsEngine, RandomnessCollectiveFlip,
+    Runtime, RuntimeVersion, SessionKeys, Signature, System, TransactionPayment,
+    BABE_GENESIS_EPOCH_CONFIG, VERSION,
 };
 
 use frame_support::weights::Weight;
@@ -480,6 +478,7 @@ mod tests {
             .fold(0, |acc, x| acc.checked_add(*x).unwrap());
     }
 
+    #[ignore]
     #[test]
     fn call_size() {
         let size = core::mem::size_of::<Call>();

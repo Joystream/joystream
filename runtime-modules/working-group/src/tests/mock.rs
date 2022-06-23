@@ -1,5 +1,5 @@
 use frame_support::parameter_types;
-use frame_support::traits::LockIdentifier;
+use frame_support::traits::{ConstU16, ConstU32, ConstU64, LockIdentifier};
 use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_support::weights::Weight;
 use frame_system;
@@ -9,6 +9,7 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
 };
 use staking_handler::LockComparator;
+use std::convert::{TryFrom, TryInto};
 
 use crate as working_group;
 use crate::{Config, Module};
@@ -35,18 +36,19 @@ frame_support::construct_runtime!(
         NodeBlock = Block,
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
-        System: frame_system::{Module, Call, Storage, Event<T>},
-        Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
-        Membership: membership::{Module, Call, Storage, Event<T>},
-        Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
-        TestWorkingGroup: working_group::{Module, Call, Storage, Event<T>},
+        System: frame_system,
+        Balances: balances,
+        Membership: membership::{Pallet, Call, Storage, Event<T>},
+        Timestamp: pallet_timestamp,
+        TestWorkingGroup: working_group::{Pallet, Call, Storage, Event<T>},
     }
 );
 
 impl frame_system::Config for Test {
-    type BaseCallFilter = ();
+    type BaseCallFilter = frame_support::traits::Everything;
     type BlockWeights = ();
     type BlockLength = ();
+    type DbWeight = ();
     type Origin = Origin;
     type Call = Call;
     type Index = u64;
@@ -57,15 +59,16 @@ impl frame_system::Config for Test {
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
     type Event = Event;
-    type BlockHashCount = BlockHashCount;
-    type DbWeight = ();
+    type BlockHashCount = ConstU64<250>;
     type Version = ();
+    type PalletInfo = PalletInfo;
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
-    type PalletInfo = PalletInfo;
     type SystemWeightInfo = ();
-    type SS58Prefix = ();
+    type SS58Prefix = ConstU16<42>;
+    type OnSetCode = ();
+    type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
 impl pallet_timestamp::Config for Test {
@@ -81,8 +84,10 @@ impl balances::Config for Test {
     type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
-    type WeightInfo = ();
     type MaxLocks = ();
+    type MaxReserves = ConstU32<2>;
+    type ReserveIdentifier = [u8; 8];
+    type WeightInfo = ();
 }
 
 impl common::membership::MembershipTypes for Test {
@@ -297,8 +302,6 @@ impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
         unimplemented!()
     }
 }
-
-pub type TestWorkingGroup = Module<Test, DefaultInstance>;
 
 pub const DEFAULT_WORKER_ACCOUNT_ID: u64 = 2;
 pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u64 = 222;

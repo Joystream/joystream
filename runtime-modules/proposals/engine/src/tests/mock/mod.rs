@@ -8,9 +8,13 @@
 
 use frame_support::dispatch::DispatchError;
 use frame_support::traits::LockIdentifier;
-use frame_support::{parameter_types, weights::Weight};
+use frame_support::{
+    parameter_types,
+    traits::{ConstU16, ConstU32, ConstU64, EnsureOneOf},
+    weights::Weight,
+};
 pub use frame_system;
-use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned};
+use frame_system::{EnsureRoot, EnsureSigned};
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
@@ -19,10 +23,10 @@ use sp_runtime::{
 };
 
 pub(crate) mod proposals;
-
 use crate as engine;
 use crate::ProposalObserver;
 pub use proposals::*;
+use sp_std::convert::{TryFrom, TryInto};
 use staking_handler::{LockComparator, StakingManager};
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -34,13 +38,13 @@ frame_support::construct_runtime!(
         NodeBlock = Block,
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
-        System: frame_system::{Module, Call, Storage, Event<T>},
-        Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
-        Membership: membership::{Module, Call, Storage, Event<T>},
-        Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
-        Council: council::{Module, Call, Storage, Event<T>},
-        Referendum: referendum::<Instance1>::{Module, Call, Storage, Event<T>},
-        ProposalsEngine: engine::{Module, Call, Storage, Event<T>},
+        System: frame_system,
+        Balances: balances,
+        Membership: membership::{Pallet, Call, Storage, Event<T>},
+        Timestamp: pallet_timestamp,
+        Council: council::{Pallet, Call, Storage, Event<T>},
+        Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>},
+        ProposalsEngine: engine::{Pallet, Call, Storage, Event<T>},
     }
 );
 
@@ -60,8 +64,7 @@ impl referendum::Config<ReferendumInstance> for Test {
     type MaxSaltLength = MaxSaltLength;
 
     type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
-    type ManagerOrigin =
-        EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
     type VotePower = u64;
 
@@ -137,20 +140,6 @@ impl referendum::WeightInfo for ReferendumWeightInfo {
     fn release_vote_stake() -> Weight {
         0
     }
-}
-
-parameter_types! {
-    pub const ExistentialDeposit: u32 = 10;
-}
-
-impl balances::Config for Test {
-    type Balance = u64;
-    type DustRemoval = ();
-    type Event = Event;
-    type ExistentialDeposit = ExistentialDeposit;
-    type AccountStore = System;
-    type WeightInfo = ();
-    type MaxLocks = ();
 }
 
 impl proposals::Config for Test {}
@@ -420,12 +409,14 @@ impl crate::VotersParameters for () {
 
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
+    pub const ExistentialDeposit: u32 = 10;
 }
 
 impl frame_system::Config for Test {
-    type BaseCallFilter = ();
+    type BaseCallFilter = frame_support::traits::Everything;
     type BlockWeights = ();
     type BlockLength = ();
+    type DbWeight = ();
     type Origin = Origin;
     type Call = Call;
     type Index = u64;
@@ -436,21 +427,34 @@ impl frame_system::Config for Test {
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
     type Event = Event;
-    type BlockHashCount = BlockHashCount;
-    type DbWeight = ();
+    type BlockHashCount = ConstU64<250>;
     type Version = ();
+    type PalletInfo = PalletInfo;
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
-    type PalletInfo = ();
     type SystemWeightInfo = ();
-    type SS58Prefix = ();
+    type SS58Prefix = ConstU16<42>;
+    type OnSetCode = ();
+    type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
 impl pallet_timestamp::Config for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
+}
+
+impl balances::Config for Test {
+    type Balance = u64;
+    type DustRemoval = ();
+    type Event = Event;
+    type ExistentialDeposit = ExistentialDeposit;
+    type AccountStore = System;
+    type MaxLocks = ();
+    type MaxReserves = ConstU32<2>;
+    type ReserveIdentifier = [u8; 8];
     type WeightInfo = ();
 }
 

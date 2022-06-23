@@ -35,6 +35,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
+#![allow(clippy::type_complexity)]
 
 use codec::{Codec, Decode, Encode};
 use common::membership::MemberOriginValidator;
@@ -53,10 +54,10 @@ use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::prelude::*;
 
-mod benchmarking;
+// mod benchmarking;
 mod errors;
-mod mock;
-mod tests;
+// mod mock;
+// mod tests;
 
 // Type for maximum number of posts/replies
 type MaxNumber = u64;
@@ -487,7 +488,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T, I>::edit_post_weight(&new_title, &new_body)]
+        #[weight = Module::<T, I>::edit_post_weight(new_title, new_body)]
         pub fn edit_post(
             origin,
             post_id: PostId,
