@@ -12,7 +12,11 @@ echo 'running clippy (rust linter)'
 # When custom build.rs triggers wasm-build-runner-impl to build we get error:
 # "Rust WASM toolchain not installed, please install it!"
 # So we skip building the WASM binary by setting BUILD_DUMMY_WASM_BINARY=1
-BUILD_DUMMY_WASM_BINARY=1 cargo +nightly-2022-05-11 clippy --release --all -- -D warnings
+# Aggressive linting
+# BUILD_DUMMY_WASM_BINARY=1 cargo +nightly-2022-05-11 clippy --release --all -- -D warnings
+
+# Less aggressive linting
+BUILD_DUMMY_WASM_BINARY=1 cargo +nightly-2022-05-11 clippy --release --all
 
 echo 'running cargo unit tests'
 cargo +nightly-2022-05-11 test --release --all --features "${FEATURES}"

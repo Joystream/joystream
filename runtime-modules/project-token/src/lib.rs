@@ -48,7 +48,6 @@ pub trait Config:
     /// Events
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
-    // TODO: Add frame_support::pallet_prelude::TypeInfo trait
     /// the Balance type used
     type Balance: AtLeast32BitUnsigned
         + FullCodec

@@ -1,4 +1,5 @@
 use super::*;
+use scale_info::TypeInfo;
 use sp_std::collections::btree_map::BTreeMap;
 #[cfg(feature = "std")]
 use strum_macros::EnumIter;
@@ -74,7 +75,6 @@ pub enum ContentModerationAction {
 
 pub type ModerationPermissionsByLevel<T> =
     BTreeMap<<T as Config>::ChannelPrivilegeLevel, BTreeSet<ContentModerationAction>>;
-use scale_info::TypeInfo;
 
 /// A group, that consists of `curators` set
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

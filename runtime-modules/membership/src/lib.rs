@@ -150,7 +150,7 @@ pub(crate) const DEFAULT_MEMBER_INVITES_COUNT: u32 = 5;
 /// Public membership profile alias.
 pub type Membership<T> = MembershipObject<<T as frame_system::Config>::AccountId>;
 
-#[derive(Encode, PartialEq, Decode, Debug, TypeInfo, Clone)]
+#[derive(Encode, Decode, PartialEq, Debug, Clone, TypeInfo)]
 /// Stored information about a registered user.
 pub struct MembershipObject<AccountId: Ord> {
     /// The hash of the handle chosen by member.
@@ -525,7 +525,6 @@ decl_module! {
                 });
             }
 
-            // handle may not have been updated if not unique!
             Self::deposit_event(RawEvent::MemberProfileUpdated(member_id, handle, metadata));
         }
 

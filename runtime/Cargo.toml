@@ -105,6 +105,7 @@ std = [
     # Third-party dependencies
     'serde',
     'codec/std',
+    'scale-info/std',
 
     # Substrate primitives
     'sp-std/std',
