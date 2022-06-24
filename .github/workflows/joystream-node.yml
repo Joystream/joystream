@@ -79,21 +79,21 @@ jobs:
         if: env.GIT_DIFF
       - name: Staging Runtime
         env:
-          RUNTIME_PROFILE: STAGING
+          RUNTIME_PROFILE: "STAGING"
         run: |
           yarn cargo-checks && yarn cargo-build
           ./target/release/joystream-node --version
         if: env.GIT_DIFF
       - name: Playground Runtime
         env:
-          RUNTIME_PROFILE: PLAYGROUND
+          RUNTIME_PROFILE: "PLAYGROUND"
         run: |
           yarn cargo-checks && yarn cargo-build
           ./target/release/joystream-node --version
         if: env.GIT_DIFF
       - name: Testing Runtime
         env:
-          RUNTIME_PROFILE: TESTING
+          RUNTIME_PROFILE: "TESTING"
         run: |
           yarn cargo-checks && yarn cargo-build
           ./target/release/joystream-node --version
