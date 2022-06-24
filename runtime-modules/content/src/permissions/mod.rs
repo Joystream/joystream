@@ -499,7 +499,7 @@ pub fn ensure_authorized_to_update_channel_state_bloat_bond<T: Config>(
     ensure_lead_auth_success::<T>(sender)
 }
 
-pub fn ensure_authorized_to_update_video_state_bloat_bond<T: Trait>(
+pub fn ensure_authorized_to_update_video_state_bloat_bond<T: Config>(
     sender: &T::AccountId,
 ) -> DispatchResult {
     ensure_lead_auth_success::<T>(sender)
