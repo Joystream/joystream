@@ -85,7 +85,7 @@ impl TokenDataBuilder {
             total_supply: Balance::zero(),
             sale: None,
             // reflect TokenData init setup
-            next_sale_id: 1,
+            next_sale_id: 0,
             transfer_policy: TransferPolicy::Permissionless,
             patronage_info: PatronageData::<Balance, BlockNumber> {
                 rate: BlockRate(Perquintill::zero()),
