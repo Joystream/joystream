@@ -130,11 +130,8 @@ impl<MemberId: Default, CuratorGroupId> Default for ChannelOwner<MemberId, Curat
 }
 
 /// A category which channels can belong to.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct ChannelCategory {
-    // No runtime information is currently stored for a Category.
-}
+// No runtime information is currently stored for a Category.
+pub type ChannelCategory = ();
 
 /// Information on the category being created.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

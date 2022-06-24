@@ -15,8 +15,8 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "paths": {
-      "@polkadot/types/augment": ["../../types/augment/augment-types.ts"],
-      "@polkadot/api/augment": ["../../types/augment/augment-api.ts"]
+      "@polkadot/types-augment": ["../../types/augment/augment-types.d.ts"],
+      "@polkadot/api-augment": ["../../types/augment/augment-api.d.ts"]
     }
   },
   "include": ["./src/**/*"]

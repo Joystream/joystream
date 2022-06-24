@@ -147,7 +147,7 @@ decl_storage! {
         map hasher(blake2_128_concat) T::ChannelId => Channel<T>;
 
         pub ChannelCategoryById get(fn channel_category_by_id):
-        map hasher(blake2_128_concat) T::ChannelCategoryId => ChannelCategory;
+        map hasher(blake2_128_concat) T::ChannelCategoryId => ();
 
         pub VideoById get(fn video_by_id): map hasher(blake2_128_concat) T::VideoId => Video<T>;
 
@@ -792,11 +792,9 @@ decl_module! {
 
             let category_id = Self::next_channel_category_id();
             NextChannelCategoryId::<T>::mutate(|id| *id += T::ChannelCategoryId::one());
+            ChannelCategoryById::<T>::insert(category_id, ());
 
-            let category = ChannelCategory {};
-            ChannelCategoryById::<T>::insert(category_id, category.clone());
-
-            Self::deposit_event(RawEvent::ChannelCategoryCreated(category_id, category, params));
+            Self::deposit_event(RawEvent::ChannelCategoryCreated(category_id, params));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -3523,11 +3521,7 @@ decl_event!(
         ChannelRewardClaimedAndWithdrawn(ContentActor, ChannelId, Balance, AccountId),
 
         // Channel Categories
-        ChannelCategoryCreated(
-            ChannelCategoryId,
-            ChannelCategory,
-            ChannelCategoryCreationParameters,
-        ),
+        ChannelCategoryCreated(ChannelCategoryId, ChannelCategoryCreationParameters),
         ChannelCategoryUpdated(
             ContentActor,
             ChannelCategoryId,
