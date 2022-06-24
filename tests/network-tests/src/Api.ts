@@ -683,42 +683,6 @@ export class Api {
     return event.data[2]
   }
 
-  // TODO: use for metaprotocol based video categories
-
-  // async createChannelCategoryAsLead(name: string): Promise<ISubmittableResult> {
-  //   const [, lead] = await this.getLeader('contentWorkingGroup')
-
-  //   const account = lead.role_account_id
-  //   const meta = new ChannelCategoryMetadata({
-  //     name,
-  //   })
-
-  //   return this.sender.signAndSend(
-  //     this.api.tx.content.createChannelCategory(
-  //       { Lead: null },
-  //       { meta: Utils.metadataToBytes(ChannelCategoryMetadata, meta) }
-  //     ),
-  //     account?.toString()
-  //   )
-  // }
-
-  // async createVideoCategoryAsLead(name: string): Promise<ISubmittableResult> {
-  //   const [, lead] = await this.getLeader('contentWorkingGroup')
-
-  //   const account = lead.role_account_id
-  //   const meta = new VideoCategoryMetadata({
-  //     name,
-  //   })
-
-  //   return this.sender.signAndSend(
-  //     this.api.tx.content.createVideoCategory(
-  //       { Lead: null },
-  //       { meta: Utils.metadataToBytes(VideoCategoryMetadata, meta) }
-  //     ),
-  //     account?.toString()
-  //   )
-  // }
-
   async assignWorkerRoleAccount(
     group: WorkingGroupModuleName,
     workerId: WorkerId,

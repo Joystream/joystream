@@ -111,11 +111,6 @@ export default function createFlow({ buckets, dynamicBagPolicy }: InitStorageCon
     const maxStorageLimit = buckets.sort((a, b) => b.storageLimit.cmp(a.storageLimit))[0].storageLimit
     const maxObjectsLimit = Math.max(...buckets.map((b) => b.objectsLimit))
 
-    // Hire operators
-    // const hireWorkersFixture = new HireWorkesFixture(api, totalBucketsNum, WorkingGroups.Distribution)
-    // await new FixtureRunner(hireWorkersFixture).run()
-    // const operatorIds = hireWorkersFixture.getCreatedWorkerIds()
-
     const operatorIds = buckets.map((b) => createType('WorkerId', b.operatorId))
     const operatorKeys = await api.getWorkerRoleAccounts(operatorIds, 'storageWorkingGroup')
 
