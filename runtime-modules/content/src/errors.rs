@@ -336,8 +336,8 @@ decl_error! {
         CannotWithdrawFromChannelWithCreatorTokenIssued,
 
         /// Patronage can only be claimed if channel is owned by a member
-        PatronageCanOnlyBeClaimedForMemberOwnedChannels, 
-               
+        PatronageCanOnlyBeClaimedForMemberOwnedChannels,
+
         /// Invalid extrinsic call: Channel state bloat bond changed.
         ChannelStateBloatBondChanged,
 

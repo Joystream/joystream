@@ -386,6 +386,16 @@ impl CreateVideoFixture {
         Balances::<Test>::usable_balance(&self.sender)
     }
 
+    pub fn call(self) {
+        let origin = Origin::signed(self.sender.clone());
+        assert_ok!(Content::create_video(
+            origin,
+            self.actor.clone(),
+            self.channel_id,
+            self.params.clone(),
+        ));
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
         let balance_pre = self.get_balance();
@@ -2784,7 +2794,7 @@ impl UpdateVideoStateBloatBondFixture {
         if actual_result.is_ok() {
             assert_eq!(
                 System::events().last().unwrap().event,
-                MetaEvent::content(RawEvent::VideoStateBloatBondValueUpdated(
+                MetaEvent::Content(RawEvent::VideoStateBloatBondValueUpdated(
                     self.new_video_state_bloat_bond
                 ))
             );
