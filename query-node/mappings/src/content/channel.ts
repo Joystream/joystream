@@ -4,12 +4,23 @@ eslint-disable @typescript-eslint/naming-convention
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
 import { ChannelMetadata } from '@joystream/metadata-protobuf'
 import { DataObjectId } from '@joystream/types/storage'
-import { Channel, ChannelAssetsDeletedByModeratorEvent, Membership, StorageDataObject } from 'query-node/dist/model'
+import {
+  Channel,
+  ChannelAssetsDeletedByModeratorEvent,
+  ChannelDeletedByModeratorEvent,
+  Membership,
+  StorageDataObject,
+} from 'query-node/dist/model'
 import { In } from 'typeorm'
 import { Content } from '../../generated/types'
 import { deserializeMetadata, genericEventFields, inconsistentState, logger } from '../common'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
-import { convertChannelOwnerToMemberOrCuratorGroup, processChannelMetadata, unsetAssetRelations } from './utils'
+import {
+  convertChannelOwnerToMemberOrCuratorGroup,
+  convertContentActor,
+  processChannelMetadata,
+  unsetAssetRelations,
+} from './utils'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
@@ -124,7 +135,7 @@ export async function content_ChannelAssetsDeletedByModerator({
     ...genericEventFields(event),
 
     assetIds: Array.from(dataObjectIds).map((item) => Number(item)),
-    rationale: Buffer.from(rationale),
+    rationale: rationale.toHuman() as string,
   })
 
   await store.save<ChannelAssetsDeletedByModeratorEvent>(channelAssetsDeletedByModeratorEvent)
@@ -147,7 +158,19 @@ export async function content_ChannelDeleted({ store, event }: EventContext & St
 }
 
 export async function content_ChannelDeletedByModerator({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [, channelId] = new Content.ChannelDeletedByModeratorEvent(event).params
+  const [actor, channelId, rationale] = new Content.ChannelDeletedByModeratorEvent(event).params
 
   await store.remove<Channel>(new Channel({ id: channelId.toString() }))
+
+  // common event processing - second
+
+  const channelDeletedByModeratorEvent = new ChannelDeletedByModeratorEvent({
+    ...genericEventFields(event),
+
+    rationale: rationale.toHuman() as string,
+    actor: await convertContentActor(store, actor),
+    channelId: channelId.toNumber(),
+  })
+
+  await store.save<ChannelDeletedByModeratorEvent>(channelDeletedByModeratorEvent)
 }

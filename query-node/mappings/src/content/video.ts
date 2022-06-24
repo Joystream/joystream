@@ -169,13 +169,24 @@ export async function content_VideoAssetsDeletedByModerator({
   store,
   event,
 }: EventContext & StoreContext): Promise<void> {
-  const [actor, , dataObjectIds, areNftAssets, rationale] = new Content.VideoAssetsDeletedByModeratorEvent(event).params
+  const [actor, videoId, dataObjectIds, areNftAssets, rationale] = new Content.VideoAssetsDeletedByModeratorEvent(
+    event
+  ).params
+
+  const video = await store.get(Video, {
+    where: { id: videoId.toString() },
+  })
+
+  if (!video) {
+    inconsistentState(`Non-existing video assets' deletion action`)
+  }
 
   const assets = await store.getMany(StorageDataObject, {
     where: {
       id: In(Array.from(dataObjectIds).map((item) => item.toString())),
     },
   })
+
   await Promise.all(assets.map((a) => unsetAssetRelations(store, a)))
   logger.info('Video assets have been removed', { ids: dataObjectIds })
 
@@ -184,13 +195,15 @@ export async function content_VideoAssetsDeletedByModerator({
   const videoAssetsDeletedByModeratorEvent = new VideoAssetsDeletedByModeratorEvent({
     ...genericEventFields(event),
 
+    // load video
+    video,
     assetIds: Array.from(dataObjectIds).map((item) => Number(item)),
-    rationale: Buffer.from(rationale),
+    rationale: rationale.toHuman() as string,
     actor: await convertContentActor(store, actor),
     areNftAssets: areNftAssets.valueOf(),
   })
 
-  await store.save<ChannelAssetsDeletedByModeratorEvent>(videoAssetsDeletedByModeratorEvent)
+  await store.save<VideoAssetsDeletedByModeratorEvent>(videoAssetsDeletedByModeratorEvent)
 }
 
 export async function content_VideoDeletedByModerator({ store, event }: EventContext & StoreContext): Promise<void> {
@@ -205,7 +218,7 @@ export async function content_VideoDeletedByModerator({ store, event }: EventCon
     ...genericEventFields(event),
 
     videoId: Number(videoId),
-    rationale: Buffer.from(rationale),
+    rationale: rationale.toHuman() as string,
     actor: await convertContentActor(store, actor),
   })
 
@@ -252,7 +265,7 @@ export async function content_VideoVisibilitySetByModerator({
 
     video,
     isHidden: isCensored.isTrue,
-    rationale: Buffer.from(rationale),
+    rationale: rationale.toHuman() as string,
     actor: await convertContentActor(store, actor),
   })
 

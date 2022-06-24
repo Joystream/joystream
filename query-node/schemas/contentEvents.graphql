@@ -52,7 +52,37 @@ type VideoDeletedByModeratorEvent @entity {
   videoId: Int!
 
   "Why the video was deleted"
-  rationale: Bytes!
+  rationale: String!
+}
+
+type ChannelDeletedByModeratorEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}."
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted."
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in."
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Actor that deleted the video."
+  actor: ContentActor!
+
+  "ID  of the deleted channel"
+  channelId: Int!
+
+  "Why the video was deleted"
+  rationale: String!
 }
 
 type ChannelAssetsDeletedByModeratorEvent @entity {
@@ -85,7 +115,7 @@ type ChannelAssetsDeletedByModeratorEvent @entity {
   assetIds: [Int!]
 
   "why the channel assets were deleted"
-  rationale: Bytes!
+  rationale: String!
 }
 
 type VideoAssetsDeletedByModeratorEvent @entity {
@@ -121,7 +151,7 @@ type VideoAssetsDeletedByModeratorEvent @entity {
   assetIds: [Int!]
 
   "why the channel assets were deleted"
-  rationale: Bytes!
+  rationale: String!
 }
 
 type VideoVisibilitySetByModeratorEvent @entity {
@@ -154,5 +184,5 @@ type VideoVisibilitySetByModeratorEvent @entity {
   isHidden: Boolean!
 
   "Why video's visibality status was set"
-  rationale: Bytes!
+  rationale: String!
 }
