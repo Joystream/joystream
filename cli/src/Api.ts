@@ -458,7 +458,6 @@ export default class Api {
       throw new CLIError(`Storage buckets policy constraint unsatifified. Not enough storage buckets exist`)
     }
 
-    // TODO: curretly it selects first `n` buckets, improve by uniform bucket selection for each channel
     return storageBuckets.map((b) => Number(b.id)).slice(0, storageBucketsPolicy.toNumber())
   }
 

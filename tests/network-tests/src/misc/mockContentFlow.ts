@@ -13,19 +13,6 @@ export default async function mockContent({ api, query }: FlowProps): Promise<vo
   const debug = extendDebug('flow:createMockContent')
   debug('Started')
 
-  // TODO: adjust tests after https://github.com/Joystream/joystream/issues/3574 has been implemented
-  // // Check to avoid creating duplicate categories
-  // const nextVideoCategoryId = await api.query.content.nextVideoCategoryId()
-  // const nextChannelCategoryId = await api.query.content.nextVideoCategoryId()
-
-  // if (nextChannelCategoryId.toNumber() === 1 && nextVideoCategoryId.toNumber() === 1) {
-  //   // create categories with lead
-  //   const createCategories = new CreateMockCategories(api)
-  //   debug('Creating Categories')
-  //   await new FixtureRunner(createCategories).run()
-  // } else {
-  //   debug('Skipping Category Creation')
-  // }
 
   if (process.env.SKIP_MOCK_CONTENT) {
     debug('Skipping Video and Channel creation')
