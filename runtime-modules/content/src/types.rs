@@ -575,7 +575,7 @@ pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<
 
 /// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct VideoRecord<ChannelId, OwnedNft, DataObjectId: Ord, Balance: PartialEq + Zero> {
     pub in_channel: ChannelId,
     /// Whether nft for this video have been issued.

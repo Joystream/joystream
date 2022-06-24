@@ -853,7 +853,7 @@ decl_module! {
             let data_objects_ids = Storage::<T>::get_next_data_object_ids(num_objs);
 
             let total_size = storage_assets.object_creation_list.iter().fold(0, |acc, obj_param| acc.saturating_add(obj_param.size));
-            let funds_needed = T::DataObjectStorage::funds_needed_for_upload(num_objs, total_size);
+            let funds_needed = <T as Config>::DataObjectStorage::funds_needed_for_upload(num_objs, total_size);
             let total_funds_needed = video_state_bloat_bond.saturating_add(funds_needed);
 
             Self::ensure_video_creation_sufficient_balance(&sender, total_funds_needed)?;
