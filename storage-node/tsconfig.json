@@ -11,8 +11,8 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@polkadot/types/augment": ["../types/augment-codec/augment-types.ts"],
-      "@polkadot/api/augment": ["../types/augment-codec/augment-api.ts"],
+      "@polkadot/types-augment": ["../types/augment/augment-types.d.ts"],
+      "@polkadot/api-augment": ["../types/augment/augment-api.d.ts"]
     },
     "esModuleInterop": true,
     "types" : [ "node", "mocha" ],
