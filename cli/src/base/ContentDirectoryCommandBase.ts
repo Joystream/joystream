@@ -313,9 +313,7 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
     throw new Error(`Unrecognized context: ${context}`)
   }
 
-  async getContentActor(
-    context: Exclude<keyof typeof ContentActor.typeDefinitions, 'Collaborator'>
-  ): Promise<[ContentActor, string]> {
+  async getContentActor(context: keyof typeof ContentActor.typeDefinitions): Promise<[ContentActor, string]> {
     if (context === 'Member') {
       const { id, membership } = await this.getRequiredMemberContext()
       return [

@@ -328,7 +328,6 @@ import {
   GetNftIssuedEventsByEventIdsQuery,
   GetNftIssuedEventsByEventIdsQueryVariables,
   EnglishAuctionSettledEventFieldsFragment,
-  EnglishAuctionSettledEventFields,
   GetEnglishAuctionSettledEventsByEventIdsQuery,
   GetEnglishAuctionSettledEventsByEventIdsQueryVariables,
   GetEnglishAuctionSettledEventsByEventIds,
@@ -351,6 +350,10 @@ import {
   VideoVisibilitySetByModeratorEventFieldsFragment,
   GetVideoVisibilitySetByModeratorEventsByEventIdsQuery,
   GetVideoVisibilitySetByModeratorEventsByEventIdsQueryVariables,
+  GetDataObjectsByVideoIdQuery,
+  GetDataObjectsByVideoIdQueryVariables,
+  GetDataObjectsByVideoId,
+  StorageDataObjectFieldsFragment,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1173,6 +1176,14 @@ export class QueryNodeApi {
       GetChannelNftCollectors,
       {},
       'channelNftCollectors'
+    )
+  }
+
+  public async dataObjectsByVideoId(videoId: string): Promise<StorageDataObjectFieldsFragment[]> {
+    return this.multipleEntitiesQuery<GetDataObjectsByVideoIdQuery, GetDataObjectsByVideoIdQueryVariables>(
+      GetDataObjectsByVideoId,
+      { videoId },
+      'storageDataObjects'
     )
   }
 

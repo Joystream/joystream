@@ -6142,7 +6142,7 @@ export type ChannelAssetsDeletedByModeratorEvent = BaseGraphQlObject & {
   /** ID  of the deleted video */
   assetIds: Array<Scalars['Int']>
   /** why the channel assets were deleted */
-  rationale: Scalars['Bytes']
+  rationale: Scalars['String']
 }
 
 export type ChannelAssetsDeletedByModeratorEventConnection = {
@@ -6247,8 +6247,11 @@ export type ChannelAssetsDeletedByModeratorEventWhereInput = {
   assetIds_containsAll?: Maybe<Array<Scalars['Int']>>
   assetIds_containsNone?: Maybe<Array<Scalars['Int']>>
   assetIds_containsAny?: Maybe<Array<Scalars['Int']>>
-  rationale_eq?: Maybe<Scalars['Bytes']>
-  rationale_in?: Maybe<Array<Scalars['Bytes']>>
+  rationale_eq?: Maybe<Scalars['String']>
+  rationale_contains?: Maybe<Scalars['String']>
+  rationale_startsWith?: Maybe<Scalars['String']>
+  rationale_endsWith?: Maybe<Scalars['String']>
+  rationale_in?: Maybe<Array<Scalars['String']>>
   channel?: Maybe<ChannelWhereInput>
   AND?: Maybe<Array<ChannelAssetsDeletedByModeratorEventWhereInput>>
   OR?: Maybe<Array<ChannelAssetsDeletedByModeratorEventWhereInput>>
@@ -27393,7 +27396,7 @@ export type VideoAssetsDeletedByModeratorEvent = BaseGraphQlObject & {
   /** ID  of the deleted video */
   assetIds: Array<Scalars['Int']>
   /** why the channel assets were deleted */
-  rationale: Scalars['Bytes']
+  rationale: Scalars['String']
 }
 
 export type VideoAssetsDeletedByModeratorEventConnection = {
@@ -27504,8 +27507,11 @@ export type VideoAssetsDeletedByModeratorEventWhereInput = {
   assetIds_containsAll?: Maybe<Array<Scalars['Int']>>
   assetIds_containsNone?: Maybe<Array<Scalars['Int']>>
   assetIds_containsAny?: Maybe<Array<Scalars['Int']>>
-  rationale_eq?: Maybe<Scalars['Bytes']>
-  rationale_in?: Maybe<Array<Scalars['Bytes']>>
+  rationale_eq?: Maybe<Scalars['String']>
+  rationale_contains?: Maybe<Scalars['String']>
+  rationale_startsWith?: Maybe<Scalars['String']>
+  rationale_endsWith?: Maybe<Scalars['String']>
+  rationale_in?: Maybe<Array<Scalars['String']>>
   video?: Maybe<VideoWhereInput>
   AND?: Maybe<Array<VideoAssetsDeletedByModeratorEventWhereInput>>
   OR?: Maybe<Array<VideoAssetsDeletedByModeratorEventWhereInput>>
@@ -27681,7 +27687,7 @@ export type VideoDeletedByModeratorEvent = BaseGraphQlObject & {
   /** ID  of the deleted video */
   videoId: Scalars['Int']
   /** Why the video was deleted */
-  rationale: Scalars['Bytes']
+  rationale: Scalars['String']
 }
 
 export type VideoDeletedByModeratorEventConnection = {
@@ -27787,8 +27793,11 @@ export type VideoDeletedByModeratorEventWhereInput = {
   videoId_lt?: Maybe<Scalars['Int']>
   videoId_lte?: Maybe<Scalars['Int']>
   videoId_in?: Maybe<Array<Scalars['Int']>>
-  rationale_eq?: Maybe<Scalars['Bytes']>
-  rationale_in?: Maybe<Array<Scalars['Bytes']>>
+  rationale_eq?: Maybe<Scalars['String']>
+  rationale_contains?: Maybe<Scalars['String']>
+  rationale_startsWith?: Maybe<Scalars['String']>
+  rationale_endsWith?: Maybe<Scalars['String']>
+  rationale_in?: Maybe<Array<Scalars['String']>>
   AND?: Maybe<Array<VideoDeletedByModeratorEventWhereInput>>
   OR?: Maybe<Array<VideoDeletedByModeratorEventWhereInput>>
 }
@@ -28255,7 +28264,7 @@ export type VideoVisibilitySetByModeratorEvent = BaseGraphQlObject & {
   /** Is video being censored/hidden (yes if true) */
   isHidden: Scalars['Boolean']
   /** Why video's visibality status was set */
-  rationale: Scalars['Bytes']
+  rationale: Scalars['String']
 }
 
 export type VideoVisibilitySetByModeratorEventConnection = {
@@ -28361,8 +28370,11 @@ export type VideoVisibilitySetByModeratorEventWhereInput = {
   actor_json?: Maybe<Scalars['JSONObject']>
   isHidden_eq?: Maybe<Scalars['Boolean']>
   isHidden_in?: Maybe<Array<Scalars['Boolean']>>
-  rationale_eq?: Maybe<Scalars['Bytes']>
-  rationale_in?: Maybe<Array<Scalars['Bytes']>>
+  rationale_eq?: Maybe<Scalars['String']>
+  rationale_contains?: Maybe<Scalars['String']>
+  rationale_startsWith?: Maybe<Scalars['String']>
+  rationale_endsWith?: Maybe<Scalars['String']>
+  rationale_in?: Maybe<Array<Scalars['String']>>
   video?: Maybe<VideoWhereInput>
   AND?: Maybe<Array<VideoVisibilitySetByModeratorEventWhereInput>>
   OR?: Maybe<Array<VideoVisibilitySetByModeratorEventWhereInput>>

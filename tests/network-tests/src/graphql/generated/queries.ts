@@ -156,6 +156,12 @@ export type GetChannelNftCollectorsQueryVariables = Types.Exact<{ [key: string]:
 
 export type GetChannelNftCollectorsQuery = { channelNftCollectors: Array<ChannelNftCollectorFieldsFragment> }
 
+export type GetDataObjectsByVideoIdQueryVariables = Types.Exact<{
+  videoId?: Types.Maybe<Types.Scalars['ID']>
+}>
+
+export type GetDataObjectsByVideoIdQuery = { storageDataObjects: Array<StorageDataObjectFieldsFragment> }
+
 export type VideoDeletedByModeratorEventFieldsFragment = {
   id: string
   createdAt: any
@@ -164,7 +170,7 @@ export type VideoDeletedByModeratorEventFieldsFragment = {
   inExtrinsic?: Types.Maybe<string>
   indexInBlock: number
   videoId: number
-  rationale: any
+  rationale: string
 }
 
 export type GetVideoDeletedByModeratorEventsByEventIdsQueryVariables = Types.Exact<{
@@ -182,7 +188,7 @@ export type ChannelAssetsDeletedByModeratorEventFieldsFragment = {
   network: Types.Network
   inExtrinsic?: Types.Maybe<string>
   indexInBlock: number
-  rationale: any
+  rationale: string
   assetIds: Array<number>
   channel: { id: string }
 }
@@ -203,7 +209,7 @@ export type VideoAssetsDeletedByModeratorEventFieldsFragment = {
   inExtrinsic?: Types.Maybe<string>
   indexInBlock: number
   assetIds: Array<number>
-  rationale: any
+  rationale: string
   video: { id: string }
 }
 
@@ -223,7 +229,7 @@ export type VideoVisibilitySetByModeratorEventFieldsFragment = {
   inExtrinsic?: Types.Maybe<string>
   indexInBlock: number
   isHidden: boolean
-  rationale: any
+  rationale: string
   video: { id: string }
 }
 
@@ -4298,6 +4304,14 @@ export const GetChannelNftCollectors = gql`
     }
   }
   ${ChannelNftCollectorFields}
+`
+export const GetDataObjectsByVideoId = gql`
+  query getDataObjectsByVideoId($videoId: ID) {
+    storageDataObjects(where: { type_json: { videoId_eq: $videoId } }) {
+      ...StorageDataObjectFields
+    }
+  }
+  ${StorageDataObjectFields}
 `
 export const GetVideoDeletedByModeratorEventsByEventIds = gql`
   query getVideoDeletedByModeratorEventsByEventIds($eventIds: [ID!]) {
