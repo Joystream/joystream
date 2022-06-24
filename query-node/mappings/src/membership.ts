@@ -53,6 +53,7 @@ import {
 } from './content'
 import { BaseModel } from '@joystream/warthog'
 import { Bytes } from '@polkadot/types'
+import { isSet } from '@joystream/metadata-protobuf/utils'
 
 async function getMemberById(store: DatabaseManager, id: MemberId, relations: string[] = []): Promise<Membership> {
   const member = await store.get(Membership, { where: { id: id.toString() }, relations })
@@ -102,7 +103,7 @@ async function saveMembershipExternalResources(
   function asMembershipExternalResource(
     metadata: MembershipMetadata.IExternalResource
   ): Pick<MembershipExternalResource, 'type' | 'value'> {
-    const type = metadata.type && MembershipMetadata.ExternalResource.ResourceType[metadata.type]
+    const type = isSet(metadata.type) && MembershipMetadata.ExternalResource.ResourceType[metadata.type]
 
     if (!type || !(type in MembershipExternalResourceType)) {
       throw new Error(`Invalid ResourceType: ${type}`)
