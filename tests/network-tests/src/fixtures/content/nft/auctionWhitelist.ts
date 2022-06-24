@@ -1,7 +1,7 @@
 import { Api } from '../../../Api'
 import { BaseQueryNodeFixture } from '../../../Fixture'
 import { QueryNodeApi } from '../../../QueryNodeApi'
-import { IMember } from '../createMembers'
+import { IMember } from '../createMembersAndCurators'
 import { Utils } from '../../../utils'
 
 export class NftAuctionWhitelistFixture extends BaseQueryNodeFixture {
