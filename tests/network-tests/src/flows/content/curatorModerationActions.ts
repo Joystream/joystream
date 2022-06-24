@@ -1,0 +1,166 @@
+import BN from 'bn.js'
+import {
+  AddCuratorToCuratorGroupFixture,
+  AddCuratorToGroupParams,
+} from '../../fixtures/content/addCuratorsToCuratorGroupFixture'
+import { CreateCuratorGroupFixture, CuratorGroupParams } from '../../fixtures/content/createCuratorGroupFixture'
+import { extendDebug } from '../../Debugger'
+import { FixtureRunner } from '../../Fixture'
+import {
+  CreateChannelsAndVideosFixture,
+  CreateContentStructureFixture,
+  CreateMembersFixture,
+} from '../../fixtures/content'
+import { FlowProps } from '../../Flow'
+import { createJoystreamCli } from '../utils'
+import {
+  DeleteVideoAsModeratorFixture,
+  DeleteVideoAsModeratorParams,
+} from '../../fixtures/content/curatorModeration/DeleteVideoByModerator'
+import {
+  DeleteVideoAssetsAsModeratorFixture,
+  DeleteVideoAssetsAsModeratorParams,
+} from '../../fixtures/content/curatorModeration/DeleteVideoAssetsByModerator'
+import {
+  DeleteChannelAsModeratorFixture,
+  DeleteChannelAsModeratorParams,
+} from '../../fixtures/content/curatorModeration/DeleteChannelAsModerator'
+
+export default async function curatorModerationActions({ api, query, env }: FlowProps): Promise<void> {
+  const debug = extendDebug('flow:curator-moderation-actions')
+  debug('Started')
+  api.enableDebugTxLogs()
+
+  // create Joystream CLI
+  const joystreamCli = await createJoystreamCli()
+
+  // settings
+  const videoCount = 2 // should be equal to number of uses of `nextVideo()` below
+  const videoCategoryCount = 1
+  const channelCount = 1
+  const curatorCount = 1
+  const channelCategoryCount = 1
+  const sufficientTopupAmount = new BN(1_000_000) // some very big number to cover fees of all transactions
+
+  // prepare content
+
+  const createContentStructureFixture = new CreateContentStructureFixture(
+    api,
+    query,
+    joystreamCli,
+    videoCategoryCount,
+    channelCategoryCount
+  )
+  await new FixtureRunner(createContentStructureFixture).run()
+
+  const { channelCategoryIds, videoCategoryIds } = createContentStructureFixture.getCreatedItems()
+
+  // create author of channels and videos as well as auction participants
+  const createMembersFixture = new CreateMembersFixture(api, query, channelCount, curatorCount, sufficientTopupAmount)
+  await new FixtureRunner(createMembersFixture).run()
+
+  const {
+    members: [channelOwner],
+    curators: [curatorId],
+  } = createMembersFixture.getCreatedItems()
+
+  const createChannelsAndVideos = new CreateChannelsAndVideosFixture(
+    api,
+    query,
+    joystreamCli,
+    channelCount,
+    videoCount,
+    channelCategoryIds[0],
+    videoCategoryIds[0],
+    channelOwner
+  )
+  await new FixtureRunner(createChannelsAndVideos).run()
+
+  const { channelIds, videosData } = createChannelsAndVideos.getCreatedItems()
+
+  // create curator & curator group
+
+  const createCuratorGroupParams: CuratorGroupParams[] = [
+    {
+      isActive: true,
+      permissionsByLevel: [
+        {
+          channelPrivilegeLevel: 0,
+          contentModerationActionSet: ['DeleteChannel', 'DeleteVideo', 'DeleteVideoAssets'],
+          permissionToDeleteNftAssets: false,
+        },
+      ],
+    },
+  ]
+
+  const createCuratorGroupFixture = new CreateCuratorGroupFixture(api, query, createCuratorGroupParams)
+  await new FixtureRunner(createCuratorGroupFixture).run()
+
+  const curatorGroupId = createCuratorGroupFixture.getCreatedCuratorGroupId()
+
+  const addCuratorToGroupParams: AddCuratorToGroupParams[] = [
+    {
+      curatorGroupId,
+      curatorId,
+      permissions: ['AddVideo', 'DeleteVideo'],
+    },
+  ]
+
+  const addCuratorToGroupFixture = new AddCuratorToCuratorGroupFixture(api, query, addCuratorToGroupParams)
+  await new FixtureRunner(addCuratorToGroupFixture).run()
+
+  // test curator moderation actions
+
+  // delete video as moderator
+  const deleteVideoAsModeratorParams: DeleteVideoAsModeratorParams[] = [
+    {
+      asCurator: [curatorGroupId, curatorId],
+      videoId: videosData[0].videoId, // first video
+      numOfObjectsToDelete: 2,
+      rationale: 'Deleted video due to offensive content',
+    },
+  ]
+
+  const deleteVideoAsModeratorFixture = new DeleteVideoAsModeratorFixture(api, query, deleteVideoAsModeratorParams)
+  await new FixtureRunner(deleteVideoAsModeratorFixture).runWithQueryNodeChecks()
+
+  // delete video assets as moderator
+
+  const assetsToRemove = (await query.dataObjectsByVideoId(videosData[1].videoId.toString())).map(({ id }) =>
+    Number(id)
+  )
+  const deleteVideoAssetsAsModeratorParams: DeleteVideoAssetsAsModeratorParams[] = [
+    {
+      asCurator: [curatorGroupId, curatorId],
+      videoId: videosData[1].videoId, // second video
+      assetsToRemove,
+      rationale: 'Deleted video assets due to pirated content',
+    },
+  ]
+
+  const deleteVideoAssetsAsModeratorFixture = new DeleteVideoAssetsAsModeratorFixture(
+    api,
+    query,
+    deleteVideoAssetsAsModeratorParams
+  )
+  await new FixtureRunner(deleteVideoAssetsAsModeratorFixture).runWithQueryNodeChecks()
+
+  // delete channel as moderator
+
+  const deleteChannelAsModeratorParams: DeleteChannelAsModeratorParams[] = [
+    {
+      asCurator: [curatorGroupId, curatorId],
+      channelId: channelIds[0],
+      numOfObjectsToDelete: 0,
+      rationale: 'Deleted video assets due to pirated content',
+    },
+  ]
+
+  const deleteChannelAsModeratorFixture = new DeleteChannelAsModeratorFixture(
+    api,
+    query,
+    deleteChannelAsModeratorParams
+  )
+  await new FixtureRunner(deleteChannelAsModeratorFixture).runWithQueryNodeChecks()
+  debug('Done')
+}
