@@ -3013,10 +3013,8 @@ impl IssueNftFixture {
 
     pub fn with_non_channel_owner(self, owner: MemberId) -> Self {
         let new_params = NftIssuanceParameters::<Test> {
-            init_transactional_status: self.params.init_transactional_status.clone(),
-            nft_metadata: self.params.nft_metadata.clone(),
             non_channel_owner: Some(owner),
-            royalty: self.params.royalty.clone(),
+            ..self.params.clone()
         };
         self.with_params(new_params)
     }
