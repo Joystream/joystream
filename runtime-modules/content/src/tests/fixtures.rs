@@ -3033,7 +3033,7 @@ impl IssueNftFixture {
     ) -> Self {
         let new_params = NftIssuanceParameters::<Test> {
             init_transactional_status,
-            ...self.params.clone()
+            ..self.params.clone()
         };
         self.with_params(new_params)
     }
@@ -3041,7 +3041,7 @@ impl IssueNftFixture {
     pub fn with_royalty(self, royalty_pct: Perbill) -> Self {
         let new_params = NftIssuanceParameters::<Test> {
             royalty: Some(royalty_pct),
-            ...self.params.clone()
+            ..self.params.clone()
         };
         self.with_params(new_params)
     }
