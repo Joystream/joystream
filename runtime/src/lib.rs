@@ -1429,6 +1429,8 @@ construct_runtime!(
         Utility: substrate_utility,
         Babe: pallet_babe,
         Timestamp: pallet_timestamp,
+        // Authorship must be before session in order to note author in the correct session and era
+        // for im-online and staking
         Authorship: pallet_authorship,
         Balances: pallet_balances,
         TransactionPayment: pallet_transaction_payment,
