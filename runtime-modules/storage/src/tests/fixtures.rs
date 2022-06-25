@@ -1047,7 +1047,7 @@ pub struct SetStorageBucketVoucherLimitsFixture {
 
 impl SetStorageBucketVoucherLimitsFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let old_voucher = Storage::storage_bucket_by_id(self.storage_bucket_id);
+        let old_bucket = Storage::storage_bucket_by_id(self.storage_bucket_id);
 
         let actual_result = Storage::set_storage_bucket_voucher_limits(
             self.origin.clone().into(),
@@ -1057,14 +1057,14 @@ impl SetStorageBucketVoucherLimitsFixture {
         );
 
         assert_eq!(actual_result, expected_result);
-        let new_voucher = Storage::storage_bucket_by_id(self.storage_bucket_id);
+        let new_bucket = Storage::storage_bucket_by_id(self.storage_bucket_id);
 
         if actual_result.is_ok() {
-            let new_voucher = new_voucher.expect("Bucket Must Exist").voucher;
+            let new_voucher = new_bucket.expect("Bucket Must Exist").voucher;
             assert_eq!(self.new_objects_size_limit, new_voucher.size_limit);
             assert_eq!(self.new_objects_number_limit, new_voucher.objects_limit);
         } else {
-            assert_eq!(old_voucher, new_voucher);
+            assert_eq!(old_bucket, new_bucket);
         }
     }
 }
