@@ -1,6 +1,6 @@
 [package]
 name = 'pallet-staking-handler'
-version = '5.0.0'
+version = '3.0.0'
 authors = ['Joystream contributors']
 edition = '2018'
 
