@@ -24,8 +24,6 @@ hex-literal = "0.3.4"
 log = "0.4.17"
 rand = "0.8"
 hex = { version = "0.4.2" }
-# Do we need registry with joystream network defined?
-# ss58-registry = { pacakge = 'ss58-registry', git = 'https://github.com/bwhm/ss58-registry', branch = 'joystream-126'}
 
 # primitives
 sp-authority-discovery = { package = 'sp-authority-discovery', git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
@@ -138,4 +136,5 @@ cli = [
 	"clap_complete",
 	"substrate-build-script-utils",
 ]
+
 runtime-benchmarks = ["node-runtime/runtime-benchmarks", "frame-benchmarking-cli"]
