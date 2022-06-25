@@ -1200,7 +1200,6 @@ where
             sale: None,
             transfer_policy: params.transfer_policy.into(),
             patronage_info,
-            // in order to avoid underflow when Token is started idle and `update_upcoming_sale` is called`
             next_sale_id: 0,
             accounts_number: 0,
             revenue_split: RevenueSplitState::Inactive,

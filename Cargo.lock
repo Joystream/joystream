@@ -4652,7 +4652,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-project-token"
-version = "5.0.0"
+version = "1.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
