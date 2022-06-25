@@ -113,7 +113,6 @@ mod benches {
         [referendum, Referendum]
         [council, Council]
         // [bounty, Bounty]
-        [blog, Blog]
         [joystream_utility, JoystreamUtility]
         [storage, Storage]
     );
@@ -370,7 +369,6 @@ impl_runtime_apis! {
             use crate::Council;
             use crate::Referendum;
             // use crate::Bounty;
-            use crate::Blog;
             use crate::JoystreamUtility;
             use crate::Staking;
             use crate::Storage;

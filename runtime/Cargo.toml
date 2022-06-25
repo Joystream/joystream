@@ -209,8 +209,7 @@ runtime-benchmarks = [
     "council/runtime-benchmarks",
     "referendum/runtime-benchmarks",
     # "bounty/runtime-benchmarks",
-    'storage/runtime-benchmarks',       
-    "blog/runtime-benchmarks",
+    'storage/runtime-benchmarks',
 ]
 
 # Staging and testing configurations
