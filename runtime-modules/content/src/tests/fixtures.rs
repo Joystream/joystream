@@ -3040,10 +3040,8 @@ impl IssueNftFixture {
 
     pub fn with_royalty(self, royalty_pct: Perbill) -> Self {
         let new_params = NftIssuanceParameters::<Test> {
-            init_transactional_status: self.params.init_transactional_status.clone(),
-            nft_metadata: self.params.nft_metadata.clone(),
-            non_channel_owner: self.params.non_channel_owner.clone(),
             royalty: Some(royalty_pct),
+            ...self.params.clone()
         };
         self.with_params(new_params)
     }
