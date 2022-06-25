@@ -3033,9 +3033,7 @@ impl IssueNftFixture {
     ) -> Self {
         let new_params = NftIssuanceParameters::<Test> {
             init_transactional_status,
-            nft_metadata: self.params.nft_metadata.clone(),
-            non_channel_owner: self.params.non_channel_owner.clone(),
-            royalty: self.params.royalty.clone(),
+            ...self.params.clone()
         };
         self.with_params(new_params)
     }
