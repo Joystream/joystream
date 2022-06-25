@@ -2765,8 +2765,8 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-utility 2.0.0",
  "pallet-utility 4.0.0-dev",
- "pallet-utility 5.0.0",
  "pallet-vesting",
  "pallet-working-group",
  "parity-scale-codec",
@@ -4362,7 +4362,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-blog"
-version = "5.0.0"
+version = "6.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4384,7 +4384,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-common"
-version = "5.0.0"
+version = "6.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4402,7 +4402,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-constitution"
-version = "5.0.0"
+version = "6.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4448,7 +4448,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-council"
-version = "5.0.0"
+version = "6.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4525,7 +4525,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-forum"
-version = "5.0.0"
+version = "6.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4591,7 +4591,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-membership"
-version = "5.0.0"
+version = "6.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4675,7 +4675,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-proposals-codex"
-version = "5.0.0"
+version = "6.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -4714,7 +4714,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-proposals-discussion"
-version = "5.0.0"
+version = "6.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4737,7 +4737,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-proposals-engine"
-version = "5.0.0"
+version = "6.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4775,7 +4775,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-referendum"
-version = "5.0.0"
+version = "6.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4858,7 +4858,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-staking-handler"
-version = "5.0.0"
+version = "3.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -5005,23 +5005,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-utility"
-version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate.git?rev=6cbe1772bf258793fa9845daa8f43ea0cadee596#6cbe1772bf258793fa9845daa8f43ea0cadee596"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-utility"
-version = "5.0.0"
+version = "2.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5043,6 +5027,22 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "strum 0.19.5",
+]
+
+[[package]]
+name = "pallet-utility"
+version = "4.0.0-dev"
+source = "git+https://github.com/paritytech/substrate.git?rev=6cbe1772bf258793fa9845daa8f43ea0cadee596#6cbe1772bf258793fa9845daa8f43ea0cadee596"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
