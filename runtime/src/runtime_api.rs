@@ -84,11 +84,9 @@ pub type Executive = frame_executive::Executive<
 pub const EXPORTED_RUNTIME_API_VERSIONS: sp_version::ApisVec = RUNTIME_API_VERSIONS;
 
 #[cfg(feature = "runtime-benchmarks")]
-#[macro_use]
-extern crate frame_benchmarking;
-
-#[cfg(feature = "runtime-benchmarks")]
 mod benches {
+    use crate::*;
+
     define_benchmarks!(
         [frame_benchmarking, BaselineBench::<Runtime>]
         [pallet_babe, Babe]
@@ -324,6 +322,7 @@ impl_runtime_apis! {
         ) {
             use frame_benchmarking::{baseline, Benchmarking, BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
+            use crate::*;
 
             // Trying to add benchmarks directly to the Session Pallet caused cyclic dependency
             // issues. To get around that, we separated the Session benchmarks into its own crate,
@@ -333,7 +332,6 @@ impl_runtime_apis! {
             use pallet_election_provider_support_benchmarking::Pallet as EPSBench;
             use frame_system_benchmarking::Pallet as SystemBench;
             use baseline::Pallet as BaselineBench;
-            use pallet_nomination_pools_benchmarking::Pallet as NominationPoolsBench;
 
             let mut list = Vec::<BenchmarkList>::new();
             list_benchmarks!(list, extra);
@@ -347,6 +345,7 @@ impl_runtime_apis! {
             config: frame_benchmarking::BenchmarkConfig
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
             use frame_benchmarking::{baseline, Benchmarking, BenchmarkBatch,  TrackedStorageKey};
+            use crate::*;
 
             // Trying to add benchmarks directly to the Session Pallet caused cyclic dependency
             // issues. To get around that, we separated the Session benchmarks into its own crate,
@@ -356,7 +355,6 @@ impl_runtime_apis! {
             use pallet_election_provider_support_benchmarking::Pallet as EPSBench;
             use frame_system_benchmarking::Pallet as SystemBench;
             use baseline::Pallet as BaselineBench;
-            use pallet_nomination_pools_benchmarking::Pallet as NominationPoolsBench;
 
             use frame_system::RawOrigin;
             use crate::ProposalsDiscussion;
@@ -382,7 +380,6 @@ impl_runtime_apis! {
             impl pallet_election_provider_support_benchmarking::Config for Runtime {}
             impl frame_system_benchmarking::Config for Runtime {}
             impl baseline::Config for Runtime {}
-            impl pallet_nomination_pools_benchmarking::Config for Runtime {}
 
             impl referendum::OptionCreator<<Runtime as frame_system::Config>::AccountId, <Runtime as common::membership::MembershipTypes>::MemberId> for Runtime {
                 fn create_option(account_id: <Runtime as frame_system::Config>::AccountId, member_id: <Runtime as common::membership::MembershipTypes>::MemberId) {

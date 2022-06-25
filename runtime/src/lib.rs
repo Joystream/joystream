@@ -78,6 +78,10 @@ use sp_std::boxed::Box;
 use sp_std::convert::{TryFrom, TryInto};
 use sp_std::{vec, vec::Vec};
 
+#[cfg(feature = "runtime-benchmarks")]
+#[macro_use]
+extern crate frame_benchmarking;
+
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
