@@ -216,7 +216,7 @@ fn accept_incoming_offer_reward_account_ok_with_owner_channel_account_correctly_
             VideoId::one(),
         ));
 
-        // check creator owner balance increased by NFT PRICE + ROYALTY - ROYALTY - FEE
+        // check creator owner balance increased by NFT PRICE - FEE
         assert_eq!(
             channel_reward_account_balance(ChannelId::one()),
             DEFAULT_NFT_PRICE - platform_fee,
