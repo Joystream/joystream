@@ -33,7 +33,7 @@ use frame_support::sp_runtime::SaturatedConversion;
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 // The distribution working group instance alias.
-pub type DistributionWorkingGroupInstance = working_group::Instance3;
+pub type DistributionWorkingGroupInstance = working_group::Instance9;
 
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Config>::Balance;

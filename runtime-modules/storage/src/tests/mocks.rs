@@ -34,7 +34,7 @@ parameter_types! {
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 // The distribution working group instance alias.
-pub type DistributionWorkingGroupInstance = working_group::Instance3;
+pub type DistributionWorkingGroupInstance = working_group::Instance9;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -53,7 +53,7 @@ frame_support::construct_runtime!(
         Storage: crate::{Pallet, Call, Storage, Config, Event<T>},
         // Need to be added for benchmarks to work
         Wg2: working_group::<Instance2>::{Pallet, Call, Storage, Event<T, I>},
-        Wg3: working_group::<Instance3>::{Pallet, Call, Storage, Event<T, I>},
+        Wg3: working_group::<Instance9>::{Pallet, Call, Storage, Event<T, I>},
     }
 );
 

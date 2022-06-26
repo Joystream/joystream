@@ -114,7 +114,7 @@ frame_support::construct_runtime!(
         ForumWorkingGroup: working_group::<Instance1>::{Pallet, Call, Storage, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Pallet, Call, Storage, Event<T>},
         ContentDirectoryWorkingGroup: working_group::<Instance3>::{Pallet, Call, Storage, Event<T>},
-        MembershipWorkingGroup: working_group::<Instance4>::{Pallet, Call, Storage, Event<T>},
+        MembershipWorkingGroup: working_group::<Instance6>::{Pallet, Call, Storage, Event<T>},
     }
 );
 
@@ -656,7 +656,7 @@ pub type StorageWorkingGroupInstance = working_group::Instance2;
 pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
 
 // The membership working group instance alias.
-pub type MembershipWorkingGroupInstance = working_group::Instance4;
+pub type MembershipWorkingGroupInstance = working_group::Instance6;
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
