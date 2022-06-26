@@ -336,6 +336,8 @@ impl_runtime_apis! {
             list_benchmarks!(list, extra);
 
             // StorageInfoTrait trait bound not satisfied
+            // This may be because we are using old style decl_storage macro
+            // instead of new syntax?
             // let storage_info = AllPalletsWithSystem::storage_info();
             // (list, storage_info)
 
