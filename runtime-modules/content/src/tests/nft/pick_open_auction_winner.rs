@@ -582,7 +582,7 @@ fn pick_open_auction_ok_with_channel_owner_correctly_credited() {
             DEFAULT_NFT_PRICE
         ));
 
-        // net revenue for creator owner : NFT PRICE + ROYALTY - ROYALTY - FEE
+        // net revenue for creator owner : NFT PRICE - FEE
         assert_eq!(
             channel_reward_account_balance(ChannelId::one()),
             DEFAULT_NFT_PRICE - platform_fee
