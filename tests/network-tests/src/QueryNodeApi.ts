@@ -354,6 +354,10 @@ import {
   GetDataObjectsByVideoIdQueryVariables,
   GetDataObjectsByVideoId,
   StorageDataObjectFieldsFragment,
+  GetChannelDeletedByModeratorEventsByEventIdsQuery,
+  GetChannelDeletedByModeratorEventsByEventIdsQueryVariables,
+  GetChannelDeletedByModeratorEventsByEventIds,
+  ChannelDeletedByModeratorEventFieldsFragment,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1234,6 +1238,16 @@ export class QueryNodeApi {
       GetVideoDeletedByModeratorEventsByEventIdsQuery,
       GetVideoDeletedByModeratorEventsByEventIdsQueryVariables
     >(GetVideoDeletedByModeratorEventsByEventIds, { eventIds }, 'videoDeletedByModeratorEvents')
+  }
+
+  public async getChannelDeletedByModeratorEvents(
+    events: EventDetails[]
+  ): Promise<ChannelDeletedByModeratorEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetChannelDeletedByModeratorEventsByEventIdsQuery,
+      GetChannelDeletedByModeratorEventsByEventIdsQueryVariables
+    >(GetChannelDeletedByModeratorEventsByEventIds, { eventIds }, 'channelDeletedByModeratorEvents')
   }
 
   public async getChannelAssetsDeletedByModeratorEvents(

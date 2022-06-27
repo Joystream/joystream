@@ -111,7 +111,10 @@ export default async function curatorModerationActions({ api, query, env }: Flow
 
   // test curator moderation actions
 
-  // delete video as moderator
+  /**
+   * delete video as moderator
+   */
+
   const deleteVideoAsModeratorParams: DeleteVideoAsModeratorParams[] = [
     {
       asCurator: [curatorGroupId, curatorId],
@@ -124,7 +127,9 @@ export default async function curatorModerationActions({ api, query, env }: Flow
   const deleteVideoAsModeratorFixture = new DeleteVideoAsModeratorFixture(api, query, deleteVideoAsModeratorParams)
   await new FixtureRunner(deleteVideoAsModeratorFixture).runWithQueryNodeChecks()
 
-  // delete video assets as moderator
+  /**
+   * delete video assets as moderator
+   */
 
   const assetsToRemove = (await query.dataObjectsByVideoId(videosData[1].videoId.toString())).map(({ id }) =>
     Number(id)
@@ -145,14 +150,33 @@ export default async function curatorModerationActions({ api, query, env }: Flow
   )
   await new FixtureRunner(deleteVideoAssetsAsModeratorFixture).runWithQueryNodeChecks()
 
-  // delete channel as moderator
+  /**
+   * delete channel as moderator
+   */
+
+  // delete other video as well because for channel to be deleted, it should have no video
+  const deleteSecondVideoAsModeratorParams: DeleteVideoAsModeratorParams[] = [
+    {
+      asCurator: [curatorGroupId, curatorId],
+      videoId: videosData[1].videoId, // second video
+      numOfObjectsToDelete: 0,
+      rationale: 'Deleted 2nd video',
+    },
+  ]
+
+  const deleteSecondVideoAsModeratorFixture = new DeleteVideoAsModeratorFixture(
+    api,
+    query,
+    deleteSecondVideoAsModeratorParams
+  )
+  await new FixtureRunner(deleteSecondVideoAsModeratorFixture).runWithQueryNodeChecks()
 
   const deleteChannelAsModeratorParams: DeleteChannelAsModeratorParams[] = [
     {
       asCurator: [curatorGroupId, curatorId],
       channelId: channelIds[0],
       numOfObjectsToDelete: 0,
-      rationale: 'Deleted video assets due to pirated content',
+      rationale: 'Deleted channel due to repeated violations of ToS',
     },
   ]
 
@@ -162,5 +186,6 @@ export default async function curatorModerationActions({ api, query, env }: Flow
     deleteChannelAsModeratorParams
   )
   await new FixtureRunner(deleteChannelAsModeratorFixture).runWithQueryNodeChecks()
+
   debug('Done')
 }

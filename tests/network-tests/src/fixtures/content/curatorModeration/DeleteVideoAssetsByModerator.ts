@@ -58,7 +58,7 @@ export class DeleteVideoAssetsAsModeratorFixture extends StandardizedFixture {
 
   protected assertQueryNodeEventIsValid(qEvent: VideoAssetsDeletedByModeratorEventFieldsFragment, i: number): void {
     const params = this.deleteVideoAssetsAsModeratorParams[i]
-    assert.equal(qEvent.video.id, params.videoId.toString())
+    assert.equal(qEvent.videoId, params.videoId)
     assert.equal(qEvent.rationale, params.rationale)
   }
 
@@ -66,7 +66,7 @@ export class DeleteVideoAssetsAsModeratorFixture extends StandardizedFixture {
     await super.runQueryNodeChecks()
     // Query the events
     await this.query.tryQueryWithTimeout(
-      () => this.query.getVideoDeletedByModeratorEvents(this.events),
+      () => this.query.getVideoAssetsDeletedByModeratorEvents(this.events),
       (qEvents) => this.assertQueryNodeEventsAreValid(qEvents)
     )
   }

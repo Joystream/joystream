@@ -109,7 +109,7 @@ type ChannelAssetsDeletedByModeratorEvent @entity {
   actor: ContentActor!
 
   "Channel whose assets are deleted"
-  channel: Channel!
+  channelId: Int!
 
   "ID  of the deleted video"
   assetIds: [Int!]
@@ -142,7 +142,7 @@ type VideoAssetsDeletedByModeratorEvent @entity {
   actor: ContentActor!
 
   "Video whose assets are being deleted"
-  video: Video!
+  videoId: Int!
 
   "Does deleted video assets belongs to NFT"
   are_nft_assets: Boolean
@@ -178,7 +178,7 @@ type VideoVisibilitySetByModeratorEvent @entity {
   actor: ContentActor!
 
   "Video whose visiblity/censorship status is changed"
-  video: Video!
+  videoId: Int!
 
   "Is video being censored/hidden (yes if true)"
   isHidden: Boolean!

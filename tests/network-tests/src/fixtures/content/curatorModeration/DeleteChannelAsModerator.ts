@@ -1,12 +1,12 @@
 import { createType } from '@joystream/types'
-import { ContentActor, CuratorGroupId, VideoId } from '@joystream/types/content'
+import { ContentActor, CuratorGroupId } from '@joystream/types/content'
 import { WorkerId } from '@joystream/types/working-group'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { assert } from 'chai'
+import { ChannelDeletedByModeratorEventFieldsFragment } from 'src/graphql/generated/queries'
 import { Api } from '../../../Api'
 import { StandardizedFixture } from '../../../Fixture'
-import { ChannelAssetsDeletedByModeratorEventFieldsFragment } from '../../../graphql/generated/queries'
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { EventDetails, EventType } from '../../../types'
 
@@ -41,7 +41,7 @@ export class DeleteChannelAsModeratorFixture extends StandardizedFixture {
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     return this.deleteChannelAsModeratorParams.map(({ asCurator, channelId, numOfObjectsToDelete, rationale }) =>
-      this.api.tx.content.deleteVideoAsModerator(
+      this.api.tx.content.deleteChannelAsModerator(
         createType<ContentActor, 'ContentActor'>('ContentActor', { Curator: asCurator }),
         channelId,
         numOfObjectsToDelete,
@@ -50,9 +50,9 @@ export class DeleteChannelAsModeratorFixture extends StandardizedFixture {
     )
   }
 
-  protected assertQueryNodeEventIsValid(qEvent: ChannelAssetsDeletedByModeratorEventFieldsFragment, i: number): void {
+  protected assertQueryNodeEventIsValid(qEvent: ChannelDeletedByModeratorEventFieldsFragment, i: number): void {
     const params = this.deleteChannelAsModeratorParams[i]
-    assert.equal(qEvent.channel.id, params.channelId.toString())
+    assert.equal(qEvent.channelId, params.channelId)
     assert.equal(qEvent.rationale, params.rationale)
   }
 
@@ -60,7 +60,7 @@ export class DeleteChannelAsModeratorFixture extends StandardizedFixture {
     await super.runQueryNodeChecks()
     // Query the events
     await this.query.tryQueryWithTimeout(
-      () => this.query.getVideoDeletedByModeratorEvents(this.events),
+      () => this.query.getChannelDeletedByModeratorEvents(this.events),
       (qEvents) => this.assertQueryNodeEventsAreValid(qEvents)
     )
   }

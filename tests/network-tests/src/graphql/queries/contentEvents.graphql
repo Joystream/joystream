@@ -15,6 +15,23 @@ query getVideoDeletedByModeratorEventsByEventIds($eventIds: [ID!]) {
   }
 }
 
+fragment ChannelDeletedByModeratorEventFields on ChannelDeletedByModeratorEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  channelId
+  rationale
+}
+
+query getChannelDeletedByModeratorEventsByEventIds($eventIds: [ID!]) {
+  channelDeletedByModeratorEvents(where: { id_in: $eventIds }) {
+    ...ChannelDeletedByModeratorEventFields
+  }
+}
+
 fragment ChannelAssetsDeletedByModeratorEventFields on ChannelAssetsDeletedByModeratorEvent {
   id
   createdAt
@@ -22,9 +39,7 @@ fragment ChannelAssetsDeletedByModeratorEventFields on ChannelAssetsDeletedByMod
   network
   inExtrinsic
   indexInBlock
-  channel {
-    id
-  }
+  channelId
   rationale
   assetIds
 }
@@ -42,9 +57,7 @@ fragment VideoAssetsDeletedByModeratorEventFields on VideoAssetsDeletedByModerat
   network
   inExtrinsic
   indexInBlock
-  video {
-    id
-  }
+  videoId
   assetIds
   rationale
 }
@@ -62,9 +75,7 @@ fragment VideoVisibilitySetByModeratorEventFields on VideoVisibilitySetByModerat
   network
   inExtrinsic
   indexInBlock
-  video {
-    id
-  }
+  videoId
   isHidden
   rationale
 }

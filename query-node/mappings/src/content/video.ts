@@ -173,14 +173,6 @@ export async function content_VideoAssetsDeletedByModerator({
     event
   ).params
 
-  const video = await store.get(Video, {
-    where: { id: videoId.toString() },
-  })
-
-  if (!video) {
-    inconsistentState(`Non-existing video assets' deletion action`)
-  }
-
   const assets = await store.getMany(StorageDataObject, {
     where: {
       id: In(Array.from(dataObjectIds).map((item) => item.toString())),
@@ -196,7 +188,7 @@ export async function content_VideoAssetsDeletedByModerator({
     ...genericEventFields(event),
 
     // load video
-    video,
+    videoId: videoId.toNumber(),
     assetIds: Array.from(dataObjectIds).map((item) => Number(item)),
     rationale: rationale.toHuman() as string,
     actor: await convertContentActor(store, actor),
@@ -263,7 +255,7 @@ export async function content_VideoVisibilitySetByModerator({
   const videoVisibilitySetByModeratorEvent = new VideoVisibilitySetByModeratorEvent({
     ...genericEventFields(event),
 
-    video,
+    videoId: videoId.toNumber(),
     isHidden: isCensored.isTrue,
     rationale: rationale.toHuman() as string,
     actor: await convertContentActor(store, actor),

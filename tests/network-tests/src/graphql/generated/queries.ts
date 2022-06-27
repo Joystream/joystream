@@ -181,6 +181,25 @@ export type GetVideoDeletedByModeratorEventsByEventIdsQuery = {
   videoDeletedByModeratorEvents: Array<VideoDeletedByModeratorEventFieldsFragment>
 }
 
+export type ChannelDeletedByModeratorEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  channelId: number
+  rationale: string
+}
+
+export type GetChannelDeletedByModeratorEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetChannelDeletedByModeratorEventsByEventIdsQuery = {
+  channelDeletedByModeratorEvents: Array<ChannelDeletedByModeratorEventFieldsFragment>
+}
+
 export type ChannelAssetsDeletedByModeratorEventFieldsFragment = {
   id: string
   createdAt: any
@@ -188,9 +207,9 @@ export type ChannelAssetsDeletedByModeratorEventFieldsFragment = {
   network: Types.Network
   inExtrinsic?: Types.Maybe<string>
   indexInBlock: number
+  channelId: number
   rationale: string
   assetIds: Array<number>
-  channel: { id: string }
 }
 
 export type GetChannelAssetsDeletedByModeratorEventsByEventIdsQueryVariables = Types.Exact<{
@@ -208,9 +227,9 @@ export type VideoAssetsDeletedByModeratorEventFieldsFragment = {
   network: Types.Network
   inExtrinsic?: Types.Maybe<string>
   indexInBlock: number
+  videoId: number
   assetIds: Array<number>
   rationale: string
-  video: { id: string }
 }
 
 export type GetVideoAssetsDeletedByModeratorEventsByEventIdsQueryVariables = Types.Exact<{
@@ -228,9 +247,9 @@ export type VideoVisibilitySetByModeratorEventFieldsFragment = {
   network: Types.Network
   inExtrinsic?: Types.Maybe<string>
   indexInBlock: number
+  videoId: number
   isHidden: boolean
   rationale: string
-  video: { id: string }
 }
 
 export type GetVideoVisibilitySetByModeratorEventsByEventIdsQueryVariables = Types.Exact<{
@@ -2394,6 +2413,18 @@ export const VideoDeletedByModeratorEventFields = gql`
     rationale
   }
 `
+export const ChannelDeletedByModeratorEventFields = gql`
+  fragment ChannelDeletedByModeratorEventFields on ChannelDeletedByModeratorEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    channelId
+    rationale
+  }
+`
 export const ChannelAssetsDeletedByModeratorEventFields = gql`
   fragment ChannelAssetsDeletedByModeratorEventFields on ChannelAssetsDeletedByModeratorEvent {
     id
@@ -2402,9 +2433,7 @@ export const ChannelAssetsDeletedByModeratorEventFields = gql`
     network
     inExtrinsic
     indexInBlock
-    channel {
-      id
-    }
+    channelId
     rationale
     assetIds
   }
@@ -2417,9 +2446,7 @@ export const VideoAssetsDeletedByModeratorEventFields = gql`
     network
     inExtrinsic
     indexInBlock
-    video {
-      id
-    }
+    videoId
     assetIds
     rationale
   }
@@ -2432,9 +2459,7 @@ export const VideoVisibilitySetByModeratorEventFields = gql`
     network
     inExtrinsic
     indexInBlock
-    video {
-      id
-    }
+    videoId
     isHidden
     rationale
   }
@@ -4320,6 +4345,14 @@ export const GetVideoDeletedByModeratorEventsByEventIds = gql`
     }
   }
   ${VideoDeletedByModeratorEventFields}
+`
+export const GetChannelDeletedByModeratorEventsByEventIds = gql`
+  query getChannelDeletedByModeratorEventsByEventIds($eventIds: [ID!]) {
+    channelDeletedByModeratorEvents(where: { id_in: $eventIds }) {
+      ...ChannelDeletedByModeratorEventFields
+    }
+  }
+  ${ChannelDeletedByModeratorEventFields}
 `
 export const GetChannelAssetsDeletedByModeratorEventsByEventIds = gql`
   query getChannelAssetsDeletedByModeratorEventsByEventIds($eventIds: [ID!]) {
