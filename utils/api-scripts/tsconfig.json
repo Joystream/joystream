@@ -11,11 +11,7 @@
     "types": ["node"],
     "noUnusedLocals": true,
     "baseUrl": "./",
-    "skipLibCheck": true,
-    "paths": {
-      "@polkadot/types-augment": ["../../types/augment/augment-types.d.ts"],
-      "@polkadot/api-augment": ["../../types/augment/augment-api.d.ts"]
-    }
+    "skipLibCheck": true
   },
   "include": ["src/**/*"]
 }

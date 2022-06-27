@@ -9,10 +9,6 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "baseUrl": ".",
-    "resolveJsonModule": true,
-    "paths": {
-      "@polkadot/types-augment": ["../../types/augment/augment-types.d.ts"],
-      "@polkadot/api-augment": ["../../types/augment/augment-api.d.ts"]
-    }
+    "resolveJsonModule": true
   }
 }
