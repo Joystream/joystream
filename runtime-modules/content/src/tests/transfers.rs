@@ -375,3 +375,19 @@ fn accept_transfer_status_succeeds_for_members_to_curators_with_price() {
         );
     })
 }
+
+#[test]
+fn accept_channel_transfer_fails_with_invalid_transfer_id() {
+    with_default_mock_builder(||{
+        ContentTest::with_member_channel().setup();
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        AcceptChannelTransferFixture::default()
+            .with_origin(RawOrigin::Signed(THIRD_MEMBER_ACCOUNT_ID))
+            .with_transfer_id(2)
+            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferCommitmentParams.into()))
+
+    })
+}

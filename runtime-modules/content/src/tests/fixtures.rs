@@ -2913,6 +2913,14 @@ impl AcceptChannelTransferFixture {
         })
     }
 
+    pub fn with_transfer_id(self, id: u64) -> Self {
+        let old_transfer_params = self.params.clone();
+        self.with_transfer_params(TransferParameters {
+            transfer_id: Some(id),
+            ..old_transfer_params
+        })
+    }
+
     pub fn with_collaborators(
         self,
         new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
