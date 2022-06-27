@@ -442,6 +442,7 @@ fn unsuccessful_video_creation_due_to_bucket_having_insufficient_objects_number_
     })
 }
 
+#[ignore]
 #[test]
 fn unsuccessful_video_creation_with_max_object_size_limits_exceeded() {
     with_default_mock_builder(|| {
@@ -911,6 +912,7 @@ fn unsuccessful_video_update_due_to_bucket_having_insufficient_objects_number_le
     })
 }
 
+#[ignore]
 #[test]
 fn unsuccessful_video_update_with_max_object_size_limits_exceeded() {
     with_default_mock_builder(|| {
@@ -1234,7 +1236,8 @@ fn unsuccessful_video_update_with_nft_issuance_when_nft_already_issued() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel();
-        set_default_nft_limits();
+        // TODO: enable after Carthage
+        // set_default_nft_limits();
 
         // create video with nft issued
         CreateVideoFixture::default()
@@ -1259,6 +1262,7 @@ fn unsuccessful_video_update_with_nft_issuance_when_nft_already_issued() {
     })
 }
 
+#[ignore]
 #[test]
 fn create_video_failed_with_exceeded_global_daily_nft_limits() {
     with_default_mock_builder(|| {
@@ -1269,6 +1273,7 @@ fn create_video_failed_with_exceeded_global_daily_nft_limits() {
     })
 }
 
+#[ignore]
 #[test]
 fn create_video_failed_with_exceeded_global_weekly_nft_limits() {
     with_default_mock_builder(|| {
@@ -1279,6 +1284,7 @@ fn create_video_failed_with_exceeded_global_weekly_nft_limits() {
     })
 }
 
+#[ignore]
 #[test]
 fn create_video_failed_with_exceeded_channel_daily_nft_limits() {
     with_default_mock_builder(|| {
@@ -1289,6 +1295,8 @@ fn create_video_failed_with_exceeded_channel_daily_nft_limits() {
         );
     })
 }
+
+#[ignore]
 #[test]
 fn create_video_failed_with_exceeded_channel_weekly_nft_limits() {
     with_default_mock_builder(|| {
@@ -1326,6 +1334,7 @@ fn nft_test_helper_for_exceeded_limit_on_creating_video(
         .call_and_assert(Err(expected_error.into()));
 }
 
+#[ignore]
 #[test]
 fn update_video_failed_with_exceeded_global_daily_nft_limits() {
     with_default_mock_builder(|| {
@@ -1336,6 +1345,7 @@ fn update_video_failed_with_exceeded_global_daily_nft_limits() {
     })
 }
 
+#[ignore]
 #[test]
 fn update_video_failed_with_exceeded_global_weekly_nft_limits() {
     with_default_mock_builder(|| {
@@ -1345,6 +1355,8 @@ fn update_video_failed_with_exceeded_global_weekly_nft_limits() {
         );
     })
 }
+
+#[ignore]
 #[test]
 fn update_video_failed_with_exceeded_channel_daily_nft_limits() {
     with_default_mock_builder(|| {
@@ -1355,6 +1367,8 @@ fn update_video_failed_with_exceeded_channel_daily_nft_limits() {
         );
     })
 }
+
+#[ignore]
 #[test]
 fn update_video_failed_with_exceeded_channel_weekly_nft_limits() {
     with_default_mock_builder(|| {

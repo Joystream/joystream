@@ -3712,10 +3712,11 @@ impl DestroyNftFixture {
 
         if actual_result.is_ok() {
             assert!(video_post.nft_status.is_none());
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::Content(RawEvent::NftDestroyed(self.actor.clone(), self.video_id))
-            );
+            // TODO: enable after enabling destroy_nft
+            // assert_eq!(
+            //     System::events().last().unwrap().event,
+            //     MetaEvent::content(RawEvent::NftDestroyed(self.actor.clone(), self.video_id))
+            // );
         } else {
             assert_eq!(video_post, video_pre);
         }
@@ -4239,11 +4240,12 @@ impl SuccessfulNftManagementFlow {
             .with_actor(self.actor.clone())
             .with_nft_issuance(NftIssuanceParameters::<Test>::default())
             .call_and_assert(Ok(()));
+        // TODO: enable after enabling destroy_nft
         // Destroy nft
-        DestroyNftFixture::default()
-            .with_sender(self.sender.clone())
-            .with_actor(self.actor.clone())
-            .call_and_assert(Ok(()));
+        // DestroyNftFixture::default()
+        //     .with_sender(self.sender.clone())
+        //     .with_actor(self.actor.clone())
+        //     .call_and_assert(Ok(()));
         // Issue nft during video update
         UpdateVideoFixture::default()
             .with_sender(self.sender.clone())
@@ -4695,7 +4697,8 @@ pub fn create_default_member_owned_channel_with_video_with_storage_buckets(
         &[],
     );
 
-    set_default_nft_limits();
+    // TODO: enable after Carthage
+    //set_default_nft_limits();
 
     CreateVideoFixture::default()
         .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
@@ -5307,10 +5310,11 @@ pub fn run_all_fixtures_with_contexts(
             .with_sender(sender)
             .with_actor(actor)
             .call_and_assert(expected_err.clone());
-        DestroyNftFixture::default()
-            .with_sender(sender)
-            .with_actor(actor)
-            .call_and_assert(expected_err.clone());
+        // TODO: enable after enabling destroy_nft
+        // DestroyNftFixture::default()
+        //     .with_sender(sender)
+        //     .with_actor(actor)
+        //     .call_and_assert(expected_err.clone());
         ChannelAgentRemarkFixture::default()
             .with_sender(sender)
             .with_actor(actor)
@@ -5415,11 +5419,11 @@ impl UpdateGlobalNftLimitFixture {
                 },
                 new_limit
             );
-
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::Content(RawEvent::GlobalNftLimitUpdated(self.period, self.limit))
-            );
+            // TODO: enable after Carthage
+            // assert_eq!(
+            //     System::events().last().unwrap().event,
+            //     MetaEvent::content(RawEvent::GlobalNftLimitUpdated(self.period, self.limit))
+            // );
         } else {
             assert_eq!(old_limit, new_limit);
         }
@@ -5474,15 +5478,16 @@ impl UpdateChannelNftLimitFixture {
                 new_limit
             );
 
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::Content(RawEvent::ChannelNftLimitUpdated(
-                    self.actor,
-                    self.period,
-                    self.channel_id,
-                    self.limit
-                ))
-            );
+            // TODO: enable after Carthage
+            // assert_eq!(
+            //     System::events().last().unwrap().event,
+            //     MetaEvent::content(RawEvent::ChannelNftLimitUpdated(
+            //         self.actor,
+            //         self.period,
+            //         self.channel_id,
+            //         self.limit
+            //     ))
+            // );
         } else {
             assert_eq!(old_limit, new_limit);
         }
