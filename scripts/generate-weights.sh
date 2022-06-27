@@ -32,9 +32,11 @@ substrate_pallet_benchmark() {
   fi
 }
 
-# Optionally use `--no-verify` arg to disable verify logic of benchmark
 # $1 pallet name
-# $2 folder name under to runtime-modules/ of the pallet crate
+# $2 folder name under runtime-modules/ of the pallet crate where weight.rs
+# will be copied to
+# We pass --no-verify here so we assume that benchmark tests have already been
+# verified
 joystream_pallet_benchmark() {
   echo "Generating weights for $1..."
   start=`date +%s`
