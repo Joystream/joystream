@@ -10,6 +10,7 @@
     "tsnode-strict": "node -r ts-node/register --unhandled-rejections=strict",
     "initialize-lead": "ts-node src/initialize-lead",
     "initialize-worker": "ts-node src/initialize-worker",
+    "buy-membership": "ts-node src/buy-membership",
     "storage-dev-init": "./dev-init-storage.sh"
   },
   "dependencies": {
