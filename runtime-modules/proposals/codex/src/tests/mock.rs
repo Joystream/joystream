@@ -626,63 +626,11 @@ impl council::Config for Test {
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
     type StakingAccountValidator = ();
-    type WeightInfo = CouncilWeightInfo;
+    type WeightInfo = ();
 
     fn new_council_elected(_: &[council::CouncilMemberOf<Self>]) {}
 
     type MemberOriginValidator = ();
-}
-
-pub struct CouncilWeightInfo;
-impl council::WeightInfo for CouncilWeightInfo {
-    fn try_process_budget() -> Weight {
-        0
-    }
-    fn try_progress_stage_idle() -> Weight {
-        0
-    }
-    fn try_progress_stage_announcing_start_election(_: u32) -> Weight {
-        0
-    }
-    fn try_progress_stage_announcing_restart() -> Weight {
-        0
-    }
-    fn announce_candidacy() -> Weight {
-        0
-    }
-    fn release_candidacy_stake() -> Weight {
-        0
-    }
-    fn set_candidacy_note(_: u32) -> Weight {
-        0
-    }
-    fn withdraw_candidacy() -> Weight {
-        0
-    }
-    fn set_budget() -> Weight {
-        0
-    }
-    fn plan_budget_refill() -> Weight {
-        0
-    }
-    fn set_budget_increment() -> Weight {
-        0
-    }
-    fn set_councilor_reward() -> Weight {
-        0
-    }
-    fn funding_request(_: u32) -> Weight {
-        0
-    }
-    fn fund_council_budget() -> Weight {
-        0
-    }
-    fn councilor_remark() -> Weight {
-        0
-    }
-    fn candidate_remark() -> Weight {
-        0
-    }
 }
 
 parameter_types! {
