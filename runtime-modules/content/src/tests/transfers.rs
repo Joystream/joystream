@@ -391,3 +391,18 @@ fn accept_channel_transfer_fails_with_invalid_transfer_id() {
 
     })
 }
+
+#[test]
+fn update_channel_transfer_ok_with_status_reset() {
+    with_default_mock_builder(||{
+        ContentTest::with_member_channel().setup();
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .with_price(100u64)
+            .call_and_assert(Ok(()));
+
+        UpdateChannelTransferStatusFixture::default()
+            .with_transfer_status(ChannelTransferStatus::NoActiveTransfer)
+            .call_and_assert(Ok(()));
+    })
+}
