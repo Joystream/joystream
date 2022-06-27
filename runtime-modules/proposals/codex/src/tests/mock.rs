@@ -77,16 +77,6 @@ impl sp_runtime::BoundToRuntimeAppPublic for OtherSessionHandler {
     type Public = UintAuthorityId;
 }
 
-pub fn is_disabled(controller: AccountId) -> bool {
-    let stash = Staking::ledger(&controller).unwrap().stash;
-    let validator_index = match Session::validators().iter().position(|v| *v == stash) {
-        Some(index) => index as u32,
-        None => return false,
-    };
-
-    Session::disabled_validators().contains(&validator_index)
-}
-
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
@@ -97,12 +87,9 @@ frame_support::construct_runtime!(
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
         System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-        Authorship: pallet_authorship::{Pallet, Call, Storage, Inherent},
         Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
         Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
         Staking: staking::{Pallet, Call, Config<T>, Storage, Event<T>},
-        Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
-        Historical: pallet_session::historical::{Pallet, Storage},
         BagsList: pallet_bags_list::{Pallet, Call, Storage, Event<T>},
 
         Membership: membership::{Pallet, Call, Storage, Event<T>},
@@ -117,17 +104,6 @@ frame_support::construct_runtime!(
         MembershipWorkingGroup: working_group::<Instance6>::{Pallet, Call, Storage, Event<T>},
     }
 );
-
-/// Author of block is always 11
-pub struct Author11;
-impl FindAuthor<AccountId> for Author11 {
-    fn find_author<'a, I>(_digests: I) -> Option<AccountId>
-    where
-        I: 'a + IntoIterator<Item = (frame_support::ConsensusEngineId, &'a [u8])>,
-    {
-        Some(11)
-    }
-}
 
 parameter_types! {
     pub BlockWeights: frame_system::limits::BlockWeights =
@@ -177,34 +153,6 @@ impl balances::Config for Test {
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = ();
-}
-
-sp_runtime::impl_opaque_keys! {
-    pub struct SessionKeys {
-        pub other: OtherSessionHandler,
-    }
-}
-impl pallet_session::Config for Test {
-    type SessionManager = pallet_session::historical::NoteHistoricalRoot<Test, Staking>;
-    type Keys = SessionKeys;
-    type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
-    type SessionHandler = (OtherSessionHandler,);
-    type Event = Event;
-    type ValidatorId = AccountId;
-    type ValidatorIdOf = staking::StashOf<Test>;
-    type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
-    type WeightInfo = ();
-}
-
-impl pallet_session::historical::Config for Test {
-    type FullIdentification = staking::Exposure<AccountId, Balance>;
-    type FullIdentificationOf = staking::ExposureOf<Test>;
-}
-impl pallet_authorship::Config for Test {
-    type FindAuthor = Author11;
-    type UncleGenerations = ConstU64<0>;
-    type FilterUncle = ();
-    type EventHandler = staking::Pallet<Test>;
 }
 
 impl pallet_timestamp::Config for Test {
@@ -309,9 +257,9 @@ impl staking::Config for Test {
     type SlashDeferDuration = SlashDeferDuration;
     type SlashCancelOrigin = frame_system::EnsureRoot<Self::AccountId>;
     type BondingDuration = BondingDuration;
-    type SessionInterface = Self;
+    type SessionInterface = ();
     type EraPayout = staking::ConvertCurve<RewardCurve>;
-    type NextNewSession = Session;
+    type NextNewSession = ();
     type MaxNominatorRewardedPerValidator = ConstU32<64>;
     type OffendingValidatorsThreshold = OffendingValidatorsThreshold;
     type ElectionProvider = onchain::UnboundedExecution<OnChainSeqPhragmen>;
