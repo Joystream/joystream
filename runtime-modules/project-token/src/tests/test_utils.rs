@@ -13,21 +13,23 @@ use crate::{
         TokenIssuanceParameters, TokenSaleId, TokenSaleOf, TransferPolicy, TransferPolicyOf,
         Transfers, Validated, ValidatedPayment, VestingSchedule, VestingSource,
     },
-    GenesisConfig, Trait,
+    Config, GenesisConfig,
 };
 
 pub struct TokenDataBuilder {
-    pub(crate) total_supply: <Test as crate::Trait>::Balance,
-    pub(crate) tokens_issued: <Test as crate::Trait>::Balance,
+    pub(crate) total_supply: <Test as crate::Config>::Balance,
+    pub(crate) tokens_issued: <Test as crate::Config>::Balance,
     pub(crate) sale: Option<TokenSaleOf<Test>>,
     pub(crate) next_sale_id: TokenSaleId,
     pub(crate) transfer_policy: TransferPolicyOf<Test>,
-    pub(crate) patronage_info:
-        PatronageData<<Test as crate::Trait>::Balance, <Test as frame_system::Trait>::BlockNumber>,
-    pub(crate) symbol: <Test as frame_system::Trait>::Hash,
+    pub(crate) patronage_info: PatronageData<
+        <Test as crate::Config>::Balance,
+        <Test as frame_system::Config>::BlockNumber,
+    >,
+    pub(crate) symbol: <Test as frame_system::Config>::Hash,
     pub(crate) revenue_split: RevenueSplitState<
-        <Test as crate::Trait>::Balance,
-        <Test as frame_system::Trait>::BlockNumber,
+        <Test as crate::Config>::Balance,
+        <Test as frame_system::Config>::BlockNumber,
     >,
 }
 
@@ -47,7 +49,7 @@ impl TokenDataBuilder {
         }
     }
 
-    pub fn with_symbol(self, symbol: <Test as frame_system::Trait>::Hash) -> Self {
+    pub fn with_symbol(self, symbol: <Test as frame_system::Config>::Hash) -> Self {
         Self { symbol, ..self }
     }
 
@@ -82,6 +84,7 @@ impl TokenDataBuilder {
             tokens_issued: Balance::zero(),
             total_supply: Balance::zero(),
             sale: None,
+            // reflect TokenData init setup
             next_sale_id: 0,
             transfer_policy: TransferPolicy::Permissionless,
             patronage_info: PatronageData::<Balance, BlockNumber> {
@@ -90,7 +93,7 @@ impl TokenDataBuilder {
                 last_unclaimed_patronage_tally_block: BlockNumber::one(),
             },
             // hash of "default"
-            symbol: <Test as frame_system::Trait>::Hash::default(),
+            symbol: <Test as frame_system::Config>::Hash::default(),
             revenue_split: RevenueSplitState::Inactive,
         }
     }
@@ -214,7 +217,7 @@ impl<
         self,
         vesting_schedule: VestingSchedule<BlockNumber, Balance>,
     ) -> Self {
-        let max_vesting_schedules = <Test as Trait>::MaxVestingBalancesPerAccountPerToken::get();
+        let max_vesting_schedules = <Test as Config>::MaxVestingBalancesPerAccountPerToken::get();
         let mut acc_data = self.clone();
         for _ in 0..max_vesting_schedules - 1 {
             acc_data = acc_data.with_vesting_schedule(vesting_schedule.clone())

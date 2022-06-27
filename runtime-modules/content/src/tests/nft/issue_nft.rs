@@ -19,11 +19,6 @@ fn issue_nft() {
         // Video does not have an nft
         assert_eq!(None, Content::video_by_id(video_id).nft_status);
 
-        // Runtime tested state before call
-
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
-
         // Issue nft
         assert_ok!(Content::issue_nft(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
@@ -44,14 +39,11 @@ fn issue_nft() {
 
         // Last event checked
         let nft_issue_params = NftIssuanceParameters::<Test>::default();
-        assert_event(
-            MetaEvent::content(RawEvent::NftIssued(
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-                video_id,
-                nft_issue_params,
-            )),
-            number_of_events_before_call + 1,
-        );
+        last_event_eq!(RawEvent::NftIssued(
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+            nft_issue_params,
+        ));
     })
 }
 

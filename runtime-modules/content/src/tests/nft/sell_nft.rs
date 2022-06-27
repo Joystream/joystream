@@ -1,7 +1,7 @@
 #![cfg(test)]
 use crate::tests::fixtures::{
     create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
-    increase_account_balance_helper,
+    increase_account_balance_helper, MetaEvent,
 };
 use crate::tests::mock::*;
 use crate::*;
@@ -26,12 +26,6 @@ fn sell_nft() {
             video_id,
             NftIssuanceParameters::<Test>::default(),
         ));
-
-        // Runtime tested state before call
-
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
-
         // Sell nft
         assert_ok!(Content::sell_nft(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
@@ -54,14 +48,11 @@ fn sell_nft() {
         ));
 
         // Last event checked
-        assert_event(
-            MetaEvent::content(RawEvent::NftSellOrderMade(
-                video_id,
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-                DEFAULT_NFT_PRICE,
-            )),
-            number_of_events_before_call + 1,
-        );
+        last_event_eq!(RawEvent::NftSellOrderMade(
+            video_id,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            DEFAULT_NFT_PRICE,
+        ));
     })
 }
 

@@ -1,8 +1,9 @@
 use crate::Module;
 use frame_support::decl_error;
+use sp_std::convert::TryInto;
 
 decl_error! {
-    pub enum Error for Module<T: crate::Trait> {
+    pub enum Error for Module<T: crate::Config> {
         /// Account's transferrable balance is insufficient to perform the transfer or initialize token sale
         InsufficientTransferrableBalance,
 

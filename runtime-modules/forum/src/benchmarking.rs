@@ -1,11 +1,11 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
-use balances::Module as Balances;
+use balances::Pallet as Balances;
 use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks};
 use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;
-use frame_system::Module as System;
+use frame_system::Pallet as System;
 use frame_system::{EventRecord, RawOrigin};
 use membership::Module as Membership;
 use sp_runtime::traits::Bounded;
@@ -45,7 +45,7 @@ pub type ForumWorkingGroupInstance = working_group::Instance1;
 type ForumGroup<T> = working_group::Module<T, ForumWorkingGroupInstance>;
 
 /// Balance alias for `balances` module.
-pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
 const SEED: u32 = 0;
 const MAX_BYTES: u32 = 16384;
@@ -56,15 +56,15 @@ fn get_byte(num: u32, byte_number: u8) -> u8 {
     ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
-fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1];
     assert_eq!(event, &system_event);
 }
 
-fn member_funded_account<T: Trait + membership::Trait + balances::Trait>(
+fn member_funded_account<T: Config + membership::Config + balances::Config>(
     id: u32,
 ) -> (T::AccountId, T::MemberId)
 where
@@ -105,7 +105,7 @@ where
 
 // Method to generate a distintic valid handle
 // for a membership. For each index.
-fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
+fn handle_from_id<T: membership::Config>(id: u32) -> Vec<u8> {
     let min_handle_length = 1;
 
     let mut handle = vec![];
@@ -122,7 +122,10 @@ fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
 }
 
 fn insert_a_leader<
-    T: Trait + membership::Trait + working_group::Trait<ForumWorkingGroupInstance> + balances::Trait,
+    T: Config
+        + membership::Config
+        + working_group::Config<ForumWorkingGroupInstance>
+        + balances::Config,
 >(
     id: u64,
 ) -> T::AccountId
@@ -157,7 +160,10 @@ where
 }
 
 fn insert_a_worker<
-    T: Trait + membership::Trait + working_group::Trait<ForumWorkingGroupInstance> + balances::Trait,
+    T: Config
+        + membership::Config
+        + working_group::Config<ForumWorkingGroupInstance>
+        + balances::Config,
 >(
     leader_account_id: T::AccountId,
     id: u64,
@@ -190,7 +196,7 @@ where
     caller_id
 }
 
-fn add_and_apply_opening<T: Trait + working_group::Trait<ForumWorkingGroupInstance>>(
+fn add_and_apply_opening<T: Config + working_group::Config<ForumWorkingGroupInstance>>(
     add_opening_origin: &T::Origin,
     applicant_account_id: &T::AccountId,
     applicant_member_id: &T::MemberId,
@@ -204,7 +210,7 @@ fn add_and_apply_opening<T: Trait + working_group::Trait<ForumWorkingGroupInstan
     (opening_id, application_id)
 }
 
-fn add_opening_helper<T: Trait + working_group::Trait<ForumWorkingGroupInstance>>(
+fn add_opening_helper<T: Config + working_group::Config<ForumWorkingGroupInstance>>(
     add_opening_origin: &T::Origin,
     job_opening_type: &OpeningType,
 ) -> OpeningId {
@@ -214,10 +220,10 @@ fn add_opening_helper<T: Trait + working_group::Trait<ForumWorkingGroupInstance>
         *job_opening_type,
         StakePolicy {
             stake_amount:
-                <T as working_group::Trait<ForumWorkingGroupInstance>>::MinimumApplicationStake::get(
+                <T as working_group::Config<ForumWorkingGroupInstance>>::MinimumApplicationStake::get(
                 ),
             leaving_unstaking_period: <T as
-                working_group::Trait<ForumWorkingGroupInstance>>::MinUnstakingPeriodLimit::get() + One::one(),
+                working_group::Config<ForumWorkingGroupInstance>>::MinUnstakingPeriodLimit::get() + One::one(),
         },
         Some(One::one()),
     )
@@ -233,7 +239,7 @@ fn add_opening_helper<T: Trait + working_group::Trait<ForumWorkingGroupInstance>
     opening_id
 }
 
-fn apply_on_opening_helper<T: Trait + working_group::Trait<ForumWorkingGroupInstance>>(
+fn apply_on_opening_helper<T: Config + working_group::Config<ForumWorkingGroupInstance>>(
     applicant_account_id: &T::AccountId,
     applicant_member_id: &T::MemberId,
     opening_id: &OpeningId,
@@ -247,7 +253,7 @@ fn apply_on_opening_helper<T: Trait + working_group::Trait<ForumWorkingGroupInst
             reward_account_id: applicant_account_id.clone(),
             description: vec![],
             stake_parameters: StakeParameters {
-                stake: <T as working_group::Trait<ForumWorkingGroupInstance>>::MinimumApplicationStake::get(),
+                stake: <T as working_group::Config<ForumWorkingGroupInstance>>::MinimumApplicationStake::get(),
                 staking_account_id: applicant_account_id.clone()
             },
         },
@@ -264,7 +270,7 @@ fn apply_on_opening_helper<T: Trait + working_group::Trait<ForumWorkingGroupInst
     application_id
 }
 
-fn create_new_category<T: Trait>(
+fn create_new_category<T: Config>(
     account_id: T::AccountId,
     parent_category_id: Option<T::CategoryId>,
     title: Vec<u8>,
@@ -284,7 +290,7 @@ fn create_new_category<T: Trait>(
     category_id
 }
 
-fn create_new_thread<T: Trait>(
+fn create_new_thread<T: Config>(
     account_id: T::AccountId,
     forum_user_id: crate::ForumUserId<T>,
     category_id: T::CategoryId,
@@ -304,7 +310,7 @@ fn create_new_thread<T: Trait>(
     Module::<T>::next_thread_id() - T::ThreadId::one()
 }
 
-fn add_thread_post<T: Trait>(
+fn add_thread_post<T: Config>(
     account_id: T::AccountId,
     forum_user_id: crate::ForumUserId<T>,
     category_id: T::CategoryId,
@@ -332,13 +338,13 @@ fn good_poll_description() -> Vec<u8> {
 }
 
 /// Generates poll input
-pub fn generate_poll_input<T: Trait>(
+pub fn generate_poll_input<T: Config>(
     expiration_diff: T::Moment,
     alternatives_number: u32,
 ) -> PollInput<T::Moment> {
     PollInput {
         description: good_poll_description(),
-        end_time: pallet_timestamp::Module::<T>::now() + expiration_diff,
+        end_time: pallet_timestamp::Pallet::<T>::now() + expiration_diff,
         poll_alternatives: {
             let mut alternatives = vec![];
             for _ in 0..alternatives_number {
@@ -350,7 +356,7 @@ pub fn generate_poll_input<T: Trait>(
 }
 
 /// Generates categories tree
-pub fn generate_categories_tree<T: Trait>(
+pub fn generate_categories_tree<T: Config>(
     caller_id: T::AccountId,
     category_depth: u32,
     moderator_id: Option<ModeratorId<T>>,
@@ -396,13 +402,11 @@ pub fn generate_categories_tree<T: Trait>(
 
 benchmarks! {
     where_clause { where
-        T: balances::Trait,
-        T: membership::Trait,
-        T: working_group::Trait<ForumWorkingGroupInstance> ,
+        T: balances::Config,
+        T: membership::Config,
+        T: working_group::Config<ForumWorkingGroupInstance> ,
         T::AccountId: CreateAccountId
     }
-
-    _{  }
 
     create_category{
         let lead_id = 0;
@@ -831,7 +835,7 @@ benchmarks! {
     verify {
         let text = vec![0u8].repeat(MAX_BYTES as usize);
 
-        let new_category: Category<T::CategoryId, T::ThreadId, <T as frame_system::Trait>::Hash> = Category {
+        let new_category: Category<T::CategoryId, T::ThreadId, <T as frame_system::Config>::Hash> = Category {
             title_hash: T::calculate_hash(text.as_slice()),
             description_hash: T::calculate_hash(text.as_slice()),
             archived: false,
@@ -877,7 +881,7 @@ benchmarks! {
     verify {
         let text = vec![0u8].repeat(MAX_BYTES as usize);
 
-        let new_category: Category<T::CategoryId, T::ThreadId, <T as frame_system::Trait>::Hash> = Category {
+        let new_category: Category<T::CategoryId, T::ThreadId, <T as frame_system::Config>::Hash> = Category {
             title_hash: T::calculate_hash(text.as_slice()),
             description_hash: T::calculate_hash(text.as_slice()),
             archived: false,
@@ -914,7 +918,7 @@ benchmarks! {
 
         let k in 0 .. MAX_BYTES;
 
-        let z in 1 .. (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32;
+        let z in 1 .. (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32;
 
         // Generate categories tree
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
@@ -1041,7 +1045,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll_input::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1252,7 +1256,7 @@ benchmarks! {
 
         let i in 1 .. (T::MaxCategoryDepth::get() + 1) as u32;
 
-        let j in 2 .. (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32;
+        let j in 2 .. (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32;
 
         // Generate categories tree
         let (category_id, _) = generate_categories_tree::<T>(caller_id.clone(), i, None);
@@ -1317,7 +1321,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll_input::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
 
         let text = vec![1u8].repeat(MAX_BYTES as usize);
@@ -1333,7 +1337,7 @@ benchmarks! {
     }: moderate_thread(RawOrigin::Signed(caller_id), PrivilegedActor::Lead, category_id, thread_id, rationale.clone())
     verify {
         // Thread balance was correctly slashed
-        let thread_account_id = T::ModuleId::get().into_sub_account(thread_id);
+        let thread_account_id = T::ModuleId::get().into_sub_account_truncating(thread_id);
         assert_eq!(
            Balances::<T>::free_balance(&thread_account_id),
            T::PostDeposit::get()
@@ -1373,7 +1377,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll_input::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
 
         let text = vec![1u8].repeat(MAX_BYTES as usize);
@@ -1396,7 +1400,7 @@ benchmarks! {
     }: moderate_thread(RawOrigin::Signed(caller_id), PrivilegedActor::Moderator(moderator_id), category_id, thread_id, rationale.clone())
     verify {
         // Thread balance was correctly slashed
-        let thread_account_id = T::ModuleId::get().into_sub_account(thread_id);
+        let thread_account_id = T::ModuleId::get().into_sub_account_truncating(thread_id);
         assert_eq!(
            Balances::<T>::free_balance(&thread_account_id),
            T::PostDeposit::get()
@@ -1491,7 +1495,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll_input::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1532,7 +1536,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll_input::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1586,7 +1590,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll_input::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1633,7 +1637,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll_input::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1689,7 +1693,7 @@ benchmarks! {
         // Create thread
         let expiration_diff = 10u32.into();
         let poll = Some(
-            generate_poll_input::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1767,7 +1771,7 @@ benchmarks! {
         // Create threads
         let expiration_diff = 1010u32.into();
         let poll = Some(
-            generate_poll_input::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1810,7 +1814,7 @@ benchmarks! {
         // Create threads
         let expiration_diff = 1010u32.into();
         let poll = Some(
-            generate_poll_input::<T>(expiration_diff, (<<<T as Trait>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
+            generate_poll_input::<T>(expiration_diff, (<<<T as Config>::MapLimits as StorageLimits>::MaxPollAlternativesNumber>::get() - 1) as u32)
         );
         let text = vec![1u8].repeat(MAX_BYTES as usize);
 
@@ -1855,193 +1859,193 @@ mod tests {
     #[test]
     fn test_create_category() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_create_category::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_create_category());
         });
     }
 
     #[test]
     fn test_update_category_membership_of_moderator_new() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_update_category_membership_of_moderator_new::<Runtime>());
+            assert_ok!(
+                TestForumModule::test_benchmark_update_category_membership_of_moderator_new()
+            );
         });
     }
 
     #[test]
     fn test_update_category_membership_of_moderator_old() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_update_category_membership_of_moderator_old::<Runtime>());
+            assert_ok!(
+                TestForumModule::test_benchmark_update_category_membership_of_moderator_old()
+            );
         });
     }
 
     #[test]
     fn test_update_category_archival_status_lead() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_update_category_archival_status_lead::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_update_category_archival_status_lead());
         });
     }
 
     #[test]
     fn test_update_category_archival_status_moderator() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_update_category_archival_status_moderator::<
-                Runtime,
-            >());
+            assert_ok!(TestForumModule::test_benchmark_update_category_archival_status_moderator());
         });
     }
 
     #[test]
     fn test_delete_category_lead() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_delete_category_lead::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_delete_category_lead());
         });
     }
 
     #[test]
     fn test_delete_category_moderator() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_delete_category_moderator::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_delete_category_moderator());
         });
     }
 
     #[test]
     fn test_create_thread() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_create_thread::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_create_thread());
         });
     }
 
     #[test]
     fn test_edit_thread_metadata() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_edit_thread_metadata::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_edit_thread_metadata());
         });
     }
 
     #[test]
     fn test_delete_thread() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_delete_thread::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_delete_thread());
         });
     }
 
     #[test]
     fn test_move_thread_to_category_lead() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_move_thread_to_category_lead::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_move_thread_to_category_lead());
         });
     }
 
     #[test]
     fn test_move_thread_to_category_moderator() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_move_thread_to_category_moderator::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_move_thread_to_category_moderator());
         });
     }
 
     #[test]
     fn test_vote_on_poll() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_vote_on_poll::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_vote_on_poll());
         });
     }
 
     #[test]
     fn test_moderate_thread_lead() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_moderate_thread_lead::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_moderate_thread_lead());
         });
     }
 
     #[test]
     fn test_moderate_thread_moderator() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_moderate_thread_moderator::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_moderate_thread_moderator());
         });
     }
 
     #[test]
     fn test_add_post() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_add_post::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_add_post());
         });
     }
 
     #[test]
     fn test_react_post() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_react_post::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_react_post());
         });
     }
 
     #[test]
     fn test_edit_post_text() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_edit_post_text::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_edit_post_text());
         });
     }
 
     #[test]
     fn test_moderate_post_lead() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_moderate_post_lead::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_moderate_post_lead());
         });
     }
 
     #[test]
     fn test_moderate_post_moderator() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_moderate_post_moderator::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_moderate_post_moderator());
         });
     }
 
     #[test]
     fn test_set_stickied_threads_moderator() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_set_stickied_threads_moderator::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_set_stickied_threads_moderator());
         });
     }
 
     #[test]
     fn test_set_stickied_threads_lead() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_set_stickied_threads_lead::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_set_stickied_threads_lead());
         });
     }
 
     #[test]
     fn test_update_category_title_lead() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_update_category_title_lead::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_update_category_title_lead());
         });
     }
 
     #[test]
     fn test_update_category_title_moderator() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_update_category_title_moderator::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_update_category_title_moderator());
         });
     }
 
     #[test]
     fn test_update_category_description_lead() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_update_category_description_lead::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_update_category_description_lead());
         });
     }
 
     #[test]
     fn test_update_category_description_moderator() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_update_category_description_moderator::<
-                Runtime,
-            >());
+            assert_ok!(TestForumModule::test_benchmark_update_category_description_moderator());
         });
     }
 
     #[test]
     fn test_delete_posts() {
         with_test_externalities(|| {
-            assert_ok!(test_benchmark_delete_posts::<Runtime>());
+            assert_ok!(TestForumModule::test_benchmark_delete_posts());
         });
     }
 }

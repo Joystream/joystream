@@ -794,7 +794,7 @@ impl IssueRevenueSplitFixture {
     }
 
     pub fn execute_call(&self) -> DispatchResult {
-        let state_pre = sp_io::storage::root();
+        let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
         let result = Token::issue_revenue_split(
             self.token_id,
             self.start,
@@ -802,7 +802,7 @@ impl IssueRevenueSplitFixture {
             self.allocation_source,
             self.allocation,
         );
-        let state_post = sp_io::storage::root();
+        let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
 
         // no-op in case of error
         if result.is_err() {
@@ -835,9 +835,9 @@ impl FinalizeRevenueSplitFixture {
     }
 
     pub fn execute_call(&self) -> DispatchResult {
-        let state_pre = sp_io::storage::root();
+        let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
         let result = Token::finalize_revenue_split(self.token_id, self.account_id);
-        let state_post = sp_io::storage::root();
+        let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
 
         // no-op in case of error
         if result.is_err() {
@@ -891,14 +891,14 @@ impl ParticipateInSplitFixture {
     }
 
     pub fn execute_call(&self) -> DispatchResult {
-        let state_pre = sp_io::storage::root();
+        let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
         let result = Token::participate_in_split(
             Origin::signed(self.sender),
             self.token_id,
             self.member_id,
             self.amount,
         );
-        let state_post = sp_io::storage::root();
+        let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
 
         // no-op in case of error
         if result.is_err() {
@@ -938,14 +938,14 @@ impl TransferFixture {
     }
 
     pub fn execute_call(&self) -> DispatchResult {
-        let state_pre = sp_io::storage::root();
+        let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
         let result = Token::transfer(
             Origin::signed(self.sender),
             self.src_member_id,
             self.token_id,
             self.outputs.clone(),
         );
-        let state_post = sp_io::storage::root();
+        let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
 
         // no-op in case of error
         if result.is_err() {
@@ -990,10 +990,10 @@ impl ExitRevenueSplitFixture {
     }
 
     pub fn execute_call(&self) -> DispatchResult {
-        let state_pre = sp_io::storage::root();
+        let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
         let result =
             Token::exit_revenue_split(Origin::signed(self.sender), self.token_id, self.member_id);
-        let state_post = sp_io::storage::root();
+        let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
 
         // no-op in case of error
         if result.is_err() {

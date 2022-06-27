@@ -9,8 +9,8 @@
 export WORKSPACE_ROOT=`cargo metadata --offline --no-deps --format-version 1 | jq .workspace_root -r`
 
 docker run \
-    -e WASM_BUILD_TOOLCHAIN=nightly-2021-02-20 \
+    -e WASM_BUILD_TOOLCHAIN=nightly-2022-05-11 \
     --volume ${WORKSPACE_ROOT}/:/home/cross/project \
     --volume ${HOME}/.cargo/registry:/home/cross/.cargo/registry \
-    joystream/rust-raspberry:nightly-2021-02-20 \
+    joystream/rust-raspberry:nightly-2022-05-11 \
     build --release -p joystream-node

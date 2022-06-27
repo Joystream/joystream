@@ -11,12 +11,14 @@ use frame_support::{
     dispatch::{fmt::Debug, marker::Copy, DispatchError, DispatchResult},
     ensure,
     traits::{Currency, ExistenceRequirement, Get},
+    PalletId,
 };
 use frame_system::ensure_signed;
+use scale_info::TypeInfo;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
     traits::{AccountIdConversion, Convert, UniqueSaturatedInto},
-    ModuleId, Permill,
+    Permill,
 };
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::Sum;
@@ -39,14 +41,13 @@ pub use events::{Event, RawEvent};
 use traits::PalletToken;
 use types::*;
 
-/// Pallet Configuration Trait
-pub trait Trait:
-    frame_system::Trait + balances::Trait + storage::Trait + membership::Trait
+/// Pallet Configuration
+pub trait Config:
+    frame_system::Config + balances::Config + storage::Config + membership::Config
 {
     /// Events
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
-    // TODO: Add frame_support::pallet_prelude::TypeInfo trait
     /// the Balance type used
     type Balance: AtLeast32BitUnsigned
         + FullCodec
@@ -57,19 +58,20 @@ pub trait Trait:
         + Sum
         + From<u64>
         + UniqueSaturatedInto<u64>
-        + Into<JoyBalanceOf<Self>>;
+        + Into<JoyBalanceOf<Self>>
+        + TypeInfo;
 
     /// The token identifier used
-    type TokenId: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug;
+    type TokenId: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug + TypeInfo;
 
     /// Block number to balance converter used for interest calculation
-    type BlockNumberToBalance: Convert<Self::BlockNumber, <Self as Trait>::Balance>;
+    type BlockNumberToBalance: Convert<Self::BlockNumber, <Self as Config>::Balance>;
 
     /// The storage type used
     type DataObjectStorage: storage::DataObjectStorage<Self>;
 
     /// Tresury account for the various tokens
-    type ModuleId: Get<ModuleId>;
+    type ModuleId: Get<PalletId>;
 
     /// Existential Deposit for the JOY pallet
     type JoyExistentialDeposit: Get<JoyBalanceOf<Self>>;
@@ -92,7 +94,7 @@ pub trait Trait:
 }
 
 decl_storage! {
-    trait Store for Module<T: Trait> as Token {
+    trait Store for Module<T: Config> as Token {
         /// Double map TokenId x MemberId => AccountData for managing account data
         pub AccountInfoByTokenAndMember get(fn account_info_by_token_and_member) config():
         double_map
@@ -148,7 +150,7 @@ decl_storage! {
 }
 
 decl_module! {
-    pub struct Module<T: Trait> for enum Call
+    pub struct Module<T: Config> for enum Call
     where
         origin: T::Origin
     {
@@ -359,7 +361,7 @@ decl_module! {
                 token_id,
                 &member_id,
                 AccountDataOf::<T>::new_with_amount_and_bond(
-                    <T as Trait>::Balance::zero(),
+                    <T as Config>::Balance::zero(),
                     bloat_bond,
                 ));
 
@@ -689,11 +691,11 @@ decl_module! {
     }
 }
 
-impl<T: Trait>
+impl<T: Config>
     PalletToken<
         T::TokenId,
         T::MemberId,
-        <T as frame_system::Trait>::AccountId,
+        <T as frame_system::Config>::AccountId,
         JoyBalanceOf<T>,
         TokenIssuanceParametersOf<T>,
         T::BlockNumber,
@@ -791,7 +793,7 @@ impl<T: Trait>
 
         TokenInfoById::<T>::mutate(token_id, |token_info| {
             token_info.increase_supply_by(unclaimed_patronage);
-            token_info.set_unclaimed_tally_patronage_at_block(<T as Trait>::Balance::zero(), now);
+            token_info.set_unclaimed_tally_patronage_at_block(<T as Config>::Balance::zero(), now);
         });
 
         Self::deposit_event(RawEvent::PatronageCreditClaimed(
@@ -1003,8 +1005,8 @@ impl<T: Trait>
         new_duration: Option<T::BlockNumber>,
     ) -> DispatchResult {
         let token_data = Self::ensure_token_exists(token_id)?;
-        let sale_id = token_data.next_sale_id - 1;
         let sale = OfferingStateOf::<T>::ensure_upcoming_sale_of::<T>(&token_data)?;
+        let sale_id = token_data.next_sale_id - 1;
 
         // Validate sale duration
         if let Some(duration) = new_duration {
@@ -1018,7 +1020,7 @@ impl<T: Trait>
         // Validate start_block
         if let Some(start_block) = new_start_block {
             ensure!(
-                start_block >= <frame_system::Module<T>>::block_number(),
+                start_block >= <frame_system::Pallet<T>>::block_number(),
                 Error::<T>::SaleStartingBlockInThePast
             );
         }
@@ -1217,7 +1219,7 @@ impl<T: Trait>
 }
 
 /// Module implementation
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     pub(crate) fn ensure_account_data_exists(
         token_id: T::TokenId,
         member_id: &T::MemberId,
@@ -1354,7 +1356,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub(crate) fn current_block() -> T::BlockNumber {
-        <frame_system::Module<T>>::block_number()
+        <frame_system::Pallet<T>>::block_number()
     }
 
     /// Computes (staked_amount / supply) * allocation
@@ -1366,7 +1368,7 @@ impl<T: Trait> Module<T> {
         supply: TokenBalanceOf<T>,
         split_allocation: JoyBalanceOf<T>,
     ) -> JoyBalanceOf<T> {
-        let perc_of_the_supply = Permill::from_rational_approximation(user_staked_amount, supply);
+        let perc_of_the_supply = Permill::from_rational(user_staked_amount, supply);
         perc_of_the_supply.mul_floor(split_allocation)
     }
 
@@ -1454,8 +1456,8 @@ impl<T: Trait> Module<T> {
     pub(crate) fn ensure_purchase_cap_not_exceeded(
         sale_id: TokenSaleId,
         account_data: &Option<AccountDataOf<T>>,
-        purchase_amount: <T as Trait>::Balance,
-        cap: <T as Trait>::Balance,
+        purchase_amount: <T as Config>::Balance,
+        cap: <T as Config>::Balance,
     ) -> DispatchResult {
         let tokens_purchased = account_data
             .as_ref()
@@ -1476,7 +1478,7 @@ impl<T: Trait> Module<T> {
 
     /// Returns the account for the current module used for both bloat bond & revenue split
     pub fn module_treasury_account() -> T::AccountId {
-        <T as Trait>::ModuleId::get().into_sub_account(Vec::<u8>::new())
+        <T as Config>::ModuleId::get().into_sub_account_truncating(Vec::<u8>::new())
     }
 
     pub(crate) fn validate_destination(

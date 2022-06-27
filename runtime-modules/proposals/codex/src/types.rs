@@ -1,6 +1,7 @@
 #![warn(missing_docs)]
 
 use codec::{Decode, Encode};
+use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_std::vec::Vec;
@@ -13,7 +14,7 @@ use content::NftLimitPeriod;
 use working_group::StakePolicy;
 
 /// Encodes proposal using its details information.
-pub trait ProposalEncoder<T: crate::Trait> {
+pub trait ProposalEncoder<T: crate::Config> {
     /// Encodes proposal using its details information.
     fn encode_proposal(proposal_details: ProposalDetailsOf<T>) -> Vec<u8>;
 }
@@ -21,18 +22,18 @@ pub trait ProposalEncoder<T: crate::Trait> {
 /// _ProposalDetails_ alias for type simplification
 pub type ProposalDetailsOf<T> = ProposalDetails<
     crate::BalanceOf<T>,
-    <T as frame_system::Trait>::BlockNumber,
-    <T as frame_system::Trait>::AccountId,
+    <T as frame_system::Config>::BlockNumber,
+    <T as frame_system::Config>::AccountId,
     working_group::WorkerId<T>,
     working_group::OpeningId,
     blog::PostId,
-    <T as proposals_engine::Trait>::ProposalId,
+    <T as proposals_engine::Config>::ProposalId,
     content::UpdateChannelPayoutsParameters<T>,
 >;
 
 /// Proposal details provide voters the information required for the perceived voting.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]
 pub enum ProposalDetails<
     Balance,
     BlockNumber,
@@ -158,7 +159,7 @@ impl<
 
 /// Proposal parameters common to all proposals
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Encode, Decode, Debug, Default, Clone, PartialEq, Eq, TypeInfo)]
 pub struct GeneralProposalParams<MemberId, AccountId, BlockNumber> {
     /// Member ID of proposer
     pub member_id: MemberId,
@@ -178,7 +179,7 @@ pub struct GeneralProposalParams<MemberId, AccountId, BlockNumber> {
 
 /// Parameters for the 'terminate the leader position' proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]
 pub struct TerminateRoleParameters<WorkerId, Balance> {
     /// Worker identifier.
     pub worker_id: WorkerId,
@@ -192,7 +193,7 @@ pub struct TerminateRoleParameters<WorkerId, Balance> {
 
 /// Parameters for the 'Fill Working Group Lead' proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]
 pub struct FillOpeningParameters {
     /// Identifier for opening in group.
     pub opening_id: working_group::OpeningId,
@@ -206,7 +207,7 @@ pub struct FillOpeningParameters {
 
 /// Parameters for the 'Create Working Group Lead Opening' proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]
 pub struct CreateOpeningParameters<BlockNumber, Balance> {
     /// Opening description.
     pub description: Vec<u8>,
