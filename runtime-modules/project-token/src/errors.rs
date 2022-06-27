@@ -25,7 +25,9 @@ decl_error! {
         /// Account Already exists
         AccountAlreadyExists,
 
-        /// Token's current issuance state is not Idle
+        /// Transfer destination member id invalid
+        TransferDestinationMemberDoesNotExist,
+
         /// Token's current offering state is not Idle
         TokenIssuanceNotInIdleState,
 
