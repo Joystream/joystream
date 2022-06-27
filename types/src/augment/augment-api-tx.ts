@@ -1976,6 +1976,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - `C` is the length of `wasm`
        * However, we treat this as a full block as `frame_system::Module::set_code` does
        * # </weight>
+       * #[weight = (T::BlockWeights::get().get(DispatchClass::Operational).base_extrinsic, DispatchClass::Operational)]
        **/
       executeRuntimeUpgradeProposal: AugmentedSubmittable<(wasm: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Bytes]>;
       /**
