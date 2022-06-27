@@ -362,6 +362,7 @@ fn unsuccessful_nft_owner_with_invalid_acount() {
     })
 }
 
+#[ignore]
 #[test]
 fn unsuccessful_nft_rewark_during_transfer() {
     with_default_mock_builder(|| {
@@ -385,6 +386,7 @@ fn unsuccessful_nft_rewark_during_transfer() {
     })
 }
 
+#[ignore]
 #[test]
 fn unsuccessful_channel_owner_remark_during_transfer() {
     with_default_mock_builder(|| {
@@ -406,6 +408,7 @@ fn unsuccessful_channel_owner_remark_during_transfer() {
     })
 }
 
+#[ignore]
 #[test]
 fn unsuccessful_channel_agent_rewark_during_transfer() {
     with_default_mock_builder(|| {

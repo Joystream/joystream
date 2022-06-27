@@ -2351,72 +2351,77 @@ decl_module! {
         /// Updates channel transfer status to whatever the current owner wants.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_channel_transfer_status(
-            origin,
-            channel_id: T::ChannelId,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            new_transfer_status: ChannelTransferStatus<T::MemberId, T::CuratorGroupId, BalanceOf<T>>
+            _origin,
+            _channel_id: T::ChannelId,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _new_transfer_status: ChannelTransferStatus<T::MemberId, T::CuratorGroupId, BalanceOf<T>>
         ) {
-            let channel = Self::ensure_channel_exists(&channel_id)?;
-            ensure_actor_authorized_to_transfer_channel::<T>(origin, &actor, &channel)?;
+            todo!()
 
-            if let ChannelTransferStatus::PendingTransfer(ref params) = new_transfer_status {
-                Self::validate_member_set(&params.transfer_params.new_collaborators.keys().cloned().collect())?;
-            }
+            // TODO: enable after Carthage
+            // let channel = Self::ensure_channel_exists(&channel_id)?;
+            // ensure_actor_authorized_to_transfer_channel::<T>(origin, &actor, &channel)?;
 
-            //
-            // == MUTATION SAFE ==
-            //
+            // if let ChannelTransferStatus::PendingTransfer(ref params) = new_transfer_status {
+            //     Self::validate_member_set(&params.transfer_params.new_collaborators.keys().cloned().collect())?;
+            // }
 
-            ChannelById::<T>::mutate(&channel_id,
-                |channel| channel.transfer_status = new_transfer_status.clone()
-            );
+            // //
+            // // == MUTATION SAFE ==
+            // //
 
-            Self::deposit_event(
-                RawEvent::UpdateChannelTransferStatus(channel_id, actor, new_transfer_status)
-            );
+            // ChannelById::<T>::mutate(&channel_id,
+            //     |channel| channel.transfer_status = new_transfer_status.clone()
+            // );
+
+            // Self::deposit_event(
+            //     RawEvent::UpdateChannelTransferStatus(channel_id, actor, new_transfer_status)
+            // );
         }
 
         /// Accepts channel transfer.
         /// `commitment_params` is required to prevent changing the transfer conditions.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn accept_channel_transfer(
-            origin,
-            channel_id: T::ChannelId,
-            commitment_params: TransferParameters<T::MemberId, BalanceOf<T>>
+            _origin,
+            _channel_id: T::ChannelId,
+            _commitment_params: TransferParameters<T::MemberId, BalanceOf<T>>
         ) {
-            let sender = ensure_signed(origin)?;
-            let channel = Self::ensure_channel_exists(&channel_id)?;
+            todo!()
+            // TODO: enable after Carthage
+            // let sender = ensure_signed(origin)?;
+            // let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            let params =
-                if let ChannelTransferStatus::PendingTransfer(ref params) = channel.transfer_status {
-                    ensure_is_authorized_to_act_as_channel_owner::<T>(&sender, &params.new_owner)?;
-                    Self::validate_channel_transfer_acceptance(&commitment_params, params)?;
+            // let params =
+            //     if let ChannelTransferStatus::PendingTransfer(ref params) = channel.transfer_status {
+            //         ensure_is_authorized_to_act_as_channel_owner::<T>(&sender, &params.new_owner)?;
+            //         Self::validate_channel_transfer_acceptance(&commitment_params, params)?;
 
-                    params
-                } else {
-                    return Err(Error::<T>::InvalidChannelTransferStatus.into());
-                };
+            //         params
+            //     } else {
+            //         return Err(Error::<T>::InvalidChannelTransferStatus.into());
+            //     };
 
-            let new_owner = params.new_owner.clone();
-            let new_collaborators = commitment_params.new_collaborators.clone();
+            // let new_owner = params.new_owner.clone();
+            // let new_collaborators = commitment_params.new_collaborators.clone();
 
-            //
-            // == MUTATION SAFE ==
-            //
+            // //
+            // // == MUTATION SAFE ==
+            // //
 
-            if !params.transfer_params.is_free_of_charge() {
-                Self::pay_for_channel_swap(&channel.owner, &new_owner, commitment_params.price)?;
-            }
+            // if !params.transfer_params.is_free_of_charge() {
+            //     Self::pay_for_channel_swap(&channel.owner, &new_owner, commitment_params.price)?;
+            // }
 
-            ChannelById::<T>::mutate(&channel_id, |channel| {
-                channel.transfer_status = ChannelTransferStatus::NoActiveTransfer;
-                channel.owner = new_owner;
-                channel.collaborators = new_collaborators;
-            });
+            // ChannelById::<T>::mutate(&channel_id, |channel| {
+            //     channel.transfer_status = ChannelTransferStatus::NoActiveTransfer;
+            //     channel.owner = new_owner;
+            //     channel.collaborators = new_collaborators;
+            // });
 
-            Self::deposit_event(
-                RawEvent::ChannelTransferAccepted(channel_id, commitment_params)
-            );
+            // Self::deposit_event(
+            //     RawEvent::ChannelTransferAccepted(channel_id, commitment_params)
+            // );
         }
 
         /// Claims an accumulated channel reward for a council.
@@ -3210,7 +3215,7 @@ impl<T: Config> Module<T> {
     }
 
     // Validates channel transfer acceptance parameters: commitment params, new owner balance.
-    fn validate_channel_transfer_acceptance(
+    fn _validate_channel_transfer_acceptance(
         commitment_params: &TransferParameters<T::MemberId, BalanceOf<T>>,
         params: &PendingTransfer<T::MemberId, T::CuratorGroupId, BalanceOf<T>>,
     ) -> DispatchResult {
@@ -3474,7 +3479,16 @@ decl_event!(
         >,
         TransferParameters =
             TransferParameters<<T as common::MembershipTypes>::MemberId, BalanceOf<T>>,
-        AccountId = <T as frame_system::Config>::AccountId,
+        AccountId = <T as frame_system::Config>::AccountId
+        // TODO: enable after Carthage
+        // ChannelTransferStatus = ChannelTransferStatus<
+        //     <T as common::MembershipTypes>::MemberId,
+        //     <T as ContentActorAuthenticator>::CuratorGroupId,
+        //     BalanceOf<T>,
+        // >,
+        // TransferParameters =
+        //     TransferParameters<<T as common::MembershipTypes>::MemberId, BalanceOf<T>>,
+        AccountId = <T as frame_system::Trait>::AccountId,
         UpdateChannelPayoutsParameters = UpdateChannelPayoutsParameters<T>,
         TokenId = <T as project_token::Config>::TokenId,
     {
@@ -3582,9 +3596,10 @@ decl_event!(
         ChannelAgentRemarked(ContentActor, ChannelId, Vec<u8>),
         NftOwnerRemarked(ContentActor, VideoId, Vec<u8>),
 
+        // TODO: enable after Carthage
         // Channel transfer
-        UpdateChannelTransferStatus(ChannelId, ContentActor, ChannelTransferStatus),
-        ChannelTransferAccepted(ChannelId, TransferParameters),
+        // UpdateChannelTransferStatus(ChannelId, ContentActor, ChannelTransferStatus),
+        // ChannelTransferAccepted(ChannelId, TransferParameters),
 
         /// Nft limits
         GlobalNftLimitUpdated(NftLimitPeriod, u64),

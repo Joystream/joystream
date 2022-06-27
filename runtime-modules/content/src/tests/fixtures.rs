@@ -2843,14 +2843,15 @@ impl UpdateChannelTransferStatusFixture {
         let new_channel = Content::channel_by_id(self.channel_id);
         if actual_result.is_ok() {
             assert_eq!(new_channel.transfer_status, self.transfer_status.clone());
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::Content(RawEvent::UpdateChannelTransferStatus(
-                    self.channel_id,
-                    self.actor.clone(),
-                    self.transfer_status.clone()
-                ))
-            );
+            // TODO: enable after Carthage
+            // assert_eq!(
+            //     System::events().last().unwrap().event,
+            //     MetaEvent::content(RawEvent::UpdateChannelTransferStatus(
+            //         self.channel_id,
+            //         self.actor.clone(),
+            //         self.transfer_status.clone()
+            //     ))
+            // );
         } else {
             assert_eq!(new_channel.transfer_status, old_channel.transfer_status,);
         }
@@ -2933,6 +2934,7 @@ impl AcceptChannelTransferFixture {
 
             assert_eq!(new_channel.owner, channel_owner);
             assert_eq!(new_channel.collaborators, self.params.new_collaborators);
+<<<<<<< HEAD
             assert_eq!(
                 System::events().last().unwrap().event,
                 MetaEvent::Content(RawEvent::ChannelTransferAccepted(
@@ -2940,6 +2942,16 @@ impl AcceptChannelTransferFixture {
                     self.params.clone()
                 ))
             );
+=======
+            // TODO: enable after Carthage
+            // assert_eq!(
+            //     System::events().last().unwrap().event,
+            //     MetaEvent::content(RawEvent::ChannelTransferAccepted(
+            //         self.channel_id,
+            //         self.params.clone()
+            //     ))
+            // );
+>>>>>>> 4c8c6f4ba7 (disable channel transfers)
         } else {
             assert_eq!(new_channel.transfer_status, old_channel.transfer_status,);
         }
@@ -5303,10 +5315,11 @@ pub fn run_all_fixtures_with_contexts(
             .with_sender(sender)
             .with_actor(actor)
             .call_and_assert(expected_err.clone());
-        UpdateChannelTransferStatusFixture::default()
-            .with_sender(sender)
-            .with_actor(actor)
-            .call_and_assert(expected_err.clone());
+        // TODO: enable after Carthage
+        // UpdateChannelTransferStatusFixture::default()
+        //     .with_sender(sender)
+        //     .with_actor(actor)
+        //     .call_and_assert(expected_err.clone());
         ClaimChannelRewardFixture::default()
             .with_sender(sender)
             .with_actor(actor)

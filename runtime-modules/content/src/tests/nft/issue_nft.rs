@@ -505,6 +505,7 @@ fn nft_counters_increment_works_as_expected() {
     })
 }
 
+#[ignore]
 #[test]
 fn issue_nft_fails_with_pending_channel_transfer() {
     with_default_mock_builder(|| {

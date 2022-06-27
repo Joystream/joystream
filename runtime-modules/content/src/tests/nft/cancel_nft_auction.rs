@@ -284,6 +284,7 @@ fn cancel_nft_auction_english_auction_with_bids() {
     })
 }
 
+#[ignore]
 #[test]
 fn cancel_open_auction_fails_during_channel_transfer() {
     with_default_mock_builder(|| {
@@ -306,6 +307,7 @@ fn cancel_open_auction_fails_during_channel_transfer() {
     })
 }
 
+#[ignore]
 #[test]
 fn cancel_english_auction_fails_during_channel_transfer() {
     with_default_mock_builder(|| {

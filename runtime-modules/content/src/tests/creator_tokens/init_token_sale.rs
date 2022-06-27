@@ -120,6 +120,7 @@ fn successful_init_curator_channel_creator_token_sale_by_lead() {
     })
 }
 
+#[ignore]
 #[test]
 fn init_token_sale_fails_during_channel_transfer() {
     with_default_mock_builder(|| {

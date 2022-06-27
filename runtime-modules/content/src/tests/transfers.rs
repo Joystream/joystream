@@ -8,6 +8,7 @@ use sp_core::sp_std::iter::FromIterator;
 use sp_std::collections::btree_map::BTreeMap;
 use strum::IntoEnumIterator;
 
+#[ignore]
 #[test]
 fn update_channel_transfer_status_succeeds() {
     with_default_mock_builder(|| {
@@ -21,6 +22,7 @@ fn update_channel_transfer_status_succeeds() {
     })
 }
 
+#[ignore]
 #[test]
 fn update_channel_transfer_status_fails_with_invalid_channel_id() {
     with_default_mock_builder(|| {
@@ -38,6 +40,7 @@ fn update_channel_transfer_status_fails_with_invalid_channel_id() {
     })
 }
 
+#[ignore]
 #[test]
 fn update_channel_transfer_status_fails_with_invalid_origin() {
     with_default_mock_builder(|| {
@@ -53,6 +56,7 @@ fn update_channel_transfer_status_fails_with_invalid_origin() {
     })
 }
 
+#[ignore]
 #[test]
 fn update_channel_transfer_status_fails_with_member_actor() {
     with_default_mock_builder(|| {
@@ -69,6 +73,7 @@ fn update_channel_transfer_status_fails_with_member_actor() {
     })
 }
 
+#[ignore]
 #[test]
 fn update_channel_transfer_status_fails_with_invalid_collaborators() {
     with_default_mock_builder(|| {
@@ -88,6 +93,7 @@ fn update_channel_transfer_status_fails_with_invalid_collaborators() {
     })
 }
 
+#[ignore]
 #[test]
 fn update_channel_transfer_status_fails_with_non_channel_owner() {
     with_default_mock_builder(|| {
@@ -108,6 +114,7 @@ fn update_channel_transfer_status_fails_with_non_channel_owner() {
     })
 }
 
+#[ignore]
 #[test]
 fn accept_transfer_status_fails_with_invalid_origin() {
     with_default_mock_builder(|| {
@@ -127,6 +134,7 @@ fn accept_transfer_status_fails_with_invalid_origin() {
     })
 }
 
+#[ignore]
 #[test]
 fn accept_transfer_status_succeeds() {
     with_default_mock_builder(|| {
@@ -150,6 +158,7 @@ fn accept_transfer_status_succeeds() {
     })
 }
 
+#[ignore]
 #[test]
 fn accept_transfer_status_fails_with_invalid_commitment_params() {
     with_default_mock_builder(|| {
@@ -175,6 +184,7 @@ fn accept_transfer_status_fails_with_invalid_commitment_params() {
     })
 }
 
+#[ignore]
 #[test]
 fn accept_transfer_status_fails_with_invalid_channel_id() {
     with_default_mock_builder(|| {
@@ -192,6 +202,7 @@ fn accept_transfer_status_fails_with_invalid_channel_id() {
     })
 }
 
+#[ignore]
 #[test]
 fn accept_transfer_status_fails_with_invalid_status() {
     with_default_mock_builder(|| {
@@ -206,6 +217,7 @@ fn accept_transfer_status_fails_with_invalid_status() {
     })
 }
 
+#[ignore]
 #[test]
 fn accept_transfer_status_fails_with_non_channel_owner() {
     with_default_mock_builder(|| {
@@ -229,6 +241,7 @@ fn accept_transfer_status_fails_with_non_channel_owner() {
     })
 }
 
+#[ignore]
 #[test]
 fn accept_transfer_status_fails_with_invalid_balance_for_members() {
     with_default_mock_builder(|| {
@@ -253,6 +266,7 @@ fn accept_transfer_status_fails_with_invalid_balance_for_members() {
     })
 }
 
+#[ignore]
 #[test]
 fn accept_transfer_status_fails_with_invalid_balance_for_curator_groups() {
     with_default_mock_builder(|| {
@@ -280,6 +294,7 @@ fn accept_transfer_status_fails_with_invalid_balance_for_curator_groups() {
     })
 }
 
+#[ignore]
 #[test]
 fn accept_transfer_status_succeeds_for_members_with_price() {
     with_default_mock_builder(|| {
@@ -315,6 +330,7 @@ fn accept_transfer_status_succeeds_for_members_with_price() {
     })
 }
 
+#[ignore]
 #[test]
 fn accept_transfer_status_succeeds_for_curators_to_members_with_price() {
     with_default_mock_builder(|| {
@@ -352,6 +368,7 @@ fn accept_transfer_status_succeeds_for_curators_to_members_with_price() {
     })
 }
 
+#[ignore]
 #[test]
 fn accept_transfer_status_succeeds_for_members_to_curators_with_price() {
     with_default_mock_builder(|| {

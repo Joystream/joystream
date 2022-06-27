@@ -148,6 +148,7 @@ fn successful_issue_curator_channel_revenue_split_by_lead() {
     })
 }
 
+#[ignore]
 #[test]
 fn issue_revenue_split_fails_during_trasfer() {
     with_default_mock_builder(|| {

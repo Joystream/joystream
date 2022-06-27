@@ -103,6 +103,7 @@ fn successful_issue_curator_channel_creator_token_by_lead() {
     })
 }
 
+#[ignore]
 #[test]
 fn issue_token_fails_during_transfer() {
     with_default_mock_builder(|| {

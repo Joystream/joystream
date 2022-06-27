@@ -216,6 +216,7 @@ fn cancel_buy_now_not_in_auction_state() {
     })
 }
 
+#[ignore]
 #[test]
 fn cancel_buy_now_fails_during_channel_transfer() {
     with_default_mock_builder(|| {

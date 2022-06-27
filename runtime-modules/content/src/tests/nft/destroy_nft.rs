@@ -193,6 +193,7 @@ fn destroy_nft_transactional_status_is_not_idle() {
     })
 }
 
+#[ignore]
 #[test]
 fn destroy_nft_fails_during_channel_transfer() {
     with_default_mock_builder(|| {

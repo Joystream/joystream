@@ -300,6 +300,7 @@ fn unsuccessful_channel_update_with_invalid_channel_id() {
     })
 }
 
+#[ignore]
 #[test]
 fn unsuccessful_channel_update_with_pending_status_transfer() {
     with_default_mock_builder(|| {
@@ -2940,6 +2941,7 @@ fn successful_channel_agent_remark_by_owner_member() {
 
 // Curator channels
 
+#[ignore]
 #[test]
 fn unsuccessful_channel_transfer_by_curator_agent_without_permissions() {
     with_default_mock_builder(|| {
@@ -2955,6 +2957,7 @@ fn unsuccessful_channel_transfer_by_curator_agent_without_permissions() {
     })
 }
 
+#[ignore]
 #[test]
 fn successful_transfer_by_curator_agent() {
     with_default_mock_builder(|| {
@@ -2968,6 +2971,7 @@ fn successful_transfer_by_curator_agent() {
     })
 }
 
+#[ignore]
 #[test]
 fn successful_channel_transfer_by_lead() {
     with_default_mock_builder(|| {
@@ -2981,6 +2985,7 @@ fn successful_channel_transfer_by_lead() {
 
 // Member channels
 
+#[ignore]
 #[test]
 fn unsuccessful_channel_transfer_by_collaborator_without_permissions() {
     with_default_mock_builder(|| {
@@ -2996,6 +3001,7 @@ fn unsuccessful_channel_transfer_by_collaborator_without_permissions() {
     })
 }
 
+#[ignore]
 #[test]
 fn successful_channel_transfer_by_collaborator() {
     with_default_mock_builder(|| {
@@ -3009,6 +3015,7 @@ fn successful_channel_transfer_by_collaborator() {
     })
 }
 
+#[ignore]
 #[test]
 fn successful_channel_transfer_by_owner_member() {
     with_default_mock_builder(|| {
@@ -3052,6 +3059,7 @@ fn claim_council_reward_succeeded() {
     })
 }
 
+#[ignore]
 #[test]
 fn claim_council_reward_fails_during_transfer() {
     with_default_mock_builder(|| {

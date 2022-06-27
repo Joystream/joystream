@@ -53,6 +53,7 @@ fn successful_video_creation_by_member() {
     })
 }
 
+#[ignore]
 #[test]
 fn unuccessful_video_creation_with_pending_channel_transfer() {
     with_default_mock_builder(|| {
@@ -590,6 +591,7 @@ fn successful_video_update_by_member_with_assets_removal() {
     })
 }
 
+#[ignore]
 #[test]
 fn unsuccessful_video_update_with_pending_channel_transfer() {
     with_default_mock_builder(|| {
@@ -990,6 +992,7 @@ fn successful_video_deletion_by_member_with_assets_removal() {
     })
 }
 
+#[ignore]
 #[test]
 fn unsuccessful_video_deletion_with_pending_transfer() {
     with_default_mock_builder(|| {

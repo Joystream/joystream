@@ -349,6 +349,7 @@ fn unsuccessful_channel_balance_withdrawal_when_amount_exceeds_balance_minus_exi
     })
 }
 
+#[ignore]
 #[test]
 fn unsuccessful_channel_balance_withdrawal_during_transfer() {
     with_default_mock_builder(|| {
@@ -854,6 +855,7 @@ fn unsuccessful_member_channel_claim_and_withdraw_by_collaborator_without_withdr
     })
 }
 
+#[ignore]
 #[test]
 fn claim_and_withdraw_fails_during_channel_transfer() {
     with_default_mock_builder(|| {
