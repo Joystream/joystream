@@ -1,6 +1,6 @@
 mod types;
-use sp_runtime::traits::CheckedSub;
 use sp_std::borrow::ToOwned;
+use sp_std::cmp::min;
 pub use types::*;
 
 use crate::*;
@@ -336,30 +336,29 @@ impl<T: Config> Module<T> {
         sender_account_id: T::AccountId,
         receiver_account_id: Option<T::AccountId>,
     ) {
+        // slash sender full amount
         let _ = Balances::<T>::slash(&sender_account_id, amount);
 
-        let platform_fee = Self::platform_fee_percentage().mul_floor(amount);
-        let amount_after_platform_fee = amount.saturating_sub(platform_fee);
-        let royalty_fee = royalty_payment
-            .as_ref()
-            .map_or(<T as balances::Config>::Balance::zero(), |(r, _)| {
-                r.mul_floor(amount)
-            });
+        // compute platform fee
+        let platform_fee_pct = Self::platform_fee_percentage();
+        let platform_fee = platform_fee_pct.mul_floor(amount);
 
-        let amount_for_receiver = amount_after_platform_fee
-            .checked_sub(&royalty_fee)
-            .unwrap_or(amount_after_platform_fee);
+        // established net amount and pay royalties if necessary
+        let net_amount = if let Some((nominal_royalty_pct, creator_account)) = royalty_payment {
+            // min(creator_royalty, 100% - platform_fee_percentage) is used to avoid underflow
+            let effective_royalty_pct = min(nominal_royalty_pct, Perbill::one().saturating_sub(platform_fee_pct));
+            let royalty = effective_royalty_pct.mul_floor(amount);
 
-        if let Some(ref receiver_account) = receiver_account_id {
-            if !amount_for_receiver.is_zero() {
-                let _ = Balances::<T>::deposit_creating(receiver_account, amount_for_receiver);
-            }
-        }
+            // deposit to creator account
+            let _ = Balances::<T>::deposit_creating(&creator_account, royalty);
 
-        if let Some((_, ref royalty_reward_account)) = royalty_payment {
-            if !royalty_fee.is_zero() {
-                let _ = Balances::<T>::deposit_creating(royalty_reward_account, royalty_fee);
-            }
+            amount.saturating_sub(platform_fee).saturating_sub(royalty)
+        } else {
+            amount.saturating_sub(platform_fee)
+        };
+
+        if let Some(ref nft_owner_account) = receiver_account_id {
+            let _ = Balances::<T>::deposit_creating(nft_owner_account, net_amount);
         }
     }
 
