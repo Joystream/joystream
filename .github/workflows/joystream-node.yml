@@ -35,13 +35,16 @@ jobs:
         if: env.GIT_DIFF
 
       - name: Build
+        env:
+          WASM_BUILD_TOOLCHAIN: nightly-2022-05-11 
         run: |
-          WASM_BUILD_TOOLCHAIN=nightly-2022-05-11 cargo +nightly-2022-05-11 test --release --features runtime-benchmarks
+          cargo +nightly-2022-05-11 build --release --features runtime-benchmarks &&
+          cargo +nightly-2022-05-11 test --release --features runtime-benchmarks
         if: env.GIT_DIFF
 
-      # - name: Generate Weights
+      # - name: Test Generate Weights
       #   run: |
-      #     ./scripts/generate-weights.sh 5 2
+      #     ./scripts/generate-weights.sh 1 1
       #     # Show any changes in computed weights
       #     git diff
       #   if: env.GIT_DIFF
@@ -75,26 +78,22 @@ jobs:
       - name: Production Runtime
         run: |
           yarn cargo-checks && yarn cargo-build
-          ./target/release/joystream-node --version
         if: env.GIT_DIFF
       - name: Staging Runtime
         env:
-          RUNTIME_PROFILE: STAGING
+          RUNTIME_PROFILE: "STAGING"
         run: |
           yarn cargo-checks && yarn cargo-build
-          ./target/release/joystream-node --version
         if: env.GIT_DIFF
       - name: Playground Runtime
         env:
-          RUNTIME_PROFILE: PLAYGROUND
+          RUNTIME_PROFILE: "PLAYGROUND"
         run: |
           yarn cargo-checks && yarn cargo-build
-          ./target/release/joystream-node --version
         if: env.GIT_DIFF
       - name: Testing Runtime
         env:
-          RUNTIME_PROFILE: TESTING
+          RUNTIME_PROFILE: "TESTING"
         run: |
           yarn cargo-checks && yarn cargo-build
-          ./target/release/joystream-node --version
         if: env.GIT_DIFF

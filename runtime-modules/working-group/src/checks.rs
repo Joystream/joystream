@@ -173,7 +173,7 @@ pub(crate) fn ensure_worker_signed<T: Config<I>, I: Instance>(
     let signer_account = ensure_signed(origin)?;
 
     // Ensure that id corresponds to active worker
-    let worker = ensure_worker_exists::<T, I>(&worker_id)?;
+    let worker = ensure_worker_exists::<T, I>(worker_id)?;
 
     // Ensure that signer is actually role account of worker
     ensure!(

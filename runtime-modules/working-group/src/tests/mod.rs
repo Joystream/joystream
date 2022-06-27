@@ -529,7 +529,7 @@ fn update_worker_role_account_by_leader_succeeds() {
         let new_account_id = 10;
         let worker_id = HireLeadFixture::default().hire_lead();
 
-        let old_lead = TestWorkingGroup::worker_by_id(worker_id);
+        let old_lead = TestWorkingGroup::worker_by_id(worker_id).expect("Worker Must Exist");
 
         let update_worker_account_fixture =
             UpdateWorkerRoleAccountFixture::default_with_ids(worker_id, new_account_id);
@@ -540,10 +540,10 @@ fn update_worker_role_account_by_leader_succeeds() {
 
         assert_eq!(
             new_lead,
-            Worker::<Test> {
+            Some(Worker::<Test> {
                 role_account_id: new_account_id,
                 ..old_lead
-            }
+            })
         );
     });
 }
@@ -609,7 +609,7 @@ fn leave_worker_role_succeeds() {
 
         EventFixture::assert_last_crate_event(RawEvent::WorkerStartedLeaving(worker_id, None));
 
-        let worker = TestWorkingGroup::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id).expect("Worker Must Exist");
         run_to_block(1 + worker.job_unstaking_period);
 
         EventFixture::assert_last_crate_event(RawEvent::WorkerExited(worker_id));
@@ -638,7 +638,7 @@ fn leave_worker_role_succeeds_with_paying_missed_reward() {
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
-        let worker = TestWorkingGroup::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id).expect("Worker Must Exist");
         let leaving_block = missed_reward_block_number + worker.job_unstaking_period;
         run_to_block(leaving_block);
 
@@ -677,8 +677,9 @@ fn leave_worker_role_succeeds_with_correct_unstaking_period() {
             worker_id
         ));
 
-        let default_unstaking_period =
-            TestWorkingGroup::worker_by_id(worker_id).job_unstaking_period;
+        let default_unstaking_period = TestWorkingGroup::worker_by_id(worker_id)
+            .expect("Worker Must Exist")
+            .job_unstaking_period;
 
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
         leave_worker_role_fixture.call_and_assert(Ok(()));
@@ -725,7 +726,7 @@ fn leave_worker_role_succeeds_with_partial_payment_of_missed_reward() {
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
-        let worker = TestWorkingGroup::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id).expect("Worker Must Exist");
         run_to_block(block_number + worker.job_unstaking_period);
 
         assert_eq!(
@@ -750,10 +751,10 @@ fn leave_worker_role_by_leader_succeeds() {
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
         let current_lead = TestWorkingGroup::current_lead().unwrap();
-        let leader = TestWorkingGroup::worker_by_id(current_lead);
+        let leader = TestWorkingGroup::worker_by_id(current_lead).expect("Worker Must Exist");
         assert!(leader.started_leaving_at.is_some());
 
-        run_to_block(frame_system::Module::<Test>::block_number() + leader.job_unstaking_period);
+        run_to_block(frame_system::Pallet::<Test>::block_number() + leader.job_unstaking_period);
 
         assert_eq!(TestWorkingGroup::current_lead(), None);
     });
@@ -1926,7 +1927,7 @@ fn rewards_payments_are_successful() {
             .with_reward_per_block(Some(reward_per_block))
             .hire();
 
-        let worker = TestWorkingGroup::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id).expect("Worker Must Exist");
 
         let account_id = worker.role_account_id;
 
@@ -1961,7 +1962,7 @@ fn rewards_payments_with_no_budget() {
             .with_reward_per_block(Some(reward_per_block))
             .hire();
 
-        let worker = TestWorkingGroup::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id).expect("Worker Must Exist");
 
         let account_id = worker.role_account_id;
 
@@ -1972,7 +1973,7 @@ fn rewards_payments_with_no_budget() {
 
         assert_eq!(Balances::usable_balance(&account_id), 0);
 
-        let worker = TestWorkingGroup::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id).expect("Worker Must Exist");
 
         assert_eq!(
             worker.missed_reward.unwrap(),
@@ -1990,7 +1991,7 @@ fn rewards_payments_with_insufficient_budget_and_restored_budget() {
             .with_reward_per_block(Some(reward_per_block))
             .hire();
 
-        let worker = TestWorkingGroup::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id).expect("Worker Must Exist");
 
         let account_id = worker.reward_account_id;
 
@@ -2008,7 +2009,7 @@ fn rewards_payments_with_insufficient_budget_and_restored_budget() {
 
         assert_eq!(Balances::usable_balance(&account_id), first_budget);
 
-        let worker = TestWorkingGroup::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id).expect("Worker Must Exist");
 
         let effective_missed_reward: u64 = block_number * reward_per_block - first_budget;
 
@@ -2040,7 +2041,7 @@ fn rewards_payments_with_starting_block() {
             .with_reward_per_block(Some(reward_per_block))
             .hire();
 
-        let worker = TestWorkingGroup::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id).expect("Worker Must Exist");
 
         let account_id = worker.reward_account_id;
 

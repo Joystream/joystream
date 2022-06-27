@@ -18,8 +18,6 @@
 // Disable it because we use such syntax for a code readability.
 // Example:  voting_period: 1 * DAY
 #![allow(clippy::identity_op)]
-// Remove after the Antioch release.
-#![allow(clippy::unnecessary_wraps)]
 
 pub mod content_config;
 pub mod council_config;

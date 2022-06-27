@@ -1,26 +1,81 @@
 #![cfg(test)]
 // Internal substrate warning.
-#![allow(non_fmt_panic)]
+#![allow(non_fmt_panics)]
 
-use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
-use frame_support::{parameter_types, weights::Weight};
+use frame_election_provider_support::{
+    onchain, SequentialPhragmen, SortedListProvider, VoteWeight,
+};
+use frame_support::{
+    dispatch::DispatchError,
+    parameter_types,
+    traits::{
+        ConstU16, ConstU32, ConstU64, Currency, EnsureOneOf, FindAuthor, Imbalance, LockIdentifier,
+        OnFinalize, OnInitialize, OnUnbalanced, OneSessionHandler,
+    },
+    weights::{constants::RocksDbWeight, Weight},
+    PalletId,
+};
 pub use frame_system;
-use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned};
+use frame_system::{EnsureRoot, EnsureSigned};
 use sp_core::H256;
 use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::{
-    testing::Header,
-    traits::{BlakeTwo256, IdentityLookup},
-    DispatchResult, ModuleId,
+    testing::{Header, TestXt, UintAuthorityId},
+    traits::{BlakeTwo256, IdentityLookup, Zero},
+    DispatchResult, Perbill,
 };
-use sp_staking::SessionIndex;
+
+use sp_staking::{
+    offence::{DisableStrategy, OffenceDetails, OnOffenceHandler},
+    EraIndex, SessionIndex,
+};
 use staking_handler::{LockComparator, StakingManager};
 
 use crate as proposals_codex;
 use crate::{ProposalDetailsOf, ProposalEncoder, ProposalParameters};
-use frame_support::dispatch::DispatchError;
 use proposals_engine::VotersParameters;
-use sp_runtime::testing::TestXt;
+
+use sp_std::collections::btree_map::BTreeMap;
+use sp_std::convert::{TryFrom, TryInto};
+use std::cell::RefCell;
+
+type NegativeImbalance = <Balances as Currency<AccountId>>::NegativeImbalance;
+type PositiveImbalance = <Balances as Currency<AccountId>>::PositiveImbalance;
+
+pub const INIT_TIMESTAMP: u64 = 30_000;
+pub const BLOCK_TIME: u64 = 1000;
+
+/// The AccountId alias in this test module.
+pub(crate) type AccountId = u64;
+pub(crate) type AccountIndex = u64;
+pub(crate) type BlockNumber = u64;
+pub(crate) type Balance = u64;
+
+/// Another session handler struct to test on_disabled.
+pub struct OtherSessionHandler;
+impl OneSessionHandler<AccountId> for OtherSessionHandler {
+    type Key = UintAuthorityId;
+
+    fn on_genesis_session<'a, I: 'a>(_: I)
+    where
+        I: Iterator<Item = (&'a AccountId, Self::Key)>,
+        AccountId: 'a,
+    {
+    }
+
+    fn on_new_session<'a, I: 'a>(_: bool, _: I, _: I)
+    where
+        I: Iterator<Item = (&'a AccountId, Self::Key)>,
+        AccountId: 'a,
+    {
+    }
+
+    fn on_disabled(_validator_index: u32) {}
+}
+
+impl sp_runtime::BoundToRuntimeAppPublic for OtherSessionHandler {
+    type Public = UintAuthorityId;
+}
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -31,62 +86,211 @@ frame_support::construct_runtime!(
         NodeBlock = Block,
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
-        System: frame_system::{Module, Call, Storage, Event<T>},
-        Staking: staking::{Module, Call, Config<T>, Storage, Event<T>, ValidateUnsigned},
-        Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
-        Membership: membership::{Module, Call, Storage, Event<T>},
-        Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
-        ProposalsCodex: proposals_codex::{Module, Call, Storage, Event<T>},
-        ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
-        Council: council::{Module, Call, Storage, Event<T>},
-        Referendum: referendum::<Instance0>::{Module, Call, Storage, Event<T>},
-        ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
-        ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
-        StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Event<T>},
-        ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Event<T>},
-        MembershipWorkingGroup: working_group::<Instance4>::{Module, Call, Storage, Event<T>},
+        System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+        Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+        Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+        Staking: staking::{Pallet, Call, Config<T>, Storage, Event<T>},
+        BagsList: pallet_bags_list::{Pallet, Call, Storage, Event<T>},
+
+        Membership: membership::{Pallet, Call, Storage, Event<T>},
+        ProposalsCodex: proposals_codex::{Pallet, Call, Storage, Event<T>},
+        ProposalsEngine: proposals_engine::{Pallet, Call, Storage, Event<T>},
+        Council: council::{Pallet, Call, Storage, Event<T>},
+        Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>},
+        ProposalsDiscussion: proposals_discussion::{Pallet, Call, Storage, Event<T>},
+        ForumWorkingGroup: working_group::<Instance1>::{Pallet, Call, Storage, Event<T>},
+        StorageWorkingGroup: working_group::<Instance2>::{Pallet, Call, Storage, Event<T>},
+        ContentDirectoryWorkingGroup: working_group::<Instance3>::{Pallet, Call, Storage, Event<T>},
+        MembershipWorkingGroup: working_group::<Instance6>::{Pallet, Call, Storage, Event<T>},
     }
 );
 
 parameter_types! {
-    pub const BlockHashCount: u64 = 250;
-    pub const MinimumPeriod: u64 = 5;
+    pub BlockWeights: frame_system::limits::BlockWeights =
+        frame_system::limits::BlockWeights::simple_max(
+            frame_support::weights::constants::WEIGHT_PER_SECOND * 2
+        );
+    pub static SessionsPerEra: SessionIndex = 3;
+    pub static ExistentialDeposit: Balance = 1;
+    pub static SlashDeferDuration: EraIndex = 0;
+    pub static Period: BlockNumber = 5;
+    pub static Offset: BlockNumber = 0;
+}
+
+impl frame_system::Config for Test {
+    type BaseCallFilter = frame_support::traits::Everything;
+    type BlockWeights = ();
+    type BlockLength = ();
+    type DbWeight = RocksDbWeight;
+    type Origin = Origin;
+    type Index = AccountIndex;
+    type BlockNumber = BlockNumber;
+    type Call = Call;
+    type Hash = H256;
+    type Hashing = ::sp_runtime::traits::BlakeTwo256;
+    type AccountId = AccountId;
+    type Lookup = IdentityLookup<Self::AccountId>;
+    type Header = Header;
+    type Event = Event;
+    type BlockHashCount = frame_support::traits::ConstU64<250>;
+    type Version = ();
+    type PalletInfo = PalletInfo;
+    type AccountData = balances::AccountData<Balance>;
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
+    type SystemWeightInfo = ();
+    type SS58Prefix = ();
+    type OnSetCode = ();
+    type MaxConsumers = frame_support::traits::ConstU32<16>;
+}
+impl balances::Config for Test {
+    type MaxLocks = frame_support::traits::ConstU32<1024>;
+    type MaxReserves = ();
+    type ReserveIdentifier = [u8; 8];
+    type Balance = Balance;
+    type Event = Event;
+    type DustRemoval = ();
+    type ExistentialDeposit = ExistentialDeposit;
+    type AccountStore = System;
+    type WeightInfo = ();
+}
+
+impl pallet_timestamp::Config for Test {
+    type Moment = u64;
+    type OnTimestampSet = ();
+    type MinimumPeriod = ConstU64<5>;
+    type WeightInfo = ();
+}
+
+pallet_staking_reward_curve::build! {
+    const I_NPOS: PiecewiseLinear<'static> = curve!(
+        min_inflation: 0_025_000,
+        max_inflation: 0_100_000,
+        ideal_stake: 0_500_000,
+        falloff: 0_050_000,
+        max_piece_count: 40,
+        test_precision: 0_005_000,
+    );
+}
+parameter_types! {
+    pub const BondingDuration: EraIndex = 3;
+    pub const RewardCurve: &'static PiecewiseLinear<'static> = &I_NPOS;
+    pub const OffendingValidatorsThreshold: Perbill = Perbill::from_percent(75);
+}
+
+thread_local! {
+    pub static REWARD_REMAINDER_UNBALANCED: RefCell<u64> = RefCell::new(0);
+}
+
+pub struct RewardRemainderMock;
+
+impl OnUnbalanced<NegativeImbalance> for RewardRemainderMock {
+    fn on_nonzero_unbalanced(amount: NegativeImbalance) {
+        REWARD_REMAINDER_UNBALANCED.with(|v| {
+            *v.borrow_mut() += amount.peek();
+        });
+        drop(amount);
+    }
+}
+
+const THRESHOLDS: [sp_npos_elections::VoteWeight; 9] =
+    [10, 20, 30, 40, 50, 60, 1_000, 2_000, 10_000];
+
+parameter_types! {
+    pub static BagThresholds: &'static [sp_npos_elections::VoteWeight] = &THRESHOLDS;
+    pub static MaxNominations: u32 = 16;
+    pub static RewardOnUnbalanceWasCalled: bool = false;
+    pub static LedgerSlashPerEra: (crate::BalanceOf<Test>, BTreeMap<EraIndex, crate::BalanceOf<Test>>) = (Zero::zero(), BTreeMap::new());
+}
+
+impl pallet_bags_list::Config for Test {
+    type Event = Event;
+    type WeightInfo = ();
+    type ScoreProvider = Staking;
+    type BagThresholds = BagThresholds;
+    type Score = VoteWeight;
+}
+
+pub struct OnChainSeqPhragmen;
+impl onchain::Config for OnChainSeqPhragmen {
+    type System = Test;
+    type Solver = SequentialPhragmen<AccountId, Perbill>;
+    type DataProvider = Staking;
+    type WeightInfo = ();
+}
+
+pub struct MockReward {}
+impl OnUnbalanced<PositiveImbalance> for MockReward {
+    fn on_unbalanced(_: PositiveImbalance) {
+        RewardOnUnbalanceWasCalled::set(true);
+    }
+}
+
+pub struct OnStakerSlashMock<T: staking::Config>(core::marker::PhantomData<T>);
+impl<T: staking::Config> sp_staking::OnStakerSlash<AccountId, Balance> for OnStakerSlashMock<T> {
+    fn on_slash(
+        _pool_account: &AccountId,
+        slashed_bonded: Balance,
+        slashed_chunks: &BTreeMap<EraIndex, Balance>,
+    ) {
+        LedgerSlashPerEra::set((slashed_bonded, slashed_chunks.clone()));
+    }
+}
+
+pub struct TestBenchmarkingConfig;
+impl staking::BenchmarkingConfig for TestBenchmarkingConfig {
+    type MaxValidators = frame_support::traits::ConstU32<100>;
+    type MaxNominators = frame_support::traits::ConstU32<100>;
+}
+
+impl staking::Config for Test {
+    type MaxNominations = MaxNominations;
+    type Currency = Balances;
+    type CurrencyBalance = <Self as balances::Config>::Balance;
+    type UnixTime = Timestamp;
+    type CurrencyToVote = frame_support::traits::SaturatingCurrencyToVote;
+    type RewardRemainder = RewardRemainderMock;
+    type Event = Event;
+    type Slash = ();
+    type Reward = MockReward;
+    type SessionsPerEra = SessionsPerEra;
+    type SlashDeferDuration = SlashDeferDuration;
+    type SlashCancelOrigin = frame_system::EnsureRoot<Self::AccountId>;
+    type BondingDuration = BondingDuration;
+    type SessionInterface = ();
+    type EraPayout = staking::ConvertCurve<RewardCurve>;
+    type NextNewSession = ();
+    type MaxNominatorRewardedPerValidator = ConstU32<64>;
+    type OffendingValidatorsThreshold = OffendingValidatorsThreshold;
+    type ElectionProvider = onchain::UnboundedExecution<OnChainSeqPhragmen>;
+    type GenesisElectionProvider = Self::ElectionProvider;
+    // NOTE: consider a macro and use `UseNominatorsAndValidatorsMap<Self>` as well.
+    type VoterList = BagsList;
+    type MaxUnlockingChunks = ConstU32<32>;
+    type OnStakerSlash = OnStakerSlashMock<Test>;
+    type BenchmarkingConfig = TestBenchmarkingConfig;
+    type WeightInfo = ();
+}
+
+impl<LocalCall> frame_system::offchain::SendTransactionTypes<LocalCall> for Test
+where
+    Call: From<LocalCall>,
+{
+    type OverarchingCall = Call;
+    type Extrinsic = Extrinsic;
+}
+
+pub type Extrinsic = TestXt<Call, ()>;
+pub(crate) type StakingCall = staking::Call<Test>;
+pub(crate) type TestRuntimeCall = <Test as frame_system::Config>::Call;
+
+//////////
+
+parameter_types! {
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
     pub const ReferralCutMaximumPercent: u8 = 50;
     pub const StakingCandidateLockId: [u8; 8] = [3; 8];
     pub const CandidateStake: u64 = 100;
-}
-
-mod proposals_codex_mod {
-    pub use crate::Event;
-}
-
-impl_outer_event! {
-    pub enum TestEvent for Test {
-        proposals_codex_mod<T>,
-        frame_system<T>,
-        balances<T>,
-        staking<T>,
-        council<T>,
-        proposals_discussion<T>,
-        proposals_engine<T>,
-        referendum Instance0 <T>,
-        membership<T>,
-        working_group Instance0 <T>,
-        working_group Instance1 <T>,
-        working_group Instance2 <T>,
-        working_group Instance3 <T>,
-        working_group Instance4 <T>,
-    }
-}
-
-impl_outer_dispatch! {
-    pub enum Call for Test where origin: Origin {
-        codex::ProposalCodex,
-        proposals::ProposalsEngine,
-        staking::Staking,
-        frame_system::System,
-    }
 }
 
 impl common::membership::MembershipTypes for Test {
@@ -230,18 +434,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
 
 parameter_types! {
     pub const DefaultMembershipPrice: u64 = 100;
-    pub const ExistentialDeposit: u32 = 10;
     pub const DefaultInitialInvitationBalance: u64 = 100;
-}
-
-impl balances::Config for Test {
-    type Balance = u64;
-    type DustRemoval = ();
-    type Event = Event;
-    type ExistentialDeposit = ExistentialDeposit;
-    type AccountStore = System;
-    type WeightInfo = ();
-    type MaxLocks = ();
 }
 
 parameter_types! {
@@ -358,7 +551,7 @@ parameter_types! {
     pub const MaxWhiteListSize: u32 = 20;
     pub const PostLifeTime: u64 = 10;
     pub const PostDeposit: u64 = 100;
-    pub const ProposalsDiscussionModuleId: ModuleId = ModuleId(*b"mo:propo");
+    pub const ProposalsDiscussionModuleId: PalletId = PalletId(*b"mo:propo");
 }
 
 pub struct MockProposalsDiscussionWeight;
@@ -411,7 +604,7 @@ pub type StorageWorkingGroupInstance = working_group::Instance2;
 pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
 
 // The membership working group instance alias.
-pub type MembershipWorkingGroupInstance = working_group::Instance4;
+pub type MembershipWorkingGroupInstance = working_group::Instance6;
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
@@ -552,71 +745,6 @@ impl working_group::Config<MembershipWorkingGroupInstance> for Test {
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-pallet_staking_reward_curve::build! {
-    const I_NPOS: PiecewiseLinear<'static> = curve!(
-        min_inflation: 0_025_000,
-        max_inflation: 0_100_000,
-        ideal_stake: 0_500_000,
-        falloff: 0_050_000,
-        max_piece_count: 40,
-        test_precision: 0_005_000,
-    );
-}
-
-parameter_types! {
-    pub const SessionsPerEra: SessionIndex = 3;
-    pub const BondingDuration: staking::EraIndex = 3;
-    pub const RewardCurve: &'static PiecewiseLinear<'static> = &I_NPOS;
-}
-impl staking::Config for Test {
-    type Currency = Balances;
-    type UnixTime = Timestamp;
-    type CurrencyToVote = frame_support::traits::SaturatingCurrencyToVote;
-    type RewardRemainder = ();
-    type Event = Event;
-    type Slash = ();
-    type Reward = ();
-    type SessionsPerEra = SessionsPerEra;
-    type BondingDuration = BondingDuration;
-    type SlashDeferDuration = ();
-    type SlashCancelOrigin = frame_system::EnsureRoot<Self::AccountId>;
-    type SessionInterface = Self;
-    type RewardCurve = RewardCurve;
-    type NextNewSession = ();
-    type ElectionLookahead = ();
-    type Call = Call;
-    type MaxIterations = ();
-    type MinSolutionScoreBump = ();
-    type MaxNominatorRewardedPerValidator = ();
-    type UnsignedPriority = ();
-    type WeightInfo = ();
-    type OffchainSolutionWeightLimit = ();
-}
-
-impl<LocalCall> frame_system::offchain::SendTransactionTypes<LocalCall> for Test
-where
-    Call: From<LocalCall>,
-{
-    type OverarchingCall = Call;
-    type Extrinsic = Extrinsic;
-}
-
-pub type Extrinsic = TestXt<Call, ()>;
-
-impl staking::SessionInterface<u64> for Test {
-    fn disable_validator(_: &u64) -> Result<bool, ()> {
-        unimplemented!()
-    }
-
-    fn validators() -> Vec<u64> {
-        unimplemented!()
-    }
-
-    fn prune_historical_up_to(_: u32) {
-        unimplemented!()
-    }
-}
-
 parameter_types! {
     pub DefaultProposalParameters: ProposalParameters<u64, u64> = default_proposal_parameters();
 }
@@ -682,7 +810,7 @@ parameter_types! {
     pub const BudgetRefillPeriod: u64 = 1000;
 }
 
-pub type ReferendumInstance = referendum::Instance0;
+pub type ReferendumInstance = referendum::Instance1;
 
 impl council::Config for Test {
     type Event = Event;
@@ -777,8 +905,7 @@ impl referendum::Config<ReferendumInstance> for Test {
     type MaxSaltLength = MaxSaltLength;
 
     type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
-    type ManagerOrigin =
-        EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
     type VotePower = u64;
 
@@ -952,38 +1079,6 @@ impl ProposalEncoder<Test> for () {
     }
 }
 
-impl frame_system::Config for Test {
-    type BaseCallFilter = ();
-    type BlockWeights = ();
-    type BlockLength = ();
-    type Origin = Origin;
-    type Call = Call;
-    type Index = u64;
-    type BlockNumber = u64;
-    type Hash = H256;
-    type Hashing = BlakeTwo256;
-    type AccountId = u64;
-    type Lookup = IdentityLookup<Self::AccountId>;
-    type Header = Header;
-    type Event = Event;
-    type BlockHashCount = BlockHashCount;
-    type DbWeight = ();
-    type Version = ();
-    type AccountData = balances::AccountData<u64>;
-    type OnNewAccount = ();
-    type OnKilledAccount = ();
-    type PalletInfo = ();
-    type SystemWeightInfo = ();
-    type SS58Prefix = ();
-}
-
-impl pallet_timestamp::Config for Test {
-    type Moment = u64;
-    type OnTimestampSet = ();
-    type MinimumPeriod = MinimumPeriod;
-    type WeightInfo = ();
-}
-
 impl LockComparator<<Test as balances::Config>::Balance> for Test {
     fn are_locks_conflicting(
         _new_lock: &LockIdentifier,
@@ -1003,7 +1098,7 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
     // Make sure we are not in block 1 where no events are emitted
     // see https://substrate.dev/recipes/2-appetizers/4-events.html#emitting-events
     result.execute_with(|| {
-        let mut block_number = frame_system::Module::<Test>::block_number();
+        let mut block_number = frame_system::Pallet::<Test>::block_number();
         <System as OnFinalize<u64>>::on_finalize(block_number);
         block_number = block_number + 1;
         System::set_block_number(block_number);

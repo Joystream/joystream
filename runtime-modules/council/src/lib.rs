@@ -42,6 +42,7 @@
 /////////////////// Configuration //////////////////////////////////////////////
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
+#![allow(clippy::type_complexity)]
 
 // used dependencies
 use codec::{Decode, Encode};
@@ -1133,7 +1134,7 @@ impl<T: Config> Module<T> {
             |balance, (member_index, council_member)| {
                 // calculate unpaid reward
                 let unpaid_reward =
-                    Calculations::<T>::get_current_reward(&council_member, reward_per_block, now);
+                    Calculations::<T>::get_current_reward(council_member, reward_per_block, now);
 
                 // depleted budget or no accumulated reward to be paid?
                 if balance == Zero::zero() || unpaid_reward == Zero::zero() {
@@ -1448,7 +1449,7 @@ impl<T: Config> Mutations<T> {
         candidate: &CandidateOf<T>,
     ) {
         // release candidacy stake
-        Self::release_candidacy_stake(&membership_id, &candidate.staking_account_id);
+        Self::release_candidacy_stake(membership_id, &candidate.staking_account_id);
 
         // prepare new stage
         let new_stage_data = CouncilStageAnnouncing {
@@ -1469,7 +1470,7 @@ impl<T: Config> Mutations<T> {
     // Release user's stake that was used for candidacy.
     fn release_candidacy_stake(membership_id: &T::MemberId, account_id: &T::AccountId) {
         // release stake amount
-        T::CandidacyLock::unlock(&account_id);
+        T::CandidacyLock::unlock(account_id);
 
         // remove candidate record
         Candidates::<T>::remove(membership_id);
@@ -1588,15 +1589,13 @@ impl<T: Config> EnsureChecks<T> {
         Self::ensure_user_membership(origin, membership_id)?;
 
         // ensure staking account's membership
-        if !T::StakingAccountValidator::is_member_staking_account(
-            &membership_id,
-            &staking_account_id,
-        ) {
+        if !T::StakingAccountValidator::is_member_staking_account(membership_id, staking_account_id)
+        {
             return Err(Error::MemberIdNotMatchAccount);
         }
 
         // ensure there are no conflicting stake types for the account
-        if !T::CandidacyLock::is_account_free_of_conflicting_stakes(&staking_account_id) {
+        if !T::CandidacyLock::is_account_free_of_conflicting_stakes(staking_account_id) {
             return Err(Error::ConflictingStake);
         }
 
@@ -1625,7 +1624,7 @@ impl<T: Config> EnsureChecks<T> {
 
         // ensure user has enough balance - includes any already locked candidacy stake as it will
         // be reused
-        if !T::CandidacyLock::is_enough_balance_for_stake(&staking_account_id, *stake) {
+        if !T::CandidacyLock::is_enough_balance_for_stake(staking_account_id, *stake) {
             return Err(Error::InsufficientBalanceForStaking);
         }
 

@@ -31,6 +31,7 @@ use node_runtime::RuntimeApi;
 use sc_cli::{ChainSpec, Result, RuntimeVersion, SubstrateCli};
 use sc_finality_grandpa as grandpa;
 use sc_service::PartialComponents;
+use sp_core::crypto::Ss58AddressFormat;
 use std::sync::Arc;
 
 impl SubstrateCli for Cli {
@@ -83,6 +84,10 @@ impl SubstrateCli for Cli {
 /// Parse command line arguments into service configuration.
 pub fn run() -> Result<()> {
     let cli = Cli::from_args();
+
+    sp_core::crypto::set_default_ss58_version(Ss58AddressFormat::custom(
+        node_runtime::constants::JOY_ADDRESS_PREFIX,
+    ));
 
     match &cli.subcommand {
         None => {

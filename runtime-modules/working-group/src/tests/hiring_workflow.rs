@@ -132,7 +132,7 @@ impl HiringWorkflow {
         if matches!(self.opening_type, OpeningType::Regular) {
             HireLeadFixture::default().hire_lead();
         } else {
-            balances::Module::<Test>::make_free_balance_be(
+            balances::Pallet::<Test>::make_free_balance_be(
                 &1,
                 <Test as Config>::MinimumApplicationStake::get()
                     + <Test as Config>::LeaderOpeningStake::get()
@@ -160,8 +160,9 @@ impl HiringWorkflow {
         let origin = match self.opening_type {
             OpeningType::Leader => RawOrigin::Root,
             OpeningType::Regular => {
-                let leader_worker_id = TestWorkingGroup::current_lead().unwrap();
-                let leader = TestWorkingGroup::worker_by_id(leader_worker_id);
+                let leader_worker_id = TestWorkingGroup::current_lead().expect("Lead Must Exist");
+                let leader =
+                    TestWorkingGroup::worker_by_id(leader_worker_id).expect("Worker Must Exist");
                 let lead_account_id = leader.role_account_id;
 
                 RawOrigin::Signed(lead_account_id)

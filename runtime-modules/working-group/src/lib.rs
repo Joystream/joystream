@@ -51,6 +51,7 @@ use frame_support::{decl_event, decl_module, decl_storage, ensure, StorageValue}
 use frame_system::{ensure_root, ensure_signed};
 use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::{Hash, SaturatedConversion, Saturating};
+use sp_std::borrow::ToOwned;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_std::vec::Vec;
 
@@ -712,7 +713,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T, I>::leave_role_weight(&rationale)]
+        #[weight = Module::<T, I>::leave_role_weight(rationale)]
         pub fn leave_role(
             origin,
             worker_id: WorkerId<T>,
@@ -747,7 +748,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T, I>::terminate_role_weight(&rationale)]
+        #[weight = Module::<T, I>::terminate_role_weight(rationale)]
         pub fn terminate_role(
             origin,
             worker_id: WorkerId<T>,
@@ -789,7 +790,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T, I>::slash_stake_weight(&rationale)]
+        #[weight = Module::<T, I>::slash_stake_weight(rationale)]
         pub fn slash_stake(
             origin,
             worker_id: WorkerId<T>,
@@ -1083,7 +1084,7 @@ decl_module! {
 
             // Update worker reward amount.
             WorkerById::<T, I>::insert(worker_id, Worker::<T> {
-                reward_per_block: reward_per_block,
+                reward_per_block,
                 ..worker
             });
 
@@ -1120,7 +1121,7 @@ decl_module! {
             let status_text_hash = status_text
                 .as_ref()
                 .map(|status_text| {
-                        let hashed = T::Hashing::hash(&status_text);
+                        let hashed = T::Hashing::hash(status_text);
 
                         hashed.as_ref().to_vec()
                     })
@@ -1369,7 +1370,7 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
         successful_applications_info
             .iter()
             .for_each(|application_info| {
-                let new_worker_id = Self::create_worker_by_application(&opening, &application_info);
+                let new_worker_id = Self::create_worker_by_application(opening, application_info);
 
                 application_id_to_worker_id.insert(application_info.application_id, new_worker_id);
 
@@ -1558,7 +1559,7 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
                     None
                 };
 
-                Self::update_worker_missed_reward(worker_id, worker.clone(), new_missed_reward);
+                Self::update_worker_missed_reward(worker_id, worker.to_owned(), new_missed_reward);
             }
         }
     }
@@ -1590,7 +1591,7 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
 
         let new_missed_reward = missed_reward_so_far + reward;
 
-        Self::update_worker_missed_reward(worker_id, worker.clone(), Some(new_missed_reward));
+        Self::update_worker_missed_reward(worker_id, worker.to_owned(), Some(new_missed_reward));
     }
 
     // Returns allowed payment by the group budget and possible missed payment

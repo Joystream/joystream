@@ -8,7 +8,7 @@ use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 
 use super::hiring_workflow::HiringWorkflow;
 use super::mock::{
-    Balances, LockId, System, Test, TestEvent, TestWorkingGroup, DEFAULT_WORKER_ACCOUNT_ID,
+    Balances, Event, LockId, System, Test, TestWorkingGroup, DEFAULT_WORKER_ACCOUNT_ID,
 };
 use crate::types::StakeParameters;
 use crate::{
@@ -33,7 +33,7 @@ impl EventFixture {
             DefaultInstance,
         >,
     ) {
-        let converted_event = Event::working_group(expected_raw_event);
+        let converted_event = Event::TestWorkingGroup(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
     }
@@ -63,7 +63,7 @@ impl EventFixture {
             DefaultInstance,
         >,
     ) {
-        let converted_event = Event::working_group(expected_raw_event);
+        let converted_event = Event::TestWorkingGroup(expected_raw_event);
 
         Self::contains_global_event(converted_event)
     }
@@ -261,7 +261,7 @@ impl ApplyOnOpeningFixture {
     }
 
     pub fn call(&self) -> Result<u64, DispatchError> {
-        balances::Module::<Test>::make_free_balance_be(
+        balances::Pallet::<Test>::make_free_balance_be(
             &self.stake_parameters.staking_account_id,
             self.initial_balance,
         );
@@ -300,7 +300,7 @@ impl ApplyOnOpeningFixture {
                 opening_id: self.opening_id,
             };
 
-            assert_eq!(actual_application, expected_application);
+            assert_eq!(actual_application, Some(expected_application));
         }
 
         saved_application_next_id
@@ -413,7 +413,7 @@ impl FillOpeningFixture {
 
             let actual_worker = TestWorkingGroup::worker_by_id(worker_id);
 
-            assert_eq!(actual_worker, expected_worker);
+            assert_eq!(actual_worker, Some(expected_worker));
 
             let expected_worker_count =
                 saved_worker_count + (self.successful_application_ids.len() as u32);
@@ -587,7 +587,7 @@ impl UpdateWorkerRoleAccountFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            let worker = TestWorkingGroup::worker_by_id(self.worker_id);
+            let worker = TestWorkingGroup::worker_by_id(self.worker_id).expect("Worker Must Exist");
 
             assert_eq!(worker.role_account_id, self.new_role_account_id);
         }
@@ -616,7 +616,7 @@ impl LeaveWorkerRoleFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            let worker = TestWorkingGroup::worker_by_id(self.worker_id);
+            let worker = TestWorkingGroup::worker_by_id(self.worker_id).expect("Worker Must Exist");
 
             if worker.job_unstaking_period > 0 {
                 assert_eq!(
@@ -754,7 +754,7 @@ fn get_current_lead_account_id() -> u64 {
     let leader_worker_id = TestWorkingGroup::current_lead();
 
     if let Some(leader_worker_id) = leader_worker_id {
-        let leader = TestWorkingGroup::worker_by_id(leader_worker_id);
+        let leader = TestWorkingGroup::worker_by_id(leader_worker_id).expect("Worker Must Exist");
         leader.role_account_id
     } else {
         0 // return invalid lead_account_id for testing
@@ -1049,7 +1049,7 @@ impl UpdateRewardAccountFixture {
         assert_eq!(actual_result.clone(), expected_result);
 
         if actual_result.is_ok() {
-            let worker = TestWorkingGroup::worker_by_id(self.worker_id);
+            let worker = TestWorkingGroup::worker_by_id(self.worker_id).expect("Worker Must Exist");
 
             assert_eq!(worker.reward_account_id, self.new_reward_account_id);
         }
@@ -1093,7 +1093,7 @@ impl UpdateRewardAmountFixture {
         assert_eq!(actual_result.clone(), expected_result);
 
         if actual_result.is_ok() {
-            let worker = TestWorkingGroup::worker_by_id(self.worker_id);
+            let worker = TestWorkingGroup::worker_by_id(self.worker_id).expect("Worker Must Exist");
 
             assert_eq!(worker.reward_per_block, self.reward_per_block);
         }

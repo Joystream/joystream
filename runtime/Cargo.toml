@@ -4,7 +4,7 @@ edition = '2018'
 name = 'joystream-node-runtime'
 # Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
 # {Authoring}.{Spec}.{Impl} of the RuntimeVersion
-version = '11.20.0'
+version = '11.0.0'
 
 [dependencies]
 # Third-party dependencies
@@ -41,7 +41,6 @@ frame-executive = { package = 'frame-executive', default-features = false, git =
 frame-system-rpc-runtime-api = { package = 'frame-system-rpc-runtime-api', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 frame-election-provider-support = { package = 'frame-election-provider-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
-pallet-election-provider-support-benchmarking = { package = 'pallet-election-provider-support-benchmarking', default-features = false, optional = true, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
 pallet-election-provider-multi-phase = { package = 'pallet-election-provider-multi-phase', default-features = false, optional = true, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
 pallet-elections-phragmen = { package = 'pallet-elections-phragmen', default-features = false, optional = true, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
 pallet-bags-list = { package = 'pallet-bags-list', default-features = false, optional = true, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
@@ -53,7 +52,7 @@ pallet-babe = { package = 'pallet-babe', default-features = false, git = 'https:
 pallet-transaction-payment = { package = 'pallet-transaction-payment', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 pallet-transaction-payment-rpc-runtime-api = { package = 'pallet-transaction-payment-rpc-runtime-api', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 pallet-authorship = { package = 'pallet-authorship', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
-pallet-session = { package = 'pallet-session', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
+pallet-session = { package = 'pallet-session', features = [ "historical" ], default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 pallet-offences = { package = 'pallet-offences', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 pallet-randomness-collective-flip = { package = 'pallet-randomness-collective-flip', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 pallet-authority-discovery = { package = 'pallet-authority-discovery', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
@@ -71,6 +70,7 @@ frame-system-benchmarking = { git = 'https://github.com/paritytech/substrate.git
 pallet-offences-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596', default-features = false, optional = true }
 pallet-session-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596', default-features = false, optional = true }
 hex-literal = { optional = true, version = '0.3.1' }
+pallet-election-provider-support-benchmarking = { package = 'pallet-election-provider-support-benchmarking', default-features = false, optional = true, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596' }
 
 # Joystream
 common = { package = 'pallet-common', default-features = false, path = '../runtime-modules/common'}
@@ -105,6 +105,7 @@ std = [
     # Third-party dependencies
     'serde',
     'codec/std',
+    'scale-info/std',
 
     # Substrate primitives
     'sp-std/std',
@@ -129,6 +130,7 @@ std = [
     'frame-system-rpc-runtime-api/std',
     'frame-system/std',
     'frame-election-provider-support/std',
+    'frame-benchmarking/std',
 
     # Pallets
     'pallet-timestamp/std',
@@ -148,7 +150,6 @@ std = [
     'pallet-vesting/std',
     'substrate-utility/std',
     'pallet-bags-list/std',
-    'pallet-election-provider-support-benchmarking/std',
     'pallet-election-provider-multi-phase/std',
     'pallet-elections-phragmen/std',
 
@@ -179,13 +180,22 @@ runtime-benchmarks = [
     "frame-benchmarking",
     "frame-system-benchmarking",
     "frame-system/runtime-benchmarks",
+
+    # Substrate pallets
     "pallet-offences-benchmarking",
+    "pallet-vesting/runtime-benchmarks",
     "pallet-session-benchmarking",
     "pallet-balances/runtime-benchmarks",
     "pallet-im-online/runtime-benchmarks",
     "pallet-staking/runtime-benchmarks",
+    "pallet-grandpa/runtime-benchmarks",
+    "pallet-babe/runtime-benchmarks",
+    "pallet-bags-list/runtime-benchmarks",
     "pallet-timestamp/runtime-benchmarks",
     "substrate-utility/runtime-benchmarks",
+    "pallet-election-provider-multi-phase/runtime-benchmarks",
+    "pallet-election-provider-support-benchmarking/runtime-benchmarks",
+    "pallet-elections-phragmen/runtime-benchmarks",
 
     # Joystream
     "proposals-discussion/runtime-benchmarks",
@@ -199,8 +209,7 @@ runtime-benchmarks = [
     "council/runtime-benchmarks",
     "referendum/runtime-benchmarks",
     # "bounty/runtime-benchmarks",
-    'storage/runtime-benchmarks',       
-    "blog/runtime-benchmarks",
+    'storage/runtime-benchmarks',
 ]
 
 # Staging and testing configurations

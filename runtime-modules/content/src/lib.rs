@@ -23,8 +23,7 @@ pub use permissions::*;
 use scale_info::TypeInfo;
 pub use types::*;
 
-use codec::Codec;
-use codec::{Decode, Encode};
+use codec::{Codec, Decode, Encode};
 
 pub use storage::{
     BagIdType, DataObjectCreationParameters, DataObjectStorage, DynBagCreationParameters,
@@ -48,7 +47,7 @@ use frame_support::{
 use frame_system::{ensure_root, ensure_signed};
 
 #[cfg(feature = "std")]
-pub use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use sp_arithmetic::{
     traits::{BaseArithmetic, One, Saturating, Zero},
     Perbill,

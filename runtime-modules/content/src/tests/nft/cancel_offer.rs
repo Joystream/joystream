@@ -33,11 +33,6 @@ fn cancel_offer() {
             None,
         ));
 
-        // Runtime tested state before call
-
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
-
         // Cancel offer
         assert_ok!(Content::cancel_offer(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
@@ -57,13 +52,10 @@ fn cancel_offer() {
         ));
 
         // Last event checked
-        assert_event(
-            MetaEvent::content(RawEvent::OfferCanceled(
-                video_id,
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-            )),
-            number_of_events_before_call + 1,
-        );
+        last_event_eq!(RawEvent::OfferCanceled(
+            video_id,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+        ));
     })
 }
 

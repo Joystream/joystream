@@ -898,7 +898,7 @@ mod tests {
     fn test_fund_council_budget() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_fund_council_budget::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_fund_council_budget());
         })
     }
 

@@ -1,4 +1,6 @@
 use crate::*;
+use frame_support::PalletId;
+use scale_info::TypeInfo;
 use sp_std::collections::btree_map::BTreeMap;
 #[cfg(feature = "std")]
 use strum_macros::EnumIter;
@@ -96,8 +98,6 @@ impl<BlockNumber: BaseArithmetic + Copy> NftCounter<BlockNumber> {
         self.last_updated = current_block;
     }
 }
-use frame_support::PalletId;
-use scale_info::TypeInfo;
 
 /// Specifies how a new asset will be provided on creating and updating
 /// Channels, Videos, Series and Person

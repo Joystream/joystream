@@ -478,7 +478,7 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for Wg {
         unimplemented!()
     }
 
-    fn ensure_leader_origin(_origin: <Runtime as frame_system::Trait>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(_origin: <Runtime as frame_system::Config>::Origin) -> DispatchResult {
         unimplemented!()
     }
 
@@ -1632,8 +1632,6 @@ impl FundCouncilBudgetFixture {
     }
 }
 
-pub type System = frame_system::Module<Runtime>;
-
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests
 pub fn run_to_block(n: u64) {
@@ -1647,12 +1645,12 @@ pub fn run_to_block(n: u64) {
 pub struct EventFixture;
 impl EventFixture {
     pub fn assert_last_crate_event(expected_raw_event: RawEvent<u64, u64, u64, u64>) {
-        let converted_event = TestEvent::event_mod(expected_raw_event);
+        let converted_event = Event::Council(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
     }
 
-    pub fn assert_last_global_event(expected_event: TestEvent) {
+    pub fn assert_last_global_event(expected_event: Event) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,

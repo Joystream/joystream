@@ -1,6 +1,6 @@
 [package]
 name = 'pallet-blog'
-version = '5.0.0'
+version = '6.0.0'
 authors = ['Joystream contributors']
 edition = '2018'
 
@@ -29,7 +29,6 @@ pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git
 
 [features]
 default = ['std']
-runtime-benchmarks = ['frame-benchmarking', 'membership']
 std = [
 	'serde',
 	'codec/std',

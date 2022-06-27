@@ -1021,7 +1021,8 @@ impl<WorkerId, AccountId> StorageBucketRecord<WorkerId, AccountId> {
 }
 
 // Helper-struct for the data object uploading.
-#[derive(Default, Clone, Debug)]
+#[allow(dead_code)]
+#[derive(Default)]
 struct DataObjectCandidates<T: Config> {
     // next data object ID to be saved in the storage.
     next_data_object_id: T::DataObjectId,

@@ -78,6 +78,10 @@ use sp_std::boxed::Box;
 use sp_std::convert::{TryFrom, TryInto};
 use sp_std::{vec, vec::Vec};
 
+#[cfg(feature = "runtime-benchmarks")]
+#[macro_use]
+extern crate frame_benchmarking;
+
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
@@ -124,7 +128,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 11,
-    spec_version: 20,
+    spec_version: 0,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -385,7 +389,7 @@ impl pallet_sudo::Config for Runtime {
 }
 
 parameter_types! {
-    pub const UncleGenerations: BlockNumber = 5;
+    pub const UncleGenerations: BlockNumber = 0;
 }
 
 impl pallet_authorship::Config for Runtime {
@@ -1425,6 +1429,8 @@ construct_runtime!(
         Utility: substrate_utility,
         Babe: pallet_babe,
         Timestamp: pallet_timestamp,
+        // Authorship must be before session in order to note author in the correct session and era
+        // for im-online and staking
         Authorship: pallet_authorship,
         Balances: pallet_balances,
         TransactionPayment: pallet_transaction_payment,

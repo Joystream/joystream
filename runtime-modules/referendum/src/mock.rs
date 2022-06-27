@@ -294,7 +294,7 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for Wg {
         unimplemented!()
     }
 
-    fn is_leader_account_id(_account_id: &<Runtime as frame_system::Trait>::AccountId) -> bool {
+    fn is_leader_account_id(_account_id: &<Runtime as frame_system::Config>::AccountId) -> bool {
         true
     }
 

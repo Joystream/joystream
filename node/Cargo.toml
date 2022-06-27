@@ -3,7 +3,7 @@ authors = ['Joystream contributors']
 build = 'build.rs'
 edition = '2018'
 name = 'joystream-node'
-version = '7.1.0'
+version = '7.0.0'
 default-run = "joystream-node"
 
 [[bin]]
@@ -136,4 +136,5 @@ cli = [
 	"clap_complete",
 	"substrate-build-script-utils",
 ]
+
 runtime-benchmarks = ["node-runtime/runtime-benchmarks", "frame-benchmarking-cli"]

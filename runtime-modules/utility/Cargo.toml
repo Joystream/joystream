@@ -44,5 +44,6 @@ std = [
     'council/std',
     'balances/std',
     'sp-arithmetic/std',
-    'scale-info/std'
+    'scale-info/std',
+    'working-group/std',
 ]

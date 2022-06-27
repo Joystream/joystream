@@ -386,11 +386,7 @@ impl<T: Config> Module<T> {
 
     /// NFT owned by:
     /// - Member: member controller account is used
-    /// - Channel: then if reward account is:
-    ///    - `Some(acc)` -> use `acc` as reward account
-    ///    - `None` -> then if channel owner is:
-    ///      - `Member` -> use member controller account
-    ///      - `CuratorGroup` -> Error
+    /// - Channel: channel account
     /// In order to statically guarantee that `video.in_channel` exists, by leveraging the
     /// Runtime invariant: `video` exists => `video.in_channel` exists
     pub(crate) fn ensure_nft_owner_has_beneficiary_account(

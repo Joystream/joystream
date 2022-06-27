@@ -150,7 +150,8 @@ decl_module! {
         /// - `C` is the length of `wasm`
         /// However, we treat this as a full block as `frame_system::Module::set_code` does
         /// # </weight>
-        #[weight = (T::BlockWeights::get().get(DispatchClass::Operational).base_extrinsic, DispatchClass::Operational)]
+        /// #[weight = (T::BlockWeights::get().get(DispatchClass::Operational).base_extrinsic, DispatchClass::Operational)]
+        #[weight = (T::BlockWeights::get().max_block, DispatchClass::Operational)]
         pub fn execute_runtime_upgrade_proposal(
             origin,
             wasm: Vec<u8>,

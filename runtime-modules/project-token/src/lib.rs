@@ -48,7 +48,6 @@ pub trait Config:
     /// Events
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
-    // TODO: Add frame_support::pallet_prelude::TypeInfo trait
     /// the Balance type used
     type Balance: AtLeast32BitUnsigned
         + FullCodec
@@ -1006,8 +1005,8 @@ impl<T: Config>
         new_duration: Option<T::BlockNumber>,
     ) -> DispatchResult {
         let token_data = Self::ensure_token_exists(token_id)?;
-        let sale_id = token_data.next_sale_id - 1;
         let sale = OfferingStateOf::<T>::ensure_upcoming_sale_of::<T>(&token_data)?;
+        let sale_id = token_data.next_sale_id - 1;
 
         // Validate sale duration
         if let Some(duration) = new_duration {

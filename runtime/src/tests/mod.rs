@@ -9,11 +9,12 @@ mod locks;
 mod fee_tests;
 
 use crate::primitives::MemberId;
-use crate::{BlockNumber, ReferendumInstance, Runtime};
+use crate::{AccountId, BlockNumber, ReferendumInstance, Runtime};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::RawOrigin;
 use referendum::ReferendumManager;
-use sp_runtime::{AccountId32, BuildStorage};
+use sp_runtime::{traits::One, AccountId32, BuildStorage};
+use std::str::FromStr;
 
 type Membership = membership::Module<Runtime>;
 type System = frame_system::Pallet<Runtime>;
@@ -38,11 +39,13 @@ pub(crate) fn initial_test_ext() -> sp_io::TestExternalities {
 
 // Simple unique account derived from member id
 pub(crate) fn account_from_member_id(member_id: MemberId) -> AccountId32 {
+    // Avoid AccountId Zero - cannot sign a transaction
+    let member_id: MemberId = member_id + MemberId::one();
     let b1: u8 = ((member_id >> 24) & 0xff) as u8;
     let b2: u8 = ((member_id >> 16) & 0xff) as u8;
     let b3: u8 = ((member_id >> 8) & 0xff) as u8;
     let b4: u8 = (member_id & 0xff) as u8;
-    let mut account: [u8; 32] = AccountId32::default().into();
+    let mut account: [u8; 32] = [0; 32];
     account[0] = b1;
     account[1] = b2;
     account[2] = b3;
@@ -189,15 +192,15 @@ pub(crate) fn set_staking_account(
     staking_account_id: AccountId32,
     member_id: u64,
 ) {
-    let current_balance = pallet_balances::Module::<Runtime>::usable_balance(&staking_account_id);
+    let current_balance = pallet_balances::Pallet::<Runtime>::usable_balance(&staking_account_id);
 
-    let _ = pallet_balances::Module::<Runtime>::deposit_creating(
+    let _ = pallet_balances::Pallet::<Runtime>::deposit_creating(
         &staking_account_id,
         <Runtime as membership::Config>::CandidateStake::get(),
     );
 
     assert_eq!(
-        pallet_balances::Module::<Runtime>::usable_balance(&staking_account_id),
+        pallet_balances::Pallet::<Runtime>::usable_balance(&staking_account_id),
         current_balance + <Runtime as membership::Config>::CandidateStake::get()
     );
 
@@ -208,7 +211,7 @@ pub(crate) fn set_staking_account(
     .unwrap();
 
     assert_eq!(
-        pallet_balances::Module::<Runtime>::usable_balance(&staking_account_id),
+        pallet_balances::Pallet::<Runtime>::usable_balance(&staking_account_id),
         current_balance
     );
 
