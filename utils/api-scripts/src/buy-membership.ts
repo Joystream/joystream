@@ -11,8 +11,8 @@ async function main() {
   const api = await ApiPromise.create({ provider })
   
   const keyring = new Keyring({ type: 'sr25519', ss58Format: JOYSTREAM_ADDRESS_PREFIX })
-  keyring.addFromUri('//Alice')
-  const [ALICE] = keyring.getPairs()
+  keyring.addFromUri(process.env.SURI || '//Alice')
+  const [KEY] = keyring.getPairs()
   
   // Buy a new membership
   const membershipParams = createType<
@@ -22,23 +22,24 @@ async function main() {
     'PalletMembershipBuyMembershipParameters',
     // The second parameter is automatically typesafe!
     {
-      handle: 'alice',
-      rootAccount: ALICE.address,
-      controllerAccount: ALICE.address,
+      handle: KEY.address.substr(-8),
+      rootAccount: KEY.address,
+      controllerAccount: KEY.address,
       referrerId: null,
       metadata: '0x'
     }
   )
-  
+
   const tx = api.tx.members.buyMembership(membershipParams) // Api interface is automatically decorated!
     
-  await tx.signAndSend(ALICE, async ({ status }) => {
+  await tx.signAndSend(KEY, async ({ status }) => {
     if (status.isInBlock) {
       console.log('Membership successfuly bought!')
       const aliceMember = await api.query.members.membershipById(0) // Query results are automatically decorated!
       console.log("Member 0 handle hash:", aliceMember.unwrap().handleHash.toString())
+      process.exit()
     }
   })
 }
   
-  main()
+main().catch(console.error)
