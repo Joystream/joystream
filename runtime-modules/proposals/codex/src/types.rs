@@ -27,7 +27,7 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
     working_group::WorkerId<T>,
     working_group::OpeningId,
     blog::PostId,
-    <T as proposals_engine::Trait>::ProposalId,
+    <T as proposals_engine::Config>::ProposalId,
     // TODO: enable after Carthage
     //content::UpdateChannelPayoutsParameters<T>,
 >;
