@@ -5,8 +5,21 @@
 
 use frame_support::weights::{constants::RocksDbWeight as DbWeight, Weight};
 
-pub struct WeightInfo;
-impl blog::WeightInfo for WeightInfo {
+/// blog WeightInfo.
+/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
+pub trait WeightInfo {
+    fn create_post(t: u32, b: u32) -> Weight;
+    fn lock_post() -> Weight;
+    fn unlock_post() -> Weight;
+    fn edit_post(t: u32, b: u32) -> Weight;
+    fn create_reply_to_post(t: u32) -> Weight;
+    fn create_reply_to_reply(t: u32) -> Weight;
+    fn edit_reply(t: u32) -> Weight;
+    fn delete_replies(i: u32) -> Weight;
+}
+
+pub struct SubstrateWeight;
+impl WeightInfo for SubstrateWeight {
     fn create_post(t: u32, b: u32) -> Weight {
         (496_105_000 as Weight)
             .saturating_add((88_000 as Weight).saturating_mul(t as Weight))

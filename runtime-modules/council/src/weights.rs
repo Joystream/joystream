@@ -5,8 +5,27 @@
 
 use frame_support::weights::{constants::RocksDbWeight as DbWeight, Weight};
 
-pub struct WeightInfo;
-impl council::WeightInfo for WeightInfo {
+pub trait WeightInfo {
+    fn set_budget_increment() -> Weight;
+    fn set_councilor_reward() -> Weight;
+    fn funding_request(i: u32) -> Weight;
+    fn try_process_budget() -> Weight;
+    fn try_progress_stage_idle() -> Weight;
+    fn try_progress_stage_announcing_start_election(i: u32) -> Weight;
+    fn try_progress_stage_announcing_restart() -> Weight;
+    fn announce_candidacy() -> Weight;
+    fn release_candidacy_stake() -> Weight;
+    fn set_candidacy_note(i: u32) -> Weight;
+    fn withdraw_candidacy() -> Weight;
+    fn set_budget() -> Weight;
+    fn plan_budget_refill() -> Weight;
+    fn fund_council_budget() -> Weight;
+    fn councilor_remark() -> Weight;
+    fn candidate_remark() -> Weight;
+}
+
+pub struct SubstrateWeight;
+impl WeightInfo for SubstrateWeight {
     fn set_budget_increment() -> Weight {
         (90_000_000 as Weight).saturating_add(DbWeight::get().writes(1 as Weight))
     }
@@ -79,5 +98,56 @@ impl council::WeightInfo for WeightInfo {
     }
     fn candidate_remark() -> Weight {
         (406_707_000 as Weight).saturating_add(DbWeight::get().reads(2 as Weight))
+    }
+}
+
+impl WeightInfo for () {
+    fn try_process_budget() -> Weight {
+        0
+    }
+    fn try_progress_stage_idle() -> Weight {
+        0
+    }
+    fn try_progress_stage_announcing_start_election(_: u32) -> Weight {
+        0
+    }
+    fn try_progress_stage_announcing_restart() -> Weight {
+        0
+    }
+    fn announce_candidacy() -> Weight {
+        0
+    }
+    fn release_candidacy_stake() -> Weight {
+        0
+    }
+    fn set_candidacy_note(_: u32) -> Weight {
+        0
+    }
+    fn withdraw_candidacy() -> Weight {
+        0
+    }
+    fn set_budget() -> Weight {
+        0
+    }
+    fn plan_budget_refill() -> Weight {
+        0
+    }
+    fn set_budget_increment() -> Weight {
+        0
+    }
+    fn set_councilor_reward() -> Weight {
+        0
+    }
+    fn funding_request(_: u32) -> Weight {
+        0
+    }
+    fn fund_council_budget() -> Weight {
+        0
+    }
+    fn councilor_remark() -> Weight {
+        0
+    }
+    fn candidate_remark() -> Weight {
+        0
     }
 }

@@ -324,48 +324,6 @@ impl common::StakingAccountValidator<Test> for () {
     }
 }
 
-impl crate::WeightInfo for () {
-    fn vote(_: u32) -> Weight {
-        0
-    }
-
-    fn cancel_proposal() -> Weight {
-        0
-    }
-
-    fn veto_proposal() -> Weight {
-        0
-    }
-
-    fn on_initialize_immediate_execution_decode_fails(_: u32) -> Weight {
-        0
-    }
-
-    fn on_initialize_pending_execution_decode_fails(_: u32) -> Weight {
-        0
-    }
-
-    fn on_initialize_approved_pending_constitutionality(_: u32) -> Weight {
-        0
-    }
-
-    fn on_initialize_rejected(_: u32) -> Weight {
-        0
-    }
-
-    fn on_initialize_slashed(_: u32) -> Weight {
-        0
-    }
-
-    fn cancel_active_and_pending_proposals(_: u32) -> u64 {
-        0
-    }
-
-    fn proposer_remark() -> Weight {
-        0
-    }
-}
-
 impl ProposalObserver<Test> for () {
     fn proposal_removed(_proposal_id: &u32) {}
 }

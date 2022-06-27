@@ -283,24 +283,6 @@ impl crate::Config for Test {
     type ModuleId = ProposalsDiscussionModuleId;
 }
 
-impl WeightInfo for () {
-    fn add_post(_: u32) -> Weight {
-        0
-    }
-
-    fn update_post(_: u32) -> Weight {
-        0
-    }
-
-    fn delete_post() -> Weight {
-        0
-    }
-
-    fn change_thread_mode(_: u32) -> Weight {
-        0
-    }
-}
-
 impl MemberOriginValidator<Origin, u64, u128> for () {
     fn ensure_member_controller_account_origin(
         origin: Origin,

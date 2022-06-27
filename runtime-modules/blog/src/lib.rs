@@ -58,6 +58,8 @@ use sp_std::prelude::*;
 mod errors;
 // mod mock;
 // mod tests;
+pub mod weights;
+pub use weights::WeightInfo;
 
 // Type for maximum number of posts/replies
 type MaxNumber = u64;
@@ -72,19 +74,6 @@ pub type ParticipantId<T> = common::MemberId<T>;
 pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
 type Balances<T> = balances::Pallet<T>;
-
-/// blog WeightInfo.
-/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
-pub trait WeightInfo {
-    fn create_post(t: u32, b: u32) -> Weight;
-    fn lock_post() -> Weight;
-    fn unlock_post() -> Weight;
-    fn edit_post(t: u32, b: u32) -> Weight;
-    fn create_reply_to_post(t: u32) -> Weight;
-    fn create_reply_to_reply(t: u32) -> Weight;
-    fn edit_reply(t: u32) -> Weight;
-    fn delete_replies(i: u32) -> Weight;
-}
 
 type BlogWeightInfo<T, I> = <T as Config<I>>::WeightInfo;
 

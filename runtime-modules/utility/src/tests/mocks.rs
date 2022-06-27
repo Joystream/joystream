@@ -215,21 +215,6 @@ impl Config for Test {
     }
 }
 
-impl WeightInfo for () {
-    fn execute_signal_proposal(_: u32) -> Weight {
-        0
-    }
-    fn update_working_group_budget_positive() -> Weight {
-        0
-    }
-    fn update_working_group_budget_negative() -> Weight {
-        0
-    }
-    fn burn_account_tokens() -> Weight {
-        0
-    }
-}
-
 parameter_types! {
     pub const DefaultMembershipPrice: u64 = 100;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
