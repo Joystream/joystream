@@ -404,10 +404,7 @@ fn test_helper_for_nft_limit_works_as_expected(
         Content::set_nft_limit(nft_limit_id, 1);
 
         if disable_limits {
-            assert_ok!(Content::toggle_nft_limits(
-                Origin::signed(LEAD_ACCOUNT_ID),
-                ContentActor::Lead,
-            ));
+            assert_ok!(Content::toggle_nft_limits(Origin::root()));
         }
 
         // Issue nft 1

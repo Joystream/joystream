@@ -2311,15 +2311,9 @@ decl_module! {
         /// Only Lead can toggle nft issuance limits constraints
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn toggle_nft_limits(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            origin
         ) {
-            let sender = ensure_signed(origin)?;
-
-            ensure_actor_authorized_to_toggle_nft_limits::<T>(
-                &sender,
-                &actor
-            )?;
+            let _ = ensure_root(origin)?;
 
             //
             // == MUTATION SAFE ==

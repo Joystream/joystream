@@ -1,10 +1,9 @@
 #![cfg(test)]
-use crate::tests::curators;
 use crate::tests::curators::add_curator_to_new_group_with_permissions;
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok};
+use frame_support::assert_ok;
 use frame_system::RawOrigin;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::FromIterator;
@@ -169,54 +168,11 @@ fn default_channel_nft_limits_set_successfully() {
 }
 
 #[test]
-fn toggle_nft_limits_fails_with_unauthorized_actor() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-        let result_with_member_context = Content::toggle_nft_limits(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-        );
-
-        assert_err!(
-            result_with_member_context,
-            Error::<Test>::ActorNotAuthorized
-        );
-
-        let curator_group_id = curators::create_curator_group(BTreeMap::new());
-        let result_with_curator_context = Content::toggle_nft_limits(
-            Origin::signed(DEFAULT_CURATOR_ACCOUNT_ID),
-            ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID),
-        );
-
-        assert_err!(
-            result_with_curator_context,
-            Error::<Test>::ActorNotAuthorized,
-        );
-    })
-}
-
-#[test]
-fn toggle_nft_limits_fails_with_authentication_error() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-        let result = Content::toggle_nft_limits(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Lead,
-        );
-
-        assert_err!(result, Error::<Test>::LeadAuthFailed);
-    })
-}
-
-#[test]
 fn toggle_nft_limits_ok_with_event_deposited_and_status_changed() {
     with_default_mock_builder(|| {
         run_to_block(1);
         // nft limits is true by chainspec configuration, changing to false..
-        assert_ok!(Content::toggle_nft_limits(
-            Origin::signed(LEAD_ACCOUNT_ID),
-            ContentActor::Lead,
-        ));
+        assert_ok!(Content::toggle_nft_limits(Origin::root()));
 
         assert_eq!(
             System::events().last().unwrap().event,
@@ -231,14 +187,8 @@ fn toggle_nft_limits_ok_with_status_unchanged_after_toggling_twice() {
     with_default_mock_builder(|| {
         run_to_block(1);
         // nft limits is true by chainspec configuration
-        assert_ok!(Content::toggle_nft_limits(
-            Origin::signed(LEAD_ACCOUNT_ID),
-            ContentActor::Lead,
-        ));
-        assert_ok!(Content::toggle_nft_limits(
-            Origin::signed(LEAD_ACCOUNT_ID),
-            ContentActor::Lead,
-        ));
+        assert_ok!(Content::toggle_nft_limits(Origin::root()));
+        assert_ok!(Content::toggle_nft_limits(Origin::root()));
 
         assert_eq!(Content::nft_limits_enabled(), true);
     })
