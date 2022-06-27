@@ -32,32 +32,67 @@ fn setup_nft_on_sale_scenario() {
 }
 
 #[test]
-fn buy_nft_ok_with_royalty_account() {
+fn buy_nft_ok_with_proper_royalty_accounting_normal_case() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
 
-        let video_id = NextVideoId::<Test>::get();
-        // deposit balance to second member
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
+        ContentTest::default().with_video().setup();
+        IssueNftFixture::default().with_params(NftIssuanceParameters::<Test> {
+            royalty: Some(Perbill::from_percent(DEFAULT_ROYALTY)),
+            non_channel_owner: Some(COLLABORATOR_MEMBER_ID),
+            init_transactional_status: InitTransactionalStatus::<Test>::BuyNow(DEFAULT_NFT_PRICE),
+            ..Default::default()
+        }).call_and_assert(Ok(()));
 
-        let platform_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE);
-        setup_nft_on_sale_scenario();
-
-        let balance_pre = channel_reward_account_balance(1u64);
 
         assert_ok!(Content::buy_nft(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            video_id,
+            VideoId::one(),
             SECOND_MEMBER_ID,
             DEFAULT_NFT_PRICE,
         ));
 
         assert_eq!(
             channel_reward_account_balance(1u64),
-            balance_pre + DEFAULT_NFT_PRICE - platform_fee,
+            Perbill::from_percent(DEFAULT_ROYALTY).mul_floor(DEFAULT_NFT_PRICE),
         );
     })
+}
+
+#[test]
+fn buy_nft_ok_with_proper_royalty_accounting_edge_case() {
+    ExtBuilder::default()
+        .with_creator_royalty_bounds(Perbill::zero(), Perbill::one())
+        .build_with_balances(vec![(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE)])
+        .execute_with(|| {
+            // Run to block one to see emitted events
+            run_to_block(1);
+
+            let platform_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE);
+            ContentTest::default().with_video().setup();
+            IssueNftFixture::default().with_params(NftIssuanceParameters::<Test> {
+                royalty: Some(Perbill::one()),
+                non_channel_owner: Some(COLLABORATOR_MEMBER_ID),
+                init_transactional_status: InitTransactionalStatus::<Test>::BuyNow(DEFAULT_NFT_PRICE),
+                ..Default::default()
+            }).call_and_assert(Ok(()));
+
+
+            assert_ok!(Content::buy_nft(
+                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                VideoId::one(),
+                SECOND_MEMBER_ID,
+                DEFAULT_NFT_PRICE,
+            ));
+
+            // nft_price * min(100%, 100% - platform_fee%) = nft_price - platform_fee
+            assert_eq!(
+                channel_reward_account_balance(1u64),
+                DEFAULT_NFT_PRICE - platform_fee,
+            );
+        })
 }
 
 #[test]
