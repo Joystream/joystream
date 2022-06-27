@@ -2,7 +2,7 @@ import './augment/types-lookup'
 import './augment/augment-types'
 import './augment/augment-api'
 
-import { Codec, DetectCodec, ITuple } from '@polkadot/types/types'
+import { Codec, DetectCodec, ITuple, Observable } from '@polkadot/types/types'
 import {
   Text,
   UInt,
@@ -20,6 +20,7 @@ import {
 } from '@polkadot/types'
 import defs from './augment/lookup'
 import BN from 'bn.js'
+import { AugmentedQuery } from '@polkadot/api/types'
 
 // Tweaked version of https://stackoverflow.com/a/62163715 for handling enum variants
 // Based on type (T) like: { a: string; b: number; c: Null; }
@@ -41,6 +42,12 @@ type EnumDefs<E extends DecoratedEnum<T>, T extends string> = { [K in T]: CodecO
 
 // Struct utility types
 type StructDefs<S extends Struct> = Omit<S, keyof Struct>
+
+type KeyOf<T> = T extends DecoratedEnum<infer S>
+  ? keyof EnumDefs<T, S>
+  : T extends Struct
+  ? keyof StructDefs<T>
+  : unknown[]
 
 /**
  * Recursively create typesafe interface representing valid input for constructing any Codec type
@@ -102,6 +109,21 @@ export function createType<T extends Codec, TN extends string>(
   value: CreateInterface<DetectCodec<T, TN>>
 ): DetectCodec<T, TN> {
   return registry.createType<T, TN>(typeName, value)
+}
+
+export function keysOf<T extends Struct | Enum, TN extends string>(typeName: TN): KeyOf<T>[] {
+  return registry.createType<T, TN>(typeName).defKeys as KeyOf<T>[]
+}
+
+export async function entriesByIds<IDType extends UInt, ValueType extends Codec>(
+  apiMethod: AugmentedQuery<'promise', (key: IDType) => Observable<ValueType>, [IDType]>
+): Promise<[IDType, AsCodec<ValueType>][]> {
+  const entries: [IDType, AsCodec<ValueType>][] = (await apiMethod.entries()).map(([storageKey, value]) => [
+    storageKey.args[0] as IDType,
+    value,
+  ])
+
+  return entries.sort((a, b) => a[0].toNumber() - b[0].toNumber())
 }
 
 export type AsCodec<T> = T extends Codec ? T : Codec
