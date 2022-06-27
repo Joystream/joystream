@@ -42,10 +42,7 @@ async function main() {
   const [ALICE] = keyring.getPairs()
   
   // Buy a new membership
-  const membershipParams = createType<
-    PalletMembershipBuyMembershipParameters,
-    'PalletMembershipBuyMembershipParameters'
-  >(
+  const membershipParams: PalletMembershipBuyMembershipParameters = createType(
     'PalletMembershipBuyMembershipParameters',
     // The second parameter is automatically typesafe!
     {
