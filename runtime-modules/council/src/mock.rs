@@ -1442,7 +1442,7 @@ where
             }
 
             InstanceMockUtils::<Runtime>::increase_block_number(
-                start_block_number.into() - current_block_number + 1,
+                start_block_number.into() + 1 - current_block_number,
             );
         }
 
