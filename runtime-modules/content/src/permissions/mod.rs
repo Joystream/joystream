@@ -679,7 +679,7 @@ pub fn ensure_actor_authorized_to_deissue_creator_token<T: Config>(
     Ok(sender)
 }
 
-pub fn ensure_actor_authorized_to_toggle_nft_limits<T: Trait>(
+pub fn ensure_actor_authorized_to_toggle_nft_limits<T: Config>(
     sender: &T::AccountId,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
 ) -> DispatchResult {

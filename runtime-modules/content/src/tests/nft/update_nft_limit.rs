@@ -220,7 +220,7 @@ fn toggle_nft_limits_ok_with_event_deposited_and_status_changed() {
 
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::LeadToggledNftLimitsEnabled(false)),
+            MetaEvent::Content(RawEvent::LeadToggledNftLimitsEnabled(false)),
         );
         assert_eq!(Content::nft_limits_enabled(), false);
     })
