@@ -1,5 +1,4 @@
 import { createType, JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
-import { PalletMembershipBuyMembershipParameters } from '@polkadot/types/lookup'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { Keyring } from '@polkadot/keyring'
 
@@ -15,10 +14,7 @@ async function main() {
   const [KEY] = keyring.getPairs()
   
   // Buy a new membership
-  const membershipParams = createType<
-    PalletMembershipBuyMembershipParameters,
-    'PalletMembershipBuyMembershipParameters'
-  >(
+  const membershipParams = createType(
     'PalletMembershipBuyMembershipParameters',
     // The second parameter is automatically typesafe!
     {
