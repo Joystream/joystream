@@ -1,3 +1,10 @@
+### Version 11.0.0 - Carthage - new chain
+  - Update to substrate v0.9.23
+  - Introduce project-token pallet into runtime
+  - Dropped blog pallet
+  - Updated existing pallets, various enhancements and security fixes
+  - Computed weights and enabled fees
+
 ### Version 10.8.0 - upgrade
 Collection of runtime fixes for council elections:
   - Referendum bug fix 1 - fix referendum intermediate winners - [3797](https://github.com/Joystream/joystream/pull/3797)

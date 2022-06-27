@@ -53,7 +53,7 @@ frame_support::construct_runtime!(
         Storage: crate::{Pallet, Call, Storage, Config, Event<T>},
         // Need to be added for benchmarks to work
         Wg2: working_group::<Instance2>::{Pallet, Call, Storage, Event<T, I>},
-        Wg3: working_group::<Instance9>::{Pallet, Call, Storage, Event<T, I>},
+        Wg9: working_group::<Instance9>::{Pallet, Call, Storage, Event<T, I>},
     }
 );
 

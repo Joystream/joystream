@@ -43,10 +43,6 @@ balances = { package = 'pallet-balances', default-features = false, git = 'https
 frame-election-provider-support = { package = 'frame-election-provider-support', git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 pallet-bags-list = { package = 'pallet-bags-list', features = ["runtime-benchmarks"], git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 sp-npos-elections = { package = 'sp-npos-elections', git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
-pallet-session = { package = 'pallet-session', default-features = false, features = [
-	"historical",
-], git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
-pallet-authorship = { package = 'pallet-authorship', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 
 [features]
 default = ['std']
@@ -74,6 +70,4 @@ std = [
     'scale-info/std',
     'frame-election-provider-support/std',
     'sp-staking/std',
-	'pallet-session/std',
-	'pallet-authorship/std',
 ]
