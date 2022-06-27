@@ -229,7 +229,10 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoDiscussion::<T>::add_post(0, text.len().saturated_into())]
+        #[weight = WeightInfoDiscussion::<T>::add_post(
+            T::MaxWhiteListSize::get() as u32,
+            text.len().saturated_into(),
+        )]
         pub fn add_post(
             origin,
             post_author_id: MemberId<T>,

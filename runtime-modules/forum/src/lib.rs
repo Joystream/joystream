@@ -879,10 +879,10 @@ decl_module! {
         ///    - O(W)
         /// # </weight>
         #[weight = WeightInfoForum::<T>::create_thread(
+            T::MaxCategoryDepth::get() as u32,
             metadata.len().saturated_into(),
             text.len().saturated_into(),
-            T::MaxCategoryDepth::get() as u32,
-            0, // poll_input.map_or(0, |ref data| data.poll_alternatives.len() as u32),
+            poll_input.clone().map_or(0, |ref data| data.poll_alternatives.len() as u32),
         )]
         fn create_thread(
             origin,

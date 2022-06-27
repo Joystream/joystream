@@ -882,7 +882,7 @@ impl council::Config for Runtime {
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
     type BudgetRefillPeriod = BudgetRefillPeriod;
     type MemberOriginValidator = Members;
-    type WeightInfo = council::weights::WeightInfo; // TODO: Generate new weights
+    type WeightInfo = council::weights::SubstrateWeight; // TODO: Generate new weights
 
     fn new_council_elected(_elected_members: &[council::CouncilMemberOf<Self>]) {
         <proposals_engine::Module<Runtime>>::reject_active_proposals();
@@ -931,7 +931,7 @@ impl storage::Config for Runtime {
         MaxNumberOfPendingInvitationsPerDistributionBucket;
     type MaxDataObjectSize = MaxDataObjectSize;
     type ContentId = ContentId;
-    type WeightInfo = storage::weights::WeightInfo; // TODO: Generate new weights
+    type WeightInfo = storage::weights::SubstrateWeight<Runtime>;
     type StorageWorkingGroup = StorageWorkingGroup;
     type DistributionWorkingGroup = DistributionWorkingGroup;
     type ModuleAccountInitialBalance = ExistentialDeposit;
@@ -1230,7 +1230,7 @@ impl proposals_engine::Config for Runtime {
     type MaxActiveProposalLimit = ProposalMaxActiveProposalLimit;
     type DispatchableCallCode = Call;
     type ProposalObserver = ProposalsCodex;
-    type WeightInfo = weights::proposals_engine::SubstrateWeight<Runtime>;
+    type WeightInfo = proposals_engine::weights::SubstrateWeight<Runtime>;
     type StakingAccountValidator = Members;
 }
 
@@ -1376,7 +1376,7 @@ impl blog::Config<BlogInstance> for Runtime {
     type Event = Event;
     type PostsMaxNumber = PostsMaxNumber;
     type ParticipantEnsureOrigin = Members;
-    type WeightInfo = blog::weights::WeightInfo;
+    type WeightInfo = blog::weights::SubstrateWeight;
     type ReplyId = u64;
     type ReplyDeposit = ReplyDeposit;
     type ModuleId = BlogModuleId;

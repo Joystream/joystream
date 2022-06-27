@@ -750,6 +750,7 @@ impl<T: Config> Module<T> {
             ProposalDetails::FundingRequest(params) => {
                 WeightInfoCodex::<T>::create_proposal_funding_request(
                     params.len().saturated_into(),
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
@@ -786,6 +787,7 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::SlashWorkingGroupLead(..) => {
                 WeightInfoCodex::<T>::create_proposal_slash_working_group_lead(
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
@@ -804,6 +806,7 @@ impl<T: Config> Module<T> {
             ProposalDetails::AmendConstitution(new_constitution) => {
                 WeightInfoCodex::<T>::create_proposal_amend_constitution(
                     new_constitution.len().saturated_into(),
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
@@ -815,6 +818,7 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::CancelWorkingGroupLeadOpening(..) => {
                 WeightInfoCodex::<T>::create_proposal_cancel_working_group_lead_opening(
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
@@ -844,6 +848,7 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::SetMembershipLeadInvitationQuota(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_membership_lead_invitation_quota(
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
