@@ -1,4 +1,6 @@
+import './augment/types-lookup'
 import './augment/augment-types'
+import './augment/augment-api'
 
 import { Codec, DetectCodec, ITuple } from '@polkadot/types/types'
 import {
@@ -103,3 +105,5 @@ export function createType<T extends Codec, TN extends string>(
 }
 
 export type AsCodec<T> = T extends Codec ? T : Codec
+
+export const JOYSTREAM_ADDRESS_PREFIX = 126

@@ -11,10 +11,6 @@
     "types" : [ "node" ],
     "noUnusedLocals": true,
     "baseUrl": ".",
-    "paths": {
-      "@polkadot/types-augment": ["../types/augment/augment-types.d.ts"],
-      "@polkadot/api-augment": ["../types/augment/augment-api.d.ts"]
-    },
     "resolveJsonModule": true,
     "skipLibCheck": true
   },
