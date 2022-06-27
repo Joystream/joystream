@@ -74,6 +74,9 @@ pub trait Config:
     /// Type of identifier for OpenAuction
     type OpenAuctionId: NumericIdentifier;
 
+    /// Type of identifier for TransferId
+    type TransferId: NumericIdentifier;
+
     /// Type of identifier for Channel Categories
     type ChannelCategoryId: NumericIdentifier;
 
@@ -155,6 +158,8 @@ decl_storage! {
         pub NextChannelId get(fn next_channel_id) config(): T::ChannelId;
 
         pub NextVideoId get(fn next_video_id) config(): T::VideoId;
+
+        pub NextTransferId get(fn next_transfer_id) config(): T::TransferId;
 
         pub NextCuratorGroupId get(fn next_curator_group_id) config(): T::CuratorGroupId;
 
@@ -2356,25 +2361,27 @@ decl_module! {
             origin,
             channel_id: T::ChannelId,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            new_transfer_status: ChannelTransferStatus<T::MemberId, T::CuratorGroupId, BalanceOf<T>>
+            candidate_status: ChannelTransferStatus<T::MemberId, T::CuratorGroupId, BalanceOf<T>, T::TransferId>
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
             ensure_actor_authorized_to_transfer_channel::<T>(origin, &actor, &channel)?;
 
-            if let ChannelTransferStatus::PendingTransfer(ref params) = new_transfer_status {
-                Self::validate_member_set(&params.transfer_params.new_collaborators.keys().cloned().collect())?;
-            }
+            let validated_status = Self::validate_transfer_status(candidate_status)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             ChannelById::<T>::mutate(&channel_id,
-                |channel| channel.transfer_status = new_transfer_status.clone()
+                |channel| channel.transfer_status = validated_status.clone()
             );
 
+            if validated_status.is_pending() {
+                NextTransferId::<T>::mutate(|id| *id = id.saturating_add(T::TransferId::one()))
+            }
+
             Self::deposit_event(
-                RawEvent::UpdateChannelTransferStatus(channel_id, actor, new_transfer_status)
+                RawEvent::UpdateChannelTransferStatus(channel_id, actor, validated_status)
             );
         }
 
@@ -2384,20 +2391,18 @@ decl_module! {
         pub fn accept_channel_transfer(
             origin,
             channel_id: T::ChannelId,
-            commitment_params: TransferParameters<T::MemberId, BalanceOf<T>>
+            commitment_params: TransferParameters<T::MemberId, BalanceOf<T>, T::TransferId>
         ) {
             let sender = ensure_signed(origin)?;
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            let params =
-                if let ChannelTransferStatus::PendingTransfer(ref params) = channel.transfer_status {
-                    ensure_is_authorized_to_act_as_channel_owner::<T>(&sender, &params.new_owner)?;
-                    Self::validate_channel_transfer_acceptance(&commitment_params, params)?;
-
-                    params
-                } else {
-                    return Err(Error::<T>::InvalidChannelTransferStatus.into());
-                };
+           let params = if let ChannelTransferStatus::PendingTransfer(ref params) = channel.transfer_status {
+                ensure_is_authorized_to_act_as_channel_owner::<T>(&sender, &params.new_owner)?;
+                Self::validate_channel_transfer_acceptance(&commitment_params, params)?;
+                Ok(params)
+            } else {
+                Err(Error::<T>::InvalidChannelTransferStatus)
+            }?;
 
             let new_owner = params.new_owner.clone();
             let new_collaborators = commitment_params.new_collaborators.clone();
@@ -3045,6 +3050,33 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
+    fn validate_transfer_status(
+        status: ChannelTransferStatus<T::MemberId, T::CuratorGroupId, BalanceOf<T>, T::TransferId>,
+    ) -> Result<
+        ChannelTransferStatus<T::MemberId, T::CuratorGroupId, BalanceOf<T>, T::TransferId>,
+        DispatchError,
+    > {
+        if let ChannelTransferStatus::PendingTransfer(params) = status {
+            Self::validate_member_set(
+                &params
+                    .transfer_params
+                    .new_collaborators
+                    .keys()
+                    .cloned()
+                    .collect(),
+            )?;
+            let transfer_id = Self::next_transfer_id();
+            Ok(ChannelTransferStatus::PendingTransfer::<
+                T::MemberId,
+                T::CuratorGroupId,
+                BalanceOf<T>,
+                T::TransferId,
+            >(params.with_nonce(transfer_id)))
+        } else {
+            Ok(status)
+        }
+    }
+
     fn verify_proof(proof: &[ProofElement<T>], item: &PullPayment<T>) -> DispatchResult {
         let candidate_root = proof.iter().fold(
             <T as frame_system::Config>::Hashing::hash_of(item),
@@ -3213,8 +3245,8 @@ impl<T: Config> Module<T> {
 
     // Validates channel transfer acceptance parameters: commitment params, new owner balance.
     fn validate_channel_transfer_acceptance(
-        commitment_params: &TransferParameters<T::MemberId, BalanceOf<T>>,
-        params: &PendingTransfer<T::MemberId, T::CuratorGroupId, BalanceOf<T>>,
+        commitment_params: &TransferParameters<T::MemberId, BalanceOf<T>, T::TransferId>,
+        params: &PendingTransfer<T::MemberId, T::CuratorGroupId, BalanceOf<T>, T::TransferId>,
     ) -> DispatchResult {
         ensure!(
             params.transfer_params == *commitment_params,
@@ -3473,9 +3505,13 @@ decl_event!(
             <T as common::MembershipTypes>::MemberId,
             <T as ContentActorAuthenticator>::CuratorGroupId,
             BalanceOf<T>,
+            <T as Config>::TransferId,
         >,
-        TransferParameters =
-            TransferParameters<<T as common::MembershipTypes>::MemberId, BalanceOf<T>>,
+        TransferParameters = TransferParameters<
+            <T as common::MembershipTypes>::MemberId,
+            BalanceOf<T>,
+            <T as Config>::TransferId,
+        >,
         AccountId = <T as frame_system::Config>::AccountId,
         UpdateChannelPayoutsParameters = UpdateChannelPayoutsParameters<T>,
         TokenId = <T as project_token::Config>::TokenId,

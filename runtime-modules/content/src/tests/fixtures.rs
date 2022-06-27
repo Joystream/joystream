@@ -2706,7 +2706,7 @@ pub struct UpdateChannelTransferStatusFixture {
     origin: RawOrigin<u128>,
     channel_id: u64,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    transfer_status: ChannelTransferStatus<MemberId, CuratorGroupId, BalanceOf<Test>>,
+    transfer_status: ChannelTransferStatus<MemberId, CuratorGroupId, BalanceOf<Test>, TransferId>,
 }
 
 impl UpdateChannelTransferStatusFixture {
@@ -2759,7 +2759,12 @@ impl UpdateChannelTransferStatusFixture {
 
     pub fn with_transfer_status(
         self,
-        transfer_status: ChannelTransferStatus<MemberId, CuratorGroupId, BalanceOf<Test>>,
+        transfer_status: ChannelTransferStatus<
+            MemberId,
+            CuratorGroupId,
+            BalanceOf<Test>,
+            TransferId,
+        >,
     ) -> Self {
         Self {
             transfer_status,
@@ -2773,6 +2778,7 @@ impl UpdateChannelTransferStatusFixture {
             MemberId,
             CuratorGroupId,
             BalanceOf<Test>,
+            TransferId,
         > {
             new_owner: ChannelOwner::Member(member_id),
             ..old_pending_transfer_params
@@ -2785,6 +2791,7 @@ impl UpdateChannelTransferStatusFixture {
             MemberId,
             CuratorGroupId,
             BalanceOf<Test>,
+            TransferId,
         > {
             new_owner: owner,
             ..old_pending_transfer_params
@@ -2793,7 +2800,7 @@ impl UpdateChannelTransferStatusFixture {
 
     fn get_pending_transfer_params(
         &self,
-    ) -> PendingTransfer<MemberId, CuratorGroupId, BalanceOf<Test>> {
+    ) -> PendingTransfer<MemberId, CuratorGroupId, BalanceOf<Test>, TransferId> {
         if let ChannelTransferStatus::PendingTransfer(transfer_status) =
             self.transfer_status.clone()
         {
@@ -2803,7 +2810,7 @@ impl UpdateChannelTransferStatusFixture {
         }
     }
 
-    fn get_transfer_params(&self) -> TransferParameters<MemberId, BalanceOf<Test>> {
+    fn get_transfer_params(&self) -> TransferParameters<MemberId, BalanceOf<Test>, TransferId> {
         if let ChannelTransferStatus::PendingTransfer(transfer_status) =
             self.transfer_status.clone()
         {
@@ -2815,13 +2822,14 @@ impl UpdateChannelTransferStatusFixture {
 
     pub fn with_transfer_parameters(
         self,
-        transfer_params: TransferParameters<MemberId, BalanceOf<Test>>,
+        transfer_params: TransferParameters<MemberId, BalanceOf<Test>, TransferId>,
     ) -> Self {
         let old_pending_transfer_params = self.get_pending_transfer_params();
         self.with_transfer_status(ChannelTransferStatus::PendingTransfer(PendingTransfer::<
             MemberId,
             CuratorGroupId,
             BalanceOf<Test>,
+            TransferId,
         > {
             transfer_params,
             ..old_pending_transfer_params
@@ -2860,7 +2868,7 @@ impl UpdateChannelTransferStatusFixture {
 pub struct AcceptChannelTransferFixture {
     origin: RawOrigin<u128>,
     channel_id: u64,
-    params: TransferParameters<MemberId, BalanceOf<Test>>,
+    params: TransferParameters<MemberId, BalanceOf<Test>, TransferId>,
 }
 
 impl AcceptChannelTransferFixture {
@@ -2882,7 +2890,7 @@ impl AcceptChannelTransferFixture {
 
     pub fn with_transfer_params(
         self,
-        params: TransferParameters<MemberId, BalanceOf<Test>>,
+        params: TransferParameters<MemberId, BalanceOf<Test>, TransferId>,
     ) -> Self {
         Self { params, ..self }
     }

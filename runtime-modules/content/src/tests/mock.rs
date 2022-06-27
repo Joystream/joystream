@@ -29,6 +29,7 @@ pub type CuratorId = <Test as ContentActorAuthenticator>::CuratorId;
 pub type CuratorGroupId = <Test as ContentActorAuthenticator>::CuratorGroupId;
 pub type MemberId = <Test as MembershipTypes>::MemberId;
 pub type ChannelId = <Test as storage::Config>::ChannelId;
+pub type TransferId = <Test as Config>::TransferId;
 pub type StorageBucketId = <Test as storage::Config>::StorageBucketId;
 
 /// Account Ids
@@ -418,6 +419,9 @@ impl Config for Test {
 
     /// Creator tokens interface
     type ProjectToken = project_token::Module<Self>;
+
+    /// Transfer Id
+    type TransferId = u64;
 }
 
 pub const COUNCIL_BUDGET_ACCOUNT_ID: u128 = 90000000;
@@ -486,6 +490,7 @@ pub struct ExtBuilder {
     next_channel_id: u64,
     next_video_id: u64,
     next_curator_group_id: u64,
+    next_transfer_id: u64,
     max_cashout_allowed: BalanceOf<Test>,
     min_cashout_allowed: BalanceOf<Test>,
     channel_cashouts_enabled: bool,
@@ -514,6 +519,7 @@ impl Default for ExtBuilder {
             next_channel_id: 1,
             next_video_id: 1,
             next_curator_group_id: 1,
+            next_transfer_id: 1,
             max_cashout_allowed: BalanceOf::<Test>::from(1_000u32),
             min_cashout_allowed: BalanceOf::<Test>::from(1u32),
             channel_cashouts_enabled: true,
@@ -547,6 +553,7 @@ impl ExtBuilder {
             next_channel_category_id: self.next_channel_category_id,
             next_channel_id: self.next_channel_id,
             next_video_id: self.next_video_id,
+            next_transfer_id: self.next_transfer_id,
             next_curator_group_id: self.next_curator_group_id,
             max_cashout_allowed: self.max_cashout_allowed,
             min_cashout_allowed: self.min_cashout_allowed,

@@ -245,7 +245,7 @@ fn accept_transfer_status_fails_with_invalid_balance_for_members() {
             .call_and_assert(Ok(()));
 
         AcceptChannelTransferFixture::default()
-            .with_transfer_params(TransferParameters::<u64, u64> {
+            .with_transfer_params(TransferParameters::<_, _, _> {
                 price,
                 ..Default::default()
             })
