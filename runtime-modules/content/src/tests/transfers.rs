@@ -209,18 +209,11 @@ fn accept_transfer_status_fails_with_invalid_status() {
 #[test]
 fn accept_transfer_status_fails_with_non_channel_owner() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-        add_curator_to_new_group(DEFAULT_CURATOR_ID, &[]);
+        ContentTest::with_member_channel().setup();
+        increase_account_balance_helper(THIRD_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
         UpdateChannelTransferStatusFixture::default()
-            .with_transfer_status(ChannelTransferStatus::PendingTransfer(PendingTransfer {
-                new_owner: ChannelOwner::Member(DEFAULT_MEMBER_ID),
-                ..Default::default()
-            }))
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Ok(()));
 
         AcceptChannelTransferFixture::default()
@@ -232,23 +225,18 @@ fn accept_transfer_status_fails_with_non_channel_owner() {
 #[test]
 fn accept_transfer_status_fails_with_invalid_balance_for_members() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
+        increase_account_balance_helper(THIRD_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        ContentTest::with_member_channel().setup();
         let price = INITIAL_BALANCE + 1; // higher than initial balance
+
         UpdateChannelTransferStatusFixture::default()
-            .with_new_member_channel_owner(DEFAULT_MEMBER_ID)
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .with_price(price)
             .call_and_assert(Ok(()));
 
         AcceptChannelTransferFixture::default()
-            .with_transfer_params(TransferParameters::<_, _, _> {
-                price,
-                ..Default::default()
-            })
+            .with_origin(RawOrigin::Signed(THIRD_MEMBER_ACCOUNT_ID))
+            .with_price(price)
             .call_and_assert(Err(Error::<Test>::InsufficientBalanceForTransfer.into()))
     })
 }
