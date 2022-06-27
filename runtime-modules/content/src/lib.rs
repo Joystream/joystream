@@ -598,34 +598,36 @@ decl_module! {
         // extrinsics for pausing/re-enabling channel features
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn set_channel_paused_features_as_moderator(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            channel_id: T::ChannelId,
-            new_paused_features: BTreeSet<PausableChannelFeature>,
-            rationale: Vec<u8>,
+            _origin,
+            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            _channel_id: T::ChannelId,
+            _new_paused_features: BTreeSet<PausableChannelFeature>,
+            _rationale: Vec<u8>,
         ) -> DispatchResult {
+            todo!()
+            // TODO: enable after Carthage
 
-            let sender = ensure_signed(origin)?;
-            // check that channel exists
-            let channel = Self::ensure_channel_exists(&channel_id)?;
+            // let sender = ensure_signed(origin)?;
+            // // check that channel exists
+            // let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            // Check permissions for moderation actions
-            let required_permissions = channel.paused_features
-                .symmetric_difference(&new_paused_features)
-                .map(|f| { ContentModerationAction::ChangeChannelFeatureStatus(*f) })
-                .collect::<Vec<_>>();
-            ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &required_permissions, channel.privilege_level)?;
+            // // Check permissions for moderation actions
+            // let required_permissions = channel.paused_features
+            //     .symmetric_difference(&new_paused_features)
+            //     .map(|f| { ContentModerationAction::ChangeChannelFeatureStatus(*f) })
+            //     .collect::<Vec<_>>();
+            // ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &required_permissions, channel.privilege_level)?;
 
-            //
-            // == MUTATION SAFE ==
-            //
-            ChannelById::<T>::mutate(channel_id, |channel| { channel.paused_features = new_paused_features.clone() });
+            // //
+            // // == MUTATION SAFE ==
+            // //
+            // ChannelById::<T>::mutate(channel_id, |channel| { channel.paused_features = new_paused_features.clone() });
 
 
-            // deposit event
-            Self::deposit_event(RawEvent::ChannelPausedFeaturesUpdatedByModerator(actor, channel_id, new_paused_features, rationale));
+            // // deposit event
+            // Self::deposit_event(RawEvent::ChannelPausedFeaturesUpdatedByModerator(actor, channel_id, new_paused_features, rationale));
 
-            Ok(())
+            // Ok(())
         }
 
         // extrinsics for channel deletion
@@ -3526,12 +3528,13 @@ decl_event!(
             bool,
             Vec<u8>, /* rationale */
         ),
-        ChannelPausedFeaturesUpdatedByModerator(
-            ContentActor,
-            ChannelId,
-            BTreeSet<PausableChannelFeature>,
-            Vec<u8>, /* rationale */
-        ),
+        // TODO: enable after enabling pause_channel_feature_as_moderator
+        // ChannelPausedFeaturesUpdatedByModerator(
+        //     ContentActor,
+        //     ChannelId,
+        //     BTreeSet<PausableChannelFeature>,
+        //     Vec<u8>, /* rationale */
+        // ),
         ChannelAssetsDeletedByModerator(
             ContentActor,
             ChannelId,

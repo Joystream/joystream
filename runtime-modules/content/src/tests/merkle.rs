@@ -577,6 +577,8 @@ fn successful_curator_channel_balance_withdrawal_by_lead() {
     })
 }
 
+// TODO: enable after enabling pause_channel_feature_as_moderator
+#[ignore]
 #[test]
 fn unsuccessful_channel_balance_withdrawal_with_fund_transfer_feature_paused() {
     with_default_mock_builder(|| {
@@ -872,6 +874,8 @@ fn claim_and_withdraw_fails_during_channel_transfer() {
     })
 }
 
+// TODO: enable after enabling pause_channel_feature_as_moderator
+#[ignore]
 #[test]
 fn unsuccessful_member_claim_and_withdraw_with_cashout_feature_paused() {
     with_default_mock_builder(|| {
@@ -886,6 +890,8 @@ fn unsuccessful_member_claim_and_withdraw_with_cashout_feature_paused() {
     })
 }
 
+// TODO: enable after enabling pause_channel_feature_as_moderator
+#[ignore]
 #[test]
 fn unsuccessful_member_claim_and_withdraw_with_transfer_fund_feature_paused() {
     with_default_mock_builder(|| {

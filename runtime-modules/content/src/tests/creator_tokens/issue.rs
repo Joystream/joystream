@@ -103,6 +103,7 @@ fn successful_issue_curator_channel_creator_token_by_lead() {
     })
 }
 
+// TODO: enable after enabling channel transfers
 #[ignore]
 #[test]
 fn issue_token_fails_during_transfer() {
@@ -124,6 +125,8 @@ fn issue_token_fails_during_transfer() {
     })
 }
 
+// TODO: enable after enabling pause_channel_feature_as_moderator
+#[ignore]
 #[test]
 fn issue_token_fails_with_creator_token_issuance_feature_paused() {
     with_default_mock_builder(|| {

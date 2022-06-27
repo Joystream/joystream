@@ -989,6 +989,8 @@ fn successful_moderation_action_channel_visibility_change_by_lead() {
 
 // Channel features status (pausing/unpausing)
 
+// TODO: enable after enabling pause_channel_feature_as_moderator
+#[ignore]
 #[test]
 fn unsuccessful_moderation_action_channel_features_status_change_by_actors_with_auth_failure() {
     with_default_mock_builder(|| {
@@ -1028,6 +1030,8 @@ fn unsuccessful_moderation_action_channel_features_status_change_by_actors_with_
     })
 }
 
+// TODO: enable after enabling pause_channel_feature_as_moderator
+#[ignore]
 #[test]
 fn unsuccessful_moderation_action_channel_features_status_change_by_member() {
     with_default_mock_builder(|| {
@@ -1044,6 +1048,8 @@ fn unsuccessful_moderation_action_channel_features_status_change_by_member() {
     })
 }
 
+// TODO: enable after enabling pause_channel_feature_as_moderator
+#[ignore]
 #[test]
 fn unsuccessful_moderation_action_non_existing_channel_features_status_change() {
     with_default_mock_builder(|| {
@@ -1069,6 +1075,8 @@ fn unsuccessful_moderation_action_non_existing_channel_features_status_change() 
     })
 }
 
+// TODO: enable after enabling pause_channel_feature_as_moderator
+#[ignore]
 #[test]
 fn unsuccessful_moderation_action_channel_features_status_change_by_curator_without_permissions() {
     with_default_mock_builder(|| {
@@ -1098,6 +1106,8 @@ fn unsuccessful_moderation_action_channel_features_status_change_by_curator_with
     })
 }
 
+// TODO: enable after enabling pause_channel_feature_as_moderator
+#[ignore]
 #[test]
 fn successful_moderation_action_channel_features_status_change_by_curator() {
     with_default_mock_builder(|| {
@@ -1136,6 +1146,8 @@ fn successful_moderation_action_channel_features_status_change_by_curator() {
     })
 }
 
+// TODO: enable after enabling pause_channel_feature_as_moderator
+#[ignore]
 #[test]
 fn successful_moderation_action_channel_features_status_change_by_lead() {
     with_default_mock_builder(|| {
@@ -1328,6 +1340,8 @@ fn successful_moderation_action_channel_assets_deletion_by_lead() {
 //////////////////////////// Paused features //////////////////////////
 ///////////////////////////////////////////////////////////////////////
 
+// TODO: enable after enabling pause_channel_feature_as_moderator
+#[ignore]
 #[test]
 fn channel_cannot_be_updated_when_channel_update_paused() {
     with_default_mock_builder(|| {
@@ -1349,6 +1363,8 @@ fn channel_cannot_be_updated_when_channel_update_paused() {
     })
 }
 
+// TODO: enable after enabling pause_channel_feature_as_moderator
+#[ignore]
 #[test]
 fn video_cannot_created_when_channel_video_creation_paused() {
     with_default_mock_builder(|| {
@@ -1373,6 +1389,8 @@ fn video_cannot_created_when_channel_video_creation_paused() {
     })
 }
 
+// TODO: enable after enabling pause_channel_feature_as_moderator
+#[ignore]
 #[test]
 fn video_nft_cannot_be_issued_when_channel_video_nft_issuance_paused() {
     with_default_mock_builder(|| {
@@ -2532,6 +2550,8 @@ fn unsuccessful_nft_owner_remark_by_curator_agent_without_permissions() {
     })
 }
 
+// TODO: enable after enabling u
+#[ignore]
 #[test]
 fn unsuccessful_nft_destruction_by_curator_agent_without_permissions() {
     with_default_mock_builder(|| {
@@ -2809,6 +2829,8 @@ fn unsuccessful_nft_owner_remark_by_collaborator_without_permissions() {
     })
 }
 
+// TODO: enable after enabling u
+#[ignore]
 #[test]
 fn unsuccessful_nft_destruction_by_collaborator_without_permissions() {
     with_default_mock_builder(|| {

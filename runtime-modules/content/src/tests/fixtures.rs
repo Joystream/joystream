@@ -1229,15 +1229,16 @@ impl SetChannelPausedFeaturesAsModeratorFixture {
 
         if actual_result.is_ok() {
             assert_eq!(channel_post.paused_features, self.new_paused_features);
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::Content(RawEvent::ChannelPausedFeaturesUpdatedByModerator(
-                    self.actor.clone(),
-                    self.channel_id,
-                    self.new_paused_features.clone(),
-                    self.rationale.clone(),
-                ))
-            );
+            // TODO: enable after enabling pause_channel_feature_as_moderator
+            // assert_eq!(
+            //     System::events().last().unwrap().event,
+            //     MetaEvent::content(RawEvent::ChannelPausedFeaturesUpdatedByModerator(
+            //         self.actor.clone(),
+            //         self.channel_id,
+            //         self.new_paused_features.clone(),
+            //         self.rationale.clone(),
+            //     ))
+            // );
         } else {
             assert_eq!(channel_post, channel_pre);
         }
