@@ -486,7 +486,6 @@ impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for ContentWG {
 
 // #[derive (Default)]
 pub struct ExtBuilder {
-    next_channel_category_id: u64,
     next_channel_id: u64,
     next_video_id: u64,
     next_curator_group_id: u64,
@@ -568,7 +567,7 @@ impl ExtBuilder {
             .unwrap();
 
         // the same as t.top().extend(GenesisConfig::<Test> etc...)
-        GenesisConfig::<Test> {
+        crate::GenesisConfig::<Test> {
             next_channel_id: self.next_channel_id,
             next_video_id: self.next_video_id,
             next_curator_group_id: self.next_curator_group_id,
