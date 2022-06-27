@@ -298,73 +298,11 @@ impl common::membership::MembershipTypes for Test {
     type ActorId = u64;
 }
 
-// Weights info stub
-pub struct Weights;
-impl membership::WeightInfo for Weights {
-    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_profile(_: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_none() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_root() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_controller() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_both() -> Weight {
-        unimplemented!()
-    }
-    fn set_referral_cut() -> Weight {
-        unimplemented!()
-    }
-    fn transfer_invites() -> Weight {
-        unimplemented!()
-    }
-    fn invite_member(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn set_membership_price() -> Weight {
-        unimplemented!()
-    }
-    fn update_profile_verification() -> Weight {
-        unimplemented!()
-    }
-    fn set_leader_invitation_quota() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_balance() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_count() -> Weight {
-        unimplemented!()
-    }
-    fn add_staking_account_candidate() -> Weight {
-        unimplemented!()
-    }
-    fn confirm_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn remove_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn member_remark() -> Weight {
-        unimplemented!()
-    }
-}
-
 impl membership::Config for Test {
     type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = Wg;
-    type WeightInfo = Weights;
+    type WeightInfo = ();
     type DefaultInitialInvitationBalance = ();
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
@@ -446,8 +384,6 @@ parameter_types! {
     pub const LockId: LockIdentifier = [2; 8];
 }
 
-pub struct MockProposalsEngineWeight;
-
 impl proposals_engine::Config for Test {
     type Event = Event;
     type ProposerOriginValidator = ();
@@ -462,7 +398,7 @@ impl proposals_engine::Config for Test {
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
     type DispatchableCallCode = crate::Call<Test>;
     type ProposalObserver = crate::Module<Test>;
-    type WeightInfo = MockProposalsEngineWeight;
+    type WeightInfo = ();
     type StakingAccountValidator = ();
 }
 
@@ -471,48 +407,6 @@ pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u64 = 222;
 impl common::StakingAccountValidator<Test> for () {
     fn is_member_staking_account(_: &u64, account_id: &u64) -> bool {
         *account_id != STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER
-    }
-}
-
-impl proposals_engine::WeightInfo for MockProposalsEngineWeight {
-    fn vote(_: u32) -> Weight {
-        0
-    }
-
-    fn cancel_proposal() -> Weight {
-        0
-    }
-
-    fn veto_proposal() -> Weight {
-        0
-    }
-
-    fn on_initialize_immediate_execution_decode_fails(_: u32) -> Weight {
-        0
-    }
-
-    fn on_initialize_pending_execution_decode_fails(_: u32) -> Weight {
-        0
-    }
-
-    fn on_initialize_approved_pending_constitutionality(_: u32) -> Weight {
-        0
-    }
-
-    fn on_initialize_rejected(_: u32) -> Weight {
-        0
-    }
-
-    fn on_initialize_slashed(_: u32) -> Weight {
-        0
-    }
-
-    fn cancel_active_and_pending_proposals(_: u32) -> u64 {
-        0
-    }
-
-    fn proposer_remark() -> u64 {
-        0
     }
 }
 
@@ -554,8 +448,6 @@ parameter_types! {
     pub const ProposalsDiscussionModuleId: PalletId = PalletId(*b"mo:propo");
 }
 
-pub struct MockProposalsDiscussionWeight;
-
 impl proposals_discussion::Config for Test {
     type Event = Event;
     type AuthorOriginValidator = ();
@@ -563,28 +455,10 @@ impl proposals_discussion::Config for Test {
     type ThreadId = u64;
     type PostId = u64;
     type MaxWhiteListSize = MaxWhiteListSize;
-    type WeightInfo = MockProposalsDiscussionWeight;
+    type WeightInfo = ();
     type PostLifeTime = PostLifeTime;
     type PostDeposit = PostDeposit;
     type ModuleId = ProposalsDiscussionModuleId;
-}
-
-impl proposals_discussion::WeightInfo for MockProposalsDiscussionWeight {
-    fn add_post(_: u32) -> Weight {
-        0
-    }
-
-    fn update_post(_: u32) -> Weight {
-        0
-    }
-
-    fn delete_post() -> Weight {
-        0
-    }
-
-    fn change_thread_mode(_: u32) -> Weight {
-        0
-    }
 }
 
 pub struct MockVotersParameters;
@@ -614,7 +488,6 @@ parameter_types! {
     pub const LeaderOpeningStake: u32 = 20;
 }
 
-pub struct WorkingGroupWeightInfo;
 impl working_group::Config<ContentDirectoryWorkingGroupInstance> for Test {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
@@ -623,87 +496,9 @@ impl working_group::Config<ContentDirectoryWorkingGroupInstance> for Test {
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
-    type WeightInfo = WorkingGroupWeightInfo;
+    type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
-}
-
-impl working_group::WeightInfo for WorkingGroupWeightInfo {
-    fn on_initialize_leaving(_: u32) -> Weight {
-        0
-    }
-    fn on_initialize_rewarding_with_missing_reward(_: u32) -> Weight {
-        0
-    }
-    fn on_initialize_rewarding_with_missing_reward_cant_pay(_: u32) -> Weight {
-        0
-    }
-    fn on_initialize_rewarding_without_missing_reward(_: u32) -> Weight {
-        0
-    }
-    fn apply_on_opening(_: u32) -> Weight {
-        0
-    }
-    fn fill_opening_lead() -> Weight {
-        0
-    }
-    fn fill_opening_worker(_: u32) -> Weight {
-        0
-    }
-    fn update_role_account() -> Weight {
-        0
-    }
-    fn cancel_opening() -> Weight {
-        0
-    }
-    fn withdraw_application() -> Weight {
-        0
-    }
-    fn slash_stake(_: u32) -> Weight {
-        0
-    }
-    fn terminate_role_worker(_: u32) -> Weight {
-        0
-    }
-    fn terminate_role_lead(_: u32) -> Weight {
-        0
-    }
-    fn increase_stake() -> Weight {
-        0
-    }
-    fn decrease_stake() -> Weight {
-        0
-    }
-    fn spend_from_budget() -> Weight {
-        0
-    }
-    fn update_reward_amount() -> Weight {
-        0
-    }
-    fn set_status_text(_: u32) -> Weight {
-        0
-    }
-    fn update_reward_account() -> Weight {
-        0
-    }
-    fn set_budget() -> Weight {
-        0
-    }
-    fn add_opening(_: u32) -> Weight {
-        0
-    }
-    fn leave_role(_: u32) -> Weight {
-        0
-    }
-    fn fund_working_group_budget() -> Weight {
-        0
-    }
-    fn lead_remark() -> Weight {
-        0
-    }
-    fn worker_remark() -> Weight {
-        0
-    }
 }
 
 impl working_group::Config<StorageWorkingGroupInstance> for Test {
@@ -714,7 +509,7 @@ impl working_group::Config<StorageWorkingGroupInstance> for Test {
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
-    type WeightInfo = WorkingGroupWeightInfo;
+    type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
@@ -727,7 +522,7 @@ impl working_group::Config<ForumWorkingGroupInstance> for Test {
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
-    type WeightInfo = WorkingGroupWeightInfo;
+    type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
@@ -740,7 +535,7 @@ impl working_group::Config<MembershipWorkingGroupInstance> for Test {
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
-    type WeightInfo = WorkingGroupWeightInfo;
+    type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
@@ -914,7 +709,7 @@ impl referendum::Config<ReferendumInstance> for Test {
 
     type MinimumStake = MinimumVotingStake;
 
-    type WeightInfo = ReferendumWeightInfo;
+    type WeightInfo = ();
 
     type MaxWinnerTargetCount = MaxWinnerTargetCount;
 
@@ -958,118 +753,6 @@ impl referendum::Config<ReferendumInstance> for Test {
         <council::Module<Test> as council::ReferendumConnection<Test>>::increase_option_power(
             option_id, amount,
         );
-    }
-}
-
-pub struct ReferendumWeightInfo;
-impl referendum::WeightInfo for ReferendumWeightInfo {
-    fn on_initialize_revealing(_: u32) -> Weight {
-        0
-    }
-    fn on_initialize_voting() -> Weight {
-        0
-    }
-    fn vote() -> Weight {
-        0
-    }
-    fn reveal_vote_space_for_new_winner(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_space_not_in_winners(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_space_replace_last_winner(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_already_existing(_: u32) -> Weight {
-        0
-    }
-    fn release_vote_stake() -> Weight {
-        0
-    }
-}
-
-impl crate::WeightInfo for () {
-    fn create_proposal_signal(_: u32, _: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_runtime_upgrade(_: u32, _: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_funding_request(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_set_max_validator_count(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_create_working_group_lead_opening(_: u32, _: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_fill_working_group_lead_opening(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_update_working_group_budget(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_decrease_working_group_lead_stake(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_slash_working_group_lead(_: u32) -> Weight {
-        0
-    }
-    fn create_proposal_set_working_group_lead_reward(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_terminate_working_group_lead(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_amend_constitution(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_cancel_working_group_lead_opening(_: u32) -> Weight {
-        0
-    }
-    fn create_proposal_set_membership_price(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_set_council_budget_increment(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_set_councilor_reward(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_set_initial_invitation_balance(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_set_initial_invitation_count(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_set_membership_lead_invitation_quota(_: u32) -> Weight {
-        0
-    }
-    fn create_proposal_set_referral_cut(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_create_blog_post(_: u32, _: u32, _: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_edit_blog_post(_: u32, _: u32, _: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_lock_blog_post(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_unlock_blog_post(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_veto_proposal(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_update_global_nft_limit(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn create_proposal_update_channel_payouts(_: u32, _: u32, _: u32) -> Weight {
-        0
     }
 }
 
