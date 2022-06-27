@@ -573,6 +573,7 @@ impl ExtBuilder {
         crate::GenesisConfig::<Test> {
             next_channel_id: self.next_channel_id,
             next_video_id: self.next_video_id,
+            next_transfer_id: self.next_transfer_id,
             next_curator_group_id: self.next_curator_group_id,
             max_cashout_allowed: self.max_cashout_allowed,
             min_cashout_allowed: self.min_cashout_allowed,
