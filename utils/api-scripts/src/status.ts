@@ -1,9 +1,4 @@
-// @ts-check
-
 import { ApiPromise, WsProvider } from '@polkadot/api'
-import { types } from '@joystream/types'
-// import { Seat } from '@joystream/types/council'
-
 import BN from 'bn.js'
 
 async function main() {
@@ -15,7 +10,7 @@ async function main() {
   let retry = 6
   while (true) {
     try {
-      api = new ApiPromise({ provider, types })
+      api = new ApiPromise({ provider })
       await api.isReadyOrError
       break
     } catch (err) {
