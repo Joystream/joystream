@@ -251,10 +251,11 @@ pub trait Config:
     /// `Veto Proposal` proposal parameters
     type VetoProposalProposalParameters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
 
+    // TODO: enable after Carthage
     /// `Update Nft limit` proposal parameters
-    type UpdateGlobalNftLimitProposalParameters: Get<
-        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
-    >;
+    // type UpdateGlobalNftLimitProposalParameters: Get<
+    //     ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    // >;
 
     /// `Update Channel Payouts` proposal parameters
     type UpdateChannelPayoutsProposalParameters: Get<
@@ -463,8 +464,9 @@ decl_module! {
         const VetoProposalProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::VetoProposalProposalParameters::get();
 
-        const UpdateGlobalNftLimitProposalParameters:
-            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateGlobalNftLimitProposalParameters::get();
+        // TODO: enable after Carthage
+        // const UpdateGlobalNftLimitProposalParameters:
+        //     ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateGlobalNftLimitProposalParameters::get();
 
         const UpdateChannelPayoutsProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateChannelPayoutsProposalParameters::get();
@@ -671,9 +673,10 @@ impl<T: Config> Module<T> {
             ProposalDetails::VetoProposal(..) => {
                 // Note: No checks for this proposal for now
             }
-            ProposalDetails::UpdateGlobalNftLimit(..) => {
-                // Note: No checks for this proposal for now
-            }
+            // TODO: enable after Carthage
+            // ProposalDetails::UpdateGlobalNftLimit(..) => {
+            //     // Note: No checks for this proposal for now
+            // }
 
             ProposalDetails::UpdateChannelPayouts(params) => {
                 if params.min_cashout_allowed.is_some() && params.max_cashout_allowed.is_some() {
@@ -748,9 +751,10 @@ impl<T: Config> Module<T> {
             ProposalDetails::LockBlogPost(..) => T::LockBlogPostProposalParameters::get(),
             ProposalDetails::UnlockBlogPost(..) => T::UnlockBlogPostProposalParameters::get(),
             ProposalDetails::VetoProposal(..) => T::VetoProposalProposalParameters::get(),
-            ProposalDetails::UpdateGlobalNftLimit(..) => {
-                T::UpdateGlobalNftLimitProposalParameters::get()
-            }
+            // TODO: enable after Carthage
+            // ProposalDetails::UpdateGlobalNftLimit(..) => {
+            //     T::UpdateGlobalNftLimitProposalParameters::get()
+            // }
             ProposalDetails::UpdateChannelPayouts(..) => {
                 T::UpdateChannelPayoutsProposalParameters::get()
             }
@@ -921,13 +925,14 @@ impl<T: Config> Module<T> {
                 )
                 .saturated_into()
             }
-            ProposalDetails::UpdateGlobalNftLimit(..) => {
-                WeightInfoCodex::<T>::create_proposal_update_global_nft_limit(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
-                )
-                .saturated_into()
-            }
+            // TODO: enable after Carthage
+            // ProposalDetails::UpdateGlobalNftLimit(..) => {
+            //     WeightInfoCodex::<T>::create_proposal_update_global_nft_limit(
+            //         title_length.saturated_into(),
+            //         description_length.saturated_into(),
+            //     )
+            //     .saturated_into()
+            // }
             ProposalDetails::UpdateChannelPayouts(params) => {
                 WeightInfoCodex::<T>::create_proposal_update_channel_payouts(
                     title_length.saturated_into(),

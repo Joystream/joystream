@@ -8,8 +8,8 @@ use balances::Pallet as Balances;
 use codec::Decode;
 use common::working_group::WorkingGroup;
 use common::BalanceKind;
-use content::NftLimitPeriod;
-use frame_benchmarking::{account, benchmarks};
+//use content::NftLimitPeriod;
+use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::sp_runtime::traits::Bounded;
 use frame_support::traits::Currency;
 use frame_system::EventRecord;
@@ -815,30 +815,37 @@ benchmarks! {
         );
     }
 
+<<<<<<< HEAD
     create_proposal_update_global_nft_limit {
         let t in 1 .. T::TitleMaxLength::get();
         let d in 1 .. T::DescriptionMaxLength::get();
+=======
+    // TODO: enable after Carthage
+    // create_proposal_update_global_nft_limit {
+    //     let t in ...;
+    //     let d in ...;
+>>>>>>> 1323c4da9e (disable UpdateGlobalNftLimits proposal)
 
-        let (account_id, member_id, general_proposal_paramters) =
-            create_proposal_parameters::<T>(t, d);
+    //     let (account_id, member_id, general_proposal_paramters) =
+    //         create_proposal_parameters::<T>(t, d);
 
-        let proposal_details = ProposalDetails::UpdateGlobalNftLimit(
-            NftLimitPeriod::Daily,
-            100
-        );
-    }: create_proposal(
-        RawOrigin::Signed(account_id.clone()),
-        general_proposal_paramters.clone(),
-        proposal_details.clone()
-    )
-    verify {
-        create_proposal_verify::<T>(
-            account_id,
-            member_id,
-            general_proposal_paramters,
-            proposal_details
-        );
-    }
+    //     let proposal_details = ProposalDetails::UpdateGlobalNftLimit(
+    //         NftLimitPeriod::Daily,
+    //         100
+    //     );
+    // }: create_proposal(
+    //     RawOrigin::Signed(account_id.clone()),
+    //     general_proposal_paramters.clone(),
+    //     proposal_details.clone()
+    // )
+    // verify {
+    //     create_proposal_verify::<T>(
+    //         account_id,
+    //         member_id,
+    //         general_proposal_paramters,
+    //         proposal_details
+    //     );
+    // }
 
 
     create_proposal_update_channel_payouts {
@@ -1079,12 +1086,22 @@ mod tests {
         });
     }
 
+<<<<<<< HEAD
     #[test]
     fn test_update_global_nft_limit_proposal() {
         initial_test_ext().execute_with(|| {
             assert_ok!(ProposalsCodex::test_benchmark_create_proposal_update_global_nft_limit());
         })
     }
+=======
+    // TODO: enable after Carthage
+    // #[test]
+    // fn test_update_global_nft_limit_proposal() {
+    //     initial_test_ext().execute_with(|| {
+    //         assert_ok!(test_benchmark_create_proposal_update_global_nft_limit::<Test>());
+    //     })
+    // }
+>>>>>>> 1323c4da9e (disable UpdateGlobalNftLimits proposal)
 
     #[test]
     fn test_update_channel_payouts_proposal() {

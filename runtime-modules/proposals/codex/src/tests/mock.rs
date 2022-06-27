@@ -792,7 +792,8 @@ impl crate::Config for Test {
     type LockBlogPostProposalParameters = DefaultProposalParameters;
     type UnlockBlogPostProposalParameters = DefaultProposalParameters;
     type VetoProposalProposalParameters = DefaultProposalParameters;
-    type UpdateGlobalNftLimitProposalParameters = DefaultProposalParameters;
+    // TODO: enable after Carthage
+    //type UpdateGlobalNftLimitProposalParameters = DefaultProposalParameters;
     type UpdateChannelPayoutsProposalParameters = DefaultProposalParameters;
 }
 
