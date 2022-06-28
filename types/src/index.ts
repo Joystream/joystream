@@ -17,6 +17,7 @@ import {
   Struct,
   Bytes,
   TypeRegistry,
+  Raw,
 } from '@polkadot/types'
 import defs from './augment/lookup'
 import BN from 'bn.js'
@@ -85,7 +86,7 @@ export type CreateInterface<T> =
       ? EnumVariant<{ [K in keyof EnumDefs<T, S>]: CreateInterface<EnumDefs<T, S>[K]> }>
       : T extends Struct
       ? { [K in keyof StructDefs<T>]: CreateInterface<StructDefs<T>[K]> }
-      : T extends Text | Bytes
+      : T extends Text | Bytes | Raw
       ? string
       : T extends UInt
       ? number | BN
