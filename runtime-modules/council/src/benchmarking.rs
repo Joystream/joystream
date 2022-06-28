@@ -395,6 +395,12 @@ benchmarks! {
             "Council not updated"
         );
 
+        // REVISE THIS!!
+        // THIS MULTIPLICATIONS OF TWO PERIODS DOESN'T MAKE ANY SENSE
+        // DID WE MEAN TO SUM OR TAKE MAX?
+        //
+        // THIS BENCHMARK IS TAKING VERY LONG MAYBE EVENT GETTING STUCK IN THE WHILE
+        // LOOP OF move_to_block()
         // Both payments and refill execute at BudgetRefefillPeriod * ElectedMemberRewardPeriod
         // -1 because we want to move just before the refill
         current_block_number = T::BudgetRefillPeriod::get() *
