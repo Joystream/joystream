@@ -2931,12 +2931,12 @@ impl<T: Config> Module<T> {
 
     fn ensure_channel_category_exists(
         channel_category_id: &T::ChannelCategoryId,
-    ) -> Result<ChannelCategory, Error<T>> {
+    ) -> Result<(), Error<T>> {
         ensure!(
             ChannelCategoryById::<T>::contains_key(channel_category_id),
             Error::<T>::CategoryDoesNotExist
         );
-        Ok(ChannelCategoryById::<T>::get(channel_category_id))
+        Ok(())
     }
 
     fn ensure_video_exists(video_id: &T::VideoId) -> Result<Video<T>, Error<T>> {
