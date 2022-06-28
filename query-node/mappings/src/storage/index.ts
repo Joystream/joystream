@@ -307,14 +307,12 @@ export async function storage_DataObjectsDeleted({ event, store }: EventContext 
     ...videoRelationsForCounters.map((item) => `videoMedia.${item}`),
   ])
 
-  await Promise.all(
-    dataObjects.map(async (dataObject) => {
-      // update video active counters
-      await getAllManagers(store).storageDataObjects.onMainEntityDeletion(dataObject)
+  for (const dataObject of dataObjects) {
+    // update video active counters
+    await getAllManagers(store).storageDataObjects.onMainEntityDeletion(dataObject)
 
-      await unsetAssetRelations(store, dataObject)
-    })
-  )
+    await unsetAssetRelations(store, dataObject)
+  }
 }
 
 // DISTRIBUTION FAMILY
