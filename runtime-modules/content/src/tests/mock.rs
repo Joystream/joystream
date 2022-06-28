@@ -543,7 +543,10 @@ impl Default for ExtBuilder {
 }
 
 impl ExtBuilder {
-    pub fn build(self) -> sp_io::TestExternalities {
+    pub fn build_with_balances(
+        self,
+        balances: Vec<(AccountId, BalanceOf<Test>)>,
+    ) -> sp_io::TestExternalities {
         let mut t = frame_system::GenesisConfig::default()
             .build_storage::<Test>()
             .unwrap();
@@ -577,7 +580,15 @@ impl ExtBuilder {
         .assimilate_storage(&mut t)
         .unwrap();
 
+        balances::GenesisConfig::<Test> { balances }
+            .assimilate_storage(&mut t)
+            .unwrap();
+
         t.into()
+    }
+
+    pub fn build(self) -> sp_io::TestExternalities {
+        self.build_with_balances(vec![])
     }
 }
 

@@ -9,27 +9,23 @@ use sp_std::collections::btree_map::BTreeMap;
 use strum::IntoEnumIterator;
 
 #[test]
-fn update_channel_transfer_status_succeeds() {
+fn update_channel_transfer_status_ok_with_status_changed() {
     with_default_mock_builder(|| {
-        run_to_block(1);
+        ContentTest::with_member_channel().setup();
 
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        UpdateChannelTransferStatusFixture::default().call_and_assert(Ok(()));
 
-        UpdateChannelTransferStatusFixture::default().call_and_assert(Ok(()))
+        assert!(matches!(
+            Content::channel_by_id(ChannelId::one()).transfer_status,
+            ChannelTransferStatus::<_, _, _, _>::PendingTransfer(_)
+        ))
     })
 }
 
 #[test]
 fn update_channel_transfer_status_fails_with_invalid_channel_id() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
+        ContentTest::with_member_channel().setup();
         let invalid_channel_id = Content::next_channel_id();
 
         UpdateChannelTransferStatusFixture::default()
@@ -41,12 +37,7 @@ fn update_channel_transfer_status_fails_with_invalid_channel_id() {
 #[test]
 fn update_channel_transfer_status_fails_with_invalid_origin() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
+        ContentTest::with_member_channel().setup();
         UpdateChannelTransferStatusFixture::default()
             .with_origin(RawOrigin::Root)
             .call_and_assert(Err(DispatchError::BadOrigin))
@@ -56,12 +47,7 @@ fn update_channel_transfer_status_fails_with_invalid_origin() {
 #[test]
 fn update_channel_transfer_status_fails_with_member_actor() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
+        ContentTest::with_member_channel().setup();
         let invalid_member_id = 111;
         UpdateChannelTransferStatusFixture::default()
             .with_actor(ContentActor::Member(invalid_member_id))
@@ -72,12 +58,7 @@ fn update_channel_transfer_status_fails_with_member_actor() {
 #[test]
 fn update_channel_transfer_status_fails_with_invalid_collaborators() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
+        ContentTest::with_member_channel().setup();
         let invalid_member_id = 111;
         UpdateChannelTransferStatusFixture::default()
             .with_collaborators(BTreeMap::from_iter(vec![(
@@ -91,11 +72,7 @@ fn update_channel_transfer_status_fails_with_invalid_collaborators() {
 #[test]
 fn update_channel_transfer_status_fails_with_non_channel_owner() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        ContentTest::with_member_channel().setup();
         let curator_group_id = add_curator_to_new_group(
             DEFAULT_CURATOR_ID,
             &[ChannelActionPermission::TransferChannel],
@@ -111,12 +88,7 @@ fn update_channel_transfer_status_fails_with_non_channel_owner() {
 #[test]
 fn accept_transfer_status_fails_with_invalid_origin() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
+        ContentTest::with_member_channel().setup();
         UpdateChannelTransferStatusFixture::default()
             .with_new_member_channel_owner(DEFAULT_MEMBER_ID)
             .call_and_assert(Ok(()));
@@ -130,12 +102,7 @@ fn accept_transfer_status_fails_with_invalid_origin() {
 #[test]
 fn accept_transfer_status_succeeds() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
+        ContentTest::with_member_channel().setup();
         let new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions> = BTreeMap::from_iter(
             vec![(SECOND_MEMBER_ID, ChannelActionPermission::iter().collect())],
         );
@@ -153,12 +120,7 @@ fn accept_transfer_status_succeeds() {
 #[test]
 fn accept_transfer_status_fails_with_invalid_commitment_params() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
+        ContentTest::with_member_channel().setup();
         UpdateChannelTransferStatusFixture::default()
             .with_new_member_channel_owner(DEFAULT_MEMBER_ID)
             .call_and_assert(Ok(()));
@@ -178,12 +140,7 @@ fn accept_transfer_status_fails_with_invalid_commitment_params() {
 #[test]
 fn accept_transfer_status_fails_with_invalid_channel_id() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
+        ContentTest::with_member_channel().setup();
         let invalid_channel_id = Content::next_channel_id();
 
         AcceptChannelTransferFixture::default()
@@ -195,12 +152,7 @@ fn accept_transfer_status_fails_with_invalid_channel_id() {
 #[test]
 fn accept_transfer_status_fails_with_invalid_status() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
+        ContentTest::with_member_channel().setup();
         AcceptChannelTransferFixture::default()
             .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()))
     })
@@ -343,12 +295,7 @@ fn accept_transfer_status_succeeds_for_curators_to_members_with_price() {
 #[test]
 fn accept_transfer_status_succeeds_for_members_to_curators_with_price() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
+        ContentTest::with_member_channel().setup();
         let curator_group_id = Content::next_curator_group_id();
 
         let price = 100;
@@ -378,7 +325,7 @@ fn accept_transfer_status_succeeds_for_members_to_curators_with_price() {
 
 #[test]
 fn accept_channel_transfer_fails_with_invalid_transfer_id() {
-    with_default_mock_builder(||{
+    with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
         UpdateChannelTransferStatusFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
@@ -387,14 +334,15 @@ fn accept_channel_transfer_fails_with_invalid_transfer_id() {
         AcceptChannelTransferFixture::default()
             .with_origin(RawOrigin::Signed(THIRD_MEMBER_ACCOUNT_ID))
             .with_transfer_id(2)
-            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferCommitmentParams.into()))
-
+            .call_and_assert(Err(
+                Error::<Test>::InvalidChannelTransferCommitmentParams.into()
+            ))
     })
 }
 
 #[test]
 fn update_channel_transfer_ok_with_status_reset() {
-    with_default_mock_builder(||{
+    with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
         UpdateChannelTransferStatusFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)

@@ -2715,14 +2715,18 @@ impl UpdateChannelTransferStatusFixture {
             origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
             channel_id: ChannelId::one(),
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
-            transfer_status: ChannelTransferStatus::PendingTransfer::<MemberId, CuratorGroupId, BalanceOf<Test>, TransferId>(
-                PendingTransfer::<_,_,_,_> {
-                    new_owner: ChannelOwner::Member(THIRD_MEMBER_ID),
-                    transfer_params: TransferParameters::<_,_,_> {
-                        transfer_id: Some(TransferId::one()),
-                        ..Default::default()
-                    }
-                })
+            transfer_status: ChannelTransferStatus::PendingTransfer::<
+                MemberId,
+                CuratorGroupId,
+                BalanceOf<Test>,
+                TransferId,
+            >(PendingTransfer::<_, _, _, _> {
+                new_owner: ChannelOwner::Member(THIRD_MEMBER_ID),
+                transfer_params: TransferParameters::<_, _, _> {
+                    transfer_id: Some(TransferId::one()),
+                    ..Default::default()
+                },
+            }),
         }
     }
 
@@ -2886,7 +2890,7 @@ impl AcceptChannelTransferFixture {
             params: TransferParameters {
                 transfer_id: Some(TransferId::one()),
                 ..Default::default()
-            }
+            },
         }
     }
 
