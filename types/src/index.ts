@@ -108,11 +108,11 @@ export type CreateInterface<T> =
 export const registry = new TypeRegistry()
 registry.register(defs as any)
 
-export function createType<T extends Codec, TN extends string>(
+export function createType<TN extends string>(
   typeName: TN,
-  value: CreateInterface<DetectCodec<T, TN>>
-): Codec extends DetectCodec<T, TN> ? unknown : DetectCodec<T, TN> {
-  return registry.createType<T, TN>(typeName, value)
+  value: CreateInterface<DetectCodec<Codec, TN>>
+): Codec extends DetectCodec<Codec, TN> ? unknown : DetectCodec<Codec, TN> {
+  return registry.createType<Codec, TN>(typeName, value)
 }
 
 export function keysOf<T extends Struct | Enum, TN extends string>(typeName: TN): KeyOf<T>[] {
