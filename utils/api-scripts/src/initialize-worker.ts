@@ -2,7 +2,7 @@ import { createType } from '@joystream/types'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { ExtrinsicsHelper, getAlicePair, getKeyFromSuri } from './helpers/extrinsics'
 import BN from 'bn.js'
-import { u64 } from '@polkadot/types'
+import { ApplicationId, OpeningId } from '@joystream/types/primitives'
 
 const workingGroupModules = [
   'storageWorkingGroup',
@@ -101,7 +101,7 @@ async function main() {
     ],
     `Failed to create ${groupModule} worker opening!`
   )
-  const openingId = openingRes.findRecord(groupModule, 'OpeningAdded')!.event.data[0] as u64
+  const openingId = openingRes.findRecord(groupModule, 'OpeningAdded')!.event.data[0] as OpeningId
 
   // Setting up stake account
   const addCandidateTx = api.tx.members.addStakingAccountCandidate(memberId)
@@ -140,7 +140,7 @@ async function main() {
     'Failed to apply on worker opening!'
   )
 
-  const applicationId = applicationRes.findRecord(groupModule, 'AppliedOnOpening')!.event.data[1] as u64
+  const applicationId = applicationRes.findRecord(groupModule, 'AppliedOnOpening')!.event.data[1] as ApplicationId
 
   // Filling the opening
   console.log('Filling the opening...')

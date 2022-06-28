@@ -4,6 +4,7 @@ import { ExtrinsicsHelper, getAlicePair, getKeyFromSuri } from './helpers/extrin
 import { u64 } from '@polkadot/types'
 import BN from 'bn.js'
 import { createType } from '@joystream/types'
+import { ApplicationId, OpeningId } from '@joystream/types/primitives'
 
 const workingGroupModules = [
   'storageWorkingGroup',
@@ -95,7 +96,7 @@ async function main() {
       ],
       `Failed to create ${groupModule} lead opening!`
     )
-    const openingId = openingRes.findRecord(groupModule, 'OpeningAdded')!.event.data[0] as u64
+    const openingId = openingRes.findRecord(groupModule, 'OpeningAdded')!.event.data[0] as OpeningId
 
     // Set up stake account
     const addCandidateTx = api.tx.members.addStakingAccountCandidate(memberId)
@@ -134,7 +135,7 @@ async function main() {
       'Failed to apply on lead opening!'
     )
 
-    const applicationId = applicationRes.findRecord(groupModule, 'AppliedOnOpening')!.event.data[1] as u64
+    const applicationId = applicationRes.findRecord(groupModule, 'AppliedOnOpening')!.event.data[1] as ApplicationId
 
     // Fill opening
     console.log('Filling the opening...')
