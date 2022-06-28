@@ -49,6 +49,8 @@ type KeyOf<T> = T extends DecoratedEnum<infer S>
   ? keyof StructDefs<T>
   : unknown[]
 
+type AsRecord<K, V> = K extends string ? Record<K & string, V> : K extends number ? Record<K & number, V> : never
+
 /**
  * Recursively create typesafe interface representing valid input for constructing any Codec type
  * (inlcuding complex types with a lot of nesting)
@@ -75,7 +77,7 @@ type KeyOf<T> = T extends DecoratedEnum<infer S>
  *   PalletContentLimitPerPeriod |
  *   { limit: u64 | BN | number, blockNumberPeriod: u32 | BN | number }
  */
-type CreateInterface<T> =
+export type CreateInterface<T> =
   | T
   | (T extends Option<infer S>
       ? null | undefined | CreateInterface<S>
@@ -89,14 +91,16 @@ type CreateInterface<T> =
       ? number | BN
       : T extends bool
       ? boolean
-      : T extends Vec<infer S> | BTreeSet<infer S>
+      : T extends Vec<infer S>
       ? CreateInterface<S>[]
+      : T extends BTreeSet<infer S>
+      ? CreateInterface<S>[] | Set<CreateInterface<S>>
       : T extends ITuple<infer S>
       ? S extends Tuple
         ? unknown[]
         : { [K in keyof S]: CreateInterface<T[K]> }
       : T extends BTreeMap<infer K, infer V>
-      ? Map<K, V>
+      ? Map<CreateInterface<K>, CreateInterface<V>> | AsRecord<CreateInterface<K>, CreateInterface<V>>
       : T extends Null
       ? null
       : unknown)
