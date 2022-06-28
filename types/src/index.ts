@@ -2,7 +2,7 @@ import './augment/types-lookup'
 import './augment/registry'
 import './augment/augment-api'
 
-import { Codec, DetectCodec, ITuple, Observable } from '@polkadot/types/types'
+import { AnyU8a, Codec, DetectCodec, ITuple, Observable } from '@polkadot/types/types'
 import {
   Text,
   UInt,
@@ -86,8 +86,10 @@ export type CreateInterface<T> =
       ? EnumVariant<{ [K in keyof EnumDefs<T, S>]: CreateInterface<EnumDefs<T, S>[K]> }>
       : T extends Struct
       ? { [K in keyof StructDefs<T>]: CreateInterface<StructDefs<T>[K]> }
-      : T extends Text | Bytes | Raw
+      : T extends Text
       ? string
+      : T extends Bytes | Raw
+      ? AnyU8a
       : T extends UInt
       ? number | BN
       : T extends bool
