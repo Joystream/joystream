@@ -1,20 +1,37 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { EventContext, StoreContext } from '@joystream/hydra-common'
+import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
+import { VideoMetadata } from '@joystream/metadata-protobuf'
+import { BaseModel } from '@joystream/warthog'
+import {
+  Channel,
+  Comment,
+  CommentCreatedEvent,
+  CommentDeletedEvent,
+  CommentModeratedEvent,
+  CommentPinnedEvent,
+  CommentReactedEvent,
+  CommentReaction,
+  CommentReactionsCountByReactionId,
+  CommentTextUpdatedEvent,
+  NftIssuedEvent,
+  Video,
+  VideoReactedEvent,
+  VideoReaction,
+  VideoReactionsCountByReactionType,
+  VideoReactionsPreferenceEvent,
+} from 'query-node/dist/model'
 import { Content } from '../../generated/types'
 import { deserializeMetadata, genericEventFields, inconsistentState, logger } from '../common'
+import { getAllManagers } from '../derivedPropertiesManager/applications'
+import { createNft } from './nft'
 import {
+  convertContentActor,
+  convertContentActorToChannelOrNftOwner,
   processVideoMetadata,
   videoRelationsForCounters,
-  convertContentActorToChannelOrNftOwner,
-  convertContentActor,
 } from './utils'
-import { Channel, NftIssuedEvent, Video } from 'query-node/dist/model'
-import { VideoMetadata } from '@joystream/metadata-protobuf'
-import _ from 'lodash'
-import { createNft } from './nft'
-import { getAllManagers } from '../derivedPropertiesManager/applications'
 
 /// //////////////// Video //////////////////////////////////////////////////////
 
@@ -42,6 +59,10 @@ export async function content_VideoCreated(ctx: EventContext & StoreContext): Pr
     createdInBlock: event.blockNumber,
     createdAt: new Date(event.blockTimestamp),
     updatedAt: new Date(event.blockTimestamp),
+    isCommentSectionEnabled: true,
+    isReactionFeatureEnabled: true,
+    commentsCount: 0,
+    reactionsCount: 0,
   })
   // deserialize & process metadata
   if (videoCreationParameters.meta.isSome) {
@@ -154,9 +175,69 @@ export async function content_VideoDeleted({ store, event }: EventContext & Stor
   // update video active counters
   await getAllManagers(store).videos.onMainEntityDeletion(video)
 
+  // TODO: remove manual deletion of referencing records after
+  // TODO: https://github.com/Joystream/hydra/issues/490 has been implemented
+
+  await removeVideoReferencingRelations(store, videoId.toString())
+
   // remove video
   await store.remove<Video>(video)
 
   // emit log event
   logger.info('Video has been deleted', { id: videoId })
+}
+
+async function removeVideoReferencingRelations(store: DatabaseManager, videoId: string): Promise<void> {
+  const loadReferencingEntities = async <T extends BaseModel>(
+    store: DatabaseManager,
+    entityType: { new (): T },
+    videoId: string
+  ) => {
+    return await store.getMany(entityType, {
+      where: { video: { id: videoId } },
+    })
+  }
+
+  const removeRelations = async <T>(store: DatabaseManager, entities: T[]) => {
+    await Promise.all(entities.map(async (r) => await store.remove<T>(r)))
+  }
+
+  // Entities in the list should be removed in the order. i.e. all `Comment` relations
+  // should be removed in the last after all other referencing relations has been removed
+  const referencingEntities: typeof BaseModel[] = [
+    CommentReaction,
+    VideoReaction,
+    VideoReactionsCountByReactionType,
+    CommentReactionsCountByReactionId,
+    VideoReactedEvent,
+    CommentReactedEvent,
+    CommentCreatedEvent,
+    CommentTextUpdatedEvent,
+    CommentDeletedEvent,
+    CommentModeratedEvent,
+    CommentPinnedEvent,
+    VideoReactionsPreferenceEvent,
+    Comment,
+  ]
+
+  const referencingRecords = await Promise.all(
+    referencingEntities.map(async (entity) => await loadReferencingEntities(store, entity as any, videoId))
+  )
+
+  // beacuse of parentComment references among comments, their deletion must be handled saperately
+  const referencingComments = referencingRecords.pop()!
+
+  // remove all referencing records except comments
+  for (const records of referencingRecords) {
+    await removeRelations(store, records)
+  }
+
+  // first delete all replies (where parentCommentId!==null), then top level comments
+  for (const comment of referencingComments) {
+    // find all comments(replies) where `comment` is parent comment
+    const replies = await store.getMany(Comment, { where: { parentComment: { id: comment.id } } })
+    await Promise.all(replies.map(async (r) => await store.remove<Comment>(r)))
+    // remove comment
+    await store.remove<Comment>(comment)
+  }
 }

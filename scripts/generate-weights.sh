@@ -10,7 +10,7 @@ REPEAT=${2:-20}
 benchmark() {
   echo "Generating weights for $1..."
   start=`date +%s`
-  ERROR=$($SCRIPT_DIR/../target/release/joystream-node benchmark \
+  ERROR=$($SCRIPT_DIR/../target/release/joystream-node benchmark pallet \
       --pallet=$1 \
       --extrinsic=* \
       --chain=dev \
@@ -33,17 +33,12 @@ benchmark() {
 }
 
 # FRAME benchmarks
-# Some FRAME pallets are commented out since the parameter's in some of the extrinsic's
-# benchmarking are being discarded and we can't adjust the trait since it's part of
-# Substrate. This problem has been fixed in this PR: https://github.com/paritytech/substrate/pull/7233
-# So uncomment this when we move to a version that contains that PR.
-# See issue: #1979
-# benchmark frame_system
+benchmark frame_system
 benchmark substrate_utility
 benchmark pallet_session
 benchmark pallet_timestamp
 
-# Pallet staking benchmarking takes too long.
+# Module staking benchmarking takes too long.
 # benchmark pallet_staking
 
 # Benchmark should be run on the reference machine because it affects the fee model (transfer fee).
@@ -65,7 +60,6 @@ benchmark council
 benchmark referendum
 benchmark forum
 benchmark membership
-benchmark bounty
-benchmark blog
+# benchmark bounty
 benchmark joystream_utility
 benchmark storage

@@ -1,48 +1,26 @@
-import { Codec, DetectCodec, RegistryTypes, ITuple } from '@polkadot/types/types'
-import common from './common'
-import members from './members'
-import council from './council'
-import forum from './forum'
-import workingGroup from './working-group'
-import storage from './storage'
-import blog from './blog'
-import proposals from './proposals'
-import referendum from './referendum'
-import constitution from './constitution'
-import bounty from './bounty'
-import content from './content'
-import project_token from './project_token'
-import { TypeRegistry, Text, UInt, Null, bool, Option, Vec, BTreeSet, BTreeMap, Tuple } from '@polkadot/types'
-import { ExtendedEnum } from './JoyEnum'
-import { ExtendedStruct } from './JoyStruct'
+import './augment/types-lookup'
+import './augment/registry'
+import './augment/augment-api'
 
+import { Codec, DetectCodec, ITuple, Observable } from '@polkadot/types/types'
+import {
+  Text,
+  UInt,
+  Null,
+  bool,
+  Option,
+  Vec,
+  BTreeSet,
+  BTreeMap,
+  Tuple,
+  Enum,
+  Struct,
+  Bytes,
+  TypeRegistry,
+} from '@polkadot/types'
+import defs from './augment/lookup'
 import BN from 'bn.js'
-
-export { common, members, council, forum, workingGroup, proposals, content, project_token }
-
-export const types: RegistryTypes = {
-  ...common,
-  ...members,
-  ...council,
-  ...forum,
-  ...workingGroup,
-  ...storage,
-  ...blog,
-  ...proposals,
-  ...referendum,
-  ...constitution,
-  ...bounty,
-  ...content,
-  ...project_token,
-  // https://github.com/polkadot-js/api/blob/master/CHANGELOG.md#351-jan-18-2020
-  AccountInfo: 'AccountInfoWithRefCount',
-  // Required for compatibility with @polkadot/api version >= 6.0
-  ValidatorPrefs: 'ValidatorPrefsWithCommission',
-}
-
-// Allows creating types without api instance (it's not a recommended way though, so should be used just for mocks)
-export const registry = new TypeRegistry()
-registry.register(types)
+import { AugmentedQuery } from '@polkadot/api/types'
 
 // Tweaked version of https://stackoverflow.com/a/62163715 for handling enum variants
 // Based on type (T) like: { a: string; b: number; c: Null; }
@@ -55,15 +33,57 @@ type EnumVariant<T> = keyof T extends infer K
     : never
   : never
 
-// Create simple interface for any Codec type (inlcuding JoyEnums and JoyStructs)
-// Cannot handle Option here, since that would cause circular reference error
-type CreateInterface_NoOption<T extends Codec> =
+// Other enum utility types:
+type EnumAccessors<T extends string> = { [K in `as${T}`]?: unknown }
+type DecoratedEnum<T extends string> = Omit<Enum, 'type'> & { type: T } & EnumAccessors<T>
+// If `asX` is defined - we want the returned codec type, otherwise it's Null (and `isX` is defined instead)
+type CodecOrNull<T> = T extends Codec ? T : Null
+type EnumDefs<E extends DecoratedEnum<T>, T extends string> = { [K in T]: CodecOrNull<E[`as${K}`]> }
+
+// Struct utility types
+type StructDefs<S extends Struct> = Omit<S, keyof Struct>
+
+type KeyOf<T> = T extends DecoratedEnum<infer S>
+  ? keyof EnumDefs<T, S>
+  : T extends Struct
+  ? keyof StructDefs<T>
+  : unknown[]
+
+/**
+ * Recursively create typesafe interface representing valid input for constructing any Codec type
+ * (inlcuding complex types with a lot of nesting)
+ *
+ * Some examples:
+ *
+ * CreateInterface<Option<u128>> = Option<u128> | u128 | number | BN | null | undefined
+ *
+ * CreateInterface<PalletCommonBalanceKind> =
+ *   PalletCommonBalanceKind |
+ *   'Positive' |
+ *   'Negative' |
+ *   { Positive: null } |
+ *   { Negative: null }
+ *
+ * CreateInterface<PalletContentPermissionsContentActor> =
+ *   PalletContentPermissionsContentActor |
+ *   'Lead' |
+ *   { Lead: null } |
+ *   { Curator: ITuple<[u64, u64]> | [u64 | BN | number, u64 | BN | number] }
+ *   { Member: u64 | BN | number }
+ *
+ * CreateInterface<PalletContentLimitPerPeriod> =
+ *   PalletContentLimitPerPeriod |
+ *   { limit: u64 | BN | number, blockNumberPeriod: u32 | BN | number }
+ */
+type CreateInterface<T> =
   | T
-  | (T extends ExtendedEnum<infer S>
-      ? EnumVariant<{ [K in keyof S]: CreateInterface<InstanceType<T['typeDefinitions'][K]>> }>
-      : T extends ExtendedStruct<infer S>
-      ? { [K in keyof S]?: CreateInterface<InstanceType<T['typeDefs'][K]>> }
-      : T extends Text
+  | (T extends Option<infer S>
+      ? null | undefined | CreateInterface<S>
+      : T extends DecoratedEnum<infer S>
+      ? EnumVariant<{ [K in keyof EnumDefs<T, S>]: CreateInterface<EnumDefs<T, S>[K]> }>
+      : T extends Struct
+      ? { [K in keyof StructDefs<T>]: CreateInterface<StructDefs<T>[K]> }
+      : T extends Text | Bytes
       ? string
       : T extends UInt
       ? number | BN
@@ -73,7 +93,7 @@ type CreateInterface_NoOption<T extends Codec> =
       ? CreateInterface<S>[]
       : T extends ITuple<infer S>
       ? S extends Tuple
-        ? any[]
+        ? unknown[]
         : { [K in keyof S]: CreateInterface<T[K]> }
       : T extends BTreeMap<infer K, infer V>
       ? Map<K, V>
@@ -81,15 +101,31 @@ type CreateInterface_NoOption<T extends Codec> =
       ? null
       : unknown)
 
-// Wrapper for CreateInterface_NoOption that includes resolving an Option
-// (nested Options like Option<Option<Codec>> will resolve to Option<any>, but there are very edge case)
-export type CreateInterface<T> = T extends Codec
-  ? T | (T extends Option<infer S> ? undefined | null | S | CreateInterface_NoOption<S> : CreateInterface_NoOption<T>)
-  : any
+export const registry = new TypeRegistry()
+registry.register(defs as any)
 
 export function createType<T extends Codec, TN extends string>(
   typeName: TN,
-  value: CreateInterface<T>
+  value: CreateInterface<DetectCodec<T, TN>>
 ): DetectCodec<T, TN> {
   return registry.createType<T, TN>(typeName, value)
 }
+
+export function keysOf<T extends Struct | Enum, TN extends string>(typeName: TN): KeyOf<T>[] {
+  return registry.createType<T, TN>(typeName).defKeys as KeyOf<T>[]
+}
+
+export async function entriesByIds<IDType extends UInt, ValueType extends Codec>(
+  apiMethod: AugmentedQuery<'promise', (key: IDType) => Observable<ValueType>, [IDType]>
+): Promise<[IDType, AsCodec<ValueType>][]> {
+  const entries: [IDType, AsCodec<ValueType>][] = (await apiMethod.entries()).map(([storageKey, value]) => [
+    storageKey.args[0] as IDType,
+    value,
+  ])
+
+  return entries.sort((a, b) => a[0].toNumber() - b[0].toNumber())
+}
+
+export type AsCodec<T> = T extends Codec ? T : Codec
+
+export const JOYSTREAM_ADDRESS_PREFIX = 126

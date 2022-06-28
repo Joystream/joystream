@@ -2,14 +2,40 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { EventContext, StoreContext } from '@joystream/hydra-common'
-import { Content } from '../../generated/types'
-import { convertChannelOwnerToMemberOrCuratorGroup, processChannelMetadata, unsetAssetRelations } from './utils'
-import { Channel, ChannelCategory, StorageDataObject, Membership } from 'query-node/dist/model'
-import { deserializeMetadata, inconsistentState, logger } from '../common'
-import { ChannelCategoryMetadata, ChannelMetadata } from '@joystream/metadata-protobuf'
-import { integrateMeta } from '@joystream/metadata-protobuf/utils'
+import { ChannelMetadata, ChannelModeratorRemarked, ChannelOwnerRemarked } from '@joystream/metadata-protobuf'
+import { BaseModel } from '@joystream/warthog'
+import {
+  Channel,
+  Membership,
+  MetaprotocolTransactionErrored,
+  MetaprotocolTransactionPending,
+  MetaprotocolTransactionStatusEvent,
+  MetaprotocolTransactionSuccessful,
+  StorageDataObject,
+} from 'query-node/dist/model'
 import { In } from 'typeorm'
+import { Content } from '../../generated/types'
+import {
+  deserializeMetadata,
+  genericEventFields,
+  inconsistentState,
+  invalidMetadata,
+  logger,
+  updateMetaprotocolTransactionStatus,
+} from '../common'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
+import {
+  processBanOrUnbanMemberFromChannelMessage,
+  processModerateCommentMessage,
+  processPinOrUnpinCommentMessage,
+  processVideoReactionsPreferenceMessage,
+} from './commentAndReaction'
+import {
+  convertChannelOwnerToMemberOrCuratorGroup,
+  convertContentActor,
+  processChannelMetadata,
+  unsetAssetRelations,
+} from './utils'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
@@ -113,4 +139,98 @@ export async function content_ChannelDeleted({ store, event }: EventContext & St
   const [, channelId] = new Content.ChannelDeletedEvent(event).params
 
   await store.remove<Channel>(new Channel({ id: channelId.toString() }))
+}
+
+export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreContext): Promise<void> {
+  const { event, store } = ctx
+  const [owner, channelId, message] = new Content.ChannelOwnerRemarkedEvent(ctx.event).params
+
+  const genericFields = genericEventFields(event)
+  // unique identifier for metaprotocol tx
+  const { id: metaprotocolTxIdentifier } = genericFields as BaseModel
+
+  const metaprotocolTxStatusEvent = new MetaprotocolTransactionStatusEvent({
+    ...genericFields,
+    status: new MetaprotocolTransactionPending(),
+  })
+
+  // save metaprotocol tx status event
+  await store.save<MetaprotocolTransactionStatusEvent>(metaprotocolTxStatusEvent)
+
+  try {
+    const decodedMessage = ChannelOwnerRemarked.decode(message.toU8a(true))
+    const messageType = decodedMessage.channelOwnerRemarked
+    const contentActor = await convertContentActor(ctx.store, owner)
+
+    // update MetaprotocolTransactionStatusEvent
+    const statusSuccessful = new MetaprotocolTransactionSuccessful()
+
+    if (!messageType) {
+      invalidMetadata('Unsupported message type in channel_owner_remark action')
+    } else if (messageType === 'pinOrUnpinComment') {
+      await processPinOrUnpinCommentMessage(ctx, contentActor, channelId, decodedMessage.pinOrUnpinComment!)
+    } else if (messageType === 'banOrUnbanMemberFromChannel') {
+      await processBanOrUnbanMemberFromChannelMessage(
+        ctx,
+        contentActor,
+        channelId,
+        decodedMessage.banOrUnbanMemberFromChannel!
+      )
+    } else if (messageType === 'videoReactionsPreference') {
+      await processVideoReactionsPreferenceMessage(
+        ctx,
+        contentActor,
+        channelId,
+        decodedMessage.videoReactionsPreference!
+      )
+    } else if (messageType === 'moderateComment') {
+      const comment = await processModerateCommentMessage(ctx, contentActor, channelId, decodedMessage.moderateComment!)
+      statusSuccessful.commentModeratedId = comment.id
+    }
+
+    await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
+  } catch (e) {
+    // update MetaprotocolTransactionStatusEvent
+    const statusErrored = new MetaprotocolTransactionErrored()
+    await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusErrored, e)
+  }
+}
+
+export async function content_ChannelModeratorRemarked(ctx: EventContext & StoreContext): Promise<void> {
+  const { event, store } = ctx
+  const [moderator, channelId, message] = new Content.ChannelModeratorRemarkedEvent(ctx.event).params
+
+  const genericFields = genericEventFields(event)
+  // unique identifier for metaprotocol tx
+  const { id: metaprotocolTxIdentifier } = genericFields as BaseModel
+
+  const metaprotocolTxStatusEvent = new MetaprotocolTransactionStatusEvent({
+    ...genericFields,
+    status: new MetaprotocolTransactionPending(),
+  })
+
+  // save metaprotocol tx status event
+  await store.save<MetaprotocolTransactionStatusEvent>(metaprotocolTxStatusEvent)
+
+  try {
+    const decodedMessage = ChannelModeratorRemarked.decode(message.toU8a(true))
+    const messageType = decodedMessage.channelModeratorRemarked
+    const contentActor = await convertContentActor(ctx.store, moderator)
+
+    // update MetaprotocolTransactionStatusEvent
+    const statusSuccessful = new MetaprotocolTransactionSuccessful()
+
+    if (!messageType) {
+      invalidMetadata('Unsupported message type in channel_moderator_remark action')
+    } else if (messageType === 'moderateComment') {
+      const comment = await processModerateCommentMessage(ctx, contentActor, channelId, decodedMessage.moderateComment!)
+      statusSuccessful.commentModeratedId = comment.id
+    }
+
+    await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusSuccessful)
+  } catch (e) {
+    // update MetaprotocolTransactionStatusEvent
+    const statusErrored = new MetaprotocolTransactionErrored()
+    await updateMetaprotocolTransactionStatus(store, metaprotocolTxIdentifier, statusErrored, e)
+  }
 }

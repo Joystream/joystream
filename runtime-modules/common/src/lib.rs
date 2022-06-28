@@ -16,6 +16,7 @@ use frame_support::dispatch::DispatchResult;
 use frame_support::traits::LockIdentifier;
 use frame_support::Parameter;
 pub use membership::{ActorId, MemberId, MembershipTypes, StakingAccountValidator};
+use scale_info::TypeInfo;
 use sp_arithmetic::traits::{BaseArithmetic, Saturating};
 use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::collections::btree_set::BTreeSet;
@@ -66,7 +67,7 @@ pub struct BlockAndTime<BlockNumber, Moment> {
 
 /// Parameters for the 'Funding Request' proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]
 pub struct FundingRequestParameters<Balance, AccountId> {
     /// Single reciever account of funding request
     pub account: AccountId,
@@ -77,7 +78,7 @@ pub struct FundingRequestParameters<Balance, AccountId> {
 
 /// Kind of Balance for `Update Working Group Budget`.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Debug, Eq)]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Debug, Eq, TypeInfo)]
 pub enum BalanceKind {
     /// Increasing Working Group budget decreasing Council budget
     Positive,
@@ -88,11 +89,11 @@ pub enum BalanceKind {
 /// Gathers current block and time information for the runtime.
 /// If this function is used inside a config() at genesis the timestamp will be 0
 /// because the timestamp is actually produced by validators.
-pub fn current_block_time<T: frame_system::Trait + pallet_timestamp::Trait>(
+pub fn current_block_time<T: frame_system::Config + pallet_timestamp::Config>(
 ) -> BlockAndTime<T::BlockNumber, T::Moment> {
     BlockAndTime {
-        block: <frame_system::Module<T>>::block_number(),
-        time: <pallet_timestamp::Module<T>>::now(),
+        block: <frame_system::Pallet<T>>::block_number(),
+        time: <pallet_timestamp::Pallet<T>>::now(),
     }
 }
 

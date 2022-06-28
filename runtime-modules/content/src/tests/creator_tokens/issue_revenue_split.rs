@@ -61,7 +61,7 @@ fn successful_issue_member_channel_revenue_split_by_collaborator() {
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
             DEFAULT_PAYOUT_EARNED
                 // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(<Test as balances::Trait>::ExistentialDeposit::get().into()),
+                .saturating_add(<Test as balances::Config>::ExistentialDeposit::get().into()),
         );
         IssueRevenueSplitFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
@@ -79,7 +79,7 @@ fn successful_issue_member_channel_revenue_split_by_owner() {
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
             DEFAULT_PAYOUT_EARNED
                 // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(<Test as balances::Trait>::ExistentialDeposit::get().into()),
+                .saturating_add(<Test as balances::Config>::ExistentialDeposit::get().into()),
         );
         IssueRevenueSplitFixture::default().call_and_assert(Ok(()));
     })
@@ -117,7 +117,7 @@ fn successful_issue_curator_channel_revenue_split_by_curator() {
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
             DEFAULT_PAYOUT_EARNED
                 // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(<Test as balances::Trait>::ExistentialDeposit::get().into()),
+                .saturating_add(<Test as balances::Config>::ExistentialDeposit::get().into()),
         );
         IssueRevenueSplitFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
@@ -139,7 +139,7 @@ fn successful_issue_curator_channel_revenue_split_by_lead() {
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
             DEFAULT_PAYOUT_EARNED
                 // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(<Test as balances::Trait>::ExistentialDeposit::get().into()),
+                .saturating_add(<Test as balances::Config>::ExistentialDeposit::get().into()),
         );
         IssueRevenueSplitFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)

@@ -8,7 +8,7 @@ use serde::Deserialize;
 use sp_core::H256;
 use std::{fs, path::Path};
 
-type CategoryId = <Runtime as forum::Trait>::CategoryId;
+type CategoryId = <Runtime as forum::Config>::CategoryId;
 type ForumUserId = forum::ForumUserId<Runtime>;
 type ModeratorId = forum::ModeratorId<Runtime>;
 type Hash = H256;

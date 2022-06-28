@@ -38,6 +38,7 @@
 // Disable this lint warning because Substrate generates function without an alias for
 // the ProposalDetailsOf type.
 #![allow(clippy::too_many_arguments)]
+#![allow(clippy::unused_unit)]
 
 mod types;
 
@@ -54,6 +55,7 @@ use sp_arithmetic::traits::Zero;
 use sp_runtime::SaturatedConversion;
 use sp_std::clone::Clone;
 use sp_std::collections::btree_set::BTreeSet;
+use sp_std::convert::TryInto;
 
 use common::membership::MemberOriginValidator;
 use common::MemberId;
@@ -105,19 +107,19 @@ pub trait WeightInfo {
     fn create_proposal_update_channel_payouts(t: u32, d: u32, i: u32) -> Weight;
 }
 
-type WeightInfoCodex<T> = <T as Trait>::WeightInfo;
+type WeightInfoCodex<T> = <T as Config>::WeightInfo;
 
 /// 'Proposals codex' substrate module Trait
-pub trait Trait:
-    frame_system::Trait
-    + proposals_engine::Trait
-    + proposals_discussion::Trait
+pub trait Config:
+    frame_system::Config
+    + proposals_engine::Config
+    + proposals_discussion::Config
     + common::membership::MembershipTypes
-    + staking::Trait
-    + proposals_engine::Trait
+    + staking::Config
+    + proposals_engine::Config
 {
     /// Proposal Codex module event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
     /// Validates member id and origin combination.
     type MembershipOriginValidator: MemberOriginValidator<
@@ -263,16 +265,16 @@ pub trait Trait:
 /// Specialized alias of GeneralProposalParams
 pub type GeneralProposalParameters<T> = GeneralProposalParams<
     MemberId<T>,
-    <T as frame_system::Trait>::AccountId,
-    <T as frame_system::Trait>::BlockNumber,
+    <T as frame_system::Config>::AccountId,
+    <T as frame_system::Config>::BlockNumber,
 >;
 
 decl_event! {
     pub enum Event<T> where
         GeneralProposalParameters = GeneralProposalParameters<T>,
         ProposalDetailsOf = ProposalDetailsOf<T>,
-        <T as proposals_engine::Trait>::ProposalId,
-        <T as proposals_discussion::Trait>::ThreadId
+        <T as proposals_engine::Config>::ProposalId,
+        <T as proposals_discussion::Config>::ThreadId
     {
         /// A proposal was created
         /// Params:
@@ -286,7 +288,7 @@ decl_event! {
 
 decl_error! {
     /// Codex module predefined errors
-    pub enum Error for Module<T: Trait> {
+    pub enum Error for Module<T: Config> {
         /// Provided text for text proposal is empty
         SignalProposalIsEmpty,
 
@@ -354,7 +356,7 @@ decl_error! {
 
 // Storage for the proposals codex module
 decl_storage! {
-    pub trait Store for Module<T: Trait> as ProposalCodex {
+    pub trait Store for Module<T: Config> as ProposalsCodex {
         /// Map proposal id to its discussion thread id
         pub ThreadIdByProposalId get(fn thread_id_by_proposal_id):
             map hasher(blake2_128_concat) T::ProposalId => T::ThreadId;
@@ -363,7 +365,7 @@ decl_storage! {
 
 decl_module! {
     /// Proposal codex substrate module Call
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -543,7 +545,7 @@ decl_module! {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     // Ensure that the proposal details respects all the checks
     fn ensure_details_checks(details: &ProposalDetailsOf<T>) -> DispatchResult {
         match details {
@@ -594,7 +596,7 @@ impl<T: Trait> Module<T> {
                 // We shouldn't access the storage for creation checks but we do it here for the
                 // reasons just explained **as an exception**.
                 ensure!(
-                    *new_validator_count >= <staking::Module<T>>::minimum_validator_count(),
+                    *new_validator_count >= <staking::Pallet<T>>::minimum_validator_count(),
                     Error::<T>::InvalidValidatorCount
                 );
 
@@ -941,8 +943,8 @@ impl<T: Trait> Module<T> {
     }
 }
 
-impl<T: Trait> ProposalObserver<T> for Module<T> {
-    fn proposal_removed(proposal_id: &<T as proposals_engine::Trait>::ProposalId) {
+impl<T: Config> ProposalObserver<T> for Module<T> {
+    fn proposal_removed(proposal_id: &<T as proposals_engine::Config>::ProposalId) {
         <ThreadIdByProposalId<T>>::remove(proposal_id);
 
         let thread_id = Self::thread_id_by_proposal_id(proposal_id);

@@ -26,6 +26,7 @@ typegen:
     - members.ReferralCutUpdated
     - members.InitialInvitationBalanceUpdated
     - members.LeaderInvitationQuotaUpdated
+    - members.MemberRemarked
     # Working groups - use Storage Working Group as a reference group (all groups emit the same events)
     - storageWorkingGroup.OpeningAdded
     - storageWorkingGroup.AppliedOnOpening
@@ -91,6 +92,8 @@ typegen:
     - content.VideoUpdated
     - content.VideoDeleted
     - content.ChannelDeleted
+    - content.ChannelOwnerRemarked
+    - content.ChannelModeratorRemarked
     # Storage
     - storage.StorageBucketCreated
     - storage.StorageBucketInvitationAccepted
@@ -233,6 +236,8 @@ mappings:
       handler: members_InitialInvitationBalanceUpdated
     - event: members.LeaderInvitationQuotaUpdated
       handler: members_LeaderInvitationQuotaUpdated
+    - event: members.MemberRemarked
+      handler: members_MemberRemarked
     # Storage working group
     - event: storageWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded
@@ -716,7 +721,10 @@ mappings:
       handler: content_VideoDeleted
     - event: content.ChannelDeleted
       handler: content_ChannelDeleted
-
+    - event: content.ChannelOwnerRemarked
+      handler: content_ChannelOwnerRemarked
+    - event: content.ChannelModeratorRemarked
+      handler: content_ChannelModeratorRemarked
     # content NFTs
     - event: content.OpenAuctionStarted
       handler: contentNft_OpenAuctionStarted

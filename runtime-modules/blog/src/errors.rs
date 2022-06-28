@@ -1,9 +1,11 @@
-use crate::{Instance, Module, Trait};
+#![allow(clippy::enum_variant_names)]
+use crate::{Config, Instance, Module};
 use frame_support::decl_error;
+use sp_std::convert::TryInto;
 
 decl_error! {
     /// Blog module predefined errors
-    pub enum Error for Module<T: Trait<I>, I: Instance> {
+    pub enum Error for Module<T: Config<I>, I: Instance> {
         /// A non-owner is trying to do a privilegeded action.
         BlogOwnershipError,
 

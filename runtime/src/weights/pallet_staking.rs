@@ -58,6 +58,14 @@ impl pallet_staking::WeightInfo for WeightInfo {
             .saturating_add(DbWeight::get().reads(2 as Weight))
             .saturating_add(DbWeight::get().writes(2 as Weight))
     }
+    fn kick(k: u32) -> Weight {
+        (31_066_000 as Weight)
+            // Standard Error: 11_000
+            .saturating_add((17_754_000 as Weight).saturating_mul(k as Weight))
+            .saturating_add(DbWeight::get().reads(2 as Weight))
+            .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(k as Weight)))
+            .saturating_add(DbWeight::get().writes((1 as Weight).saturating_mul(k as Weight)))
+    }
     fn nominate(n: u32) -> Weight {
         (48596000 as Weight)
             .saturating_add((308000 as Weight).saturating_mul(n as Weight))
