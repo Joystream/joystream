@@ -2721,7 +2721,7 @@ impl UpdateChannelTransferStatusFixture {
                 BalanceOf<Test>,
                 TransferId,
             >(PendingTransfer::<_, _, _, _> {
-                new_owner: ChannelOwner::Member(THIRD_MEMBER_ID),
+                new_owner: ChannelOwner::Member(SECOND_MEMBER_ID),
                 transfer_params: TransferParameters::<_, _, _> {
                     transfer_id: Some(TransferId::one()),
                     price: DEFAULT_CHANNEL_TRANSFER_PRICE,
