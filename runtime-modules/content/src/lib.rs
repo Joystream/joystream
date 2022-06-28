@@ -146,7 +146,7 @@ decl_storage! {
         map hasher(blake2_128_concat) T::ChannelId => Channel<T>;
 
         pub ChannelCategoryById get(fn channel_category_by_id):
-        map hasher(blake2_128_concat) T::ChannelCategoryId => ChannelCategory;
+        map hasher(blake2_128_concat) T::ChannelCategoryId => ();
 
         pub VideoById get(fn video_by_id): map hasher(blake2_128_concat) T::VideoId => Video<T>;
 
@@ -791,11 +791,9 @@ decl_module! {
 
             let category_id = Self::next_channel_category_id();
             NextChannelCategoryId::<T>::mutate(|id| *id += T::ChannelCategoryId::one());
+            ChannelCategoryById::<T>::insert(category_id, ());
 
-            let category = ChannelCategory {};
-            ChannelCategoryById::<T>::insert(category_id, category.clone());
-
-            Self::deposit_event(RawEvent::ChannelCategoryCreated(category_id, category, params));
+            Self::deposit_event(RawEvent::ChannelCategoryCreated(category_id, params));
         }
 
         #[weight = 10_000_000] // TODO: adjust weight
@@ -2928,12 +2926,12 @@ impl<T: Config> Module<T> {
 
     fn ensure_channel_category_exists(
         channel_category_id: &T::ChannelCategoryId,
-    ) -> Result<ChannelCategory, Error<T>> {
+    ) -> Result<(), Error<T>> {
         ensure!(
             ChannelCategoryById::<T>::contains_key(channel_category_id),
             Error::<T>::CategoryDoesNotExist
         );
-        Ok(ChannelCategoryById::<T>::get(channel_category_id))
+        Ok(())
     }
 
     fn ensure_video_exists(video_id: &T::VideoId) -> Result<Video<T>, Error<T>> {
@@ -3522,11 +3520,7 @@ decl_event!(
         ChannelRewardClaimedAndWithdrawn(ContentActor, ChannelId, Balance, AccountId),
 
         // Channel Categories
-        ChannelCategoryCreated(
-            ChannelCategoryId,
-            ChannelCategory,
-            ChannelCategoryCreationParameters,
-        ),
+        ChannelCategoryCreated(ChannelCategoryId, ChannelCategoryCreationParameters),
         ChannelCategoryUpdated(
             ContentActor,
             ChannelCategoryId,

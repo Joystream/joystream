@@ -1,10 +1,8 @@
-import { registry, types } from '@joystream/types'
-import { MemberId } from '@joystream/types/common'
-import { ApplicationId, OpeningId } from '@joystream/types/working-group'
+import { createType } from '@joystream/types'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { ExtrinsicsHelper, getAlicePair, getKeyFromSuri } from './helpers/extrinsics'
 import BN from 'bn.js'
-import { BTreeSet } from '@polkadot/types'
+import { ApplicationId, OpeningId } from '@joystream/types/primitives'
 
 const workingGroupModules = [
   'storageWorkingGroup',
@@ -29,7 +27,7 @@ async function main() {
   const WS_URI = process.env.WS_URI || 'ws://127.0.0.1:9944'
   console.log(`Initializing the api (${WS_URI})...`)
   const provider = new WsProvider(WS_URI)
-  const api = await ApiPromise.create({ provider, types })
+  const api = await ApiPromise.create({ provider })
 
   // Input data
   const Group = process.env.GROUP || 'contentWorkingGroup'
@@ -56,24 +54,24 @@ async function main() {
   }
 
   // Check if lead keypair is valid
-  const leadWorker = await api.query[groupModule].workerById(currentLead.unwrap())
-  if (!leadWorker.role_account_id.eq(LeadRoleKeyPair.address)) {
+  const leadWorker = (await api.query[groupModule].workerById(currentLead.unwrap())).unwrap()
+  if (!leadWorker.roleAccountId.eq(LeadRoleKeyPair.address)) {
     throw new Error(`${groupModule} lead keypair invalid!`)
   }
 
   // Check if worker member exists
   const memberEntries = await api.query.members.membershipById.entries()
   const matchingMemberEntry = memberEntries.find(([, member]) =>
-    member.controller_account.eq(WorkerMemberKeyPair.address)
+    member.unwrap().controllerAccount.eq(WorkerMemberKeyPair.address)
   )
-  const memberId: MemberId | undefined = matchingMemberEntry?.[0].args[0] as MemberId | undefined
+  const memberId = matchingMemberEntry?.[0].args[0]
   if (!memberId) {
     throw new Error('Make sure WORKER_MEMBER_URI is for a member!')
   }
 
   // Check if worker already exists
   const workerEntries = await api.query[groupModule].workerById.entries()
-  const matchingWorkerEntry = workerEntries.find(([, worker]) => worker.role_account_id.eq(WorkerRoleKeyPair.address))
+  const matchingWorkerEntry = workerEntries.find(([, worker]) => worker.unwrap().roleAccountId.eq(WorkerRoleKeyPair.address))
   if (matchingWorkerEntry) {
     throw new Error(`Worker with role key ${WorkerRoleKeyPair.address} already exists`)
   }
@@ -82,7 +80,7 @@ async function main() {
   console.log(`Topping up lead's staking account with OPENING_STAKE...`)
   await txHelper.sendAndCheck(
     LeadRoleKeyPair,
-    [api.tx.balances.transferKeepAlive(leadWorker.staking_account_id, OPENING_STAKE)],
+    [api.tx.balances.transferKeepAlive(leadWorker.stakingAccountId, OPENING_STAKE)],
     'Lead stake top-up failed'
   )
 
@@ -95,8 +93,8 @@ async function main() {
         '',
         'Regular',
         {
-          stake_amount: MIN_APPLICATION_STAKE,
-          leaving_unstaking_period: 99999,
+          stakeAmount: MIN_APPLICATION_STAKE,
+          leavingUnstakingPeriod: 99999,
         },
         null
       ),
@@ -130,12 +128,12 @@ async function main() {
     WorkerMemberKeyPair,
     [
       api.tx[groupModule].applyOnOpening({
-        member_id: memberId,
-        role_account_id: WorkerRoleKeyPair.address,
-        opening_id: openingId,
-        stake_parameters: {
+        memberId,
+        roleAccountId: WorkerRoleKeyPair.address,
+        openingId,
+        stakeParameters: {
           stake: MIN_APPLICATION_STAKE,
-          staking_account_id: StakeKeyPair.address,
+          stakingAccountId: StakeKeyPair.address,
         },
       }),
     ],
@@ -148,7 +146,7 @@ async function main() {
   console.log('Filling the opening...')
   await txHelper.sendAndCheck(
     LeadRoleKeyPair,
-    [api.tx[groupModule].fillOpening(openingId, new (BTreeSet.with(ApplicationId))(registry, [applicationId]))],
+    [api.tx[groupModule].fillOpening(openingId, createType('BTreeSet<u64>', [applicationId]))],
     'Failed to fill the opening'
   )
 
