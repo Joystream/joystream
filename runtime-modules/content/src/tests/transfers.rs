@@ -48,9 +48,8 @@ fn update_channel_transfer_status_fails_with_invalid_origin() {
 fn update_channel_transfer_status_fails_with_member_actor() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
-        let invalid_member_id = 111;
         UpdateChannelTransferStatusFixture::default()
-            .with_actor(ContentActor::Member(invalid_member_id))
+            .with_actor(ContentActor::Member(UNAUTHORIZED_MEMBER_ID))
             .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()))
     })
 }
@@ -123,12 +122,12 @@ fn accept_transfer_status_fails_with_invalid_commitment_params() {
         ContentTest::with_member_channel().setup();
         UpdateChannelTransferStatusFixture::default()
             .with_new_member_channel_owner(DEFAULT_MEMBER_ID)
+            .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
             .call_and_assert(Ok(()));
 
-        let invalid_price = 100;
         AcceptChannelTransferFixture::default()
             .with_transfer_params(TransferParameters {
-                price: invalid_price,
+                price: DEFAULT_CHANNEL_TRANSFER_PRICE + 1,
                 ..Default::default()
             })
             .call_and_assert(Err(
@@ -162,7 +161,6 @@ fn accept_transfer_status_fails_with_invalid_status() {
 fn accept_transfer_status_fails_with_non_channel_owner() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
-        increase_account_balance_helper(THIRD_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
 
         UpdateChannelTransferStatusFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
@@ -177,10 +175,9 @@ fn accept_transfer_status_fails_with_non_channel_owner() {
 #[test]
 fn accept_transfer_status_fails_with_invalid_balance_for_members() {
     with_default_mock_builder(|| {
-        increase_account_balance_helper(THIRD_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         ContentTest::with_member_channel().setup();
-        let price = INITIAL_BALANCE + 1; // higher than initial balance
-
+        let balance_pre = Balances::<Test>::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID);
+        let price = balance_pre.saturating_add(DEFAULT_CHANNEL_TRANSFER_PRICE);
         UpdateChannelTransferStatusFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .with_price(price)
@@ -196,25 +193,19 @@ fn accept_transfer_status_fails_with_invalid_balance_for_members() {
 #[test]
 fn accept_transfer_status_fails_with_invalid_balance_for_curator_groups() {
     with_default_mock_builder(|| {
-        run_to_block(1);
+        ContentTest::with_curator_channel().setup();
 
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        let curator_group_id = Content::next_curator_group_id();
-        create_default_curator_owned_channel(DATA_OBJECT_STATE_BLOAT_BOND, &[]);
-
-        let price = INITIAL_BALANCE + 1; // higher than initial balance
         UpdateChannelTransferStatusFixture::default()
             .with_origin(RawOrigin::Signed(LEAD_ACCOUNT_ID))
-            .with_new_channel_owner(ChannelOwner::CuratorGroup(curator_group_id))
+            .with_new_channel_owner(ChannelOwner::CuratorGroup(CuratorGroupId::one()))
             .with_actor(ContentActor::Lead)
-            .with_price(price)
+            .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
             .call_and_assert(Ok(()));
 
-        <Test as Config>::ContentWorkingGroup::set_budget(INITIAL_BALANCE);
+        <Test as Config>::ContentWorkingGroup::set_budget(0u64);
 
         AcceptChannelTransferFixture::default()
-            .with_price(price)
+            .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
             .with_origin(RawOrigin::Signed(LEAD_ACCOUNT_ID))
             .call_and_assert(Err(Error::<Test>::InsufficientBalanceForTransfer.into()));
     })
@@ -222,103 +213,97 @@ fn accept_transfer_status_fails_with_invalid_balance_for_curator_groups() {
 
 #[test]
 fn accept_transfer_status_succeeds_for_members_with_price() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
+    ExtBuilder::default()
+        .build_with_balances(vec![(
+            THIRD_MEMBER_ACCOUNT_ID,
+            DEFAULT_CHANNEL_TRANSFER_PRICE,
+        )])
+        .execute_with(|| {
+            ContentTest::with_member_channel().setup();
+            UpdateChannelTransferStatusFixture::default()
+                .with_new_member_channel_owner(THIRD_MEMBER_ID)
+                .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
+                .call_and_assert(Ok(()));
+            let balance_pre = Balances::<Test>::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID);
 
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+            AcceptChannelTransferFixture::default()
+                .with_origin(RawOrigin::Signed(THIRD_MEMBER_ACCOUNT_ID))
+                .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
+                .call_and_assert(Ok(()));
 
-        let price = 100;
-        UpdateChannelTransferStatusFixture::default()
-            .with_new_member_channel_owner(SECOND_MEMBER_ID)
-            .with_price(price)
-            .call_and_assert(Ok(()));
-
-        let member1_balance = Balances::<Test>::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID);
-        let member2_balance = Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID);
-
-        AcceptChannelTransferFixture::default()
-            .with_origin(RawOrigin::Signed(SECOND_MEMBER_ACCOUNT_ID))
-            .with_price(price)
-            .call_and_assert(Ok(()));
-
-        assert_eq!(
-            Balances::<Test>::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
-            member1_balance + price
-        );
-        assert_eq!(
-            Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID),
-            member2_balance - price
-        );
-    })
+            assert_eq!(
+                (
+                    Balances::<Test>::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
+                    Balances::<Test>::usable_balance(&THIRD_MEMBER_ACCOUNT_ID)
+                ),
+                (
+                    balance_pre.saturating_add(DEFAULT_CHANNEL_TRANSFER_PRICE),
+                    BalanceOf::<Test>::zero(),
+                )
+            );
+        })
 }
 
 #[test]
 fn accept_transfer_status_succeeds_for_curators_to_members_with_price() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
+    ExtBuilder::default()
+        .build_with_balances(vec![(
+            SECOND_MEMBER_ACCOUNT_ID,
+            DEFAULT_CHANNEL_TRANSFER_PRICE,
+        )])
+        .execute_with(|| {
+            ContentTest::with_curator_channel().setup();
+            UpdateChannelTransferStatusFixture::default()
+                .with_origin(RawOrigin::Signed(LEAD_ACCOUNT_ID))
+                .with_new_member_channel_owner(SECOND_MEMBER_ID)
+                .with_actor(ContentActor::Lead)
+                .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
+                .call_and_assert(Ok(()));
+            let group_balance_pre = <Test as Config>::ContentWorkingGroup::get_budget();
 
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_STATE_BLOAT_BOND, &[]);
+            AcceptChannelTransferFixture::default()
+                .with_origin(RawOrigin::Signed(SECOND_MEMBER_ACCOUNT_ID))
+                .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
+                .call_and_assert(Ok(()));
 
-        let price = 100;
-        UpdateChannelTransferStatusFixture::default()
-            .with_origin(RawOrigin::Signed(LEAD_ACCOUNT_ID))
-            .with_new_member_channel_owner(SECOND_MEMBER_ID)
-            .with_actor(ContentActor::Lead)
-            .with_price(price)
-            .call_and_assert(Ok(()));
-
-        let member2_balance = Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID);
-        <Test as Config>::ContentWorkingGroup::set_budget(INITIAL_BALANCE);
-
-        AcceptChannelTransferFixture::default()
-            .with_origin(RawOrigin::Signed(SECOND_MEMBER_ACCOUNT_ID))
-            .with_price(price)
-            .call_and_assert(Ok(()));
-
-        assert_eq!(
-            <Test as Config>::ContentWorkingGroup::get_budget(),
-            INITIAL_BALANCE + price
-        );
-        assert_eq!(
-            Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID),
-            member2_balance - price
-        );
-    })
+            assert_eq!(
+                (
+                    <Test as Config>::ContentWorkingGroup::get_budget(),
+                    Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID)
+                ),
+                (
+                    group_balance_pre.saturating_add(DEFAULT_CHANNEL_TRANSFER_PRICE),
+                    BalanceOf::<Test>::zero()
+                ),
+            );
+        })
 }
 
 #[test]
 fn accept_transfer_status_succeeds_for_members_to_curators_with_price() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
-        let curator_group_id = Content::next_curator_group_id();
-
-        let price = 100;
         UpdateChannelTransferStatusFixture::default()
-            .with_new_channel_owner(ChannelOwner::CuratorGroup(curator_group_id))
-            .with_price(price)
+            .with_new_channel_owner(ChannelOwner::CuratorGroup(CuratorGroupId::one()))
+            .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
             .call_and_assert(Ok(()));
-
-        let member1_balance = Balances::<Test>::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID);
-        <Test as Config>::ContentWorkingGroup::set_budget(INITIAL_BALANCE);
+        let member_balance_pre = Balances::<Test>::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID);
+        <Test as Config>::ContentWorkingGroup::set_budget(DEFAULT_CHANNEL_TRANSFER_PRICE);
 
         AcceptChannelTransferFixture::default()
             .with_origin(RawOrigin::Signed(LEAD_ACCOUNT_ID))
-            .with_price(price)
+            .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            <Test as Config>::ContentWorkingGroup::get_budget(),
-            INITIAL_BALANCE - price
-        );
-        assert_eq!(
-            Balances::<Test>::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
-            member1_balance + price
+            (
+                <Test as Config>::ContentWorkingGroup::get_budget(),
+                Balances::<Test>::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID),
+            ),
+            (
+                BalanceOf::<Test>::zero(),
+                member_balance_pre.saturating_add(DEFAULT_CHANNEL_TRANSFER_PRICE)
+            )
         );
     })
 }
@@ -333,7 +318,7 @@ fn accept_channel_transfer_fails_with_invalid_transfer_id() {
 
         AcceptChannelTransferFixture::default()
             .with_origin(RawOrigin::Signed(THIRD_MEMBER_ACCOUNT_ID))
-            .with_transfer_id(2)
+            .with_transfer_id(TransferId::from(2u32))
             .call_and_assert(Err(
                 Error::<Test>::InvalidChannelTransferCommitmentParams.into()
             ))
@@ -346,7 +331,6 @@ fn update_channel_transfer_ok_with_status_reset() {
         ContentTest::with_member_channel().setup();
         UpdateChannelTransferStatusFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
-            .with_price(100u64)
             .call_and_assert(Ok(()));
 
         UpdateChannelTransferStatusFixture::default()

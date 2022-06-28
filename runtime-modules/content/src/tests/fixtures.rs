@@ -2724,6 +2724,7 @@ impl UpdateChannelTransferStatusFixture {
                 new_owner: ChannelOwner::Member(THIRD_MEMBER_ID),
                 transfer_params: TransferParameters::<_, _, _> {
                     transfer_id: Some(TransferId::one()),
+                    price: DEFAULT_CHANNEL_TRANSFER_PRICE,
                     ..Default::default()
                 },
             }),
@@ -2889,6 +2890,7 @@ impl AcceptChannelTransferFixture {
             channel_id: ChannelId::one(),
             params: TransferParameters {
                 transfer_id: Some(TransferId::one()),
+                price: DEFAULT_CHANNEL_TRANSFER_PRICE,
                 ..Default::default()
             },
         }
