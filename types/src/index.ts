@@ -107,7 +107,7 @@ registry.register(defs as any)
 export function createType<T extends Codec, TN extends string>(
   typeName: TN,
   value: CreateInterface<DetectCodec<T, TN>>
-): DetectCodec<T, TN> {
+): Codec extends DetectCodec<T, TN> ? unknown : DetectCodec<T, TN> {
   return registry.createType<T, TN>(typeName, value)
 }
 
