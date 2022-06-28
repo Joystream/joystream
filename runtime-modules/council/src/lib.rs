@@ -1199,8 +1199,13 @@ impl<T: Config> Module<T> {
             weight
         };
 
-        // Total weight = try progress weight + try process budget weight
-        CouncilWeightInfo::<T>::try_process_budget().saturating_add(weight)
+        // Total weight = try progress weight + refill budget weight
+        //      + pay council member rewards weight
+        CouncilWeightInfo::<T>::try_process_budget_refill_budget_only()
+            .saturating_add(
+                CouncilWeightInfo::<T>::try_process_budget_payout_council_members_only(),
+            )
+            .saturating_add(weight)
     }
 }
 

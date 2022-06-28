@@ -882,7 +882,7 @@ impl council::Config for Runtime {
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
     type BudgetRefillPeriod = BudgetRefillPeriod;
     type MemberOriginValidator = Members;
-    type WeightInfo = council::weights::SubstrateWeight; // TODO: Generate new weights
+    type WeightInfo = council::weights::SubstrateWeight<Runtime>;
 
     fn new_council_elected(_elected_members: &[council::CouncilMemberOf<Self>]) {
         <proposals_engine::Module<Runtime>>::reject_active_proposals();
