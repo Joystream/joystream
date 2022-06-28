@@ -35,8 +35,6 @@ substrate_pallet_benchmark() {
 # $1 pallet name
 # $2 folder name under runtime-modules/ of the pallet crate where weight.rs
 # will be copied to
-# We pass --no-verify here so we assume that benchmark tests have already been
-# verified
 joystream_pallet_benchmark() {
   echo "Generating weights for $1..."
   start=`date +%s`
@@ -47,7 +45,6 @@ joystream_pallet_benchmark() {
       --steps=$STEPS \
       --repeat=$REPEAT \
       --execution=wasm \
-      --no-verify \
       --template=$SCRIPT_DIR/../devops/joystream-pallet-weight-template.hbs \
       --output=. 2>&1 > /dev/null)
 
@@ -88,14 +85,11 @@ joystream_pallet_benchmark proposals_engine proposals/engine
 joystream_pallet_benchmark proposals_codex proposals/codex
 joystream_pallet_benchmark pallet_constitution constitution
 joystream_pallet_benchmark working_group working-group
-# Council benchmark taking too long! Why?
-# joystream_pallet_benchmark council council
+joystream_pallet_benchmark council council
 joystream_pallet_benchmark referendum referendum
 joystream_pallet_benchmark forum forum
 joystream_pallet_benchmark membership membership
 # Disabled until we merge new bounty module
 # joystream_pallet_benchmark bounty bounty
 joystream_pallet_benchmark joystream_utility utility
-# Storage benchmark generating Error: Input("CurrentLeadNotSet")
-# used --no-verify to get past it for now.
 joystream_pallet_benchmark storage storage
