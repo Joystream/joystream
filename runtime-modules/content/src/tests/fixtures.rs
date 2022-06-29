@@ -2135,6 +2135,7 @@ impl IssueCreatorTokenFixture {
             params: TokenIssuanceParametersOf::<Test> {
                 symbol: Hashing::hash_of(b"CRT"),
                 patronage_rate: DEFAULT_PATRONAGE_RATE,
+                revenue_split_rate: DEFAULT_SPLIT_RATE,
                 ..Default::default()
             },
         }

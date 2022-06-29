@@ -2,6 +2,7 @@
 use frame_support::assert_err;
 use sp_arithmetic::traits::Zero;
 use sp_runtime::{DispatchError, Permill};
+use sp_arithmetic::PerThing;
 
 use crate::member;
 use crate::tests::fixtures::*;
@@ -929,5 +930,24 @@ fn exit_revenue_split_ok_with_active_and_ended_split() {
         increase_block_number_by(DEFAULT_SPLIT_DURATION);
 
         ExitRevenueSplitFixture::default().execute_call().unwrap();
+    })
+}
+
+#[test]
+fn issue_revenue_split_ok_with_allocation_leftovers_retained_by_issuer() {
+    let leftovers = DEFAULT_SPLIT_RATE.left_from_one().mul_ceil(DEFAULT_SPLIT_ALLOCATION) + ExistentialDeposit::get();
+    build_default_test_externalities_with_balances(vec![(
+        member!(1).1,
+        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap(); // send participation to other acc
+        IssueRevenueSplitFixture::default().with_allocation(DEFAULT_SPLIT_ALLOCATION).execute_call().unwrap();
+
+        assert_eq!(
+            Joy::<Test>::usable_balance(member!(1).1),
+            leftovers,
+        );
     })
 }
