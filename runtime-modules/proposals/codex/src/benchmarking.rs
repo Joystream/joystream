@@ -19,7 +19,7 @@ use membership::Module as Membership;
 use proposals_discussion::Module as Discussion;
 use proposals_engine::Module as Engine;
 use sp_core::Hasher;
-use sp_runtime::traits::{One, TrailingZeroInput, Zero};
+use sp_runtime::traits::{One, TrailingZeroInput};
 use sp_std::convert::TryInto;
 use sp_std::iter::FromIterator;
 use sp_std::prelude::*;
@@ -815,17 +815,10 @@ benchmarks! {
         );
     }
 
-<<<<<<< HEAD
-    create_proposal_update_global_nft_limit {
-        let t in 1 .. T::TitleMaxLength::get();
-        let d in 1 .. T::DescriptionMaxLength::get();
-=======
     // TODO: enable after Carthage
     // create_proposal_update_global_nft_limit {
     //     let t in ...;
     //     let d in ...;
->>>>>>> 1323c4da9e (disable UpdateGlobalNftLimits proposal)
-
     //     let (account_id, member_id, general_proposal_paramters) =
     //         create_proposal_parameters::<T>(t, d);
 
@@ -846,7 +839,6 @@ benchmarks! {
     //         proposal_details
     //     );
     // }
-
 
     create_proposal_update_channel_payouts {
         let i in 1 .. MAX_BYTES;
@@ -1086,14 +1078,6 @@ mod tests {
         });
     }
 
-<<<<<<< HEAD
-    #[test]
-    fn test_update_global_nft_limit_proposal() {
-        initial_test_ext().execute_with(|| {
-            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_update_global_nft_limit());
-        })
-    }
-=======
     // TODO: enable after Carthage
     // #[test]
     // fn test_update_global_nft_limit_proposal() {
@@ -1101,7 +1085,6 @@ mod tests {
     //         assert_ok!(test_benchmark_create_proposal_update_global_nft_limit::<Test>());
     //     })
     // }
->>>>>>> 1323c4da9e (disable UpdateGlobalNftLimits proposal)
 
     #[test]
     fn test_update_channel_payouts_proposal() {

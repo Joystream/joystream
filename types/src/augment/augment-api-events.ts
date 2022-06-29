@@ -145,9 +145,6 @@ declare module '@polkadot/api-base/types/events' {
       CuratorRemoved: AugmentedEvent<ApiType, [u64, u64]>;
       EnglishAuctionSettled: AugmentedEvent<ApiType, [u64, AccountId32, u64]>;
       EnglishAuctionStarted: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, PalletContentNftTypesEnglishAuctionParamsRecord]>;
-      /**
-       * Nft limits
-       **/
       GlobalNftLimitUpdated: AugmentedEvent<ApiType, [PalletContentNftLimitPeriod, u64]>;
       NftBought: AugmentedEvent<ApiType, [u64, u64]>;
       NftDestroyed: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64]>;

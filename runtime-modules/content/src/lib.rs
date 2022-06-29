@@ -3496,7 +3496,7 @@ decl_event!(
         >,
         TransferParameters =
             TransferParameters<<T as common::MembershipTypes>::MemberId, BalanceOf<T>>,
-        AccountId = <T as frame_system::Config>::AccountId
+        AccountId = <T as frame_system::Config>::AccountId,
         // TODO: enable after Carthage
         // ChannelTransferStatus = ChannelTransferStatus<
         //     <T as common::MembershipTypes>::MemberId,
@@ -3505,7 +3505,6 @@ decl_event!(
         // >,
         // TransferParameters =
         //     TransferParameters<<T as common::MembershipTypes>::MemberId, BalanceOf<T>>,
-        AccountId = <T as frame_system::Trait>::AccountId,
         UpdateChannelPayoutsParameters = UpdateChannelPayoutsParameters<T>,
         TokenId = <T as project_token::Config>::TokenId,
     {

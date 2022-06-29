@@ -1276,7 +1276,6 @@ export default {
       LockBlogPost: 'u64',
       UnlockBlogPost: 'u64',
       VetoProposal: 'u32',
-      UpdateGlobalNftLimit: '(PalletContentNftLimitPeriod,u64)',
       UpdateChannelPayouts: 'PalletContentUpdateChannelPayoutsParametersRecord'
     }
   },

@@ -677,7 +677,6 @@ impl<T: Config> Module<T> {
             // ProposalDetails::UpdateGlobalNftLimit(..) => {
             //     // Note: No checks for this proposal for now
             // }
-
             ProposalDetails::UpdateChannelPayouts(params) => {
                 if params.min_cashout_allowed.is_some() && params.max_cashout_allowed.is_some() {
                     ensure!(

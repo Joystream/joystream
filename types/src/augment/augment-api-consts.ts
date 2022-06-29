@@ -592,7 +592,6 @@ declare module '@polkadot/api-base/types/consts' {
       terminateWorkingGroupLeadProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       unlockBlogPostProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       updateChannelPayoutsProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
-      updateGlobalNftLimitProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
        * Exports 'Update Working Group Budget' proposal parameters.
        **/
