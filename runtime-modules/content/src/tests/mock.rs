@@ -90,6 +90,7 @@ pub const DEFAULT_CREATOR_TOKEN_SALE_DURATION: u64 = 100;
 pub const DEFAULT_ISSUER_TRANSFER_AMOUNT: u64 = 1_000_000;
 pub const DEFAULT_PATRONAGE_RATE: YearlyRate = YearlyRate(Permill::from_percent(1));
 pub const DEFAULT_REVENUE_SPLIT_DURATION: u64 = 1000;
+pub const DEFAULT_SPLIT_RATE: Permill = Permill::from_percent(10);
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
