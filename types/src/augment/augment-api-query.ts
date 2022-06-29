@@ -223,7 +223,6 @@ declare module '@polkadot/api-base/types/storage' {
       auctionStartsAtMaxDelta: AugmentedQuery<ApiType, () => Observable<u32>, []>;
       channelById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<PalletContentChannelRecord>, [u64]>;
       channelCashoutsEnabled: AugmentedQuery<ApiType, () => Observable<bool>, []>;
-      channelCategoryById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Null>, [u64]>;
       commitment: AugmentedQuery<ApiType, () => Observable<H256>, []>;
       curatorGroupById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<PalletContentPermissionsCuratorGroup>, [u64]>;
       /**
@@ -296,7 +295,6 @@ declare module '@polkadot/api-base/types/storage' {
        * Min auction staring price
        **/
       minStartingPrice: AugmentedQuery<ApiType, () => Observable<u128>, []>;
-      nextChannelCategoryId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       nextChannelId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       nextCuratorGroupId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       nextVideoId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
