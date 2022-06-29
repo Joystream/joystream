@@ -1183,8 +1183,13 @@ where
 
     pub(crate) fn from_params<T: crate::Config>(
         params: TokenIssuanceParametersOf<T>,
-    ) -> TokenDataOf<T> {
+    ) -> Result<TokenDataOf<T>, DispatchError> {
         let current_block = <frame_system::Pallet<T>>::block_number();
+
+        ensure!(
+            !params.revenue_split_rate.is_zero(),
+            Error::<T>::RevenueSplitRateIsZero
+        );
 
         let patronage_info =
             PatronageData::<<T as Config>::Balance, <T as frame_system::Config>::BlockNumber> {
@@ -1199,7 +1204,7 @@ where
             .map(|(_, v)| v.amount)
             .sum();
 
-        TokenData {
+        Ok(TokenData {
             symbol: params.symbol,
             total_supply,
             tokens_issued: total_supply,
@@ -1212,7 +1217,7 @@ where
             next_revenue_split_id: 0,
             // TODO: revenue split rate might be subjected to constraints: https://github.com/Joystream/atlas/issues/2728
             revenue_split_rate: params.revenue_split_rate,
-        }
+        })
     }
 }
 

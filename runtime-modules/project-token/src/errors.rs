@@ -143,6 +143,9 @@ decl_error! {
         /// Attempt to modify supply when revenue split is active
         CannotModifySupplyWhenRevenueSplitsAreActive,
 
+        /// Revenue split rate cannot be 0
+        RevenueSplitRateIsZero,
+
         // ------ Burning ------------------------------------------------------
 
         /// Provided amount to burn is == 0
