@@ -2071,6 +2071,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       RevenueSplitNotOngoing: AugmentedError<ApiType>;
       /**
+       * Revenue split rate cannot be 0
+       **/
+      RevenueSplitRateIsZero: AugmentedError<ApiType>;
+      /**
        * Specified revenue split starting block is in the past
        **/
       RevenueSplitTimeToStartTooShort: AugmentedError<ApiType>;
@@ -2125,7 +2129,6 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       TokenDoesNotExist: AugmentedError<ApiType>;
       /**
-       * Token's current issuance state is not Idle
        * Token's current offering state is not Idle
        **/
       TokenIssuanceNotInIdleState: AugmentedError<ApiType>;
@@ -2133,6 +2136,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Symbol already in use
        **/
       TokenSymbolAlreadyInUse: AugmentedError<ApiType>;
+      /**
+       * Transfer destination member id invalid
+       **/
+      TransferDestinationMemberDoesNotExist: AugmentedError<ApiType>;
       /**
        * User already participating in the revenue split
        **/
