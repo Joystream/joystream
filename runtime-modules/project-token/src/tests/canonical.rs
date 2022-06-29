@@ -781,6 +781,7 @@ fn issue_token_fails_with_insufficient_balance_for_bloat_bond() {
 
     let params = TokenIssuanceParametersOf::<Test> {
         symbol: Hashing::hash_of(&token_id),
+        revenue_split_rate: DEFAULT_SPLIT_RATE,
         ..Default::default()
     }
     .with_allocation(&owner_id, 0, None)
@@ -809,6 +810,7 @@ fn issue_token_ok_with_bloat_bond_transferred() {
 
     let params = TokenIssuanceParametersOf::<Test> {
         symbol: Hashing::hash_of(&token_id),
+        revenue_split_rate: DEFAULT_SPLIT_RATE,
         ..Default::default()
     }
     .with_allocation(&owner_id, 0, None)
@@ -844,12 +846,14 @@ fn issue_token_ok_owner_having_already_issued_a_token() {
 
     let params1 = TokenIssuanceParametersOf::<Test> {
         symbol: Hashing::hash_of(&"CRT1".to_string()),
+        revenue_split_rate: DEFAULT_SPLIT_RATE,
         ..Default::default()
     }
     .with_allocation(&owner_id, init_supply, None);
 
     let params2 = TokenIssuanceParametersOf::<Test> {
         symbol: Hashing::hash_of(&"CRT2".to_string()),
+        revenue_split_rate: DEFAULT_SPLIT_RATE,
         ..params1.clone()
     };
 
@@ -869,7 +873,10 @@ fn issue_token_ok_with_token_id_increased() {
 
     let config = GenesisConfigBuilder::new_empty().build();
 
-    let params = TokenIssuanceParametersOf::<Test>::default();
+    let params = TokenIssuanceParametersOf::<Test> {
+        revenue_split_rate: DEFAULT_SPLIT_RATE,
+        ..Default::default()
+    };
 
     build_test_externalities(config).execute_with(|| {
         let _ = Token::issue_token(owner_acc, params, default_upload_context());
@@ -880,7 +887,10 @@ fn issue_token_ok_with_token_id_increased() {
 
 #[test]
 fn issue_token_ok() {
-    let params = TokenIssuanceParametersOf::<Test>::default();
+    let params = TokenIssuanceParametersOf::<Test> {
+        revenue_split_rate: DEFAULT_SPLIT_RATE,
+        ..Default::default()
+    };
     let config = GenesisConfigBuilder::new_empty().build();
     let (_, owner_acc) = member!(1);
 
@@ -899,6 +909,7 @@ fn issue_token_ok_with_event_deposit() {
         symbol: Hashing::hash_of(&token_id),
         transfer_policy: TransferPolicyParams::Permissionless,
         patronage_rate: yearly_rate!(1),
+        revenue_split_rate: DEFAULT_SPLIT_RATE,
         ..Default::default()
     }
     .with_allocation(&owner_id, balance!(100), None);
@@ -927,7 +938,7 @@ fn issue_token_ok_with_token_info_added() {
         symbol: Hashing::hash_of(&token_id),
         transfer_policy: TransferPolicyParams::Permissionless,
         patronage_rate: yearly_rate!(10),
-        revenue_split_rate: DEFAULT_SPLIT_ALLOCATION_RATE,
+        revenue_split_rate: DEFAULT_SPLIT_RATE,
         ..Default::default()
     }
     .with_allocation(&owner_id, owner_balance, None)
@@ -958,7 +969,7 @@ fn issue_token_ok_with_token_info_added() {
                 next_sale_id: 0,
                 next_revenue_split_id: 0,
                 revenue_split: RevenueSplitState::Inactive,
-                revenue_split_rate: DEFAULT_SPLIT_ALLOCATION_RATE,
+                revenue_split_rate: DEFAULT_SPLIT_RATE,
             }
         );
     })
@@ -973,6 +984,7 @@ fn issue_token_ok_with_correct_patronage_rate_approximated() {
     let params = TokenIssuanceParametersOf::<Test> {
         symbol: Hashing::hash_of(&token_id),
         transfer_policy: TransferPolicyParams::Permissionless,
+        revenue_split_rate: DEFAULT_SPLIT_RATE,
         patronage_rate: YearlyRate(Permill::from_perthousand(105)), // 10.5%
         ..Default::default()
     }
@@ -995,12 +1007,33 @@ fn issue_token_ok_with_correct_patronage_rate_approximated() {
 }
 
 #[test]
+fn issue_token_fails_with_zero_split_rate() {
+    let token_id = token!(1);
+    let (_, owner_acc) = member!(1);
+
+    let params = TokenIssuanceParametersOf::<Test> {
+        symbol: Hashing::hash_of(&token_id),
+        revenue_split_rate: Permill::zero(),
+        ..Default::default()
+    };
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        assert_noop!(
+            Token::issue_token(owner_acc, params.clone(), default_upload_context()),
+            Error::<Test>::RevenueSplitRateIsZero,
+        );
+    })
+}
+
+#[test]
 fn issue_token_ok_with_symbol_added() {
     let token_id = token!(1);
     let (_, owner_acc) = member!(1);
 
     let params = TokenIssuanceParametersOf::<Test> {
         symbol: Hashing::hash_of(&token_id),
+        revenue_split_rate: DEFAULT_SPLIT_RATE,
         ..Default::default()
     };
     let config = GenesisConfigBuilder::new_empty().build();
@@ -1024,6 +1057,7 @@ fn issue_token_ok_with_owner_accounts_data_added() {
 
     let params = TokenIssuanceParametersOf::<Test> {
         symbol: Hashing::hash_of(&token_id),
+        revenue_split_rate: DEFAULT_SPLIT_RATE,
         ..Default::default()
     }
     .with_allocation(&owner_id, owner_balance, None)
@@ -1177,7 +1211,7 @@ fn burn_fails_with_active_revenue_split() {
         member!(2),
     );
     let token_data = TokenDataBuilder::new_empty()
-        .with_split_rate(DEFAULT_SPLIT_ALLOCATION_RATE)
+        .with_split_rate(DEFAULT_SPLIT_RATE)
         .build();
 
     let config = GenesisConfigBuilder::new_empty()
