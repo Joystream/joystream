@@ -761,3 +761,20 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         );
     }
 }
+
+impl
+    crate::OptionCreator<
+        <Runtime as frame_system::Config>::AccountId,
+        <Runtime as common::membership::MembershipTypes>::MemberId,
+    > for Runtime
+{
+    fn create_option(
+        _: <Runtime as frame_system::Config>::AccountId,
+        option_id: <Runtime as common::membership::MembershipTypes>::MemberId,
+    ) {
+        // clear saved option power from previous cycle
+        INTERMEDIATE_RESULTS.with(|value| {
+            value.borrow_mut().insert(option_id, 0);
+        });
+    }
+}
