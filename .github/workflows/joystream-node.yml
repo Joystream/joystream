@@ -38,8 +38,7 @@ jobs:
         env:
           WASM_BUILD_TOOLCHAIN: nightly-2022-05-11 
         run: |
-          # re-enable after referendum benchmark tests are fixed
-          # cargo +nightly-2022-05-11 test --release --features runtime-benchmarks &&
+          cargo +nightly-2022-05-11 test --release --features runtime-benchmarks &&
           cargo +nightly-2022-05-11 build --release --features runtime-benchmarks
         if: env.GIT_DIFF
 
