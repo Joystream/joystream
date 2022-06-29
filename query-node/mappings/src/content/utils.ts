@@ -35,7 +35,11 @@ import {
   Curator,
 } from 'query-node/dist/model'
 // Joystream types
-import { ChannelOwner, ContentActor, StorageAssets } from '@joystream/types/augment'
+import {
+  PalletContentChannelOwner as ChannelOwner,
+  PalletContentPermissionsContentActor as ContentActor,
+  PalletContentStorageAssetsRecord as StorageAssets,
+} from '@polkadot/types/lookup'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import BN from 'bn.js'
 import { getMostRecentlyCreatedDataObjects } from '../storage/utils'
@@ -418,7 +422,7 @@ function processPublishedBeforeJoystream(
 }
 
 async function processNewAssets(ctx: EventContext & StoreContext, assets: StorageAssets): Promise<StorageDataObject[]> {
-  const assetsUploaded = assets.object_creation_list.length
+  const assetsUploaded = assets.objectCreationList.length
   // FIXME: Ideally the runtime would provide object ids in ChannelCreated/VideoCreated/ChannelUpdated(...) events
   const objects = await getMostRecentlyCreatedDataObjects(ctx.store, assetsUploaded)
   return objects

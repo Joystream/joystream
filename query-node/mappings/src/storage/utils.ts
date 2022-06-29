@@ -1,7 +1,13 @@
 import { DatabaseManager } from '@joystream/hydra-common'
-import { UploadParameters } from '@joystream/types/augment'
+import {
+  PalletStorageDataObjectCreationParameters as ObjectCreationParams,
+  PalletStorageBagIdType as BagId,
+  PalletStorageDynamicBagIdType as DynamicBagId,
+  PalletStorageStaticBagId as StaticBagId,
+  PalletStorageDistributionBucketIdRecord as DistributionBucketId,
+  PalletStorageDistributionBucketFamilyRecord as DistributionBucketFamilyId,
+} from '@polkadot/types/lookup'
 import { registry } from '@joystream/types'
-import { DataObjectCreationParameters as ObjectCreationParams } from '@joystream/types/storage'
 import {
   DataObjectTypeUnknown,
   StorageBag,
@@ -22,16 +28,13 @@ import { In } from 'typeorm'
 
 import { BTreeSet } from '@polkadot/types'
 import _ from 'lodash'
+import { DistributionBucketId, DistributionBucketIndex } from '@joystream/types/augment/all'
 import {
+  WorkerId,
   DataObjectId,
-  BagId,
-  DynamicBagId,
-  StaticBagId,
-  DistributionBucketId,
   DistributionBucketFamilyId,
   DistributionBucketIndex,
-  WorkerId,
-} from '@joystream/types/augment/all'
+} from '@joystream/types/primitives'
 import { Balance } from '@polkadot/types/interfaces'
 
 export async function getDataObjectsInBag(

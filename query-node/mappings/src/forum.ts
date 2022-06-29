@@ -58,7 +58,8 @@ import {
   ForumThreadTag,
 } from 'query-node/dist/model'
 import { Forum } from '../generated/types'
-import { PostReactionId, PrivilegedActor } from '@joystream/types/augment/all'
+import { PalletForumPrivilegedActor as PrivilegedActor } from '@polkadot/types/lookup'
+import { ForumPostReactionId } from '@joystream/types/primitives'
 import {
   ForumPostMetadata,
   ForumPostReaction as SupportedPostReactions,
@@ -181,7 +182,7 @@ async function unsetThreadTags({ event, store }: StoreContext & EventContext, ta
 }
 
 // Get standarized PostReactionResult by PostReactionId
-function parseReaction(reactionId: PostReactionId): typeof PostReactionResult {
+function parseReaction(reactionId: ForumPostReactionId): typeof PostReactionResult {
   switch (toNumber(reactionId)) {
     case SupportedPostReactions.Reaction.CANCEL: {
       return new PostReactionResultCancel()

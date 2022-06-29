@@ -21,6 +21,7 @@ export type DataObjectId = u64
 export type StorageBucketId = u64
 export type DistributionBucketFamilyId = u64
 export type DistributionBucketOperatorId = u64
+export type DistributionBucketIndex = u64
 
 // Membership
 export type MemberId = u64

@@ -3,7 +3,11 @@ eslint-disable @typescript-eslint/naming-convention
 */
 import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
 import { Members } from '../generated/types'
-import { MemberId, BuyMembershipParameters, InviteMembershipParameters } from '@joystream/types/augment/all'
+import { MemberId } from '@joystream/types/primitives'
+import {
+  PalletMembershipBuyMembershipParameters as BuyMembershipParameters,
+  PalletMembershipInviteMembershipParameters as InviteMembershipParameters,
+} from '@polkadot/types/lookup'
 import { MembershipMetadata, MemberRemarked } from '@joystream/metadata-protobuf'
 import {
   bytesToString,
@@ -91,7 +95,7 @@ async function createNewMemberFromParams(
   params: BuyMembershipParameters | InviteMembershipParameters
 ): Promise<Membership> {
   const { defaultInviteCount } = await getLatestMembershipSystemSnapshot(store)
-  const { root_account: rootAccount, controller_account: controllerAccount, handle, metadata: metadataBytes } = params
+  const { rootAccount, controllerAccount, handle, metadata: metadataBytes } = params
   const metadata = deserializeMetadata(MembershipMetadata, metadataBytes)
   const eventTime = new Date(event.blockTimestamp)
 
@@ -116,8 +120,8 @@ async function createNewMemberFromParams(
     metadata: metadataEntity,
     entry: entryMethod,
     referredBy:
-      entryMethod.isTypeOf === 'MembershipEntryPaid' && (params as BuyMembershipParameters).referrer_id.isSome
-        ? new Membership({ id: (params as BuyMembershipParameters).referrer_id.unwrap().toString() })
+      entryMethod.isTypeOf === 'MembershipEntryPaid' && (params as BuyMembershipParameters).referrerId.isSome
+        ? new Membership({ id: (params as BuyMembershipParameters).referrerId.unwrap().toString() })
         : undefined,
     isVerified: false,
     inviteCount: entryMethod.isTypeOf === 'MembershipEntryInvited' ? 0 : defaultInviteCount,
@@ -126,7 +130,7 @@ async function createNewMemberFromParams(
     referredMembers: [],
     invitedBy:
       entryMethod.isTypeOf === 'MembershipEntryInvited'
-        ? new Membership({ id: (params as InviteMembershipParameters).inviting_member_id.toString() })
+        ? new Membership({ id: (params as InviteMembershipParameters).invitingMemberId.toString() })
         : undefined,
     isFoundingMember: false,
     isCouncilMember: false,

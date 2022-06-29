@@ -37,7 +37,12 @@ import {
   BuyNowPriceUpdatedEvent,
   NftSlingedBackToTheOriginalArtistEvent,
 } from 'query-node/dist/model'
-import * as joystreamTypes from '@joystream/types/augment/all/types'
+import {
+  PalletContentNftTypesNftIssuanceParametersRecord as NftIssuanceParameters,
+  PalletContentNftTypesOpenAuctionParamsRecord as OpenAuctionParams,
+  PalletContentNftTypesEnglishAuctionParamsRecord as EnglishAuctionParams,
+  PalletContentNftTypesInitTransactionalStatusRecord as InitTransactionalStatus,
+} from '@polkadot/types/lookup'
 import { Content } from '../../generated/types'
 import { FindConditions, In } from 'typeorm'
 import BN from 'bn.js'
@@ -403,19 +408,19 @@ async function createBid(
 export async function createNft(
   store: DatabaseManager,
   video: Video,
-  nftIssuanceParameters: joystreamTypes.NftIssuanceParameters,
+  nftIssuanceParameters: NftIssuanceParameters,
   blockNumber: number
 ): Promise<OwnedNft> {
   // load owner
-  const ownerMember = nftIssuanceParameters.non_channel_owner.isSome
-    ? await getExistingEntity(store, Membership, nftIssuanceParameters.non_channel_owner.unwrap().toString())
+  const ownerMember = nftIssuanceParameters.nonChannelOwner.isSome
+    ? await getExistingEntity(store, Membership, nftIssuanceParameters.nonChannelOwner.unwrap().toString())
     : video.channel.ownerMember
 
   // calculate some values
   const creatorRoyalty = nftIssuanceParameters.royalty.isSome
     ? nftIssuanceParameters.royalty.unwrap().div(new BN(PERBILL_ONE_PERCENT)).toNumber()
     : undefined
-  const decodedMetadata = nftIssuanceParameters.nft_metadata.toString()
+  const decodedMetadata = nftIssuanceParameters.nftMetadata.toString()
 
   // Is NFT owned by channel or some member
   const isOwnedByChannel = !ownerMember
@@ -444,7 +449,7 @@ export async function createNft(
 
   // update NFT transactional status
   const transactionalStatus = await convertTransactionalStatus(
-    nftIssuanceParameters.init_transactional_status,
+    nftIssuanceParameters.initTransactionalStatus,
     store,
     nft,
     blockNumber
@@ -481,7 +486,7 @@ function findTopBid(bids: Bid[]): Bid | undefined {
 async function createAuction(
   store: DatabaseManager,
   nft: OwnedNft, // expects `nft.ownerMember` to be available
-  auctionParams: joystreamTypes.OpenAuctionParams | joystreamTypes.EnglishAuctionParams,
+  auctionParams: OpenAuctionParams | EnglishAuctionParams,
   startsAtBlockNumber: number
 ): Promise<Auction> {
   const whitelistedMembers = await getRequiredExistingEntites(
@@ -496,8 +501,8 @@ async function createAuction(
   const auction = new Auction({
     nft: nft,
     initialOwner: nft.ownerMember,
-    startingPrice: new BN(auctionParams.starting_price.toString()),
-    buyNowPrice: new BN(auctionParams.buy_now_price.toString()),
+    startingPrice: new BN(auctionParams.startingPrice.toString()),
+    buyNowPrice: new BN(auctionParams.buyNowPrice.toString()),
     auctionType: createAuctionType(auctionParams, startsAtBlockNumber),
     startsAtBlock: startsAtBlockNumber,
     isCanceled: false,
@@ -512,7 +517,7 @@ async function createAuction(
 }
 
 export async function convertTransactionalStatus(
-  transactionalStatus: joystreamTypes.InitTransactionalStatus,
+  transactionalStatus: InitTransactionalStatus,
   store: DatabaseManager,
   nft: OwnedNft,
   blockNumber: number
@@ -537,7 +542,7 @@ export async function convertTransactionalStatus(
       : transactionalStatus.asEnglishAuction
 
     // create new auction
-    const auctionStart = auctionParams.starts_at.isSome ? auctionParams.starts_at.unwrap().toNumber() : blockNumber
+    const auctionStart = auctionParams.startsAt.isSome ? auctionParams.startsAt.unwrap().toNumber() : blockNumber
     const auction = await createAuction(store, nft, auctionParams, auctionStart)
 
     return auction
@@ -644,12 +649,10 @@ export async function contentNft_EnglishAuctionStarted({ event, store }: EventCo
 
 // create auction type variant from raw runtime auction type
 function createAuctionType(
-  auctionParams: joystreamTypes.OpenAuctionParams | joystreamTypes.EnglishAuctionParams,
+  auctionParams: OpenAuctionParams | EnglishAuctionParams,
   startsAtBlockNumber: number
 ): typeof AuctionType {
-  function isEnglishAuction(
-    auction: joystreamTypes.OpenAuctionParams | joystreamTypes.EnglishAuctionParams
-  ): auction is joystreamTypes.EnglishAuctionParams {
+  function isEnglishAuction(auction: OpenAuctionParams | EnglishAuctionParams): auction is EnglishAuctionParams {
     return !!(auction as any).duration
   }
 
@@ -658,8 +661,8 @@ function createAuctionType(
     // prepare auction variant
     const auctionType = new AuctionTypeEnglish()
     auctionType.duration = auctionParams.duration.toNumber()
-    auctionType.extensionPeriod = auctionParams.extension_period.toNumber()
-    auctionType.minimalBidStep = new BN(auctionParams.min_bid_step.toString())
+    auctionType.extensionPeriod = auctionParams.extensionPeriod.toNumber()
+    auctionType.minimalBidStep = new BN(auctionParams.minBidStep.toString())
     auctionType.plannedEndAtBlock = startsAtBlockNumber + auctionParams.duration.toNumber()
 
     return auctionType
@@ -669,7 +672,7 @@ function createAuctionType(
 
   // prepare auction variant
   const auctionType = new AuctionTypeOpen()
-  auctionType.bidLockDuration = auctionParams.bid_lock_duration.toNumber()
+  auctionType.bidLockDuration = auctionParams.bidLockDuration.toNumber()
   return auctionType
 }
 

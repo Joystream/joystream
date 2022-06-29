@@ -1,7 +1,8 @@
 import { DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
 import { Bytes } from '@polkadot/types'
 import { Codec } from '@polkadot/types/types'
-import { WorkingGroup as WGType, WorkerId } from '@joystream/types/augment/all'
+import { WorkerId } from '@joystream/types/primitives'
+import { PalletCommonWorkingGroup as WGType } from '@polkadot/types/lookup'
 import {
   Worker,
   Event,
