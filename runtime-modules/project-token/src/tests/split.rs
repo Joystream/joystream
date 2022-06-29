@@ -934,7 +934,6 @@ fn exit_revenue_split_ok_with_active_and_ended_split() {
 }
 
 #[test]
-<<<<<<< HEAD
 fn issue_revenue_split_ok_with_revenue_leftovers_retained_by_issuer() {
     let leftovers = DEFAULT_SPLIT_RATE
         .left_from_one()
@@ -943,31 +942,15 @@ fn issue_revenue_split_ok_with_revenue_leftovers_retained_by_issuer() {
     build_default_test_externalities_with_balances(vec![(
         member!(1).1,
         DEFAULT_SPLIT_REVENUE + ExistentialDeposit::get(),
-=======
-fn issue_revenue_split_ok_with_allocation_leftovers_retained_by_issuer() {
-    let leftovers = DEFAULT_SPLIT_RATE.left_from_one().mul_ceil(DEFAULT_SPLIT_ALLOCATION) + ExistentialDeposit::get();
-    build_default_test_externalities_with_balances(vec![(
-        member!(1).1,
-        DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
->>>>>>> 91dc78ac7e (add test for lefover revenue split allocation amount)
     )])
     .execute_with(|| {
         IssueTokenFixture::default().execute_call().unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
-<<<<<<< HEAD
         IssueRevenueSplitFixture::default()
             .with_revenue_amount(DEFAULT_SPLIT_REVENUE)
             .execute_call()
             .unwrap();
 
         assert_eq!(Joy::<Test>::usable_balance(member!(1).1), leftovers,);
-=======
-        IssueRevenueSplitFixture::default().with_allocation(DEFAULT_SPLIT_ALLOCATION).execute_call().unwrap();
-
-        assert_eq!(
-            Joy::<Test>::usable_balance(member!(1).1),
-            leftovers,
-        );
->>>>>>> 91dc78ac7e (add test for lefover revenue split allocation amount)
     })
 }
