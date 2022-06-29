@@ -1229,7 +1229,7 @@ export default {
     }
   },
   /**
-   * Lookup185: pallet_proposals_codex::RawEvent<pallet_proposals_codex::types::GeneralProposalParams<MemberId, sp_core::crypto::AccountId32, BlockNumber>, pallet_proposals_codex::types::ProposalDetails<Balance, BlockNumber, sp_core::crypto::AccountId32, WorkerId, OpeningId, PostId, ProposalId, pallet_content::types::UpdateChannelPayoutsParametersRecord<pallet_content::types::ChannelPayoutsPayloadParametersRecord<sp_core::crypto::AccountId32, Balance>, Balance, primitive_types::H256>>, ProposalId, ThreadId>
+   * Lookup185: pallet_proposals_codex::RawEvent<pallet_proposals_codex::types::GeneralProposalParams<MemberId, sp_core::crypto::AccountId32, BlockNumber>, pallet_proposals_codex::types::ProposalDetails<Balance, BlockNumber, sp_core::crypto::AccountId32, WorkerId, OpeningId, PostId, ProposalId>, ProposalId, ThreadId>
    **/
   PalletProposalsCodexRawEvent: {
     _enum: {
@@ -1247,7 +1247,7 @@ export default {
     exactExecutionBlock: 'Option<u32>'
   },
   /**
-   * Lookup187: pallet_proposals_codex::types::ProposalDetails<Balance, BlockNumber, sp_core::crypto::AccountId32, WorkerId, OpeningId, PostId, ProposalId, pallet_content::types::UpdateChannelPayoutsParametersRecord<pallet_content::types::ChannelPayoutsPayloadParametersRecord<sp_core::crypto::AccountId32, Balance>, Balance, primitive_types::H256>>
+   * Lookup187: pallet_proposals_codex::types::ProposalDetails<Balance, BlockNumber, sp_core::crypto::AccountId32, WorkerId, OpeningId, PostId, ProposalId>
    **/
   PalletProposalsCodexProposalDetails: {
     _enum: {
@@ -1276,8 +1276,7 @@ export default {
       LockBlogPost: 'u64',
       UnlockBlogPost: 'u64',
       VetoProposal: 'u32',
-      UpdateGlobalNftLimit: '(PalletContentNftLimitPeriod,u64)',
-      UpdateChannelPayouts: 'PalletContentUpdateChannelPayoutsParametersRecord'
+      UpdateGlobalNftLimit: '(PalletContentNftLimitPeriod,u64)'
     }
   },
   /**

@@ -164,9 +164,10 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                     limit,
                 })
             }
-            ProposalDetails::UpdateChannelPayouts(params) => {
-                Call::Content(content::Call::update_channel_payouts { params })
-            }
+            // TODO: Enable after Carthage
+            // ProposalDetails::UpdateChannelPayouts(params) => {
+            //     Call::Content(content::Call::update_channel_payouts { params })
+            // }
         };
 
         call.encode()
