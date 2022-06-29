@@ -42,6 +42,7 @@ fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
 
     let params = TokenIssuanceParametersOf::<Test> {
         patronage_rate,
+        revenue_split_rate: DEFAULT_SPLIT_RATE,
         ..Default::default()
     }
     .with_allocation(&owner_id, init_supply, None);
@@ -282,7 +283,7 @@ fn claim_patronage_fails_with_active_revenue_split() {
 
     let params = TokenDataBuilder::new_empty()
         .with_patronage_rate(rate)
-        .with_split_rate(DEFAULT_SPLIT_ALLOCATION_RATE);
+        .with_split_rate(DEFAULT_SPLIT_RATE);
 
     let config = GenesisConfigBuilder::new_empty()
         .with_token(token_id, params.build())

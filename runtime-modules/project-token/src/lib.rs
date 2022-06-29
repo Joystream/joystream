@@ -826,7 +826,7 @@ impl<T: Config>
         let token_id = Self::next_token_id();
         let bloat_bond = Self::bloat_bond();
         Self::validate_issuance_parameters(&issuance_parameters)?;
-        let token_data = TokenDataOf::<T>::from_params::<T>(issuance_parameters.clone());
+        let token_data = TokenDataOf::<T>::from_params::<T>(issuance_parameters.clone())?;
         let whitelist_payload = issuance_parameters.get_whitelist_payload();
 
         // TODO: Not clear what the storage interface will be yet, so this is just a mock code now
@@ -1091,9 +1091,7 @@ impl<T: Config>
         let token_info = Self::ensure_token_exists(token_id)?;
         token_info.revenue_split.ensure_inactive::<T>()?;
 
-        let revenue_amount = token_info
-            .revenue_split_rate
-            .mul_floor(allocation_amount);
+        let revenue_amount = token_info.revenue_split_rate.mul_floor(allocation_amount);
 
         ensure!(
             !revenue_amount.is_zero(),
@@ -1120,10 +1118,7 @@ impl<T: Config>
         let timeline = TimelineOf::<T>::from_params(revenue_split_start, duration);
 
         let treasury_account = Self::module_treasury_account();
-        Self::ensure_can_transfer_joy(
-            &allocation_source,
-            &[(&treasury_account, revenue_amount)],
-        )?;
+        Self::ensure_can_transfer_joy(&allocation_source, &[(&treasury_account, revenue_amount)])?;
 
         // == MUTATION SAFE ==
 

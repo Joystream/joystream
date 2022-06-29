@@ -617,7 +617,7 @@ pub const DEFAULT_SALE_DURATION: u64 = 100;
 // ------ Revenue Split constants ------------
 pub const DEFAULT_SALE_PURCHASE_AMOUNT: u128 = 1000;
 pub const DEFAULT_SPLIT_ALLOCATION: u128 = 1000;
-pub const DEFAULT_SPLIT_ALLOCATION_RATE: Permill = Permill::from_percent(10);
+pub const DEFAULT_SPLIT_RATE: Permill = Permill::from_percent(10);
 pub const DEFAULT_SPLIT_DURATION: u64 = 100;
 pub const DEFAULT_SPLIT_PARTICIPATION: u128 = 100_000;
 pub const DEFAULT_SPLIT_JOY_DIVIDEND: u128 = 10; // (participation / issuance) * allocation * rate
