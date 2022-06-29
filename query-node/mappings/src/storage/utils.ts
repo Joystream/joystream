@@ -1,13 +1,13 @@
 import { DatabaseManager } from '@joystream/hydra-common'
 import {
-  PalletStorageDataObjectCreationParameters as ObjectCreationParams,
+  PalletStorageUploadParametersRecordBagIdType as UploadParameters,
+  PalletStorageDataObjectCreationParameters,
   PalletStorageBagIdType as BagId,
   PalletStorageDynamicBagIdType as DynamicBagId,
   PalletStorageStaticBagId as StaticBagId,
   PalletStorageDistributionBucketIdRecord as DistributionBucketId,
-  PalletStorageDistributionBucketFamilyRecord as DistributionBucketFamilyId,
 } from '@polkadot/types/lookup'
-import { registry } from '@joystream/types'
+import { createType, registry } from '@joystream/types'
 import {
   DataObjectTypeUnknown,
   StorageBag,
@@ -28,7 +28,6 @@ import { In } from 'typeorm'
 
 import { BTreeSet } from '@polkadot/types'
 import _ from 'lodash'
-import { DistributionBucketId, DistributionBucketIndex } from '@joystream/types/augment/all'
 import {
   WorkerId,
   DataObjectId,
@@ -207,13 +206,12 @@ export async function createDataObjects(
   const storageBag = await getBag(store, bagId)
 
   const dataObjects = objectCreationList.map((objectParams, i) => {
-    const params = new ObjectCreationParams(registry, objectParams.toJSON() as any)
     const objectId = objectIds ? objectIds[i] : storageSystem.nextDataObjectId
     const object = new StorageDataObject({
       id: objectId.toString(),
       isAccepted: false,
       ipfsHash: bytesToString(objectParams.ipfsContentId),
-      size: new BN(params.getField('size').toString()),
+      size: new BN(objectParams.size_),
       type: new DataObjectTypeUnknown(),
       stateBloatBond,
       storageBag,
@@ -249,8 +247,8 @@ export async function getMostRecentlyCreatedDataObjects(
 }
 
 export function distributionBucketId(runtimeBucketId: DistributionBucketId): string {
-  const { distribution_bucket_family_id: familyId, distribution_bucket_index: bucketIndex } = runtimeBucketId
-  return distributionBucketIdByFamilyAndIndex(familyId, bucketIndex)
+  const { distributionBucketFamilyId, distributionBucketIndex } = runtimeBucketId
+  return distributionBucketIdByFamilyAndIndex(distributionBucketFamilyId, distributionBucketIndex)
 }
 
 export function distributionBucketIdByFamilyAndIndex(

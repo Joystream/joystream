@@ -6,6 +6,10 @@ import { ChannelMetadata, ChannelModeratorRemarked, ChannelOwnerRemarked } from 
 import { BaseModel } from '@joystream/warthog'
 import {
   Channel,
+  ContentActor,
+  ContentActorCurator,
+  ContentActorMember,
+  CuratorGroup,
   Membership,
   MetaprotocolTransactionErrored,
   MetaprotocolTransactionPending,
@@ -93,17 +97,12 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
   }
 
   // prepare changed metadata
-  const newMetadataBytes = channelUpdateParameters.new_meta.unwrapOr(null)
+  const newMetadataBytes = channelUpdateParameters.newMeta.unwrapOr(null)
 
   //  update metadata if it was changed
   if (newMetadataBytes) {
     const newMetadata = deserializeMetadata(ChannelMetadata, newMetadataBytes) || {}
-    await processChannelMetadata(
-      ctx,
-      channel,
-      newMetadata,
-      channelUpdateParameters.assets_to_upload.unwrapOr(undefined)
-    )
+    await processChannelMetadata(ctx, channel, newMetadata, channelUpdateParameters.assetsToUpload.unwrapOr(undefined))
   }
 
   const newCollaborators = channelUpdateParameters.collaborators.unwrapOr(undefined)
@@ -143,7 +142,30 @@ export async function content_ChannelDeleted({ store, event }: EventContext & St
 
 export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreContext): Promise<void> {
   const { event, store } = ctx
-  const [owner, channelId, message] = new Content.ChannelOwnerRemarkedEvent(ctx.event).params
+  const [channelId, message] = new Content.ChannelOwnerRemarkedEvent(ctx.event).params
+
+  // load channel
+  const channel = await store.get(Channel, {
+    where: { id: channelId.toString() },
+    relations: ['ownerMember', 'ownerCuratorGroup'],
+  })
+
+  // ensure channel exists
+  if (!channel) {
+    return inconsistentState('Owner Remarked for Non-existing channel', channelId)
+  }
+
+  const getcontentActor = (ownerMember?: Membership, ownerCuratorGroup?: CuratorGroup) => {
+    if (ownerMember) {
+      const actor = new ContentActorMember()
+      actor.memberId = ownerMember.id
+      return actor
+    } else if (ownerCuratorGroup) {
+      const actor = new ContentActorCurator()
+      actor.curatorId = ownerCuratorGroup.id
+      return actor
+    }
+  }
 
   const genericFields = genericEventFields(event)
   // unique identifier for metaprotocol tx
@@ -160,7 +182,7 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
   try {
     const decodedMessage = ChannelOwnerRemarked.decode(message.toU8a(true))
     const messageType = decodedMessage.channelOwnerRemarked
-    const contentActor = await convertContentActor(ctx.store, owner)
+    const contentActor = getcontentActor(channel.ownerMember, channel.ownerCuratorGroup)!
 
     // update MetaprotocolTransactionStatusEvent
     const statusSuccessful = new MetaprotocolTransactionSuccessful()
@@ -198,7 +220,7 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
 
 export async function content_ChannelModeratorRemarked(ctx: EventContext & StoreContext): Promise<void> {
   const { event, store } = ctx
-  const [moderator, channelId, message] = new Content.ChannelModeratorRemarkedEvent(ctx.event).params
+  const [moderator, channelId, message] = new Content.ChannelAgentRemarkedEvent(ctx.event).params
 
   const genericFields = genericEventFields(event)
   // unique identifier for metaprotocol tx

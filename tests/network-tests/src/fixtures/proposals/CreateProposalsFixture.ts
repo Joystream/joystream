@@ -6,8 +6,8 @@ import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { ProposalCreatedEventFieldsFragment, ProposalFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
-import { ProposalId, ProposalParameters } from '@joystream/types/proposals'
-import { MemberId } from '@joystream/types/common'
+import { PalletProposalsEngineProposalParameters as ProposalParameters } from '@polkadot/types/lookup'
+import { MemberId, ProposalId } from '@joystream/types/primitives'
 import { FixtureRunner, StandardizedFixture } from '../../Fixture'
 import { AddStakingAccountsHappyCaseFixture } from '../membership'
 import { getWorkingGroupModuleName } from '../../consts'
@@ -81,11 +81,11 @@ export class CreateProposalsFixture extends StandardizedFixture {
       const proposalDetails = { [type]: details } as { [K in ProposalType]: ProposalDetailsJsonByType<K> }
       return this.api.tx.proposalsCodex.createProposal(
         {
-          member_id: asMember,
+          memberId: asMember,
           description: description,
           title: title,
-          exact_execution_block: exactExecutionBlock,
-          staking_account_id: this.stakingAccounts[i],
+          exactExecutionBlock: exactExecutionBlock,
+          stakingAccountId: this.stakingAccounts[i],
         },
         proposalDetails
       )
@@ -104,7 +104,7 @@ export class CreateProposalsFixture extends StandardizedFixture {
     switch (params.type) {
       case 'AmendConstitution': {
         Utils.assert(qProposal.details.__typename === 'AmendConstitutionProposalDetails')
-        const details = proposalDetails.asType('AmendConstitution')
+        const details = proposalDetails.asAmendConstitution
         assert.equal(qProposal.details.text, details.toString())
         break
       }

@@ -364,13 +364,13 @@ export async function proposalsCodex_ProposalCreated({ store, event }: EventCont
     updatedAt: eventTime,
     details: proposalDetails,
     councilApprovals: 0,
-    creator: new Membership({ id: generalProposalParameters.member_id.toString() }),
+    creator: new Membership({ id: generalProposalParameters.memberId.toString() }),
     title: perpareString(generalProposalParameters.title.toString()),
     description: perpareString(generalProposalParameters.description.toString()),
-    exactExecutionBlock: generalProposalParameters.exact_execution_block.isSome
-      ? toNumber(generalProposalParameters.exact_execution_block.unwrap(), INT32MAX)
+    exactExecutionBlock: generalProposalParameters.exactExecutionBlock.isSome
+      ? toNumber(generalProposalParameters.exactExecutionBlock.unwrap(), INT32MAX)
       : undefined,
-    stakingAccount: generalProposalParameters.staking_account_id.toString(),
+    stakingAccount: generalProposalParameters.stakingAccountId.toString(),
     status: new ProposalStatusDeciding(),
     isFinalized: false,
     statusSetAtBlock: event.blockNumber,

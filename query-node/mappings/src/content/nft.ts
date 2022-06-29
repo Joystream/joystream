@@ -583,7 +583,7 @@ export async function contentNft_OpenAuctionStarted({ event, store }: EventConte
   const nft = video.nft
 
   // create auction
-  const auctionStart = auctionParams.starts_at.isSome ? auctionParams.starts_at.unwrap().toNumber() : event.blockNumber
+  const auctionStart = auctionParams.startsAt.isSome ? auctionParams.startsAt.unwrap().toNumber() : event.blockNumber
   const auction = await createAuction(store, nft, auctionParams, auctionStart)
 
   await setNewNftTransactionalStatus(store, nft, auction, event.blockNumber)
@@ -627,7 +627,7 @@ export async function contentNft_EnglishAuctionStarted({ event, store }: EventCo
   const nft = video.nft
 
   // create new auction
-  const auctionStart = auctionParams.starts_at.isSome ? auctionParams.starts_at.unwrap().toNumber() : event.blockNumber
+  const auctionStart = auctionParams.startsAt.isSome ? auctionParams.startsAt.unwrap().toNumber() : event.blockNumber
   const auction = await createAuction(store, nft, auctionParams, auctionStart)
 
   await setNewNftTransactionalStatus(store, nft, auction, event.blockNumber)

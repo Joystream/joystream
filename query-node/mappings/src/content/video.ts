@@ -1,7 +1,7 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
+import { DatabaseManager, DeepPartial, EventContext, StoreContext } from '@joystream/hydra-common'
 import { VideoMetadata } from '@joystream/metadata-protobuf'
 import { BaseModel } from '@joystream/warthog'
 import {
@@ -73,8 +73,8 @@ export async function content_VideoCreated(ctx: EventContext & StoreContext): Pr
   // save video
   await store.save<Video>(video)
 
-  if (videoCreationParameters.auto_issue_nft.isSome) {
-    const issuanceParameters = videoCreationParameters.auto_issue_nft.unwrap()
+  if (videoCreationParameters.autoIssueNft.isSome) {
+    const issuanceParameters = videoCreationParameters.autoIssueNft.unwrap()
     const nft = await createNft(store, video, issuanceParameters, event.blockNumber)
 
     const nftIssuedEvent = new NftIssuedEvent({
@@ -114,16 +114,16 @@ export async function content_VideoUpdated(ctx: EventContext & StoreContext): Pr
   }
 
   // prepare changed metadata
-  const newMetadataBytes = videoUpdateParameters.new_meta.unwrapOr(null)
+  const newMetadataBytes = videoUpdateParameters.newMeta.unwrapOr(null)
 
   // update metadata if it was changed
   if (newMetadataBytes) {
     const newMetadata = deserializeMetadata(VideoMetadata, newMetadataBytes) || {}
-    await processVideoMetadata(ctx, video, newMetadata, videoUpdateParameters.assets_to_upload.unwrapOr(undefined))
+    await processVideoMetadata(ctx, video, newMetadata, videoUpdateParameters.assetsToUpload.unwrapOr(undefined))
   }
 
   // create nft if requested
-  const issuanceParameters = videoUpdateParameters.auto_issue_nft.unwrapOr(null)
+  const issuanceParameters = videoUpdateParameters.autoIssueNft.unwrapOr(null)
   if (issuanceParameters) {
     const nft = await createNft(store, video, issuanceParameters, event.blockNumber)
 
@@ -198,7 +198,7 @@ async function removeVideoReferencingRelations(store: DatabaseManager, videoId: 
     })
   }
 
-  const removeRelations = async <T>(store: DatabaseManager, entities: T[]) => {
+  const removeRelations = async <T extends DeepPartial<T>>(store: DatabaseManager, entities: T[]) => {
     await Promise.all(entities.map(async (r) => await store.remove<T>(r)))
   }
 

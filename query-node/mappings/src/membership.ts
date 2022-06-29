@@ -345,7 +345,7 @@ export async function members_MemberInvited({ store, event }: EventContext & Sto
   const invitedMember = await createNewMemberFromParams(store, event, memberId, entryMethod, inviteMembershipParameters)
 
   // Decrease invite count of inviting member
-  const invitingMember = await getMemberById(store, inviteMembershipParameters.inviting_member_id)
+  const invitingMember = await getMemberById(store, inviteMembershipParameters.invitingMemberId)
   invitingMember.inviteCount -= 1
   invitingMember.updatedAt = eventTime
   await store.save<Membership>(invitingMember)
