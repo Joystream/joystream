@@ -223,7 +223,7 @@ fn unsuccessful_finalize_token_sale_during_channel_transfer() {
         increase_account_balance_helper(
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
             DEFAULT_PAYOUT_EARNED
-                .saturating_add(<Test as balances::Trait>::ExistentialDeposit::get().into()),
+                .saturating_add(<Test as balances::Config>::ExistentialDeposit::get().into()),
         );
         InitCreatorTokenSaleFixture::default().call_and_assert(Ok(()));
         purchase_tokens_on_sale(DEFAULT_CREATOR_TOKEN_ISSUANCE);

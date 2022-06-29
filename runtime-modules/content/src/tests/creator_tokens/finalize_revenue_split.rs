@@ -170,7 +170,7 @@ fn unsuccesful_finalize_revenue_split_during_transfer() {
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
             DEFAULT_PAYOUT_EARNED
                 // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(<Test as balances::Trait>::ExistentialDeposit::get().into()),
+                .saturating_add(<Test as balances::Config>::ExistentialDeposit::get().into()),
         );
         IssueRevenueSplitFixture::default().call_and_assert(Ok(()));
         run_to_block(
