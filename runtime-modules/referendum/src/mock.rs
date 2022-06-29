@@ -762,6 +762,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
     }
 }
 
+#[cfg(feature = "runtime-benchmarks")]
 impl
     crate::OptionCreator<
         <Runtime as frame_system::Config>::AccountId,
