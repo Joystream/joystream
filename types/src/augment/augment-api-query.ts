@@ -301,6 +301,11 @@ declare module '@polkadot/api-base/types/storage' {
       nextCuratorGroupId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       nextVideoId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       /**
+       * NFT limits enabled or not
+       * Can be updated in flight by Lead
+       **/
+      nftLimitsEnabled: AugmentedQuery<ApiType, () => Observable<bool>, []>;
+      /**
        * Bids for open auctions
        **/
       openAuctionBidByVideoAndMember: AugmentedQuery<ApiType, (arg1: u64 | AnyNumber | Uint8Array, arg2: u64 | AnyNumber | Uint8Array) => Observable<PalletContentNftTypesOpenAuctionBidRecord>, [u64, u64]>;

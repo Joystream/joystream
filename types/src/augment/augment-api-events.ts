@@ -149,6 +149,7 @@ declare module '@polkadot/api-base/types/events' {
        * Nft limits
        **/
       GlobalNftLimitUpdated: AugmentedEvent<ApiType, [PalletContentNftLimitPeriod, u64]>;
+      LeadToggledNftLimitsEnabled: AugmentedEvent<ApiType, [bool]>;
       NftBought: AugmentedEvent<ApiType, [u64, u64]>;
       NftDestroyed: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64]>;
       NftIssued: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, PalletContentNftTypesNftIssuanceParametersRecord]>;

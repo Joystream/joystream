@@ -665,6 +665,7 @@ export default {
       ChannelTransferAccepted: '(u64,PalletContentTransferParameters)',
       GlobalNftLimitUpdated: '(PalletContentNftLimitPeriod,u64)',
       ChannelNftLimitUpdated: '(PalletContentPermissionsContentActor,PalletContentNftLimitPeriod,u64,u64)',
+      LeadToggledNftLimitsEnabled: 'bool',
       CreatorTokenIssued: '(PalletContentPermissionsContentActor,u64,u64)'
     }
   },
@@ -2894,6 +2895,7 @@ export default {
         participantId: 'u64',
         priceCommit: 'u128',
       },
+      toggle_nft_limits: 'Null',
       channel_owner_remark: {
         channelId: 'u64',
         msg: 'Bytes',
