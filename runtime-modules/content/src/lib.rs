@@ -1400,7 +1400,6 @@ decl_module! {
             // block extrinsics during transfers
             Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
 
-
             // Authorize nft destruction
             ensure_actor_authorized_to_manage_nft::<T>(origin, &actor, &nft.owner, video.in_channel)?;
 

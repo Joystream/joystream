@@ -568,7 +568,7 @@ impl ExtBuilder {
         .unwrap();
 
         // the same as t.top().extend(GenesisConfig::<Test> etc...)
-        GenesisConfig::<Test> {
+        crate::GenesisConfig::<Test> {
             next_channel_category_id: self.next_channel_category_id,
             next_channel_id: self.next_channel_id,
             next_video_id: self.next_video_id,
