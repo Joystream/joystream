@@ -163,6 +163,7 @@ declare module '@polkadot/api-base/types/events' {
       VideoCreated: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u64, PalletContentVideoCreationParametersRecord, BTreeSet<u64>]>;
       VideoDeleted: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64]>;
       VideoDeletedByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, Bytes]>;
+      VideoStateBloatBondValueUpdated: AugmentedEvent<ApiType, [u128]>;
       VideoUpdated: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, PalletContentVideoUpdateParametersRecord, BTreeSet<u64>]>;
       VideoVisibilitySetByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, bool, Bytes]>;
     };
