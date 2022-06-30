@@ -1,15 +1,15 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "512"]
+#![allow(clippy::unused_unit)]
 
-#[cfg(test)]
-mod tests;
-use core::marker::PhantomData;
 mod errors;
 mod nft;
 mod permissions;
+mod tests;
 mod types;
 
+use core::marker::PhantomData;
 use project_token::traits::PalletToken;
 use project_token::types::{
     TokenIssuanceParametersOf, TokenSaleParamsOf, TransfersWithVestingOf, UploadContextOf,

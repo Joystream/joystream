@@ -32,7 +32,6 @@ mod events;
 pub mod traits;
 pub mod types;
 
-// #[cfg(test)]
 mod tests;
 
 // crate imports
