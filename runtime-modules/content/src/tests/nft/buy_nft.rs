@@ -9,11 +9,13 @@ fn buy_nft_ok_with_proper_royalty_accounting_normal_case() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         run_to_block(1);
-
+        let royalty_pct = Perbill::from_percent(DEFAULT_ROYALTY);
+        let royalty = royalty_pct.mul_floor(DEFAULT_NFT_PRICE);
+        let platform_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE);
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
         ContentTest::default().with_video().setup();
         IssueNftFixture::default().with_params(NftIssuanceParameters::<Test> {
-            royalty: Some(Perbill::from_percent(DEFAULT_ROYALTY)),
+            royalty: Some(royalty_pct),
             non_channel_owner: Some(COLLABORATOR_MEMBER_ID),
             init_transactional_status: InitTransactionalStatus::<Test>::BuyNow(DEFAULT_NFT_PRICE),
             ..Default::default()
@@ -27,10 +29,18 @@ fn buy_nft_ok_with_proper_royalty_accounting_normal_case() {
             DEFAULT_NFT_PRICE,
         ));
 
-        assert_eq!(
-            channel_reward_account_balance(1u64),
-            Perbill::from_percent(DEFAULT_ROYALTY).mul_floor(DEFAULT_NFT_PRICE),
-        );
+            assert_eq!(
+                (
+                    channel_reward_account_balance(ChannelId::one()),
+                    balances::Pallet::<Test>::usable_balance(SECOND_MEMBER_ACCOUNT_ID),
+                    balances::Pallet::<Test>::usable_balance(COLLABORATOR_MEMBER_ACCOUNT_ID)
+                ),
+                (
+                    royalty,
+                    BalanceOf::<Test>::zero(),
+                    DEFAULT_NFT_PRICE - platform_fee - royalty,
+                )
+            );
     })
 }
 
