@@ -170,9 +170,6 @@ decl_storage! {
 
         pub MinCashoutAllowed get(fn min_cashout_allowed) config(): BalanceOf<T>;
 
-        /// The state bloat bond for the channel (helps preventing the state bloat).
-        pub ChannelStateBloatBondValue get (fn channel_state_bloat_bond_value): BalanceOf<T>;
-
         pub ChannelCashoutsEnabled get(fn channel_cashouts_enabled) config(): bool;
 
         /// Min auction duration
