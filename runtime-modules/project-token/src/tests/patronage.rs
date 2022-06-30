@@ -293,7 +293,7 @@ fn claim_patronage_fails_with_active_revenue_split() {
     build_test_externalities(config).execute_with(|| {
         increase_account_balance(
             &owner_account,
-            DEFAULT_SPLIT_ALLOCATION + ExistentialDeposit::get(),
+            DEFAULT_SPLIT_REVENUE + ExistentialDeposit::get(),
         );
         IssueRevenueSplitFixture::default().execute_call().unwrap(); // activate revenue split
         increase_block_number_by(blocks);
