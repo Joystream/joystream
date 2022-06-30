@@ -1199,9 +1199,9 @@ fn burn_fails_with_amount_exceeding_account_tokens() {
 fn burn_fails_with_active_revenue_split() {
     let (
         token_id,
-        split_allocation_amount,
+        revenue_amount,
         burn_amount,
-        split_allocation_src,
+        revenue_src,
         (member_id, account),
     ) = (
         token!(1),
@@ -1222,8 +1222,8 @@ fn burn_fails_with_active_revenue_split() {
     build_test_externalities_with_balances(
         config,
         vec![(
-            split_allocation_src,
-            <Test as Config>::JoyExistentialDeposit::get() + split_allocation_amount,
+            revenue_src,
+            <Test as Config>::JoyExistentialDeposit::get() + revenue_amount,
         )],
     )
     .execute_with(|| {
@@ -1231,8 +1231,8 @@ fn burn_fails_with_active_revenue_split() {
             token_id,
             Some(100),
             100,
-            split_allocation_src,
-            split_allocation_amount
+            revenue_src,
+            revenue_amount
         ));
         let result = Token::burn(origin!(account), token_id, member_id, burn_amount);
 
