@@ -1118,6 +1118,7 @@ impl<T: Config>
         let timeline = TimelineOf::<T>::from_params(revenue_split_start, duration);
 
         let treasury_account = Self::module_treasury_account();
+
         Self::ensure_can_transfer_joy(
             &revenue_source_account,
             &[(&treasury_account, allocation_amount)],
