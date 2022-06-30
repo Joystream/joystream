@@ -1197,13 +1197,7 @@ fn burn_fails_with_amount_exceeding_account_tokens() {
 
 #[test]
 fn burn_fails_with_active_revenue_split() {
-    let (
-        token_id,
-        revenue_amount,
-        burn_amount,
-        revenue_src,
-        (member_id, account),
-    ) = (
+    let (token_id, revenue_amount, burn_amount, revenue_src, (member_id, account)) = (
         token!(1),
         joy!(100),
         balance!(100),
