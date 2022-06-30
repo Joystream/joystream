@@ -374,9 +374,6 @@ impl Config for Test {
     /// Type of identifier for open auctions
     type OpenAuctionId = u64;
 
-    /// Type of identifier for Channel Categories
-    type ChannelCategoryId = u64;
-
     /// The maximum number of curators per group constraint
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
 
@@ -482,7 +479,6 @@ impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for ContentWG {
 
 // #[derive (Default)]
 pub struct ExtBuilder {
-    next_channel_category_id: u64,
     next_channel_id: u64,
     next_video_id: u64,
     next_curator_group_id: u64,
@@ -510,7 +506,6 @@ impl Default for ExtBuilder {
     // init test scenario for ExtBuilder
     fn default() -> Self {
         Self {
-            next_channel_category_id: 1,
             next_channel_id: 1,
             next_video_id: 1,
             next_curator_group_id: 1,
@@ -544,7 +539,6 @@ impl ExtBuilder {
 
         // the same as t.top().extend(GenesisConfig::<Test> etc...)
         crate::GenesisConfig::<Test> {
-            next_channel_category_id: self.next_channel_category_id,
             next_channel_id: self.next_channel_id,
             next_video_id: self.next_video_id,
             next_curator_group_id: self.next_curator_group_id,
