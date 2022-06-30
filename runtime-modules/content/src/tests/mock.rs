@@ -590,39 +590,7 @@ impl ExtBuilder {
     }
 
     pub fn build(self) -> sp_io::TestExternalities {
-        let mut t = frame_system::GenesisConfig::default()
-            .build_storage::<Test>()
-            .unwrap();
-
-        // the same as t.top().extend(GenesisConfig::<Test> etc...)
-        crate::GenesisConfig::<Test> {
-            next_channel_category_id: self.next_channel_category_id,
-            next_channel_id: self.next_channel_id,
-            next_video_id: self.next_video_id,
-            next_curator_group_id: self.next_curator_group_id,
-            max_cashout_allowed: self.max_cashout_allowed,
-            min_cashout_allowed: self.min_cashout_allowed,
-            channel_cashouts_enabled: self.channel_cashouts_enabled,
-            min_auction_duration: self.min_auction_duration,
-            max_auction_duration: self.max_auction_duration,
-            min_auction_extension_period: self.min_auction_extension_period,
-            max_auction_extension_period: self.max_auction_extension_period,
-            min_bid_lock_duration: self.min_bid_lock_duration,
-            max_bid_lock_duration: self.max_bid_lock_duration,
-            min_starting_price: self.min_starting_price,
-            max_starting_price: self.max_starting_price,
-            min_creator_royalty: self.min_creator_royalty,
-            max_creator_royalty: self.max_creator_royalty,
-            min_bid_step: self.min_bid_step,
-            max_bid_step: self.max_bid_step,
-            platform_fee_percentage: self.platform_fee_percentage,
-            auction_starts_at_max_delta: self.auction_starts_at_max_delta,
-            max_auction_whitelist_length: self.max_auction_whitelist_length,
-        }
-        .assimilate_storage(&mut t)
-        .unwrap();
-
-        t.into()
+        self.build_with_balances(vec![])
     }
 }
 
