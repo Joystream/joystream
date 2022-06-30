@@ -459,16 +459,15 @@ mod tests {
             .fold(0, |acc, x| acc.checked_add(*x).unwrap());
     }
 
-    #[ignore]
     #[test]
     fn call_size() {
         let size = core::mem::size_of::<Call>();
         assert!(
-			size <= 208,
-			"size of Call {} is more than 208 bytes: some calls have too big arguments, use Box to reduce the
-			size of Call.
-			If the limit is too strong, maybe consider increase the limit to 300.",
-			size,
-		);
+            size <= 352,
+            "size of Call {} is more than 208 bytes: some calls have too big arguments, use Box to reduce the
+            size of Call.
+            If the limit is too strong, maybe consider increase the limit to 400.",
+            size,
+        );
     }
 }
