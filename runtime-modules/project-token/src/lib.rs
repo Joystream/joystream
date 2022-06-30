@@ -1085,16 +1085,16 @@ impl<T: Config>
         token_id: T::TokenId,
         start: Option<T::BlockNumber>,
         duration: T::BlockNumber,
-        allocation_source: T::AccountId,
-        allocation_amount: JoyBalanceOf<T>,
+        revenue_source_account: T::AccountId,
+        revenue_amount: JoyBalanceOf<T>,
     ) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
         token_info.revenue_split.ensure_inactive::<T>()?;
 
-        let revenue_amount = token_info.revenue_split_rate.mul_floor(allocation_amount);
+        let allocation_amount = token_info.revenue_split_rate.mul_floor(revenue_amount);
 
         ensure!(
-            !revenue_amount.is_zero(),
+            !allocation_amount.is_zero(),
             Error::<T>::CannotIssueSplitWithZeroAllocationAmount,
         );
 
@@ -1118,22 +1118,22 @@ impl<T: Config>
         let timeline = TimelineOf::<T>::from_params(revenue_split_start, duration);
 
         let treasury_account = Self::module_treasury_account();
-        Self::ensure_can_transfer_joy(&allocation_source, &[(&treasury_account, revenue_amount)])?;
+        Self::ensure_can_transfer_joy(&revenue_source_account, &[(&treasury_account, allocation_amount)])?;
 
         // == MUTATION SAFE ==
 
         // tranfer allocation keeping the source account alive
-        Self::transfer_joy(&allocation_source, &treasury_account, revenue_amount);
+        Self::transfer_joy(&revenue_source_account, &treasury_account, allocation_amount);
 
         TokenInfoById::<T>::mutate(token_id, |token_info| {
-            token_info.activate_new_revenue_split(revenue_amount, timeline);
+            token_info.activate_new_revenue_split(allocation_amount, timeline);
         });
 
         Self::deposit_event(RawEvent::RevenueSplitIssued(
             token_id,
             revenue_split_start,
             duration,
-            revenue_amount,
+            allocation_amount,
         ));
 
         Ok(())
