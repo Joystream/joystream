@@ -99,7 +99,7 @@ fn issue_split_fails_with_non_existing_source() {
 fn issue_split_fails_with_revenue_split_already_active() {
     build_default_test_externalities_with_balances(vec![(
         member!(1).1,
-        // endow enough allocation for 2 splits
+        // endow enough revenue for 2 splits
         DEFAULT_SPLIT_REVENUE + DEFAULT_SPLIT_REVENUE + ExistentialDeposit::get(),
     )])
     .execute_with(|| {
@@ -157,7 +157,7 @@ fn issue_split_ok_with_user_provided_start_block() {
 }
 
 #[test]
-fn issue_split_fails_with_allocation_zero() {
+fn issue_split_fails_with_revenue_zero() {
     build_default_test_externalities_with_balances(vec![(
         member!(1).1,
         DEFAULT_SPLIT_REVENUE + ExistentialDeposit::get(),
@@ -934,7 +934,7 @@ fn exit_revenue_split_ok_with_active_and_ended_split() {
 }
 
 #[test]
-fn issue_revenue_split_ok_with_allocation_leftovers_retained_by_issuer() {
+fn issue_revenue_split_ok_with_revenue_leftovers_retained_by_issuer() {
     let leftovers = DEFAULT_SPLIT_RATE
         .left_from_one()
         .mul_ceil(DEFAULT_SPLIT_REVENUE)
