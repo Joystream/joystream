@@ -62,8 +62,16 @@ fn buy_nft_ok_with_proper_royalty_accounting_edge_case() {
 
             // nft_price * min(100%, 100% - platform_fee%) = nft_price - platform_fee
             assert_eq!(
-                channel_reward_account_balance(1u64),
-                DEFAULT_NFT_PRICE - platform_fee,
+                (
+                    channel_reward_account_balance(1u64),
+                    balances::Pallet::<Test>::usable_balance(SECOND_MEMBER_ACCOUNT_ID),
+                    balances::Pallet::<Test>::usable_balance(COLLABORATOR_MEMBER_ACCOUNT_ID)
+                ),
+                (
+                    DEFAULT_NFT_PRICE - platform_fee,
+                    BalanceOf::<Test>::zero(),
+                    BalanceOf::<Test>::zero(),
+                )
             );
         })
 }
