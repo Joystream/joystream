@@ -13,10 +13,7 @@ echo 'running clippy (rust linter)'
 # "Rust WASM toolchain not installed, please install it!"
 # So we skip building the WASM binary by setting BUILD_DUMMY_WASM_BINARY=1
 # Aggressive linting
-# BUILD_DUMMY_WASM_BINARY=1 cargo +nightly-2022-05-11 clippy --release --all -- -D warnings
-
-# Less aggressive linting
-BUILD_DUMMY_WASM_BINARY=1 cargo +nightly-2022-05-11 clippy --release --all
+BUILD_DUMMY_WASM_BINARY=1 cargo +nightly-2022-05-11 clippy --release --all -- -D warnings
 
 echo 'running cargo unit tests'
 cargo +nightly-2022-05-11 test --release --all --features "${FEATURES}"
