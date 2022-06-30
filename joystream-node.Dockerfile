@@ -17,8 +17,8 @@ COPY . /joystream
 ARG CARGO_FEATURES
 RUN echo "CARGO_FEATURES=$CARGO_FEATURES"
 ENV WASM_BUILD_TOOLCHAIN=nightly-2022-05-11
-# RUN BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --all -- -D warnings && \
-RUN cargo test --release --all --features "${CARGO_FEATURES}" && \
+RUN BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --all -- -D warnings && \
+    cargo test --release --all --features "${CARGO_FEATURES}" && \
     cargo build --release --features "${CARGO_FEATURES}"
 
 FROM ubuntu:21.04
