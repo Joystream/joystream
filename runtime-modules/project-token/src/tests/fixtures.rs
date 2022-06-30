@@ -762,7 +762,7 @@ impl IssueRevenueSplitFixture {
             start: None,
             duration: BlockNumber::from(DEFAULT_SPLIT_DURATION),
             allocation_source: member!(1).1,
-            allocation: Balance::from(DEFAULT_SPLIT_ALLOCATION),
+            allocation: Balance::from(DEFAULT_SPLIT_REVENUE),
         }
     }
 
@@ -780,14 +780,14 @@ impl IssueRevenueSplitFixture {
         }
     }
 
-    pub fn with_allocation(self, allocation: u128) -> Self {
+    pub fn with_revenue_amount(self, allocation: u128) -> Self {
         Self {
             allocation: allocation.into(),
             ..self
         }
     }
 
-    pub fn with_allocation_source(self, account: u64) -> Self {
+    pub fn with_revenue_source_account(self, account: u64) -> Self {
         Self {
             allocation_source: account.into(),
             ..self
