@@ -1087,7 +1087,7 @@ impl<T: Config>
         duration: T::BlockNumber,
         revenue_source_account: T::AccountId,
         revenue_amount: JoyBalanceOf<T>,
-    ) -> DispatchResult {
+    ) -> Result<JoyBalanceOf<T>, DispatchError> {
         let token_info = Self::ensure_token_exists(token_id)?;
         token_info.revenue_split.ensure_inactive::<T>()?;
 
@@ -1136,7 +1136,7 @@ impl<T: Config>
             allocation_amount,
         ));
 
-        Ok(())
+        Ok(revenue_amount.saturating_sub(allocation_amount))
     }
 
     /// Finalize revenue split once it is ended
