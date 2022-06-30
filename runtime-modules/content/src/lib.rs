@@ -2715,13 +2715,24 @@ decl_module! {
             let reward_account_balance = Balances::<T>::usable_balance(&reward_account);
 
             // Call to ProjectToken - should be the first call before MUTATION SAFE!
-            T::ProjectToken::issue_revenue_split(
+            let leftover_amount = T::ProjectToken::issue_revenue_split(
                 token_id,
                 start,
                 duration,
-                reward_account,
+                reward_account.clone(),
                 reward_account_balance.saturating_sub(<T as balances::Config>::ExistentialDeposit::get())
             )?;
+
+            match channel.owner {
+                ChannelOwner::Member(member_id) => {
+                    let destination = T::MemberAuthenticator::controller_account_id(member_id)?;
+                    Self::execute_channel_balance_withdrawal(&reward_account, &destination, leftover_amount)?
+                },
+                ChannelOwner::CuratorGroup(_) => {
+                    let _ = balances::Pallet::<T>::slash(&reward_account, leftover_amount);
+                    T::CouncilBudgetManager::increase_budget(leftover_amount);
+                },
+            }
         }
 
         /// Finalize an ended revenue split

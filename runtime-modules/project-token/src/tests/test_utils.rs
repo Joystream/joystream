@@ -31,6 +31,7 @@ pub struct TokenDataBuilder {
         <Test as crate::Config>::Balance,
         <Test as frame_system::Config>::BlockNumber,
     >,
+    pub(crate) revenue_split_rate: Permill,
 }
 
 impl TokenDataBuilder {
@@ -46,6 +47,14 @@ impl TokenDataBuilder {
             accounts_number: 0u64,
             revenue_split: self.revenue_split,
             next_revenue_split_id: 0u32,
+            revenue_split_rate: self.revenue_split_rate,
+        }
+    }
+
+    pub fn with_split_rate(self, revenue_split_rate: Permill) -> Self {
+        Self {
+            revenue_split_rate,
+            ..self
         }
     }
 
@@ -95,6 +104,7 @@ impl TokenDataBuilder {
             // hash of "default"
             symbol: <Test as frame_system::Config>::Hash::default(),
             revenue_split: RevenueSplitState::Inactive,
+            revenue_split_rate: Permill::zero(),
         }
     }
 }

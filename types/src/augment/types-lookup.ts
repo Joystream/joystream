@@ -1233,6 +1233,7 @@ declare module '@polkadot/types/lookup' {
     readonly symbol: H256;
     readonly transferPolicy: PalletProjectTokenTransferPolicyParams;
     readonly patronageRate: Permill;
+    readonly revenueSplitRate: Permill;
   }
 
   /** @name PalletProjectTokenTokenAllocation (152) */
@@ -4988,6 +4989,7 @@ declare module '@polkadot/types/lookup' {
     readonly symbol: H256;
     readonly patronageInfo: PalletProjectTokenPatronageData;
     readonly accountsNumber: u64;
+    readonly revenueSplitRate: Permill;
     readonly revenueSplit: PalletProjectTokenRevenueSplitState;
     readonly nextRevenueSplitId: u32;
   }
@@ -5029,6 +5031,7 @@ declare module '@polkadot/types/lookup' {
     readonly isTargetPatronageRateIsHigherThanCurrentRate: boolean;
     readonly isTokenSymbolAlreadyInUse: boolean;
     readonly isAccountAlreadyExists: boolean;
+    readonly isTransferDestinationMemberDoesNotExist: boolean;
     readonly isTokenIssuanceNotInIdleState: boolean;
     readonly isInsufficientJoyBalance: boolean;
     readonly isJoyTransferSubjectToDusting: boolean;
@@ -5065,9 +5068,10 @@ declare module '@polkadot/types/lookup' {
     readonly isCannotParticipateInSplitWithZeroAmount: boolean;
     readonly isCannotIssueSplitWithZeroAllocationAmount: boolean;
     readonly isCannotModifySupplyWhenRevenueSplitsAreActive: boolean;
+    readonly isRevenueSplitRateIsZero: boolean;
     readonly isBurnAmountIsZero: boolean;
     readonly isBurnAmountGreaterThanAccountTokensAmount: boolean;
-    readonly type: 'InsufficientTransferrableBalance' | 'TokenDoesNotExist' | 'AccountInformationDoesNotExist' | 'MerkleProofVerificationFailure' | 'TargetPatronageRateIsHigherThanCurrentRate' | 'TokenSymbolAlreadyInUse' | 'AccountAlreadyExists' | 'TokenIssuanceNotInIdleState' | 'InsufficientJoyBalance' | 'JoyTransferSubjectToDusting' | 'AttemptToRemoveNonOwnedAccountUnderPermissionedMode' | 'AttemptToRemoveNonEmptyAccount' | 'CannotJoinWhitelistInPermissionlessMode' | 'CannotDeissueTokenWithOutstandingAccounts' | 'NoUpcomingSale' | 'NoActiveSale' | 'InsufficientBalanceForTokenPurchase' | 'NotEnoughTokensOnSale' | 'SaleStartingBlockInThePast' | 'SaleAccessProofRequired' | 'SaleAccessProofParticipantIsNotSender' | 'SalePurchaseCapExceeded' | 'MaxVestingSchedulesPerAccountPerTokenReached' | 'PreviousSaleNotFinalized' | 'NoTokensToRecover' | 'SaleDurationTooShort' | 'SaleDurationIsZero' | 'SaleUpperBoundQuantityIsZero' | 'SaleCapPerMemberIsZero' | 'SaleUnitPriceIsZero' | 'SalePurchaseAmountIsZero' | 'RevenueSplitTimeToStartTooShort' | 'RevenueSplitDurationTooShort' | 'RevenueSplitAlreadyActiveForToken' | 'RevenueSplitNotActiveForToken' | 'RevenueSplitDidNotEnd' | 'RevenueSplitNotOngoing' | 'UserAlreadyParticipating' | 'InsufficientBalanceForSplitParticipation' | 'UserNotParticipantingInAnySplit' | 'CannotParticipateInSplitWithZeroAmount' | 'CannotIssueSplitWithZeroAllocationAmount' | 'CannotModifySupplyWhenRevenueSplitsAreActive' | 'BurnAmountIsZero' | 'BurnAmountGreaterThanAccountTokensAmount';
+    readonly type: 'InsufficientTransferrableBalance' | 'TokenDoesNotExist' | 'AccountInformationDoesNotExist' | 'MerkleProofVerificationFailure' | 'TargetPatronageRateIsHigherThanCurrentRate' | 'TokenSymbolAlreadyInUse' | 'AccountAlreadyExists' | 'TransferDestinationMemberDoesNotExist' | 'TokenIssuanceNotInIdleState' | 'InsufficientJoyBalance' | 'JoyTransferSubjectToDusting' | 'AttemptToRemoveNonOwnedAccountUnderPermissionedMode' | 'AttemptToRemoveNonEmptyAccount' | 'CannotJoinWhitelistInPermissionlessMode' | 'CannotDeissueTokenWithOutstandingAccounts' | 'NoUpcomingSale' | 'NoActiveSale' | 'InsufficientBalanceForTokenPurchase' | 'NotEnoughTokensOnSale' | 'SaleStartingBlockInThePast' | 'SaleAccessProofRequired' | 'SaleAccessProofParticipantIsNotSender' | 'SalePurchaseCapExceeded' | 'MaxVestingSchedulesPerAccountPerTokenReached' | 'PreviousSaleNotFinalized' | 'NoTokensToRecover' | 'SaleDurationTooShort' | 'SaleDurationIsZero' | 'SaleUpperBoundQuantityIsZero' | 'SaleCapPerMemberIsZero' | 'SaleUnitPriceIsZero' | 'SalePurchaseAmountIsZero' | 'RevenueSplitTimeToStartTooShort' | 'RevenueSplitDurationTooShort' | 'RevenueSplitAlreadyActiveForToken' | 'RevenueSplitNotActiveForToken' | 'RevenueSplitDidNotEnd' | 'RevenueSplitNotOngoing' | 'UserAlreadyParticipating' | 'InsufficientBalanceForSplitParticipation' | 'UserNotParticipantingInAnySplit' | 'CannotParticipateInSplitWithZeroAmount' | 'CannotIssueSplitWithZeroAllocationAmount' | 'CannotModifySupplyWhenRevenueSplitsAreActive' | 'RevenueSplitRateIsZero' | 'BurnAmountIsZero' | 'BurnAmountGreaterThanAccountTokensAmount';
   }
 
   /** @name PalletProposalsEngineProposal (567) */
