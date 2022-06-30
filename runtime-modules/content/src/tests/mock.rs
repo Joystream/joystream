@@ -538,7 +538,11 @@ impl Default for ExtBuilder {
 
 // TODO(post mainnet?): authomatically set block number = 1
 impl ExtBuilder {
-    pub fn with_creator_royalty_bounds(self, min_creator_royalty: Perbill, max_creator_royalty: Perbill) -> Self {
+    pub fn with_creator_royalty_bounds(
+        self,
+        min_creator_royalty: Perbill,
+        max_creator_royalty: Perbill,
+    ) -> Self {
         Self {
             min_creator_royalty,
             max_creator_royalty,
@@ -555,8 +559,8 @@ impl ExtBuilder {
             .unwrap();
 
         balances::GenesisConfig::<Test> { balances }
-        .assimilate_storage(&mut t)
-        .unwrap();
+            .assimilate_storage(&mut t)
+            .unwrap();
 
         // the same as t.top().extend(GenesisConfig::<Test> etc...)
         crate::GenesisConfig::<Test> {
