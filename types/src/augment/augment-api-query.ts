@@ -223,6 +223,10 @@ declare module '@polkadot/api-base/types/storage' {
       auctionStartsAtMaxDelta: AugmentedQuery<ApiType, () => Observable<u32>, []>;
       channelById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<PalletContentChannelRecord>, [u64]>;
       channelCashoutsEnabled: AugmentedQuery<ApiType, () => Observable<bool>, []>;
+      /**
+       * The state bloat bond for the channel (helps preventing the state bloat).
+       **/
+      channelStateBloatBondValue: AugmentedQuery<ApiType, () => Observable<u128>, []>;
       commitment: AugmentedQuery<ApiType, () => Observable<H256>, []>;
       curatorGroupById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<PalletContentPermissionsCuratorGroup>, [u64]>;
       /**

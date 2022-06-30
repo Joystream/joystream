@@ -266,6 +266,10 @@ declare module '@polkadot/api-base/types/errors' {
       ChannelNftDailyLimitExceeded: AugmentedError<ApiType>;
       ChannelNftWeeklyLimitExceeded: AugmentedError<ApiType>;
       /**
+       * Invalid extrinsic call: Channel state bloat bond changed.
+       **/
+      ChannelStateBloatBondChanged: AugmentedError<ApiType>;
+      /**
        * Creator token was already issued for this channel
        **/
       CreatorTokenAlreadyIssued: AugmentedError<ApiType>;
@@ -335,6 +339,11 @@ declare module '@polkadot/api-base/types/errors' {
        * Insufficient balance
        **/
       InsufficientBalance: AugmentedError<ApiType>;
+      /**
+       * Cannot create the channel: channel creator has insufficient balance
+       * (budget for state bloat bond + data objs statebloat bonds + data objs storage fees)
+       **/
+      InsufficientBalanceForChannelCreation: AugmentedError<ApiType>;
       /**
        * Cannot transfer the channel: channel owner has insufficient balance (budget for WGs)
        **/

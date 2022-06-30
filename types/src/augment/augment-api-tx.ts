@@ -310,7 +310,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * Claim channel's creator token patronage credit
        **/
       claimCreatorTokenPatronageCredit: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
-      createChannel: AugmentedSubmittable<(channelOwner: PalletContentChannelOwner | { Member: any } | { CuratorGroup: any } | string | Uint8Array, params: PalletContentChannelCreationParametersRecord | { assets?: any; meta?: any; collaborators?: any; storageBuckets?: any; distributionBuckets?: any; expectedDataObjectStateBloatBond?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentChannelOwner, PalletContentChannelCreationParametersRecord]>;
+      createChannel: AugmentedSubmittable<(channelOwner: PalletContentChannelOwner | { Member: any } | { CuratorGroup: any } | string | Uint8Array, params: PalletContentChannelCreationParametersRecord | { assets?: any; meta?: any; collaborators?: any; storageBuckets?: any; distributionBuckets?: any; expectedChannelStateBloatBond?: any; expectedDataObjectStateBloatBond?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentChannelOwner, PalletContentChannelCreationParametersRecord]>;
       /**
        * Add new curator group to runtime storage
        **/
@@ -430,6 +430,11 @@ declare module '@polkadot/api-base/types/submittable' {
       updateChannelNftLimit: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, nftLimitPeriod: PalletContentNftLimitPeriod | 'Daily' | 'Weekly' | number | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, limit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, PalletContentNftLimitPeriod, u64, u64]>;
       updateChannelPayouts: AugmentedSubmittable<(params: PalletContentUpdateChannelPayoutsParametersRecord | { commitment?: any; payload?: any; minCashoutAllowed?: any; maxCashoutAllowed?: any; channelCashoutsEnabled?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentUpdateChannelPayoutsParametersRecord]>;
       updateChannelPrivilegeLevel: AugmentedSubmittable<(channelId: u64 | AnyNumber | Uint8Array, newPrivilegeLevel: u8 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u8]>;
+      /**
+       * Updates channel state bloat bond value.
+       * Only lead can upload this value
+       **/
+      updateChannelStateBloatBond: AugmentedSubmittable<(newChannelStateBloatBond: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u128]>;
       /**
        * Updates channel transfer status to whatever the current owner wants.
        **/
