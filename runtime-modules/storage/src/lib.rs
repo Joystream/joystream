@@ -3716,15 +3716,15 @@ impl<T: Config> Module<T> {
         voucher_operation: OperationType,
     ) {
         for bucket_id in bucket_ids.iter() {
-            <StorageBucketById<T>>::get(bucket_id)
-                .map(|bucket| StorageBucket::<T> {
+            if let Some(bucket) =
+                <StorageBucketById<T>>::get(bucket_id).map(|bucket| StorageBucket::<T> {
                     voucher: voucher_update.get_updated_voucher(&bucket.voucher, voucher_operation),
                     ..bucket
                 })
-                .map(|bucket| {
-                    <StorageBucketById<T>>::insert(bucket_id, bucket.clone());
-                    Self::deposit_event(RawEvent::VoucherChanged(*bucket_id, bucket.voucher));
-                });
+            {
+                <StorageBucketById<T>>::insert(bucket_id, bucket.clone());
+                Self::deposit_event(RawEvent::VoucherChanged(*bucket_id, bucket.voucher));
+            }
         }
     }
 
@@ -4070,17 +4070,17 @@ impl<T: Config> Module<T> {
         remove_buckets: &BTreeSet<T::StorageBucketId>,
     ) {
         for bucket_id in add_buckets.iter() {
-            StorageBucketById::<T>::get(bucket_id).map(|mut bucket| {
+            if let Some(mut bucket) = StorageBucketById::<T>::get(bucket_id) {
                 bucket.register_bag_assignment();
                 StorageBucketById::<T>::insert(bucket_id, bucket);
-            });
+            }
         }
 
         for bucket_id in remove_buckets.iter() {
-            StorageBucketById::<T>::get(bucket_id).map(|mut bucket| {
+            if let Some(mut bucket) = StorageBucketById::<T>::get(bucket_id) {
                 bucket.unregister_bag_assignment();
                 StorageBucketById::<T>::insert(bucket_id, bucket);
-            });
+            }
         }
     }
 
