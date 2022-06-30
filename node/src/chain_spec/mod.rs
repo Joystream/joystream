@@ -193,7 +193,7 @@ pub fn testnet_genesis(
         .chain(initial_nominators.iter().map(|x| {
             use rand::{seq::SliceRandom, Rng};
             let limit = (MaxNominations::get() as usize).min(initial_authorities.len());
-            let count = (rng.gen::<usize>() % limit).max(1); // at least one nomination
+            let count = (rng.gen::<usize>() % limit).saturating_add(1); // at least one nomination
             let nominations = initial_authorities
                 .as_slice()
                 .choose_multiple(&mut rng, count)
