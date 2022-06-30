@@ -479,7 +479,7 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_numb
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
             state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-            object_creation_list: object_creation_list,
+            object_creation_list,
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
             expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
@@ -526,7 +526,7 @@ fn update_storage_buckets_for_bags_fails_with_exceeding_the_voucher_objects_tota
         let upload_params = UploadParameters::<Test> {
             bag_id: bag_id.clone(),
             state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-            object_creation_list: object_creation_list,
+            object_creation_list,
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
             expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
@@ -672,7 +672,7 @@ fn update_storage_buckets_for_bags_fails_with_going_beyond_the_buckets_per_bag_l
         let limit = 3;
         set_update_storage_buckets_per_bag_limit(limit);
 
-        let buckets = BTreeSet::from_iter((0..=limit));
+        let buckets = BTreeSet::from_iter(0..=limit);
         let bag_id = BagId::<Test>::Static(StaticBagId::Council);
 
         UpdateStorageBucketForBagsFixture::new()
@@ -1065,7 +1065,7 @@ fn upload_fails_with_active_storage_bucket_with_voucher_object_number_limit_exce
         let upload_params = UploadParameters::<Test> {
             bag_id,
             state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-            object_creation_list: object_creation_list,
+            object_creation_list,
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
             expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
@@ -1101,7 +1101,7 @@ fn upload_fails_with_active_storage_bucket_with_voucher_object_size_limit_exceed
         let upload_params = UploadParameters::<Test> {
             bag_id,
             state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-            object_creation_list: object_creation_list,
+            object_creation_list,
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
             expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
@@ -2268,7 +2268,7 @@ fn move_data_objects_fails_with_exceeding_voucher_object_number_limit() {
         let upload_params = UploadParameters::<Test> {
             bag_id: src_bag_id.clone(),
             state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-            object_creation_list: object_creation_list,
+            object_creation_list,
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
             expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
@@ -2328,7 +2328,7 @@ fn move_data_objects_fails_with_exceeding_voucher_objects_size_limit() {
         let upload_params = UploadParameters::<Test> {
             bag_id: src_bag_id.clone(),
             state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-            object_creation_list: object_creation_list,
+            object_creation_list,
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
             expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
@@ -3073,9 +3073,9 @@ fn delete_storage_bucket_fails_with_non_empty_bucket() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let upload_params = UploadParameters::<Test> {
-            bag_id: bag_id,
+            bag_id,
             state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
-            object_creation_list: object_creation_list,
+            object_creation_list,
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
             expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(),
             ..Default::default()
@@ -3277,7 +3277,7 @@ fn storage_bucket_voucher_changed_event_fired() {
         increase_account_balance(&DEFAULT_MEMBER_ACCOUNT_ID, initial_balance);
 
         let upload_params = UploadParameters::<Test> {
-            bag_id: bag_id,
+            bag_id,
             state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
             object_creation_list: object_creation_list.clone(),
             expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),

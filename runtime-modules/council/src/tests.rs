@@ -46,7 +46,7 @@ fn council_candidacy_invalid_time() {
             .map(|i| MockUtils::generate_candidate(i, council_settings.min_candidate_stake))
             .collect();
         let late_candidate = MockUtils::generate_candidate(
-            (candidates.len() as u64),
+            candidates.len() as u64,
             council_settings.min_candidate_stake,
         );
 

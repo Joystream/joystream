@@ -91,7 +91,7 @@ impl Config for Runtime {
         account_id: &<Self as frame_system::Config>::AccountId,
         stake: &BalanceOf<Self>,
     ) -> <Self as Config<DefaultInstance>>::VotePower {
-        let stake: u64 = (*stake);
+        let stake: u64 = *stake;
         if *account_id == USER_REGULAR_POWER_VOTES {
             return stake * POWER_VOTE_STRENGTH;
         }
@@ -687,7 +687,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
             Votes::<Runtime, DefaultInstance>::get(account_id),
             CastVote {
                 commitment,
-                cycle_id: cycle_id,
+                cycle_id,
                 stake,
                 vote_for: None,
             },

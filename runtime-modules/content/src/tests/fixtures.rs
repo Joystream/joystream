@@ -3395,8 +3395,7 @@ impl MakeOpenAuctionBidFixture {
 
     pub fn create_auction_state_snapshot(&self) -> NftAuctionStateSnapshot {
         let video = Content::video_by_id(self.video_id);
-        let winner_account =
-            TestMemberships::controller_account_id(self.member_id).map_or(None, Some);
+        let winner_account = TestMemberships::controller_account_id(self.member_id).ok();
         let channel_account = ContentTreasury::<Test>::account_for_channel(video.in_channel);
         let owner_account = video.nft_status.as_ref().map(|s| match s.owner {
             NftOwner::Member(member_id) => {
@@ -3522,8 +3521,7 @@ impl PickOpenAuctionWinnerFixture {
 
     pub fn create_auction_state_snapshot(&self) -> NftAuctionStateSnapshot {
         let video = Content::video_by_id(self.video_id);
-        let winner_account =
-            TestMemberships::controller_account_id(self.winner_id).map_or(None, Some);
+        let winner_account = TestMemberships::controller_account_id(self.winner_id).ok();
         let channel_account = ContentTreasury::<Test>::account_for_channel(video.in_channel);
 
         NftAuctionStateSnapshot {
@@ -4785,7 +4783,7 @@ pub fn create_some_pull_payments_helper_with_rewards(
     for i in 0..PAYMENTS_NUMBER {
         payments.push(PullPayment::<Test> {
             channel_id: (i % 2),
-            cumulative_reward_earned: cumulative_reward_earned,
+            cumulative_reward_earned,
             reason: Hashing::hash_of(&b"reason".to_vec()),
         });
     }

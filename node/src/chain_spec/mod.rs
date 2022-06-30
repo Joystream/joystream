@@ -26,23 +26,22 @@ pub mod initial_balances;
 pub mod initial_members;
 
 use grandpa_primitives::AuthorityId as GrandpaId;
-use hex_literal::hex;
+
 use node_runtime::{
     constants::currency::*, constants::JOY_ADDRESS_PREFIX, membership, wasm_binary_unwrap,
-    AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, Block, ContentConfig, CouncilConfig,
-    ForumConfig, GrandpaConfig, ImOnlineConfig, MaxNominations, MembersConfig, ReferendumConfig,
-    SessionConfig, SessionKeys, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
-    TransactionPaymentConfig,
+    AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, Block, ContentConfig, ForumConfig,
+    GrandpaConfig, ImOnlineConfig, MaxNominations, MembersConfig, SessionConfig, SessionKeys,
+    StakerStatus, StakingConfig, SudoConfig, SystemConfig, TransactionPaymentConfig,
 };
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_chain_spec::ChainSpecExtension;
 use sc_service::ChainType;
-use sc_telemetry::TelemetryEndpoints;
+
 use serde::{Deserialize, Serialize};
 use serde_json as json;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_babe::AuthorityId as BabeId;
-use sp_core::{crypto::UncheckedInto, sr25519, Pair, Public};
+use sp_core::{sr25519, Pair, Public};
 use sp_runtime::{
     traits::{IdentifyAccount, Verify},
     Perbill,

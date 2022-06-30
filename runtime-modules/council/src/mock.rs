@@ -229,7 +229,7 @@ impl referendum::Config<ReferendumInstance> for Runtime {
         account_id: &<Self as frame_system::Config>::AccountId,
         stake: &Balance<Self>,
     ) -> Self::VotePower {
-        let stake: u64 = (*stake);
+        let stake: u64 = *stake;
         if *account_id == USER_REGULAR_POWER_VOTES {
             return stake * POWER_VOTE_STRENGTH;
         }
@@ -825,7 +825,7 @@ where
     pub fn check_candidacy_note(membership_id: &T::MemberId, note: Option<&[u8]>) {
         assert_eq!(Candidates::<T>::contains_key(membership_id), true);
 
-        let note_hash = note.map(|tmp_note| T::Hashing::hash(tmp_note));
+        let note_hash = note.map(T::Hashing::hash);
 
         assert_eq!(
             Candidates::<T>::get(membership_id)

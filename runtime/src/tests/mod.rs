@@ -9,12 +9,11 @@ mod locks;
 mod fee_tests;
 
 use crate::primitives::MemberId;
-use crate::{AccountId, BlockNumber, ReferendumInstance, Runtime};
+use crate::{BlockNumber, ReferendumInstance, Runtime};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::RawOrigin;
 use referendum::ReferendumManager;
 use sp_runtime::{traits::One, AccountId32, BuildStorage};
-use std::str::FromStr;
 
 type Membership = membership::Module<Runtime>;
 type System = frame_system::Pallet<Runtime>;
@@ -95,7 +94,7 @@ pub(crate) fn setup_new_council(cycle_id: u64) {
         .unwrap();
     }
 
-    for member_id in extra_candidate_ids.clone() {
+    for member_id in extra_candidate_ids {
         let extra_councilor = account_from_member_id(member_id);
 
         increase_total_balance_issuance_using_account_id(
@@ -118,7 +117,7 @@ pub(crate) fn setup_new_council(cycle_id: u64) {
     let voter_stake: u128 =
         <Runtime as referendum::Config<ReferendumInstance>>::MinimumStake::get().into();
 
-    for (i, member_id) in voter_ids.clone().iter().enumerate() {
+    for (i, member_id) in voter_ids.iter().enumerate() {
         let voter = account_from_member_id(*member_id);
         increase_total_balance_issuance_using_account_id(voter.clone(), voter_stake + 1);
 
@@ -148,7 +147,7 @@ pub(crate) fn setup_new_council(cycle_id: u64) {
         Referendum::reveal_vote(
             RawOrigin::Signed(voter.clone()).into(),
             vec![0u8],
-            council_member_ids[i as usize].clone(),
+            council_member_ids[i as usize],
         )
         .unwrap();
     }
@@ -216,9 +215,9 @@ pub(crate) fn set_staking_account(
     );
 
     membership::Module::<Runtime>::confirm_staking_account(
-        RawOrigin::Signed(controller_account_id.clone()).into(),
+        RawOrigin::Signed(controller_account_id).into(),
         member_id,
-        staking_account_id.clone(),
+        staking_account_id,
     )
     .unwrap();
 }

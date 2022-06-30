@@ -1,3 +1,5 @@
+#![warn(unused_crate_dependencies)]
+
 pub mod chain_spec;
 mod cli;
 pub mod command;
