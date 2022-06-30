@@ -155,6 +155,7 @@ pub fn joy_chain_spec_properties() -> json::map::Map<String, json::Value> {
     properties
 }
 
+#[allow(clippy::too_many_arguments)]
 /// Helper function to create GenesisConfig for testing
 pub fn testnet_genesis(
     initial_authorities: Vec<(

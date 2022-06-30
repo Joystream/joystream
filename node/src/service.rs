@@ -16,8 +16,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-#![warn(unused_extern_crates)]
-
 //! Service implementation. Specialized wrapper over substrate service.
 
 use crate::node_executor::ExecutorDispatch;
@@ -36,7 +34,6 @@ use sc_telemetry::{Telemetry, TelemetryWorker};
 use sp_api::ProvideRuntimeApi;
 use sp_core::crypto::Pair;
 use sp_runtime::{generic, traits::Block as BlockT, SaturatedConversion};
-use sp_transaction_storage_proof;
 use std::sync::Arc;
 
 /// The full client type definition.
@@ -126,6 +123,7 @@ pub fn create_extrinsic(
     )
 }
 
+#[allow(clippy::type_complexity)]
 /// Creates a new partial node.
 pub fn new_partial(
     config: &Configuration,
