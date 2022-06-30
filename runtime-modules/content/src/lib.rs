@@ -2718,16 +2718,17 @@ decl_module! {
                 token_id,
                 start,
                 duration,
-                reward_account,
+                reward_account.clone(),
                 reward_account_balance.saturating_sub(<T as balances::Config>::ExistentialDeposit::get())
             )?;
 
             match channel.owner {
-                Member(member_id) => {
+                ChannelOwner::Member(member_id) => {
                     let destination = T::MemberAuthenticator::controller_account_id(member_id)?;
                     Self::execute_channel_balance_withdrawal(&reward_account, &destination, leftover_amount)?
                 },
-                CuratorGroup(_) => {
+                ChannelOwner::CuratorGroup(_) => {
+                    let _ = balances::Pallet::<T>::slash(&reward_account, leftover_amount);
                     T::CouncilBudgetManager::increase_budget(leftover_amount);
                 },
             }
