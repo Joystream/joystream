@@ -94,6 +94,7 @@ impl IssueTokenFixture {
                 patronage_rate: yearly_rate!(0),
                 symbol: Hashing::hash_of(b"ABC"),
                 transfer_policy: TransferPolicyParams::Permissionless,
+                revenue_split_rate: DEFAULT_SPLIT_RATE,
                 ..Default::default()
             }
             .with_allocation(&member!(1).0, DEFAULT_INITIAL_ISSUANCE, None),
@@ -138,7 +139,7 @@ impl Fixture<IssueTokenFixtureStateSnapshot> for IssueTokenFixture {
             Token::token_info_by_id(snapshot_pre.next_token_id),
             TokenData {
                 accounts_number: self.params.initial_allocation.len() as u64,
-                ..TokenData::from_params::<Test>(self.params.clone())
+                ..TokenData::from_params::<Test>(self.params.clone()).unwrap()
             }
         );
         assert!(SymbolsUsed::<Test>::contains_key(self.params.symbol));
@@ -750,8 +751,8 @@ pub struct IssueRevenueSplitFixture {
     token_id: TokenId,
     start: Option<BlockNumber>,
     duration: BlockNumber,
-    allocation_source: AccountId,
-    allocation: JoyBalance,
+    revenue_source_account: AccountId,
+    revenue_amount: JoyBalance,
 }
 
 impl IssueRevenueSplitFixture {
@@ -760,8 +761,8 @@ impl IssueRevenueSplitFixture {
             token_id: TokenId::one(),
             start: None,
             duration: BlockNumber::from(DEFAULT_SPLIT_DURATION),
-            allocation_source: member!(1).1,
-            allocation: Balance::from(DEFAULT_SPLIT_ALLOCATION),
+            revenue_source_account: member!(1).1,
+            revenue_amount: Balance::from(DEFAULT_SPLIT_REVENUE),
         }
     }
 
@@ -779,28 +780,28 @@ impl IssueRevenueSplitFixture {
         }
     }
 
-    pub fn with_allocation(self, allocation: u128) -> Self {
+    pub fn with_revenue_amount(self, amount: u128) -> Self {
         Self {
-            allocation: allocation.into(),
+            revenue_amount: amount.into(),
             ..self
         }
     }
 
-    pub fn with_allocation_source(self, account: u64) -> Self {
+    pub fn with_revenue_source_account(self, account: u64) -> Self {
         Self {
-            allocation_source: account.into(),
+            revenue_source_account: account.into(),
             ..self
         }
     }
 
-    pub fn execute_call(&self) -> DispatchResult {
+    pub fn execute_call(&self) -> Result<JoyBalance, DispatchError> {
         let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
         let result = Token::issue_revenue_split(
             self.token_id,
             self.start,
             self.duration,
-            self.allocation_source,
-            self.allocation,
+            self.revenue_source_account,
+            self.revenue_amount,
         );
         let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
 

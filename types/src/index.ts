@@ -2,7 +2,7 @@ import './augment/types-lookup'
 import './augment/registry'
 import './augment/augment-api'
 
-import { Codec, DetectCodec, ITuple, Observable } from '@polkadot/types/types'
+import { AnyU8a, Codec, DetectCodec, ITuple, Observable } from '@polkadot/types/types'
 import {
   Text,
   UInt,
@@ -17,6 +17,7 @@ import {
   Struct,
   Bytes,
   TypeRegistry,
+  Raw,
 } from '@polkadot/types'
 import defs from './augment/lookup'
 import BN from 'bn.js'
@@ -49,6 +50,8 @@ type KeyOf<T> = T extends DecoratedEnum<infer S>
   ? keyof StructDefs<T>
   : unknown[]
 
+type AsRecord<K, V> = K extends string ? Record<K & string, V> : K extends number ? Record<K & number, V> : never
+
 /**
  * Recursively create typesafe interface representing valid input for constructing any Codec type
  * (inlcuding complex types with a lot of nesting)
@@ -75,7 +78,7 @@ type KeyOf<T> = T extends DecoratedEnum<infer S>
  *   PalletContentLimitPerPeriod |
  *   { limit: u64 | BN | number, blockNumberPeriod: u32 | BN | number }
  */
-type CreateInterface<T> =
+export type CreateInterface<T> =
   | T
   | (T extends Option<infer S>
       ? null | undefined | CreateInterface<S>
@@ -83,20 +86,24 @@ type CreateInterface<T> =
       ? EnumVariant<{ [K in keyof EnumDefs<T, S>]: CreateInterface<EnumDefs<T, S>[K]> }>
       : T extends Struct
       ? { [K in keyof StructDefs<T>]: CreateInterface<StructDefs<T>[K]> }
-      : T extends Text | Bytes
+      : T extends Text
       ? string
+      : T extends Bytes | Raw
+      ? AnyU8a
       : T extends UInt
       ? number | BN
       : T extends bool
       ? boolean
-      : T extends Vec<infer S> | BTreeSet<infer S>
+      : T extends Vec<infer S>
       ? CreateInterface<S>[]
+      : T extends BTreeSet<infer S>
+      ? CreateInterface<S>[] | Set<CreateInterface<S>>
       : T extends ITuple<infer S>
       ? S extends Tuple
         ? unknown[]
         : { [K in keyof S]: CreateInterface<T[K]> }
       : T extends BTreeMap<infer K, infer V>
-      ? Map<K, V>
+      ? Map<CreateInterface<K>, CreateInterface<V>> | AsRecord<CreateInterface<K>, CreateInterface<V>>
       : T extends Null
       ? null
       : unknown)
@@ -104,11 +111,11 @@ type CreateInterface<T> =
 export const registry = new TypeRegistry()
 registry.register(defs as any)
 
-export function createType<T extends Codec, TN extends string>(
+export function createType<TN extends string>(
   typeName: TN,
-  value: CreateInterface<DetectCodec<T, TN>>
-): DetectCodec<T, TN> {
-  return registry.createType<T, TN>(typeName, value)
+  value: CreateInterface<DetectCodec<Codec, TN>>
+): Codec extends DetectCodec<Codec, TN> ? unknown : DetectCodec<Codec, TN> {
+  return registry.createType<Codec, TN>(typeName, value)
 }
 
 export function keysOf<T extends Struct | Enum, TN extends string>(typeName: TN): KeyOf<T>[] {

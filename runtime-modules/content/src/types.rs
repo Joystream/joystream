@@ -129,23 +129,6 @@ impl<MemberId: Default, CuratorGroupId> Default for ChannelOwner<MemberId, Curat
     }
 }
 
-/// Information on the category being created.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct ChannelCategoryCreationParameters {
-    /// Metadata for the category.
-    meta: Vec<u8>,
-}
-
-/// Information on the category being updated.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct ChannelCategoryUpdateParameters {
-    // as this is the only field it is not an Option
-    /// Metadata update for the category.
-    new_meta: Vec<u8>,
-}
-
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord, TypeInfo)]
 pub enum ChannelActionPermission {
@@ -477,30 +460,6 @@ pub type ChannelUpdateParameters<T> = ChannelUpdateParametersRecord<
     <T as common::MembershipTypes>::MemberId,
     BalanceOf<T>,
 >;
-
-/// A category that videos can belong to.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct VideoCategory {
-    // No runtime information is currently stored for a Category.
-}
-
-/// Information about the video category being created.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct VideoCategoryCreationParameters {
-    /// Metadata about the video category.
-    meta: Vec<u8>,
-}
-
-/// Information about the video category being updated.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct VideoCategoryUpdateParameters {
-    // Because it is the only field it is not an Option
-    /// Metadata update for the video category.
-    new_meta: Vec<u8>,
-}
 
 /// Information regarding the content being uploaded
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
