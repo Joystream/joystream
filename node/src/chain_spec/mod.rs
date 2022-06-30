@@ -193,7 +193,7 @@ pub fn testnet_genesis(
         .chain(initial_nominators.iter().map(|x| {
             use rand::{seq::SliceRandom, Rng};
             let limit = (MaxNominations::get() as usize).min(initial_authorities.len());
-            let count = rng.gen::<usize>() % limit;
+            let count = (rng.gen::<usize>() % limit).max(1); // at least one nomination
             let nominations = initial_authorities
                 .as_slice()
                 .choose_multiple(&mut rng, count)
@@ -274,7 +274,10 @@ pub fn testnet_genesis(
 fn development_config_genesis() -> GenesisConfig {
     testnet_genesis(
         vec![authority_keys_from_seed("Alice")],
-        vec![],
+        vec![
+            get_account_id_from_seed::<sr25519::Public>("Bob"),
+            get_account_id_from_seed::<sr25519::Public>("Charlie"),
+        ],
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         development_endowed_accounts(),
         initial_members::none(),
