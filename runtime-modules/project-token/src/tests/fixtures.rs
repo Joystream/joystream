@@ -794,7 +794,7 @@ impl IssueRevenueSplitFixture {
         }
     }
 
-    pub fn execute_call(&self) -> DispatchResult {
+    pub fn execute_call(&self) -> Result<JoyBalance, DispatchError> {
         let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
         let result = Token::issue_revenue_split(
             self.token_id,
