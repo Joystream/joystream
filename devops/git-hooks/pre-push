@@ -16,3 +16,5 @@ BUILD_DUMMY_WASM_BINARY=1 cargo +nightly-2021-02-20 clippy --release --all -- -D
 
 echo 'running cargo unit tests'
 cargo +nightly-2021-02-20 test --release --all --features "${FEATURES}"
+
+../../scripts/lint-typescript.sh

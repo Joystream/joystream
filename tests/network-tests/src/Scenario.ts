@@ -47,7 +47,14 @@ function writeOutput(api: Api, miniSecret: string) {
 
   fs.writeFileSync(OUTPUT_FILE_PATH, JSON.stringify(output, undefined, 2))
 }
+/*
+export function scenario(label: string, scene: (props: ScenarioProps) => Promise<void>): void {
+  scenario(label, scene)
+    .then
+}
 
+export async function scenarioInner(label: string, scene: (props: ScenarioProps) => Promise<void>): Promise<void> {
+*/
 export async function scenario(label: string, scene: (props: ScenarioProps) => Promise<void>): Promise<void> {
   // Load env variables - test framework specific
   config({ path: path.join(__dirname, '../.env') })

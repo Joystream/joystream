@@ -732,7 +732,7 @@ export async function contentNft_AuctionBidMade({ event, store }: EventContext &
     auction.auctionType.plannedEndAtBlock - auction.auctionType.extensionPeriod < event.blockNumber
   ) {
     auction.auctionType.plannedEndAtBlock = auction.auctionType.extensionPeriod
-    store.save<Auction>(auction)
+    await store.save<Auction>(auction)
   }
 
   // common event processing - second
@@ -1308,7 +1308,7 @@ export async function contentNft_NftSlingedBackToTheOriginalArtist({
 
   await getAllManagers(store).videoNfts.onMainEntityUpdate(nft)
 
-  store.save<OwnedNft>(nft)
+  await store.save<OwnedNft>(nft)
 
   // common event processing - second
 

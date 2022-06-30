@@ -79,7 +79,7 @@ export class NftEnglishAuctionFixture extends BaseQueryNodeFixture {
     )
 
     this.debug('Check Nft ownership in EnglishAuctionStarted event')
-    assertNftEventContentActor(
+    await assertNftEventContentActor(
       this.query,
       () => this.query.getEnglishAuctionStartedEvents([auctionStartedRuntimeEvent]),
       this.author.memberId.toString(),

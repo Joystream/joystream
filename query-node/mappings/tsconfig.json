@@ -19,5 +19,6 @@
       "@polkadot/api/augment": ["../../types/augment/augment-api.ts"]
     }
   },
-  "include": ["./src/**/*"]
+  "include": ["./src/**/*"],
+  "exclude": ["./queryTemplates.ts"]
 }

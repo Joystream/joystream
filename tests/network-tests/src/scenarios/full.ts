@@ -35,6 +35,7 @@ import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
 import updatingVerificationStatus from '../flows/membership/updateVerificationStatus'
 import commentsAndReactions from '../flows/content/commentsAndReactions'
 
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job, env }) => {
   // Runtime upgrade should always be first job
   // (except councilJob, which is required for voting and should probably depend on the "source" runtime)

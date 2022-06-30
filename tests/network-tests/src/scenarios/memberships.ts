@@ -9,6 +9,7 @@ import { scenario } from '../Scenario'
 import updatingVerificationStatus from '../flows/membership/updateVerificationStatus'
 import leadOpening from '../flows/working-groups/leadOpening'
 
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Memberships', async ({ job }) => {
   const membershipSystemJob = job('membership system', membershipSystem)
   const sudoHireLead = job('sudo lead opening', leadOpening(true, ['membershipWorkingGroup'])).after(
