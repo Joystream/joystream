@@ -341,13 +341,18 @@ declare module '@polkadot/api-base/types/errors' {
       InsufficientBalance: AugmentedError<ApiType>;
       /**
        * Cannot create the channel: channel creator has insufficient balance
-       * (budget for state bloat bond + data objs statebloat bonds + data objs storage fees)
+       * (budget for channel state bloat bond + channel data objs state bloat bonds + data objs storage fees)
        **/
       InsufficientBalanceForChannelCreation: AugmentedError<ApiType>;
       /**
        * Cannot transfer the channel: channel owner has insufficient balance (budget for WGs)
        **/
       InsufficientBalanceForTransfer: AugmentedError<ApiType>;
+      /**
+       * Cannot create the video: video creator has insufficient balance
+       * (budget for video state bloat bond + video data objs state bloat bonds + data objs storage fees)
+       **/
+      InsufficientBalanceForVideoCreation: AugmentedError<ApiType>;
       InsufficientCouncilBudget: AugmentedError<ApiType>;
       /**
        * Insufficient treasury balance
@@ -527,6 +532,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Vfdeo in season can`t be removed (because order is important)
        **/
       VideoInSeason: AugmentedError<ApiType>;
+      /**
+       * Invalid extrinsic call: video state bloat bond changed.
+       **/
+      VideoStateBloatBondChanged: AugmentedError<ApiType>;
       /**
        * Auction whitelist has only one member
        **/

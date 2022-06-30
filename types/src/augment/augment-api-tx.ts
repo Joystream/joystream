@@ -315,7 +315,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * Add new curator group to runtime storage
        **/
       createCuratorGroup: AugmentedSubmittable<(isActive: bool | boolean | Uint8Array, permissionsByLevel: BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>) => SubmittableExtrinsic<ApiType>, [bool, BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>]>;
-      createVideo: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, params: PalletContentVideoCreationParametersRecord | { assets?: any; meta?: any; autoIssueNft?: any; expectedDataObjectStateBloatBond?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentVideoCreationParametersRecord]>;
+      createVideo: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, params: PalletContentVideoCreationParametersRecord | { assets?: any; meta?: any; autoIssueNft?: any; expectedVideoStateBloatBond?: any; expectedDataObjectStateBloatBond?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentVideoCreationParametersRecord]>;
       /**
        * Perform transfer of tokens as creator token issuer
        **/
@@ -452,6 +452,11 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       updateUpcomingCreatorTokenSale: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, newStartBlock: Option<u32> | null | object | string | Uint8Array, newDuration: Option<u32> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, Option<u32>, Option<u32>]>;
       updateVideo: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, params: PalletContentVideoUpdateParametersRecord | { assetsToUpload?: any; newMeta?: any; assetsToRemove?: any; autoIssueNft?: any; expectedDataObjectStateBloatBond?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentVideoUpdateParametersRecord]>;
+      /**
+       * Updates video state bloat bond value.
+       * Only lead can upload this value
+       **/
+      updateVideoStateBloatBond: AugmentedSubmittable<(newVideoStateBloatBond: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u128]>;
       withdrawFromChannelBalance: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array, destination: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, u128, AccountId32]>;
     };
     contentWorkingGroup: {
