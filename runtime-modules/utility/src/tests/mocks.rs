@@ -22,9 +22,9 @@ use staking_handler::{LockComparator, StakingManager};
 
 pub(crate) fn assert_last_event(generic_event: <Test as Config>::Event) {
     let events = System::events();
-    let system_event: <Test as frame_system::Config>::Event = generic_event.into();
+    let system_event: <Test as frame_system::Config>::Event = generic_event;
     assert!(
-        events.len() > 0,
+        !events.is_empty(),
         "If you are checking for last event there must be at least 1 event"
     );
 
@@ -448,7 +448,7 @@ impl referendum::Config<ReferendumInstance> for Test {
             .iter()
             .map(|item| referendum::OptionResult {
                 option_id: item.option_id,
-                vote_power: item.vote_power.into(),
+                vote_power: item.vote_power,
             })
             .collect();
         <council::Module<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(
@@ -609,14 +609,14 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
         .build_storage::<Test>()
         .unwrap();
 
-    let mut result = Into::<sp_io::TestExternalities>::into(t.clone());
+    let mut result = Into::<sp_io::TestExternalities>::into(t);
 
     // Make sure we are not in block 1 where no events are emitted
     // see https://substrate.dev/recipes/2-appetizers/4-events.html#emitting-events
     result.execute_with(|| {
         let mut block_number = frame_system::Pallet::<Test>::block_number();
         <System as OnFinalize<u64>>::on_finalize(block_number);
-        block_number = block_number + 1;
+        block_number += 1;
         System::set_block_number(block_number);
         <System as OnInitialize<u64>>::on_initialize(block_number);
     });

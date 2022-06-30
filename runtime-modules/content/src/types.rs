@@ -368,7 +368,7 @@ impl<
         member_id: &MemberId,
     ) -> Result<&ChannelAgentPermissions, DispatchError> {
         self.collaborators
-            .get(&member_id)
+            .get(member_id)
             .ok_or_else(|| Error::<T>::ActorNotAuthorized.into())
     }
 

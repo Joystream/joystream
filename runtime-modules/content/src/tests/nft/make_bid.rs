@@ -41,7 +41,7 @@ fn setup_open_auction_scenario() {
         Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
         ContentActor::Member(DEFAULT_MEMBER_ID),
         video_id,
-        auction_params.clone(),
+        auction_params,
     ));
 }
 
@@ -75,7 +75,7 @@ fn setup_english_auction_scenario() {
         Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
         ContentActor::Member(DEFAULT_MEMBER_ID),
         video_id,
-        auction_params.clone(),
+        auction_params,
     ));
 }
 
@@ -129,7 +129,7 @@ fn make_bid() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // Runtime tested state before call
@@ -200,7 +200,7 @@ fn make_bid_auth_failed() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // deposit initial balance
@@ -248,7 +248,7 @@ fn make_bid_insufficient_balance() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         let bid = Content::min_starting_price();
@@ -395,7 +395,7 @@ fn make_bid_nft_auction_expired() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // Run to the block when auction expires
@@ -454,7 +454,7 @@ fn make_bid_member_is_not_allowed_to_participate() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // Run to the block when auction expires
@@ -514,7 +514,7 @@ fn make_bid_starting_price_constraint_violated() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         let bid = Content::min_starting_price();
@@ -1040,7 +1040,7 @@ fn make_bid_with_open_auction_is_not_started() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // Make an attempt to make auction bid if auction is not started
@@ -1092,7 +1092,7 @@ fn make_bid_with_english_auction_is_not_started() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // Make an attempt to make auction bid if auction is not started

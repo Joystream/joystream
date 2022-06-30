@@ -9,7 +9,7 @@ pub use serde::{Deserialize, Serialize};
 use codec::{Codec, Decode, Encode};
 pub use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, ExistenceRequirement};
-use frame_support::weights::Weight;
+
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, traits::Get, PalletId, Parameter,
 };
@@ -1491,9 +1491,9 @@ decl_module! {
                 let post = Self::ensure_can_delete_post(
                     &account_id,
                     &forum_user_id,
-                    &category_id,
-                    &thread_id,
-                    &post_id,
+                    category_id,
+                    thread_id,
+                    post_id,
                     *hide,
                 )?;
 
@@ -1739,11 +1739,11 @@ impl<T: Config> Module<T> {
     ) -> Result<Post<ForumUserId<T>, T::ThreadId, T::Hash, BalanceOf<T>, T::BlockNumber>, Error<T>>
     {
         // Ensure the moderator can moderate the category
-        Self::ensure_can_moderate_category(&account_id, &actor, &category_id)?;
+        Self::ensure_can_moderate_category(&account_id, actor, category_id)?;
 
         // Make sure post exists and is mutable
         let post = if Self::thread_exists(category_id, thread_id) {
-            Self::ensure_post_is_mutable(&category_id, &thread_id, &post_id)?
+            Self::ensure_post_is_mutable(category_id, thread_id, post_id)?
         } else {
             <PostById<T>>::get(thread_id, post_id)
         };
@@ -1761,18 +1761,18 @@ impl<T: Config> Module<T> {
     ) -> Result<Post<ForumUserId<T>, T::ThreadId, T::Hash, BalanceOf<T>, T::BlockNumber>, Error<T>>
     {
         let post = if Self::thread_exists(category_id, thread_id) {
-            Self::ensure_post_is_mutable(&category_id, &thread_id, &post_id)?
+            Self::ensure_post_is_mutable(category_id, thread_id, post_id)?
         } else {
             <PostById<T>>::get(thread_id, post_id)
         };
 
         // Check that account is forum member
-        Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
+        Self::ensure_is_forum_user(account_id, forum_user_id)?;
 
         // Signer does not match creator of post with identifier postId
         ensure!(
             post.author_id == *forum_user_id
-                || Self::anyone_can_delete_post(&post, &thread_id, &category_id) && !hide,
+                || Self::anyone_can_delete_post(&post, thread_id, category_id) && !hide,
             Error::<T>::AccountDoesNotMatchPostAuthor
         );
 
@@ -1785,7 +1785,7 @@ impl<T: Config> Module<T> {
         category_id: &T::CategoryId,
     ) -> bool {
         frame_system::Pallet::<T>::block_number() >= T::PostLifeTime::get() + post.last_edited
-            && !Self::thread_exists(&category_id, &thread_id)
+            && !Self::thread_exists(category_id, thread_id)
     }
 
     fn thread_exists(category_id: &T::CategoryId, thread_id: &T::ThreadId) -> bool {
@@ -1823,7 +1823,7 @@ impl<T: Config> Module<T> {
         forum_user_id: &ForumUserId<T>,
     ) -> Result<ThreadOf<T>, Error<T>> {
         // Check that account is forum member
-        Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
+        Self::ensure_is_forum_user(&account_id, forum_user_id)?;
 
         // Ensure thread is mutable
         let (_, thread) = Self::ensure_thread_is_mutable(category_id, thread_id)?;
@@ -1855,7 +1855,7 @@ impl<T: Config> Module<T> {
                 Self::ensure_is_forum_lead_account(account_id)?;
             }
             PrivilegedActor::Moderator(moderator_id) => {
-                Self::ensure_is_moderator_account(account_id, &moderator_id)?;
+                Self::ensure_is_moderator_account(account_id, moderator_id)?;
             }
         };
         Ok(())
@@ -1919,10 +1919,10 @@ impl<T: Config> Module<T> {
         let (_, thread) = Self::ensure_thread_is_mutable(category_id, thread_id)?;
 
         // Check that account is forum member
-        Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
+        Self::ensure_is_forum_user(account_id, forum_user_id)?;
 
         // Ensure forum user is author of the thread
-        Self::ensure_is_thread_author(&thread, &forum_user_id)?;
+        Self::ensure_is_thread_author(&thread, forum_user_id)?;
 
         Ok(thread)
     }
@@ -1951,7 +1951,7 @@ impl<T: Config> Module<T> {
     fn ensure_category_is_mutable(
         category_id: &T::CategoryId,
     ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
-        let category_tree_path = Self::build_category_tree_path(&category_id);
+        let category_tree_path = Self::build_category_tree_path(category_id);
 
         Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
 
@@ -2001,7 +2001,7 @@ impl<T: Config> Module<T> {
         );
 
         // Get path from parent to root of category tree.
-        let category_tree_path = Self::build_category_tree_path(&category_id);
+        let category_tree_path = Self::build_category_tree_path(category_id);
 
         if category_tree_path.is_empty() {
             debug_assert!(
@@ -2180,7 +2180,7 @@ impl<T: Config> Module<T> {
         // If not root, then check that we can create in parent category
         if let Some(tmp_parent_category_id) = parent_category_id {
             // Can we mutate in this category?
-            Self::ensure_can_add_subcategory_path_leaf(&tmp_parent_category_id)?;
+            Self::ensure_can_add_subcategory_path_leaf(tmp_parent_category_id)?;
 
             let parent_category = <CategoryById<T>>::get(tmp_parent_category_id);
 
@@ -2200,7 +2200,7 @@ impl<T: Config> Module<T> {
         category_id: &T::CategoryId,
     ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
         // Check that account is forum member
-        Self::ensure_is_forum_user(account_id, &forum_user_id)?;
+        Self::ensure_is_forum_user(account_id, forum_user_id)?;
 
         Self::ensure_category_exists(category_id)?;
 
@@ -2209,7 +2209,7 @@ impl<T: Config> Module<T> {
         // The balance for creation of thread is the base cost plus the cost of a single post
         let minimum_balance = T::ThreadDeposit::get() + T::PostDeposit::get();
         ensure!(
-            Self::ensure_enough_balance(minimum_balance, &account_id),
+            Self::ensure_enough_balance(minimum_balance, account_id),
             Error::<T>::InsufficientBalanceForThreadCreation
         );
 
@@ -2227,7 +2227,7 @@ impl<T: Config> Module<T> {
         thread_id: &T::ThreadId,
     ) -> Result<(Category<T::CategoryId, T::ThreadId, T::Hash>, ThreadOf<T>), Error<T>> {
         // Check that account is forum member
-        Self::ensure_is_forum_user(account_id, &forum_user_id)?;
+        Self::ensure_is_forum_user(account_id, forum_user_id)?;
 
         let (category, thread) = Self::ensure_thread_is_mutable(category_id, thread_id)?;
 
@@ -2241,7 +2241,7 @@ impl<T: Config> Module<T> {
         stickied_ids: &[T::ThreadId],
     ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
         // Ensure actor can moderate the category
-        let category = Self::ensure_can_moderate_category(&account_id, &actor, &category_id)?;
+        let category = Self::ensure_can_moderate_category(&account_id, actor, category_id)?;
 
         // Ensure all thread id valid and is under the category
         // Helps to prevent thread ID duplicates.
@@ -2256,7 +2256,7 @@ impl<T: Config> Module<T> {
                 unique_stickied_ids.insert(*thread_id);
             }
 
-            Self::ensure_thread_exists(&category_id, thread_id)?;
+            Self::ensure_thread_exists(category_id, thread_id)?;
         }
 
         Ok(category)

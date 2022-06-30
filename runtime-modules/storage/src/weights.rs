@@ -408,13 +408,13 @@ impl WeightInfo for () {
 	fn update_number_of_storage_buckets_in_dynamic_bag_creation_policy() -> Weight {
 		0
 	}
-	fn update_blacklist(i: u32, j: u32, ) -> Weight {
+	fn update_blacklist(_i: u32, _j: u32, ) -> Weight {
 		0
 	}
 	fn create_storage_bucket() -> Weight {
 		0
 	}
-	fn update_storage_buckets_for_bag(i: u32, j: u32, ) -> Weight {
+	fn update_storage_buckets_for_bag(_i: u32, _j: u32, ) -> Weight {
 		0
 	}
 	fn cancel_storage_bucket_operator_invite() -> Weight {
@@ -456,7 +456,7 @@ impl WeightInfo for () {
 	fn delete_distribution_bucket() -> Weight {
 		0
 	}
-	fn update_distribution_buckets_for_bag(i: u32, j: u32, ) -> Weight {
+	fn update_distribution_buckets_for_bag(_i: u32, _j: u32, ) -> Weight {
 		0
 	}
 	fn update_distribution_buckets_per_bag_limit() -> Weight {

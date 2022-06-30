@@ -34,7 +34,6 @@ mod integration;
 pub mod primitives;
 mod proposals_configuration;
 mod runtime_api;
-#[cfg(test)]
 mod tests;
 /// Generated voter bag information.
 mod voter_bags;
@@ -57,7 +56,7 @@ use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
     ConstantMultiplier, DispatchClass, Weight,
 };
-use frame_support::weights::{WeightToFeeCoefficients, WeightToFeePolynomial};
+
 use frame_support::{construct_runtime, parameter_types, PalletId};
 use frame_system::limits::{BlockLength, BlockWeights};
 use frame_system::{EnsureRoot, EnsureSigned};
@@ -68,7 +67,7 @@ use pallet_transaction_payment::{CurrencyAdapter, Multiplier};
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::crypto::KeyTypeId;
 use sp_core::Hasher;
-use sp_io;
+
 use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::traits::{AccountIdLookup, BlakeTwo256, ConvertInto, OpaqueKeys, Saturating};
 use sp_runtime::{

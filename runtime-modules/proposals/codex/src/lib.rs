@@ -453,8 +453,8 @@ decl_module! {
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
         #[weight = Module::<T>::get_create_proposal_weight(
-                &general_proposal_parameters,
-                &proposal_details
+                general_proposal_parameters,
+                proposal_details
             )
         ]
         pub fn create_proposal(

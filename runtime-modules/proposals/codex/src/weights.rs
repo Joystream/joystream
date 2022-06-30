@@ -597,85 +597,85 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 
 // Default implementation for tests
 impl WeightInfo for () {
-	fn create_proposal_signal(i: u32, t: u32, d: u32, ) -> Weight {
+	fn create_proposal_signal(_i: u32, _t: u32, _d: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_runtime_upgrade(i: u32, t: u32, d: u32, ) -> Weight {
+	fn create_proposal_runtime_upgrade(_i: u32, _t: u32, _d: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_funding_request(i: u32, _t: u32, _d: u32, ) -> Weight {
+	fn create_proposal_funding_request(_i: u32, _t: u32, _d: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_set_max_validator_count(t: u32, d: u32, ) -> Weight {
+	fn create_proposal_set_max_validator_count(_t: u32, _d: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_veto_proposal(_t: u32, d: u32, ) -> Weight {
+	fn create_proposal_veto_proposal(_t: u32, _d: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_create_working_group_lead_opening(i: u32, _t: u32, d: u32, ) -> Weight {
+	fn create_proposal_create_working_group_lead_opening(_i: u32, _t: u32, _d: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_fill_working_group_lead_opening(_t: u32, d: u32, ) -> Weight {
+	fn create_proposal_fill_working_group_lead_opening(_t: u32, _d: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_update_working_group_budget(t: u32, d: u32, ) -> Weight {
+	fn create_proposal_update_working_group_budget(_t: u32, _d: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_decrease_working_group_lead_stake(t: u32, d: u32, ) -> Weight {
+	fn create_proposal_decrease_working_group_lead_stake(_t: u32, _d: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_slash_working_group_lead(t: u32, d: u32, ) -> Weight {
+	fn create_proposal_slash_working_group_lead(_t: u32, _d: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_set_working_group_lead_reward(_t: u32, d: u32, ) -> Weight {
+	fn create_proposal_set_working_group_lead_reward(_t: u32, _d: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_terminate_working_group_lead(t: u32, d: u32, ) -> Weight {
+	fn create_proposal_terminate_working_group_lead(_t: u32, _d: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_amend_constitution(i: u32, _t: u32, d: u32, ) -> Weight {
+	fn create_proposal_amend_constitution(_i: u32, _t: u32, _d: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_cancel_working_group_lead_opening(_t: u32, d: u32, ) -> Weight {
+	fn create_proposal_cancel_working_group_lead_opening(_t: u32, _d: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_set_membership_price(_t: u32, d: u32, ) -> Weight {
+	fn create_proposal_set_membership_price(_t: u32, _d: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_set_council_budget_increment(_t: u32, d: u32, ) -> Weight {
+	fn create_proposal_set_council_budget_increment(_t: u32, _d: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_set_councilor_reward(_t: u32, d: u32, ) -> Weight {
+	fn create_proposal_set_councilor_reward(_t: u32, _d: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_set_initial_invitation_balance(_t: u32, d: u32, ) -> Weight {
+	fn create_proposal_set_initial_invitation_balance(_t: u32, _d: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_set_initial_invitation_count(t: u32, d: u32, ) -> Weight {
+	fn create_proposal_set_initial_invitation_count(_t: u32, _d: u32, ) -> Weight {
 		0
 	}
 	fn create_proposal_set_membership_lead_invitation_quota(_t: u32, _d: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_set_referral_cut(t: u32, d: u32, ) -> Weight {
+	fn create_proposal_set_referral_cut(_t: u32, _d: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_create_blog_post(t: u32, _d: u32, h: u32, b: u32, ) -> Weight {
+	fn create_proposal_create_blog_post(_t: u32, _d: u32, _h: u32, _b: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_edit_blog_post(_t: u32, _d: u32, h: u32, b: u32, ) -> Weight {
+	fn create_proposal_edit_blog_post(_t: u32, _d: u32, _h: u32, _b: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_lock_blog_post(t: u32, d: u32, ) -> Weight {
+	fn create_proposal_lock_blog_post(_t: u32, _d: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_unlock_blog_post(_t: u32, d: u32, ) -> Weight {
+	fn create_proposal_unlock_blog_post(_t: u32, _d: u32, ) -> Weight {
 		0
 	}
 	fn create_proposal_update_global_nft_limit(_t: u32, _d: u32, ) -> Weight {
 		0
 	}
-	fn create_proposal_update_channel_payouts(i: u32, _t: u32, _d: u32, ) -> Weight {
+	fn create_proposal_update_channel_payouts(_i: u32, _t: u32, _d: u32, ) -> Weight {
 		0
 	}
 }

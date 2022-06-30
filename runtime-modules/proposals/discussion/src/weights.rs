@@ -95,7 +95,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 
 // Default implementation for tests
 impl WeightInfo for () {
-	fn add_post(_i: u32, j: u32, ) -> Weight {
+	fn add_post(_i: u32, _j: u32, ) -> Weight {
 		0
 	}
 	fn update_post(_j: u32, ) -> Weight {

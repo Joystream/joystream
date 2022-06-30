@@ -447,7 +447,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 
 // Default implementation for tests
 impl WeightInfo for () {
-	fn create_category(i: u32, j: u32, k: u32, ) -> Weight {
+	fn create_category(_i: u32, _j: u32, _k: u32, ) -> Weight {
 		0
 	}
 	fn update_category_membership_of_moderator_new() -> Weight {
@@ -462,16 +462,16 @@ impl WeightInfo for () {
 	fn update_category_archival_status_moderator(_i: u32, ) -> Weight {
 		0
 	}
-	fn update_category_title_lead(i: u32, j: u32, ) -> Weight {
+	fn update_category_title_lead(_i: u32, _j: u32, ) -> Weight {
 		0
 	}
-	fn update_category_title_moderator(i: u32, j: u32, ) -> Weight {
+	fn update_category_title_moderator(_i: u32, _j: u32, ) -> Weight {
 		0
 	}
-	fn update_category_description_lead(i: u32, j: u32, ) -> Weight {
+	fn update_category_description_lead(_i: u32, _j: u32, ) -> Weight {
 		0
 	}
-	fn update_category_description_moderator(i: u32, j: u32, ) -> Weight {
+	fn update_category_description_moderator(_i: u32, _j: u32, ) -> Weight {
 		0
 	}
 	fn delete_category_lead(_i: u32, ) -> Weight {
@@ -480,10 +480,10 @@ impl WeightInfo for () {
 	fn delete_category_moderator(_i: u32, ) -> Weight {
 		0
 	}
-	fn create_thread(i: u32, j: u32, k: u32, z: u32, ) -> Weight {
+	fn create_thread(_i: u32, _j: u32, _k: u32, _z: u32, ) -> Weight {
 		0
 	}
-	fn edit_thread_metadata(i: u32, j: u32, ) -> Weight {
+	fn edit_thread_metadata(_i: u32, _j: u32, ) -> Weight {
 		0
 	}
 	fn delete_thread(_i: u32, ) -> Weight {
@@ -495,37 +495,37 @@ impl WeightInfo for () {
 	fn move_thread_to_category_moderator(_i: u32, ) -> Weight {
 		0
 	}
-	fn vote_on_poll(i: u32, j: u32, ) -> Weight {
+	fn vote_on_poll(_i: u32, _j: u32, ) -> Weight {
 		0
 	}
-	fn moderate_thread_lead(i: u32, k: u32, ) -> Weight {
+	fn moderate_thread_lead(_i: u32, _k: u32, ) -> Weight {
 		0
 	}
-	fn moderate_thread_moderator(i: u32, k: u32, ) -> Weight {
+	fn moderate_thread_moderator(_i: u32, _k: u32, ) -> Weight {
 		0
 	}
-	fn add_post(i: u32, j: u32, ) -> Weight {
+	fn add_post(_i: u32, _j: u32, ) -> Weight {
 		0
 	}
 	fn react_post(_i: u32, ) -> Weight {
 		0
 	}
-	fn edit_post_text(i: u32, j: u32, ) -> Weight {
+	fn edit_post_text(_i: u32, _j: u32, ) -> Weight {
 		0
 	}
-	fn moderate_post_lead(i: u32, j: u32, ) -> Weight {
+	fn moderate_post_lead(_i: u32, _j: u32, ) -> Weight {
 		0
 	}
-	fn moderate_post_moderator(i: u32, j: u32, ) -> Weight {
+	fn moderate_post_moderator(_i: u32, _j: u32, ) -> Weight {
 		0
 	}
-	fn delete_posts(i: u32, _j: u32, k: u32, ) -> Weight {
+	fn delete_posts(_i: u32, _j: u32, _k: u32, ) -> Weight {
 		0
 	}
-	fn set_stickied_threads_lead(i: u32, j: u32, ) -> Weight {
+	fn set_stickied_threads_lead(_i: u32, _j: u32, ) -> Weight {
 		0
 	}
-	fn set_stickied_threads_moderator(i: u32, j: u32, ) -> Weight {
+	fn set_stickied_threads_moderator(_i: u32, _j: u32, ) -> Weight {
 		0
 	}
 }

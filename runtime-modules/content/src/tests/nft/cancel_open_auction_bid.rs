@@ -35,7 +35,7 @@ fn setup_open_auction_scenario() {
         Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
         ContentActor::Member(DEFAULT_MEMBER_ID),
         video_id,
-        auction_params.clone(),
+        auction_params,
     ));
 }
 

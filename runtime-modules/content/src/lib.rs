@@ -1712,7 +1712,7 @@ decl_module! {
             )?;
 
             // Ensure nft in buy now state
-            let _ = Self::ensure_in_buy_now_state(&nft)?;
+            Self::ensure_in_buy_now_state(&nft)?;
 
             //
             // == MUTATION SAFE ==
@@ -3179,10 +3179,10 @@ impl<T: Config> Module<T> {
         ids_to_remove: &BTreeSet<DataObjectId<T>>,
     ) -> BTreeSet<DataObjectId<T>> {
         current_set
-            .union(&ids_to_add)
+            .union(ids_to_add)
             .cloned()
             .collect::<BTreeSet<_>>()
-            .difference(&ids_to_remove)
+            .difference(ids_to_remove)
             .cloned()
             .collect::<BTreeSet<_>>()
     }
@@ -3367,7 +3367,7 @@ impl<T: Config> Module<T> {
 
         channel.ensure_has_no_active_transfer::<T>()?;
 
-        ensure_actor_authorized_to_claim_payment::<T>(origin.clone(), &actor, &channel)?;
+        ensure_actor_authorized_to_claim_payment::<T>(origin.clone(), actor, &channel)?;
 
         ensure!(
             Self::channel_cashouts_enabled(),

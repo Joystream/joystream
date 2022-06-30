@@ -214,7 +214,7 @@ impl<T: Config> CuratorGroup<T> {
         let permissions_for_level = self.permissions_by_level.get(&privilege_level);
         if let Some(permissions_for_level) = permissions_for_level {
             for action in actions {
-                if !permissions_for_level.contains(&action) {
+                if !permissions_for_level.contains(action) {
                     return false;
                 }
             }
@@ -241,7 +241,7 @@ impl<T: Config> CuratorGroup<T> {
         curator_id: &T::CuratorId,
     ) -> Result<&ChannelAgentPermissions, DispatchError> {
         self.curators
-            .get(&curator_id)
+            .get(curator_id)
             .ok_or_else(|| Error::<T>::ActorNotAuthorized.into())
     }
 }

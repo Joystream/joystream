@@ -13,7 +13,7 @@ use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{
     ConstU16, ConstU32, Currency, LockIdentifier, OnFinalize, OnInitialize,
 };
-use frame_support::weights::Weight;
+
 use frame_support::{parameter_types, traits::EnsureOneOf, StorageMap, StorageValue};
 use frame_system::{EnsureRoot, EnsureSigned, RawOrigin};
 use rand::Rng;
@@ -91,7 +91,7 @@ impl Config for Runtime {
         account_id: &<Self as frame_system::Config>::AccountId,
         stake: &BalanceOf<Self>,
     ) -> <Self as Config<DefaultInstance>>::VotePower {
-        let stake: u64 = u64::from(*stake);
+        let stake: u64 = (*stake);
         if *account_id == USER_REGULAR_POWER_VOTES {
             return stake * POWER_VOTE_STRENGTH;
         }
@@ -407,7 +407,7 @@ where
         for _ in 0..increase {
             <frame_system::Pallet<T> as OnFinalize<T::BlockNumber>>::on_finalize(block_number);
             <Module<T, I> as OnFinalize<T::BlockNumber>>::on_finalize(block_number);
-            block_number = block_number + One::one();
+            block_number += One::one();
             frame_system::Pallet::<T>::set_block_number(block_number);
             <frame_system::Pallet<T> as OnInitialize<T::BlockNumber>>::on_initialize(block_number);
             <Module<T, I> as OnInitialize<T::BlockNumber>>::on_initialize(block_number);
@@ -427,7 +427,7 @@ where
         vote_option_index: &<T as common::membership::MembershipTypes>::MemberId,
         cycle_id: &u64,
     ) -> (T::Hash, Vec<u8>) {
-        Self::calculate_commitment_for_cycle(account_id, &cycle_id, vote_option_index, None)
+        Self::calculate_commitment_for_cycle(account_id, cycle_id, vote_option_index, None)
     }
 
     pub fn calculate_commitment_custom_salt(
@@ -438,7 +438,7 @@ where
     ) -> (T::Hash, Vec<u8>) {
         Self::calculate_commitment_for_cycle(
             account_id,
-            &cycle_id,
+            cycle_id,
             vote_option_index,
             Some(custom_salt),
         )
@@ -687,7 +687,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
             Votes::<Runtime, DefaultInstance>::get(account_id),
             CastVote {
                 commitment,
-                cycle_id: cycle_id.clone(),
+                cycle_id: cycle_id,
                 stake,
                 vote_for: None,
             },

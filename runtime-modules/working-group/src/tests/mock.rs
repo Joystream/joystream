@@ -1,8 +1,7 @@
 use frame_support::parameter_types;
 use frame_support::traits::{ConstU16, ConstU32, ConstU64, LockIdentifier};
 use frame_support::traits::{OnFinalize, OnInitialize};
-use frame_support::weights::Weight;
-use frame_system;
+
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
@@ -142,7 +141,7 @@ impl common::StakingAccountValidator<Test> for () {
     }
 }
 
-pub const ACTOR_ORIGIN_ERROR: &'static str = "Invalid membership";
+pub const ACTOR_ORIGIN_ERROR: &str = "Invalid membership";
 
 impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
     fn ensure_member_controller_account_origin(

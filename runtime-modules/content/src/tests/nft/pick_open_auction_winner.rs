@@ -40,7 +40,7 @@ fn pick_open_auction_winner() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // deposit initial balance
@@ -121,7 +121,7 @@ fn pick_open_auction_winner_auth_failed() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // deposit initial balance
@@ -192,7 +192,7 @@ fn pick_open_auction_winner_actor_not_authorized() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // deposit initial balance
@@ -354,7 +354,7 @@ fn pick_open_auction_winner_is_not_open_auction_type() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // deposit initial balance
@@ -422,7 +422,7 @@ fn pick_open_auction_winner_bid_does_not_exist() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // Run to the block where auction expires
@@ -481,7 +481,7 @@ fn pick_open_auction_winner_fails_with_invalid_bid_commit() {
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
-            auction_params.clone(),
+            auction_params,
         ));
 
         // deposit initial balance
