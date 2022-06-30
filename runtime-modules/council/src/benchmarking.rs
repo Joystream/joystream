@@ -746,9 +746,9 @@ benchmarks! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     pub use crate::mock::Runtime;
     use crate::mock::{build_test_externalities, default_genesis_config};
+    use crate::Module as Council;
     use frame_support::assert_ok;
 
     #[test]

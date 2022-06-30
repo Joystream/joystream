@@ -885,7 +885,6 @@ benchmarks! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::tests::{initial_test_ext, Test};
     use frame_support::assert_ok;
     type ProposalsCodex = crate::Module<Test>;

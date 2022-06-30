@@ -1,9 +1,9 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
-use balances::Module as Balances;
+use balances::Pallet as Balances;
 use frame_benchmarking::{account, benchmarks_instance, Zero};
 use frame_support::traits::Currency;
-use frame_system::Module as System;
+use frame_system::Pallet as System;
 use frame_system::{EventRecord, RawOrigin};
 use membership::Module as Membership;
 use sp_runtime::traits::Bounded;

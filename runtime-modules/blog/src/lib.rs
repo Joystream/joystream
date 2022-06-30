@@ -54,10 +54,7 @@ use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::prelude::*;
 
-// mod benchmarking;
 mod errors;
-// mod mock;
-// mod tests;
 pub mod weights;
 pub use weights::WeightInfo;
 

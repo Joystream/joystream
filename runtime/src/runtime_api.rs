@@ -84,8 +84,6 @@ pub const EXPORTED_RUNTIME_API_VERSIONS: sp_version::ApisVec = RUNTIME_API_VERSI
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
-    use crate::*;
-
     define_benchmarks!(
         [frame_benchmarking, BaselineBench::<Runtime>]
         [pallet_babe, Babe]
@@ -319,7 +317,7 @@ impl_runtime_apis! {
             Vec<frame_support::traits::StorageInfo>,
         ) {
             use frame_benchmarking::{baseline, Benchmarking, BenchmarkList};
-            use frame_support::traits::StorageInfoTrait;
+            // use frame_support::traits::StorageInfoTrait;
             use crate::*;
 
             // Trying to add benchmarks directly to the Session Pallet caused cyclic dependency

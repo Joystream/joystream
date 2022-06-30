@@ -1852,7 +1852,6 @@ benchmarks! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::mock::*;
     use frame_support::assert_ok;
 
