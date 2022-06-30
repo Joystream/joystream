@@ -346,7 +346,10 @@ impl<T: Config> Module<T> {
         // established net amount and pay royalties if necessary
         let net_amount = if let Some((nominal_royalty_pct, creator_account)) = royalty_payment {
             // min(creator_royalty, 100% - platform_fee_percentage) is used to avoid underflow
-            let effective_royalty_pct = min(nominal_royalty_pct, Perbill::one().saturating_sub(platform_fee_pct));
+            let effective_royalty_pct = min(
+                nominal_royalty_pct,
+                Perbill::one().saturating_sub(platform_fee_pct),
+            );
             let royalty = effective_royalty_pct.mul_floor(amount);
 
             // deposit to creator account
