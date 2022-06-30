@@ -6,7 +6,7 @@ use crate::{
     AnnouncementPeriodNr, Balance, Budget, BudgetIncrement, Candidate, CandidateOf, Candidates,
     Config, CouncilMemberOf, CouncilMembers, CouncilStage, CouncilStageAnnouncing,
     CouncilStageElection, CouncilStageUpdate, CouncilStageUpdateOf, CouncilorReward, Error, Module,
-    NextBudgetRefill, RawEvent, ReferendumConnection, Stage, WeightInfo,
+    NextBudgetRefill, RawEvent, ReferendumConnection, Stage,
 };
 
 use frame_support::dispatch::{DispatchError, DispatchResult};

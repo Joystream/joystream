@@ -275,7 +275,6 @@ parameter_types! {
     pub const LeaderOpeningStake: u32 = 20;
 }
 
-pub struct WorkingGroupWeightInfo;
 impl working_group::Config<ContentWorkingGroupInstance> for Test {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;

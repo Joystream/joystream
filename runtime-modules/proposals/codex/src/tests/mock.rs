@@ -2,9 +2,7 @@
 // Internal substrate warning.
 #![allow(non_fmt_panics)]
 
-use frame_election_provider_support::{
-    onchain, SequentialPhragmen, SortedListProvider, VoteWeight,
-};
+use frame_election_provider_support::{onchain, SequentialPhragmen, VoteWeight};
 use frame_support::{
     dispatch::DispatchError,
     parameter_types,
@@ -38,9 +36,6 @@ use std::cell::RefCell;
 
 type NegativeImbalance = <Balances as Currency<AccountId>>::NegativeImbalance;
 type PositiveImbalance = <Balances as Currency<AccountId>>::PositiveImbalance;
-
-pub const INIT_TIMESTAMP: u64 = 30_000;
-pub const BLOCK_TIME: u64 = 1000;
 
 /// The AccountId alias in this test module.
 pub(crate) type AccountId = u64;
@@ -278,10 +273,6 @@ where
 }
 
 pub type Extrinsic = TestXt<Call, ()>;
-pub(crate) type StakingCall = staking::Call<Test>;
-pub(crate) type TestRuntimeCall = <Test as frame_system::Config>::Call;
-
-//////////
 
 parameter_types! {
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];

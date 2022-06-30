@@ -36,6 +36,7 @@ use sc_telemetry::{Telemetry, TelemetryWorker};
 use sp_api::ProvideRuntimeApi;
 use sp_core::crypto::Pair;
 use sp_runtime::{generic, traits::Block as BlockT, SaturatedConversion};
+use sp_transaction_storage_proof;
 use std::sync::Arc;
 
 /// The full client type definition.
@@ -461,6 +462,8 @@ pub fn new_full_base(
 							slot_duration,
 						);
 
+                    // We Have not included transaction_storage pallet in runtime
+                    // are they related?
                     let storage_proof =
                         sp_transaction_storage_proof::registration::new_data_provider(
                             &*client_clone,

@@ -4,7 +4,7 @@
 use crate::{
     BalanceOf, CastVote, Config, Error, Instance, Module, OptionResult, RawEvent,
     ReferendumManager, ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Stage,
-    Votes, WeightInfo,
+    Votes,
 };
 
 pub use crate::DefaultInstance;
