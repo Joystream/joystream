@@ -349,5 +349,12 @@ decl_error! {
 
         /// Invalid extrinsic call: video state bloat bond changed.
         VideoStateBloatBondChanged
+
+        /// Channel Transfers are blocked during revenue splits
+        ChannelTransfersBlockedDuringRevenueSplits,
+
+        /// Channel Transfers are blocked during token sales
+        ChannelTransfersBlockedDuringTokenSales,
+
     }
 }
