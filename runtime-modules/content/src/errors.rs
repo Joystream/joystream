@@ -8,6 +8,13 @@ decl_error! {
         /// Feature Not Implemented
         FeatureNotImplemented,
 
+        /// Invalid extrinsic call: Channel state bloat bond changed.
+        ChannelStateBloatBondChanged,
+
+        /// Invalid extrinsic call: video state bloat bond changed.
+        VideoStateBloatBondChanged,
+
+
         // Curator Management Errors
         // -------------------------
 
@@ -343,18 +350,5 @@ decl_error! {
 
         /// Channel Transfers are blocked during token sales
         ChannelTransfersBlockedDuringTokenSales,
-
-        /// Invalid extrinsic call: Channel state bloat bond changed.
-        ChannelStateBloatBondChanged,
-
-        /// Invalid extrinsic call: video state bloat bond changed.
-        VideoStateBloatBondChanged,
-
-        /// Channel Transfers are blocked during revenue splits
-        ChannelTransfersBlockedDuringRevenueSplits,
-
-        /// Channel Transfers are blocked during token sales
-        ChannelTransfersBlockedDuringTokenSales,
-
     }
 }
