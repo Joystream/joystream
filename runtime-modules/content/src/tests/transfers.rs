@@ -391,8 +391,18 @@ fn accept_transfer_status_succeeds_for_members_to_curators_with_price() {
 #[test]
 fn update_transfer_status_blocked_during_revenue_split() {
     with_default_mock_builder(|| {
+        let ed = <Test as balances::Config>::ExistentialDeposit::get();
         ContentTest::with_member_channel().setup();
-        IssueRevenueSplit::default().call_and_assert(Ok(()));
+        increase_account_balance_helper(
+            ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
+            DEFAULT_PAYOUT_EARNED
+            // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
+                .saturating_add(ed.into()),
+        );
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+        IssueRevenueSplitFixture::default()
+            .call_and_assert(Ok(()));
+
         UpdateChannelTransferStatusFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Err(
@@ -405,11 +415,12 @@ fn update_transfer_status_blocked_during_revenue_split() {
 fn update_transfer_status_blocked_during_token_sales() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
         InitCreatorTokenSaleFixture::default().call_and_assert(Ok(()));
         UpdateChannelTransferStatusFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Err(
-                Error::<Test>::ChannelTransfersBlockedDuringTokenSales.into(),
+                Error::<Test>::ChannelTransfersBlockedDuringTokenSales.into()
             ));
     })
 }

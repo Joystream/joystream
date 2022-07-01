@@ -596,7 +596,6 @@ decl_module! {
             new_paused_features: BTreeSet<PausableChannelFeature>,
             rationale: Vec<u8>,
         ) -> DispatchResult {
-
             let sender = ensure_signed(origin)?;
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -2312,6 +2311,18 @@ decl_module! {
 
             if let ChannelTransferStatus::PendingTransfer(ref params) = new_transfer_status {
                 Self::validate_member_set(&params.transfer_params.new_collaborators.keys().cloned().collect())?;
+            }
+
+            if let Ok(token_id) = channel.ensure_creator_token_issued::<T>() {
+                ensure!(
+                    T::ProjectToken::is_revenue_split_inactive(token_id),
+                    Error::<T>::ChannelTransfersBlockedDuringRevenueSplits
+                );
+
+                ensure!(
+                    T::ProjectToken::is_sale_unscheduled(token_id),
+                    Error::<T>::ChannelTransfersBlockedDuringTokenSales,
+                );
             }
 
             //

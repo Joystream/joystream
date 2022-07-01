@@ -704,6 +704,24 @@ impl<T: Config>
         TransfersWithVestingOf<T>,
     > for Module<T>
 {
+    /// Establish weather revenue split is ongoing
+    /// Postconditions: true if token @ token_id has an ongoing revenue split, fales otherwise
+    fn is_revenue_split_inactive(token_id: T::TokenId) -> bool {
+        if let Ok(token_info) = Self::ensure_token_exists(token_id) {
+            return token_info.revenue_split.ensure_inactive::<T>().is_ok();
+        }
+        true
+    }
+
+    /// Establish weather revenue sale is ongoing
+    /// Postconditions: true if token @ token_id has an ongoing sale, fales otherwise
+    fn is_sale_unscheduled(token_id: T::TokenId) -> bool {
+        if let Ok(token_info) = Self::ensure_token_exists(token_id) {
+            return token_info.sale.is_none();
+        }
+        true
+    }
+
     /// Change to permissionless
     /// Preconditions:
     /// - token by `token_id` must exist
