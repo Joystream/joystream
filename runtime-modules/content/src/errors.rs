@@ -348,7 +348,7 @@ decl_error! {
         ChannelStateBloatBondChanged,
 
         /// Invalid extrinsic call: video state bloat bond changed.
-        VideoStateBloatBondChanged
+        VideoStateBloatBondChanged,
 
         /// Channel Transfers are blocked during revenue splits
         ChannelTransfersBlockedDuringRevenueSplits,
