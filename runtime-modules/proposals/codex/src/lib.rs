@@ -830,12 +830,12 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::UpdateChannelPayouts(params) => {
                 WeightInfoCodex::<T>::create_proposal_update_channel_payouts(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
                     params
                         .payload
                         .as_ref()
                         .map_or(0, |p| p.object_creation_params.ipfs_content_id.len() as u32),
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
                 )
                 .saturated_into()
             }
