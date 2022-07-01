@@ -1247,3 +1247,28 @@ fn make_open_auction_bid_fails_during_transfer() {
         );
     })
 }
+
+#[test]
+fn make_english_auction_bid_fails_during_transfer() {
+    with_default_mock_builder(|| {
+        ContentTest::default()
+            .with_video_nft_status(NftTransactionalStatusType::Auction(
+                AuctionType::English,
+            ))
+            .setup();
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, Content::min_starting_price());
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::make_english_auction_bid(
+                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                SECOND_MEMBER_ID,
+                VideoId::one(),
+                Content::min_starting_price(),
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
+        );
+    })
+}
