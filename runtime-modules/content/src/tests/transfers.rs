@@ -396,12 +396,11 @@ fn update_transfer_status_blocked_during_revenue_split() {
         increase_account_balance_helper(
             ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
             DEFAULT_PAYOUT_EARNED
-            // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
+                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
                 .saturating_add(ed.into()),
         );
         IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
-        IssueRevenueSplitFixture::default()
-            .call_and_assert(Ok(()));
+        IssueRevenueSplitFixture::default().call_and_assert(Ok(()));
 
         UpdateChannelTransferStatusFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)

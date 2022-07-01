@@ -276,7 +276,7 @@ fn accept_incoming_offer_fails_during_channel_transfer() {
 
         assert_noop!(
             Content::accept_incoming_offer(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 VideoId::one(),
             ),
             Error::<Test>::InvalidChannelTransferStatus,
