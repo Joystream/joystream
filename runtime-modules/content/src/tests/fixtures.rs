@@ -296,6 +296,7 @@ impl CreateVideoFixture {
                 meta: None,
                 auto_issue_nft: None,
                 expected_data_object_state_bloat_bond: DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
+                expected_video_state_bloat_bond: DEFAULT_VIDEO_STATE_BLOAT_BOND,
             },
             channel_id: ChannelId::one(), // channel index starts at 1
         }
@@ -308,6 +309,18 @@ impl CreateVideoFixture {
         Self {
             params: VideoCreationParameters::<Test> {
                 expected_data_object_state_bloat_bond,
+                ..self.params.clone()
+            },
+            ..self
+        }
+    }
+    pub fn with_expected_video_state_bloat_bond(
+        self,
+        expected_video_state_bloat_bond: u64,
+    ) -> Self {
+        Self {
+            params: VideoCreationParameters::<Test> {
+                expected_video_state_bloat_bond,
                 ..self.params.clone()
             },
             ..self
@@ -369,6 +382,10 @@ impl CreateVideoFixture {
         }
     }
 
+    fn get_balance(&self) -> BalanceOf<Test> {
+        Balances::<Test>::usable_balance(&self.sender)
+    }
+
     pub fn call(self) {
         let origin = Origin::signed(self.sender.clone());
         assert_ok!(Content::create_video(
@@ -381,7 +398,7 @@ impl CreateVideoFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
-        let balance_pre = Balances::<Test>::usable_balance(self.sender);
+        let balance_pre = self.get_balance();
         let channel_bag_id = Content::bag_id_for_channel(&self.channel_id);
         let video_id = Content::next_video_id();
         let beg_obj_id = storage::NextDataObjectId::<Test>::get();
@@ -393,7 +410,7 @@ impl CreateVideoFixture {
             self.params.clone(),
         );
 
-        let balance_post = Balances::<Test>::usable_balance(self.sender);
+        let balance_post = self.get_balance();
         let end_obj_id = storage::NextDataObjectId::<Test>::get();
 
         assert_eq!(actual_result, expected_result);
@@ -428,7 +445,7 @@ impl CreateVideoFixture {
 
                 assert_eq!(
                     balance_pre.saturating_sub(balance_post),
-                    objects_state_bloat_bond,
+                    objects_state_bloat_bond + Content::video_state_bloat_bond_value()
                 );
 
                 assert!((beg_obj_id..end_obj_id).all(|id| {
@@ -1499,11 +1516,15 @@ pub trait VideoDeletion {
     fn execute_call(&self) -> DispatchResult;
     fn expected_event_on_success(&self) -> MetaEvent;
 
+    fn get_balance(&self) -> BalanceOf<Test> {
+        Balances::<Test>::usable_balance(self.get_sender())
+    }
+
     fn call_and_assert(&self, expected_result: DispatchResult) {
-        let balance_pre = Balances::<Test>::usable_balance(self.get_sender());
+        let balance_pre = self.get_balance();
         let video_pre = <VideoById<Test>>::get(&self.get_video_id());
         let channel_bag_id = Content::bag_id_for_channel(&video_pre.in_channel);
-        let state_bloat_bond =
+        let data_obj_state_bloat_bond =
             video_pre
                 .data_objects
                 .iter()
@@ -1514,7 +1535,7 @@ pub trait VideoDeletion {
 
         let actual_result = self.execute_call();
 
-        let balance_post = Balances::<Test>::usable_balance(self.get_sender());
+        let balance_post = self.get_balance();
 
         assert_eq!(actual_result, expected_result);
 
@@ -1525,7 +1546,10 @@ pub trait VideoDeletion {
                     self.expected_event_on_success()
                 );
 
-                assert_eq!(balance_post.saturating_sub(balance_pre), state_bloat_bond);
+                assert_eq!(
+                    balance_post.saturating_sub(balance_pre),
+                    data_obj_state_bloat_bond + Content::video_state_bloat_bond_value()
+                );
 
                 assert!(!video_pre.data_objects.iter().any(|obj_id| {
                     storage::DataObjectsById::<Test>::contains_key(&channel_bag_id, obj_id)
@@ -2729,6 +2753,54 @@ impl UpdateChannelStateBloatBondFixture {
             );
         } else {
             assert_eq!(channel_state_bloat_bond_post, channel_state_bloat_bond_pre);
+        }
+    }
+}
+
+pub struct UpdateVideoStateBloatBondFixture {
+    sender: AccountId,
+    new_video_state_bloat_bond: BalanceOf<Test>,
+}
+
+impl UpdateVideoStateBloatBondFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: LEAD_ACCOUNT_ID,
+            new_video_state_bloat_bond: DEFAULT_VIDEO_STATE_BLOAT_BOND,
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_video_state_bloat_bond(self, new_video_state_bloat_bond: BalanceOf<Test>) -> Self {
+        Self {
+            new_video_state_bloat_bond,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = Origin::signed(self.sender.clone());
+        let video_state_bloat_bond_pre = Content::video_state_bloat_bond_value();
+
+        let actual_result =
+            Content::update_video_state_bloat_bond(origin, self.new_video_state_bloat_bond.clone());
+
+        let video_state_bloat_bond_post = Content::video_state_bloat_bond_value();
+
+        assert_eq!(actual_result, expected_result);
+        if actual_result.is_ok() {
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::Content(RawEvent::VideoStateBloatBondValueUpdated(
+                    self.new_video_state_bloat_bond
+                ))
+            );
+            assert_eq!(video_state_bloat_bond_post, self.new_video_state_bloat_bond);
+        } else {
+            assert_eq!(video_state_bloat_bond_post, video_state_bloat_bond_pre);
         }
     }
 }

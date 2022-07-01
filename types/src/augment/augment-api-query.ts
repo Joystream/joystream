@@ -311,6 +311,10 @@ declare module '@polkadot/api-base/types/storage' {
        **/
       platfromFeePercentage: AugmentedQuery<ApiType, () => Observable<Perbill>, []>;
       videoById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<PalletContentVideoRecord>, [u64]>;
+      /**
+       * The state bloat bond for the video (helps preventing the state bloat).
+       **/
+      videoStateBloatBondValue: AugmentedQuery<ApiType, () => Observable<u128>, []>;
     };
     contentWorkingGroup: {
       /**
