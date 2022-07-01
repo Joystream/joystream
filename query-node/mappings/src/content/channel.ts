@@ -6,7 +6,6 @@ import { ChannelMetadata, ChannelModeratorRemarked, ChannelOwnerRemarked } from 
 import { BaseModel } from '@joystream/warthog'
 import {
   Channel,
-  ContentActor,
   ContentActorCurator,
   ContentActorMember,
   CuratorGroup,
@@ -218,7 +217,7 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
   }
 }
 
-export async function content_ChannelModeratorRemarked(ctx: EventContext & StoreContext): Promise<void> {
+export async function content_ChannelAgentRemarked(ctx: EventContext & StoreContext): Promise<void> {
   const { event, store } = ctx
   const [moderator, channelId, message] = new Content.ChannelAgentRemarkedEvent(ctx.event).params
 

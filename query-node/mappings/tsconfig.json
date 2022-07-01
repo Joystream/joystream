@@ -5,7 +5,9 @@
     "importHelpers": true,
     "module": "commonjs",
     "outDir": "lib",
-    "rootDirs": ["./"],
+    "rootDirs": [
+      "./"
+    ],
     "strict": true,
     "target": "es2017",
     "noImplicitAny": false,
@@ -15,5 +17,10 @@
     "skipLibCheck": true,
     "resolveJsonModule": true
   },
-  "include": ["./src/**/*"]
+  "include": [
+    "./src/**/*"
+  ],
+  "exclude": [
+    "./src/bounty.ts"
+  ]
 }
