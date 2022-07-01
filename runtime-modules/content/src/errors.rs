@@ -329,5 +329,12 @@ decl_error! {
 
         /// Patronage can only be claimed if channel is owned by a member
         PatronageCanOnlyBeClaimedForMemberOwnedChannels,
+
+        /// Channel Transfers are blocked during revenue splits
+        ChannelTransfersBlockedDuringRevenueSplits,
+
+        /// Channel Transfers are blocked during token sales
+        ChannelTransfersBlockedDuringTokenSales,
+
     }
 }

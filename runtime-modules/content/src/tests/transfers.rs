@@ -387,3 +387,29 @@ fn accept_transfer_status_succeeds_for_members_to_curators_with_price() {
         );
     })
 }
+
+#[test]
+fn update_transfer_status_blocked_during_revenue_split() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueRevenueSplit::default().call_and_assert(Ok(()));
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Err(
+                Error::<Test>::ChannelTransfersBlockedDuringRevenueSplits.into(),
+            ));
+    })
+}
+
+#[test]
+fn update_transfer_status_blocked_during_token_sales() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        InitCreatorTokenSaleFixture::default().call_and_assert(Ok(()));
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Err(
+                Error::<Test>::ChannelTransfersBlockedDuringTokenSales.into(),
+            ));
+    })
+}
