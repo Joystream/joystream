@@ -5,7 +5,7 @@ import type { ApiTypes } from '@polkadot/api-base/types';
 import type { BTreeMap, Bytes, Null, Option, U8aFixed, Vec, WrapperOpaque, bool, u128, u16, u32, u64, u8 } from '@polkadot/types-codec';
 import type { AnyNumber, ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, H256, Perbill, Percent, Permill } from '@polkadot/types/interfaces/runtime';
-import type { FrameSupportWeightsPerDispatchClassU64, FrameSystemAccountInfo, FrameSystemEventRecord, FrameSystemLastRuntimeUpgradeInfo, FrameSystemPhase, JoystreamNodeRuntimeSessionKeys, PalletAuthorshipUncleEntryItem, PalletBagsListListBag, PalletBagsListListNode, PalletBalancesAccountData, PalletBalancesBalanceLock, PalletBalancesReleases, PalletBalancesReserveData, PalletBlogPost, PalletBlogReply, PalletConstitutionConstitutionInfo, PalletContentChannelRecord, PalletContentLimitPerPeriod, PalletContentNftCounter, PalletContentNftTypesOpenAuctionBidRecord, PalletContentPermissionsCuratorGroup, PalletContentVideoRecord, PalletCouncilCandidate, PalletCouncilCouncilMember, PalletCouncilCouncilStageUpdate, PalletElectionProviderMultiPhasePhase, PalletElectionProviderMultiPhaseReadySolution, PalletElectionProviderMultiPhaseRoundSnapshot, PalletElectionProviderMultiPhaseSignedSignedSubmission, PalletElectionProviderMultiPhaseSolutionOrSnapshotSize, PalletForumCategory, PalletForumPost, PalletForumThread, PalletGrandpaStoredPendingChange, PalletGrandpaStoredState, PalletImOnlineBoundedOpaqueNetworkState, PalletImOnlineSr25519AppSr25519Public, PalletMembershipMembershipObject, PalletMembershipStakingAccountMemberBinding, PalletProjectTokenAccountData, PalletProjectTokenTokenData, PalletProposalsDiscussionDiscussionPost, PalletProposalsDiscussionDiscussionThread, PalletProposalsEngineProposal, PalletProposalsEngineVoteKind, PalletReferendumCastVote, PalletReferendumReferendumStage, PalletStakingActiveEraInfo, PalletStakingEraRewardPoints, PalletStakingExposure, PalletStakingForcing, PalletStakingNominations, PalletStakingReleases, PalletStakingRewardDestination, PalletStakingSlashingSlashingSpans, PalletStakingSlashingSpanRecord, PalletStakingStakingLedger, PalletStakingUnappliedSlash, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageBagRecord, PalletStorageDataObject, PalletStorageDistributionBucketFamilyRecord, PalletStorageDistributionBucketRecord, PalletStorageDynamicBagCreationPolicy, PalletStorageDynamicBagType, PalletStorageStorageBucketRecord, PalletTransactionPaymentReleases, PalletVestingReleases, PalletVestingVestingInfo, PalletWorkingGroupGroupWorker, PalletWorkingGroupJobApplication, PalletWorkingGroupOpening, SpAuthorityDiscoveryAppPublic, SpConsensusBabeAppPublic, SpConsensusBabeBabeEpochConfiguration, SpConsensusBabeDigestsNextConfigDescriptor, SpConsensusBabeDigestsPreDigest, SpCoreCryptoKeyTypeId, SpNposElectionsElectionScore, SpRuntimeDigest, SpStakingOffenceOffenceDetails } from '@polkadot/types/lookup';
+import type { FrameSupportWeightsPerDispatchClassU64, FrameSystemAccountInfo, FrameSystemEventRecord, FrameSystemLastRuntimeUpgradeInfo, FrameSystemPhase, JoystreamNodeRuntimeSessionKeys, PalletAuthorshipUncleEntryItem, PalletBagsListListBag, PalletBagsListListNode, PalletBalancesAccountData, PalletBalancesBalanceLock, PalletBalancesReleases, PalletBalancesReserveData, PalletConstitutionConstitutionInfo, PalletContentChannelRecord, PalletContentLimitPerPeriod, PalletContentNftCounter, PalletContentNftTypesOpenAuctionBidRecord, PalletContentPermissionsCuratorGroup, PalletContentVideoRecord, PalletCouncilCandidate, PalletCouncilCouncilMember, PalletCouncilCouncilStageUpdate, PalletElectionProviderMultiPhasePhase, PalletElectionProviderMultiPhaseReadySolution, PalletElectionProviderMultiPhaseRoundSnapshot, PalletElectionProviderMultiPhaseSignedSignedSubmission, PalletElectionProviderMultiPhaseSolutionOrSnapshotSize, PalletForumCategory, PalletForumPost, PalletForumThread, PalletGrandpaStoredPendingChange, PalletGrandpaStoredState, PalletImOnlineBoundedOpaqueNetworkState, PalletImOnlineSr25519AppSr25519Public, PalletMembershipMembershipObject, PalletMembershipStakingAccountMemberBinding, PalletProjectTokenAccountData, PalletProjectTokenTokenData, PalletProposalsDiscussionDiscussionPost, PalletProposalsDiscussionDiscussionThread, PalletProposalsEngineProposal, PalletProposalsEngineVoteKind, PalletReferendumCastVote, PalletReferendumReferendumStage, PalletStakingActiveEraInfo, PalletStakingEraRewardPoints, PalletStakingExposure, PalletStakingForcing, PalletStakingNominations, PalletStakingReleases, PalletStakingRewardDestination, PalletStakingSlashingSlashingSpans, PalletStakingSlashingSpanRecord, PalletStakingStakingLedger, PalletStakingUnappliedSlash, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageBagRecord, PalletStorageDataObject, PalletStorageDistributionBucketFamilyRecord, PalletStorageDistributionBucketRecord, PalletStorageDynamicBagCreationPolicy, PalletStorageDynamicBagType, PalletStorageStorageBucketRecord, PalletTransactionPaymentReleases, PalletVestingReleases, PalletVestingVestingInfo, PalletWorkingGroupGroupWorker, PalletWorkingGroupJobApplication, PalletWorkingGroupOpening, SpAuthorityDiscoveryAppPublic, SpConsensusBabeAppPublic, SpConsensusBabeBabeEpochConfiguration, SpConsensusBabeDigestsNextConfigDescriptor, SpConsensusBabeDigestsPreDigest, SpCoreCryptoKeyTypeId, SpNposElectionsElectionScore, SpRuntimeDigest, SpStakingOffenceOffenceDetails } from '@polkadot/types/lookup';
 import type { Observable } from '@polkadot/types/types';
 
 declare module '@polkadot/api-base/types/storage' {
@@ -198,21 +198,6 @@ declare module '@polkadot/api-base/types/storage' {
        **/
       totalIssuance: AugmentedQuery<ApiType, () => Observable<u128>, []>;
     };
-    blog: {
-      /**
-       * Post by unique blog and post identificators
-       **/
-      postById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<PalletBlogPost>, [u64]>;
-      /**
-       * Maps, representing id => item relationship for blogs, posts and replies related structures
-       * Post count
-       **/
-      postCount: AugmentedQuery<ApiType, () => Observable<u64>, []>;
-      /**
-       * Reply by unique blog, post and reply identificators
-       **/
-      replyById: AugmentedQuery<ApiType, (arg1: u64 | AnyNumber | Uint8Array, arg2: u64 | AnyNumber | Uint8Array) => Observable<PalletBlogReply>, [u64, u64]>;
-    };
     constitution: {
       constitution: AugmentedQuery<ApiType, () => Observable<PalletConstitutionConstitutionInfo>, []>;
     };
@@ -223,7 +208,10 @@ declare module '@polkadot/api-base/types/storage' {
       auctionStartsAtMaxDelta: AugmentedQuery<ApiType, () => Observable<u32>, []>;
       channelById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<PalletContentChannelRecord>, [u64]>;
       channelCashoutsEnabled: AugmentedQuery<ApiType, () => Observable<bool>, []>;
-      channelCategoryById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Null>, [u64]>;
+      /**
+       * The state bloat bond for the channel (helps preventing the state bloat).
+       **/
+      channelStateBloatBondValue: AugmentedQuery<ApiType, () => Observable<u128>, []>;
       commitment: AugmentedQuery<ApiType, () => Observable<H256>, []>;
       curatorGroupById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<PalletContentPermissionsCuratorGroup>, [u64]>;
       /**
@@ -296,7 +284,6 @@ declare module '@polkadot/api-base/types/storage' {
        * Min auction staring price
        **/
       minStartingPrice: AugmentedQuery<ApiType, () => Observable<u128>, []>;
-      nextChannelCategoryId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       nextChannelId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       nextCuratorGroupId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       nextVideoId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
@@ -309,6 +296,10 @@ declare module '@polkadot/api-base/types/storage' {
        **/
       platfromFeePercentage: AugmentedQuery<ApiType, () => Observable<Perbill>, []>;
       videoById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<PalletContentVideoRecord>, [u64]>;
+      /**
+       * The state bloat bond for the video (helps preventing the state bloat).
+       **/
+      videoStateBloatBondValue: AugmentedQuery<ApiType, () => Observable<u128>, []>;
     };
     contentWorkingGroup: {
       /**

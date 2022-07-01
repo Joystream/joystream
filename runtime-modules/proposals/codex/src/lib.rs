@@ -202,22 +202,6 @@ pub trait Config:
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// `Create Blog Post` proposal parameters
-    type CreateBlogPostProposalParameters: Get<
-        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
-    >;
-
-    /// `Edit Blog Post` proposal parameters
-    type EditBlogPostProoposalParamters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
-
-    /// `Lock Blog Post` proposal parameters
-    type LockBlogPostProposalParameters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
-
-    /// `Unlock Blog Post` proposal parameters
-    type UnlockBlogPostProposalParameters: Get<
-        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
-    >;
-
     /// `Veto Proposal` proposal parameters
     type VetoProposalProposalParameters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
 
@@ -418,18 +402,6 @@ decl_module! {
         const SetReferralCutProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetReferralCutProposalParameters::get();
 
-        const CreateBlogPostProposalParameters:
-            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::CreateBlogPostProposalParameters::get();
-
-        const EditBlogPostProoposalParamters:
-            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::EditBlogPostProoposalParamters::get();
-
-        const LockBlogPostProposalParameters:
-            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::LockBlogPostProposalParameters::get();
-
-        const UnlockBlogPostProposalParameters:
-            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UnlockBlogPostProposalParameters::get();
-
         const VetoProposalProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::VetoProposalProposalParameters::get();
 
@@ -626,18 +598,6 @@ impl<T: Config> Module<T> {
             ProposalDetails::SetReferralCut(..) => {
                 // Note: No checks for this proposal for now
             }
-            ProposalDetails::CreateBlogPost(..) => {
-                // Note: No checks for this proposal for now
-            }
-            ProposalDetails::EditBlogPost(..) => {
-                // Note: No checks for this proposal for now
-            }
-            ProposalDetails::LockBlogPost(..) => {
-                // Note: No checks for this proposal for now
-            }
-            ProposalDetails::UnlockBlogPost(..) => {
-                // Note: No checks for this proposal for now
-            }
             ProposalDetails::VetoProposal(..) => {
                 // Note: No checks for this proposal for now
             }
@@ -713,10 +673,6 @@ impl<T: Config> Module<T> {
                 T::SetMembershipLeadInvitationQuotaProposalParameters::get()
             }
             ProposalDetails::SetReferralCut(..) => T::SetReferralCutProposalParameters::get(),
-            ProposalDetails::CreateBlogPost(..) => T::CreateBlogPostProposalParameters::get(),
-            ProposalDetails::EditBlogPost(..) => T::EditBlogPostProoposalParamters::get(),
-            ProposalDetails::LockBlogPost(..) => T::LockBlogPostProposalParameters::get(),
-            ProposalDetails::UnlockBlogPost(..) => T::UnlockBlogPostProposalParameters::get(),
             ProposalDetails::VetoProposal(..) => T::VetoProposalProposalParameters::get(),
             ProposalDetails::UpdateGlobalNftLimit(..) => {
                 T::UpdateGlobalNftLimitProposalParameters::get()
@@ -858,37 +814,6 @@ impl<T: Config> Module<T> {
                     description_length.saturated_into(),
                 )
             }
-            ProposalDetails::CreateBlogPost(header, body) => {
-                WeightInfoCodex::<T>::create_proposal_create_blog_post(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
-                    header.len().saturated_into(),
-                    body.len().saturated_into(),
-                )
-            }
-            ProposalDetails::EditBlogPost(_, header, body) => {
-                let header_len = header.as_ref().map_or(0, |h| h.len());
-                let body_len = body.as_ref().map_or(0, |b| b.len());
-                WeightInfoCodex::<T>::create_proposal_edit_blog_post(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
-                    header_len.saturated_into(),
-                    body_len.saturated_into(),
-                )
-            }
-            ProposalDetails::LockBlogPost(..) => {
-                WeightInfoCodex::<T>::create_proposal_lock_blog_post(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
-                )
-            }
-            ProposalDetails::UnlockBlogPost(..) => {
-                WeightInfoCodex::<T>::create_proposal_unlock_blog_post(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
-                )
-                .saturated_into()
-            }
             ProposalDetails::VetoProposal(..) => {
                 WeightInfoCodex::<T>::create_proposal_veto_proposal(
                     title_length.saturated_into(),
@@ -905,12 +830,12 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::UpdateChannelPayouts(params) => {
                 WeightInfoCodex::<T>::create_proposal_update_channel_payouts(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
                     params
                         .payload
                         .as_ref()
                         .map_or(0, |p| p.object_creation_params.ipfs_content_id.len() as u32),
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
                 )
                 .saturated_into()
             }

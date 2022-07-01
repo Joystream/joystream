@@ -64,9 +64,9 @@ pub trait PalletToken<
         token_id: TokenId,
         start: Option<BlockNumber>,
         duration: BlockNumber,
-        allocation_source: AccountId,
-        allocation_amount: JoyBalance,
-    ) -> DispatchResult;
+        revenue_source_account: AccountId,
+        revenue_amount: JoyBalance,
+    ) -> Result<JoyBalance, DispatchError>;
 
     /// Finalize split by sending back eventual JOYs leftover
     fn finalize_revenue_split(token_id: TokenId, account_id: AccountId) -> DispatchResult;

@@ -489,6 +489,17 @@ pub fn ensure_authorized_to_update_min_cashout<T: Config>(sender: &T::AccountId)
     ensure_lead_auth_success::<T>(sender)
 }
 
+pub fn ensure_authorized_to_update_channel_state_bloat_bond<T: Config>(
+    sender: &T::AccountId,
+) -> DispatchResult {
+    ensure_lead_auth_success::<T>(sender)
+}
+
+pub fn ensure_authorized_to_update_video_state_bloat_bond<T: Config>(
+    sender: &T::AccountId,
+) -> DispatchResult {
+    ensure_lead_auth_success::<T>(sender)
+}
 /// Moderation actions (curator/lead)
 
 pub fn ensure_actor_authorized_to_perform_moderation_actions<T: Config>(

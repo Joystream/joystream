@@ -93,49 +93,6 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       VestingBalance: AugmentedError<ApiType>;
     };
-    blog: {
-      /**
-       * A non-owner is trying to do a privilegeded action.
-       **/
-      BlogOwnershipError: AugmentedError<ApiType>;
-      /**
-       * Insuficient balance for reply creation
-       **/
-      InsufficientBalanceForReply: AugmentedError<ApiType>;
-      /**
-       * This error represent the invalid state where there is not enough funds in a post
-       * account to pay off its delete
-       **/
-      InsufficientBalanceInPostAccount: AugmentedError<ApiType>;
-      /**
-       * Reaction doesn't exists
-       **/
-      InvalidReactionIndex: AugmentedError<ApiType>;
-      /**
-       * A non-member is trying to participate
-       **/
-      MembershipError: AugmentedError<ApiType>;
-      /**
-       * Number of posts exceeds limits.
-       **/
-      PostLimitReached: AugmentedError<ApiType>;
-      /**
-       * Post is locked for modifications.
-       **/
-      PostLockedError: AugmentedError<ApiType>;
-      /**
-       * Post do not exists.
-       **/
-      PostNotFound: AugmentedError<ApiType>;
-      /**
-       * Reply do no exists.
-       **/
-      ReplyNotFound: AugmentedError<ApiType>;
-      /**
-       * A non-owner of a reply is trying to do a privileged action.
-       **/
-      ReplyOwnershipError: AugmentedError<ApiType>;
-    };
     content: {
       /**
        * Already active auction cannot be cancelled
@@ -266,6 +223,10 @@ declare module '@polkadot/api-base/types/errors' {
       ChannelNftDailyLimitExceeded: AugmentedError<ApiType>;
       ChannelNftWeeklyLimitExceeded: AugmentedError<ApiType>;
       /**
+       * Invalid extrinsic call: Channel state bloat bond changed.
+       **/
+      ChannelStateBloatBondChanged: AugmentedError<ApiType>;
+      /**
        * Creator token was already issued for this channel
        **/
       CreatorTokenAlreadyIssued: AugmentedError<ApiType>;
@@ -336,9 +297,19 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InsufficientBalance: AugmentedError<ApiType>;
       /**
+       * Cannot create the channel: channel creator has insufficient balance
+       * (budget for channel state bloat bond + channel data objs state bloat bonds + data objs storage fees)
+       **/
+      InsufficientBalanceForChannelCreation: AugmentedError<ApiType>;
+      /**
        * Cannot transfer the channel: channel owner has insufficient balance (budget for WGs)
        **/
       InsufficientBalanceForTransfer: AugmentedError<ApiType>;
+      /**
+       * Cannot create the video: video creator has insufficient balance
+       * (budget for video state bloat bond + video data objs state bloat bonds + data objs storage fees)
+       **/
+      InsufficientBalanceForVideoCreation: AugmentedError<ApiType>;
       InsufficientCouncilBudget: AugmentedError<ApiType>;
       /**
        * Insufficient treasury balance
@@ -518,6 +489,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Vfdeo in season can`t be removed (because order is important)
        **/
       VideoInSeason: AugmentedError<ApiType>;
+      /**
+       * Invalid extrinsic call: video state bloat bond changed.
+       **/
+      VideoStateBloatBondChanged: AugmentedError<ApiType>;
       /**
        * Auction whitelist has only one member
        **/
@@ -2071,6 +2046,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       RevenueSplitNotOngoing: AugmentedError<ApiType>;
       /**
+       * Revenue split rate cannot be 0
+       **/
+      RevenueSplitRateIsZero: AugmentedError<ApiType>;
+      /**
        * Specified revenue split starting block is in the past
        **/
       RevenueSplitTimeToStartTooShort: AugmentedError<ApiType>;
@@ -2125,7 +2104,6 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       TokenDoesNotExist: AugmentedError<ApiType>;
       /**
-       * Token's current issuance state is not Idle
        * Token's current offering state is not Idle
        **/
       TokenIssuanceNotInIdleState: AugmentedError<ApiType>;
@@ -2133,6 +2111,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Symbol already in use
        **/
       TokenSymbolAlreadyInUse: AugmentedError<ApiType>;
+      /**
+       * Transfer destination member id invalid
+       **/
+      TransferDestinationMemberDoesNotExist: AugmentedError<ApiType>;
       /**
        * User already participating in the revenue split
        **/
