@@ -14,7 +14,6 @@ decl_error! {
         /// Invalid extrinsic call: video state bloat bond changed.
         VideoStateBloatBondChanged,
 
-
         // Curator Management Errors
         // -------------------------
 
@@ -350,5 +349,6 @@ decl_error! {
 
         /// Channel Transfers are blocked during token sales
         ChannelTransfersBlockedDuringTokenSales,
+
     }
 }

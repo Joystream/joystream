@@ -227,14 +227,6 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ChannelStateBloatBondChanged: AugmentedError<ApiType>;
       /**
-       * Channel Transfers are blocked during revenue splits
-       **/
-      ChannelTransfersBlockedDuringRevenueSplits: AugmentedError<ApiType>;
-      /**
-       * Channel Transfers are blocked during token sales
-       **/
-      ChannelTransfersBlockedDuringTokenSales: AugmentedError<ApiType>;
-      /**
        * Creator token was already issued for this channel
        **/
       CreatorTokenAlreadyIssued: AugmentedError<ApiType>;
