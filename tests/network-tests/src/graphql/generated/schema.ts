@@ -8311,13 +8311,6 @@ export type CouncilStageUpdateWhereUniqueInput = {
   id: Scalars['ID']
 }
 
-export type CreateBlogPostProposalDetails = {
-  /** Blog post title */
-  title: Scalars['String']
-  /** Blog post content (md-formatted) */
-  body: Scalars['String']
-}
-
 export type CreateWorkingGroupLeadOpeningProposalDetails = {
   /** The opening metadata */
   metadata?: Maybe<WorkingGroupOpeningMetadata>
@@ -9214,15 +9207,6 @@ export type DistributionBucketWhereInput = {
 
 export type DistributionBucketWhereUniqueInput = {
   id: Scalars['ID']
-}
-
-export type EditBlogPostProposalDetails = {
-  /** The related blog post */
-  blogPost: Scalars['String']
-  /** The new blog post title (if should be updated) */
-  newTitle?: Maybe<Scalars['String']>
-  /** The new blog post body (if should be updated) */
-  newBody?: Maybe<Scalars['String']>
 }
 
 export type ElectedCouncil = BaseGraphQlObject & {
@@ -12274,11 +12258,6 @@ export type LicenseWhereInput = {
 
 export type LicenseWhereUniqueInput = {
   id: Scalars['ID']
-}
-
-export type LockBlogPostProposalDetails = {
-  /** The blog post that should be locked */
-  blogPost: Scalars['String']
 }
 
 export type MemberAccountsUpdatedEvent = Event &
@@ -18347,10 +18326,6 @@ export type ProposalDetails =
   | SetInitialInvitationCountProposalDetails
   | SetMembershipLeadInvitationQuotaProposalDetails
   | SetReferralCutProposalDetails
-  | CreateBlogPostProposalDetails
-  | EditBlogPostProposalDetails
-  | LockBlogPostProposalDetails
-  | UnlockBlogPostProposalDetails
   | VetoProposalDetails
 
 export type ProposalDiscussionPost = BaseGraphQlObject & {
@@ -27832,7 +27807,6 @@ export type TerminatedLeaderEventConnection = {
   pageInfo: PageInfo
 }
 
-<<<<<<< HEAD
 export type StorageDataObjectCreateInput = {
   isAccepted: Scalars['Boolean']
   size: Scalars['String']
@@ -27841,17 +27815,6 @@ export type StorageDataObjectCreateInput = {
   type: Scalars['JSONObject']
   stateBloatBond: Scalars['String']
   unsetAt?: Maybe<Scalars['DateTime']>
-=======
-export type TerminatedLeaderEventCreateInput = {
-  inExtrinsic?: Maybe<Scalars['String']>
-  inBlock: Scalars['Float']
-  network: Network
-  indexInBlock: Scalars['Float']
-  group: Scalars['ID']
-  worker: Scalars['ID']
-  penalty?: Maybe<Scalars['String']>
-  rationale?: Maybe<Scalars['String']>
->>>>>>> rhodes-substrate-v3-update
 }
 
 export type TerminatedLeaderEventEdge = {
@@ -27866,7 +27829,6 @@ export enum TerminatedLeaderEventOrderByInput {
   UpdatedAtDesc = 'updatedAt_DESC',
   DeletedAtAsc = 'deletedAt_ASC',
   DeletedAtDesc = 'deletedAt_DESC',
-<<<<<<< HEAD
   IsAcceptedAsc = 'isAccepted_ASC',
   IsAcceptedDesc = 'isAccepted_DESC',
   SizeAsc = 'size_ASC',
@@ -27889,35 +27851,6 @@ export type StorageDataObjectUpdateInput = {
   type?: Maybe<Scalars['JSONObject']>
   stateBloatBond?: Maybe<Scalars['String']>
   unsetAt?: Maybe<Scalars['DateTime']>
-=======
-  InExtrinsicAsc = 'inExtrinsic_ASC',
-  InExtrinsicDesc = 'inExtrinsic_DESC',
-  InBlockAsc = 'inBlock_ASC',
-  InBlockDesc = 'inBlock_DESC',
-  NetworkAsc = 'network_ASC',
-  NetworkDesc = 'network_DESC',
-  IndexInBlockAsc = 'indexInBlock_ASC',
-  IndexInBlockDesc = 'indexInBlock_DESC',
-  GroupAsc = 'group_ASC',
-  GroupDesc = 'group_DESC',
-  WorkerAsc = 'worker_ASC',
-  WorkerDesc = 'worker_DESC',
-  PenaltyAsc = 'penalty_ASC',
-  PenaltyDesc = 'penalty_DESC',
-  RationaleAsc = 'rationale_ASC',
-  RationaleDesc = 'rationale_DESC',
-}
-
-export type TerminatedLeaderEventUpdateInput = {
-  inExtrinsic?: Maybe<Scalars['String']>
-  inBlock?: Maybe<Scalars['Float']>
-  network?: Maybe<Network>
-  indexInBlock?: Maybe<Scalars['Float']>
-  group?: Maybe<Scalars['ID']>
-  worker?: Maybe<Scalars['ID']>
-  penalty?: Maybe<Scalars['String']>
-  rationale?: Maybe<Scalars['String']>
->>>>>>> rhodes-substrate-v3-update
 }
 
 export type TerminatedLeaderEventWhereInput = {
@@ -27945,7 +27878,6 @@ export type TerminatedLeaderEventWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
-<<<<<<< HEAD
   isAccepted_eq?: Maybe<Scalars['Boolean']>
   isAccepted_in?: Maybe<Array<Scalars['Boolean']>>
   size_eq?: Maybe<Scalars['BigInt']>
@@ -27982,42 +27914,6 @@ export type TerminatedLeaderEventWhereInput = {
   channelavatarPhoto_every?: Maybe<ChannelWhereInput>
   AND?: Maybe<Array<StorageDataObjectWhereInput>>
   OR?: Maybe<Array<StorageDataObjectWhereInput>>
-=======
-  inExtrinsic_eq?: Maybe<Scalars['String']>
-  inExtrinsic_contains?: Maybe<Scalars['String']>
-  inExtrinsic_startsWith?: Maybe<Scalars['String']>
-  inExtrinsic_endsWith?: Maybe<Scalars['String']>
-  inExtrinsic_in?: Maybe<Array<Scalars['String']>>
-  inBlock_eq?: Maybe<Scalars['Int']>
-  inBlock_gt?: Maybe<Scalars['Int']>
-  inBlock_gte?: Maybe<Scalars['Int']>
-  inBlock_lt?: Maybe<Scalars['Int']>
-  inBlock_lte?: Maybe<Scalars['Int']>
-  inBlock_in?: Maybe<Array<Scalars['Int']>>
-  network_eq?: Maybe<Network>
-  network_in?: Maybe<Array<Network>>
-  indexInBlock_eq?: Maybe<Scalars['Int']>
-  indexInBlock_gt?: Maybe<Scalars['Int']>
-  indexInBlock_gte?: Maybe<Scalars['Int']>
-  indexInBlock_lt?: Maybe<Scalars['Int']>
-  indexInBlock_lte?: Maybe<Scalars['Int']>
-  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
-  penalty_eq?: Maybe<Scalars['BigInt']>
-  penalty_gt?: Maybe<Scalars['BigInt']>
-  penalty_gte?: Maybe<Scalars['BigInt']>
-  penalty_lt?: Maybe<Scalars['BigInt']>
-  penalty_lte?: Maybe<Scalars['BigInt']>
-  penalty_in?: Maybe<Array<Scalars['BigInt']>>
-  rationale_eq?: Maybe<Scalars['String']>
-  rationale_contains?: Maybe<Scalars['String']>
-  rationale_startsWith?: Maybe<Scalars['String']>
-  rationale_endsWith?: Maybe<Scalars['String']>
-  rationale_in?: Maybe<Array<Scalars['String']>>
-  group?: Maybe<WorkingGroupWhereInput>
-  worker?: Maybe<WorkerWhereInput>
-  AND?: Maybe<Array<TerminatedLeaderEventWhereInput>>
-  OR?: Maybe<Array<TerminatedLeaderEventWhereInput>>
->>>>>>> rhodes-substrate-v3-update
 }
 
 export type TerminatedLeaderEventWhereUniqueInput = {
@@ -29021,11 +28917,6 @@ export type TransactionalStatusUpdateWhereInput = {
 
 export type TransactionalStatusUpdateWhereUniqueInput = {
   id: Scalars['ID']
-}
-
-export type UnlockBlogPostProposalDetails = {
-  /** The blog post that should be unlocked */
-  blogPost: Scalars['String']
 }
 
 export type UpcomingOpeningAdded = {

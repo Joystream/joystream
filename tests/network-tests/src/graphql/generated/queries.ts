@@ -1378,29 +1378,6 @@ type ProposalDetailsFields_SetReferralCutProposalDetails_Fragment = {
   newReferralCut: number
 }
 
-type ProposalDetailsFields_CreateBlogPostProposalDetails_Fragment = {
-  __typename: 'CreateBlogPostProposalDetails'
-  title: string
-  body: string
-}
-
-type ProposalDetailsFields_EditBlogPostProposalDetails_Fragment = {
-  __typename: 'EditBlogPostProposalDetails'
-  blogPost: string
-  newTitle?: Types.Maybe<string>
-  newBody?: Types.Maybe<string>
-}
-
-type ProposalDetailsFields_LockBlogPostProposalDetails_Fragment = {
-  __typename: 'LockBlogPostProposalDetails'
-  blogPost: string
-}
-
-type ProposalDetailsFields_UnlockBlogPostProposalDetails_Fragment = {
-  __typename: 'UnlockBlogPostProposalDetails'
-  blogPost: string
-}
-
 type ProposalDetailsFields_VetoProposalDetails_Fragment = {
   __typename: 'VetoProposalDetails'
   proposal?: Types.Maybe<{ id: string }>
@@ -1427,10 +1404,6 @@ export type ProposalDetailsFieldsFragment =
   | ProposalDetailsFields_SetInitialInvitationCountProposalDetails_Fragment
   | ProposalDetailsFields_SetMembershipLeadInvitationQuotaProposalDetails_Fragment
   | ProposalDetailsFields_SetReferralCutProposalDetails_Fragment
-  | ProposalDetailsFields_CreateBlogPostProposalDetails_Fragment
-  | ProposalDetailsFields_EditBlogPostProposalDetails_Fragment
-  | ProposalDetailsFields_LockBlogPostProposalDetails_Fragment
-  | ProposalDetailsFields_UnlockBlogPostProposalDetails_Fragment
   | ProposalDetailsFields_VetoProposalDetails_Fragment
 
 export type ProposalFieldsFragment = {
@@ -1464,10 +1437,6 @@ export type ProposalFieldsFragment = {
     | ProposalDetailsFields_SetInitialInvitationCountProposalDetails_Fragment
     | ProposalDetailsFields_SetMembershipLeadInvitationQuotaProposalDetails_Fragment
     | ProposalDetailsFields_SetReferralCutProposalDetails_Fragment
-    | ProposalDetailsFields_CreateBlogPostProposalDetails_Fragment
-    | ProposalDetailsFields_EditBlogPostProposalDetails_Fragment
-    | ProposalDetailsFields_LockBlogPostProposalDetails_Fragment
-    | ProposalDetailsFields_UnlockBlogPostProposalDetails_Fragment
     | ProposalDetailsFields_VetoProposalDetails_Fragment
   creator: { id: string }
   proposalStatusUpdates: Array<{
@@ -3594,21 +3563,6 @@ export const ProposalDetailsFields = gql`
     }
     ... on SetReferralCutProposalDetails {
       newReferralCut
-    }
-    ... on CreateBlogPostProposalDetails {
-      title
-      body
-    }
-    ... on EditBlogPostProposalDetails {
-      blogPost
-      newTitle
-      newBody
-    }
-    ... on LockBlogPostProposalDetails {
-      blogPost
-    }
-    ... on UnlockBlogPostProposalDetails {
-      blogPost
     }
     ... on VetoProposalDetails {
       proposal {
