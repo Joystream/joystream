@@ -1227,9 +1227,7 @@ fn open_auction_decreased_bid_works_correctly() {
 fn make_open_auction_bid_fails_during_transfer() {
     with_default_mock_builder(|| {
         ContentTest::default()
-            .with_video_nft_status(NftTransactionalStatusType::Auction(
-                AuctionType::Open,
-            ))
+            .with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::Open))
             .setup();
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, Content::min_starting_price());
         UpdateChannelTransferStatusFixture::default()
@@ -1252,9 +1250,7 @@ fn make_open_auction_bid_fails_during_transfer() {
 fn make_english_auction_bid_fails_during_transfer() {
     with_default_mock_builder(|| {
         ContentTest::default()
-            .with_video_nft_status(NftTransactionalStatusType::Auction(
-                AuctionType::English,
-            ))
+            .with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::English))
             .setup();
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, Content::min_starting_price());
         UpdateChannelTransferStatusFixture::default()
