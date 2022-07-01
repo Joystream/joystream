@@ -204,12 +204,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * Channel owner remark
        **/
       channelOwnerRemark: AugmentedSubmittable<(channelId: u64 | AnyNumber | Uint8Array, msg: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Bytes]>;
-      claimAndWithdrawChannelReward: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, proof: Vec<PalletContentProofElementRecord> | (PalletContentProofElementRecord | { hash_?: any; side?: any } | string | Uint8Array)[], item: PalletContentPullPaymentElement | { channelId?: any; cumulativeRewardEarned?: any; reason?: any } | string | Uint8Array, destination: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, Vec<PalletContentProofElementRecord>, PalletContentPullPaymentElement, AccountId32]>;
+      claimAndWithdrawChannelReward: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, proof: Vec<PalletContentProofElementRecord> | (PalletContentProofElementRecord | { hash_?: any; side?: any } | string | Uint8Array)[], item: PalletContentPullPaymentElement | { channelId?: any; cumulativeRewardEarned?: any; reason?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, Vec<PalletContentProofElementRecord>, PalletContentPullPaymentElement]>;
       claimChannelReward: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, proof: Vec<PalletContentProofElementRecord> | (PalletContentProofElementRecord | { hash_?: any; side?: any } | string | Uint8Array)[], item: PalletContentPullPaymentElement | { channelId?: any; cumulativeRewardEarned?: any; reason?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, Vec<PalletContentProofElementRecord>, PalletContentPullPaymentElement]>;
-      /**
-       * Claims an accumulated channel reward for a council.
-       **/
-      claimCouncilReward: AugmentedSubmittable<(channelId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64]>;
       /**
        * Claim channel's creator token patronage credit
        **/
@@ -361,7 +357,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * Only lead can upload this value
        **/
       updateVideoStateBloatBond: AugmentedSubmittable<(newVideoStateBloatBond: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u128]>;
-      withdrawFromChannelBalance: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array, destination: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, u128, AccountId32]>;
+      withdrawFromChannelBalance: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, u128]>;
     };
     contentWorkingGroup: {
       /**
