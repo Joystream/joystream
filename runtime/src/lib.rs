@@ -698,7 +698,6 @@ parameter_types! {
 
 impl content::Config for Runtime {
     type Event = Event;
-    type ChannelCategoryId = ChannelCategoryId;
     type VideoId = VideoId;
     type OpenAuctionId = OpenAuctionId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
@@ -1325,10 +1324,6 @@ impl proposals_codex::Config for Runtime {
     type SetMembershipLeadInvitationQuotaProposalParameters =
         SetMembershipLeadInvitationQuotaProposalParameters;
     type SetReferralCutProposalParameters = SetReferralCutProposalParameters;
-    type CreateBlogPostProposalParameters = CreateBlogPostProposalParameters;
-    type EditBlogPostProoposalParamters = EditBlogPostProoposalParamters;
-    type LockBlogPostProposalParameters = LockBlogPostProposalParameters;
-    type UnlockBlogPostProposalParameters = UnlockBlogPostProposalParameters;
     type VetoProposalProposalParameters = VetoProposalProposalParameters;
     type UpdateGlobalNftLimitProposalParameters = UpdateGlobalNftLimitProposalParameters;
     type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;
@@ -1362,26 +1357,6 @@ impl pallet_constitution::Config for Runtime {
 //     type MinFundingLimit = MinFundingLimit;
 //     type MinWorkEntrantStake = MinWorkEntrantStake;
 // }
-
-parameter_types! {
-    pub const PostsMaxNumber: u64 = 20;
-    pub const RepliesMaxNumber: u64 = 100;
-    pub const ReplyDeposit: Balance = 2000;
-    pub const BlogModuleId: PalletId = PalletId(*b"mod:blog"); // module : forum
-    pub const ReplyLifetime: BlockNumber = 43_200;
-}
-
-pub type BlogInstance = blog::Instance1;
-impl blog::Config<BlogInstance> for Runtime {
-    type Event = Event;
-    type PostsMaxNumber = PostsMaxNumber;
-    type ParticipantEnsureOrigin = Members;
-    type WeightInfo = blog::weights::SubstrateWeight;
-    type ReplyId = u64;
-    type ReplyDeposit = ReplyDeposit;
-    type ModuleId = BlogModuleId;
-    type ReplyLifetime = ReplyLifetime;
-}
 
 /// Forum identifier for category
 pub type CategoryId = u64;
@@ -1453,7 +1428,6 @@ construct_runtime!(
         Forum: forum::{Pallet, Call, Storage, Event<T>, Config<T>},
         Constitution: pallet_constitution::{Pallet, Call, Storage, Event},
         // Bounty: bounty::{Pallet, Call, Storage, Event<T>},
-        Blog: blog::<Instance1>::{Pallet, Call, Storage, Event<T>},
         JoystreamUtility: joystream_utility::{Pallet, Call, Event<T>},
         Content: content::{Pallet, Call, Storage, Event<T>, Config<T>},
         Storage: storage::{Pallet, Call, Storage, Event<T>},

@@ -11,10 +11,6 @@ export type ProposalId = u32
 export type ProposalDiscussionThreadId = u64
 export type ProposalDiscussionPostId = u64
 
-// Blog
-export type BlogReplyId = u64
-export type BlogPostId = u64
-
 // Storage
 export type DataObjectTypeId = u64
 export type DataObjectId = u64

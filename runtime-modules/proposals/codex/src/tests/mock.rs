@@ -582,10 +582,6 @@ impl crate::Config for Test {
     type SetInvitationCountProposalParameters = DefaultProposalParameters;
     type SetMembershipLeadInvitationQuotaProposalParameters = DefaultProposalParameters;
     type SetReferralCutProposalParameters = DefaultProposalParameters;
-    type CreateBlogPostProposalParameters = DefaultProposalParameters;
-    type EditBlogPostProoposalParamters = DefaultProposalParameters;
-    type LockBlogPostProposalParameters = DefaultProposalParameters;
-    type UnlockBlogPostProposalParameters = DefaultProposalParameters;
     type VetoProposalProposalParameters = DefaultProposalParameters;
     type UpdateGlobalNftLimitProposalParameters = DefaultProposalParameters;
     type UpdateChannelPayoutsProposalParameters = DefaultProposalParameters;
