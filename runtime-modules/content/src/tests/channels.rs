@@ -1,7 +1,5 @@
 #![cfg(test)]
 
-use common::council::CouncilBudgetManager;
-use frame_system::RawOrigin;
 use std::collections::BTreeMap;
 use std::iter::FromIterator;
 use strum::IntoEnumIterator;
@@ -3023,80 +3021,3 @@ fn successful_channel_transfer_by_owner_member() {
 //////////////////////////////////////////////////////////////////////
 /////////////// END OF CHANNEL AGENT PERMISSIONS TESTS ///////////////
 //////////////////////////////////////////////////////////////////////
-
-#[test]
-fn claim_council_reward_succeeded() {
-    with_default_mock_builder(|| {
-        type CouncilBudget = crate::tests::mock::CouncilBudgetManager;
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_STATE_BLOAT_BOND, &[]);
-
-        let channel_id = ChannelId::one();
-
-        // Set earned reward to the channel.
-        let expected_reward = 100;
-        let channel_account_id = ContentTreasury::<Test>::account_for_channel(channel_id);
-        let _ = Balances::<Test>::deposit_creating(&channel_account_id, expected_reward);
-
-        ClaimCouncilRewardFixture::default()
-            .with_channel_id(channel_id)
-            .with_expected_reward(expected_reward)
-            .with_origin(RawOrigin::Signed(LEAD_ACCOUNT_ID))
-            .call_and_assert(Ok(()));
-
-        assert_eq!(CouncilBudget::get_budget(), expected_reward);
-        assert_eq!(Balances::<Test>::usable_balance(&channel_account_id), 0);
-    })
-}
-
-#[test]
-fn claim_council_reward_fails_during_transfer() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-        ContentTest::with_member_channel().with_video().setup();
-        UpdateChannelTransferStatusFixture::default()
-            .with_new_member_channel_owner(SECOND_MEMBER_ID)
-            .call_and_assert(Ok(()));
-
-        ClaimCouncilRewardFixture::default()
-            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
-    })
-}
-
-#[test]
-fn claim_council_reward_failed_with_invalid_channel() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_STATE_BLOAT_BOND, &[]);
-
-        let invalid_channel_id = 444;
-        ClaimCouncilRewardFixture::default()
-            .with_origin(RawOrigin::Signed(LEAD_ACCOUNT_ID))
-            .with_channel_id(invalid_channel_id)
-            .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()));
-    })
-}
-
-#[test]
-fn claim_council_reward_failed_with_zero_reward() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_STATE_BLOAT_BOND, &[]);
-
-        let channel_id = ChannelId::one();
-
-        ClaimCouncilRewardFixture::default()
-            .with_channel_id(channel_id)
-            .with_origin(RawOrigin::Signed(LEAD_ACCOUNT_ID))
-            .call_and_assert(Err(Error::<Test>::ZeroReward.into()));
-    })
-}

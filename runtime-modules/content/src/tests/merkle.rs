@@ -8,11 +8,7 @@ use sp_runtime::DispatchError;
 #[test]
 fn unsuccessful_reward_claim_with_unsufficient_cashout() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        ContentTest::with_member_channel().setup();
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::one(),
@@ -29,11 +25,7 @@ fn unsuccessful_reward_claim_with_unsufficient_cashout() {
 #[test]
 fn unsuccessful_reward_claim_with_cashout_limit_exceeded() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        ContentTest::with_member_channel().setup();
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::one(),
@@ -50,11 +42,7 @@ fn unsuccessful_reward_claim_with_cashout_limit_exceeded() {
 #[test]
 fn unsuccessful_reward_claim_with_invalid_channel_id() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        ContentTest::with_member_channel().setup();
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::zero(),
@@ -71,11 +59,7 @@ fn unsuccessful_reward_claim_with_invalid_channel_id() {
 #[test]
 fn unsuccessful_reward_claim_with_invalid_claim() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        ContentTest::with_member_channel().setup();
         <Test as Config>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED + 1);
 
         let item = PullPayment::<Test> {
@@ -92,11 +76,7 @@ fn unsuccessful_reward_claim_with_invalid_claim() {
 #[test]
 fn unsuccessful_reward_claim_with_empty_proof() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        ContentTest::with_member_channel().setup();
         <Test as Config>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
 
         let item = PullPayment::<Test> {
@@ -114,38 +94,21 @@ fn unsuccessful_reward_claim_with_empty_proof() {
 #[test]
 fn unsuccessful_reward_claim_with_pending_channel_transfer() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel_with_video(
-            DATA_OBJECT_STATE_BLOAT_BOND,
-            &[ChannelActionPermission::ClaimChannelReward],
-        );
-        let payments = create_some_pull_payments_helper();
-        update_commit_value_with_payments_helper(&payments);
-        <Test as Config>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
-
-        let default_curator_group_id = Content::next_curator_group_id() - 1;
+        ContentTest::with_member_channel()
+            .with_claimable_reward()
+            .setup();
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(SECOND_MEMBER_ID)
+            .call_and_assert(Ok(()));
         ClaimChannelRewardFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_payments(payments)
-            .with_actor(ContentActor::Curator(
-                default_curator_group_id,
-                DEFAULT_CURATOR_ID,
-            ))
-            .call_and_assert(Ok(()))
+            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
     })
 }
 
 #[test]
 fn unsuccessful_reward_claim_with_no_commitment_value_outstanding() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        ContentTest::with_member_channel().setup();
         let payments = create_some_pull_payments_helper();
         <Test as Config>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
 
@@ -158,20 +121,15 @@ fn unsuccessful_reward_claim_with_no_commitment_value_outstanding() {
 #[test]
 fn unsuccessful_reward_claim_cashouts_disabled() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
-        let payments = create_some_pull_payments_helper();
-        update_commit_value_with_payments_helper(&payments);
+        ContentTest::with_member_channel()
+            .with_claimable_reward()
+            .setup();
 
         UpdateChannelPayoutsFixture::default()
             .with_channel_cashouts_enabled(Some(false))
             .call_and_assert(Ok(()));
 
         ClaimChannelRewardFixture::default()
-            .with_payments(payments.clone())
             .call_and_assert(Err(Error::<Test>::ChannelCashoutsDisabled.into()));
     })
 }
@@ -179,22 +137,14 @@ fn unsuccessful_reward_claim_cashouts_disabled() {
 #[test]
 fn unsuccessful_reward_claim_with_successive_request() {
     with_default_mock_builder(|| {
-        run_to_block(1);
+        ContentTest::with_member_channel()
+            .with_claimable_reward()
+            .setup();
 
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
-        let payments = create_some_pull_payments_helper();
-        update_commit_value_with_payments_helper(&payments);
-        <Test as Config>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
-
-        ClaimChannelRewardFixture::default()
-            .with_payments(payments.clone())
-            .call_and_assert(Ok(()));
+        ClaimChannelRewardFixture::default().call_and_assert(Ok(()));
 
         // cashout is 0 now
         ClaimChannelRewardFixture::default()
-            .with_payments(payments)
             .call_and_assert(Err(Error::<Test>::CashoutAmountBelowMinimumAmount.into()))
     })
 }
@@ -202,18 +152,12 @@ fn unsuccessful_reward_claim_with_successive_request() {
 #[test]
 fn successful_reward_claim_with_successive_request_when_reward_increased() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
-        let payments = create_some_pull_payments_helper();
-        update_commit_value_with_payments_helper(&payments);
+        ContentTest::with_member_channel()
+            .with_claimable_reward()
+            .setup();
         <Test as Config>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED * 2);
 
-        ClaimChannelRewardFixture::default()
-            .with_payments(payments.clone())
-            .call_and_assert(Ok(()));
+        ClaimChannelRewardFixture::default().call_and_assert(Ok(()));
 
         // update commit (double channel's reward)
         let payments2 = create_some_pull_payments_helper_with_rewards(DEFAULT_PAYOUT_EARNED * 2);
@@ -229,17 +173,12 @@ fn successful_reward_claim_with_successive_request_when_reward_increased() {
 #[test]
 fn unsuccessful_reward_claim_with_insufficient_council_budget() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
-        let payments = create_some_pull_payments_helper();
-        update_commit_value_with_payments_helper(&payments);
+        ContentTest::with_member_channel()
+            .with_claimable_reward()
+            .setup();
         <Test as Config>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED - 1);
 
         ClaimChannelRewardFixture::default()
-            .with_payments(payments.clone())
             .call_and_assert(Err(Error::<Test>::InsufficientCouncilBudget.into()));
     })
 }
@@ -257,6 +196,25 @@ fn unsuccessful_channel_reward_claim_by_curator_agent_without_permissions() {
             .call_and_assert(Err(
                 Error::<Test>::ChannelAgentInsufficientPermissions.into()
             ));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_reward_claim_when_creator_cashouts_paused() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_claimable_reward()
+            .setup();
+        SetChannelPausedFeaturesAsModeratorFixture::default()
+            .with_new_paused_features(
+                [PausableChannelFeature::CreatorCashout]
+                    .iter()
+                    .cloned()
+                    .collect(),
+            )
+            .call_and_assert(Ok(()));
+        ClaimChannelRewardFixture::default()
+            .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
     })
 }
 
@@ -334,11 +292,7 @@ fn successful_channel_reward_claim_by_owner_member() {
 #[test]
 fn unsuccessful_channel_balance_withdrawal_when_amount_exceeds_balance_minus_existential_deposit() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        ContentTest::with_member_channel().setup();
 
         // TODO: Should not be required after https://github.com/Joystream/joystream/issues/3511
         make_channel_account_existential_deposit(ChannelId::one());
@@ -352,8 +306,7 @@ fn unsuccessful_channel_balance_withdrawal_when_amount_exceeds_balance_minus_exi
 #[test]
 fn unsuccessful_channel_balance_withdrawal_during_transfer() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-        ContentTest::with_member_channel().with_video().setup();
+        ContentTest::with_member_channel().setup();
         UpdateChannelTransferStatusFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
@@ -366,11 +319,7 @@ fn unsuccessful_channel_balance_withdrawal_during_transfer() {
 #[test]
 fn unsuccessful_channel_balance_withdrawal_when_amount_is_zero() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        ContentTest::with_member_channel().setup();
 
         WithdrawFromChannelBalanceFixture::default()
             .with_amount(0)
@@ -381,22 +330,14 @@ fn unsuccessful_channel_balance_withdrawal_when_amount_is_zero() {
 #[test]
 fn unsuccessful_channel_balance_double_spend_withdrawal() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        let payments = create_some_pull_payments_helper();
-        update_commit_value_with_payments_helper(&payments);
-        <Test as Config>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
+        ContentTest::with_member_channel()
+            .with_claimable_reward()
+            .setup();
 
         // TODO: Should not be required after https://github.com/Joystream/joystream/issues/3511
         make_channel_account_existential_deposit(ChannelId::one());
 
-        ClaimChannelRewardFixture::default()
-            .with_payments(payments)
-            .call_and_assert(Ok(()));
+        ClaimChannelRewardFixture::default().call_and_assert(Ok(()));
 
         WithdrawFromChannelBalanceFixture::default().call_and_assert(Ok(()));
         WithdrawFromChannelBalanceFixture::default().call_and_assert(Err(
@@ -408,11 +349,7 @@ fn unsuccessful_channel_balance_double_spend_withdrawal() {
 #[test]
 fn unsuccessful_channel_balance_withdrawal_invalid_channel_id() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
+        ContentTest::with_member_channel().setup();
 
         WithdrawFromChannelBalanceFixture::default()
             .with_channel_id(ChannelId::zero())
@@ -442,22 +379,14 @@ fn unsuccessful_channel_balance_withdrawal_when_creator_token_issued() {
 #[test]
 fn successful_channel_balance_multiple_withdrawals() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel();
-
-        let payments = create_some_pull_payments_helper();
-        update_commit_value_with_payments_helper(&payments);
-        <Test as Config>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
+        ContentTest::with_member_channel()
+            .with_claimable_reward()
+            .setup();
 
         // TODO: Should not be required after https://github.com/Joystream/joystream/issues/3511
         make_channel_account_existential_deposit(ChannelId::one());
 
-        ClaimChannelRewardFixture::default()
-            .with_payments(payments)
-            .call_and_assert(Ok(()));
+        ClaimChannelRewardFixture::default().call_and_assert(Ok(()));
 
         WithdrawFromChannelBalanceFixture::default()
             .with_amount(DEFAULT_PAYOUT_CLAIMED - 1)
@@ -501,7 +430,6 @@ fn successful_member_channel_balance_withdrawal_by_collaborator() {
         WithdrawFromChannelBalanceFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .with_destination(COLLABORATOR_MEMBER_ACCOUNT_ID)
             .call_and_assert(Ok(()));
     })
 }
@@ -553,7 +481,6 @@ fn successful_curator_channel_balance_withdrawal_by_curator() {
         WithdrawFromChannelBalanceFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
             .with_actor(default_curator_actor())
-            .with_destination(DEFAULT_CURATOR_ACCOUNT_ID)
             .call_and_assert(Ok(()));
     })
 }
@@ -571,7 +498,6 @@ fn successful_curator_channel_balance_withdrawal_by_lead() {
         WithdrawFromChannelBalanceFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
-            .with_destination(LEAD_ACCOUNT_ID)
             .call_and_assert(Ok(()));
     })
 }
@@ -599,11 +525,7 @@ fn unsuccessful_channel_balance_withdrawal_with_fund_transfer_feature_paused() {
 #[test]
 fn unsuccessful_claim_and_withdraw_with_unsufficient_cashout() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        ContentTest::with_member_channel().setup();
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::one(),
@@ -620,11 +542,7 @@ fn unsuccessful_claim_and_withdraw_with_unsufficient_cashout() {
 #[test]
 fn unsuccessful_claim_and_withdraw_with_reward_limit_exceeded() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        ContentTest::with_member_channel().setup();
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::one(),
@@ -641,11 +559,7 @@ fn unsuccessful_claim_and_withdraw_with_reward_limit_exceeded() {
 #[test]
 fn unsuccessful_claim_and_withdraw_with_invalid_channel_id() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        ContentTest::with_member_channel().setup();
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::zero(),
@@ -662,14 +576,10 @@ fn unsuccessful_claim_and_withdraw_with_invalid_channel_id() {
 #[test]
 fn unsuccessful_claim_and_withdraw_with_invalid_claim() {
     with_default_mock_builder(|| {
-        run_to_block(1);
+        ContentTest::with_member_channel()
+            .with_claimable_reward()
+            .setup();
 
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
-
-        let payments = create_some_pull_payments_helper();
-        update_commit_value_with_payments_helper(&payments);
         <Test as Config>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED + 1);
 
         let item = PullPayment::<Test> {
@@ -686,12 +596,9 @@ fn unsuccessful_claim_and_withdraw_with_invalid_claim() {
 #[test]
 fn unsuccessful_claim_and_withdraw_with_empty_proof() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
-        <Test as Config>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
+        ContentTest::with_member_channel()
+            .with_claimable_reward()
+            .setup();
 
         let item = PullPayment::<Test> {
             channel_id: ChannelId::one(),
@@ -708,11 +615,7 @@ fn unsuccessful_claim_and_withdraw_with_empty_proof() {
 #[test]
 fn unsuccessful_claim_and_withdraw_with_no_commitment() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        ContentTest::with_member_channel().setup();
         <Test as Config>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
 
         ClaimAndWithdrawChannelRewardFixture::default()
@@ -723,20 +626,15 @@ fn unsuccessful_claim_and_withdraw_with_no_commitment() {
 #[test]
 fn unsuccessful_claim_and_withdraw_cashouts_disabled() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
-        let payments = create_some_pull_payments_helper();
-        update_commit_value_with_payments_helper(&payments);
+        ContentTest::with_member_channel()
+            .with_claimable_reward()
+            .setup();
 
         UpdateChannelPayoutsFixture::default()
             .with_channel_cashouts_enabled(Some(false))
             .call_and_assert(Ok(()));
 
         ClaimAndWithdrawChannelRewardFixture::default()
-            .with_payments(payments.clone())
             .call_and_assert(Err(Error::<Test>::ChannelCashoutsDisabled.into()));
     })
 }
@@ -744,30 +642,21 @@ fn unsuccessful_claim_and_withdraw_cashouts_disabled() {
 #[test]
 fn unsuccessful_claim_and_withdraw_double_spend() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
-        let payments = create_some_pull_payments_helper();
-        update_commit_value_with_payments_helper(&payments);
-        <Test as Config>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED);
+        ContentTest::with_member_channel()
+            .with_claimable_reward()
+            .setup();
 
         // TODO: Should not be required after https://github.com/Joystream/joystream/issues/3511
         make_channel_account_existential_deposit(ChannelId::one());
 
-        ClaimAndWithdrawChannelRewardFixture::default()
-            .with_payments(payments.clone())
-            .call_and_assert(Ok(()));
+        ClaimAndWithdrawChannelRewardFixture::default().call_and_assert(Ok(()));
 
         // claim and withdraw
         ClaimAndWithdrawChannelRewardFixture::default()
-            .with_payments(payments.clone())
             .call_and_assert(Err(Error::<Test>::CashoutAmountBelowMinimumAmount.into()));
 
         // claim only
         ClaimChannelRewardFixture::default()
-            .with_payments(payments.clone())
             .call_and_assert(Err(Error::<Test>::CashoutAmountBelowMinimumAmount.into()));
 
         // withdraw only
@@ -780,17 +669,12 @@ fn unsuccessful_claim_and_withdraw_double_spend() {
 #[test]
 fn unsuccessful_claim_and_withdraw_insufficient_council_budget() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
-        let payments = create_some_pull_payments_helper();
-        update_commit_value_with_payments_helper(&payments);
+        ContentTest::with_member_channel()
+            .with_claimable_reward()
+            .setup();
         <Test as Config>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED - 1);
 
         ClaimAndWithdrawChannelRewardFixture::default()
-            .with_payments(payments.clone())
             .call_and_assert(Err(Error::<Test>::InsufficientCouncilBudget.into()));
     })
 }
@@ -798,11 +682,7 @@ fn unsuccessful_claim_and_withdraw_insufficient_council_budget() {
 #[test]
 fn successful_multiple_claims_and_withdrawals_when_reward_updated() {
     with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_member_owned_channel_with_video();
+        ContentTest::with_member_channel().setup();
         let payments = create_some_pull_payments_helper();
         update_commit_value_with_payments_helper(&payments);
         <Test as Config>::CouncilBudgetManager::set_budget(DEFAULT_PAYOUT_CLAIMED * 2);
@@ -911,7 +791,6 @@ fn successful_member_channel_claim_and_withdraw_by_collaborator() {
         ClaimAndWithdrawChannelRewardFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .with_destination(COLLABORATOR_MEMBER_ACCOUNT_ID)
             .call_and_assert(Ok(()));
     })
 }
@@ -972,7 +851,6 @@ fn successful_curator_channel_claim_and_withdraw_by_curator() {
         ClaimAndWithdrawChannelRewardFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
             .with_actor(default_curator_actor())
-            .with_destination(DEFAULT_CURATOR_ACCOUNT_ID)
             .call_and_assert(Ok(()));
     })
 }
@@ -986,7 +864,6 @@ fn successful_curator_channel_claim_and_withdraw_by_lead() {
         ClaimAndWithdrawChannelRewardFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
-            .with_destination(LEAD_ACCOUNT_ID)
             .call_and_assert(Ok(()));
     })
 }
