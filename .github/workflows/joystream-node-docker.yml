@@ -63,15 +63,15 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        #platform: ['linux/arm64', 'linux/arm/v7']
+        # platform: ['linux/arm64', 'linux/arm/v7']
         platform: ['linux/arm64']
         include:
           - platform: 'linux/arm64'
             platform_tag: 'arm64'
             file: 'joystream-node.Dockerfile'
-          - platform: 'linux/arm/v7'
-            platform_tag: 'arm'
-            file: 'joystream-node-armv7.Dockerfile'
+          # - platform: 'linux/arm/v7'
+          #   platform_tag: 'arm'
+          #   file: 'joystream-node-armv7.Dockerfile'
     env:
       STACK_NAME: build-joystream-node-docker-ga-${{ github.run_number }}-${{ matrix.platform_tag }}
     steps:
