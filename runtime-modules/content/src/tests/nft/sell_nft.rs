@@ -1,11 +1,8 @@
 #![cfg(test)]
-use crate::tests::fixtures::{
-    create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
-    increase_account_balance_helper, MetaEvent,
-};
+use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_ok, assert_noop};
 
 #[test]
 fn sell_nft() {
@@ -207,5 +204,28 @@ fn sell_nft_transactional_status_is_not_idle() {
 
         // Failure checked
         assert_err!(sell_nft_result, Error::<Test>::NftIsNotIdle);
+    })
+}
+
+#[test]
+fn sell_nft_fails_during_transfer() {
+    with_default_mock_builder(|| {
+        ContentTest::default()
+            .with_video_nft_status(NftTransactionalStatusType::BuyNow)
+            .setup();
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::sell_nft(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                VideoId::one(),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                DEFAULT_NFT_PRICE,
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
+        );
     })
 }
