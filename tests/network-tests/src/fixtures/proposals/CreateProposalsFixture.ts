@@ -116,14 +116,6 @@ export class CreateProposalsFixture extends StandardizedFixture {
         assert.equal(qProposal.details.opening?.id, expectedId)
         break
       }
-      case 'CreateBlogPost': {
-        Utils.assert(qProposal.details.__typename === 'CreateBlogPostProposalDetails')
-        const details = proposalDetails.asType('CreateBlogPost')
-        const [title, body] = details
-        assert.equal(qProposal.details.title, title.toString())
-        assert.equal(qProposal.details.body, body.toString())
-        break
-      }
       case 'CreateWorkingGroupLeadOpening': {
         Utils.assert(qProposal.details.__typename === 'CreateWorkingGroupLeadOpeningProposalDetails')
         const details = proposalDetails.asType('CreateWorkingGroupLeadOpening')
@@ -147,15 +139,6 @@ export class CreateProposalsFixture extends StandardizedFixture {
         assert.equal(qProposal.details.lead?.id, expectedId)
         break
       }
-      case 'EditBlogPost': {
-        Utils.assert(qProposal.details.__typename === 'EditBlogPostProposalDetails')
-        const details = proposalDetails.asType('EditBlogPost')
-        const [postId, newTitle, newBody] = details
-        assert.equal(qProposal.details.blogPost, postId.toString())
-        assert.equal(qProposal.details.newTitle, newTitle.unwrapOr(undefined)?.toString())
-        assert.equal(qProposal.details.newBody, newBody.unwrapOr(undefined)?.toString())
-        break
-      }
       case 'FillWorkingGroupLeadOpening': {
         Utils.assert(qProposal.details.__typename === 'FillWorkingGroupLeadOpeningProposalDetails')
         const details = proposalDetails.asType('FillWorkingGroupLeadOpening')
@@ -174,12 +157,6 @@ export class CreateProposalsFixture extends StandardizedFixture {
           qProposal.details.destinationsList?.destinations.map(({ amount, account }) => ({ amount, account })) || [],
           details.map((d) => ({ amount: d.amount.toString(), account: d.account.toString() }))
         )
-        break
-      }
-      case 'LockBlogPost': {
-        Utils.assert(qProposal.details.__typename === 'LockBlogPostProposalDetails')
-        const postId = proposalDetails.asType('LockBlogPost')
-        assert.equal(qProposal.details.blogPost, postId.toString())
         break
       }
       case 'RuntimeUpgrade': {
@@ -278,12 +255,6 @@ export class CreateProposalsFixture extends StandardizedFixture {
         const expectedId = `${getWorkingGroupModuleName(details.working_group)}-${details.worker_id.toString()}`
         assert.equal(qProposal.details.lead?.id, expectedId)
         assert.equal(qProposal.details.slashingAmount!.toString(), details.slashing_amount.toString())
-        break
-      }
-      case 'UnlockBlogPost': {
-        Utils.assert(qProposal.details.__typename === 'UnlockBlogPostProposalDetails')
-        const postId = proposalDetails.asType('UnlockBlogPost')
-        assert.equal(qProposal.details.blogPost, postId.toString())
         break
       }
       case 'UpdateWorkingGroupBudget': {

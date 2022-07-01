@@ -63,40 +63,6 @@ declare module '@polkadot/api-base/types/events' {
        **/
       Withdraw: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32, amount: u128 }>;
     };
-    blog: {
-      /**
-       * A reply to a reply was created
-       **/
-      DirectReplyCreated: AugmentedEvent<ApiType, [u64, u64, u64, u64, Bytes, bool]>;
-      /**
-       * A post was created
-       **/
-      PostCreated: AugmentedEvent<ApiType, [u64, Bytes, Bytes]>;
-      /**
-       * A post was edited
-       **/
-      PostEdited: AugmentedEvent<ApiType, [u64, Option<Bytes>, Option<Bytes>]>;
-      /**
-       * A post was locked
-       **/
-      PostLocked: AugmentedEvent<ApiType, [u64]>;
-      /**
-       * A post was unlocked
-       **/
-      PostUnlocked: AugmentedEvent<ApiType, [u64]>;
-      /**
-       * A reply to a post was created
-       **/
-      ReplyCreated: AugmentedEvent<ApiType, [u64, u64, u64, Bytes, bool]>;
-      /**
-       * A reply was deleted from storage
-       **/
-      ReplyDeleted: AugmentedEvent<ApiType, [u64, u64, u64, bool]>;
-      /**
-       * A reply was edited
-       **/
-      ReplyEdited: AugmentedEvent<ApiType, [u64, u64, u64, Bytes]>;
-    };
     constitution: {
       /**
        * Emits on constitution amendment.
@@ -130,6 +96,7 @@ declare module '@polkadot/api-base/types/events' {
       ChannelPrivilegeLevelUpdated: AugmentedEvent<ApiType, [u64, u8]>;
       ChannelRewardClaimedAndWithdrawn: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u128, AccountId32]>;
       ChannelRewardUpdated: AugmentedEvent<ApiType, [u128, u64]>;
+      ChannelStateBloatBondValueUpdated: AugmentedEvent<ApiType, [u128]>;
       ChannelTransferAccepted: AugmentedEvent<ApiType, [u64, PalletContentTransferParameters]>;
       ChannelUpdated: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, PalletContentChannelUpdateParametersRecord, BTreeSet<u64>]>;
       ChannelVisibilitySetByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, bool, Bytes]>;
@@ -162,6 +129,7 @@ declare module '@polkadot/api-base/types/events' {
       VideoCreated: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u64, PalletContentVideoCreationParametersRecord, BTreeSet<u64>]>;
       VideoDeleted: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64]>;
       VideoDeletedByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, Bytes]>;
+      VideoStateBloatBondValueUpdated: AugmentedEvent<ApiType, [u128]>;
       VideoUpdated: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, PalletContentVideoUpdateParametersRecord, BTreeSet<u64>]>;
       VideoVisibilitySetByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, bool, Bytes]>;
     };

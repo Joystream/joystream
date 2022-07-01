@@ -2735,7 +2735,6 @@ dependencies = [
  "pallet-babe",
  "pallet-bags-list",
  "pallet-balances",
- "pallet-blog",
  "pallet-common",
  "pallet-constitution",
  "pallet-content",
@@ -4361,28 +4360,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-blog"
-version = "6.0.0"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "pallet-balances",
- "pallet-common",
- "pallet-membership",
- "pallet-staking-handler",
- "pallet-timestamp",
- "parity-scale-codec",
- "scale-info",
- "serde",
- "sp-arithmetic",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-common"
 version = "6.0.0"
 dependencies = [
@@ -4684,7 +4661,6 @@ dependencies = [
  "frame-system",
  "pallet-bags-list",
  "pallet-balances",
- "pallet-blog",
  "pallet-common",
  "pallet-constitution",
  "pallet-content",

@@ -6,6 +6,46 @@ use common::council::CouncilBudgetManager;
 use sp_runtime::DispatchError;
 
 #[test]
+fn successful_channel_state_bloat_bond_update_by_lead_account() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        UpdateChannelStateBloatBondFixture::default()
+            .with_channel_state_bloat_bond(20)
+            .call_and_assert(Ok(()))
+    })
+}
+
+#[test]
+fn unsuccessful_channel_state_bloat_bond_update_by_non_lead_account() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        UpdateChannelStateBloatBondFixture::default()
+            .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
+            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()))
+    })
+}
+
+#[test]
+fn successful_video_state_bloat_bond_update_by_lead_account() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        UpdateVideoStateBloatBondFixture::default()
+            .with_video_state_bloat_bond(20)
+            .call_and_assert(Ok(()))
+    })
+}
+
+#[test]
+fn unsuccessful_video_state_bloat_bond_update_by_non_lead_account() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        UpdateVideoStateBloatBondFixture::default()
+            .with_sender(UNAUTHORIZED_LEAD_ACCOUNT_ID)
+            .call_and_assert(Err(Error::<Test>::LeadAuthFailed.into()))
+    })
+}
+
+#[test]
 fn unsuccessful_reward_claim_with_unsufficient_cashout() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
