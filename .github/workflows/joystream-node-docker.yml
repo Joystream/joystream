@@ -1,7 +1,7 @@
 # Production runtime build of joystream-node
 name: joystream-node-docker
 
-on: push
+on: [push, workflow_dispatch]
 
 env:
   REPOSITORY: joystream/node
@@ -63,7 +63,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        platform: ['linux/arm64', 'linux/arm/v7']
+        #platform: ['linux/arm64', 'linux/arm/v7']
+        platform: ['linux/arm64']
         include:
           - platform: 'linux/arm64'
             platform_tag: 'arm64'
@@ -177,11 +178,12 @@ jobs:
           echo $IMAGE
           docker pull $IMAGE-amd64
           docker pull $IMAGE-arm64
-          docker pull $IMAGE-arm
-          docker manifest create $IMAGE $IMAGE-amd64 $IMAGE-arm64 $IMAGE-arm
+          # docker pull $IMAGE-arm
+          # docker manifest create $IMAGE $IMAGE-amd64 $IMAGE-arm64 $IMAGE-arm
+          docker manifest create $IMAGE $IMAGE-amd64 $IMAGE-arm64
           docker manifest annotate $IMAGE $IMAGE-amd64 --arch amd64
           docker manifest annotate $IMAGE $IMAGE-arm64 --arch arm64
-          docker manifest annotate $IMAGE $IMAGE-arm --arch arm
+          # docker manifest annotate $IMAGE $IMAGE-arm --arch arm
           docker manifest push $IMAGE
 
       - name: Create manifest with latest tag for master
@@ -189,8 +191,9 @@ jobs:
         run: |
           IMAGE=${{ env.REPOSITORY }}:${{ env.TAG_SHASUM }}
           LATEST_TAG=${{ env.REPOSITORY }}:latest
-          docker manifest create $LATEST_TAG $IMAGE-amd64 $IMAGE-arm64 $IMAGE-arm
+          # docker manifest create $LATEST_TAG $IMAGE-amd64 $IMAGE-arm64 $IMAGE-arm
+          docker manifest create $LATEST_TAG $IMAGE-amd64 $IMAGE-arm64
           docker manifest annotate $LATEST_TAG $IMAGE-amd64 --arch amd64
           docker manifest annotate $LATEST_TAG $IMAGE-arm64 --arch arm64
-          docker manifest annotate $LATEST_TAG $IMAGE-arm --arch arm
+          # docker manifest annotate $LATEST_TAG $IMAGE-arm --arch arm
           docker manifest push $LATEST_TAG
