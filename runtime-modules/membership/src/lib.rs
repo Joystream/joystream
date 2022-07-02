@@ -229,9 +229,6 @@ decl_error! {
         /// Not enough balance to buy membership.
         NotEnoughBalanceToBuyMembership,
 
-        /// Not enough balance to invite member.
-        NotEnoughBalanceToInvite,
-
         /// Controller account required.
         ControllerAccountRequired,
 
@@ -843,7 +840,7 @@ decl_module! {
             //
 
             let invitation_balance = Self::initial_invitation_balance();
-            
+
             // Endow invited member
             let _ = <balances::Pallet::<T> as Currency<T::AccountId>>::deposit_creating(
                 &params.controller_account,
