@@ -67,6 +67,16 @@ fn member_funded_account<T: Config + balances::Config>(
     (account_id, member_id)
 }
 
+fn setup_privileged_inviter<T: Config + balances::Config>() -> T::AccountId {
+    let account_id = account::<T::AccountId>("inviter", 1, SEED);
+
+    let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
+
+    Module::<T>::set_privileged_inviter(RawOrigin::Root.into(), account_id.clone()).unwrap();
+
+    account_id
+}
+
 // Method to generate a distintic valid handle
 // for a membership. For each index.
 fn handle_from_id<T: Config>(id: u32) -> Vec<u8> {
@@ -497,6 +507,71 @@ benchmarks! {
 
         assert_last_event::<T>(RawEvent::MemberInvited(invited_member_id, invite_params).into());
 
+    }
+
+    invite_member_privileged {
+        let i in 1 .. MAX_BYTES;
+        let j in 0 .. MAX_BYTES;
+
+        let account_id = setup_privileged_inviter::<T>();
+
+        let handle = handle_from_id::<T>(i);
+
+        let metadata = vec![0u8].repeat(j as usize);
+
+        let invite_params = InviteMembershipParameters {
+            inviting_member_id: T::MemberId::from(0),
+            root_account: account_id.clone(),
+            controller_account: account_id.clone(),
+            handle: Some(handle.clone()),
+            metadata,
+        };
+
+        let invited_member_id = <NextMemberId<T>>::get();
+
+    }: _(RawOrigin::Signed(account_id.clone()), invite_params.clone())
+
+    verify {
+        // Ensure member is successfully invited
+        let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
+
+        let invited_membership: Membership<T> = MembershipObject {
+            handle_hash: handle_hash.clone(),
+            root_account: account_id.clone(),
+            controller_account: account_id.clone(),
+            verified: false,
+            invites: 0,
+        };
+
+        assert_eq!(MemberIdByHandleHash::<T>::get(&handle_hash), invited_member_id);
+
+        assert_eq!(MembershipById::<T>::get(invited_member_id), Some(invited_membership));
+
+        assert_last_event::<T>(RawEvent::MemberInvitedPrivileged(invited_member_id, invite_params).into());
+    }
+
+    set_privileged_inviter {
+        let account_id = account::<T::AccountId>("inviter", 1, SEED);
+    }: _(RawOrigin::Root, account_id.clone())
+    verify {
+        assert_eq!(
+            PrivilegedInviter::<T>::get(),
+            Some(account_id)
+        );
+    }
+
+    unset_privileged_inviter {
+        let account_id = setup_privileged_inviter::<T>();
+        assert_eq!(
+            PrivilegedInviter::<T>::get(),
+            Some(account_id)
+        );
+    }: _(RawOrigin::Root)
+    verify {
+        assert_eq!(
+            PrivilegedInviter::<T>::get(),
+            None
+        );
     }
 
     set_membership_price {

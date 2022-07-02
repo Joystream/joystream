@@ -229,14 +229,20 @@ decl_error! {
         /// Not enough balance to buy membership.
         NotEnoughBalanceToBuyMembership,
 
+        /// Not enough balance to invite member.
+        NotEnoughBalanceToInvite,
+
         /// Controller account required.
         ControllerAccountRequired,
 
         /// Root account required.
         RootAccountRequired,
 
-        /// Invalid origin.
+        /// Unsigned origin.
         UnsignedOrigin,
+
+        /// Origin not privileged for operation.
+        NonPrivilegedOrigin,
 
         /// Member profile not found (invalid member id).
         MemberProfileNotFound,
@@ -319,6 +325,10 @@ decl_storage! {
         pub(crate) StakingAccountIdMemberStatus get(fn staking_account_id_member_status):
             map hasher(blake2_128_concat) T::AccountId => StakingAccountMemberBinding<T::MemberId>;
 
+        /// Privileged account that can invite members bypassing invite limits
+        /// and working group budget restrictions.
+        pub PrivilegedInviter get(fn privileged_inviter): Option<T::AccountId>;
+
     }
     add_extra_genesis {
         config(members) : Vec<genesis::Member<T::MemberId, T::AccountId>>;
@@ -358,6 +368,7 @@ decl_event! {
         >,
     {
         MemberInvited(MemberId, InviteMembershipParameters),
+        MemberInvitedPrivileged(MemberId, InviteMembershipParameters),
         MembershipBought(MemberId, BuyMembershipParameters),
         MemberProfileUpdated(
             MemberId,
@@ -761,6 +772,100 @@ decl_module! {
 
             // Fire the event.
             Self::deposit_event(RawEvent::MemberInvited(invited_member_id, params));
+        }
+
+        /// Set the privileged account. When set sudo will no longer
+        /// be able to do privileged invites. To disable both sudo and account
+        /// from doing privileged invites, set the account to zero.
+        // #[weight = WeightInfoMembership::<T>::set_privileged_inviter()]
+        // TODO: Enable correct weight after benchmarking PR is merged
+        #[weight = 10000]
+        pub fn set_privileged_inviter(
+            origin,
+            account_id: T::AccountId,
+        ) {
+            ensure_root(origin)?;
+            PrivilegedInviter::<T>::put(account_id);
+        }
+
+        /// Unset the privileged account. When set to None, only sudo
+        /// will be able to do privileged invites.
+        // #[weight = WeightInfoMembership::<T>::unset_privileged_inviter()]
+        // TODO: Enable correct weight after benchmarking PR is merged
+        #[weight = 10000]
+        pub fn unset_privileged_inviter(
+            origin,
+        ) {
+            ensure_root(origin)?;
+            PrivilegedInviter::<T>::take();
+        }
+
+        /// Invite a new member by privileged accounts. Does not require to be a member.
+        /// Has no restrictions on invites. Locked funds for invited member
+        /// are not limited by the working group budget.
+        // #[weight = WeightInfoMembership::<T>::invite_member_privileged(
+        //     Module::<T>::text_length_unwrap_or_default(&params.handle),
+        //     params.metadata.len().saturated_into(),
+        // )]
+        // TODO: Enable correct weight after benchmarking PR is merged
+        #[weight = 10000]
+        pub fn invite_member_privileged(
+            origin,
+            params: InviteMembershipParameters<T::AccountId, T::MemberId>,
+        ) {
+
+            if let Some(privileged_account) = Self::privileged_inviter() {
+                // if privileged account is set, ensure it matches signed origin
+                let sender = ensure_signed(origin)?;
+                ensure!(
+                    privileged_account == sender,
+                    Error::<T>::NonPrivilegedOrigin
+                );
+            } else {
+                // otherwise root origin can do privileged invites
+                ensure_root(origin)?;
+            }
+
+            let handle_hash = Self::get_handle_hash(
+                &params.handle,
+            )?;
+
+            // Check for existing invitation locks.
+            ensure!(
+                T::InvitedMemberStakingHandler::is_account_free_of_conflicting_stakes(
+                    &params.controller_account
+                ),
+                Error::<T>::ConflictingLock,
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let invitation_balance = Self::initial_invitation_balance();
+            
+            // Endow invited member
+            let _ = <balances::Pallet::<T> as Currency<T::AccountId>>::deposit_creating(
+                &params.controller_account,
+                invitation_balance,
+            );
+
+            // Create new membership
+            let invited_member_id = Self::insert_member(
+                &params.root_account,
+                &params.controller_account,
+                handle_hash,
+                Zero::zero(),
+            );
+
+            // Lock invitation balance. Allow only transaction payments.
+            T::InvitedMemberStakingHandler::lock_with_reasons(
+                &params.controller_account,
+                invitation_balance,
+                WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT)
+            );
+
+            Self::deposit_event(RawEvent::MemberInvitedPrivileged(invited_member_id, params));
         }
 
         /// Updates membership price. Requires root origin.
