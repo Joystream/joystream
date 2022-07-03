@@ -70,7 +70,7 @@ use sp_core::crypto::KeyTypeId;
 use sp_core::Hasher;
 use sp_io;
 use sp_runtime::curve::PiecewiseLinear;
-use sp_runtime::traits::{AccountIdLookup, BlakeTwo256, ConvertInto, OpaqueKeys, Saturating};
+use sp_runtime::traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys, Saturating};
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys, FixedPointNumber, Perbill, Perquintill,
 };
@@ -199,7 +199,7 @@ impl frame_system::Config for Runtime {
     type Hash = Hash;
     type Hashing = BlakeTwo256;
     type AccountId = AccountId;
-    type Lookup = AccountIdLookup<AccountId, ()>;
+    type Lookup = IdentityLookup<Self::AccountId>;
     type Header = generic::Header<BlockNumber, BlakeTwo256>;
     type Event = Event;
     type BlockHashCount = BlockHashCount;
