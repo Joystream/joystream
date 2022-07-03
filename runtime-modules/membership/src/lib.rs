@@ -238,9 +238,6 @@ decl_error! {
         /// Unsigned origin.
         UnsignedOrigin,
 
-        /// Origin not privileged for operation.
-        NonPrivilegedOrigin,
-
         /// Member profile not found (invalid member id).
         MemberProfileNotFound,
 
@@ -771,9 +768,7 @@ decl_module! {
             Self::deposit_event(RawEvent::MemberInvited(invited_member_id, params));
         }
 
-        /// Set the privileged account. When set sudo will no longer
-        /// be able to do privileged invites. To disable both sudo and account
-        /// from doing privileged invites, set the account to zero.
+        /// Set the privileged account.
         // #[weight = WeightInfoMembership::<T>::set_privileged_inviter()]
         // TODO: Enable correct weight after benchmarking PR is merged
         #[weight = 10000]
@@ -785,8 +780,7 @@ decl_module! {
             PrivilegedInviter::<T>::put(account_id);
         }
 
-        /// Unset the privileged account. When set to None, only sudo
-        /// will be able to do privileged invites.
+        /// Unset the privileged account.
         // #[weight = WeightInfoMembership::<T>::unset_privileged_inviter()]
         // TODO: Enable correct weight after benchmarking PR is merged
         #[weight = 10000]
@@ -797,7 +791,7 @@ decl_module! {
             PrivilegedInviter::<T>::take();
         }
 
-        /// Invite a new member by privileged accounts. Does not require to be a member.
+        /// Invite a new member by privileged account or root.
         /// Has no restrictions on invites. Locked funds for invited member
         /// are not limited by the working group budget.
         // #[weight = WeightInfoMembership::<T>::invite_member_privileged(
@@ -810,17 +804,19 @@ decl_module! {
             origin,
             params: InviteMembershipParameters<T::AccountId, T::MemberId>,
         ) {
+            let is_root = ensure_root(origin.clone()).is_ok();
 
-            if let Some(privileged_account) = Self::privileged_inviter() {
-                // if privileged account is set, ensure it matches signed origin
-                let sender = ensure_signed(origin)?;
-                ensure!(
-                    privileged_account == sender,
-                    Error::<T>::NonPrivilegedOrigin
-                );
-            } else {
-                // otherwise root origin can do privileged invites
-                ensure_root(origin)?;
+            // if not root origin, then must be privileged account
+            if !is_root {
+                if let Some(privileged_account) = Self::privileged_inviter() {
+                    let sender = ensure_signed(origin)?;
+                    ensure!(
+                        privileged_account == sender,
+                        sp_runtime::traits::BadOrigin
+                    );
+                } else {
+                    return Err(sp_runtime::traits::BadOrigin.into());
+                }
             }
 
             let handle_hash = Self::get_handle_hash(
@@ -847,19 +843,19 @@ decl_module! {
                 invitation_balance,
             );
 
+            // Lock invitation balance. Allow only transaction payments.
+            T::InvitedMemberStakingHandler::lock_with_reasons(
+                &params.controller_account,
+                invitation_balance,
+                WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT)
+            );
+
             // Create new membership
             let invited_member_id = Self::insert_member(
                 &params.root_account,
                 &params.controller_account,
                 handle_hash,
                 Zero::zero(),
-            );
-
-            // Lock invitation balance. Allow only transaction payments.
-            T::InvitedMemberStakingHandler::lock_with_reasons(
-                &params.controller_account,
-                invitation_balance,
-                WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT)
             );
 
             Self::deposit_event(RawEvent::MemberInvitedPrivileged(invited_member_id, params));
