@@ -1,7 +1,7 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { DatabaseManager, EventContext, StoreContext, FindOptionsWhere } from '@joystream/hydra-common'
+import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
 import { Storage } from '../../generated/types/storage'
 import {
   DistributionBucket,
@@ -406,7 +406,7 @@ export async function storage_DistributionBucketDeleted({ event, store }: EventC
   const invitedOperators = await store.getMany(DistributionBucketOperator, {
     where: {
       status: DistributionBucketOperatorStatus.INVITED,
-      distributionBucket: distributionBucket as FindOptionsWhere<any>, // TODO: get rid of `any` type
+      distributionBucket: { id: distributionBucket.id },
     },
   })
   await Promise.all(invitedOperators.map((operator) => removeDistributionBucketOperator(store, operator)))
