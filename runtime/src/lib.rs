@@ -50,8 +50,8 @@ use frame_election_provider_support::{
 };
 use frame_support::pallet_prelude::Get;
 use frame_support::traits::{
-    ConstU16, ConstU32, Currency, EnsureOneOf, Imbalance, KeyOwnerProofSystem, LockIdentifier,
-    OnUnbalanced,
+    ConstU16, ConstU32, Contains, Currency, EnsureOneOf, Imbalance, KeyOwnerProofSystem,
+    LockIdentifier, OnUnbalanced,
 };
 use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
@@ -187,8 +187,43 @@ parameter_types! {
 
 const_assert!(NORMAL_DISPATCH_RATIO.deconstruct() >= AVERAGE_ON_INITIALIZE_RATIO.deconstruct());
 
+/// BaseCallFilter that disables all non-essential calls.
+/// Allowing only calls for successful block authoring, staking, nominating.
+/// Since balances calls are disabled, his means that stash and controller
+/// accounts must already be funded. If this is not practical to setup at genesis
+/// then consider enabling Balances calls?
+/// This will be used at initial launch, and other calls will be enabled as we rollout.
+pub enum LockedDownBaseFilter {}
+impl Contains<<Runtime as frame_system::Config>::Call> for LockedDownBaseFilter {
+    fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
+        match call {
+            Call::System(method)=> {
+                // All methods except the remark call
+                match method {
+                    remark => false,
+                    _ => true,
+                }
+            }
+            // confirmed that Utility.batch dispatch does not bypass filter.
+            Call::Utility(_) => true,
+            Call::Babe(_) => true,
+            Call::Timestamp(_) => true,
+            Call::Authorship(_) => true,
+            Call::ElectionProviderMultiPhase(_) => true,
+            Call::Staking(_) => true,
+            Call::Session(_) => true,
+            Call::Grandpa(_) => true,
+            Call::ImOnline(_) => true,
+            Call::Sudo(_) => true,
+            Call::BagsList(_) => true,
+            // Disable all other calls
+            _ => false,
+        }
+    }
+}
+
 impl frame_system::Config for Runtime {
-    type BaseCallFilter = frame_support::traits::Everything;
+    type BaseCallFilter = LockedDownBaseFilter;
     type BlockWeights = RuntimeBlockWeights;
     type BlockLength = RuntimeBlockLength;
     type DbWeight = RocksDbWeight;
