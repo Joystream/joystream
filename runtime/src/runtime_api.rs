@@ -32,8 +32,8 @@ pub type SignedExtra = (
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
 );
 
-/// We don't use specific Address types (like Indices).
-pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
+/// Simply AccountId.
+pub type Address = AccountId;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem;
