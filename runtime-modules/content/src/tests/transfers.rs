@@ -261,7 +261,7 @@ fn accept_transfer_status_fails_with_invalid_balance_for_curator_groups() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         let curator_group_id = Content::next_curator_group_id();
-        create_default_curator_owned_channel(DATA_OBJECT_STATE_BLOAT_BOND, &[]);
+        create_default_curator_owned_channel(DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND, &[]);
 
         let price = INITIAL_BALANCE + 1; // higher than initial balance
         UpdateChannelTransferStatusFixture::default()
@@ -271,7 +271,7 @@ fn accept_transfer_status_fails_with_invalid_balance_for_curator_groups() {
             .with_price(price)
             .call_and_assert(Ok(()));
 
-        <Test as Trait>::ContentWorkingGroup::set_budget(INITIAL_BALANCE);
+        <Test as Config>::ContentWorkingGroup::set_budget(INITIAL_BALANCE);
 
         AcceptChannelTransferFixture::default()
             .with_price(price)
@@ -323,7 +323,7 @@ fn accept_transfer_status_succeeds_for_curators_to_members_with_price() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_STATE_BLOAT_BOND, &[]);
+        create_default_curator_owned_channel(DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND, &[]);
 
         let price = 100;
         UpdateChannelTransferStatusFixture::default()
@@ -334,7 +334,7 @@ fn accept_transfer_status_succeeds_for_curators_to_members_with_price() {
             .call_and_assert(Ok(()));
 
         let member2_balance = Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID);
-        <Test as Trait>::ContentWorkingGroup::set_budget(INITIAL_BALANCE);
+        <Test as Config>::ContentWorkingGroup::set_budget(INITIAL_BALANCE);
 
         AcceptChannelTransferFixture::default()
             .with_origin(RawOrigin::Signed(SECOND_MEMBER_ACCOUNT_ID))
@@ -342,7 +342,7 @@ fn accept_transfer_status_succeeds_for_curators_to_members_with_price() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            <Test as Trait>::ContentWorkingGroup::get_budget(),
+            <Test as Config>::ContentWorkingGroup::get_budget(),
             INITIAL_BALANCE + price
         );
         assert_eq!(
@@ -370,7 +370,7 @@ fn accept_transfer_status_succeeds_for_members_to_curators_with_price() {
             .call_and_assert(Ok(()));
 
         let member1_balance = Balances::<Test>::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID);
-        <Test as Trait>::ContentWorkingGroup::set_budget(INITIAL_BALANCE);
+        <Test as Config>::ContentWorkingGroup::set_budget(INITIAL_BALANCE);
 
         AcceptChannelTransferFixture::default()
             .with_origin(RawOrigin::Signed(LEAD_ACCOUNT_ID))
@@ -378,7 +378,7 @@ fn accept_transfer_status_succeeds_for_members_to_curators_with_price() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            <Test as Trait>::ContentWorkingGroup::get_budget(),
+            <Test as Config>::ContentWorkingGroup::get_budget(),
             INITIAL_BALANCE - price
         );
         assert_eq!(

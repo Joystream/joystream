@@ -1,6 +1,7 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::type_complexity)]
+#![allow(clippy::unused_unit)]
 
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
@@ -10,15 +11,17 @@ pub use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, ExistenceRequirement};
 use frame_support::weights::Weight;
 use frame_support::{
-    decl_error, decl_event, decl_module, decl_storage, ensure, traits::Get, Parameter,
+    decl_error, decl_event, decl_module, decl_storage, ensure, traits::Get, PalletId, Parameter,
 };
 use frame_system::ensure_signed;
+use scale_info::TypeInfo;
 use sp_arithmetic::traits::{BaseArithmetic, One};
 pub use sp_io::storage::clear_prefix;
 use sp_runtime::traits::{AccountIdConversion, MaybeSerialize, Member};
-use sp_runtime::{ModuleId, SaturatedConversion};
+use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
+use sp_std::convert::TryInto;
 use sp_std::fmt::Debug;
 use sp_std::prelude::*;
 
@@ -38,34 +41,34 @@ pub type ModeratorId<T> = common::ActorId<T>;
 
 /// Forum user ID alias for the member of the system.
 pub type ForumUserId<T> = common::MemberId<T>;
-type WeightInfoForum<T> = <T as Trait>::WeightInfo;
+type WeightInfoForum<T> = <T as Config>::WeightInfo;
 
 /// Balance alias for `balances` module.
-pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
 /// Alias for the thread
 pub type ThreadOf<T> = Thread<
     ForumUserId<T>,
-    <T as Trait>::CategoryId,
-    <T as pallet_timestamp::Trait>::Moment,
-    <T as frame_system::Trait>::Hash,
+    <T as Config>::CategoryId,
+    <T as pallet_timestamp::Config>::Moment,
+    <T as frame_system::Config>::Hash,
     BalanceOf<T>,
 >;
 
 /// Type alias for `ExtendedPostIdObject`
 pub type ExtendedPostId<T> =
-    ExtendedPostIdObject<<T as Trait>::CategoryId, <T as Trait>::ThreadId, <T as Trait>::PostId>;
+    ExtendedPostIdObject<<T as Config>::CategoryId, <T as Config>::ThreadId, <T as Config>::PostId>;
 
 /// Extended post id representation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, TypeInfo)]
 pub struct ExtendedPostIdObject<CategoryId, ThreadId, PostId> {
     pub category_id: CategoryId,
     pub thread_id: ThreadId,
     pub post_id: PostId,
 }
 
-type Balances<T> = balances::Module<T>;
+type Balances<T> = balances::Pallet<T>;
 
 /// pallet_forum WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -99,13 +102,13 @@ pub trait WeightInfo {
     fn set_stickied_threads_moderator(i: u32, j: u32) -> Weight;
 }
 
-pub trait Trait:
-    frame_system::Trait
-    + pallet_timestamp::Trait
+pub trait Config:
+    frame_system::Config
+    + pallet_timestamp::Config
     + common::membership::MembershipTypes
-    + balances::Trait
+    + balances::Config
 {
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
     type CategoryId: Parameter
         + Member
@@ -168,7 +171,7 @@ pub trait Trait:
     type MapLimits: StorageLimits;
 
     /// The forum module Id, used to derive the account Id to hold the thread bounty
-    type ModuleId: Get<ModuleId>;
+    type ModuleId: Get<PalletId>;
 
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
@@ -205,7 +208,7 @@ pub trait StorageLimits {
 
 /// Represents all poll alternative text hashes and vote count for each one
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct PollAlternative<Hash> {
     /// hash of alternative description
     pub alternative_text_hash: Hash,
@@ -216,7 +219,7 @@ pub struct PollAlternative<Hash> {
 
 /// Represents a poll input
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct PollInput<Timestamp> {
     /// description
     pub description: Vec<u8>,
@@ -230,7 +233,7 @@ pub struct PollInput<Timestamp> {
 
 /// Represents a poll
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct Poll<Timestamp, Hash> {
     /// hash of description
     pub description_hash: Hash,
@@ -244,7 +247,7 @@ pub struct Poll<Timestamp, Hash> {
 
 /// Represents a thread post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, TypeInfo)]
 pub struct Post<ForumUserId, ThreadId, Hash, Balance, BlockNumber> {
     /// Id of thread to which this post corresponds.
     pub thread_id: ThreadId,
@@ -264,7 +267,7 @@ pub struct Post<ForumUserId, ThreadId, Hash, Balance, BlockNumber> {
 
 /// Represents a thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq, TypeInfo)]
 pub struct Thread<ForumUserId, CategoryId, Moment, Hash, Balance> {
     /// Category in which this thread lives
     pub category_id: CategoryId,
@@ -284,7 +287,7 @@ pub struct Thread<ForumUserId, CategoryId, Moment, Hash, Balance> {
 
 /// Represents a category
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct Category<CategoryId, ThreadId, Hash> {
     /// Title
     pub title_hash: Hash,
@@ -310,13 +313,14 @@ pub struct Category<CategoryId, ThreadId, Hash> {
     pub sticky_thread_ids: Vec<ThreadId>,
 }
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
-pub enum PrivilegedActor<T: Trait> {
+#[derive(Encode, Decode, Clone, PartialEq, Eq, TypeInfo)]
+#[scale_info(skip_type_params(T))]
+pub enum PrivilegedActor<T: Config> {
     Lead,
     Moderator(ModeratorId<T>),
 }
 
-impl<T: Trait> core::fmt::Debug for PrivilegedActor<T> {
+impl<T: Config> core::fmt::Debug for PrivilegedActor<T> {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             PrivilegedActor::Lead => write!(formatter, "PrivilegedActor {{ Lead }}"),
@@ -337,7 +341,7 @@ type CategoryTreePathArg<CategoryId, ThreadId, Hash> =
 
 decl_error! {
     /// Forum predefined errors
-    pub enum Error for Module<T: Trait> {
+    pub enum Error for Module<T: Config> {
         /// Origin doesn't correspond to any lead account
         OriginNotForumLead,
 
@@ -449,7 +453,7 @@ decl_error! {
 }
 
 decl_storage! {
-    trait Store for Module<T: Trait> as Forum_1_1 {
+    trait Store for Module<T: Config> as Forum_1_1 {
         /// Map category identifier to corresponding category.
         pub CategoryById get(fn category_by_id) config(): map hasher(blake2_128_concat) T::CategoryId => Category<T::CategoryId, T::ThreadId, T::Hash>;
 
@@ -497,16 +501,16 @@ decl_storage! {
 decl_event!(
     pub enum Event<T>
     where
-        <T as Trait>::CategoryId,
+        <T as Config>::CategoryId,
         ModeratorId = ModeratorId<T>,
-        <T as Trait>::ThreadId,
-        <T as Trait>::PostId,
-        <T as frame_system::Trait>::Hash,
+        <T as Config>::ThreadId,
+        <T as Config>::PostId,
+        <T as frame_system::Config>::Hash,
         ForumUserId = ForumUserId<T>,
-        <T as Trait>::PostReactionId,
+        <T as Config>::PostReactionId,
         PrivilegedActor = PrivilegedActor<T>,
         ExtendedPostId = ExtendedPostId<T>,
-        PollInput = PollInput<<T as pallet_timestamp::Trait>::Moment>,
+        PollInput = PollInput<<T as pallet_timestamp::Config>::Moment>,
     {
         /// A category was introduced
         CategoryCreated(CategoryId, Option<CategoryId>, Vec<u8>, Vec<u8>),
@@ -574,7 +578,7 @@ decl_event!(
 );
 
 decl_module! {
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
 
         /// Predefined errors
         type Error = Error<T>;
@@ -588,6 +592,12 @@ decl_module! {
 
         /// Deposit needed to create a thread
         const ThreadDeposit: BalanceOf<T> = T::ThreadDeposit::get();
+
+        /// MaxSubcategories
+        const MaxSubcategories: u64 = <T::MapLimits as StorageLimits>::MaxSubcategories::get();
+
+        /// MaxCategories
+        const MaxCategories: u64 = <T::MapLimits as StorageLimits>::MaxCategories::get();
 
         /// Enable a moderator can moderate a category and its sub categories.
         ///
@@ -603,7 +613,7 @@ decl_module! {
         fn update_category_membership_of_moderator(origin, moderator_id: ModeratorId<T>, category_id: T::CategoryId, new_value: bool) -> DispatchResult {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
-            clear_prefix(b"Forum ForumUserById");
+            clear_prefix(b"Forum ForumUserById", None);
 
             let account_id = ensure_signed(origin)?;
 
@@ -1409,7 +1419,7 @@ decl_module! {
             // Update post text
             let text_hash = T::calculate_hash(&new_text);
             post.text_hash = text_hash;
-            post.last_edited = frame_system::Module::<T>::block_number();
+            post.last_edited = frame_system::Pallet::<T>::block_number();
 
             <PostById<T>>::insert(thread_id, post_id, post);
 
@@ -1583,7 +1593,7 @@ decl_module! {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     /// Hash poll description and poll alternatives descriptions, coverting `PollInput` into `Poll`
     fn from_poll_input(poll_input: PollInput<T::Moment>) -> Poll<T::Moment, T::Hash> {
         Poll {
@@ -1601,7 +1611,7 @@ impl<T: Trait> Module<T> {
     }
 
     fn slash_thread_account(thread_id: T::ThreadId, amount: BalanceOf<T>) {
-        let thread_account_id = T::ModuleId::get().into_sub_account(thread_id);
+        let thread_account_id = T::ModuleId::get().into_sub_account_truncating(thread_id);
         let _ = Balances::<T>::slash(&thread_account_id, amount);
     }
 
@@ -1610,7 +1620,8 @@ impl<T: Trait> Module<T> {
         amount: BalanceOf<T>,
         account_id: &T::AccountId,
     ) -> DispatchResult {
-        let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(thread_id);
+        let state_cleanup_treasury_account =
+            T::ModuleId::get().into_sub_account_truncating(thread_id);
         <Balances<T> as Currency<T::AccountId>>::transfer(
             &state_cleanup_treasury_account,
             account_id,
@@ -1624,7 +1635,8 @@ impl<T: Trait> Module<T> {
         thread_id: T::ThreadId,
         account_id: &T::AccountId,
     ) -> DispatchResult {
-        let state_cleanup_treasury_account = T::ModuleId::get().into_sub_account(thread_id);
+        let state_cleanup_treasury_account =
+            T::ModuleId::get().into_sub_account_truncating(thread_id);
         <Balances<T> as Currency<T::AccountId>>::transfer(
             account_id,
             &state_cleanup_treasury_account,
@@ -1654,7 +1666,7 @@ impl<T: Trait> Module<T> {
                 thread_id,
                 author_id,
                 cleanup_pay_off: T::PostDeposit::get(),
-                last_edited: frame_system::Module::<T>::block_number(),
+                last_edited: frame_system::Pallet::<T>::block_number(),
             };
 
             <PostById<T>>::insert(thread_id, new_post_id, new_post);
@@ -1673,7 +1685,7 @@ impl<T: Trait> Module<T> {
         <ThreadById<T>>::remove(category_id, thread_id);
 
         // Remove all thread poll votes.
-        <PollVotes<T>>::remove_prefix(thread_id);
+        <PollVotes<T>>::remove_prefix(thread_id, None);
 
         // decrease category's thread counter
         <CategoryById<T>>::mutate(category_id, |category| category.num_direct_threads -= 1);
@@ -1693,7 +1705,7 @@ impl<T: Trait> Module<T> {
     // Ensure poll is valid
     fn ensure_poll_input_is_valid(poll: &PollInput<T::Moment>) -> Result<(), Error<T>> {
         // Poll end time must larger than now
-        if poll.end_time < <pallet_timestamp::Module<T>>::now() {
+        if poll.end_time < <pallet_timestamp::Pallet<T>>::now() {
             return Err(Error::<T>::PollTimeSetting);
         }
 
@@ -1801,7 +1813,7 @@ impl<T: Trait> Module<T> {
         thread_id: &T::ThreadId,
         category_id: &T::CategoryId,
     ) -> bool {
-        frame_system::Module::<T>::block_number() >= T::PostLifeTime::get() + post.last_edited
+        frame_system::Pallet::<T>::block_number() >= T::PostLifeTime::get() + post.last_edited
             && !Self::thread_exists(&category_id, &thread_id)
     }
 
@@ -2118,7 +2130,7 @@ impl<T: Trait> Module<T> {
         actor: &PrivilegedActor<T>,
         category_id: &T::CategoryId,
     ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error<T>> {
-        fn check_moderator<T: Trait>(
+        fn check_moderator<T: Config>(
             category_tree_path: &CategoryTreePathArg<T::CategoryId, T::ThreadId, T::Hash>,
             moderator_id: &ModeratorId<T>,
         ) -> Result<(), Error<T>> {
@@ -2296,7 +2308,7 @@ impl<T: Trait> Module<T> {
         );
 
         // Poll not expired
-        if poll.end_time < <pallet_timestamp::Module<T>>::now() {
+        if poll.end_time < <pallet_timestamp::Pallet<T>>::now() {
             Err(Error::<T>::PollCommitExpired)
         } else {
             let alternative_length = poll.poll_alternatives.len();
@@ -2311,7 +2323,7 @@ impl<T: Trait> Module<T> {
 
     // supposed to be called before mutations - checks if next entity can be added
     fn ensure_map_limits<U: Get<u64>>(current_amount: u64) -> Result<(), Error<T>> {
-        fn check_limit<T: Trait>(amount: u64, limit: u64) -> Result<(), Error<T>> {
+        fn check_limit<T: Config>(amount: u64, limit: u64) -> Result<(), Error<T>> {
             if amount >= limit {
                 return Err(Error::<T>::MapSizeLimit);
             }

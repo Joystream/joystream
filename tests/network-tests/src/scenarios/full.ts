@@ -33,6 +33,7 @@ import { scenario } from '../Scenario'
 import activeVideoCounters from '../flows/content/activeVideoCounters'
 import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
 import updatingVerificationStatus from '../flows/membership/updateVerificationStatus'
+import commentsAndReactions from '../flows/content/commentsAndReactions'
 
 scenario('Full', async ({ job, env }) => {
   // Runtime upgrade should always be first job
@@ -95,6 +96,7 @@ scenario('Full', async ({ job, env }) => {
   // Content directory
   const videoCountersJob = job('check active video counters', activeVideoCounters).requires(sudoHireLead)
   job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
+  job('video comments and reactions', commentsAndReactions).after(videoCountersJob)
 
   // CLIs:
   const createChannelJob = job('create channel via CLI', createChannel).after(videoCountersJob)

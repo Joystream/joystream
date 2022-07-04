@@ -1,4 +1,5 @@
 use codec::{Decode, Encode};
+use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::DispatchResult;
@@ -7,7 +8,7 @@ use strum_macros::EnumIter;
 
 /// Defines well-known working groups.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Copy, Debug, PartialOrd, Ord)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Copy, Debug, PartialOrd, Ord, TypeInfo)]
 pub enum WorkingGroup {
     /// Forum working group: working_group::Instance1.
     Forum,
@@ -48,6 +49,9 @@ pub trait WorkingGroupAuthenticator<T: crate::MembershipTypes> {
     /// Get member ID of the current leader.
     fn get_leader_member_id() -> Option<T::MemberId>;
 
+    /// Get member ID of the specified worker.
+    fn get_worker_member_id(worker_id: &T::ActorId) -> Option<T::MemberId>;
+
     /// Verifies that given account ID belongs to the leader.
     fn is_leader_account_id(account_id: &T::AccountId) -> bool;
 
@@ -60,11 +64,5 @@ pub trait WorkingGroupAuthenticator<T: crate::MembershipTypes> {
     fn ensure_worker_exists(worker_id: &T::ActorId) -> DispatchResult;
 }
 
-/// Working group interface to work with the its budget.
-pub trait WorkingGroupBudgetHandler<T: balances::Trait> {
-    /// Returns current working group balance.
-    fn get_budget() -> T::Balance;
-
-    /// Sets new working broup balance
-    fn set_budget(new_value: T::Balance);
-}
+/// Provides an interface for the working group budget.
+pub use crate::BudgetManager as WorkingGroupBudgetHandler;

@@ -5,11 +5,12 @@ import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { DispatchError } from '@polkadot/types/interfaces/system'
 import { TypeRegistry } from '@polkadot/types'
 import { ISubmittableResult } from '@polkadot/types/types'
+import { JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
 
 // TODO: Move to @joystream/js soon
 
 export function getAlicePair(): KeyringPair {
-  const keyring = new Keyring({ type: 'sr25519' })
+  const keyring = new Keyring({ type: 'sr25519', ss58Format: JOYSTREAM_ADDRESS_PREFIX })
   keyring.addFromUri('//Alice', { name: 'Alice' })
   const ALICE = keyring.getPairs()[0]
 
@@ -17,7 +18,7 @@ export function getAlicePair(): KeyringPair {
 }
 
 export function getKeyFromSuri(suri: string): KeyringPair {
-  const keyring = new Keyring({ type: 'sr25519' })
+  const keyring = new Keyring({ type: 'sr25519', ss58Format: JOYSTREAM_ADDRESS_PREFIX })
 
   // Assume a SURI, add to keyring and return keypair
   return keyring.addFromUri(suri)

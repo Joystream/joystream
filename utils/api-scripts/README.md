@@ -17,7 +17,7 @@ yarn ts-node src/sudo-init-content-lead.ts
 For example you can add a new file `test-command.ts`:
 
 ```javascript
-import { types } from '@joystream/types'
+import '@joystream/types'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 
 async function main() {
@@ -25,7 +25,7 @@ async function main() {
   const provider = new WsProvider('ws://127.0.0.1:9944')
 
   // Create the API and wait until ready
-  const api = await ApiPromise.create({ provider, types })
+  const api = await ApiPromise.create({ provider })
 
   // Retrieve the chain & node information information via rpc calls
   const [chain, nodeName, nodeVersion] = await Promise.all([

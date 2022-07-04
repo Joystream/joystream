@@ -1,4 +1,4 @@
-//! THIS FILE WAS AUTO-GENERATED USING THE SUBSTRATE BENCHMARK CLI VERSION 2.0.0
+//! THIS FILE WAS AUTO-GENERATED USING THE SUBSTRATE BENCHMARK CLI VERSION 2.0.1
 
 #![allow(unused_parens)]
 #![allow(unused_imports)]
@@ -159,42 +159,18 @@ impl proposals_codex::WeightInfo for WeightInfo {
             .saturating_add(DbWeight::get().reads(6 as Weight))
             .saturating_add(DbWeight::get().writes(9 as Weight))
     }
-    fn create_proposal_create_blog_post(t: u32, d: u32, h: u32, b: u32) -> Weight {
-        (0 as Weight)
-            .saturating_add((30_282_000 as Weight).saturating_mul(t as Weight))
-            .saturating_add((746_000 as Weight).saturating_mul(d as Weight))
-            .saturating_add((323_000 as Weight).saturating_mul(h as Weight))
-            .saturating_add((352_000 as Weight).saturating_mul(b as Weight))
-            .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(9 as Weight))
-    }
-    fn create_proposal_edit_blog_post(t: u32, d: u32, h: u32, b: u32) -> Weight {
-        (528_348_000 as Weight)
-            .saturating_add((13_015_000 as Weight).saturating_mul(t as Weight))
-            .saturating_add((737_000 as Weight).saturating_mul(d as Weight))
-            .saturating_add((318_000 as Weight).saturating_mul(h as Weight))
-            .saturating_add((356_000 as Weight).saturating_mul(b as Weight))
-            .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(9 as Weight))
-    }
-    fn create_proposal_lock_blog_post(t: u32, d: u32) -> Weight {
-        (633_768_000 as Weight)
-            .saturating_add((2_369_000 as Weight).saturating_mul(t as Weight))
-            .saturating_add((241_000 as Weight).saturating_mul(d as Weight))
-            .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(9 as Weight))
-    }
-    fn create_proposal_unlock_blog_post(t: u32, d: u32) -> Weight {
-        (742_217_000 as Weight)
-            .saturating_add((523_000 as Weight).saturating_mul(t as Weight))
-            .saturating_add((239_000 as Weight).saturating_mul(d as Weight))
-            .saturating_add(DbWeight::get().reads(6 as Weight))
-            .saturating_add(DbWeight::get().writes(9 as Weight))
-    }
     fn create_proposal_update_global_nft_limit(t: u32, d: u32) -> Weight {
         (652_251_000 as Weight)
             .saturating_add((180_000 as Weight).saturating_mul(t as Weight))
             .saturating_add((224_000 as Weight).saturating_mul(d as Weight))
+            .saturating_add(DbWeight::get().reads(7 as Weight))
+            .saturating_add(DbWeight::get().writes(9 as Weight))
+    }
+    fn create_proposal_update_channel_payouts(t: u32, d: u32, i: u32) -> Weight {
+        (121_547_000 as Weight)
+            .saturating_add((3_626_000 as Weight).saturating_mul(t as Weight))
+            .saturating_add((302_000 as Weight).saturating_mul(d as Weight))
+            .saturating_add((314_000 as Weight).saturating_mul(i as Weight))
             .saturating_add(DbWeight::get().reads(7 as Weight))
             .saturating_add(DbWeight::get().writes(9 as Weight))
     }

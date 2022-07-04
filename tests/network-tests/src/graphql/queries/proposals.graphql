@@ -209,26 +209,7 @@ fragment ProposalDetailsFields on ProposalDetails {
   ... on SetReferralCutProposalDetails {
     newReferralCut
   }
-
-  ... on CreateBlogPostProposalDetails {
-    title
-    body
-  }
-
-  ... on EditBlogPostProposalDetails {
-    blogPost
-    newTitle
-    newBody
-  }
-
-  ... on LockBlogPostProposalDetails {
-    blogPost
-  }
-
-  ... on UnlockBlogPostProposalDetails {
-    blogPost
-  }
-
+  
   ... on VetoProposalDetails {
     proposal {
       id

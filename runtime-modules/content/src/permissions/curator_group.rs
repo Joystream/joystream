@@ -1,16 +1,19 @@
 use super::*;
+use scale_info::TypeInfo;
 use sp_std::collections::btree_map::BTreeMap;
 #[cfg(feature = "std")]
 use strum_macros::EnumIter;
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord)]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord, TypeInfo)]
 pub enum PausableChannelFeature {
-    // TODO: Will affect `withdraw_from_channel_balance` and `claim_and_withdraw_channel_reward` after https://github.com/Joystream/joystream/pull/3444
+    // Affects:
+    // -`withdraw_from_channel_balance`
+    // -`claim_and_withdraw_channel_reward`
     ChannelFundsTransfer,
     // Affects:
     // - `claim_channel_reward`
-    // TODO: Will affect `claim_and_withdraw_channel_reward`
+    // - `claim_and_withdraw_channel_reward`
     CreatorCashout,
     // Affects:
     // - `issue_nft`
@@ -26,7 +29,8 @@ pub enum PausableChannelFeature {
     // Affects:
     // - `update_channel`
     ChannelUpdate,
-    // TODO: Will affect extrinsics depending on creator tokens implementation (https://github.com/Joystream/joystream/issues/2362)
+    // Affects:
+    // - `issue_creator_token`
     CreatorTokenIssuance,
 }
 
@@ -37,7 +41,7 @@ impl Default for PausableChannelFeature {
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, PartialOrd, Ord, TypeInfo)]
 pub enum ContentModerationAction {
     // Related extrinsics:
     // - `set_video_visibility_as_moderator`
@@ -70,12 +74,13 @@ pub enum ContentModerationAction {
 }
 
 pub type ModerationPermissionsByLevel<T> =
-    BTreeMap<<T as Trait>::ChannelPrivilegeLevel, BTreeSet<ContentModerationAction>>;
+    BTreeMap<<T as Config>::ChannelPrivilegeLevel, BTreeSet<ContentModerationAction>>;
 
 /// A group, that consists of `curators` set
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
-pub struct CuratorGroup<T: Trait>
+#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug, TypeInfo)]
+#[scale_info(skip_type_params(T))]
+pub struct CuratorGroup<T: Config>
 where
     T: common::membership::MembershipTypes,
     T::ActorId: Ord,
@@ -90,7 +95,7 @@ where
     permissions_by_level: ModerationPermissionsByLevel<T>,
 }
 
-impl<T: Trait> Default for CuratorGroup<T> {
+impl<T: Config> Default for CuratorGroup<T> {
     fn default() -> Self {
         Self {
             curators: BTreeMap::new(),
@@ -101,7 +106,7 @@ impl<T: Trait> Default for CuratorGroup<T> {
     }
 }
 
-impl<T: Trait> CuratorGroup<T> {
+impl<T: Config> CuratorGroup<T> {
     pub fn create(active: bool, permissions_by_level: &ModerationPermissionsByLevel<T>) -> Self {
         Self {
             curators: BTreeMap::new(),

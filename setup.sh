@@ -33,10 +33,11 @@ curl https://getsubstrate.io -sSf | bash -s -- --fast
 
 source ~/.cargo/env
 
-rustup install nightly-2021-02-20
-rustup target add wasm32-unknown-unknown --toolchain nightly-2021-02-20
+rustup install nightly-2022-05-11
+rustup target add wasm32-unknown-unknown --toolchain nightly-2022-05-11
 
-rustup component add rustfmt clippy
+rustup component add --toolchain nightly-2022-05-11 clippy
+rustup component add rustfmt
 
 # Install substrate keychain tool - install doesn't seem to work lately.
 # cargo install --force subkey --git https://github.com/paritytech/substrate --version 2.0.1 --locked

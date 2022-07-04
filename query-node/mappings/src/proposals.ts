@@ -26,10 +26,6 @@ import {
   SetInitialInvitationCountProposalDetails,
   SetMembershipLeadInvitationQuotaProposalDetails,
   SetReferralCutProposalDetails,
-  CreateBlogPostProposalDetails,
-  EditBlogPostProposalDetails,
-  LockBlogPostProposalDetails,
-  UnlockBlogPostProposalDetails,
   VetoProposalDetails,
   ProposalDetails,
   FundingRequestDestinationsList,
@@ -66,7 +62,6 @@ import {
   genericEventFields,
   getWorkingGroupModuleName,
   INT32MAX,
-  MemoryCache,
   perpareString,
   toNumber,
 } from './common'
@@ -280,39 +275,6 @@ async function parseProposalDetails(
     details.newReferralCut = specificDetails.toNumber()
     return details
   }
-  // CreateBlogPostProposalDetails:
-  else if (proposalDetails.isCreateBlogPost) {
-    const details = new CreateBlogPostProposalDetails()
-    const specificDetails = proposalDetails.asCreateBlogPost
-    const [title, body] = specificDetails
-    details.title = perpareString(title.toString())
-    details.body = perpareString(body.toString())
-    return details
-  }
-  // EditBlogPostProposalDetails:
-  else if (proposalDetails.isEditBlogPost) {
-    const details = new EditBlogPostProposalDetails()
-    const specificDetails = proposalDetails.asEditBlogPost
-    const [postId, optTitle, optBody] = specificDetails
-    details.blogPost = postId.toString()
-    details.newTitle = optTitle.isSome ? perpareString(optTitle.unwrap().toString()) : undefined
-    details.newBody = optBody.isSome ? perpareString(optBody.unwrap().toString()) : undefined
-    return details
-  }
-  // LockBlogPostProposalDetails:
-  else if (proposalDetails.isLockBlogPost) {
-    const details = new LockBlogPostProposalDetails()
-    const postId = proposalDetails.asLockBlogPost
-    details.blogPost = postId.toString()
-    return details
-  }
-  // UnlockBlogPostProposalDetails:
-  else if (proposalDetails.isUnlockBlogPost) {
-    const details = new UnlockBlogPostProposalDetails()
-    const postId = proposalDetails.asUnlockBlogPost
-    details.blogPost = postId.toString()
-    return details
-  }
   // VetoProposalDetails:
   else if (proposalDetails.isVetoProposal) {
     const details = new VetoProposalDetails()
@@ -352,15 +314,14 @@ async function handleRuntimeUpgradeProposalExecution(event: SubstrateEvent, stor
 }
 
 export async function proposalsCodex_ProposalCreated({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [proposalId, generalProposalParameters, runtimeProposalDetails] = new ProposalsCodex.ProposalCreatedEvent(
-    event
-  ).params
+  const [
+    proposalId,
+    generalProposalParameters,
+    runtimeProposalDetails,
+    proposalThreadId,
+  ] = new ProposalsCodex.ProposalCreatedEvent(event).params
   const eventTime = new Date(event.blockTimestamp)
   const proposalDetails = await parseProposalDetails(event, store, runtimeProposalDetails)
-
-  if (!MemoryCache.lastCreatedProposalThreadId) {
-    throw new Error('Unexpected state: MemoryCache.lastCreatedProposalThreadId is empty')
-  }
 
   const proposal = new Proposal({
     id: proposalId.toString(),
@@ -384,7 +345,7 @@ export async function proposalsCodex_ProposalCreated({ store, event }: EventCont
 
   // Thread is always created along with the proposal
   const proposalThread = new ProposalDiscussionThread({
-    id: MemoryCache.lastCreatedProposalThreadId.toString(),
+    id: proposalThreadId.toString(),
     createdAt: eventTime,
     updatedAt: eventTime,
     mode: new ProposalDiscussionThreadModeOpen(),

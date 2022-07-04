@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 
@@ -23,7 +23,7 @@ echo -e "\n\n=========== Deploying single node ==========="
 aws cloudformation deploy \
   --region $REGION \
   --profile $CLI_PROFILE \
-  --stack-name $SINGLE_NODE_STACK_NAME \
+  --stack-name $STACK_NAME \
   --template-file cloudformation/single-instance.yml \
   --no-fail-on-empty-changeset \
   --capabilities CAPABILITY_NAMED_IAM \
@@ -36,7 +36,7 @@ if [ $? -eq 0 ]; then
   # Install additional Ansible roles from requirements
   ansible-galaxy install -r requirements.yml
 
-  SERVER_IP=$(get_aws_export $SINGLE_NODE_STACK_NAME "PublicIp")
+  SERVER_IP=$(get_aws_export $STACK_NAME "PublicIp")
 
   echo -e "New Node Public IP: $SERVER_IP"
 

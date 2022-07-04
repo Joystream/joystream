@@ -43,6 +43,7 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
 
 #[cfg(test)]
 pub(crate) mod tests;
@@ -79,7 +80,7 @@ pub trait WeightInfo {
     fn creator_remark() -> Weight;
 }
 
-type WeightInfoBounty<T> = <T as Trait>::WeightInfo;
+type WeightInfoBounty<T> = <T as Config>::WeightInfo;
 
 pub(crate) use actors::BountyActorManager;
 pub(crate) use stages::BountyStageCalculator;
@@ -107,11 +108,11 @@ use common::membership::{
 use staking_handler::StakingHandler;
 
 /// Main pallet-bounty trait.
-pub trait Trait:
-    frame_system::Trait + balances::Trait + common::membership::MembershipTypes
+pub trait Config:
+    frame_system::Config + balances::Config + common::membership::MembershipTypes
 {
     /// Events
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
     /// The bounty's module id, used for deriving its sovereign account ID.
     type ModuleId: Get<ModuleId>;
@@ -129,7 +130,7 @@ pub trait Trait:
     type WeightInfo: WeightInfo;
 
     /// Provides an access for the council budget.
-    type CouncilBudgetManager: CouncilBudgetManager<BalanceOf<Self>>;
+    type CouncilBudgetManager: CouncilBudgetManager<Self::AccountId, BalanceOf<Self>>;
 
     /// Provides stake logic implementation.
     type StakingHandler: StakingHandler<
@@ -158,7 +159,7 @@ pub trait Trait:
 /// Alias type for the BountyParameters.
 pub type BountyCreationParameters<T> = BountyParameters<
     BalanceOf<T>,
-    <T as frame_system::Trait>::BlockNumber,
+    <T as frame_system::Config>::BlockNumber,
     <T as common::membership::MembershipTypes>::MemberId,
 >;
 
@@ -331,7 +332,7 @@ impl<BlockNumber: Default> Default for BountyMilestone<BlockNumber> {
 /// Alias type for the Bounty.
 pub type Bounty<T> = BountyRecord<
     BalanceOf<T>,
-    <T as frame_system::Trait>::BlockNumber,
+    <T as frame_system::Config>::BlockNumber,
     <T as common::membership::MembershipTypes>::MemberId,
 >;
 
@@ -393,9 +394,9 @@ impl<Balance: PartialOrd + Clone, BlockNumber: Clone, MemberId: Ord>
 
 /// Alias type for the Entry.
 pub type Entry<T> = EntryRecord<
-    <T as frame_system::Trait>::AccountId,
+    <T as frame_system::Config>::AccountId,
     <T as common::membership::MembershipTypes>::MemberId,
-    <T as frame_system::Trait>::BlockNumber,
+    <T as frame_system::Config>::BlockNumber,
     BalanceOf<T>,
 >;
 
@@ -446,10 +447,10 @@ impl<Balance> OracleWorkEntryJudgment<Balance> {
 }
 
 /// Balance alias for `balances` module.
-pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
 // Entrant stake helper struct.
-struct RequiredStakeInfo<T: Trait> {
+struct RequiredStakeInfo<T: Config> {
     // stake amount
     amount: BalanceOf<T>,
     // staking_account_id
@@ -457,13 +458,13 @@ struct RequiredStakeInfo<T: Trait> {
 }
 
 /// An alias for the OracleJudgment.
-pub type OracleJudgmentOf<T> = OracleJudgment<<T as Trait>::EntryId, BalanceOf<T>>;
+pub type OracleJudgmentOf<T> = OracleJudgment<<T as Config>::EntryId, BalanceOf<T>>;
 
 /// The collection of the oracle judgments for the work entries.
 pub type OracleJudgment<EntryId, Balance> = BTreeMap<EntryId, OracleWorkEntryJudgment<Balance>>;
 
 decl_storage! {
-    trait Store for Module<T: Trait> as Bounty {
+    trait Store for Module<T: Config> as Bounty {
         /// Bounty storage.
         pub Bounties get(fn bounties) : map hasher(blake2_128_concat) T::BountyId => Bounty<T>;
 
@@ -488,11 +489,11 @@ decl_storage! {
 decl_event! {
     pub enum Event<T>
     where
-        <T as Trait>::BountyId,
-        <T as Trait>::EntryId,
+        <T as Config>::BountyId,
+        <T as Config>::EntryId,
         Balance = BalanceOf<T>,
         MemberId = MemberId<T>,
-        <T as frame_system::Trait>::AccountId,
+        <T as frame_system::Config>::AccountId,
         BountyCreationParameters = BountyCreationParameters<T>,
         OracleJudgment = OracleJudgmentOf<T>,
     {
@@ -621,7 +622,7 @@ decl_event! {
 
 decl_error! {
     /// Bounty pallet predefined errors
-    pub enum Error for Module<T: Trait> {
+    pub enum Error for Module<T: Config> {
         /// Min funding amount cannot be greater than max amount.
         MinFundingAmountCannotBeGreaterThanMaxAmount,
 
@@ -735,13 +736,12 @@ decl_error! {
 
         /// Invalid Creator Actor for Bounty specified
         InvalidCreatorActorSpecified,
-
     }
 }
 
 decl_module! {
     /// Bounty pallet Substrate Module
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -1102,6 +1102,8 @@ decl_module! {
 
             let entry = Self::ensure_work_entry_exists(&bounty_id, &entry_id)?;
 
+            Self::ensure_work_entry_ownership(&entry, &member_id)?;
+
             //
             // == MUTATION SAFE ==
             //
@@ -1138,7 +1140,9 @@ decl_module! {
 
             Self::ensure_bounty_stage(current_bounty_stage, BountyStage::WorkSubmission)?;
 
-            Self::ensure_work_entry_exists(&bounty_id, &entry_id)?;
+            let entry = Self::ensure_work_entry_exists(&bounty_id, &entry_id)?;
+
+            Self::ensure_work_entry_ownership(&entry, &member_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1272,6 +1276,8 @@ decl_module! {
 
             let entry = Self::ensure_work_entry_exists(&bounty_id, &entry_id)?;
 
+            Self::ensure_work_entry_ownership(&entry, &member_id)?;
+
             //
             // == MUTATION SAFE ==
             //
@@ -1386,10 +1392,7 @@ decl_module! {
             T::Membership::ensure_member_controller_account_origin(origin, entrant_id)?;
 
             let entry = Self::ensure_work_entry_exists(&bounty_id, &entry_id)?;
-            ensure!(
-                entry.member_id == entrant_id,
-                Error::<T>::InvalidEntrantWorkerSpecified,
-            );
+            Self::ensure_work_entry_ownership(&entry, &entrant_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1436,10 +1439,10 @@ decl_module! {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     // Wrapper-function over System::block_number()
     pub(crate) fn current_block() -> T::BlockNumber {
-        <frame_system::Module<T>>::block_number()
+        <frame_system::Pallet<T>>::block_number()
     }
 
     // Validates parameters for a bounty creation.
@@ -1517,7 +1520,7 @@ impl<T: Trait> Module<T> {
 
     // Verifies that member balance is sufficient for a bounty.
     fn check_balance_for_account(amount: BalanceOf<T>, account_id: &T::AccountId) -> bool {
-        balances::Module::<T>::usable_balance(account_id) >= amount
+        balances::Pallet::<T>::usable_balance(account_id) >= amount
     }
 
     // Transfer funds from the member account to the bounty account.
@@ -1528,7 +1531,7 @@ impl<T: Trait> Module<T> {
     ) -> DispatchResult {
         let bounty_account_id = Self::bounty_account_id(bounty_id);
 
-        <balances::Module<T> as Currency<T::AccountId>>::transfer(
+        <balances::Pallet<T> as Currency<T::AccountId>>::transfer(
             account_id,
             &bounty_account_id,
             amount,
@@ -1544,7 +1547,7 @@ impl<T: Trait> Module<T> {
     ) -> DispatchResult {
         let bounty_account_id = Self::bounty_account_id(bounty_id);
 
-        <balances::Module<T> as Currency<T::AccountId>>::transfer(
+        <balances::Pallet<T> as Currency<T::AccountId>>::transfer(
             &bounty_account_id,
             account_id,
             amount,
@@ -1584,9 +1587,9 @@ impl<T: Trait> Module<T> {
 
         // Slash remaining funds.
         let bounty_account_id = Self::bounty_account_id(*bounty_id);
-        let all = balances::Module::<T>::usable_balance(&bounty_account_id);
+        let all = balances::Pallet::<T>::usable_balance(&bounty_account_id);
         if all != Zero::zero() {
-            let _ = balances::Module::<T>::slash(&bounty_account_id, all);
+            let _ = balances::Pallet::<T>::slash(&bounty_account_id, all);
         }
 
         Self::deposit_event(RawEvent::BountyRemoved(*bounty_id));
@@ -1726,6 +1729,19 @@ impl<T: Trait> Module<T> {
         let entry = Self::entries(bounty_id, entry_id);
 
         Ok(entry)
+    }
+
+    // Ensures entry record ownership for a member.
+    fn ensure_work_entry_ownership(
+        entry: &Entry<T>,
+        owner_member_id: &MemberId<T>,
+    ) -> DispatchResult {
+        ensure!(
+            entry.member_id == *owner_member_id,
+            Error::<T>::InvalidEntrantWorkerSpecified
+        );
+
+        Ok(())
     }
 
     // Unlocks the work entry stake.

@@ -43,6 +43,7 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
 
 pub mod benchmarking;
 
@@ -51,14 +52,16 @@ mod tests;
 
 use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchError;
-use frame_support::traits::{Currency, Get, LockIdentifier, WithdrawReason, WithdrawReasons};
+use frame_support::traits::{Currency, Get, LockIdentifier, WithdrawReasons};
 pub use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
 use frame_system::{ensure_root, ensure_signed};
+use scale_info::TypeInfo;
 use sp_arithmetic::traits::{One, Zero};
 use sp_arithmetic::Perbill;
-use sp_runtime::traits::{Hash, Saturating};
+use sp_runtime::traits::Hash;
 use sp_runtime::SaturatedConversion;
+use sp_std::convert::TryInto;
 use sp_std::vec::Vec;
 
 use common::membership::{MemberOriginValidator, MembershipInfoProvider};
@@ -69,9 +72,9 @@ use staking_handler::StakingHandler;
 pub use benchmarking::MembershipWorkingGroupHelper;
 
 // Balance type alias
-type BalanceOf<T> = <T as balances::Trait>::Balance;
+type BalanceOf<T> = <T as balances::Config>::Balance;
 
-type WeightInfoMembership<T> = <T as Trait>::WeightInfo;
+type WeightInfoMembership<T> = <T as Config>::WeightInfo;
 
 /// pallet_forum WeightInfo.
 /// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
@@ -97,14 +100,14 @@ pub trait WeightInfo {
     fn member_remark() -> Weight;
 }
 
-pub trait Trait:
-    frame_system::Trait
-    + balances::Trait
-    + pallet_timestamp::Trait
+pub trait Config:
+    frame_system::Config
+    + balances::Config
+    + pallet_timestamp::Config
     + common::membership::MembershipTypes
 {
     /// Membership module event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
     /// Defines the default membership fee.
     type DefaultMembershipPrice: Get<BalanceOf<Self>>;
@@ -114,7 +117,7 @@ pub trait Trait:
 
     /// Working group pallet integration.
     type WorkingGroup: common::working_group::WorkingGroupAuthenticator<Self>
-        + common::working_group::WorkingGroupBudgetHandler<Self>;
+        + common::working_group::WorkingGroupBudgetHandler<Self::AccountId, BalanceOf<Self>>;
 
     /// Defines the default balance for the invited member.
     type DefaultInitialInvitationBalance: Get<BalanceOf<Self>>;
@@ -145,10 +148,9 @@ pub trait Trait:
 pub(crate) const DEFAULT_MEMBER_INVITES_COUNT: u32 = 5;
 
 /// Public membership profile alias.
+pub type Membership<T> = MembershipObject<<T as frame_system::Config>::AccountId>;
 
-pub type Membership<T> = MembershipObject<<T as frame_system::Trait>::AccountId>;
-
-#[derive(Encode, PartialEq, Decode, Debug, Default)]
+#[derive(Encode, Decode, PartialEq, Debug, Clone, TypeInfo)]
 /// Stored information about a registered user.
 pub struct MembershipObject<AccountId: Ord> {
     /// The hash of the handle chosen by member.
@@ -174,7 +176,7 @@ pub struct MembershipObject<AccountId: Ord> {
 }
 
 // Contain staking account to member binding and its confirmation.
-#[derive(Encode, Decode, Default, Debug, PartialEq)]
+#[derive(Encode, Decode, Default, Debug, PartialEq, TypeInfo)]
 pub struct StakingAccountMemberBinding<MemberId> {
     /// Member id that we bind account to.
     pub member_id: MemberId,
@@ -184,7 +186,7 @@ pub struct StakingAccountMemberBinding<MemberId> {
 }
 
 /// Parameters for the buy_membership extrinsic.
-#[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]
 pub struct BuyMembershipParameters<AccountId, MemberId> {
     /// New member root account.
     pub root_account: AccountId,
@@ -203,7 +205,7 @@ pub struct BuyMembershipParameters<AccountId, MemberId> {
 }
 
 /// Parameters for the invite_member extrinsic.
-#[derive(Encode, Decode, Default, Clone, PartialEq, Debug, Eq)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]
 pub struct InviteMembershipParameters<AccountId, MemberId> {
     /// Inviting member id.
     pub inviting_member_id: MemberId,
@@ -223,7 +225,7 @@ pub struct InviteMembershipParameters<AccountId, MemberId> {
 
 decl_error! {
     /// Membership module predefined errors
-    pub enum Error for Module<T: Trait> {
+    pub enum Error for Module<T: Config> {
         /// Not enough balance to buy membership.
         NotEnoughBalanceToBuyMembership,
 
@@ -285,14 +287,14 @@ decl_error! {
 }
 
 decl_storage! {
-    trait Store for Module<T: Trait> as Membership {
+    trait Store for Module<T: Config> as Membership {
         /// MemberId to assign to next member that is added to the registry, and is also the
         /// total number of members created. MemberIds start at Zero.
         pub NextMemberId get(fn members_created) : T::MemberId;
 
         /// Mapping of member's id to their membership profile.
         pub MembershipById get(fn membership) : map hasher(blake2_128_concat)
-            T::MemberId => Membership<T>;
+            T::MemberId => Option<Membership<T>>;
 
         /// Registered unique handles hash and their mapping to their owner.
         pub MemberIdByHandleHash get(fn handles) : map hasher(blake2_128_concat)
@@ -344,14 +346,14 @@ decl_event! {
     pub enum Event<T> where
       <T as common::membership::MembershipTypes>::MemberId,
       Balance = BalanceOf<T>,
-      <T as frame_system::Trait>::AccountId,
+      <T as frame_system::Config>::AccountId,
       BuyMembershipParameters = BuyMembershipParameters<
-          <T as frame_system::Trait>::AccountId,
+          <T as frame_system::Config>::AccountId,
           <T as common::membership::MembershipTypes>::MemberId,
         >,
       <T as common::membership::MembershipTypes>::ActorId,
       InviteMembershipParameters = InviteMembershipParameters<
-          <T as frame_system::Trait>::AccountId,
+          <T as frame_system::Config>::AccountId,
           <T as common::membership::MembershipTypes>::MemberId,
         >,
     {
@@ -378,7 +380,7 @@ decl_event! {
 }
 
 decl_module! {
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -427,7 +429,7 @@ decl_module! {
 
             // Ensure enough free balance to cover membership fee.
             ensure!(
-                balances::Module::<T>::usable_balance(&who) >= fee,
+                balances::Pallet::<T>::usable_balance(&who) >= fee,
                 Error::<T>::NotEnoughBalanceToBuyMembership
             );
 
@@ -454,14 +456,14 @@ decl_module! {
             );
 
             // Collect membership fee (just burn it).
-            let _ = balances::Module::<T>::slash(&who, fee);
+            let _ = balances::Pallet::<T>::slash(&who, fee);
 
             // Reward the referring member.
             if let Some(referrer) = referrer {
                 let referral_cut: BalanceOf<T> = Self::get_referral_bonus();
 
                 if referral_cut > Zero::zero() {
-                    let _ = balances::Module::<T>::deposit_creating(
+                    let _ = balances::Pallet::<T>::deposit_creating(
                         &referrer.controller_account,
                         referral_cut
                     );
@@ -511,15 +513,16 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            if let Some(new_handle_hash) = new_handle_hash{
+            if let Some(new_handle_hash) = new_handle_hash {
                 // remove old handle hash
                 <MemberIdByHandleHash<T>>::remove(&membership.handle_hash);
 
-                <MembershipById<T>>::mutate(&member_id, |membership| {
-                    membership.handle_hash = new_handle_hash.clone();
-                });
+                <MemberIdByHandleHash<T>>::insert(new_handle_hash.clone(), member_id);
 
-                <MemberIdByHandleHash<T>>::insert(new_handle_hash, member_id);
+                <MembershipById<T>>::insert(&member_id, Membership::<T> {
+                    handle_hash: new_handle_hash,
+                    ..membership
+                });
             }
 
             Self::deposit_event(RawEvent::MemberProfileUpdated(member_id, handle, metadata));
@@ -549,7 +552,7 @@ decl_module! {
             }
 
             let sender = ensure_signed(origin)?;
-            let mut membership = Self::ensure_membership(member_id)?;
+            let membership = Self::ensure_membership(member_id)?;
 
             ensure!(membership.root_account == sender, Error::<T>::RootAccountRequired);
 
@@ -557,20 +560,17 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            if let Some(root_account) = new_root_account.clone() {
-                membership.root_account = root_account;
-            }
+            <MembershipById<T>>::insert(member_id, Membership::<T> {
+                root_account: new_root_account.clone().unwrap_or(membership.root_account),
+                controller_account: new_controller_account.clone().unwrap_or(membership.controller_account),
+                ..membership
+            });
 
-            if let Some(controller_account) = new_controller_account.clone() {
-                membership.controller_account = controller_account;
-            }
-
-            <MembershipById<T>>::insert(member_id, membership);
             Self::deposit_event(RawEvent::MemberAccountsUpdated(
-                    member_id,
-                    new_root_account,
-                    new_controller_account
-                ));
+                member_id,
+                new_root_account,
+                new_controller_account
+            ));
         }
 
         /// Updates member profile verification status. Requires working group member origin.
@@ -591,14 +591,15 @@ decl_module! {
         ) {
             T::WorkingGroup::ensure_worker_origin(origin, &worker_id)?;
 
-            Self::ensure_membership(target_member_id)?;
+            let membership = Self::ensure_membership(target_member_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            <MembershipById<T>>::mutate(&target_member_id, |membership| {
-                    membership.verified = is_verified;
+            <MembershipById<T>>::insert(&target_member_id, Membership::<T> {
+                verified: is_verified,
+                ..membership
             });
 
             Self::deposit_event(
@@ -652,7 +653,7 @@ decl_module! {
             Self::ensure_member_controller_account_origin_signed(origin, &source_member_id)?;
 
             let source_membership = Self::ensure_membership(source_member_id)?;
-            Self::ensure_membership_with_error(
+            let target_membership = Self::ensure_membership_with_error(
                 target_member_id,
                 Error::<T>::CannotTransferInvitesForNotMember
             )?;
@@ -664,13 +665,15 @@ decl_module! {
             //
 
             // Decrease source member invite number.
-            <MembershipById<T>>::mutate(&source_member_id, |membership| {
-                membership.invites = membership.invites.saturating_sub(number_of_invites);
+            <MembershipById<T>>::insert(&source_member_id, Membership::<T> {
+                invites: source_membership.invites.saturating_sub(number_of_invites),
+                ..source_membership
             });
 
             // Increase target member invite number.
-            <MembershipById<T>>::mutate(&target_member_id, |membership| {
-                membership.invites = membership.invites.saturating_add(number_of_invites);
+            <MembershipById<T>>::insert(&target_member_id, Membership::<T> {
+                invites: target_membership.invites.saturating_add(number_of_invites),
+                ..target_membership
             });
 
             Self::deposit_event(RawEvent::InvitesTransferred(
@@ -741,25 +744,19 @@ decl_module! {
             );
 
             // Save the updated profile.
-            <MembershipById<T>>::mutate(&params.inviting_member_id, |membership| {
-                membership.invites = membership.invites.saturating_sub(1);
+            <MembershipById<T>>::insert(&params.inviting_member_id, Membership::<T> {
+                invites: membership.invites.saturating_sub(1),
+                ..membership
             });
 
-            // Decrease the working group balance.
-            let new_wg_budget = current_wg_budget.saturating_sub(invitation_balance);
-            T::WorkingGroup::set_budget(new_wg_budget);
-
-            // Create default balance for the invited member.
-            let _ = balances::Module::<T>::deposit_creating(
-                &params.controller_account,
-                invitation_balance
-            );
+            // Transfer the balance from tne WG budget to the controller account.
+            T::WorkingGroup::withdraw(&params.controller_account, invitation_balance);
 
             // Lock invitation balance. Allow only transaction payments.
             T::InvitedMemberStakingHandler::lock_with_reasons(
                 &params.controller_account,
                 invitation_balance,
-                WithdrawReasons::except(WithdrawReason::TransactionPayment)
+                WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT)
             );
 
             // Fire the event.
@@ -803,19 +800,23 @@ decl_module! {
 
             let leader_member_id = T::WorkingGroup::get_leader_member_id();
 
-            ensure!(leader_member_id.is_some(), Error::<T>::WorkingGroupLeaderNotSet);
+            // ensure!(leader_member_id.is_some(), Error::<T>::WorkingGroupLeaderNotSet);
+
+            let member_id = leader_member_id.ok_or(Error::<T>::WorkingGroupLeaderNotSet)?;
+
+            // Membership must exist!
+            let membership = Self::ensure_membership(member_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            if let Some(member_id) = leader_member_id {
-                <MembershipById<T>>::mutate(&member_id, |membership| {
-                        membership.invites = invitation_quota;
-                });
+            <MembershipById<T>>::insert(member_id, Membership::<T> {
+                invites: invitation_quota,
+                ..membership
+            });
 
-                Self::deposit_event(RawEvent::LeaderInvitationQuotaUpdated(invitation_quota));
-            }
+            Self::deposit_event(RawEvent::LeaderInvitationQuotaUpdated(invitation_quota));
         }
 
         /// Updates initial invitation balance for a invited member. Requires root origin.
@@ -1014,7 +1015,7 @@ decl_module! {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     // Helper for update_account extrinsic weight calculation
     fn calculate_weight_for_update_account(
         new_root_account: &Option<T::AccountId>,
@@ -1062,11 +1063,7 @@ impl<T: Trait> Module<T> {
         id: T::MemberId,
         error: Error<T>,
     ) -> Result<Membership<T>, Error<T>> {
-        if <MembershipById<T>>::contains_key(&id) {
-            Ok(Self::membership(&id))
-        } else {
-            Err(error)
-        }
+        Self::membership(id).ok_or(error)
     }
 
     // Ensure possible member handle hash is unique.
@@ -1089,7 +1086,7 @@ impl<T: Trait> Module<T> {
             return Err(Error::<T>::HandleMustBeProvidedDuringRegistration);
         }
 
-        let hashed = T::Hashing::hash(&handle);
+        let hashed = T::Hashing::hash(handle);
         let handle_hash = hashed.as_ref().to_vec();
 
         Self::ensure_unique_handle_hash(handle_hash.clone())?;
@@ -1138,12 +1135,7 @@ impl<T: Trait> Module<T> {
         member_id: &T::MemberId,
         account: &T::AccountId,
     ) -> Result<Membership<T>, Error<T>> {
-        ensure!(
-            MembershipById::<T>::contains_key(member_id),
-            Error::<T>::MemberProfileNotFound
-        );
-
-        let membership = MembershipById::<T>::get(member_id);
+        let membership = Self::ensure_membership(*member_id)?;
 
         ensure!(
             membership.controller_account == *account,
@@ -1198,7 +1190,7 @@ impl<T: Trait> Module<T> {
     }
 }
 
-impl<T: Trait> common::StakingAccountValidator<T> for Module<T> {
+impl<T: Config> common::StakingAccountValidator<T> for Module<T> {
     fn is_member_staking_account(
         member_id: &common::MemberId<T>,
         account_id: &T::AccountId,
@@ -1207,7 +1199,7 @@ impl<T: Trait> common::StakingAccountValidator<T> for Module<T> {
     }
 }
 
-impl<T: Trait> MemberOriginValidator<T::Origin, T::MemberId, T::AccountId> for Module<T> {
+impl<T: Config> MemberOriginValidator<T::Origin, T::MemberId, T::AccountId> for Module<T> {
     fn ensure_member_controller_account_origin(
         origin: T::Origin,
         actor_id: T::MemberId,
@@ -1224,7 +1216,7 @@ impl<T: Trait> MemberOriginValidator<T::Origin, T::MemberId, T::AccountId> for M
     }
 }
 
-impl<T: Trait> MembershipInfoProvider<T> for Module<T> {
+impl<T: Config> MembershipInfoProvider<T> for Module<T> {
     fn controller_account_id(
         member_id: common::MemberId<T>,
     ) -> Result<T::AccountId, DispatchError> {

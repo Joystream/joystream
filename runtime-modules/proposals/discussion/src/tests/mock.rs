@@ -3,68 +3,57 @@
 pub use frame_system;
 
 use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, weights::Weight};
-use frame_system::{EnsureOneOf, EnsureRoot, EnsureSigned};
+use frame_support::{
+    parameter_types,
+    traits::{ConstU16, ConstU32, ConstU64, EnsureOneOf},
+    weights::Weight,
+    PalletId,
+};
+use frame_system::{EnsureRoot, EnsureSigned};
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    DispatchResult, ModuleId, Perbill,
+    DispatchResult,
 };
 
 use crate::CouncilOriginValidator;
 use crate::MemberOriginValidator;
 use crate::WeightInfo;
 use frame_support::dispatch::DispatchError;
+use sp_std::convert::{TryFrom, TryInto};
 
 use staking_handler::{LockComparator, StakingManager};
 
-impl_outer_origin! {
-    pub enum Origin for Test {}
-}
+use crate as proposals_discussion;
 
-// Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Test;
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+type Block = frame_system::mocking::MockBlock<Test>;
+
+frame_support::construct_runtime!(
+    pub enum Test where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system,
+        Balances: balances,
+        Membership: membership::{Pallet, Call, Storage, Event<T>},
+        Timestamp: pallet_timestamp,
+        Council: council::{Pallet, Call, Storage, Event<T>},
+        Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>},
+        Discussions: proposals_discussion::{Pallet, Call, Storage, Event<T>},
+    }
+);
+
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
-    pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
 }
 
 parameter_types! {
     pub const ThreadTitleLengthLimit: u32 = 200;
     pub const PostLengthLimit: u32 = 2000;
-}
-
-mod discussion {
-    pub use crate::Event;
-}
-
-mod membership_mod {
-    pub use membership::Event;
-}
-
-mod referendum_mod {
-    pub use referendum::Event;
-    pub use referendum::Instance1;
-}
-
-mod council_mod {
-    pub use council::Event;
-}
-
-impl_outer_event! {
-    pub enum TestEvent for Test {
-        discussion<T>,
-        balances<T>,
-        membership_mod<T>,
-        frame_system<T>,
-        referendum_mod Instance1 <T>,
-        council_mod<T>,
-    }
 }
 
 parameter_types! {
@@ -80,7 +69,7 @@ parameter_types! {
     pub const CandidateStake: u64 = 100;
     pub const PostLifeTime: u64 = 10;
     pub const PostDeposit: u64 = 100;
-    pub const ProposalsDiscussionModuleId: ModuleId = ModuleId(*b"mo:propo");
+    pub const ProposalsDiscussionModuleId: PalletId = PalletId(*b"mo:propo");
 }
 
 // Weights info stub
@@ -145,14 +134,50 @@ impl membership::WeightInfo for Weights {
     }
 }
 
-impl balances::Trait for Test {
+impl frame_system::Config for Test {
+    type BaseCallFilter = frame_support::traits::Everything;
+    type BlockWeights = ();
+    type BlockLength = ();
+    type DbWeight = ();
+    type Origin = Origin;
+    type Call = Call;
+    type Index = u64;
+    type BlockNumber = u64;
+    type Hash = H256;
+    type Hashing = BlakeTwo256;
+    type AccountId = u128;
+    type Lookup = IdentityLookup<Self::AccountId>;
+    type Header = Header;
+    type Event = Event;
+    type BlockHashCount = ConstU64<250>;
+    type Version = ();
+    type PalletInfo = PalletInfo;
+    type AccountData = balances::AccountData<u64>;
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
+    type SystemWeightInfo = ();
+    type SS58Prefix = ConstU16<42>;
+    type OnSetCode = ();
+    type MaxConsumers = frame_support::traits::ConstU32<16>;
+}
+
+impl pallet_timestamp::Config for Test {
+    type Moment = u64;
+    type OnTimestampSet = ();
+    type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
+}
+
+impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = TestEvent;
+    type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
-    type WeightInfo = ();
     type MaxLocks = ();
+    type MaxReserves = ConstU32<2>;
+    type ReserveIdentifier = [u8; 8];
+    type WeightInfo = ();
 }
 
 impl common::membership::MembershipTypes for Test {
@@ -164,10 +189,10 @@ parameter_types! {
     pub const ScreenedMemberMaxInitialBalance: u64 = 500;
 }
 
-impl membership::Trait for Test {
-    type Event = TestEvent;
+impl membership::Config for Test {
+    type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
-    type WorkingGroup = ();
+    type WorkingGroup = Wg;
     type WeightInfo = Weights;
     type DefaultInitialInvitationBalance = ();
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
@@ -177,7 +202,7 @@ impl membership::Trait for Test {
     type CandidateStake = CandidateStake;
 }
 
-impl LockComparator<<Test as balances::Trait>::Balance> for Test {
+impl LockComparator<<Test as balances::Config>::Balance> for Test {
     fn are_locks_conflicting(
         _new_lock: &LockIdentifier,
         _existing_locks: &[LockIdentifier],
@@ -186,7 +211,8 @@ impl LockComparator<<Test as balances::Trait>::Balance> for Test {
     }
 }
 
-impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
+pub struct Wg;
+impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for Wg {
     fn get_budget() -> u64 {
         unimplemented!()
     }
@@ -194,30 +220,40 @@ impl common::working_group::WorkingGroupBudgetHandler<Test> for () {
     fn set_budget(_new_value: u64) {
         unimplemented!()
     }
+
+    fn try_withdraw(_account_id: &u128, _amount: u64) -> DispatchResult {
+        unimplemented!()
+    }
 }
 
-impl common::working_group::WorkingGroupAuthenticator<Test> for () {
+impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     fn ensure_worker_origin(
-        _origin: <Test as frame_system::Trait>::Origin,
+        _origin: <Test as frame_system::Config>::Origin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
 
-    fn ensure_leader_origin(_origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(_origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
         unimplemented!()
     }
 
     fn get_leader_member_id() -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
-        unimplemented!();
+        unimplemented!()
     }
 
-    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+    fn get_worker_member_id(
+        _: &<Test as common::membership::MembershipTypes>::ActorId,
+    ) -> Option<<Test as common::membership::MembershipTypes>::MemberId> {
+        unimplemented!()
+    }
+
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Config>::AccountId) -> bool {
         unimplemented!()
     }
 
     fn is_worker_account_id(
-        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _account_id: &<Test as frame_system::Config>::AccountId,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
         unimplemented!()
@@ -234,8 +270,8 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for () {
     }
 }
 
-impl crate::Trait for Test {
-    type Event = TestEvent;
+impl crate::Config for Test {
+    type Event = Event;
     type AuthorOriginValidator = ();
     type CouncilOriginValidator = CouncilMock;
     type ThreadId = u64;
@@ -310,8 +346,8 @@ parameter_types! {
 
 type ReferendumInstance = referendum::Instance1;
 
-impl council::Trait for Test {
-    type Event = TestEvent;
+impl council::Config for Test {
+    type Event = Event;
 
     type Referendum = referendum::Module<Test, ReferendumInstance>;
 
@@ -399,34 +435,6 @@ impl CouncilOriginValidator<Origin, u64, u128> for CouncilMock {
     }
 }
 
-impl frame_system::Trait for Test {
-    type BaseCallFilter = ();
-    type Origin = Origin;
-    type Call = ();
-    type Index = u64;
-    type BlockNumber = u64;
-    type Hash = H256;
-    type Hashing = BlakeTwo256;
-    type AccountId = u128;
-    type Lookup = IdentityLookup<Self::AccountId>;
-    type Header = Header;
-    type Event = TestEvent;
-    type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
-    type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
-    type Version = ();
-    type AccountData = balances::AccountData<u64>;
-    type OnNewAccount = ();
-    type OnKilledAccount = ();
-    type PalletInfo = ();
-    type SystemWeightInfo = ();
-}
-
 parameter_types! {
     pub const VoteStageDuration: u64 = 19;
     pub const RevealStageDuration: u64 = 23;
@@ -436,14 +444,13 @@ parameter_types! {
     pub const MaxWinnerTargetCount: u64 = 10;
 }
 
-impl referendum::Trait<ReferendumInstance> for Test {
-    type Event = TestEvent;
+impl referendum::Config<ReferendumInstance> for Test {
+    type Event = Event;
 
     type MaxSaltLength = MaxSaltLength;
 
     type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
-    type ManagerOrigin =
-        EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
     type VotePower = u64;
 
@@ -457,7 +464,7 @@ impl referendum::Trait<ReferendumInstance> for Test {
     type MaxWinnerTargetCount = MaxWinnerTargetCount;
 
     fn calculate_vote_power(
-        _: &<Self as frame_system::Trait>::AccountId,
+        _: &<Self as frame_system::Config>::AccountId,
         _: &Self::Balance,
     ) -> Self::VotePower {
         1
@@ -521,13 +528,6 @@ impl referendum::WeightInfo for ReferendumWeightInfo {
     }
 }
 
-impl pallet_timestamp::Trait for Test {
-    type Moment = u64;
-    type OnTimestampSet = ();
-    type MinimumPeriod = MinimumPeriod;
-    type WeightInfo = ();
-}
-
 pub fn initial_test_ext() -> sp_io::TestExternalities {
     let t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
@@ -535,9 +535,6 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
 
     t.into()
 }
-
-pub type Discussions = crate::Module<Test>;
-pub type System = frame_system::Module<Test>;
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests

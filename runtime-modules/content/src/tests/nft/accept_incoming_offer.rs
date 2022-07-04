@@ -1,8 +1,5 @@
 #![cfg(test)]
-use crate::tests::fixtures::{
-    create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
-    increase_account_balance_helper,
-};
+use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_ok};
@@ -35,11 +32,6 @@ fn accept_incoming_offer() {
             None,
         ));
 
-        // Runtime tested state before call
-
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
-
         // Accept nft offer
         assert_ok!(Content::accept_incoming_offer(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
@@ -59,10 +51,7 @@ fn accept_incoming_offer() {
         ));
 
         // Last event checked
-        assert_event(
-            MetaEvent::content(RawEvent::OfferAccepted(video_id)),
-            number_of_events_before_call + 1,
-        );
+        last_event_eq!(RawEvent::OfferAccepted(video_id));
     })
 }
 
@@ -175,6 +164,62 @@ fn accept_incoming_offer_no_incoming_offers() {
         assert_err!(
             accept_incoming_offer_result,
             Error::<Test>::PendingOfferDoesNotExist
+        );
+    })
+}
+
+#[test]
+fn accept_incoming_offer_ok_with_nft_member_owner_correctly_credited() {
+    with_default_mock_builder(|| {
+        ContentTest::default().with_video().setup();
+        IssueNftFixture::default()
+            .with_non_channel_owner(THIRD_MEMBER_ID)
+            .with_royalty(Perbill::from_percent(1))
+            .with_init_status(InitTransactionalStatus::<Test>::InitiatedOfferToMember(
+                SECOND_MEMBER_ID,
+                Some(DEFAULT_NFT_PRICE),
+            ))
+            .call_and_assert(Ok(()));
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
+        let royalty = Perbill::from_percent(DEFAULT_ROYALTY).mul_floor(DEFAULT_NFT_PRICE);
+        let platform_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE);
+
+        assert_ok!(Content::accept_incoming_offer(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            VideoId::one(),
+        ));
+
+        // check member owner balance increased by NFT PRICE - ROYALTY - FEE
+        assert_eq!(
+            Balances::<Test>::usable_balance(THIRD_MEMBER_ACCOUNT_ID),
+            DEFAULT_NFT_PRICE - royalty - platform_fee,
+        );
+    })
+}
+
+#[test]
+fn accept_incoming_offer_reward_account_ok_with_owner_channel_account_correctly_credited() {
+    with_default_mock_builder(|| {
+        ContentTest::default().with_video().setup();
+        IssueNftFixture::default()
+            .with_royalty(Perbill::from_percent(1))
+            .with_init_status(InitTransactionalStatus::<Test>::InitiatedOfferToMember(
+                SECOND_MEMBER_ID,
+                Some(DEFAULT_NFT_PRICE),
+            ))
+            .call_and_assert(Ok(()));
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
+        let platform_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE);
+
+        assert_ok!(Content::accept_incoming_offer(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            VideoId::one(),
+        ));
+
+        // check creator owner balance increased by NFT PRICE - FEE
+        assert_eq!(
+            channel_reward_account_balance(ChannelId::one()),
+            DEFAULT_NFT_PRICE - platform_fee,
         );
     })
 }

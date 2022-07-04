@@ -140,8 +140,8 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
           value: 'ws://localhost:9944',
         },
         {
-          name: 'Current Testnet official Joystream node (wss://rome-rpc-endpoint.joystream.org:9944/)',
-          value: 'wss://rome-rpc-endpoint.joystream.org:9944/',
+          name: 'Current Testnet official Joystream node (wss://rpc.joystream.org:9944/)',
+          value: 'wss://rpc.joystream.org:9944/',
         },
         {
           name: 'Custom endpoint',
@@ -174,8 +174,8 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         value: 'http://localhost:8081/graphql',
       },
       {
-        name: 'Jsgenesis-hosted query node (https://hydra.joystream.org/graphql)',
-        value: 'https://hydra.joystream.org/graphql',
+        name: 'Jsgenesis-hosted query node (https://query.joystream.org/graphql)',
+        value: 'https://query.joystream.org/graphql',
       },
       {
         name: 'Custom endpoint',

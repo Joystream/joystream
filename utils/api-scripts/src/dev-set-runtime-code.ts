@@ -1,5 +1,4 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
-import { types } from '@joystream/types'
 import { Keyring } from '@polkadot/keyring'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { DispatchError, DispatchResult } from '@polkadot/types/interfaces/system'
@@ -32,7 +31,7 @@ async function main() {
   let retry = 6
   while (true) {
     try {
-      api = new ApiPromise({ provider, types })
+      api = new ApiPromise({ provider })
       await api.isReadyOrError
       break
     } catch (err) {

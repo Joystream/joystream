@@ -1,4 +1,6 @@
-use super::{increase_total_balance_issuance_using_account_id, initial_test_ext};
+use super::{
+    account_from_member_id, increase_total_balance_issuance_using_account_id, initial_test_ext,
+};
 use crate::{
     BoundStakingAccountStakingManager, ContentWorkingGroupStakingManager,
     GatewayWorkingGroupStakingManager,
@@ -9,7 +11,7 @@ use staking_handler::StakingHandler;
 #[test]
 fn compatible_stakes_check_passed_successfully() {
     initial_test_ext().execute_with(|| {
-        let account_id = AccountId32::default();
+        let account_id = account_from_member_id(0);
         let total_amout = 10000;
         let stake_amount = 100;
 
@@ -28,7 +30,7 @@ fn compatible_stakes_check_passed_successfully() {
 #[test]
 fn compatible_stakes_check_reversed_order_passed_successfully() {
     initial_test_ext().execute_with(|| {
-        let account_id = AccountId32::default();
+        let account_id = account_from_member_id(0);
         let total_amout = 10000;
         let stake_amount = 100;
 
@@ -47,7 +49,7 @@ fn compatible_stakes_check_reversed_order_passed_successfully() {
 #[test]
 fn incompatible_stakes_check_passed_successfully() {
     initial_test_ext().execute_with(|| {
-        let account_id = AccountId32::default();
+        let account_id = account_from_member_id(0);
         let total_amout = 10000;
         let stake_amount = 100;
 

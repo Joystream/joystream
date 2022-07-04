@@ -26,8 +26,8 @@
     --chain-spec-path {{ chain_spec_path }}
     --endowed 1 --keystore-path {{ remote_data_path }}
     {% if deployment_type is defined and deployment_type|length > 0 %}--deployment {{ deployment_type }}{% endif %}
-    {% if initial_members_file is defined and initial_members_file|length > 0 %}--initial-balances-path {{ remote_code_path }}/initial-balances.json{% endif %}
-    {% if initial_balances_file is defined and initial_balances_file|length > 0 %}
+    {% if initial_balances_file is defined and initial_balances_file|length > 0 %}--initial-balances-path {{ remote_code_path }}/initial-balances.json{% endif %}
+    {% if initial_members_file is defined and initial_members_file|length > 0 %}
     --initial-members-path {{ remote_code_path }}/query-node/mappings/src/bootstrap-data/data/members.json
     {% endif %}
   register: chain_spec_output
@@ -51,8 +51,20 @@
 
 - name: Save output of chain spec to local file
   copy:
-    content: '{{ chain_spec_output.stdout | regex_replace("\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]", "") }}'
+    content: '{{ chain_spec_output.stdout }}'
     dest: '{{ remote_data_path }}/chain_spec_output.txt'
+  delegate_to: '{{ build_instance }}'
+  run_once: true
+
+- name: Format chain spec output
+  set_fact:
+    chain_spec_output_formatted: '{{ chain_spec_output.stdout | regex_replace("=", ": ") | from_yaml }}'
+  run_once: true
+
+- name: Extract keys from chain spec output
+  set_fact:
+    sudo_key: '{{ chain_spec_output_formatted.sudo }}'
+    endowed_key: '{{ chain_spec_output_formatted.endowed_0 }}'
   delegate_to: '{{ build_instance }}'
   run_once: true
 

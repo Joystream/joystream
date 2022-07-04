@@ -145,11 +145,6 @@ type BountyEntryStatusRejected @variant {
   dummy: Int
 }
 
-"Worker cashed out stake and/or share of bounty reward."
-type BountyEntryStatusCashedOut @variant {
-  reward: BigInt
-}
-
 "All valid work entry statuses"
 union BountyEntryStatus =
     BountyEntryStatusWorking
@@ -157,7 +152,6 @@ union BountyEntryStatus =
   | BountyEntryStatusWinner
   | BountyEntryStatusPassed
   | BountyEntryStatusRejected
-  | BountyEntryStatusCashedOut
 
 type BountyEntry @entity {
   # Work entry creation parameters:
@@ -206,6 +200,10 @@ type BountyContribution @entity {
 
   "Member making the contribution (if a member and not the council)"
   contributor: Membership
+
+  # This exposes internal Hydra value related to `contributor`
+  "The id of the contributor"
+  contributorId: ID
 
   "Amount of the contribution"
   amount: BigInt!

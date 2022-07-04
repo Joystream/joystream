@@ -21,11 +21,18 @@ fn successful_channel_creation_with_member_context() {
         run_to_block(1);
         set_dynamic_bag_creation_policy_for_storage_numbers(0);
         create_initial_storage_buckets_helper();
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+
+        let channel_state_bloat_bond = 10;
+        UpdateChannelStateBloatBondFixture::default()
+            .with_channel_state_bloat_bond(channel_state_bloat_bond)
+            .call_and_assert(Ok(()));
 
         CreateChannelFixture::default()
             .with_default_storage_buckets()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_channel_owner(ChannelOwner::Member(DEFAULT_MEMBER_ID))
+            .with_expected_channel_state_bloat_bond(channel_state_bloat_bond)
             .call_and_assert(Ok(()));
     })
 }
@@ -75,11 +82,24 @@ fn successful_channel_creation_with_storage_upload_and_member_context() {
     with_default_mock_builder(|| {
         run_to_block(1);
         create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+        //1 channel SBB + 1 data obj SBB * 10 objs = 11 SBB
+        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, 11);
+
+        let channel_state_bloat_bond = 1;
+        let data_state_bloat_bond = 1;
+
+        UpdateChannelStateBloatBondFixture::default()
+            .with_channel_state_bloat_bond(channel_state_bloat_bond)
+            .call_and_assert(Ok(()));
+
+        set_data_object_state_bloat_bond(data_state_bloat_bond);
+
         CreateChannelFixture::default()
             .with_default_storage_buckets()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_channel_owner(ChannelOwner::Member(DEFAULT_MEMBER_ID))
+            .with_expected_channel_state_bloat_bond(channel_state_bloat_bond)
+            .with_data_object_state_bloat_bond(data_state_bloat_bond)
             .with_assets(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_objects_helper(),
@@ -95,15 +115,43 @@ fn successful_curator_group_channel_creation_with_storage_upload_and_lead_contex
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
         let default_curator_group_id = curators::create_curator_group(BTreeMap::new());
+
+        let channel_state_bloat_bond = 10;
+        UpdateChannelStateBloatBondFixture::default()
+            .with_channel_state_bloat_bond(channel_state_bloat_bond)
+            .call_and_assert(Ok(()));
+
         CreateChannelFixture::default()
             .with_default_storage_buckets()
             .with_sender(LEAD_ACCOUNT_ID)
             .with_channel_owner(ChannelOwner::CuratorGroup(default_curator_group_id))
+            .with_expected_channel_state_bloat_bond(channel_state_bloat_bond)
             .with_assets(StorageAssets::<Test> {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_objects_helper(),
             })
             .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_creation_with_invalid_expected_channel_state_bloat_bond() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        create_initial_storage_buckets_helper();
+        increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
+        let default_curator_group_id = curators::create_curator_group(BTreeMap::new());
+
+        let channel_state_bloat_bond = 10;
+        UpdateChannelStateBloatBondFixture::default()
+            .with_channel_state_bloat_bond(channel_state_bloat_bond)
+            .call_and_assert(Ok(()));
+
+        CreateChannelFixture::default()
+            .with_default_storage_buckets()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_channel_owner(ChannelOwner::CuratorGroup(default_curator_group_id))
+            .call_and_assert(Err(Error::<Test>::ChannelStateBloatBondChanged.into()));
     })
 }
 
@@ -145,7 +193,9 @@ fn unsuccessful_channel_creation_with_insufficient_balance() {
                 expected_data_size_fee: Storage::<Test>::data_object_per_mega_byte_fee(),
                 object_creation_list: create_data_objects_helper(),
             })
-            .call_and_assert(Err(storage::Error::<Test>::InsufficientBalance.into()));
+            .call_and_assert(Err(
+                Error::<Test>::InsufficientBalanceForChannelCreation.into()
+            ));
     })
 }
 
@@ -182,7 +232,7 @@ fn unsuccessful_channel_creation_with_no_bucket_with_sufficient_number_available
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(
             DEFAULT_MEMBER_ACCOUNT_ID,
-            DATA_OBJECT_STATE_BLOAT_BOND * (STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1),
+            DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND * (STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1),
         );
 
         set_dynamic_bag_creation_policy_for_storage_numbers(1);
@@ -469,8 +519,9 @@ fn unsuccessful_channel_update_with_no_bucket_with_sufficient_object_number_limi
         increase_account_balance_helper(
             DEFAULT_MEMBER_ACCOUNT_ID,
             // balance necessary to create channel + video with specified no. of assets
-            DATA_OBJECT_STATE_BLOAT_BOND * (STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1)
-                + DATA_OBJECT_STATE_BLOAT_BOND * DATA_OBJECTS_NUMBER,
+            DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND * (STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT + 1)
+                + DEFAULT_CHANNEL_STATE_BLOAT_BOND
+                + DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND * DATA_OBJECTS_NUMBER,
         );
 
         create_default_member_owned_channel();
@@ -578,6 +629,18 @@ fn unsuccessful_channel_deletion_with_invalid_bag_size() {
             // default member owned channel has DATA_OBJECTS_NUMBER > 0 assets
             .with_num_objects_to_delete(0u64)
             .call_and_assert(Err(Error::<Test>::InvalidBagSizeSpecified.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_channel_deletion_with_creator_token_issued() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+
+        DeleteChannelFixture::default()
+            .call_and_assert(Err(Error::<Test>::CreatorTokenAlreadyIssued.into()));
     })
 }
 
@@ -754,8 +817,15 @@ fn successful_moderation_action_channel_deletion_by_curator() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
+
+        let channel_state_bloat_bond = 10;
+        UpdateChannelStateBloatBondFixture::default()
+            .with_channel_state_bloat_bond(channel_state_bloat_bond)
+            .call_and_assert(Ok(()));
+
         CreateChannelFixture::default()
             .with_default_storage_buckets()
+            .with_expected_channel_state_bloat_bond(channel_state_bloat_bond)
             .call_and_assert(Ok(()));
 
         let group_id = curators::add_curator_to_new_group_with_permissions(
@@ -3009,98 +3079,8 @@ fn successful_channel_transfer_by_owner_member() {
 }
 
 //////////////////////////////////////////////////////////////////////
-/////// Channel agent / owner permissions - ClaimChannelReward ///////
+/////////////// END OF CHANNEL AGENT PERMISSIONS TESTS ///////////////
 //////////////////////////////////////////////////////////////////////
-
-// Curator channels
-
-#[test]
-fn unsuccessful_channel_reward_claim_by_curator_agent_without_permissions() {
-    with_default_mock_builder(|| {
-        ContentTest::with_curator_channel()
-            .with_claimable_reward()
-            .with_all_agent_permissions_except(&[ChannelActionPermission::ClaimChannelReward])
-            .setup();
-        ClaimChannelRewardFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(default_curator_actor())
-            .call_and_assert(Err(
-                Error::<Test>::ChannelAgentInsufficientPermissions.into()
-            ));
-    })
-}
-
-#[test]
-fn successful_channel_reward_claim_by_curator_agent() {
-    with_default_mock_builder(|| {
-        ContentTest::with_curator_channel()
-            .with_claimable_reward()
-            .with_agent_permissions(&[ChannelActionPermission::ClaimChannelReward])
-            .setup();
-        ClaimChannelRewardFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(default_curator_actor())
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn successful_channel_reward_claim_by_lead() {
-    with_default_mock_builder(|| {
-        ContentTest::with_curator_channel()
-            .with_claimable_reward()
-            .setup();
-        ClaimChannelRewardFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            .call_and_assert(Ok(()));
-    })
-}
-
-// Member channels
-
-#[test]
-fn unsuccessful_channel_reward_claim_by_collaborator_without_permissions() {
-    with_default_mock_builder(|| {
-        ContentTest::with_member_channel()
-            .with_claimable_reward()
-            .with_all_agent_permissions_except(&[ChannelActionPermission::ClaimChannelReward])
-            .setup();
-        ClaimChannelRewardFixture::default()
-            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .call_and_assert(Err(
-                Error::<Test>::ChannelAgentInsufficientPermissions.into()
-            ));
-    })
-}
-
-#[test]
-fn successful_channel_reward_claim_by_collaborator() {
-    with_default_mock_builder(|| {
-        ContentTest::with_member_channel()
-            .with_claimable_reward()
-            .with_agent_permissions(&[ChannelActionPermission::ClaimChannelReward])
-            .setup();
-        ClaimChannelRewardFixture::default()
-            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn successful_channel_reward_claim_by_owner_member() {
-    with_default_mock_builder(|| {
-        ContentTest::with_member_channel()
-            .with_claimable_reward()
-            .setup();
-        ClaimChannelRewardFixture::default()
-            .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .call_and_assert(Ok(()));
-    })
-}
 
 #[test]
 fn claim_council_reward_succeeded() {
@@ -3110,7 +3090,7 @@ fn claim_council_reward_succeeded() {
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_STATE_BLOAT_BOND, &[]);
+        create_default_curator_owned_channel(DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND, &[]);
 
         let channel_id = ChannelId::one();
 
@@ -3131,13 +3111,27 @@ fn claim_council_reward_succeeded() {
 }
 
 #[test]
+fn claim_council_reward_fails_during_transfer() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        ContentTest::with_member_channel().with_video().setup();
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(SECOND_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        ClaimCouncilRewardFixture::default()
+            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
+    })
+}
+
+#[test]
 fn claim_council_reward_failed_with_invalid_channel() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_STATE_BLOAT_BOND, &[]);
+        create_default_curator_owned_channel(DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND, &[]);
 
         let invalid_channel_id = 444;
         ClaimCouncilRewardFixture::default()
@@ -3148,35 +3142,13 @@ fn claim_council_reward_failed_with_invalid_channel() {
 }
 
 #[test]
-fn claim_council_reward_failed_with_invalid_channel_transfer_status() {
-    with_default_mock_builder(|| {
-        run_to_block(1);
-
-        create_initial_storage_buckets_helper();
-        increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_STATE_BLOAT_BOND, &[]);
-
-        // Change channel transfer status.
-        let channel_id = ChannelId::one();
-        <crate::ChannelById<Test>>::mutate(channel_id, |channel| {
-            channel.transfer_status =
-                ChannelTransferStatus::PendingTransfer(PendingTransfer::default())
-        });
-
-        ClaimCouncilRewardFixture::default()
-            .with_origin(RawOrigin::Signed(LEAD_ACCOUNT_ID))
-            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
-    })
-}
-
-#[test]
 fn claim_council_reward_failed_with_zero_reward() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_STATE_BLOAT_BOND, &[]);
+        create_default_curator_owned_channel(DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND, &[]);
 
         let channel_id = ChannelId::one();
 
