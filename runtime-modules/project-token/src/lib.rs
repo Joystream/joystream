@@ -1648,8 +1648,6 @@ impl<T: Config> Module<T> {
             expected_data_size_fee: payload.expected_data_size_fee,
             object_creation_list: vec![payload.object_creation_params.clone()],
             expected_data_object_state_bloat_bond: payload.expected_data_object_state_bloat_bond,
-            storage_buckets: Default::default(),
-            distribution_buckets: Default::default(),
         })
     }
 
