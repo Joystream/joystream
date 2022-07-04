@@ -631,16 +631,15 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::UpdateGlobalNftLimit(..) => {
                 // Note: No checks for this proposal for now
-            }
-            // TODO: enable after Carthage
-            // ProposalDetails::UpdateChannelPayouts(params) => {
-            //     if params.min_cashout_allowed.is_some() && params.max_cashout_allowed.is_some() {
-            //         ensure!(
-            //             params.max_cashout_allowed.unwrap() >= params.min_cashout_allowed.unwrap(),
-            //             Error::<T>::InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout
-            //         );
-            //     }
-            // }
+            } // TODO: enable after Carthage
+              // ProposalDetails::UpdateChannelPayouts(params) => {
+              //     if params.min_cashout_allowed.is_some() && params.max_cashout_allowed.is_some() {
+              //         ensure!(
+              //             params.max_cashout_allowed.unwrap() >= params.min_cashout_allowed.unwrap(),
+              //             Error::<T>::InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout
+              //         );
+              //     }
+              // }
         }
 
         Ok(())
@@ -704,11 +703,10 @@ impl<T: Config> Module<T> {
             ProposalDetails::VetoProposal(..) => T::VetoProposalProposalParameters::get(),
             ProposalDetails::UpdateGlobalNftLimit(..) => {
                 T::UpdateGlobalNftLimitProposalParameters::get()
-            }
-            // TODO: enable after Carthage
-            // ProposalDetails::UpdateChannelPayouts(..) => {
-            //     T::UpdateChannelPayoutsProposalParameters::get()
-            // }
+            } // TODO: enable after Carthage
+              // ProposalDetails::UpdateChannelPayouts(..) => {
+              //     T::UpdateChannelPayoutsProposalParameters::get()
+              // }
         }
     }
 
@@ -851,19 +849,18 @@ impl<T: Config> Module<T> {
                     description_length.saturated_into(),
                 )
                 .saturated_into()
-            }
-            // TODO: enable after Carthage
-            // ProposalDetails::UpdateChannelPayouts(params) => {
-            //     WeightInfoCodex::<T>::create_proposal_update_channel_payouts(
-            //         title_length.saturated_into(),
-            //         description_length.saturated_into(),
-            //         params
-            //             .payload
-            //             .as_ref()
-            //             .map_or(0, |p| p.object_creation_params.ipfs_content_id.len() as u32),
-            //     )
-            //     .saturated_into()
-            // }
+            } // TODO: enable after Carthage
+              // ProposalDetails::UpdateChannelPayouts(params) => {
+              //     WeightInfoCodex::<T>::create_proposal_update_channel_payouts(
+              //         title_length.saturated_into(),
+              //         description_length.saturated_into(),
+              //         params
+              //             .payload
+              //             .as_ref()
+              //             .map_or(0, |p| p.object_creation_params.ipfs_content_id.len() as u32),
+              //     )
+              //     .saturated_into()
+              // }
         }
     }
 }

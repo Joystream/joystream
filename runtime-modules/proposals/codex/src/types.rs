@@ -114,7 +114,6 @@ pub enum ProposalDetails<
 
     /// `Update global NFT limit` proposal
     UpdateGlobalNftLimit(NftLimitPeriod, u64),
-
     // TODO: enable after Carthage
     // /// `Update Channel Payouts` proposal
     // UpdateChannelPayouts(UpdateChannelPayoutsParameters),
