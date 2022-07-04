@@ -191,6 +191,9 @@ decl_error! {
         /// Auction buy now is less then starting price
         BuyNowIsLessThenStartingPrice,
 
+        /// Nft offer target member does not exist
+        TargetMemberDoesNotExist,
+
         /// Max auction whitelist length upper bound exceeded
         MaxAuctionWhiteListLengthUpperBoundExceeded,
 

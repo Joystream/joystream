@@ -2134,6 +2134,12 @@ decl_module! {
             // Ensure there is no pending offer or existing auction for given nft.
             Self::ensure_nft_transactional_status_is_idle(&nft)?;
 
+            // Ensure target member exists
+            ensure!(
+                T::MemberAuthenticator::controller_account_id(to).is_ok(),
+                Error::<T>::TargetMemberDoesNotExist
+            );
+
             //
             // == MUTATION SAFE ==
             //
