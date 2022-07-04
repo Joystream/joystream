@@ -210,10 +210,11 @@ pub trait Config:
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// `Update Channel Payouts` proposal parameters
-    type UpdateChannelPayoutsProposalParameters: Get<
-        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
-    >;
+    // TODO: enable after Carthage
+    // /// `Update Channel Payouts` proposal parameters
+    // type UpdateChannelPayoutsProposalParameters: Get<
+    //     ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    // >;
 }
 
 /// Specialized alias of GeneralProposalParams
@@ -408,8 +409,9 @@ decl_module! {
         const UpdateGlobalNftLimitProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateGlobalNftLimitProposalParameters::get();
 
-        const UpdateChannelPayoutsProposalParameters:
-            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateChannelPayoutsProposalParameters::get();
+        // TODO: enable after Carthage
+        // const UpdateChannelPayoutsProposalParameters:
+        //     ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateChannelPayoutsProposalParameters::get();
 
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
@@ -603,16 +605,15 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::UpdateGlobalNftLimit(..) => {
                 // Note: No checks for this proposal for now
-            }
-
-            ProposalDetails::UpdateChannelPayouts(params) => {
-                if params.min_cashout_allowed.is_some() && params.max_cashout_allowed.is_some() {
-                    ensure!(
-                        params.max_cashout_allowed.unwrap() >= params.min_cashout_allowed.unwrap(),
-                        Error::<T>::InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout
-                    );
-                }
-            }
+            } // TODO: enable after Carthage
+              // ProposalDetails::UpdateChannelPayouts(params) => {
+              //     if params.min_cashout_allowed.is_some() && params.max_cashout_allowed.is_some() {
+              //         ensure!(
+              //             params.max_cashout_allowed.unwrap() >= params.min_cashout_allowed.unwrap(),
+              //             Error::<T>::InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout
+              //         );
+              //     }
+              // }
         }
 
         Ok(())
@@ -676,10 +677,10 @@ impl<T: Config> Module<T> {
             ProposalDetails::VetoProposal(..) => T::VetoProposalProposalParameters::get(),
             ProposalDetails::UpdateGlobalNftLimit(..) => {
                 T::UpdateGlobalNftLimitProposalParameters::get()
-            }
-            ProposalDetails::UpdateChannelPayouts(..) => {
-                T::UpdateChannelPayoutsProposalParameters::get()
-            }
+            } // TODO: enable after Carthage
+              // ProposalDetails::UpdateChannelPayouts(..) => {
+              //     T::UpdateChannelPayoutsProposalParameters::get()
+              // }
         }
     }
 
@@ -827,18 +828,18 @@ impl<T: Config> Module<T> {
                     description_length.saturated_into(),
                 )
                 .saturated_into()
-            }
-            ProposalDetails::UpdateChannelPayouts(params) => {
-                WeightInfoCodex::<T>::create_proposal_update_channel_payouts(
-                    params
-                        .payload
-                        .as_ref()
-                        .map_or(0, |p| p.object_creation_params.ipfs_content_id.len() as u32),
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
-                )
-                .saturated_into()
-            }
+            } // TODO: enable after Carthage
+              // ProposalDetails::UpdateChannelPayouts(params) => {
+              //     WeightInfoCodex::<T>::create_proposal_update_channel_payouts(
+              //         params
+              //             .payload
+              //             .as_ref()
+              //             .map_or(0, |p| p.object_creation_params.ipfs_content_id.len() as u32),
+              //         title_length.saturated_into(),
+              //         description_length.saturated_into(),
+              //     )
+              //     .saturated_into()
+              // }
         }
     }
 }

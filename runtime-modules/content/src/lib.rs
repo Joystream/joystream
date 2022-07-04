@@ -567,10 +567,7 @@ decl_module! {
                 object_creation_list: assets_to_upload.object_creation_list,
                 state_bloat_bond_source_account_id: sender,
                 expected_data_size_fee: assets_to_upload.expected_data_size_fee,
-                expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond,
-                storage_buckets: Default::default(),
-                distribution_buckets: Default::default(),
-            };
+                expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond            };
 
             Storage::<T>::upload_and_delete_data_objects(
                 upload_parameters,
@@ -621,7 +618,6 @@ decl_module! {
             new_paused_features: BTreeSet<PausableChannelFeature>,
             rationale: Vec<u8>,
         ) -> DispatchResult {
-
             let sender = ensure_signed(origin)?;
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -961,8 +957,6 @@ decl_module! {
                 expected_data_size_fee: params.assets_to_upload.clone()
                     .map_or(Default::default(), |assets| assets.expected_data_size_fee),
                 expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond,
-                storage_buckets: Default::default(),
-                distribution_buckets: Default::default(),
             };
 
             Storage::<T>::upload_and_delete_data_objects(
@@ -1177,8 +1171,6 @@ decl_module! {
                     state_bloat_bond_source_account_id: payload.uploader_account.clone(),
                     expected_data_size_fee: payload.expected_data_size_fee,
                     expected_data_object_state_bloat_bond: payload.expected_data_object_state_bloat_bond,
-                    storage_buckets: Default::default(),
-                    distribution_buckets: Default::default()
                 };
                 Storage::<T>::upload_data_objects(upload_params)?;
             }
@@ -1424,7 +1416,6 @@ decl_module! {
 
             // block extrinsics during transfers
             Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
-
 
             // Authorize nft destruction
             ensure_actor_authorized_to_manage_nft::<T>(origin, &actor, &nft.owner, video.in_channel)?;
@@ -1783,6 +1774,9 @@ decl_module! {
             let video = Self::ensure_video_exists(&video_id)?;
             let nft = video.ensure_nft_is_issued::<T>()?;
 
+            // block during transfers
+            Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
+
             // Validate parameters & return english auction
             let open_auction =  Self::ensure_in_open_auction_state(&nft)?;
 
@@ -1866,6 +1860,9 @@ decl_module! {
             // Ensure nft is already issued
             let video = Self::ensure_video_exists(&video_id)?;
             let nft = video.ensure_nft_is_issued::<T>()?;
+
+            // block during tranfers
+            Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
 
             // Validate parameters & return english auction
             let eng_auction =  Self::ensure_in_english_auction_state(&nft)?;
@@ -1975,6 +1972,10 @@ decl_module! {
             let participant_account_id = ensure_signed(origin)?;
             ensure_member_auth_success::<T>(&participant_account_id, &participant_id)?;
 
+            // block during channel transfers
+            let video = Self::ensure_video_exists(&video_id)?;
+            Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
+
             // ensure nft exists
             let nft = Self::ensure_nft_exists(video_id)?;
 
@@ -2015,6 +2016,9 @@ decl_module! {
             // Ensure nft is already issued
             let video = Self::ensure_video_exists(&video_id)?;
             let nft = video.ensure_nft_is_issued::<T>()?;
+
+            // block during channel transfers
+            Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
 
             // Ensure nft & english auction validity for nft exists, retrieve top bid
             let english_auction = Self::ensure_in_english_auction_state(&nft)?;
@@ -2216,6 +2220,8 @@ decl_module! {
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
+            Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
+
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
 
@@ -2224,6 +2230,7 @@ decl_module! {
 
             // account_id where the nft offer price is deposited
             let nft_owner_account = Self::ensure_nft_owner_has_beneficiary_account(&video, &nft).ok();
+
             //
             // == MUTATION SAFE ==
             //
@@ -2305,6 +2312,9 @@ decl_module! {
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
+            // block during channel transfer
+            Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
+
             // Ensure nft is already issued
             let nft = video.ensure_nft_is_issued::<T>()?;
 
@@ -2339,7 +2349,6 @@ decl_module! {
         pub fn channel_owner_remark(origin, channel_id: T::ChannelId, msg: Vec<u8>) {
             let sender = ensure_signed(origin)?;
             let channel = Self::ensure_channel_exists(&channel_id)?;
-            channel.ensure_has_no_active_transfer::<T>()?;
             ensure_is_authorized_to_act_as_channel_owner::<T>(&sender, &channel.owner)?;
 
             //
@@ -2354,7 +2363,6 @@ decl_module! {
         pub fn channel_agent_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, channel_id: T::ChannelId, msg: Vec<u8>) {
             let sender = ensure_signed(origin)?;
             let channel = Self::ensure_channel_exists(&channel_id)?;
-            channel.ensure_has_no_active_transfer::<T>()?;
             ensure_actor_authorized_to_send_channel_agent_remark::<T>(&sender, &actor, &channel)?;
             //
             // == MUTATION SAFE ==
@@ -2368,7 +2376,6 @@ decl_module! {
         pub fn nft_owner_remark(origin, actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>, video_id: T::VideoId, msg: Vec<u8>) {
             let video = Self::ensure_video_exists(&video_id)?;
             let nft = video.ensure_nft_is_issued::<T>()?;
-            Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
             ensure_actor_authorized_to_manage_nft::<T>(origin, &actor, &nft.owner, video.in_channel)?;
 
             //
@@ -2391,6 +2398,18 @@ decl_module! {
 
             if let ChannelTransferStatus::PendingTransfer(ref params) = new_transfer_status {
                 Self::validate_member_set(&params.transfer_params.new_collaborators.keys().cloned().collect())?;
+            }
+
+            if let Ok(token_id) = channel.ensure_creator_token_issued::<T>() {
+                ensure!(
+                    T::ProjectToken::is_revenue_split_inactive(token_id),
+                    Error::<T>::ChannelTransfersBlockedDuringRevenueSplits
+                );
+
+                ensure!(
+                    T::ProjectToken::is_sale_unscheduled(token_id),
+                    Error::<T>::ChannelTransfersBlockedDuringTokenSales,
+                );
             }
 
             //
@@ -2631,6 +2650,8 @@ decl_module! {
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
+            channel.ensure_has_no_active_transfer::<T>()?;
+
             // Permissions check
             let (_, permissions) = ensure_actor_authorized_to_init_and_manage_creator_token_sale::<T>(
                 origin,
@@ -2670,6 +2691,8 @@ decl_module! {
             outputs: TransfersWithVestingOf<T>,
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            channel.ensure_has_no_active_transfer::<T>()?;
 
             // Permissions check
             let sender = ensure_actor_authorized_to_perform_creator_token_issuer_transfer::<T>(
@@ -2839,6 +2862,8 @@ decl_module! {
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
+            channel.ensure_has_no_active_transfer::<T>()?;
+
             // Permissions check
             ensure_actor_authorized_to_manage_revenue_splits::<T>(
                 origin,
@@ -2867,6 +2892,8 @@ decl_module! {
             channel_id: T::ChannelId,
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            channel.ensure_has_no_active_transfer::<T>()?;
 
             // Permissions check
             let (_, permissions) = ensure_actor_authorized_to_init_and_manage_creator_token_sale::<T>(
@@ -2911,6 +2938,8 @@ decl_module! {
             channel_id: T::ChannelId,
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            channel.ensure_has_no_active_transfer::<T>()?;
 
             // Permissions check
             ensure_actor_authorized_to_deissue_creator_token::<T>(
@@ -3060,8 +3089,6 @@ impl<T: Config> Module<T> {
             state_bloat_bond_source_account_id: obj_state_bloat_bond_source_account.clone(),
             expected_data_size_fee: assets.expected_data_size_fee,
             expected_data_object_state_bloat_bond,
-            storage_buckets: Default::default(),
-            distribution_buckets: Default::default(),
         }
     }
 
