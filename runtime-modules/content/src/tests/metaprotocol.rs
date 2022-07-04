@@ -401,7 +401,7 @@ fn successful_channel_owner_remark_during_transfer() {
 }
 
 #[test]
-fn successful_channel_agent_rewark_during_transfer() {
+fn successful_channel_agent_remark_during_transfer() {
     with_default_mock_builder(|| {
         run_to_block(1);
         ContentTest::with_member_channel()
