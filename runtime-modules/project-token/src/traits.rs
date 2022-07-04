@@ -79,5 +79,4 @@ pub trait PalletToken<
 
     /// Establish whether the token has an unfinalized sale
     fn is_sale_unscheduled(token_id: TokenId) -> bool;
-
 }

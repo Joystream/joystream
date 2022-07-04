@@ -567,10 +567,7 @@ decl_module! {
                 object_creation_list: assets_to_upload.object_creation_list,
                 state_bloat_bond_source_account_id: sender,
                 expected_data_size_fee: assets_to_upload.expected_data_size_fee,
-                expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond,
-                storage_buckets: Default::default(),
-                distribution_buckets: Default::default(),
-            };
+                expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond            };
 
             Storage::<T>::upload_and_delete_data_objects(
                 upload_parameters,
@@ -960,8 +957,6 @@ decl_module! {
                 expected_data_size_fee: params.assets_to_upload.clone()
                     .map_or(Default::default(), |assets| assets.expected_data_size_fee),
                 expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond,
-                storage_buckets: Default::default(),
-                distribution_buckets: Default::default(),
             };
 
             Storage::<T>::upload_and_delete_data_objects(
@@ -1176,8 +1171,6 @@ decl_module! {
                     state_bloat_bond_source_account_id: payload.uploader_account.clone(),
                     expected_data_size_fee: payload.expected_data_size_fee,
                     expected_data_object_state_bloat_bond: payload.expected_data_object_state_bloat_bond,
-                    storage_buckets: Default::default(),
-                    distribution_buckets: Default::default()
                 };
                 Storage::<T>::upload_data_objects(upload_params)?;
             }
@@ -3096,8 +3089,6 @@ impl<T: Config> Module<T> {
             state_bloat_bond_source_account_id: obj_state_bloat_bond_source_account.clone(),
             expected_data_size_fee: assets.expected_data_size_fee,
             expected_data_object_state_bloat_bond,
-            storage_buckets: Default::default(),
-            distribution_buckets: Default::default(),
         }
     }
 
