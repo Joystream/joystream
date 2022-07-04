@@ -534,10 +534,30 @@ impl Default for ExtBuilder {
     }
 }
 
+// TODO(post mainnet?): authomatically set block number = 1
 impl ExtBuilder {
-    pub fn build(self) -> sp_io::TestExternalities {
+    pub fn with_creator_royalty_bounds(
+        self,
+        min_creator_royalty: Perbill,
+        max_creator_royalty: Perbill,
+    ) -> Self {
+        Self {
+            min_creator_royalty,
+            max_creator_royalty,
+            ..self
+        }
+    }
+    /// test externalities + initial balances allocation
+    pub fn build_with_balances(
+        self,
+        balances: Vec<(AccountId, BalanceOf<Test>)>,
+    ) -> sp_io::TestExternalities {
         let mut t = frame_system::GenesisConfig::default()
             .build_storage::<Test>()
+            .unwrap();
+
+        balances::GenesisConfig::<Test> { balances }
+            .assimilate_storage(&mut t)
             .unwrap();
 
         // the same as t.top().extend(GenesisConfig::<Test> etc...)
@@ -567,7 +587,11 @@ impl ExtBuilder {
         .assimilate_storage(&mut t)
         .unwrap();
 
-        t.into()
+        Into::<sp_io::TestExternalities>::into(t)
+    }
+
+    pub fn build(self) -> sp_io::TestExternalities {
+        self.build_with_balances(vec![])
     }
 }
 
