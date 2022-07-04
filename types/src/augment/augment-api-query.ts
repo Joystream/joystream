@@ -289,7 +289,7 @@ declare module '@polkadot/api-base/types/storage' {
       nextVideoId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       /**
        * NFT limits enabled or not
-       * Can be updated in flight by Lead
+       * Can be updated in flight by the Council
        **/
       nftLimitsEnabled: AugmentedQuery<ApiType, () => Observable<bool>, []>;
       /**
