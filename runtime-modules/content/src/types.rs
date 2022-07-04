@@ -249,6 +249,8 @@ pub struct ChannelRecord<
     pub weekly_nft_counter: NftCounter<BlockNumber>,
     /// Id of the channel's creator token (if issued)
     pub creator_token_id: Option<TokenId>,
+    /// State bloat bond needed to store a channel
+    pub channel_state_bloat_bond: Balance,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -426,6 +428,8 @@ pub struct ChannelCreationParametersRecord<
     pub storage_buckets: BTreeSet<StorageBucketId>,
     /// Distribution buckets to assign to a bag.
     pub distribution_buckets: BTreeSet<DistributionBucketId>,
+    /// Commitment for the channel state bloat bond.
+    pub expected_channel_state_bloat_bond: Balance,
     /// Commitment for the data object state bloat bond for the storage pallet.
     pub expected_data_object_state_bloat_bond: Balance,
 }
@@ -484,6 +488,8 @@ pub struct VideoCreationParametersRecord<StorageAssets, NftIssuanceParameters, B
     pub meta: Option<Vec<u8>>,
     /// Parameters for issuing video Nft
     pub auto_issue_nft: Option<NftIssuanceParameters>,
+    /// Commitment for the video state bloat bond.
+    pub expected_video_state_bloat_bond: Balance,
     /// Commitment for the data object state bloat bond for the storage pallet.
     pub expected_data_object_state_bloat_bond: Balance,
 }
@@ -522,15 +528,18 @@ pub type VideoUpdateParameters<T> = VideoUpdateParametersRecord<
 /// A video which belongs to a channel. A video may be part of a series or playlist.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct VideoRecord<ChannelId, OwnedNft, DataObjectId: Ord> {
+pub struct VideoRecord<ChannelId, OwnedNft, DataObjectId: Ord, Balance: PartialEq + Zero> {
     pub in_channel: ChannelId,
     /// Whether nft for this video have been issued.
     pub nft_status: Option<OwnedNft>,
     /// Set of associated data objects
     pub data_objects: BTreeSet<DataObjectId>,
+    /// State bloat bond needed to store a video
+    pub video_state_bloat_bond: Balance,
 }
 
-pub type Video<T> = VideoRecord<<T as storage::Config>::ChannelId, Nft<T>, DataObjectId<T>>;
+pub type Video<T> =
+    VideoRecord<<T as storage::Config>::ChannelId, Nft<T>, DataObjectId<T>, BalanceOf<T>>;
 
 pub type DataObjectId<T> = <T as storage::Config>::DataObjectId;
 
@@ -576,8 +585,8 @@ pub type PullPayment<T> = PullPaymentElement<
     <T as frame_system::Config>::Hash,
 >;
 
-impl<ChannelId: Clone, OwnedNft: Clone, DataObjectId: Ord>
-    VideoRecord<ChannelId, OwnedNft, DataObjectId>
+impl<ChannelId: Clone, OwnedNft: Clone, DataObjectId: Ord, Balance: PartialEq + Zero>
+    VideoRecord<ChannelId, OwnedNft, DataObjectId, Balance>
 {
     /// Ensure nft is not issued
     pub fn ensure_nft_is_not_issued<T: Config>(&self) -> DispatchResult {

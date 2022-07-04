@@ -98,11 +98,6 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
         },
       },
     },
-    { details: { CreateBlogPost: ['Blog title', 'Blog text'] } },
-    // Blogs not supported yet, so we currently use invalid id and expect failure
-    { details: { EditBlogPost: [999, 'New title', 'New text'] }, expectExecutionFailure: true },
-    { details: { LockBlogPost: 999 }, expectExecutionFailure: true },
-    { details: { UnlockBlogPost: 999 }, expectExecutionFailure: true },
   ]
 
   const testAllOutcomesFixture = new AllProposalsOutcomesFixture(api, query, lock, proposalsToTest)

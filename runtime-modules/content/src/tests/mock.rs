@@ -60,7 +60,9 @@ pub const LEAD_MEMBER_ID: u64 = 218;
 pub const DEFAULT_CURATOR_MEMBER_ID: u64 = 219;
 pub const UNAUTHORIZED_CURATOR_MEMBER_ID: u64 = 220;
 
-pub const DATA_OBJECT_STATE_BLOAT_BOND: u64 = 0;
+pub const DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND: u64 = 0;
+pub const DEFAULT_CHANNEL_STATE_BLOAT_BOND: u64 = 0;
+pub const DEFAULT_VIDEO_STATE_BLOAT_BOND: u64 = 0;
 pub const DEFAULT_OBJECT_SIZE: u64 = 5;
 pub const DATA_OBJECTS_NUMBER: u64 = 10;
 pub const OUTSTANDING_VIDEOS: u64 = 5;
@@ -532,10 +534,30 @@ impl Default for ExtBuilder {
     }
 }
 
+// TODO(post mainnet?): authomatically set block number = 1
 impl ExtBuilder {
-    pub fn build(self) -> sp_io::TestExternalities {
+    pub fn with_creator_royalty_bounds(
+        self,
+        min_creator_royalty: Perbill,
+        max_creator_royalty: Perbill,
+    ) -> Self {
+        Self {
+            min_creator_royalty,
+            max_creator_royalty,
+            ..self
+        }
+    }
+    /// test externalities + initial balances allocation
+    pub fn build_with_balances(
+        self,
+        balances: Vec<(AccountId, BalanceOf<Test>)>,
+    ) -> sp_io::TestExternalities {
         let mut t = frame_system::GenesisConfig::default()
             .build_storage::<Test>()
+            .unwrap();
+
+        balances::GenesisConfig::<Test> { balances }
+            .assimilate_storage(&mut t)
             .unwrap();
 
         // the same as t.top().extend(GenesisConfig::<Test> etc...)
@@ -565,7 +587,11 @@ impl ExtBuilder {
         .assimilate_storage(&mut t)
         .unwrap();
 
-        t.into()
+        Into::<sp_io::TestExternalities>::into(t)
+    }
+
+    pub fn build(self) -> sp_io::TestExternalities {
+        self.build_with_balances(vec![])
     }
 }
 

@@ -26,10 +26,6 @@ import {
   SetInitialInvitationCountProposalDetails,
   SetMembershipLeadInvitationQuotaProposalDetails,
   SetReferralCutProposalDetails,
-  CreateBlogPostProposalDetails,
-  EditBlogPostProposalDetails,
-  LockBlogPostProposalDetails,
-  UnlockBlogPostProposalDetails,
   VetoProposalDetails,
   ProposalDetails,
   FundingRequestDestinationsList,
@@ -275,39 +271,6 @@ async function parseProposalDetails(
     const details = new SetReferralCutProposalDetails()
     const specificDetails = proposalDetails.asSetReferralCut
     details.newReferralCut = specificDetails.toNumber()
-    return details
-  }
-  // CreateBlogPostProposalDetails:
-  else if (proposalDetails.isCreateBlogPost) {
-    const details = new CreateBlogPostProposalDetails()
-    const specificDetails = proposalDetails.asCreateBlogPost
-    const [title, body] = specificDetails
-    details.title = perpareString(title.toString())
-    details.body = perpareString(body.toString())
-    return details
-  }
-  // EditBlogPostProposalDetails:
-  else if (proposalDetails.isEditBlogPost) {
-    const details = new EditBlogPostProposalDetails()
-    const specificDetails = proposalDetails.asEditBlogPost
-    const [postId, optTitle, optBody] = specificDetails
-    details.blogPost = postId.toString()
-    details.newTitle = optTitle.isSome ? perpareString(optTitle.unwrap().toString()) : undefined
-    details.newBody = optBody.isSome ? perpareString(optBody.unwrap().toString()) : undefined
-    return details
-  }
-  // LockBlogPostProposalDetails:
-  else if (proposalDetails.isLockBlogPost) {
-    const details = new LockBlogPostProposalDetails()
-    const postId = proposalDetails.asLockBlogPost
-    details.blogPost = postId.toString()
-    return details
-  }
-  // UnlockBlogPostProposalDetails:
-  else if (proposalDetails.isUnlockBlogPost) {
-    const details = new UnlockBlogPostProposalDetails()
-    const postId = proposalDetails.asUnlockBlogPost
-    details.blogPost = postId.toString()
     return details
   }
   // VetoProposalDetails:

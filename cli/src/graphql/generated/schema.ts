@@ -6937,13 +6937,6 @@ export type CouncilStageUpdateWhereUniqueInput = {
   id: Scalars['ID']
 }
 
-export type CreateBlogPostProposalDetails = {
-  /** Blog post title */
-  title: Scalars['String']
-  /** Blog post content (md-formatted) */
-  body: Scalars['String']
-}
-
 export type CreateWorkingGroupLeadOpeningProposalDetails = {
   /** The opening metadata */
   metadata?: Maybe<WorkingGroupOpeningMetadata>
@@ -7840,15 +7833,6 @@ export type DistributionBucketWhereInput = {
 
 export type DistributionBucketWhereUniqueInput = {
   id: Scalars['ID']
-}
-
-export type EditBlogPostProposalDetails = {
-  /** The related blog post */
-  blogPost: Scalars['String']
-  /** The new blog post title (if should be updated) */
-  newTitle?: Maybe<Scalars['String']>
-  /** The new blog post body (if should be updated) */
-  newBody?: Maybe<Scalars['String']>
 }
 
 export type ElectedCouncil = BaseGraphQlObject & {
@@ -10890,11 +10874,6 @@ export type LicenseWhereInput = {
 
 export type LicenseWhereUniqueInput = {
   id: Scalars['ID']
-}
-
-export type LockBlogPostProposalDetails = {
-  /** The blog post that should be locked */
-  blogPost: Scalars['String']
 }
 
 export type MemberAccountsUpdatedEvent = Event &
@@ -16653,10 +16632,6 @@ export type ProposalDetails =
   | SetInitialInvitationCountProposalDetails
   | SetMembershipLeadInvitationQuotaProposalDetails
   | SetReferralCutProposalDetails
-  | CreateBlogPostProposalDetails
-  | EditBlogPostProposalDetails
-  | LockBlogPostProposalDetails
-  | UnlockBlogPostProposalDetails
   | VetoProposalDetails
 
 export type ProposalDiscussionPost = BaseGraphQlObject & {
@@ -26874,11 +26849,6 @@ export type TransactionalStatusUpdateWhereInput = {
 
 export type TransactionalStatusUpdateWhereUniqueInput = {
   id: Scalars['ID']
-}
-
-export type UnlockBlogPostProposalDetails = {
-  /** The blog post that should be unlocked */
-  blogPost: Scalars['String']
 }
 
 export type UpcomingOpeningAdded = {

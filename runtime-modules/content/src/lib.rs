@@ -155,6 +155,12 @@ decl_storage! {
 
         pub Commitment get(fn commitment): <T as frame_system::Config>::Hash;
 
+        /// The state bloat bond for the channel (helps preventing the state bloat).
+        pub ChannelStateBloatBondValue get (fn channel_state_bloat_bond_value): BalanceOf<T>;
+
+        ///The state bloat bond for the video (helps preventing the state bloat).
+        pub VideoStateBloatBondValue get (fn video_state_bloat_bond_value): BalanceOf<T>;
+
         pub MaxCashoutAllowed get(fn max_cashout_allowed) config(): BalanceOf<T>;
 
         pub MinCashoutAllowed get(fn min_cashout_allowed) config(): BalanceOf<T>;
@@ -447,6 +453,15 @@ decl_module! {
                 &channel_owner,
             )?;
 
+            let channel_state_bloat_bond = Self::channel_state_bloat_bond_value();
+
+            // ensure channel state bloat bond
+            ensure!(
+                params.expected_channel_state_bloat_bond
+                    == channel_state_bloat_bond,
+                Error::<T>::ChannelStateBloatBondChanged,
+            );
+
             // ensure collaborator member ids are valid
             Self::validate_member_set(&params.collaborators.keys().cloned().collect())?;
 
@@ -454,13 +469,20 @@ decl_module! {
             let channel_id = NextChannelId::<T>::get();
 
             let storage_assets = params.assets.clone().unwrap_or_default();
+            let num_objs = storage_assets.object_creation_list.len();
 
-            let data_objects_ids = Storage::<T>::get_next_data_object_ids(storage_assets.object_creation_list.len());
+            let data_objects_ids = Storage::<T>::get_next_data_object_ids(num_objs);
+
+            let total_size = storage_assets.object_creation_list.iter().fold(0, |acc, obj_param| acc.saturating_add(obj_param.size));
+            let funds_needed = <T as Config>::DataObjectStorage::funds_needed_for_upload(num_objs, total_size);
+            let total_funds_needed = channel_state_bloat_bond.saturating_add(funds_needed);
+
+            Self::ensure_channel_creation_sufficient_balance(&sender, total_funds_needed)?;
 
             let bag_creation_params = DynBagCreationParameters::<T> {
                 bag_id: DynBagId::<T>::Channel(channel_id),
                 object_creation_list: storage_assets.object_creation_list,
-                state_bloat_bond_source_account_id: sender,
+                state_bloat_bond_source_account_id: sender.clone(),
                 expected_data_size_fee: storage_assets.expected_data_size_fee,
                 expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond,
                 storage_buckets: params.storage_buckets.clone(),
@@ -470,6 +492,8 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
+            let _ = Balances::<T>::slash(&sender, channel_state_bloat_bond);
 
             // create channel bag
             Storage::<T>::create_dynamic_bag(bag_creation_params)?;
@@ -492,6 +516,7 @@ decl_module! {
                 daily_nft_counter: Default::default(),
                 weekly_nft_counter: Default::default(),
                 creator_token_id: None,
+                channel_state_bloat_bond
             };
 
             // add channel to onchain state
@@ -542,10 +567,7 @@ decl_module! {
                 object_creation_list: assets_to_upload.object_creation_list,
                 state_bloat_bond_source_account_id: sender,
                 expected_data_size_fee: assets_to_upload.expected_data_size_fee,
-                expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond,
-                storage_buckets: Default::default(),
-                distribution_buckets: Default::default(),
-            };
+                expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond            };
 
             Storage::<T>::upload_and_delete_data_objects(
                 upload_parameters,
@@ -646,12 +668,14 @@ decl_module! {
             Self::ensure_channel_bag_can_be_dropped(channel_id, num_objects_to_delete)?;
 
             // try to remove the channel
-            Self::try_to_perform_channel_deletion(sender, channel_id)?;
+            Self::try_to_perform_channel_deletion(sender.clone(), channel_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
+            //rewards the sender a state bloat bond amount for the work to delete the channel.
+            let _ = Balances::<T>::deposit_creating(&sender, channel.channel_state_bloat_bond);
 
             // deposit event
             Self::deposit_event(RawEvent::ChannelDeleted(actor, channel_id));
@@ -712,6 +736,7 @@ decl_module! {
         ) -> DispatchResult {
 
             let sender = ensure_signed(origin)?;
+
             // check that channel exists
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
@@ -726,11 +751,14 @@ decl_module! {
             Self::ensure_channel_bag_can_be_dropped(channel_id, num_objects_to_delete)?;
 
             // try to remove the channel
-            Self::try_to_perform_channel_deletion(sender, channel_id)?;
+            Self::try_to_perform_channel_deletion(sender.clone(), channel_id)?;
 
             //
             // == MUTATION SAFE ==
             //
+
+            //rewards the sender a state bloat bond amount for the work to delete the channel.
+            let _ = Balances::<T>::deposit_creating(&sender, channel.channel_state_bloat_bond);
 
             // deposit event
             Self::deposit_event(RawEvent::ChannelDeletedByModerator(actor, channel_id, rationale));
@@ -799,10 +827,25 @@ decl_module! {
                     }
                 )?;
 
-            let storage_assets = params.assets.clone().unwrap_or_default();
+            let video_state_bloat_bond = Self::video_state_bloat_bond_value();
 
-            // assets ids
-            let data_objects_ids = Storage::<T>::get_next_data_object_ids(storage_assets.object_creation_list.len());
+            // ensure expected video state bloat bond
+            ensure!(
+                params.expected_video_state_bloat_bond
+                    == video_state_bloat_bond,
+                Error::<T>::VideoStateBloatBondChanged,
+            );
+
+            let storage_assets = params.assets.clone().unwrap_or_default();
+            let num_objs = storage_assets.object_creation_list.len();
+
+            let data_objects_ids = Storage::<T>::get_next_data_object_ids(num_objs);
+
+            let total_size = storage_assets.object_creation_list.iter().fold(0, |acc, obj_param| acc.saturating_add(obj_param.size));
+            let funds_needed = <T as Config>::DataObjectStorage::funds_needed_for_upload(num_objs, total_size);
+            let total_funds_needed = video_state_bloat_bond.saturating_add(funds_needed);
+
+            Self::ensure_video_creation_sufficient_balance(&sender, total_funds_needed)?;
 
             if nft_status.is_some() {
                 Self::check_nft_limits(&channel)?;
@@ -813,6 +856,7 @@ decl_module! {
                 in_channel: channel_id,
                 nft_status: nft_status.clone(),
                 data_objects: data_objects_ids.clone(),
+                video_state_bloat_bond
             };
 
             if let Some(upload_assets) = params.assets.as_ref() {
@@ -828,6 +872,8 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
+            let _ = Balances::<T>::slash(&sender, video_state_bloat_bond);
 
             // add it to the onchain state
             VideoById::<T>::insert(video_id, video);
@@ -912,8 +958,6 @@ decl_module! {
                 expected_data_size_fee: params.assets_to_upload.clone()
                     .map_or(Default::default(), |assets| assets.expected_data_size_fee),
                 expected_data_object_state_bloat_bond: params.expected_data_object_state_bloat_bond,
-                storage_buckets: Default::default(),
-                distribution_buckets: Default::default(),
             };
 
             Storage::<T>::upload_and_delete_data_objects(
@@ -974,6 +1018,9 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
+            //rewards the sender a state bloat bond amount for the work to delete the video.
+            let _ = Balances::<T>::deposit_creating(&sender, video.video_state_bloat_bond);
 
             Self::deposit_event(RawEvent::VideoDeleted(actor, video_id));
         }
@@ -1059,6 +1106,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            //rewards the sender a state bloat bond amount for the work to delete the video.
+            let _ = Balances::<T>::deposit_creating(&sender, video.video_state_bloat_bond);
+
             Self::deposit_event(RawEvent::VideoDeletedByModerator(actor, video_id, rationale));
         }
 
@@ -1122,8 +1172,6 @@ decl_module! {
                     state_bloat_bond_source_account_id: payload.uploader_account.clone(),
                     expected_data_size_fee: payload.expected_data_size_fee,
                     expected_data_object_state_bloat_bond: payload.expected_data_object_state_bloat_bond,
-                    storage_buckets: Default::default(),
-                    distribution_buckets: Default::default()
                 };
                 Storage::<T>::upload_data_objects(upload_params)?;
             }
@@ -1225,6 +1273,46 @@ decl_module! {
             ));
 
             Ok(())
+        }
+
+        /// Updates channel state bloat bond value.
+        /// Only lead can upload this value
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_channel_state_bloat_bond(
+            origin,
+            new_channel_state_bloat_bond: BalanceOf<T>,
+        ) {
+            let sender = ensure_signed(origin)?;
+            ensure_authorized_to_update_channel_state_bloat_bond::<T>(&sender)?;
+
+            //
+            // == MUTATION_SAFE ==
+            //
+
+            ChannelStateBloatBondValue::<T>::put(new_channel_state_bloat_bond);
+            Self::deposit_event(
+                RawEvent::ChannelStateBloatBondValueUpdated(
+                    new_channel_state_bloat_bond));
+        }
+
+        /// Updates video state bloat bond value.
+        /// Only lead can upload this value
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_video_state_bloat_bond(
+            origin,
+            new_video_state_bloat_bond: BalanceOf<T>,
+        ) {
+            let sender = ensure_signed(origin)?;
+            ensure_authorized_to_update_video_state_bloat_bond::<T>(&sender)?;
+
+            //
+            // == MUTATION_SAFE ==
+            //
+
+            VideoStateBloatBondValue::<T>::put(new_video_state_bloat_bond);
+            Self::deposit_event(
+                RawEvent::VideoStateBloatBondValueUpdated(
+                    new_video_state_bloat_bond));
         }
 
         #[weight = 10_000_000] // TODO: adjust Weight
@@ -1329,7 +1417,6 @@ decl_module! {
 
             // block extrinsics during transfers
             Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
-
 
             // Authorize nft destruction
             ensure_actor_authorized_to_manage_nft::<T>(origin, &actor, &nft.owner, video.in_channel)?;
@@ -2965,8 +3052,6 @@ impl<T: Config> Module<T> {
             state_bloat_bond_source_account_id: obj_state_bloat_bond_source_account.clone(),
             expected_data_size_fee: assets.expected_data_size_fee,
             expected_data_object_state_bloat_bond,
-            storage_buckets: Default::default(),
-            distribution_buckets: Default::default(),
         }
     }
 
@@ -3121,6 +3206,32 @@ impl<T: Config> Module<T> {
             .difference(&ids_to_remove)
             .cloned()
             .collect::<BTreeSet<_>>()
+    }
+
+    fn ensure_channel_creation_sufficient_balance(
+        account_id: &T::AccountId,
+        amount: BalanceOf<T>,
+    ) -> DispatchResult {
+        let balance = Balances::<T>::usable_balance(account_id);
+
+        ensure!(
+            balance >= amount,
+            Error::<T>::InsufficientBalanceForChannelCreation
+        );
+        Ok(())
+    }
+
+    fn ensure_video_creation_sufficient_balance(
+        account_id: &T::AccountId,
+        amount: BalanceOf<T>,
+    ) -> DispatchResult {
+        let balance = Balances::<T>::usable_balance(account_id);
+
+        ensure!(
+            balance >= amount,
+            Error::<T>::InsufficientBalanceForVideoCreation
+        );
+        Ok(())
     }
 
     fn ensure_sufficient_balance_for_channel_transfer(
@@ -3429,6 +3540,8 @@ decl_event!(
             BTreeSet<DataObjectId>,
         ),
         ChannelPrivilegeLevelUpdated(ChannelId, ChannelPrivilegeLevel),
+        ChannelStateBloatBondValueUpdated(Balance),
+        VideoStateBloatBondValueUpdated(Balance),
         ChannelAssetsRemoved(ContentActor, ChannelId, BTreeSet<DataObjectId>, Channel),
         ChannelDeleted(ContentActor, ChannelId),
         ChannelDeletedByModerator(ContentActor, ChannelId, Vec<u8> /* rationale */),
