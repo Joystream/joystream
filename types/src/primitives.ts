@@ -1,10 +1,5 @@
 import { u8, u32, u64 } from '@polkadot/types'
 
-import { GenericAccountId } from '@polkadot/types/generic/AccountId'
-
-// Common
-export type AccountId = GenericAccountId
-
 // Forum
 export type ForumCategoryId = u64
 export type ForumThreadId = u64
