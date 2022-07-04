@@ -715,6 +715,7 @@ impl content::Config for Runtime {
     type DefaultChannelDailyNftLimit = DefaultChannelDailyNftLimit;
     type DefaultChannelWeeklyNftLimit = DefaultChannelWeeklyNftLimit;
     type ProjectToken = ProjectToken;
+    type TransferId = TransferId;
 }
 
 parameter_types! {
