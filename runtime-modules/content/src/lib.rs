@@ -316,7 +316,7 @@ decl_module! {
             _curator_group_id: T::CuratorGroupId,
             _permissions_by_level: ModerationPermissionsByLevel<T>
         ) {
-            todo!()
+            return Err(Error::<T>::FeatureNotImplemented.into());
             // TODO: enable after Carthage
             // let sender = ensure_signed(origin)?;
             // // Ensure given origin is lead
@@ -597,7 +597,7 @@ decl_module! {
             _channel_id: T::ChannelId,
             _new_privilege_level: T::ChannelPrivilegeLevel,
         ) {
-            todo!()
+            return Err(Error::<T>::FeatureNotImplemented.into());
             // TODO: enable after Carthage
             // let sender = ensure_signed(origin)?;
 
@@ -624,8 +624,8 @@ decl_module! {
             _channel_id: T::ChannelId,
             _new_paused_features: BTreeSet<PausableChannelFeature>,
             _rationale: Vec<u8>,
-        ) -> DispatchResult {
-            todo!()
+        ) {
+            return Err(Error::<T>::FeatureNotImplemented.into());
             // TODO: enable after Carthage
 
             // let sender = ensure_signed(origin)?;
@@ -1422,7 +1422,7 @@ decl_module! {
             _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             _video_id: T::VideoId
         ) {
-            todo!()
+            return Err(Error::<T>::FeatureNotImplemented.into());
             // TODO: enable after Carthage
             // // Ensure given video exists
             // let video = Self::ensure_video_exists(&video_id)?;
@@ -2393,7 +2393,7 @@ decl_module! {
             _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             _new_transfer_status: ChannelTransferStatus<T::MemberId, T::CuratorGroupId, BalanceOf<T>>
         ) {
-            todo!()
+            return Err(Error::<T>::FeatureNotImplemented.into());
 
             // TODO: enable after Carthage
             // let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -2424,7 +2424,7 @@ decl_module! {
             _channel_id: T::ChannelId,
             _commitment_params: TransferParameters<T::MemberId, BalanceOf<T>>
         ) {
-            todo!()
+            return Err(Error::<T>::FeatureNotImplemented.into());
             // TODO: enable after Carthage
             // let sender = ensure_signed(origin)?;
             // let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -2499,7 +2499,7 @@ decl_module! {
             _nft_limit_period: NftLimitPeriod,
             _limit: u64,
         ) {
-            todo!()
+            return Err(Error::<T>::FeatureNotImplemented.into());
             // TODO: enable after Carthage
             // ensure_root(origin)?;
 
@@ -2526,7 +2526,7 @@ decl_module! {
             _channel_id: T::ChannelId,
             _limit: u64,
         ) {
-            todo!()
+            return Err(Error::<T>::FeatureNotImplemented.into());
             // TODO: enable after Carthage
             // let channel = Self::ensure_channel_exists(&channel_id)?;
             // ensure_actor_authorized_to_update_channel_nft_limits::<T>(origin, &actor, &channel)?;
@@ -3260,7 +3260,7 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
-    fn ensure_sufficient_balance_for_channel_transfer(
+    fn _ensure_sufficient_balance_for_channel_transfer(
         owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
         transfer_cost: BalanceOf<T>,
     ) -> DispatchResult {
@@ -3417,7 +3417,8 @@ impl<T: Config> Module<T> {
 
     // Set global and channel NFT limit
     pub(crate) fn set_nft_limit(_limit_id: NftLimitId<T::ChannelId>, _limit: u64) {
-        todo!()
+        // Noop
+
         // TODO: enable after Carthage
         // match limit_id {
         //     NftLimitId::GlobalDaily => GlobalDailyNftLimit::<T>::mutate(|l| l.limit = limit),
