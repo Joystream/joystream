@@ -363,7 +363,7 @@ fn unsuccessful_nft_owner_with_invalid_acount() {
 }
 
 #[test]
-fn successful_nft_rewark_during_transfer() {
+fn successful_nft_remark_during_transfer() {
     with_default_mock_builder(|| {
         run_to_block(1);
         run_to_block(1);
