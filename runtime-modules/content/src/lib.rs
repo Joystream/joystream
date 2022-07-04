@@ -2427,10 +2427,16 @@ decl_module! {
             //
 
             if channel.transfer_status.is_pending() {
-                ChannelById::<T>::mutate(&channel_id,
-                |channel| channel.transfer_status = ChannelTransferStatus::NoActiveTransfer;
-                                         );
-            }
+                ChannelById::<T>::mutate(
+                    &channel_id,
+                    |channel| channel.transfer_status = ChannelTransferStatus::NoActiveTransfer;
+                );
+
+                Self::deposit_event(
+                    RawEvent::CancelChannelTransfer(channel_id, actor);
+                )}
+
+            Ok(())
         }
 
 
@@ -3690,6 +3696,7 @@ decl_event!(
 
         // Channel transfer
         UpdateChannelTransferStatus(ChannelId, ContentActor, ChannelTransferStatus),
+        CancelChannelTransfe(ChannelId, ContentActor),
         ChannelTransferAccepted(ChannelId, TransferParameters),
 
         /// Nft limits
