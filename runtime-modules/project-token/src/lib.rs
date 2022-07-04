@@ -705,7 +705,7 @@ impl<T: Config>
     > for Module<T>
 {
     /// Establish weather revenue split is ongoing
-    /// Postconditions: true if token @ token_id has an ongoing revenue split, fales otherwise
+    /// Postconditions: true if token @ token_id has an unfinalized revenue split, false otherwise
     fn is_revenue_split_inactive(token_id: T::TokenId) -> bool {
         if let Ok(token_info) = Self::ensure_token_exists(token_id) {
             return token_info.revenue_split.ensure_inactive::<T>().is_ok();
