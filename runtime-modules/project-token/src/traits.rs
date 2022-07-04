@@ -74,7 +74,7 @@ pub trait PalletToken<
     /// Finalize creator token sale and recover unsold tokens
     fn finalize_token_sale(token_id: TokenId) -> Result<JoyBalance, DispatchError>;
 
-    /// Establish weather the token has a revenue split pending
+    /// Establish whether the token has an unfinalized revenue split
     fn is_revenue_split_inactive(token_id: TokenId) -> bool;
 
     /// Establish weather the token has a sale pending
