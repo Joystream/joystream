@@ -713,8 +713,8 @@ impl<T: Config>
         true
     }
 
-    /// Establish weather revenue sale is ongoing
-    /// Postconditions: true if token @ token_id has an ongoing sale, fales otherwise
+    /// Establish whether there is an unfinalized token sale
+    /// Postconditions: true if token @ token_id has an unfinalized sale, false otherwise
     fn is_sale_unscheduled(token_id: T::TokenId) -> bool {
         if let Ok(token_info) = Self::ensure_token_exists(token_id) {
             return token_info.sale.is_none();
