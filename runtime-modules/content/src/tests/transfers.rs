@@ -9,21 +9,7 @@ use sp_std::collections::btree_map::BTreeMap;
 use strum::IntoEnumIterator;
 
 #[test]
-fn update_channel_transfer_status_ok_with_status_changed() {
-    with_default_mock_builder(|| {
-        ContentTest::with_member_channel().setup();
-
-        UpdateChannelTransferStatusFixture::default().call_and_assert(Ok(()));
-
-        assert!(matches!(
-            Content::channel_by_id(ChannelId::one()).transfer_status,
-            ChannelTransferStatus::<_, _, _, _>::PendingTransfer(_)
-        ))
-    })
-}
-
-#[test]
-fn activate_channel_transfer_status_ok_with_channel_status_updated_correctly() {
+fn update_channel_transfer_status_ok_with_status_changed_to_pending_transfer() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
 
@@ -38,8 +24,24 @@ fn activate_channel_transfer_status_ok_with_channel_status_updated_correctly() {
                     price: DEFAULT_CHANNEL_TRANSFER_PRICE,
                     new_collaborators: BTreeMap::new(),
                 }
-            })
-        )
+            }),
+            "transfer parameters not correctly updated when activating a transfer"
+        );
+    })
+}
+
+#[test]
+fn activate_channel_transfer_status_ok_with_transfer_id_updated_correctly() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+
+        UpdateChannelTransferStatusFixture::default().call_and_assert(Ok(()));
+
+        assert_eq!(
+            Content::next_transfer_id(),
+            TransferId::from(2u32),
+            "transfer nonce has not been updated"
+        );
     })
 }
 
@@ -197,16 +199,14 @@ fn accept_transfer_status_fails_with_non_channel_owner() {
 fn accept_transfer_status_fails_with_invalid_balance_for_members() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
-        let balance_pre = Balances::<Test>::usable_balance(&DEFAULT_MEMBER_ACCOUNT_ID);
-        let price = balance_pre.saturating_add(DEFAULT_CHANNEL_TRANSFER_PRICE);
         UpdateChannelTransferStatusFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
-            .with_price(price)
+            .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
             .call_and_assert(Ok(()));
 
         AcceptChannelTransferFixture::default()
             .with_origin(RawOrigin::Signed(SECOND_MEMBER_ACCOUNT_ID))
-            .with_price(price)
+            .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
             .call_and_assert(Err(Error::<Test>::InsufficientBalanceForTransfer.into()))
     })
 }
@@ -357,5 +357,11 @@ fn update_channel_transfer_ok_with_status_reset() {
         UpdateChannelTransferStatusFixture::default()
             .with_transfer_status(ChannelTransferStatus::NoActiveTransfer)
             .call_and_assert(Ok(()));
+
+        assert_eq!(
+            Content::next_transfer_id(),
+            TransferId::from(2u32),
+            "transfer Id should not change when disactivating a transfer"
+        );
     })
 }
