@@ -2424,41 +2424,39 @@ decl_module! {
             _channel_id: T::ChannelId,
             _commitment_params: TransferParameters<T::MemberId, BalanceOf<T>>
         ) {
-            return Err(Error::<T>::FeatureNotImplemented.into());
-            // TODO: enable after Carthage
-            // let sender = ensure_signed(origin)?;
-            // let channel = Self::ensure_channel_exists(&channel_id)?;
+            let sender = ensure_signed(origin)?;
+            let channel = Self::ensure_channel_exists(&channel_id)?;
 
-            // let params =
-            //     if let ChannelTransferStatus::PendingTransfer(ref params) = channel.transfer_status {
-            //         ensure_is_authorized_to_act_as_channel_owner::<T>(&sender, &params.new_owner)?;
-            //         Self::validate_channel_transfer_acceptance(&commitment_params, params)?;
+            let params =
+                if let ChannelTransferStatus::PendingTransfer(ref params) = channel.transfer_status {
+                    ensure_is_authorized_to_act_as_channel_owner::<T>(&sender, &params.new_owner)?;
+                    Self::validate_channel_transfer_acceptance(&commitment_params, params)?;
 
-            //         params
-            //     } else {
-            //         return Err(Error::<T>::InvalidChannelTransferStatus.into());
-            //     };
+                    params
+                } else {
+                    return Err(Error::<T>::InvalidChannelTransferStatus.into());
+                };
 
-            // let new_owner = params.new_owner.clone();
-            // let new_collaborators = commitment_params.new_collaborators.clone();
+            let new_owner = params.new_owner.clone();
+            let new_collaborators = commitment_params.new_collaborators.clone();
 
-            // //
-            // // == MUTATION SAFE ==
-            // //
+            //
+            // == MUTATION SAFE ==
+            //
 
-            // if !params.transfer_params.is_free_of_charge() {
-            //     Self::pay_for_channel_swap(&channel.owner, &new_owner, commitment_params.price)?;
-            // }
+            if !params.transfer_params.is_free_of_charge() {
+                Self::pay_for_channel_swap(&channel.owner, &new_owner, commitment_params.price)?;
+            }
 
-            // ChannelById::<T>::mutate(&channel_id, |channel| {
-            //     channel.transfer_status = ChannelTransferStatus::NoActiveTransfer;
-            //     channel.owner = new_owner;
-            //     channel.collaborators = new_collaborators;
-            // });
+            ChannelById::<T>::mutate(&channel_id, |channel| {
+                channel.transfer_status = ChannelTransferStatus::NoActiveTransfer;
+                channel.owner = new_owner;
+                channel.collaborators = new_collaborators;
+            });
 
-            // Self::deposit_event(
-            //     RawEvent::ChannelTransferAccepted(channel_id, commitment_params)
-            // );
+            Self::deposit_event(
+                RawEvent::ChannelTransferAccepted(channel_id, commitment_params)
+            );
         }
 
         /// Claims an accumulated channel reward for a council.
