@@ -297,7 +297,7 @@ fn cancel_open_auction_bid_ok_for_expired_auction() {
 }
 
 #[test]
-fn cancel_open_auction_fails_during_transfer() {
+fn cancel_open_auction_bid_fails_during_transfer() {
     with_default_mock_builder(|| {
         ContentTest::default()
             .with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::English))
