@@ -845,7 +845,7 @@ pub type DynBagCreationParameters<T> = DynBagCreationParametersRecord<
 
 /// Data wrapper structure. Helps passing the parameters to the `upload` extrinsic.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct UploadParametersRecord<BagId, AccountId, Balance> {
     /// Static or dynamic bag to upload data.
     pub bag_id: BagId,
@@ -865,7 +865,7 @@ pub struct UploadParametersRecord<BagId, AccountId, Balance> {
 
 /// Data wrapper structure. Helps with create dynamic bag method
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct DynBagCreationParametersRecord<
     BagId,
     AccountId,
