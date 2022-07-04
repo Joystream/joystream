@@ -2854,6 +2854,48 @@ impl DeissueCreatorTokenFixture {
     }
 }
 
+pub struct CancelChannelTransferFixture {
+    origin: RawOrigin<u128>,
+    channel_id: u64,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+}
+
+impl CancelChannelTransferFixture {
+    pub fn default() -> Self {
+        origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
+        channel_id: ChannelId::one(),
+        actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self {
+            origin: RawOrigin::Signed(sender),
+            ..self
+        }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
+        Self { channel_id, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_channel = Content::channel_by_id(self.channel_id);
+
+        let actual_result = Content::cancel_channel_transfer(
+            self.origin.into(),
+            self.channel_id,
+            self.actor,
+        );
+
+        assert_eq!(actual_result, expected_result);
+    }
+
+}
+
 pub struct UpdateChannelTransferStatusFixture {
     origin: RawOrigin<u128>,
     channel_id: u64,
