@@ -2412,6 +2412,28 @@ decl_module! {
             );
         }
 
+        /// cancel status
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn cancel_channel_transfer(
+            origin,
+            channel_id: T::ChannelId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            ensure_actor_authorized_to_cancel_channel_transfer::<T>(origin, &actor, &channel)?;
+
+            //
+            // ==MUTATION SAFE ==
+            //
+
+            if channel.transfer_status.is_pending() {
+                ChannelById::<T>::mutate(&channel_id,
+                |channel| channel.transfer_status = ChannelTransferStatus::NoActiveTransfer;
+                                         );
+            }
+        }
+
+
         /// Accepts channel transfer.
         /// `commitment_params` is required to prevent changing the transfer conditions.
         #[weight = 10_000_000] // TODO: adjust weight
