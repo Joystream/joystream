@@ -214,26 +214,3 @@ fn successful_finalize_curator_channel_creator_token_sale_by_lead() {
         );
     })
 }
-
-#[test]
-fn unsuccessful_finalize_token_sale_during_channel_transfer() {
-    with_default_mock_builder(|| {
-        ContentTest::with_member_channel().setup();
-        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
-        InitCreatorTokenSaleFixture::default().call_and_assert(Ok(()));
-        purchase_tokens_on_sale(DEFAULT_CREATOR_TOKEN_ISSUANCE);
-        run_to_block(1 + DEFAULT_CREATOR_TOKEN_SALE_DURATION);
-        UpdateChannelTransferStatusFixture::default()
-            .with_new_member_channel_owner(THIRD_MEMBER_ID)
-            .call_and_assert(Ok(()));
-
-        assert_noop!(
-            Content::finalize_creator_token_sale(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-                1u64,
-            ),
-            Error::<Test>::InvalidChannelTransferStatus,
-        );
-    })
-}

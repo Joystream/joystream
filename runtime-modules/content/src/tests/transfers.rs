@@ -479,7 +479,7 @@ fn update_transfer_status_blocked_during_upcoming_token_sales() {
         UpdateChannelTransferStatusFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Err(
-                Error::<Test>::ChannelTransfersBlockedDuringTokenSales.into(),
+                Error::<Test>::ChannelTransfersBlockedDuringTokenSales.into()
             ));
     })
 }
@@ -497,7 +497,7 @@ fn update_transfer_status_blocked_during_ongoing_token_sales() {
         UpdateChannelTransferStatusFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Err(
-                Error::<Test>::ChannelTransfersBlockedDuringTokenSales.into(),
+                Error::<Test>::ChannelTransfersBlockedDuringTokenSales.into()
             ));
     })
 }
@@ -515,7 +515,7 @@ fn update_transfer_status_blocked_during_unfinalized_token_sales() {
         UpdateChannelTransferStatusFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Err(
-                Error::<Test>::ChannelTransfersBlockedDuringTokenSales.into(),
+                Error::<Test>::ChannelTransfersBlockedDuringTokenSales.into()
             ));
     })
 }
