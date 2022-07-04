@@ -3258,7 +3258,8 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
-    fn _ensure_sufficient_balance_for_channel_transfer(
+    #[allow(dead_code)] // TODO: Remove the `allow` attribute after carthage
+    fn ensure_sufficient_balance_for_channel_transfer(
         owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
         transfer_cost: BalanceOf<T>,
     ) -> DispatchResult {
@@ -3414,9 +3415,8 @@ impl<T: Config> Module<T> {
     }
 
     // Set global and channel NFT limit
-    pub(crate) fn _set_nft_limit(_limit_id: NftLimitId<T::ChannelId>, _limit: u64) {
-        // Noop
-
+    #[allow(dead_code)] // TODO: Remove the `allow` attribute after Carthage
+    pub(crate) fn set_nft_limit(_limit_id: NftLimitId<T::ChannelId>, _limit: u64) {
         // TODO: enable after Carthage
         // match limit_id {
         //     NftLimitId::GlobalDaily => GlobalDailyNftLimit::<T>::mutate(|l| l.limit = limit),
@@ -3548,8 +3548,6 @@ decl_event!(
             <T as ContentActorAuthenticator>::CuratorGroupId,
             BalanceOf<T>,
         >,
-        TransferParameters =
-            TransferParameters<<T as common::MembershipTypes>::MemberId, BalanceOf<T>>,
         AccountId = <T as frame_system::Config>::AccountId,
         // TODO: enable after Carthage
         // ChannelTransferStatus = ChannelTransferStatus<

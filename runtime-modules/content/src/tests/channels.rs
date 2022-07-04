@@ -2614,7 +2614,7 @@ fn unsuccessful_nft_owner_remark_by_curator_agent_without_permissions() {
     })
 }
 
-// TODO: enable after enabling u
+// TODO: enable after enabling destoy_nft
 #[ignore]
 #[test]
 fn unsuccessful_nft_destruction_by_curator_agent_without_permissions() {
@@ -2893,7 +2893,7 @@ fn unsuccessful_nft_owner_remark_by_collaborator_without_permissions() {
     })
 }
 
-// TODO: enable after enabling u
+// TODO: enable after enabling destroy_nft
 #[ignore]
 #[test]
 fn unsuccessful_nft_destruction_by_collaborator_without_permissions() {
@@ -3035,6 +3035,7 @@ fn successful_channel_agent_remark_by_owner_member() {
 
 // Curator channels
 
+// TODO: enable after enabling channel transfer
 #[ignore]
 #[test]
 fn unsuccessful_channel_transfer_by_curator_agent_without_permissions() {
@@ -3051,6 +3052,7 @@ fn unsuccessful_channel_transfer_by_curator_agent_without_permissions() {
     })
 }
 
+// TODO: enable after enabling channel transfer
 #[ignore]
 #[test]
 fn successful_transfer_by_curator_agent() {
@@ -3065,6 +3067,7 @@ fn successful_transfer_by_curator_agent() {
     })
 }
 
+// TODO: enable after enabling channel transfer
 #[ignore]
 #[test]
 fn successful_channel_transfer_by_lead() {
@@ -3079,6 +3082,7 @@ fn successful_channel_transfer_by_lead() {
 
 // Member channels
 
+// TODO: enable after enabling channel transfer
 #[ignore]
 #[test]
 fn unsuccessful_channel_transfer_by_collaborator_without_permissions() {
@@ -3095,6 +3099,7 @@ fn unsuccessful_channel_transfer_by_collaborator_without_permissions() {
     })
 }
 
+// TODO: enable after enabling channel transfer
 #[ignore]
 #[test]
 fn successful_channel_transfer_by_collaborator() {
@@ -3109,6 +3114,7 @@ fn successful_channel_transfer_by_collaborator() {
     })
 }
 
+// TODO: enable after enabling channel transfer
 #[ignore]
 #[test]
 fn successful_channel_transfer_by_owner_member() {

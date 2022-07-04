@@ -4,6 +4,7 @@ use crate::tests::mock::*;
 use crate::*;
 use frame_support::{assert_err, assert_noop, assert_ok};
 
+// TODO: enable after enabling destroy_nft
 #[ignore]
 #[test]
 fn destroy_nft() {
@@ -38,18 +39,14 @@ fn destroy_nft() {
         assert!(matches!(Content::video_by_id(video_id).nft_status, None));
 
         // TODO: enable after Carthage
-        // let number_of_events_before_call = System::events().len();
-        // Last event checked
-        // assert_event(
-        //     MetaEvent::content(RawEvent::NftDestroyed(
-        //         ContentActor::Member(DEFAULT_MEMBER_ID),
-        //         video_id,
-        //     )),
-        //     number_of_events_before_call + 1,
-        // );
+        // last_event_eq!(RawEvent::NftDestroyed(
+        //     ContentActor::Member(DEFAULT_MEMBER_ID),
+        //     video_id,
+        // ));
     })
 }
 
+// TODO: enable after enabling destroy_nft
 #[ignore]
 #[test]
 fn destroy_nft_video_does_not_exist() {
@@ -71,6 +68,7 @@ fn destroy_nft_video_does_not_exist() {
     })
 }
 
+// TODO: enable after enabling destroy_nft
 #[ignore]
 #[test]
 fn destroy_nft_not_issued() {
@@ -96,6 +94,7 @@ fn destroy_nft_not_issued() {
     })
 }
 
+// TODO: enable after enabling destroy_nft
 #[ignore]
 #[test]
 fn destroy_nft_auth_failed() {
@@ -129,6 +128,7 @@ fn destroy_nft_auth_failed() {
     })
 }
 
+// TODO: enable after enabling destroy_nft
 #[ignore]
 #[test]
 fn destroy_nft_not_authorized() {
@@ -162,6 +162,7 @@ fn destroy_nft_not_authorized() {
     })
 }
 
+// TODO: enable after enabling destroy_nft
 #[ignore]
 #[test]
 fn destroy_nft_transactional_status_is_not_idle() {
@@ -204,6 +205,7 @@ fn destroy_nft_transactional_status_is_not_idle() {
     })
 }
 
+// TODO: enable after enabling destroy_nft
 #[ignore]
 #[test]
 fn destroy_nft_fails_during_channel_transfer() {

@@ -1,7 +1,8 @@
 #![cfg(test)]
 
 use std::collections::BTreeMap;
-//use std::iter::FromIterator;
+// TODO: enable after Carthage
+// use std::iter::FromIterator;
 
 use super::fixtures::*;
 use super::mock::{CuratorGroupId, CuratorId, Event, *};
@@ -144,11 +145,11 @@ fn curator_group_management() {
         //     ))
         // );
 
-        // Validate permissions
+        // // Validate permissions
         // let group = Content::curator_group_by_id(curator_group_id);
         // assert_eq!(group.get_permissions_by_level().len(), 3);
-        // Iterate over privilege levels from 0 to 3
-        // (3 will be a "non-existent map entry" case)
+        // // Iterate over privilege levels from 0 to 3
+        // // (3 will be a "non-existent map entry" case)
         // for i in 0u8..4u8 {
         //     let allowed_actions: Vec<ContentModerationAction>;
         //     let permissions_for_level = permissions.get(&i);

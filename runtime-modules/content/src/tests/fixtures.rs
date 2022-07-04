@@ -4559,7 +4559,8 @@ impl SuccessfulChannelCollaboratorsManagementFlow {
 }
 
 // helper functions
-pub fn __assert_group_has_permissions_for_actions(
+#[allow(dead_code)] // TODO: Remove the `allow` attribute after carthage
+pub fn assert_group_has_permissions_for_actions(
     group: &CuratorGroup<Test>,
     privilege_level: <Test as Config>::ChannelPrivilegeLevel,
     allowed_actions: &Vec<ContentModerationAction>,
