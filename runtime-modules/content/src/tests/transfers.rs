@@ -215,7 +215,6 @@ fn accept_transfer_status_fails_with_invalid_balance_for_members() {
 fn accept_transfer_status_fails_with_invalid_balance_for_curator_groups() {
     with_default_mock_builder(|| {
         ContentTest::with_curator_channel().setup();
-
         UpdateChannelTransferStatusFixture::default()
             .with_origin(RawOrigin::Signed(LEAD_ACCOUNT_ID))
             .with_new_channel_owner(ChannelOwner::CuratorGroup(CuratorGroupId::one()))
