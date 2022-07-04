@@ -201,7 +201,7 @@ fn unsuccessful_curator_channel_owner_remark_by_unauthorized_curator() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel(
-            DATA_OBJECT_STATE_BLOAT_BOND,
+            DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
             &[ChannelActionPermission::AgentRemark],
         );
         let channel_id = Content::next_channel_id() - 1;

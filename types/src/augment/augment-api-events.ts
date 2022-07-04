@@ -5,7 +5,7 @@ import type { ApiTypes } from '@polkadot/api-base/types';
 import type { BTreeMap, BTreeSet, Bytes, Null, Option, Result, U8aFixed, Vec, bool, u128, u32, u64, u8 } from '@polkadot/types-codec';
 import type { ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, H256, Perquintill } from '@polkadot/types/interfaces/runtime';
-import type { FrameSupportTokensMiscBalanceStatus, FrameSupportWeightsDispatchInfo, PalletCommonBalanceKind, PalletCommonWorkingGroup, PalletContentChannelActionPermission, PalletContentChannelCategoryCreationParameters, PalletContentChannelCategoryUpdateParameters, PalletContentChannelCreationParametersRecord, PalletContentChannelRecord, PalletContentChannelTransferStatus, PalletContentChannelUpdateParametersRecord, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupContentModerationAction, PalletContentPermissionsCuratorGroupPausableChannelFeature, PalletContentTransferParameters, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseElectionCompute, PalletForumExtendedPostIdObject, PalletForumPollInput, PalletForumPrivilegedActor, PalletImOnlineSr25519AppSr25519Public, PalletMembershipBuyMembershipParameters, PalletMembershipInviteMembershipParameters, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSale, PalletProjectTokenTransferPolicy, PalletProjectTokenValidated, PalletProjectTokenValidatedPayment, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadMode, PalletProposalsEngineProposalStatusesExecutionStatus, PalletProposalsEngineProposalStatusesProposalDecision, PalletProposalsEngineProposalStatusesProposalStatus, PalletProposalsEngineVoteKind, PalletReferendumOptionResult, PalletStakingExposure, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynamicBagIdType, PalletStorageDynamicBagType, PalletStorageUploadParametersRecordBagIdType, PalletStorageVoucher, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupRewardPaymentType, PalletWorkingGroupStakePolicy, SpFinalityGrandpaAppPublic, SpRuntimeDispatchError } from '@polkadot/types/lookup';
+import type { FrameSupportTokensMiscBalanceStatus, FrameSupportWeightsDispatchInfo, PalletCommonBalanceKind, PalletCommonWorkingGroup, PalletContentChannelActionPermission, PalletContentChannelCreationParametersRecord, PalletContentChannelRecord, PalletContentChannelTransferStatus, PalletContentChannelUpdateParametersRecord, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupContentModerationAction, PalletContentPermissionsCuratorGroupPausableChannelFeature, PalletContentTransferParameters, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseElectionCompute, PalletForumExtendedPostIdObject, PalletForumPollInput, PalletForumPrivilegedActor, PalletImOnlineSr25519AppSr25519Public, PalletMembershipBuyMembershipParameters, PalletMembershipInviteMembershipParameters, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSale, PalletProjectTokenTransferPolicy, PalletProjectTokenValidated, PalletProjectTokenValidatedPayment, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadMode, PalletProposalsEngineProposalStatusesExecutionStatus, PalletProposalsEngineProposalStatusesProposalDecision, PalletProposalsEngineProposalStatusesProposalStatus, PalletProposalsEngineVoteKind, PalletReferendumOptionResult, PalletStakingExposure, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynamicBagIdType, PalletStorageDynamicBagType, PalletStorageUploadParametersRecordBagIdType, PalletStorageVoucher, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupRewardPaymentType, PalletWorkingGroupStakePolicy, SpFinalityGrandpaAppPublic, SpRuntimeDispatchError } from '@polkadot/types/lookup';
 
 declare module '@polkadot/api-base/types/events' {
   export interface AugmentedEvents<ApiType extends ApiTypes> {
@@ -63,40 +63,6 @@ declare module '@polkadot/api-base/types/events' {
        **/
       Withdraw: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32, amount: u128 }>;
     };
-    blog: {
-      /**
-       * A reply to a reply was created
-       **/
-      DirectReplyCreated: AugmentedEvent<ApiType, [u64, u64, u64, u64, Bytes, bool]>;
-      /**
-       * A post was created
-       **/
-      PostCreated: AugmentedEvent<ApiType, [u64, Bytes, Bytes]>;
-      /**
-       * A post was edited
-       **/
-      PostEdited: AugmentedEvent<ApiType, [u64, Option<Bytes>, Option<Bytes>]>;
-      /**
-       * A post was locked
-       **/
-      PostLocked: AugmentedEvent<ApiType, [u64]>;
-      /**
-       * A post was unlocked
-       **/
-      PostUnlocked: AugmentedEvent<ApiType, [u64]>;
-      /**
-       * A reply to a post was created
-       **/
-      ReplyCreated: AugmentedEvent<ApiType, [u64, u64, u64, Bytes, bool]>;
-      /**
-       * A reply was deleted from storage
-       **/
-      ReplyDeleted: AugmentedEvent<ApiType, [u64, u64, u64, bool]>;
-      /**
-       * A reply was edited
-       **/
-      ReplyEdited: AugmentedEvent<ApiType, [u64, u64, u64, Bytes]>;
-    };
     constitution: {
       /**
        * Emits on constitution amendment.
@@ -116,9 +82,6 @@ declare module '@polkadot/api-base/types/events' {
       ChannelAgentRemarked: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, Bytes]>;
       ChannelAssetsDeletedByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, BTreeSet<u64>, Bytes]>;
       ChannelAssetsRemoved: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, BTreeSet<u64>, PalletContentChannelRecord]>;
-      ChannelCategoryCreated: AugmentedEvent<ApiType, [u64, PalletContentChannelCategoryCreationParameters]>;
-      ChannelCategoryDeleted: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64]>;
-      ChannelCategoryUpdated: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, PalletContentChannelCategoryUpdateParameters]>;
       ChannelCreated: AugmentedEvent<ApiType, [u64, PalletContentChannelRecord, PalletContentChannelCreationParametersRecord]>;
       ChannelDeleted: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64]>;
       ChannelDeletedByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, Bytes]>;
@@ -133,6 +96,7 @@ declare module '@polkadot/api-base/types/events' {
       ChannelPrivilegeLevelUpdated: AugmentedEvent<ApiType, [u64, u8]>;
       ChannelRewardClaimedAndWithdrawn: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u128, AccountId32]>;
       ChannelRewardUpdated: AugmentedEvent<ApiType, [u128, u64]>;
+      ChannelStateBloatBondValueUpdated: AugmentedEvent<ApiType, [u128]>;
       ChannelTransferAccepted: AugmentedEvent<ApiType, [u64, PalletContentTransferParameters]>;
       ChannelUpdated: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, PalletContentChannelUpdateParametersRecord, BTreeSet<u64>]>;
       ChannelVisibilitySetByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, bool, Bytes]>;
@@ -162,6 +126,7 @@ declare module '@polkadot/api-base/types/events' {
       VideoCreated: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u64, PalletContentVideoCreationParametersRecord, BTreeSet<u64>]>;
       VideoDeleted: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64]>;
       VideoDeletedByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, Bytes]>;
+      VideoStateBloatBondValueUpdated: AugmentedEvent<ApiType, [u128]>;
       VideoUpdated: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, PalletContentVideoUpdateParametersRecord, BTreeSet<u64>]>;
       VideoVisibilitySetByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, bool, Bytes]>;
     };

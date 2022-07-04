@@ -28,7 +28,6 @@
 // pub mod substrate_utility;
 
 // Joystream pallets
-pub mod blog;
 // pub mod bounty;
 pub mod council;
 pub mod forum;

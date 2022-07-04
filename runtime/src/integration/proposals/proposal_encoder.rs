@@ -141,20 +141,6 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::SetReferralCut(percent_value) => {
                 Call::Members(membership::Call::set_referral_cut { percent_value })
             }
-            ProposalDetails::CreateBlogPost(title, body) => {
-                Call::Blog(blog::Call::create_post { title, body })
-            }
-            ProposalDetails::EditBlogPost(post_id, new_title, new_body) => {
-                Call::Blog(blog::Call::edit_post {
-                    post_id,
-                    new_title,
-                    new_body,
-                })
-            }
-            ProposalDetails::LockBlogPost(post_id) => Call::Blog(blog::Call::lock_post { post_id }),
-            ProposalDetails::UnlockBlogPost(post_id) => {
-                Call::Blog(blog::Call::unlock_post { post_id })
-            }
             ProposalDetails::VetoProposal(proposal_id) => {
                 Call::ProposalsEngine(proposals_engine::Call::veto_proposal { proposal_id })
             }

@@ -826,7 +826,7 @@ impl<T: Config>
         let token_id = Self::next_token_id();
         let bloat_bond = Self::bloat_bond();
         Self::validate_issuance_parameters(&issuance_parameters)?;
-        let token_data = TokenDataOf::<T>::from_params::<T>(issuance_parameters.clone());
+        let token_data = TokenDataOf::<T>::from_params::<T>(issuance_parameters.clone())?;
         let whitelist_payload = issuance_parameters.get_whitelist_payload();
 
         // TODO: Not clear what the storage interface will be yet, so this is just a mock code now
@@ -1067,7 +1067,7 @@ impl<T: Config>
     /// Issue a revenue split for the token
     /// Preconditions:
     /// - `token` must exist for `token_id`
-    /// - `allocation_amount > 0`
+    /// - `floor(revenue_split_rate * nominal_allocation_amount) > 0`
     /// - `token` revenue split status must be inactive
     /// - if Some(start) specified: `start - System::block_number() >= MinRevenueSplitTimeToStart`
     /// - `duration` must be >= `MinRevenueSplitDuration`
@@ -1085,17 +1085,18 @@ impl<T: Config>
         token_id: T::TokenId,
         start: Option<T::BlockNumber>,
         duration: T::BlockNumber,
-        allocation_source: T::AccountId,
-        allocation_amount: JoyBalanceOf<T>,
-    ) -> DispatchResult {
+        revenue_source_account: T::AccountId,
+        revenue_amount: JoyBalanceOf<T>,
+    ) -> Result<JoyBalanceOf<T>, DispatchError> {
+        let token_info = Self::ensure_token_exists(token_id)?;
+        token_info.revenue_split.ensure_inactive::<T>()?;
+
+        let allocation_amount = token_info.revenue_split_rate.mul_floor(revenue_amount);
+
         ensure!(
             !allocation_amount.is_zero(),
             Error::<T>::CannotIssueSplitWithZeroAllocationAmount,
         );
-
-        let token_info = Self::ensure_token_exists(token_id)?;
-
-        token_info.revenue_split.ensure_inactive::<T>()?;
 
         ensure!(
             duration >= Self::min_revenue_split_duration(),
@@ -1118,14 +1119,18 @@ impl<T: Config>
 
         let treasury_account = Self::module_treasury_account();
         Self::ensure_can_transfer_joy(
-            &allocation_source,
+            &revenue_source_account,
             &[(&treasury_account, allocation_amount)],
         )?;
 
         // == MUTATION SAFE ==
 
         // tranfer allocation keeping the source account alive
-        Self::transfer_joy(&allocation_source, &treasury_account, allocation_amount);
+        Self::transfer_joy(
+            &revenue_source_account,
+            &treasury_account,
+            allocation_amount,
+        );
 
         TokenInfoById::<T>::mutate(token_id, |token_info| {
             token_info.activate_new_revenue_split(allocation_amount, timeline);
@@ -1138,7 +1143,7 @@ impl<T: Config>
             allocation_amount,
         ));
 
-        Ok(())
+        Ok(revenue_amount.saturating_sub(allocation_amount))
     }
 
     /// Finalize revenue split once it is ended
@@ -1487,6 +1492,10 @@ impl<T: Config> Module<T> {
         transfer_policy: &TransferPolicyOf<T>,
         is_issuer: bool,
     ) -> Result<Validated<T::MemberId>, DispatchError> {
+        ensure!(
+            T::MembershipInfoProvider::controller_account_id(dst).is_ok(),
+            Error::<T>::TransferDestinationMemberDoesNotExist
+        );
         if let TransferPolicy::Permissioned(_) = transfer_policy {
             ensure!(
                 is_issuer || dst_acc_data.is_some(),

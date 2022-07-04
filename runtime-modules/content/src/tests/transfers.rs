@@ -289,7 +289,7 @@ fn accept_transfer_status_fails_with_invalid_balance_for_curator_groups() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         let curator_group_id = Content::next_curator_group_id();
-        create_default_curator_owned_channel(DATA_OBJECT_STATE_BLOAT_BOND, &[]);
+        create_default_curator_owned_channel(DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND, &[]);
 
         let price = INITIAL_BALANCE + 1; // higher than initial balance
         UpdateChannelTransferStatusFixture::default()
@@ -355,7 +355,7 @@ fn accept_transfer_status_succeeds_for_curators_to_members_with_price() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
-        create_default_curator_owned_channel(DATA_OBJECT_STATE_BLOAT_BOND, &[]);
+        create_default_curator_owned_channel(DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND, &[]);
 
         let price = 100;
         UpdateChannelTransferStatusFixture::default()
