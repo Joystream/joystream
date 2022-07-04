@@ -7,7 +7,6 @@ use sp_runtime::Perbill;
 pub fn production_config() -> ContentConfig {
     ContentConfig {
         next_curator_group_id: 1,
-        next_channel_category_id: 1,
         next_channel_id: 1,
         next_video_id: 1,
         max_cashout_allowed: 1000,
@@ -35,7 +34,6 @@ pub fn production_config() -> ContentConfig {
 pub fn testing_config() -> ContentConfig {
     ContentConfig {
         next_curator_group_id: 1,
-        next_channel_category_id: 1,
         next_channel_id: 1,
         next_video_id: 1,
         max_cashout_allowed: 1000,
