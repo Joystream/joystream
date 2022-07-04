@@ -2420,9 +2420,9 @@ decl_module! {
         /// `commitment_params` is required to prevent changing the transfer conditions.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn accept_channel_transfer(
-            _origin,
-            _channel_id: T::ChannelId,
-            _commitment_params: TransferParameters<T::MemberId, BalanceOf<T>>
+            origin,
+            channel_id: T::ChannelId,
+            commitment_params: TransferParameters<T::MemberId, BalanceOf<T>>
         ) {
             let sender = ensure_signed(origin)?;
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -3281,30 +3281,31 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
-    // TODO: enable after enabling channel transfer
-    // // Validates channel transfer acceptance parameters: commitment params, new owner balance.
-    // fn _validate_channel_transfer_acceptance(
-    //     commitment_params: &TransferParameters<T::MemberId, BalanceOf<T>>,
-    //     params: &PendingTransfer<T::MemberId, T::CuratorGroupId, BalanceOf<T>>,
-    // ) -> DispatchResult {
-    //     ensure!(
-    //         params.transfer_params == *commitment_params,
-    //         Error::<T>::InvalidChannelTransferCommitmentParams
-    //     );
+    // Validates channel transfer acceptance parameters: commitment params, new owner balance.
+    #[allow(dead_code)] // TODO: remove the allow attribute after Carthage
+    fn validate_channel_transfer_acceptance(
+        commitment_params: &TransferParameters<T::MemberId, BalanceOf<T>>,
+        params: &PendingTransfer<T::MemberId, T::CuratorGroupId, BalanceOf<T>>,
+    ) -> DispatchResult {
+        ensure!(
+            params.transfer_params == *commitment_params,
+            Error::<T>::InvalidChannelTransferCommitmentParams
+        );
 
-    //     // Check for new owner balance only if the transfer is not free.
-    //     if !params.transfer_params.is_free_of_charge() {
-    //         Self::ensure_sufficient_balance_for_channel_transfer(
-    //             &params.new_owner,
-    //             params.transfer_params.price,
-    //         )?;
-    //     }
+        // Check for new owner balance only if the transfer is not free.
+        if !params.transfer_params.is_free_of_charge() {
+            Self::ensure_sufficient_balance_for_channel_transfer(
+                &params.new_owner,
+                params.transfer_params.price,
+            )?;
+        }
 
-    //     Ok(())
-    // }
+        Ok(())
+    }
 
     // Transfers balance from the new channel owner to the old channel owner.
-    fn _pay_for_channel_swap(
+    #[allow(dead_code)] // TODO: enable after enabling channel transfer
+    fn pay_for_channel_swap(
         old_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
         new_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
         price: BalanceOf<T>,
@@ -3555,8 +3556,8 @@ decl_event!(
         //     <T as ContentActorAuthenticator>::CuratorGroupId,
         //     BalanceOf<T>,
         // >,
-        // TransferParameters =
-        //     TransferParameters<<T as common::MembershipTypes>::MemberId, BalanceOf<T>>,
+        TransferParameters =
+            TransferParameters<<T as common::MembershipTypes>::MemberId, BalanceOf<T>>,
         UpdateChannelPayoutsParameters = UpdateChannelPayoutsParameters<T>,
         TokenId = <T as project_token::Config>::TokenId,
     {

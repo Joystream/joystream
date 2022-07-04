@@ -1994,9 +1994,6 @@ fn create_set_referral_cut_common_checks_succeed() {
 //                     proposal_details.clone(),
 //                 )
 //             },
-//             // TODO: enable after Carthage
-//             // proposal_parameters:
-//             //     <Test as crate::Trait>::UpdateGlobalNftLimitProposalParameters::get(),
 //         };
 //         proposal_fixture.check_all();
 //     });
