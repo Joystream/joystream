@@ -2,7 +2,7 @@
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_noop, assert_ok};
 
 #[test]
 fn buy_nft_ok_with_proper_royalty_accounting_normal_case() {
@@ -443,5 +443,27 @@ fn buy_now_ok_with_nft_owner_channel_correctly_credited() {
             // balance_pre - platform fee (since channel owner it retains royalty)
             DEFAULT_NFT_PRICE - platform_fee,
         )
+    })
+}
+
+#[test]
+fn buy_nft_fails_during_channel_transfer() {
+    with_default_mock_builder(|| {
+        ContentTest::default()
+            .with_video_nft_status(NftTransactionalStatusType::BuyNow)
+            .setup();
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::buy_nft(
+                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                VideoId::one(),
+                SECOND_MEMBER_ID,
+                BalanceOf::<Test>::zero(),
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
+        );
     })
 }
