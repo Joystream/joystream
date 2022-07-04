@@ -3,7 +3,7 @@ use crate::tests::curators::add_curator_to_new_group_with_permissions;
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_ok, assert_noop};
+use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::FromIterator;
