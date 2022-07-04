@@ -116,7 +116,7 @@ async function createNewMemberFromParams(
     id: memberId.toString(),
     rootAccount: rootAccount.toString(),
     controllerAccount: controllerAccount.toString(),
-    handle: handle.unwrap().toString(),
+    handle: handle.unwrap().toHuman()?.toString(),
     metadata: metadataEntity,
     entry: entryMethod,
     referredBy:
