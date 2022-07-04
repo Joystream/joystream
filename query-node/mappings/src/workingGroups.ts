@@ -15,7 +15,7 @@ import {
   OpeningMetadata,
   WorkingGroupMetadataAction,
 } from '@joystream/metadata-protobuf'
-import { BTreeSet, Bytes, Vec } from '@polkadot/types'
+import { Bytes } from '@polkadot/types'
 import {
   deserializeMetadata,
   bytesToString,
@@ -85,7 +85,6 @@ import {
 import { createType } from '@joystream/types'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { isSet } from '@joystream/metadata-protobuf/utils'
-import { ApplicationId } from '@joystream/types/primitives'
 
 // Reusable functions
 async function getWorkingGroup(
@@ -499,7 +498,7 @@ export async function workingGroups_OpeningFilled({ store, event }: EventContext
     'applications',
     'applications.applicant',
   ])
-  const acceptedApplicationIds = createType<Vec<ApplicationId>>(applicationIdsSet.toHex() as any)
+  const acceptedApplicationIds = createType('Vec<u64>', applicationIdsSet.toHex() as any)
 
   // Save the event
   const openingFilledEvent = new OpeningFilledEvent({

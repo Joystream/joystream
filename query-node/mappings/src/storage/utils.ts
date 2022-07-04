@@ -1,13 +1,11 @@
 import { DatabaseManager } from '@joystream/hydra-common'
 import {
   PalletStorageUploadParametersRecordBagIdType as UploadParameters,
-  PalletStorageDataObjectCreationParameters,
   PalletStorageBagIdType as BagId,
   PalletStorageDynamicBagIdType as DynamicBagId,
   PalletStorageStaticBagId as StaticBagId,
   PalletStorageDistributionBucketIdRecord as DistributionBucketId,
 } from '@polkadot/types/lookup'
-import { createType, registry } from '@joystream/types'
 import {
   DataObjectTypeUnknown,
   StorageBag,
