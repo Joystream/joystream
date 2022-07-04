@@ -77,7 +77,7 @@ pub trait PalletToken<
     /// Establish whether the token has an unfinalized revenue split
     fn is_revenue_split_inactive(token_id: TokenId) -> bool;
 
-    /// Establish weather the token has a sale pending
+    /// Establish whether the token has an unfinalized sale
     fn is_sale_unscheduled(token_id: TokenId) -> bool;
 
 }
