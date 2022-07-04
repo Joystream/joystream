@@ -411,11 +411,50 @@ fn update_transfer_status_blocked_during_revenue_split() {
 }
 
 #[test]
-fn update_transfer_status_blocked_during_token_sales() {
+fn update_transfer_status_blocked_during_upcoming_token_sales() {
+    pub const SALE_STARTING_BLOCK: u64 = 10;
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
         IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
-        InitCreatorTokenSaleFixture::default().call_and_assert(Ok(()));
+        InitCreatorTokenSaleFixture::default()
+            .with_start_block(SALE_STARTING_BLOCK)
+            .call_and_assert(Ok(()));
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Err(
+                Error::<Test>::ChannelTransfersBlockedDuringTokenSales.into(),
+            ));
+    })
+}
+
+#[test]
+fn update_transfer_status_blocked_during_ongoing_token_sales() {
+    pub const SALE_STARTING_BLOCK: u64 = 10;
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+        InitCreatorTokenSaleFixture::default()
+            .with_start_block(SALE_STARTING_BLOCK)
+            .call_and_assert(Ok(()));
+        run_to_block(SALE_STARTING_BLOCK + 1);
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Err(
+                Error::<Test>::ChannelTransfersBlockedDuringTokenSales.into(),
+            ));
+    })
+}
+
+#[test]
+fn update_transfer_status_blocked_during_unfinalized_token_sales() {
+    pub const SALE_STARTING_BLOCK: u64 = 10;
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+        InitCreatorTokenSaleFixture::default()
+            .with_start_block(SALE_STARTING_BLOCK)
+            .call_and_assert(Ok(()));
+        run_to_block(SALE_STARTING_BLOCK + DEFAULT_CREATOR_TOKEN_SALE_DURATION + 1);
         UpdateChannelTransferStatusFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Err(
