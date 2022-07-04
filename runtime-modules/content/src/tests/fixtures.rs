@@ -4386,10 +4386,15 @@ impl SuccessfulNftManagementFlow {
         //     .with_sender(self.sender.clone())
         //     .with_actor(self.actor.clone())
         //     .call_and_assert(Ok(()));
+        CreateVideoFixture::default()
+            .with_sender(self.sender.clone())
+            .with_actor(self.actor.clone())
+            .call_and_assert(Ok(()));
         // Issue nft during video update
         UpdateVideoFixture::default()
             .with_sender(self.sender.clone())
             .with_actor(self.actor.clone())
+            .with_video_id(VideoId::from(3u32))
             .with_nft_issuance(NftIssuanceParameters::<Test>::default())
             .call_and_assert(Ok(()));
         // Start open auction

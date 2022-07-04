@@ -1,6 +1,7 @@
 mod mock;
 
-//use content::NftLimitPeriod;
+// TODO: enable after Carthage
+// use content::NftLimitPeriod;
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;

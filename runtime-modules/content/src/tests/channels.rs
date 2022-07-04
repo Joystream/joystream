@@ -2632,8 +2632,6 @@ fn unsuccessful_nft_destruction_by_curator_agent_without_permissions() {
     })
 }
 
-// TODO: enable after enabling destroy_nft
-#[ignore]
 #[test]
 fn succesfull_nft_management_actions_by_curator_agent() {
     with_default_mock_builder(|| {
@@ -2651,8 +2649,6 @@ fn succesfull_nft_management_actions_by_curator_agent() {
     })
 }
 
-// TODO: enable after enabling destroy_nft
-#[ignore]
 #[test]
 fn succesfull_nft_management_actions_by_lead() {
     with_default_mock_builder(|| {
@@ -2911,8 +2907,6 @@ fn unsuccessful_nft_destruction_by_collaborator_without_permissions() {
     })
 }
 
-// TODO: enable after enabling destroy_nft
-#[ignore]
 #[test]
 fn succesfull_nft_management_actions_by_collaborator() {
     with_default_mock_builder(|| {
@@ -2930,8 +2924,6 @@ fn succesfull_nft_management_actions_by_collaborator() {
     })
 }
 
-// TODO: enable after enabling destroy_nft
-#[ignore]
 #[test]
 fn succesfull_nft_management_actions_by_owner_member() {
     with_default_mock_builder(|| {
