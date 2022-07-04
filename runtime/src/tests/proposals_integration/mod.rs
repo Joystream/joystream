@@ -1071,41 +1071,42 @@ fn proposal_reactivation_succeeds() {
     });
 }
 
-#[test]
-fn update_global_nft_limit_proposal_succeeds() {
-    initial_test_ext().execute_with(|| {
-        let member_id = create_new_members(1)[0];
-        let account_id = account_from_member_id(member_id);
+// TODO: Enable after Carthage
+// #[test]
+// fn update_global_nft_limit_proposal_succeeds() {
+//     initial_test_ext().execute_with(|| {
+//         let member_id = create_new_members(1)[0];
+//         let account_id = account_from_member_id(member_id);
 
-        let period = NftLimitPeriod::Daily;
-        let new_limit = 9999;
+//         let period = NftLimitPeriod::Daily;
+//         let new_limit = 9999;
 
-        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id,
-                title: b"title".to_vec(),
-                description: b"body".to_vec(),
-                staking_account_id: Some(account_id.clone()),
-                exact_execution_block: None,
-            };
+//         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+//             let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+//                 member_id: member_id,
+//                 title: b"title".to_vec(),
+//                 description: b"body".to_vec(),
+//                 staking_account_id: Some(account_id.clone()),
+//                 exact_execution_block: None,
+//             };
 
-            ProposalsCodex::create_proposal(
-                RawOrigin::Signed(account_id.clone()).into(),
-                general_proposal_parameters,
-                ProposalDetails::UpdateGlobalNftLimit(period, new_limit),
-            )
-        })
-        .with_member_id(member_id as u64);
+//             ProposalsCodex::create_proposal(
+//                 RawOrigin::Signed(account_id.clone()).into(),
+//                 general_proposal_parameters,
+//                 ProposalDetails::UpdateGlobalNftLimit(period, new_limit),
+//             )
+//         })
+//         .with_member_id(member_id as u64);
 
-        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+//         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
-        let params =
-            <Runtime as proposals_codex::Config>::UpdateGlobalNftLimitProposalParameters::get();
-        run_to_block(System::block_number() + params.grace_period + 1);
+//         let params =
+//             <Runtime as proposals_codex::Config>::UpdateGlobalNftLimitProposalParameters::get();
+//         run_to_block(System::block_number() + params.grace_period + 1);
 
-        assert_eq!(
-            content::GlobalDailyNftLimit::<Runtime>::get().limit,
-            new_limit
-        );
-    });
-}
+//         assert_eq!(
+//             content::GlobalDailyNftLimit::<Runtime>::get().limit,
+//             new_limit
+//         );
+//     });
+// }

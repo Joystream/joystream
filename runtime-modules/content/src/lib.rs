@@ -3416,7 +3416,7 @@ impl<T: Config> Module<T> {
     }
 
     // Set global and channel NFT limit
-    pub(crate) fn set_nft_limit(_limit_id: NftLimitId<T::ChannelId>, _limit: u64) {
+    pub(crate) fn _set_nft_limit(_limit_id: NftLimitId<T::ChannelId>, _limit: u64) {
         // Noop
 
         // TODO: enable after Carthage
