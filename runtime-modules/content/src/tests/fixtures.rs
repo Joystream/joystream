@@ -2590,6 +2590,13 @@ impl IssueRevenueSplitFixture {
         Self { actor, ..self }
     }
 
+    pub fn with_starting_block(self, block: u64) -> Self {
+        Self {
+            start: Some(block),
+            ..self
+        }
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
 
