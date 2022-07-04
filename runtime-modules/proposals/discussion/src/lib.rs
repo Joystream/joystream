@@ -230,7 +230,6 @@ decl_module! {
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoDiscussion::<T>::add_post(
-            T::MaxWhiteListSize::get() as u32,
             text.len().saturated_into(),
         )]
         pub fn add_post(
