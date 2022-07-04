@@ -885,14 +885,14 @@ export default {
     _enum: ['Daily', 'Weekly']
   },
   /**
-   * Lookup136: pallet_storage::RawEvent<StorageBucketId, WorkerId, DataObjectId, pallet_storage::UploadParametersRecord<pallet_storage::BagIdType<MemberId, ChannelId>, sp_core::crypto::AccountId32, Balance, StorageBucketId, pallet_storage::DistributionBucketIdRecord<DistributionBucketFamilyId, DistributionBucketIndex>>, pallet_storage::BagIdType<MemberId, ChannelId>, pallet_storage::DynamicBagIdType<MemberId, ChannelId>, sp_core::crypto::AccountId32, Balance, DistributionBucketFamilyId, pallet_storage::DistributionBucketIdRecord<DistributionBucketFamilyId, DistributionBucketIndex>, DistributionBucketIndex>
+   * Lookup136: pallet_storage::RawEvent<StorageBucketId, WorkerId, DataObjectId, pallet_storage::UploadParametersRecord<pallet_storage::BagIdType<MemberId, ChannelId>, sp_core::crypto::AccountId32, Balance>, pallet_storage::BagIdType<MemberId, ChannelId>, pallet_storage::DynamicBagIdType<MemberId, ChannelId>, sp_core::crypto::AccountId32, Balance, DistributionBucketFamilyId, pallet_storage::DistributionBucketIdRecord<DistributionBucketFamilyId, DistributionBucketIndex>, DistributionBucketIndex>
    **/
   PalletStorageRawEvent: {
     _enum: {
       StorageBucketCreated: '(u64,Option<u64>,bool,u64,u64)',
       StorageBucketInvitationAccepted: '(u64,u64,AccountId32)',
       StorageBucketsUpdatedForBag: '(PalletStorageBagIdType,BTreeSet<u64>,BTreeSet<u64>)',
-      DataObjectsUploaded: '(Vec<u64>,PalletStorageUploadParametersRecordBagIdType,u128)',
+      DataObjectsUploaded: '(Vec<u64>,PalletStorageUploadParametersRecord,u128)',
       StorageOperatorMetadataSet: '(u64,u64,Bytes)',
       StorageBucketVoucherLimitsSet: '(u64,u64,u64)',
       PendingDataObjectsAccepted: '(u64,u64,PalletStorageBagIdType,BTreeSet<u64>)',
@@ -929,22 +929,20 @@ export default {
       DistributionBucketOperatorRemoved: '(PalletStorageDistributionBucketIdRecord,u64)',
       DistributionBucketFamilyMetadataSet: '(u64,Bytes)',
       DataObjectStateBloatBondValueUpdated: 'u128',
-      DataObjectsUpdated: '(PalletStorageUploadParametersRecordBagIdType,BTreeSet<u64>)',
+      DataObjectsUpdated: '(PalletStorageUploadParametersRecord,BTreeSet<u64>)',
       StorageOperatorRemarked: '(u64,u64,Bytes)',
       DistributionOperatorRemarked: '(u64,PalletStorageDistributionBucketIdRecord,Bytes)'
     }
   },
   /**
-   * Lookup137: pallet_storage::UploadParametersRecord<pallet_storage::BagIdType<MemberId, ChannelId>, sp_core::crypto::AccountId32, Balance, StorageBucketId, pallet_storage::DistributionBucketIdRecord<DistributionBucketFamilyId, DistributionBucketIndex>>
+   * Lookup137: pallet_storage::UploadParametersRecord<pallet_storage::BagIdType<MemberId, ChannelId>, sp_core::crypto::AccountId32, Balance>
    **/
-  PalletStorageUploadParametersRecordBagIdType: {
+  PalletStorageUploadParametersRecord: {
     bagId: 'PalletStorageBagIdType',
     objectCreationList: 'Vec<PalletStorageDataObjectCreationParameters>',
     stateBloatBondSourceAccountId: 'AccountId32',
     expectedDataSizeFee: 'u128',
-    expectedDataObjectStateBloatBond: 'u128',
-    storageBuckets: 'BTreeSet<u64>',
-    distributionBuckets: 'BTreeSet<PalletStorageDistributionBucketIdRecord>'
+    expectedDataObjectStateBloatBond: 'u128'
   },
   /**
    * Lookup138: pallet_storage::BagIdType<MemberId, ChannelId>
@@ -3074,10 +3072,10 @@ export default {
         metadata: 'Bytes',
       },
       sudo_upload_data_objects: {
-        params: 'PalletStorageUploadParametersRecordBagIdType',
+        params: 'PalletStorageUploadParametersRecord',
       },
       sudo_create_dynamic_bag: {
-        params: 'PalletStorageUploadParametersRecordDynamicBagIdType',
+        params: 'PalletStorageDynBagCreationParametersRecord',
       },
       storage_operator_remark: {
         workerId: 'u64',
@@ -3092,9 +3090,9 @@ export default {
     }
   },
   /**
-   * Lookup373: pallet_storage::UploadParametersRecord<pallet_storage::DynamicBagIdType<MemberId, ChannelId>, sp_core::crypto::AccountId32, Balance, StorageBucketId, pallet_storage::DistributionBucketIdRecord<DistributionBucketFamilyId, DistributionBucketIndex>>
+   * Lookup373: pallet_storage::DynBagCreationParametersRecord<pallet_storage::DynamicBagIdType<MemberId, ChannelId>, sp_core::crypto::AccountId32, Balance, StorageBucketId, pallet_storage::DistributionBucketIdRecord<DistributionBucketFamilyId, DistributionBucketIndex>>
    **/
-  PalletStorageUploadParametersRecordDynamicBagIdType: {
+  PalletStorageDynBagCreationParametersRecord: {
     bagId: 'PalletStorageDynamicBagIdType',
     objectCreationList: 'Vec<PalletStorageDataObjectCreationParameters>',
     stateBloatBondSourceAccountId: 'AccountId32',

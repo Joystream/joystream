@@ -832,12 +832,10 @@ pub type UploadParameters<T> = UploadParametersRecord<
     BagIdType<MemberId<T>, <T as Config>::ChannelId>,
     <T as frame_system::Config>::AccountId,
     BalanceOf<T>,
-    <T as Config>::StorageBucketId,
-    DistributionBucketId<T>,
 >;
 
 /// Alias for the parameter record used in create bag
-pub type DynBagCreationParameters<T> = UploadParametersRecord<
+pub type DynBagCreationParameters<T> = DynBagCreationParametersRecord<
     DynamicBagId<T>,
     <T as frame_system::Config>::AccountId,
     BalanceOf<T>,
@@ -848,7 +846,27 @@ pub type DynBagCreationParameters<T> = UploadParametersRecord<
 /// Data wrapper structure. Helps passing the parameters to the `upload` extrinsic.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct UploadParametersRecord<
+pub struct UploadParametersRecord<BagId, AccountId, Balance> {
+    /// Static or dynamic bag to upload data.
+    pub bag_id: BagId,
+
+    /// Data object parameters.
+    pub object_creation_list: Vec<DataObjectCreationParameters>,
+
+    /// Account for the data object state bloat bond.
+    pub state_bloat_bond_source_account_id: AccountId,
+
+    /// Expected data size fee value for this extrinsic call.
+    pub expected_data_size_fee: Balance,
+
+    /// Expected for the data object state bloat bond for the storage pallet.
+    pub expected_data_object_state_bloat_bond: Balance,
+}
+
+/// Data wrapper structure. Helps with create dynamic bag method
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
+pub struct DynBagCreationParametersRecord<
     BagId,
     AccountId,
     Balance,
