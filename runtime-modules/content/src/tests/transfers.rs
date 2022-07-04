@@ -346,6 +346,32 @@ fn accept_channel_transfer_fails_with_invalid_transfer_id() {
 }
 
 #[test]
+fn cancel_channel_transfer_fails_with_invalid_channel_id() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        UpdateChannelTransferStatusFixture::default()
+            .with_new_member_channel_owner(SECOND_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        CancelChannelTransferFixture::default()
+            .with_channel_id(ChannelId::from(2u32))
+            .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()))
+    })
+}
+
+#[test]
+fn cancel_channel_transfer_fails_by_unauthorized_actor() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+
+        CancelChannelTransferFixture::default()
+            .with_origin(RawOrigin::Signed(DEFAULT_CURATOR_ACCOUNT_ID))
+            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
+    })
+}
+
+#[test]
 fn cancel_channel_transfer_ok_with_status_reset() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
@@ -354,7 +380,6 @@ fn cancel_channel_transfer_ok_with_status_reset() {
             .call_and_assert(Ok(()));
 
         CancelChannelTransferFixture::default()
-            .with_transfer_status(ChannelTransferStatus::NoActiveTransfer)
             .call_and_assert(Ok(()));
 
         assert_eq!(
@@ -362,5 +387,7 @@ fn cancel_channel_transfer_ok_with_status_reset() {
             TransferId::from(2u32),
             "transfer Id should not change when disactivating a transfer"
         );
+
+        assert!(!Content::channel_by_id(ChannelId::one()).has_active_transfer());
     })
 }
