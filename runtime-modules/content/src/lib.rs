@@ -238,7 +238,7 @@ decl_storage! {
         LimitPerPeriod<T::BlockNumber>;
 
         /// NFT limits enabled or not
-        /// Can be updated in flight by Lead
+        /// Can be updated in flight by the Council
         pub NftLimitsEnabled get(fn nft_limits_enabled) config(): bool;
 
     }
@@ -2308,10 +2308,11 @@ decl_module! {
             Self::deposit_event(RawEvent::NftBought(video_id, participant_id));
         }
 
-        /// Only Lead can toggle nft issuance limits constraints
+        /// Only Council can toggle nft issuance limits constraints
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn toggle_nft_limits(
-            origin
+            origin,
+            enabled: bool
         ) {
             let _ = ensure_root(origin)?;
 
@@ -2319,10 +2320,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let old_v = NftLimitsEnabled::get();
-            NftLimitsEnabled::put(!old_v);
+            NftLimitsEnabled::mutate(|nft_limits| *nft_limits = enabled);
 
-            Self::deposit_event(RawEvent::LeadToggledNftLimitsEnabled(!old_v));
+            Self::deposit_event(RawEvent::ToggledNftLimits(enabled));
         }
 
         /// Channel owner remark
@@ -3611,7 +3611,7 @@ decl_event!(
         /// Nft limits
         GlobalNftLimitUpdated(NftLimitPeriod, u64),
         ChannelNftLimitUpdated(ContentActor, NftLimitPeriod, ChannelId, u64),
-        LeadToggledNftLimitsEnabled(bool),
+        ToggledNftLimits(bool),
         // Creator tokens
         CreatorTokenIssued(ContentActor, ChannelId, TokenId),
     }

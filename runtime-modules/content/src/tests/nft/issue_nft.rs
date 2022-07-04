@@ -404,7 +404,7 @@ fn test_helper_for_nft_limit_works_as_expected(
         Content::set_nft_limit(nft_limit_id, 1);
 
         if disable_limits {
-            assert_ok!(Content::toggle_nft_limits(Origin::root()));
+            assert_ok!(Content::toggle_nft_limits(Origin::root(), false));
         }
 
         // Issue nft 1
