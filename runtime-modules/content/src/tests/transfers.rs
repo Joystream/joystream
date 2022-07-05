@@ -132,6 +132,85 @@ fn initialize_channel_transfer_ok_with_transfer_id_updated_correctly() {
 }
 
 #[test]
+fn initialize_channel_transfer_fails_during_upcoming_revenue_split() {
+    pub const SPLIT_STARTING_BLOCK: u64 = 10;
+    with_default_mock_builder(|| {
+        let ed = <Test as balances::Config>::ExistentialDeposit::get();
+        ContentTest::with_member_channel().setup();
+        increase_account_balance_helper(
+            ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
+            DEFAULT_PAYOUT_EARNED
+                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
+                .saturating_add(ed.into()),
+        );
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+        IssueRevenueSplitFixture::default()
+            .with_starting_block(SPLIT_STARTING_BLOCK)
+            .call_and_assert(Ok(()));
+
+        InitializeChannelTransferFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Err(
+                Error::<Test>::ChannelTransfersBlockedDuringRevenueSplits.into(),
+            ));
+    })
+}
+
+#[test]
+fn initialize_channel_transfer_fails_during_ongoing_revenue_split() {
+    pub const SPLIT_STARTING_BLOCK: u64 = 10;
+    with_default_mock_builder(|| {
+        let ed = <Test as balances::Config>::ExistentialDeposit::get();
+        ContentTest::with_member_channel().setup();
+        increase_account_balance_helper(
+            ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
+            DEFAULT_PAYOUT_EARNED
+                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
+                .saturating_add(ed.into()),
+        );
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+        IssueRevenueSplitFixture::default()
+            .with_starting_block(SPLIT_STARTING_BLOCK)
+            .call_and_assert(Ok(()));
+
+        run_to_block(SPLIT_STARTING_BLOCK + 1);
+
+        InitializeChannelTransferFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Err(
+                Error::<Test>::ChannelTransfersBlockedDuringRevenueSplits.into(),
+            ));
+    })
+}
+
+#[test]
+fn initialize_channel_transfer_fails_during_unfinalized_revenue_split() {
+    pub const SPLIT_STARTING_BLOCK: u64 = 10;
+    with_default_mock_builder(|| {
+        let ed = <Test as balances::Config>::ExistentialDeposit::get();
+        ContentTest::with_member_channel().setup();
+        increase_account_balance_helper(
+            ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
+            DEFAULT_PAYOUT_EARNED
+                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
+                .saturating_add(ed.into()),
+        );
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+        IssueRevenueSplitFixture::default()
+            .with_starting_block(SPLIT_STARTING_BLOCK)
+            .call_and_assert(Ok(()));
+
+        run_to_block(SPLIT_STARTING_BLOCK + DEFAULT_REVENUE_SPLIT_DURATION + 1);
+
+        InitializeChannelTransferFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Err(
+                Error::<Test>::ChannelTransfersBlockedDuringRevenueSplits.into(),
+            ));
+    })
+}
+
+#[test]
 fn initialize_channel_transfer_fails_during_upcoming_token_sales() {
     pub const SALE_STARTING_BLOCK: u64 = 10;
     with_default_mock_builder(|| {
@@ -536,14 +615,131 @@ fn cancel_channel_transfer_fails_with_invalid_channel_id() {
 }
 
 #[test]
-fn cancel_channel_transfer_fails_by_unauthorized_actor() {
+fn cancel_channel_transfer_fails_with_non_member_owner() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
+        InitializeChannelTransferFixture::default().call_and_assert(Ok(()));
 
         CancelChannelTransferFixture::default()
             .with_sender(THIRD_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(THIRD_MEMBER_ID))
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
+    })
+}
+
+#[test]
+fn cancel_channel_transfer_fails_with_lead_and_member_channel() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        InitializeChannelTransferFixture::default().call_and_assert(Ok(()));
+
+        CancelChannelTransferFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
+    })
+}
+
+#[test]
+fn cancel_channel_transfer_fails_with_collaborator_not_having_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        InitializeChannelTransferFixture::default().call_and_assert(Ok(()));
+
+        CancelChannelTransferFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Err(Error::<Test>::ChannelAgentInsufficientPermissions.into()))
+    })
+}
+
+#[test]
+fn cancel_channel_transfer_fails_with_invalid_curator() {
+    with_default_mock_builder(|| {
+        let group_id = Content::next_curator_group_id();
+        ContentTest::with_curator_channel()
+            .with_agent_permissions(&vec![ChannelActionPermission::TransferChannel])
+            .setup();
+        InitializeChannelTransferFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Ok(()));
+
+        CancelChannelTransferFixture::default()
+            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(group_id, UNAUTHORIZED_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::CuratorIsNotAMemberOfGivenCuratorGroup.into()))
+    })
+}
+
+#[test]
+fn cancel_channel_transfer_ok_with_member_owner() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        InitializeChannelTransferFixture::default().call_and_assert(Ok(()));
+
+        CancelChannelTransferFixture::default().call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn cancel_channel_transfer_ok_with_lead() {
+    with_default_mock_builder(|| {
+        let group_id = Content::next_curator_group_id();
+
+        ContentTest::with_curator_channel()
+            .with_agent_permissions(&vec![ChannelActionPermission::TransferChannel])
+            .setup();
+        InitializeChannelTransferFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Ok(()));
+
+        CancelChannelTransferFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Ok(()))
+    })
+}
+
+#[test]
+fn cancel_channel_transfer_ok_with_collaborator_having_permissions() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_collaborators(
+                vec![(
+                    COLLABORATOR_MEMBER_ID,
+                    BTreeSet::from_iter(vec![ChannelActionPermission::TransferChannel]),
+                )]
+                .as_slice(),
+            )
+            .setup();
+
+        InitializeChannelTransferFixture::default().call_and_assert(Ok(()));
+
+        CancelChannelTransferFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Ok(()))
+    })
+}
+
+#[test]
+fn cancel_channel_transfer_ok_with_curator_having_permissions() {
+    with_default_mock_builder(|| {
+        let group_id = Content::next_curator_group_id();
+        ContentTest::with_curator_channel()
+            .with_agent_permissions(&vec![ChannelActionPermission::TransferChannel])
+            .setup();
+        InitializeChannelTransferFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Ok(()));
+
+        CancelChannelTransferFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Ok(()));
     })
 }
 
@@ -557,91 +753,23 @@ fn cancel_channel_transfer_ok_with_status_reset() {
 
         CancelChannelTransferFixture::default().call_and_assert(Ok(()));
 
-        assert_eq!(
-            Content::next_transfer_id(),
-            TransferId::from(2u32),
-            "transfer Id should not change when disactivating a transfer"
-        );
-
         assert!(!Content::channel_by_id(ChannelId::one()).has_active_transfer());
     })
 }
 
 #[test]
-fn initialize_channel_transfer_fails_during_upcoming_revenue_split() {
-    pub const SPLIT_STARTING_BLOCK: u64 = 10;
+fn cancel_channel_transfer_ok_with_event_deposit() {
     with_default_mock_builder(|| {
-        let ed = <Test as balances::Config>::ExistentialDeposit::get();
         ContentTest::with_member_channel().setup();
-        increase_account_balance_helper(
-            ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
-            DEFAULT_PAYOUT_EARNED
-                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(ed.into()),
-        );
-        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
-        IssueRevenueSplitFixture::default()
-            .with_starting_block(SPLIT_STARTING_BLOCK)
+        InitializeChannelTransferFixture::default()
+            .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
 
-        InitializeChannelTransferFixture::default()
-            .with_new_member_channel_owner(THIRD_MEMBER_ID)
-            .call_and_assert(Err(
-                Error::<Test>::ChannelTransfersBlockedDuringRevenueSplits.into(),
-            ));
-    })
-}
+        CancelChannelTransferFixture::default().call_and_assert(Ok(()));
 
-#[test]
-fn initialize_channel_transfer_fails_during_ongoing_revenue_split() {
-    pub const SPLIT_STARTING_BLOCK: u64 = 10;
-    with_default_mock_builder(|| {
-        let ed = <Test as balances::Config>::ExistentialDeposit::get();
-        ContentTest::with_member_channel().setup();
-        increase_account_balance_helper(
-            ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
-            DEFAULT_PAYOUT_EARNED
-                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(ed.into()),
-        );
-        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
-        IssueRevenueSplitFixture::default()
-            .with_starting_block(SPLIT_STARTING_BLOCK)
-            .call_and_assert(Ok(()));
-
-        run_to_block(SPLIT_STARTING_BLOCK + 1);
-
-        InitializeChannelTransferFixture::default()
-            .with_new_member_channel_owner(THIRD_MEMBER_ID)
-            .call_and_assert(Err(
-                Error::<Test>::ChannelTransfersBlockedDuringRevenueSplits.into(),
-            ));
-    })
-}
-
-#[test]
-fn initialize_channel_transfer_fails_during_unfinalized_revenue_split() {
-    pub const SPLIT_STARTING_BLOCK: u64 = 10;
-    with_default_mock_builder(|| {
-        let ed = <Test as balances::Config>::ExistentialDeposit::get();
-        ContentTest::with_member_channel().setup();
-        increase_account_balance_helper(
-            ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
-            DEFAULT_PAYOUT_EARNED
-                // TODO: Should be changed to bloat_bond after https://github.com/Joystream/joystream/issues/3511
-                .saturating_add(ed.into()),
-        );
-        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
-        IssueRevenueSplitFixture::default()
-            .with_starting_block(SPLIT_STARTING_BLOCK)
-            .call_and_assert(Ok(()));
-
-        run_to_block(SPLIT_STARTING_BLOCK + DEFAULT_REVENUE_SPLIT_DURATION + 1);
-
-        InitializeChannelTransferFixture::default()
-            .with_new_member_channel_owner(THIRD_MEMBER_ID)
-            .call_and_assert(Err(
-                Error::<Test>::ChannelTransfersBlockedDuringRevenueSplits.into(),
-            ));
+        last_event_eq!(RawEvent::CancelChannelTransfer(
+            ChannelId::one(),
+            ContentActor::Member(DEFAULT_MEMBER_ID)
+        ));
     })
 }
