@@ -2390,7 +2390,7 @@ decl_module! {
             Self::deposit_event(RawEvent::NftOwnerRemarked(actor, video_id, msg));
         }
 
-        /// Updates channel transfer status to whatever the current owner wants.
+        /// Start a channel transfer with specified characteristics
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_channel_transfer_status(
             origin,
@@ -2401,6 +2401,7 @@ decl_module! {
             let channel = Self::ensure_channel_exists(&channel_id)?;
             ensure_actor_authorized_to_transfer_channel::<T>(origin, &actor, &channel)?;
 
+            // (parameters, nonce) (owner,commitment parameters)
             let validated_status = Self::validate_transfer_status(candidate_status)?;
 
             if let Ok(token_id) = channel.ensure_creator_token_issued::<T>() {
@@ -2432,7 +2433,7 @@ decl_module! {
             );
         }
 
-        /// cancel status
+        /// cancel channel transfer
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn cancel_channel_transfer(
             origin,
@@ -2467,7 +2468,7 @@ decl_module! {
         pub fn accept_channel_transfer(
             origin,
             channel_id: T::ChannelId,
-            commitment_params: TransferParameters<T::MemberId, BalanceOf<T>, T::TransferId>
+            commitment_params: TransferCommitmentParameters<T::MemberId, BalanceOf<T>, T::TransferId>
         ) {
             let sender = ensure_signed(origin)?;
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -3356,7 +3357,7 @@ impl<T: Config> Module<T> {
 
     // Validates channel transfer acceptance parameters: commitment params, new owner balance.
     fn validate_channel_transfer_acceptance(
-        commitment_params: &TransferParameters<T::MemberId, BalanceOf<T>, T::TransferId>,
+        commitment_params: &TransferCommitmentParameters<T::MemberId, BalanceOf<T>, T::TransferId>,
         params: &PendingTransfer<T::MemberId, T::CuratorGroupId, BalanceOf<T>, T::TransferId>,
     ) -> DispatchResult {
         ensure!(
@@ -3617,7 +3618,7 @@ decl_event!(
             BalanceOf<T>,
             <T as Config>::TransferId,
         >,
-        TransferParameters = TransferParameters<
+        TransferCommitmentParameters = TransferCommitmentParameters<
             <T as common::MembershipTypes>::MemberId,
             BalanceOf<T>,
             <T as Config>::TransferId,
@@ -3726,7 +3727,7 @@ decl_event!(
         // Channel transfer
         UpdateChannelTransferStatus(ChannelId, ContentActor, ChannelTransferStatus),
         CancelChannelTransfer(ChannelId, ContentActor),
-        ChannelTransferAccepted(ChannelId, TransferParameters),
+        ChannelTransferAccepted(ChannelId, TransferCommitmentParameters),
 
         /// Nft limits
         GlobalNftLimitUpdated(NftLimitPeriod, u64),

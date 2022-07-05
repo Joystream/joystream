@@ -306,7 +306,7 @@ pub struct PendingTransfer<
     /// New channel owner.
     pub new_owner: ChannelOwner<MemberId, CuratorGroupId>,
     /// Transfer parameters.
-    pub transfer_params: TransferParameters<MemberId, Balance, TransferId>,
+    pub transfer_params: TransferCommitmentParameters<MemberId, Balance, TransferId>,
 }
 
 impl<MemberId: Ord, CuratorGroupId, Balance: Zero, TransferId: PartialEq + Copy>
@@ -323,7 +323,7 @@ impl<MemberId: Ord, CuratorGroupId, Balance: Zero, TransferId: PartialEq + Copy>
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 /// Contains parameters for the pending transfer.
-pub struct TransferParameters<MemberId: Ord, Balance: Zero, TransferId: PartialEq + Copy> {
+pub struct TransferCommitmentParameters<MemberId: Ord, Balance: Zero, TransferId: PartialEq + Copy> {
     /// Channel's new collaborators along with their respective permissions
     pub new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
     /// Transfer price: can be 0, which means free.
@@ -333,7 +333,7 @@ pub struct TransferParameters<MemberId: Ord, Balance: Zero, TransferId: PartialE
 }
 
 impl<MemberId: Ord, Balance: Zero, TransferId: PartialEq + Copy>
-    TransferParameters<MemberId, Balance, TransferId>
+    TransferCommitmentParameters<MemberId, Balance, TransferId>
 {
     // Defines whether the transfer is free.
     pub(crate) fn is_free_of_charge(&self) -> bool {

@@ -19,7 +19,7 @@ fn update_channel_transfer_status_ok_with_status_changed_to_pending_transfer() {
             Content::channel_by_id(ChannelId::one()).transfer_status,
             ChannelTransferStatus::PendingTransfer::<_, _, _, _>(PendingTransfer::<_, _, _, _> {
                 new_owner: ChannelOwner::Member(SECOND_MEMBER_ID),
-                transfer_params: TransferParameters::<_, _, _> {
+                transfer_params: TransferCommitmentParameters::<_, _, _> {
                     transfer_id: Some(TransferId::one()),
                     price: DEFAULT_CHANNEL_TRANSFER_PRICE,
                     new_collaborators: BTreeMap::new(),
@@ -149,7 +149,7 @@ fn accept_transfer_status_fails_with_invalid_commitment_params() {
             .call_and_assert(Ok(()));
 
         AcceptChannelTransferFixture::default()
-            .with_transfer_params(TransferParameters {
+            .with_transfer_params(TransferCommitmentParameters {
                 price: DEFAULT_CHANNEL_TRANSFER_PRICE + 1,
                 ..Default::default()
             })
@@ -379,8 +379,7 @@ fn cancel_channel_transfer_ok_with_status_reset() {
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
 
-        CancelChannelTransferFixture::default()
-            .call_and_assert(Ok(()));
+        CancelChannelTransferFixture::default().call_and_assert(Ok(()));
 
         assert_eq!(
             Content::next_transfer_id(),

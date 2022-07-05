@@ -2892,7 +2892,6 @@ impl CancelChannelTransferFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-
         let actual_result = Content::cancel_channel_transfer(
             self.origin.clone().into(),
             self.channel_id,
@@ -2901,7 +2900,6 @@ impl CancelChannelTransferFixture {
 
         assert_eq!(actual_result, expected_result);
     }
-
 }
 
 pub struct UpdateChannelTransferStatusFixture {
@@ -2924,7 +2922,7 @@ impl UpdateChannelTransferStatusFixture {
                 TransferId,
             >(PendingTransfer::<_, _, _, _> {
                 new_owner: ChannelOwner::Member(SECOND_MEMBER_ID),
-                transfer_params: TransferParameters::<_, _, _> {
+                transfer_params: TransferCommitmentParameters::<_, _, _> {
                     transfer_id: Some(TransferId::one()),
                     price: DEFAULT_CHANNEL_TRANSFER_PRICE,
                     ..Default::default()
@@ -2957,7 +2955,7 @@ impl UpdateChannelTransferStatusFixture {
         new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
     ) -> Self {
         let old_transfer_params = self.get_transfer_params();
-        self.with_transfer_parameters(TransferParameters {
+        self.with_transfer_parameters(TransferCommitmentParameters {
             new_collaborators,
             ..old_transfer_params
         })
@@ -2965,7 +2963,7 @@ impl UpdateChannelTransferStatusFixture {
 
     pub fn with_price(self, price: u64) -> Self {
         let old_transfer_params = self.get_transfer_params();
-        self.with_transfer_parameters(TransferParameters {
+        self.with_transfer_parameters(TransferCommitmentParameters {
             price,
             ..old_transfer_params
         })
@@ -3024,7 +3022,7 @@ impl UpdateChannelTransferStatusFixture {
         }
     }
 
-    fn get_transfer_params(&self) -> TransferParameters<MemberId, BalanceOf<Test>, TransferId> {
+    fn get_transfer_params(&self) -> TransferCommitmentParameters<MemberId, BalanceOf<Test>, TransferId> {
         if let ChannelTransferStatus::PendingTransfer(transfer_status) =
             self.transfer_status.clone()
         {
@@ -3036,7 +3034,7 @@ impl UpdateChannelTransferStatusFixture {
 
     pub fn with_transfer_parameters(
         self,
-        transfer_params: TransferParameters<MemberId, BalanceOf<Test>, TransferId>,
+        transfer_params: TransferCommitmentParameters<MemberId, BalanceOf<Test>, TransferId>,
     ) -> Self {
         let old_pending_transfer_params = self.get_pending_transfer_params();
         self.with_transfer_status(ChannelTransferStatus::PendingTransfer(PendingTransfer::<
@@ -3082,7 +3080,7 @@ impl UpdateChannelTransferStatusFixture {
 pub struct AcceptChannelTransferFixture {
     origin: RawOrigin<u128>,
     channel_id: u64,
-    params: TransferParameters<MemberId, BalanceOf<Test>, TransferId>,
+    params: TransferCommitmentParameters<MemberId, BalanceOf<Test>, TransferId>,
 }
 
 impl AcceptChannelTransferFixture {
@@ -3090,7 +3088,7 @@ impl AcceptChannelTransferFixture {
         Self {
             origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
             channel_id: ChannelId::one(),
-            params: TransferParameters {
+            params: TransferCommitmentParameters {
                 transfer_id: Some(TransferId::one()),
                 price: DEFAULT_CHANNEL_TRANSFER_PRICE,
                 ..Default::default()
@@ -3108,14 +3106,14 @@ impl AcceptChannelTransferFixture {
 
     pub fn with_transfer_params(
         self,
-        params: TransferParameters<MemberId, BalanceOf<Test>, TransferId>,
+        params: TransferCommitmentParameters<MemberId, BalanceOf<Test>, TransferId>,
     ) -> Self {
         Self { params, ..self }
     }
 
     pub fn with_price(self, price: u64) -> Self {
         let old_transfer_params = self.params.clone();
-        self.with_transfer_params(TransferParameters {
+        self.with_transfer_params(TransferCommitmentParameters {
             price,
             ..old_transfer_params
         })
@@ -3123,7 +3121,7 @@ impl AcceptChannelTransferFixture {
 
     pub fn with_transfer_id(self, id: u64) -> Self {
         let old_transfer_params = self.params.clone();
-        self.with_transfer_params(TransferParameters {
+        self.with_transfer_params(TransferCommitmentParameters {
             transfer_id: Some(id),
             ..old_transfer_params
         })
@@ -3134,7 +3132,7 @@ impl AcceptChannelTransferFixture {
         new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
     ) -> Self {
         let old_transfer_params = self.params.clone();
-        self.with_transfer_params(TransferParameters {
+        self.with_transfer_params(TransferCommitmentParameters {
             new_collaborators,
             ..old_transfer_params
         })
