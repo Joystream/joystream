@@ -9,11 +9,17 @@ use sp_std::collections::btree_map::BTreeMap;
 use strum::IntoEnumIterator;
 
 #[test]
-fn initialize_channel_transfer_ok_with_status_changed_to_pending_transfer() {
+fn initialize_channel_transfer_ok_with_status_correctly_changed_and_event_deposited() {
+    let new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions> = BTreeMap::from_iter(
+        vec![(SECOND_MEMBER_ID, ChannelActionPermission::iter().collect())],
+    );
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
 
-        InitializeChannelTransferFixture::default().call_and_assert(Ok(()));
+        InitializeChannelTransferFixture::default()
+            .with_collaborators(new_collaborators.clone())
+            .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
+            .call_and_assert(Ok(()));
 
         assert_eq!(
             Content::channel_by_id(ChannelId::one()).transfer_status,
@@ -22,11 +28,24 @@ fn initialize_channel_transfer_ok_with_status_changed_to_pending_transfer() {
                 transfer_params: TransferCommitmentParameters::<_, _, _> {
                     transfer_id: TransferId::one(),
                     price: DEFAULT_CHANNEL_TRANSFER_PRICE,
-                    new_collaborators: BTreeMap::new(),
+                    new_collaborators: new_collaborators.clone(),
                 }
             }),
             "transfer parameters not correctly updated when activating a transfer"
         );
+        last_event_eq!(RawEvent::InitializedChannelTransfer(
+            ChannelId::one(),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            PendingTransferOf::<Test> {
+                new_owner: ChannelOwner::Member(SECOND_MEMBER_ID),
+                transfer_params: TransferCommitmentOf::<Test> {
+                    price: BalanceOf::<Test>::from(DEFAULT_CHANNEL_TRANSFER_PRICE),
+                    new_collaborators,
+                    transfer_id: TransferId::one(),
+                }
+            }
+        ));
+
     })
 }
 
@@ -135,7 +154,7 @@ fn accept_transfer_status_fails_with_invalid_origin() {
 }
 
 #[test]
-fn accept_transfer_status_ok_with_event_deposit() {
+fn accept_transfer_status_ok() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
         let new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions> = BTreeMap::from_iter(
@@ -151,18 +170,6 @@ fn accept_transfer_status_ok_with_event_deposit() {
             .with_collaborators(new_collaborators.clone())
             .call_and_assert(Ok(()));
 
-        last_event_eq!(RawEvent::InitializedChannelTransfer(
-            ChannelId::one(),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            PendingTransferOf::<Test> {
-                new_owner: ChannelOwner::Member(SECOND_MEMBER_ID),
-                transfer_params: TransferCommitmentOf::<Test> {
-                    price: BalanceOf::<Test>::from(DEFAULT_CHANNEL_TRANSFER_PRICE),
-                    new_collaborators,
-                    transfer_id: TransferId::one(),
-                }
-            }
-        ));
     })
 }
 
