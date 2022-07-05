@@ -9,18 +9,18 @@ use sp_std::collections::btree_map::BTreeMap;
 use strum::IntoEnumIterator;
 
 #[test]
-fn update_channel_transfer_status_ok_with_status_changed_to_pending_transfer() {
+fn initialize_channel_transfer_ok_with_status_changed_to_pending_transfer() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
 
-        UpdateChannelTransferStatusFixture::default().call_and_assert(Ok(()));
+        InitializeChannelTransferFixture::default().call_and_assert(Ok(()));
 
         assert_eq!(
             Content::channel_by_id(ChannelId::one()).transfer_status,
             ChannelTransferStatus::PendingTransfer::<_, _, _, _>(PendingTransfer::<_, _, _, _> {
                 new_owner: ChannelOwner::Member(SECOND_MEMBER_ID),
                 transfer_params: TransferCommitmentParameters::<_, _, _> {
-                    transfer_id: Some(TransferId::one()),
+                    transfer_id: TransferId::one(),
                     price: DEFAULT_CHANNEL_TRANSFER_PRICE,
                     new_collaborators: BTreeMap::new(),
                 }
@@ -31,11 +31,11 @@ fn update_channel_transfer_status_ok_with_status_changed_to_pending_transfer() {
 }
 
 #[test]
-fn activate_channel_transfer_status_ok_with_transfer_id_updated_correctly() {
+fn initialize_channel_transfer_ok_with_transfer_id_updated_correctly() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
 
-        UpdateChannelTransferStatusFixture::default().call_and_assert(Ok(()));
+        InitializeChannelTransferFixture::default().call_and_assert(Ok(()));
 
         assert_eq!(
             Content::next_transfer_id(),
@@ -46,43 +46,56 @@ fn activate_channel_transfer_status_ok_with_transfer_id_updated_correctly() {
 }
 
 #[test]
-fn update_channel_transfer_status_fails_with_invalid_channel_id() {
+fn initialize_channel_transfer_fails_with_invalid_channel_id() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
         let invalid_channel_id = Content::next_channel_id();
 
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_channel_id(invalid_channel_id)
             .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()))
     })
 }
 
 #[test]
-fn update_channel_transfer_status_fails_with_invalid_origin() {
+fn initialize_channel_transfer_fails_with_transfer_already_started() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
+            .call_and_assert(Ok(()));
+
+        InitializeChannelTransferFixture::default()
+            .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()))
+
+    })
+}
+
+#[test]
+fn initialize_channel_transfer_fails_with_invalid_origin() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        InitializeChannelTransferFixture::default()
             .with_origin(RawOrigin::Root)
             .call_and_assert(Err(DispatchError::BadOrigin))
     })
 }
 
 #[test]
-fn update_channel_transfer_status_fails_with_member_actor() {
+fn initialize_channel_transfer_fails_with_member_actor() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_actor(ContentActor::Member(UNAUTHORIZED_MEMBER_ID))
             .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()))
     })
 }
 
 #[test]
-fn update_channel_transfer_status_fails_with_invalid_collaborators() {
+fn initialize_channel_transfer_fails_with_invalid_collaborators() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
         let invalid_member_id = 111;
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_collaborators(BTreeMap::from_iter(vec![(
                 invalid_member_id,
                 BTreeSet::new(),
@@ -92,7 +105,7 @@ fn update_channel_transfer_status_fails_with_invalid_collaborators() {
 }
 
 #[test]
-fn update_channel_transfer_status_fails_with_non_channel_owner() {
+fn initialize_channel_transfer_fails_with_non_channel_owner() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
         let curator_group_id = add_curator_to_new_group(
@@ -100,7 +113,7 @@ fn update_channel_transfer_status_fails_with_non_channel_owner() {
             &[ChannelActionPermission::TransferChannel],
         );
 
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_origin(RawOrigin::Signed(DEFAULT_CURATOR_ACCOUNT_ID))
             .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
@@ -111,7 +124,7 @@ fn update_channel_transfer_status_fails_with_non_channel_owner() {
 fn accept_transfer_status_fails_with_invalid_origin() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(DEFAULT_MEMBER_ID)
             .call_and_assert(Ok(()));
 
@@ -122,20 +135,34 @@ fn accept_transfer_status_fails_with_invalid_origin() {
 }
 
 #[test]
-fn accept_transfer_status_succeeds() {
+fn accept_transfer_status_ok_with_event_deposit() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
         let new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions> = BTreeMap::from_iter(
             vec![(SECOND_MEMBER_ID, ChannelActionPermission::iter().collect())],
         );
-
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(DEFAULT_MEMBER_ID)
             .with_collaborators(new_collaborators.clone())
+            .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
             .call_and_assert(Ok(()));
+
         AcceptChannelTransferFixture::default()
-            .with_collaborators(new_collaborators)
+            .with_collaborators(new_collaborators.clone())
             .call_and_assert(Ok(()));
+
+        last_event_eq!(RawEvent::InitializedChannelTransfer(
+            ChannelId::one(),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            PendingTransferOf::<Test> {
+                new_owner: ChannelOwner::Member(SECOND_MEMBER_ID),
+                transfer_params: TransferCommitmentOf::<Test> {
+                    price: BalanceOf::<Test>::from(DEFAULT_CHANNEL_TRANSFER_PRICE),
+                    new_collaborators,
+                    transfer_id: TransferId::one(),
+                }
+            }
+        ));
     })
 }
 
@@ -143,7 +170,7 @@ fn accept_transfer_status_succeeds() {
 fn accept_transfer_status_fails_with_invalid_commitment_params() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(DEFAULT_MEMBER_ID)
             .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
             .call_and_assert(Ok(()));
@@ -185,7 +212,7 @@ fn accept_transfer_status_fails_with_non_channel_owner() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
 
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
 
@@ -199,7 +226,7 @@ fn accept_transfer_status_fails_with_non_channel_owner() {
 fn accept_transfer_status_fails_with_invalid_balance_for_members() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
             .call_and_assert(Ok(()));
@@ -215,7 +242,7 @@ fn accept_transfer_status_fails_with_invalid_balance_for_members() {
 fn accept_transfer_status_fails_with_invalid_balance_for_curator_groups() {
     with_default_mock_builder(|| {
         ContentTest::with_curator_channel().setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_origin(RawOrigin::Signed(LEAD_ACCOUNT_ID))
             .with_new_channel_owner(ChannelOwner::CuratorGroup(CuratorGroupId::one()))
             .with_actor(ContentActor::Lead)
@@ -240,7 +267,7 @@ fn accept_transfer_status_succeeds_for_members_with_price() {
         )])
         .execute_with(|| {
             ContentTest::with_member_channel().setup();
-            UpdateChannelTransferStatusFixture::default()
+            InitializeChannelTransferFixture::default()
                 .with_new_member_channel_owner(SECOND_MEMBER_ID)
                 .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
                 .call_and_assert(Ok(()));
@@ -273,7 +300,7 @@ fn accept_transfer_status_succeeds_for_curators_to_members_with_price() {
         )])
         .execute_with(|| {
             ContentTest::with_curator_channel().setup();
-            UpdateChannelTransferStatusFixture::default()
+            InitializeChannelTransferFixture::default()
                 .with_origin(RawOrigin::Signed(LEAD_ACCOUNT_ID))
                 .with_new_member_channel_owner(SECOND_MEMBER_ID)
                 .with_actor(ContentActor::Lead)
@@ -303,7 +330,7 @@ fn accept_transfer_status_succeeds_for_curators_to_members_with_price() {
 fn accept_transfer_status_succeeds_for_members_to_curators_with_price() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_channel_owner(ChannelOwner::CuratorGroup(CuratorGroupId::one()))
             .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
             .call_and_assert(Ok(()));
@@ -332,7 +359,7 @@ fn accept_transfer_status_succeeds_for_members_to_curators_with_price() {
 fn accept_channel_transfer_fails_with_invalid_transfer_id() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
 
@@ -349,7 +376,7 @@ fn accept_channel_transfer_fails_with_invalid_transfer_id() {
 fn cancel_channel_transfer_fails_with_invalid_channel_id() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
 
@@ -375,7 +402,7 @@ fn cancel_channel_transfer_fails_by_unauthorized_actor() {
 fn cancel_channel_transfer_ok_with_status_reset() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
 
@@ -408,7 +435,7 @@ fn update_transfer_status_blocked_during_upcoming_revenue_split() {
             .with_starting_block(SPLIT_STARTING_BLOCK)
             .call_and_assert(Ok(()));
 
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Err(
                 Error::<Test>::ChannelTransfersBlockedDuringRevenueSplits.into(),
@@ -435,7 +462,7 @@ fn update_transfer_status_blocked_during_ongoing_revenue_split() {
 
         run_to_block(SPLIT_STARTING_BLOCK + 1);
 
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Err(
                 Error::<Test>::ChannelTransfersBlockedDuringRevenueSplits.into(),
@@ -462,7 +489,7 @@ fn update_transfer_status_blocked_during_unfinalized_revenue_split() {
 
         run_to_block(SPLIT_STARTING_BLOCK + DEFAULT_REVENUE_SPLIT_DURATION + 1);
 
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Err(
                 Error::<Test>::ChannelTransfersBlockedDuringRevenueSplits.into(),
@@ -479,7 +506,7 @@ fn update_transfer_status_blocked_during_upcoming_token_sales() {
         InitCreatorTokenSaleFixture::default()
             .with_start_block(SALE_STARTING_BLOCK)
             .call_and_assert(Ok(()));
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Err(
                 Error::<Test>::ChannelTransfersBlockedDuringTokenSales.into()
@@ -497,7 +524,7 @@ fn update_transfer_status_blocked_during_ongoing_token_sales() {
             .with_start_block(SALE_STARTING_BLOCK)
             .call_and_assert(Ok(()));
         run_to_block(SALE_STARTING_BLOCK + 1);
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Err(
                 Error::<Test>::ChannelTransfersBlockedDuringTokenSales.into()
@@ -515,7 +542,7 @@ fn update_transfer_status_blocked_during_unfinalized_token_sales() {
             .with_start_block(SALE_STARTING_BLOCK)
             .call_and_assert(Ok(()));
         run_to_block(SALE_STARTING_BLOCK + DEFAULT_CREATOR_TOKEN_SALE_DURATION + 1);
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Err(
                 Error::<Test>::ChannelTransfersBlockedDuringTokenSales.into()

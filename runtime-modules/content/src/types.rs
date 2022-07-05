@@ -309,27 +309,29 @@ pub struct PendingTransfer<
     pub transfer_params: TransferCommitmentParameters<MemberId, Balance, TransferId>,
 }
 
-impl<MemberId: Ord, CuratorGroupId, Balance: Zero, TransferId: PartialEq + Copy>
-    PendingTransfer<MemberId, CuratorGroupId, Balance, TransferId>
-{
-    pub fn with_nonce(self, nonce: TransferId) -> Self {
-        Self {
-            transfer_params: self.transfer_params.with_nonce(nonce),
-            ..self
-        }
-    }
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
+/// Contains parameters for the pending transfer.
+pub struct InitTransferParameters<MemberId: Ord + Clone, CuratorGroupId, Balance: Zero> {
+    /// Channel's new collaborators along with their respective permissions
+    pub new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
+    /// Transfer price: can be 0, which means free.
+    pub price: Balance,
+    /// New channel owner
+    pub new_owner: ChannelOwner<MemberId, CuratorGroupId>,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 /// Contains parameters for the pending transfer.
-pub struct TransferCommitmentParameters<MemberId: Ord, Balance: Zero, TransferId: PartialEq + Copy> {
+pub struct TransferCommitmentParameters<MemberId: Ord, Balance: Zero, TransferId: PartialEq + Copy>
+{
     /// Channel's new collaborators along with their respective permissions
     pub new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
     /// Transfer price: can be 0, which means free.
     pub price: Balance,
     /// Transaction nonce
-    pub transfer_id: Option<TransferId>,
+    pub transfer_id: TransferId,
 }
 
 impl<MemberId: Ord, Balance: Zero, TransferId: PartialEq + Copy>
@@ -338,13 +340,6 @@ impl<MemberId: Ord, Balance: Zero, TransferId: PartialEq + Copy>
     // Defines whether the transfer is free.
     pub(crate) fn is_free_of_charge(&self) -> bool {
         self.price.is_zero()
-    }
-
-    pub(crate) fn with_nonce(self, nonce: TransferId) -> Self {
-        Self {
-            transfer_id: Some(nonce),
-            ..self
-        }
     }
 }
 
@@ -779,6 +774,22 @@ pub type ChannelRewardClaimInfo<T> = (
     <T as frame_system::Config>::AccountId,
     BalanceOf<T>,
 );
+pub type InitTransferParametersOf<T> = InitTransferParameters<
+    <T as common::MembershipTypes>::MemberId,
+    <T as ContentActorAuthenticator>::CuratorGroupId,
+    BalanceOf<T>,
+>;
+pub type PendingTransferOf<T> = PendingTransfer<
+    <T as common::MembershipTypes>::MemberId,
+    <T as ContentActorAuthenticator>::CuratorGroupId,
+    BalanceOf<T>,
+    <T as Config>::TransferId,
+>;
+pub type TransferCommitmentOf<T> = TransferCommitmentParameters<
+    <T as common::MembershipTypes>::MemberId,
+    BalanceOf<T>,
+    <T as Config>::TransferId,
+>;
 
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;

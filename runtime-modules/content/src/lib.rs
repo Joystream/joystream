@@ -372,7 +372,7 @@ decl_module! {
         }
 
         /// Add curator to curator group under given `curator_group_id`
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = 10_000_0] // adjust weight
         pub fn add_curator_to_group(
             origin,
             curator_group_id: T::CuratorGroupId,
@@ -2392,17 +2392,19 @@ decl_module! {
 
         /// Start a channel transfer with specified characteristics
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn update_channel_transfer_status(
+        pub fn initialize_channel_transfer(
             origin,
             channel_id: T::ChannelId,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            candidate_status: ChannelTransferStatus<T::MemberId, T::CuratorGroupId, BalanceOf<T>, T::TransferId>
+            transfer_params: InitTransferParametersOf<T>,
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            channel.ensure_has_no_active_transfer::<T>()?;
+
             ensure_actor_authorized_to_transfer_channel::<T>(origin, &actor, &channel)?;
 
-            // (parameters, nonce) (owner,commitment parameters)
-            let validated_status = Self::validate_transfer_status(candidate_status)?;
+            let pending_transfer = Self::try_initialize_transfer(transfer_params)?;
 
             if let Ok(token_id) = channel.ensure_creator_token_issued::<T>() {
                 ensure!(
@@ -2420,16 +2422,15 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            ChannelById::<T>::mutate(&channel_id,
-                |channel| channel.transfer_status = validated_status.clone()
+            ChannelById::<T>::mutate(
+                &channel_id,
+                |channel| channel.transfer_status = ChannelTransferStatus::PendingTransfer::<_,_,_,_>(pending_transfer.clone())
             );
 
-            if validated_status.is_pending() {
-                NextTransferId::<T>::mutate(|id| *id = id.saturating_add(T::TransferId::one()))
-            }
+            NextTransferId::<T>::mutate(|id| *id = id.saturating_add(T::TransferId::one()));
 
             Self::deposit_event(
-                RawEvent::UpdateChannelTransferStatus(channel_id, actor, validated_status)
+                RawEvent::InitializedChannelTransfer(channel_id, actor, pending_transfer)
             );
         }
 
@@ -3136,31 +3137,19 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
-    fn validate_transfer_status(
-        status: ChannelTransferStatus<T::MemberId, T::CuratorGroupId, BalanceOf<T>, T::TransferId>,
-    ) -> Result<
-        ChannelTransferStatus<T::MemberId, T::CuratorGroupId, BalanceOf<T>, T::TransferId>,
-        DispatchError,
-    > {
-        if let ChannelTransferStatus::PendingTransfer(params) = status {
-            Self::validate_member_set(
-                &params
-                    .transfer_params
-                    .new_collaborators
-                    .keys()
-                    .cloned()
-                    .collect(),
-            )?;
-            let transfer_id = Self::next_transfer_id();
-            Ok(ChannelTransferStatus::PendingTransfer::<
-                T::MemberId,
-                T::CuratorGroupId,
-                BalanceOf<T>,
-                T::TransferId,
-            >(params.with_nonce(transfer_id)))
-        } else {
-            Ok(status)
-        }
+    fn try_initialize_transfer(
+        params: InitTransferParametersOf<T>,
+    ) -> Result<PendingTransferOf<T>, DispatchError> {
+        Self::validate_member_set(&params.new_collaborators.keys().cloned().collect())?;
+        let transfer_id = Self::next_transfer_id();
+        Ok(PendingTransferOf::<T>{
+            new_owner: params.new_owner,
+            transfer_params: TransferCommitmentOf::<T> {
+                price: params.price,
+                new_collaborators: params.new_collaborators,
+                transfer_id,
+            }
+        })
     }
 
     fn verify_proof(proof: &[ProofElement<T>], item: &PullPayment<T>) -> DispatchResult {
@@ -3612,17 +3601,8 @@ decl_event!(
         VideoUpdateParameters = VideoUpdateParameters<T>,
         ChannelPrivilegeLevel = <T as Config>::ChannelPrivilegeLevel,
         ModerationPermissionsByLevel = ModerationPermissionsByLevel<T>,
-        ChannelTransferStatus = ChannelTransferStatus<
-            <T as common::MembershipTypes>::MemberId,
-            <T as ContentActorAuthenticator>::CuratorGroupId,
-            BalanceOf<T>,
-            <T as Config>::TransferId,
-        >,
-        TransferCommitmentParameters = TransferCommitmentParameters<
-            <T as common::MembershipTypes>::MemberId,
-            BalanceOf<T>,
-            <T as Config>::TransferId,
-        >,
+        TransferCommitment = TransferCommitmentOf<T>,
+        PendingTransfer = PendingTransferOf<T>,
         AccountId = <T as frame_system::Config>::AccountId,
         UpdateChannelPayoutsParameters = UpdateChannelPayoutsParameters<T>,
         TokenId = <T as project_token::Config>::TokenId,
@@ -3725,9 +3705,9 @@ decl_event!(
         NftOwnerRemarked(ContentActor, VideoId, Vec<u8>),
 
         // Channel transfer
-        UpdateChannelTransferStatus(ChannelId, ContentActor, ChannelTransferStatus),
+        InitializedChannelTransfer(ChannelId, ContentActor, PendingTransfer),
         CancelChannelTransfer(ChannelId, ContentActor),
-        ChannelTransferAccepted(ChannelId, TransferCommitmentParameters),
+        ChannelTransferAccepted(ChannelId, TransferCommitment),
 
         /// Nft limits
         GlobalNftLimitUpdated(NftLimitPeriod, u64),
