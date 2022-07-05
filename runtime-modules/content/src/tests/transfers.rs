@@ -365,8 +365,8 @@ fn cancel_channel_transfer_fails_by_unauthorized_actor() {
         ContentTest::with_member_channel().setup();
 
         CancelChannelTransferFixture::default()
-            .with_origin(RawOrigin::Signed(DEFAULT_CURATOR_ACCOUNT_ID))
-            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
+            .with_sender(THIRD_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(THIRD_MEMBER_ID))
             .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
     })
 }

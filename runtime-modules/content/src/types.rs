@@ -391,7 +391,7 @@ impl<
     }
 
     // Defines whether the channel has ongoing transfer.
-    fn has_active_transfer(&self) -> bool {
+    pub(crate) fn has_active_transfer(&self) -> bool {
         self.transfer_status != ChannelTransferStatus::NoActiveTransfer
     }
 

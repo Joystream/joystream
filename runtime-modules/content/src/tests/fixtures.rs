@@ -2869,9 +2869,11 @@ pub struct CancelChannelTransferFixture {
 
 impl CancelChannelTransferFixture {
     pub fn default() -> Self {
-        origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
-        channel_id: ChannelId::one(),
-        actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+        Self {
+            origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            channel_id: ChannelId::one(),
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+        }
     }
 
     pub fn with_sender(self, sender: AccountId) -> Self {
@@ -2890,10 +2892,9 @@ impl CancelChannelTransferFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let old_channel = Content::channel_by_id(self.channel_id);
 
         let actual_result = Content::cancel_channel_transfer(
-            self.origin.into(),
+            self.origin.clone().into(),
             self.channel_id,
             self.actor,
         );
