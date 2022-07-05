@@ -4552,6 +4552,69 @@ fn update_families_in_dynamic_bag_creation_policy_fails_with_invalid_family_id()
     });
 }
 
+#[test]
+fn update_families_in_dynamic_bag_creation_policy_fails_with_too_many_buckets_per_bag() {
+    build_test_externalities().execute_with(|| {
+        let dynamic_bag_type = DynamicBagType::Channel;
+
+        for _ in 0..2 {
+            CreateDistributionBucketFamilyFixture::new()
+                .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+                .call_and_assert(Ok(()));
+        }
+
+        let min_buckets_per_bag: u32 =
+            <Test as crate::Config>::DistributionBucketsPerBagValueConstraint::get()
+                .min
+                .try_into()
+                .unwrap();
+        let families = BTreeMap::from_iter(vec![
+            (Storage::next_distribution_bucket_family_id() - 1, u32::MAX), // u32 overflow case test
+            (
+                Storage::next_distribution_bucket_family_id() - 2,
+                min_buckets_per_bag,
+            ),
+        ]);
+
+        UpdateFamiliesInDynamicBagCreationPolicyFixture::new()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_families(families.clone())
+            .with_dynamic_bag_type(dynamic_bag_type)
+            .call_and_assert(Err(
+                Error::<Test>::NumberOfDistributionBucketsOutsideOfAllowedContraints.into(),
+            ));
+    });
+}
+
+#[test]
+fn update_families_in_dynamic_bag_creation_policy_fails_with_not_enough_buckets_per_bag() {
+    build_test_externalities().execute_with(|| {
+        let dynamic_bag_type = DynamicBagType::Channel;
+
+        CreateDistributionBucketFamilyFixture::new()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .call_and_assert(Ok(()));
+
+        let min_buckets_per_bag: u32 =
+            <Test as crate::Config>::DistributionBucketsPerBagValueConstraint::get()
+                .min
+                .try_into()
+                .unwrap();
+        let families = BTreeMap::from_iter(vec![(
+            Storage::next_distribution_bucket_family_id() - 1,
+            min_buckets_per_bag.saturating_sub(1),
+        )]);
+
+        UpdateFamiliesInDynamicBagCreationPolicyFixture::new()
+            .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
+            .with_families(families.clone())
+            .with_dynamic_bag_type(dynamic_bag_type)
+            .call_and_assert(Err(
+                Error::<Test>::NumberOfDistributionBucketsOutsideOfAllowedContraints.into(),
+            ));
+    });
+}
+
 fn create_distribution_bucket_family_with_buckets(
     bucket_number: u64,
 ) -> (u64, Vec<DistributionBucketId<Test>>) {

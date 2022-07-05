@@ -3486,7 +3486,6 @@ impl OfferNftFixture {
         Self { video_id, ..self }
     }
 
-    #[allow(dead_code)]
     pub fn with_to(self, to: MemberId) -> Self {
         Self { to, ..self }
     }
