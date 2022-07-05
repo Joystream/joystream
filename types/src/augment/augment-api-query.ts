@@ -286,6 +286,7 @@ declare module '@polkadot/api-base/types/storage' {
       minStartingPrice: AugmentedQuery<ApiType, () => Observable<u128>, []>;
       nextChannelId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       nextCuratorGroupId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
+      nextTransferId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       nextVideoId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       /**
        * Bids for open auctions
