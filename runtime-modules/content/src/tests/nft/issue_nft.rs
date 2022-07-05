@@ -2,7 +2,7 @@
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_noop, assert_ok};
+use frame_support::{assert_err, assert_ok};
 
 #[test]
 fn issue_nft() {
@@ -381,8 +381,12 @@ fn issue_nft_channel_weekly_limit_works_as_expected() {
 #[test]
 fn issue_nft_ok_with_limits_not_enforced() {
     with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
         // chainspec value = true, setting to false
         test_helper_for_nft_limit_works_as_expected(NftLimitId::GlobalDaily, Ok(()), true);
+        test_helper_for_nft_limit_works_as_expected(NftLimitId::GlobalWeekly, Ok(()), true);
+        test_helper_for_nft_limit_works_as_expected(NftLimitId::ChannelDaily(ChannelId::one()), Ok(()), true);
+        test_helper_for_nft_limit_works_as_expected(NftLimitId::ChannelWeekly(ChannelId::one()), Ok(()), true);
     })
 }
 
