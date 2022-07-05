@@ -1273,11 +1273,9 @@ pub fn moderate_thread_mock(
             ))
         );
 
-        // If we moderate a thread with no extra post, only the initial post deposit
-        // should remain
         assert_eq!(
             balances::Pallet::<Runtime>::free_balance(&thread_account_id),
-            <Runtime as Config>::PostDeposit::get()
+            0
         );
     }
     thread_id

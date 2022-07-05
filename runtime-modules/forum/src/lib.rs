@@ -18,6 +18,7 @@ use scale_info::TypeInfo;
 use sp_arithmetic::traits::{BaseArithmetic, One};
 pub use sp_io::storage::clear_prefix;
 use sp_runtime::traits::{AccountIdConversion, MaybeSerialize, Member};
+use sp_runtime::DispatchError;
 use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
@@ -373,6 +374,9 @@ decl_error! {
 
         /// Not enough balance to create thread
         InsufficientBalanceForThreadCreation,
+
+        /// A thread with outstanding posts cannot be removed
+        CannotDeleteThreadWithOutstandingPosts,
 
         // Errors about post.
 
@@ -1250,7 +1254,7 @@ decl_module! {
 
             let account_id = ensure_signed(origin)?;
 
-            // Ensure actor is allowed to moderate post
+            // Ensure actor is allowed to moderate thread
             let thread = Self::ensure_can_moderate_thread(&account_id, &actor, &category_id, &thread_id)?;
 
             //
@@ -1771,11 +1775,7 @@ impl<T: Config> Module<T> {
         Self::ensure_can_moderate_category(&account_id, &actor, &category_id)?;
 
         // Make sure post exists and is mutable
-        let post = if Self::thread_exists(category_id, thread_id) {
-            Self::ensure_post_is_mutable(&category_id, &thread_id, &post_id)?
-        } else {
-            <PostById<T>>::get(thread_id, post_id)
-        };
+        let post = Self::ensure_post_is_mutable(&category_id, &thread_id, &post_id)?;
 
         Ok(post)
     }
@@ -1789,11 +1789,7 @@ impl<T: Config> Module<T> {
         hide: bool,
     ) -> Result<Post<ForumUserId<T>, T::ThreadId, T::Hash, BalanceOf<T>, T::BlockNumber>, Error<T>>
     {
-        let post = if Self::thread_exists(category_id, thread_id) {
-            Self::ensure_post_is_mutable(&category_id, &thread_id, &post_id)?
-        } else {
-            <PostById<T>>::get(thread_id, post_id)
-        };
+        let post = Self::ensure_post_is_mutable(&category_id, &thread_id, &post_id)?;
 
         // Check that account is forum member
         Self::ensure_is_forum_user(&account_id, &forum_user_id)?;
@@ -1922,17 +1918,20 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
-    // Ensure actor can manipulate thread.
+    // Ensure actor can moderate thread.
     fn ensure_can_moderate_thread(
         account_id: &T::AccountId,
         actor: &PrivilegedActor<T>,
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
-    ) -> Result<ThreadOf<T>, Error<T>> {
+    ) -> Result<ThreadOf<T>, DispatchError> {
         // Check that account is forum member
         Self::ensure_can_moderate_category(account_id, actor, category_id)?;
 
         let thread = Self::ensure_thread_exists(category_id, thread_id)?;
+
+        // Ensure that the thread has no outstanding posts
+        Self::ensure_empty_thread(&thread)?;
 
         Ok(thread)
     }
@@ -1943,7 +1942,7 @@ impl<T: Config> Module<T> {
         forum_user_id: &ForumUserId<T>,
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
-    ) -> Result<ThreadOf<T>, Error<T>> {
+    ) -> Result<ThreadOf<T>, DispatchError> {
         // Ensure thread exists and is mutable
         let (_, thread) = Self::ensure_thread_is_mutable(category_id, thread_id)?;
 
@@ -1952,6 +1951,9 @@ impl<T: Config> Module<T> {
 
         // Ensure forum user is author of the thread
         Self::ensure_is_thread_author(&thread, &forum_user_id)?;
+
+        // Ensure the thread has no outstanding posts
+        Self::ensure_empty_thread(&thread)?;
 
         Ok(thread)
     }
@@ -1962,14 +1964,16 @@ impl<T: Config> Module<T> {
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
         new_category_id: &T::CategoryId,
-    ) -> Result<ThreadOf<T>, Error<T>> {
+    ) -> Result<ThreadOf<T>, DispatchError> {
         ensure!(
             category_id != new_category_id,
             Error::<T>::ThreadMoveInvalid,
         );
 
-        let thread = Self::ensure_can_moderate_thread(&account_id, actor, category_id, thread_id)
-            .map_err(|_| Error::<T>::ModeratorModerateOriginCategory)?;
+        Self::ensure_can_moderate_category(&account_id, actor, category_id)
+            .or::<DispatchError>(Err(Error::<T>::ModeratorModerateOriginCategory.into()))?;
+
+        let thread = Self::ensure_thread_exists(category_id, thread_id)?;
 
         Self::ensure_can_moderate_category_path(actor, new_category_id)
             .map_err(|_| Error::<T>::ModeratorModerateDestinationCategory)?;
@@ -2341,5 +2345,13 @@ impl<T: Config> Module<T> {
         } else {
             Err(Error::<T>::DataMigrationNotDone)
         }
+    }
+
+    fn ensure_empty_thread(thread: &ThreadOf<T>) -> DispatchResult {
+        ensure!(
+            thread.number_of_posts == 0u64,
+            Error::<T>::CannotDeleteThreadWithOutstandingPosts
+        );
+        Ok(())
     }
 }
