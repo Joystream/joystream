@@ -19,4 +19,10 @@ echo 'running clippy (rust linter)'
 BUILD_DUMMY_WASM_BINARY=1 cargo +nightly-2022-05-11 clippy --release --all
 
 echo 'running cargo unit tests'
+<<<<<<< HEAD
 cargo +nightly-2022-05-11 test --release --all --features "${FEATURES}"
+=======
+cargo +nightly-2021-02-20 test --release --all --features "${FEATURES}"
+
+../../scripts/lint-typescript.sh
+>>>>>>> master_lint_improvements
