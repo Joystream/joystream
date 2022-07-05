@@ -9,7 +9,7 @@ use sp_std::collections::btree_map::BTreeMap;
 use strum::IntoEnumIterator;
 
 #[test]
-fn initialize_channel_transfer_ok_with_status_correctly_changed_and_event_deposited() {
+fn initialize_channel_transfer_ok_with_status_correctly_changed() {
     let new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions> = BTreeMap::from_iter(
         vec![(SECOND_MEMBER_ID, ChannelActionPermission::iter().collect())],
     );
@@ -33,6 +33,22 @@ fn initialize_channel_transfer_ok_with_status_correctly_changed_and_event_deposi
             }),
             "transfer parameters not correctly updated when activating a transfer"
         );
+    })
+}
+
+#[test]
+fn initialize_channel_transfer_ok_with_event_deposited() {
+    let new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions> = BTreeMap::from_iter(
+        vec![(SECOND_MEMBER_ID, ChannelActionPermission::iter().collect())],
+    );
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+
+        InitializeChannelTransferFixture::default()
+            .with_collaborators(new_collaborators.clone())
+            .with_price(DEFAULT_CHANNEL_TRANSFER_PRICE)
+            .call_and_assert(Ok(()));
+
         last_event_eq!(RawEvent::InitializedChannelTransfer(
             ChannelId::one(),
             ContentActor::Member(DEFAULT_MEMBER_ID),
@@ -426,7 +442,7 @@ fn cancel_channel_transfer_ok_with_status_reset() {
 }
 
 #[test]
-fn update_transfer_status_blocked_during_upcoming_revenue_split() {
+fn initialize_channel_transfer_fails_during_upcoming_revenue_split() {
     pub const SPLIT_STARTING_BLOCK: u64 = 10;
     with_default_mock_builder(|| {
         let ed = <Test as balances::Config>::ExistentialDeposit::get();
@@ -451,7 +467,7 @@ fn update_transfer_status_blocked_during_upcoming_revenue_split() {
 }
 
 #[test]
-fn update_transfer_status_blocked_during_ongoing_revenue_split() {
+fn initialize_channel_transfer_fails_during_ongoing_revenue_split() {
     pub const SPLIT_STARTING_BLOCK: u64 = 10;
     with_default_mock_builder(|| {
         let ed = <Test as balances::Config>::ExistentialDeposit::get();
@@ -478,7 +494,7 @@ fn update_transfer_status_blocked_during_ongoing_revenue_split() {
 }
 
 #[test]
-fn update_transfer_status_blocked_during_unfinalized_revenue_split() {
+fn initialize_channel_transfer_fails_during_unfinalized_revenue_split() {
     pub const SPLIT_STARTING_BLOCK: u64 = 10;
     with_default_mock_builder(|| {
         let ed = <Test as balances::Config>::ExistentialDeposit::get();
@@ -505,7 +521,7 @@ fn update_transfer_status_blocked_during_unfinalized_revenue_split() {
 }
 
 #[test]
-fn update_transfer_status_blocked_during_upcoming_token_sales() {
+fn initialize_channel_transfer_fails_during_upcoming_token_sales() {
     pub const SALE_STARTING_BLOCK: u64 = 10;
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
@@ -522,7 +538,7 @@ fn update_transfer_status_blocked_during_upcoming_token_sales() {
 }
 
 #[test]
-fn update_transfer_status_blocked_during_ongoing_token_sales() {
+fn initialize_channel_transfer_fails_during_ongoing_token_sales() {
     pub const SALE_STARTING_BLOCK: u64 = 10;
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
@@ -540,7 +556,7 @@ fn update_transfer_status_blocked_during_ongoing_token_sales() {
 }
 
 #[test]
-fn update_transfer_status_blocked_during_unfinalized_token_sales() {
+fn initialize_channel_transfer_fails_during_unfinalized_token_sales() {
     pub const SALE_STARTING_BLOCK: u64 = 10;
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
