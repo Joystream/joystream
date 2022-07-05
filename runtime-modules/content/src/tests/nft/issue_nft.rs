@@ -385,8 +385,16 @@ fn issue_nft_ok_with_limits_not_enforced() {
         // chainspec value = true, setting to false
         test_helper_for_nft_limit_works_as_expected(NftLimitId::GlobalDaily, Ok(()), true);
         test_helper_for_nft_limit_works_as_expected(NftLimitId::GlobalWeekly, Ok(()), true);
-        test_helper_for_nft_limit_works_as_expected(NftLimitId::ChannelDaily(ChannelId::one()), Ok(()), true);
-        test_helper_for_nft_limit_works_as_expected(NftLimitId::ChannelWeekly(ChannelId::one()), Ok(()), true);
+        test_helper_for_nft_limit_works_as_expected(
+            NftLimitId::ChannelDaily(ChannelId::one()),
+            Ok(()),
+            true,
+        );
+        test_helper_for_nft_limit_works_as_expected(
+            NftLimitId::ChannelWeekly(ChannelId::one()),
+            Ok(()),
+            true,
+        );
     })
 }
 
