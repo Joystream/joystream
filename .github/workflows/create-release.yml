@@ -122,10 +122,10 @@ jobs:
         with:
           name: joystream-node-macos-${{ steps.compute_shasum.outputs.shasum }}
 
-      - name: Retrieve saved RPi binary
-        uses: actions/download-artifact@v2
-        with:
-          name: joystream-node-rpi-${{ steps.compute_shasum.outputs.shasum }}
+      # - name: Retrieve saved RPi binary
+      #   uses: actions/download-artifact@v2
+      #   with:
+      #     name: joystream-node-rpi-${{ steps.compute_shasum.outputs.shasum }}
 
       - name: Rename MacOS and RPi tar
         run: |
