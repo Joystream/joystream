@@ -8,11 +8,15 @@ use sp_core::sp_std::iter::FromIterator;
 use sp_std::collections::btree_map::BTreeMap;
 use strum::IntoEnumIterator;
 
+// -- Initialize channel transfer ---------------------------------------------------
+
 #[test]
 fn initialize_channel_transfer_ok_with_status_correctly_changed() {
-    let new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions> = BTreeMap::from_iter(
-        vec![(SECOND_MEMBER_ID, ChannelActionPermission::iter().collect())],
-    );
+    let new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions> =
+        BTreeMap::from_iter(vec![(
+            SECOND_MEMBER_ID,
+            ChannelActionPermission::iter().collect(),
+        )]);
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
 
@@ -38,9 +42,11 @@ fn initialize_channel_transfer_ok_with_status_correctly_changed() {
 
 #[test]
 fn initialize_channel_transfer_ok_with_event_deposited() {
-    let new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions> = BTreeMap::from_iter(
-        vec![(SECOND_MEMBER_ID, ChannelActionPermission::iter().collect())],
-    );
+    let new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions> =
+        BTreeMap::from_iter(vec![(
+            SECOND_MEMBER_ID,
+            ChannelActionPermission::iter().collect(),
+        )]);
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
 
@@ -61,7 +67,52 @@ fn initialize_channel_transfer_ok_with_event_deposited() {
                 }
             }
         ));
+    })
+}
 
+#[test]
+fn initialize_channel_transfer_ok_when_issued_by_lead() {
+    with_default_mock_builder(|| {
+        ContentTest::with_curator_channel().setup();
+
+        InitializeChannelTransferFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn initialize_channel_transfer_ok_when_issued_by_curator() {
+    with_default_mock_builder(|| {
+        let group_id = Content::next_curator_group_id();
+        ContentTest::with_curator_channel()
+            .with_agent_permissions(&vec![ChannelActionPermission::TransferChannel])
+            .setup();
+
+        InitializeChannelTransferFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn initialize_channel_transfer_ok_when_issued_by_collaborator() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel()
+            .with_collaborators(
+                vec![(
+                    COLLABORATOR_MEMBER_ID,
+                    BTreeSet::from_iter(vec![ChannelActionPermission::TransferChannel]),
+                )]
+                .as_slice(),
+            )
+            .setup();
+        InitializeChannelTransferFixture::default()
+            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
+            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
+            .call_and_assert(Ok(()));
     })
 }
 
@@ -81,6 +132,82 @@ fn initialize_channel_transfer_ok_with_transfer_id_updated_correctly() {
 }
 
 #[test]
+fn initialize_channel_transfer_fails_during_upcoming_token_sales() {
+    pub const SALE_STARTING_BLOCK: u64 = 10;
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+        InitCreatorTokenSaleFixture::default()
+            .with_start_block(SALE_STARTING_BLOCK)
+            .call_and_assert(Ok(()));
+        InitializeChannelTransferFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Err(
+                Error::<Test>::ChannelTransfersBlockedDuringTokenSales.into()
+            ));
+    })
+}
+
+#[test]
+fn initialize_channel_transfer_fails_with_lead_and_non_curator_channel() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        InitializeChannelTransferFixture::default()
+            .with_sender(LEAD_ACCOUNT_ID)
+            .with_actor(ContentActor::Lead)
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+    })
+}
+
+#[test]
+fn initialize_channel_transfer_fails_with_curator_non_authorized_channel() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        let group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID, &vec![]);
+        InitializeChannelTransferFixture::default()
+            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
+            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
+            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
+    })
+}
+
+#[test]
+fn initialize_channel_transfer_fails_during_ongoing_token_sales() {
+    pub const SALE_STARTING_BLOCK: u64 = 10;
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+        InitCreatorTokenSaleFixture::default()
+            .with_start_block(SALE_STARTING_BLOCK)
+            .call_and_assert(Ok(()));
+        run_to_block(SALE_STARTING_BLOCK + 1);
+        InitializeChannelTransferFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Err(
+                Error::<Test>::ChannelTransfersBlockedDuringTokenSales.into()
+            ));
+    })
+}
+
+#[test]
+fn initialize_channel_transfer_fails_during_unfinalized_token_sales() {
+    pub const SALE_STARTING_BLOCK: u64 = 10;
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+        InitCreatorTokenSaleFixture::default()
+            .with_start_block(SALE_STARTING_BLOCK)
+            .call_and_assert(Ok(()));
+        run_to_block(SALE_STARTING_BLOCK + DEFAULT_CREATOR_TOKEN_SALE_DURATION + 1);
+        InitializeChannelTransferFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Err(
+                Error::<Test>::ChannelTransfersBlockedDuringTokenSales.into()
+            ));
+    })
+}
+
+#[test]
 fn initialize_channel_transfer_fails_with_invalid_channel_id() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
@@ -96,12 +223,10 @@ fn initialize_channel_transfer_fails_with_invalid_channel_id() {
 fn initialize_channel_transfer_fails_with_transfer_already_started() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
-        InitializeChannelTransferFixture::default()
-            .call_and_assert(Ok(()));
+        InitializeChannelTransferFixture::default().call_and_assert(Ok(()));
 
         InitializeChannelTransferFixture::default()
             .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()))
-
     })
 }
 
@@ -169,6 +294,8 @@ fn accept_transfer_status_fails_with_invalid_origin() {
     })
 }
 
+// -- Accept transfer status ---------------------------------------------------
+
 #[test]
 fn accept_transfer_status_ok() {
     with_default_mock_builder(|| {
@@ -185,7 +312,6 @@ fn accept_transfer_status_ok() {
         AcceptChannelTransferFixture::default()
             .with_collaborators(new_collaborators.clone())
             .call_and_assert(Ok(()));
-
     })
 }
 
@@ -516,59 +642,6 @@ fn initialize_channel_transfer_fails_during_unfinalized_revenue_split() {
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Err(
                 Error::<Test>::ChannelTransfersBlockedDuringRevenueSplits.into(),
-            ));
-    })
-}
-
-#[test]
-fn initialize_channel_transfer_fails_during_upcoming_token_sales() {
-    pub const SALE_STARTING_BLOCK: u64 = 10;
-    with_default_mock_builder(|| {
-        ContentTest::with_member_channel().setup();
-        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
-        InitCreatorTokenSaleFixture::default()
-            .with_start_block(SALE_STARTING_BLOCK)
-            .call_and_assert(Ok(()));
-        InitializeChannelTransferFixture::default()
-            .with_new_member_channel_owner(THIRD_MEMBER_ID)
-            .call_and_assert(Err(
-                Error::<Test>::ChannelTransfersBlockedDuringTokenSales.into()
-            ));
-    })
-}
-
-#[test]
-fn initialize_channel_transfer_fails_during_ongoing_token_sales() {
-    pub const SALE_STARTING_BLOCK: u64 = 10;
-    with_default_mock_builder(|| {
-        ContentTest::with_member_channel().setup();
-        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
-        InitCreatorTokenSaleFixture::default()
-            .with_start_block(SALE_STARTING_BLOCK)
-            .call_and_assert(Ok(()));
-        run_to_block(SALE_STARTING_BLOCK + 1);
-        InitializeChannelTransferFixture::default()
-            .with_new_member_channel_owner(THIRD_MEMBER_ID)
-            .call_and_assert(Err(
-                Error::<Test>::ChannelTransfersBlockedDuringTokenSales.into()
-            ));
-    })
-}
-
-#[test]
-fn initialize_channel_transfer_fails_during_unfinalized_token_sales() {
-    pub const SALE_STARTING_BLOCK: u64 = 10;
-    with_default_mock_builder(|| {
-        ContentTest::with_member_channel().setup();
-        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
-        InitCreatorTokenSaleFixture::default()
-            .with_start_block(SALE_STARTING_BLOCK)
-            .call_and_assert(Ok(()));
-        run_to_block(SALE_STARTING_BLOCK + DEFAULT_CREATOR_TOKEN_SALE_DURATION + 1);
-        InitializeChannelTransferFixture::default()
-            .with_new_member_channel_owner(THIRD_MEMBER_ID)
-            .call_and_assert(Err(
-                Error::<Test>::ChannelTransfersBlockedDuringTokenSales.into()
             ));
     })
 }

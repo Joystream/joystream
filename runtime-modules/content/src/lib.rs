@@ -3142,13 +3142,13 @@ impl<T: Config> Module<T> {
     ) -> Result<PendingTransferOf<T>, DispatchError> {
         Self::validate_member_set(&params.new_collaborators.keys().cloned().collect())?;
         let transfer_id = Self::next_transfer_id();
-        Ok(PendingTransferOf::<T>{
+        Ok(PendingTransferOf::<T> {
             new_owner: params.new_owner,
             transfer_params: TransferCommitmentOf::<T> {
                 price: params.price,
                 new_collaborators: params.new_collaborators,
                 transfer_id,
-            }
+            },
         })
     }
 

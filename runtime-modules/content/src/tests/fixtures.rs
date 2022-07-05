@@ -2918,8 +2918,8 @@ impl InitializeChannelTransferFixture {
             transfer_params: InitTransferParametersOf::<Test> {
                 new_collaborators: BTreeMap::new(),
                 price: BalanceOf::<Test>::zero(),
-                new_owner: ChannelOwner::Member(SECOND_MEMBER_ID)
-            }
+                new_owner: ChannelOwner::Member(SECOND_MEMBER_ID),
+            },
         }
     }
 
@@ -3024,10 +3024,7 @@ impl AcceptChannelTransferFixture {
         Self { channel_id, ..self }
     }
 
-    pub fn with_transfer_params(
-        self,
-        params: TransferCommitmentOf::<Test>,
-    ) -> Self {
+    pub fn with_transfer_params(self, params: TransferCommitmentOf<Test>) -> Self {
         Self { params, ..self }
     }
 
