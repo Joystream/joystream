@@ -1328,7 +1328,8 @@ impl proposals_codex::Config for Runtime {
     type SetReferralCutProposalParameters = SetReferralCutProposalParameters;
     type VetoProposalProposalParameters = VetoProposalProposalParameters;
     type UpdateGlobalNftLimitProposalParameters = UpdateGlobalNftLimitProposalParameters;
-    type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;
+    // TODO: Enable after Carthage
+    // type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;
     type WeightInfo = weights::proposals_codex::WeightInfo;
 }
 
