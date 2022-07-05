@@ -649,7 +649,9 @@ fn cancel_channel_transfer_fails_with_collaborator_not_having_permissions() {
         CancelChannelTransferFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .call_and_assert(Err(Error::<Test>::ChannelAgentInsufficientPermissions.into()))
+            .call_and_assert(Err(
+                Error::<Test>::ChannelAgentInsufficientPermissions.into()
+            ))
     })
 }
 
@@ -668,7 +670,9 @@ fn cancel_channel_transfer_fails_with_invalid_curator() {
         CancelChannelTransferFixture::default()
             .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
             .with_actor(ContentActor::Curator(group_id, UNAUTHORIZED_CURATOR_ID))
-            .call_and_assert(Err(Error::<Test>::CuratorIsNotAMemberOfGivenCuratorGroup.into()))
+            .call_and_assert(Err(
+                Error::<Test>::CuratorIsNotAMemberOfGivenCuratorGroup.into()
+            ))
     })
 }
 
