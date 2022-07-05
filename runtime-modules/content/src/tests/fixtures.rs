@@ -2621,6 +2621,13 @@ impl IssueRevenueSplitFixture {
         Self { actor, ..self }
     }
 
+    pub fn with_starting_block(self, block: u64) -> Self {
+        Self {
+            start: Some(block),
+            ..self
+        }
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let origin = Origin::signed(self.sender.clone());
 
@@ -3462,7 +3469,6 @@ impl OfferNftFixture {
         Self { video_id, ..self }
     }
 
-    #[allow(dead_code)]
     pub fn with_to(self, to: MemberId) -> Self {
         Self { to, ..self }
     }

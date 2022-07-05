@@ -227,6 +227,14 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ChannelStateBloatBondChanged: AugmentedError<ApiType>;
       /**
+       * Channel Transfers are blocked during revenue splits
+       **/
+      ChannelTransfersBlockedDuringRevenueSplits: AugmentedError<ApiType>;
+      /**
+       * Channel Transfers are blocked during token sales
+       **/
+      ChannelTransfersBlockedDuringTokenSales: AugmentedError<ApiType>;
+      /**
        * Creator token was already issued for this channel
        **/
       CreatorTokenAlreadyIssued: AugmentedError<ApiType>;
@@ -477,6 +485,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Auction starts at upper bound exceeded
        **/
       StartsAtUpperBoundExceeded: AugmentedError<ApiType>;
+      /**
+       * Nft offer target member does not exist
+       **/
+      TargetMemberDoesNotExist: AugmentedError<ApiType>;
       /**
        * Insufficient balance
        **/
