@@ -1,9 +1,7 @@
-// import { assert } from 'chai'
-// import { registry } from '@joystream/types'
 import { CreateChannelsAsMemberFixture } from './createChannelsAsMemberFixture'
 import { CreateVideosAsMemberFixture } from './createVideosAsMemberFixture'
 import { BuyMembershipHappyCaseFixture } from '../fixtures/membership'
-
+import BN from 'bn.js'
 import { FlowProps } from '../Flow'
 import { FixtureRunner } from '../Fixture'
 import { extendDebug } from '../Debugger'
@@ -24,6 +22,10 @@ export default async function mockContent({ api, query }: FlowProps): Promise<vo
 
   const memberId = createMember.getCreatedMembers()[0].toNumber()
 
+  // Send some funds to pay the state_bloat_bond and fees
+  const channelOwnerBalance = new BN(10000)
+  await api.treasuryTransferBalance(memberAccount, channelOwnerBalance)
+
   // If we are too "aggressive" seeing
   // 'ExtrinsicStatus:: 1010: Invalid Transaction: Transaction is outdated' errors
   const numberOfChannelsPerRound = 100
@@ -36,7 +38,7 @@ export default async function mockContent({ api, query }: FlowProps): Promise<vo
   // create mock channels
   debug('Creating Channels')
   for (let n = 0; n < numberOfRoundsChannel; n++) {
-    const createChannels = new CreateChannelsAsMemberFixture(api, memberId, numberOfChannelsPerRound)
+    const createChannels = new CreateChannelsAsMemberFixture(api, query, memberId, numberOfChannelsPerRound)
     await new FixtureRunner(createChannels).run()
     createChannels.getCreatedChannels().forEach((id) => channelIds.push(id.toNumber()))
   }

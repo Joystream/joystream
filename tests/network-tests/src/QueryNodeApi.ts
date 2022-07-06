@@ -392,6 +392,14 @@ import {
   GetVideoReactionsPreferenceEventsByEventIdsQuery,
   GetVideoReactionsPreferenceEventsByEventIdsQueryVariables,
   GetVideoReactionsPreferenceEventsByEventIds,
+  StorageNodeInfoFragment,
+  GetStorageBucketsQuery,
+  GetStorageBucketsQueryVariables,
+  GetStorageBuckets,
+  DistributionBucketFamilyFieldsFragment,
+  GetDistributionFamiliesAdndBucketsQuery,
+  GetDistributionFamiliesAdndBucketsQueryVariables,
+  GetDistributionFamiliesAdndBuckets,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1353,5 +1361,20 @@ export class QueryNodeApi {
       GetEnglishAuctionSettledEventsByEventIdsQuery,
       GetEnglishAuctionSettledEventsByEventIdsQueryVariables
     >(GetEnglishAuctionSettledEventsByEventIds, { eventIds }, 'englishAuctionSettledEvents')
+  }
+
+  async storageBucketsForNewChannel(): Promise<StorageNodeInfoFragment[]> {
+    return this.multipleEntitiesQuery<GetStorageBucketsQuery, GetStorageBucketsQueryVariables>(
+      GetStorageBuckets,
+      {},
+      'storageBuckets'
+    )
+  }
+
+  async distributionBucketsForNewChannel(): Promise<DistributionBucketFamilyFieldsFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetDistributionFamiliesAdndBucketsQuery,
+      GetDistributionFamiliesAdndBucketsQueryVariables
+    >(GetDistributionFamiliesAdndBuckets, {}, 'distributionBucketFamilies')
   }
 }

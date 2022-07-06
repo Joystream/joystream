@@ -657,7 +657,15 @@ export class Api {
   }
 
   // Create a mock channel, throws on failure
-  async createMockChannel(memberId: number, memberControllerAccount?: string): Promise<ChannelId> {
+  async createMockChannel(
+    memberId: number,
+    storageBuckets: number[],
+    distributionBuckets: {
+      distributionBucketFamilyId: number
+      distributionBucketIndex: number
+    }[],
+    memberControllerAccount?: string
+  ): Promise<ChannelId> {
     memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
 
     if (!memberControllerAccount) {
@@ -670,6 +678,8 @@ export class Api {
       {
         assets: null,
         meta: null,
+        storageBuckets,
+        distributionBuckets,
       }
     )
 
