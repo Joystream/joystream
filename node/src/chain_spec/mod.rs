@@ -29,9 +29,9 @@ use grandpa_primitives::AuthorityId as GrandpaId;
 
 use node_runtime::{
     constants::currency::*, membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig,
-    BalancesConfig, Block, ContentConfig, CouncilConfig, ForumConfig, GrandpaConfig,
-    ImOnlineConfig, MaxNominations, MembersConfig, ReferendumConfig, SessionConfig, SessionKeys,
-    StakerStatus, StakingConfig, SudoConfig, SystemConfig, TransactionPaymentConfig,
+    BalancesConfig, Block, ContentConfig, ForumConfig, GrandpaConfig, ImOnlineConfig,
+    MaxNominations, MembersConfig, SessionConfig, SessionKeys, StakerStatus, StakingConfig,
+    SudoConfig, SystemConfig, TransactionPaymentConfig,
 };
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_chain_spec::ChainSpecExtension;

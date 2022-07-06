@@ -2361,7 +2361,7 @@ decl_module! {
             origin,
             enabled: bool
         ) {
-            let _ = ensure_root(origin)?;
+            ensure_root(origin)?;
 
             //
             // == MUTATION SAFE ==
@@ -3504,7 +3504,7 @@ impl<T: Config> Module<T> {
                 )
             }
             ChannelFundsDestination::CouncilBudget => {
-                let _ = Balances::<T>::slash(&reward_account, amount);
+                let _ = Balances::<T>::slash(reward_account, amount);
                 T::CouncilBudgetManager::increase_budget(amount);
                 Ok(())
             }
