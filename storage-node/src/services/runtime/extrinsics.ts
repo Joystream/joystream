@@ -120,7 +120,8 @@ export async function uploadDataObjects(
   bagId: BagId,
   objectSize: number,
   objectCid: string,
-  dataFee: number
+  dataFee: number,
+  stateBloatBond: number
 ): Promise<boolean> {
   return await extrinsicWrapper(() => {
     const alice = getAlicePair()
@@ -128,7 +129,7 @@ export async function uploadDataObjects(
     const data = createType('PalletStorageUploadParametersRecord', {
       bagId,
       stateBloatBondSourceAccountId: alice.address,
-      expectedDataObjectStateBloatBond: 0,
+      expectedDataObjectStateBloatBond: stateBloatBond,
       objectCreationList: [
         {
           size_: objectSize,
