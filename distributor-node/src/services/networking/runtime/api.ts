@@ -23,18 +23,14 @@ export class RuntimeApi {
     this._api = originalApi
   }
 
-  static async create(
-    logging: LoggingService,
-    apiUri: string,
-    metadataCache?: Record<string, string>
-  ): Promise<RuntimeApi> {
-    const { api, chainType } = await RuntimeApi.initApi(apiUri, metadataCache)
+  static async create(logging: LoggingService, apiUri: string): Promise<RuntimeApi> {
+    const { api, chainType } = await RuntimeApi.initApi(apiUri)
     return new RuntimeApi(logging, api, chainType.isDevelopment || chainType.isLocal)
   }
 
-  private static async initApi(apiUri: string, metadataCache?: Record<string, string>) {
+  private static async initApi(apiUri: string) {
     const wsProvider: WsProvider = new WsProvider(apiUri)
-    const api = await ApiPromise.create({ provider: wsProvider, metadata: metadataCache as any })
+    const api = await ApiPromise.create({ provider: wsProvider })
 
     const [properties, chainType] = await Promise.all([api.rpc.system.properties(), api.rpc.system.chainType()])
 

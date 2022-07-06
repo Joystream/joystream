@@ -2,34 +2,11 @@ import {
   PalletStorageBagIdType as BagId,
   PalletStorageDynamicBagType as DynamicBagType,
   PalletStorageStaticBagId as Static,
+  PalletCommonWorkingGroup,
 } from '@polkadot/types/lookup'
-import { createType } from '@joystream/types'
+import { createType, keysOf } from '@joystream/types'
 import ExitCodes from '../../command-base/ExitCodes'
 import { CLIError } from '@oclif/errors'
-
-export const workingGroups = [
-  'Forum',
-  'Storage',
-  'Content',
-  'OperationsAlpha',
-  'Gateway',
-  'Distribution',
-  'OperationsBeta',
-  'OperationsGamma',
-  'Membership',
-] as const
-
-export const dynamicBagTypes = [
-  'Forum',
-  'Storage',
-  'Content',
-  'OperationsAlpha',
-  'Gateway',
-  'Distribution',
-  'OperationsBeta',
-  'OperationsGamma',
-  'Membership',
-] as const
 
 /**
  * Special error type for bagId parsing. Extends the CLIError with setting
@@ -126,9 +103,10 @@ class BagIdParser {
     // Try to construct static working group bag ID.
     if (this.bagIdParts[1] === 'wg') {
       if (this.bagIdParts.length === 3) {
+        const groups = keysOf<PalletCommonWorkingGroup, 'PalletCommonWorkingGroup'>('PalletCommonWorkingGroup')
         const actualGroup = this.bagIdParts[2]
 
-        for (const group of workingGroups) {
+        for (const group of groups) {
           if (group.toLowerCase() === actualGroup) {
             const workingGroup = createType('PalletCommonWorkingGroup', group)
             const staticBagId: Static = createType('PalletStorageStaticBagId', {
@@ -157,6 +135,7 @@ class BagIdParser {
 
       // Verify successful entity ID parsing
       if (!isNaN(parsedId)) {
+        const dynamicBagTypes = keysOf<DynamicBagType, 'PalletStorageDynamicBagType'>('PalletStorageDynamicBagType')
         const actualType = this.bagIdParts[1]
 
         // Try to construct dynamic bag ID.

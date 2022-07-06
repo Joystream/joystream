@@ -3,7 +3,6 @@ import { PalletStorageDynamicBagType as DynamicBagType } from '@polkadot/types/l
 import AccountsCommandBase from '../../command-base/accounts'
 import DefaultCommandBase from '../../command-base/default'
 import { createType } from '@joystream/types'
-import { u64, u32 } from '@polkadot/types'
 
 export default class LeaderUpdateDynamicBagPolicy extends AccountsCommandBase {
   static description = `Update dynamic bag creation policy (number of buckets by family that should store given dynamic bag type).
@@ -47,7 +46,7 @@ export default class LeaderUpdateDynamicBagPolicy extends AccountsCommandBase {
       await this.getDecodedPair(leadKey),
       this.api.tx.storage.updateFamiliesInDynamicBagCreationPolicy(
         type,
-        createType('BTreeMap<u64,u32>', (new Map(policy) as unknown) as Map<u64, u32>)
+        createType('BTreeMap<u64,u32>', new Map(policy))
       )
     )
     this.log('Dynamic bag creation policy succesfully updated!')
