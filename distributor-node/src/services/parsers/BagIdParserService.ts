@@ -1,8 +1,23 @@
-import { BagId, DynamicBagTypeKey } from '@joystream/types/storage'
 import { createType } from '@joystream/types'
-import { WorkingGroup, WorkingGroupKey } from '@joystream/types/common'
+import {
+  PalletStorageBagIdType as BagId,
+  PalletCommonWorkingGroup as WorkingGroup,
+  PalletStorageDynamicBagType as DynamicBagType,
+} from '@polkadot/types/lookup'
 import { CLIError } from '@oclif/errors'
 import ExitCodes from '../../command-base/ExitCodes'
+
+export const workingGroups = [
+  'Forum',
+  'Storage',
+  'Content',
+  'OperationsAlpha',
+  'Gateway',
+  'Distribution',
+  'OperationsBeta',
+  'OperationsGamma',
+  'Membership',
+] as const
 
 export class BagIdParserService {
   private bagId: string
@@ -44,7 +59,7 @@ export class BagIdParserService {
     // Try to construct static council bag ID.
     if (staticBagType === 'council') {
       if (optGroupName === undefined) {
-        return createType<BagId, 'BagId'>('BagId', {
+        return createType('PalletStorageBagIdType', {
           'Static': 'Council',
         })
       }
@@ -55,12 +70,10 @@ export class BagIdParserService {
     // Try to construct static working group bag ID.
     if (staticBagType === 'wg') {
       if (optGroupName) {
-        const groups = Object.keys(WorkingGroup.typeDefinitions) as WorkingGroupKey[]
-
-        if (groups.find((g) => g.toLowerCase() === optGroupName)) {
-          return createType<BagId, 'BagId'>('BagId', {
+        if (workingGroups.find((g) => g.toLowerCase() === optGroupName)) {
+          return createType('PalletStorageBagIdType', {
             Static: {
-              WorkingGroup: optGroupName as WorkingGroupKey,
+              WorkingGroup: optGroupName as WorkingGroup['type'],
             },
           })
         }
@@ -80,9 +93,9 @@ export class BagIdParserService {
 
       // Verify successful entity ID parsing
       if (!isNaN(entityId)) {
-        const resultByType: { [key in DynamicBagTypeKey]: BagId } = {
-          Member: createType<BagId, 'BagId'>('BagId', { Dynamic: { Member: entityId } }),
-          Channel: createType<BagId, 'BagId'>('BagId', { Dynamic: { Channel: entityId } }),
+        const resultByType: { [key in DynamicBagType['type']]: BagId } = {
+          Member: createType('PalletStorageBagIdType', { Dynamic: { Member: entityId } }),
+          Channel: createType('PalletStorageBagIdType', { Dynamic: { Channel: entityId } }),
         }
 
         for (const [type, result] of Object.entries(resultByType)) {

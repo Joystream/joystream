@@ -1,4 +1,3 @@
-import { types } from '@joystream/types/'
 import { ApiPromise, WsProvider, SubmittableResult } from '@polkadot/api'
 import { SubmittableExtrinsic, AugmentedEvent } from '@polkadot/api/types'
 import { KeyringPair } from '@polkadot/keyring/types'
@@ -8,6 +7,7 @@ import { IEvent } from '@polkadot/types/types'
 import { DispatchError } from '@polkadot/types/interfaces/system'
 import { LoggingService } from '../../logging'
 import { Logger } from 'winston'
+import { SpRuntimeDispatchError } from '@polkadot/types/lookup'
 
 export class ExtrinsicFailedError extends Error {}
 
@@ -34,7 +34,7 @@ export class RuntimeApi {
 
   private static async initApi(apiUri: string, metadataCache?: Record<string, string>) {
     const wsProvider: WsProvider = new WsProvider(apiUri)
-    const api = await ApiPromise.create({ provider: wsProvider, types, metadata: metadataCache })
+    const api = await ApiPromise.create({ provider: wsProvider, metadata: metadataCache as any })
 
     const [properties, chainType] = await Promise.all([api.rpc.system.properties(), api.rpc.system.chainType()])
 
@@ -99,7 +99,7 @@ export class RuntimeApi {
     return (event as unknown) as EventType
   }
 
-  private formatDispatchError(err: DispatchError): string {
+  private formatDispatchError(err: DispatchError | SpRuntimeDispatchError): string {
     try {
       const { name, docs } = this._api.registry.findMetaError(err.asModule)
       return `${name} (${docs.join(', ')})`
