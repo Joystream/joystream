@@ -389,6 +389,7 @@ fn unsuccessful_channel_balance_withdrawal_when_amount_exceeds_balance_minus_exi
     })
 }
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn unsuccessful_channel_balance_withdrawal_during_transfer() {
@@ -897,6 +898,7 @@ fn unsuccessful_member_channel_claim_and_withdraw_by_collaborator_without_withdr
     })
 }
 
+// TODO: Enable after enabling channel transfer
 #[ignore]
 #[test]
 fn claim_and_withdraw_fails_during_channel_transfer() {

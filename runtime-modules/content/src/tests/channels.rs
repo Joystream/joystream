@@ -350,6 +350,7 @@ fn unsuccessful_channel_update_with_invalid_channel_id() {
     })
 }
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn unsuccessful_channel_update_with_pending_status_transfer() {
@@ -3151,6 +3152,7 @@ fn claim_council_reward_succeeded() {
     })
 }
 
+// TODO: Enable after enabling channel transfers
 #[ignore]
 #[test]
 fn claim_council_reward_fails_during_transfer() {

@@ -119,6 +119,7 @@ fn successful_reduce_curator_channel_creator_token_patronage_rate_by_lead() {
     })
 }
 
+// TODO: Enable after enabling transfer
 #[ignore]
 #[test]
 fn reduce_creator_token_patronage_rate_fails_during_transfer() {

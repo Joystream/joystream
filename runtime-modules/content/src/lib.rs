@@ -3471,21 +3471,20 @@ impl<T: Config> Module<T> {
     // Set global and channel NFT limit
     #[allow(dead_code)] // TODO: Remove the `allow` attribute after Carthage
     pub(crate) fn set_nft_limit(_limit_id: NftLimitId<T::ChannelId>, _limit: u64) {
-        // TODO: enable after Carthage
-        // match limit_id {
-        //     NftLimitId::GlobalDaily => GlobalDailyNftLimit::<T>::mutate(|l| l.limit = limit),
-        //     NftLimitId::GlobalWeekly => GlobalWeeklyNftLimit::<T>::mutate(|l| l.limit = limit),
-        //     NftLimitId::ChannelDaily(channel_id) => {
-        //         ChannelById::<T>::mutate(channel_id, |channel| {
-        //             channel.daily_nft_limit.limit = limit;
-        //         });
-        //     }
-        //     NftLimitId::ChannelWeekly(channel_id) => {
-        //         ChannelById::<T>::mutate(channel_id, |channel| {
-        //             channel.weekly_nft_limit.limit = limit;
-        //         });
-        //     }
-        // }
+        match limit_id {
+            NftLimitId::GlobalDaily => GlobalDailyNftLimit::<T>::mutate(|l| l.limit = limit),
+            NftLimitId::GlobalWeekly => GlobalWeeklyNftLimit::<T>::mutate(|l| l.limit = limit),
+            NftLimitId::ChannelDaily(channel_id) => {
+                ChannelById::<T>::mutate(channel_id, |channel| {
+                    channel.daily_nft_limit.limit = limit;
+                });
+            }
+            NftLimitId::ChannelWeekly(channel_id) => {
+                ChannelById::<T>::mutate(channel_id, |channel| {
+                    channel.weekly_nft_limit.limit = limit;
+                });
+            }
+        }
     }
 
     fn ensure_can_claim_channel_reward(

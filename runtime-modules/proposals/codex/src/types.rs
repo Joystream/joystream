@@ -10,7 +10,8 @@ use common::working_group::WorkingGroup;
 use common::BalanceKind;
 use common::FundingRequestParameters;
 
-//use content::NftLimitPeriod;
+// TODO: Enable after Carthage
+// use content::NftLimitPeriod;
 use working_group::StakePolicy;
 
 /// Encodes proposal using its details information.

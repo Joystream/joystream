@@ -8,7 +8,8 @@ use balances::Pallet as Balances;
 use codec::Decode;
 use common::working_group::WorkingGroup;
 use common::BalanceKind;
-//use content::NftLimitPeriod;
+// TODO: Enable after Carthage
+// use content::NftLimitPeriod;
 use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::sp_runtime::traits::Bounded;
 use frame_support::traits::Currency;

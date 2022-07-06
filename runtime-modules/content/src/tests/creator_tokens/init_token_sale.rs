@@ -120,6 +120,7 @@ fn successful_init_curator_channel_creator_token_sale_by_lead() {
     })
 }
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn init_token_sale_fails_during_channel_transfer() {

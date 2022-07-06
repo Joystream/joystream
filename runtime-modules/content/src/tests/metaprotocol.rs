@@ -362,6 +362,7 @@ fn unsuccessful_nft_owner_with_invalid_acount() {
     })
 }
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn successful_nft_remark_during_transfer() {
@@ -383,6 +384,7 @@ fn successful_nft_remark_during_transfer() {
     })
 }
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn successful_channel_owner_remark_during_transfer() {
@@ -402,6 +404,7 @@ fn successful_channel_owner_remark_during_transfer() {
     })
 }
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn successful_channel_agent_remark_during_transfer() {
