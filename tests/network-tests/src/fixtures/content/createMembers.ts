@@ -1,5 +1,5 @@
 import { QueryNodeApi } from '../../QueryNodeApi'
-import { MemberId } from '@joystream/types/common'
+import { MemberId } from '@joystream/types/primitives'
 import { BaseQueryNodeFixture, FixtureRunner } from '../../Fixture'
 import { Api } from '../../Api'
 import { KeyringPair } from '@polkadot/keyring/types'
