@@ -218,7 +218,6 @@ services:
       - DB_NAME=${INDEXER_DB_NAME}
       - INDEXER_WORKERS=5
       - REDIS_URI=redis://redis:6379/0
-      - TYPES_JSON=types.json
       - WS_PROVIDER_ENDPOINT_URI=${JOYSTREAM_NODE_WS}
       - DB_HOST=db
     depends_on:
