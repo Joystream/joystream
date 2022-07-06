@@ -511,6 +511,7 @@ pub struct ExtBuilder {
     platform_fee_percentage: Perbill,
     auction_starts_at_max_delta: u64,
     max_auction_whitelist_length: u32,
+    nft_limits_enabled: bool,
 }
 
 impl Default for ExtBuilder {
@@ -539,6 +540,7 @@ impl Default for ExtBuilder {
             platform_fee_percentage: Perbill::from_percent(1),
             auction_starts_at_max_delta: 90_000,
             max_auction_whitelist_length: 4,
+            nft_limits_enabled: true,
         }
     }
 }
@@ -593,6 +595,7 @@ impl ExtBuilder {
             platform_fee_percentage: self.platform_fee_percentage,
             auction_starts_at_max_delta: self.auction_starts_at_max_delta,
             max_auction_whitelist_length: self.max_auction_whitelist_length,
+            nft_limits_enabled: self.nft_limits_enabled,
         }
         .assimilate_storage(&mut t)
         .unwrap();

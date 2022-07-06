@@ -337,7 +337,8 @@ fn issue_nft_global_daily_limit_works_as_expected() {
     with_default_mock_builder(|| {
         test_helper_for_nft_limit_works_as_expected(
             NftLimitId::GlobalDaily,
-            Error::<Test>::GlobalNftDailyLimitExceeded,
+            Err(Error::<Test>::GlobalNftDailyLimitExceeded.into()),
+            false,
         );
     })
 }
@@ -347,7 +348,8 @@ fn issue_nft_global_weekly_limit_works_as_expected() {
     with_default_mock_builder(|| {
         test_helper_for_nft_limit_works_as_expected(
             NftLimitId::GlobalWeekly,
-            Error::<Test>::GlobalNftWeeklyLimitExceeded,
+            Err(Error::<Test>::GlobalNftWeeklyLimitExceeded.into()),
+            false,
         );
     })
 }
@@ -358,7 +360,8 @@ fn issue_nft_channel_daily_limit_works_as_expected() {
         let channel_id = 1;
         test_helper_for_nft_limit_works_as_expected(
             NftLimitId::ChannelDaily(channel_id),
-            Error::<Test>::ChannelNftDailyLimitExceeded,
+            Err(Error::<Test>::ChannelNftDailyLimitExceeded.into()),
+            false,
         );
     })
 }
@@ -369,14 +372,36 @@ fn issue_nft_channel_weekly_limit_works_as_expected() {
         let channel_id = 1;
         test_helper_for_nft_limit_works_as_expected(
             NftLimitId::ChannelWeekly(channel_id),
-            Error::<Test>::ChannelNftWeeklyLimitExceeded,
+            Err(Error::<Test>::ChannelNftWeeklyLimitExceeded.into()),
+            false,
+        );
+    })
+}
+
+#[test]
+fn issue_nft_ok_with_limits_not_enforced() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        // chainspec value = true, setting to false
+        test_helper_for_nft_limit_works_as_expected(NftLimitId::GlobalDaily, Ok(()), true);
+        test_helper_for_nft_limit_works_as_expected(NftLimitId::GlobalWeekly, Ok(()), true);
+        test_helper_for_nft_limit_works_as_expected(
+            NftLimitId::ChannelDaily(ChannelId::one()),
+            Ok(()),
+            true,
+        );
+        test_helper_for_nft_limit_works_as_expected(
+            NftLimitId::ChannelWeekly(ChannelId::one()),
+            Ok(()),
+            true,
         );
     })
 }
 
 fn test_helper_for_nft_limit_works_as_expected(
     nft_limit_id: NftLimitId<u64>,
-    expected_error: Error<Test>,
+    expected: DispatchResult,
+    disable_limits: bool,
 ) {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
@@ -389,6 +414,10 @@ fn test_helper_for_nft_limit_works_as_expected(
         create_default_member_owned_channel_with_video();
 
         Content::set_nft_limit(nft_limit_id, 1);
+
+        if disable_limits {
+            assert_ok!(Content::toggle_nft_limits(Origin::root(), false));
+        }
 
         // Issue nft 1
         assert_ok!(Content::issue_nft(
@@ -417,20 +446,23 @@ fn test_helper_for_nft_limit_works_as_expected(
                 video_id,
                 NftIssuanceParameters::<Test>::default(),
             ),
-            Err(expected_error.into()),
+            expected,
         );
 
         let nft_limit = nft_limit_by_id(nft_limit_id);
 
         run_to_block(nft_limit.block_number_period);
 
-        // Issue nft 3
-        assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            ContentActor::Member(DEFAULT_MEMBER_ID),
-            video_id,
-            NftIssuanceParameters::<Test>::default(),
-        ));
+        // otherwise nft already exists
+        if !disable_limits {
+            // Issue nft 3
+            assert_ok!(Content::issue_nft(
+                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                ContentActor::Member(DEFAULT_MEMBER_ID),
+                video_id,
+                NftIssuanceParameters::<Test>::default(),
+            ));
+        }
     })
 }
 
