@@ -4,7 +4,7 @@ import { asValidatedMetadata, metadataToBytes } from '../../helpers/serializatio
 import { VideoInputParameters, VideoFileMetadata } from '../../Types'
 import { createType } from '@joystream/types'
 import { flags } from '@oclif/command'
-import { VideoCreationParameters, VideoId } from '@joystream/types/content'
+import { VideoId } from '@joystream/types/primitives'
 import { IVideoMetadata, VideoMetadata } from '@joystream/metadata-protobuf'
 import { VideoInputSchema } from '../../schemas/ContentDirectory'
 import chalk from 'chalk'
@@ -71,15 +71,13 @@ export default class CreateVideoCommand extends UploadCommandBase {
 
     // Preare and send the extrinsic
     const assets = await this.prepareAssetsForExtrinsic(resolvedAssets)
-    const videoCreationParameters = createType<VideoCreationParameters, 'VideoCreationParameters'>(
-      'VideoCreationParameters',
-      {
-        assets,
-        meta: metadataToBytes(VideoMetadata, meta),
+    const videoCreationParameters = createType('PalletContentVideoCreationParametersRecord', {
+      assets,
+      meta: metadataToBytes(VideoMetadata, meta),
       }
     )
 
-    this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), metadata: meta, enableComments }))
+    this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), metadata: meta }))
 
     await this.requireConfirmation('Do you confirm the provided input?', true)
 

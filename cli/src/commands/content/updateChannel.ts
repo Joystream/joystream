@@ -3,8 +3,7 @@ import { asValidatedMetadata, metadataToBytes } from '../../helpers/serializatio
 import { ChannelUpdateInputParameters } from '../../Types'
 import { flags } from '@oclif/command'
 import UploadCommandBase from '../../base/UploadCommandBase'
-import { CreateInterface, createType } from '@joystream/types'
-import { ChannelUpdateParameters } from '@joystream/types/content'
+import { createType } from '@joystream/types'
 import { ChannelUpdateInputSchema } from '../../schemas/ContentDirectory'
 import { ChannelMetadata } from '@joystream/metadata-protobuf'
 import { DataObjectInfoFragment } from '../../graphql/generated/queries'
@@ -51,7 +50,7 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     channelId: number,
     coverPhotoIndex: number | undefined,
     avatarPhotoIndex: number | undefined
-  ): Promise<string[]> {
+  ): Promise<number[]> {
     let assetsToRemove: DataObjectInfoFragment[] = []
     if (coverPhotoIndex !== undefined || avatarPhotoIndex !== undefined) {
       const currentAssets = await this.getQNApi().dataObjectsByChannelId(channelId.toString())
@@ -74,7 +73,7 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       }
     }
 
-    return assetsToRemove.map((a) => a.id)
+    return assetsToRemove.map((a) => Number(a.id))
   }
 
   async run(): Promise<void> {
@@ -118,18 +117,18 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       assetIndices.avatarPhotoPath
     )
 
-    const channelUpdateParameters: CreateInterface<ChannelUpdateParameters> = {
-      assets_to_upload: assetsToUpload,
-      assets_to_remove: createType('BTreeSet<DataObjectId>', assetsToRemove),
-      new_meta: metadataToBytes(ChannelMetadata, meta),
-    }
-
+    const channelUpdateParameters = createType('PalletContentChannelUpdateParametersRecord', {
+      assetsToUpload: assetsToUpload,
+      expectedDataObjectStateBloatBond: 0,
+      collaborators: [],
+      assetsToRemove: createType('BTreeSet<u64>', assetsToRemove),
+      newMeta: metadataToBytes(ChannelMetadata, meta),
+    })
     this.jsonPrettyPrint(
       JSON.stringify({
         assetsToUpload: assetsToUpload?.toJSON(),
         assetsToRemove,
         metadata: meta,
-        rewardAccount,
         collaborators,
       })
     )

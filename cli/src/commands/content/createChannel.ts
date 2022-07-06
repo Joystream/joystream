@@ -1,17 +1,14 @@
-import { getInputJson } from '../../helpers/InputOutput'
-import { ChannelCreationInputParameters } from '../../Types'
-import { asValidatedMetadata, metadataToBytes } from '../../helpers/serialization'
-import { flags } from '@oclif/command'
+import { ChannelMetadata } from '@joystream/metadata-protobuf'
 import { createType } from '@joystream/types'
-import { ChannelCreationParameters, CuratorGroupId } from '@joystream/types/content'
-import { ChannelCreationInputSchema } from '../../schemas/ContentDirectory'
+import { ChannelId, CuratorGroupId, MemberId } from '@joystream/types/primitives'
+import { flags } from '@oclif/command'
+import chalk from 'chalk'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import UploadCommandBase from '../../base/UploadCommandBase'
-import chalk from 'chalk'
-import { ChannelMetadata } from '@joystream/metadata-protobuf'
-import { ChannelId, MemberId } from '@joystream/types/common'
-import { DistributionBucketId, StorageBucketId } from '@joystream/types/storage'
-import { BTreeSet } from '@polkadot/types'
+import { getInputJson } from '../../helpers/InputOutput'
+import { asValidatedMetadata, metadataToBytes } from '../../helpers/serialization'
+import { ChannelCreationInputSchema } from '../../schemas/ContentDirectory'
+import { ChannelCreationInputParameters } from '../../Types'
 
 export default class CreateChannelCommand extends UploadCommandBase {
   static description = 'Create channel inside content directory.'
@@ -67,21 +64,15 @@ export default class CreateChannelCommand extends UploadCommandBase {
     const distributionBuckets = await this.getApi().selectDistributionBucketsForNewChannel()
 
     const assets = await this.prepareAssetsForExtrinsic(resolvedAssets)
-    const channelCreationParameters = createType<ChannelCreationParameters, 'ChannelCreationParameters'>(
-      'ChannelCreationParameters',
-      {
-        assets,
-        meta: metadataToBytes(ChannelMetadata, meta),
-        storage_buckets: createType<BTreeSet<StorageBucketId>, 'BTreeSet<StorageBucketId>'>(
-          'BTreeSet<StorageBucketId>',
-          storageBuckets
-        ),
-        distribution_buckets: createType<BTreeSet<DistributionBucketId>, 'BTreeSet<DistributionBucketId>'>(
-          'BTreeSet<DistributionBucketId>',
-          distributionBuckets
-        ),
-      }
-    )
+    const channelCreationParameters = createType('PalletContentChannelCreationParametersRecord', {
+      assets,
+      expectedChannelStateBloatBond: 0,
+      expectedDataObjectStateBloatBond: 0,
+      meta: metadataToBytes(ChannelMetadata, meta),
+      storageBuckets: storageBuckets,
+      distributionBuckets: createType('BTreeSet<PalletStorageDistributionBucketIdRecord>', distributionBuckets),
+      collaborators: new Map(),
+    })
 
     this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), metadata: meta, collaborators }))
 
