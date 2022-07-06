@@ -75,4 +75,4 @@ docker-compose -f ../../docker-compose.yml run -d -v ${DATA_PATH}:/spec --name j
   -p 9944:9944 -p 9933:9933 joystream-node \
   --alice --validator --unsafe-ws-external --unsafe-rpc-external \
   --rpc-methods Unsafe --rpc-cors=all -l runtime \
-  --chain /spec/chain-spec-raw.json
+  --chain /spec/chain-spec-raw.json --pruning=archive
