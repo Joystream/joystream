@@ -3092,14 +3092,13 @@ impl AcceptChannelTransferFixture {
 
             assert_eq!(new_channel.owner, channel_owner);
             assert_eq!(new_channel.collaborators, self.params.new_collaborators);
-            // TODO: enable after Carthage
-            // assert_eq!(
-            //     System::events().last().unwrap().event,
-            //     MetaEvent::Content(RawEvent::ChannelTransferAccepted(
-            //         self.channel_id,
-            //         self.params.clone()
-            //     ))
-            // );
+            assert_eq!(
+                System::events().last().unwrap().event,
+                MetaEvent::Content(RawEvent::ChannelTransferAccepted(
+                    self.channel_id,
+                    self.params.clone()
+                ))
+            );
         } else {
             assert_eq!(new_channel.transfer_status, old_channel.transfer_status,);
         }
