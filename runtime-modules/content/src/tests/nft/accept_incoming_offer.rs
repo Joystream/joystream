@@ -2,7 +2,10 @@
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_noop, assert_ok};
+use frame_support::{
+    assert_err, assert_noop, assert_ok,
+    traits::{LockableCurrency, WithdrawReasons},
+};
 
 #[test]
 fn accept_incoming_offer() {
@@ -280,6 +283,44 @@ fn accept_incoming_offer_fails_during_channel_transfer() {
                 VideoId::one(),
             ),
             Error::<Test>::InvalidChannelTransferStatus,
+        );
+    })
+}
+
+#[test]
+fn accept_incoming_offer_fails_when_trying_to_use_locked_balance() {
+    with_default_mock_builder(|| {
+        ContentTest::default().with_video_nft().setup();
+
+        OfferNftFixture::default()
+            .with_price(Some(DEFAULT_NFT_PRICE))
+            .call_and_assert(Ok(()));
+
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
+
+        Balances::<Test>::set_lock(
+            LockId::get(),
+            &SECOND_MEMBER_ACCOUNT_ID,
+            1,
+            WithdrawReasons::TRANSFER,
+        );
+
+        assert_eq!(
+            Balances::<Test>::free_balance(SECOND_MEMBER_ACCOUNT_ID),
+            DEFAULT_NFT_PRICE
+        );
+
+        assert_eq!(
+            Balances::<Test>::usable_balance(SECOND_MEMBER_ACCOUNT_ID),
+            DEFAULT_NFT_PRICE - 1
+        );
+
+        assert_noop!(
+            Content::accept_incoming_offer(
+                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                VideoId::one()
+            ),
+            Error::<Test>::InsufficientBalance
         );
     })
 }
