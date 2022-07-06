@@ -1,7 +1,6 @@
 import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { EventDetails } from '../../types'
-import { WorkerId } from '@joystream/types/working-group'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
@@ -10,12 +9,12 @@ import {
   ForumCategoryFieldsFragment,
 } from '../../graphql/generated/queries'
 import { assert } from 'chai'
-import { CategoryId } from '@joystream/types/forum'
+import { WorkerId, ForumCategoryId } from '@joystream/types/primitives'
 import { WithForumWorkersFixture } from './WithForumWorkersFixture'
 import _ from 'lodash'
 
 export type CategoryStatusUpdate = {
-  categoryId: CategoryId
+  categoryId: ForumCategoryId
   archived: boolean
   asWorker?: WorkerId
 }
@@ -32,7 +31,7 @@ export class UpdateCategoriesStatusFixture extends WithForumWorkersFixture {
     return Promise.all(
       this.updates.map(async (u) => {
         const workerId = u.asWorker || (await this.getForumLeadId())
-        return (await this.api.query.forumWorkingGroup.workerById(workerId)).role_account_id.toString()
+        return (await this.api.query.forumWorkingGroup.workerById(workerId)).unwrap().roleAccountId.toString()
       })
     )
   }
