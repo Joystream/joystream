@@ -2,9 +2,10 @@ import { sendAndFollowSudoNamedTx, sendAndFollowNamedTx, getEvent } from './api'
 import { getAlicePair } from './accounts'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
-import { BagId, DynamicBagType } from '@joystream/types/storage'
+import { PalletStorageBagIdType as BagId, PalletStorageDynamicBagType as DynamicBagType } from '@polkadot/types/lookup'
 import logger from '../../services/logger'
 import { timeout } from 'promise-timeout'
+import { createType } from '@joystream/types'
 
 /**
  * Creates storage bucket.
@@ -31,7 +32,7 @@ export async function createStorageBucket(
 ): Promise<[boolean, number | void]> {
   let bucketId: number | void = 0
   const success = await extrinsicWrapper(async () => {
-    const invitedWorkerValue = api.createType('Option<WorkerId>', invitedWorker)
+    const invitedWorkerValue = api.createType('Option<u64>', invitedWorker)
 
     const tx = api.tx.storage.createStorageBucket(invitedWorkerValue, allowedNewBags, sizeLimit, objectsLimit)
     bucketId = await sendAndFollowNamedTx(api, account, tx, false, (result) => {
@@ -92,8 +93,8 @@ export async function updateStorageBucketsForBag(
   remove: number[]
 ): Promise<boolean> {
   return await extrinsicWrapper(() => {
-    const removeBuckets = api.createType('StorageBucketIdSet', remove)
-    const addBuckets = api.createType('StorageBucketIdSet', add)
+    const removeBuckets = api.createType('BTreeSet<u64>', remove)
+    const addBuckets = api.createType('BTreeSet<u64>', add)
 
     const tx = api.tx.storage.updateStorageBucketsForBag(bagId, addBuckets, removeBuckets)
 
@@ -116,6 +117,7 @@ export async function updateStorageBucketsForBag(
  */
 export async function uploadDataObjects(
   api: ApiPromise,
+  bagId: BagId,
   objectSize: number,
   objectCid: string,
   dataFee: number
@@ -123,12 +125,14 @@ export async function uploadDataObjects(
   return await extrinsicWrapper(() => {
     const alice = getAlicePair()
 
-    const data = api.createType('UploadParameters', {
+    const data = createType('PalletStorageUploadParametersRecord', {
+      bagId,
       stateBloatBondSourceAccountId: alice.address,
+      expectedDataObjectStateBloatBond: 0,
       objectCreationList: [
         {
-          Size: objectSize,
-          IpfsContentId: objectCid,
+          size_: objectSize,
+          ipfsContentId: objectCid,
         },
       ],
       expectedDataSizeFee: dataFee,
@@ -163,7 +167,7 @@ export async function acceptPendingDataObjects(
   dataObjects: number[]
 ): Promise<boolean> {
   return await extrinsicWrapper(() => {
-    const dataObjectSet = api.createType('DataObjectIdSet', dataObjects)
+    const dataObjectSet = api.createType('BTreeSet<u64>', dataObjects)
 
     const tx = api.tx.storage.acceptPendingDataObjects(workerId, storageBucketId, bagId, dataObjectSet)
 
@@ -502,8 +506,8 @@ export async function updateBlacklist(
   remove: string[]
 ): Promise<boolean> {
   return await extrinsicWrapper(() => {
-    const removeHashes = api.createType('ContentIdSet', remove)
-    const addHashes = api.createType('ContentIdSet', add)
+    const removeHashes = api.createType('BTreeSet<Bytes>', remove)
+    const addHashes = api.createType('BTreeSet<Bytes>', add)
 
     const tx = api.tx.storage.updateBlacklist(removeHashes, addHashes)
 
