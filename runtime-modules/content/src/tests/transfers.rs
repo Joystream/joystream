@@ -1,7 +1,6 @@
 #![cfg(test)]
 use super::fixtures::*;
 use super::mock::*;
-use crate::tests::curators::add_curator_to_new_group;
 use crate::*;
 use frame_system::RawOrigin;
 use sp_core::sp_std::iter::FromIterator;
@@ -67,52 +66,6 @@ fn initialize_channel_transfer_ok_with_event_deposited() {
                 }
             }
         ));
-    })
-}
-
-#[test]
-fn initialize_channel_transfer_ok_when_issued_by_lead() {
-    with_default_mock_builder(|| {
-        ContentTest::with_curator_channel().setup();
-
-        InitializeChannelTransferFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn initialize_channel_transfer_ok_when_issued_by_curator() {
-    with_default_mock_builder(|| {
-        let group_id = Content::next_curator_group_id();
-        ContentTest::with_curator_channel()
-            .with_agent_permissions(&vec![ChannelActionPermission::TransferChannel])
-            .setup();
-
-        InitializeChannelTransferFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
-            .call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn initialize_channel_transfer_ok_when_issued_by_collaborator() {
-    with_default_mock_builder(|| {
-        ContentTest::with_member_channel()
-            .with_collaborators(
-                vec![(
-                    COLLABORATOR_MEMBER_ID,
-                    BTreeSet::from_iter(vec![ChannelActionPermission::TransferChannel]),
-                )]
-                .as_slice(),
-            )
-            .setup();
-        InitializeChannelTransferFixture::default()
-            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .call_and_assert(Ok(()));
     })
 }
 
@@ -228,29 +181,6 @@ fn initialize_channel_transfer_fails_during_upcoming_token_sales() {
 }
 
 #[test]
-fn initialize_channel_transfer_fails_with_lead_and_non_curator_channel() {
-    with_default_mock_builder(|| {
-        ContentTest::with_member_channel().setup();
-        InitializeChannelTransferFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
-    })
-}
-
-#[test]
-fn initialize_channel_transfer_fails_with_curator_non_authorized_channel() {
-    with_default_mock_builder(|| {
-        ContentTest::with_member_channel().setup();
-        let group_id = add_curator_to_new_group(DEFAULT_CURATOR_ID, &vec![]);
-        InitializeChannelTransferFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()));
-    })
-}
-
-#[test]
 fn initialize_channel_transfer_fails_during_ongoing_token_sales() {
     pub const SALE_STARTING_BLOCK: u64 = 10;
     with_default_mock_builder(|| {
@@ -320,16 +250,6 @@ fn initialize_channel_transfer_fails_with_invalid_origin() {
 }
 
 #[test]
-fn initialize_channel_transfer_fails_with_member_actor() {
-    with_default_mock_builder(|| {
-        ContentTest::with_member_channel().setup();
-        InitializeChannelTransferFixture::default()
-            .with_actor(ContentActor::Member(UNAUTHORIZED_MEMBER_ID))
-            .call_and_assert(Err(Error::<Test>::MemberAuthFailed.into()))
-    })
-}
-
-#[test]
 fn initialize_channel_transfer_fails_with_invalid_collaborators() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
@@ -340,22 +260,6 @@ fn initialize_channel_transfer_fails_with_invalid_collaborators() {
                 BTreeSet::new(),
             )]))
             .call_and_assert(Err(Error::<Test>::InvalidMemberProvided.into()))
-    })
-}
-
-#[test]
-fn initialize_channel_transfer_fails_with_non_channel_owner() {
-    with_default_mock_builder(|| {
-        ContentTest::with_member_channel().setup();
-        let curator_group_id = add_curator_to_new_group(
-            DEFAULT_CURATOR_ID,
-            &[ChannelActionPermission::TransferChannel],
-        );
-
-        InitializeChannelTransferFixture::default()
-            .with_origin(RawOrigin::Signed(DEFAULT_CURATOR_ACCOUNT_ID))
-            .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
     })
 }
 
@@ -611,139 +515,6 @@ fn cancel_channel_transfer_fails_with_invalid_channel_id() {
         CancelChannelTransferFixture::default()
             .with_channel_id(ChannelId::from(2u32))
             .call_and_assert(Err(Error::<Test>::ChannelDoesNotExist.into()))
-    })
-}
-
-#[test]
-fn cancel_channel_transfer_fails_with_non_member_owner() {
-    with_default_mock_builder(|| {
-        ContentTest::with_member_channel().setup();
-        InitializeChannelTransferFixture::default().call_and_assert(Ok(()));
-
-        CancelChannelTransferFixture::default()
-            .with_sender(THIRD_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(THIRD_MEMBER_ID))
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
-    })
-}
-
-#[test]
-fn cancel_channel_transfer_fails_with_lead_and_member_channel() {
-    with_default_mock_builder(|| {
-        ContentTest::with_member_channel().setup();
-        InitializeChannelTransferFixture::default().call_and_assert(Ok(()));
-
-        CancelChannelTransferFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            .call_and_assert(Err(Error::<Test>::ActorNotAuthorized.into()))
-    })
-}
-
-#[test]
-fn cancel_channel_transfer_fails_with_collaborator_not_having_permissions() {
-    with_default_mock_builder(|| {
-        ContentTest::with_member_channel().setup();
-        InitializeChannelTransferFixture::default().call_and_assert(Ok(()));
-
-        CancelChannelTransferFixture::default()
-            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .call_and_assert(Err(
-                Error::<Test>::ChannelAgentInsufficientPermissions.into()
-            ))
-    })
-}
-
-#[test]
-fn cancel_channel_transfer_fails_with_invalid_curator() {
-    with_default_mock_builder(|| {
-        let group_id = Content::next_curator_group_id();
-        ContentTest::with_curator_channel()
-            .with_agent_permissions(&vec![ChannelActionPermission::TransferChannel])
-            .setup();
-        InitializeChannelTransferFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
-            .call_and_assert(Ok(()));
-
-        CancelChannelTransferFixture::default()
-            .with_sender(UNAUTHORIZED_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(group_id, UNAUTHORIZED_CURATOR_ID))
-            .call_and_assert(Err(
-                Error::<Test>::CuratorIsNotAMemberOfGivenCuratorGroup.into()
-            ))
-    })
-}
-
-#[test]
-fn cancel_channel_transfer_ok_with_member_owner() {
-    with_default_mock_builder(|| {
-        ContentTest::with_member_channel().setup();
-        InitializeChannelTransferFixture::default().call_and_assert(Ok(()));
-
-        CancelChannelTransferFixture::default().call_and_assert(Ok(()));
-    })
-}
-
-#[test]
-fn cancel_channel_transfer_ok_with_lead() {
-    with_default_mock_builder(|| {
-        let group_id = Content::next_curator_group_id();
-
-        ContentTest::with_curator_channel()
-            .with_agent_permissions(&vec![ChannelActionPermission::TransferChannel])
-            .setup();
-        InitializeChannelTransferFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
-            .call_and_assert(Ok(()));
-
-        CancelChannelTransferFixture::default()
-            .with_sender(LEAD_ACCOUNT_ID)
-            .with_actor(ContentActor::Lead)
-            .call_and_assert(Ok(()))
-    })
-}
-
-#[test]
-fn cancel_channel_transfer_ok_with_collaborator_having_permissions() {
-    with_default_mock_builder(|| {
-        ContentTest::with_member_channel()
-            .with_collaborators(
-                vec![(
-                    COLLABORATOR_MEMBER_ID,
-                    BTreeSet::from_iter(vec![ChannelActionPermission::TransferChannel]),
-                )]
-                .as_slice(),
-            )
-            .setup();
-
-        InitializeChannelTransferFixture::default().call_and_assert(Ok(()));
-
-        CancelChannelTransferFixture::default()
-            .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
-            .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .call_and_assert(Ok(()))
-    })
-}
-
-#[test]
-fn cancel_channel_transfer_ok_with_curator_having_permissions() {
-    with_default_mock_builder(|| {
-        let group_id = Content::next_curator_group_id();
-        ContentTest::with_curator_channel()
-            .with_agent_permissions(&vec![ChannelActionPermission::TransferChannel])
-            .setup();
-        InitializeChannelTransferFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
-            .call_and_assert(Ok(()));
-
-        CancelChannelTransferFixture::default()
-            .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
-            .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
-            .call_and_assert(Ok(()));
     })
 }
 
