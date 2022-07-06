@@ -1237,8 +1237,7 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            amount: BalanceOf<T>,
-            destination: T::AccountId,
+            amount: BalanceOf<T>
         ) -> DispatchResult {
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
@@ -1247,7 +1246,7 @@ decl_module! {
             let reward_account = ContentTreasury::<T>::account_for_channel(channel_id);
             ensure_actor_authorized_to_withdraw_from_channel::<T>(origin, &actor, &channel)?;
 
-            // Ensure cannot transfer fund feature is pasued
+            // Ensure channel funds transfer feature is not paused
             channel.ensure_feature_not_paused::<T>(PausableChannelFeature::ChannelFundsTransfer)?;
 
             ensure!(
@@ -1265,6 +1264,8 @@ decl_module! {
                 channel.creator_token_id.is_none(),
                 Error::<T>::CannotWithdrawFromChannelWithCreatorTokenIssued
             );
+
+            let destination = Self::channel_funds_destination(&channel)?;
 
             //
             // == MUTATION_SAFE ==
@@ -1327,17 +1328,17 @@ decl_module! {
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             proof: Vec<ProofElement<T>>,
-            item: PullPayment<T>,
-            destination: T::AccountId,
+            item: PullPayment<T>
         ) -> DispatchResult {
             let (channel, reward_account, amount) =
                 Self::ensure_can_claim_channel_reward(&origin, &actor, &item, &proof)?;
 
-            // Ensure features are not paused
+            // Ensure withdrawals are not paused
             channel.ensure_feature_not_paused::<T>(PausableChannelFeature::ChannelFundsTransfer)?;
-            channel.ensure_feature_not_paused::<T>(PausableChannelFeature::CreatorCashout)?;
 
             ensure_actor_authorized_to_withdraw_from_channel::<T>(origin, &actor, &channel)?;
+
+            let destination = Self::channel_funds_destination(&channel)?;
 
             //
             // == MUTATION_SAFE ==
@@ -2505,37 +2506,6 @@ decl_module! {
             );
         }
 
-        /// Claims an accumulated channel reward for a council.
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn claim_council_reward(
-            origin,
-            channel_id: T::ChannelId,
-        ) {
-            let channel = Self::ensure_channel_exists(&channel_id)?;
-
-            channel.ensure_has_no_active_transfer::<T>()?;
-
-            ensure_actor_authorized_to_claim_council_reward::<T>(origin, &channel.owner)?;
-
-            let channel_account_id = ContentTreasury::<T>::account_for_channel(channel_id);
-            let reward: BalanceOf<T> = Balances::<T>::usable_balance(&channel_account_id);
-
-            ensure!(!reward.is_zero(), Error::<T>::ZeroReward);
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            let _ = Balances::<T>::slash(&channel_account_id, reward);
-
-            let budget = T::CouncilBudgetManager::get_budget();
-            let new_budget = budget.saturating_add(reward);
-
-            T::CouncilBudgetManager::set_budget(new_budget);
-
-            Self::deposit_event(RawEvent::CouncilRewardClaimed(channel_id, reward));
-        }
-
         /// Updates global NFT limit.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_global_nft_limit(
@@ -2873,6 +2843,9 @@ decl_module! {
             let reward_account = ContentTreasury::<T>::account_for_channel(channel_id);
             let reward_account_balance = Balances::<T>::usable_balance(&reward_account);
 
+            // Get leftover funds destination
+            let leftover_destination = Self::channel_funds_destination(&channel)?;
+
             // Call to ProjectToken - should be the first call before MUTATION SAFE!
             let leftover_amount = T::ProjectToken::issue_revenue_split(
                 token_id,
@@ -2882,16 +2855,8 @@ decl_module! {
                 reward_account_balance.saturating_sub(<T as balances::Config>::ExistentialDeposit::get())
             )?;
 
-            match channel.owner {
-                ChannelOwner::Member(member_id) => {
-                    let destination = T::MemberAuthenticator::controller_account_id(member_id)?;
-                    Self::execute_channel_balance_withdrawal(&reward_account, &destination, leftover_amount)?
-                },
-                ChannelOwner::CuratorGroup(_) => {
-                    let _ = balances::Pallet::<T>::slash(&reward_account, leftover_amount);
-                    T::CouncilBudgetManager::increase_budget(leftover_amount);
-                },
-            }
+
+            Self::execute_channel_balance_withdrawal(&reward_account, &leftover_destination, leftover_amount)?
         }
 
         /// Finalize an ended revenue split
@@ -3496,6 +3461,7 @@ impl<T: Config> Module<T> {
         let channel = Self::ensure_channel_exists(&item.channel_id)?;
 
         channel.ensure_has_no_active_transfer::<T>()?;
+        channel.ensure_feature_not_paused::<T>(PausableChannelFeature::CreatorCashout)?;
 
         ensure_actor_authorized_to_claim_payment::<T>(origin.clone(), &actor, &channel)?;
 
@@ -3543,16 +3509,24 @@ impl<T: Config> Module<T> {
 
     fn execute_channel_balance_withdrawal(
         reward_account: &T::AccountId,
-        destination: &T::AccountId,
+        destination: &ChannelFundsDestination<T::AccountId>,
         amount: BalanceOf<T>,
     ) -> DispatchResult {
-        <Balances<T> as Currency<T::AccountId>>::transfer(
-            reward_account,
-            destination,
-            amount,
-            ExistenceRequirement::AllowDeath,
-        )?;
-        Ok(())
+        match destination {
+            ChannelFundsDestination::AccountId(account_id) => {
+                <Balances<T> as Currency<T::AccountId>>::transfer(
+                    reward_account,
+                    account_id,
+                    amount,
+                    ExistenceRequirement::AllowDeath,
+                )
+            }
+            ChannelFundsDestination::CouncilBudget => {
+                let _ = Balances::<T>::slash(&reward_account, amount);
+                T::CouncilBudgetManager::increase_budget(amount);
+                Ok(())
+            }
+        }
     }
 
     fn establish_creator_token_sale_earnings_destination(
@@ -3566,6 +3540,19 @@ impl<T: Config> Module<T> {
             ChannelOwner::Member(_) => Some(sender.clone()),
             // Channel owned by curators - earnings are burned
             ChannelOwner::CuratorGroup(_) => None,
+        }
+    }
+
+    fn channel_funds_destination(
+        channel: &Channel<T>,
+    ) -> Result<ChannelFundsDestination<T::AccountId>, DispatchError> {
+        match channel.owner {
+            ChannelOwner::Member(member_id) => {
+                let controller_account =
+                    T::MembershipInfoProvider::controller_account_id(member_id)?;
+                Ok(ChannelFundsDestination::AccountId(controller_account))
+            }
+            ChannelOwner::CuratorGroup(..) => Ok(ChannelFundsDestination::CouncilBudget),
         }
     }
 }
@@ -3606,6 +3593,7 @@ decl_event!(
             TransferParameters<<T as common::MembershipTypes>::MemberId, BalanceOf<T>>,
         UpdateChannelPayoutsParameters = UpdateChannelPayoutsParameters<T>,
         TokenId = <T as project_token::Config>::TokenId,
+        ChannelFundsDestination = ChannelFundsDestination<<T as frame_system::Config>::AccountId>,
     {
         // Curators
         CuratorGroupCreated(CuratorGroupId),
@@ -3647,8 +3635,8 @@ decl_event!(
             Vec<u8>, /* rationale */
         ),
 
-        ChannelFundsWithdrawn(ContentActor, ChannelId, Balance, AccountId),
-        ChannelRewardClaimedAndWithdrawn(ContentActor, ChannelId, Balance, AccountId),
+        ChannelFundsWithdrawn(ContentActor, ChannelId, Balance, ChannelFundsDestination),
+        ChannelRewardClaimedAndWithdrawn(ContentActor, ChannelId, Balance, ChannelFundsDestination),
 
         // Videos
         VideoCreated(
