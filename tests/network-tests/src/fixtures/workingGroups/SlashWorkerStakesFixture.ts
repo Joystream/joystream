@@ -4,9 +4,11 @@ import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { EventDetails, WorkingGroupModuleName } from '../../types'
 import { BaseWorkingGroupFixture } from './BaseWorkingGroupFixture'
-import { Worker, WorkerId } from '@joystream/types/working-group'
+import { WorkerId } from '@joystream/types/primitives'
+import { PalletWorkingGroupGroupWorker as Worker } from '@polkadot/types/lookup'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
+import { Option } from '@polkadot/types/'
 import { Utils } from '../../utils'
 import { StakeSlashedEventFieldsFragment, WorkerFieldsFragment } from '../../graphql/generated/queries'
 
@@ -33,9 +35,11 @@ export class SlashWorkerStakesFixture extends BaseWorkingGroupFixture {
   }
 
   protected async loadWorkersData(): Promise<void> {
-    this.workers = await this.api.query[this.group].workerById.multi<Worker>(this.workerIds)
+    this.workers = (
+      await this.api.query[this.group].workerById.multi<Option<Worker>>(this.workerIds)
+    ).map((optionalWorker) => optionalWorker.unwrap())
     this.workerStakes = await Promise.all(
-      this.workers.map((w) => this.api.getStakedBalance(w.staking_account_id, this.api.lockIdByGroup(this.group)))
+      this.workers.map((w) => this.api.getStakedBalance(w.stakingAccountId, this.api.lockIdByGroup(this.group)))
     )
   }
 
