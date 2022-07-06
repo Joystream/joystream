@@ -12,7 +12,7 @@ import {
   ThreadMetadataUpdate,
   UpdateThreadsMetadataFixture,
 } from '../../fixtures/forum'
-import { CategoryId } from '@joystream/types/forum'
+import { ForumCategoryId } from '@joystream/types/primitives'
 
 export default async function threads({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug(`flow:threads`)
@@ -61,7 +61,7 @@ export default async function threads({ api, query }: FlowProps): Promise<void> 
   await Promise.all([setStickyThreadsRunner.runQueryNodeChecks(), updateThreadTitlesRunner.runQueryNodeChecks()])
 
   // Move threads to different categories
-  const newThreadCategory = (oldCategory: CategoryId) =>
+  const newThreadCategory = (oldCategory: ForumCategoryId) =>
     categoryIds[(categoryIds.indexOf(oldCategory) + 1) % categoryIds.length]
   const threadCategoryUpdates: MoveThreadParams[] = initializeForumFixture.getThreadPaths().map((threadPath) => ({
     ...threadPath,

@@ -1,6 +1,6 @@
 import { BaseFixture } from '../Fixture'
 import { Api } from '../Api'
-import { ChannelId } from '@joystream/types/common'
+import { ChannelId } from '@joystream/types/primitives'
 
 export class CreateChannelsAsMemberFixture extends BaseFixture {
   // Member that will be channel owner

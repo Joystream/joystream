@@ -2,8 +2,9 @@ import { FlowProps } from '../../Flow'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
-import { CreateProposalsFixture, DecideOnProposalStatusFixture } from '../../fixtures/proposals'
+import { CreateProposalsFixture, DecideOnProposalStatusFixture, ProposalCreationParams } from '../../fixtures/proposals'
 import { Resource } from '../../Resources'
+import { Bytes } from '@polkadot/types'
 
 export default async function vetoProposal({ api, query, lock }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:creating-proposals')
@@ -20,7 +21,7 @@ export default async function vetoProposal({ api, query, lock }: FlowProps): Pro
   const createProposalFixture = new CreateProposalsFixture(api, query, [
     {
       type: 'Signal',
-      details: 'Proposal to be vetoed',
+      details: ('Proposal to be vetoed' as unknown) as Bytes,
       asMember: memberId,
       title: 'Proposal to veto',
       description: 'Proposal to be vetoed',
@@ -36,7 +37,7 @@ export default async function vetoProposal({ api, query, lock }: FlowProps): Pro
       asMember: memberId,
       title: 'Veto proposal',
       description: 'Test veto proposal',
-    },
+    } as ProposalCreationParams<'VetoProposal'>,
   ])
   await new FixtureRunner(createVetoProposalFixture).run()
   const [vetoProposalId] = createVetoProposalFixture.getCreatedProposalsIds()

@@ -1,21 +1,24 @@
-import { FlowProps } from '../../Flow'
-import { extendDebug } from '../../Debugger'
 import {
   DistributionBucketFamilyMetadata,
   DistributionBucketOperatorMetadata,
   IDistributionBucketFamilyMetadata,
   IDistributionBucketOperatorMetadata,
 } from '@joystream/metadata-protobuf'
-import { CreateInterface, createType } from '@joystream/types'
-import { BagId, DistributionBucketFamilyId, DynamicBagId, StaticBagId } from '@joystream/types/storage'
+import { createType } from '@joystream/types'
+import { DistributionBucketFamilyId, WorkerId } from '@joystream/types/primitives'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
+import {
+  PalletStorageDynamicBagIdType as DynamicBagId,
+  PalletStorageStaticBagId as StaticBagId,
+} from '@polkadot/types/lookup'
 import _ from 'lodash'
+import { extendDebug } from '../../Debugger'
+import { FlowProps } from '../../Flow'
 import { Utils } from '../../utils'
-import { WorkerId } from '@joystream/types/working-group'
 
 type DistributionBucketConfig = {
   metadata: IDistributionBucketOperatorMetadata
-  staticBags?: CreateInterface<StaticBagId>[]
+  staticBags?: StaticBagId[]
   operatorId: number
 }
 
@@ -23,7 +26,7 @@ type DistributionFamilyConfig = {
   metadata?: IDistributionBucketFamilyMetadata
   buckets: DistributionBucketConfig[]
   dynamicBagPolicy: {
-    [K in keyof typeof DynamicBagId.typeDefinitions]?: number
+    [K in DynamicBagId['type']]?: number
   }
 }
 
@@ -31,7 +34,7 @@ type InitDistributionConfig = {
   families: DistributionFamilyConfig[]
 }
 
-export const allStaticBags: CreateInterface<StaticBagId>[] = [
+export const allStaticBags = [
   'Council',
   { WorkingGroup: 'Content' },
   { WorkingGroup: 'Distribution' },
@@ -53,7 +56,7 @@ export const singleBucketConfig: InitDistributionConfig = {
       buckets: [
         {
           metadata: { endpoint: process.env.DISTRIBUTOR_1_URL || 'http://localhost:3334' },
-          staticBags: allStaticBags,
+          staticBags: (allStaticBags as unknown) as StaticBagId[],
           operatorId: parseInt(process.env.DISTRIBUTOR_1_WORKER_ID || '0'),
         },
       ],
@@ -72,7 +75,7 @@ export const doubleBucketConfig: InitDistributionConfig = {
       buckets: [
         {
           metadata: { endpoint: process.env.DISTRIBUTOR_1_URL || 'http://localhost:3334' },
-          staticBags: allStaticBags,
+          staticBags: (allStaticBags as unknown) as StaticBagId[],
           operatorId: parseInt(process.env.DISTRIBUTOR_1_WORKER_ID || '0'),
         },
       ],
@@ -86,7 +89,7 @@ export const doubleBucketConfig: InitDistributionConfig = {
       buckets: [
         {
           metadata: { endpoint: process.env.DISTRIBUTOR_2_URL || 'http://localhost:3336' },
-          staticBags: allStaticBags,
+          staticBags: (allStaticBags as unknown) as StaticBagId[],
           operatorId: parseInt(process.env.DISTRIBUTOR_2_WORKER_ID || '1'),
         },
       ],
@@ -103,7 +106,7 @@ export default function createFlow({ families }: InitDistributionConfig) {
     // Get working group leaders
     const [, distributionLeader] = await api.getLeader('distributionWorkingGroup')
 
-    const distributionLeaderKey = distributionLeader.role_account_id.toString()
+    const distributionLeaderKey = distributionLeader.roleAccountId.toString()
     const totalBucketsNum = families.reduce((a, b) => a + b.buckets.length, 0)
 
     // Hire operators
@@ -112,7 +115,7 @@ export default function createFlow({ families }: InitDistributionConfig) {
     // const operatorIds = hireWorkersFixture.getHiredWorkers()
 
     const operatorIds = families.reduce(
-      (ids, { buckets }) => ids.concat(buckets.map((b) => createType('WorkerId', b.operatorId))),
+      (ids, { buckets }) => ids.concat(buckets.map((b) => api.createType('u64', b.operatorId))),
       [] as WorkerId[]
     )
     const operatorKeys = await api.getWorkerRoleAccounts(operatorIds, 'distributionWorkingGroup')
@@ -150,8 +153,8 @@ export default function createFlow({ families }: InitDistributionConfig) {
     })
     const updateDynamicBagPolicyTxs = _.entries(dynamicBagPolicies).map(([bagType, policyEntries]) =>
       api.tx.storage.updateFamiliesInDynamicBagCreationPolicy(
-        bagType as keyof typeof DynamicBagId.typeDefinitions,
-        createType('BTreeMap<DistributionBucketFamilyId, u32>', new Map(policyEntries))
+        bagType as DynamicBagId['type'],
+        createType('BTreeMap<u64, u32>', new Map(policyEntries))
       )
     )
     const [createBucketResults] = await Promise.all([
@@ -166,13 +169,13 @@ export default function createFlow({ families }: InitDistributionConfig) {
       })
       .sort(
         (a, b) =>
-          a.distribution_bucket_family_id.cmp(b.distribution_bucket_family_id) ||
-          a.distribution_bucket_index.cmp(b.distribution_bucket_index)
+          a.distributionBucketFamilyId.cmp(b.distributionBucketFamilyId) ||
+          a.distributionBucketIndex.cmp(b.distributionBucketIndex)
       )
     const bucketById = new Map<string, DistributionBucketConfig>()
     bucketIds.forEach((bucketId) => {
-      const familyId = bucketId.distribution_bucket_family_id.toNumber()
-      const bucketIndex = bucketId.distribution_bucket_index.toNumber()
+      const familyId = bucketId.distributionBucketFamilyId.toNumber()
+      const bucketIndex = bucketId.distributionBucketIndex.toNumber()
       const family = familyById.get(familyId)
       if (!family) {
         throw new Error(`familyById not found: ${familyId}`)
@@ -206,10 +209,10 @@ export default function createFlow({ families }: InitDistributionConfig) {
         const setMetaPromise = api.sendExtrinsicsAndGetResults([setMetaTx], operatorKey)
         const updateBagTxs = (bucketConfig.staticBags || []).map((sBagId) => {
           return api.tx.storage.updateDistributionBucketsForBag(
-            createType<BagId, 'BagId'>('BagId', { Static: sBagId }),
-            bucketId.distribution_bucket_family_id,
-            createType('BTreeSet<DistributionBucketIndex>', [bucketId.distribution_bucket_index]),
-            createType('BTreeSet<DistributionBucketIndex>', [])
+            createType('PalletStorageBagIdType', { Static: sBagId }),
+            bucketId.distributionBucketFamilyId,
+            createType('BTreeSet<u64>', [bucketId.distributionBucketIndex]),
+            createType('BTreeSet<u64>', [])
           )
         })
         const updateBagsPromise = api.sendExtrinsicsAndGetResults(updateBagTxs, distributionLeaderKey)

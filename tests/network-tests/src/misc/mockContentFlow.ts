@@ -3,7 +3,6 @@
 import { CreateChannelsAsMemberFixture } from './createChannelsAsMemberFixture'
 import { CreateVideosAsMemberFixture } from './createVideosAsMemberFixture'
 import { BuyMembershipHappyCaseFixture } from '../fixtures/membership'
-import { CreateMockCategories } from './createCategoriesFixture'
 
 import { FlowProps } from '../Flow'
 import { FixtureRunner } from '../Fixture'
@@ -12,7 +11,6 @@ import { extendDebug } from '../Debugger'
 export default async function mockContent({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:createMockContent')
   debug('Started')
-
 
   if (process.env.SKIP_MOCK_CONTENT) {
     debug('Skipping Video and Channel creation')
