@@ -175,9 +175,10 @@ pub enum ChannelActionPermission {
     /// Allows claiming channel reward through `claim_channel_reward` tx
     // or `claim_and_withdraw_channel_reward` tx (provided `WithdrawFromChannelBalance` permission is also granted)
     ClaimChannelReward,
-    // Allows the agent to withdraw channel balance through `withdraw_from_channel_balance` tx
-    // or `claim_and_withdraw_channel_reward` tx (provided `ClaimChannelReward` permission is also granted)
-    // into AGENT'S ACCOUNT(!)
+    // Allows the agent to trigger channel balance withdrawal through `withdraw_from_channel_balance` tx
+    // or `claim_and_withdraw_channel_reward` tx (provided `ClaimChannelReward` permission is also granted).
+    // The withdrawal always goes to the channel owner member controller account (for member channels) /
+    // the council budget (curator channels)
     WithdrawFromChannelBalance,
     /// Allows issuing channel's creator token through `issue_creator_token` extrinsic.
     IssueCreatorToken,
@@ -210,6 +211,14 @@ pub enum ChannelActionPermission {
 }
 
 pub type ChannelAgentPermissions = BTreeSet<ChannelActionPermission>;
+
+/// Destination of the funds withdrawn from the channel account
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+pub enum ChannelFundsDestination<AccountId> {
+    AccountId(AccountId),
+    CouncilBudget,
+}
 
 /// Type representing an owned channel which videos, playlists, and series can belong to.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

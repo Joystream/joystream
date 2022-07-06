@@ -237,3 +237,14 @@ fn offer_nft_fails_during_channel_transfer() {
         );
     })
 }
+
+#[test]
+fn offer_nft_fails_with_non_existing_target_member_id() {
+    with_default_mock_builder(|| {
+        let non_existing_member_id = 9999;
+        ContentTest::default().with_video_nft().setup();
+        OfferNftFixture::default()
+            .with_to(non_existing_member_id)
+            .call_and_assert(Err(Error::<Test>::TargetMemberDoesNotExist.into()))
+    })
+}
