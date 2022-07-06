@@ -3470,7 +3470,7 @@ impl<T: Config> Module<T> {
 
     // Set global and channel NFT limit
     #[allow(dead_code)] // TODO: Remove the `allow` attribute after Carthage
-    pub(crate) fn set_nft_limit(_limit_id: NftLimitId<T::ChannelId>, _limit: u64) {
+    pub(crate) fn set_nft_limit(limit_id: NftLimitId<T::ChannelId>, limit: u64) {
         match limit_id {
             NftLimitId::GlobalDaily => GlobalDailyNftLimit::<T>::mutate(|l| l.limit = limit),
             NftLimitId::GlobalWeekly => GlobalWeeklyNftLimit::<T>::mutate(|l| l.limit = limit),

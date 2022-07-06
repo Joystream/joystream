@@ -207,6 +207,8 @@ fn sell_nft_transactional_status_is_not_idle() {
     })
 }
 
+// TODO: Enable after enabling channel transfers
+#[ignore]
 #[test]
 fn sell_nft_fails_during_transfer() {
     with_default_mock_builder(|| {

@@ -446,6 +446,8 @@ fn buy_now_ok_with_nft_owner_channel_correctly_credited() {
     })
 }
 
+// TODO: Enable after enabling channel transfers
+#[ignore]
 #[test]
 fn buy_nft_fails_during_channel_transfer() {
     with_default_mock_builder(|| {

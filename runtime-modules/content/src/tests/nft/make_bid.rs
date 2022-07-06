@@ -1223,6 +1223,8 @@ fn open_auction_decreased_bid_works_correctly() {
     })
 }
 
+// TODO: Enable after enabling channel transfers
+#[ignore]
 #[test]
 fn make_open_auction_bid_fails_during_transfer() {
     with_default_mock_builder(|| {
@@ -1246,6 +1248,8 @@ fn make_open_auction_bid_fails_during_transfer() {
     })
 }
 
+// TODO: Enable after enabling channel transfers
+#[ignore]
 #[test]
 fn make_english_auction_bid_fails_during_transfer() {
     with_default_mock_builder(|| {

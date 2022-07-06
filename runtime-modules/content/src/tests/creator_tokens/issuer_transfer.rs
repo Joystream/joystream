@@ -120,6 +120,9 @@ fn successful_curator_channel_creator_token_issuer_transfer_by_lead() {
             .call_and_assert(Ok(()));
     })
 }
+
+// TODO: Enable after enabling channel transfer
+#[ignore]
 #[test]
 fn unsuccessful_curator_channel_creator_token_issuer_transfer_during_transfer() {
     with_default_mock_builder(|| {

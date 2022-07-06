@@ -581,6 +581,8 @@ fn settle_english_auction_ok_with_nft_claimed_by_non_winner_and_winner_free_bala
     })
 }
 
+// TODO: Enable after enabling channel transfers
+#[ignore]
 #[test]
 fn settle_english_auction_fails_during_transfer() {
     with_default_mock_builder(|| {

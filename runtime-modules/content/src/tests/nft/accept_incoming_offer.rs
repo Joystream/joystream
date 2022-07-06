@@ -264,6 +264,8 @@ fn accept_incoming_offer_insufficient_balance() {
     })
 }
 
+// TODO: Enable after enabling channel transfers
+#[ignore]
 #[test]
 fn accept_incoming_offer_fails_during_channel_transfer() {
     with_default_mock_builder(|| {

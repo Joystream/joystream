@@ -296,6 +296,8 @@ fn cancel_open_auction_bid_ok_for_expired_auction() {
     })
 }
 
+// TODO: Enable after enabling channel transfers
+#[ignore]
 #[test]
 fn cancel_open_auction_bid_fails_during_transfer() {
     with_default_mock_builder(|| {

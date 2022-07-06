@@ -422,6 +422,8 @@ fn accept_transfer_status_succeeds_for_members_to_curators_with_price() {
     })
 }
 
+// TODO: Enable after enabling channel transfers
+#[ignore]
 #[test]
 fn update_transfer_status_blocked_during_upcoming_revenue_split() {
     pub const SPLIT_STARTING_BLOCK: u64 = 10;
@@ -447,6 +449,8 @@ fn update_transfer_status_blocked_during_upcoming_revenue_split() {
     })
 }
 
+// TODO: Enable after enabling channel transfers
+#[ignore]
 #[test]
 fn update_transfer_status_blocked_during_ongoing_revenue_split() {
     pub const SPLIT_STARTING_BLOCK: u64 = 10;
@@ -474,6 +478,8 @@ fn update_transfer_status_blocked_during_ongoing_revenue_split() {
     })
 }
 
+// TODO: Enable after enabling channel transfers
+#[ignore]
 #[test]
 fn update_transfer_status_blocked_during_unfinalized_revenue_split() {
     pub const SPLIT_STARTING_BLOCK: u64 = 10;
@@ -501,6 +507,8 @@ fn update_transfer_status_blocked_during_unfinalized_revenue_split() {
     })
 }
 
+// TODO: Enable after enabling channel transfers
+#[ignore]
 #[test]
 fn update_transfer_status_blocked_during_upcoming_token_sales() {
     pub const SALE_STARTING_BLOCK: u64 = 10;
@@ -518,6 +526,8 @@ fn update_transfer_status_blocked_during_upcoming_token_sales() {
     })
 }
 
+// TODO: Enable after enabling channel transfers
+#[ignore]
 #[test]
 fn update_transfer_status_blocked_during_ongoing_token_sales() {
     pub const SALE_STARTING_BLOCK: u64 = 10;
@@ -536,6 +546,8 @@ fn update_transfer_status_blocked_during_ongoing_token_sales() {
     })
 }
 
+// TODO: Enable after enabling channel transfers
+#[ignore]
 #[test]
 fn update_transfer_status_blocked_during_unfinalized_token_sales() {
     pub const SALE_STARTING_BLOCK: u64 = 10;

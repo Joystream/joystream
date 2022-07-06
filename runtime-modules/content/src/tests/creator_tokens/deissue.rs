@@ -120,6 +120,8 @@ fn successful_deissue_curator_channel_creator_token_by_lead() {
     })
 }
 
+// TODO: Enable after enabling channel transfer
+#[ignore]
 #[test]
 fn deissue_token_fails_during_transfer() {
     with_default_mock_builder(|| {
