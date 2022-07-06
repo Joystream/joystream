@@ -3,6 +3,7 @@ use crate::tests::curators::add_curator_to_new_group_with_permissions;
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
+use frame_support::{assert_noop, assert_ok};
 use frame_system::RawOrigin;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::FromIterator;
@@ -162,6 +163,33 @@ fn default_channel_nft_limits_set_successfully() {
         assert_eq!(
             channel.weekly_nft_limit,
             DefaultChannelWeeklyNftLimit::get()
+        );
+    })
+}
+
+#[test]
+fn toggle_nft_limits_ok_with_event_deposited_and_status_changed() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        // nft limits is true by chainspec configuration, changing to false..
+        assert_ok!(Content::toggle_nft_limits(Origin::root(), false));
+
+        assert_eq!(
+            System::events().last().unwrap().event,
+            MetaEvent::Content(RawEvent::ToggledNftLimits(false)),
+        );
+        assert_eq!(Content::nft_limits_enabled(), false);
+    })
+}
+
+#[test]
+fn toggle_nft_limits_fails_by_non_root_origin() {
+    with_default_mock_builder(|| {
+        run_to_block(1);
+        // nft limits is true by chainspec configuration
+        assert_noop!(
+            Content::toggle_nft_limits(Origin::signed(LEAD_ACCOUNT_ID), false),
+            DispatchError::BadOrigin,
         );
     })
 }

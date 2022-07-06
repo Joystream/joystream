@@ -28,9 +28,9 @@ pub mod initial_members;
 use grandpa_primitives::AuthorityId as GrandpaId;
 
 use node_runtime::{
-    constants::currency::*, constants::JOY_ADDRESS_PREFIX, membership, wasm_binary_unwrap,
-    AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, Block, ContentConfig, ForumConfig,
-    GrandpaConfig, ImOnlineConfig, MaxNominations, MembersConfig, SessionConfig, SessionKeys,
+    constants::currency::*, membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig,
+    BalancesConfig, Block, ContentConfig, CouncilConfig, ForumConfig, GrandpaConfig,
+    ImOnlineConfig, MaxNominations, MembersConfig, ReferendumConfig, SessionConfig, SessionKeys,
     StakerStatus, StakingConfig, SudoConfig, SystemConfig, TransactionPaymentConfig,
 };
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
@@ -47,6 +47,7 @@ use sp_runtime::{
     Perbill,
 };
 
+pub use node_runtime::constants::JOY_ADDRESS_PREFIX;
 pub use node_runtime::primitives::{AccountId, Balance, Signature};
 pub use node_runtime::GenesisConfig;
 

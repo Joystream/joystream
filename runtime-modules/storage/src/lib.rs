@@ -3987,7 +3987,9 @@ impl<T: Config> Module<T> {
     fn validate_update_families_in_dynamic_bag_creation_policy_params(
         families: &BTreeMap<T::DistributionBucketFamilyId, u32>,
     ) -> DispatchResult {
-        let number_of_distribution_buckets: u32 = families.iter().map(|(_, num)| num).sum();
+        let number_of_distribution_buckets: u64 = families
+            .iter()
+            .fold(0, |acc, (_, num)| acc.saturating_add((*num).into()));
         T::DistributionBucketsPerBagValueConstraint::get().ensure_valid(
             number_of_distribution_buckets,
             Error::<T>::NumberOfDistributionBucketsOutsideOfAllowedContraints,

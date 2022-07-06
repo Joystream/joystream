@@ -1955,7 +1955,6 @@ pub struct WithdrawFromChannelBalanceFixture {
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
     amount: BalanceOf<Test>,
-    destination: AccountId,
 }
 
 impl WithdrawFromChannelBalanceFixture {
@@ -1965,7 +1964,6 @@ impl WithdrawFromChannelBalanceFixture {
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             channel_id: ChannelId::one(),
             amount: DEFAULT_PAYOUT_EARNED,
-            destination: DEFAULT_CHANNEL_REWARD_WITHDRAWAL_ACCOUNT_ID,
         }
     }
 
@@ -1985,30 +1983,46 @@ impl WithdrawFromChannelBalanceFixture {
         Self { amount, ..self }
     }
 
-    pub fn with_destination(self, destination: AccountId) -> Self {
-        Self {
-            destination,
-            ..self
+    fn balance_of(
+        dest: &ChannelFundsDestination<<Test as frame_system::Config>::AccountId>,
+    ) -> BalanceOf<Test> {
+        match dest {
+            ChannelFundsDestination::AccountId(account_id) => {
+                Balances::<Test>::usable_balance(account_id)
+            }
+            ChannelFundsDestination::CouncilBudget => {
+                <Test as Config>::CouncilBudgetManager::get_budget()
+            }
         }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
-        let dest_balance_pre = Balances::<Test>::usable_balance(self.destination);
+        let origin = Origin::signed(self.sender.clone());
+
         let channel_pre = Content::channel_by_id(self.channel_id);
         let channel_balance_pre = channel_reward_account_balance(self.channel_id);
+        let expected_dest = match channel_pre.owner {
+            ChannelOwner::Member(member_id) => {
+                ChannelFundsDestination::<<Test as frame_system::Config>::AccountId>::AccountId(
+                    TestMemberships::controller_account_id(member_id).unwrap_or_default(),
+                )
+            }
+            ChannelOwner::CuratorGroup(..) => {
+                ChannelFundsDestination::<<Test as frame_system::Config>::AccountId>::CouncilBudget
+            }
+        };
+        let dest_balance_pre = Self::balance_of(&expected_dest);
 
         let actual_result = Content::withdraw_from_channel_balance(
             origin,
             self.actor,
             self.channel_id,
             self.amount,
-            self.destination,
         );
 
-        let dest_balance_post = Balances::<Test>::usable_balance(&self.destination);
         let channel_post = Content::channel_by_id(self.channel_id);
         let channel_balance_post = channel_reward_account_balance(self.channel_id);
+        let dest_balance_post = Self::balance_of(&expected_dest);
 
         assert_eq!(actual_result, expected_result);
 
@@ -2028,7 +2042,7 @@ impl WithdrawFromChannelBalanceFixture {
                     self.actor,
                     self.channel_id,
                     self.amount,
-                    self.destination,
+                    expected_dest,
                 ))
             );
         } else {
@@ -2044,7 +2058,6 @@ pub struct ClaimAndWithdrawChannelRewardFixture {
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     payments: Vec<PullPayment<Test>>,
     item: PullPayment<Test>,
-    destination: AccountId,
 }
 
 impl ClaimAndWithdrawChannelRewardFixture {
@@ -2058,7 +2071,6 @@ impl ClaimAndWithdrawChannelRewardFixture {
                 cumulative_reward_earned: DEFAULT_PAYOUT_CLAIMED,
                 reason: Hashing::hash_of(&b"reason".to_vec()),
             },
-            destination: DEFAULT_CHANNEL_REWARD_WITHDRAWAL_ACCOUNT_ID,
         }
     }
 
@@ -2078,18 +2090,34 @@ impl ClaimAndWithdrawChannelRewardFixture {
         Self { item, ..self }
     }
 
-    pub fn with_destination(self, destination: AccountId) -> Self {
-        Self {
-            destination,
-            ..self
+    fn balance_of(
+        dest: &ChannelFundsDestination<<Test as frame_system::Config>::AccountId>,
+    ) -> BalanceOf<Test> {
+        match dest {
+            ChannelFundsDestination::AccountId(account_id) => {
+                Balances::<Test>::usable_balance(account_id)
+            }
+            ChannelFundsDestination::CouncilBudget => {
+                <Test as Config>::CouncilBudgetManager::get_budget()
+            }
         }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
-        let dest_balance_pre = Balances::<Test>::usable_balance(&self.destination);
+        let origin = Origin::signed(self.sender.clone());
         let channel_pre = Content::channel_by_id(&self.item.channel_id);
         let channel_balance_pre = channel_reward_account_balance(self.item.channel_id);
+        let expected_dest = match channel_pre.owner {
+            ChannelOwner::Member(member_id) => {
+                ChannelFundsDestination::<<Test as frame_system::Config>::AccountId>::AccountId(
+                    TestMemberships::controller_account_id(member_id).unwrap_or_default(),
+                )
+            }
+            ChannelOwner::CuratorGroup(..) => {
+                ChannelFundsDestination::<<Test as frame_system::Config>::AccountId>::CouncilBudget
+            }
+        };
+        let dest_balance_pre = Self::balance_of(&expected_dest);
         let council_budget_pre = <Test as Config>::CouncilBudgetManager::get_budget();
 
         let proof = if self.payments.is_empty() {
@@ -2100,15 +2128,14 @@ impl ClaimAndWithdrawChannelRewardFixture {
 
         let actual_result = Content::claim_and_withdraw_channel_reward(
             origin,
-            self.actor,
-            proof,
-            self.item,
-            self.destination,
+            self.actor.clone(),
+            proof.clone(),
+            self.item.clone(),
         );
 
-        let dest_balance_post = Balances::<Test>::usable_balance(&self.destination);
         let channel_post = Content::channel_by_id(&self.item.channel_id);
         let channel_balance_post = channel_reward_account_balance(self.item.channel_id);
+        let dest_balance_post = Self::balance_of(&expected_dest);
         let council_budget_post = <Test as Config>::CouncilBudgetManager::get_budget();
 
         assert_eq!(actual_result, expected_result);
@@ -2124,13 +2151,17 @@ impl ClaimAndWithdrawChannelRewardFixture {
                 self.item.cumulative_reward_earned
             );
             assert_eq!(
-                dest_balance_post,
-                dest_balance_pre.saturating_add(amount_claimed)
-            );
-            assert_eq!(channel_balance_post, channel_balance_pre);
-            assert_eq!(
-                council_budget_post,
-                council_budget_pre.saturating_sub(amount_claimed)
+                (dest_balance_post, council_budget_post),
+                match expected_dest {
+                    // Funds are first claimed from, then withdrawn into the council budget
+                    ChannelFundsDestination::CouncilBudget =>
+                        (dest_balance_pre, council_budget_pre),
+                    // Funds are taken from council budget and withdrawn into an account
+                    _ => (
+                        dest_balance_pre.saturating_add(amount_claimed),
+                        council_budget_pre.saturating_sub(amount_claimed)
+                    ),
+                }
             );
             assert_eq!(
                 System::events().last().unwrap().event,
@@ -2138,7 +2169,7 @@ impl ClaimAndWithdrawChannelRewardFixture {
                     self.actor,
                     self.item.channel_id,
                     amount_claimed,
-                    self.destination,
+                    expected_dest,
                 ))
             );
         } else {
@@ -3080,54 +3111,6 @@ impl AcceptChannelTransferFixture {
     }
 }
 
-pub struct ClaimCouncilRewardFixture {
-    origin: RawOrigin<u128>,
-    channel_id: u64,
-    expected_reward: BalanceOf<Test>,
-}
-
-impl ClaimCouncilRewardFixture {
-    pub fn default() -> Self {
-        Self {
-            origin: RawOrigin::Signed(DEFAULT_MEMBER_ACCOUNT_ID),
-            channel_id: ChannelId::one(),
-            expected_reward: Default::default(),
-        }
-    }
-
-    pub fn with_origin(self, origin: RawOrigin<u128>) -> Self {
-        Self { origin, ..self }
-    }
-
-    pub fn with_expected_reward(self, expected_reward: BalanceOf<Test>) -> Self {
-        Self {
-            expected_reward,
-            ..self
-        }
-    }
-
-    pub fn with_channel_id(self, channel_id: ChannelId) -> Self {
-        Self { channel_id, ..self }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result =
-            Content::claim_council_reward(self.origin.clone().into(), self.channel_id);
-
-        assert_eq!(actual_result, expected_result);
-
-        if actual_result.is_ok() {
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::Content(RawEvent::CouncilRewardClaimed(
-                    self.channel_id,
-                    self.expected_reward
-                ))
-            );
-        }
-    }
-}
-
 pub struct IssueNftFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
@@ -3461,7 +3444,6 @@ impl OfferNftFixture {
         Self { video_id, ..self }
     }
 
-    #[allow(dead_code)]
     pub fn with_to(self, to: MemberId) -> Self {
         Self { to, ..self }
     }
