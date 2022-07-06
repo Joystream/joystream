@@ -5456,6 +5456,11 @@ pub fn run_all_fixtures_with_contexts(
             .with_sender(sender)
             .with_actor(actor)
             .call_and_assert(expected_err.clone());
+        CancelChannelTransferFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err.clone());
+
         ClaimChannelRewardFixture::default()
             .with_sender(sender)
             .with_actor(actor)
