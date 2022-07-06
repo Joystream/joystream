@@ -1,8 +1,7 @@
 import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
-import { ProposalDetails } from '@joystream/types/proposals'
+import { PalletProposalsCodexProposalDetails as ProposalDetails } from '@polkadot/types/lookup'
 import { BaseFixture, FixtureRunner } from '../../Fixture'
-import { CreateInterface } from '@joystream/types'
 import {
   DecideOnProposalStatusFixture,
   DecideOnProposalStatusParams,
@@ -14,6 +13,7 @@ import { CreateProposalsFixture, ProposalCreationParams } from './CreateProposal
 import { ElectCouncilFixture } from '../council/ElectCouncilFixture'
 import _ from 'lodash'
 import { Resource, ResourceLocker } from '../../Resources'
+import { CreateInterface, createType } from '@joystream/types'
 
 export type TestedProposal = { details: CreateInterface<ProposalDetails>; expectExecutionFailure?: boolean }
 export type ProposalTestCase = {
@@ -44,10 +44,10 @@ export class AllProposalsOutcomesFixture extends BaseFixture {
 
     for (const { details, expectExecutionFailure } of testedProposals) {
       for (const decisionStatus of decisionStatuses) {
-        const proposalDetails = api.createType('ProposalDetails', details)
+        const proposalDetails = createType('PalletProposalsCodexProposalDetails', details)
         testCases.push({
           type: proposalDetails.type,
-          details: proposalDetails.value,
+          details: proposalDetails[`as${proposalDetails.type}`],
           decisionStatus,
           expectExecutionFailure,
         })
@@ -66,7 +66,7 @@ export class AllProposalsOutcomesFixture extends BaseFixture {
     let n = 0
     while ((batch = testCases.slice(n * proposalsPerBatch, (n + 1) * proposalsPerBatch)).length) {
       const unlocks = await Promise.all(batch.map(() => this.lock(Resource.Proposals)))
-      const createProposalsParams: ProposalCreationParams[] = batch.map(({ type, details, decisionStatus }, i) => ({
+      const createProposalsParams = batch.map(({ type, details, decisionStatus }, i) => ({
         asMember: memberIds[i],
         title: `${_.startCase(type)}`,
         description: `Test ${type} proposal to be ${decisionStatus}`,
@@ -75,9 +75,13 @@ export class AllProposalsOutcomesFixture extends BaseFixture {
       }))
       this.debug(
         'Creating proposals:',
-        createProposalsParams.map((p) => p.type)
+        createProposalsParams.map((p) => [p.description, p.details])
       )
-      const createProposalsFixure = new CreateProposalsFixture(api, query, createProposalsParams)
+      const createProposalsFixure = new CreateProposalsFixture(
+        api,
+        query,
+        (createProposalsParams as unknown) as ProposalCreationParams[]
+      )
       await new FixtureRunner(createProposalsFixure).runWithQueryNodeChecks()
       const proposalIds = createProposalsFixure.getCreatedProposalsIds()
 

@@ -6,19 +6,22 @@ import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { ProposalFieldsFragment, ProposalVotedEventFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
-import { Proposal, ProposalId, VoteKind } from '@joystream/types/proposals'
-import { MemberId } from '@joystream/types/common'
+import {
+  PalletProposalsEngineProposal as Proposal,
+  PalletProposalsEngineVoteKind as VoteKind,
+} from '@polkadot/types/lookup'
+import { MemberId, ProposalId } from '@joystream/types/primitives'
 import { StandardizedFixture } from '../../Fixture'
 import { ProposalVoteKind } from '../../graphql/generated/schema'
 
 export type ProposalVote = {
   asMember: MemberId
   proposalId: ProposalId
-  vote: keyof typeof VoteKind['typeDefinitions']
+  vote: VoteKind['type']
   rationale: string
 }
 
-const voteKindToQueryNodeVoteKind: { [K in keyof typeof VoteKind['typeDefinitions']]: ProposalVoteKind } = {
+const voteKindToQueryNodeVoteKind: { [K in VoteKind['type']]: ProposalVoteKind } = {
   'Abstain': ProposalVoteKind.Abstain,
   'Approve': ProposalVoteKind.Approve,
   'Reject': ProposalVoteKind.Reject,

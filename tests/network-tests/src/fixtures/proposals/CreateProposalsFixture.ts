@@ -79,6 +79,7 @@ export class CreateProposalsFixture extends StandardizedFixture {
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     return this.proposalsParams.map(({ asMember, description, title, exactExecutionBlock, details, type }, i) => {
       const proposalDetails = { [type]: details } as { [K in ProposalType]: ProposalDetailsJsonByType<K> }
+      console.log('proposalDetails: ', proposalDetails)
       return this.api.tx.proposalsCodex.createProposal(
         {
           memberId: asMember,
@@ -100,17 +101,19 @@ export class CreateProposalsFixture extends StandardizedFixture {
     params: ProposalCreationParams<ProposalType>,
     qProposal: ProposalFieldsFragment
   ): void {
-    const proposalDetails = this.api.createType('ProposalDetails', { [params.type]: params.details })
+    const proposalDetails = this.api.createType('PalletProposalsCodexProposalDetails', {
+      [params.type]: params.details,
+    })
     switch (params.type) {
       case 'AmendConstitution': {
         Utils.assert(qProposal.details.__typename === 'AmendConstitutionProposalDetails')
         const details = proposalDetails.asAmendConstitution
-        assert.equal(qProposal.details.text, details.toString())
+        assert.equal(qProposal.details.text, details.toHuman()?.toString())
         break
       }
       case 'CancelWorkingGroupLeadOpening': {
         Utils.assert(qProposal.details.__typename === 'CancelWorkingGroupLeadOpeningProposalDetails')
-        const details = proposalDetails.asType('CancelWorkingGroupLeadOpening')
+        const details = proposalDetails.asCancelWorkingGroupLeadOpening
         const [openingId, workingGroup] = details
         const expectedId = `${getWorkingGroupModuleName(workingGroup)}-${openingId.toString()}`
         assert.equal(qProposal.details.opening?.id, expectedId)
@@ -118,11 +121,11 @@ export class CreateProposalsFixture extends StandardizedFixture {
       }
       case 'CreateWorkingGroupLeadOpening': {
         Utils.assert(qProposal.details.__typename === 'CreateWorkingGroupLeadOpeningProposalDetails')
-        const details = proposalDetails.asType('CreateWorkingGroupLeadOpening')
-        assert.equal(qProposal.details.group?.id, getWorkingGroupModuleName(details.working_group))
-        assert.equal(qProposal.details.rewardPerBlock.toString(), details.reward_per_block.toString())
-        assert.equal(qProposal.details.stakeAmount.toString(), details.stake_policy.stake_amount.toString())
-        assert.equal(qProposal.details.unstakingPeriod, details.stake_policy.leaving_unstaking_period.toNumber())
+        const details = proposalDetails.asCreateWorkingGroupLeadOpening
+        assert.equal(qProposal.details.group?.id, getWorkingGroupModuleName(details.group))
+        assert.equal(qProposal.details.rewardPerBlock.toString(), details.rewardPerBlock.toString())
+        assert.equal(qProposal.details.stakeAmount.toString(), details.stakePolicy.stakeAmount.toString())
+        assert.equal(qProposal.details.unstakingPeriod, details.stakePolicy.leavingUnstakingPeriod.toNumber())
         Utils.assert(qProposal.details.metadata)
         assertQueriedOpeningMetadataIsValid(
           qProposal.details.metadata,
@@ -132,7 +135,7 @@ export class CreateProposalsFixture extends StandardizedFixture {
       }
       case 'DecreaseWorkingGroupLeadStake': {
         Utils.assert(qProposal.details.__typename === 'DecreaseWorkingGroupLeadStakeProposalDetails')
-        const details = proposalDetails.asType('DecreaseWorkingGroupLeadStake')
+        const details = proposalDetails.asDecreaseWorkingGroupLeadStake
         const [workerId, amount, group] = details
         const expectedId = `${getWorkingGroupModuleName(group)}-${workerId.toString()}`
         assert.equal(qProposal.details.amount.toString(), amount.toString())
@@ -141,18 +144,18 @@ export class CreateProposalsFixture extends StandardizedFixture {
       }
       case 'FillWorkingGroupLeadOpening': {
         Utils.assert(qProposal.details.__typename === 'FillWorkingGroupLeadOpeningProposalDetails')
-        const details = proposalDetails.asType('FillWorkingGroupLeadOpening')
-        const expectedOpeningId = `${getWorkingGroupModuleName(details.working_group)}-${details.opening_id.toString()}`
+        const details = proposalDetails.asFillWorkingGroupLeadOpening
+        const expectedOpeningId = `${getWorkingGroupModuleName(details.workingGroup)}-${details.openingId.toString()}`
         const expectedApplicationId = `${getWorkingGroupModuleName(
-          details.working_group
-        )}-${details.successful_application_id.toString()}`
+          details.workingGroup
+        )}-${details.applicationId.toString()}`
         assert.equal(qProposal.details.opening?.id, expectedOpeningId)
         assert.equal(qProposal.details.application?.id, expectedApplicationId)
         break
       }
       case 'FundingRequest': {
         Utils.assert(qProposal.details.__typename === 'FundingRequestProposalDetails')
-        const details = proposalDetails.asType('FundingRequest')
+        const details = proposalDetails.asFundingRequest
         assert.sameDeepMembers(
           qProposal.details.destinationsList?.destinations.map(({ amount, account }) => ({ amount, account })) || [],
           details.map((d) => ({ amount: d.amount.toString(), account: d.account.toString() }))
@@ -161,7 +164,7 @@ export class CreateProposalsFixture extends StandardizedFixture {
       }
       case 'RuntimeUpgrade': {
         Utils.assert(qProposal.details.__typename === 'RuntimeUpgradeProposalDetails')
-        const details = proposalDetails.asType('RuntimeUpgrade')
+        const details = proposalDetails.asRuntimeUpgrade
         Utils.assert(qProposal.details.newRuntimeBytecode, 'Missing newRuntimeBytecode relationship')
         assert.equal(qProposal.details.newRuntimeBytecode.id, blake2AsHex(details.toU8a(true)))
         const expectedBytecode = '0x' + Buffer.from(details.toU8a(true)).toString('hex')
@@ -179,55 +182,55 @@ export class CreateProposalsFixture extends StandardizedFixture {
       }
       case 'SetCouncilBudgetIncrement': {
         Utils.assert(qProposal.details.__typename === 'SetCouncilBudgetIncrementProposalDetails')
-        const details = proposalDetails.asType('SetCouncilBudgetIncrement')
+        const details = proposalDetails.asSetCouncilBudgetIncrement
         assert.equal(qProposal.details.newAmount.toString(), details.toString())
         break
       }
       case 'SetCouncilorReward': {
         Utils.assert(qProposal.details.__typename === 'SetCouncilorRewardProposalDetails')
-        const details = proposalDetails.asType('SetCouncilorReward')
+        const details = proposalDetails.asSetCouncilorReward
         assert.equal(qProposal.details.newRewardPerBlock.toString(), details.toString())
         break
       }
       case 'SetInitialInvitationBalance': {
         Utils.assert(qProposal.details.__typename === 'SetInitialInvitationBalanceProposalDetails')
-        const details = proposalDetails.asType('SetInitialInvitationBalance')
+        const details = proposalDetails.asSetInitialInvitationBalance
         assert.equal(qProposal.details.newInitialInvitationBalance.toString(), details.toString())
         break
       }
       case 'SetInitialInvitationCount': {
         Utils.assert(qProposal.details.__typename === 'SetInitialInvitationCountProposalDetails')
-        const details = proposalDetails.asType('SetInitialInvitationCount')
+        const details = proposalDetails.asSetInitialInvitationCount
         assert.equal(qProposal.details.newInitialInvitationsCount, details.toNumber())
         break
       }
       case 'SetMaxValidatorCount': {
         Utils.assert(qProposal.details.__typename === 'SetMaxValidatorCountProposalDetails')
-        const details = proposalDetails.asType('SetMaxValidatorCount')
+        const details = proposalDetails.asSetMaxValidatorCount
         assert.equal(qProposal.details.newMaxValidatorCount, details.toNumber())
         break
       }
       case 'SetMembershipLeadInvitationQuota': {
         Utils.assert(qProposal.details.__typename === 'SetMembershipLeadInvitationQuotaProposalDetails')
-        const details = proposalDetails.asType('SetMembershipLeadInvitationQuota')
+        const details = proposalDetails.asSetMembershipLeadInvitationQuota
         assert.equal(qProposal.details.newLeadInvitationQuota, details.toNumber())
         break
       }
       case 'SetMembershipPrice': {
         Utils.assert(qProposal.details.__typename === 'SetMembershipPriceProposalDetails')
-        const details = proposalDetails.asType('SetMembershipPrice')
+        const details = proposalDetails.asSetMembershipPrice
         assert.equal(qProposal.details.newPrice.toString(), details.toString())
         break
       }
       case 'SetReferralCut': {
         Utils.assert(qProposal.details.__typename === 'SetReferralCutProposalDetails')
-        const details = proposalDetails.asType('SetReferralCut')
+        const details = proposalDetails.asSetReferralCut
         assert.equal(qProposal.details.newReferralCut, details.toNumber())
         break
       }
       case 'SetWorkingGroupLeadReward': {
         Utils.assert(qProposal.details.__typename === 'SetWorkingGroupLeadRewardProposalDetails')
-        const details = proposalDetails.asType('SetWorkingGroupLeadReward')
+        const details = proposalDetails.asSetWorkingGroupLeadReward
         const [workerId, reward, group] = details
         const expectedId = `${getWorkingGroupModuleName(group)}-${workerId.toString()}`
         assert.equal(qProposal.details.newRewardPerBlock.toString(), reward.toString())
@@ -236,13 +239,13 @@ export class CreateProposalsFixture extends StandardizedFixture {
       }
       case 'Signal': {
         Utils.assert(qProposal.details.__typename === 'SignalProposalDetails')
-        const details = proposalDetails.asType('Signal')
-        assert.equal(qProposal.details.text, details.toString())
+        const details = proposalDetails.asSignal
+        assert.equal(qProposal.details.text, details.toHuman()?.toString())
         break
       }
       case 'SlashWorkingGroupLead': {
         Utils.assert(qProposal.details.__typename === 'SlashWorkingGroupLeadProposalDetails')
-        const details = proposalDetails.asType('SlashWorkingGroupLead')
+        const details = proposalDetails.asSlashWorkingGroupLead
         const [workerId, amount, group] = details
         const expectedId = `${getWorkingGroupModuleName(group)}-${workerId.toString()}`
         assert.equal(qProposal.details.lead?.id, expectedId)
@@ -251,26 +254,23 @@ export class CreateProposalsFixture extends StandardizedFixture {
       }
       case 'TerminateWorkingGroupLead': {
         Utils.assert(qProposal.details.__typename === 'TerminateWorkingGroupLeadProposalDetails')
-        const details = proposalDetails.asType('TerminateWorkingGroupLead')
-        const expectedId = `${getWorkingGroupModuleName(details.working_group)}-${details.worker_id.toString()}`
+        const details = proposalDetails.asTerminateWorkingGroupLead
+        const expectedId = `${getWorkingGroupModuleName(details.group)}-${details.workerId.toString()}`
         assert.equal(qProposal.details.lead?.id, expectedId)
-        assert.equal(qProposal.details.slashingAmount!.toString(), details.slashing_amount.toString())
+        assert.equal(qProposal.details.slashingAmount!.toString(), details.slashingAmount.toString())
         break
       }
       case 'UpdateWorkingGroupBudget': {
         Utils.assert(qProposal.details.__typename === 'UpdateWorkingGroupBudgetProposalDetails')
-        const details = proposalDetails.asType('UpdateWorkingGroupBudget')
+        const details = proposalDetails.asUpdateWorkingGroupBudget
         const [balance, group, balanceKind] = details
-        assert.equal(
-          qProposal.details.amount.toString(),
-          (balanceKind.isOfType('Negative') ? '-' : '') + balance.toString()
-        )
+        assert.equal(qProposal.details.amount.toString(), (balanceKind.isNegative ? '-' : '') + balance.toString())
         assert.equal(qProposal.details.group?.id, getWorkingGroupModuleName(group))
         break
       }
       case 'VetoProposal': {
         Utils.assert(qProposal.details.__typename === 'VetoProposalDetails')
-        const details = proposalDetails.asType('VetoProposal')
+        const details = proposalDetails.asVetoProposal
         assert.equal(qProposal.details.proposal?.id, details.toString())
         break
       }
