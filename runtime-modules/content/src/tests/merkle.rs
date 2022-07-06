@@ -131,6 +131,8 @@ fn unsuccessful_reward_claim_with_empty_proof() {
     })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn unsuccessful_reward_claim_with_pending_channel_transfer() {
     with_default_mock_builder(|| {
