@@ -590,6 +590,7 @@ fn pick_open_auction_ok_with_channel_owner_correctly_credited() {
     })
 }
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn pick_open_auction_fails_during_channel_transfer() {

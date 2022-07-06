@@ -778,43 +778,41 @@ decl_module! {
         /// # </weight>
         #[weight = Module::<T>::create_bounty_weight(&params, &metadata)]
         pub fn create_bounty(origin, params: BountyCreationParameters<T>, metadata: Vec<u8>) {
-            return Err(Error::<T>::FeatureNotImplemented.into());
-            // TODO: Enable after Carthage
-            // let bounty_creator_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
-            //     origin,
-            //     params.creator.clone()
-            // )?;
+            let bounty_creator_manager = BountyActorManager::<T>::ensure_bounty_actor_manager(
+                origin,
+                params.creator.clone()
+            )?;
 
-            // Self::ensure_create_bounty_parameters_valid(&params)?;
+            Self::ensure_create_bounty_parameters_valid(&params)?;
 
-            // bounty_creator_manager.validate_balance_sufficiency(params.cherry)?;
+            bounty_creator_manager.validate_balance_sufficiency(params.cherry)?;
 
-            // //
-            // // == MUTATION SAFE ==
-            // //
+            //
+            // == MUTATION SAFE ==
+            //
 
-            // let next_bounty_count_value = Self::bounty_count() + 1;
-            // let bounty_id = T::BountyId::from(next_bounty_count_value);
+            let next_bounty_count_value = Self::bounty_count() + 1;
+            let bounty_id = T::BountyId::from(next_bounty_count_value);
 
-            // bounty_creator_manager.transfer_funds_to_bounty_account(bounty_id, params.cherry)?;
+            bounty_creator_manager.transfer_funds_to_bounty_account(bounty_id, params.cherry)?;
 
-            // let created_bounty_milestone = BountyMilestone::Created {
-            //     created_at: Self::current_block(),
-            //     has_contributions: false, // just created - no contributions
-            // };
+            let created_bounty_milestone = BountyMilestone::Created {
+                created_at: Self::current_block(),
+                has_contributions: false, // just created - no contributions
+            };
 
-            // let bounty = Bounty::<T> {
-            //     total_funding: Zero::zero(),
-            //     creation_params: params.clone(),
-            //     milestone: created_bounty_milestone,
-            //     active_work_entry_count: 0,
-            // };
+            let bounty = Bounty::<T> {
+                total_funding: Zero::zero(),
+                creation_params: params.clone(),
+                milestone: created_bounty_milestone,
+                active_work_entry_count: 0,
+            };
 
-            // <Bounties<T>>::insert(bounty_id, bounty);
-            // BountyCount::mutate(|count| {
-            //     *count = next_bounty_count_value
-            // });
-            // Self::deposit_event(RawEvent::BountyCreated(bounty_id, params, metadata));
+            <Bounties<T>>::insert(bounty_id, bounty);
+            BountyCount::mutate(|count| {
+                *count = next_bounty_count_value
+            });
+            Self::deposit_event(RawEvent::BountyCreated(bounty_id, params, metadata));
         }
 
         /// Cancels a bounty.

@@ -8,6 +8,7 @@ use frame_system::RawOrigin;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::FromIterator;
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn update_nft_limits_works_as_expected_for_global_limits() {
@@ -35,6 +36,7 @@ fn update_nft_limits_works_as_expected_for_global_limits() {
     })
 }
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn update_nft_limits_works_as_expected_for_channel_limits() {
@@ -145,6 +147,7 @@ fn update_channel_nft_limit_test_helper(
 }
 
 // channel creation tests
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn default_channel_nft_limits_set_successfully() {

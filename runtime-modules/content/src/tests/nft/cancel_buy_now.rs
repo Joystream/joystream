@@ -216,6 +216,7 @@ fn cancel_buy_now_not_in_auction_state() {
     })
 }
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn cancel_buy_now_fails_during_channel_transfer() {
