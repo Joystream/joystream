@@ -1,7 +1,15 @@
 import { ApolloClient, DocumentNode, NormalizedCacheObject } from '@apollo/client/core'
-import { MemberId, PostId, ThreadId } from '@joystream/types/common'
+import {
+  MemberId,
+  ApplicationId,
+  OpeningId,
+  WorkerId,
+  ProposalId,
+  ForumCategoryId,
+  ForumPostId,
+  ForumThreadId,
+} from '@joystream/types/primitives'
 import { extendDebug, Debugger } from './Debugger'
-import { ApplicationId, OpeningId, WorkerId } from '@joystream/types/working-group'
 import { EventDetails, WorkingGroupModuleName } from './types'
 import {
   ElectedCouncilFieldsFragment,
@@ -369,7 +377,6 @@ import {
   GetNftIssuedEventsByEventIdsQuery,
   GetNftIssuedEventsByEventIdsQueryVariables,
   EnglishAuctionSettledEventFieldsFragment,
-  EnglishAuctionSettledEventFields,
   GetEnglishAuctionSettledEventsByEventIdsQuery,
   GetEnglishAuctionSettledEventsByEventIdsQueryVariables,
   GetEnglishAuctionSettledEventsByEventIds,
@@ -388,11 +395,8 @@ import {
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
-import { ProposalId } from '@joystream/types/proposals'
 import { BLOCKTIME } from './consts'
-import { CategoryId } from '@joystream/types/forum'
 import { Utils } from './utils'
-import { VideoId } from '@joystream/types/content'
 
 export class QueryNodeApi {
   private readonly queryNodeProvider: ApolloClient<NormalizedCacheObject>
@@ -941,7 +945,7 @@ export class QueryNodeApi {
     >(GetProposalCancelledEventsByEventIds, { eventIds }, 'proposalCancelledEvents')
   }
 
-  public async getCategoriesByIds(ids: CategoryId[]): Promise<ForumCategoryFieldsFragment[]> {
+  public async getCategoriesByIds(ids: ForumCategoryId[]): Promise<ForumCategoryFieldsFragment[]> {
     return this.multipleEntitiesQuery<GetCategoriesByIdsQuery, GetCategoriesByIdsQueryVariables>(
       GetCategoriesByIds,
       { ids: ids.map((id) => id.toString()) },
@@ -993,7 +997,7 @@ export class QueryNodeApi {
     >(GetThreadMetadataUpdatedEventsByEventIds, { eventIds }, 'threadMetadataUpdatedEvents')
   }
 
-  public async getThreadsWithInitialPostsByIds(ids: ThreadId[]): Promise<ForumThreadWithInitialPostFragment[]> {
+  public async getThreadsWithInitialPostsByIds(ids: ForumThreadId[]): Promise<ForumThreadWithInitialPostFragment[]> {
     return this.multipleEntitiesQuery<
       GetThreadsWithInitialPostsByIdsQuery,
       GetThreadsWithInitialPostsByIdsQueryVariables
@@ -1017,7 +1021,7 @@ export class QueryNodeApi {
     >(GetThreadDeletedEventsByEventIds, { eventIds }, 'threadDeletedEvents')
   }
 
-  public async getPostsByIds(ids: PostId[]): Promise<ForumPostFieldsFragment[]> {
+  public async getPostsByIds(ids: ForumPostId[]): Promise<ForumPostFieldsFragment[]> {
     return this.multipleEntitiesQuery<GetPostsByIdsQuery, GetPostsByIdsQueryVariables>(
       GetPostsByIds,
       { ids: ids.map((id) => id.toString()) },
@@ -1147,7 +1151,7 @@ export class QueryNodeApi {
   }
 
   public async getProposalDiscussionPostsByIds(
-    ids: (PostId | number)[]
+    ids: (ForumPostId | number)[]
   ): Promise<ProposalDiscussionPostFieldsFragment[]> {
     return this.multipleEntitiesQuery<
       GetProposalDiscussionPostsByIdsQuery,
@@ -1156,7 +1160,7 @@ export class QueryNodeApi {
   }
 
   public async getProposalDiscussionThreadsByIds(
-    ids: (PostId | number)[]
+    ids: (ForumPostId | number)[]
   ): Promise<ProposalDiscussionThreadFieldsFragment[]> {
     return this.multipleEntitiesQuery<
       GetProposalDiscussionThreadsByIdsQuery,
