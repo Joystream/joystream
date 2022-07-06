@@ -302,7 +302,7 @@ fn accept_incoming_offer_fails_during_channel_transfer() {
 }
 
 #[test]
-fn accept_incoming_offer_fails_with_invalid_witness() {
+fn accept_incoming_offer_fails_with_invalid_witness_price_provided() {
     with_default_mock_builder(|| {
         ContentTest::default().with_video_nft().setup();
         OfferNftFixture::default()
@@ -315,7 +315,7 @@ fn accept_incoming_offer_fails_with_invalid_witness() {
                 VideoId::one(),
                 Some(DEFAULT_NFT_PRICE - 1)
             ),
-            Error::<Test>::NftOfferPriceChanged,
+            Error::<Test>::InvalidNftOfferWitnessPriceProvided,
         );
 
         assert_noop!(
@@ -324,7 +324,7 @@ fn accept_incoming_offer_fails_with_invalid_witness() {
                 VideoId::one(),
                 None
             ),
-            Error::<Test>::NftOfferPriceChanged,
+            Error::<Test>::InvalidNftOfferWitnessPriceProvided,
         );
     })
 }
