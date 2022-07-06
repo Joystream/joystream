@@ -13,7 +13,6 @@ export default async function mockContent({ api, query }: FlowProps): Promise<vo
   const debug = extendDebug('flow:createMockContent')
   debug('Started')
 
-
   if (process.env.SKIP_MOCK_CONTENT) {
     debug('Skipping Video and Channel creation')
     debug('Done')

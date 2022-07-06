@@ -19,6 +19,5 @@ export class CreateMockCategories extends BaseFixture {
       'Science & Technology',
       'Nonprofits & Activism',
     ]
-    
   }
 }

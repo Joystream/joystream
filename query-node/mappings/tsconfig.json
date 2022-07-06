@@ -16,5 +16,5 @@
     "resolveJsonModule": true
   },
   "include": ["./src/**/*"],
-  "exclude": ["./src/bounty.ts", "./queryTemplates.ts"]
+  "exclude": []
 }
