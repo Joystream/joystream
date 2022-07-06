@@ -3602,12 +3602,6 @@ decl_event!(
             BalanceOf<T>,
         >,
         AccountId = <T as frame_system::Config>::AccountId,
-        // TODO: enable after Carthage
-        // ChannelTransferStatus = ChannelTransferStatus<
-        //     <T as common::MembershipTypes>::MemberId,
-        //     <T as ContentActorAuthenticator>::CuratorGroupId,
-        //     BalanceOf<T>,
-        // >,
         TransferParameters =
             TransferParameters<<T as common::MembershipTypes>::MemberId, BalanceOf<T>>,
         UpdateChannelPayoutsParameters = UpdateChannelPayoutsParameters<T>,
