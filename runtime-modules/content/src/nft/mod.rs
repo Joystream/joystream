@@ -265,10 +265,14 @@ impl<T: Config> Module<T> {
     pub(crate) fn ensure_new_pending_offer_available_to_proceed(
         nft: &Nft<T>,
         participant_account_id: &T::AccountId,
+        witness_price: Option<<T as balances::Config>::Balance>,
     ) -> DispatchResult {
         if let TransactionalStatus::<T>::InitiatedOfferToMember(member_id, price) =
             &nft.transactional_status
         {
+            // Validate witness price
+            ensure!(*price == witness_price, Error::<T>::NftOfferPriceChanged);
+
             // Authorize participant under given member id
             ensure_member_auth_success::<T>(participant_account_id, &member_id)?;
 

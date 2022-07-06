@@ -173,7 +173,7 @@ declare module '@polkadot/api-base/types/submittable' {
       /**
        * Accept incoming Nft offer
        **/
-      acceptIncomingOffer: AugmentedSubmittable<(videoId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64]>;
+      acceptIncomingOffer: AugmentedSubmittable<(videoId: u64 | AnyNumber | Uint8Array, witnessPrice: Option<u128> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Option<u128>]>;
       /**
        * Add curator to curator group under given `curator_group_id`
        **/

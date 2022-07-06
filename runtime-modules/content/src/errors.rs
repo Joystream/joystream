@@ -200,6 +200,9 @@ decl_error! {
         /// Nft offer target member does not exist
         TargetMemberDoesNotExist,
 
+        /// Current nft offer price does not match the witness_price
+        NftOfferPriceChanged,
+
         /// Max auction whitelist length upper bound exceeded
         MaxAuctionWhiteListLengthUpperBoundExceeded,
 

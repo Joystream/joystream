@@ -426,6 +426,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       NftNotInBuyNowState: AugmentedError<ApiType>;
       /**
+       * Current nft offer price does not match the witness_price
+       **/
+      NftOfferPriceChanged: AugmentedError<ApiType>;
+      /**
        * No assets to be removed have been specified
        **/
       NoAssetsSpecified: AugmentedError<ApiType>;
