@@ -68,6 +68,7 @@ fn successful_video_creation_by_member() {
     })
 }
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn unuccessful_video_creation_with_pending_channel_transfer() {
@@ -487,6 +488,7 @@ fn unsuccessful_video_creation_due_to_bucket_having_insufficient_objects_number_
     })
 }
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn unsuccessful_video_creation_with_max_object_size_limits_exceeded() {
@@ -637,6 +639,7 @@ fn successful_video_update_by_member_with_assets_removal() {
     })
 }
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn unsuccessful_video_update_with_pending_channel_transfer() {
@@ -957,6 +960,7 @@ fn unsuccessful_video_update_due_to_bucket_having_insufficient_objects_number_le
     })
 }
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn unsuccessful_video_update_with_max_object_size_limits_exceeded() {
@@ -1053,6 +1057,7 @@ fn successful_video_deletion_by_member_with_assets_removal() {
     })
 }
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn unsuccessful_video_deletion_with_pending_transfer() {
@@ -1321,6 +1326,7 @@ fn unsuccessful_video_update_with_nft_issuance_when_nft_already_issued() {
     })
 }
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn create_video_failed_with_exceeded_global_daily_nft_limits() {
@@ -1332,6 +1338,7 @@ fn create_video_failed_with_exceeded_global_daily_nft_limits() {
     })
 }
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn create_video_failed_with_exceeded_global_weekly_nft_limits() {
@@ -1343,6 +1350,7 @@ fn create_video_failed_with_exceeded_global_weekly_nft_limits() {
     })
 }
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn create_video_failed_with_exceeded_channel_daily_nft_limits() {
@@ -1355,6 +1363,7 @@ fn create_video_failed_with_exceeded_channel_daily_nft_limits() {
     })
 }
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn create_video_failed_with_exceeded_channel_weekly_nft_limits() {
@@ -1393,6 +1402,7 @@ fn nft_test_helper_for_exceeded_limit_on_creating_video(
         .call_and_assert(Err(expected_error.into()));
 }
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn update_video_failed_with_exceeded_global_daily_nft_limits() {
@@ -1404,6 +1414,7 @@ fn update_video_failed_with_exceeded_global_daily_nft_limits() {
     })
 }
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn update_video_failed_with_exceeded_global_weekly_nft_limits() {
@@ -1415,6 +1426,7 @@ fn update_video_failed_with_exceeded_global_weekly_nft_limits() {
     })
 }
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn update_video_failed_with_exceeded_channel_daily_nft_limits() {
@@ -1427,6 +1439,7 @@ fn update_video_failed_with_exceeded_channel_daily_nft_limits() {
     })
 }
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn update_video_failed_with_exceeded_channel_weekly_nft_limits() {
