@@ -1,6 +1,6 @@
 import { DatabaseManager } from '@joystream/hydra-common'
 import {
-  PalletStorageUploadParametersRecordBagIdType as UploadParameters,
+  PalletStorageUploadParametersRecord as UploadParameters,
   PalletStorageBagIdType as BagId,
   PalletStorageDynamicBagIdType as DynamicBagId,
   PalletStorageStaticBagId as StaticBagId,
