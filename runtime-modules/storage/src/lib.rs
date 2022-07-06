@@ -157,6 +157,7 @@ pub trait WeightInfo {
     fn update_data_size_fee() -> Weight;
     fn update_storage_buckets_per_bag_limit() -> Weight;
     fn update_storage_buckets_voucher_max_limits() -> Weight;
+    fn update_data_object_state_bloat_bond() -> Weight;
     fn update_number_of_storage_buckets_in_dynamic_bag_creation_policy() -> Weight;
     fn update_blacklist(i: u32, j: u32) -> Weight;
     fn create_storage_bucket() -> Weight;
@@ -1933,7 +1934,14 @@ decl_module! {
 
 
         /// Updates data object state bloat bond value.
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoStorage::<T>::update_data_object_state_bloat_bond()]
         pub fn update_data_object_state_bloat_bond(
             origin,
             state_bloat_bond: BalanceOf<T>,
@@ -4580,6 +4588,9 @@ impl WeightInfo for () {
         0
     }
     fn update_storage_buckets_voucher_max_limits() -> Weight {
+        0
+    }
+    fn update_data_object_state_bloat_bond() -> Weight {
         0
     }
     fn update_number_of_storage_buckets_in_dynamic_bag_creation_policy() -> Weight {

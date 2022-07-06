@@ -32,6 +32,11 @@ impl storage::WeightInfo for WeightInfo {
             .saturating_add(DbWeight::get().reads(2 as Weight))
             .saturating_add(DbWeight::get().writes(2 as Weight))
     }
+    fn update_data_object_state_bloat_bond() -> Weight {
+        (28_186_000 as Weight)
+            .saturating_add(DbWeight::get().reads(2 as Weight))
+            .saturating_add(DbWeight::get().writes(1 as Weight))
+    }
     fn update_number_of_storage_buckets_in_dynamic_bag_creation_policy() -> Weight {
         (220_859_000 as Weight)
             .saturating_add(DbWeight::get().reads(3 as Weight))
