@@ -324,6 +324,10 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       startOpenAuction: AugmentedSubmittable<(ownerId: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, auctionParams: PalletContentNftTypesOpenAuctionParamsRecord | { startingPrice?: any; buyNowPrice?: any; startsAt?: any; whitelist?: any; bidLockDuration?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentNftTypesOpenAuctionParamsRecord]>;
       /**
+       * Only Council can toggle nft issuance limits constraints
+       **/
+      toggleNftLimits: AugmentedSubmittable<(enabled: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [bool]>;
+      /**
        * Update Buy now nft price
        **/
       updateBuyNowPrice: AugmentedSubmittable<(ownerId: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, newPrice: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, u128]>;
@@ -3288,7 +3292,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
        **/
-      createProposal: AugmentedSubmittable<(generalProposalParameters: PalletProposalsCodexGeneralProposalParams | { memberId?: any; title?: any; description?: any; stakingAccountId?: any; exactExecutionBlock?: any } | string | Uint8Array, proposalDetails: PalletProposalsCodexProposalDetails | { Signal: any } | { RuntimeUpgrade: any } | { FundingRequest: any } | { SetMaxValidatorCount: any } | { CreateWorkingGroupLeadOpening: any } | { FillWorkingGroupLeadOpening: any } | { UpdateWorkingGroupBudget: any } | { DecreaseWorkingGroupLeadStake: any } | { SlashWorkingGroupLead: any } | { SetWorkingGroupLeadReward: any } | { TerminateWorkingGroupLead: any } | { AmendConstitution: any } | { CancelWorkingGroupLeadOpening: any } | { SetMembershipPrice: any } | { SetCouncilBudgetIncrement: any } | { SetCouncilorReward: any } | { SetInitialInvitationBalance: any } | { SetInitialInvitationCount: any } | { SetMembershipLeadInvitationQuota: any } | { SetReferralCut: any } | { VetoProposal: any } | { UpdateChannelPayouts: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails]>;
+      createProposal: AugmentedSubmittable<(generalProposalParameters: PalletProposalsCodexGeneralProposalParams | { memberId?: any; title?: any; description?: any; stakingAccountId?: any; exactExecutionBlock?: any } | string | Uint8Array, proposalDetails: PalletProposalsCodexProposalDetails | { Signal: any } | { RuntimeUpgrade: any } | { FundingRequest: any } | { SetMaxValidatorCount: any } | { CreateWorkingGroupLeadOpening: any } | { FillWorkingGroupLeadOpening: any } | { UpdateWorkingGroupBudget: any } | { DecreaseWorkingGroupLeadStake: any } | { SlashWorkingGroupLead: any } | { SetWorkingGroupLeadReward: any } | { TerminateWorkingGroupLead: any } | { AmendConstitution: any } | { CancelWorkingGroupLeadOpening: any } | { SetMembershipPrice: any } | { SetCouncilBudgetIncrement: any } | { SetCouncilorReward: any } | { SetInitialInvitationBalance: any } | { SetInitialInvitationCount: any } | { SetMembershipLeadInvitationQuota: any } | { SetReferralCut: any } | { VetoProposal: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails]>;
     };
     proposalsDiscussion: {
       /**

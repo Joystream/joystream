@@ -486,6 +486,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       StartsAtUpperBoundExceeded: AugmentedError<ApiType>;
       /**
+       * Nft offer target member does not exist
+       **/
+      TargetMemberDoesNotExist: AugmentedError<ApiType>;
+      /**
        * Insufficient balance
        **/
       UnsufficientBalance: AugmentedError<ApiType>;
