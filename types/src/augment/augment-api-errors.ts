@@ -336,9 +336,9 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InvalidBidAmountSpecified: AugmentedError<ApiType>;
       /**
-       * Invalid Buy Now price commit provided
+       * `witness_price` provided to `buy_now` extrinsic does not match the current sell price
        **/
-      InvalidBuyNowPriceProvided: AugmentedError<ApiType>;
+      InvalidBuyNowWitnessPriceProvided: AugmentedError<ApiType>;
       /**
        * Incorrect channel owner for an operation.
        **/
@@ -360,6 +360,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Invalid member id  specified
        **/
       InvalidMemberProvided: AugmentedError<ApiType>;
+      /**
+       * Current nft offer price does not match the provided `witness_price`
+       **/
+      InvalidNftOfferWitnessPriceProvided: AugmentedError<ApiType>;
       /**
        * Invalid number of objects to delete provided for delete_video
        **/
@@ -425,10 +429,6 @@ declare module '@polkadot/api-base/types/errors' {
        * Given video nft is not in buy now state
        **/
       NftNotInBuyNowState: AugmentedError<ApiType>;
-      /**
-       * Current nft offer price does not match the witness_price
-       **/
-      NftOfferPriceChanged: AugmentedError<ApiType>;
       /**
        * No assets to be removed have been specified
        **/
