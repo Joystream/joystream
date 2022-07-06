@@ -99,6 +99,30 @@ fn update_category_membership_category_moderator_does_not_exist() {
 }
 
 #[test]
+// test an attempt to add moderator to a category when provided moderator_id is not an existing worker id
+fn update_category_membership_moderator_worker_does_not_exist() {
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    with_test_externalities(|| {
+        let moderator_id = 9999;
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderator_id,
+            category_id,
+            true,
+            Err(DispatchError::Other("Worker doesnt exist")),
+        );
+    });
+}
+
+#[test]
 // test case for check if origin is forum lead
 fn create_category_origin() {
     let origins = vec![FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
@@ -1158,7 +1182,7 @@ fn delete_thread() {
         assert!(<PollVotes<Runtime>>::contains_key(thread_id, forum_lead));
 
         update_category_membership_of_moderator_mock(
-            FORUM_MODERATOR_ORIGIN.clone(),
+            origin.clone(),
             FORUM_MODERATOR_ORIGIN_ID,
             category_id,
             true,
@@ -1458,7 +1482,7 @@ fn category_updated_successfully_on_thread_moving() {
 
         // set incomplete permissions for first user (only category 1)
         update_category_membership_of_moderator_mock(
-            moderator_origin.clone(),
+            origin.clone(),
             moderator,
             category_id_1,
             true,
@@ -1467,7 +1491,7 @@ fn category_updated_successfully_on_thread_moving() {
 
         // give the rest of necessary permissions to the first moderator
         update_category_membership_of_moderator_mock(
-            moderator_origin.clone(),
+            origin.clone(),
             moderator,
             category_id_2,
             true,
@@ -2385,7 +2409,7 @@ fn delete_post_creator() {
         );
 
         update_category_membership_of_moderator_mock(
-            FORUM_MODERATOR_ORIGIN.clone(),
+            origin.clone(),
             FORUM_MODERATOR_ORIGIN_ID,
             category_id,
             true,

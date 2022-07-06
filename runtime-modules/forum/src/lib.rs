@@ -2167,7 +2167,7 @@ impl<T: Config> Module<T> {
         category_id: &T::CategoryId,
         moderator_id: &ModeratorId<T>,
         new_value: bool,
-    ) -> Result<(), Error<T>> {
+    ) -> Result<(), DispatchError> {
         // Not signed by forum LEAD
         Self::ensure_is_forum_lead_account(&account_id)?;
 
@@ -2175,6 +2175,8 @@ impl<T: Config> Module<T> {
         let category = Self::ensure_category_exists(category_id)?;
 
         if new_value {
+            // ensure worker by moderator_id exists
+            T::WorkingGroup::ensure_worker_exists(moderator_id)?;
             Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxModeratorsForCategory>(
                 category.num_direct_moderators as u64,
             )?;
