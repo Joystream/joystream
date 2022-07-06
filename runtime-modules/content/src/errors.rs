@@ -8,6 +8,12 @@ decl_error! {
         /// Feature Not Implemented
         FeatureNotImplemented,
 
+        /// Invalid extrinsic call: Channel state bloat bond changed.
+        ChannelStateBloatBondChanged,
+
+        /// Invalid extrinsic call: video state bloat bond changed.
+        VideoStateBloatBondChanged,
+
         // Curator Management Errors
         // -------------------------
 
@@ -191,6 +197,9 @@ decl_error! {
         /// Auction buy now is less then starting price
         BuyNowIsLessThenStartingPrice,
 
+        /// Nft offer target member does not exist
+        TargetMemberDoesNotExist,
+
         /// Max auction whitelist length upper bound exceeded
         MaxAuctionWhiteListLengthUpperBoundExceeded,
 
@@ -338,10 +347,11 @@ decl_error! {
         /// Patronage can only be claimed if channel is owned by a member
         PatronageCanOnlyBeClaimedForMemberOwnedChannels,
 
-        /// Invalid extrinsic call: Channel state bloat bond changed.
-        ChannelStateBloatBondChanged,
+        /// Channel Transfers are blocked during revenue splits
+        ChannelTransfersBlockedDuringRevenueSplits,
 
-        /// Invalid extrinsic call: video state bloat bond changed.
-        VideoStateBloatBondChanged
+        /// Channel Transfers are blocked during token sales
+        ChannelTransfersBlockedDuringTokenSales,
+
     }
 }

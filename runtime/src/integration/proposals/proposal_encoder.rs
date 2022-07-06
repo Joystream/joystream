@@ -144,6 +144,7 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::VetoProposal(proposal_id) => {
                 Call::ProposalsEngine(proposals_engine::Call::veto_proposal { proposal_id })
             }
+
             // TODO: Enable after Carthage
             // ProposalDetails::UpdateGlobalNftLimit(nft_limit_period, limit) => {
             //     Call::Content(content::Call::update_global_nft_limit {
@@ -151,9 +152,11 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             //         limit,
             //     })
             // }
-            ProposalDetails::UpdateChannelPayouts(params) => {
-                Call::Content(content::Call::update_channel_payouts { params })
-            }
+
+            // TODO: Enable after Carthage
+            // ProposalDetails::UpdateChannelPayouts(params) => {
+            //     Call::Content(content::Call::update_channel_payouts { params })
+            // }
         };
 
         call.encode()

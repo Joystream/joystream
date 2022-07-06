@@ -789,8 +789,9 @@ impl crate::Config for Test {
     type SetReferralCutProposalParameters = DefaultProposalParameters;
     type VetoProposalProposalParameters = DefaultProposalParameters;
     // TODO: enable after Carthage
-    //type UpdateGlobalNftLimitProposalParameters = DefaultProposalParameters;
-    type UpdateChannelPayoutsProposalParameters = DefaultProposalParameters;
+    // type UpdateGlobalNftLimitProposalParameters = DefaultProposalParameters;
+    // TODO: enable after Carthage
+    // type UpdateChannelPayoutsProposalParameters = DefaultProposalParameters;
 }
 
 parameter_types! {
