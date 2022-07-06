@@ -1993,10 +1993,13 @@ fn create_set_referral_cut_common_checks_succeed() {
 //                     proposal_details.clone(),
 //                 )
 //             },
-//         };
-//         proposal_fixture.check_all();
+//            proposal_parameters:
+//                <Test as crate::Config>::UpdateGlobalNftLimitProposalParameters::get(),
+//        };
+//                proposal_fixture.check_all();
 //     });
 // }
+//
 
 // TODO: enable after Carthage
 // #[test]
