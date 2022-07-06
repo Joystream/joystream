@@ -19,7 +19,7 @@ SUDO_ACCOUNT=$(docker run --rm --pull=always docker.io/parity/subkey:2.0.1 inspe
 
 # Source of funds for all new accounts that are created in the tests.
 TREASURY_INITIAL_BALANCE=${TREASURY_INITIAL_BALANCE:=100000000}
-TREASURY_ACCOUNT_URI=${TREASURY_ACCOUNT_URI:=$SUDO_ACCOUNT_URI}
+TREASURY_ACCOUNT_URI=${TREASURY_ACCOUNT_URI:="//Bob"}
 TREASURY_ACCOUNT=$(docker run --rm --pull=always docker.io/parity/subkey:2.0.1 inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
 
 >&2 echo "sudo account from suri: ${SUDO_ACCOUNT}"
