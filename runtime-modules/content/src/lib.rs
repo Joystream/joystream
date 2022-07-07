@@ -3418,7 +3418,8 @@ impl<T: Config> Module<T> {
     }
 
     // Checks generic NFT-limit.
-    fn _check_generic_nft_limit(
+    #[allow(dead_code)] // TODO: Remove the `allow` attribute after Carthage
+    fn check_generic_nft_limit(
         nft_limit: &LimitPerPeriod<T::BlockNumber>,
         nft_counter: &NftCounter<T::BlockNumber>,
         error: Error<T>,
