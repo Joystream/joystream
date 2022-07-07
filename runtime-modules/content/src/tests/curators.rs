@@ -139,7 +139,7 @@ fn curator_group_management() {
         // // Check CuratorGroupPermissionsUpdated event
         // assert_eq!(
         //     System::events().last().unwrap().event,
-        //     MetaEvent::Content(RawEvent::CuratorGroupPermissionsUpdated(
+        //     Event::Content(RawEvent::CuratorGroupPermissionsUpdated(
         //         curator_group_id,
         //         permissions.clone()
         //     ))
