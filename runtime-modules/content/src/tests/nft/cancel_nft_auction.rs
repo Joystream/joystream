@@ -283,7 +283,7 @@ fn cancel_nft_auction_english_auction_with_bids() {
         );
     })
 }
-
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn cancel_open_auction_fails_during_channel_transfer() {
