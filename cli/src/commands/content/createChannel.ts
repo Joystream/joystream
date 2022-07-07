@@ -84,17 +84,17 @@ export default class CreateChannelCommand extends UploadCommandBase {
 
     const channelCreatedEvent = this.getEvent(result, 'content', 'ChannelCreated')
     const channelId: ChannelId = channelCreatedEvent.data[0]
+    const { dataObjects } = channelCreatedEvent.data[1]
+
     this.log(chalk.green(`Channel with id ${chalk.cyanBright(channelId.toString())} successfully created!`))
     this.output(channelId.toString())
 
-    const dataObjectsUploadedEvent = this.findEvent(result, 'storage', 'DataObjectsUploaded')
-    if (dataObjectsUploadedEvent) {
-      const [objectIds] = dataObjectsUploadedEvent.data
+    if (dataObjects.size) {
       await this.uploadAssets(
         keypair,
         memberId.toNumber(),
         `dynamic:channel:${channelId.toString()}`,
-        objectIds.map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
+        [...dataObjects].map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
         input
       )
     }

@@ -143,14 +143,14 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       channelId,
       channelUpdateParameters,
     ])
-    const dataObjectsUploadedEvent = this.findEvent(result, 'storage', 'DataObjectsUploaded')
-    if (dataObjectsUploadedEvent) {
-      const [objectIds] = dataObjectsUploadedEvent.data
+    const channelUpdatedEvent = this.findEvent(result, 'content', 'ChannelUpdated')
+    if (channelUpdatedEvent) {
+      const objectIds = channelUpdatedEvent.data[3]
       await this.uploadAssets(
         keypair,
         memberId.toNumber(),
         `dynamic:channel:${channelId.toString()}`,
-        objectIds.map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
+        [...objectIds].map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
         input
       )
     }
