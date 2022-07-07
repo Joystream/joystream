@@ -123,6 +123,9 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
+pub mod weights;
+pub use weights::WeightInfo;
+
 use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{Currency, ExistenceRequirement, Get};
@@ -148,45 +151,6 @@ use sp_std::vec::Vec;
 use common::constraints::BoundedValueConstraint;
 use common::working_group::WorkingGroup;
 use common::working_group::WorkingGroupAuthenticator;
-
-/// pallet_forum WeightInfo.
-/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
-pub trait WeightInfo {
-    fn delete_storage_bucket() -> Weight;
-    fn update_uploading_blocked_status() -> Weight;
-    fn update_data_size_fee() -> Weight;
-    fn update_storage_buckets_per_bag_limit() -> Weight;
-    fn update_storage_buckets_voucher_max_limits() -> Weight;
-    fn update_number_of_storage_buckets_in_dynamic_bag_creation_policy() -> Weight;
-    fn update_blacklist(i: u32, j: u32) -> Weight;
-    fn create_storage_bucket() -> Weight;
-    fn update_storage_buckets_for_bag(i: u32, j: u32) -> Weight;
-    fn cancel_storage_bucket_operator_invite() -> Weight;
-    fn invite_storage_bucket_operator() -> Weight;
-    fn remove_storage_bucket_operator() -> Weight;
-    fn update_storage_bucket_status() -> Weight;
-    fn set_storage_bucket_voucher_limits() -> Weight;
-    fn accept_storage_bucket_invitation() -> Weight;
-    fn set_storage_operator_metadata(i: u32) -> Weight;
-    fn accept_pending_data_objects(i: u32) -> Weight;
-    fn create_distribution_bucket_family() -> Weight;
-    fn delete_distribution_bucket_family() -> Weight;
-    fn create_distribution_bucket() -> Weight;
-    fn update_distribution_bucket_status() -> Weight;
-    fn delete_distribution_bucket() -> Weight;
-    fn update_distribution_buckets_for_bag(i: u32, j: u32) -> Weight;
-    fn update_distribution_buckets_per_bag_limit() -> Weight;
-    fn update_distribution_bucket_mode() -> Weight;
-    fn update_families_in_dynamic_bag_creation_policy(i: u32) -> Weight;
-    fn invite_distribution_bucket_operator() -> Weight;
-    fn cancel_distribution_bucket_operator_invite() -> Weight;
-    fn remove_distribution_bucket_operator() -> Weight;
-    fn set_distribution_bucket_family_metadata(i: u32) -> Weight;
-    fn accept_distribution_bucket_invitation() -> Weight;
-    fn set_distribution_operator_metadata(i: u32) -> Weight;
-    fn storage_operator_remark(i: u32) -> Weight;
-    fn distribution_operator_remark(i: u32) -> Weight;
-}
 
 type WeightInfoStorage<T> = <T as Config>::WeightInfo;
 
@@ -832,12 +796,10 @@ pub type UploadParameters<T> = UploadParametersRecord<
     BagIdType<MemberId<T>, <T as Config>::ChannelId>,
     <T as frame_system::Config>::AccountId,
     BalanceOf<T>,
-    <T as Config>::StorageBucketId,
-    DistributionBucketId<T>,
 >;
 
 /// Alias for the parameter record used in create bag
-pub type DynBagCreationParameters<T> = UploadParametersRecord<
+pub type DynBagCreationParameters<T> = DynBagCreationParametersRecord<
     DynamicBagId<T>,
     <T as frame_system::Config>::AccountId,
     BalanceOf<T>,
@@ -848,7 +810,27 @@ pub type DynBagCreationParameters<T> = UploadParametersRecord<
 /// Data wrapper structure. Helps passing the parameters to the `upload` extrinsic.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct UploadParametersRecord<
+pub struct UploadParametersRecord<BagId, AccountId, Balance> {
+    /// Static or dynamic bag to upload data.
+    pub bag_id: BagId,
+
+    /// Data object parameters.
+    pub object_creation_list: Vec<DataObjectCreationParameters>,
+
+    /// Account for the data object state bloat bond.
+    pub state_bloat_bond_source_account_id: AccountId,
+
+    /// Expected data size fee value for this extrinsic call.
+    pub expected_data_size_fee: Balance,
+
+    /// Expected for the data object state bloat bond for the storage pallet.
+    pub expected_data_object_state_bloat_bond: Balance,
+}
+
+/// Data wrapper structure. Helps with create dynamic bag method
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
+pub struct DynBagCreationParametersRecord<
     BagId,
     AccountId,
     Balance,
@@ -4008,7 +3990,9 @@ impl<T: Config> Module<T> {
     fn validate_update_families_in_dynamic_bag_creation_policy_params(
         families: &BTreeMap<T::DistributionBucketFamilyId, u32>,
     ) -> DispatchResult {
-        let number_of_distribution_buckets: u32 = families.iter().map(|(_, num)| num).sum();
+        let number_of_distribution_buckets: u64 = families
+            .iter()
+            .fold(0, |acc, (_, num)| acc.saturating_add((*num).into()));
         T::DistributionBucketsPerBagValueConstraint::get().ensure_valid(
             number_of_distribution_buckets,
             Error::<T>::NumberOfDistributionBucketsOutsideOfAllowedContraints,
@@ -4542,111 +4526,5 @@ impl<T: Config> Module<T> {
         }
 
         Ok(())
-    }
-}
-
-// Default implementation.
-impl WeightInfo for () {
-    fn delete_storage_bucket() -> Weight {
-        0
-    }
-    fn update_uploading_blocked_status() -> Weight {
-        0
-    }
-    fn update_data_size_fee() -> Weight {
-        0
-    }
-    fn update_storage_buckets_per_bag_limit() -> Weight {
-        0
-    }
-    fn update_storage_buckets_voucher_max_limits() -> Weight {
-        0
-    }
-    fn update_number_of_storage_buckets_in_dynamic_bag_creation_policy() -> Weight {
-        0
-    }
-    fn update_blacklist(_i: u32, _j: u32) -> Weight {
-        0
-    }
-    fn create_storage_bucket() -> Weight {
-        0
-    }
-    fn update_storage_buckets_for_bag(_i: u32, _j: u32) -> Weight {
-        0
-    }
-    fn cancel_storage_bucket_operator_invite() -> Weight {
-        0
-    }
-    fn invite_storage_bucket_operator() -> Weight {
-        0
-    }
-    fn remove_storage_bucket_operator() -> Weight {
-        0
-    }
-    fn update_storage_bucket_status() -> Weight {
-        0
-    }
-    fn set_storage_bucket_voucher_limits() -> Weight {
-        0
-    }
-    fn accept_storage_bucket_invitation() -> Weight {
-        0
-    }
-    fn set_storage_operator_metadata(_i: u32) -> Weight {
-        0
-    }
-    fn accept_pending_data_objects(_i: u32) -> Weight {
-        0
-    }
-    fn create_distribution_bucket_family() -> Weight {
-        0
-    }
-    fn delete_distribution_bucket_family() -> Weight {
-        0
-    }
-    fn create_distribution_bucket() -> Weight {
-        0
-    }
-    fn update_distribution_bucket_status() -> Weight {
-        0
-    }
-    fn delete_distribution_bucket() -> Weight {
-        0
-    }
-    fn update_distribution_buckets_for_bag(_i: u32, _j: u32) -> Weight {
-        0
-    }
-    fn update_distribution_buckets_per_bag_limit() -> Weight {
-        0
-    }
-    fn update_distribution_bucket_mode() -> Weight {
-        0
-    }
-    fn update_families_in_dynamic_bag_creation_policy(_i: u32) -> Weight {
-        0
-    }
-    fn invite_distribution_bucket_operator() -> Weight {
-        0
-    }
-    fn cancel_distribution_bucket_operator_invite() -> Weight {
-        0
-    }
-    fn remove_distribution_bucket_operator() -> Weight {
-        0
-    }
-    fn set_distribution_bucket_family_metadata(_i: u32) -> Weight {
-        0
-    }
-    fn accept_distribution_bucket_invitation() -> Weight {
-        0
-    }
-    fn set_distribution_operator_metadata(_i: u32) -> Weight {
-        0
-    }
-    fn storage_operator_remark(_i: u32) -> Weight {
-        0
-    }
-    fn distribution_operator_remark(_i: u32) -> Weight {
-        0
     }
 }

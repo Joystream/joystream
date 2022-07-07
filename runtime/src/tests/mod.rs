@@ -297,8 +297,9 @@ pub(crate) fn max_proposal_stake() -> u128 {
     stakes.push(<Runtime as proposals_codex::Config>::SetMembershipLeadInvitationQuotaProposalParameters::get());
     stakes.push(<Runtime as proposals_codex::Config>::SetReferralCutProposalParameters::get());
     stakes.push(<Runtime as proposals_codex::Config>::VetoProposalProposalParameters::get());
-    stakes
-        .push(<Runtime as proposals_codex::Config>::UpdateChannelPayoutsProposalParameters::get());
+    // TODO: Enable after Carthage
+    // stakes
+    //     .push(<Runtime as proposals_codex::Config>::UpdateChannelPayoutsProposalParameters::get());
 
     stakes
         .iter()

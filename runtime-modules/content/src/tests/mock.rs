@@ -503,6 +503,7 @@ pub struct ExtBuilder {
     platform_fee_percentage: Perbill,
     auction_starts_at_max_delta: u64,
     max_auction_whitelist_length: u32,
+    nft_limits_enabled: bool,
 }
 
 impl Default for ExtBuilder {
@@ -530,14 +531,35 @@ impl Default for ExtBuilder {
             platform_fee_percentage: Perbill::from_percent(1),
             auction_starts_at_max_delta: 90_000,
             max_auction_whitelist_length: 4,
+            nft_limits_enabled: true,
         }
     }
 }
 
+// TODO(post mainnet?): authomatically set block number = 1
 impl ExtBuilder {
-    pub fn build(self) -> sp_io::TestExternalities {
+    pub fn with_creator_royalty_bounds(
+        self,
+        min_creator_royalty: Perbill,
+        max_creator_royalty: Perbill,
+    ) -> Self {
+        Self {
+            min_creator_royalty,
+            max_creator_royalty,
+            ..self
+        }
+    }
+    /// test externalities + initial balances allocation
+    pub fn build_with_balances(
+        self,
+        balances: Vec<(AccountId, BalanceOf<Test>)>,
+    ) -> sp_io::TestExternalities {
         let mut t = frame_system::GenesisConfig::default()
             .build_storage::<Test>()
+            .unwrap();
+
+        balances::GenesisConfig::<Test> { balances }
+            .assimilate_storage(&mut t)
             .unwrap();
 
         // the same as t.top().extend(GenesisConfig::<Test> etc...)
@@ -563,11 +585,16 @@ impl ExtBuilder {
             platform_fee_percentage: self.platform_fee_percentage,
             auction_starts_at_max_delta: self.auction_starts_at_max_delta,
             max_auction_whitelist_length: self.max_auction_whitelist_length,
+            nft_limits_enabled: self.nft_limits_enabled,
         }
         .assimilate_storage(&mut t)
         .unwrap();
 
-        t.into()
+        Into::<sp_io::TestExternalities>::into(t)
+    }
+
+    pub fn build(self) -> sp_io::TestExternalities {
+        self.build_with_balances(vec![])
     }
 }
 

@@ -46,9 +46,11 @@
 #![allow(clippy::unused_unit)]
 
 pub mod benchmarking;
-
 pub mod genesis;
+#[cfg(test)]
 mod tests;
+pub mod weights;
+pub use weights::WeightInfo;
 
 use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchError;
@@ -75,30 +77,6 @@ pub use benchmarking::MembershipWorkingGroupHelper;
 type BalanceOf<T> = <T as balances::Config>::Balance;
 
 type WeightInfoMembership<T> = <T as Config>::WeightInfo;
-
-/// pallet_forum WeightInfo.
-/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
-pub trait WeightInfo {
-    fn buy_membership_without_referrer(i: u32, j: u32) -> Weight;
-    fn buy_membership_with_referrer(i: u32, j: u32) -> Weight;
-    fn update_profile(i: u32) -> Weight;
-    fn update_accounts_none() -> Weight;
-    fn update_accounts_root() -> Weight;
-    fn update_accounts_controller() -> Weight;
-    fn update_accounts_both() -> Weight;
-    fn set_referral_cut() -> Weight;
-    fn transfer_invites() -> Weight;
-    fn invite_member(i: u32, j: u32) -> Weight;
-    fn set_membership_price() -> Weight;
-    fn update_profile_verification() -> Weight;
-    fn set_leader_invitation_quota() -> Weight;
-    fn set_initial_invitation_balance() -> Weight;
-    fn set_initial_invitation_count() -> Weight;
-    fn add_staking_account_candidate() -> Weight;
-    fn confirm_staking_account() -> Weight;
-    fn remove_staking_account() -> Weight;
-    fn member_remark() -> Weight;
-}
 
 pub trait Config:
     frame_system::Config
@@ -1321,65 +1299,5 @@ impl<T: Config> MembershipInfoProvider<T> for Module<T> {
         let membership = Self::ensure_membership(member_id)?;
 
         Ok(membership.controller_account)
-    }
-}
-
-impl WeightInfo for () {
-    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn update_profile(_: u32) -> Weight {
-        0
-    }
-    fn update_accounts_none() -> Weight {
-        0
-    }
-    fn update_accounts_root() -> Weight {
-        0
-    }
-    fn update_accounts_controller() -> Weight {
-        0
-    }
-    fn update_accounts_both() -> Weight {
-        0
-    }
-    fn set_referral_cut() -> Weight {
-        0
-    }
-    fn transfer_invites() -> Weight {
-        0
-    }
-    fn invite_member(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn set_membership_price() -> Weight {
-        0
-    }
-    fn update_profile_verification() -> Weight {
-        0
-    }
-    fn set_leader_invitation_quota() -> Weight {
-        0
-    }
-    fn set_initial_invitation_balance() -> Weight {
-        0
-    }
-    fn set_initial_invitation_count() -> Weight {
-        0
-    }
-    fn add_staking_account_candidate() -> Weight {
-        0
-    }
-    fn confirm_staking_account() -> Weight {
-        0
-    }
-    fn remove_staking_account() -> Weight {
-        0
-    }
-    fn member_remark() -> Weight {
-        0
     }
 }
