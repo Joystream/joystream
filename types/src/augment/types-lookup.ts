@@ -4521,6 +4521,7 @@ declare module '@polkadot/types/lookup' {
     readonly isThreadMoveInvalid: boolean;
     readonly isThreadNotBeingUpdated: boolean;
     readonly isInsufficientBalanceForThreadCreation: boolean;
+    readonly isCannotDeleteThreadWithOutstandingPosts: boolean;
     readonly isPostDoesNotExist: boolean;
     readonly isAccountDoesNotMatchPostAuthor: boolean;
     readonly isInsufficientBalanceForPost: boolean;
@@ -4543,7 +4544,7 @@ declare module '@polkadot/types/lookup' {
     readonly isDataMigrationNotDone: boolean;
     readonly isMapSizeLimit: boolean;
     readonly isPathLengthShouldBeGreaterThanZero: boolean;
-    readonly type: 'OriginNotForumLead' | 'ForumUserIdNotMatchAccount' | 'ModeratorIdNotMatchAccount' | 'AccountDoesNotMatchThreadAuthor' | 'ThreadDoesNotExist' | 'ModeratorModerateOriginCategory' | 'ModeratorModerateDestinationCategory' | 'ThreadMoveInvalid' | 'ThreadNotBeingUpdated' | 'InsufficientBalanceForThreadCreation' | 'PostDoesNotExist' | 'AccountDoesNotMatchPostAuthor' | 'InsufficientBalanceForPost' | 'CategoryNotBeingUpdated' | 'AncestorCategoryImmutable' | 'MaxValidCategoryDepthExceeded' | 'CategoryDoesNotExist' | 'CategoryModeratorDoesNotExist' | 'CategoryNotEmptyThreads' | 'CategoryNotEmptyCategories' | 'ModeratorCantDeleteCategory' | 'ModeratorCantUpdateCategory' | 'StickiedThreadIdsDuplicates' | 'PollAlternativesTooShort' | 'PollNotExist' | 'PollTimeSetting' | 'PollData' | 'PollCommitExpired' | 'AlreadyVotedOnPoll' | 'DataMigrationNotDone' | 'MapSizeLimit' | 'PathLengthShouldBeGreaterThanZero';
+    readonly type: 'OriginNotForumLead' | 'ForumUserIdNotMatchAccount' | 'ModeratorIdNotMatchAccount' | 'AccountDoesNotMatchThreadAuthor' | 'ThreadDoesNotExist' | 'ModeratorModerateOriginCategory' | 'ModeratorModerateDestinationCategory' | 'ThreadMoveInvalid' | 'ThreadNotBeingUpdated' | 'InsufficientBalanceForThreadCreation' | 'CannotDeleteThreadWithOutstandingPosts' | 'PostDoesNotExist' | 'AccountDoesNotMatchPostAuthor' | 'InsufficientBalanceForPost' | 'CategoryNotBeingUpdated' | 'AncestorCategoryImmutable' | 'MaxValidCategoryDepthExceeded' | 'CategoryDoesNotExist' | 'CategoryModeratorDoesNotExist' | 'CategoryNotEmptyThreads' | 'CategoryNotEmptyCategories' | 'ModeratorCantDeleteCategory' | 'ModeratorCantUpdateCategory' | 'StickiedThreadIdsDuplicates' | 'PollAlternativesTooShort' | 'PollNotExist' | 'PollTimeSetting' | 'PollData' | 'PollCommitExpired' | 'AlreadyVotedOnPoll' | 'DataMigrationNotDone' | 'MapSizeLimit' | 'PathLengthShouldBeGreaterThanZero';
   }
 
   /** @name PalletConstitutionConstitutionInfo (519) */

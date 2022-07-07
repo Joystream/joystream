@@ -15,7 +15,7 @@ use frame_support::{
 };
 use frame_system::ensure_signed;
 use scale_info::TypeInfo;
-use sp_arithmetic::traits::{BaseArithmetic, One};
+use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 pub use sp_io::storage::clear_prefix;
 use sp_runtime::traits::{AccountIdConversion, MaybeSerialize, Member};
 use sp_runtime::DispatchError;
@@ -2322,7 +2322,7 @@ impl<T: Config> Module<T> {
 
     fn ensure_empty_thread(thread: &ThreadOf<T>) -> DispatchResult {
         ensure!(
-            thread.number_of_posts == 0u64,
+            thread.number_of_posts.is_zero(),
             Error::<T>::CannotDeleteThreadWithOutstandingPosts
         );
         Ok(())

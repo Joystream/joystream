@@ -100,7 +100,7 @@ fn update_category_membership_category_moderator_does_not_exist() {
 
 #[test]
 // test an attempt to add moderator to a category when provided moderator_id is not an existing worker id
-fn update_category_membership_moderator_worker_does_not_exist() {
+fn update_category_membership_fails_when_moderator_worker_does_not_exist() {
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
     with_test_externalities(|| {
