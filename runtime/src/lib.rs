@@ -102,7 +102,7 @@ pub use primitives::*;
 pub use proposals_configuration::*;
 pub use runtime_api::*;
 
-use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder};
+use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, ProposalsSelector};
 
 use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
 use council::ReferendumConnection;
@@ -1325,11 +1325,10 @@ impl proposals_codex::Config for Runtime {
         SetMembershipLeadInvitationQuotaProposalParameters;
     type SetReferralCutProposalParameters = SetReferralCutProposalParameters;
     type VetoProposalProposalParameters = VetoProposalProposalParameters;
-    // TODO: enable after Carthage
-    // type UpdateGlobalNftLimitProposalParameters = UpdateGlobalNftLimitProposalParameters;
-    // TODO: Enable after Carthage
-    // type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;
+    type UpdateGlobalNftLimitProposalParameters = UpdateGlobalNftLimitProposalParameters;
+    type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;
     type WeightInfo = proposals_codex::weights::SubstrateWeight<Runtime>;
+    type ProposalsEnabled = ProposalsSelector;
 }
 
 impl pallet_constitution::Config for Runtime {

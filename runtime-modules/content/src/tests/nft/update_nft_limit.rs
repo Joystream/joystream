@@ -184,7 +184,7 @@ fn toggle_nft_limits_ok_with_event_deposited_and_status_changed() {
     })
 }
 
- // TODO: Enable after enabling toggling nft limits
+// TODO: Enable after enabling toggling nft limits
 #[ignore]
 #[test]
 fn toggle_nft_limits_fails_by_non_root_origin() {
