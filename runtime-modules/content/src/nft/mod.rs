@@ -235,13 +235,13 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
-    /// Ensure given participant have sufficient free balance
-    pub(crate) fn ensure_sufficient_free_balance(
+    /// Ensure given participant has sufficient usable balance (free - frozen)
+    pub(crate) fn ensure_sufficient_usable_balance(
         participant_account_id: &T::AccountId,
         balance: BalanceOf<T>,
     ) -> DispatchResult {
         ensure!(
-            Balances::<T>::can_slash(participant_account_id, balance),
+            Balances::<T>::usable_balance(participant_account_id) >= balance,
             Error::<T>::InsufficientBalance
         );
         Ok(())
@@ -251,11 +251,14 @@ impl<T: Config> Module<T> {
     pub(crate) fn ensure_can_buy_now(
         nft: &Nft<T>,
         participant_account_id: &T::AccountId,
-        offering: BalanceOf<T>,
+        witness_price: BalanceOf<T>,
     ) -> DispatchResult {
         if let TransactionalStatus::<T>::BuyNow(price) = &nft.transactional_status {
-            ensure!(*price == offering, Error::<T>::InvalidBuyNowPriceProvided);
-            Self::ensure_sufficient_free_balance(participant_account_id, *price)
+            ensure!(
+                *price == witness_price,
+                Error::<T>::InvalidBuyNowWitnessPriceProvided
+            );
+            Self::ensure_sufficient_usable_balance(participant_account_id, *price)
         } else {
             Err(Error::<T>::NftNotInBuyNowState.into())
         }
@@ -265,15 +268,22 @@ impl<T: Config> Module<T> {
     pub(crate) fn ensure_new_pending_offer_available_to_proceed(
         nft: &Nft<T>,
         participant_account_id: &T::AccountId,
+        witness_price: Option<<T as balances::Config>::Balance>,
     ) -> DispatchResult {
         if let TransactionalStatus::<T>::InitiatedOfferToMember(member_id, price) =
             &nft.transactional_status
         {
+            // Validate witness price
+            ensure!(
+                *price == witness_price,
+                Error::<T>::InvalidNftOfferWitnessPriceProvided
+            );
+
             // Authorize participant under given member id
             ensure_member_auth_success::<T>(participant_account_id, &member_id)?;
 
             if let Some(price) = price {
-                Self::ensure_sufficient_free_balance(participant_account_id, *price)?;
+                Self::ensure_sufficient_usable_balance(participant_account_id, *price)?;
             }
             Ok(())
         } else {
