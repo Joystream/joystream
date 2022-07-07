@@ -704,6 +704,24 @@ impl<T: Config>
         TransfersWithVestingOf<T>,
     > for Module<T>
 {
+    /// Establish whether there's an unfinalized revenue split
+    /// Postconditions: true if token @ token_id has an unfinalized revenue split, false otherwise
+    fn is_revenue_split_inactive(token_id: T::TokenId) -> bool {
+        if let Ok(token_info) = Self::ensure_token_exists(token_id) {
+            return token_info.revenue_split.ensure_inactive::<T>().is_ok();
+        }
+        true
+    }
+
+    /// Establish whether there is an unfinalized token sale
+    /// Postconditions: true if token @ token_id has an unfinalized sale, false otherwise
+    fn is_sale_unscheduled(token_id: T::TokenId) -> bool {
+        if let Ok(token_info) = Self::ensure_token_exists(token_id) {
+            return token_info.sale.is_none();
+        }
+        true
+    }
+
     /// Change to permissionless
     /// Preconditions:
     /// - token by `token_id` must exist
@@ -1118,6 +1136,7 @@ impl<T: Config>
         let timeline = TimelineOf::<T>::from_params(revenue_split_start, duration);
 
         let treasury_account = Self::module_treasury_account();
+
         Self::ensure_can_transfer_joy(
             &revenue_source_account,
             &[(&treasury_account, allocation_amount)],

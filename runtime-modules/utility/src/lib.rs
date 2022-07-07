@@ -24,6 +24,8 @@
 pub(crate) mod tests;
 
 mod benchmarking;
+pub mod weights;
+pub use weights::WeightInfo;
 
 use common::{working_group::WorkingGroup, BalanceKind};
 use council::Module as Council;
@@ -53,15 +55,6 @@ pub trait Config: frame_system::Config + balances::Config + council::Config {
 
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
-}
-
-/// Utility WeightInfo.
-/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
-pub trait WeightInfo {
-    fn execute_signal_proposal(i: u32) -> Weight;
-    fn update_working_group_budget_positive() -> Weight;
-    fn update_working_group_budget_negative() -> Weight;
-    fn burn_account_tokens() -> Weight;
 }
 
 type WeightInfoUtilities<T> = <T as Config>::WeightInfo;

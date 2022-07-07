@@ -29,6 +29,7 @@ pub type CuratorId = <Test as ContentActorAuthenticator>::CuratorId;
 pub type CuratorGroupId = <Test as ContentActorAuthenticator>::CuratorGroupId;
 pub type MemberId = <Test as MembershipTypes>::MemberId;
 pub type ChannelId = <Test as storage::Config>::ChannelId;
+pub type TransferId = <Test as Config>::TransferId;
 pub type StorageBucketId = <Test as storage::Config>::StorageBucketId;
 
 /// Account Ids
@@ -42,7 +43,6 @@ pub const UNAUTHORIZED_LEAD_ACCOUNT_ID: u128 = 113;
 pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID: u128 = 114;
 pub const SECOND_MEMBER_ACCOUNT_ID: u128 = 116;
 pub const THIRD_MEMBER_ACCOUNT_ID: u128 = 117;
-pub const DEFAULT_CHANNEL_REWARD_WITHDRAWAL_ACCOUNT_ID: u128 = 119;
 pub const LEAD_MEMBER_CONTROLLER_ACCOUNT_ID: u128 = 120;
 pub const DEFAULT_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID: u128 = 121;
 pub const UNAUTHORIZED_CURATOR_MEMBER_CONTROLLER_ACCOUNT_ID: u128 = 122;
@@ -77,6 +77,9 @@ pub const STORAGE_BUCKET_ACCEPTING_BAGS: bool = true;
 pub const VOUCHER_OBJECTS_NUMBER_LIMIT: u64 = 2 * STORAGE_BUCKET_OBJECTS_NUMBER_LIMIT;
 pub const VOUCHER_OBJECTS_SIZE_LIMIT: u64 = VOUCHER_OBJECTS_NUMBER_LIMIT * DEFAULT_OBJECT_SIZE;
 pub const INITIAL_BALANCE: u64 = 1000;
+
+// Transfer price
+pub const DEFAULT_CHANNEL_TRANSFER_PRICE: u64 = 100;
 
 pub const MEMBERS_COUNT: u64 = 10;
 pub const PAYMENTS_NUMBER: u64 = 10;
@@ -418,6 +421,9 @@ impl Config for Test {
 
     /// Creator tokens interface
     type ProjectToken = project_token::Module<Self>;
+
+    /// Transfer Id
+    type TransferId = u64;
 }
 
 pub const COUNCIL_BUDGET_ACCOUNT_ID: u128 = 90000000;
@@ -485,6 +491,7 @@ pub struct ExtBuilder {
     next_channel_id: u64,
     next_video_id: u64,
     next_curator_group_id: u64,
+    next_transfer_id: u64,
     max_cashout_allowed: BalanceOf<Test>,
     min_cashout_allowed: BalanceOf<Test>,
     channel_cashouts_enabled: bool,
@@ -503,6 +510,7 @@ pub struct ExtBuilder {
     platform_fee_percentage: Perbill,
     auction_starts_at_max_delta: u64,
     max_auction_whitelist_length: u32,
+    nft_limits_enabled: bool,
 }
 
 impl Default for ExtBuilder {
@@ -512,6 +520,7 @@ impl Default for ExtBuilder {
             next_channel_id: 1,
             next_video_id: 1,
             next_curator_group_id: 1,
+            next_transfer_id: 1,
             max_cashout_allowed: BalanceOf::<Test>::from(1_000u32),
             min_cashout_allowed: BalanceOf::<Test>::from(1u32),
             channel_cashouts_enabled: true,
@@ -530,6 +539,7 @@ impl Default for ExtBuilder {
             platform_fee_percentage: Perbill::from_percent(1),
             auction_starts_at_max_delta: 90_000,
             max_auction_whitelist_length: 4,
+            nft_limits_enabled: true,
         }
     }
 }
@@ -564,6 +574,7 @@ impl ExtBuilder {
         crate::GenesisConfig::<Test> {
             next_channel_id: self.next_channel_id,
             next_video_id: self.next_video_id,
+            next_transfer_id: self.next_transfer_id,
             next_curator_group_id: self.next_curator_group_id,
             max_cashout_allowed: self.max_cashout_allowed,
             min_cashout_allowed: self.min_cashout_allowed,
@@ -583,6 +594,7 @@ impl ExtBuilder {
             platform_fee_percentage: self.platform_fee_percentage,
             auction_starts_at_max_delta: self.auction_starts_at_max_delta,
             max_auction_whitelist_length: self.max_auction_whitelist_length,
+            nft_limits_enabled: self.nft_limits_enabled,
         }
         .assimilate_storage(&mut t)
         .unwrap();

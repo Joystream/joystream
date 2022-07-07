@@ -227,6 +227,14 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ChannelStateBloatBondChanged: AugmentedError<ApiType>;
       /**
+       * Channel Transfers are blocked during revenue splits
+       **/
+      ChannelTransfersBlockedDuringRevenueSplits: AugmentedError<ApiType>;
+      /**
+       * Channel Transfers are blocked during token sales
+       **/
+      ChannelTransfersBlockedDuringTokenSales: AugmentedError<ApiType>;
+      /**
        * Creator token was already issued for this channel
        **/
       CreatorTokenAlreadyIssued: AugmentedError<ApiType>;
@@ -328,9 +336,9 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InvalidBidAmountSpecified: AugmentedError<ApiType>;
       /**
-       * Invalid Buy Now price commit provided
+       * `witness_price` provided to `buy_now` extrinsic does not match the current sell price
        **/
-      InvalidBuyNowPriceProvided: AugmentedError<ApiType>;
+      InvalidBuyNowWitnessPriceProvided: AugmentedError<ApiType>;
       /**
        * Incorrect channel owner for an operation.
        **/
@@ -352,6 +360,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Invalid member id  specified
        **/
       InvalidMemberProvided: AugmentedError<ApiType>;
+      /**
+       * Current nft offer price does not match the provided `witness_price`
+       **/
+      InvalidNftOfferWitnessPriceProvided: AugmentedError<ApiType>;
       /**
        * Invalid number of objects to delete provided for delete_video
        **/
@@ -477,6 +489,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Auction starts at upper bound exceeded
        **/
       StartsAtUpperBoundExceeded: AugmentedError<ApiType>;
+      /**
+       * Nft offer target member does not exist
+       **/
+      TargetMemberDoesNotExist: AugmentedError<ApiType>;
       /**
        * Insufficient balance
        **/
@@ -927,6 +943,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Ancestor category immutable, i.e. deleted or archived
        **/
       AncestorCategoryImmutable: AugmentedError<ApiType>;
+      /**
+       * A thread with outstanding posts cannot be removed
+       **/
+      CannotDeleteThreadWithOutstandingPosts: AugmentedError<ApiType>;
       /**
        * Category does not exist.
        **/

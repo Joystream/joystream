@@ -1,11 +1,8 @@
 #![cfg(test)]
-use crate::tests::fixtures::{
-    create_default_member_owned_channel_with_video, create_initial_storage_buckets_helper,
-    increase_account_balance_helper, make_content_module_account_existential_deposit, MetaEvent,
-};
+use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_noop, assert_ok};
 
 fn setup_open_auction_scenario() {
     let video_id = NextVideoId::<Test>::get();
@@ -296,5 +293,27 @@ fn cancel_open_auction_bid_ok_for_expired_auction() {
             SECOND_MEMBER_ID,
             video_id,
         ));
+    })
+}
+
+#[test]
+fn cancel_open_auction_bid_fails_during_transfer() {
+    with_default_mock_builder(|| {
+        ContentTest::default()
+            .with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::English))
+            .setup();
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, Content::min_starting_price());
+        InitializeChannelTransferFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::cancel_open_auction_bid(
+                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                SECOND_MEMBER_ID,
+                VideoId::one(),
+            ),
+            Error::<Test>::InvalidChannelTransferStatus,
+        );
     })
 }
