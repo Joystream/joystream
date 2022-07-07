@@ -334,7 +334,7 @@ fn buy_nft_insufficient_balance() {
 }
 
 #[test]
-fn buy_nft_fails_with_invalid_price_commit() {
+fn buy_nft_fails_with_invalid_witness_price_provided() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         let starting_block = 1;
@@ -378,7 +378,7 @@ fn buy_nft_fails_with_invalid_price_commit() {
             0,
         ));
 
-        // Attempt to buy NFT with price_commit protection
+        // Attempt to buy NFT with witness_price protection
         let buy_nft_result = Content::buy_nft(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
@@ -387,7 +387,10 @@ fn buy_nft_fails_with_invalid_price_commit() {
         );
 
         // Failure checked
-        assert_err!(buy_nft_result, Error::<Test>::InvalidBuyNowPriceProvided);
+        assert_err!(
+            buy_nft_result,
+            Error::<Test>::InvalidBuyNowWitnessPriceProvided
+        );
     })
 }
 

@@ -2225,6 +2225,7 @@ decl_module! {
         pub fn accept_incoming_offer(
             origin,
             video_id: T::VideoId,
+            witness_price: Option<<T as balances::Config>::Balance>
         ) {
             let receiver_account_id = ensure_signed(origin)?;
 
@@ -2237,7 +2238,7 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Ensure new pending offer is available to proceed
-            Self::ensure_new_pending_offer_available_to_proceed(&nft, &receiver_account_id)?;
+            Self::ensure_new_pending_offer_available_to_proceed(&nft, &receiver_account_id, witness_price)?;
 
             // account_id where the nft offer price is deposited
             let nft_owner_account = Self::ensure_nft_owner_has_beneficiary_account(&video, &nft).ok();
@@ -2313,7 +2314,7 @@ decl_module! {
             origin,
             video_id: T::VideoId,
             participant_id: T::MemberId,
-            price_commit: BalanceOf<T>, // in order to avoid front running
+            witness_price: BalanceOf<T>, // in order to avoid front running
         ) {
 
             // Authorize participant under given member id
@@ -2330,7 +2331,7 @@ decl_module! {
             let nft = video.ensure_nft_is_issued::<T>()?;
 
             // Ensure given participant can buy nft now
-            Self::ensure_can_buy_now(&nft, &participant_account_id, price_commit)?;
+            Self::ensure_can_buy_now(&nft, &participant_account_id, witness_price)?;
 
             // seller account
             let old_nft_owner_account_id = Self::ensure_nft_owner_has_beneficiary_account(&video, &nft).ok();
