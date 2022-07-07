@@ -38,16 +38,14 @@ jobs:
         env:
           WASM_BUILD_TOOLCHAIN: nightly-2022-05-11 
         run: |
-          cargo +nightly-2022-05-11 build --release --features runtime-benchmarks &&
-          cargo +nightly-2022-05-11 test --release --features runtime-benchmarks
+          cargo +nightly-2022-05-11 test --release --features runtime-benchmarks &&
+          cargo +nightly-2022-05-11 build --release --features runtime-benchmarks
         if: env.GIT_DIFF
 
-      # - name: Test Generate Weights
-      #   run: |
-      #     ./scripts/generate-weights.sh 1 1
-      #     # Show any changes in computed weights
-      #     git diff
-      #   if: env.GIT_DIFF
+      - name: Test Generate Weights
+        run: |
+          ./scripts/generate-weights.sh 1 1 && git diff
+        if: env.GIT_DIFF
 
   # Build and test joystream-node with all runtime profiles
   runtime_profiles:

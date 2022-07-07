@@ -229,8 +229,6 @@ benchmarks! {
     }
 
     add_post {
-        let i in 1 .. T::MaxWhiteListSize::get();
-
         let j in 0 .. MAX_BYTES;
 
         // We do this to ignore the id 0 because the `Test` runtime
@@ -242,13 +240,13 @@ benchmarks! {
 
         // We start from 2 since we have previously created id 0 and not used it
         // and used id 1 for the caller (see comment above)
-        for id in 2 .. i + 1 {
+        for id in 2 .. T::MaxWhiteListSize::get() + 1 {
             let (_, member_id) = member_account::<T>("member", id);
             whitelisted_members.push(member_id);
         }
 
         // Worst case scenario there is a council
-        elect_council::<T>(i+1);
+        elect_council::<T>(T::MaxWhiteListSize::get()+1);
 
         let thread_id = ProposalsDiscussion::<T>::create_thread(
             caller_member_id,

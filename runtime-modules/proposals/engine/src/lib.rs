@@ -141,6 +141,8 @@ mod benchmarking;
 
 #[cfg(test)]
 mod tests;
+pub mod weights;
+pub use weights::WeightInfo;
 
 use codec::Decode;
 use frame_support::dispatch::{DispatchError, DispatchResult, UnfilteredDispatchable};
@@ -159,21 +161,6 @@ use common::council::CouncilOriginValidator;
 use common::membership::MemberOriginValidator;
 use common::{MemberId, StakingAccountValidator};
 use staking_handler::StakingHandler;
-
-/// Proposals engine WeightInfo.
-/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
-pub trait WeightInfo {
-    fn vote(i: u32) -> Weight;
-    fn cancel_proposal() -> Weight;
-    fn veto_proposal() -> Weight;
-    fn on_initialize_immediate_execution_decode_fails(i: u32) -> Weight;
-    fn on_initialize_pending_execution_decode_fails(i: u32) -> Weight;
-    fn on_initialize_approved_pending_constitutionality(i: u32) -> Weight;
-    fn on_initialize_rejected(i: u32) -> Weight;
-    fn on_initialize_slashed(i: u32) -> Weight;
-    fn cancel_active_and_pending_proposals(i: u32) -> Weight;
-    fn proposer_remark() -> Weight;
-}
 
 type WeightInfoEngine<T> = <T as Config>::WeightInfo;
 
