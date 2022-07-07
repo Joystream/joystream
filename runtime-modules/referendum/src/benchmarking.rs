@@ -81,11 +81,11 @@ fn make_multiple_votes_for_multiple_options<
     let mut intermediate_winners = Vec::new();
     let stake = T::MinimumStake::get() + One::one();
 
-    for option in 0..number_of_options {
+    for i in 0..number_of_options {
         let (account_id, option, commitment) = create_account_and_vote::<T, I>(
             "voter",
-            option,
-            number_of_options + option,
+            i,
+            number_of_options + i,
             cycle_id,
             Zero::zero(),
         );
@@ -764,88 +764,10 @@ benchmarks_instance! {
 
         assert_last_event::<T, I>(RawEvent::StakeReleased(account_id).into());
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::mock::{build_test_externalities, default_genesis_config, Runtime};
-    use frame_support::assert_ok;
-
-    impl
-        OptionCreator<
-            <Runtime as frame_system::Config>::AccountId,
-            <Runtime as common::membership::MembershipTypes>::MemberId,
-        > for Runtime
-    {
-        fn create_option(
-            _: <Runtime as frame_system::Config>::AccountId,
-            _: <Runtime as common::membership::MembershipTypes>::MemberId,
-        ) {
-        }
-    }
-
-    #[test]
-    fn test_vote() {
-        let config = default_genesis_config();
-        build_test_externalities(config).execute_with(|| {
-            assert_ok!(Module::<Runtime>::test_benchmark_vote());
-        })
-    }
-
-    #[test]
-    fn test_reveal_vote_space_for_new_winner() {
-        let config = default_genesis_config();
-        build_test_externalities(config).execute_with(|| {
-            assert_ok!(Module::<Runtime>::test_benchmark_reveal_vote_space_for_new_winner());
-        })
-    }
-
-    #[test]
-    fn test_reveal_vote_space_not_in_winners() {
-        let config = default_genesis_config();
-        build_test_externalities(config).execute_with(|| {
-            assert_ok!(Module::<Runtime>::test_benchmark_reveal_vote_space_not_in_winners());
-        })
-    }
-
-    #[test]
-    fn test_reveal_vote_already_existing() {
-        let config = default_genesis_config();
-        build_test_externalities(config).execute_with(|| {
-            assert_ok!(Module::<Runtime>::test_benchmark_reveal_vote_already_existing());
-        })
-    }
-
-    #[test]
-    fn test_reveal_vote_space_replace_last_winner() {
-        let config = default_genesis_config();
-        build_test_externalities(config).execute_with(|| {
-            assert_ok!(Module::<Runtime>::test_benchmark_reveal_vote_space_replace_last_winner());
-        })
-    }
-
-    #[test]
-    fn test_release_vote_stake() {
-        let config = default_genesis_config();
-        build_test_externalities(config).execute_with(|| {
-            assert_ok!(Module::<Runtime>::test_benchmark_release_vote_stake());
-        })
-    }
-
-    #[test]
-    fn test_on_initialize_voting() {
-        let config = default_genesis_config();
-        build_test_externalities(config).execute_with(|| {
-            assert_ok!(Module::<Runtime>::test_benchmark_on_initialize_voting());
-        })
-    }
-
-    #[test]
-    fn test_on_initialize_revealing() {
-        let config = default_genesis_config();
-        build_test_externalities(config).execute_with(|| {
-            assert_ok!(Module::<Runtime>::test_benchmark_on_initialize_revealing());
-        })
-    }
+    impl_benchmark_test_suite!(
+        Module,
+        crate::mock::build_test_externalities(crate::mock::default_genesis_config()),
+        crate::mock::Runtime
+    )
 }

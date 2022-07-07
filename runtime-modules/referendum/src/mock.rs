@@ -138,95 +138,6 @@ impl Config for Runtime {
     }
 }
 
-impl WeightInfo for () {
-    fn on_initialize_revealing(_: u32) -> Weight {
-        0
-    }
-    fn on_initialize_voting() -> Weight {
-        0
-    }
-    fn vote() -> Weight {
-        0
-    }
-    fn reveal_vote_space_for_new_winner(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_space_not_in_winners(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_space_replace_last_winner(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_already_existing(_: u32) -> Weight {
-        0
-    }
-    fn release_vote_stake() -> Weight {
-        0
-    }
-}
-
-// Weights info stub
-pub struct Weights;
-impl membership::WeightInfo for Weights {
-    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_profile(_: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_none() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_root() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_controller() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_both() -> Weight {
-        unimplemented!()
-    }
-    fn set_referral_cut() -> Weight {
-        unimplemented!()
-    }
-    fn transfer_invites() -> Weight {
-        unimplemented!()
-    }
-    fn invite_member(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn set_membership_price() -> Weight {
-        unimplemented!()
-    }
-    fn update_profile_verification() -> Weight {
-        unimplemented!()
-    }
-    fn set_leader_invitation_quota() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_balance() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_count() -> Weight {
-        unimplemented!()
-    }
-    fn add_staking_account_candidate() -> Weight {
-        unimplemented!()
-    }
-    fn confirm_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn remove_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn member_remark() -> Weight {
-        unimplemented!()
-    }
-}
-
 parameter_types! {
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
@@ -240,7 +151,7 @@ impl membership::Config for Runtime {
     type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = Wg;
-    type WeightInfo = Weights;
+    type WeightInfo = ();
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
@@ -848,5 +759,23 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .event,
             Event::Referendum(RawEvent::StakeReleased(account_id))
         );
+    }
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl
+    crate::OptionCreator<
+        <Runtime as frame_system::Config>::AccountId,
+        <Runtime as common::membership::MembershipTypes>::MemberId,
+    > for Runtime
+{
+    fn create_option(
+        _: <Runtime as frame_system::Config>::AccountId,
+        option_id: <Runtime as common::membership::MembershipTypes>::MemberId,
+    ) {
+        // clear saved option power from previous cycle
+        INTERMEDIATE_RESULTS.with(|value| {
+            value.borrow_mut().insert(option_id, 0);
+        });
     }
 }

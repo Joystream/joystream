@@ -39,6 +39,7 @@ fn accept_incoming_offer() {
         assert_ok!(Content::accept_incoming_offer(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
+            None
         ));
 
         // Runtime tested state after call
@@ -67,8 +68,11 @@ fn accept_incoming_offer_video_does_not_exist() {
         let video_id = NextVideoId::<Test>::get();
 
         // Make an attempt to accept incoming nft offer if corresponding video does not exist
-        let accept_incoming_offer_result =
-            Content::accept_incoming_offer(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
+        let accept_incoming_offer_result = Content::accept_incoming_offer(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            video_id,
+            None,
+        );
 
         // Failure checked
         assert_err!(
@@ -90,8 +94,11 @@ fn accept_incoming_offer_nft_not_issued() {
         create_default_member_owned_channel_with_video();
 
         // Make an attempt to accept incoming nft offer if corresponding nft is not issued yet
-        let accept_incoming_offer_result =
-            Content::accept_incoming_offer(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
+        let accept_incoming_offer_result = Content::accept_incoming_offer(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            video_id,
+            None,
+        );
 
         // Failure checked
         assert_err!(accept_incoming_offer_result, Error::<Test>::NftDoesNotExist);
@@ -130,6 +137,7 @@ fn accept_incoming_offer_auth_failed() {
         let accept_incoming_offer_result = Content::accept_incoming_offer(
             Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             video_id,
+            None,
         );
 
         // Failure checked
@@ -160,8 +168,11 @@ fn accept_incoming_offer_no_incoming_offers() {
         ));
 
         // Make an attempt to accept incoming nft offer if there is no incoming transfers
-        let accept_incoming_offer_result =
-            Content::accept_incoming_offer(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
+        let accept_incoming_offer_result = Content::accept_incoming_offer(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            video_id,
+            None,
+        );
 
         // Failure checked
         assert_err!(
@@ -190,6 +201,7 @@ fn accept_incoming_offer_ok_with_nft_member_owner_correctly_credited() {
         assert_ok!(Content::accept_incoming_offer(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             VideoId::one(),
+            Some(DEFAULT_NFT_PRICE)
         ));
 
         // check member owner balance increased by NFT PRICE - ROYALTY - FEE
@@ -217,6 +229,7 @@ fn accept_incoming_offer_reward_account_ok_with_owner_channel_account_correctly_
         assert_ok!(Content::accept_incoming_offer(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             VideoId::one(),
+            Some(DEFAULT_NFT_PRICE)
         ));
 
         // check creator owner balance increased by NFT PRICE - FEE
@@ -256,8 +269,11 @@ fn accept_incoming_offer_insufficient_balance() {
         ));
 
         // Make an attempt to accept incoming nft offer if there is no incoming transfers
-        let accept_incoming_offer_result =
-            Content::accept_incoming_offer(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
+        let accept_incoming_offer_result = Content::accept_incoming_offer(
+            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            video_id,
+            Some(DEFAULT_NFT_PRICE),
+        );
 
         // Failure checked
         assert_err!(
@@ -273,7 +289,7 @@ fn accept_incoming_offer_fails_during_channel_transfer() {
         ContentTest::default()
             .with_video_nft_status(NftTransactionalStatusType::Offer)
             .setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Ok(()));
 
@@ -281,8 +297,37 @@ fn accept_incoming_offer_fails_during_channel_transfer() {
             Content::accept_incoming_offer(
                 Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 VideoId::one(),
+                None
             ),
             Error::<Test>::InvalidChannelTransferStatus,
+        );
+    })
+}
+
+#[test]
+fn accept_incoming_offer_fails_with_invalid_witness_price_provided() {
+    with_default_mock_builder(|| {
+        ContentTest::default().with_video_nft().setup();
+        OfferNftFixture::default()
+            .with_price(Some(DEFAULT_NFT_PRICE))
+            .call_and_assert(Ok(()));
+
+        assert_noop!(
+            Content::accept_incoming_offer(
+                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                VideoId::one(),
+                Some(DEFAULT_NFT_PRICE - 1)
+            ),
+            Error::<Test>::InvalidNftOfferWitnessPriceProvided,
+        );
+
+        assert_noop!(
+            Content::accept_incoming_offer(
+                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                VideoId::one(),
+                None
+            ),
+            Error::<Test>::InvalidNftOfferWitnessPriceProvided,
         );
     })
 }
@@ -318,7 +363,8 @@ fn accept_incoming_offer_fails_when_trying_to_use_locked_balance() {
         assert_noop!(
             Content::accept_incoming_offer(
                 Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-                VideoId::one()
+                VideoId::one(),
+                Some(DEFAULT_NFT_PRICE)
             ),
             Error::<Test>::InsufficientBalance
         );
