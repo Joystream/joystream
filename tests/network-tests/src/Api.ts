@@ -656,6 +656,18 @@ export class Api {
     return (await this.api.query.content.channelById.entries<ChannelId>()).length
   }
 
+  public async getVideoStateBloatBond(): Promise<number> {
+    return (await this.api.query.content.videoStateBloatBondValue()).toNumber()
+  }
+
+  public async getChannelStateBloatBond(): Promise<number> {
+    return (await this.api.query.content.channelStateBloatBondValue()).toNumber()
+  }
+
+  public async getDataObjectStateBloatBond(): Promise<number> {
+    return (await this.api.query.storage.dataObjectStateBloatBondValue()).toNumber()
+  }
+
   // Create a mock channel, throws on failure
   async createMockChannel(
     memberId: number,
@@ -1077,11 +1089,14 @@ export class Api {
         : { Idle: null }
     )
 
+    const expectedVideoStateBloatBond = await this.getVideoStateBloatBond()
+    const expectedDataObjectStateBloatBond = await this.getDataObjectStateBloatBond()
+
     const createParameters = createType('PalletContentVideoCreationParametersRecord', {
       assets: null,
       meta: null,
-      expectedVideoStateBloatBond: 0,
-      expectedDataObjectStateBloatBond: 0,
+      expectedVideoStateBloatBond,
+      expectedDataObjectStateBloatBond,
       autoIssueNft: {
         royalty: null,
         nftMetadata: '',
@@ -1102,11 +1117,14 @@ export class Api {
     channelId: number,
     price: BN
   ): Promise<ISubmittableResult> {
+    const expectedVideoStateBloatBond = await this.getVideoStateBloatBond()
+    const expectedDataObjectStateBloatBond = await this.getDataObjectStateBloatBond()
+
     const createParameters = createType('PalletContentVideoCreationParametersRecord', {
       assets: null,
       meta: null,
-      expectedVideoStateBloatBond: 0,
-      expectedDataObjectStateBloatBond: 0,
+      expectedVideoStateBloatBond,
+      expectedDataObjectStateBloatBond,
       autoIssueNft: {
         royalty: null,
         nftMetadata: '',

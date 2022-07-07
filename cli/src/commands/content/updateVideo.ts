@@ -4,7 +4,7 @@ import { asValidatedMetadata, metadataToBytes } from '../../helpers/serializatio
 import UploadCommandBase from '../../base/UploadCommandBase'
 import { flags } from '@oclif/command'
 import { CreateInterface, createType } from '@joystream/types'
-import { VideoUpdateParameters } from '@joystream/types/content'
+import { PalletContentVideoUpdateParametersRecord as VideoUpdateParameters } from '@polkadot/types/lookup'
 import { VideoInputSchema } from '../../schemas/ContentDirectory'
 import { VideoMetadata } from '@joystream/metadata-protobuf'
 import { DataObjectInfoFragment } from '../../graphql/generated/queries'
@@ -37,7 +37,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
     videoId: number,
     videoIndex: number | undefined,
     thumbnailIndex: number | undefined
-  ): Promise<string[]> {
+  ): Promise<number[]> {
     let assetsToRemove: DataObjectInfoFragment[] = []
     if (videoIndex !== undefined || thumbnailIndex !== undefined) {
       const currentAssets = await this.getQNApi().dataObjectsByVideoId(videoId.toString())
@@ -60,7 +60,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       }
     }
 
-    return assetsToRemove.map((a) => a.id)
+    return assetsToRemove.map((a) => Number(a.id))
   }
 
   async run(): Promise<void> {
@@ -71,7 +71,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
 
     // Context
     const video = await this.getApi().videoById(videoId)
-    const channel = await this.getApi().channelById(video.in_channel.toNumber())
+    const channel = await this.getApi().channelById(video.inChannel.toNumber())
     const [actor, address] = await this.getChannelManagementActor(channel, context)
     const { id: memberId } = await this.getRequiredMemberContext(true)
     const keypair = await this.getDecodedPair(address)
@@ -95,9 +95,11 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       assetIndices.thumbnailPhotoPath
     )
     const videoUpdateParameters: CreateInterface<VideoUpdateParameters> = {
-      assets_to_upload: assetsToUpload,
-      new_meta: metadataToBytes(VideoMetadata, meta),
-      assets_to_remove: createType('BTreeSet<DataObjectId>', assetsToRemove),
+      expectedDataObjectStateBloatBond: 0,
+      autoIssueNft: null,
+      assetsToUpload: assetsToUpload,
+      newMeta: metadataToBytes(VideoMetadata, meta),
+      assetsToRemove: createType('BTreeSet<u64>', assetsToRemove),
     }
 
     this.jsonPrettyPrint(
@@ -117,7 +119,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       await this.uploadAssets(
         keypair,
         memberId.toNumber(),
-        `dynamic:channel:${video.in_channel.toString()}`,
+        `dynamic:channel:${video.inChannel.toString()}`,
         objectIds.map((id, index) => ({ dataObjectId: id, path: resolvedAssets[index].path })),
         input
       )

@@ -1,4 +1,5 @@
-import { Category, CategoryId } from '@joystream/types/forum'
+import { ForumCategoryId as CategoryId } from '@joystream/types/primitives'
+import { PalletForumCategory as Category } from '@polkadot/types/lookup'
 import { flags } from '@oclif/command'
 import { cli } from 'cli-ux'
 import chalk from 'chalk'
@@ -30,7 +31,7 @@ export default class ForumCategoriesCommand extends ForumCommandBase {
     allCategories: [CategoryId, Category][]
   ): void {
     for (const [parentId] of parents) {
-      const children = allCategories.filter(([, c]) => c.parent_category_id.unwrapOr(undefined)?.eq(parentId))
+      const children = allCategories.filter(([, c]) => c.parentCategoryId.unwrapOr(undefined)?.eq(parentId))
       const childSubtree = cli.tree()
       this.recursivelyGenerateCategoryTree(childSubtree, children, allCategories)
       tree.insert(parentId.toString(), childSubtree)
@@ -46,7 +47,7 @@ export default class ForumCategoriesCommand extends ForumCommandBase {
         this.error(`Category ${chalk.magentaBright(root)} not found!`)
       }
     }
-    const treeRootCategories = rootCategory ? [rootCategory] : categories.filter(([, c]) => c.parent_category_id.isNone)
+    const treeRootCategories = rootCategory ? [rootCategory] : categories.filter(([, c]) => c.parentCategoryId.isNone)
     this.recursivelyGenerateCategoryTree(tree, treeRootCategories, categories)
     return tree
   }
@@ -65,15 +66,15 @@ export default class ForumCategoriesCommand extends ForumCommandBase {
       categoryTree.display()
     } else {
       const children = categories.filter(
-        ([, c]) => c.parent_category_id.unwrapOr(undefined)?.toNumber() === parentCategoryId
+        ([, c]) => c.parentCategoryId.unwrapOr(undefined)?.toNumber() === parentCategoryId
       )
       if (children.length) {
         displayTable(
           children.map(([id, c]) => ({
             'ID': id.toString(),
-            'Direct subcategories': c.num_direct_subcategories.toNumber(),
-            'Direct threads': c.num_direct_threads.toNumber(),
-            'Direct modreators': c.num_direct_moderators.toNumber(),
+            'Direct subcategories': c.numDirectSubcategories.toNumber(),
+            'Direct threads': c.numDirectThreads.toNumber(),
+            'Direct modreators': c.numDirectModerators.toNumber(),
           })),
           5
         )

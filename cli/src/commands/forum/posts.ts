@@ -24,9 +24,9 @@ export default class ForumPostsCommand extends ForumCommandBase {
       displayTable(
         posts.map(([id, p]) => ({
           'ID': id.toString(),
-          'Cleanup payoff': formatBalance(p.cleanup_pay_off),
-          'Author member id': p.author_id.toString(),
-          'Last edited': `#${p.last_edited.toNumber()}`,
+          'Cleanup payoff': formatBalance(p.cleanupPayOff),
+          'Author member id': p.authorId.toString(),
+          'Last edited': `#${p.lastEdited.toNumber()}`,
         })),
         5
       )

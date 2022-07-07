@@ -33,7 +33,7 @@ export default class ForumModerateThreadCommand extends ForumCommandBase {
     const [key, actor] = await this.getForumModerationContext([categoryId], context)
 
     this.jsonPrettyPrint(JSON.stringify({ categoryId, threadId, rationale }))
-    this.warn(`Thread stake of ${formatBalance(thread.cleanup_pay_off)} will be slashed!`)
+    this.warn(`Thread stake of ${formatBalance(thread.cleanupPayOff)} will be slashed!`)
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
     await this.sendAndFollowTx(

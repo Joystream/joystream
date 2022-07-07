@@ -35,8 +35,8 @@ export default class MembershipDetailsCommand extends AccountsCommandBase {
 
     displayHeader('Keys')
     displayCollapsedRow({
-      'Root': details.membership.root_account.toString(),
-      'Controller': details.membership.controller_account.toString(),
+      'Root': details.membership.rootAccount.toString(),
+      'Controller': details.membership.controllerAccount.toString(),
     })
   }
 }

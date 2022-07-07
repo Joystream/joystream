@@ -97,7 +97,10 @@ export default class UpdateChannelCommand extends UploadCommandBase {
     }
 
     if (collaborators) {
-      await this.validateMemberIdsSet(collaborators, 'collaborator')
+      await this.validateMemberIdsSet(
+        collaborators.map(({ memberId }) => memberId),
+        'collaborator'
+      )
     }
 
     const [resolvedAssets, assetIndices] = await this.resolveAndValidateAssets(
