@@ -2365,18 +2365,20 @@ decl_module! {
         /// Only Council can toggle nft issuance limits constraints
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn toggle_nft_limits(
-            origin,
-            enabled: bool
+            _origin,
+            _enabled: bool
         ) {
-            let _ = ensure_root(origin)?;
+            // TODO: enable after Carthage
+            return Err(Error::<T>::FeatureNotImplemented.into());
+            // let _ = ensure_root(origin)?;
 
-            //
-            // == MUTATION SAFE ==
-            //
+            // //
+            // // == MUTATION SAFE ==
+            // //
 
-            NftLimitsEnabled::mutate(|nft_limits| *nft_limits = enabled);
+            // NftLimitsEnabled::mutate(|nft_limits| *nft_limits = enabled);
 
-            Self::deposit_event(RawEvent::ToggledNftLimits(enabled));
+            // Self::deposit_event(RawEvent::ToggledNftLimits(enabled));
         }
 
         /// Channel owner remark
@@ -2513,6 +2515,10 @@ decl_module! {
             nft_limit_period: NftLimitPeriod,
             limit: u64,
         ) {
+            if !Self::nft_limits_enabled() {
+                return Ok(());
+            }
+
             ensure_root(origin)?;
 
             let nft_limit_id: NftLimitId<T::ChannelId> = match nft_limit_period {
@@ -2538,6 +2544,10 @@ decl_module! {
             channel_id: T::ChannelId,
             limit: u64,
         ) {
+            if !Self::nft_limits_enabled() {
+                return Ok(());
+            }
+
             let channel = Self::ensure_channel_exists(&channel_id)?;
             ensure_actor_authorized_to_update_channel_nft_limits::<T>(origin, &actor, &channel)?;
 

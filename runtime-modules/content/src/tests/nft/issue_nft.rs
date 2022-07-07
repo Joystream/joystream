@@ -394,6 +394,8 @@ fn issue_nft_channel_weekly_limit_works_as_expected() {
     })
 }
 
+// TODO: enable after Enabling NFT limits toggling
+#[ignore]
 #[test]
 fn issue_nft_ok_with_limits_not_enforced() {
     with_default_mock_builder(|| {

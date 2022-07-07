@@ -1322,8 +1322,6 @@ fn unsuccessful_video_update_with_nft_issuance_when_nft_already_issued() {
     })
 }
 
-// TODO: Enable after Carthage
-#[ignore]
 #[test]
 fn create_video_failed_with_exceeded_global_daily_nft_limits() {
     with_default_mock_builder(|| {
@@ -1334,8 +1332,6 @@ fn create_video_failed_with_exceeded_global_daily_nft_limits() {
     })
 }
 
-// TODO: Enable after Carthage
-#[ignore]
 #[test]
 fn create_video_failed_with_exceeded_global_weekly_nft_limits() {
     with_default_mock_builder(|| {
@@ -1346,8 +1342,6 @@ fn create_video_failed_with_exceeded_global_weekly_nft_limits() {
     })
 }
 
-// TODO: Enable after Carthage
-#[ignore]
 #[test]
 fn create_video_failed_with_exceeded_channel_daily_nft_limits() {
     with_default_mock_builder(|| {
@@ -1359,8 +1353,6 @@ fn create_video_failed_with_exceeded_channel_daily_nft_limits() {
     })
 }
 
-// TODO: Enable after Carthage
-#[ignore]
 #[test]
 fn create_video_failed_with_exceeded_channel_weekly_nft_limits() {
     with_default_mock_builder(|| {
@@ -1398,8 +1390,6 @@ fn nft_test_helper_for_exceeded_limit_on_creating_video(
         .call_and_assert(Err(expected_error.into()));
 }
 
-// TODO: Enable after Carthage
-#[ignore]
 #[test]
 fn update_video_failed_with_exceeded_global_daily_nft_limits() {
     with_default_mock_builder(|| {
@@ -1410,8 +1400,6 @@ fn update_video_failed_with_exceeded_global_daily_nft_limits() {
     })
 }
 
-// TODO: Enable after Carthage
-#[ignore]
 #[test]
 fn update_video_failed_with_exceeded_global_weekly_nft_limits() {
     with_default_mock_builder(|| {
@@ -1422,8 +1410,6 @@ fn update_video_failed_with_exceeded_global_weekly_nft_limits() {
     })
 }
 
-// TODO: Enable after Carthage
-#[ignore]
 #[test]
 fn update_video_failed_with_exceeded_channel_daily_nft_limits() {
     with_default_mock_builder(|| {
@@ -1435,8 +1421,6 @@ fn update_video_failed_with_exceeded_channel_daily_nft_limits() {
     })
 }
 
-// TODO: Enable after Carthage
-#[ignore]
 #[test]
 fn update_video_failed_with_exceeded_channel_weekly_nft_limits() {
     with_default_mock_builder(|| {

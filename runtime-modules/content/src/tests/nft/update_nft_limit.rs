@@ -34,8 +34,6 @@ fn update_nft_limits_works_as_expected_for_global_limits() {
     })
 }
 
-// TODO: Enable after Carthage
-#[ignore]
 #[test]
 fn update_nft_limits_works_as_expected_for_channel_limits() {
     with_default_mock_builder(|| {
@@ -169,6 +167,8 @@ fn default_channel_nft_limits_set_successfully() {
     })
 }
 
+// TODO enable after enabling toggling nft limits
+#[ignore]
 #[test]
 fn toggle_nft_limits_ok_with_event_deposited_and_status_changed() {
     with_default_mock_builder(|| {
@@ -184,6 +184,8 @@ fn toggle_nft_limits_ok_with_event_deposited_and_status_changed() {
     })
 }
 
+ // TODO: Enable after enabling toggling nft limits
+#[ignore]
 #[test]
 fn toggle_nft_limits_fails_by_non_root_origin() {
     with_default_mock_builder(|| {
