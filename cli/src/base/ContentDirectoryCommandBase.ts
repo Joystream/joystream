@@ -288,10 +288,7 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
     return group
   }
 
-  async getChannelOwner(
-    context: ChannelOwner['type'],
-    ownerId: MemberId | CuratorGroupId
-  ): Promise<[ChannelOwner, string]> {
+  async getChannelOwner(context: ChannelOwner['type']): Promise<[ChannelOwner, string]> {
     if (context === 'Member') {
       const { id, membership } = await this.getRequiredMemberContext()
 
@@ -300,9 +297,9 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
 
     if (context === 'CuratorGroup') {
       const lead = await this.getRequiredLeadContext()
-      await this.getCuratorGroup(ownerId.toString())
+      const curatorGroupId = await this.promptForCuratorGroup()
 
-      return [createType('PalletContentChannelOwner', { CuratorGroup: ownerId }), lead.roleAccount.toString()]
+      return [createType('PalletContentChannelOwner', { CuratorGroup: curatorGroupId }), lead.roleAccount.toString()]
     }
 
     throw new Error(`Unrecognized context: ${context}`)

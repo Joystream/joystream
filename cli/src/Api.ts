@@ -469,6 +469,14 @@ export default class Api {
     return video
   }
 
+  async channelStateBloatBond(): Promise<number> {
+    return (this._api.query.content.channelStateBloatBondValue() as unknown) as number
+  }
+
+  async dataObjectStateBloatBond(): Promise<number> {
+    return (this._api.query.storage.dataObjectStateBloatBondValue() as unknown) as number
+  }
+
   async dataObjectsByIds(bagId: BagId, ids: DataObjectId[]): Promise<DataObject[]> {
     return this._api.query.storage.dataObjectsById.multi(ids.map((id) => [bagId, id]))
   }
