@@ -179,8 +179,8 @@ decl_error! {
         /// Given video nft is not in buy now state
         NftNotInBuyNowState,
 
-        /// Invalid Buy Now price commit provided
-        InvalidBuyNowPriceProvided,
+        /// `witness_price` provided to `buy_now` extrinsic does not match the current sell price
+        InvalidBuyNowWitnessPriceProvided,
 
         /// Auction type is not `Open`
         IsNotOpenAuctionType,
@@ -196,6 +196,12 @@ decl_error! {
 
         /// Auction buy now is less then starting price
         BuyNowIsLessThenStartingPrice,
+
+        /// Nft offer target member does not exist
+        TargetMemberDoesNotExist,
+
+        /// Current nft offer price does not match the provided `witness_price`
+        InvalidNftOfferWitnessPriceProvided,
 
         /// Max auction whitelist length upper bound exceeded
         MaxAuctionWhiteListLengthUpperBoundExceeded,

@@ -530,8 +530,23 @@ pub fn ensure_actor_authorized_to_perform_moderation_actions<T: Config>(
 
 /// Transfer channels permissions
 
-// Transfer channel check.
+// start Transfer channel check.
 pub fn ensure_actor_authorized_to_transfer_channel<T: Config>(
+    origin: T::Origin,
+    actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel: &Channel<T>,
+) -> Result<Option<ChannelAgentPermissions>, DispatchError> {
+    let sender = ensure_signed(origin)?;
+    ensure_actor_has_channel_permissions::<T>(
+        &sender,
+        &actor,
+        &channel,
+        &[ChannelActionPermission::TransferChannel],
+    )
+}
+
+// cancel Transfer channel check.
+pub fn ensure_actor_authorized_to_cancel_channel_transfer<T: Config>(
     origin: T::Origin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,

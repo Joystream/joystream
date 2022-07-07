@@ -3,7 +3,6 @@ use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
 use common::BudgetManager;
-use frame_support::assert_noop;
 
 fn purchase_tokens_on_sale(amount: u64) {
     let existential_deposit: u64 = <Test as balances::Config>::ExistentialDeposit::get().into();

@@ -2,7 +2,10 @@
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_noop, assert_ok};
+use frame_support::{
+    assert_err, assert_noop, assert_ok,
+    traits::{LockableCurrency, WithdrawReasons},
+};
 
 #[test]
 fn buy_nft_ok_with_proper_royalty_accounting_normal_case() {
@@ -334,7 +337,7 @@ fn buy_nft_insufficient_balance() {
 }
 
 #[test]
-fn buy_nft_fails_with_invalid_price_commit() {
+fn buy_nft_fails_with_invalid_witness_price_provided() {
     with_default_mock_builder(|| {
         // Run to block one to see emitted events
         let starting_block = 1;
@@ -378,7 +381,7 @@ fn buy_nft_fails_with_invalid_price_commit() {
             0,
         ));
 
-        // Attempt to buy NFT with price_commit protection
+        // Attempt to buy NFT with witness_price protection
         let buy_nft_result = Content::buy_nft(
             Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
@@ -387,7 +390,10 @@ fn buy_nft_fails_with_invalid_price_commit() {
         );
 
         // Failure checked
-        assert_err!(buy_nft_result, Error::<Test>::InvalidBuyNowPriceProvided);
+        assert_err!(
+            buy_nft_result,
+            Error::<Test>::InvalidBuyNowWitnessPriceProvided
+        );
     })
 }
 
@@ -452,7 +458,7 @@ fn buy_nft_fails_during_channel_transfer() {
         ContentTest::default()
             .with_video_nft_status(NftTransactionalStatusType::BuyNow)
             .setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Ok(()));
 
@@ -464,6 +470,46 @@ fn buy_nft_fails_during_channel_transfer() {
                 BalanceOf::<Test>::zero(),
             ),
             Error::<Test>::InvalidChannelTransferStatus,
+        );
+    })
+}
+
+#[test]
+fn buy_nft_fails_when_trying_to_use_locked_balance() {
+    with_default_mock_builder(|| {
+        ContentTest::default().with_video_nft().setup();
+
+        SellNftFixture::default()
+            .with_price(DEFAULT_NFT_PRICE)
+            .call_and_assert(Ok(()));
+
+        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
+
+        Balances::<Test>::set_lock(
+            LockId::get(),
+            &SECOND_MEMBER_ACCOUNT_ID,
+            1,
+            WithdrawReasons::TRANSFER,
+        );
+
+        assert_eq!(
+            Balances::<Test>::free_balance(SECOND_MEMBER_ACCOUNT_ID),
+            DEFAULT_NFT_PRICE
+        );
+
+        assert_eq!(
+            Balances::<Test>::usable_balance(SECOND_MEMBER_ACCOUNT_ID),
+            DEFAULT_NFT_PRICE - 1
+        );
+
+        assert_noop!(
+            Content::buy_nft(
+                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                VideoId::one(),
+                SECOND_MEMBER_ID,
+                DEFAULT_NFT_PRICE,
+            ),
+            Error::<Test>::InsufficientBalance
         );
     })
 }
