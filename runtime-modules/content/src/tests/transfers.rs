@@ -9,6 +9,8 @@ use strum::IntoEnumIterator;
 
 // -- Initialize channel transfer ---------------------------------------------------
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn initialize_channel_transfer_ok_with_status_correctly_changed() {
     let new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions> =
@@ -39,6 +41,8 @@ fn initialize_channel_transfer_ok_with_status_correctly_changed() {
     })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn initialize_channel_transfer_ok_with_event_deposited() {
     let new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions> =
@@ -69,6 +73,8 @@ fn initialize_channel_transfer_ok_with_event_deposited() {
     })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn initialize_channel_transfer_ok_with_transfer_id_updated_correctly() {
     with_default_mock_builder(|| {
@@ -84,6 +90,8 @@ fn initialize_channel_transfer_ok_with_transfer_id_updated_correctly() {
     })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn initialize_channel_transfer_fails_during_upcoming_revenue_split() {
     pub const SPLIT_STARTING_BLOCK: u64 = 10;
@@ -110,6 +118,8 @@ fn initialize_channel_transfer_fails_during_upcoming_revenue_split() {
 }
 
 // TODO: Enable after enabling channel transfers
+#[ignore]
+// TODO: enable after enabling channel transfers
 #[ignore]
 #[test]
 fn initialize_channel_transfer_fails_during_ongoing_revenue_split() {
@@ -140,6 +150,8 @@ fn initialize_channel_transfer_fails_during_ongoing_revenue_split() {
 
 // TODO: Enable after enabling channel transfers
 #[ignore]
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn initialize_channel_transfer_fails_during_unfinalized_revenue_split() {
     pub const SPLIT_STARTING_BLOCK: u64 = 10;
@@ -169,6 +181,8 @@ fn initialize_channel_transfer_fails_during_unfinalized_revenue_split() {
 
 // TODO: Enable after enabling channel transfers
 #[ignore]
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn initialize_channel_transfer_fails_during_upcoming_token_sales() {
     pub const SALE_STARTING_BLOCK: u64 = 10;
@@ -187,6 +201,8 @@ fn initialize_channel_transfer_fails_during_upcoming_token_sales() {
 }
 
 // TODO: Enable after enabling channel transfers
+#[ignore]
+// TODO: enable after enabling channel transfers
 #[ignore]
 #[test]
 fn initialize_channel_transfer_fails_during_ongoing_token_sales() {
@@ -208,6 +224,8 @@ fn initialize_channel_transfer_fails_during_ongoing_token_sales() {
 
 // TODO: Enable after enabling channel transfers
 #[ignore]
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn initialize_channel_transfer_fails_during_unfinalized_token_sales() {
     pub const SALE_STARTING_BLOCK: u64 = 10;
@@ -228,6 +246,8 @@ fn initialize_channel_transfer_fails_during_unfinalized_token_sales() {
 
 // TODO: Enable after enabling channel transfers
 #[ignore]
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn initialize_channel_transfer_fails_with_invalid_channel_id() {
     with_default_mock_builder(|| {
@@ -240,6 +260,8 @@ fn initialize_channel_transfer_fails_with_invalid_channel_id() {
     })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn initialize_channel_transfer_fails_with_transfer_already_started() {
     with_default_mock_builder(|| {
@@ -251,6 +273,8 @@ fn initialize_channel_transfer_fails_with_transfer_already_started() {
     })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn initialize_channel_transfer_fails_with_invalid_origin() {
     with_default_mock_builder(|| {
@@ -261,6 +285,8 @@ fn initialize_channel_transfer_fails_with_invalid_origin() {
     })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn initialize_channel_transfer_fails_with_invalid_collaborators() {
     with_default_mock_builder(|| {
@@ -275,6 +301,8 @@ fn initialize_channel_transfer_fails_with_invalid_collaborators() {
     })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn accept_transfer_status_fails_with_invalid_origin() {
     with_default_mock_builder(|| {
@@ -291,6 +319,8 @@ fn accept_transfer_status_fails_with_invalid_origin() {
 
 // -- Accept transfer status ---------------------------------------------------
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn accept_transfer_status_ok() {
     with_default_mock_builder(|| {
@@ -310,6 +340,8 @@ fn accept_transfer_status_ok() {
     })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn accept_transfer_status_fails_with_invalid_commitment_params() {
     with_default_mock_builder(|| {
@@ -330,6 +362,8 @@ fn accept_transfer_status_fails_with_invalid_commitment_params() {
     })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn accept_transfer_status_fails_with_invalid_channel_id() {
     with_default_mock_builder(|| {
@@ -342,6 +376,8 @@ fn accept_transfer_status_fails_with_invalid_channel_id() {
     })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn accept_transfer_status_fails_with_invalid_status() {
     with_default_mock_builder(|| {
@@ -351,6 +387,8 @@ fn accept_transfer_status_fails_with_invalid_status() {
     })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn accept_transfer_status_fails_with_non_channel_owner() {
     with_default_mock_builder(|| {
@@ -366,6 +404,8 @@ fn accept_transfer_status_fails_with_non_channel_owner() {
     })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn accept_transfer_status_fails_with_invalid_balance_for_members() {
     with_default_mock_builder(|| {
@@ -382,6 +422,8 @@ fn accept_transfer_status_fails_with_invalid_balance_for_members() {
     })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn accept_transfer_status_fails_with_invalid_balance_for_curator_groups() {
     with_default_mock_builder(|| {
@@ -402,6 +444,8 @@ fn accept_transfer_status_fails_with_invalid_balance_for_curator_groups() {
     })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn accept_transfer_status_succeeds_for_members_with_price() {
     ExtBuilder::default()
@@ -435,6 +479,8 @@ fn accept_transfer_status_succeeds_for_members_with_price() {
         })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn accept_transfer_status_succeeds_for_curators_to_members_with_price() {
     ExtBuilder::default()
@@ -470,6 +516,8 @@ fn accept_transfer_status_succeeds_for_curators_to_members_with_price() {
         })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn accept_transfer_status_succeeds_for_members_to_curators_with_price() {
     with_default_mock_builder(|| {
@@ -499,6 +547,8 @@ fn accept_transfer_status_succeeds_for_members_to_curators_with_price() {
     })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn accept_channel_transfer_fails_with_invalid_transfer_id() {
     with_default_mock_builder(|| {
@@ -516,6 +566,8 @@ fn accept_channel_transfer_fails_with_invalid_transfer_id() {
     })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn cancel_channel_transfer_fails_with_invalid_channel_id() {
     with_default_mock_builder(|| {
@@ -530,6 +582,8 @@ fn cancel_channel_transfer_fails_with_invalid_channel_id() {
     })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn cancel_channel_transfer_ok_with_status_reset() {
     with_default_mock_builder(|| {
@@ -544,6 +598,8 @@ fn cancel_channel_transfer_ok_with_status_reset() {
     })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn cancel_channel_transfer_ok_with_event_deposit() {
     with_default_mock_builder(|| {

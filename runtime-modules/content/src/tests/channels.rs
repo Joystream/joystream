@@ -3123,7 +3123,8 @@ fn successful_initialize_channel_transfer_by_owner_member() {
 ///////////////////////////////////////////////////////////////////////////
 
 // Curator channels
-
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn unsuccessful_cancel_channel_transfer_by_curator_agent_without_permissions() {
     with_default_mock_builder(|| {
@@ -3143,6 +3144,8 @@ fn unsuccessful_cancel_channel_transfer_by_curator_agent_without_permissions() {
     })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn successful_cancel_channel_transfer_by_curator_agent() {
     with_default_mock_builder(|| {
@@ -3160,6 +3163,8 @@ fn successful_cancel_channel_transfer_by_curator_agent() {
     })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn successful_cancel_channel_transfer_by_lead() {
     with_default_mock_builder(|| {
@@ -3177,6 +3182,8 @@ fn successful_cancel_channel_transfer_by_lead() {
 
 // Member channels
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn unsuccessful_cancel_channel_transfer_by_collaborator_without_permissions() {
     with_default_mock_builder(|| {
@@ -3196,6 +3203,8 @@ fn unsuccessful_cancel_channel_transfer_by_collaborator_without_permissions() {
     })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn successful_cancel_channel_transfer_by_collaborator() {
     with_default_mock_builder(|| {
@@ -3213,6 +3222,8 @@ fn successful_cancel_channel_transfer_by_collaborator() {
     })
 }
 
+// TODO: enable after enabling channel transfers
+#[ignore]
 #[test]
 fn successful_cancel_channel_transfer_by_owner_member() {
     with_default_mock_builder(|| {
