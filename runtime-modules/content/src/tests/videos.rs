@@ -488,8 +488,6 @@ fn unsuccessful_video_creation_due_to_bucket_having_insufficient_objects_number_
     })
 }
 
-// TODO: Enable after Carthage
-#[ignore]
 #[test]
 fn unsuccessful_video_creation_with_max_object_size_limits_exceeded() {
     with_default_mock_builder(|| {
