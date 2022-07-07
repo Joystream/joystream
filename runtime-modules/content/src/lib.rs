@@ -376,7 +376,7 @@ decl_module! {
         }
 
         /// Add curator to curator group under given `curator_group_id`
-        #[weight = 10_000_000] // adjust weight
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_curator_to_group(
             origin,
             curator_group_id: T::CuratorGroupId,
