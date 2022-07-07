@@ -54,15 +54,19 @@ pub use weights::WeightInfo;
 
 use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchError;
-use frame_support::traits::{Currency, Get, LockIdentifier, WithdrawReasons};
+use frame_support::traits::{Currency, ExistenceRequirement, Get, LockIdentifier, WithdrawReasons};
 pub use frame_support::weights::Weight;
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, transactional};
 use frame_system::{ensure_root, ensure_signed};
 use scale_info::TypeInfo;
-use sp_arithmetic::traits::{One, Zero};
-use sp_arithmetic::Perbill;
-use sp_runtime::traits::Hash;
-use sp_runtime::SaturatedConversion;
+use sp_arithmetic::{
+    traits::{One, Zero},
+    Perbill,
+};
+use sp_runtime::{
+    traits::{Hash, Saturating},
+    SaturatedConversion,
+};
 use sp_std::convert::TryInto;
 use sp_std::vec::Vec;
 
@@ -182,6 +186,35 @@ pub struct BuyMembershipParameters<AccountId, MemberId> {
     pub referrer_id: Option<MemberId>,
 }
 
+#[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]
+pub struct GiftMembershipParameters<AccountId, Balance> {
+    /// New member root account.
+    pub root_account: AccountId,
+
+    /// New member controller account.
+    pub controller_account: AccountId,
+
+    /// New member handle.
+    pub handle: Option<Vec<u8>>,
+
+    /// Metadata concerning new member.
+    pub metadata: Vec<u8>,
+
+    /// Amount to transfer to controller_account
+    pub credit_controller_account: Balance,
+
+    /// Amount to lock of funds transferred to controller_account. If Some(x),
+    /// x must be lte credit_controller_account_balance.
+    pub apply_controller_account_invitation_lock: Option<Balance>,
+
+    /// Amount to transfer to root_account
+    pub credit_root_account: Balance,
+
+    /// Amount to lock from funds transferred to root_account. If Some(x),
+    /// x must be lte credit_root_account_balance
+    pub apply_root_account_invitation_lock: Option<Balance>,
+}
+
 /// Parameters for the invite_member extrinsic.
 #[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]
 pub struct InviteMembershipParameters<AccountId, MemberId> {
@@ -261,6 +294,12 @@ decl_error! {
 
         /// Insufficient balance to cover stake.
         InsufficientBalanceToCoverStake,
+
+        /// Locked amount is greater than credit amount
+        GifLockExceedsCredit,
+
+        /// Gifter doesn't have sufficient balance to credit
+        InsufficientBalanceToGift,
     }
 }
 
@@ -296,11 +335,6 @@ decl_storage! {
         /// Double of a staking account id and member id to the confirmation status.
         pub(crate) StakingAccountIdMemberStatus get(fn staking_account_id_member_status):
             map hasher(blake2_128_concat) T::AccountId => StakingAccountMemberBinding<T::MemberId>;
-
-        /// Privileged account that can invite members bypassing invite limits
-        /// and working group budget restrictions.
-        pub PrivilegedInviter get(fn privileged_inviter): Option<T::AccountId>;
-
     }
     add_extra_genesis {
         config(members) : Vec<genesis::Member<T::MemberId, T::AccountId>>;
@@ -338,9 +372,13 @@ decl_event! {
           <T as frame_system::Config>::AccountId,
           <T as common::membership::MembershipTypes>::MemberId,
         >,
+      GiftMembershipParameters = GiftMembershipParameters<
+        <T as frame_system::Config>::AccountId,
+        BalanceOf<T>,
+      >,
     {
         MemberInvited(MemberId, InviteMembershipParameters),
-        MemberInvitedPrivileged(MemberId, InviteMembershipParameters),
+        MemberGifted(MemberId, GiftMembershipParameters),
         MembershipBought(MemberId, BuyMembershipParameters),
         MemberProfileUpdated(
             MemberId,
@@ -746,65 +784,67 @@ decl_module! {
             Self::deposit_event(RawEvent::MemberInvited(invited_member_id, params));
         }
 
-        /// Set the privileged account.
-        // #[weight = WeightInfoMembership::<T>::set_privileged_inviter()]
-        // TODO: Enable correct weight after benchmarking PR is merged
-        #[weight = 10000]
-        pub fn set_privileged_inviter(
+        /// Gift a membership using own funds. Gifter does not need to be a member.
+        /// Can optinally apply a lock on a portion of the funds transferred to root and controller
+        /// accounts. Gifter also pays the membership fee.
+        #[weight = WeightInfoMembership::<T>::gift_membership(
+            Module::<T>::text_length_unwrap_or_default(&params.handle),
+            params.metadata.len().saturated_into(),
+        )]
+        #[transactional]
+        pub fn gift_membership(
             origin,
-            account_id: T::AccountId,
+            params: GiftMembershipParameters<T::AccountId, BalanceOf<T>>,
         ) {
-            ensure_root(origin)?;
-            PrivilegedInviter::<T>::put(account_id);
-        }
-
-        /// Unset the privileged account.
-        // #[weight = WeightInfoMembership::<T>::unset_privileged_inviter()]
-        // TODO: Enable correct weight after benchmarking PR is merged
-        #[weight = 10000]
-        pub fn unset_privileged_inviter(
-            origin,
-        ) {
-            ensure_root(origin)?;
-            PrivilegedInviter::<T>::take();
-        }
-
-        /// Invite a new member by privileged account or root.
-        /// Has no restrictions on invites. Locked funds for invited member
-        /// are not limited by the working group budget.
-        // #[weight = WeightInfoMembership::<T>::invite_member_privileged(
-        //     Module::<T>::text_length_unwrap_or_default(&params.handle),
-        //     params.metadata.len().saturated_into(),
-        // )]
-        // TODO: Enable correct weight after benchmarking PR is merged
-        #[weight = 10000]
-        pub fn invite_member_privileged(
-            origin,
-            params: InviteMembershipParameters<T::AccountId, T::MemberId>,
-        ) {
-            let is_root = ensure_root(origin.clone()).is_ok();
-
-            // if not root origin, then must be privileged account
-            if !is_root {
-                if let Some(privileged_account) = Self::privileged_inviter() {
-                    let sender = ensure_signed(origin)?;
-                    ensure!(
-                        privileged_account == sender,
-                        sp_runtime::traits::BadOrigin
-                    );
-                } else {
-                    return Err(sp_runtime::traits::BadOrigin.into());
-                }
-            }
+            let gifter = ensure_signed(origin)?;
 
             let handle_hash = Self::get_handle_hash(
                 &params.handle,
             )?;
 
-            // Check for existing invitation locks.
+            // Check that gifter has sufficient funds
+            let membership_fee = Self::membership_price();
+            let gifter_free_balance = balances::Pallet::<T>::usable_balance(&gifter);
+            let total_credit = params
+                .credit_controller_account
+                .saturating_add(params.credit_root_account)
+                .saturating_add(membership_fee);
+
+            ensure!(
+                gifter_free_balance >= total_credit,
+                Error::<T>::InsufficientBalanceToGift
+            );
+            ensure!(
+                balances::Pallet::<T>::can_slash(&gifter, membership_fee),
+                Error::<T>::InsufficientBalanceToGift
+            );
+
+            if let Some(locked) = params.apply_controller_account_invitation_lock {
+                ensure!(
+                    params.credit_controller_account >= locked,
+                    Error::<T>::GifLockExceedsCredit
+                );
+            };
+
+            if let Some(locked) = params.apply_root_account_invitation_lock {
+                ensure!(
+                    params.credit_root_account >= locked,
+                    Error::<T>::GifLockExceedsCredit
+                );
+            };
+
+            // Check for existing invitation locks on controller account.
             ensure!(
                 T::InvitedMemberStakingHandler::is_account_free_of_conflicting_stakes(
                     &params.controller_account
+                ),
+                Error::<T>::ConflictingLock,
+            );
+
+            // Check for existing invitation locks on root account.
+            ensure!(
+                T::InvitedMemberStakingHandler::is_account_free_of_conflicting_stakes(
+                    &params.root_account
                 ),
                 Error::<T>::ConflictingLock,
             );
@@ -813,20 +853,50 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let invitation_balance = Self::initial_invitation_balance();
-
-            // Endow invited member
-            let _ = <balances::Pallet::<T> as Currency<T::AccountId>>::deposit_creating(
+            // Transfer funds to controller account
+            <balances::Pallet::<T> as Currency<T::AccountId>>::transfer(
+                &gifter,
                 &params.controller_account,
-                invitation_balance,
+                params.credit_controller_account,
+                ExistenceRequirement::AllowDeath
+            )?;
+
+            // Transfer funds to root account
+            <balances::Pallet::<T> as Currency<T::AccountId>>::transfer(
+                &gifter,
+                &params.root_account,
+                params.credit_root_account,
+                ExistenceRequirement::AllowDeath
+            )?;
+
+            // slash fee, balance_not_slashed should be zero
+            let (_netgative_imbalance, balance_not_slashed) = balances::Pallet::<T>::slash(
+                &gifter,
+                membership_fee
             );
 
-            // Lock invitation balance. Allow only transaction payments.
-            T::InvitedMemberStakingHandler::lock_with_reasons(
-                &params.controller_account,
-                invitation_balance,
-                WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT)
+            ensure!(
+                balance_not_slashed == Zero::zero(),
+                Error::<T>::InsufficientBalanceToGift
             );
+
+            // Lock credited balance. Allow only transaction payments.
+            if let Some(locked_balance) = params.apply_controller_account_invitation_lock {
+                T::InvitedMemberStakingHandler::lock_with_reasons(
+                    &params.controller_account,
+                    locked_balance,
+                    WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT)
+                );
+            };
+
+            // Lock credited balance. Allow only transaction payments.
+            if let Some(locked_balance) = params.apply_root_account_invitation_lock {
+                T::InvitedMemberStakingHandler::lock_with_reasons(
+                    &params.root_account,
+                    locked_balance,
+                    WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT)
+                );
+            };
 
             // Create new membership
             let invited_member_id = Self::insert_member(
@@ -836,7 +906,7 @@ decl_module! {
                 Zero::zero(),
             );
 
-            Self::deposit_event(RawEvent::MemberInvitedPrivileged(invited_member_id, params));
+            Self::deposit_event(RawEvent::MemberGifted(invited_member_id, params));
         }
 
         /// Updates membership price. Requires root origin.

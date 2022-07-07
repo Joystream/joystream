@@ -13,7 +13,7 @@ use frame_system::Pallet as System;
 use frame_system::{EventRecord, RawOrigin};
 use sp_arithmetic::traits::One;
 use sp_arithmetic::Perbill;
-use sp_runtime::traits::{Bounded, Saturating};
+use sp_runtime::traits::{Bounded, SaturatedConversion, Saturating};
 use sp_std::prelude::*;
 use sp_std::vec;
 
@@ -65,16 +65,6 @@ fn member_funded_account<T: Config + balances::Config>(
     let member_id = T::MemberId::from(id.try_into().unwrap());
 
     (account_id, member_id)
-}
-
-fn setup_privileged_inviter<T: Config + balances::Config>() -> T::AccountId {
-    let account_id = account::<T::AccountId>("inviter", 1, SEED);
-
-    let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
-
-    Module::<T>::set_privileged_inviter(RawOrigin::Root.into(), account_id.clone()).unwrap();
-
-    account_id
 }
 
 // Method to generate a distintic valid handle
@@ -509,68 +499,70 @@ benchmarks! {
 
     }
 
-    invite_member_privileged {
+    gift_membership {
         let i in 1 .. MAX_BYTES;
         let j in 0 .. MAX_BYTES;
 
-        let account_id = setup_privileged_inviter::<T>();
+        let account_id = account::<T::AccountId>("gifter", 1, SEED);
+        let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
+        let root_account = account::<T::AccountId>("member", 2, SEED);
+        let controller_account = account::<T::AccountId>("member", 4, SEED);
 
         let handle = handle_from_id::<T>(i);
 
         let metadata = vec![0u8].repeat(j as usize);
 
-        let invite_params = InviteMembershipParameters {
-            inviting_member_id: T::MemberId::from(0),
-            root_account: account_id.clone(),
-            controller_account: account_id.clone(),
+        let gift_params = GiftMembershipParameters {
+            root_account: root_account.clone(),
+            controller_account: controller_account.clone(),
             handle: Some(handle.clone()),
             metadata,
+            credit_controller_account: (1000 as u32).saturated_into::<BalanceOf<T>>(),
+            apply_controller_account_invitation_lock: Some((500 as u32).saturated_into()),
+            credit_root_account: (2000 as u32).saturated_into::<BalanceOf<T>>(),
+            apply_root_account_invitation_lock: Some((1000 as u32).saturated_into()),
         };
 
-        let invited_member_id = <NextMemberId<T>>::get();
+        let member_id = <NextMemberId<T>>::get();
 
-    }: _(RawOrigin::Signed(account_id.clone()), invite_params.clone())
+    }: _(RawOrigin::Signed(account_id.clone()), gift_params.clone())
 
     verify {
         // Ensure member is successfully invited
         let handle_hash = T::Hashing::hash(&handle).as_ref().to_vec();
 
-        let invited_membership: Membership<T> = MembershipObject {
+        let gifted_membership: Membership<T> = MembershipObject {
             handle_hash: handle_hash.clone(),
-            root_account: account_id.clone(),
-            controller_account: account_id.clone(),
+            root_account: root_account.clone(),
+            controller_account: controller_account.clone(),
             verified: false,
             invites: 0,
         };
 
-        assert_eq!(MemberIdByHandleHash::<T>::get(&handle_hash), invited_member_id);
+        assert_eq!(MemberIdByHandleHash::<T>::get(&handle_hash), member_id);
 
-        assert_eq!(MembershipById::<T>::get(invited_member_id), Some(invited_membership));
+        assert_eq!(MembershipById::<T>::get(member_id), Some(gifted_membership));
 
-        assert_last_event::<T>(RawEvent::MemberInvitedPrivileged(invited_member_id, invite_params).into());
-    }
+        assert_last_event::<T>(RawEvent::MemberGifted(member_id, gift_params).into());
 
-    set_privileged_inviter {
-        let account_id = account::<T::AccountId>("inviter", 1, SEED);
-    }: _(RawOrigin::Root, account_id.clone())
-    verify {
         assert_eq!(
-            PrivilegedInviter::<T>::get(),
-            Some(account_id)
+            balances::Pallet::<T>::free_balance(controller_account.clone()),
+            (1000 as u32).saturated_into::<BalanceOf<T>>(),
         );
-    }
 
-    unset_privileged_inviter {
-        let account_id = setup_privileged_inviter::<T>();
         assert_eq!(
-            PrivilegedInviter::<T>::get(),
-            Some(account_id)
+            balances::Pallet::<T>::free_balance(root_account.clone()),
+            (2000 as u32).saturated_into::<BalanceOf<T>>(),
         );
-    }: _(RawOrigin::Root)
-    verify {
+
         assert_eq!(
-            PrivilegedInviter::<T>::get(),
-            None
+            balances::Pallet::<T>::usable_balance(controller_account),
+            (500 as u32).saturated_into::<BalanceOf<T>>(),
+        );
+
+        assert_eq!(
+            balances::Pallet::<T>::usable_balance(root_account),
+            (1000 as u32).saturated_into::<BalanceOf<T>>(),
         );
     }
 
