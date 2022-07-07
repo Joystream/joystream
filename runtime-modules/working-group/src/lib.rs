@@ -43,6 +43,8 @@ mod errors;
 #[cfg(test)]
 mod tests;
 mod types;
+pub mod weights;
+pub use weights::WeightInfo;
 
 use frame_support::traits::{Currency, Get, LockIdentifier};
 use frame_support::weights::Weight;
@@ -69,36 +71,6 @@ use staking_handler::StakingHandler;
 type Balances<T> = balances::Pallet<T>;
 
 type WeightInfoWorkingGroup<T, I> = <T as Config<I>>::WeightInfo;
-
-/// Working group WeightInfo
-/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
-pub trait WeightInfo {
-    fn on_initialize_leaving(i: u32) -> Weight;
-    fn on_initialize_rewarding_with_missing_reward(i: u32) -> Weight;
-    fn on_initialize_rewarding_with_missing_reward_cant_pay(i: u32) -> Weight;
-    fn on_initialize_rewarding_without_missing_reward(i: u32) -> Weight;
-    fn apply_on_opening(i: u32) -> Weight;
-    fn fill_opening_lead() -> Weight;
-    fn fill_opening_worker(i: u32) -> Weight;
-    fn update_role_account() -> Weight;
-    fn cancel_opening() -> Weight;
-    fn withdraw_application() -> Weight;
-    fn slash_stake(i: u32) -> Weight;
-    fn terminate_role_worker(i: u32) -> Weight;
-    fn terminate_role_lead(i: u32) -> Weight;
-    fn increase_stake() -> Weight;
-    fn decrease_stake() -> Weight;
-    fn spend_from_budget() -> Weight;
-    fn update_reward_amount() -> Weight;
-    fn set_status_text(i: u32) -> Weight;
-    fn update_reward_account() -> Weight;
-    fn set_budget() -> Weight;
-    fn add_opening(i: u32) -> Weight;
-    fn leave_role(i: u32) -> Weight;
-    fn fund_working_group_budget() -> Weight;
-    fn lead_remark() -> Weight;
-    fn worker_remark() -> Weight;
-}
 
 /// The _Group_ main _Config_
 pub trait Config<I: Instance = DefaultInstance>:

@@ -350,14 +350,29 @@ benchmarks! {
         }
     }
 
-    // We calculate `on_finalize` as `try_progress_stage + try_process_budget`
-    try_process_budget {
-        // We need to make sure that the block number starts at 0 to make payment/budget refill
-        // periods easier to calculate
-        let mut current_block_number = Zero::zero();
-        System::<T>::set_block_number(current_block_number);
-        assert_eq!(System::<T>::block_number(), current_block_number, "Block number not updated");
+    // We calculate `on_finalize` as
+    // `try_progress_stage + try_process_budget_refill_budget_only` +
+    //   try_process_budget_payout_council_members_only
+    //
+    // We split the budget handling into two, (instead of benchmarking try_process_budget)
+    // to avoid having to "run_to_block" to a potentially
+    // very distant block where budget refill and payout of members align,
+    // if ElectedMemberRewardPeriod mod BudgetRefillPeriod is non zero.
+    // ie at ElectedMemberRewardPeriod * BudgetRefillPeriod in the general case.
+    // This causes the benchmark to take too long for large values.
+    try_process_budget_refill_budget_only {
+        // Refill budget independant of how many members are elected
+        // Worst case is
+        let now = System::<T>::block_number();
+    }: { Council::<T>::refill_budget(now); }
+    verify {
+        // budget increment is independant of the number of blocks since last payment
+        assert_eq!(Council::<T>::budget(), Council::<T>::budget_increment());
+    }
 
+    try_process_budget_payout_council_members_only {
+        System::<T>::set_block_number(Zero::zero());
+        assert_eq!(System::<T>::block_number(), Zero::zero(), "Block number not updated");
         // Worst case we have a council elected
         let (accounts_id, candidates_id) = start_period_announce_multiple_candidates::<T>(
             T::CouncilSize::get().try_into().unwrap()
@@ -395,106 +410,30 @@ benchmarks! {
             "Council not updated"
         );
 
-        // Both payments and refill execute at BudgetRefefillPeriod * ElectedMemberRewardPeriod
-        // -1 because we want to move just before the refill
-        current_block_number = T::BudgetRefillPeriod::get() *
-            T::ElectedMemberRewardPeriod::get() - One::one();
-
-        // The first time we reach the next_reward_payments
-        // the next time will be now + next_reward_payments
-        // Note: this function doesn't execute the `on_finalize` of the
-        // `current_block_number` this is important since we want to execute
-        // the `try_process_budget` for this block
-        move_to_block::<T>(current_block_number);
-
-        // Worst case scenario we can pay as much as it is possible
         Council::<T>::set_budget(RawOrigin::Root.into(), Balance::<T>::max_value()).unwrap();
-
-        let target = System::<T>::block_number() + One::one();
-
-        assert_eq!(
-            Council::<T>::next_budget_refill(),
-            target,
-            "Budget refill not now",
-        );
-
-        assert_eq!(
-            Council::<T>::next_reward_payments(),
-            target,
-            "Reward payment not now",
-        );
-
-        let reward_period: T::BlockNumber = T::ElectedMemberRewardPeriod::get();
-
-        let current_council = Council::<T>::council_members();
-        let council = council.into_iter().map(|mut councillor| {
-            councillor.last_payment_block = target - reward_period;
-            councillor
-        }).collect::<Vec<_>>();
-
-        assert_eq!(
-            current_council,
-            council,
-            "Payment block not updated"
-        );
-        let unpaid_rewards = Council::<T>::council_members()
-            .iter()
-            .map(|member| member.unpaid_reward)
-            .collect::<Vec<_>>();
-    }: { Council::<T>::try_process_budget(target); }
+        let now = T::ElectedMemberRewardPeriod::get();
+    }: {
+        Council::<T>::pay_elected_member_rewards(now);
+    }
     verify {
+        // verify budget was reduced correct amount
+        let reward_period = T::ElectedMemberRewardPeriod::get();
         let reward_per_block: Balance<T> = Council::<T>::councilor_reward();
-
-        let reward_per_councillor: Balance<T> =
+        let num_council_members = T::CouncilSize::get().saturated_into();
+        let total_reward: Balance<T> =
             reward_period
             .saturated_into::<u64>()
             .saturating_mul(reward_per_block.saturated_into())
+            .saturating_mul(num_council_members)
             .saturated_into();
 
-        assert_eq!(
-            Council::<T>::next_budget_refill(),
-            target + T::BudgetRefillPeriod::get(),
-            "Budget refill not updated"
-        );
-
-        let current_council = Council::<T>::council_members();
-        let council = council.into_iter().map(|mut councillor| {
-            councillor.last_payment_block = target;
-            councillor
-        }).collect::<Vec<_>>();
-
-        assert_eq!(
-            current_council,
-            council,
-            "Update block not updated"
-        );
-
-        let total_unpdaid_rewards: Balance<T> =
-            unpaid_rewards.into_iter().fold(Zero::zero(), |acc, x| acc + x);
-
-        let budget = Balance::<T>::max_value()
-            .saturating_sub(
-                reward_per_councillor.saturating_mul(T::CouncilSize::get().saturated_into())
-            ).saturating_sub(total_unpdaid_rewards);
+        let budget = Balance::<T>::max_value().saturating_sub(total_reward);
 
         assert_eq!(
             Council::<T>::budget(),
             budget,
             "Budget not correctly updated, probably a councillor was not correctly paid"
         );
-
-        candidates_id.into_iter().enumerate().for_each(|(idx, member_id)| {
-            let member_id: T::MemberId = member_id;
-            let account_id: T::AccountId = accounts_id[idx].clone();
-            assert_in_events::<T>(
-                RawEvent::RewardPayment(
-                    member_id,
-                    account_id,
-                    reward_per_councillor,
-                    Balance::<T>::from(0u32),
-                ).into()
-            )
-        });
     }
 
     try_progress_stage_idle {
@@ -813,6 +752,24 @@ mod tests {
     use frame_support::assert_ok;
 
     #[test]
+    fn test_refill_budget() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(Council::<Runtime>::test_benchmark_try_process_budget_refill_budget_only());
+        })
+    }
+
+    #[test]
+    fn test_payout_council_members() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(
+                Council::<Runtime>::test_benchmark_try_process_budget_payout_council_members_only()
+            );
+        })
+    }
+
+    #[test]
     fn test_announce_candidacy() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
@@ -859,14 +816,6 @@ mod tests {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
             assert_ok!(Council::<Runtime>::test_benchmark_try_progress_stage_idle());
-        })
-    }
-
-    #[test]
-    fn test_try_process_budget() {
-        let config = default_genesis_config();
-        build_test_externalities(config).execute_with(|| {
-            assert_ok!(Council::<Runtime>::test_benchmark_try_process_budget());
         })
     }
 

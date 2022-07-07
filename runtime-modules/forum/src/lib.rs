@@ -28,10 +28,11 @@ use sp_std::prelude::*;
 use common::membership::MemberOriginValidator;
 use common::working_group::WorkingGroupAuthenticator;
 
+mod benchmarking;
 mod mock;
 mod tests;
-
-mod benchmarking;
+pub mod weights;
+pub use weights::WeightInfo;
 
 /// Type for keeping track of number of posts in a thread
 pub type NumberOfPosts = u64;
@@ -41,6 +42,7 @@ pub type ModeratorId<T> = common::ActorId<T>;
 
 /// Forum user ID alias for the member of the system.
 pub type ForumUserId<T> = common::MemberId<T>;
+
 type WeightInfoForum<T> = <T as Config>::WeightInfo;
 
 /// Balance alias for `balances` module.
@@ -69,38 +71,6 @@ pub struct ExtendedPostIdObject<CategoryId, ThreadId, PostId> {
 }
 
 type Balances<T> = balances::Pallet<T>;
-
-/// pallet_forum WeightInfo.
-/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
-pub trait WeightInfo {
-    fn create_category(i: u32, j: u32, k: u32) -> Weight;
-    fn update_category_membership_of_moderator_new() -> Weight;
-    fn update_category_membership_of_moderator_old() -> Weight;
-    fn update_category_archival_status_lead(i: u32) -> Weight;
-    fn update_category_archival_status_moderator(i: u32) -> Weight;
-    fn update_category_title_lead(i: u32, j: u32) -> Weight;
-    fn update_category_title_moderator(i: u32, j: u32) -> Weight;
-    fn update_category_description_lead(i: u32, j: u32) -> Weight;
-    fn update_category_description_moderator(i: u32, j: u32) -> Weight;
-    fn delete_category_lead(i: u32) -> Weight;
-    fn delete_category_moderator(i: u32) -> Weight;
-    fn create_thread(j: u32, k: u32, i: u32) -> Weight;
-    fn edit_thread_metadata(i: u32, j: u32) -> Weight;
-    fn delete_thread(i: u32) -> Weight;
-    fn move_thread_to_category_lead(i: u32) -> Weight;
-    fn move_thread_to_category_moderator(i: u32) -> Weight;
-    fn vote_on_poll(i: u32, j: u32) -> Weight;
-    fn moderate_thread_lead(i: u32, k: u32) -> Weight;
-    fn moderate_thread_moderator(i: u32, k: u32) -> Weight;
-    fn add_post(i: u32, j: u32) -> Weight;
-    fn react_post(i: u32) -> Weight;
-    fn edit_post_text(i: u32, j: u32) -> Weight;
-    fn moderate_post_lead(i: u32, j: u32) -> Weight;
-    fn moderate_post_moderator(i: u32, j: u32) -> Weight;
-    fn delete_posts(i: u32, j: u32, k: u32) -> Weight;
-    fn set_stickied_threads_lead(i: u32, j: u32) -> Weight;
-    fn set_stickied_threads_moderator(i: u32, j: u32) -> Weight;
-}
 
 pub trait Config:
     frame_system::Config
@@ -909,9 +879,10 @@ decl_module! {
         ///    - O(W)
         /// # </weight>
         #[weight = WeightInfoForum::<T>::create_thread(
+            T::MaxCategoryDepth::get() as u32,
             metadata.len().saturated_into(),
             text.len().saturated_into(),
-            T::MaxCategoryDepth::get() as u32,
+            poll_input.clone().map_or(0, |ref data| data.poll_alternatives.len() as u32),
         )]
         fn create_thread(
             origin,

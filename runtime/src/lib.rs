@@ -208,7 +208,7 @@ impl frame_system::Config for Runtime {
     type AccountData = pallet_balances::AccountData<Balance>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
-    type SystemWeightInfo = frame_system::weights::SubstrateWeight<Runtime>;
+    type SystemWeightInfo = weights::frame_system::SubstrateWeight<Runtime>;
     type SS58Prefix = ConstU16<JOY_ADDRESS_PREFIX>;
     type OnSetCode = ();
     type MaxConsumers = ConstU32<16>;
@@ -220,7 +220,7 @@ impl substrate_utility::Config for Runtime {
     type Event = Event;
     type Call = Call;
     type PalletsOrigin = OriginCaller;
-    type WeightInfo = (); // weights::substrate_utility::WeightInfo;
+    type WeightInfo = weights::substrate_utility::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -319,7 +319,7 @@ impl pallet_timestamp::Config for Runtime {
     type Moment = Moment;
     type OnTimestampSet = Babe;
     type MinimumPeriod = MinimumPeriod;
-    type WeightInfo = pallet_timestamp::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_timestamp::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -338,7 +338,7 @@ impl pallet_balances::Config for Runtime {
     type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
-    type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
 type NegativeImbalance = <Balances as Currency<AccountId>>::NegativeImbalance;
@@ -417,7 +417,7 @@ impl pallet_session::Config for Runtime {
     type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, Staking>;
     type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
-    type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
 }
 
 impl pallet_session::historical::Config for Runtime {
@@ -476,7 +476,7 @@ impl pallet_staking::Config for Runtime {
     type VoterList = BagsList;
     type MaxUnlockingChunks = ConstU32<32>;
     type OnStakerSlash = (); // NominationPools;
-    type WeightInfo = pallet_staking::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_staking::SubstrateWeight<Runtime>;
     type BenchmarkingConfig = StakingBenchmarkingConfig;
 }
 
@@ -656,7 +656,7 @@ impl pallet_im_online::Config for Runtime {
     type ValidatorSet = Historical;
     type ReportUnresponsiveness = Offences;
     type UnsignedPriority = ImOnlineUnsignedPriority;
-    type WeightInfo = pallet_im_online::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_im_online::SubstrateWeight<Runtime>;
     type MaxKeys = MaxKeys;
     type MaxPeerInHeartbeats = MaxPeerInHeartbeats;
     type MaxPeerDataEncodingSize = MaxPeerDataEncodingSize;
@@ -827,7 +827,7 @@ impl referendum::Config<ReferendumInstance> for Runtime {
     type VoteStageDuration = VoteStageDuration;
     type RevealStageDuration = RevealStageDuration;
     type MinimumStake = MinimumVotingStake;
-    type WeightInfo = weights::referendum::WeightInfo;
+    type WeightInfo = referendum::weights::SubstrateWeight<Runtime>;
     type MaxWinnerTargetCount = MaxWinnerTargetCount;
 
     fn calculate_vote_power(
@@ -881,7 +881,7 @@ impl council::Config for Runtime {
     type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
     type BudgetRefillPeriod = BudgetRefillPeriod;
     type MemberOriginValidator = Members;
-    type WeightInfo = weights::council::WeightInfo;
+    type WeightInfo = council::weights::SubstrateWeight<Runtime>;
 
     fn new_council_elected(_elected_members: &[council::CouncilMemberOf<Self>]) {
         <proposals_engine::Module<Runtime>>::reject_active_proposals();
@@ -930,7 +930,7 @@ impl storage::Config for Runtime {
         MaxNumberOfPendingInvitationsPerDistributionBucket;
     type MaxDataObjectSize = MaxDataObjectSize;
     type ContentId = ContentId;
-    type WeightInfo = weights::storage::WeightInfo;
+    type WeightInfo = storage::weights::SubstrateWeight<Runtime>;
     type StorageWorkingGroup = StorageWorkingGroup;
     type DistributionWorkingGroup = DistributionWorkingGroup;
     type ModuleAccountInitialBalance = ExistentialDeposit;
@@ -956,7 +956,7 @@ impl membership::Config for Runtime {
     type InvitedMemberStakingHandler = InvitedMemberStakingManager;
     type StakingCandidateStakingHandler = BoundStakingAccountStakingManager;
     type WorkingGroup = MembershipWorkingGroup;
-    type WeightInfo = weights::membership::WeightInfo;
+    type WeightInfo = membership::weights::SubstrateWeight<Runtime>;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type CandidateStake = CandidateStake;
 }
@@ -994,7 +994,7 @@ impl forum::Config for Runtime {
     type PostDeposit = PostDeposit;
     type ModuleId = ForumModuleId;
     type MapLimits = MapLimits;
-    type WeightInfo = weights::forum::WeightInfo;
+    type WeightInfo = forum::weights::SubstrateWeight<Runtime>;
     type WorkingGroup = ForumWorkingGroup;
     type MemberOriginValidator = Members;
     type PostLifeTime = PostLifeTime;
@@ -1098,7 +1098,7 @@ impl working_group::Config<ForumWorkingGroupInstance> for Runtime {
     type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ForumWorkingGroupRewardPeriod;
-    type WeightInfo = weights::working_group::WeightInfo;
+    type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
@@ -1111,7 +1111,7 @@ impl working_group::Config<StorageWorkingGroupInstance> for Runtime {
     type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = StorageWorkingGroupRewardPeriod;
-    type WeightInfo = weights::working_group::WeightInfo;
+    type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
@@ -1124,7 +1124,7 @@ impl working_group::Config<ContentWorkingGroupInstance> for Runtime {
     type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = ContentWorkingGroupRewardPeriod;
-    type WeightInfo = weights::working_group::WeightInfo;
+    type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
@@ -1137,7 +1137,7 @@ impl working_group::Config<MembershipWorkingGroupInstance> for Runtime {
     type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = MembershipRewardPeriod;
-    type WeightInfo = weights::working_group::WeightInfo;
+    type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
@@ -1150,7 +1150,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Runtime {
     type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = OperationsAlphaRewardPeriod;
-    type WeightInfo = weights::working_group::WeightInfo;
+    type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
@@ -1163,7 +1163,7 @@ impl working_group::Config<GatewayWorkingGroupInstance> for Runtime {
     type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = GatewayRewardPeriod;
-    type WeightInfo = weights::working_group::WeightInfo;
+    type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
@@ -1176,7 +1176,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Runtime {
     type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = OperationsBetaRewardPeriod;
-    type WeightInfo = weights::working_group::WeightInfo;
+    type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
@@ -1189,7 +1189,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Runtime {
     type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = OperationsGammaRewardPeriod;
-    type WeightInfo = weights::working_group::WeightInfo;
+    type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
@@ -1202,7 +1202,7 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Runtime {
     type MemberOriginValidator = Members;
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
     type RewardPeriod = DistributionRewardPeriod;
-    type WeightInfo = weights::working_group::WeightInfo;
+    type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
@@ -1229,7 +1229,7 @@ impl proposals_engine::Config for Runtime {
     type MaxActiveProposalLimit = ProposalMaxActiveProposalLimit;
     type DispatchableCallCode = Call;
     type ProposalObserver = ProposalsCodex;
-    type WeightInfo = weights::proposals_engine::WeightInfo;
+    type WeightInfo = proposals_engine::weights::SubstrateWeight<Runtime>;
     type StakingAccountValidator = Members;
 }
 
@@ -1270,7 +1270,7 @@ impl proposals_discussion::Config for Runtime {
     type ThreadId = ThreadId;
     type PostId = PostId;
     type MaxWhiteListSize = MaxWhiteListSize;
-    type WeightInfo = weights::proposals_discussion::WeightInfo;
+    type WeightInfo = proposals_discussion::weights::SubstrateWeight<Runtime>;
     type PostDeposit = ProposalsPostDeposit;
     type ModuleId = ProposalsDiscussionModuleId;
     type PostLifeTime = ForumPostLifeTime;
@@ -1279,7 +1279,7 @@ impl proposals_discussion::Config for Runtime {
 impl joystream_utility::Config for Runtime {
     type Event = Event;
 
-    type WeightInfo = weights::joystream_utility::WeightInfo;
+    type WeightInfo = joystream_utility::weights::SubstrateWeight<Runtime>;
 
     fn get_working_group_budget(working_group: WorkingGroup) -> Balance {
         call_wg!(working_group, get_budget)
@@ -1329,12 +1329,12 @@ impl proposals_codex::Config for Runtime {
     // type UpdateGlobalNftLimitProposalParameters = UpdateGlobalNftLimitProposalParameters;
     // TODO: Enable after Carthage
     // type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;
-    type WeightInfo = weights::proposals_codex::WeightInfo;
+    type WeightInfo = proposals_codex::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_constitution::Config for Runtime {
     type Event = Event;
-    type WeightInfo = weights::pallet_constitution::WeightInfo;
+    type WeightInfo = pallet_constitution::weights::SubstrateWeight<Runtime>;
 }
 
 // parameter_types! {
@@ -1372,7 +1372,7 @@ impl pallet_vesting::Config for Runtime {
     type Currency = Balances;
     type BlockNumberToBalance = ConvertInto;
     type MinVestedTransfer = MinVestedTransfer;
-    type WeightInfo = pallet_vesting::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_vesting::SubstrateWeight<Runtime>;
     // `VestingInfo` encode length is 36bytes. 28 schedules gets encoded as 1009 bytes, which is the
     // highest number of schedules that encodes less than 2^10.
     const MAX_VESTING_SCHEDULES: u32 = 28;
