@@ -213,7 +213,7 @@ fn destroy_nft_fails_during_channel_transfer() {
         run_to_block(1);
         ContentTest::with_member_channel().with_video().setup();
         IssueNftFixture::default().call_and_assert(Ok(()));
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
 

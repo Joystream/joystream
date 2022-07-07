@@ -127,7 +127,7 @@ fn deissue_token_fails_during_transfer() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
         IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Ok(()));
 

@@ -216,7 +216,7 @@ fn sell_nft_fails_during_transfer() {
             .with_video_nft_status(NftTransactionalStatusType::BuyNow)
             .setup();
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, DEFAULT_NFT_PRICE);
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Ok(()));
 

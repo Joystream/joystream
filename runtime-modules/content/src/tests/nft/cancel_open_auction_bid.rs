@@ -305,7 +305,7 @@ fn cancel_open_auction_bid_fails_during_transfer() {
             .with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::English))
             .setup();
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, Content::min_starting_price());
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Ok(()));
 

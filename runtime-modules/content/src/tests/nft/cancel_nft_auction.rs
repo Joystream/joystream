@@ -292,7 +292,7 @@ fn cancel_open_auction_fails_during_channel_transfer() {
         ContentTest::default()
             .with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::Open))
             .setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
 
@@ -316,7 +316,7 @@ fn cancel_english_auction_fails_during_channel_transfer() {
         ContentTest::default()
             .with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::English))
             .setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
 

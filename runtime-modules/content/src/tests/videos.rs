@@ -79,7 +79,7 @@ fn unuccessful_video_creation_with_pending_channel_transfer() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel();
 
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(DEFAULT_MEMBER_ID)
             .call_and_assert(Ok(()));
 
@@ -650,7 +650,7 @@ fn unsuccessful_video_update_with_pending_channel_transfer() {
         let video_assets = ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64 - 1))
             .collect::<BTreeSet<_>>();
 
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(DEFAULT_MEMBER_ID)
             .call_and_assert(Ok(()));
 
@@ -1064,7 +1064,7 @@ fn unsuccessful_video_deletion_with_pending_transfer() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video();
 
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(DEFAULT_MEMBER_ID)
             .call_and_assert(Ok(()));
 

@@ -598,7 +598,7 @@ fn settle_english_auction_fails_during_transfer() {
         ));
         // Run to the block where auction expires
         run_to_block(Content::max_auction_duration() + 1);
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Ok(()));
 

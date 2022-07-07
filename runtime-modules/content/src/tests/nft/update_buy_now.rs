@@ -240,7 +240,7 @@ fn update_buy_now_price_fails_during_channel_transfer() {
         ContentTest::default()
             .with_video_nft_status(NftTransactionalStatusType::BuyNow)
             .setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Ok(()));
 

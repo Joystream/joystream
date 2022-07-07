@@ -371,7 +371,7 @@ fn successful_nft_remark_during_transfer() {
         run_to_block(1);
 
         ContentTest::default().with_video_nft().setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
 
@@ -392,7 +392,7 @@ fn successful_channel_owner_remark_during_transfer() {
         run_to_block(1);
 
         ContentTest::with_member_channel().setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
 
@@ -416,7 +416,7 @@ fn successful_channel_agent_remark_during_transfer() {
                 BTreeSet::from_iter(vec![ChannelActionPermission::AgentRemark]),
             )])
             .setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
 

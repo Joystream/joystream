@@ -944,6 +944,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       AncestorCategoryImmutable: AugmentedError<ApiType>;
       /**
+       * A thread with outstanding posts cannot be removed
+       **/
+      CannotDeleteThreadWithOutstandingPosts: AugmentedError<ApiType>;
+      /**
        * Category does not exist.
        **/
       CategoryDoesNotExist: AugmentedError<ApiType>;
