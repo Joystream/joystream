@@ -307,6 +307,7 @@ fn cancel_open_auction_fails_during_channel_transfer() {
     })
 }
 
+// TODO: Enable after Carthage
 #[ignore]
 #[test]
 fn cancel_english_auction_fails_during_channel_transfer() {
