@@ -2423,45 +2423,44 @@ decl_module! {
         /// Updates channel transfer status to whatever the current owner wants.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_channel_transfer_status(
-            _origin,
-            _channel_id: T::ChannelId,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _new_transfer_status: ChannelTransferStatus<T::MemberId, T::CuratorGroupId, BalanceOf<T>>
+            origin,
+            channel_id: T::ChannelId,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            new_transfer_status: ChannelTransferStatus<T::MemberId, T::CuratorGroupId, BalanceOf<T>>
         ) {
             return Err(Error::<T>::FeatureNotImplemented.into());
 
-            // TODO: enable after Carthage
-            // let channel = Self::ensure_channel_exists(&channel_id)?;
-            // ensure_actor_authorized_to_transfer_channel::<T>(origin, &actor, &channel)?;
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            ensure_actor_authorized_to_transfer_channel::<T>(origin, &actor, &channel)?;
 
 
-            // if let ChannelTransferStatus::PendingTransfer(ref params) = new_transfer_status {
-            //     Self::validate_member_set(&params.transfer_params.new_collaborators.keys().cloned().collect())?;
-            // }
+            if let ChannelTransferStatus::PendingTransfer(ref params) = new_transfer_status {
+                Self::validate_member_set(&params.transfer_params.new_collaborators.keys().cloned().collect())?;
+            }
 
-            // if let Ok(token_id) = channel.ensure_creator_token_issued::<T>() {
-            //     ensure!(
-            //         T::ProjectToken::is_revenue_split_inactive(token_id),
-            //         Error::<T>::ChannelTransfersBlockedDuringRevenueSplits
-            //     );
+            if let Ok(token_id) = channel.ensure_creator_token_issued::<T>() {
+                ensure!(
+                    T::ProjectToken::is_revenue_split_inactive(token_id),
+                    Error::<T>::ChannelTransfersBlockedDuringRevenueSplits
+                );
 
-            //     ensure!(
-            //         T::ProjectToken::is_sale_unscheduled(token_id),
-            //         Error::<T>::ChannelTransfersBlockedDuringTokenSales,
-            //     );
-            // }
+                ensure!(
+                    T::ProjectToken::is_sale_unscheduled(token_id),
+                    Error::<T>::ChannelTransfersBlockedDuringTokenSales,
+                );
+            }
 
-            // //
-            // // == MUTATION SAFE ==
-            // //
+            //
+            // == MUTATION SAFE ==
+            //
 
-            // ChannelById::<T>::mutate(&channel_id,
-            //     |channel| channel.transfer_status = new_transfer_status.clone()
-            // );
+            ChannelById::<T>::mutate(&channel_id,
+                |channel| channel.transfer_status = new_transfer_status.clone()
+            );
 
-            // Self::deposit_event(
-            //     RawEvent::UpdateChannelTransferStatus(channel_id, actor, new_transfer_status)
-            // );
+            Self::deposit_event(
+                RawEvent::UpdateChannelTransferStatus(channel_id, actor, new_transfer_status)
+            );
         }
 
         /// Accepts channel transfer.
@@ -2510,54 +2509,50 @@ decl_module! {
         /// Updates global NFT limit.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_global_nft_limit(
-            _origin,
-            _nft_limit_period: NftLimitPeriod,
-            _limit: u64,
+            origin,
+            nft_limit_period: NftLimitPeriod,
+            limit: u64,
         ) {
-            return Err(Error::<T>::FeatureNotImplemented.into());
-            // TODO: enable after Carthage
-            // ensure_root(origin)?;
+            ensure_root(origin)?;
 
-            // let nft_limit_id: NftLimitId<T::ChannelId> = match nft_limit_period {
-            //     NftLimitPeriod::Daily => NftLimitId::GlobalDaily,
-            //     NftLimitPeriod::Weekly => NftLimitId::GlobalWeekly,
-            // };
+            let nft_limit_id: NftLimitId<T::ChannelId> = match nft_limit_period {
+                NftLimitPeriod::Daily => NftLimitId::GlobalDaily,
+                NftLimitPeriod::Weekly => NftLimitId::GlobalWeekly,
+            };
 
-            // //
-            // // == MUTATION SAFE ==
-            // //
+            //
+            // == MUTATION SAFE ==
+            //
 
-            // Self::set_nft_limit(nft_limit_id, limit);
+            Self::set_nft_limit(nft_limit_id, limit);
 
-            // Self::deposit_event(RawEvent::GlobalNftLimitUpdated(nft_limit_period, limit));
+            Self::deposit_event(RawEvent::GlobalNftLimitUpdated(nft_limit_period, limit));
         }
 
         /// Updates channel's NFT limit.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_channel_nft_limit(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _nft_limit_period: NftLimitPeriod,
-            _channel_id: T::ChannelId,
-            _limit: u64,
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            nft_limit_period: NftLimitPeriod,
+            channel_id: T::ChannelId,
+            limit: u64,
         ) {
-            return Err(Error::<T>::FeatureNotImplemented.into());
-            // TODO: enable after Carthage
-            // let channel = Self::ensure_channel_exists(&channel_id)?;
-            // ensure_actor_authorized_to_update_channel_nft_limits::<T>(origin, &actor, &channel)?;
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+            ensure_actor_authorized_to_update_channel_nft_limits::<T>(origin, &actor, &channel)?;
 
-            // let nft_limit_id: NftLimitId<T::ChannelId> = match nft_limit_period {
-            //     NftLimitPeriod::Daily => NftLimitId::ChannelDaily(channel_id),
-            //     NftLimitPeriod::Weekly => NftLimitId::ChannelWeekly(channel_id),
-            // };
+            let nft_limit_id: NftLimitId<T::ChannelId> = match nft_limit_period {
+                NftLimitPeriod::Daily => NftLimitId::ChannelDaily(channel_id),
+                NftLimitPeriod::Weekly => NftLimitId::ChannelWeekly(channel_id),
+            };
 
-            // //
-            // // == MUTATION SAFE ==
-            // //
+            //
+            // == MUTATION SAFE ==
+            //
 
-            // Self::set_nft_limit(nft_limit_id, limit);
+            Self::set_nft_limit(nft_limit_id, limit);
 
-            // Self::deposit_event(RawEvent::ChannelNftLimitUpdated(actor, nft_limit_period, channel_id, limit));
+            Self::deposit_event(RawEvent::ChannelNftLimitUpdated(actor, nft_limit_period, channel_id, limit));
         }
 
         /// Issue creator token
@@ -3386,35 +3381,36 @@ impl<T: Config> Module<T> {
     }
 
     // Checks all NFT-limits
-    fn check_nft_limits(_channel: &Channel<T>) -> DispatchResult {
-        // TODO: enable after Carthage
-        // // Global daily limit.
-        // Self::check_generic_nft_limit(
-        //     &Self::global_daily_nft_limit(),
-        //     &Self::global_daily_nft_counter(),
-        //     Error::<T>::GlobalNftDailyLimitExceeded,
-        // )?;
+    fn check_nft_limits(channel: &Channel<T>) -> DispatchResult {
+        if Self::nft_limits_enabled() {
+            // Global daily limit.
+            Self::check_generic_nft_limit(
+                &Self::global_daily_nft_limit(),
+                &Self::global_daily_nft_counter(),
+                Error::<T>::GlobalNftDailyLimitExceeded,
+            )?;
 
-        // // Global weekly limit.
-        // Self::check_generic_nft_limit(
-        //     &Self::global_weekly_nft_limit(),
-        //     &Self::global_weekly_nft_counter(),
-        //     Error::<T>::GlobalNftWeeklyLimitExceeded,
-        // )?;
+            // Global weekly limit.
+            Self::check_generic_nft_limit(
+                &Self::global_weekly_nft_limit(),
+                &Self::global_weekly_nft_counter(),
+                Error::<T>::GlobalNftWeeklyLimitExceeded,
+            )?;
 
-        // // Channel daily limit.
-        // Self::check_generic_nft_limit(
-        //     &channel.daily_nft_limit,
-        //     &channel.daily_nft_counter,
-        //     Error::<T>::ChannelNftDailyLimitExceeded,
-        // )?;
+            // Channel daily limit.
+            Self::check_generic_nft_limit(
+                &channel.daily_nft_limit,
+                &channel.daily_nft_counter,
+                Error::<T>::ChannelNftDailyLimitExceeded,
+            )?;
 
-        // // Channel weekly limit.
-        // Self::check_generic_nft_limit(
-        //     &channel.weekly_nft_limit,
-        //     &channel.weekly_nft_counter,
-        //     Error::<T>::ChannelNftWeeklyLimitExceeded,
-        // )?;
+            // Channel weekly limit.
+            Self::check_generic_nft_limit(
+                &channel.weekly_nft_limit,
+                &channel.weekly_nft_counter,
+                Error::<T>::ChannelNftWeeklyLimitExceeded,
+            )?;
+        }
         Ok(())
     }
 
