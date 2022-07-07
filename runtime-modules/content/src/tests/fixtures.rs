@@ -3448,7 +3448,6 @@ impl OfferNftFixture {
         Self { to, ..self }
     }
 
-    #[allow(dead_code)]
     pub fn with_price(self, price: Option<BalanceOf<Test>>) -> Self {
         Self { price, ..self }
     }
