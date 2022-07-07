@@ -69,6 +69,8 @@ use staking_handler::StakingHandler;
 mod benchmarking;
 mod mock;
 mod tests;
+pub mod weights;
+pub use weights::WeightInfo;
 
 /////////////////// Data Structures ////////////////////////////////////////////
 
@@ -205,27 +207,6 @@ pub type CouncilStageUpdateOf<T> = CouncilStageUpdate<<T as frame_system::Config
 pub(crate) type Balances<T> = balances::Pallet<T>;
 
 /////////////////// Traits, Storage, Errors, and Events /////////////////////////
-
-/// council WeightInfo
-/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
-pub trait WeightInfo {
-    fn set_budget_increment() -> Weight;
-    fn set_councilor_reward() -> Weight;
-    fn funding_request(i: u32) -> Weight;
-    fn try_process_budget() -> Weight;
-    fn try_progress_stage_idle() -> Weight;
-    fn try_progress_stage_announcing_start_election(i: u32) -> Weight;
-    fn try_progress_stage_announcing_restart() -> Weight;
-    fn announce_candidacy() -> Weight;
-    fn release_candidacy_stake() -> Weight;
-    fn set_candidacy_note(i: u32) -> Weight;
-    fn withdraw_candidacy() -> Weight;
-    fn set_budget() -> Weight;
-    fn plan_budget_refill() -> Weight;
-    fn fund_council_budget() -> Weight;
-    fn councilor_remark() -> Weight;
-    fn candidate_remark() -> Weight;
-}
 
 type CouncilWeightInfo<T> = <T as Config>::WeightInfo;
 
@@ -1218,8 +1199,13 @@ impl<T: Config> Module<T> {
             weight
         };
 
-        // Total weight = try progress weight + try process budget weight
-        CouncilWeightInfo::<T>::try_process_budget().saturating_add(weight)
+        // Total weight = try progress weight + refill budget weight
+        //      + pay council member rewards weight
+        CouncilWeightInfo::<T>::try_process_budget_refill_budget_only()
+            .saturating_add(
+                CouncilWeightInfo::<T>::try_process_budget_payout_council_members_only(),
+            )
+            .saturating_add(weight)
     }
 }
 

@@ -594,7 +594,7 @@ fn pick_open_auction_ok_with_channel_owner_correctly_credited() {
 fn pick_open_auction_fails_during_channel_transfer() {
     with_default_mock_builder(|| {
         ContentTest::default().with_nft_open_auction_bid().setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Ok(()));
 
