@@ -39,7 +39,7 @@ export default class CreateChannelCommand extends UploadCommandBase {
 
     if (collaborators) {
       await this.validateMemberIdsSet(
-        collaborators.map(([memberId]) => memberId),
+        collaborators.map(({ memberId }) => memberId),
         'collaborator'
       )
     }
@@ -65,7 +65,12 @@ export default class CreateChannelCommand extends UploadCommandBase {
       meta: metadataToBytes(ChannelMetadata, meta),
       storageBuckets: storageBuckets,
       distributionBuckets: createType('BTreeSet<PalletStorageDistributionBucketIdRecord>', distributionBuckets),
-      collaborators: new Map(),
+      collaborators: new Map(
+        collaborators?.map(({ memberId, channelAgentPermissions }) => [
+          memberId,
+          channelAgentPermissions.map((p) => createType('PalletContentChannelActionPermission', p)),
+        ])
+      ),
     })
 
     this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), metadata: meta, collaborators }))
