@@ -1,14 +1,18 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
 #![recursion_limit = "512"]
 
 #[cfg(test)]
 mod tests;
 use core::marker::PhantomData;
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarks;
 mod errors;
 mod nft;
 mod permissions;
 mod types;
+pub mod weights;
 
 use project_token::traits::PalletToken;
 use project_token::types::{
@@ -16,6 +20,7 @@ use project_token::types::{
     YearlyRate,
 };
 use sp_std::vec;
+pub use weights::WeightInfo;
 
 pub use errors::*;
 pub use nft::*;
@@ -24,7 +29,7 @@ use scale_info::TypeInfo;
 pub use types::*;
 
 use codec::{Codec, Decode, Encode};
-
+use frame_support::weights::Weight;
 pub use storage::{
     BagIdType, DataObjectCreationParameters, DataObjectStorage, DynBagCreationParameters,
     DynamicBagIdType, StaticBagId, UploadParameters,
@@ -55,6 +60,8 @@ use sp_arithmetic::{
 use sp_runtime::traits::{AccountIdConversion, Hash, MaybeSerializeDeserialize, Member};
 use sp_std::{borrow::ToOwned, collections::btree_set::BTreeSet, vec::Vec};
 
+type WeightInfoContent<T> = <T as Config>::WeightInfo;
+
 /// Module configuration trait for Content Directory Module
 pub trait Config:
     frame_system::Config
@@ -65,6 +72,9 @@ pub trait Config:
     + storage::Config
     + project_token::Config
 {
+    /// Weight information for extrinsics in this pallet.
+    type WeightInfo: WeightInfo;
+
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
@@ -448,7 +458,7 @@ decl_module! {
             Self::deposit_event(RawEvent::CuratorRemoved(curator_group_id, curator_id));
         }
 
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = Module::<T>::channel_creation_weight(&params)] // TODO: adjust weight
         pub fn create_channel(
             origin,
             channel_owner: ChannelOwner<T::MemberId, T::CuratorGroupId>,
@@ -1743,7 +1753,7 @@ decl_module! {
             )?;
 
             // Ensure nft in buy now state
-            let _ = Self::ensure_in_buy_now_state(&nft)?;
+            Self::ensure_in_buy_now_state(&nft)?;
 
             //
             // == MUTATION SAFE ==
@@ -3281,10 +3291,10 @@ impl<T: Config> Module<T> {
         ids_to_remove: &BTreeSet<DataObjectId<T>>,
     ) -> BTreeSet<DataObjectId<T>> {
         current_set
-            .union(&ids_to_add)
+            .union(ids_to_add)
             .cloned()
             .collect::<BTreeSet<_>>()
-            .difference(&ids_to_remove)
+            .difference(ids_to_remove)
             .cloned()
             .collect::<BTreeSet<_>>()
     }
@@ -3497,7 +3507,7 @@ impl<T: Config> Module<T> {
         channel.ensure_has_no_active_transfer::<T>()?;
         channel.ensure_feature_not_paused::<T>(PausableChannelFeature::CreatorCashout)?;
 
-        ensure_actor_authorized_to_claim_payment::<T>(origin.clone(), &actor, &channel)?;
+        ensure_actor_authorized_to_claim_payment::<T>(origin.clone(), actor, &channel)?;
 
         ensure!(
             Self::channel_cashouts_enabled(),
@@ -3588,6 +3598,33 @@ impl<T: Config> Module<T> {
             }
             ChannelOwner::CuratorGroup(..) => Ok(ChannelFundsDestination::CouncilBudget),
         }
+    }
+    //Weight functions
+
+    // Calculates weight for channel_creation_weight extrinsic.
+    fn channel_creation_weight(params: &ChannelCreationParameters<T>) -> Weight {
+        // new_meta.
+        let a = params.meta.as_ref().map_or(0, |v| v.len()) as u32;
+
+        //collaborators
+        let b = params
+            .collaborators
+            .iter()
+            .fold(0, |acc, (_, permissions)| acc + permissions.len() + 1) as u32;
+
+        //storage_buckets
+        let c = params.storage_buckets.len() as u32;
+
+        //distribution_buckets
+        let e = params.distribution_buckets.len() as u32;
+
+        // assets
+        let f = params
+            .assets
+            .as_ref()
+            .map_or(0, |v| v.object_creation_list.len()) as u32;
+
+        WeightInfoContent::<T>::channel_creation_with_channel_bag(a, b, c, e, f)
     }
 }
 

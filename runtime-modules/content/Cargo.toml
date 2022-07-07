@@ -21,6 +21,11 @@ membership = { package = 'pallet-membership', default-features = false, path = '
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 project-token = { package = 'pallet-project-token', default-features = false, path = '../project-token'}
 
+# Benchmarking
+frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596', optional = true}
+working-group = { package = 'pallet-working-group', default-features = false, path = '../working-group', optional = true}
+sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
+
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
 sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '6cbe1772bf258793fa9845daa8f43ea0cadee596'}
@@ -33,6 +38,13 @@ derive-new = "0.5"
 
 [features]
 default = ['std']
+runtime-benchmarks = [
+	"frame-benchmarking",
+	"sp-runtime/runtime-benchmarks",
+	"membership/runtime-benchmarks",
+	"storage/runtime-benchmarks",
+	"working-group",
+]
 std = [
 	'sp-std/std',
 	'sp-runtime/std',

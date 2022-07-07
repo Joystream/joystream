@@ -115,6 +115,7 @@ mod benches {
         // [bounty, Bounty]
         [joystream_utility, JoystreamUtility]
         [storage, Storage]
+        [content, Content]
     );
 }
 
