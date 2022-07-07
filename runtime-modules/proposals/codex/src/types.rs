@@ -10,14 +10,18 @@ use common::working_group::WorkingGroup;
 use common::BalanceKind;
 use common::FundingRequestParameters;
 
-// TODO: Enable after Carthage
-// use content::NftLimitPeriod;
+use content::NftLimitPeriod;
 use working_group::StakePolicy;
 
 /// Encodes proposal using its details information.
 pub trait ProposalEncoder<T: crate::Config> {
     /// Encodes proposal using its details information.
     fn encode_proposal(proposal_details: ProposalDetailsOf<T>) -> Vec<u8>;
+}
+
+pub trait ProposalsEnabled<T: crate::Config> {
+    /// Encodes proposal using its details information.
+    fn is_proposal_enabled(proposal_details: &ProposalDetailsOf<T>) -> bool;
 }
 
 /// _ProposalDetails_ alias for type simplification
@@ -28,8 +32,7 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
     working_group::WorkerId<T>,
     working_group::OpeningId,
     <T as proposals_engine::Config>::ProposalId,
-    // TODO: enable after Carthage
-    //content::UpdateChannelPayoutsParameters<T>,
+    content::UpdateChannelPayoutsParameters<T>,
 >;
 
 /// Proposal details provide voters the information required for the perceived voting.
@@ -42,8 +45,7 @@ pub enum ProposalDetails<
     WorkerId,
     OpeningId,
     ProposalId,
-    // TODO: enable after Carthage
-    // UpdateChannelPayoutsParameters,
+    UpdateChannelPayoutsParameters,
 > {
     /// The signal of the `Signal` proposal
     Signal(Vec<u8>),
@@ -112,13 +114,12 @@ pub enum ProposalDetails<
 
     /// `Veto Proposal` proposal
     VetoProposal(ProposalId),
-    // TODO: enable after Carthage
-    // /// `Update global NFT limit` proposal
-    // UpdateGlobalNftLimit(NftLimitPeriod, u64),
 
-    // TODO: enable after Carthage
-    // /// `Update Channel Payouts` proposal
-    // UpdateChannelPayouts(UpdateChannelPayoutsParameters),
+    /// `Update global NFT limit` proposal
+    UpdateGlobalNftLimit(NftLimitPeriod, u64),
+
+    /// `Update Channel Payouts` proposal
+    UpdateChannelPayouts(UpdateChannelPayoutsParameters),
 }
 
 impl<
@@ -128,8 +129,7 @@ impl<
         WorkerId,
         OpeningId,
         ProposalId,
-        // TODO: enable after Carthage
-        // UpdateChannelPayoutsParameters,
+        UpdateChannelPayoutsParameters,
     > Default
     for ProposalDetails<
         Balance,
@@ -138,8 +138,7 @@ impl<
         WorkerId,
         OpeningId,
         ProposalId,
-        // TODO: enable after Carthage
-        // UpdateChannelPayoutsParameters,
+        UpdateChannelPayoutsParameters,
     >
 {
     fn default() -> Self {

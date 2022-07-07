@@ -67,7 +67,7 @@ use proposals_engine::{
 };
 pub use types::{
     CreateOpeningParameters, FillOpeningParameters, GeneralProposalParams, ProposalDetails,
-    ProposalDetailsOf, ProposalEncoder, TerminateRoleParameters,
+    ProposalDetailsOf, ProposalEncoder, ProposalsEnabled, TerminateRoleParameters,
 };
 
 // Max allowed value for 'Funding Request' proposal
@@ -205,17 +205,18 @@ pub trait Config:
     /// `Veto Proposal` proposal parameters
     type VetoProposalProposalParameters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
 
-    // TODO: enable after Carthage
-    // `Update Nft limit` proposal parameters
-    // type UpdateGlobalNftLimitProposalParameters: Get<
-    //     ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
-    // >;
+    /// `Update Nft limit` proposal parameters
+    type UpdateGlobalNftLimitProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
 
-    // TODO: enable after Carthage
-    // /// `Update Channel Payouts` proposal parameters
-    // type UpdateChannelPayoutsProposalParameters: Get<
-    //     ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
-    // >;
+    /// `Update Channel Payouts` proposal parameters
+    type UpdateChannelPayoutsProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    /// Proposals Enabled at runtime
+    type ProposalsEnabled: ProposalsEnabled<Self>;
 }
 
 /// Specialized alias of GeneralProposalParams
@@ -228,7 +229,8 @@ pub type GeneralProposalParameters<T> = GeneralProposalParams<
 decl_event! {
     pub enum Event<T> where
         GeneralProposalParameters = GeneralProposalParameters<T>,
-        ProposalDetailsOf = ProposalDetailsOf<T>,
+
+    ProposalDetailsOf = ProposalDetailsOf<T>,
         <T as proposals_engine::Config>::ProposalId,
         <T as proposals_discussion::Config>::ThreadId
     {
@@ -245,6 +247,9 @@ decl_event! {
 decl_error! {
     /// Codex module predefined errors
     pub enum Error for Module<T: Config> {
+        /// Proposal is not implemented yet
+        ProposalNotImplemented,
+
         /// Provided text for text proposal is empty
         SignalProposalIsEmpty,
 
@@ -407,13 +412,11 @@ decl_module! {
         const VetoProposalProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::VetoProposalProposalParameters::get();
 
-        // TODO: enable after Carthage
-        // const UpdateGlobalNftLimitProposalParameters:
-        //     ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateGlobalNftLimitProposalParameters::get();
+        const UpdateGlobalNftLimitProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateGlobalNftLimitProposalParameters::get();
 
-        // TODO: enable after Carthage
-        // const UpdateChannelPayoutsProposalParameters:
-        //     ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateChannelPayoutsProposalParameters::get();
+        const UpdateChannelPayoutsProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateChannelPayoutsProposalParameters::get();
 
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
@@ -438,6 +441,11 @@ decl_module! {
             general_proposal_parameters: GeneralProposalParameters<T>,
             proposal_details: ProposalDetailsOf<T>,
         ) {
+            // no op in case proposal is not enabled
+            if !T::ProposalsEnabled::is_proposal_enabled(&proposal_details) {
+                return Ok(());
+            }
+
             Self::ensure_details_checks(&proposal_details)?;
 
             let proposal_parameters = Self::get_proposal_parameters(&proposal_details);
@@ -604,19 +612,18 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::VetoProposal(..) => {
                 // Note: No checks for this proposal for now
-            } // TODO: enable after Carthage
-              // ProposalDetails::UpdateGlobalNftLimit(..) => {
-              //     // Note: No checks for this proposal for now
-              // }
-              // TODO: enable after Carthage
-              // ProposalDetails::UpdateChannelPayouts(params) => {
-              //     if params.min_cashout_allowed.is_some() && params.max_cashout_allowed.is_some() {
-              //         ensure!(
-              //             params.max_cashout_allowed.unwrap() >= params.min_cashout_allowed.unwrap(),
-              //             Error::<T>::InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout
-              //         );
-              //     }
-              // }
+            }
+            ProposalDetails::UpdateGlobalNftLimit(..) => {
+                // Note: No checks for this proposal for now
+            }
+            ProposalDetails::UpdateChannelPayouts(params) => {
+                if params.min_cashout_allowed.is_some() && params.max_cashout_allowed.is_some() {
+                    ensure!(
+                        params.max_cashout_allowed.unwrap() >= params.min_cashout_allowed.unwrap(),
+                        Error::<T>::InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout
+                    );
+                }
+            }
         }
 
         Ok(())
@@ -678,14 +685,12 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::SetReferralCut(..) => T::SetReferralCutProposalParameters::get(),
             ProposalDetails::VetoProposal(..) => T::VetoProposalProposalParameters::get(),
-            // TODO: enable after Carthage
-            // ProposalDetails::UpdateGlobalNftLimit(..) => {
-            //     T::UpdateGlobalNftLimitProposalParameters::get()
-            // }
-            // TODO: enable after Carthage
-            // ProposalDetails::UpdateChannelPayouts(..) => {
-            //     T::UpdateChannelPayoutsProposalParameters::get()
-            // }
+            ProposalDetails::UpdateGlobalNftLimit(..) => {
+                T::UpdateGlobalNftLimitProposalParameters::get()
+            }
+            ProposalDetails::UpdateChannelPayouts(..) => {
+                T::UpdateChannelPayoutsProposalParameters::get()
+            }
         }
     }
 
@@ -826,26 +831,25 @@ impl<T: Config> Module<T> {
                     description_length.saturated_into(),
                 )
                 .saturated_into()
-            } // TODO: enable after Carthage
-              // ProposalDetails::UpdateGlobalNftLimit(..) => {
-              //     WeightInfoCodex::<T>::create_proposal_update_global_nft_limit(
-              //         title_length.saturated_into(),
-              //         description_length.saturated_into(),
-              //     )
-              //     .saturated_into()
-              // }
-              // TODO: enable after Carthage
-              // ProposalDetails::UpdateChannelPayouts(params) => {
-              //     WeightInfoCodex::<T>::create_proposal_update_channel_payouts(
-              //         params
-              //             .payload
-              //             .as_ref()
-              //             .map_or(0, |p| p.object_creation_params.ipfs_content_id.len() as u32),
-              //         title_length.saturated_into(),
-              //         description_length.saturated_into(),
-              //     )
-              //     .saturated_into()
-              // }
+            }
+            ProposalDetails::UpdateGlobalNftLimit(..) => {
+                WeightInfoCodex::<T>::create_proposal_update_global_nft_limit(
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
+                .saturated_into()
+            }
+            ProposalDetails::UpdateChannelPayouts(params) => {
+                WeightInfoCodex::<T>::create_proposal_update_channel_payouts(
+                    params
+                        .payload
+                        .as_ref()
+                        .map_or(0, |p| p.object_creation_params.ipfs_content_id.len() as u32),
+                    title_length.saturated_into(),
+                    description_length.saturated_into(),
+                )
+                .saturated_into()
+            }
         }
     }
 }
