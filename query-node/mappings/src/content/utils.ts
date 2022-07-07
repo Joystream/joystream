@@ -42,7 +42,7 @@ import {
 } from '@polkadot/types/lookup'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import BN from 'bn.js'
-import { getMostRecentlyCreatedDataObjects } from '../storage/utils'
+import { createDataObjects, getMostRecentlyCreatedDataObjects, StorageDataObjectParams } from '../storage/utils'
 
 const ASSET_TYPES = {
   channel: [
@@ -134,9 +134,9 @@ export async function processChannelMetadata(
   ctx: EventContext & StoreContext,
   channel: Channel,
   meta: DecodedMetadataObject<IChannelMetadata>,
-  assetsParams?: StorageAssets
+  dataObjectParams: StorageDataObjectParams
 ): Promise<Channel> {
-  const assets = assetsParams ? await processNewAssets(ctx, assetsParams) : []
+  const assets = await createDataObjects(ctx.store, dataObjectParams)
 
   integrateMeta(channel, meta, ['title', 'description', 'isPublic'])
 

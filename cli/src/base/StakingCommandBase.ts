@@ -1,6 +1,5 @@
 import ExitCodes from '../ExitCodes'
-import { AccountId } from '@joystream/types/common'
-import { StakingLedger } from '@polkadot/types/interfaces'
+import { StakingLedger, AccountId } from '@polkadot/types/interfaces'
 import AccountsCommandBase from './AccountsCommandBase'
 import { formatBalance } from '@polkadot/util'
 

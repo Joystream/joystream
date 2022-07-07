@@ -6,7 +6,7 @@ async function main() {
   console.log(`Initializing the api (${WS_URI})...`)
   const provider = new WsProvider(WS_URI)
   const api = await ApiPromise.create({ provider })
-  const meta = await api.rpc.state.getMetadata();
+  const meta = await api.rpc.state.getMetadata()
   console.log(JSON.stringify(meta.toJSON(), null, 2))
 }
 

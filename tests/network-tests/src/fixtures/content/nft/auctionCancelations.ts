@@ -5,7 +5,6 @@ import { IMember } from '../createMembers'
 import { PlaceBidsInAuctionFixture } from './placeBidsInAuction'
 import { Utils } from '../../../utils'
 import { assertNftOwner, ensureMemberOpenAuctionBidsAreCancelled } from './utils'
-import BN from 'bn.js'
 
 export class AuctionCancelationsFixture extends BaseQueryNodeFixture {
   private videoId: number

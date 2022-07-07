@@ -8,7 +8,7 @@ export default async function initStorageBucket({ api }: FlowProps): Promise<voi
 
   const [leaderId, leader] = await api.getLeader('storageWorkingGroup')
 
-  const leaderSuri = api.getSuri(leader.role_account_id)
+  const leaderSuri = api.getSuri(leader.roleAccountId)
   const transactorKey = '5DkE5YD8m5Yzno6EH2RTBnH268TDnnibZMEMjxwYemU4XevU' // //Colossus1
 
   const operatorId = leaderId.toString()
@@ -34,7 +34,7 @@ export default async function initStorageBucket({ api }: FlowProps): Promise<voi
     transactorKey,
   ])
   await cli.run('leader:update-bag', ['--add', bucketId, '--bagId', 'static:council'])
-  await cli.run('leader:update-dynamic-bag-policy', ['--bagType', 'Channel', '--number', '1'])
+  await cli.run('leader:update-dynamic-bag-policy', ['--bagType', 'Channel', '--number', '5'])
   await cli.run('operator:set-metadata', [
     '--bucketId',
     bucketId,

@@ -27,8 +27,8 @@ export class UpdatePostsTextFixture extends StandardizedFixture {
     this.postAuthors = await Promise.all(
       this.updates.map(async (u) => {
         const post = await this.api.query.forum.postById(u.threadId, u.postId)
-        const member = await this.api.query.members.membershipById(post.author_id)
-        return { account: member.controller_account.toString(), memberId: post.author_id }
+        const member = await this.api.query.members.membershipById(post.authorId)
+        return { account: member.unwrap().controllerAccount.toString(), memberId: post.authorId }
       })
     )
   }

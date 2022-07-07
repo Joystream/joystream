@@ -1,4 +1,4 @@
-import { WorkerId } from '@joystream/types/working-group'
+import { WorkerId } from '@joystream/types/primitives'
 import { Api } from '../../Api'
 import { LEADER_OPENING_STAKE } from '../../consts'
 import { BaseQueryNodeFixture, FixtureRunner } from '../../Fixture'

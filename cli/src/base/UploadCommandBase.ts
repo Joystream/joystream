@@ -19,7 +19,10 @@ import path from 'path'
 import mimeTypes from 'mime-types'
 import { Assets } from '../schemas/typings/Assets.schema'
 import chalk from 'chalk'
-import { DataObjectCreationParameters } from '@joystream/types/storage'
+import {
+  PalletStorageDataObjectCreationParameters as DataObjectCreationParameters,
+  PalletContentStorageAssetsRecord as StorageAssets,
+} from '@polkadot/types/lookup'
 import { createHash } from 'blake3-wasm'
 import * as multihash from 'multihashes'
 import { u8aToHex, formatBalance } from '@polkadot/util'
@@ -27,7 +30,6 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import FormData from 'form-data'
 import BN from 'bn.js'
 import { createType } from '@joystream/types'
-import { StorageAssets } from '@joystream/types/content'
 
 ffmpeg.setFfprobePath(ffprobeInstaller.path)
 
@@ -191,8 +193,8 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
   }
 
   async generateDataObjectParameters(filePath: string): Promise<DataObjectCreationParameters> {
-    return createType<DataObjectCreationParameters, 'DataObjectCreationParameters'>('DataObjectCreationParameters', {
-      size: this.getFileSize(filePath),
+    return createType('PalletStorageDataObjectCreationParameters', {
+      size_: this.getFileSize(filePath),
       ipfsContentId: await this.calculateFileHash(filePath),
     })
   }
@@ -350,7 +352,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
     if (resolvedAssets.length) {
       const totalBytes = resolvedAssets
         .reduce((a, b) => {
-          return a.add(b.parameters.getField('size'))
+          return a.add(b.parameters.size_)
         }, new BN(0))
         .toNumber()
       const totalStorageFee = feePerMB.muln(Math.ceil(totalBytes / 1024 / 1024))
@@ -363,9 +365,9 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
           )} (recoverable on data object(s) removal)\n` +
           `Are you sure you want to continue?`
       )
-      return createType<StorageAssets, 'StorageAssets'>('StorageAssets', {
-        expected_data_size_fee: feePerMB,
-        object_creation_list: resolvedAssets.map((a) => a.parameters),
+      return createType('PalletContentStorageAssetsRecord', {
+        expectedDataSizeFee: feePerMB,
+        objectCreationList: resolvedAssets.map((a) => a.parameters),
       })
     }
 

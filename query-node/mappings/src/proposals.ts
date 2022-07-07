@@ -103,7 +103,7 @@ async function parseProposalDetails(
   if (proposalDetails.isSignal) {
     const details = new SignalProposalDetails()
     const specificDetails = proposalDetails.asSignal
-    details.text = perpareString(specificDetails.toString())
+    details.text = perpareString(specificDetails.toHuman() as string)
     return details
   }
   // RuntimeUpgradeProposalDetails:
@@ -213,7 +213,7 @@ async function parseProposalDetails(
   else if (proposalDetails.isAmendConstitution) {
     const details = new AmendConstitutionProposalDetails()
     const specificDetails = proposalDetails.asAmendConstitution
-    details.text = perpareString(specificDetails.toString())
+    details.text = perpareString(specificDetails.toHuman() as string)
     return details
   }
   // CancelWorkingGroupLeadOpeningProposalDetails:
@@ -328,8 +328,8 @@ export async function proposalsCodex_ProposalCreated({ store, event }: EventCont
     details: proposalDetails,
     councilApprovals: 0,
     creator: new Membership({ id: generalProposalParameters.memberId.toString() }),
-    title: perpareString(generalProposalParameters.title.toString()),
-    description: perpareString(generalProposalParameters.description.toString()),
+    title: perpareString(generalProposalParameters.title.toHuman() as string),
+    description: perpareString(generalProposalParameters.description.toHuman() as string),
     exactExecutionBlock: generalProposalParameters.exactExecutionBlock.isSome
       ? toNumber(generalProposalParameters.exactExecutionBlock.unwrap(), INT32MAX)
       : undefined,

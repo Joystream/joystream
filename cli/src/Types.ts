@@ -3,9 +3,12 @@ import { Codec, IEvent } from '@polkadot/types/types'
 import { Balance, AccountId } from '@polkadot/types/interfaces'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { WorkerId, OpeningType } from '@joystream/types/working-group'
-import { Membership } from '@joystream/types/members'
-import { MemberId } from '@joystream/types/common'
+import {
+  PalletMembershipMembershipObject as Membership,
+  PalletWorkingGroupOpeningType as OpeningType,
+  PalletStorageDataObjectCreationParameters as DataObjectCreationParameters,
+} from '@polkadot/types/lookup'
+import { MemberId, WorkerId } from '@joystream/types/primitives'
 import { Validator } from 'inquirer'
 import { ApiPromise } from '@polkadot/api'
 import {
@@ -23,7 +26,6 @@ import {
   IOpeningMetadata,
   IWorkingGroupMetadata,
 } from '@joystream/metadata-protobuf'
-import { DataObjectCreationParameters } from '@joystream/types/storage'
 import {
   MembershipFieldsFragment,
   WorkingGroupApplicationDetailsFragment,
