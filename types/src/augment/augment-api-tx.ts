@@ -173,7 +173,7 @@ declare module '@polkadot/api-base/types/submittable' {
       /**
        * Accept incoming Nft offer
        **/
-      acceptIncomingOffer: AugmentedSubmittable<(videoId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64]>;
+      acceptIncomingOffer: AugmentedSubmittable<(videoId: u64 | AnyNumber | Uint8Array, witnessPrice: Option<u128> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Option<u128>]>;
       /**
        * Add curator to curator group under given `curator_group_id`
        **/
@@ -181,7 +181,7 @@ declare module '@polkadot/api-base/types/submittable' {
       /**
        * Buy Nft
        **/
-      buyNft: AugmentedSubmittable<(videoId: u64 | AnyNumber | Uint8Array, participantId: u64 | AnyNumber | Uint8Array, priceCommit: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128]>;
+      buyNft: AugmentedSubmittable<(videoId: u64 | AnyNumber | Uint8Array, participantId: u64 | AnyNumber | Uint8Array, witnessPrice: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128]>;
       /**
        * Cancel Nft sell order
        **/
