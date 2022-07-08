@@ -1,7 +1,7 @@
 import { FlowProps } from '../../Flow'
 import { extendDebug } from '../../Debugger'
 import { IStorageBucketOperatorMetadata, StorageBucketOperatorMetadata } from '@joystream/metadata-protobuf'
-import { createType } from '@joystream/types'
+import { CreateInterface, createType } from '@joystream/types'
 import {
   PalletStorageDynamicBagIdType as DynamicBagId,
   PalletStorageStaticBagId as StaticBagId,
@@ -27,7 +27,7 @@ type InitStorageConfig = {
   }
 }
 
-export const allStaticBags = [
+export const allStaticBags: CreateInterface<StaticBagId>[] = [
   'Council',
   { WorkingGroup: 'Content' },
   { WorkingGroup: 'Distribution' },
@@ -45,7 +45,7 @@ const sampleStorageBucket = {
   storageLimit: new BN(1_000_000_000_000),
   objectsLimit: 1000000000,
   transactorUri: process.env.COLOSSUS_1_TRANSACTOR_URI || '//Colossus1',
-  transactorBalance: new BN(100_000),
+  transactorBalance: new BN(10_000_000_000),
 } as const
 
 export const singleBucketConfig: InitStorageConfig = {
@@ -56,12 +56,12 @@ export const singleBucketConfig: InitStorageConfig = {
   buckets: [
     {
       metadata: { endpoint: process.env.COLOSSUS_1_URL || 'http://localhost:3333' },
-      staticBags: (allStaticBags as unknown) as StaticBagId[],
+      staticBags: createType('Vec<PalletStorageStaticBagId>', allStaticBags),
       operatorId: parseInt(process.env.COLOSSUS_1_WORKER_ID || '0'),
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
       transactorUri: process.env.COLOSSUS_1_TRANSACTOR_URI || '//Colossus1',
-      transactorBalance: new BN(100_000),
+      transactorBalance: new BN(10_000_000_000),
     },
   ],
 }
@@ -82,21 +82,21 @@ export const doubleBucketConfig: InitStorageConfig = {
   buckets: [
     {
       metadata: { endpoint: process.env.COLOSSUS_1_URL || 'http://localhost:3333' },
-      staticBags: (allStaticBags as unknown) as StaticBagId[],
+      staticBags: createType('Vec<PalletStorageStaticBagId>', allStaticBags),
       operatorId: parseInt(process.env.COLOSSUS_1_WORKER_ID || '0'),
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
       transactorUri: process.env.COLOSSUS_1_TRANSACTOR_URI || '//Colossus1',
-      transactorBalance: new BN(100_000),
+      transactorBalance: new BN(10_000_000_000),
     },
     {
-      metadata: { endpoint: process.env.COLOSSUS_1_URL || 'http://localhost:3333' },
-      staticBags: (allStaticBags as unknown) as StaticBagId[],
-      operatorId: parseInt(process.env.COLOSSUS_1_WORKER_ID || '0'),
+      metadata: { endpoint: process.env.STORAGE_2_URL || 'http://localhost:3335' },
+      staticBags: createType('Vec<PalletStorageStaticBagId>', allStaticBags),
+      operatorId: parseInt(process.env.STORAGE_2_WORKER_ID || '1'),
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
-      transactorUri: process.env.COLOSSUS_1_TRANSACTOR_URI || '//Colossus1',
-      transactorBalance: new BN(100_000),
+      transactorUri: process.env.COLOSSUS_2_TRANSACTOR_URI || '//Colossus2',
+      transactorBalance: new BN(10_000_000_000),
     },
   ],
 }

@@ -1153,11 +1153,13 @@ export class Api {
         ? { OpenAuction: auctionParams as OpenAuctionParams }
         : { EnglishAuction: auctionParams as EnglishAuctionParams }
 
+    const expectedDataObjectStateBloatBond = await this.getDataObjectStateBloatBond()
+
     const updateParameters = createType('PalletContentVideoUpdateParametersRecord', {
       assetsToUpload: null,
       newMeta: null,
       assetsToRemove: [],
-      expectedDataObjectStateBloatBond: 0,
+      expectedDataObjectStateBloatBond,
       autoIssueNft: createType('PalletContentNftTypesNftIssuanceParametersRecord', {
         royalty: null,
         nftMetadata: '',
@@ -1188,11 +1190,13 @@ export class Api {
         : { Idle: null }
     )
 
+    const expectedDataObjectStateBloatBond = await this.getDataObjectStateBloatBond()
+
     const updateParameters = createType('PalletContentVideoUpdateParametersRecord', {
       assetsToUpload: null,
       newMeta: null,
       assetsToRemove: [],
-      expectedDataObjectStateBloatBond: 0,
+      expectedDataObjectStateBloatBond,
       autoIssueNft: createType('PalletContentNftTypesNftIssuanceParametersRecord', {
         royalty: null,
         nftMetadata: '',

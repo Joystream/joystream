@@ -88,6 +88,7 @@ export default class UpdateVideoCommand extends UploadCommandBase {
     meta.thumbnailPhoto = assetIndices.thumbnailPhotoPath
 
     // Preare and send the extrinsic
+    const expectedDataObjectStateBloatBond = await this.getApi().dataObjectStateBloatBond()
     const assetsToUpload = await this.prepareAssetsForExtrinsic(resolvedAssets)
     const assetsToRemove = await this.getAssetsToRemove(
       videoId,
@@ -95,11 +96,11 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       assetIndices.thumbnailPhotoPath
     )
     const videoUpdateParameters: CreateInterface<VideoUpdateParameters> = {
-      expectedDataObjectStateBloatBond: 0,
+      expectedDataObjectStateBloatBond,
       autoIssueNft: null,
-      assetsToUpload: assetsToUpload,
+      assetsToUpload,
       newMeta: metadataToBytes(VideoMetadata, meta),
-      assetsToRemove: createType('BTreeSet<u64>', assetsToRemove),
+      assetsToRemove,
     }
 
     this.jsonPrettyPrint(

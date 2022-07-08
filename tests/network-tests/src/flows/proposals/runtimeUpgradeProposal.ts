@@ -8,13 +8,11 @@ import {
   DecideOnProposalStatusFixture,
   AllProposalsOutcomesFixture,
   TestedProposal,
-  ProposalCreationParams,
 } from '../../fixtures/proposals'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
 import { assert } from 'chai'
 import { Resource } from '../../Resources'
 import { createType } from '@joystream/types'
-import { Bytes } from '@polkadot/types'
 
 export default async function runtimeUpgradeProposal({ api, query, lock, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:runtime-upgrade-proposal')
@@ -39,11 +37,11 @@ export default async function runtimeUpgradeProposal({ api, query, lock, env }: 
   const createProposalsFixture = new CreateProposalsFixture(api, query, [
     {
       type: 'RuntimeUpgrade',
-      details: (Utils.readRuntimeFromFile(runtimeUpgradeWasmPath) as unknown) as Bytes,
+      details: createType('Bytes', Utils.readRuntimeFromFile(runtimeUpgradeWasmPath)),
       asMember: memberId,
       title: 'To be cancelled by runtime',
       description: 'Proposal to be cancelled by runtime',
-    } as ProposalCreationParams<'RuntimeUpgrade'>,
+    },
   ])
   await new FixtureRunner(createProposalsFixture).run()
   const [toBeCanceledByRuntimeProposalId] = createProposalsFixture.getCreatedProposalsIds()

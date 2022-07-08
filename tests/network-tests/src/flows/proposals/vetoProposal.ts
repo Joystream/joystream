@@ -4,7 +4,7 @@ import { FixtureRunner } from '../../Fixture'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
 import { CreateProposalsFixture, DecideOnProposalStatusFixture, ProposalCreationParams } from '../../fixtures/proposals'
 import { Resource } from '../../Resources'
-import { Bytes } from '@polkadot/types'
+import { createType } from '@joystream/types'
 
 export default async function vetoProposal({ api, query, lock }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:creating-proposals')
@@ -21,7 +21,7 @@ export default async function vetoProposal({ api, query, lock }: FlowProps): Pro
   const createProposalFixture = new CreateProposalsFixture(api, query, [
     {
       type: 'Signal',
-      details: ('Proposal to be vetoed' as unknown) as Bytes,
+      details: createType('Bytes', 'Proposal to be vetoed'),
       asMember: memberId,
       title: 'Proposal to veto',
       description: 'Proposal to be vetoed',
