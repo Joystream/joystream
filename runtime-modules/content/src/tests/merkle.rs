@@ -137,7 +137,7 @@ fn unsuccessful_reward_claim_with_pending_channel_transfer() {
         ContentTest::with_member_channel()
             .with_claimable_reward()
             .setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
         ClaimChannelRewardFixture::default()
@@ -347,7 +347,7 @@ fn unsuccessful_channel_balance_withdrawal_when_amount_exceeds_balance_minus_exi
 fn unsuccessful_channel_balance_withdrawal_during_transfer() {
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
 
@@ -781,7 +781,7 @@ fn claim_and_withdraw_fails_during_channel_transfer() {
             .with_claimable_reward()
             .setup();
 
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
 

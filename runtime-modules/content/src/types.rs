@@ -231,6 +231,7 @@ pub struct ChannelRecord<
     DataObjectId: Ord,
     BlockNumber: BaseArithmetic + Copy,
     TokenId,
+    TransferId: PartialEq + Copy,
 > {
     /// The owner of a channel
     pub owner: ChannelOwner<MemberId, CuratorGroupId>,
@@ -245,7 +246,7 @@ pub struct ChannelRecord<
     /// List of channel features that have been paused by a curator
     pub paused_features: BTreeSet<PausableChannelFeature>,
     /// Transfer status of the channel. Requires to be explicitly accepted.
-    pub transfer_status: ChannelTransferStatus<MemberId, CuratorGroupId, Balance>,
+    pub transfer_status: ChannelTransferStatus<MemberId, CuratorGroupId, Balance, TransferId>,
     /// Set of associated data objects
     pub data_objects: BTreeSet<DataObjectId>,
     /// Channel daily NFT limit.
@@ -269,43 +270,82 @@ pub enum ChannelTransferStatus<
     MemberId: Ord + PartialEq,
     CuratorGroupId: PartialEq,
     Balance: PartialEq + Zero,
+    TransferId: PartialEq + Copy,
 > {
     /// Default transfer status: no pending transfers.
     NoActiveTransfer,
 
     /// There is ongoing transfer with parameters.
-    PendingTransfer(PendingTransfer<MemberId, CuratorGroupId, Balance>),
+    PendingTransfer(PendingTransfer<MemberId, CuratorGroupId, Balance, TransferId>),
 }
 
-impl<MemberId: Ord + PartialEq, CuratorGroupId: PartialEq, Balance: PartialEq + Zero> Default
-    for ChannelTransferStatus<MemberId, CuratorGroupId, Balance>
+impl<
+        MemberId: Ord + PartialEq,
+        CuratorGroupId: PartialEq,
+        Balance: PartialEq + Zero,
+        TransferId: PartialEq + Copy,
+    > Default for ChannelTransferStatus<MemberId, CuratorGroupId, Balance, TransferId>
 {
     fn default() -> Self {
         ChannelTransferStatus::NoActiveTransfer
     }
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
-/// Contains parameters for the pending transfer.
-pub struct PendingTransfer<MemberId: Ord, CuratorGroupId, Balance: Zero> {
-    /// New channel owner.
-    pub new_owner: ChannelOwner<MemberId, CuratorGroupId>,
-    /// Transfer parameters.
-    pub transfer_params: TransferParameters<MemberId, Balance>,
+impl<
+        MemberId: Ord + PartialEq,
+        CuratorGroupId: PartialEq,
+        Balance: PartialEq + Zero,
+        TransferId: PartialEq + Copy,
+    > ChannelTransferStatus<MemberId, CuratorGroupId, Balance, TransferId>
+{
+    pub(crate) fn is_pending(&self) -> bool {
+        matches!(&self, &ChannelTransferStatus::PendingTransfer(_))
+    }
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
 /// Contains parameters for the pending transfer.
-pub struct TransferParameters<MemberId: Ord, Balance: Zero> {
+pub struct PendingTransfer<
+    MemberId: Ord,
+    CuratorGroupId,
+    Balance: Zero,
+    TransferId: PartialEq + Copy,
+> {
+    /// New channel owner.
+    pub new_owner: ChannelOwner<MemberId, CuratorGroupId>,
+    /// Transfer parameters.
+    pub transfer_params: TransferCommitmentParameters<MemberId, Balance, TransferId>,
+}
+
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
+/// Contains parameters for the pending transfer.
+pub struct InitTransferParameters<MemberId: Ord + Clone, CuratorGroupId, Balance: Zero> {
     /// Channel's new collaborators along with their respective permissions
     pub new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
     /// Transfer price: can be 0, which means free.
     pub price: Balance,
+    /// New channel owner
+    pub new_owner: ChannelOwner<MemberId, CuratorGroupId>,
 }
 
-impl<MemberId: Ord, Balance: Zero> TransferParameters<MemberId, Balance> {
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug, TypeInfo)]
+/// Contains parameters for the pending transfer.
+pub struct TransferCommitmentParameters<MemberId: Ord, Balance: Zero, TransferId: PartialEq + Copy>
+{
+    /// Channel's new collaborators along with their respective permissions
+    pub new_collaborators: BTreeMap<MemberId, ChannelAgentPermissions>,
+    /// Transfer price: can be 0, which means free.
+    pub price: Balance,
+    /// Transaction nonce
+    pub transfer_id: TransferId,
+}
+
+impl<MemberId: Ord, Balance: Zero, TransferId: PartialEq + Copy>
+    TransferCommitmentParameters<MemberId, Balance, TransferId>
+{
     // Defines whether the transfer is free.
     pub(crate) fn is_free_of_charge(&self) -> bool {
         self.price.is_zero()
@@ -320,6 +360,7 @@ impl<
         DataObjectId: Ord,
         BlockNumber: BaseArithmetic + Copy,
         TokenId: Clone,
+        TransferId: PartialEq + Copy,
     >
     ChannelRecord<
         MemberId,
@@ -329,6 +370,7 @@ impl<
         DataObjectId,
         BlockNumber,
         TokenId,
+        TransferId,
     >
 {
     pub fn ensure_feature_not_paused<T: Config>(
@@ -353,7 +395,7 @@ impl<
     }
 
     // Defines whether the channel has ongoing transfer.
-    fn has_active_transfer(&self) -> bool {
+    pub(crate) fn has_active_transfer(&self) -> bool {
         self.transfer_status != ChannelTransferStatus::NoActiveTransfer
     }
 
@@ -398,6 +440,7 @@ pub type Channel<T> = ChannelRecord<
     DataObjectId<T>,
     <T as frame_system::Config>::BlockNumber,
     <T as project_token::Config>::TokenId,
+    <T as Config>::TransferId,
 >;
 
 /// A request to buy a channel by a new ChannelOwner.
@@ -740,6 +783,22 @@ pub type ChannelRewardClaimInfo<T> = (
     <T as frame_system::Config>::AccountId,
     BalanceOf<T>,
 );
+pub type InitTransferParametersOf<T> = InitTransferParameters<
+    <T as common::MembershipTypes>::MemberId,
+    <T as ContentActorAuthenticator>::CuratorGroupId,
+    BalanceOf<T>,
+>;
+pub type PendingTransferOf<T> = PendingTransfer<
+    <T as common::MembershipTypes>::MemberId,
+    <T as ContentActorAuthenticator>::CuratorGroupId,
+    BalanceOf<T>,
+    <T as Config>::TransferId,
+>;
+pub type TransferCommitmentOf<T> = TransferCommitmentParameters<
+    <T as common::MembershipTypes>::MemberId,
+    BalanceOf<T>,
+    <T as Config>::TransferId,
+>;
 
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;

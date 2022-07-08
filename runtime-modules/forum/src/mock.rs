@@ -270,26 +270,37 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for Wg {
     }
 
     fn is_leader_account_id(account_id: &<Runtime as frame_system::Config>::AccountId) -> bool {
-        *account_id != NOT_FORUM_LEAD_ORIGIN_ID && *account_id != NOT_FORUM_LEAD_2_ORIGIN_ID
+        *account_id == FORUM_LEAD_ORIGIN_ID
     }
 
     fn is_worker_account_id(
         account_id: &<Runtime as frame_system::Config>::AccountId,
-        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
+        worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
-        *account_id != NOT_FORUM_MODERATOR_ORIGIN_ID
+        Self::worker_exists(worker_id) && *account_id == *worker_id
     }
 
     fn worker_exists(
-        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
+        worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
-        unimplemented!();
+        [
+            FORUM_LEAD_ORIGIN_ID,
+            FORUM_MODERATOR_ORIGIN_ID,
+            FORUM_MODERATOR_2_ORIGIN_ID,
+        ]
+        .iter()
+        .chain(EXTRA_MODERATORS.iter())
+        .any(|id| *id == *worker_id)
     }
 
     fn ensure_worker_exists(
-        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
+        worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
-        unimplemented!();
+        ensure!(
+            Self::worker_exists(worker_id),
+            DispatchError::Other("Worker doesnt exist")
+        );
+        Ok(())
     }
 }
 
@@ -1027,11 +1038,9 @@ pub fn moderate_thread_mock(
             ))
         );
 
-        // If we moderate a thread with no extra post, only the initial post deposit
-        // should remain
         assert_eq!(
             balances::Pallet::<Runtime>::free_balance(&thread_account_id),
-            <Runtime as Config>::PostDeposit::get()
+            0
         );
     }
     thread_id
