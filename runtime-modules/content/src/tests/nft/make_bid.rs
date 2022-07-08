@@ -788,27 +788,60 @@ fn make_bid_ok_with_open_auction_completion_and_no_reserve_balance_left_for_bidd
 }
 
 #[test]
+fn make_bid_ok_with_english_auction_completion_with_bid_below_min_step() {
+    ExtBuilder::default()
+        .build_with_balances(vec![
+            (SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE),
+            (THIRD_MEMBER_ACCOUNT_ID, BIDDER_BALANCE)
+        ])
+        .execute_with(|| {
+            ContentTest::default().with_video_nft().setup();
+            StartEnglishAuctionFixture::default()
+                .with_buy_now_price(DEFAULT_BUY_NOW_PRICE)
+                .with_min_bid_step(BalanceOf::<Test>::from(20u32))
+                .call_and_assert(Ok(()));
+
+            assert_ok!(Content::make_english_auction_bid(
+                Origin::signed(THIRD_MEMBER_ACCOUNT_ID),
+                THIRD_MEMBER_ID,
+                VideoId::one(),
+                DEFAULT_BUY_NOW_PRICE - 10,
+            ));
+
+            assert_ok!(Content::make_english_auction_bid(
+                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                SECOND_MEMBER_ID,
+                VideoId::one(),
+                DEFAULT_BUY_NOW_PRICE,
+            ));
+        })
+}
+
+#[test]
 fn make_bid_ok_with_english_auction_completion_and_total_balance_slashed() {
-    with_default_mock_builder(|| {
-        // Run to block one to see emitted events
-        run_to_block(1);
+    ExtBuilder::default()
+        .build_with_balances(vec![
+            (SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE),
+        ])
+        .execute_with(|| {
+            ContentTest::default().with_video_nft().setup();
+            StartEnglishAuctionFixture::default()
+                .with_buy_now_price(DEFAULT_BUY_NOW_PRICE)
+                .with_min_bid_step(BalanceOf::<Test>::from(2u32))
+                .call_and_assert(Ok(()));
 
-        let video_id = Content::next_video_id();
-        increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE);
-        setup_english_auction_scenario();
+            assert_ok!(Content::make_english_auction_bid(
+                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                THIRD_MEMBER_ID,
+                VideoId::one(),
+                DEFAULT_BUY_NOW_PRICE,
+            ));
 
-        assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-            SECOND_MEMBER_ID,
-            video_id,
-            DEFAULT_BUY_NOW_PRICE + 10,
-        ));
-
-        assert_eq!(
-            Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID),
-            BIDDER_BALANCE - DEFAULT_BUY_NOW_PRICE,
-        );
-    })
+            assert_eq!(
+                Balances::<Test>::usable_balance(&SECOND_MEMBER_ACCOUNT_ID),
+                BIDDER_BALANCE - DEFAULT_BUY_NOW_PRICE,
+            );
+        })
 }
 
 #[test]
