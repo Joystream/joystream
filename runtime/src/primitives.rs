@@ -103,6 +103,9 @@ pub type ChannelPrivilegeLevel = u8;
 /// Represents creator token id
 pub type TokenId = u64;
 
+/// Represents transfer id
+pub type TransferId = u64;
+
 /// BlockNumber to Balance converter
 pub struct BlockNumberToBalance;
 
