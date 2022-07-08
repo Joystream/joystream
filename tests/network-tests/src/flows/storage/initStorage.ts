@@ -12,7 +12,7 @@ import BN from 'bn.js'
 
 type StorageBucketConfig = {
   metadata: IStorageBucketOperatorMetadata
-  staticBags?: StaticBagId[]
+  staticBags?: CreateInterface<StaticBagId>[]
   storageLimit: BN
   objectsLimit: number
   operatorId: number
@@ -38,16 +38,6 @@ export const allStaticBags: CreateInterface<StaticBagId>[] = [
   { WorkingGroup: 'Storage' },
 ]
 
-const sampleStorageBucket = {
-  metadata: { endpoint: process.env.COLOSSUS_1_URL || 'http://localhost:3333' },
-  staticBags: allStaticBags,
-  operatorId: parseInt(process.env.COLOSSUS_1_WORKER_ID || '0'),
-  storageLimit: new BN(1_000_000_000_000),
-  objectsLimit: 1000000000,
-  transactorUri: process.env.COLOSSUS_1_TRANSACTOR_URI || '//Colossus1',
-  transactorBalance: new BN(10_000_000_000),
-} as const
-
 export const singleBucketConfig: InitStorageConfig = {
   dynamicBagPolicy: {
     'Channel': 1,
@@ -56,7 +46,7 @@ export const singleBucketConfig: InitStorageConfig = {
   buckets: [
     {
       metadata: { endpoint: process.env.COLOSSUS_1_URL || 'http://localhost:3333' },
-      staticBags: createType('Vec<PalletStorageStaticBagId>', allStaticBags),
+      staticBags: allStaticBags,
       operatorId: parseInt(process.env.COLOSSUS_1_WORKER_ID || '0'),
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
@@ -64,14 +54,6 @@ export const singleBucketConfig: InitStorageConfig = {
       transactorBalance: new BN(10_000_000_000),
     },
   ],
-}
-
-export const fiveBucketConfig: InitStorageConfig = {
-  dynamicBagPolicy: {
-    'Channel': 5,
-    'Member': 5,
-  },
-  buckets: Array(5).fill(sampleStorageBucket),
 }
 
 export const doubleBucketConfig: InitStorageConfig = {
@@ -82,7 +64,7 @@ export const doubleBucketConfig: InitStorageConfig = {
   buckets: [
     {
       metadata: { endpoint: process.env.COLOSSUS_1_URL || 'http://localhost:3333' },
-      staticBags: createType('Vec<PalletStorageStaticBagId>', allStaticBags),
+      staticBags: allStaticBags,
       operatorId: parseInt(process.env.COLOSSUS_1_WORKER_ID || '0'),
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
@@ -91,7 +73,7 @@ export const doubleBucketConfig: InitStorageConfig = {
     },
     {
       metadata: { endpoint: process.env.STORAGE_2_URL || 'http://localhost:3335' },
-      staticBags: createType('Vec<PalletStorageStaticBagId>', allStaticBags),
+      staticBags: allStaticBags,
       operatorId: parseInt(process.env.STORAGE_2_WORKER_ID || '1'),
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,

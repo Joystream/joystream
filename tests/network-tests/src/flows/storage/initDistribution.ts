@@ -18,7 +18,7 @@ import { Utils } from '../../utils'
 
 type DistributionBucketConfig = {
   metadata: IDistributionBucketOperatorMetadata
-  staticBags?: StaticBagId[]
+  staticBags?: CreateInterface<StaticBagId>[]
   operatorId: number
 }
 
@@ -56,7 +56,7 @@ export const singleBucketConfig: InitDistributionConfig = {
       buckets: [
         {
           metadata: { endpoint: process.env.DISTRIBUTOR_1_URL || 'http://localhost:3334' },
-          staticBags: createType('Vec<PalletStorageStaticBagId>', allStaticBags),
+          staticBags: allStaticBags,
           operatorId: parseInt(process.env.DISTRIBUTOR_1_WORKER_ID || '0'),
         },
       ],
@@ -75,7 +75,7 @@ export const doubleBucketConfig: InitDistributionConfig = {
       buckets: [
         {
           metadata: { endpoint: process.env.DISTRIBUTOR_1_URL || 'http://localhost:3334' },
-          staticBags: createType('Vec<PalletStorageStaticBagId>', allStaticBags),
+          staticBags: allStaticBags,
           operatorId: parseInt(process.env.DISTRIBUTOR_1_WORKER_ID || '0'),
         },
       ],
@@ -89,7 +89,7 @@ export const doubleBucketConfig: InitDistributionConfig = {
       buckets: [
         {
           metadata: { endpoint: process.env.DISTRIBUTOR_2_URL || 'http://localhost:3336' },
-          staticBags: createType('Vec<PalletStorageStaticBagId>', allStaticBags),
+          staticBags: allStaticBags,
           operatorId: parseInt(process.env.DISTRIBUTOR_2_WORKER_ID || '1'),
         },
       ],
