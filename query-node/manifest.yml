@@ -161,6 +161,7 @@ typegen:
     - referendum.VoteRevealed
     - referendum.StakeReleased
     # Bounty
+    # TODO: uncomment this + event handlers below after bounties are repaired
     # - bounty.BountyCreated
     # - bounty.BountyCanceled
     # - bounty.BountyVetoed
