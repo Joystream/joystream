@@ -378,7 +378,7 @@ decl_event! {
       >,
     {
         MemberInvited(MemberId, InviteMembershipParameters),
-        MemberGifted(MemberId, GiftMembershipParameters),
+        MembershipGifted(MemberId, GiftMembershipParameters),
         MembershipBought(MemberId, BuyMembershipParameters),
         MemberProfileUpdated(
             MemberId,
@@ -810,6 +810,11 @@ decl_module! {
                 .saturating_add(membership_fee);
 
             ensure!(
+                balances::Pallet::<T>::can_slash(&gifter, membership_fee),
+                Error::<T>::InsufficientBalanceToGift
+            );
+
+            ensure!(
                 gifter_free_balance >= total_credit,
                 Error::<T>::InsufficientBalanceToGift
             );
@@ -840,13 +845,16 @@ decl_module! {
                 Error::<T>::ConflictingLock,
             );
 
-            // Check for existing invitation locks on root account.
-            ensure!(
-                T::InvitedMemberStakingHandler::is_account_free_of_conflicting_stakes(
-                    &params.root_account
-                ),
-                Error::<T>::ConflictingLock,
-            );
+            // Check for existing invitation locks on root account if not same
+            // as controller account.
+            if params.root_account != params.controller_account {
+                ensure!(
+                    T::InvitedMemberStakingHandler::is_account_free_of_conflicting_stakes(
+                        &params.root_account
+                    ),
+                    Error::<T>::ConflictingLock,
+                );
+            }
 
             //
             // == MUTATION SAFE ==
@@ -869,33 +877,48 @@ decl_module! {
             )?;
 
             // slash fee, balance_not_slashed should be zero
-            let (_netgative_imbalance, balance_not_slashed) = balances::Pallet::<T>::slash(
+            let (_negative_imbalance, balance_not_slashed) = balances::Pallet::<T>::slash(
                 &gifter,
                 membership_fee
             );
 
+            // Ensure the entire fee was slashed. This should not fail
+            // since we checked for sufficient usable balance.
             ensure!(
                 balance_not_slashed == Zero::zero(),
                 Error::<T>::InsufficientBalanceToGift
             );
 
-            // Lock credited balance. Allow only transaction payments.
-            if let Some(locked_balance) = params.apply_controller_account_invitation_lock {
-                T::InvitedMemberStakingHandler::lock_with_reasons(
-                    &params.controller_account,
-                    locked_balance,
-                    WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT)
-                );
-            };
+            if params.root_account != params.controller_account {
+                // Lock credited balance. Allow only transaction payments.
+                if let Some(locked_balance) = params.apply_root_account_invitation_lock {
+                    T::InvitedMemberStakingHandler::lock_with_reasons(
+                        &params.root_account,
+                        locked_balance,
+                        WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT)
+                    );
+                };
+                // Lock credited balance. Allow only transaction payments.
+                if let Some(locked_balance) = params.apply_controller_account_invitation_lock {
+                    T::InvitedMemberStakingHandler::lock_with_reasons(
+                        &params.controller_account,
+                        locked_balance,
+                        WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT)
+                    );
+                };
+            } else {
+                let locked_balance: BalanceOf<T> = params.apply_controller_account_invitation_lock.map_or(Zero::zero(), |b| b)
+                    .saturating_add(params.apply_root_account_invitation_lock.map_or(Zero::zero(), |b| b))
+                    .saturated_into();
 
-            // Lock credited balance. Allow only transaction payments.
-            if let Some(locked_balance) = params.apply_root_account_invitation_lock {
-                T::InvitedMemberStakingHandler::lock_with_reasons(
-                    &params.root_account,
-                    locked_balance,
-                    WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT)
-                );
-            };
+                if locked_balance != Zero::zero() {
+                    T::InvitedMemberStakingHandler::lock_with_reasons(
+                        &params.root_account,
+                        locked_balance,
+                        WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT)
+                    );
+                }
+            }
 
             // Create new membership
             let invited_member_id = Self::insert_member(
@@ -905,7 +928,7 @@ decl_module! {
                 Zero::zero(),
             );
 
-            Self::deposit_event(RawEvent::MemberGifted(invited_member_id, params));
+            Self::deposit_event(RawEvent::MembershipGifted(invited_member_id, params));
         }
 
         /// Updates membership price. Requires root origin.

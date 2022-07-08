@@ -543,7 +543,7 @@ benchmarks! {
 
         assert_eq!(MembershipById::<T>::get(member_id), Some(gifted_membership));
 
-        assert_last_event::<T>(RawEvent::MemberGifted(member_id, gift_params).into());
+        assert_last_event::<T>(RawEvent::MembershipGifted(member_id, gift_params).into());
 
         assert_eq!(
             balances::Pallet::<T>::free_balance(controller_account.clone()),

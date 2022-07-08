@@ -3,7 +3,7 @@
 pub(crate) mod fixtures;
 pub(crate) mod mock;
 
-use crate::{Error, Event};
+use crate::{BalanceOf, Error, Event};
 pub use fixtures::*;
 pub use mock::*;
 
@@ -11,10 +11,101 @@ use common::membership::{MemberOriginValidator, MembershipInfoProvider};
 use common::working_group::WorkingGroupBudgetHandler;
 use common::StakingAccountValidator;
 use frame_support::traits::{LockIdentifier, LockableCurrency, WithdrawReasons};
-use frame_support::{assert_ok, StorageMap, StorageValue};
+use frame_support::{assert_err, assert_ok, StorageMap, StorageValue};
 use frame_system::RawOrigin;
 use sp_arithmetic::Perbill;
-use sp_runtime::DispatchError;
+use sp_runtime::{traits::Zero, DispatchError};
+
+#[test]
+fn gift_membership_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let params = get_bob_gift_membership_parameters();
+        let alice_start_balance = params.credit_controller_account
+            + params.credit_root_account
+            + DefaultMembershipPrice::get();
+        let _ = Balances::deposit_creating(&ALICE_ACCOUNT_ID, alice_start_balance);
+
+        let next_member_id = Membership::members_created();
+
+        assert_ok!(gift_bob_membership_as_alice(params.clone()));
+
+        let member_ids = vec![0];
+        assert_eq!(member_ids, vec![next_member_id]);
+
+        let profile = get_membership_by_id(next_member_id);
+
+        assert_eq!(Some(profile.handle_hash), get_bob_info().handle_hash);
+        assert_eq!(profile.invites, 0);
+
+        assert_eq!(profile.root_account, BOB_ROOT_ACCOUNT_ID);
+        assert_eq!(profile.controller_account, BOB_CONTROLLER_ACCOUNT_ID);
+
+        // free-balance
+        assert_eq!(
+            Balances::free_balance(profile.root_account),
+            params.credit_root_account
+        );
+        assert_eq!(
+            Balances::free_balance(profile.controller_account),
+            params.credit_controller_account
+        );
+
+        // usable-balance
+        assert_eq!(
+            Balances::usable_balance(profile.root_account),
+            params.credit_root_account
+                - params
+                    .apply_root_account_invitation_lock
+                    .map_or(Zero::zero(), |b| b)
+        );
+        assert_eq!(
+            Balances::usable_balance(profile.controller_account),
+            params.credit_controller_account
+                - params
+                    .apply_controller_account_invitation_lock
+                    .map_or(Zero::zero(), |b| b)
+        );
+
+        EventFixture::assert_last_crate_event(Event::<Test>::MembershipGifted(
+            next_member_id,
+            params,
+        ));
+    });
+}
+
+#[test]
+fn gift_membership_fails_with_insufficient_funds() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let params = get_bob_gift_membership_parameters();
+
+        assert_err!(
+            gift_bob_membership_as_alice(params),
+            Error::<Test>::InsufficientBalanceToGift
+        );
+    });
+}
+
+#[test]
+fn gift_membership_fails_with_invalid_lock_attempt() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let params = get_bob_gift_membership_parameters_invalid();
+        let _ = Balances::deposit_creating(&ALICE_ACCOUNT_ID, BalanceOf::<Test>::max_value());
+
+        assert_err!(
+            gift_bob_membership_as_alice(params),
+            Error::<Test>::GifLockExceedsCredit
+        );
+    });
+}
 
 #[test]
 fn buy_membership_succeeds() {
