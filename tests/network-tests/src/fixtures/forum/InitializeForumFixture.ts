@@ -33,6 +33,7 @@ export class InitializeForumFixture extends BaseQueryNodeFixture {
   protected categoryIds: ForumCategoryId[] | undefined
   protected moderatorIds: WorkerId[] | undefined
   protected threadIdsByCategoryId: Map<number, ForumThreadId[]> = new Map()
+  protected initialPostIdByThreadId: Map<number, ForumPostId> = new Map()
   protected postIdsByThreadId: Map<number, ForumPostId[]> = new Map()
   protected moderatorIdsByCategoryId: Map<number, WorkerId[]> = new Map()
 
@@ -44,6 +45,12 @@ export class InitializeForumFixture extends BaseQueryNodeFixture {
   public getCreatedPostsIds(): ForumPostId[] {
     Utils.assert(this.postIds, 'Posts not yet created!')
     return this.postIds
+  }
+
+  public getCreatedInitialPostByThreadId(threadId: ForumThreadId): ForumPostId {
+    const postsId = this.initialPostIdByThreadId.get(threadId.toNumber())
+    Utils.assert(postsId, `No initial post found by threadId ${threadId}`)
+    return postsId
   }
 
   public getCreatedPostsByThreadId(threadId: ForumThreadId): ForumPostId[] {
@@ -185,6 +192,7 @@ export class InitializeForumFixture extends BaseQueryNodeFixture {
       this.createThreadsRunner = new FixtureRunner(createThreadsFixture)
       await this.createThreadsRunner.run()
       this.threadIds = createThreadsFixture.getCreatedThreadsIds()
+      this.initialPostIdByThreadId = createThreadsFixture.getCreatedInitialPostByThreadsIds()
       this.threadIds.forEach((threadId, i) => {
         const categoryId = threads[i].categoryId.toNumber()
         this.threadIdsByCategoryId.set(categoryId, [...(this.threadIdsByCategoryId.get(categoryId) || []), threadId])

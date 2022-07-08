@@ -26,7 +26,7 @@ export default class ForumModerateThreadCommand extends ForumCommandBase {
   }
 
   async run(): Promise<void> {
-    const api = await this.getOriginalApi()
+    const api = this.getOriginalApi()
     const { categoryId, threadId, context, rationale } = this.parse(ForumModerateThreadCommand).flags
 
     const thread = await this.getThread(categoryId, threadId)
@@ -34,6 +34,10 @@ export default class ForumModerateThreadCommand extends ForumCommandBase {
 
     this.jsonPrettyPrint(JSON.stringify({ categoryId, threadId, rationale }))
     this.warn(`Thread stake of ${formatBalance(thread.cleanupPayOff)} will be slashed!`)
+    if (thread.numberOfPosts) {
+      this.error(`Thread with existing posts cannot be deleted. Posts count - ${thread.numberOfPosts}`)
+    }
+
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
     await this.sendAndFollowTx(
