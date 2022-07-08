@@ -1530,6 +1530,9 @@ decl_event! {
 decl_error! {
     /// Storage module predefined errors
     pub enum Error for Module<T: Config>{
+        /// Generic Arithmetic Error due to internal accounting operation
+        ArithmeticError,
+
         /// Invalid CID length (must be 46 bytes)
         InvalidCidLength,
 
@@ -3782,17 +3785,25 @@ impl<T: Config> Module<T> {
             let bucket = Self::storage_bucket_by_id(bucket_id)
                 .ok_or(Error::<T>::StorageBucketDoesntExist)?;
 
+            let new_bucket_objs_used = voucher_update
+                .objects_number
+                .checked_add(bucket.voucher.objects_used)
+                .ok_or(Error::<T>::ArithmeticError)?;
+
+            let new_bucket_size_used = voucher_update
+                .objects_total_size
+                .checked_add(bucket.voucher.size_used)
+                .ok_or(Error::<T>::ArithmeticError)?;
+
             // Total object number limit is not exceeded.
             ensure!(
-                voucher_update.objects_number + bucket.voucher.objects_used
-                    <= bucket.voucher.objects_limit,
+                new_bucket_objs_used <= bucket.voucher.objects_limit,
                 Error::<T>::StorageBucketObjectNumberLimitReached
             );
 
             // Total object size limit is not exceeded.
             ensure!(
-                voucher_update.objects_total_size + bucket.voucher.size_used
-                    <= bucket.voucher.size_limit,
+                new_bucket_size_used <= bucket.voucher.size_limit,
                 Error::<T>::StorageBucketObjectSizeLimitReached
             );
         }
