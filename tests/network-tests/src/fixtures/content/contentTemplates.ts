@@ -34,13 +34,12 @@ export function getVideoCategoryDefaults(index: number) {
   }
 }
 
-export function getChannelDefaults(index: number, rewardAccountAddress: string) {
+export function getChannelDefaults(index: number) {
   return {
     title: 'Active video counters Testing channel',
     description: 'Channel for testing active video counters.',
     isPublic: true,
     language: 'en',
-    rewardAccount: rewardAccountAddress,
   }
 }
 

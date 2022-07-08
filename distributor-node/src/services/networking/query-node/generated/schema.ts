@@ -6091,8 +6091,6 @@ export type Channel = BaseGraphQlObject & {
   ownerCuratorGroupId?: Maybe<Scalars['String']>
   category?: Maybe<ChannelCategory>
   categoryId?: Maybe<Scalars['String']>
-  /** Reward account where revenue is sent if set. */
-  rewardAccount?: Maybe<Scalars['String']>
   /** The title of the Channel */
   title?: Maybe<Scalars['String']>
   /** The description of a Channel */
@@ -6245,7 +6243,6 @@ export type ChannelCreateInput = {
   ownerMember?: Maybe<Scalars['ID']>
   ownerCuratorGroup?: Maybe<Scalars['ID']>
   category?: Maybe<Scalars['ID']>
-  rewardAccount?: Maybe<Scalars['String']>
   title?: Maybe<Scalars['String']>
   description?: Maybe<Scalars['String']>
   activeVideosCounter: Scalars['Float']
@@ -6389,8 +6386,6 @@ export enum ChannelOrderByInput {
   OwnerCuratorGroupDesc = 'ownerCuratorGroup_DESC',
   CategoryAsc = 'category_ASC',
   CategoryDesc = 'category_DESC',
-  RewardAccountAsc = 'rewardAccount_ASC',
-  RewardAccountDesc = 'rewardAccount_DESC',
   TitleAsc = 'title_ASC',
   TitleDesc = 'title_DESC',
   DescriptionAsc = 'description_ASC',
@@ -6415,7 +6410,6 @@ export type ChannelUpdateInput = {
   ownerMember?: Maybe<Scalars['ID']>
   ownerCuratorGroup?: Maybe<Scalars['ID']>
   category?: Maybe<Scalars['ID']>
-  rewardAccount?: Maybe<Scalars['String']>
   title?: Maybe<Scalars['String']>
   description?: Maybe<Scalars['String']>
   activeVideosCounter?: Maybe<Scalars['Float']>
@@ -6452,11 +6446,6 @@ export type ChannelWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
-  rewardAccount_eq?: Maybe<Scalars['String']>
-  rewardAccount_contains?: Maybe<Scalars['String']>
-  rewardAccount_startsWith?: Maybe<Scalars['String']>
-  rewardAccount_endsWith?: Maybe<Scalars['String']>
-  rewardAccount_in?: Maybe<Array<Scalars['String']>>
   title_eq?: Maybe<Scalars['String']>
   title_contains?: Maybe<Scalars['String']>
   title_startsWith?: Maybe<Scalars['String']>
@@ -25419,8 +25408,8 @@ export type StorageDataObject = BaseGraphQlObject & {
   ipfsHash: Scalars['String']
   /** The type of the asset that the data object represents (if known) */
   type: DataObjectType
-  /** Prize for removing the data object */
-  deletionPrize: Scalars['BigInt']
+  /** State Bloat Bond for removing the data object */
+  stateBloatBond: Scalars['BigInt']
   /** If the object is no longer used as an asset - the time at which it was unset (if known) */
   unsetAt?: Maybe<Scalars['DateTime']>
   videoThumbnail?: Maybe<Video>
@@ -25441,7 +25430,7 @@ export type StorageDataObjectCreateInput = {
   storageBag: Scalars['ID']
   ipfsHash: Scalars['String']
   type: Scalars['JSONObject']
-  deletionPrize: Scalars['String']
+  stateBloatBond: Scalars['String']
   unsetAt?: Maybe<Scalars['DateTime']>
 }
 
@@ -25465,8 +25454,8 @@ export enum StorageDataObjectOrderByInput {
   StorageBagDesc = 'storageBag_DESC',
   IpfsHashAsc = 'ipfsHash_ASC',
   IpfsHashDesc = 'ipfsHash_DESC',
-  DeletionPrizeAsc = 'deletionPrize_ASC',
-  DeletionPrizeDesc = 'deletionPrize_DESC',
+  StateBloatBondAsc = 'stateBloatBond_ASC',
+  StateBloatBondDesc = 'stateBloatBond_DESC',
   UnsetAtAsc = 'unsetAt_ASC',
   UnsetAtDesc = 'unsetAt_DESC',
 }
@@ -25477,7 +25466,7 @@ export type StorageDataObjectUpdateInput = {
   storageBag?: Maybe<Scalars['ID']>
   ipfsHash?: Maybe<Scalars['String']>
   type?: Maybe<Scalars['JSONObject']>
-  deletionPrize?: Maybe<Scalars['String']>
+  stateBloatBond?: Maybe<Scalars['String']>
   unsetAt?: Maybe<Scalars['DateTime']>
 }
 
@@ -25520,12 +25509,12 @@ export type StorageDataObjectWhereInput = {
   ipfsHash_endsWith?: Maybe<Scalars['String']>
   ipfsHash_in?: Maybe<Array<Scalars['String']>>
   type_json?: Maybe<Scalars['JSONObject']>
-  deletionPrize_eq?: Maybe<Scalars['BigInt']>
-  deletionPrize_gt?: Maybe<Scalars['BigInt']>
-  deletionPrize_gte?: Maybe<Scalars['BigInt']>
-  deletionPrize_lt?: Maybe<Scalars['BigInt']>
-  deletionPrize_lte?: Maybe<Scalars['BigInt']>
-  deletionPrize_in?: Maybe<Array<Scalars['BigInt']>>
+  stateBloatBond_eq?: Maybe<Scalars['BigInt']>
+  stateBloatBond_gt?: Maybe<Scalars['BigInt']>
+  stateBloatBond_gte?: Maybe<Scalars['BigInt']>
+  stateBloatBond_lt?: Maybe<Scalars['BigInt']>
+  stateBloatBond_lte?: Maybe<Scalars['BigInt']>
+  stateBloatBond_in?: Maybe<Array<Scalars['BigInt']>>
   unsetAt_eq?: Maybe<Scalars['DateTime']>
   unsetAt_lt?: Maybe<Scalars['DateTime']>
   unsetAt_lte?: Maybe<Scalars['DateTime']>
@@ -26016,33 +26005,11 @@ export type TerminatedWorkerEventWhereUniqueInput = {
   id: Scalars['ID']
 }
 
-export type StorageDataObject = BaseGraphQlObject & {
-  id: Scalars['ID']
-  createdAt: Scalars['DateTime']
-  createdById: Scalars['String']
-  updatedAt?: Maybe<Scalars['DateTime']>
-  updatedById?: Maybe<Scalars['String']>
-  deletedAt?: Maybe<Scalars['DateTime']>
-  deletedById?: Maybe<Scalars['String']>
-  version: Scalars['Int']
-  /** Whether the data object was uploaded and accepted by the storage provider */
-  isAccepted: Scalars['Boolean']
-  /** Data object size in bytes */
-  size: Scalars['BigInt']
-  storageBag: StorageBag
-  storageBagId: Scalars['String']
-  /** IPFS content hash */
-  ipfsHash: Scalars['String']
-  /** The type of the asset that the data object represents (if known) */
-  type: DataObjectType
-  /** State Bloat Bond for removing the data object */
-  stateBloatBond: Scalars['BigInt']
-  /** If the object is no longer used as an asset - the time at which it was unset (if known) */
-  unsetAt?: Maybe<Scalars['DateTime']>
-  channelcoverPhoto?: Maybe<Array<Channel>>
-  channelavatarPhoto?: Maybe<Array<Channel>>
-  videothumbnailPhoto?: Maybe<Array<Video>>
-  videomedia?: Maybe<Array<Video>>
+export type TerminateWorkingGroupLeadProposalDetails = {
+  /** Lead that's supposed to be terminated */
+  lead?: Maybe<Worker>
+  /** Optionally - the amount to slash the lead's stake by */
+  slashingAmount?: Maybe<Scalars['Float']>
 }
 
 export type ThreadCreatedEvent = Event &
@@ -26079,14 +26046,14 @@ export type ThreadCreatedEventConnection = {
   pageInfo: PageInfo
 }
 
-export type StorageDataObjectCreateInput = {
-  isAccepted: Scalars['Boolean']
-  size: Scalars['String']
-  storageBag: Scalars['ID']
-  ipfsHash: Scalars['String']
-  type: Scalars['JSONObject']
-  stateBloatBond: Scalars['String']
-  unsetAt?: Maybe<Scalars['DateTime']>
+export type ThreadCreatedEventCreateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock: Scalars['Float']
+  network: Network
+  indexInBlock: Scalars['Float']
+  thread: Scalars['ID']
+  title: Scalars['String']
+  text: Scalars['String']
 }
 
 export type ThreadCreatedEventEdge = {
@@ -26101,28 +26068,30 @@ export enum ThreadCreatedEventOrderByInput {
   UpdatedAtDesc = 'updatedAt_DESC',
   DeletedAtAsc = 'deletedAt_ASC',
   DeletedAtDesc = 'deletedAt_DESC',
-  IsAcceptedAsc = 'isAccepted_ASC',
-  IsAcceptedDesc = 'isAccepted_DESC',
-  SizeAsc = 'size_ASC',
-  SizeDesc = 'size_DESC',
-  StorageBagAsc = 'storageBag_ASC',
-  StorageBagDesc = 'storageBag_DESC',
-  IpfsHashAsc = 'ipfsHash_ASC',
-  IpfsHashDesc = 'ipfsHash_DESC',
-  StateBloatBondAsc = 'stateBloatBond_ASC',
-  StateBloatBondDesc = 'stateBloatBond_DESC',
-  UnsetAtAsc = 'unsetAt_ASC',
-  UnsetAtDesc = 'unsetAt_DESC',
+  InExtrinsicAsc = 'inExtrinsic_ASC',
+  InExtrinsicDesc = 'inExtrinsic_DESC',
+  InBlockAsc = 'inBlock_ASC',
+  InBlockDesc = 'inBlock_DESC',
+  NetworkAsc = 'network_ASC',
+  NetworkDesc = 'network_DESC',
+  IndexInBlockAsc = 'indexInBlock_ASC',
+  IndexInBlockDesc = 'indexInBlock_DESC',
+  ThreadAsc = 'thread_ASC',
+  ThreadDesc = 'thread_DESC',
+  TitleAsc = 'title_ASC',
+  TitleDesc = 'title_DESC',
+  TextAsc = 'text_ASC',
+  TextDesc = 'text_DESC',
 }
 
-export type StorageDataObjectUpdateInput = {
-  isAccepted?: Maybe<Scalars['Boolean']>
-  size?: Maybe<Scalars['String']>
-  storageBag?: Maybe<Scalars['ID']>
-  ipfsHash?: Maybe<Scalars['String']>
-  type?: Maybe<Scalars['JSONObject']>
-  stateBloatBond?: Maybe<Scalars['String']>
-  unsetAt?: Maybe<Scalars['DateTime']>
+export type ThreadCreatedEventUpdateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock?: Maybe<Scalars['Float']>
+  network?: Maybe<Network>
+  indexInBlock?: Maybe<Scalars['Float']>
+  thread?: Maybe<Scalars['ID']>
+  title?: Maybe<Scalars['String']>
+  text?: Maybe<Scalars['String']>
 }
 
 export type ThreadCreatedEventWhereInput = {
@@ -26150,46 +26119,38 @@ export type ThreadCreatedEventWhereInput = {
   deletedAt_gte?: Maybe<Scalars['DateTime']>
   deletedById_eq?: Maybe<Scalars['ID']>
   deletedById_in?: Maybe<Array<Scalars['ID']>>
-  isAccepted_eq?: Maybe<Scalars['Boolean']>
-  isAccepted_in?: Maybe<Array<Scalars['Boolean']>>
-  size_eq?: Maybe<Scalars['BigInt']>
-  size_gt?: Maybe<Scalars['BigInt']>
-  size_gte?: Maybe<Scalars['BigInt']>
-  size_lt?: Maybe<Scalars['BigInt']>
-  size_lte?: Maybe<Scalars['BigInt']>
-  size_in?: Maybe<Array<Scalars['BigInt']>>
-  ipfsHash_eq?: Maybe<Scalars['String']>
-  ipfsHash_contains?: Maybe<Scalars['String']>
-  ipfsHash_startsWith?: Maybe<Scalars['String']>
-  ipfsHash_endsWith?: Maybe<Scalars['String']>
-  ipfsHash_in?: Maybe<Array<Scalars['String']>>
-  type_json?: Maybe<Scalars['JSONObject']>
-  stateBloatBond_eq?: Maybe<Scalars['BigInt']>
-  stateBloatBond_gt?: Maybe<Scalars['BigInt']>
-  stateBloatBond_gte?: Maybe<Scalars['BigInt']>
-  stateBloatBond_lt?: Maybe<Scalars['BigInt']>
-  stateBloatBond_lte?: Maybe<Scalars['BigInt']>
-  stateBloatBond_in?: Maybe<Array<Scalars['BigInt']>>
-  unsetAt_eq?: Maybe<Scalars['DateTime']>
-  unsetAt_lt?: Maybe<Scalars['DateTime']>
-  unsetAt_lte?: Maybe<Scalars['DateTime']>
-  unsetAt_gt?: Maybe<Scalars['DateTime']>
-  unsetAt_gte?: Maybe<Scalars['DateTime']>
-  storageBag?: Maybe<StorageBagWhereInput>
-  channelcoverPhoto_none?: Maybe<ChannelWhereInput>
-  channelcoverPhoto_some?: Maybe<ChannelWhereInput>
-  channelcoverPhoto_every?: Maybe<ChannelWhereInput>
-  channelavatarPhoto_none?: Maybe<ChannelWhereInput>
-  channelavatarPhoto_some?: Maybe<ChannelWhereInput>
-  channelavatarPhoto_every?: Maybe<ChannelWhereInput>
-  videothumbnailPhoto_none?: Maybe<VideoWhereInput>
-  videothumbnailPhoto_some?: Maybe<VideoWhereInput>
-  videothumbnailPhoto_every?: Maybe<VideoWhereInput>
-  videomedia_none?: Maybe<VideoWhereInput>
-  videomedia_some?: Maybe<VideoWhereInput>
-  videomedia_every?: Maybe<VideoWhereInput>
-  AND?: Maybe<Array<StorageDataObjectWhereInput>>
-  OR?: Maybe<Array<StorageDataObjectWhereInput>>
+  inExtrinsic_eq?: Maybe<Scalars['String']>
+  inExtrinsic_contains?: Maybe<Scalars['String']>
+  inExtrinsic_startsWith?: Maybe<Scalars['String']>
+  inExtrinsic_endsWith?: Maybe<Scalars['String']>
+  inExtrinsic_in?: Maybe<Array<Scalars['String']>>
+  inBlock_eq?: Maybe<Scalars['Int']>
+  inBlock_gt?: Maybe<Scalars['Int']>
+  inBlock_gte?: Maybe<Scalars['Int']>
+  inBlock_lt?: Maybe<Scalars['Int']>
+  inBlock_lte?: Maybe<Scalars['Int']>
+  inBlock_in?: Maybe<Array<Scalars['Int']>>
+  network_eq?: Maybe<Network>
+  network_in?: Maybe<Array<Network>>
+  indexInBlock_eq?: Maybe<Scalars['Int']>
+  indexInBlock_gt?: Maybe<Scalars['Int']>
+  indexInBlock_gte?: Maybe<Scalars['Int']>
+  indexInBlock_lt?: Maybe<Scalars['Int']>
+  indexInBlock_lte?: Maybe<Scalars['Int']>
+  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
+  title_eq?: Maybe<Scalars['String']>
+  title_contains?: Maybe<Scalars['String']>
+  title_startsWith?: Maybe<Scalars['String']>
+  title_endsWith?: Maybe<Scalars['String']>
+  title_in?: Maybe<Array<Scalars['String']>>
+  text_eq?: Maybe<Scalars['String']>
+  text_contains?: Maybe<Scalars['String']>
+  text_startsWith?: Maybe<Scalars['String']>
+  text_endsWith?: Maybe<Scalars['String']>
+  text_in?: Maybe<Array<Scalars['String']>>
+  thread?: Maybe<ForumThreadWhereInput>
+  AND?: Maybe<Array<ThreadCreatedEventWhereInput>>
+  OR?: Maybe<Array<ThreadCreatedEventWhereInput>>
 }
 
 export type ThreadCreatedEventWhereUniqueInput = {

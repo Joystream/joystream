@@ -22,16 +22,8 @@ import { CLIError } from '@oclif/errors'
 import { Worker, WorkerId, OpeningId, Application, ApplicationId, Opening } from '@joystream/types/working-group'
 import { Membership, StakingAccountMemberBinding } from '@joystream/types/members'
 import { MemberId, ChannelId, AccountId, ThreadId, PostId } from '@joystream/types/common'
-import {
-  Channel,
-  Video,
-  ChannelCategoryId,
-  VideoId,
-  CuratorGroupId,
-  CuratorGroup,
-  VideoCategoryId,
-} from '@joystream/types/content'
-import { BagId, DataObject, DataObjectId } from '@joystream/types/storage'
+import { Channel, Video, ChannelCategoryId, VideoId, CuratorGroupId, CuratorGroup } from '@joystream/types/content'
+import { BagId, DataObject, DataObjectId, DistributionBucketFamilyId } from '@joystream/types/storage'
 import QueryNodeApi from './QueryNodeApi'
 import { MembershipFieldsFragment } from './graphql/generated/queries'
 import { blake2AsHex } from '@polkadot/util-crypto'
@@ -456,16 +448,53 @@ export default class Api {
     return this._api.query.storage.dataObjectsById.multi(ids.map((id) => [bagId, id]))
   }
 
+  async selectStorageBucketsForNewChannel(): Promise<number[]> {
+    const storageBuckets = await this._qnApi?.storageBucketsForNewChannel()
+    const { numberOfStorageBuckets: storageBucketsPolicy } = await this._api.query.storage.dynamicBagCreationPolicies(
+      'Channel'
+    )
+
+    if (!storageBuckets || storageBuckets.length < storageBucketsPolicy.toNumber()) {
+      throw new CLIError(`Storage buckets policy constraint unsatifified. Not enough storage buckets exist`)
+    }
+
+    return storageBuckets.map((b) => Number(b.id)).slice(0, storageBucketsPolicy.toNumber())
+  }
+
+  async selectDistributionBucketsForNewChannel(): Promise<
+    { distribution_bucket_family_id: number; distribution_bucket_index: number }[]
+  > {
+    const { families: distributionBucketFamiliesPolicy } = await this._api.query.storage.dynamicBagCreationPolicies(
+      'Channel'
+    )
+
+    const families = await this._qnApi?.distributionBucketsForNewChannel()
+    const distributionBucketIds = []
+
+    for (const { id, buckets } of families || []) {
+      const bucketsCountPolicy = distributionBucketFamiliesPolicy.get((id as unknown) as DistributionBucketFamilyId)
+      if (bucketsCountPolicy && bucketsCountPolicy.toNumber() < buckets.length) {
+        throw new CLIError(`Distribution buckets policy constraint unsatifified. Not enough distribution buckets exist`)
+      }
+
+      distributionBucketIds.push(
+        ...buckets
+          .map(({ bucketIndex }) => {
+            return {
+              distribution_bucket_family_id: Number(id),
+              distribution_bucket_index: bucketIndex,
+            }
+          })
+          .slice(0, bucketsCountPolicy?.toNumber())
+      )
+    }
+    return distributionBucketIds
+  }
+
   async channelCategoryIds(): Promise<ChannelCategoryId[]> {
     // There is currently no way to differentiate between unexisting and existing category
     // other than fetching all existing category ids (event the .size() trick does not work, as the object is empty)
     return (await this.entriesByIds(this._api.query.content.channelCategoryById)).map(([id]) => id)
-  }
-
-  async videoCategoryIds(): Promise<VideoCategoryId[]> {
-    // There is currently no way to differentiate between unexisting and existing category
-    // other than fetching all existing category ids (event the .size() trick does not work, as the object is empty)
-    return (await this.entriesByIds(this._api.query.content.videoCategoryById)).map(([id]) => id)
   }
 
   async dataObjectsInBag(bagId: BagId): Promise<[DataObjectId, DataObject][]> {

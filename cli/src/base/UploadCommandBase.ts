@@ -346,7 +346,7 @@ export default abstract class UploadCommandBase extends ContentDirectoryCommandB
 
   async prepareAssetsForExtrinsic(resolvedAssets: ResolvedAsset[]): Promise<StorageAssets | undefined> {
     const feePerMB = await this.getOriginalApi().query.storage.dataObjectPerMegabyteFee()
-    const { dataObjectStateBloatBond } = this.getOriginalApi().consts.storage
+    const dataObjectStateBloatBond = await this.getOriginalApi().query.storage.dataObjectStateBloatBondValue()
     if (resolvedAssets.length) {
       const totalBytes = resolvedAssets
         .reduce((a, b) => {
