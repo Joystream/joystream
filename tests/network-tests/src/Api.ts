@@ -1069,8 +1069,12 @@ export class Api {
     )
   }
 
-  async acceptIncomingOffer(accountFrom: string, videoId: number): Promise<ISubmittableResult> {
-    return await this.sender.signAndSend(this.api.tx.content.acceptIncomingOffer(videoId, accountFrom), accountFrom)
+  async acceptIncomingOffer(
+    accountFrom: string,
+    videoId: number,
+    price: BN | null = null
+  ): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(this.api.tx.content.acceptIncomingOffer(videoId, price), accountFrom)
   }
 
   async createVideoWithNft(
