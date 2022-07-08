@@ -56,7 +56,7 @@ use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchError;
 use frame_support::traits::{Currency, ExistenceRequirement, Get, LockIdentifier, WithdrawReasons};
 pub use frame_support::weights::Weight;
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, transactional};
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure};
 use frame_system::{ensure_root, ensure_signed};
 use scale_info::TypeInfo;
 use sp_arithmetic::{
@@ -791,7 +791,6 @@ decl_module! {
             Module::<T>::text_length_unwrap_or_default(&params.handle),
             params.metadata.len().saturated_into(),
         )]
-        #[transactional]
         pub fn gift_membership(
             origin,
             params: GiftMembershipParameters<T::AccountId, BalanceOf<T>>,
