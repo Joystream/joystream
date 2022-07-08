@@ -57,7 +57,6 @@ export default async function createChannel({ api, query }: FlowProps): Promise<
       assert.equal(channel.description, channelInput.description)
       assert.equal(channel.isPublic, channelInput.isPublic)
       assert.equal(channel.language?.iso, channelInput.language)
-      assert.equal(channel.rewardAccount, channelInput.rewardAccount)
       assert.equal(channel.avatarPhoto?.type.__typename, 'DataObjectTypeChannelAvatar')
       assert.equal(channel.avatarPhoto?.size, statSync(avatarPhotoPath).size)
       assert.equal(channel.coverPhoto?.type.__typename, 'DataObjectTypeChannelCoverPhoto')

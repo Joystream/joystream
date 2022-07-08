@@ -1,7 +1,6 @@
+import { MemberId } from '@joystream/types/common'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { displayCollapsedRow, displayHeader, memberHandle } from '../../helpers/display'
-import { BTreeSet } from '@polkadot/types'
-import { MemberId } from '@joystream/types/common'
 
 export default class ChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Show Channel details by id.'
@@ -17,9 +16,8 @@ export default class ChannelCommand extends ContentDirectoryCommandBase {
     ...ContentDirectoryCommandBase.flags,
   }
 
-  async displayMembersSet(set: BTreeSet<MemberId>): Promise<void> {
-    const ids = Array.from(set)
-    const members = await this.getApi().membersDetailsByIds(ids)
+  async displayMembersSet(set: MemberId[]): Promise<void> {
+    const members = await this.getApi().membersDetailsByIds(set)
     this.log(members.length ? members.map((m) => `${m.id} (${memberHandle(m)})`).join(', ') : 'NONE')
   }
 
@@ -30,8 +28,6 @@ export default class ChannelCommand extends ContentDirectoryCommandBase {
       displayCollapsedRow({
         'ID': channelId.toString(),
         'Owner': JSON.stringify(channel.owner.toJSON()),
-        'IsCensored': channel.is_censored.toString(),
-        'RewardAccount': channel.reward_account.unwrapOr('NONE').toString(),
       })
 
       displayHeader(`Media`)
@@ -40,10 +36,7 @@ export default class ChannelCommand extends ContentDirectoryCommandBase {
       })
 
       displayHeader(`Collaborators`)
-      await this.displayMembersSet(channel.collaborators)
-
-      displayHeader('Moderators')
-      await this.displayMembersSet(channel.moderators)
+      await this.displayMembersSet([...channel.collaborators.keys()])
     } else {
       this.error(`Channel not found by channel id: "${channelId}"!`)
     }

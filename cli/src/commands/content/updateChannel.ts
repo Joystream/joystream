@@ -66,7 +66,10 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       if (assetsToRemove.length) {
         this.log(`\nData objects to be removed due to replacement:`)
         assetsToRemove.forEach((a) => this.log(`- ${a.id} (${a.type.__typename})`))
-        const totalStateBloatBond = assetsToRemove.reduce((sum, { stateBloatBond }) => sum.add(new BN(stateBloatBond)), new BN(0))
+        const totalStateBloatBond = assetsToRemove.reduce(
+          (sum, { stateBloatBond }) => sum.add(new BN(stateBloatBond)),
+          new BN(0)
+        )
         this.log(`Total state bloat bond: ${chalk.cyanBright(formatBalance(totalStateBloatBond))}\n`)
       }
     }
@@ -88,11 +91,7 @@ export default class UpdateChannelCommand extends UploadCommandBase {
 
     const channelInput = await getInputJson<ChannelUpdateInputParameters>(input, ChannelUpdateInputSchema)
     const meta = asValidatedMetadata(ChannelMetadata, channelInput)
-    const { collaborators, rewardAccount, coverPhotoPath, avatarPhotoPath } = channelInput
-
-    if (rewardAccount !== undefined && !this.isChannelOwner(channel, actor)) {
-      this.error("Only channel owner is allowed to update channel's reward account!", { exit: ExitCodes.AccessDenied })
-    }
+    const { collaborators, coverPhotoPath, avatarPhotoPath } = channelInput
 
     if (collaborators !== undefined && !this.isChannelOwner(channel, actor)) {
       this.error("Only channel owner is allowed to update channel's collaborators!", { exit: ExitCodes.AccessDenied })
@@ -123,8 +122,6 @@ export default class UpdateChannelCommand extends UploadCommandBase {
       assets_to_upload: assetsToUpload,
       assets_to_remove: createType('BTreeSet<DataObjectId>', assetsToRemove),
       new_meta: metadataToBytes(ChannelMetadata, meta),
-      reward_account: this.parseRewardAccountInput(rewardAccount),
-      collaborators: createType('Option<BTreeSet<MemberId>>', collaborators),
     }
 
     this.jsonPrettyPrint(

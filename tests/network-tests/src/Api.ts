@@ -640,10 +640,6 @@ export class Api {
     return (await this.api.query.content.channelById.entries<ChannelId>()).length
   }
 
-  public async getNumberOfOutstandingVideoCategories(): Promise<number> {
-    return (await this.api.query.content.videoCategoryById.entries<VideoCategoryId>()).length
-  }
-
   // Create a mock channel, throws on failure
   async createMockChannel(memberId: number, memberControllerAccount?: string): Promise<ChannelId> {
     memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
@@ -658,14 +654,13 @@ export class Api {
       {
         assets: null,
         meta: null,
-        reward_account: null,
       }
     )
 
     const result = await this.sender.signAndSend(tx, memberControllerAccount)
 
     const event = this.getEvent(result.events, 'content', 'ChannelCreated')
-    return event.data[1]
+    return event.data[0]
   }
 
   // Create a mock video, throws on failure
@@ -686,40 +681,6 @@ export class Api {
 
     const event = this.getEvent(result.events, 'content', 'VideoCreated')
     return event.data[2]
-  }
-
-  async createChannelCategoryAsLead(name: string): Promise<ISubmittableResult> {
-    const [, lead] = await this.getLeader('contentWorkingGroup')
-
-    const account = lead.role_account_id
-    const meta = new ChannelCategoryMetadata({
-      name,
-    })
-
-    return this.sender.signAndSend(
-      this.api.tx.content.createChannelCategory(
-        { Lead: null },
-        { meta: Utils.metadataToBytes(ChannelCategoryMetadata, meta) }
-      ),
-      account?.toString()
-    )
-  }
-
-  async createVideoCategoryAsLead(name: string): Promise<ISubmittableResult> {
-    const [, lead] = await this.getLeader('contentWorkingGroup')
-
-    const account = lead.role_account_id
-    const meta = new VideoCategoryMetadata({
-      name,
-    })
-
-    return this.sender.signAndSend(
-      this.api.tx.content.createVideoCategory(
-        { Lead: null },
-        { meta: Utils.metadataToBytes(VideoCategoryMetadata, meta) }
-      ),
-      account?.toString()
-    )
   }
 
   async assignWorkerRoleAccount(
