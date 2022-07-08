@@ -22,7 +22,7 @@ export default async function expireProposal({ api, query, lock }: FlowProps): P
   const createProposalFixture = new CreateProposalsFixture(api, query, [
     {
       type: 'Signal',
-      details: (`Proposal to be Expired` as unknown) as Bytes,
+      details: `Proposal to be Expired` as unknown as Bytes,
       asMember: memberId,
       title: `Proposal to be Expired`,
       description: `Proposal to be Expired`,

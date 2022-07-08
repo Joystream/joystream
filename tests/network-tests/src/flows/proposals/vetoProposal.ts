@@ -21,7 +21,7 @@ export default async function vetoProposal({ api, query, lock }: FlowProps): Pro
   const createProposalFixture = new CreateProposalsFixture(api, query, [
     {
       type: 'Signal',
-      details: ('Proposal to be vetoed' as unknown) as Bytes,
+      details: 'Proposal to be vetoed' as unknown as Bytes,
       asMember: memberId,
       title: 'Proposal to veto',
       description: 'Proposal to be vetoed',

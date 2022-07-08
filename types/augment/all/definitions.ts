@@ -1,6 +1,6 @@
 import { Struct, TypeRegistry } from '@polkadot/types'
 import { RegistryTypes } from '@polkadot/types/types'
-import defs from'./defs.json'
+import defs from './defs.json'
 
 const emptyStruct = new Struct(new TypeRegistry() as any, {}) // TODO: get rid of any
 
@@ -9,7 +9,7 @@ const emptyStruct = new Struct(new TypeRegistry() as any, {}) // TODO: get rid o
 const normalizedDefs = {} as RegistryTypes
 Object.entries(defs).forEach(([typeName, typeDef]) => {
   if (typeof typeDef !== 'string' && !typeDef.hasOwnProperty('_enum') && !typeDef.hasOwnProperty('_set')) {
-     // definition is a struct:
+    // definition is a struct:
     const normalizedDef = {} as Record<string, string>
     Object.entries(typeDef).forEach(([key, value]) => {
       if ((emptyStruct as any)[key] !== undefined) {
@@ -17,14 +17,12 @@ Object.entries(defs).forEach(([typeName, typeDef]) => {
       }
       normalizedDef[key] = value as string
     })
-    normalizedDefs[typeName] = normalizedDef;
-  }
-  else {
+    normalizedDefs[typeName] = normalizedDef
+  } else {
     normalizedDefs[typeName] = typeDef
   }
 })
 
-
 export default {
-  types: normalizedDefs
+  types: normalizedDefs,
 }

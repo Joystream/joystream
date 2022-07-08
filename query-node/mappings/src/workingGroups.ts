@@ -495,10 +495,7 @@ export async function workingGroups_OpeningFilled({ store, event }: EventContext
     'applications',
     'applications.applicant',
   ])
-  const acceptedApplicationIds = createType(
-    'Vec<u64>',
-    applicationIdsSet.toHex() as any
-  )
+  const acceptedApplicationIds = createType('Vec<u64>', applicationIdsSet.toHex() as any)
 
   // Save the event
   const openingFilledEvent = new OpeningFilledEvent({

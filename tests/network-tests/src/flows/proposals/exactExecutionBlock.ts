@@ -23,7 +23,7 @@ export default async function exactExecutionBlock({ api, query, lock }: FlowProp
   const createProposalFixture = new CreateProposalsFixture(api, query, [
     {
       type: 'Signal',
-      details: (`Proposal to be executed at block ${exactExecutionBlock}` as unknown) as Bytes,
+      details: `Proposal to be executed at block ${exactExecutionBlock}` as unknown as Bytes,
       asMember: memberId,
       title: `Executes at #${exactExecutionBlock}`,
       description: `Proposal to be executed at block ${exactExecutionBlock}`,
