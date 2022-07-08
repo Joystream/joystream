@@ -181,16 +181,20 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
     return inconsistentState('Owner Remarked for Non-existing channel', channelId)
   }
 
-  const getcontentActor = (ownerMember?: Membership, ownerCuratorGroup?: CuratorGroup) => {
+  const getContentActor = (ownerMember?: Membership, ownerCuratorGroup?: CuratorGroup) => {
     if (ownerMember) {
       const actor = new ContentActorMember()
       actor.memberId = ownerMember.id
       return actor
-    } else if (ownerCuratorGroup) {
+    }
+
+    if (ownerCuratorGroup) {
       const actor = new ContentActorCurator()
       actor.curatorId = ownerCuratorGroup.id
       return actor
     }
+
+    return inconsistentState('Unknown content actor', { ownerMember, ownerCuratorGroup })
   }
 
   const genericFields = genericEventFields(event)
