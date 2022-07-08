@@ -1,5 +1,4 @@
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { FindConditions } from 'typeorm'
 import {
   IVideoMetadata,
   IPublishedBeforeJoystream,
@@ -8,7 +7,7 @@ import {
   IChannelMetadata,
 } from '@joystream/metadata-protobuf'
 import { integrateMeta, isSet, isValidLanguageCode } from '@joystream/metadata-protobuf/utils'
-import { invalidMetadata, inconsistentState, logger, deterministicEntityId } from '../common'
+import { invalidMetadata, inconsistentState, logger, deterministicEntityId, EntityType } from '../common'
 import {
   // primary entities
   CuratorGroup,
@@ -270,7 +269,7 @@ export async function convertContentActorToChannelOrNftOwner(
 }> {
   if (contentActor.isMember) {
     const memberId = contentActor.asMember.toNumber()
-    const member = await store.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
+    const member = await store.get(Membership, { where: { id: memberId.toString() } })
 
     // ensure member exists
     if (!member) {
@@ -286,7 +285,7 @@ export async function convertContentActorToChannelOrNftOwner(
   if (contentActor.isCurator) {
     const curatorGroupId = contentActor.asCurator[0].toNumber()
     const curatorGroup = await store.get(CuratorGroup, {
-      where: { id: curatorGroupId.toString() } as FindConditions<CuratorGroup>,
+      where: { id: curatorGroupId.toString() },
     })
 
     // ensure curator group exists
@@ -312,7 +311,7 @@ export async function convertContentActor(
 ): Promise<typeof ContentActorVariant> {
   if (contentActor.isMember) {
     const memberId = contentActor.asMember.toNumber()
-    const member = await store.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
+    const member = await store.get(Membership, { where: { id: memberId.toString() } })
 
     // ensure member exists
     if (!member) {
@@ -328,7 +327,7 @@ export async function convertContentActor(
   if (contentActor.isCurator) {
     const curatorId = contentActor.asCurator[1].toNumber()
     const curator = await store.get(Curator, {
-      where: { id: curatorId.toString() } as FindConditions<Curator>,
+      where: { id: curatorId.toString() },
     })
 
     // ensure curator group exists
@@ -527,53 +526,57 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
   const channelAssets = ['avatarPhoto', 'coverPhoto'] as const
   const videoAssets = ['thumbnailPhoto', 'media'] as const
 
-  // NOTE: we don't need to retrieve multiple channels/videos via `store.getMany()` because dataObject
-  // is allowed to be associated only with one channel/video in runtime
-  const channel = await store.get(Channel, {
-    where: channelAssets.map((assetName) => ({
-      [assetName]: {
-        id: dataObject.id,
+  async function unconnectAsset<T extends EntityType<Channel | Video>>(
+    entity: T,
+    targetAsset: string,
+    relations: typeof channelAssets | typeof videoAssets
+  ) {
+    // load video/channel
+    const result = await store.get(entity, {
+      where: {
+        [targetAsset]: {
+          id: dataObject.id,
+        },
       },
-    })),
-    relations: [...channelAssets],
-  })
-  const video = await store.get(Video, {
-    where: videoAssets.map((assetName) => ({
-      [assetName]: {
-        id: dataObject.id,
-      },
-    })),
-    relations: [...videoRelationsForCounters],
-  })
+      relations: [...relations],
+    })
 
-  if (channel) {
-    channelAssets.forEach((assetName) => {
-      if (channel[assetName] && channel[assetName]?.id === dataObject.id) {
-        channel[assetName] = null as any
+    if (!result) {
+      return
+    }
+
+    // unset relation
+    relations.forEach((assetName) => {
+      if (result[assetName] && result[assetName]?.id === dataObject.id) {
+        result[assetName] = null as any
       }
     })
-    await store.save<Channel>(channel)
 
-    // emit log event
-    logger.info('Content has been disconnected from Channel', {
-      channelId: channel.id.toString(),
-      dataObjectId: dataObject.id,
-    })
+    await store.save(result)
+
+    // log event
+    if (result instanceof Video) {
+      logger.info('Content has been disconnected from Video', {
+        videoId: result.id.toString(),
+        dataObjectId: dataObject.id,
+      })
+    } else {
+      logger.info('Content has been disconnected from Channel', {
+        channelId: result.id.toString(),
+        dataObjectId: dataObject.id,
+      })
+    }
   }
 
-  if (video) {
-    videoAssets.forEach((assetName) => {
-      if (video[assetName] && video[assetName]?.id === dataObject.id) {
-        video[assetName] = null as any
-      }
-    })
-    await store.save<Video>(video)
+  // NOTE: we don't need to retrieve multiple channels/videos via `store.getMany()` because dataObject
+  // is allowed to be associated only with one channel/video in runtime
 
-    // emit log event
-    logger.info('Content has been disconnected from Video', {
-      videoId: video.id.toString(),
-      dataObjectId: dataObject.id,
-    })
+  for (const channelAsset of channelAssets) {
+    await unconnectAsset(Channel, channelAsset, channelAssets)
+  }
+
+  for (const videoAsset of videoAssets) {
+    await unconnectAsset(Video, videoAsset, videoAssets)
   }
 
   // remove data object

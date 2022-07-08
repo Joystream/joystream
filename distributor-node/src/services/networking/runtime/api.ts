@@ -96,7 +96,7 @@ export class RuntimeApi {
     if (!event) {
       throw new Error(`Cannot find expected ${section}.${method} event in result: ${result.toHuman()}`)
     }
-    return (event as unknown) as EventType
+    return event as unknown as EventType
   }
 
   private formatDispatchError(err: DispatchError): string {

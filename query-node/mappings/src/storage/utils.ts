@@ -204,7 +204,7 @@ export async function createDataObjects(
   const storageBag = await getBag(store, bagId)
 
   const dataObjects = objectCreationList.map((objectParams, i) => {
-    const params = new ObjectCreationParams(registry, objectParams.toJSON() as any)
+    const params = new ObjectCreationParams(registry as any, objectParams.toJSON() as any) as any // TODO: get rid of `any` typecast
     const objectId = objectIds ? objectIds[i] : storageSystem.nextDataObjectId
     const object = new StorageDataObject({
       id: objectId.toString(),

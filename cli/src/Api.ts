@@ -72,7 +72,7 @@ export default class Api {
 
   // Get api for use-cases where no type augmentations are desirable
   public getUnaugmentedApi(): UnaugmentedApiPromise {
-    return (this._api as unknown) as UnaugmentedApiPromise
+    return this._api as unknown as UnaugmentedApiPromise
   }
 
   private static async initApi(apiUri: string = DEFAULT_API_URI, metadataCache: Record<string, any>) {
@@ -469,10 +469,14 @@ export default class Api {
   }
 
   async dataObjectsInBag(bagId: BagId): Promise<[DataObjectId, DataObject][]> {
-    return (await this._api.query.storage.dataObjectsById.entries(bagId)).map(([{ args: [, dataObjectId] }, value]) => [
-      dataObjectId,
-      value,
-    ])
+    return (await this._api.query.storage.dataObjectsById.entries(bagId)).map(
+      ([
+        {
+          args: [, dataObjectId],
+        },
+        value,
+      ]) => [dataObjectId, value]
+    )
   }
 
   async stakingAccountStatus(account: string): Promise<StakingAccountMemberBinding | null> {

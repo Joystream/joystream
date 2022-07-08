@@ -73,7 +73,8 @@ export class InputValidationLengthConstraint
     min: u16,
     max_min_diff: u16,
   })
-  implements InputValidationLengthConstraintType {
+  implements InputValidationLengthConstraintType
+{
   get max(): u16 {
     return this.registry.createType('u16', this.min.add(this.max_min_diff))
   }

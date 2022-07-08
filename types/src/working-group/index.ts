@@ -68,7 +68,8 @@ export class Worker
     missed_reward: Option.with(u128),
     created_at: u32,
   })
-  implements IWorker {
+  implements IWorker
+{
   // FIXME: Won't be needed soon?
   get is_active(): boolean {
     return !this.isEmpty

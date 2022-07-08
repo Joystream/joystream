@@ -2,7 +2,7 @@ import { Struct, TypeRegistry } from '@polkadot/types'
 import { RegistryTypes } from '@polkadot/types/types'
 import defs from'./defs.json'
 
-const emptyStruct = new Struct(new TypeRegistry(), {})
+const emptyStruct = new Struct(new TypeRegistry() as any, {}) // TODO: get rid of any
 
 // Prevents errors in interfaces that will be generated based on those types
 // ie. an interface cannot have fields like "values" and extend Struct (which also has "values") at the same time

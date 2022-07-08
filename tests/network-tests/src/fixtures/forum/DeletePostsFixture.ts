@@ -49,7 +49,7 @@ export class DeletePostsFixture extends StandardizedFixture {
             hide === undefined || hide,
           ] as [ExtendedPostId, boolean]
       )
-      const postsToDeleteMap = new PostsToDeleteMap(registry, new Map(postsToDeleteEntries))
+      const postsToDeleteMap = new PostsToDeleteMap(registry as any, new Map(postsToDeleteEntries))
       return this.api.tx.forum.deletePosts(r.asMember, postsToDeleteMap, r.rationale || DEFAULT_RATIONALE)
     })
   }

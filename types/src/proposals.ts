@@ -252,23 +252,23 @@ export class FundingRequestParameters
   implements IFundingRequestParameters {}
 
 // Typesafe tuple workarounds
-const UpdateWorkingGroupBudget = (Tuple.with(['Balance', WorkingGroup, BalanceKind]) as unknown) as Constructor<
+const UpdateWorkingGroupBudget = Tuple.with(['Balance', WorkingGroup, BalanceKind]) as unknown as Constructor<
   ITuple<[Balance, WorkingGroup, BalanceKind]>
 >
-const DecreaseWorkingGroupLeadStake = (Tuple.with([WorkerId, 'Balance', WorkingGroup]) as unknown) as Constructor<
+const DecreaseWorkingGroupLeadStake = Tuple.with([WorkerId, 'Balance', WorkingGroup]) as unknown as Constructor<
   ITuple<[WorkerId, Balance, WorkingGroup]>
 >
-const SlashWorkingGroupLead = (Tuple.with([WorkerId, 'Balance', WorkingGroup]) as unknown) as Constructor<
+const SlashWorkingGroupLead = Tuple.with([WorkerId, 'Balance', WorkingGroup]) as unknown as Constructor<
   ITuple<[WorkerId, Balance, WorkingGroup]>
 >
-const SetWorkingGroupLeadReward = (Tuple.with([WorkerId, 'Option<Balance>', WorkingGroup]) as unknown) as Constructor<
+const SetWorkingGroupLeadReward = Tuple.with([WorkerId, 'Option<Balance>', WorkingGroup]) as unknown as Constructor<
   ITuple<[WorkerId, Option<Balance>, WorkingGroup]>
 >
-const CancelWorkingGroupLeadOpening = (Tuple.with([OpeningId, WorkingGroup]) as unknown) as Constructor<
+const CancelWorkingGroupLeadOpening = Tuple.with([OpeningId, WorkingGroup]) as unknown as Constructor<
   ITuple<[OpeningId, WorkingGroup]>
 >
-const CreateBlogPost = (Tuple.with([Text, Text]) as unknown) as Constructor<ITuple<[Text, Text]>>
-const EditBlogPost = (Tuple.with([PostId, 'Option<Text>', 'Option<Text>']) as unknown) as Constructor<
+const CreateBlogPost = Tuple.with([Text, Text]) as unknown as Constructor<ITuple<[Text, Text]>>
+const EditBlogPost = Tuple.with([PostId, 'Option<Text>', 'Option<Text>']) as unknown as Constructor<
   ITuple<[PostId, Option<Text>, Option<Text>]>
 >
 

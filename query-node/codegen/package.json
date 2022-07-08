@@ -5,8 +5,12 @@
   "author": "",
   "license": "ISC",
   "scripts": {},
+  "resolutions": {
+    "@types/bn.js": "^5.1.0",
+    "bn.js": "^5.2.0"
+  },
   "dependencies": {
-    "@joystream/hydra-cli": "^3.1.0-alpha.26",
-    "@joystream/hydra-typegen": "^3.1.0-alpha.26"
+    "@joystream/hydra-cli": "^3.1.0-alpha.27",
+    "@joystream/hydra-typegen": "^3.1.0-alpha.27"
   }
 }

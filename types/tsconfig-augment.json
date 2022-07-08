@@ -7,7 +7,5 @@
       "@polkadot/api/augment": ["augment/augment-api.ts"]
     }
   },
-  "include": [
-    "augment/**/*.ts"
-  ]
+  "include": ["augment/**/*.ts"]
 }
