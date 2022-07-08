@@ -792,7 +792,7 @@ fn make_bid_ok_with_english_auction_completion_with_bid_below_min_step() {
     ExtBuilder::default()
         .build_with_balances(vec![
             (SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE),
-            (THIRD_MEMBER_ACCOUNT_ID, BIDDER_BALANCE)
+            (THIRD_MEMBER_ACCOUNT_ID, BIDDER_BALANCE),
         ])
         .execute_with(|| {
             ContentTest::default().with_video_nft().setup();
@@ -820,13 +820,10 @@ fn make_bid_ok_with_english_auction_completion_with_bid_below_min_step() {
 #[test]
 fn make_bid_ok_with_english_auction_completion_and_total_balance_slashed() {
     ExtBuilder::default()
-        .build_with_balances(vec![
-            (SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE),
-        ])
+        .build_with_balances(vec![(SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE)])
         .execute_with(|| {
             ContentTest::default().with_video_nft().setup();
-            StartEnglishAuctionFixture::default()
-                .call_and_assert(Ok(()));
+            StartEnglishAuctionFixture::default().call_and_assert(Ok(()));
 
             assert_ok!(Content::make_english_auction_bid(
                 Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
