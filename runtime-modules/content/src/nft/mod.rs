@@ -78,7 +78,7 @@ impl<T: Config> Module<T> {
         if let Some(buy_now_price) = auction_params.buy_now_price {
             ensure!(
                 buy_now_price > auction_params.starting_price,
-                Error::<T>::BuyNowIsLessThenStartingPrice
+                Error::<T>::BuyNowMustBeGreaterThanStartingPrice,
             );
         }
 
@@ -103,7 +103,7 @@ impl<T: Config> Module<T> {
         if let Some(buy_now_price) = auction_params.buy_now_price {
             ensure!(
                 buy_now_price > auction_params.starting_price,
-                Error::<T>::BuyNowIsLessThenStartingPrice
+                Error::<T>::BuyNowMustBeGreaterThanStartingPrice
             );
         }
 

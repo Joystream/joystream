@@ -195,7 +195,7 @@ decl_error! {
         NftAuctionIsAlreadyExpired,
 
         /// Auction buy now is less then starting price
-        BuyNowIsLessThenStartingPrice,
+        BuyNowIsNotLessThenStartingPrice,
 
         /// Nft offer target member does not exist
         TargetMemberDoesNotExist,
