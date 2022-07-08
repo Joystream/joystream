@@ -67,7 +67,7 @@ fn assert_in_events<T: Config>(generic_event: <T as Config>::Event) {
 }
 
 fn make_free_balance_be<T: Config>(account_id: &T::AccountId, balance: Balance<T>) {
-    Balances::<T>::make_free_balance_be(&account_id, balance);
+    Balances::<T>::make_free_balance_be(account_id, balance);
 }
 
 fn start_announcing_period<T: Config>() {
@@ -137,7 +137,7 @@ where
     let account_id = T::AccountId::create_account_id(id);
     let handle = handle_from_id::<T>(id);
 
-    let _ = make_free_balance_be::<T>(&account_id, Balance::<T>::max_value());
+    make_free_balance_be::<T>(&account_id, Balance::<T>::max_value());
     let members_created = Membership::<T>::members_created();
     let member_id = if cfg!(test) {
         // For the tests we need member_id == account_id even if that's not what's registered
@@ -157,7 +157,7 @@ where
 
     Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
-    let _ = make_free_balance_be::<T>(&account_id, Balance::<T>::max_value());
+    make_free_balance_be::<T>(&account_id, Balance::<T>::max_value());
 
     Membership::<T>::add_staking_account_candidate(
         RawOrigin::Signed(account_id.clone()).into(),

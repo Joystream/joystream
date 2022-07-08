@@ -395,7 +395,7 @@ impl_runtime_apis! {
                         working_group::OpeningType::Leader,
                         opening_id,
                         None,
-                        &caller_id,
+                        caller_id,
                         member_id,
                     )
                 }

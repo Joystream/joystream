@@ -5,7 +5,7 @@
 use super::*;
 use crate::Module as Codex;
 use balances::Pallet as Balances;
-use codec::Decode;
+
 use common::working_group::WorkingGroup;
 use common::BalanceKind;
 use content::NftLimitPeriod;
@@ -18,8 +18,8 @@ use frame_system::RawOrigin;
 use membership::Module as Membership;
 use proposals_discussion::Module as Discussion;
 use proposals_engine::Module as Engine;
-use sp_core::Hasher;
-use sp_runtime::traits::{One, TrailingZeroInput, Zero};
+
+use sp_runtime::traits::{One, Zero};
 use sp_std::convert::TryInto;
 use sp_std::prelude::*;
 
