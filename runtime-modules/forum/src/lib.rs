@@ -1941,8 +1941,10 @@ impl<T: Config> Module<T> {
             Error::<T>::ThreadMoveInvalid,
         );
 
-        Self::ensure_can_moderate_category(&account_id, actor, category_id)
-            .or::<DispatchError>(Err(Error::<T>::ModeratorModerateOriginCategory.into()))?;
+        ensure!(
+            Self::ensure_can_moderate_category(&account_id, actor, category_id).is_ok(),
+            Error::<T>::ModeratorModerateOriginCategory
+        );
 
         let thread = Self::ensure_thread_exists(category_id, thread_id)?;
 
