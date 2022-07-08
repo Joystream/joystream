@@ -826,13 +826,11 @@ fn make_bid_ok_with_english_auction_completion_and_total_balance_slashed() {
         .execute_with(|| {
             ContentTest::default().with_video_nft().setup();
             StartEnglishAuctionFixture::default()
-                .with_buy_now_price(DEFAULT_BUY_NOW_PRICE)
-                .with_min_bid_step(BalanceOf::<Test>::from(2u32))
                 .call_and_assert(Ok(()));
 
             assert_ok!(Content::make_english_auction_bid(
                 Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
-                THIRD_MEMBER_ID,
+                SECOND_MEMBER_ID,
                 VideoId::one(),
                 DEFAULT_BUY_NOW_PRICE,
             ));
