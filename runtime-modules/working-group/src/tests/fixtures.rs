@@ -666,7 +666,7 @@ impl TerminateWorkerRoleFixture {
         );
         assert_eq!(actual_result, expected_result);
 
-        if actual_result.is_ok() && actual_result.is_ok() {
+        if actual_result.is_ok() {
             assert!(!<crate::WorkerById<Test, DefaultInstance>>::contains_key(
                 self.worker_id
             ));
