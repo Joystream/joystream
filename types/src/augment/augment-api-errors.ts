@@ -1390,6 +1390,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ControllerAccountRequired: AugmentedError<ApiType>;
       /**
+       * Locked amount is greater than credit amount
+       **/
+      GifLockExceedsCredit: AugmentedError<ApiType>;
+      /**
        * Handle already registered.
        **/
       HandleAlreadyRegistered: AugmentedError<ApiType>;
@@ -1401,6 +1405,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Insufficient balance to cover stake.
        **/
       InsufficientBalanceToCoverStake: AugmentedError<ApiType>;
+      /**
+       * Gifter doesn't have sufficient balance to credit
+       **/
+      InsufficientBalanceToGift: AugmentedError<ApiType>;
       /**
        * Member profile not found (invalid member id).
        **/
@@ -1434,7 +1442,7 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       StakingAccountIsAlreadyRegistered: AugmentedError<ApiType>;
       /**
-       * Invalid origin.
+       * Unsigned origin.
        **/
       UnsignedOrigin: AugmentedError<ApiType>;
       /**
