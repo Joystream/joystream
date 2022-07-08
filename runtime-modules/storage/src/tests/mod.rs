@@ -2650,6 +2650,94 @@ fn delete_data_objects_fails_with_non_existing_data_object() {
 }
 
 #[test]
+fn update_storage_bucket_for_bag_fails_with_voucher_limits_overflow() {
+    // SETUP :
+    // - storage bucket with size limit u64::MAX, call it bucket1
+    // - bag (eg static) with bucket1 as backend, bag1
+    // - upload to bag1 a data object of size MaxDataObjectSize
+    // - storage buckets with size limit u64::MAX, call it bucket2,bucket3,bucket4,..
+    // - bag (eg static) with bucket2,bucket3,bucket4,.. as backend, bag2
+    // - upload to bag2 a data object of size u64::MAX - MaxDataObjectSize, filling bucket2
+    // - add bucket2 to bag1
+    let static_bag_id = StaticBagId::Council;
+    let dynamic_bag_id = DynamicBagId::<Test>::Member(DEFAULT_MEMBER_ID);
+    pub const NEW_LIMIT: u64 = 7;
+    pub const OBJECTS_LIMIT: u64 = 10;
+    pub const SIZE_LIMIT: u64 = u64::MAX;
+
+    build_test_externalities().execute_with(|| {
+        set_update_storage_buckets_per_bag_limit(NEW_LIMIT);
+
+        UpdateStorageBucketsVoucherMaxLimitsFixture::new()
+            .with_new_objects_size_limit(SIZE_LIMIT)
+            .with_new_objects_number_limit(OBJECTS_LIMIT)
+            .call_and_assert(Ok(()));
+
+        let bucket_id = CreateStorageBucketFixture::new()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_size_limit(SIZE_LIMIT)
+            .with_objects_limit(OBJECTS_LIMIT)
+            .call_and_assert(Ok(()))
+            .unwrap();
+
+        UpdateStorageBucketForBagsFixture::new()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_bag_id(static_bag_id.clone().into())
+            .with_add_bucket_ids(BTreeSet::from_iter(vec![bucket_id]))
+            .call_and_assert(Ok(()));
+
+        UploadFixture::default()
+            .with_params(UploadParameters::<Test> {
+                bag_id: static_bag_id.clone().into(),
+                state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+                object_creation_list: vec![DataObjectCreationParameters {
+                    size: MaxDataObjectSize::get(),
+                    ipfs_content_id: create_cid(1u8.into()),
+                }],
+                expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+                expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(
+                ),
+            })
+            .call_and_assert(Ok(()));
+
+        let dyn_bag_storage_buckets = CreateStorageBucketFixture::new()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_size_limit(SIZE_LIMIT)
+            .with_objects_limit(OBJECTS_LIMIT)
+            .create_several(3); // member dyn bag policy: 3 buckets per bag
+
+        CreateDynamicBagFixture::default()
+            .with_bag_id(dynamic_bag_id.clone())
+            .with_storage_buckets(dyn_bag_storage_buckets.clone())
+            .with_expected_data_object_state_bloat_bond(
+                Storage::data_object_state_bloat_bond_value(),
+            )
+            .with_expected_data_size_fee(Storage::data_object_per_mega_byte_fee())
+            .call_and_assert(Ok(()));
+
+        UploadFixture::default()
+            .with_params(UploadParameters::<Test> {
+                bag_id: dynamic_bag_id.clone().into(),
+                state_bloat_bond_source_account_id: DEFAULT_MEMBER_ACCOUNT_ID,
+                object_creation_list: vec![DataObjectCreationParameters {
+                    size: SIZE_LIMIT - MaxDataObjectSize::get() + 1,
+                    ipfs_content_id: create_cid(2u8.into()),
+                }],
+                expected_data_size_fee: Storage::data_object_per_mega_byte_fee(),
+                expected_data_object_state_bloat_bond: Storage::data_object_state_bloat_bond_value(
+                ),
+            })
+            .call_and_assert(Ok(()));
+
+        UpdateStorageBucketForBagsFixture::new()
+            .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
+            .with_bag_id(static_bag_id.into())
+            .with_add_bucket_ids(dyn_bag_storage_buckets)
+            .call_and_assert(Err(Error::<Test>::ArithmeticError.into()));
+    })
+}
+
+#[test]
 fn update_storage_bucket_status_succeeded() {
     build_test_externalities().execute_with(|| {
         let starting_block = 1;
@@ -5452,7 +5540,7 @@ fn unsuccessful_dyn_bag_creation_with_object_size_exceeding_max_obj_size() {
             .into_iter()
             .map(|idx| DataObjectCreationParameters {
                 // set size high on purpose to trigger error
-                size: 5 * ONE_MB + 1,
+                size: MaxDataObjectSize::get() + 1,
                 ipfs_content_id: vec![idx.try_into().unwrap()],
             })
             .collect();
