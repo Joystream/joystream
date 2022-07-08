@@ -185,7 +185,7 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
   try {
     const decodedMessage = ChannelOwnerRemarked.decode(message.toU8a(true))
     const messageType = decodedMessage.channelOwnerRemarked
-    const contentActor = getcontentActor(channel.ownerMember, channel.ownerCuratorGroup)!
+    const contentActor = getContentActor(channel.ownerMember, channel.ownerCuratorGroup)
 
     // update MetaprotocolTransactionStatusEvent
     const statusSuccessful = new MetaprotocolTransactionSuccessful()
