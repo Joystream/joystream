@@ -101,14 +101,6 @@ declare module '@polkadot/api-base/types/consts' {
     };
     content: {
       /**
-       * Exports const - default channel daily NFT limit.
-       **/
-      defaultChannelDailyNftLimit: PalletContentLimitPerPeriod & AugmentedConst<ApiType>;
-      /**
-       * Exports const - default channel weekly NFT limit.
-       **/
-      defaultChannelWeeklyNftLimit: PalletContentLimitPerPeriod & AugmentedConst<ApiType>;
-      /**
        * Exports const - default global daily NFT limit.
        **/
       defaultGlobalDailyNftLimit: PalletContentLimitPerPeriod & AugmentedConst<ApiType>;
@@ -116,6 +108,14 @@ declare module '@polkadot/api-base/types/consts' {
        * Exports const - default global weekly NFT limit.
        **/
       defaultGlobalWeeklyNftLimit: PalletContentLimitPerPeriod & AugmentedConst<ApiType>;
+      /**
+       * Exports const - default channel daily NFT limit.
+       **/
+      defaultChannelDailyNftLimit: PalletContentLimitPerPeriod & AugmentedConst<ApiType>;
+      /**
+       * Exports const - default channel weekly NFT limit.
+       **/
+      defaultChannelWeeklyNftLimit: PalletContentLimitPerPeriod & AugmentedConst<ApiType>;
       /**
        * Exports const -  max number of keys per curator_group.permissions_by_level map instance
        **/
@@ -587,8 +587,8 @@ declare module '@polkadot/api-base/types/consts' {
        * Exports 'Terminate Working Group Lead' proposal parameters.
        **/
       terminateWorkingGroupLeadProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
-      updateChannelPayoutsProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       updateGlobalNftLimitProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
+      updateChannelPayoutsProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
        * Exports 'Update Working Group Budget' proposal parameters.
        **/

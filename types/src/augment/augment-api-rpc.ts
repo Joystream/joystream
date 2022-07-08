@@ -8,8 +8,6 @@ import type { AnyNumber, Codec } from '@polkadot/types-codec/types';
 import type { ExtrinsicOrHash, ExtrinsicStatus } from '@polkadot/types/interfaces/author';
 import type { EpochAuthorship } from '@polkadot/types/interfaces/babe';
 import type { BeefySignedCommitment } from '@polkadot/types/interfaces/beefy';
-import type { BlockHash } from '@polkadot/types/interfaces/chain';
-import type { PrefixedStorageKey } from '@polkadot/types/interfaces/childstate';
 import type { AuthorityId } from '@polkadot/types/interfaces/consensus';
 import type { CodeUploadRequest, CodeUploadResult, ContractCallRequest, ContractExecResult, ContractInstantiateResult, InstantiateRequest } from '@polkadot/types/interfaces/contracts';
 import type { BlockStats } from '@polkadot/types/interfaces/dev';
@@ -17,6 +15,8 @@ import type { CreatedBlock } from '@polkadot/types/interfaces/engine';
 import type { EthAccount, EthCallRequest, EthFilter, EthFilterChanges, EthLog, EthReceipt, EthRichBlock, EthSubKind, EthSubParams, EthSyncStatus, EthTransaction, EthTransactionRequest, EthWork } from '@polkadot/types/interfaces/eth';
 import type { Extrinsic } from '@polkadot/types/interfaces/extrinsics';
 import type { EncodedFinalityProofs, JustificationNotification, ReportedRoundStates } from '@polkadot/types/interfaces/grandpa';
+import type { BlockHash } from '@polkadot/types/interfaces/chain';
+import type { PrefixedStorageKey } from '@polkadot/types/interfaces/childstate';
 import type { MmrLeafBatchProof, MmrLeafProof } from '@polkadot/types/interfaces/mmr';
 import type { StorageKind } from '@polkadot/types/interfaces/offchain';
 import type { FeeDetails, RuntimeDispatchInfo } from '@polkadot/types/interfaces/payment';
@@ -77,62 +77,6 @@ declare module '@polkadot/rpc-core/types/jsonrpc' {
        * Returns the block most recently finalized by BEEFY, alongside side its justification.
        **/
       subscribeJustifications: AugmentedRpc<() => Observable<BeefySignedCommitment>>;
-    };
-    chain: {
-      /**
-       * Get header and body of a relay chain block
-       **/
-      getBlock: AugmentedRpc<(hash?: BlockHash | string | Uint8Array) => Observable<SignedBlock>>;
-      /**
-       * Get the block hash for a specific block
-       **/
-      getBlockHash: AugmentedRpc<(blockNumber?: BlockNumber | AnyNumber | Uint8Array) => Observable<BlockHash>>;
-      /**
-       * Get hash of the last finalized block in the canon chain
-       **/
-      getFinalizedHead: AugmentedRpc<() => Observable<BlockHash>>;
-      /**
-       * Retrieves the header for a specific block
-       **/
-      getHeader: AugmentedRpc<(hash?: BlockHash | string | Uint8Array) => Observable<Header>>;
-      /**
-       * Retrieves the newest header via subscription
-       **/
-      subscribeAllHeads: AugmentedRpc<() => Observable<Header>>;
-      /**
-       * Retrieves the best finalized header via subscription
-       **/
-      subscribeFinalizedHeads: AugmentedRpc<() => Observable<Header>>;
-      /**
-       * Retrieves the best header via subscription
-       **/
-      subscribeNewHeads: AugmentedRpc<() => Observable<Header>>;
-    };
-    childstate: {
-      /**
-       * Returns the keys with prefix from a child storage, leave empty to get all the keys
-       **/
-      getKeys: AugmentedRpc<(childKey: PrefixedStorageKey | string | Uint8Array, prefix: StorageKey | string | Uint8Array | any, at?: Hash | string | Uint8Array) => Observable<Vec<StorageKey>>>;
-      /**
-       * Returns the keys with prefix from a child storage with pagination support
-       **/
-      getKeysPaged: AugmentedRpc<(childKey: PrefixedStorageKey | string | Uint8Array, prefix: StorageKey | string | Uint8Array | any, count: u32 | AnyNumber | Uint8Array, startKey?: StorageKey | string | Uint8Array | any, at?: Hash | string | Uint8Array) => Observable<Vec<StorageKey>>>;
-      /**
-       * Returns a child storage entry at a specific block state
-       **/
-      getStorage: AugmentedRpc<(childKey: PrefixedStorageKey | string | Uint8Array, key: StorageKey | string | Uint8Array | any, at?: Hash | string | Uint8Array) => Observable<Option<StorageData>>>;
-      /**
-       * Returns child storage entries for multiple keys at a specific block state
-       **/
-      getStorageEntries: AugmentedRpc<(childKey: PrefixedStorageKey | string | Uint8Array, keys: Vec<StorageKey> | (StorageKey | string | Uint8Array | any)[], at?: Hash | string | Uint8Array) => Observable<Vec<Option<StorageData>>>>;
-      /**
-       * Returns the hash of a child storage entry at a block state
-       **/
-      getStorageHash: AugmentedRpc<(childKey: PrefixedStorageKey | string | Uint8Array, key: StorageKey | string | Uint8Array | any, at?: Hash | string | Uint8Array) => Observable<Option<Hash>>>;
-      /**
-       * Returns the size of a child storage entry at a block state
-       **/
-      getStorageSize: AugmentedRpc<(childKey: PrefixedStorageKey | string | Uint8Array, key: StorageKey | string | Uint8Array | any, at?: Hash | string | Uint8Array) => Observable<Option<u64>>>;
     };
     contracts: {
       /**
@@ -351,6 +295,62 @@ declare module '@polkadot/rpc-core/types/jsonrpc' {
        * Subscribes to grandpa justifications
        **/
       subscribeJustifications: AugmentedRpc<() => Observable<JustificationNotification>>;
+    };
+    chain: {
+      /**
+       * Get header and body of a relay chain block
+       **/
+      getBlock: AugmentedRpc<(hash?: BlockHash | string | Uint8Array) => Observable<SignedBlock>>;
+      /**
+       * Get the block hash for a specific block
+       **/
+      getBlockHash: AugmentedRpc<(blockNumber?: BlockNumber | AnyNumber | Uint8Array) => Observable<BlockHash>>;
+      /**
+       * Get hash of the last finalized block in the canon chain
+       **/
+      getFinalizedHead: AugmentedRpc<() => Observable<BlockHash>>;
+      /**
+       * Retrieves the header for a specific block
+       **/
+      getHeader: AugmentedRpc<(hash?: BlockHash | string | Uint8Array) => Observable<Header>>;
+      /**
+       * Retrieves the newest header via subscription
+       **/
+      subscribeAllHeads: AugmentedRpc<() => Observable<Header>>;
+      /**
+       * Retrieves the best finalized header via subscription
+       **/
+      subscribeFinalizedHeads: AugmentedRpc<() => Observable<Header>>;
+      /**
+       * Retrieves the best header via subscription
+       **/
+      subscribeNewHeads: AugmentedRpc<() => Observable<Header>>;
+    };
+    childstate: {
+      /**
+       * Returns the keys with prefix from a child storage, leave empty to get all the keys
+       **/
+      getKeys: AugmentedRpc<(childKey: PrefixedStorageKey | string | Uint8Array, prefix: StorageKey | string | Uint8Array | any, at?: Hash | string | Uint8Array) => Observable<Vec<StorageKey>>>;
+      /**
+       * Returns the keys with prefix from a child storage with pagination support
+       **/
+      getKeysPaged: AugmentedRpc<(childKey: PrefixedStorageKey | string | Uint8Array, prefix: StorageKey | string | Uint8Array | any, count: u32 | AnyNumber | Uint8Array, startKey?: StorageKey | string | Uint8Array | any, at?: Hash | string | Uint8Array) => Observable<Vec<StorageKey>>>;
+      /**
+       * Returns a child storage entry at a specific block state
+       **/
+      getStorage: AugmentedRpc<(childKey: PrefixedStorageKey | string | Uint8Array, key: StorageKey | string | Uint8Array | any, at?: Hash | string | Uint8Array) => Observable<Option<StorageData>>>;
+      /**
+       * Returns child storage entries for multiple keys at a specific block state
+       **/
+      getStorageEntries: AugmentedRpc<(childKey: PrefixedStorageKey | string | Uint8Array, keys: Vec<StorageKey> | (StorageKey | string | Uint8Array | any)[], at?: Hash | string | Uint8Array) => Observable<Vec<Option<StorageData>>>>;
+      /**
+       * Returns the hash of a child storage entry at a block state
+       **/
+      getStorageHash: AugmentedRpc<(childKey: PrefixedStorageKey | string | Uint8Array, key: StorageKey | string | Uint8Array | any, at?: Hash | string | Uint8Array) => Observable<Option<Hash>>>;
+      /**
+       * Returns the size of a child storage entry at a block state
+       **/
+      getStorageSize: AugmentedRpc<(childKey: PrefixedStorageKey | string | Uint8Array, key: StorageKey | string | Uint8Array | any, at?: Hash | string | Uint8Array) => Observable<Option<u64>>>;
     };
     mmr: {
       /**

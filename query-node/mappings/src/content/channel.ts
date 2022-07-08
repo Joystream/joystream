@@ -156,7 +156,11 @@ export async function content_ChannelAssetsRemoved({ store, event }: EventContex
       id: In(Array.from(dataObjectIds).map((item) => item.toString())),
     },
   })
-  await Promise.all(assets.map((a) => unsetAssetRelations(store, a)))
+
+  for (const asset of assets) {
+    await unsetAssetRelations(store, asset)
+  }
+
   logger.info('Channel assets have been removed', { ids: dataObjectIds.toJSON() })
 }
 

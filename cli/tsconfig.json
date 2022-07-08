@@ -8,13 +8,11 @@
     "strict": true,
     "target": "es2017",
     "esModuleInterop": true,
-    "types" : [ "node" ],
+    "types": ["node"],
     "noUnusedLocals": true,
     "baseUrl": ".",
     "resolveJsonModule": true,
     "skipLibCheck": true
   },
-  "include": [
-    "src/**/*"
-  ]
+  "include": ["src/**/*"]
 }

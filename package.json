@@ -42,10 +42,16 @@
     "typescript": "^4.4.3",
     "bn.js": "^5.2.1",
     "rxjs": "^7.4.0",
-    "typeorm": "https://github.com/Joystream/typeorm/releases/download/0.3.5/typeorm-v0.3.5.tgz",
     "pg": "^8.4.0",
     "chalk": "^4.0.0",
-    "@types/bn.js": "^5.1.0"
+    "@types/bn.js": "^5.1.0",
+    "typeorm": "https://github.com/Joystream/typeorm/releases/download/0.3.5/typeorm-v0.3.5.tgz",
+    "rxjs": "^7.4.0",
+    "pg": "^8.4.0",
+    "@types/bn.js": "^5.1.0",
+    "bn.js": "^5.2.0",
+    "graphql": "^14.7.0",
+    "chalk": "^4.0.0"
   },
   "devDependencies": {
     "eslint": "^7.25.0",

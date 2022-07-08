@@ -1,7 +1,7 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
+import { EventContext, StoreContext, DatabaseManager, SubstrateEvent, FindOneOptions } from '@joystream/hydra-common'
 
 import { StorageWorkingGroup as WorkingGroups } from '../generated/types'
 import {
@@ -15,7 +15,7 @@ import {
   OpeningMetadata,
   WorkingGroupMetadataAction,
 } from '@joystream/metadata-protobuf'
-import { Bytes } from '@polkadot/types'
+import { Bytes, Vec } from '@polkadot/types'
 import {
   deserializeMetadata,
   bytesToString,
@@ -82,6 +82,7 @@ import {
   LeaderSetEvent,
   WorkerStatusLeaving,
 } from 'query-node/dist/model'
+import { ApplicationId } from '@joystream/types/augment/all/types'
 import { createType } from '@joystream/types'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { isSet } from '@joystream/metadata-protobuf/utils'
@@ -273,7 +274,9 @@ async function handleRemoveUpcomingOpeningAction(
   action: IRemoveUpcomingOpening
 ): Promise<UpcomingOpeningRemoved | InvalidActionMetadata> {
   const { id } = action
-  const upcomingOpening = await store.get(UpcomingWorkingGroupOpening, { where: { id } })
+  const upcomingOpening = await store.get(UpcomingWorkingGroupOpening, {
+    where: { id },
+  } as FindOneOptions<UpcomingWorkingGroupOpening>)
   let result: UpcomingOpeningRemoved | InvalidActionMetadata
   if (upcomingOpening) {
     result = new UpcomingOpeningRemoved()
@@ -391,13 +394,8 @@ function isWorkerActive(worker: Worker): boolean {
 
 // Mapping functions
 export async function workingGroups_OpeningAdded({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [
-    openingRuntimeId,
-    metadataBytes,
-    openingType,
-    stakePolicy,
-    optRewardPerBlock,
-  ] = new WorkingGroups.OpeningAddedEvent(event).params
+  const [openingRuntimeId, metadataBytes, openingType, stakePolicy, optRewardPerBlock] =
+    new WorkingGroups.OpeningAddedEvent(event).params
   const group = await getWorkingGroup(store, event)
   const eventTime = new Date(event.blockTimestamp)
 
@@ -489,16 +487,18 @@ export async function workingGroups_LeaderSet({ store, event }: EventContext & S
 export async function workingGroups_OpeningFilled({ store, event }: EventContext & StoreContext): Promise<void> {
   const eventTime = new Date(event.blockTimestamp)
 
-  const [openingRuntimeId, applicationIdToWorkerIdMap, applicationIdsSet] = new WorkingGroups.OpeningFilledEvent(
-    event
-  ).params
+  const [openingRuntimeId, applicationIdToWorkerIdMap, applicationIdsSet] = new WorkingGroups.OpeningFilledEvent(event)
+    .params
 
   const group = await getWorkingGroup(store, event)
   const opening = await getOpening(store, `${group.name}-${openingRuntimeId.toString()}`, [
     'applications',
     'applications.applicant',
   ])
-  const acceptedApplicationIds = createType('Vec<u64>', applicationIdsSet.toHex() as any)
+  const acceptedApplicationIds = createType(
+    'Vec<u64>',
+    applicationIdsSet.toHex() as any
+  )
 
   // Save the event
   const openingFilledEvent = new OpeningFilledEvent({

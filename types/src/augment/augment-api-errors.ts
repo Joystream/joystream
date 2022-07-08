@@ -195,37 +195,6 @@ declare module '@polkadot/api-base/types/errors' {
        * A Channel or Video Category does not exist.
        **/
       CategoryDoesNotExist: AugmentedError<ApiType>;
-      ChannelAgentInsufficientPermissions: AugmentedError<ApiType>;
-      /**
-       * Unexpected runtime state: missing channel bag during delete_channel attempt
-       **/
-      ChannelBagMissing: AugmentedError<ApiType>;
-      /**
-       * Channel cashouts are currently disabled
-       **/
-      ChannelCashoutsDisabled: AugmentedError<ApiType>;
-      /**
-       * Channel Contains Assets
-       **/
-      ChannelContainsAssets: AugmentedError<ApiType>;
-      /**
-       * Channel Contains Video
-       **/
-      ChannelContainsVideos: AugmentedError<ApiType>;
-      /**
-       * Channel does not exist
-       **/
-      ChannelDoesNotExist: AugmentedError<ApiType>;
-      /**
-       * Operation cannot be executed, because this channel feature has been paused by a curator
-       **/
-      ChannelFeaturePaused: AugmentedError<ApiType>;
-      ChannelNftDailyLimitExceeded: AugmentedError<ApiType>;
-      ChannelNftWeeklyLimitExceeded: AugmentedError<ApiType>;
-      /**
-       * Invalid extrinsic call: Channel state bloat bond changed.
-       **/
-      ChannelStateBloatBondChanged: AugmentedError<ApiType>;
       /**
        * Creator token was already issued for this channel
        **/
@@ -292,6 +261,37 @@ declare module '@polkadot/api-base/types/errors' {
       FeatureNotImplemented: AugmentedError<ApiType>;
       GlobalNftDailyLimitExceeded: AugmentedError<ApiType>;
       GlobalNftWeeklyLimitExceeded: AugmentedError<ApiType>;
+      ChannelAgentInsufficientPermissions: AugmentedError<ApiType>;
+      /**
+       * Unexpected runtime state: missing channel bag during delete_channel attempt
+       **/
+      ChannelBagMissing: AugmentedError<ApiType>;
+      /**
+       * Channel cashouts are currently disabled
+       **/
+      ChannelCashoutsDisabled: AugmentedError<ApiType>;
+      /**
+       * Channel Contains Assets
+       **/
+      ChannelContainsAssets: AugmentedError<ApiType>;
+      /**
+       * Channel Contains Video
+       **/
+      ChannelContainsVideos: AugmentedError<ApiType>;
+      /**
+       * Channel does not exist
+       **/
+      ChannelDoesNotExist: AugmentedError<ApiType>;
+      /**
+       * Operation cannot be executed, because this channel feature has been paused by a curator
+       **/
+      ChannelFeaturePaused: AugmentedError<ApiType>;
+      ChannelNftDailyLimitExceeded: AugmentedError<ApiType>;
+      ChannelNftWeeklyLimitExceeded: AugmentedError<ApiType>;
+      /**
+       * Invalid extrinsic call: Channel state bloat bond changed.
+       **/
+      ChannelStateBloatBondChanged: AugmentedError<ApiType>;
       /**
        * Insufficient balance
        **/
@@ -1294,13 +1294,13 @@ declare module '@polkadot/api-base/types/errors' {
     };
     grandpa: {
       /**
-       * Attempt to signal GRANDPA change with one already pending.
-       **/
-      ChangePending: AugmentedError<ApiType>;
-      /**
        * A given equivocation report is valid but already previously reported.
        **/
       DuplicateOffenceReport: AugmentedError<ApiType>;
+      /**
+       * Attempt to signal GRANDPA change with one already pending.
+       **/
+      ChangePending: AugmentedError<ApiType>;
       /**
        * An equivocation proof provided as part of an equivocation report is invalid.
        **/
@@ -2133,7 +2133,6 @@ declare module '@polkadot/api-base/types/errors' {
        * Insufficient funds for 'Update Working Group Budget' proposal execution
        **/
       InsufficientFundsForBudgetUpdate: AugmentedError<ApiType>;
-      InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout: AugmentedError<ApiType>;
       /**
        * Invalid council election parameter - announcing_period
        **/
@@ -2178,6 +2177,7 @@ declare module '@polkadot/api-base/types/errors' {
        * Repeated account in 'Funding Request' proposal.
        **/
       InvalidFundingRequestProposalRepeatedAccount: AugmentedError<ApiType>;
+      InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout: AugmentedError<ApiType>;
       /**
        * Invalid 'set lead proposal' parameter - proposed lead cannot be a councilor
        **/

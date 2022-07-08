@@ -1,4 +1,4 @@
-import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
+import { DatabaseManager, EventContext, StoreContext, SubstrateEvent, FindOneOptions } from '@joystream/hydra-common'
 import { BountyMetadata, BountyWorkData } from '@joystream/metadata-protobuf'
 import {
   AssuranceContractType,
@@ -49,7 +49,7 @@ import { scheduleAtBlock } from './scheduler'
  */
 
 async function getBounty(store: DatabaseManager, bountyId: BountyId | string, relations?: string[]): Promise<Bounty> {
-  const bounty = await store.get(Bounty, { where: { id: bountyId }, relations })
+  const bounty = await store.get(Bounty, { where: { id: bountyId }, relations } as FindOneOptions<Bounty>)
   if (!bounty) {
     throw new Error(`Bounty not found by id: ${bountyId}`)
   }
@@ -62,12 +62,13 @@ function getContribution(
   contributorId: string | undefined
 ): Promise<BountyContribution | undefined> {
   return store.get(BountyContribution, {
-    where: { bounty: { id: bountyId }, contributor: { id: contributorId ?? null } },
+    // where: { bounty: { id: bountyId.toString() }, contributor: { id: contributorId ?? null } },
+    where: { bounty: { id: bountyId.toString() }, contributor: { id: contributorId } }, // TODO: check this is ok
   })
 }
 
 async function getEntry(store: DatabaseManager, entryId: EntryId): Promise<BountyEntry> {
-  const entry = await store.get(BountyEntry, { where: { id: entryId } })
+  const entry = await store.get(BountyEntry, { where: { id: entryId.toString() } })
   if (!entry) {
     throw new Error(`Entry not found by id: ${entryId}`)
   }

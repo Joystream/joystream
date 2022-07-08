@@ -461,7 +461,7 @@ export class Api {
         )}. ` + `Expected: ${expectedCount}, Got: ${events.length}`
       )
     }
-    return (events.sort((a, b) => new BN(a.index).cmp(new BN(b.index))) as unknown) as EventType<S, M>[]
+    return events.sort((a, b) => new BN(a.index).cmp(new BN(b.index))) as unknown as EventType<S, M>[]
   }
 
   public async getEventDetails<S extends EventSection, M extends EventMethod<S>>(
@@ -883,9 +883,7 @@ export class Api {
     return boundaries
   }
 
-  async createOpenAuctionParameters(
-    whitelist: number[] = []
-  ): Promise<{
+  async createOpenAuctionParameters(whitelist: number[] = []): Promise<{
     auctionParams: OpenAuctionParams
     startingPrice: BN
     minimalBidStep: BN
@@ -911,9 +909,7 @@ export class Api {
     }
   }
 
-  async createEnglishAuctionParameters(
-    whitelist: number[] = []
-  ): Promise<{
+  async createEnglishAuctionParameters(whitelist: number[] = []): Promise<{
     auctionParams: EnglishAuctionParams
     startingPrice: BN
     minimalBidStep: BN

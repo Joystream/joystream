@@ -2,7 +2,6 @@
 
 The types package provides types and api augmentation for `@polkadot/api` and some useful reusable functionality related to Joystream runtime types.
 
-
 ## Installation
 
 Add the package as a dependency in your project.

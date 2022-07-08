@@ -74,8 +74,7 @@ export default class CreateVideoCommand extends UploadCommandBase {
     const videoCreationParameters = createType('PalletContentVideoCreationParametersRecord', {
       assets,
       meta: metadataToBytes(VideoMetadata, meta),
-      }
-    )
+    })
 
     this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), metadata: meta }))
 
