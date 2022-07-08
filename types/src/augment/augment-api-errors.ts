@@ -177,7 +177,7 @@ declare module '@polkadot/api-base/types/errors' {
       /**
        * Auction buy now is less then starting price
        **/
-      BuyNowIsLessThenStartingPrice: AugmentedError<ApiType>;
+      BuyNowMustBeGreaterThanStartingPrice: AugmentedError<ApiType>;
       /**
        * Cannot directly withdraw funds from a channel account when the channel has
        * a creator token issued
