@@ -550,8 +550,8 @@ pub fn ensure_actor_authorized_to_cancel_channel_transfer<T: Config>(
     let sender = ensure_signed(origin)?;
     ensure_actor_has_channel_permissions::<T>(
         &sender,
-        &actor,
-        &channel,
+        actor,
+        channel,
         &[ChannelActionPermission::TransferChannel],
     )
 }

@@ -199,7 +199,7 @@ impl CreateChannelFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender.clone());
+        let origin = Origin::signed(self.sender);
         let balance_pre = self.get_balance();
         let channel_id = Content::next_channel_id();
         let channel_bag_id = Content::bag_id_for_channel(&channel_id);
@@ -397,7 +397,7 @@ impl CreateVideoFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender.clone());
+        let origin = Origin::signed(self.sender);
         let balance_pre = self.get_balance();
         let channel_bag_id = Content::bag_id_for_channel(&self.channel_id);
         let video_id = Content::next_video_id();
@@ -1013,7 +1013,7 @@ pub trait ChannelDeletion {
 
     fn call_and_assert(&self, expected_result: DispatchResult) {
         let balance_pre = self.get_balance();
-        let bag_id_for_channel = Content::bag_id_for_channel(&self.get_channel_id());
+        let bag_id_for_channel = Content::bag_id_for_channel(self.get_channel_id());
 
         let objects_state_bloat_bond =
             storage::DataObjectsById::<Test>::iter_prefix(&bag_id_for_channel)
@@ -1997,7 +1997,7 @@ impl WithdrawFromChannelBalanceFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender.clone());
+        let origin = Origin::signed(self.sender);
 
         let channel_pre = Content::channel_by_id(self.channel_id);
         let channel_balance_pre = channel_reward_account_balance(self.channel_id);
@@ -2104,7 +2104,7 @@ impl ClaimAndWithdrawChannelRewardFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender.clone());
+        let origin = Origin::signed(self.sender);
         let channel_pre = Content::channel_by_id(&self.item.channel_id);
         let channel_balance_pre = channel_reward_account_balance(self.item.channel_id);
         let expected_dest = match channel_pre.owner {
@@ -2126,12 +2126,8 @@ impl ClaimAndWithdrawChannelRewardFixture {
             build_merkle_path_helper(&self.payments, DEFAULT_PROOF_INDEX)
         };
 
-        let actual_result = Content::claim_and_withdraw_channel_reward(
-            origin,
-            self.actor.clone(),
-            proof.clone(),
-            self.item.clone(),
-        );
+        let actual_result =
+            Content::claim_and_withdraw_channel_reward(origin, self.actor, proof, self.item);
 
         let channel_post = Content::channel_by_id(&self.item.channel_id);
         let channel_balance_post = channel_reward_account_balance(self.item.channel_id);
@@ -2743,13 +2739,11 @@ impl UpdateChannelStateBloatBondFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender.clone());
+        let origin = Origin::signed(self.sender);
         let channel_state_bloat_bond_pre = Content::channel_state_bloat_bond_value();
 
-        let actual_result = Content::update_channel_state_bloat_bond(
-            origin,
-            self.new_channel_state_bloat_bond.clone(),
-        );
+        let actual_result =
+            Content::update_channel_state_bloat_bond(origin, self.new_channel_state_bloat_bond);
 
         let channel_state_bloat_bond_post = Content::channel_state_bloat_bond_value();
 
@@ -2796,11 +2790,11 @@ impl UpdateVideoStateBloatBondFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender.clone());
+        let origin = Origin::signed(self.sender);
         let video_state_bloat_bond_pre = Content::video_state_bloat_bond_value();
 
         let actual_result =
-            Content::update_video_state_bloat_bond(origin, self.new_video_state_bloat_bond.clone());
+            Content::update_video_state_bloat_bond(origin, self.new_video_state_bloat_bond);
 
         let video_state_bloat_bond_post = Content::video_state_bloat_bond_value();
 
@@ -2995,7 +2989,7 @@ impl InitializeChannelTransferFixture {
         let actual_result = Content::initialize_channel_transfer(
             self.origin.clone().into(),
             self.channel_id,
-            self.actor.clone(),
+            self.actor,
             self.transfer_params.clone(),
         );
 
@@ -5392,15 +5386,15 @@ pub fn run_all_fixtures_with_contexts(
         ChannelAgentRemarkFixture::default()
             .with_sender(sender)
             .with_actor(actor)
-            .call_and_assert(expected_err.clone());
+            .call_and_assert(expected_err);
         InitializeChannelTransferFixture::default()
             .with_sender(sender)
             .with_actor(actor)
-            .call_and_assert(expected_err.clone());
+            .call_and_assert(expected_err);
         CancelChannelTransferFixture::default()
             .with_sender(sender)
             .with_actor(actor)
-            .call_and_assert(expected_err.clone());
+            .call_and_assert(expected_err);
 
         ClaimChannelRewardFixture::default()
             .with_sender(sender)

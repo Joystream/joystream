@@ -1746,7 +1746,7 @@ impl<T: Config> Module<T> {
         Self::ensure_can_moderate_category(&account_id, actor, category_id)?;
 
         // Make sure post exists and is mutable
-        let post = Self::ensure_post_is_mutable(&category_id, &thread_id, &post_id)?;
+        let post = Self::ensure_post_is_mutable(category_id, thread_id, post_id)?;
 
         Ok(post)
     }
@@ -1760,7 +1760,7 @@ impl<T: Config> Module<T> {
         hide: bool,
     ) -> Result<Post<ForumUserId<T>, T::ThreadId, T::Hash, BalanceOf<T>, T::BlockNumber>, Error<T>>
     {
-        let post = Self::ensure_post_is_mutable(&category_id, &thread_id, &post_id)?;
+        let post = Self::ensure_post_is_mutable(category_id, thread_id, post_id)?;
 
         // Check that account is forum member
         Self::ensure_is_forum_user(account_id, forum_user_id)?;

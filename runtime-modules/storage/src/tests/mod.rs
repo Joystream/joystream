@@ -4578,7 +4578,7 @@ fn update_families_in_dynamic_bag_creation_policy_fails_with_too_many_buckets_pe
 
         UpdateFamiliesInDynamicBagCreationPolicyFixture::new()
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
-            .with_families(families.clone())
+            .with_families(families)
             .with_dynamic_bag_type(dynamic_bag_type)
             .call_and_assert(Err(
                 Error::<Test>::NumberOfDistributionBucketsOutsideOfAllowedContraints.into(),
@@ -4607,7 +4607,7 @@ fn update_families_in_dynamic_bag_creation_policy_fails_with_not_enough_buckets_
 
         UpdateFamiliesInDynamicBagCreationPolicyFixture::new()
             .with_origin(RawOrigin::Signed(DISTRIBUTION_WG_LEADER_ACCOUNT_ID))
-            .with_families(families.clone())
+            .with_families(families)
             .with_dynamic_bag_type(dynamic_bag_type)
             .call_and_assert(Err(
                 Error::<Test>::NumberOfDistributionBucketsOutsideOfAllowedContraints.into(),
