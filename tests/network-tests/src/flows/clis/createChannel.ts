@@ -39,7 +39,6 @@ export default async function createChannel({ api, query }: FlowProps): Promise<
     description: 'This is a test channel',
     isPublic: true,
     language: 'en',
-    rewardAccount: channelOwnerKeypair.key.address,
   }
 
   const channelId = await joystreamCli.createChannel(channelInput, [
