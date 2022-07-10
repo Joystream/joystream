@@ -169,7 +169,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = Module::<T>::get_update_working_group_budget_weight(&balance_kind)]
+        #[weight = Module::<T>::get_update_working_group_budget_weight(balance_kind)]
         pub fn update_working_group_budget(
             origin,
             working_group: WorkingGroup,

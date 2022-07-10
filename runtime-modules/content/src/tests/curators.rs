@@ -152,7 +152,7 @@ fn curator_group_management() {
             let allowed_actions: Vec<ContentModerationAction>;
             let permissions_for_level = permissions.get(&i);
             if let Some(permissions_for_level) = permissions_for_level {
-                allowed_actions = Vec::from_iter(permissions_for_level.iter().map(|p| p.clone()));
+                allowed_actions = Vec::from_iter(permissions_for_level.iter().cloned());
             } else {
                 allowed_actions = vec![]
             }

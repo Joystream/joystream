@@ -2,7 +2,7 @@ use super::initial_test_ext;
 use crate::constants::currency::{CENTS, DOLLARS};
 use crate::Runtime;
 use crate::MAXIMUM_BLOCK_WEIGHT;
-use pallet_transaction_payment::Module as TransactionPayment;
+use pallet_transaction_payment::Pallet as TransactionPayment;
 
 // TODO: Fix Fee Tests
 #[ignore]

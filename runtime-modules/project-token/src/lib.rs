@@ -32,7 +32,6 @@ mod events;
 pub mod traits;
 pub mod types;
 
-// #[cfg(test)]
 mod tests;
 
 // crate imports
@@ -506,7 +505,7 @@ decl_module! {
             if let Some(dst) = sale.earnings_destination.as_ref() {
                 Self::transfer_joy(
                     &sender,
-                    &dst,
+                    dst,
                     transfer_amount
                 );
             }
@@ -1297,7 +1296,7 @@ impl<T: Config> Module<T> {
 
         // compute bloat bond
         let cumulative_bloat_bond = Self::compute_bloat_bond(&validated_transfers);
-        Self::ensure_can_transfer_joy(bloat_bond_payer, &[(&treasury, cumulative_bloat_bond)])?;
+        Self::ensure_can_transfer_joy(bloat_bond_payer, &[(treasury, cumulative_bloat_bond)])?;
 
         Ok(validated_transfers)
     }
@@ -1351,7 +1350,7 @@ impl<T: Config> Module<T> {
                     Validated::<_>::NonExisting(dst_member_id) => {
                         Self::do_insert_new_account_for_token(
                             token_id,
-                            &dst_member_id,
+                            dst_member_id,
                             if let Some(vs) = vesting_schedule {
                                 AccountDataOf::<T>::new_with_vesting_and_bond(
                                     VestingSource::IssuerTransfer(0),
@@ -1615,7 +1614,7 @@ impl<T: Config> Module<T> {
     pub(crate) fn transfer_joy(src: &T::AccountId, dst: &T::AccountId, amount: JoyBalanceOf<T>) {
         let _ = <Joy<T> as Currency<T::AccountId>>::transfer(
             src,
-            &dst,
+            dst,
             amount,
             ExistenceRequirement::KeepAlive,
         );
@@ -1651,7 +1650,7 @@ impl<T: Config> Module<T> {
                 AccountDataOf::<T>::new_with_amount_and_bond(allocation.amount, bloat_bond)
             };
 
-            Self::do_insert_new_account_for_token(token_id, &destination, account_data);
+            Self::do_insert_new_account_for_token(token_id, destination, account_data);
         }
     }
 

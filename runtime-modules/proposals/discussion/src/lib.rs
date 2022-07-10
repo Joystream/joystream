@@ -61,7 +61,7 @@ use frame_support::sp_runtime::SaturatedConversion;
 use frame_support::traits::Get;
 use frame_support::traits::{Currency, ExistenceRequirement};
 use frame_support::{
-    decl_error, decl_event, decl_module, decl_storage, ensure, weights::Weight, PalletId, Parameter,
+    decl_error, decl_event, decl_module, decl_storage, ensure, PalletId, Parameter,
 };
 use sp_runtime::traits::{AccountIdConversion, Saturating};
 use sp_std::clone::Clone;

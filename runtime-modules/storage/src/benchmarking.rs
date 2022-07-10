@@ -7,7 +7,6 @@ use frame_support::traits::{Currency, Get};
 use frame_system::{EventRecord, RawOrigin};
 use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::Bounded;
-use sp_std::boxed::Box;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::iter;
@@ -1389,7 +1388,6 @@ benchmarks! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::tests::mocks::{build_test_externalities, Test};
     use frame_support::assert_ok;
     type Storage = crate::Module<Test>;

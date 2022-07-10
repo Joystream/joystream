@@ -963,8 +963,8 @@ benchmarks_instance! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::tests::{build_test_externalities, Test};
+    use crate::Module as WorkingGroup;
     use frame_support::assert_ok;
 
     #[test]
