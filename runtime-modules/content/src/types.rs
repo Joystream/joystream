@@ -700,6 +700,7 @@ impl<ChannelPayoutsPayloadParameters, Balance, Hash> Default
             channel_cashouts_enabled: None,
         }
     }
+
 }
 
 pub type UpdateChannelPayoutsParameters<T> = UpdateChannelPayoutsParametersRecord<

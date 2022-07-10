@@ -368,6 +368,10 @@ parameter_types! {
         block_number_period: 1000,
         limit: 500,
     };
+
+    pub const MinimumCashoutAllowed: u64 = 1;
+
+    pub const MaximumCashoutAllowed: u64 = 1_000_000;
 }
 
 impl Config for Test {
@@ -424,6 +428,12 @@ impl Config for Test {
 
     /// Transfer Id
     type TransferId = u64;
+
+    /// Minimum cashout allowed limit
+    type MinimumCashoutAllowed = MinimumCashoutAllowed;
+
+    /// Max cashout allowed limit
+    type MaximumCashoutAllowed = MaximumCashoutAllowed;
 }
 
 pub const COUNCIL_BUDGET_ACCOUNT_ID: u128 = 90000000;
