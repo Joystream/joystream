@@ -4,54 +4,57 @@ https://github.com/Joystream/community-repo/issues/781
 
 ## Tx Support
 
-| Tx                                        | CLI Command            | Useful | Pioneer Support | SP / DP Support | Uses QN |
-| ----------------------------------------- | ---------------------- | ------ | --------------- | --------------- | ------- |
-| balances.Transfer                         | account:transferTokens | X      | X               |                 |         |
-| content.addCuratorToGroup                 |                        |        |                 |                 |         |
-| content.channelById                       |                        |        |                 |                 |         |
-| content.createChannel                     |                        |        |                 |                 |         |
-| content.createChannelCategory             |                        |        |                 |                 |         |
-| content.createCuratorGroup                |                        |        |                 |                 |         |
-| content.createVideo                       |                        |        |                 |                 |         |
-| content.createVideoCategory               |                        |        |                 |                 |         |
-| content.curatorGroupById                  |                        |        |                 |                 |         |
-| content.deleteChannel                     |                        |        |                 |                 |         |
-| content.deleteChannelCategory             |                        |        |                 |                 |         |
-| content.deleteVideo                       |                        |        |                 |                 |         |
-| content.deleteVideoCategory               |                        |        |                 |                 |         |
-| content.removeChannelAssets               |                        |        |                 |                 |         |
-| content.removeCuratorFromGroup            |                        |        |                 |                 |         |
-| content.setCuratorGroupStatus             |                        |        |                 |                 |         |
-| content.setFeaturedVideos                 |                        |        |                 |                 |         |
-| content.updateChannel                     |                        |        |                 |                 |         |
-| content.updateChannelCategory             |                        |        |                 |                 |         |
-| content.updateChannelCensorshipStatus     |                        |        |                 |                 |         |
-| content.updateChannelModerators           |                        |        |                 |                 |         |
-| content.updateVideo                       |                        |        |                 |                 |         |
-| content.updateVideoCategory               |                        |        |                 |                 |         |
-| content.updateVideoCensorshipStatus       |                        |        |                 |                 |         |
-| content.videoById                         |                        |        |                 |                 |         |
-| forum.addPost                             |                        |        |                 |                 |         |
-| query.forum.categoryById                  |                        |        |                 |                 |         |
-| query.forum.categoryById                  |                        |        |                 |                 |         |
-| forum.createCategory                      |                        |        |                 |                 |         |
-| forum.createThread                        |                        |        |                 |                 |         |
-| forum.deleteCategory                      |                        |        |                 |                 |         |
-| forum.moderatePost                        |                        |        |                 |                 |         |
-| forum.moderateThread                      |                        |        |                 |                 |         |
-| forum.moveThreadToCategory                |                        |        |                 |                 |         |
-| forum.posts                               |                        |        |                 |                 |         |
-| forum.setStickiedThreads                  |                        |        |                 |                 |         |
-| forum.threadById.entries(categoryId)      |                        |        |                 |                 |         |
-| forum.updateCategoryArchivalStatus        |                        |        |                 |                 |         |
-| forum.updateCategoryMembershipOfModerator |                        |        |                 |                 |         |
-| members.addStakingAccountCandidate        |                        |        |                 |                 |         |
-| query.members.membershipPrice             |                        |        |                 |                 |         |
-| members.addStakingAccountCandidat         |                        |        |                 |                 |         |
-| members.buyMembership                     |                        |        |                 |                 |         |
-| query.members.membershipById              |                        |        |                 |                 |         |
-| members.updateProfile                     |                        |        |                 |                 |         |
-| members.updateAccounts                    |                        |        |                 |                 |         |
+| Tx                                        | CLI Command                           | Useful | Pioneer Support | SP / DP Support | Uses QN |
+| ----------------------------------------- | ------------------------------------- | ------ | --------------- | --------------- | ------- |
+| balances.Transfer                         | account:transferTokens                | X      | X               |                 |         |
+| content.addCuratorToGroup                 | addCuratorToGroup                     | X      |                 |                 |         |
+| content.channelById                       | channel                               | X      |                 |                 |         |
+| content.channelById                       | channels                              | X      |                 |                 |         |
+| content.createChannel                     | createChannel                         | X      |                 |                 |         |
+| content.createChannelCategory             | createChannelCategory                 | X      |                 |                 |         |
+| content.createCuratorGroup                | createCuratorGroup                    | X      |                 |                 |         |
+| content.createVideo                       | createVideo                           | X      |                 |                 |         |
+| content.createVideoCategory               | createVideoCategory                   | X      |                 |                 |         |
+| content.curatorGroupById                  | curatorGroup                          | X      |                 |                 |         |
+| content.curatorGroupById                  | curatorGroups                         | X      |                 |                 |         |
+| content.deleteChannel                     | deleteChannel                         | X      |                 |                 |         |
+| content.deleteChannelCategory             | deleteChannelCategory                 | X      |                 |                 |         |
+| content.deleteVideo                       | deleteVideo                           | X      |                 |                 |         |
+| content.deleteVideoCategory               | deleteVideoCategory                   | X      |                 |                 |         |
+| content.removeChannelAssets               | removeChannelAssets                   | X      |                 |                 |         |
+| content.removeCuratorFromGroup            | removeCuratorFromGroup                | X      |                 |                 |         |
+| content.setCuratorGroupStatus             | content:setCuratorGroupStatus         | X      |                 |                 |         |
+| content.setFeaturedVideos                 | content:setFeaturedVideos             | X      |                 |                 |         |
+| content.updateChannel                     | content:updateChannel                 | X      |                 |                 |         |
+| content.updateChannelCategory             | content:updateChannelCategory         | X      |                 |                 |         |
+| content.updateChannelCensorshipStatus     | content:updateChannelCensorshipStatus | X      |                 |                 |         |
+| content.updateChannelModerators           | content:updateChannelModerators       | X      |                 |                 |         |
+| content.updateVideo                       | content:updateVideo                   | X      |                 |                 |         |
+| content.updateVideoCategory               | content:updateVideoCategory           | X      |                 |                 |         |
+| content.updateVideoCensorshipStatus       | content:updateVideoCensorshipStatus   | X      |                 |                 |         |
+| content.videoById                         |                                       | X      |                 |                 |         |
+| forum.addPost                             |                                       | X      |                 |                 |         |
+| query.forum.categoryById                  |                                       | X      |                 |                 |         |
+| query.forum.categoryById                  |                                       | X      |                 |                 |         |
+| forum.createCategory                      |                                       | X      |                 |                 |         |
+| forum.createThread                        |                                       | X      |                 |                 |         |
+| forum.deleteCategory                      |                                       | X      |                 |                 |         |
+| forum.moderatePost                        |                                       | X      |                 |                 |         |
+| forum.moderateThread                      |                                       | X      |                 |                 |         |
+| forum.moveThreadToCategory                |                                       | X      |                 |                 |         |
+| forum.posts                               |                                       | X      |                 |                 |         |
+| forum.setStickiedThreads                  |                                       | X      |                 |                 |         |
+| forum.threadById.entries(categoryId)      |                                       | X      |                 |                 |         |
+| forum.updateCategoryArchivalStatus        |                                       | X      |                 |                 |         |
+| forum.updateCategoryMembershipOfModerator |                                       | X      |                 |                 |         |
+| members.addStakingAccountCandidate        |                                       | X      |                 |                 |         |
+| query.members.membershipPrice             |                                       | X      |                 |                 |         |
+| members.addStakingAccountCandidat         |                                       | X      |                 |                 |         |
+| members.buyMembership                     |                                       | X      |                 |                 |         |
+| query.members.membershipById              |                                       | X      |                 |                 |         |
+| members.updateProfile                     |                                       | X      |                 |                 |         |
+| members.updateAccounts                    |                                       | X      |                 |                 |         |
+| staking.validate                          | staking:validate                      | X      | X               | -               | -       |
 
 ## Needed commands
 
@@ -146,27 +149,27 @@ Lists of commands
 | membership     | details                       |                       | query.members.membershipById              | -       | X                 | -           | X          |                 | X               | X      |
 | membership     | update                        |                       | members.updateProfile                     | -       | X                 | -           | X          |                 | X               | X      |
 | membership     | updateAccounts                |                       | members.updateAccounts                    | -       | X                 | -           | X          |                 | X               | X      |
-| staking        | validate                      |                       |                                           |         |                   |             |            |                 |                 |        |
-| working-groups | application                   | WGAPPLICATIONID       |                                           |         |                   |             |            |                 |                 |        |
-| working-groups | apply                         |                       |                                           |         |                   |             |            |                 |                 |        |
-| working-groups | cancelOpening                 | OPENINGID             |                                           |         |                   |             |            |                 |                 |        |
-| working-groups | createOpening                 |                       |                                           |         |                   |             |            |                 |                 |        |
-| working-groups | decreaseWorkerStake           | WORKERID AMOUNT       |                                           |         |                   |             |            |                 |                 |        |
-| working-groups | evictWorker                   | WORKERID              |                                           |         |                   |             |            |                 |                 |        |
-| working-groups | fillOpening                   |                       |                                           |         |                   |             |            |                 |                 |        |
-| working-groups | increaseStake                 | AMOUNT                |                                           |         |                   |             |            |                 |                 |        |
-| working-groups | leaveRole                     |                       |                                           |         |                   |             |            |                 |                 |        |
-| working-groups | opening                       |                       |                                           |         |                   |             |            |                 |                 |        |
-| working-groups | openings                      |                       |                                           |         |                   |             |            |                 |                 |        |
-| working-groups | overview                      |                       |                                           |         |                   |             |            |                 |                 |        |
-| working-groups | removeUpcomingOpening         |                       |                                           |         |                   |             |            |                 |                 |        |
-| working-groups | setDefaultGroup               |                       |                                           |         |                   |             |            |                 |                 |        |
-| working-groups | slashWorker                   | WORKERID AMOUNT       |                                           |         |                   |             |            |                 |                 |        |
-| working-groups | updateGroupMetadata           |                       |                                           |         |                   |             |            |                 |                 |        |
-| working-groups | updateRewardAccount           | [ADDRESS]             |                                           |         |                   |             |            |                 |                 |        |
-| working-groups | updateRoleAccount             | [ADDRESS]             |                                           |         |                   |             |            |                 |                 |        |
-| working-groups | updateRoleStorage             | STORAGE               |                                           |         |                   |             |            |                 |                 |        |
-| working-groups | updateWorkerReward            | WORKERID NEWREWARD    |                                           |         |                   |             |            |                 |                 |        |
+| staking        | validate                      |                       | staking.validate                          | -       | X                 | X           | X          |                 | X               | X      |
+| working-groups | application                   | WGAPPLICATIONID       | working-groups.application                | -       | X                 | X           | X          |                 | X               | X      |
+| working-groups | apply                         |                       | working-groups.apply                      | -       | X                 | X           | X          |                 | X               | X      |
+| working-groups | cancelOpening                 | OPENINGID             | working-groups.cancelOpening              | -       | X                 | -           | X          |                 | X               | X      |
+| working-groups | createOpening                 |                       | working-groups.createOpening              | -       | X                 | X           | X          |                 | X               | X      |
+| working-groups | decreaseWorkerStake           | WORKERID AMOUNT       | working-groups.decreaseWorkerStake        | -       | X                 | -           | X          |                 | X               | X      |
+| working-groups | evictWorker                   | WORKERID              | working-groups.evictWorker                | -       | X                 | -           | X          |                 | X               | X      |
+| working-groups | fillOpening                   |                       | working-groups.fillOpening                | -       | X                 | -           | X          |                 | X               | X      |
+| working-groups | increaseStake                 | AMOUNT                | working-groups.increaseStake              | -       | X                 | X           | X          |                 | X               | X      |
+| working-groups | leaveRole                     |                       | working-groups.leaveRole                  | -       | X                 | X           | X          |                 | X               | X      |
+| working-groups | opening                       |                       | working-groups.opening                    | -       | X                 | -           | X          |                 | X               | X      |
+| working-groups | openings                      |                       | working-groups.openings                   | -       | X                 | -           | X          |                 | X               | X      |
+| working-groups | overview                      |                       | working-groups.overview                   | -       | X                 | -           | X          |                 | X               | X      |
+| working-groups | removeUpcomingOpening         |                       | working-groups.removeUpcomingOpening      | -       | X                 | X           | X          |                 | X               | X      |
+| working-groups | setDefaultGroup               |                       | working-groups.setDefaultGroup            | -       | X                 | -           | X          |                 | X               | X      |
+| working-groups | slashWorker                   | WORKERID AMOUNT       | working-groups.slashWorker                | -       | X                 | -           | X          |                 | X               | X      |
+| working-groups | updateGroupMetadata           |                       | working-groups.updateGroupMetadata        | -       | X                 | -           | X          |                 | X               | X      |
+| working-groups | updateRewardAccount           | [ADDRESS]             | working-groups.updateRewardAccount        |         |                   |             |            |                 |                 |        |
+| working-groups | updateRoleAccount             | [ADDRESS]             | working-groups.updateRoleAccount          |         |                   |             |            |                 |                 |        |
+| working-groups | updateRoleStorage             | STORAGE               | working-groups.updateRoleStorage          |         |                   |             |            |                 |                 |        |
+| working-groups | updateWorkerReward            | WORKERID NEWREWARD    | working-groups.updateWorkerReward         |         |                   |             |            |                 |                 |        |
 | incentives     | councilSpending               |                       | ...                                       | X       |                   |             |            |                 |                 |        |
 | incentives     | distributionStats             |                       |                                           | X       |                   |             |            |                 |                 |        |
 | incentives     | getBountyInfo                 |                       |                                           | X       |                   |             |            |                 |                 |        |
@@ -438,3 +441,17 @@ account:export Export account(s) to given location
 account:forget Forget (remove) account from the list of available accounts
 account:import Import account using JSON backup file
 account:transferTokens Transfer tokens from currently choosen account
+
+# Errors:
+
+1. When command `staking:validate` used twice in a row with same controller account the dev-chain looks broken and prints this error:
+   s
+
+```
+Jul 10 17:40:20.834  INFO 💤 Idle (0 peers), best: #986 (0xb095…1564), finalized #984 (0x91b6…dd6c), ⬇ 0 ⬆ 0
+Jul 10 17:40:24.002  INFO 🙌 Starting consensus session on top of parent 0xb095d57940e8bb0d414b5642f38ca5f275b74e8b4da4d39368fc68bddba01564
+Jul 10 17:40:24.003  INFO 💸 new validator set of size 1 has been elected via ElectionCompute::OnChain for era 2
+Jul 10 17:40:24.004  INFO 🎁 Prepared block for proposing at 987 [hash: 0x1451aa4c8c2bcc1d61df4b0b99e2b73f17b7f452ab22eca6b92a8439ae85ab54; parent_hash: 0xb095…1564; extrinsics (2): [0x072d…ab00, 0xf36c…a6d9]]
+Jul 10 17:40:24.008  INFO 🔖 Pre-sealed block for proposal at 987. Hash now 0x8eb4b23defcdd941d9213636367d2d59d9309063e8043476945128f94007e3c1, previously 0x1451aa4c8c2bcc1d61df4b0b99e2b73f17b7f452ab22eca6b92a8439ae85ab54.
+Jul 10 17:40:24.008  WARN Error with block built on 0xb095d57940e8bb0d414b5642f38ca5f275b74e8b4da4d39368fc68bddba01564: ClientImport("Unexpected epoch change")
+```
