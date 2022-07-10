@@ -2,13 +2,11 @@
 
 use super::*;
 use frame_benchmarking::{account, benchmarks};
-use frame_system::Module as System;
+use frame_system::Pallet as System;
 use frame_system::{EventRecord, RawOrigin};
 use sp_runtime::traits::One;
-use sp_std::boxed::Box;
 use sp_std::convert::TryInto;
 use sp_std::vec;
-use sp_std::vec::Vec;
 
 fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
@@ -115,7 +113,6 @@ benchmarks! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::tests::mocks::{initial_test_ext, Test};
     use frame_support::assert_ok;
     type Utility = crate::Module<Test>;

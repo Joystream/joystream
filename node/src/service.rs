@@ -16,8 +16,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-#![warn(unused_extern_crates)]
-
 //! Service implementation. Specialized wrapper over substrate service.
 
 use crate::node_executor::ExecutorDispatch;
@@ -125,6 +123,7 @@ pub fn create_extrinsic(
     )
 }
 
+#[allow(clippy::type_complexity)]
 /// Creates a new partial node.
 pub fn new_partial(
     config: &Configuration,
@@ -461,6 +460,8 @@ pub fn new_full_base(
 							slot_duration,
 						);
 
+                    // We Have not included transaction_storage pallet in runtime
+                    // are they related?
                     let storage_proof =
                         sp_transaction_storage_proof::registration::new_data_provider(
                             &*client_clone,
@@ -612,7 +613,7 @@ mod tests {
         traits::{Block as BlockT, Header as HeaderT, IdentifyAccount, Verify},
         RuntimeAppPublic,
     };
-    use sp_timestamp;
+
     use std::convert::TryInto;
     use std::{borrow::Cow, sync::Arc};
 
@@ -800,7 +801,7 @@ mod tests {
                 let signer = charlie.clone();
 
                 let function = Call::Balances(BalancesCall::transfer {
-                    dest: to.into(),
+                    dest: to,
                     value: amount,
                 });
 
@@ -839,8 +840,7 @@ mod tests {
                 let signature = raw_payload.using_encoded(|payload| signer.sign(payload));
                 let (function, extra, _) = raw_payload.deconstruct();
                 index += 1;
-                UncheckedExtrinsic::new_signed(function, from.into(), signature.into(), extra)
-                    .into()
+                UncheckedExtrinsic::new_signed(function, from, signature.into(), extra).into()
             },
         );
     }

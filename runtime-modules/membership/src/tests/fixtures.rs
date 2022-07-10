@@ -235,11 +235,11 @@ impl Default for BuyMembershipFixture {
 impl BuyMembershipFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let params = BuyMembershipParameters {
-            root_account: self.root_account.clone(),
-            controller_account: self.controller_account.clone(),
+            root_account: self.root_account,
+            controller_account: self.controller_account,
             handle: self.handle.clone(),
             metadata: self.metadata.clone(),
-            referrer_id: self.referrer_id.clone(),
+            referrer_id: self.referrer_id,
         };
 
         let actual_result = Membership::buy_membership(self.origin.clone().into(), params);
@@ -397,9 +397,9 @@ impl Default for InviteMembershipFixture {
 impl InviteMembershipFixture {
     pub fn get_invite_membership_parameters(&self) -> InviteMembershipParameters<u64, u64> {
         InviteMembershipParameters {
-            inviting_member_id: self.member_id.clone(),
-            root_account: self.root_account.clone(),
-            controller_account: self.controller_account.clone(),
+            inviting_member_id: self.member_id,
+            root_account: self.root_account,
+            controller_account: self.controller_account,
             handle: self.handle.clone(),
             metadata: self.metadata.clone(),
         }

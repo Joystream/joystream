@@ -11,7 +11,6 @@ use frame_support::traits::LockIdentifier;
 use frame_support::{
     parameter_types,
     traits::{ConstU16, ConstU32, ConstU64, EnsureOneOf},
-    weights::Weight,
 };
 pub use frame_system;
 use frame_system::{EnsureRoot, EnsureSigned};
@@ -95,7 +94,7 @@ impl referendum::Config<ReferendumInstance> for Test {
             .iter()
             .map(|item| referendum::OptionResult {
                 option_id: item.option_id,
-                vote_power: item.vote_power.into(),
+                vote_power: item.vote_power,
             })
             .collect();
         <council::Module<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(

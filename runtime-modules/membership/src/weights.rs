@@ -37,6 +37,7 @@
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
 #![allow(unused_imports)]
+#![allow(unused_variables)]
 
 use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
 use sp_std::marker::PhantomData;
@@ -260,7 +261,7 @@ impl WeightInfo for () {
 	fn transfer_invites() -> Weight {
 		0
 	}
-	fn invite_member(i: u32, j: u32, ) -> Weight {
+	fn invite_member(_i: u32, _j: u32, ) -> Weight {
 		0
 	}
 	fn gift_membership(i: u32, j: u32, ) -> Weight {
