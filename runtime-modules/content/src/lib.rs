@@ -3539,10 +3539,16 @@ impl<T: Config> Module<T> {
 
     fn verify_cashout_limits(params: &UpdateChannelPayoutsParameters<T>) -> DispatchResult {
         if let Some(ref min_cashout) = params.min_cashout_allowed {
-            ensure!(*min_cashout >= T::MinimumCashoutAllowedLimit::get(), Error::<T>::MinCashoutValueTooLow);
+            ensure!(
+                *min_cashout >= T::MinimumCashoutAllowedLimit::get(),
+                Error::<T>::MinCashoutValueTooLow
+            );
         }
         if let Some(ref max_cashout) = params.max_cashout_allowed {
-            ensure!(*max_cashout <= T::MaximumCashoutAllowedLimit::get(), Error::<T>::MaxCashoutValueTooHigh);
+            ensure!(
+                *max_cashout <= T::MaximumCashoutAllowedLimit::get(),
+                Error::<T>::MaxCashoutValueTooHigh
+            );
         }
         Ok(())
     }

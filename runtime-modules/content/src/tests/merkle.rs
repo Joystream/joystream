@@ -1034,21 +1034,16 @@ fn unsuccessful_channel_payouts_updat_with_min_cashout_value_below_limit() {
     with_default_mock_builder(|| {
         UpdateChannelPayoutsFixture::default()
             .with_min_cashout_allowed(Some(MinimumCashoutAllowedLimit::get() - 1))
-            .call_and_assert(Err(
-                Error::<Test>::MinCashoutValueTooLow.into(),
-            ));
+            .call_and_assert(Err(Error::<Test>::MinCashoutValueTooLow.into()));
     })
 }
-
 
 #[test]
 fn unsuccessful_channel_payouts_updat_with_max_cashout_value_above_limit() {
     with_default_mock_builder(|| {
         UpdateChannelPayoutsFixture::default()
             .with_max_cashout_allowed(Some(MaximumCashoutAllowedLimit::get() + 1))
-            .call_and_assert(Err(
-                Error::<Test>::MaxCashoutValueTooHigh.into(),
-            ));
+            .call_and_assert(Err(Error::<Test>::MaxCashoutValueTooHigh.into()));
     })
 }
 
