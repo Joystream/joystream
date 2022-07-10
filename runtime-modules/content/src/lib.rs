@@ -140,10 +140,10 @@ pub trait Config:
     >;
 
     /// Minimum cashout allowed limit
-    type MinimumCashoutAllowed: Get<BalanceOf<Self>>;
+    type MinimumCashoutAllowedLimit: Get<BalanceOf<Self>>;
 
     /// Max cashout allowed limit
-    type MaximumCashoutAllowed: Get<BalanceOf<Self>>;
+    type MaximumCashoutAllowedLimit: Get<BalanceOf<Self>>;
 }
 
 decl_storage! {
@@ -1165,7 +1165,7 @@ decl_module! {
         ) {
             ensure_root(origin)?;
 
-            Self::verify_cashout_limits(&params)?;
+            verify_cashout_limits(&params)?;
 
             let new_min_cashout_allowed = params.min_cashout_allowed
                 .unwrap_or_else(Self::min_cashout_allowed);
@@ -3539,10 +3539,10 @@ impl<T: Config> Module<T> {
 
     fn verify_cashout_limits(params: &UpdateChannelPayoutsParameters<T>) -> DispatchResult {
         if let Some(ref min_cashout) = params.min_cashout_allowed {
-            ensure!(*min_cashout <= T::MinimumCashoutAllowed::get(), Error::<T>::MinCashoutValueTooLow);
+            ensure!(*min_cashout <= T::MinimumCashoutAllowedLimit::get(), Error::<T>::MinCashoutValueTooLow);
         }
         if let Some(ref max_cashout) = params.max_cashout_allowed {
-            ensure!(*max_cashout <= T::MaximumCashoutAllowed::get(), Error::<T>::MaxCashoutValueTooHigh);
+            ensure!(*max_cashout <= T::MaximumCashoutAllowedLimit::get(), Error::<T>::MaxCashoutValueTooHigh);
         }
         Ok(())
     }
