@@ -77,7 +77,7 @@ fn unuccessful_video_creation_with_pending_channel_transfer() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel();
 
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(DEFAULT_MEMBER_ID)
             .call_and_assert(Ok(()));
 
@@ -377,7 +377,7 @@ fn unsuccessful_video_creation_with_invalid_expected_data_size_fee() {
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
             .with_assets(StorageAssets::<Test> {
                 // setting a purposely high fee to trigger error
-                expected_data_size_fee: BalanceOf::<Test>::from(1_000_000u64),
+                expected_data_size_fee: 1_000_000u64,
                 object_creation_list: create_data_objects_helper(),
             })
             .call_and_assert(Err(storage::Error::<Test>::DataSizeFeeChanged.into()));
@@ -646,7 +646,7 @@ fn unsuccessful_video_update_with_pending_channel_transfer() {
         let video_assets = ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64 - 1))
             .collect::<BTreeSet<_>>();
 
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(DEFAULT_MEMBER_ID)
             .call_and_assert(Ok(()));
 
@@ -866,7 +866,7 @@ fn unsuccessful_video_update_with_invalid_expected_data_size_fee() {
         UpdateVideoFixture::default()
             .with_assets_to_upload(StorageAssets::<Test> {
                 // setting a purposely high fee to trigger error
-                expected_data_size_fee: BalanceOf::<Test>::from(1_000_000u64),
+                expected_data_size_fee: 1_000_000u64,
                 object_creation_list: create_data_objects_helper(),
             })
             .call_and_assert(Err(storage::Error::<Test>::DataSizeFeeChanged.into()));
@@ -1058,7 +1058,7 @@ fn unsuccessful_video_deletion_with_pending_transfer() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video();
 
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(DEFAULT_MEMBER_ID)
             .call_and_assert(Ok(()));
 

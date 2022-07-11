@@ -11,7 +11,6 @@ use frame_support::traits::LockIdentifier;
 use frame_support::{
     parameter_types,
     traits::{ConstU16, ConstU32, ConstU64, EnsureOneOf},
-    weights::Weight,
 };
 pub use frame_system;
 use frame_system::{EnsureRoot, EnsureSigned};
@@ -73,7 +72,7 @@ impl referendum::Config<ReferendumInstance> for Test {
 
     type MinimumStake = MinimumVotingStake;
 
-    type WeightInfo = ReferendumWeightInfo;
+    type WeightInfo = ();
 
     type MaxWinnerTargetCount = MaxWinnerTargetCount;
 
@@ -95,7 +94,7 @@ impl referendum::Config<ReferendumInstance> for Test {
             .iter()
             .map(|item| referendum::OptionResult {
                 option_id: item.option_id,
-                vote_power: item.vote_power.into(),
+                vote_power: item.vote_power,
             })
             .collect();
         <council::Module<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(
@@ -112,34 +111,6 @@ impl referendum::Config<ReferendumInstance> for Test {
     }
 
     fn increase_option_power(_: &u64, _: &Self::VotePower) {}
-}
-
-pub struct ReferendumWeightInfo;
-impl referendum::WeightInfo for ReferendumWeightInfo {
-    fn on_initialize_revealing(_: u32) -> Weight {
-        0
-    }
-    fn on_initialize_voting() -> Weight {
-        0
-    }
-    fn vote() -> Weight {
-        0
-    }
-    fn reveal_vote_space_for_new_winner(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_space_not_in_winners(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_space_replace_last_winner(_: u32) -> Weight {
-        0
-    }
-    fn reveal_vote_already_existing(_: u32) -> Weight {
-        0
-    }
-    fn release_vote_stake() -> Weight {
-        0
-    }
 }
 
 impl proposals::Config for Test {}
@@ -164,73 +135,11 @@ impl common::membership::MembershipTypes for Test {
     type ActorId = u64;
 }
 
-// Weights info stub
-pub struct Weights;
-impl membership::WeightInfo for Weights {
-    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_profile(_: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_none() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_root() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_controller() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_both() -> Weight {
-        unimplemented!()
-    }
-    fn set_referral_cut() -> Weight {
-        unimplemented!()
-    }
-    fn transfer_invites() -> Weight {
-        unimplemented!()
-    }
-    fn invite_member(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn set_membership_price() -> Weight {
-        unimplemented!()
-    }
-    fn update_profile_verification() -> Weight {
-        unimplemented!()
-    }
-    fn set_leader_invitation_quota() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_balance() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_count() -> Weight {
-        unimplemented!()
-    }
-    fn add_staking_account_candidate() -> Weight {
-        unimplemented!()
-    }
-    fn confirm_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn remove_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn member_remark() -> Weight {
-        unimplemented!()
-    }
-}
-
 impl membership::Config for Test {
     type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = Wg;
-    type WeightInfo = Weights;
+    type WeightInfo = ();
     type DefaultInitialInvitationBalance = ();
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InvitedMemberLockId>;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
@@ -321,48 +230,6 @@ pub const STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER: u64 = 222;
 impl common::StakingAccountValidator<Test> for () {
     fn is_member_staking_account(_: &u64, account_id: &u64) -> bool {
         *account_id != STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER
-    }
-}
-
-impl crate::WeightInfo for () {
-    fn vote(_: u32) -> Weight {
-        0
-    }
-
-    fn cancel_proposal() -> Weight {
-        0
-    }
-
-    fn veto_proposal() -> Weight {
-        0
-    }
-
-    fn on_initialize_immediate_execution_decode_fails(_: u32) -> Weight {
-        0
-    }
-
-    fn on_initialize_pending_execution_decode_fails(_: u32) -> Weight {
-        0
-    }
-
-    fn on_initialize_approved_pending_constitutionality(_: u32) -> Weight {
-        0
-    }
-
-    fn on_initialize_rejected(_: u32) -> Weight {
-        0
-    }
-
-    fn on_initialize_slashed(_: u32) -> Weight {
-        0
-    }
-
-    fn cancel_active_and_pending_proposals(_: u32) -> u64 {
-        0
-    }
-
-    fn proposer_remark() -> Weight {
-        0
     }
 }
 
@@ -493,65 +360,11 @@ impl council::Config for Test {
     type BudgetRefillPeriod = BudgetRefillPeriod;
 
     type StakingAccountValidator = membership::Module<Test>;
-    type WeightInfo = CouncilWeightInfo;
+    type WeightInfo = ();
 
     fn new_council_elected(_: &[council::CouncilMemberOf<Self>]) {}
 
     type MemberOriginValidator = ();
-}
-
-pub struct CouncilWeightInfo;
-impl council::WeightInfo for CouncilWeightInfo {
-    fn try_process_budget() -> Weight {
-        0
-    }
-    fn try_progress_stage_idle() -> Weight {
-        0
-    }
-    fn try_progress_stage_announcing_start_election(_: u32) -> Weight {
-        0
-    }
-    fn try_progress_stage_announcing_restart() -> Weight {
-        0
-    }
-    fn announce_candidacy() -> Weight {
-        0
-    }
-    fn release_candidacy_stake() -> Weight {
-        0
-    }
-    fn set_candidacy_note(_: u32) -> Weight {
-        0
-    }
-    fn withdraw_candidacy() -> Weight {
-        0
-    }
-    fn set_budget() -> Weight {
-        0
-    }
-    fn plan_budget_refill() -> Weight {
-        0
-    }
-    fn set_budget_increment() -> Weight {
-        0
-    }
-    fn set_councilor_reward() -> Weight {
-        0
-    }
-    fn funding_request(_: u32) -> Weight {
-        0
-    }
-    fn fund_council_budget() -> Weight {
-        0
-    }
-
-    fn councilor_remark() -> Weight {
-        0
-    }
-
-    fn candidate_remark() -> Weight {
-        0
-    }
 }
 
 impl LockComparator<<Test as balances::Config>::Balance> for Test {

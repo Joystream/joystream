@@ -77,11 +77,7 @@ export class AllProposalsOutcomesFixture extends BaseFixture {
         'Creating proposals:',
         createProposalsParams.map((p) => [p.description, p.details])
       )
-      const createProposalsFixure = new CreateProposalsFixture(
-        api,
-        query,
-        createProposalsParams as unknown as ProposalCreationParams[]
-      )
+      const createProposalsFixure = new CreateProposalsFixture(api, query, createProposalsParams)
       await new FixtureRunner(createProposalsFixure).runWithQueryNodeChecks()
       const proposalIds = createProposalsFixure.getCreatedProposalsIds()
 

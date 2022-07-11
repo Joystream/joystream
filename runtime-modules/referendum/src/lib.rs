@@ -62,7 +62,10 @@ pub use benchmarking::OptionCreator;
 // declared modules
 mod benchmarking;
 mod mock;
+#[cfg(test)]
 mod tests;
+pub mod weights;
+pub use weights::WeightInfo;
 
 /////////////////// Data Structures ////////////////////////////////////////////
 
@@ -161,19 +164,6 @@ pub type CanRevealResult<T, I> = (
 );
 
 /////////////////// Configs, Storage, Errors, and Events /////////////////////////
-
-/// referendum WeightInfo
-/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
-pub trait WeightInfo {
-    fn on_initialize_revealing(i: u32) -> Weight;
-    fn on_initialize_voting() -> Weight;
-    fn vote() -> Weight;
-    fn reveal_vote_space_for_new_winner(i: u32) -> Weight;
-    fn reveal_vote_space_not_in_winners(i: u32) -> Weight;
-    fn reveal_vote_space_replace_last_winner(i: u32) -> Weight;
-    fn reveal_vote_already_existing(i: u32) -> Weight;
-    fn release_vote_stake() -> Weight;
-}
 
 type ReferendumWeightInfo<T, I> = <T as Config<I>>::WeightInfo;
 

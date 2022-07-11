@@ -105,7 +105,7 @@ async function getCandidate(
     where,
     order: { inBlock: 'DESC', indexInBlock: 'DESC' },
     relations: ['candidate'].concat(relations.map((r) => `candidate.${r}`)),
-  })
+  } as FindOneOptions<NewCandidateEvent>)
 
   if (!event) {
     throw new Error(`Candidate not found. memberId '${memberId}' electionRound '${electionRound?.id}'`)

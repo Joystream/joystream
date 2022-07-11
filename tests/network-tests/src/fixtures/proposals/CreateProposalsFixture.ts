@@ -79,7 +79,6 @@ export class CreateProposalsFixture extends StandardizedFixture {
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     return this.proposalsParams.map(({ asMember, description, title, exactExecutionBlock, details, type }, i) => {
       const proposalDetails = { [type]: details } as { [K in ProposalType]: ProposalDetailsJsonByType<K> }
-      console.log('proposalDetails: ', proposalDetails)
       return this.api.tx.proposalsCodex.createProposal(
         {
           memberId: asMember,

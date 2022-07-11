@@ -4,7 +4,7 @@ import {
   IDistributionBucketFamilyMetadata,
   IDistributionBucketOperatorMetadata,
 } from '@joystream/metadata-protobuf'
-import { createType } from '@joystream/types'
+import { CreateInterface, createType } from '@joystream/types'
 import { DistributionBucketFamilyId, WorkerId } from '@joystream/types/primitives'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import {
@@ -18,7 +18,7 @@ import { Utils } from '../../utils'
 
 type DistributionBucketConfig = {
   metadata: IDistributionBucketOperatorMetadata
-  staticBags?: StaticBagId[]
+  staticBags?: CreateInterface<StaticBagId>[]
   operatorId: number
 }
 
@@ -34,7 +34,7 @@ type InitDistributionConfig = {
   families: DistributionFamilyConfig[]
 }
 
-export const allStaticBags = [
+export const allStaticBags: CreateInterface<StaticBagId>[] = [
   'Council',
   { WorkingGroup: 'Content' },
   { WorkingGroup: 'Distribution' },
@@ -56,7 +56,7 @@ export const singleBucketConfig: InitDistributionConfig = {
       buckets: [
         {
           metadata: { endpoint: process.env.DISTRIBUTOR_1_URL || 'http://localhost:3334' },
-          staticBags: allStaticBags as unknown as StaticBagId[],
+          staticBags: allStaticBags,
           operatorId: parseInt(process.env.DISTRIBUTOR_1_WORKER_ID || '0'),
         },
       ],
@@ -75,7 +75,7 @@ export const doubleBucketConfig: InitDistributionConfig = {
       buckets: [
         {
           metadata: { endpoint: process.env.DISTRIBUTOR_1_URL || 'http://localhost:3334' },
-          staticBags: allStaticBags as unknown as StaticBagId[],
+          staticBags: allStaticBags,
           operatorId: parseInt(process.env.DISTRIBUTOR_1_WORKER_ID || '0'),
         },
       ],
@@ -89,7 +89,7 @@ export const doubleBucketConfig: InitDistributionConfig = {
       buckets: [
         {
           metadata: { endpoint: process.env.DISTRIBUTOR_2_URL || 'http://localhost:3336' },
-          staticBags: allStaticBags as unknown as StaticBagId[],
+          staticBags: allStaticBags,
           operatorId: parseInt(process.env.DISTRIBUTOR_2_WORKER_ID || '1'),
         },
       ],

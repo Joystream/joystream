@@ -2,9 +2,9 @@ import { FlowProps } from '../../Flow'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
-import { CreateProposalsFixture, CancelProposalsFixture, ProposalCreationParams } from '../../fixtures/proposals'
+import { CreateProposalsFixture, CancelProposalsFixture } from '../../fixtures/proposals'
 import { Resource } from '../../Resources'
-import { Bytes } from '@polkadot/types/'
+import { createType } from '@joystream/types'
 
 export default async function cancellingProposals({ api, query, lock }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:cancelling-proposals')
@@ -21,11 +21,11 @@ export default async function cancellingProposals({ api, query, lock }: FlowProp
   const createProposalFixture = new CreateProposalsFixture(api, query, [
     {
       type: 'Signal',
-      details: 'Proposal to cancel' as unknown as Bytes,
+      details: createType('Bytes', 'Proposal to cancel'),
       asMember: memberId,
       title: 'Proposal to cancel',
       description: 'Proposal to cancel',
-    } as ProposalCreationParams<'Signal'>,
+    },
   ])
   await new FixtureRunner(createProposalFixture).run()
   const [proposalId] = createProposalFixture.getCreatedProposalsIds()

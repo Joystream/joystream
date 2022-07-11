@@ -2,7 +2,7 @@
 use super::*;
 use balances::Pallet as Balances;
 use core::convert::TryInto;
-use frame_benchmarking::{account, benchmarks};
+use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;
 use frame_system::Pallet as System;
@@ -1054,6 +1054,14 @@ benchmarks! {
             text.clone(), text, poll
         );
 
+        // Delete initial post first in order to allow thread deletion
+        let _ = Module::<T>::delete_posts(
+            RawOrigin::Signed(caller_id.clone()).into(),
+            forum_user_id.saturated_into(),
+            [(ExtendedPostId::<T> { category_id, thread_id, post_id: <T as Config>::PostId::one() }, true)].iter().cloned().collect(),
+            Vec::new()
+        );
+
         // Add poll voting.
         for idx in 1..(T::MaxWorkerNumberLimit::get() - 1) {
             let member_id = idx.into();
@@ -1330,6 +1338,14 @@ benchmarks! {
             text.clone(), text, poll
         );
 
+        // Delete initial post first in order to allow thread deletion
+        let _ = Module::<T>::delete_posts(
+            RawOrigin::Signed(caller_id.clone()).into(),
+            lead_id.saturated_into(),
+            [(ExtendedPostId::<T> { category_id, thread_id, post_id: <T as Config>::PostId::one() }, true)].iter().cloned().collect(),
+            Vec::new()
+        );
+
         let mut category = Module::<T>::category_by_id(category_id);
 
         let rationale = vec![0u8].repeat(k as usize);
@@ -1340,7 +1356,7 @@ benchmarks! {
         let thread_account_id = T::ModuleId::get().into_sub_account_truncating(thread_id);
         assert_eq!(
            Balances::<T>::free_balance(&thread_account_id),
-           T::PostDeposit::get()
+           <T as balances::Config>::Balance::zero()
         );
 
         // Ensure category num_direct_threads updated successfully.
@@ -1386,6 +1402,14 @@ benchmarks! {
             text.clone(), text, poll
         );
 
+        // Delete initial post first in order to allow thread deletion
+        let _ = Module::<T>::delete_posts(
+            RawOrigin::Signed(caller_id.clone()).into(),
+            lead_id.saturated_into(),
+            [(ExtendedPostId::<T> { category_id, thread_id, post_id: <T as Config>::PostId::one() }, true)].iter().cloned().collect(),
+            Vec::new()
+        );
+
         let moderator_id = ModeratorId::<T>::from(lead_id.try_into().unwrap());
 
         // Set up category membership of moderator.
@@ -1403,7 +1427,7 @@ benchmarks! {
         let thread_account_id = T::ModuleId::get().into_sub_account_truncating(thread_id);
         assert_eq!(
            Balances::<T>::free_balance(&thread_account_id),
-           T::PostDeposit::get()
+           <T as balances::Config>::Balance::zero()
         );
 
 
@@ -1852,7 +1876,6 @@ benchmarks! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::mock::*;
     use frame_support::assert_ok;
 

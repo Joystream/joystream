@@ -34,7 +34,7 @@ export default async function initStorageBucket({ api }: FlowProps): Promise<voi
     transactorKey,
   ])
   await cli.run('leader:update-bag', ['--add', bucketId, '--bagId', 'static:council'])
-  await cli.run('leader:update-dynamic-bag-policy', ['--bagType', 'Channel', '--number', '5'])
+  await cli.run('leader:update-dynamic-bag-policy', ['--bagType', 'Channel', '--number', '1'])
   await cli.run('operator:set-metadata', [
     '--bucketId',
     bucketId,

@@ -53,7 +53,6 @@ export default class CreateVideoCommand extends UploadCommandBase {
     // Get input from file
     const videoCreationParametersInput = await getInputJson<VideoInputParameters>(input, VideoInputSchema)
     let meta = asValidatedMetadata(VideoMetadata, videoCreationParametersInput)
-    const { enableComments } = videoCreationParametersInput
 
     // Assets
     const { videoPath, thumbnailPhotoPath } = videoCreationParametersInput
@@ -71,9 +70,15 @@ export default class CreateVideoCommand extends UploadCommandBase {
 
     // Preare and send the extrinsic
     const assets = await this.prepareAssetsForExtrinsic(resolvedAssets)
+    const expectedVideoStateBloatBond = await this.getApi().videoStateBloatBond()
+    const expectedDataObjectStateBloatBond = await this.getApi().dataObjectStateBloatBond()
+
     const videoCreationParameters = createType('PalletContentVideoCreationParametersRecord', {
       assets,
       meta: metadataToBytes(VideoMetadata, meta),
+      expectedVideoStateBloatBond,
+      expectedDataObjectStateBloatBond,
+      autoIssueNft: null,
     })
 
     this.jsonPrettyPrint(JSON.stringify({ assets: assets?.toJSON(), metadata: meta }))

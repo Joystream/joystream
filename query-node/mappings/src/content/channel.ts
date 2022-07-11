@@ -185,16 +185,20 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
     return inconsistentState('Owner Remarked for Non-existing channel', channelId)
   }
 
-  const getcontentActor = (ownerMember?: Membership, ownerCuratorGroup?: CuratorGroup) => {
+  const getContentActor = (ownerMember?: Membership, ownerCuratorGroup?: CuratorGroup) => {
     if (ownerMember) {
       const actor = new ContentActorMember()
       actor.memberId = ownerMember.id
       return actor
-    } else if (ownerCuratorGroup) {
+    }
+
+    if (ownerCuratorGroup) {
       const actor = new ContentActorCurator()
       actor.curatorId = ownerCuratorGroup.id
       return actor
     }
+
+    return inconsistentState('Unknown content actor', { ownerMember, ownerCuratorGroup })
   }
 
   const genericFields = genericEventFields(event)
@@ -212,7 +216,7 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
   try {
     const decodedMessage = ChannelOwnerRemarked.decode(message.toU8a(true))
     const messageType = decodedMessage.channelOwnerRemarked
-    const contentActor = getcontentActor(channel.ownerMember, channel.ownerCuratorGroup)!
+    const contentActor = getContentActor(channel.ownerMember, channel.ownerCuratorGroup)
 
     // update MetaprotocolTransactionStatusEvent
     const statusSuccessful = new MetaprotocolTransactionSuccessful()

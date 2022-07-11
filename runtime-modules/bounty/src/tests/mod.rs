@@ -377,14 +377,14 @@ fn create_bounty_transfers_member_balance_correctly() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&account_id),
+            balances::Pallet::<Test>::usable_balance(&account_id),
             initial_balance - cherry
         );
 
         let bounty_id = 1;
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            balances::Pallet::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
             cherry
         );
     });
@@ -408,7 +408,7 @@ fn create_bounty_transfers_the_council_balance_correctly() {
         let bounty_id = 1;
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            balances::Pallet::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
             cherry
         );
     });
@@ -813,7 +813,7 @@ fn fund_bounty_succeeds_by_member() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&account_id),
+            balances::Pallet::<Test>::usable_balance(&account_id),
             initial_balance - amount
         );
 
@@ -826,7 +826,7 @@ fn fund_bounty_succeeds_by_member() {
         );
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            balances::Pallet::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
             amount + cherry
         );
 
@@ -866,7 +866,7 @@ fn fund_bounty_succeeds_by_council() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
+            balances::Pallet::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
             initial_balance - amount - cherry
         );
 
@@ -876,7 +876,7 @@ fn fund_bounty_succeeds_by_council() {
         );
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            balances::Pallet::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
             amount + cherry
         );
 
@@ -918,7 +918,7 @@ fn fund_bounty_succeeds_with_reaching_max_funding_amount() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&account_id),
+            balances::Pallet::<Test>::usable_balance(&account_id),
             initial_balance - max_amount
         );
 
@@ -974,12 +974,12 @@ fn multiple_fund_bounty_succeed() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&account_id),
+            balances::Pallet::<Test>::usable_balance(&account_id),
             initial_balance - 2 * amount
         );
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            balances::Pallet::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
             2 * amount + cherry
         );
     });
@@ -1185,17 +1185,17 @@ fn withdraw_member_funding_succeeds() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&account_id),
+            balances::Pallet::<Test>::usable_balance(&account_id),
             initial_balance + cherry
         );
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
+            balances::Pallet::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
             initial_balance - cherry
         );
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            balances::Pallet::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
             0
         );
 
@@ -1239,12 +1239,12 @@ fn withdraw_council_funding_succeeds() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
+            balances::Pallet::<Test>::usable_balance(&COUNCIL_BUDGET_ACCOUNT_ID),
             initial_balance
         );
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            balances::Pallet::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
             0
         );
 
@@ -1301,13 +1301,13 @@ fn withdraw_member_funding_with_half_cherry() {
 
         // A half of the cherry
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&account_id1),
+            balances::Pallet::<Test>::usable_balance(&account_id1),
             initial_balance + cherry / 2
         );
 
         // On funding amount + creation funding + half of the cherry left.
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            balances::Pallet::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
             amount + cherry / 2
         );
 
@@ -1627,7 +1627,7 @@ fn bounty_removal_succeeds() {
 
         let cherry_remaining_fraction = cherry - (cherry * 2 / 3) + amount;
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            balances::Pallet::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
             cherry_remaining_fraction
         );
 
@@ -1638,13 +1638,13 @@ fn bounty_removal_succeeds() {
             .call_and_assert(Ok(()));
 
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&account_id),
+            balances::Pallet::<Test>::usable_balance(&account_id),
             initial_balance - cherry
         );
 
         // Bounty removal effects.
         assert_eq!(
-            balances::Module::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
+            balances::Pallet::<Test>::usable_balance(&Bounty::bounty_account_id(bounty_id)),
             0
         );
 

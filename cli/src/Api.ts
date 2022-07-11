@@ -19,7 +19,7 @@ import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { AugmentedQuery, SubmittableExtrinsic } from '@polkadot/api/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { Option, UInt, u64 } from '@polkadot/types'
-import { Balance, AccountId, ElectionStatus, LockIdentifier, StakingLedger } from '@polkadot/types/interfaces'
+import { Balance, AccountId, LockIdentifier, StakingLedger } from '@polkadot/types/interfaces'
 import {
   PalletContentChannelRecord as Channel,
   PalletContentPermissionsCuratorGroup as CuratorGroup,
@@ -436,9 +436,9 @@ export default class Api {
     return await this._api.query.staking.ledger(account)
   }
 
-  async getEraElectionStatus(): Promise<ElectionStatus> {
-    return await this._api.query.staking.eraElectionStatus()
-  }
+  // async getEraElectionStatus(): Promise<ElectionStatus> {
+  //   return await this._api.consts.staking.eraElectionStatus()
+  // }
 
   async curatorGroupById(id: number): Promise<CuratorGroup | null> {
     const exists = !!(await this._api.query.content.curatorGroupById.size(id)).toNumber()
@@ -469,12 +469,16 @@ export default class Api {
     return video
   }
 
+  async videoStateBloatBond(): Promise<number> {
+    return (await this._api.query.content.videoStateBloatBondValue()).toNumber()
+  }
+
   async channelStateBloatBond(): Promise<number> {
-    return (this._api.query.content.channelStateBloatBondValue() as unknown) as number
+    return (await this._api.query.content.channelStateBloatBondValue()).toNumber()
   }
 
   async dataObjectStateBloatBond(): Promise<number> {
-    return (this._api.query.storage.dataObjectStateBloatBondValue() as unknown) as number
+    return (await this._api.query.storage.dataObjectStateBloatBondValue()).toNumber()
   }
 
   async dataObjectsByIds(bagId: BagId, ids: DataObjectId[]): Promise<DataObject[]> {

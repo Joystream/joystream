@@ -37,7 +37,7 @@ export default async function proposalsDiscussion({ api, query, lock }: FlowProp
     query,
     Array.from({ length: threadsN }, (v, i) => ({
       type: 'Signal',
-      details: `Discussion test ${i}` as unknown as Bytes,
+      details: createType('Bytes', `Discussion test ${i}`),
       asMember: memberIds[i],
       title: `Discussion test proposal ${i}`,
       description: `Proposals discussion test proposal ${i}`,

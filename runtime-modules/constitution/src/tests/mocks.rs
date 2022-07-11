@@ -63,12 +63,6 @@ impl Config for Test {
     type WeightInfo = ();
 }
 
-impl crate::WeightInfo for () {
-    fn amend_constitution(_: u32) -> u64 {
-        0
-    }
-}
-
 pub fn build_test_externalities() -> sp_io::TestExternalities {
     let t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()

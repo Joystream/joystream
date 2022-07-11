@@ -1,10 +1,10 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { DatabaseManager, DeepPartial, EventContext, StoreContext } from '@joystream/hydra-common'
+import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
 import { VideoMetadata } from '@joystream/metadata-protobuf'
 import { BaseModel } from '@joystream/warthog'
-import { In, FindOptionsWhere } from 'typeorm'
+import { FindOptionsWhere } from 'typeorm'
 import {
   Channel,
   Comment,

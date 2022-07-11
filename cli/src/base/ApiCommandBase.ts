@@ -106,7 +106,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
       }
       if (queryNodeUri) {
         cli.action.start(`Initializing the query node connection (${queryNodeUri})...`)
-        this.queryNodeApi = new QueryNodeApi('http://127.0.0.1:8081/graphql', (err) => {
+        this.queryNodeApi = new QueryNodeApi(queryNodeUri, (err) => {
           this.warn(`Query node error: ${err.networkError?.message || err.graphQLErrors?.join('\n')}`)
         })
         cli.action.stop()

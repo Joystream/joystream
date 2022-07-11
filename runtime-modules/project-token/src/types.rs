@@ -605,7 +605,7 @@ impl<TokenSale> OfferingState<TokenSale> {
     }
 
     pub(crate) fn ensure_idle_of<T: crate::Config>(token: &TokenDataOf<T>) -> DispatchResult {
-        match Self::of::<T>(&token) {
+        match Self::of::<T>(token) {
             OfferingStateOf::<T>::Idle => Ok(()),
             _ => Err(Error::<T>::TokenIssuanceNotInIdleState.into()),
         }
@@ -614,7 +614,7 @@ impl<TokenSale> OfferingState<TokenSale> {
     pub(crate) fn ensure_upcoming_sale_of<T: crate::Config>(
         token: &TokenDataOf<T>,
     ) -> Result<TokenSaleOf<T>, DispatchError> {
-        match Self::of::<T>(&token) {
+        match Self::of::<T>(token) {
             OfferingStateOf::<T>::UpcomingSale(sale) => Ok(sale),
             _ => Err(Error::<T>::NoUpcomingSale.into()),
         }
@@ -623,7 +623,7 @@ impl<TokenSale> OfferingState<TokenSale> {
     pub(crate) fn ensure_sale_of<T: crate::Config>(
         token: &TokenDataOf<T>,
     ) -> Result<TokenSaleOf<T>, DispatchError> {
-        match Self::of::<T>(&token) {
+        match Self::of::<T>(token) {
             OfferingStateOf::<T>::Sale(sale) => Ok(sale),
             _ => Err(Error::<T>::NoActiveSale.into()),
         }
