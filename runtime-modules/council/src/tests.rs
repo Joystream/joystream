@@ -328,8 +328,10 @@ fn council_announcement_reset_on_insufficient_candidates() {
         // check announcements were reset
         Mocks::check_announcing_period(
             params.cycle_start_block_number + council_settings.announcing_stage_duration,
-            CouncilStageAnnouncing {
+            CouncilStageAnnouncing::<u64> {
                 candidates_count: 0,
+                ends_at: params.cycle_start_block_number
+                    + council_settings.announcing_stage_duration * 2,
             },
         );
     });
@@ -376,8 +378,10 @@ fn council_announcement_reset_on_insufficient_candidates_after_candidacy_withdra
         // check announcements were reset
         Mocks::check_announcing_period(
             params.cycle_start_block_number + council_settings.announcing_stage_duration,
-            CouncilStageAnnouncing {
+            CouncilStageAnnouncing::<u64> {
                 candidates_count: 0,
+                ends_at: params.cycle_start_block_number
+                    + council_settings.announcing_stage_duration * 2,
             },
         );
     });
@@ -425,8 +429,6 @@ fn council_announcement_reset_on_not_enough_winners() {
             candidates_announcing: candidates,
             expected_candidates,
             voters,
-
-            // escape before voting
             interrupt_point: Some(CouncilCycleInterrupt::AfterRevealing),
         };
 
@@ -436,13 +438,15 @@ fn council_announcement_reset_on_not_enough_winners() {
         MockUtils::increase_block_number(council_settings.reveal_stage_duration);
 
         // check announcements were reset
+        let expected_update_block_number = params.cycle_start_block_number
+            + council_settings.announcing_stage_duration
+            + council_settings.voting_stage_duration
+            + council_settings.reveal_stage_duration;
         Mocks::check_announcing_period(
-            params.cycle_start_block_number
-                + council_settings.announcing_stage_duration
-                + council_settings.voting_stage_duration
-                + council_settings.reveal_stage_duration,
-            CouncilStageAnnouncing {
+            expected_update_block_number,
+            CouncilStageAnnouncing::<u64> {
                 candidates_count: 0,
+                ends_at: expected_update_block_number + council_settings.announcing_stage_duration,
             },
         );
     });

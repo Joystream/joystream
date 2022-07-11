@@ -73,10 +73,11 @@ fn make_free_balance_be<T: Config>(account_id: &T::AccountId, balance: Balance<T
 fn start_announcing_period<T: Config>() {
     Mutations::<T>::start_announcing_period();
 
-    let current_state = CouncilStageAnnouncing {
-        candidates_count: 0,
-    };
     let current_block_number = System::<T>::block_number();
+    let current_state = CouncilStageAnnouncing::<<T as frame_system::Config>::BlockNumber> {
+        candidates_count: 0,
+        ends_at: current_block_number + T::AnnouncingPeriodDuration::get(),
+    };
 
     assert_eq!(
         Council::<T>::stage(),
@@ -239,8 +240,9 @@ where
 
     Mutations::<T>::start_announcing_period();
 
-    let current_state = CouncilStageAnnouncing {
+    let current_state = CouncilStageAnnouncing::<<T as frame_system::Config>::BlockNumber> {
         candidates_count: 0,
+        ends_at: current_block_number + T::AnnouncingPeriodDuration::get(),
     };
 
     assert_eq!(
@@ -386,11 +388,7 @@ benchmarks! {
             }
         }).collect::<Vec<_>>();
 
-        Council::<T>::end_announcement_period(
-            CouncilStageAnnouncing {
-                candidates_count: T::CouncilSize::get(),
-            }
-        );
+        Council::<T>::end_announcement_period(T::CouncilSize::get());
 
         Council::<T>::end_election_period(&winners[..]);
 
@@ -439,7 +437,9 @@ benchmarks! {
     try_progress_stage_idle {
         let current_block_number = System::<T>::block_number();
 
-        let current_stage = CouncilStage::Idle;
+        let current_stage = CouncilStage::Idle(CouncilStageIdle::<<T as frame_system::Config>::BlockNumber> {
+            ends_at: current_block_number + T::IdlePeriodDuration::get()
+        });
         let current_stage_update =
             CouncilStageUpdate {
                 stage: current_stage,
@@ -452,7 +452,9 @@ benchmarks! {
         });
 
         // Redefine `current_stage_update` simply because we haven't derived clone in the struct
-        let current_stage = CouncilStage::Idle;
+        let current_stage = CouncilStage::Idle(CouncilStageIdle::<<T as frame_system::Config>::BlockNumber> {
+            ends_at: current_block_number + T::IdlePeriodDuration::get()
+        });
         let current_stage_update =
             CouncilStageUpdate {
                 stage: current_stage,
@@ -464,18 +466,20 @@ benchmarks! {
 
     }: { Council::<T>::try_progress_stage(System::<T>::block_number()); }
     verify {
+        let announcing_ends_at = target_block_number + T::AnnouncingPeriodDuration::get();
         assert_eq!(
             Council::<T>::stage(),
             CouncilStageUpdate {
-                stage: CouncilStage::Announcing(CouncilStageAnnouncing {
+                stage: CouncilStage::Announcing(CouncilStageAnnouncing::<<T as frame_system::Config>::BlockNumber> {
                     candidates_count: 0,
+                    ends_at: announcing_ends_at
                 }),
                 changed_at: target_block_number,
             },
             "Idle period didn't end"
         );
 
-        assert_last_event::<T>(RawEvent::AnnouncingPeriodStarted().into());
+        assert_last_event::<T>(RawEvent::AnnouncingPeriodStarted(announcing_ends_at).into());
     }
 
     try_progress_stage_announcing_start_election {
@@ -487,8 +491,9 @@ benchmarks! {
                 };
         let current_block_number = System::<T>::block_number();
         let current_stage =
-            CouncilStage::Announcing(CouncilStageAnnouncing {
-                candidates_count: (i + 1).into()
+            CouncilStage::Announcing(CouncilStageAnnouncing::<<T as frame_system::Config>::BlockNumber> {
+                candidates_count: (i + 1).into(),
+                ends_at: current_block_number + T::AnnouncingPeriodDuration::get()
             });
         let current_stage_update =
             CouncilStageUpdate {
@@ -506,7 +511,7 @@ benchmarks! {
             CouncilStageUpdate {
                 stage: CouncilStage::Election(
                     CouncilStageElection {
-                        candidates_count: (i + 1).into(),
+                        candidates_count: (i + 1).into()
                     }),
                 changed_at: target_block_number,
             },
@@ -520,8 +525,9 @@ benchmarks! {
         start_announcing_period::<T>();
         let current_block_number = System::<T>::block_number();
         let current_stage =
-            CouncilStage::Announcing(CouncilStageAnnouncing {
-                candidates_count: 0
+            CouncilStage::Announcing(CouncilStageAnnouncing::<<T as frame_system::Config>::BlockNumber> {
+                candidates_count: 0,
+                ends_at: current_block_number + T::AnnouncingPeriodDuration::get()
             });
         let current_stage_update =
             CouncilStageUpdate {
@@ -535,9 +541,11 @@ benchmarks! {
         );
     }: { Council::<T>::try_progress_stage(System::<T>::block_number()); }
     verify {
+        let announcing_ends_at = target_block_number + T::AnnouncingPeriodDuration::get();
         let current_stage =
-            CouncilStage::Announcing(CouncilStageAnnouncing {
-                candidates_count: 0
+            CouncilStage::Announcing(CouncilStageAnnouncing::<<T as frame_system::Config>::BlockNumber> {
+                candidates_count: 0,
+                ends_at: announcing_ends_at
             });
         let current_stage_update =
             CouncilStageUpdate {
@@ -547,7 +555,7 @@ benchmarks! {
 
         assert_eq!(Council::<T>::stage(), current_stage_update, "Council stage not restarted");
 
-        assert_last_event::<T>(RawEvent::NotEnoughCandidates().into());
+        assert_last_event::<T>(RawEvent::NotEnoughCandidates(announcing_ends_at).into());
 
     }
 
@@ -581,8 +589,9 @@ benchmarks! {
             "Candidacy hasn't been announced"
         );
 
-        let current_state = CouncilStageAnnouncing {
+        let current_state = CouncilStageAnnouncing::<<T as frame_system::Config>::BlockNumber> {
             candidates_count: 1,
+            ends_at: current_block_number + T::AnnouncingPeriodDuration::get()
         };
 
         assert_eq!(
@@ -714,11 +723,7 @@ benchmarks! {
             }
         }).collect::<Vec<_>>();
 
-        Council::<T>::end_announcement_period(
-            CouncilStageAnnouncing {
-                candidates_count: T::CouncilSize::get(),
-            }
-        );
+        Council::<T>::end_announcement_period(T::CouncilSize::get());
 
         Council::<T>::end_election_period(&winners[..]);
 

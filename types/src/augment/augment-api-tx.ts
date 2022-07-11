@@ -4139,6 +4139,13 @@ declare module '@polkadot/api-base/types/submittable' {
       updateBlacklist: AugmentedSubmittable<(removeHashes: BTreeSet<Bytes>, addHashes: BTreeSet<Bytes>) => SubmittableExtrinsic<ApiType>, [BTreeSet<Bytes>, BTreeSet<Bytes>]>;
       /**
        * Updates data object state bloat bond value.
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
        **/
       updateDataObjectStateBloatBond: AugmentedSubmittable<(stateBloatBond: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u128]>;
       /**

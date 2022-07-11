@@ -327,7 +327,7 @@ declare module '@polkadot/api-base/types/events' {
       /**
        * New council was elected
        **/
-      AnnouncingPeriodStarted: AugmentedEvent<ApiType, []>;
+      AnnouncingPeriodStarted: AugmentedEvent<ApiType, [u32]>;
       /**
        * Budget balance was changed by the root.
        **/
@@ -383,15 +383,15 @@ declare module '@polkadot/api-base/types/events' {
       /**
        * New council was elected and appointed
        **/
-      NewCouncilElected: AugmentedEvent<ApiType, [Vec<u64>]>;
+      NewCouncilElected: AugmentedEvent<ApiType, [Vec<u64>, u32]>;
       /**
        * New council was not elected
        **/
-      NewCouncilNotElected: AugmentedEvent<ApiType, []>;
+      NewCouncilNotElected: AugmentedEvent<ApiType, [u32]>;
       /**
        * Announcing period can't finish because of insufficient candidtate count
        **/
-      NotEnoughCandidates: AugmentedEvent<ApiType, []>;
+      NotEnoughCandidates: AugmentedEvent<ApiType, [u32]>;
       /**
        * Request has been funded
        **/
@@ -2150,15 +2150,15 @@ declare module '@polkadot/api-base/types/events' {
       /**
        * Referendum started
        **/
-      ReferendumStarted: AugmentedEvent<ApiType, [u64]>;
+      ReferendumStarted: AugmentedEvent<ApiType, [u64, u32]>;
       /**
        * Referendum started
        **/
-      ReferendumStartedForcefully: AugmentedEvent<ApiType, [u64]>;
+      ReferendumStartedForcefully: AugmentedEvent<ApiType, [u64, u32]>;
       /**
        * Revealing phase has begun
        **/
-      RevealingStageStarted: AugmentedEvent<ApiType, []>;
+      RevealingStageStarted: AugmentedEvent<ApiType, [u32]>;
       /**
        * User released his stake
        **/

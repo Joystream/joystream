@@ -38,6 +38,7 @@ fn start_voting_cycle<T: Config<I>, I: Instance>(winning_target_count: u32) {
             started: System::<T>::block_number(),
             winning_target_count: (winning_target_count + 1).into(),
             current_cycle_id: 0,
+            ends_at: System::<T>::block_number() + T::VoteStageDuration::get()
         }),
         "Vote cycle not started"
     );
@@ -330,6 +331,7 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
         winning_target_count: (target_winners + 1).into(),
         intermediate_winners: vec![],
         current_cycle_id: cycle_id.into(),
+        ends_at: target_block_number + T::RevealStageDuration::get(),
     });
 
     move_to_block::<T, I>(
@@ -351,6 +353,7 @@ fn add_and_reveal_multiple_votes_and_add_extra_unrevealed_vote<
         started: target_block_number,
         winning_target_count: (target_winners + 1).into(),
         current_cycle_id: cycle_id.into(),
+        ends_at: target_block_number + T::RevealStageDuration::get(),
     });
 
     assert_eq!(
@@ -401,6 +404,7 @@ benchmarks_instance! {
                 started: started_voting_block_number + T::VoteStageDuration::get(),
                 winning_target_count: (i + 1).into(),
                 current_cycle_id: cycle_id,
+                ends_at: started_voting_block_number + T::VoteStageDuration::get() + T::RevealStageDuration::get()
             }
         );
 
@@ -434,16 +438,19 @@ benchmarks_instance! {
                 started: System::<T>::block_number(),
                 winning_target_count: (winning_target_count + 1).into(),
                 current_cycle_id: cycle_id,
+                ends_at: System::<T>::block_number() + T::VoteStageDuration::get()
         });
 
         move_to_block_before_initialize::<T, I>(target_block_number, target_stage);
     }: { Referendum::<T, I>::on_initialize(System::<T>::block_number()); }
     verify {
+        let revealing_ends_at = target_block_number + T::RevealStageDuration::get();
         let current_stage = ReferendumStage::Revealing(ReferendumStageRevealing {
             started: target_block_number,
             winning_target_count: 1,
             intermediate_winners: vec![],
             current_cycle_id: cycle_id,
+            ends_at: revealing_ends_at
         });
 
         assert_eq!(
@@ -452,7 +459,7 @@ benchmarks_instance! {
             "Voting period not ended"
         );
 
-        assert_last_event::<T, I>(RawEvent::RevealingStageStarted().into());
+        assert_last_event::<T, I>(RawEvent::RevealingStageStarted(revealing_ends_at).into());
     }
 
     vote {
@@ -529,6 +536,7 @@ benchmarks_instance! {
                 winning_target_count: (i+1).into(),
                 started: T::VoteStageDuration::get() + started_block_number,
                 current_cycle_id: cycle_id,
+                ends_at: T::VoteStageDuration::get() + started_block_number + T::RevealStageDuration::get()
             }),
             "Vote not revealed",
         );
@@ -583,6 +591,7 @@ benchmarks_instance! {
                 winning_target_count: (i+1).into(),
                 started: T::VoteStageDuration::get() + started_block_number,
                 current_cycle_id: cycle_id,
+                ends_at: T::VoteStageDuration::get() + started_block_number + T::RevealStageDuration::get()
             }),
             "Vote not revealed",
         );
@@ -644,6 +653,7 @@ benchmarks_instance! {
                 winning_target_count: (i+1).into(),
                 started: T::VoteStageDuration::get() + started_block_number,
                 current_cycle_id: cycle_id,
+                ends_at: T::VoteStageDuration::get() + started_block_number + T::RevealStageDuration::get()
             }),
             "Vote not revealed",
         );
@@ -708,6 +718,7 @@ benchmarks_instance! {
                 winning_target_count: (i+1).into(),
                 started: T::VoteStageDuration::get() + started_block_number,
                 current_cycle_id: cycle_id,
+                ends_at: T::VoteStageDuration::get() + started_block_number + T::RevealStageDuration::get()
             }),
             "Vote not revealed",
         );
