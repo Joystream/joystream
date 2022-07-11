@@ -1,10 +1,10 @@
 import { DatabaseManager } from '@joystream/hydra-common'
 import {
-  PalletStorageUploadParametersRecord as UploadParameters,
   PalletStorageBagIdType as BagId,
   PalletStorageDynamicBagIdType as DynamicBagId,
   PalletStorageStaticBagId as StaticBagId,
   PalletStorageDistributionBucketIdRecord as DistributionBucketId,
+  PalletStorageDataObjectCreationParameters as DataObjectCreationParameters,
 } from '@polkadot/types/lookup'
 import {
   DataObjectTypeUnknown,
@@ -33,6 +33,13 @@ import {
   DistributionBucketIndex,
 } from '@joystream/types/primitives'
 import { Balance } from '@polkadot/types/interfaces'
+
+export type StorageDataObjectParams = {
+  storageBagOrId: StorageBag | BagId
+  objectCreationList: DataObjectCreationParameters[]
+  stateBloatBond: Balance
+  objectIds?: BN[]
+}
 
 export async function getDataObjectsInBag(
   store: DatabaseManager,
@@ -195,13 +202,10 @@ export async function getStorageSystem(store: DatabaseManager): Promise<StorageS
 
 export async function createDataObjects(
   store: DatabaseManager,
-  uploadParams: UploadParameters,
-  stateBloatBond: Balance,
-  objectIds?: BN[]
+  { storageBagOrId, objectCreationList, stateBloatBond, objectIds }: StorageDataObjectParams
 ): Promise<StorageDataObject[]> {
   const storageSystem = await getStorageSystem(store)
-  const { objectCreationList, bagId } = uploadParams
-  const storageBag = await getBag(store, bagId)
+  const storageBag = storageBagOrId instanceof StorageBag ? storageBagOrId : await getBag(store, storageBagOrId)
 
   const dataObjects = objectCreationList.map((objectParams, i) => {
     const objectId = objectIds ? objectIds[i] : storageSystem.nextDataObjectId

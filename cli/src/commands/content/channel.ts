@@ -1,4 +1,4 @@
-import { MemberId } from '@joystream/types/common'
+import { MemberId } from '@joystream/types/primitives'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { displayCollapsedRow, displayHeader, memberHandle } from '../../helpers/display'
 
@@ -32,7 +32,7 @@ export default class ChannelCommand extends ContentDirectoryCommandBase {
 
       displayHeader(`Media`)
       displayCollapsedRow({
-        'NumberOfVideos': channel.num_videos.toNumber(),
+        'NumberOfVideos': channel.numVideos.toNumber(),
       })
 
       displayHeader(`Collaborators`)

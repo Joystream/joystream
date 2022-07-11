@@ -2,9 +2,10 @@ import path from 'path'
 import { spawn } from 'child_process'
 import { DistributorNodeConfiguration } from '@joystream/distributor-cli/src/types/generated/ConfigJson'
 import { CLI, CommandResult } from './base'
-import { WorkerId } from '@joystream/types/working-group'
+import { WorkerId } from '@joystream/types/primitives'
 import { ProcessManager } from './utils'
 import Keyring from '@polkadot/keyring'
+import { JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
 
 const CLI_ROOT_PATH = path.resolve(__dirname, '../../../../distributor-node')
 
@@ -19,7 +20,7 @@ export class DistributorCLI extends CLI {
       JOYSTREAM_DISTRIBUTOR__KEYS: JSON.stringify(keys),
     }
     super(CLI_ROOT_PATH, defaultEnv)
-    const keyring = new Keyring({ type: 'sr25519' })
+    const keyring = new Keyring({ type: 'sr25519', ss58Format: JOYSTREAM_ADDRESS_PREFIX })
     keyUris.forEach((uri) => keyring.addFromUri(uri))
     this.keys = keyring.getPairs().map((p) => p.address)
   }

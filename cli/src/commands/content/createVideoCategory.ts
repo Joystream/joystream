@@ -1,10 +1,10 @@
+// TODO: re-work afer merging metaprotocol content categories PR - https://github.com/Joystream/joystream/pull/3950
+
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { getInputJson } from '../../helpers/InputOutput'
 import { VideoCategoryInputParameters } from '../../Types'
 import { asValidatedMetadata, metadataToBytes } from '../../helpers/serialization'
 import { flags } from '@oclif/command'
-import { CreateInterface } from '@joystream/types'
-import { VideoCategoryCreationParameters, VideoCategoryId } from '@joystream/types/content'
 import { VideoCategoryInputSchema } from '../../schemas/ContentDirectory'
 import chalk from 'chalk'
 import { VideoCategoryMetadata } from '@joystream/metadata-protobuf'
@@ -24,14 +24,12 @@ export default class CreateVideoCategoryCommand extends ContentDirectoryCommandB
   async run(): Promise<void> {
     const { context, input } = this.parse(CreateVideoCategoryCommand).flags
 
-    const [actor, address] = context ? await this.getContentActor(context) : await this.getCategoryManagementActor()
+    const [, address] = context ? await this.getContentActor(context) : await this.getCategoryManagementActor()
 
     const videoCategoryInput = await getInputJson<VideoCategoryInputParameters>(input, VideoCategoryInputSchema)
     const meta = asValidatedMetadata(VideoCategoryMetadata, videoCategoryInput)
 
-    const videoCategoryCreationParameters: CreateInterface<VideoCategoryCreationParameters> = {
-      meta: metadataToBytes(VideoCategoryMetadata, meta),
-    }
+    const videoCategoryCreationParameters = metadataToBytes(VideoCategoryMetadata, meta)
 
     this.jsonPrettyPrint(JSON.stringify(videoCategoryInput))
 
@@ -39,13 +37,13 @@ export default class CreateVideoCategoryCommand extends ContentDirectoryCommandB
 
     const result = await this.sendAndFollowNamedTx(
       await this.getDecodedPair(address),
-      'content',
-      'createVideoCategory',
-      [actor, videoCategoryCreationParameters]
+      'contentWorkingGroup',
+      'leadRemark',
+      [videoCategoryCreationParameters]
     )
 
     if (result) {
-      const categoryId: VideoCategoryId = this.getEvent(result, 'content', 'VideoCategoryCreated').data[1]
+      const categoryId = this.getEvent(result, 'contentWorkingGroup', 'LeadRemarked').data[1]
       this.log(chalk.green(`VideoCategory with id ${chalk.cyanBright(categoryId.toString())} successfully created!`))
     }
   }

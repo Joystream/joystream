@@ -1897,7 +1897,14 @@ decl_module! {
 
 
         /// Updates data object state bloat bond value.
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoStorage::<T>::update_data_object_state_bloat_bond()]
         pub fn update_data_object_state_bloat_bond(
             origin,
             state_bloat_bond: BalanceOf<T>,

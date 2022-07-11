@@ -1,5 +1,6 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
-import { Video, VideoId } from '@joystream/types/content'
+import { VideoId } from '@joystream/types/primitives'
+import { PalletContentVideoRecord as Video } from '@polkadot/types/lookup'
 import { displayTable } from '../../helpers/display'
 
 export default class VideosCommand extends ContentDirectoryCommandBase {
@@ -22,14 +23,14 @@ export default class VideosCommand extends ContentDirectoryCommandBase {
 
     let videos: [VideoId, Video][] = await this.getApi().availableVideos()
     if (channelId) {
-      videos = videos.filter(([, v]) => v.in_channel.eqn(parseInt(channelId)))
+      videos = videos.filter(([, v]) => v.inChannel.eqn(parseInt(channelId)))
     }
 
     if (videos.length > 0) {
       displayTable(
         videos.map(([id, v]) => ({
           'ID': id.toString(),
-          'InChannel': v.in_channel.toString(),
+          'InChannel': v.inChannel.toString(),
         })),
         3
       )
