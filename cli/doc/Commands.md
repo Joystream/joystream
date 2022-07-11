@@ -6,7 +6,7 @@ https://github.com/Joystream/community-repo/issues/781
 
 | Tx                                        | CLI Command                           | Useful | Pioneer Support | SP / DP Support | Uses QN |
 | ----------------------------------------- | ------------------------------------- | ------ | --------------- | --------------- | ------- |
-| balances.Transfer                         | account:transferTokens                | X      | X               |                 |         |
+| balances.Transfer                         | account:transferTokens                | X      | X               | -               | -       |
 | content.addCuratorToGroup                 | addCuratorToGroup                     | X      |                 |                 |         |
 | content.channelById                       | channel                               | X      |                 |                 |         |
 | content.channelById                       | channels                              | X      |                 |                 |         |
@@ -32,7 +32,8 @@ https://github.com/Joystream/community-repo/issues/781
 | content.updateVideo                       | content:updateVideo                   | X      |                 |                 |         |
 | content.updateVideoCategory               | content:updateVideoCategory           | X      |                 |                 |         |
 | content.updateVideoCensorshipStatus       | content:updateVideoCensorshipStatus   | X      |                 |                 |         |
-| content.videoById                         |                                       | X      |                 |                 |         |
+| content.videoById                         | content:video                         | X      |                 |                 |         |
+| content.videoById                         | content:videos                        | X      |                 |                 |         |
 | forum.addPost                             | forum:addPost                         | X      |                 |                 |         |
 | query.forum.categoryById                  | forum:categories                      | X      |                 |                 |         |
 | query.forum.categoryById                  | forum:category                        | X      |                 |                 |         |
@@ -47,13 +48,11 @@ https://github.com/Joystream/community-repo/issues/781
 | forum.threadById.entries(categoryId)      | forum:threads                         | X      |                 |                 |         |
 | forum.updateCategoryArchivalStatus        | forum:updateCategoryArchivalStatus    | X      |                 |                 |         |
 | forum.updateCategoryMembershipOfModerator | forum:updateCategoryModeratorStatus   | X      |                 |                 |         |
-| members.addStakingAccountCandidate        |                                       | X      |                 |                 |         |
-| query.members.membershipPrice             |                                       | X      |                 |                 |         |
-| members.addStakingAccountCandidat         |                                       | X      |                 |                 |         |
-| members.buyMembership                     |                                       | X      |                 |                 |         |
-| query.members.membershipById              |                                       | X      |                 |                 |         |
-| members.updateProfile                     |                                       | X      |                 |                 |         |
-| members.updateAccounts                    |                                       | X      |                 |                 |         |
+| members.addStakingAccountCandidate        | membership:addStakingAccount          | X      |                 |                 |         |
+| members.buyMembership                     | membership:buy                        | X      |                 |                 |         |
+| query.members.membershipById              | membership:details                    | X      |                 |                 |         |
+| members.updateProfile                     | membership:update                     | X      |                 |                 |         |
+| members.updateAccounts                    | membership:updateAccounts             | X      |                 |                 |         |
 | staking.validate                          | staking:validate                      | X      | X               | -               | -       |
 | working-groups.application                | working-groups:application            | X      |                 |                 |         |
 | working-groups.apply                      | working-groups:apply                  | X      |                 |                 |         |
