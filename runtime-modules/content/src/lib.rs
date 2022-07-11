@@ -2550,10 +2550,6 @@ decl_module! {
             nft_limit_period: NftLimitPeriod,
             limit: u64,
         ) {
-            if !Self::nft_limits_enabled() {
-                return Ok(());
-            }
-
             ensure_root(origin)?;
 
             let nft_limit_id: NftLimitId<T::ChannelId> = match nft_limit_period {
@@ -2579,10 +2575,6 @@ decl_module! {
             channel_id: T::ChannelId,
             limit: u64,
         ) {
-            if !Self::nft_limits_enabled() {
-                return Ok(());
-            }
-
             let channel = Self::ensure_channel_exists(&channel_id)?;
             ensure_actor_authorized_to_update_channel_nft_limits::<T>(origin, &actor, &channel)?;
 

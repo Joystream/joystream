@@ -441,10 +441,10 @@ decl_module! {
             general_proposal_parameters: GeneralProposalParameters<T>,
             proposal_details: ProposalDetailsOf<T>,
         ) {
-            // no op in case proposal is not enabled
-            if !T::ProposalsEnabled::is_proposal_enabled(&proposal_details) {
-                return Ok(());
-            }
+            ensure!(
+                T::ProposalsEnabled::is_proposal_enabled(&proposal_details),
+                Error::<T>::ProposalNotImplemented,
+            );
 
             Self::ensure_details_checks(&proposal_details)?;
 
