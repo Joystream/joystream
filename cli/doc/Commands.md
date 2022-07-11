@@ -33,20 +33,20 @@ https://github.com/Joystream/community-repo/issues/781
 | content.updateVideoCategory               | content:updateVideoCategory           | X      |                 |                 |         |
 | content.updateVideoCensorshipStatus       | content:updateVideoCensorshipStatus   | X      |                 |                 |         |
 | content.videoById                         |                                       | X      |                 |                 |         |
-| forum.addPost                             |                                       | X      |                 |                 |         |
-| query.forum.categoryById                  |                                       | X      |                 |                 |         |
-| query.forum.categoryById                  |                                       | X      |                 |                 |         |
-| forum.createCategory                      |                                       | X      |                 |                 |         |
-| forum.createThread                        |                                       | X      |                 |                 |         |
-| forum.deleteCategory                      |                                       | X      |                 |                 |         |
-| forum.moderatePost                        |                                       | X      |                 |                 |         |
-| forum.moderateThread                      |                                       | X      |                 |                 |         |
-| forum.moveThreadToCategory                |                                       | X      |                 |                 |         |
-| forum.posts                               |                                       | X      |                 |                 |         |
-| forum.setStickiedThreads                  |                                       | X      |                 |                 |         |
-| forum.threadById.entries(categoryId)      |                                       | X      |                 |                 |         |
-| forum.updateCategoryArchivalStatus        |                                       | X      |                 |                 |         |
-| forum.updateCategoryMembershipOfModerator |                                       | X      |                 |                 |         |
+| forum.addPost                             | forum:addPost                         | X      |                 |                 |         |
+| query.forum.categoryById                  | forum:categories                      | X      |                 |                 |         |
+| query.forum.categoryById                  | forum:category                        | X      |                 |                 |         |
+| forum.createCategory                      | forum:createCategory                  | X      |                 |                 |         |
+| forum.createThread                        | forum:createThread                    | X      |                 |                 |         |
+| forum.deleteCategory                      | forum:deleteCategory                  | X      |                 |                 |         |
+| forum.moderatePost                        | forum:moderatePost                    | X      |                 |                 |         |
+| forum.moderateThread                      | forum:moderateThread                  | X      |                 |                 |         |
+| forum.moveThreadToCategory                | forum:moveThread                      | X      |                 |                 |         |
+| forum.posts                               | forum:posts                           | X      |                 |                 |         |
+| forum.setStickiedThreads                  | forum:setStickiedThreads              | X      |                 |                 |         |
+| forum.threadById.entries(categoryId)      | forum:threads                         | X      |                 |                 |         |
+| forum.updateCategoryArchivalStatus        | forum:updateCategoryArchivalStatus    | X      |                 |                 |         |
+| forum.updateCategoryMembershipOfModerator | forum:updateCategoryModeratorStatus   | X      |                 |                 |         |
 | members.addStakingAccountCandidate        |                                       | X      |                 |                 |         |
 | query.members.membershipPrice             |                                       | X      |                 |                 |         |
 | members.addStakingAccountCandidat         |                                       | X      |                 |                 |         |
@@ -55,6 +55,26 @@ https://github.com/Joystream/community-repo/issues/781
 | members.updateProfile                     |                                       | X      |                 |                 |         |
 | members.updateAccounts                    |                                       | X      |                 |                 |         |
 | staking.validate                          | staking:validate                      | X      | X               | -               | -       |
+| working-groups.application                | working-groups:application            | X      |                 |                 |         |
+| working-groups.apply                      | working-groups:apply                  | X      |                 |                 |         |
+| working-groups.cancelOpening              | working-groups:cancelOpening          | X      |                 |                 |         |
+| working-groups.createOpening              | working-groups:createOpening          | X      |                 |                 |         |
+| working-groups.decreaseWorkerStake        | working-groups:decreaseWorkerStake    | X      |                 |                 |         |
+| working-groups.evictWorker                | working-groups:evictWorker            | X      |                 |                 |         |
+| working-groups.fillOpening                | working-groups:fillOpening            | X      |                 |                 |         |
+| working-groups.increaseStake              | working-groups:increaseStake          | X      |                 |                 |         |
+| working-groups.leaveRole                  | working-groups:leaveRole              | X      |                 |                 |         |
+| working-groups.opening                    | working-groups:opening                | X      |                 |                 |         |
+| working-groups.openings                   | working-groups:openings               | X      |                 |                 |         |
+| working-groups.overview                   | working-groups:overview               | X      |                 |                 |         |
+| working-groups.removeUpcomingOpening      | working-groups:removeUpcomingOpening  | X      |                 |                 |         |
+| working-groups.setDefaultGroup            | working-groups:setDefaultGroup        | X      |                 |                 |         |
+| working-groups.slashWorker                | working-groups:slashWorker            | X      |                 |                 |         |
+| working-groups.updateGroupMetadata        | working-groups:updateGroupMetadata    | X      |                 |                 |         |
+| working-groups.updateRewardAccount        | working-groups:updateRewardAccount    | X      |                 |                 |         |
+| working-groups.updateRoleAccount          | working-groups:updateRoleAccount      | X      |                 |                 |         |
+| working-groups.updateRoleStorage          | working-groups:updateRoleStorage      | X      |                 |                 |         |
+| working-groups.updateWorkerReward         | working-groups:updateWorkerReward     | X      |                 |                 |         |
 
 ## Needed commands
 
@@ -166,22 +186,22 @@ Lists of commands
 | working-groups | setDefaultGroup               |                       | working-groups.setDefaultGroup            | -       | X                 | -           | X          |                 | X               | X      |
 | working-groups | slashWorker                   | WORKERID AMOUNT       | working-groups.slashWorker                | -       | X                 | -           | X          |                 | X               | X      |
 | working-groups | updateGroupMetadata           |                       | working-groups.updateGroupMetadata        | -       | X                 | -           | X          |                 | X               | X      |
-| working-groups | updateRewardAccount           | [ADDRESS]             | working-groups.updateRewardAccount        |         |                   |             |            |                 |                 |        |
-| working-groups | updateRoleAccount             | [ADDRESS]             | working-groups.updateRoleAccount          |         |                   |             |            |                 |                 |        |
-| working-groups | updateRoleStorage             | STORAGE               | working-groups.updateRoleStorage          |         |                   |             |            |                 |                 |        |
-| working-groups | updateWorkerReward            | WORKERID NEWREWARD    | working-groups.updateWorkerReward         |         |                   |             |            |                 |                 |        |
-| incentives     | councilSpending               |                       | ...                                       | X       |                   |             |            |                 |                 |        |
-| incentives     | distributionStats             |                       |                                           | X       |                   |             |            |                 |                 |        |
-| incentives     | getBountyInfo                 |                       |                                           | X       |                   |             |            |                 |                 |        |
-| incentives     | getBountyInfoChain            |                       |                                           | X       |                   |             |            |                 |                 |        |
-| incentives     | getContentStats               |                       |                                           | X       |                   |             |            |                 |                 |        |
-| incentives     | getForumStats                 |                       |                                           | X       |                   |             |            |                 |                 |        |
-| incentives     | getOpenings                   |                       |                                           | X       |                   |             |            |                 |                 |        |
-| incentives     | getOpportunitiesScore         |                       |                                           | X       |                   |             |            |                 |                 |        |
-| incentives     | getWorkersStats               |                       |                                           | X       |                   |             |            |                 |                 |        |
-| incentives     | storageMaintenance            |                       |                                           | X       |                   |             |            |                 |                 |        |
-| incentives     | storageUploads                |                       |                                           | X       |                   |             |            |                 |                 |        |
-| incentives     | validatorRewards              |                       | staking.\*                                | X       |                   |             |            |                 |                 |        |
+| working-groups | updateRewardAccount           | [ADDRESS]             | working-groups.updateRewardAccount        | -       | X                 | X           | X          |                 | X               | X      |
+| working-groups | updateRoleAccount             | [ADDRESS]             | working-groups.updateRoleAccount          | -       | X                 | X           | X          |                 | X               | X      |
+| working-groups | updateRoleStorage             | STORAGE               | working-groups.updateRoleStorage          | -       | X                 | X           | X          |                 | X               | X      |
+| working-groups | updateWorkerReward            | WORKERID NEWREWARD    | working-groups.updateWorkerReward         | -       | X                 | X           | X          |                 | X               | X      |
+| incentives     | councilSpending               |                       | -                                         | -       | -                 | -           | -          | -               | -               | -      |
+| incentives     | distributionStats             |                       | -                                         | -       | -                 | -           | -          | -               | -               | -      |
+| incentives     | getBountyInfo                 |                       | -                                         | -       | -                 | -           | -          | -               | -               | -      |
+| incentives     | getBountyInfoChain            |                       | -                                         | -       | -                 | -           | -          | -               | -               | -      |
+| incentives     | getContentStats               |                       | -                                         | -       | -                 | -           | -          | -               | -               | -      |
+| incentives     | getForumStats                 |                       | -                                         | -       | -                 | -           | -          | -               | -               | -      |
+| incentives     | getOpenings                   |                       | -                                         | -       | -                 | -           | -          | -               | -               | -      |
+| incentives     | getOpportunitiesScore         |                       | -                                         | -       | -                 | -           | -          | -               | -               | -      |
+| incentives     | getWorkersStats               |                       | -                                         | -       | -                 | -           | -          | -               | -               | -      |
+| incentives     | storageMaintenance            |                       | -                                         | -       | -                 | -           | -          | -               | -               | -      |
+| incentives     | storageUploads                |                       | -                                         | -       | -                 | -           | -          | -               | -               | -      |
+| incentives     | validatorRewards              |                       | -                                         | -       | -                 | -           | -          | -               | -               | -      |
 
 ## Api Requests
 
@@ -415,17 +435,16 @@ src/commands/incentives/getOpenings.ts:    const allOpenings = await this.getQNA
 ```
 src/commands/incentives/getWorkersStats.ts:    const rewardPaidEventsBetweenBlocks = await this.getQNApi().rewardPaidEventsBetweenBlocks(startBlock,endBlock)
 src/base/IncentivesCommandBase.ts:    const workerHistory = await this.getQNApi().workerHistory()
+```
 
 #### Members
-```
 
+```
 src/base/IncentivesCommandBase.ts: const recipientRootIsMember = await this.getQNApi().membersByRootAccounts([recipient.account])
 src/base/IncentivesCommandBase.ts: const recipientControllerIsMember = await this.getQNApi().membersByControllerAccounts([recipient.account])
-
 ```
 
 ```
-
 ➜ joystream git:(master) ✗ joystream-cli account --help
 › Warning: @joystream/cli update available from 0.5.1 to 0.8.0.
 Accounts management - create, import or switch currently used account
@@ -441,11 +460,12 @@ account:export Export account(s) to given location
 account:forget Forget (remove) account from the list of available accounts
 account:import Import account using JSON backup file
 account:transferTokens Transfer tokens from currently choosen account
+```
 
 # Errors:
 
 1. When command `staking:validate` used twice in a row with same controller account the dev-chain looks broken and prints this error:
-   s
+   Tried to reproduce
 
 ```
 Jul 10 17:40:20.834  INFO 💤 Idle (0 peers), best: #986 (0xb095…1564), finalized #984 (0x91b6…dd6c), ⬇ 0 ⬆ 0
