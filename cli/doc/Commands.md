@@ -464,7 +464,7 @@ account:transferTokens Transfer tokens from currently choosen account
 # Errors:
 
 1. When command `staking:validate` used twice in a row with same controller account the dev-chain looks broken and prints this error:
-   Tried to reproduce
+   Could not reproduce more than once.
 
 ```
 Jul 10 17:40:20.834  INFO 💤 Idle (0 peers), best: #986 (0xb095…1564), finalized #984 (0x91b6…dd6c), ⬇ 0 ⬆ 0
