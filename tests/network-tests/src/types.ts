@@ -1,7 +1,6 @@
 import { MemberId, ForumPostId, ForumThreadId, ForumCategoryId } from '@joystream/types/primitives'
 import { MembershipBoughtEvent } from './graphql/generated/schema'
 import { PalletProposalsCodexProposalDetails as ProposalDetails } from '@polkadot/types/lookup'
-import { CreateInterface } from '@joystream/types'
 import { ApiPromise } from '@polkadot/api'
 import { AugmentedEvent } from '@polkadot/api/types'
 import { IEvent } from '@polkadot/types/types'
@@ -62,9 +61,11 @@ export type WorkingGroupModuleName =
 // Proposals:
 
 export type ProposalType = ProposalDetails['type']
-export type ProposalDetailsJsonByType<T extends ProposalType = ProposalType> = CreateInterface<
-  InstanceType<ProposalDetails['type'][T]>
->
+// export type ProposalDetailsJsonByType<T extends ProposalType = ProposalType> = CreateInterface<
+//   InstanceType<ProposalDetails['type'][T]>
+// >
+
+export type ProposalDetailsJsonByType<T extends ProposalType = ProposalType> = ProposalDetails[`as${T}`]
 // Forum
 
 export type ThreadPath = {

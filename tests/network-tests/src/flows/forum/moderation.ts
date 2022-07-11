@@ -39,8 +39,13 @@ export default async function threads({ api, query }: FlowProps): Promise<void> 
         ...genericModerationInput,
         rationale: `Moderate thread ${i} in category ${categoryId.toString()} rationale`,
       })
+
+      const allPosts = [
+        initializeForumFixture.getCreatedInitialPostByThreadId(threadId),
+        ...initializeForumFixture.getCreatedPostsByThreadId(threadId),
+      ]
       postModerations = postModerations.concat(
-        initializeForumFixture.getCreatedPostsByThreadId(threadId).map((postId, j) => ({
+        allPosts.map((postId, j) => ({
           ...genericModerationInput,
           postId,
           rationale: `Moderate post ${j} in thread ${i} in category ${categoryId.toString()} rationale`,
@@ -50,19 +55,21 @@ export default async function threads({ api, query }: FlowProps): Promise<void> 
     // Moderate as lead
     const threadId = categoryThreads[i]
     threadModerations.push({ categoryId, threadId })
-    postModerations = postModerations.concat(
-      initializeForumFixture.getCreatedPostsByThreadId(threadId).map((postId) => ({ categoryId, threadId, postId }))
-    )
+    const allPosts = [
+      initializeForumFixture.getCreatedInitialPostByThreadId(threadId),
+      ...initializeForumFixture.getCreatedPostsByThreadId(threadId),
+    ]
+    postModerations = postModerations.concat(allPosts.map((postId) => ({ categoryId, threadId, postId })))
   })
 
   // Run fixtures
-  const moderateThreadsFixture = new ModerateThreadsFixture(api, query, threadModerations)
-  const moderateThreadsRunner = new FixtureRunner(moderateThreadsFixture)
-  await moderateThreadsRunner.run()
-
   const moderatePostsFixture = new ModeratePostsFixture(api, query, postModerations)
   const moderatePostsRunner = new FixtureRunner(moderatePostsFixture)
   await moderatePostsRunner.run()
+
+  const moderateThreadsFixture = new ModerateThreadsFixture(api, query, threadModerations)
+  const moderateThreadsRunner = new FixtureRunner(moderateThreadsFixture)
+  await moderateThreadsRunner.run()
 
   // Run query-node checks
   await Promise.all([moderateThreadsFixture.runQueryNodeChecks(), moderatePostsFixture.runQueryNodeChecks()])

@@ -35,7 +35,7 @@ export default class RemoveChannelAssetsCommand extends ContentDirectoryCommandB
     await this.sendAndFollowNamedTx(await this.getDecodedPair(address), 'content', 'updateChannel', [
       actor,
       channelId,
-      { assets_to_remove: createType('BTreeSet<DataObjectId>', objectIds) },
+      { assetsToRemove: createType('BTreeSet<DataObjectId>', objectIds) },
     ])
   }
 }

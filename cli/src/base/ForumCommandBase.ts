@@ -1,13 +1,22 @@
-import { Category, CategoryId, Post, PrivilegedActor, Thread } from '@joystream/types/forum'
+import {
+  PalletForumCategory as Category,
+  PalletForumPost as Post,
+  PalletForumPrivilegedActor as PrivilegedActor,
+  PalletForumThread as Thread,
+} from '@polkadot/types/lookup'
 import { WorkingGroups } from '../Types'
 import { flags } from '@oclif/command'
 import WorkingGroupCommandBase from './WorkingGroupCommandBase'
 import chalk from 'chalk'
 import ExitCodes from '../ExitCodes'
 import { createType } from '@joystream/types'
-import { AccountId, PostId, ThreadId } from '@joystream/types/common'
-import { WorkerId } from '@joystream/types/working-group'
-
+import {
+  WorkerId,
+  ForumPostId as PostId,
+  ForumThreadId as ThreadId,
+  ForumCategoryId as CategoryId,
+} from '@joystream/types/primitives'
+import { AccountId } from '@polkadot/types/interfaces'
 const FORUM_MODERATION_CONTEXT = ['Leader', 'Moderator'] as const
 
 type ForumModerationContext = typeof FORUM_MODERATION_CONTEXT[number]
@@ -99,17 +108,14 @@ export default abstract class ForumCommandBase extends WorkingGroupCommandBase {
     }
     return Array.from(categoriesCountByModeratorId.entries())
       .filter(([, count]) => count === categories.length)
-      .map(([id]) => createType<WorkerId, 'WorkerId'>('WorkerId', id))
+      .map(([id]) => createType('u64', id))
   }
 
   async getForumModeratorContext(categories: CategoryId[] | number[]): Promise<[AccountId, PrivilegedActor]> {
     const moderators = await this.getIdsOfModeratorsWithAccessToCategories(categories)
     try {
       const worker = await this.getRequiredWorkerContext('Role', moderators)
-      return [
-        worker.roleAccount,
-        createType<PrivilegedActor, 'PrivilegedActor'>('PrivilegedActor', { Moderator: worker.workerId }),
-      ]
+      return [worker.roleAccount, createType('PalletForumPrivilegedActor', { Moderator: worker.workerId })]
     } catch (e) {
       this.error(
         `Moderator access to categories: ${categories
@@ -122,7 +128,7 @@ export default abstract class ForumCommandBase extends WorkingGroupCommandBase {
 
   async getForumLeadContext(): Promise<[AccountId, PrivilegedActor]> {
     const lead = await this.getRequiredLeadContext()
-    return [lead.roleAccount, createType<PrivilegedActor, 'PrivilegedActor'>('PrivilegedActor', 'Lead')]
+    return [lead.roleAccount, createType('PalletForumPrivilegedActor', 'Lead')]
   }
 
   async getForumModerationContext(

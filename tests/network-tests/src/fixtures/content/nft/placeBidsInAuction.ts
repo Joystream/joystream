@@ -1,5 +1,5 @@
 import { Api } from '../../../Api'
-import { BaseQueryNodeFixture, FixtureRunner } from '../../../Fixture'
+import { BaseQueryNodeFixture } from '../../../Fixture'
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { IMember } from '../createMembers'
 import BN from 'bn.js'

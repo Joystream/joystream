@@ -6,12 +6,12 @@ import { QueryNodeApi } from '../../QueryNodeApi'
 import { EventDetails, EventType, WorkingGroupModuleName } from '../../types'
 import { BaseWorkingGroupFixture } from './BaseWorkingGroupFixture'
 import _ from 'lodash'
-import { MemberId } from '@joystream/types/common'
-import { ApplicationId, Opening, OpeningId } from '@joystream/types/working-group'
+import { MemberId, ApplicationId, OpeningId } from '@joystream/types/primitives'
+import { PalletWorkingGroupOpening as Opening } from '@polkadot/types/lookup'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { Utils } from '../../utils'
-
+import { createType } from '@joystream/types'
 export type ApplicantDetails = {
   memberId: MemberId
   roleAccount: string
@@ -74,14 +74,14 @@ export class ApplyOnOpeningsHappyCaseFixture extends BaseWorkingGroupFixture {
       const openingIndex = openingIds.findIndex((id) => id === a.openingId.toString())
       const opening = openings[openingIndex]
       return this.api.tx[this.group].applyOnOpening({
-        member_id: a.applicant.memberId,
+        memberId: a.applicant.memberId,
         description: Utils.metadataToBytes(ApplicationMetadata, this.getApplicationMetadata(a.openingMetadata, i)),
-        opening_id: a.openingId,
-        reward_account_id: a.applicant.rewardAccount,
-        role_account_id: a.applicant.roleAccount,
-        stake_parameters: {
-          stake: opening.stake_policy.stake_amount,
-          staking_account_id: a.applicant.stakingAccount,
+        openingId: a.openingId,
+        rewardAccountId: a.applicant.rewardAccount,
+        roleAccountId: a.applicant.roleAccount,
+        stakeParameters: {
+          stake: opening.stakePolicy.stakeAmount,
+          stakingAccountId: a.applicant.stakingAccount,
         },
       })
     })
@@ -134,7 +134,7 @@ export class ApplyOnOpeningsHappyCaseFixture extends BaseWorkingGroupFixture {
       assert.equal(qApplication.rewardAccount, applicationDetails.applicant.rewardAccount)
       assert.equal(qApplication.stakingAccount, applicationDetails.applicant.stakingAccount)
       assert.equal(qApplication.status.__typename, 'ApplicationStatusPending')
-      assert.equal(qApplication.stake, e.event.data[0].stake_parameters.stake)
+      assert.equal(qApplication.stake, e.event.data[0].stakeParameters.stake)
 
       const applicationMetadata = this.getApplicationMetadata(applicationDetails.openingMetadata, i)
       assert.deepEqual(

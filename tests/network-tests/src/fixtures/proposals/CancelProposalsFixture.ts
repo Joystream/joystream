@@ -6,7 +6,9 @@ import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { ProposalCancelledEventFieldsFragment, ProposalFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
-import { Proposal, ProposalId } from '@joystream/types/proposals'
+import { ProposalId } from '@joystream/types/primitives'
+import { PalletProposalsEngineProposal as Proposal } from '@polkadot/types/lookup'
+
 import { StandardizedFixture } from '../../Fixture'
 
 export class CancelProposalsFixture extends StandardizedFixture {
