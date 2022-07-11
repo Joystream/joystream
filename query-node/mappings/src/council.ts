@@ -89,17 +89,16 @@ async function getCandidate(
   electionRound?: ElectionRound,
   relations: string[] = []
 ): Promise<Candidate> {
-  const event = await store.get(NewCandidateEvent, {
-    join: { alias: 'event', innerJoin: { candidate: 'event.candidate' } },
-    where: (qb: SelectQueryBuilder<NewCandidateEvent>) => {
-      qb.where('candidate.memberId = :memberId', { memberId })
-      if (electionRound) {
-        qb.andWhere('candidate.electionRoundId = :electionRoundId', { electionRoundId: electionRound.id })
-      }
-    },
+  console.log(`Getting candidate by member id ${memberId} in election round ${electionRound}`)
+  const event = await store.get<NewCandidateEvent>(NewCandidateEvent, {
+    where: electionRound
+      ? { candidate: { member: { id: memberId }, electionRound: { id: electionRound.id } } }
+      : { candidate: { member: { id: memberId } } },
     order: { inBlock: 'DESC', indexInBlock: 'DESC' },
     relations: ['candidate'].concat(relations.map((r) => `candidate.${r}`)),
-  } as FindOneOptions<NewCandidateEvent>)
+  })
+
+  console.log(`Candidate got: ${event?.candidate.id}`)
 
   if (!event) {
     throw new Error(`Candidate not found. memberId '${memberId}' electionRound '${electionRound?.id}'`)
