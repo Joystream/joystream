@@ -89,7 +89,6 @@ async function getCandidate(
   electionRound?: ElectionRound,
   relations: string[] = []
 ): Promise<Candidate> {
-  console.log(`Getting candidate by member id ${memberId} in election round ${electionRound}`)
   const event = await store.get<NewCandidateEvent>(NewCandidateEvent, {
     where: electionRound
       ? { candidate: { member: { id: memberId }, electionRound: { id: electionRound.id } } }
@@ -97,8 +96,6 @@ async function getCandidate(
     order: { inBlock: 'DESC', indexInBlock: 'DESC' },
     relations: ['candidate'].concat(relations.map((r) => `candidate.${r}`)),
   })
-
-  console.log(`Candidate got: ${event?.candidate.id}`)
 
   if (!event) {
     throw new Error(`Candidate not found. memberId '${memberId}' electionRound '${electionRound?.id}'`)
