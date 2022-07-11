@@ -7,73 +7,73 @@ https://github.com/Joystream/community-repo/issues/781
 | Tx                                        | CLI Command                           | Useful | Pioneer Support | SP / DP Support | Uses QN |
 | ----------------------------------------- | ------------------------------------- | ------ | --------------- | --------------- | ------- |
 | balances.Transfer                         | account:transferTokens                | X      | X               | -               | -       |
-| content.addCuratorToGroup                 | addCuratorToGroup                     | X      |                 |                 |         |
-| content.channelById                       | channel                               | X      |                 |                 |         |
-| content.channelById                       | channels                              | X      |                 |                 |         |
-| content.createChannel                     | createChannel                         | X      |                 |                 |         |
-| content.createChannelCategory             | createChannelCategory                 | X      |                 |                 |         |
-| content.createCuratorGroup                | createCuratorGroup                    | X      |                 |                 |         |
-| content.createVideo                       | createVideo                           | X      |                 |                 |         |
-| content.createVideoCategory               | createVideoCategory                   | X      |                 |                 |         |
-| content.curatorGroupById                  | curatorGroup                          | X      |                 |                 |         |
-| content.curatorGroupById                  | curatorGroups                         | X      |                 |                 |         |
-| content.deleteChannel                     | deleteChannel                         | X      |                 |                 |         |
-| content.deleteChannelCategory             | deleteChannelCategory                 | X      |                 |                 |         |
-| content.deleteVideo                       | deleteVideo                           | X      |                 |                 |         |
-| content.deleteVideoCategory               | deleteVideoCategory                   | X      |                 |                 |         |
-| content.removeChannelAssets               | removeChannelAssets                   | X      |                 |                 |         |
-| content.removeCuratorFromGroup            | removeCuratorFromGroup                | X      |                 |                 |         |
-| content.setCuratorGroupStatus             | content:setCuratorGroupStatus         | X      |                 |                 |         |
-| content.setFeaturedVideos                 | content:setFeaturedVideos             | X      |                 |                 |         |
-| content.updateChannel                     | content:updateChannel                 | X      |                 |                 |         |
-| content.updateChannelCategory             | content:updateChannelCategory         | X      |                 |                 |         |
-| content.updateChannelCensorshipStatus     | content:updateChannelCensorshipStatus | X      |                 |                 |         |
-| content.updateChannelModerators           | content:updateChannelModerators       | X      |                 |                 |         |
-| content.updateVideo                       | content:updateVideo                   | X      |                 |                 |         |
-| content.updateVideoCategory               | content:updateVideoCategory           | X      |                 |                 |         |
-| content.updateVideoCensorshipStatus       | content:updateVideoCensorshipStatus   | X      |                 |                 |         |
-| content.videoById                         | content:video                         | X      |                 |                 |         |
-| content.videoById                         | content:videos                        | X      |                 |                 |         |
-| forum.addPost                             | forum:addPost                         | X      |                 |                 |         |
-| query.forum.categoryById                  | forum:categories                      | X      |                 |                 |         |
-| query.forum.categoryById                  | forum:category                        | X      |                 |                 |         |
-| forum.createCategory                      | forum:createCategory                  | X      |                 |                 |         |
-| forum.createThread                        | forum:createThread                    | X      |                 |                 |         |
-| forum.deleteCategory                      | forum:deleteCategory                  | X      |                 |                 |         |
-| forum.moderatePost                        | forum:moderatePost                    | X      |                 |                 |         |
-| forum.moderateThread                      | forum:moderateThread                  | X      |                 |                 |         |
-| forum.moveThreadToCategory                | forum:moveThread                      | X      |                 |                 |         |
-| forum.posts                               | forum:posts                           | X      |                 |                 |         |
-| forum.setStickiedThreads                  | forum:setStickiedThreads              | X      |                 |                 |         |
-| forum.threadById.entries(categoryId)      | forum:threads                         | X      |                 |                 |         |
-| forum.updateCategoryArchivalStatus        | forum:updateCategoryArchivalStatus    | X      |                 |                 |         |
-| forum.updateCategoryMembershipOfModerator | forum:updateCategoryModeratorStatus   | X      |                 |                 |         |
-| members.addStakingAccountCandidate        | membership:addStakingAccount          | X      |                 |                 |         |
-| members.buyMembership                     | membership:buy                        | X      |                 |                 |         |
-| query.members.membershipById              | membership:details                    | X      |                 |                 |         |
-| members.updateProfile                     | membership:update                     | X      |                 |                 |         |
-| members.updateAccounts                    | membership:updateAccounts             | X      |                 |                 |         |
+| content.addCuratorToGroup                 | content:addCuratorToGroup             | X      | -               | -               | -       |
+| content.channelById                       | content:channel                       | X      | -               | -               | -       |
+| content.channelById                       | content:channels                      | X      | -               | -               | -       |
+| content.createChannel                     | content:createChannel                 | X      | -               |                 | X       |
+| content.createChannelCategory             | content:createChannelCategory         | X      | -               |                 | -       |
+| content.createCuratorGroup                | content:createCuratorGroup            | X      | -               |                 | -       |
+| content.createVideo                       | content:createVideo                   | X      | -               |                 | X       |
+| content.createVideoCategory               | content:createVideoCategory           | X      | -               |                 | -       |
+| content.curatorGroupById                  | content:curatorGroup                  | X      | -               |                 | -       |
+| content.curatorGroupById                  | content:curatorGroups                 | X      | -               |                 | -       |
+| content.deleteChannel                     | content:deleteChannel                 | X      | -               |                 | X       |
+| content.deleteChannelCategory             | content:deleteChannelCategory         | X      | -               |                 | -       |
+| content.deleteVideo                       | content:deleteVideo                   | X      | -               |                 | X       |
+| content.deleteVideoCategory               | content:deleteVideoCategory           | X      | -               |                 | -       |
+| content.removeChannelAssets               | content:removeChannelAssets           | X      | -               |                 | -       |
+| content.removeCuratorFromGroup            | content:removeCuratorFromGroup        | X      | -               |                 | -       |
+| content.setCuratorGroupStatus             | content:setCuratorGroupStatus         | X      | -               |                 | -       |
+| content.setFeaturedVideos                 | content:setFeaturedVideos             | X      | -               |                 | -       |
+| content.updateChannel                     | content:updateChannel                 | X      | -               |                 | X       |
+| content.updateChannelCategory             | content:updateChannelCategory         | X      | -               |                 | -       |
+| content.updateChannelCensorshipStatus     | content:updateChannelCensorshipStatus | X      | -               |                 | -       |
+| content.updateChannelModerators           | content:updateChannelModerators       | X      | -               |                 | -       |
+| content.updateVideo                       | content:updateVideo                   | X      | -               |                 | X       |
+| content.updateVideoCategory               | content:updateVideoCategory           | X      | -               |                 | -       |
+| content.updateVideoCensorshipStatus       | content:updateVideoCensorshipStatus   | X      | -               |                 | -       |
+| content.videoById                         | content:video                         | X      | -               |                 | -       |
+| content.videoById                         | content:videos                        | X      | -               |                 | -       |
+| forum.addPost                             | forum:addPost                         | X      | X               |                 | -       |
+| query.forum.categoryById                  | forum:categories                      | X      | X               |                 | -       |
+| query.forum.categoryById                  | forum:category                        | X      | X               |                 | -       |
+| forum.createCategory                      | forum:createCategory                  | X      | X               |                 | -       |
+| forum.createThread                        | forum:createThread                    | X      | X               |                 | -       |
+| forum.deleteCategory                      | forum:deleteCategory                  | X      | X               |                 | -       |
+| forum.moderatePost                        | forum:moderatePost                    | X      | -               |                 | -       |
+| forum.moderateThread                      | forum:moderateThread                  | X      | -               |                 | -       |
+| forum.moveThreadToCategory                | forum:moveThread                      | X      |                 |                 | -       |
+| forum.posts                               | forum:posts                           | X      | X               |                 | -       |
+| forum.setStickiedThreads                  | forum:setStickiedThreads              | X      | -               |                 | -       |
+| forum.threadById.entries(categoryId)      | forum:threads                         | X      | X               |                 | -       |
+| forum.updateCategoryArchivalStatus        | forum:updateCategoryArchivalStatus    | X      | -               |                 | -       |
+| forum.updateCategoryMembershipOfModerator | forum:updateCategoryModeratorStatus   | X      | -               |                 | -       |
+| members.addStakingAccountCandidate        | membership:addStakingAccount          | X      | X               |                 | -       |
+| members.buyMembership                     | membership:buy                        | X      | X               |                 | -       |
+| query.members.membershipById              | membership:details                    | X      | X               |                 | -       |
+| members.updateProfile                     | membership:update                     | X      | X               |                 | -       |
+| members.updateAccounts                    | membership:updateAccounts             | X      | X               |                 | -       |
 | staking.validate                          | staking:validate                      | X      | X               | -               | -       |
-| working-groups.application                | working-groups:application            | X      |                 |                 |         |
-| working-groups.apply                      | working-groups:apply                  | X      |                 |                 |         |
-| working-groups.cancelOpening              | working-groups:cancelOpening          | X      |                 |                 |         |
-| working-groups.createOpening              | working-groups:createOpening          | X      |                 |                 |         |
-| working-groups.decreaseWorkerStake        | working-groups:decreaseWorkerStake    | X      |                 |                 |         |
-| working-groups.evictWorker                | working-groups:evictWorker            | X      |                 |                 |         |
-| working-groups.fillOpening                | working-groups:fillOpening            | X      |                 |                 |         |
-| working-groups.increaseStake              | working-groups:increaseStake          | X      |                 |                 |         |
-| working-groups.leaveRole                  | working-groups:leaveRole              | X      |                 |                 |         |
-| working-groups.opening                    | working-groups:opening                | X      |                 |                 |         |
-| working-groups.openings                   | working-groups:openings               | X      |                 |                 |         |
-| working-groups.overview                   | working-groups:overview               | X      |                 |                 |         |
-| working-groups.removeUpcomingOpening      | working-groups:removeUpcomingOpening  | X      |                 |                 |         |
-| working-groups.setDefaultGroup            | working-groups:setDefaultGroup        | X      |                 |                 |         |
-| working-groups.slashWorker                | working-groups:slashWorker            | X      |                 |                 |         |
-| working-groups.updateGroupMetadata        | working-groups:updateGroupMetadata    | X      |                 |                 |         |
-| working-groups.updateRewardAccount        | working-groups:updateRewardAccount    | X      |                 |                 |         |
-| working-groups.updateRoleAccount          | working-groups:updateRoleAccount      | X      |                 |                 |         |
-| working-groups.updateRoleStorage          | working-groups:updateRoleStorage      | X      |                 |                 |         |
-| working-groups.updateWorkerReward         | working-groups:updateWorkerReward     | X      |                 |                 |         |
+| working-groups.application                | working-groups:application            | X      | X               |                 | -       |
+| working-groups.apply                      | working-groups:apply                  | X      | X               |                 | -       |
+| working-groups.cancelOpening              | working-groups:cancelOpening          | X      | X               |                 | -       |
+| working-groups.createOpening              | working-groups:createOpening          | X      | X               |                 | -       |
+| working-groups.decreaseWorkerStake        | working-groups:decreaseWorkerStake    | X      | X               |                 | -       |
+| working-groups.evictWorker                | working-groups:evictWorker            | X      | X               |                 | -       |
+| working-groups.fillOpening                | working-groups:fillOpening            | X      | -               |                 | -       |
+| working-groups.increaseStake              | working-groups:increaseStake          | X      | X               |                 | -       |
+| working-groups.leaveRole                  | working-groups:leaveRole              | X      | X               |                 | -       |
+| working-groups.opening                    | working-groups:opening                | X      | X               |                 | X       |
+| working-groups.openings                   | working-groups:openings               | X      | X               |                 | X       |
+| working-groups.overview                   | working-groups:overview               | X      | X               |                 | -       |
+| working-groups.removeUpcomingOpening      | working-groups:removeUpcomingOpening  | X      | -               |                 | X       |
+| working-groups.setDefaultGroup            | working-groups:setDefaultGroup        | X      | -               |                 | -       |
+| working-groups.slashWorker                | working-groups:slashWorker            | X      | -               |                 | -       |
+| working-groups.updateGroupMetadata        | working-groups:updateGroupMetadata    | X      | -               |                 | -       |
+| working-groups.updateRewardAccount        | working-groups:updateRewardAccount    | X      | X               |                 | -       |
+| working-groups.updateRoleAccount          | working-groups:updateRoleAccount      | X      | X               |                 | -       |
+| working-groups.updateRoleStorage          | working-groups:updateRoleStorage      | X      | -               |                 | -       |
+| working-groups.updateWorkerReward         | working-groups:updateWorkerReward     | X      | -               |                 | -       |
 
 ## Needed commands
 
