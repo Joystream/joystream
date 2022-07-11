@@ -42,7 +42,7 @@ https://github.com/Joystream/community-repo/issues/781
 | forum.deleteCategory                      | forum:deleteCategory                  | X      | X               |                 | -       |
 | forum.moderatePost                        | forum:moderatePost                    | X      | -               |                 | -       |
 | forum.moderateThread                      | forum:moderateThread                  | X      | -               |                 | -       |
-| forum.moveThreadToCategory                | forum:moveThread                      | X      |                 |                 | -       |
+| forum.moveThreadToCategory                | forum:moveThread                      | X      | -               |                 | -       |
 | forum.posts                               | forum:posts                           | X      | X               |                 | -       |
 | forum.setStickiedThreads                  | forum:setStickiedThreads              | X      | -               |                 | -       |
 | forum.threadById.entries(categoryId)      | forum:threads                         | X      | X               |                 | -       |
