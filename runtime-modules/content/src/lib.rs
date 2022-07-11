@@ -1417,39 +1417,41 @@ decl_module! {
 
         /// Destroy NFT
         #[weight = 10_000_000] // TODO: adjust weight
+        #[allow(unused_variables)]
         pub fn destroy_nft(
-            _origin,
-            _actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            _video_id: T::VideoId
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            video_id: T::VideoId
         ) {
-            return Err(Error::<T>::FeatureNotImplemented.into());
             // TODO: enable after Carthage
-            // // Ensure given video exists
-            // let video = Self::ensure_video_exists(&video_id)?;
+            return Err(Error::<T>::FeatureNotImplemented.into());
 
-            // // Ensure nft is already issued
-            // let nft = video.ensure_nft_is_issued::<T>()?;
+            // Ensure given video exists
+            let video = Self::ensure_video_exists(&video_id)?;
 
-            // // block extrinsics during transfers
-            // Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
+            // Ensure nft is already issued
+            let nft = video.ensure_nft_is_issued::<T>()?;
 
-            // // Authorize nft destruction
-            // ensure_actor_authorized_to_manage_nft::<T>(origin, &actor, &nft.owner, video.in_channel)?;
+            // block extrinsics during transfers
+            Self::channel_by_id(video.in_channel).ensure_has_no_active_transfer::<T>()?;
 
-            // // Ensure there nft transactional status is set to idle.
-            // Self::ensure_nft_transactional_status_is_idle(&nft)?;
+            // Authorize nft destruction
+            ensure_actor_authorized_to_manage_nft::<T>(origin, &actor, &nft.owner, video.in_channel)?;
 
-            // //
-            // // == MUTATION SAFE ==
-            // //
+            // Ensure there nft transactional status is set to idle.
+            Self::ensure_nft_transactional_status_is_idle(&nft)?;
 
-            // // Update the video
-            // VideoById::<T>::mutate(video_id, |v| v.destroy_nft());
+            //
+            // == MUTATION SAFE ==
+            //
 
-            // Self::deposit_event(RawEvent::NftDestroyed(
-            //     actor,
-            //     video_id,
-            // ));
+            // Update the video
+            VideoById::<T>::mutate(video_id, |v| v.destroy_nft());
+
+            Self::deposit_event(RawEvent::NftDestroyed(
+                actor,
+                video_id,
+            ));
         }
 
         /// Start video nft open auction
@@ -2369,21 +2371,23 @@ decl_module! {
 
         /// Only Council can toggle nft issuance limits constraints
         #[weight = 10_000_000] // TODO: adjust weight
+        #[allow(unused_variables)]
         pub fn toggle_nft_limits(
-            _origin,
-            _enabled: bool
+            origin,
+            enabled: bool
         ) {
             // TODO: enable after Carthage
             return Err(Error::<T>::FeatureNotImplemented.into());
-            // let _ = ensure_root(origin)?;
 
-            // //
-            // // == MUTATION SAFE ==
-            // //
+            let _ = ensure_root(origin)?;
 
-            // NftLimitsEnabled::mutate(|nft_limits| *nft_limits = enabled);
+            //
+            // == MUTATION SAFE ==
+            //
 
-            // Self::deposit_event(RawEvent::ToggledNftLimits(enabled));
+            NftLimitsEnabled::mutate(|nft_limits| *nft_limits = enabled);
+
+            Self::deposit_event(RawEvent::ToggledNftLimits(enabled));
         }
 
         /// Channel owner remark
@@ -2435,8 +2439,6 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             transfer_params: InitTransferParametersOf<T>,
         ) {
-            return Err(Error::<T>::FeatureNotImplemented.into());
-
             let channel = Self::ensure_channel_exists(&channel_id)?;
 
             channel.ensure_has_no_active_transfer::<T>()?;
@@ -2498,7 +2500,6 @@ decl_module! {
                     RawEvent::CancelChannelTransfer(channel_id, actor)
                 );
             }
-
         }
 
 

@@ -117,8 +117,6 @@ fn initialize_channel_transfer_fails_during_upcoming_revenue_split() {
     })
 }
 
-// TODO: Enable after enabling channel transfers
-#[ignore]
 // TODO: enable after enabling channel transfers
 #[ignore]
 #[test]
@@ -150,8 +148,6 @@ fn initialize_channel_transfer_fails_during_ongoing_revenue_split() {
 
 // TODO: Enable after enabling channel transfers
 #[ignore]
-// TODO: enable after enabling channel transfers
-#[ignore]
 #[test]
 fn initialize_channel_transfer_fails_during_unfinalized_revenue_split() {
     pub const SPLIT_STARTING_BLOCK: u64 = 10;
@@ -181,8 +177,6 @@ fn initialize_channel_transfer_fails_during_unfinalized_revenue_split() {
 
 // TODO: Enable after enabling channel transfers
 #[ignore]
-// TODO: enable after enabling channel transfers
-#[ignore]
 #[test]
 fn initialize_channel_transfer_fails_during_upcoming_token_sales() {
     pub const SALE_STARTING_BLOCK: u64 = 10;
@@ -201,8 +195,6 @@ fn initialize_channel_transfer_fails_during_upcoming_token_sales() {
 }
 
 // TODO: Enable after enabling channel transfers
-#[ignore]
-// TODO: enable after enabling channel transfers
 #[ignore]
 #[test]
 fn initialize_channel_transfer_fails_during_ongoing_token_sales() {
@@ -224,8 +216,6 @@ fn initialize_channel_transfer_fails_during_ongoing_token_sales() {
 
 // TODO: Enable after enabling channel transfers
 #[ignore]
-// TODO: enable after enabling channel transfers
-#[ignore]
 #[test]
 fn initialize_channel_transfer_fails_during_unfinalized_token_sales() {
     pub const SALE_STARTING_BLOCK: u64 = 10;
@@ -245,8 +235,6 @@ fn initialize_channel_transfer_fails_during_unfinalized_token_sales() {
 }
 
 // TODO: Enable after enabling channel transfers
-#[ignore]
-// TODO: enable after enabling channel transfers
 #[ignore]
 #[test]
 fn initialize_channel_transfer_fails_with_invalid_channel_id() {
