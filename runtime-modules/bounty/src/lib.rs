@@ -623,9 +623,6 @@ decl_event! {
 decl_error! {
     /// Bounty pallet predefined errors
     pub enum Error for Module<T: Config> {
-        /// Feature not implemented error
-        FeatureNotImplemented,
-
         /// Min funding amount cannot be greater than max amount.
         MinFundingAmountCannotBeGreaterThanMaxAmount,
 
