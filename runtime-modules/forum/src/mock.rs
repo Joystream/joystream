@@ -119,7 +119,7 @@ impl working_group::Config<ForumWorkingGroupInstance> for Runtime {
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
-    type WeightInfo = Weights;
+    type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
@@ -130,168 +130,6 @@ impl LockComparator<<Runtime as balances::Config>::Balance> for Runtime {
         _existing_locks: &[LockIdentifier],
     ) -> bool {
         false
-    }
-}
-
-// Weights info stub
-pub struct Weights;
-impl working_group::WeightInfo for Weights {
-    fn on_initialize_leaving(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn on_initialize_rewarding_with_missing_reward(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn on_initialize_rewarding_with_missing_reward_cant_pay(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn on_initialize_rewarding_without_missing_reward(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn apply_on_opening(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn fill_opening_lead() -> u64 {
-        unimplemented!()
-    }
-
-    fn fill_opening_worker(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn update_role_account() -> u64 {
-        unimplemented!()
-    }
-
-    fn cancel_opening() -> u64 {
-        unimplemented!()
-    }
-
-    fn withdraw_application() -> u64 {
-        unimplemented!()
-    }
-
-    fn slash_stake(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn terminate_role_worker(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn terminate_role_lead(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn increase_stake() -> u64 {
-        unimplemented!()
-    }
-
-    fn decrease_stake() -> u64 {
-        unimplemented!()
-    }
-
-    fn spend_from_budget() -> u64 {
-        unimplemented!()
-    }
-
-    fn update_reward_amount() -> u64 {
-        unimplemented!()
-    }
-
-    fn set_status_text(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn update_reward_account() -> u64 {
-        unimplemented!()
-    }
-
-    fn set_budget() -> u64 {
-        unimplemented!()
-    }
-
-    fn add_opening(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn leave_role(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn fund_working_group_budget() -> Weight {
-        0
-    }
-    fn lead_remark() -> u64 {
-        unimplemented!()
-    }
-    fn worker_remark() -> u64 {
-        unimplemented!()
-    }
-}
-
-impl membership::WeightInfo for Weights {
-    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_profile(_: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_none() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_root() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_controller() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_both() -> Weight {
-        unimplemented!()
-    }
-    fn set_referral_cut() -> Weight {
-        unimplemented!()
-    }
-    fn transfer_invites() -> Weight {
-        unimplemented!()
-    }
-    fn invite_member(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn set_membership_price() -> Weight {
-        unimplemented!()
-    }
-    fn update_profile_verification() -> Weight {
-        unimplemented!()
-    }
-    fn set_leader_invitation_quota() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_balance() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_count() -> Weight {
-        unimplemented!()
-    }
-    fn add_staking_account_candidate() -> Weight {
-        unimplemented!()
-    }
-    fn confirm_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn remove_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn member_remark() -> Weight {
-        unimplemented!()
     }
 }
 
@@ -323,7 +161,7 @@ impl membership::Config for Runtime {
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type WorkingGroup = Wg;
-    type WeightInfo = Weights;
+    type WeightInfo = ();
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InviteMemberLockId>;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type StakingCandidateStakingHandler =
@@ -432,110 +270,37 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for Wg {
     }
 
     fn is_leader_account_id(account_id: &<Runtime as frame_system::Config>::AccountId) -> bool {
-        *account_id != NOT_FORUM_LEAD_ORIGIN_ID && *account_id != NOT_FORUM_LEAD_2_ORIGIN_ID
+        *account_id == FORUM_LEAD_ORIGIN_ID
     }
 
     fn is_worker_account_id(
         account_id: &<Runtime as frame_system::Config>::AccountId,
-        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
+        worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
-        *account_id != NOT_FORUM_MODERATOR_ORIGIN_ID
+        Self::worker_exists(worker_id) && *account_id == *worker_id
     }
 
     fn worker_exists(
-        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
+        worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
-        unimplemented!();
+        [
+            FORUM_LEAD_ORIGIN_ID,
+            FORUM_MODERATOR_ORIGIN_ID,
+            FORUM_MODERATOR_2_ORIGIN_ID,
+        ]
+        .iter()
+        .chain(EXTRA_MODERATORS.iter())
+        .any(|id| *id == *worker_id)
     }
 
     fn ensure_worker_exists(
-        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
+        worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
-        unimplemented!();
-    }
-}
-
-impl WeightInfo for () {
-    fn create_category(_: u32, _: u32, _: u32) -> Weight {
-        0
-    }
-    fn update_category_membership_of_moderator_new() -> Weight {
-        0
-    }
-    fn update_category_membership_of_moderator_old() -> Weight {
-        0
-    }
-    fn update_category_archival_status_lead(_: u32) -> Weight {
-        0
-    }
-    fn update_category_archival_status_moderator(_: u32) -> Weight {
-        0
-    }
-    fn update_category_title_lead(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn update_category_title_moderator(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn update_category_description_lead(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn update_category_description_moderator(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn delete_category_lead(_: u32) -> Weight {
-        0
-    }
-    fn delete_category_moderator(_: u32) -> Weight {
-        0
-    }
-    fn create_thread(_: u32, _: u32, _: u32) -> Weight {
-        0
-    }
-    fn edit_thread_metadata(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn delete_thread(_: u32) -> Weight {
-        0
-    }
-    fn move_thread_to_category_lead(_: u32) -> Weight {
-        0
-    }
-    fn move_thread_to_category_moderator(_: u32) -> Weight {
-        0
-    }
-    fn vote_on_poll(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn moderate_thread_lead(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn moderate_thread_moderator(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn add_post(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn react_post(_: u32) -> Weight {
-        0
-    }
-    fn edit_post_text(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn moderate_post_lead(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn moderate_post_moderator(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn set_stickied_threads_lead(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn set_stickied_threads_moderator(_: u32, _: u32) -> Weight {
-        0
-    }
-    fn delete_posts(_: u32, _: u32, _: u32) -> Weight {
-        0
+        ensure!(
+            Self::worker_exists(worker_id),
+            DispatchError::Other("Worker doesnt exist")
+        );
+        Ok(())
     }
 }
 
@@ -695,8 +460,8 @@ pub fn create_category_mock(
             Event::TestForumModule(RawEvent::CategoryCreated(
                 category_id,
                 parent,
-                title.clone(),
-                description.clone()
+                title,
+                description
             ))
         );
     }
@@ -719,7 +484,7 @@ pub fn create_thread_mock(
 
     assert_eq!(
         TestForumModule::create_thread(
-            mock_origin(origin.clone()),
+            mock_origin(origin),
             forum_user_id,
             category_id,
             title.clone(),
@@ -737,9 +502,9 @@ pub fn create_thread_mock(
                 thread_id,
                 TestForumModule::next_thread_id() - 1,
                 forum_user_id,
-                title.clone(),
-                text.clone(),
-                poll_input_data.clone()
+                title,
+                text,
+                poll_input_data
             ))
         );
 
@@ -810,7 +575,7 @@ pub fn delete_thread_mock(
     let thread_payment = <ThreadById<Runtime>>::get(category_id, thread_id).cleanup_pay_off;
     assert_eq!(
         TestForumModule::delete_thread(
-            mock_origin(origin.clone()),
+            mock_origin(origin),
             forum_user_id,
             category_id,
             thread_id,
@@ -870,7 +635,7 @@ pub fn delete_post_mock(
 
     assert_eq!(
         TestForumModule::delete_posts(
-            mock_origin(origin.clone()),
+            mock_origin(origin),
             forum_user_id,
             deleted_posts.clone(),
             vec![0u8]
@@ -918,7 +683,7 @@ pub fn move_thread_mock(
 ) {
     assert_eq!(
         TestForumModule::move_thread_to_category(
-            mock_origin(origin.clone()),
+            mock_origin(origin),
             PrivilegedActor::Moderator(moderator_id),
             category_id,
             thread_id,
@@ -958,7 +723,7 @@ pub fn create_post_mock(
     let initial_balance = balances::Pallet::<Runtime>::free_balance(account_id);
     assert_eq!(
         TestForumModule::add_post(
-            mock_origin(origin.clone()),
+            mock_origin(origin),
             forum_user_id,
             category_id,
             thread_id,
@@ -1273,11 +1038,9 @@ pub fn moderate_thread_mock(
             ))
         );
 
-        // If we moderate a thread with no extra post, only the initial post deposit
-        // should remain
         assert_eq!(
             balances::Pallet::<Runtime>::free_balance(&thread_account_id),
-            <Runtime as Config>::PostDeposit::get()
+            0
         );
     }
     thread_id
@@ -1352,13 +1115,13 @@ pub fn set_stickied_threads_mock(
     if result.is_ok() {
         assert_eq!(
             TestForumModule::category_by_id(category_id).sticky_thread_ids,
-            stickied_ids.clone()
+            stickied_ids
         );
         assert_eq!(
             System::events().last().unwrap().event,
             Event::TestForumModule(RawEvent::CategoryStickyThreadUpdate(
                 category_id,
-                stickied_ids.clone(),
+                stickied_ids,
                 PrivilegedActor::Moderator(moderator_id)
             ))
         );
@@ -1378,7 +1141,7 @@ pub fn react_post_mock(
 ) {
     assert_eq!(
         TestForumModule::react_post(
-            mock_origin(origin.clone()),
+            mock_origin(origin),
             forum_user_id,
             category_id,
             thread_id,
@@ -1425,7 +1188,7 @@ pub fn create_genesis_config(data_migration_done: bool) -> forum::GenesisConfig<
         category_by_moderator: vec![],
 
         // data migration part
-        data_migration_done: data_migration_done,
+        data_migration_done,
     }
 }
 

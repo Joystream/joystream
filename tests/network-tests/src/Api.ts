@@ -461,7 +461,7 @@ export class Api {
         )}. ` + `Expected: ${expectedCount}, Got: ${events.length}`
       )
     }
-    return events.sort((a, b) => new BN(a.index).cmp(new BN(b.index))) as unknown as EventType<S, M>[]
+    return (events.sort((a, b) => new BN(a.index).cmp(new BN(b.index))) as unknown) as EventType<S, M>[]
   }
 
   public async getEventDetails<S extends EventSection, M extends EventMethod<S>>(
@@ -654,6 +654,18 @@ export class Api {
 
   public async getNumberOfOutstandingChannels(): Promise<number> {
     return (await this.api.query.content.channelById.entries<ChannelId>()).length
+  }
+
+  public async getVideoStateBloatBond(): Promise<number> {
+    return (await this.api.query.content.videoStateBloatBondValue()).toNumber()
+  }
+
+  public async getChannelStateBloatBond(): Promise<number> {
+    return (await this.api.query.content.channelStateBloatBondValue()).toNumber()
+  }
+
+  public async getDataObjectStateBloatBond(): Promise<number> {
+    return (await this.api.query.storage.dataObjectStateBloatBondValue()).toNumber()
   }
 
   // Create a mock channel, throws on failure
@@ -883,7 +895,9 @@ export class Api {
     return boundaries
   }
 
-  async createOpenAuctionParameters(whitelist: number[] = []): Promise<{
+  async createOpenAuctionParameters(
+    whitelist: number[] = []
+  ): Promise<{
     auctionParams: OpenAuctionParams
     startingPrice: BN
     minimalBidStep: BN
@@ -909,7 +923,9 @@ export class Api {
     }
   }
 
-  async createEnglishAuctionParameters(whitelist: number[] = []): Promise<{
+  async createEnglishAuctionParameters(
+    whitelist: number[] = []
+  ): Promise<{
     auctionParams: EnglishAuctionParams
     startingPrice: BN
     minimalBidStep: BN
@@ -1053,8 +1069,12 @@ export class Api {
     )
   }
 
-  async acceptIncomingOffer(accountFrom: string, videoId: number): Promise<ISubmittableResult> {
-    return await this.sender.signAndSend(this.api.tx.content.acceptIncomingOffer(videoId), accountFrom)
+  async acceptIncomingOffer(
+    accountFrom: string,
+    videoId: number,
+    price: BN | null = null
+  ): Promise<ISubmittableResult> {
+    return await this.sender.signAndSend(this.api.tx.content.acceptIncomingOffer(videoId, price), accountFrom)
   }
 
   async createVideoWithNft(
@@ -1073,11 +1093,14 @@ export class Api {
         : { Idle: null }
     )
 
+    const expectedVideoStateBloatBond = await this.getVideoStateBloatBond()
+    const expectedDataObjectStateBloatBond = await this.getDataObjectStateBloatBond()
+
     const createParameters = createType('PalletContentVideoCreationParametersRecord', {
       assets: null,
       meta: null,
-      expectedVideoStateBloatBond: 0,
-      expectedDataObjectStateBloatBond: 0,
+      expectedVideoStateBloatBond,
+      expectedDataObjectStateBloatBond,
       autoIssueNft: {
         royalty: null,
         nftMetadata: '',
@@ -1098,11 +1121,14 @@ export class Api {
     channelId: number,
     price: BN
   ): Promise<ISubmittableResult> {
+    const expectedVideoStateBloatBond = await this.getVideoStateBloatBond()
+    const expectedDataObjectStateBloatBond = await this.getDataObjectStateBloatBond()
+
     const createParameters = createType('PalletContentVideoCreationParametersRecord', {
       assets: null,
       meta: null,
-      expectedVideoStateBloatBond: 0,
-      expectedDataObjectStateBloatBond: 0,
+      expectedVideoStateBloatBond,
+      expectedDataObjectStateBloatBond,
       autoIssueNft: {
         royalty: null,
         nftMetadata: '',
@@ -1131,11 +1157,13 @@ export class Api {
         ? { OpenAuction: auctionParams as OpenAuctionParams }
         : { EnglishAuction: auctionParams as EnglishAuctionParams }
 
+    const expectedDataObjectStateBloatBond = await this.getDataObjectStateBloatBond()
+
     const updateParameters = createType('PalletContentVideoUpdateParametersRecord', {
       assetsToUpload: null,
       newMeta: null,
       assetsToRemove: [],
-      expectedDataObjectStateBloatBond: 0,
+      expectedDataObjectStateBloatBond,
       autoIssueNft: createType('PalletContentNftTypesNftIssuanceParametersRecord', {
         royalty: null,
         nftMetadata: '',
@@ -1166,11 +1194,13 @@ export class Api {
         : { Idle: null }
     )
 
+    const expectedDataObjectStateBloatBond = await this.getDataObjectStateBloatBond()
+
     const updateParameters = createType('PalletContentVideoUpdateParametersRecord', {
       assetsToUpload: null,
       newMeta: null,
       assetsToRemove: [],
-      expectedDataObjectStateBloatBond: 0,
+      expectedDataObjectStateBloatBond,
       autoIssueNft: createType('PalletContentNftTypesNftIssuanceParametersRecord', {
         royalty: null,
         nftMetadata: '',

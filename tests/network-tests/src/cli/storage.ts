@@ -26,9 +26,8 @@ export class StorageCLI extends CLI {
     if (!accountUri) {
       throw new Error('Missing accountUri')
     }
-    const accountKey = new Keyring({ type: 'sr25519', ss58Format: JOYSTREAM_ADDRESS_PREFIX }).createFromUri(
-      accountUri
-    ).address
+    const accountKey = new Keyring({ type: 'sr25519', ss58Format: JOYSTREAM_ADDRESS_PREFIX }).createFromUri(accountUri)
+      .address
     return super.run(command, args, [accountKey])
   }
 

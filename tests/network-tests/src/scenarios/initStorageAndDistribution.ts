@@ -1,5 +1,5 @@
 import leaderSetup from '../flows/working-groups/leadOpening'
-import initStorage, { fiveBucketConfig as defaultStorageConfig } from '../flows/storage/initStorage'
+import initStorage, { singleBucketConfig as defaultStorageConfig } from '../flows/storage/initStorage'
 import initDistribution, { singleBucketConfig as defaultDistributionConfig } from '../flows/storage/initDistribution'
 import { scenario } from '../Scenario'
 import updateAccountsFlow from '../misc/updateAllWorkerRoleAccountsFlow'

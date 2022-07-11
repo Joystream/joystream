@@ -48,6 +48,7 @@ async function runScheduledJobs(store: DatabaseManager, currentBlock: number): P
 
 async function scheduleMissedMappings(store: DatabaseManager): Promise<void> {
   // Reschedule mappings lost while the processor was off
+  // TODO: uncomment this + event handlers below after bounties are repaired
   // // Bounty stage updates
   // const bounties = await store.getMany(Bounty, {
   //   where: { stage: In([BountyStage.Funding, BountyStage.WorkSubmission, BountyStage.Judgment]) },

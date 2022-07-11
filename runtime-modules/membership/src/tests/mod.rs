@@ -1063,7 +1063,7 @@ fn membership_origin_validator_succeeds() {
 
     build_test_externalities_with_initial_members(initial_members.to_vec()).execute_with(|| {
         let account_id = ALICE_ACCOUNT_ID;
-        let origin = RawOrigin::Signed(account_id.clone());
+        let origin = RawOrigin::Signed(account_id);
 
         let validation_result =
             Membership::ensure_member_controller_account_origin(origin.into(), ALICE_MEMBER_ID);
@@ -1081,7 +1081,7 @@ fn membership_origin_validator_fails_with_incompatible_account_id_and_member_id(
 
         let invalid_account_id = BOB_ACCOUNT_ID;
         let validation_result = Membership::ensure_member_controller_account_origin(
-            RawOrigin::Signed(invalid_account_id.into()).into(),
+            RawOrigin::Signed(invalid_account_id).into(),
             ALICE_MEMBER_ID,
         );
 

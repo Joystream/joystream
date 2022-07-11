@@ -2,9 +2,9 @@ import { FlowProps } from '../../Flow'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
-import { CreateProposalsFixture, DecideOnProposalStatusFixture, ProposalCreationParams } from '../../fixtures/proposals'
+import { CreateProposalsFixture, DecideOnProposalStatusFixture } from '../../fixtures/proposals'
 import { Resource } from '../../Resources'
-import { Bytes } from '@polkadot/types'
+import { createType } from '@joystream/types'
 
 export default async function exactExecutionBlock({ api, query, lock }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:proposal-exact-execution-block')
@@ -23,12 +23,12 @@ export default async function exactExecutionBlock({ api, query, lock }: FlowProp
   const createProposalFixture = new CreateProposalsFixture(api, query, [
     {
       type: 'Signal',
-      details: `Proposal to be executed at block ${exactExecutionBlock}` as unknown as Bytes,
+      details: createType('Bytes', `Proposal to be executed at block ${exactExecutionBlock}`),
       asMember: memberId,
       title: `Executes at #${exactExecutionBlock}`,
       description: `Proposal to be executed at block ${exactExecutionBlock}`,
       exactExecutionBlock,
-    } as ProposalCreationParams<'Signal'>,
+    },
   ])
   await new FixtureRunner(createProposalFixture).run()
   const [proposalId] = createProposalFixture.getCreatedProposalsIds()

@@ -53,13 +53,15 @@ mod benchmarking;
 #[cfg(test)]
 mod tests;
 mod types;
+pub mod weights;
+pub use weights::WeightInfo;
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::sp_runtime::SaturatedConversion;
 use frame_support::traits::Get;
 use frame_support::traits::{Currency, ExistenceRequirement};
 use frame_support::{
-    decl_error, decl_event, decl_module, decl_storage, ensure, weights::Weight, PalletId, Parameter,
+    decl_error, decl_event, decl_module, decl_storage, ensure, PalletId, Parameter,
 };
 use sp_runtime::traits::{AccountIdConversion, Saturating};
 use sp_std::clone::Clone;
@@ -77,15 +79,6 @@ pub use types::ThreadMode;
 pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
 type Balances<T> = balances::Pallet<T>;
-
-/// Proposals discussion WeightInfo.
-/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
-pub trait WeightInfo {
-    fn add_post(j: u32) -> Weight;
-    fn update_post(j: u32) -> Weight;
-    fn delete_post() -> Weight;
-    fn change_thread_mode(i: u32) -> Weight;
-}
 
 type WeightInfoDiscussion<T> = <T as Config>::WeightInfo;
 
@@ -236,7 +229,9 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoDiscussion::<T>::add_post(text.len().saturated_into())]
+        #[weight = WeightInfoDiscussion::<T>::add_post(
+            text.len().saturated_into(),
+        )]
         pub fn add_post(
             origin,
             post_author_id: MemberId<T>,

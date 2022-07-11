@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 pub use frame_support::traits::LockIdentifier;
-use frame_support::weights::Weight;
+
 use frame_support::{
     ensure, parameter_types,
     traits::{ConstU16, ConstU32, ConstU64},
@@ -201,7 +201,7 @@ impl working_group::Config<StorageWorkingGroupInstance> for Test {
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
-    type WeightInfo = Weights;
+    type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
@@ -215,7 +215,7 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Test {
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
-    type WeightInfo = Weights;
+    type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
 }
@@ -234,7 +234,7 @@ impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
     }
 
     fn is_member_controller_account(_member_id: &u64, _account_id: &u64) -> bool {
-        return true;
+        true
     }
 }
 
@@ -314,116 +314,12 @@ impl LockComparator<<Test as balances::Config>::Balance> for Test {
     }
 }
 
-// Weights info stub
-pub struct Weights;
-impl working_group::WeightInfo for Weights {
-    fn on_initialize_leaving(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn on_initialize_rewarding_with_missing_reward(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn on_initialize_rewarding_with_missing_reward_cant_pay(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn on_initialize_rewarding_without_missing_reward(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn apply_on_opening(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn fill_opening_lead() -> u64 {
-        unimplemented!()
-    }
-
-    fn fill_opening_worker(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn update_role_account() -> u64 {
-        unimplemented!()
-    }
-
-    fn cancel_opening() -> u64 {
-        unimplemented!()
-    }
-
-    fn withdraw_application() -> u64 {
-        unimplemented!()
-    }
-
-    fn slash_stake(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn terminate_role_worker(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn terminate_role_lead(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn increase_stake() -> u64 {
-        unimplemented!()
-    }
-
-    fn decrease_stake() -> u64 {
-        unimplemented!()
-    }
-
-    fn spend_from_budget() -> u64 {
-        unimplemented!()
-    }
-
-    fn update_reward_amount() -> u64 {
-        unimplemented!()
-    }
-
-    fn set_status_text(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn update_reward_account() -> u64 {
-        unimplemented!()
-    }
-
-    fn set_budget() -> u64 {
-        unimplemented!()
-    }
-
-    fn add_opening(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn leave_role(_: u32) -> u64 {
-        unimplemented!()
-    }
-
-    fn lead_remark() -> u64 {
-        unimplemented!()
-    }
-
-    fn worker_remark() -> u64 {
-        unimplemented!()
-    }
-
-    fn fund_working_group_budget() -> u64 {
-        unimplemented!()
-    }
-}
-
 impl membership::Config for Test {
     type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type WorkingGroup = MembershipWG;
-    type WeightInfo = Weights;
+    type WeightInfo = ();
     type InvitedMemberStakingHandler = staking_handler::StakingManager<Self, InviteMemberLockId>;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type StakingCandidateStakingHandler =
@@ -439,66 +335,6 @@ parameter_types! {
     pub const InviteMemberLockId: [u8; 8] = [9; 8];
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
-}
-
-impl membership::WeightInfo for Weights {
-    fn buy_membership_without_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn buy_membership_with_referrer(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_profile(_: u32) -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_none() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_root() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_controller() -> Weight {
-        unimplemented!()
-    }
-    fn update_accounts_both() -> Weight {
-        unimplemented!()
-    }
-    fn set_referral_cut() -> Weight {
-        unimplemented!()
-    }
-    fn transfer_invites() -> Weight {
-        unimplemented!()
-    }
-    fn invite_member(_: u32, _: u32) -> Weight {
-        unimplemented!()
-    }
-    fn set_membership_price() -> Weight {
-        unimplemented!()
-    }
-    fn update_profile_verification() -> Weight {
-        unimplemented!()
-    }
-    fn set_leader_invitation_quota() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_balance() -> Weight {
-        unimplemented!()
-    }
-    fn set_initial_invitation_count() -> Weight {
-        unimplemented!()
-    }
-    fn add_staking_account_candidate() -> Weight {
-        unimplemented!()
-    }
-    fn confirm_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn remove_staking_account() -> Weight {
-        unimplemented!()
-    }
-    fn member_remark() -> Weight {
-        unimplemented!()
-    }
 }
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {

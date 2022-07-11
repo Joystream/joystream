@@ -286,7 +286,13 @@ declare module '@polkadot/api-base/types/storage' {
       minStartingPrice: AugmentedQuery<ApiType, () => Observable<u128>, []>;
       nextCuratorGroupId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       nextChannelId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
+      nextTransferId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       nextVideoId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
+      /**
+       * NFT limits enabled or not
+       * Can be updated in flight by the Council
+       **/
+      nftLimitsEnabled: AugmentedQuery<ApiType, () => Observable<bool>, []>;
       /**
        * Bids for open auctions
        **/

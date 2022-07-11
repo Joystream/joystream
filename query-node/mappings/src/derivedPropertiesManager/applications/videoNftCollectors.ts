@@ -97,7 +97,7 @@ class NftCollectorsExecutor implements IExecutor<OwnedNft, IOwnedNftChange, Chan
   ): Promise<ChannelNftCollectors> {
     const existingRecord = await store.get(ChannelNftCollectors, {
       where: {
-        channelId: channel.id.toString(),
+        channel: { id: channel.id.toString() },
         ...(ownerType.member ? { memberId: ownerType.member?.id.toString() } : {}),
         ...(ownerType.curatorGroup ? { curatorGroupId: ownerType.curatorGroup?.id.toString() } : {}),
       },

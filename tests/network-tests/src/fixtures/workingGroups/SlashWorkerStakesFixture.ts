@@ -35,9 +35,9 @@ export class SlashWorkerStakesFixture extends BaseWorkingGroupFixture {
   }
 
   protected async loadWorkersData(): Promise<void> {
-    this.workers = (await this.api.query[this.group].workerById.multi<Option<Worker>>(this.workerIds)).map(
-      (optionalWorker) => optionalWorker.unwrap()
-    )
+    this.workers = (
+      await this.api.query[this.group].workerById.multi<Option<Worker>>(this.workerIds)
+    ).map((optionalWorker) => optionalWorker.unwrap())
     this.workerStakes = await Promise.all(
       this.workers.map((w) => this.api.getStakedBalance(w.stakingAccountId, this.api.lockIdByGroup(this.group)))
     )
