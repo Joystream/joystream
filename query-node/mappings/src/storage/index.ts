@@ -201,7 +201,7 @@ export async function storage_StorageBucketDeleted({ event, store }: EventContex
 
 // DYNAMIC BAGS
 export async function storage_DynamicBagCreated({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [bagId, , storageBucketIdsSet, distributionBucketIdsSet] = new Storage.DynamicBagCreatedEvent(event).params
+  const [bagId, storageBucketIdsSet, distributionBucketIdsSet] = new Storage.DynamicBagCreatedEvent(event).params
   const storageBag = new StorageBag({
     id: getDynamicBagId(bagId),
     owner: getDynamicBagOwner(bagId),
@@ -368,7 +368,7 @@ export async function storage_DistributionBucketCreated({ event, store }: EventC
   const family = await getById(store, DistributionBucketFamily, familyId.toString())
   const bucket = new DistributionBucket({
     id: distributionBucketId(bucketId),
-    bucketIndex: bucketId.distribution_bucket_index.toNumber(),
+    bucketIndex: bucketId.distributionBucketIndex.toNumber(),
     acceptingNewBags: acceptingNewBags.valueOf(),
     distributing: true, // Runtime default
     family,

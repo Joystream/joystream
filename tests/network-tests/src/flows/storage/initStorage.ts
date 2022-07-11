@@ -35,6 +35,16 @@ export const allStaticBags: CreateInterface<StaticBagId>[] = [
   { WorkingGroup: 'Storage' },
 ]
 
+const sampleStorageBucket = {
+  metadata: { endpoint: process.env.COLOSSUS_1_URL || 'http://localhost:3333' },
+  staticBags: allStaticBags,
+  operatorId: parseInt(process.env.COLOSSUS_1_WORKER_ID || '0'),
+  storageLimit: new BN(1_000_000_000_000),
+  objectsLimit: 1000000000,
+  transactorUri: process.env.COLOSSUS_1_TRANSACTOR_URI || '//Colossus1',
+  transactorBalance: new BN(100_000),
+} as const
+
 export const singleBucketConfig: InitStorageConfig = {
   dynamicBagPolicy: {
     'Channel': 1,
@@ -53,6 +63,14 @@ export const singleBucketConfig: InitStorageConfig = {
   ],
 }
 
+export const fiveBucketConfig: InitStorageConfig = {
+  dynamicBagPolicy: {
+    'Channel': 5,
+    'Member': 5,
+  },
+  buckets: Array(5).fill(sampleStorageBucket),
+}
+
 export const doubleBucketConfig: InitStorageConfig = {
   dynamicBagPolicy: {
     'Channel': 2,
@@ -69,19 +87,19 @@ export const doubleBucketConfig: InitStorageConfig = {
       transactorBalance: new BN(100_000),
     },
     {
-      metadata: { endpoint: process.env.STORAGE_2_URL || 'http://localhost:3335' },
+      metadata: { endpoint: process.env.COLOSSUS_1_URL || 'http://localhost:3333' },
       staticBags: allStaticBags,
-      operatorId: parseInt(process.env.STORAGE_2_WORKER_ID || '1'),
+      operatorId: parseInt(process.env.COLOSSUS_1_WORKER_ID || '0'),
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
-      transactorUri: process.env.COLOSSUS_2_TRANSACTOR_URI || '//Colossus2',
+      transactorUri: process.env.COLOSSUS_1_TRANSACTOR_URI || '//Colossus1',
       transactorBalance: new BN(100_000),
     },
   ],
 }
 
 export default function createFlow({ buckets, dynamicBagPolicy }: InitStorageConfig) {
-  return async function initDistribution({ api }: FlowProps): Promise<void> {
+  return async function initStorage({ api, query }: FlowProps): Promise<void> {
     const debug = extendDebug('flow:initStorage')
     api.enableDebugTxLogs()
     debug('Started')
@@ -92,11 +110,6 @@ export default function createFlow({ buckets, dynamicBagPolicy }: InitStorageCon
     const storageLeaderKey = storageLeader.role_account_id.toString()
     const maxStorageLimit = buckets.sort((a, b) => b.storageLimit.cmp(a.storageLimit))[0].storageLimit
     const maxObjectsLimit = Math.max(...buckets.map((b) => b.objectsLimit))
-
-    // Hire operators
-    // const hireWorkersFixture = new HireWorkesFixture(api, totalBucketsNum, WorkingGroups.Distribution)
-    // await new FixtureRunner(hireWorkersFixture).run()
-    // const operatorIds = hireWorkersFixture.getHiredWorkers()
 
     const operatorIds = buckets.map((b) => createType('WorkerId', b.operatorId))
     const operatorKeys = await api.getWorkerRoleAccounts(operatorIds, 'storageWorkingGroup')

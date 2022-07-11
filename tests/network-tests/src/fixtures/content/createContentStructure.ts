@@ -51,12 +51,6 @@ export class CreateContentStructureFixture extends BaseQueryNodeFixture {
     this.debug(`Choosing content working group lead's account`)
     const contentLeaderKeyPair = this.api.getKeypair(contentLeader.role_account_id.toString())
     await this.cli.importAccount(contentLeaderKeyPair)
-
-    this.debug('Creating channel categories')
-    this.createdItems.channelCategoryIds = await this.createChannelCategories(this.channelCategoryCount)
-
-    this.debug('Creating video categories')
-    this.createdItems.videoCategoryIds = await this.createVideoCategories(this.videoCategoryCount)
   }
 
   /**

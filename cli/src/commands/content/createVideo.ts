@@ -76,7 +76,6 @@ export default class CreateVideoCommand extends UploadCommandBase {
       {
         assets,
         meta: metadataToBytes(VideoMetadata, meta),
-        enable_comments: enableComments,
       }
     )
 

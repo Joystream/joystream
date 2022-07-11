@@ -43,7 +43,8 @@
     "rxjs": "^7.4.0",
     "typeorm": "0.2.34",
     "pg": "^8.4.0",
-    "chalk": "^4.0.0"
+    "chalk": "^4.0.0",
+    "@types/bn.js": "^5.1.0"
   },
   "devDependencies": {
     "eslint": "^7.25.0",

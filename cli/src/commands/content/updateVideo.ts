@@ -52,7 +52,10 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       if (assetsToRemove.length) {
         this.log(`\nData objects to be removed due to replacement:`)
         assetsToRemove.forEach((a) => this.log(`- ${a.id} (${a.type.__typename})`))
-        const totalStateBloatBond = assetsToRemove.reduce((sum, { stateBloatBond }) => sum.add(new BN(stateBloatBond)), new BN(0))
+        const totalStateBloatBond = assetsToRemove.reduce(
+          (sum, { stateBloatBond }) => sum.add(new BN(stateBloatBond)),
+          new BN(0)
+        )
         this.log(`Total state bloat bond: ${chalk.cyanBright(formatBalance(totalStateBloatBond))}\n`)
       }
     }
@@ -95,7 +98,6 @@ export default class UpdateVideoCommand extends UploadCommandBase {
       assets_to_upload: assetsToUpload,
       new_meta: metadataToBytes(VideoMetadata, meta),
       assets_to_remove: createType('BTreeSet<DataObjectId>', assetsToRemove),
-      enable_comments: enableComments,
     }
 
     this.jsonPrettyPrint(

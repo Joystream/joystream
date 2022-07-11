@@ -52,7 +52,6 @@ export type ChannelFieldsFragment = {
   title?: Types.Maybe<string>
   description?: Types.Maybe<string>
   isPublic?: Types.Maybe<boolean>
-  rewardAccount?: Types.Maybe<string>
   isCensored: boolean
   language?: Types.Maybe<{ iso: string }>
   ownerMember?: Types.Maybe<{ id: string }>
@@ -2354,7 +2353,6 @@ export const ChannelFields = gql`
     language {
       iso
     }
-    rewardAccount
     isCensored
     ownerMember {
       id
