@@ -705,8 +705,12 @@ impl LockComparator<<Test as balances::Config>::Balance> for Test {
 }
 
 pub fn initial_test_ext() -> sp_io::TestExternalities {
-    let t = frame_system::GenesisConfig::default()
+    let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
+        .unwrap();
+
+    council::GenesisConfig::<Test>::default()
+        .assimilate_storage(&mut t)
         .unwrap();
 
     let mut result = Into::<sp_io::TestExternalities>::into(t);
