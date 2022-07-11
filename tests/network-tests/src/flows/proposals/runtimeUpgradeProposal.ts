@@ -39,7 +39,7 @@ export default async function runtimeUpgradeProposal({ api, query, lock, env }: 
   const createProposalsFixture = new CreateProposalsFixture(api, query, [
     {
       type: 'RuntimeUpgrade',
-      details: (Utils.readRuntimeFromFile(runtimeUpgradeWasmPath) as unknown) as Bytes,
+      details: Utils.readRuntimeFromFile(runtimeUpgradeWasmPath) as unknown as Bytes,
       asMember: memberId,
       title: 'To be cancelled by runtime',
       description: 'Proposal to be cancelled by runtime',

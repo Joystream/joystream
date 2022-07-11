@@ -56,7 +56,7 @@ export const singleBucketConfig: InitStorageConfig = {
   buckets: [
     {
       metadata: { endpoint: process.env.COLOSSUS_1_URL || 'http://localhost:3333' },
-      staticBags: (allStaticBags as unknown) as StaticBagId[],
+      staticBags: allStaticBags as unknown as StaticBagId[],
       operatorId: parseInt(process.env.COLOSSUS_1_WORKER_ID || '0'),
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
@@ -82,7 +82,7 @@ export const doubleBucketConfig: InitStorageConfig = {
   buckets: [
     {
       metadata: { endpoint: process.env.COLOSSUS_1_URL || 'http://localhost:3333' },
-      staticBags: (allStaticBags as unknown) as StaticBagId[],
+      staticBags: allStaticBags as unknown as StaticBagId[],
       operatorId: parseInt(process.env.COLOSSUS_1_WORKER_ID || '0'),
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,
@@ -91,7 +91,7 @@ export const doubleBucketConfig: InitStorageConfig = {
     },
     {
       metadata: { endpoint: process.env.COLOSSUS_1_URL || 'http://localhost:3333' },
-      staticBags: (allStaticBags as unknown) as StaticBagId[],
+      staticBags: allStaticBags as unknown as StaticBagId[],
       operatorId: parseInt(process.env.COLOSSUS_1_WORKER_ID || '0'),
       storageLimit: new BN(1_000_000_000_000),
       objectsLimit: 1000000000,

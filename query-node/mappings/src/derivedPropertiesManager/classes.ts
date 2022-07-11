@@ -8,7 +8,8 @@ interface IListenerWithExecutors<Entity, Change> {
 }
 
 export class DerivedPropertiesManager<Entity extends { id: string }, Change>
-  implements IDerivedPropertiesManager<Entity, Change> {
+  implements IDerivedPropertiesManager<Entity, Change>
+{
   private store: DatabaseManager
   private listeners: IListenerWithExecutors<Entity, Change>[] = []
   private entityType: EntityType<Entity>

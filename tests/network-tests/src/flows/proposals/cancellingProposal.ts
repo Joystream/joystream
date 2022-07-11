@@ -21,7 +21,7 @@ export default async function cancellingProposals({ api, query, lock }: FlowProp
   const createProposalFixture = new CreateProposalsFixture(api, query, [
     {
       type: 'Signal',
-      details: ('Proposal to cancel' as unknown) as Bytes,
+      details: 'Proposal to cancel' as unknown as Bytes,
       asMember: memberId,
       title: 'Proposal to cancel',
       description: 'Proposal to cancel',

@@ -47,13 +47,8 @@ import { getAllManagers } from '../derivedPropertiesManager/applications'
 // STORAGE BUCKETS
 
 export async function storage_StorageBucketCreated({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [
-    bucketId,
-    invitedWorkerId,
-    acceptingNewBags,
-    dataObjectSizeLimit,
-    dataObjectCountLimit,
-  ] = new Storage.StorageBucketCreatedEvent(event).params
+  const [bucketId, invitedWorkerId, acceptingNewBags, dataObjectSizeLimit, dataObjectCountLimit] =
+    new Storage.StorageBucketCreatedEvent(event).params
 
   const storageBucket = new StorageBucket({
     id: bucketId.toString(),
@@ -424,12 +419,8 @@ export async function storage_DistributionBucketsUpdatedForBag({
   event,
   store,
 }: EventContext & StoreContext): Promise<void> {
-  const [
-    bagId,
-    familyId,
-    addedBucketsIndices,
-    removedBucketsIndices,
-  ] = new Storage.DistributionBucketsUpdatedForBagEvent(event).params
+  const [bagId, familyId, addedBucketsIndices, removedBucketsIndices] =
+    new Storage.DistributionBucketsUpdatedForBagEvent(event).params
   // Get or create bag
   const storageBag = await getBag(store, bagId, ['distributionBuckets'])
   const removedBucketsIds = Array.from(removedBucketsIndices).map((bucketIndex) =>

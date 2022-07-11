@@ -80,7 +80,7 @@ export class AllProposalsOutcomesFixture extends BaseFixture {
       const createProposalsFixure = new CreateProposalsFixture(
         api,
         query,
-        (createProposalsParams as unknown) as ProposalCreationParams[]
+        createProposalsParams as unknown as ProposalCreationParams[]
       )
       await new FixtureRunner(createProposalsFixure).runWithQueryNodeChecks()
       const proposalIds = createProposalsFixure.getCreatedProposalsIds()

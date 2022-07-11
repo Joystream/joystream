@@ -391,13 +391,8 @@ function isWorkerActive(worker: Worker): boolean {
 
 // Mapping functions
 export async function workingGroups_OpeningAdded({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [
-    openingRuntimeId,
-    metadataBytes,
-    openingType,
-    stakePolicy,
-    optRewardPerBlock,
-  ] = new WorkingGroups.OpeningAddedEvent(event).params
+  const [openingRuntimeId, metadataBytes, openingType, stakePolicy, optRewardPerBlock] =
+    new WorkingGroups.OpeningAddedEvent(event).params
   const group = await getWorkingGroup(store, event)
   const eventTime = new Date(event.blockTimestamp)
 
@@ -489,9 +484,8 @@ export async function workingGroups_LeaderSet({ store, event }: EventContext & S
 export async function workingGroups_OpeningFilled({ store, event }: EventContext & StoreContext): Promise<void> {
   const eventTime = new Date(event.blockTimestamp)
 
-  const [openingRuntimeId, applicationIdToWorkerIdMap, applicationIdsSet] = new WorkingGroups.OpeningFilledEvent(
-    event
-  ).params
+  const [openingRuntimeId, applicationIdToWorkerIdMap, applicationIdsSet] = new WorkingGroups.OpeningFilledEvent(event)
+    .params
 
   const group = await getWorkingGroup(store, event)
   const opening = await getOpening(store, `${group.name}-${openingRuntimeId.toString()}`, [

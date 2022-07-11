@@ -107,13 +107,8 @@ export class InitializeForumFixture extends BaseQueryNodeFixture {
 
   public async execute(): Promise<void> {
     const { api, query } = this
-    const {
-      numberOfForumMembers,
-      numberOfCategories,
-      threadsPerCategory,
-      postsPerThread,
-      moderatorsPerCategory,
-    } = this.config
+    const { numberOfForumMembers, numberOfCategories, threadsPerCategory, postsPerThread, moderatorsPerCategory } =
+      this.config
     // Create forum members
     const accounts = (await api.createKeyPairs(numberOfForumMembers)).map(({ key }) => key.address)
     const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, accounts)
