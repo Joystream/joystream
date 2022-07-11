@@ -542,6 +542,19 @@ benchmarks! {
         );
     }
 
+    update_data_object_state_bloat_bond {
+        let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
+        let new_bloat_bond: <T as balances::Config>::Balance = 100u32.into();
+
+    }: _ (RawOrigin::Signed(lead_account_id), new_bloat_bond)
+    verify {
+
+        assert_eq!(Module::<T>::data_object_state_bloat_bond_value(), new_bloat_bond);
+        assert_last_event::<T>(
+            RawEvent::DataObjectStateBloatBondValueUpdated(new_bloat_bond).into()
+        );
+    }
+
     update_number_of_storage_buckets_in_dynamic_bag_creation_policy {
         let lead_account_id = insert_storage_leader::<T>(STORAGE_WG_LEADER_ACCOUNT_ID);
         let dynamic_bag_type = DynamicBagType::Member;
@@ -1424,6 +1437,13 @@ mod tests {
     fn update_storage_buckets_voucher_max_limits() {
         build_test_externalities().execute_with(|| {
             assert_ok!(Storage::test_benchmark_update_storage_buckets_voucher_max_limits());
+        });
+    }
+
+    #[test]
+    fn update_data_object_state_bloat_bond() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(Storage::test_benchmark_update_data_object_state_bloat_bond());
         });
     }
 
