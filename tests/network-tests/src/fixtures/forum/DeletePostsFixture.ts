@@ -49,14 +49,12 @@ export class DeletePostsFixture extends StandardizedFixture {
             hide === undefined || hide,
           ] as [ExtendedPostId, boolean]
       )
-<<<<<<< HEAD
+
       const postsToDeleteMap = createType(
         'BTreeMap<PalletForumExtendedPostIdObject, bool>',
         new Map(postsToDeleteEntries)
       )
-=======
-      const postsToDeleteMap = new PostsToDeleteMap(registry as any, new Map(postsToDeleteEntries))
->>>>>>> master
+
       return this.api.tx.forum.deletePosts(r.asMember, postsToDeleteMap, r.rationale || DEFAULT_RATIONALE)
     })
   }

@@ -895,9 +895,7 @@ export class Api {
     return boundaries
   }
 
-  async createOpenAuctionParameters(
-    whitelist: number[] = []
-  ): Promise<{
+  async createOpenAuctionParameters(whitelist: number[] = []): Promise<{
     auctionParams: OpenAuctionParams
     startingPrice: BN
     minimalBidStep: BN
@@ -923,9 +921,7 @@ export class Api {
     }
   }
 
-  async createEnglishAuctionParameters(
-    whitelist: number[] = []
-  ): Promise<{
+  async createEnglishAuctionParameters(whitelist: number[] = []): Promise<{
     auctionParams: EnglishAuctionParams
     startingPrice: BN
     minimalBidStep: BN
