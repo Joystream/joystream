@@ -49,8 +49,8 @@ use frame_election_provider_support::{
 };
 use frame_support::pallet_prelude::Get;
 use frame_support::traits::{
-    ConstU16, ConstU32, Currency, EnsureOneOf, Imbalance, KeyOwnerProofSystem, LockIdentifier,
-    OnUnbalanced,
+    ConstU16, ConstU32, Contains, Currency, EnsureOneOf, Imbalance, KeyOwnerProofSystem,
+    LockIdentifier, OnUnbalanced,
 };
 use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
@@ -185,6 +185,32 @@ parameter_types! {
 }
 
 const_assert!(NORMAL_DISPATCH_RATIO.deconstruct() >= AVERAGE_ON_INITIALIZE_RATIO.deconstruct());
+
+pub struct LockedDownBaseFilter {}
+
+// TODO: this will change after https://github.com/Joystream/joystream/pull/3986 is merged
+#[cfg(not(feature = "runtime-benchmarks"))]
+impl Contains<<Runtime as frame_system::Config>::Call> for LockedDownBaseFilter {
+    fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
+        match call {
+            // TODO: adjust after Carthage
+            Call::Content(content::Call::<Runtime>::destroy_nft { .. }) => false,
+            Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. }) => false,
+            Call::Content(content::Call::<Runtime>::update_curator_group_permission { .. }) => {
+                false
+            }
+            Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. }) => false,
+            _ => true, // Enable all other calls
+        }
+    }
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl Contains<<Runtime as frame_system::Config>::Call> for LockedDownBaseFilter {
+    fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
+        true
+    }
+}
 
 impl frame_system::Config for Runtime {
     type BaseCallFilter = frame_support::traits::Everything;

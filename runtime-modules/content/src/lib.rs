@@ -320,14 +320,11 @@ decl_module! {
 
         /// Update existing curator group's permissions
         #[weight = 10_000_000] // TODO: adjust weight
-        #[allow(unused_variables)] // TODO: update after Carthage
         pub fn update_curator_group_permissions(
             origin,
             curator_group_id: T::CuratorGroupId,
             permissions_by_level: ModerationPermissionsByLevel<T>
         ) {
-            return Err(Error::<T>::FeatureNotImplemented.into());
-
             let sender = ensure_signed(origin)?;
             // Ensure given origin is lead
             ensure_lead_auth_success::<T>(&sender)?;
@@ -604,7 +601,6 @@ decl_module! {
             channel_id: T::ChannelId,
             new_privilege_level: T::ChannelPrivilegeLevel,
         ) {
-            return Err(Error::<T>::FeatureNotImplemented.into());
             let sender = ensure_signed(origin)?;
 
             ensure_lead_auth_success::<T>(&sender)?;
@@ -1423,9 +1419,6 @@ decl_module! {
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             video_id: T::VideoId
         ) {
-            // TODO: enable after Carthage
-            return Err(Error::<T>::FeatureNotImplemented.into());
-
             // Ensure given video exists
             let video = Self::ensure_video_exists(&video_id)?;
 
@@ -2376,9 +2369,6 @@ decl_module! {
             origin,
             enabled: bool
         ) {
-            // TODO: enable after Carthage
-            return Err(Error::<T>::FeatureNotImplemented.into());
-
             let _ = ensure_root(origin)?;
 
             //
