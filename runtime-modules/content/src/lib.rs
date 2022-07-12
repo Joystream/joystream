@@ -600,27 +600,26 @@ decl_module! {
         // Extrinsic for updating channel privilege level (requires lead access)
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_channel_privilege_level(
-            _origin,
-            _channel_id: T::ChannelId,
-            _new_privilege_level: T::ChannelPrivilegeLevel,
+            origin,
+            channel_id: T::ChannelId,
+            new_privilege_level: T::ChannelPrivilegeLevel,
         ) {
             return Err(Error::<T>::FeatureNotImplemented.into());
-            // TODO: enable after Carthage
-            // let sender = ensure_signed(origin)?;
+            let sender = ensure_signed(origin)?;
 
-            // ensure_lead_auth_success::<T>(&sender)?;
+            ensure_lead_auth_success::<T>(&sender)?;
 
-            // // check that channel exists
-            // Self::ensure_channel_exists(&channel_id)?;
+            // check that channel exists
+            Self::ensure_channel_exists(&channel_id)?;
 
-            // //
-            // // == MUTATION SAFE ==
-            // //
+            //
+            // == MUTATION SAFE ==
+            //
 
-            // // Update the channel
-            // ChannelById::<T>::mutate(channel_id, |channel| { channel.privilege_level = new_privilege_level });
+            // Update the channel
+            ChannelById::<T>::mutate(channel_id, |channel| { channel.privilege_level = new_privilege_level });
 
-            // Self::deposit_event(RawEvent::ChannelPrivilegeLevelUpdated(channel_id, new_privilege_level));
+            Self::deposit_event(RawEvent::ChannelPrivilegeLevelUpdated(channel_id, new_privilege_level));
         }
 
         // extrinsics for pausing/re-enabling channel features
