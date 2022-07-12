@@ -1,8 +1,7 @@
 #![cfg(test)]
 
 use std::collections::BTreeMap;
-// TODO: enable after Carthage
-// use std::iter::FromIterator;
+use std::iter::FromIterator;
 
 use super::fixtures::*;
 use super::mock::{CuratorGroupId, CuratorId, Event, *};
@@ -47,6 +46,8 @@ pub fn add_curator_to_new_group_with_permissions(
     curator_group_id
 }
 
+// TODO: enable after Carthage
+#[ignore]
 #[test]
 fn curator_group_management() {
     with_default_mock_builder(|| {
@@ -73,93 +74,93 @@ fn curator_group_management() {
         assert_eq!(group.is_active(), true);
 
         // TODO: enable after enabling `update_curator_group_permission`
-        // // Group permissions
-        // let permissions = BTreeMap::from_iter(vec![
-        //     (
-        //         0,
-        //         BTreeSet::from_iter(vec![
-        //             ContentModerationAction::HideVideo,
-        //             ContentModerationAction::DeleteVideo,
-        //         ]),
-        //     ),
-        //     (
-        //         1,
-        //         BTreeSet::from_iter(vec![
-        //             ContentModerationAction::HideChannel,
-        //             ContentModerationAction::ChangeChannelFeatureStatus(
-        //                 PausableChannelFeature::VideoCreation,
-        //             ),
-        //             ContentModerationAction::ChangeChannelFeatureStatus(
-        //                 PausableChannelFeature::VideoUpdate,
-        //             ),
-        //             ContentModerationAction::ChangeChannelFeatureStatus(
-        //                 PausableChannelFeature::ChannelUpdate,
-        //             ),
-        //         ]),
-        //     ),
-        //     (
-        //         2,
-        //         BTreeSet::from_iter(vec![
-        //             ContentModerationAction::DeleteVideo,
-        //             ContentModerationAction::DeleteChannel,
-        //             ContentModerationAction::HideChannel,
-        //             ContentModerationAction::HideVideo,
-        //             ContentModerationAction::ChangeChannelFeatureStatus(
-        //                 PausableChannelFeature::ChannelFundsTransfer,
-        //             ),
-        //             ContentModerationAction::ChangeChannelFeatureStatus(
-        //                 PausableChannelFeature::CreatorCashout,
-        //             ),
-        //             ContentModerationAction::ChangeChannelFeatureStatus(
-        //                 PausableChannelFeature::CreatorTokenIssuance,
-        //             ),
-        //             ContentModerationAction::ChangeChannelFeatureStatus(
-        //                 PausableChannelFeature::ChannelUpdate,
-        //             ),
-        //             ContentModerationAction::ChangeChannelFeatureStatus(
-        //                 PausableChannelFeature::VideoCreation,
-        //             ),
-        //             ContentModerationAction::ChangeChannelFeatureStatus(
-        //                 PausableChannelFeature::VideoNftIssuance,
-        //             ),
-        //             ContentModerationAction::ChangeChannelFeatureStatus(
-        //                 PausableChannelFeature::VideoUpdate,
-        //             ),
-        //         ]),
-        //     ),
-        // ]);
+        // Group permissions
+        let permissions = BTreeMap::from_iter(vec![
+            (
+                0,
+                BTreeSet::from_iter(vec![
+                    ContentModerationAction::HideVideo,
+                    ContentModerationAction::DeleteVideo,
+                ]),
+            ),
+            (
+                1,
+                BTreeSet::from_iter(vec![
+                    ContentModerationAction::HideChannel,
+                    ContentModerationAction::ChangeChannelFeatureStatus(
+                        PausableChannelFeature::VideoCreation,
+                    ),
+                    ContentModerationAction::ChangeChannelFeatureStatus(
+                        PausableChannelFeature::VideoUpdate,
+                    ),
+                    ContentModerationAction::ChangeChannelFeatureStatus(
+                        PausableChannelFeature::ChannelUpdate,
+                    ),
+                ]),
+            ),
+            (
+                2,
+                BTreeSet::from_iter(vec![
+                    ContentModerationAction::DeleteVideo,
+                    ContentModerationAction::DeleteChannel,
+                    ContentModerationAction::HideChannel,
+                    ContentModerationAction::HideVideo,
+                    ContentModerationAction::ChangeChannelFeatureStatus(
+                        PausableChannelFeature::ChannelFundsTransfer,
+                    ),
+                    ContentModerationAction::ChangeChannelFeatureStatus(
+                        PausableChannelFeature::CreatorCashout,
+                    ),
+                    ContentModerationAction::ChangeChannelFeatureStatus(
+                        PausableChannelFeature::CreatorTokenIssuance,
+                    ),
+                    ContentModerationAction::ChangeChannelFeatureStatus(
+                        PausableChannelFeature::ChannelUpdate,
+                    ),
+                    ContentModerationAction::ChangeChannelFeatureStatus(
+                        PausableChannelFeature::VideoCreation,
+                    ),
+                    ContentModerationAction::ChangeChannelFeatureStatus(
+                        PausableChannelFeature::VideoNftIssuance,
+                    ),
+                    ContentModerationAction::ChangeChannelFeatureStatus(
+                        PausableChannelFeature::VideoUpdate,
+                    ),
+                ]),
+            ),
+        ]);
 
-        // // Update group permissions
-        // assert_ok!(Content::update_curator_group_permissions(
-        //     Origin::signed(LEAD_ACCOUNT_ID),
-        //     curator_group_id,
-        //     permissions.clone()
-        // ));
+        // Update group permissions
+        assert_ok!(Content::update_curator_group_permissions(
+            Origin::signed(LEAD_ACCOUNT_ID),
+            curator_group_id,
+            permissions.clone()
+        ));
 
-        // // Check CuratorGroupPermissionsUpdated event
-        // assert_eq!(
-        //     System::events().last().unwrap().event,
-        //     Event::Content(RawEvent::CuratorGroupPermissionsUpdated(
-        //         curator_group_id,
-        //         permissions.clone()
-        //     ))
-        // );
+        // Check CuratorGroupPermissionsUpdated event
+        assert_eq!(
+            System::events().last().unwrap().event,
+            Event::Content(RawEvent::CuratorGroupPermissionsUpdated(
+                curator_group_id,
+                permissions.clone()
+            ))
+        );
 
-        // // Validate permissions
-        // let group = Content::curator_group_by_id(curator_group_id);
-        // assert_eq!(group.get_permissions_by_level().len(), 3);
-        // // Iterate over privilege levels from 0 to 3
-        // // (3 will be a "non-existent map entry" case)
-        // for i in 0u8..4u8 {
-        //     let allowed_actions: Vec<ContentModerationAction>;
-        //     let permissions_for_level = permissions.get(&i);
-        //     if let Some(permissions_for_level) = permissions_for_level {
-        //         allowed_actions = Vec::from_iter(permissions_for_level.iter().map(|p| p.clone()));
-        //     } else {
-        //         allowed_actions = vec![]
-        //     }
-        //     assert_group_has_permissions_for_actions(&group, i, &allowed_actions);
-        // }
+        // Validate permissions
+        let group = Content::curator_group_by_id(curator_group_id);
+        assert_eq!(group.get_permissions_by_level().len(), 3);
+        // Iterate over privilege levels from 0 to 3
+        // (3 will be a "non-existent map entry" case)
+        for i in 0u8..4u8 {
+            let allowed_actions: Vec<ContentModerationAction>;
+            let permissions_for_level = permissions.get(&i);
+            if let Some(permissions_for_level) = permissions_for_level {
+                allowed_actions = Vec::from_iter(permissions_for_level.iter().map(|p| p.clone()));
+            } else {
+                allowed_actions = vec![]
+            }
+            assert_group_has_permissions_for_actions(&group, i, &allowed_actions);
+        }
 
         // Cannot add non curators into group
         assert_err!(

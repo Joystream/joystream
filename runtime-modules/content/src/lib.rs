@@ -320,32 +320,33 @@ decl_module! {
 
         /// Update existing curator group's permissions
         #[weight = 10_000_000] // TODO: adjust weight
+        #[allow(unused_variables)] // TODO: update after Carthage
         pub fn update_curator_group_permissions(
-            _origin,
-            _curator_group_id: T::CuratorGroupId,
-            _permissions_by_level: ModerationPermissionsByLevel<T>
+            origin,
+            curator_group_id: T::CuratorGroupId,
+            permissions_by_level: ModerationPermissionsByLevel<T>
         ) {
             return Err(Error::<T>::FeatureNotImplemented.into());
-            // TODO: enable after Carthage
-            // let sender = ensure_signed(origin)?;
-            // // Ensure given origin is lead
-            // ensure_lead_auth_success::<T>(&sender)?;
-            // // Ensure curator group under provided curator_group_id already exist
-            // Self::ensure_curator_group_under_given_id_exists(&curator_group_id)?;
-            // // Ensure permissions_by_level map max. allowed size is not exceeded
-            // Self::ensure_permissions_by_level_map_size_not_exceeded(&permissions_by_level)?;
 
-            // //
-            // // == MUTATION SAFE ==
-            // //
+            let sender = ensure_signed(origin)?;
+            // Ensure given origin is lead
+            ensure_lead_auth_success::<T>(&sender)?;
+            // Ensure curator group under provided curator_group_id already exist
+            Self::ensure_curator_group_under_given_id_exists(&curator_group_id)?;
+            // Ensure permissions_by_level map max. allowed size is not exceeded
+            Self::ensure_permissions_by_level_map_size_not_exceeded(&permissions_by_level)?;
 
-            // // Set `permissions` for curator group under given `curator_group_id`
-            // <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
-            //     curator_group.set_permissions_by_level(&permissions_by_level)
-            // });
+            //
+            // == MUTATION SAFE ==
+            //
 
-            // // Trigger event
-            // Self::deposit_event(RawEvent::CuratorGroupPermissionsUpdated(curator_group_id, permissions_by_level))
+            // Set `permissions` for curator group under given `curator_group_id`
+            <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
+                curator_group.set_permissions_by_level(&permissions_by_level)
+            });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::CuratorGroupPermissionsUpdated(curator_group_id, permissions_by_level))
         }
 
         /// Set `is_active` status for curator group under given `curator_group_id`
