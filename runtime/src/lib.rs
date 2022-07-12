@@ -196,9 +196,9 @@ impl Contains<<Runtime as frame_system::Config>::Call> for LockedDownBaseFilter 
             // TODO: adjust after Carthage
             Call::Content(content::Call::<Runtime>::destroy_nft { .. }) => false,
             Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. }) => false,
-            Call::Content(content::Call::<Runtime>::update_curator_group_permissions { .. }) => {
-                false
-            }
+            Call::Content(content::Call::<Runtime>::update_curator_group_permissions {
+                ..
+            }) => false,
             Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. }) => false,
             _ => true, // Enable all other calls
         }
