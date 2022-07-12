@@ -9,15 +9,13 @@ import {
   ForumCategoryFieldsFragment,
 } from '../../graphql/generated/queries'
 import { assert } from 'chai'
-import { CategoryId } from '@joystream/types/forum'
-import { ThreadId } from '@joystream/types/common'
-import { WorkerId } from '@joystream/types/working-group'
+import { WorkerId, ForumThreadId, ForumCategoryId } from '@joystream/types/primitives'
 import { WithForumWorkersFixture } from './WithForumWorkersFixture'
 import _ from 'lodash'
 
 export type StickyThreadsParams = {
-  categoryId: CategoryId
-  stickyTreads: ThreadId[]
+  categoryId: ForumCategoryId
+  stickyTreads: ForumThreadId[]
   asWorker?: WorkerId
 }
 

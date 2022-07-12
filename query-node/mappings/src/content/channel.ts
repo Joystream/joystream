@@ -14,6 +14,7 @@ import {
   MetaprotocolTransactionPending,
   MetaprotocolTransactionStatusEvent,
   MetaprotocolTransactionSuccessful,
+  StorageBag,
   StorageDataObject,
 } from 'query-node/dist/model'
 import { In } from 'typeorm'
@@ -43,7 +44,7 @@ import {
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
   // read event data
-  const [channelId, { owner }, channelCreationParameters] = new Content.ChannelCreatedEvent(event).params
+  const [channelId, { owner, dataObjects }, channelCreationParameters] = new Content.ChannelCreatedEvent(event).params
 
   // create entity
   const channel = new Channel({
@@ -68,8 +69,21 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
 
   // deserialize & process metadata
   if (channelCreationParameters.meta.isSome) {
+    const storageBag = await store.get(StorageBag, { where: { id: `dynamic:channel:${channelId.toString()}` } })
+
+    if (!storageBag) {
+      inconsistentState(`storageBag for channel ${channelId} does not exist`)
+    }
+
+    const storageDataObjectParams = {
+      storageBagOrId: storageBag,
+      objectCreationList: channelCreationParameters.assets.unwrapOr(undefined)?.objectCreationList || [],
+      stateBloatBond: channelCreationParameters.expectedDataObjectStateBloatBond,
+      objectIds: [...dataObjects],
+    }
+
     const metadata = deserializeMetadata(ChannelMetadata, channelCreationParameters.meta.unwrap()) || {}
-    await processChannelMetadata(ctx, channel, metadata, channelCreationParameters.assets.unwrapOr(undefined))
+    await processChannelMetadata(ctx, channel, metadata, storageDataObjectParams)
   }
 
   // save entity
@@ -82,7 +96,7 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
 export async function content_ChannelUpdated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
   // read event data
-  const [, channelId, channelUpdateParameters] = new Content.ChannelUpdatedEvent(event).params
+  const [, channelId, channelUpdateParameters, newDataObjects] = new Content.ChannelUpdatedEvent(event).params
 
   // load channel
   const channel = await store.get(Channel, {
@@ -100,8 +114,21 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
 
   //  update metadata if it was changed
   if (newMetadataBytes) {
+    const storageBag = await store.get(StorageBag, { where: { id: `dynamic:channel:${channelId.toString()}` } })
+
+    if (!storageBag) {
+      inconsistentState(`storageBag for channel ${channelId} does not exist`)
+    }
+
+    const storageDataObjectParams = {
+      storageBagOrId: storageBag,
+      objectCreationList: channelUpdateParameters.assetsToUpload.unwrapOr(undefined)?.objectCreationList || [],
+      stateBloatBond: channelUpdateParameters.expectedDataObjectStateBloatBond,
+      objectIds: [...newDataObjects],
+    }
+
     const newMetadata = deserializeMetadata(ChannelMetadata, newMetadataBytes) || {}
-    await processChannelMetadata(ctx, channel, newMetadata, channelUpdateParameters.assetsToUpload.unwrapOr(undefined))
+    await processChannelMetadata(ctx, channel, newMetadata, storageDataObjectParams)
   }
 
   const newCollaborators = channelUpdateParameters.collaborators.unwrapOr(undefined)

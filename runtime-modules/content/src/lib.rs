@@ -1,15 +1,15 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "512"]
+#![allow(clippy::unused_unit)]
 
-#[cfg(test)]
-mod tests;
-use core::marker::PhantomData;
 mod errors;
 mod nft;
 mod permissions;
+mod tests;
 mod types;
 
+use core::marker::PhantomData;
 use project_token::traits::PalletToken;
 use project_token::types::{
     TokenIssuanceParametersOf, TokenSaleParamsOf, TransfersWithVestingOf, UploadContextOf,
@@ -1751,7 +1751,7 @@ decl_module! {
             )?;
 
             // Ensure nft in buy now state
-            let _ = Self::ensure_in_buy_now_state(&nft)?;
+            Self::ensure_in_buy_now_state(&nft)?;
 
             //
             // == MUTATION SAFE ==
@@ -3292,10 +3292,10 @@ impl<T: Config> Module<T> {
         ids_to_remove: &BTreeSet<DataObjectId<T>>,
     ) -> BTreeSet<DataObjectId<T>> {
         current_set
-            .union(&ids_to_add)
+            .union(ids_to_add)
             .cloned()
             .collect::<BTreeSet<_>>()
-            .difference(&ids_to_remove)
+            .difference(ids_to_remove)
             .cloned()
             .collect::<BTreeSet<_>>()
     }
@@ -3514,7 +3514,7 @@ impl<T: Config> Module<T> {
         channel.ensure_has_no_active_transfer::<T>()?;
         channel.ensure_feature_not_paused::<T>(PausableChannelFeature::CreatorCashout)?;
 
-        ensure_actor_authorized_to_claim_payment::<T>(origin.clone(), &actor, &channel)?;
+        ensure_actor_authorized_to_claim_payment::<T>(origin.clone(), actor, &channel)?;
 
         ensure!(
             Self::channel_cashouts_enabled(),
@@ -3573,7 +3573,7 @@ impl<T: Config> Module<T> {
                 )
             }
             ChannelFundsDestination::CouncilBudget => {
-                let _ = Balances::<T>::slash(&reward_account, amount);
+                let _ = Balances::<T>::slash(reward_account, amount);
                 T::CouncilBudgetManager::increase_budget(amount);
                 Ok(())
             }

@@ -1,4 +1,3 @@
-import { assert } from 'chai'
 import { Utils } from '../../../utils'
 import { Api } from '../../../Api'
 import { BaseQueryNodeFixture } from '../../../Fixture'

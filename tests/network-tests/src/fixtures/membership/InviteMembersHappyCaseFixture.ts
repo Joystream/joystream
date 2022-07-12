@@ -4,7 +4,7 @@ import { QueryNodeApi } from '../../QueryNodeApi'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { EventDetails, EventType, MemberContext } from '../../types'
 import { MemberInvitedEventFieldsFragment, MembershipFieldsFragment } from '../../graphql/generated/queries'
-import { MemberId } from '@joystream/types/common'
+import { MemberId } from '@joystream/types/primitives'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
 import { Utils } from '../../utils'
 import { StandardizedFixture } from '../../Fixture'
@@ -28,7 +28,7 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
   generateInviteMemberTx(memberId: MemberId, inviteeAccountId: string): SubmittableExtrinsic<'promise'> {
     return this.api.tx.members.inviteMember({
       ...generateParamsFromAccountId(inviteeAccountId),
-      inviting_member_id: memberId,
+      invitingMemberId: memberId,
     })
   }
 
@@ -102,9 +102,9 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
       this.api.tx.membershipWorkingGroup.setBudget(initialInvitationBalance.muln(this.accounts.length))
     )
     // Load initial invites count
-    this.initialInvitesCount = (
-      await this.api.query.members.membershipById(this.inviterContext.memberId)
-    ).invites.toNumber()
+    this.initialInvitesCount = (await this.api.query.members.membershipById(this.inviterContext.memberId))
+      .unwrap()
+      .invites.toNumber()
     // Execute
     await super.execute()
   }

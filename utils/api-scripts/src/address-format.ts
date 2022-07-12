@@ -1,12 +1,13 @@
 // @ts-check
 import { cryptoWaitReady } from '@polkadot/util-crypto'
 import { Keyring } from '@polkadot/keyring'
+import { JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
 
 async function main() {
   await cryptoWaitReady()
 
   const keyring = new Keyring({
-    ss58Format: 126,
+    ss58Format: JOYSTREAM_ADDRESS_PREFIX,
   })
 
   const suri = '//Alice'

@@ -292,13 +292,13 @@ impl<T: Config> TestExternalitiesBuilder<T> {
         // Add system
         let mut t = self
             .system_config
-            .unwrap_or(frame_system::GenesisConfig::default())
+            .unwrap_or_default()
             .build_storage::<T>()
             .unwrap();
 
         // Add membership
         self.membership_config
-            .unwrap_or(membership::GenesisConfig::default())
+            .unwrap_or_default()
             .assimilate_storage(&mut t)
             .unwrap();
 

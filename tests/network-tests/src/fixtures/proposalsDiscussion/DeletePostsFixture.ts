@@ -10,7 +10,11 @@ import {
 } from '../../graphql/generated/queries'
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
-import { MemberId, PostId, ThreadId } from '@joystream/types/common'
+import {
+  MemberId,
+  ProposalDiscussionPostId as PostId,
+  ProposalDiscussionThreadId as ThreadId,
+} from '@joystream/types/primitives'
 
 export type DeletePostParams = {
   threadId: ThreadId | number

@@ -379,7 +379,7 @@ fn unsuccessful_video_creation_with_invalid_expected_data_size_fee() {
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
             .with_assets(StorageAssets::<Test> {
                 // setting a purposely high fee to trigger error
-                expected_data_size_fee: BalanceOf::<Test>::from(1_000_000u64),
+                expected_data_size_fee: 1_000_000u64,
                 object_creation_list: create_data_objects_helper(),
             })
             .call_and_assert(Err(storage::Error::<Test>::DataSizeFeeChanged.into()));
@@ -870,7 +870,7 @@ fn unsuccessful_video_update_with_invalid_expected_data_size_fee() {
         UpdateVideoFixture::default()
             .with_assets_to_upload(StorageAssets::<Test> {
                 // setting a purposely high fee to trigger error
-                expected_data_size_fee: BalanceOf::<Test>::from(1_000_000u64),
+                expected_data_size_fee: 1_000_000u64,
                 object_creation_list: create_data_objects_helper(),
             })
             .call_and_assert(Err(storage::Error::<Test>::DataSizeFeeChanged.into()));

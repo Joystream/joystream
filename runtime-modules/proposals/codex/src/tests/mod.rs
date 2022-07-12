@@ -39,9 +39,9 @@ pub(crate) fn increase_total_balance_issuance_using_account_id(account_id: u64, 
 
 fn assert_last_event(generic_event: <Test as Config>::Event) {
     let events = System::events();
-    let system_event: <Test as frame_system::Config>::Event = generic_event.into();
+    let system_event: <Test as frame_system::Config>::Event = generic_event;
     assert!(
-        events.len() > 0,
+        !events.is_empty(),
         "If you are checking for last event there must be at least 1 event"
     );
 
@@ -224,7 +224,7 @@ fn create_signal_proposal_codex_call_fails_without_text() {
         assert_eq!(
             ProposalsCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
-                general_proposal_parameters.clone(),
+                general_proposal_parameters,
                 ProposalDetails::Signal(Vec::new()),
             ),
             Err(Error::<Test>::SignalProposalIsEmpty.into())
@@ -311,7 +311,7 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_empty_wasm() {
         assert_eq!(
             ProposalsCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
-                general_proposal_parameters.clone(),
+                general_proposal_parameters,
                 ProposalDetails::RuntimeUpgrade(Vec::new()),
             ),
             Err(Error::<Test>::RuntimeProposalIsEmpty.into())
@@ -433,7 +433,7 @@ fn create_funding_request_proposal_call_fails_with_incorrect_balance() {
         assert_eq!(
             ProposalsCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
-                general_proposal_parameters.clone(),
+                general_proposal_parameters,
                 funding_request_proposal_exceeded_balance,
             ),
             Err(Error::<Test>::InvalidFundingRequestProposalBalance.into())
@@ -478,7 +478,7 @@ fn create_funding_request_proposal_call_fails_with_incorrect_number_of_accounts(
         assert_eq!(
             ProposalsCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
-                general_proposal_parameters.clone(),
+                general_proposal_parameters,
                 ProposalDetails::FundingRequest(
                     funding_request_proposal_exceeded_number_of_account
                 ),
@@ -510,7 +510,7 @@ fn create_funding_request_proposal_call_fails_repeated_account() {
         assert_eq!(
             ProposalsCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
-                general_proposal_parameters.clone(),
+                general_proposal_parameters,
                 ProposalDetails::FundingRequest(funding_request_proposal_details),
             ),
             Err(Error::<Test>::InvalidFundingRequestProposalRepeatedAccount.into())
@@ -679,7 +679,7 @@ fn create_set_max_validator_count_proposal_failed_with_invalid_validator_count()
         assert_eq!(
             ProposalsCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
-                general_proposal_parameters.clone(),
+                general_proposal_parameters,
                 ProposalDetails::SetMaxValidatorCount(MAX_VALIDATOR_COUNT + 1),
             ),
             Err(Error::<Test>::InvalidValidatorCount.into())
@@ -725,7 +725,7 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(gr
             stake_policy: StakePolicy {
                 stake_amount: <Test as working_group::Config<working_group::Instance1>>::MinimumApplicationStake::get() as
                     u64,
-                leaving_unstaking_period: 0 as u64,
+                leaving_unstaking_period: 0_u64,
             },
             reward_per_block: None,
             group,

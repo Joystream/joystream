@@ -223,8 +223,8 @@ export async function storage_DynamicBagDeleted({ event, store }: EventContext &
 
 // Note: "Uploaded" here actually means "created" (the real upload happens later)
 export async function storage_DataObjectsUploaded({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [dataObjectIds, uploadParams, stateBloatBond] = new Storage.DataObjectsUploadedEvent(event).params
-  await createDataObjects(store, uploadParams, stateBloatBond, dataObjectIds)
+  const [objectIds, { bagId, objectCreationList }, stateBloatBond] = new Storage.DataObjectsUploadedEvent(event).params
+  await createDataObjects(store, { storageBagOrId: bagId, objectCreationList, stateBloatBond, objectIds })
 }
 
 export async function storage_PendingDataObjectsAccepted({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -413,7 +413,7 @@ export async function storage_DistributionBucketDeleted({ event, store }: EventC
   const invitedOperators = await store.getMany(DistributionBucketOperator, {
     where: {
       status: DistributionBucketOperatorStatus.INVITED,
-      distributionBucket,
+      distributionBucket: { id: distributionBucket.id },
     },
   })
   await Promise.all(invitedOperators.map((operator) => removeDistributionBucketOperator(store, operator)))

@@ -1,6 +1,6 @@
 import { BaseFixture } from '../Fixture'
 import { Api } from '../Api'
-import { VideoId } from '@joystream/types/content'
+import { VideoId } from '@joystream/types/primitives'
 
 export class CreateVideosAsMemberFixture extends BaseFixture {
   // Member that will be channel owner

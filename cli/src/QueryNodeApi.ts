@@ -57,8 +57,7 @@ import {
 } from './graphql/generated/queries'
 import { URL } from 'url'
 import fetch from 'cross-fetch'
-import { MemberId } from '@joystream/types/common'
-import { ApplicationId, OpeningId } from '@joystream/types/working-group'
+import { MemberId, ApplicationId, OpeningId } from '@joystream/types/primitives'
 import { apiModuleByGroup } from './Api'
 
 export default class QueryNodeApi {

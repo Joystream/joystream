@@ -1,5 +1,6 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import BN from 'bn.js'
+import '@joystream/types'
 
 async function main() {
   // Initialise the provider to connect to the local node

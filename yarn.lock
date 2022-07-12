@@ -1087,6 +1087,13 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
+"@babel/runtime@^7.18.6":
+  version "7.18.6"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.18.6.tgz#6a1ef59f838debd670421f8c7f2cbb8da9751580"
+  integrity sha512-t9wi7/AW6XtKahAe20Yw0/mMljKq0B1r2fPdvaAdV/KPDZewFXdaaa6K7lxmZBZ8FBNpCiAT6iHPmd6QO9bKfQ==
+  dependencies:
+    regenerator-runtime "^0.13.4"
+
 "@babel/runtime@^7.6.3":
   version "7.7.4"
   resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.7.4.tgz#b23a856751e4bf099262f867767889c0e3fe175b"
@@ -2055,73 +2062,7 @@
     yaml "^1.10.0"
     yaml-validator "^3.0.0"
 
-"@joystream/warthog@^2.41.4":
-  version "2.41.4"
-  resolved "https://registry.yarnpkg.com/@joystream/warthog/-/warthog-2.41.4.tgz#4b0a396d9d6eee9e469a36b1ca1c86c3890d56d6"
-  integrity sha512-yfGgrjbg3alGR+7g1NcSTdlpYtgH0kDFNDSKFWiYFEPNsjwwCBgWnsVQ+ED1PWAa2RhUhwp9J4dsI5U21P543A==
-  dependencies:
-    "@apollographql/graphql-playground-react" "https://github.com/Joystream/graphql-playground/releases/download/graphql-playground-react%401.7.29/graphql-playground-react-v1.7.29.tgz"
-    "@types/app-root-path" "^1.2.4"
-    "@types/bn.js" "^4.11.6"
-    "@types/caller" "^1.0.0"
-    "@types/cosmiconfig" "^6.0.0"
-    "@types/debug" "^4.1.5"
-    "@types/dotenv" "^8.2.0"
-    "@types/express" "^4.17.2"
-    "@types/graphql" "^14.5.0"
-    "@types/graphql-fields" "^1.3.2"
-    "@types/graphql-iso-date" "^3.3.3"
-    "@types/graphql-type-json" "^0.3.2"
-    "@types/isomorphic-fetch" "^0.0.35"
-    "@types/lodash" "^4.14.148"
-    "@types/mkdirp" "^0.5.2"
-    "@types/node" "^12.12.8"
-    "@types/node-emoji" "^1.8.1"
-    "@types/open" "^6.2.1"
-    "@types/pg" "^7.14.11"
-    "@types/prettier" "^1.18.3"
-    "@types/shortid" "^0.0.29"
-    "@types/ws" "^6.0.3"
-    apollo-link-error "^1.1.12"
-    apollo-link-http "^1.5.16"
-    apollo-server "^2.9.9"
-    apollo-server-express "^2.9.9"
-    app-root-path "^3.0.0"
-    bn.js "^5.2.0"
-    caller "^1.0.1"
-    class-transformer "^0.2.3"
-    class-validator "^0.11.0"
-    cosmiconfig "^6.0.0"
-    cross-fetch "^3.0.4"
-    dataloader "^1.4.0"
-    debug "^4.1.1"
-    execa "^4.0.3"
-    express "^4.17.1"
-    gluegun "^4.1.0"
-    graphql "^14.5.8"
-    graphql-binding "^2.5.2"
-    graphql-fields "^2.0.3"
-    graphql-import-node "^0.0.4"
-    graphql-iso-date "^3.6.1"
-    graphql-scalars "^1.2.6"
-    graphql-tools "^4.0.6"
-    graphql-type-json "^0.3.0"
-    lodash "^4.17.15"
-    mkdirp "^0.5.1"
-    node-emoji "^1.10.0"
-    open "^7.0.0"
-    pg "^8.6.0"
-    pgtools "^0.3.1"
-    prettier "^1.19.1"
-    reflect-metadata "^0.1.13"
-    shortid "^2.2.15"
-    type-graphql "^0.17.5"
-    typedi "^0.8.0"
-    typeorm "0.2.37"
-    typeorm-typedi-extensions "^0.4.1"
-    typescript "^4.4"
-
-"@joystream/warthog@^2.41.5":
+"@joystream/warthog@^2.41.4", "@joystream/warthog@^2.41.5":
   version "2.41.5"
   resolved "https://registry.yarnpkg.com/@joystream/warthog/-/warthog-2.41.5.tgz#8d03ec92cb1b6f95002b923184f7ff55e9e07098"
   integrity sha512-0r4vbsftW7SMjjZjGThy8n4O1bx1/nYatpbYld36HzJRs5Ex/f3HlNLBHy2lkMIt9ugi6z9W6yyWKqNgWjLNZg==
@@ -2746,56 +2687,56 @@
     bn.js "^5.2.1"
     ip-regex "^4.3.0"
 
-"@polkadot/wasm-bridge@6.1.5":
-  version "6.1.5"
-  resolved "https://registry.yarnpkg.com/@polkadot/wasm-bridge/-/wasm-bridge-6.1.5.tgz#f77e3605eb30ac199a8d3a6357affb35f81f983a"
-  integrity sha512-nqxhJQTjw5P3yEY1Cd9g86GvpY/PHD3h74dszaBOg5GVPE53G18AKehb5I8daSpOHVKsItKK1n8xstxZTVI0Hg==
+"@polkadot/wasm-bridge@6.2.1":
+  version "6.2.1"
+  resolved "https://registry.yarnpkg.com/@polkadot/wasm-bridge/-/wasm-bridge-6.2.1.tgz#1ce6efac3e7799d3484b628fa162866327c40bc8"
+  integrity sha512-Q/TWfKPBDdAHTPgzjn5uxivxqZsTt6Fml+o/K6GuGmYqT4wbkWBN5+BVFawgcJqjnhzvJ8+Pocfzb/IwqYfsPQ==
   dependencies:
-    "@babel/runtime" "^7.18.3"
+    "@babel/runtime" "^7.18.6"
 
-"@polkadot/wasm-crypto-asmjs@6.1.5":
-  version "6.1.5"
-  resolved "https://registry.yarnpkg.com/@polkadot/wasm-crypto-asmjs/-/wasm-crypto-asmjs-6.1.5.tgz#2446159502fc3966cdcc4a9560494e037bdec3ab"
-  integrity sha512-GsVIe+fjJ2sHfrjtqSLV0tP6nClF/7/QXZd+BAWomVMCVcR35OIrkNK2giDzlCqaTP+MiCb/UF3phrU4wsHV4Q==
+"@polkadot/wasm-crypto-asmjs@6.2.1":
+  version "6.2.1"
+  resolved "https://registry.yarnpkg.com/@polkadot/wasm-crypto-asmjs/-/wasm-crypto-asmjs-6.2.1.tgz#cd186e8fc2d8f85e88c482b666af8c374f8d2fa3"
+  integrity sha512-YCCe0fPO/TDd+PGrQfQc4KPuZFKdtYYy6prJW+mM4oNm6VCrlUNFGEpu/mNUIGleihVKaSC8cA0eQfj7oUa4GA==
   dependencies:
-    "@babel/runtime" "^7.18.3"
+    "@babel/runtime" "^7.18.6"
 
-"@polkadot/wasm-crypto-init@6.1.5":
-  version "6.1.5"
-  resolved "https://registry.yarnpkg.com/@polkadot/wasm-crypto-init/-/wasm-crypto-init-6.1.5.tgz#86756bc85bffced837778c2c2d35dab69adfb8f5"
-  integrity sha512-VkBNc4cEkQ9YWAKLGW2ve2HV56GBHii3Xy4QYV+8OFYiOUbBMDVmuAvjlCjxiwa8nUxLzgCIz0HqqUx2YzxkhQ==
+"@polkadot/wasm-crypto-init@6.2.1":
+  version "6.2.1"
+  resolved "https://registry.yarnpkg.com/@polkadot/wasm-crypto-init/-/wasm-crypto-init-6.2.1.tgz#aca9ead354ab3cc21a1f377c7faddc832e222d22"
+  integrity sha512-hVgd2HU3gWzx1yf+6nsCJ2oSQaNCPcTZfbGBT+QPM9osXQidf1vIVTp2w+Q6LB1pgIzrEh87LFF3CGo4RrdtAQ==
   dependencies:
-    "@babel/runtime" "^7.18.3"
-    "@polkadot/wasm-bridge" "6.1.5"
-    "@polkadot/wasm-crypto-asmjs" "6.1.5"
-    "@polkadot/wasm-crypto-wasm" "6.1.5"
+    "@babel/runtime" "^7.18.6"
+    "@polkadot/wasm-bridge" "6.2.1"
+    "@polkadot/wasm-crypto-asmjs" "6.2.1"
+    "@polkadot/wasm-crypto-wasm" "6.2.1"
 
-"@polkadot/wasm-crypto-wasm@6.1.5":
-  version "6.1.5"
-  resolved "https://registry.yarnpkg.com/@polkadot/wasm-crypto-wasm/-/wasm-crypto-wasm-6.1.5.tgz#1a694958b8aedf1908d0abf4d30a95e68219cef8"
-  integrity sha512-YKriV8xUnnNVCykB0c1r0JEQgGPmgPMsEfHLzKhUeE415vkj3UcfcgXuOXVSEXKqgeoCLkvlY5OL3yb3Fg+Xbw==
+"@polkadot/wasm-crypto-wasm@6.2.1":
+  version "6.2.1"
+  resolved "https://registry.yarnpkg.com/@polkadot/wasm-crypto-wasm/-/wasm-crypto-wasm-6.2.1.tgz#8e9389e70504ae168e4ef766578d19f6c81c3f5c"
+  integrity sha512-hIKjPyvPb5msLZTFJZTM+/QI94UnCBXhZHfrbUI7ooBsll3vo9+Vm4va4g7AxH2BIeGp8EZEn0hVNdtnVC2Puw==
   dependencies:
-    "@babel/runtime" "^7.18.3"
-    "@polkadot/wasm-util" "6.1.5"
+    "@babel/runtime" "^7.18.6"
+    "@polkadot/wasm-util" "6.2.1"
 
 "@polkadot/wasm-crypto@^6.1.1":
-  version "6.1.5"
-  resolved "https://registry.yarnpkg.com/@polkadot/wasm-crypto/-/wasm-crypto-6.1.5.tgz#a7f60ebf81297a460fa1e97f71c4db6c91d49639"
-  integrity sha512-P4MIVE0RJm+Ar0qbOFFtEvA9fkrcmu4KI929k/XiWOqqKuLogwNjZcZiWZYLG7pDIXeHciAy65nIUpV2nr0D+Q==
+  version "6.2.1"
+  resolved "https://registry.yarnpkg.com/@polkadot/wasm-crypto/-/wasm-crypto-6.2.1.tgz#df50200bcaa8ee2a5cf216cc7d4e463385689ac4"
+  integrity sha512-euUsn/HYC4/2wrSBZrcKn4Hg59r8YrINrh2L/I6ID9SjzHFRlEeStRarnRvlkZS6ihnVQZbRtNrJKvgceik0uQ==
   dependencies:
-    "@babel/runtime" "^7.18.3"
-    "@polkadot/wasm-bridge" "6.1.5"
-    "@polkadot/wasm-crypto-asmjs" "6.1.5"
-    "@polkadot/wasm-crypto-init" "6.1.5"
-    "@polkadot/wasm-crypto-wasm" "6.1.5"
-    "@polkadot/wasm-util" "6.1.5"
+    "@babel/runtime" "^7.18.6"
+    "@polkadot/wasm-bridge" "6.2.1"
+    "@polkadot/wasm-crypto-asmjs" "6.2.1"
+    "@polkadot/wasm-crypto-init" "6.2.1"
+    "@polkadot/wasm-crypto-wasm" "6.2.1"
+    "@polkadot/wasm-util" "6.2.1"
 
-"@polkadot/wasm-util@6.1.5":
-  version "6.1.5"
-  resolved "https://registry.yarnpkg.com/@polkadot/wasm-util/-/wasm-util-6.1.5.tgz#4dcd4a32d706e18a40c2de65813abad1b4cbf730"
-  integrity sha512-5OH31mz8/Ly50fNOQ6eGFcO8OtLLyTvaoJPqUmcdl6OI+1+8GLoZMoXyRdrhWjftqQFxiJnwvlpqq6VdNVDg6g==
+"@polkadot/wasm-util@6.2.1":
+  version "6.2.1"
+  resolved "https://registry.yarnpkg.com/@polkadot/wasm-util/-/wasm-util-6.2.1.tgz#926d910eb8b09162880f8924452278c94f72c97b"
+  integrity sha512-4CYCB0ewC+IX74AOSwmmq05ki+TM9PZl+AZ96GjyFpLbjK8Pk9N72U9GSs6aamgL/uMRqct5EeA0ToUTPFQarw==
   dependencies:
-    "@babel/runtime" "^7.18.3"
+    "@babel/runtime" "^7.18.6"
 
 "@polkadot/x-bigint@9.5.1":
   version "9.5.1"
@@ -4028,11 +3969,6 @@
   integrity sha512-qCxJE1qgz2y0hA4pIxjBR+PelCH0U5CK1XJXFwCNqfmliatKp47UCXXE9Dyk1OXBDLvsCF57TqQEJaeLfDYEOQ==
   dependencies:
     "@types/yargs-parser" "*"
-
-"@types/zen-observable@0.8.3":
-  version "0.8.3"
-  resolved "https://registry.yarnpkg.com/@types/zen-observable/-/zen-observable-0.8.3.tgz#781d360c282436494b32fe7d9f7f8e64b3118aa3"
-  integrity sha512-fbF6oTd4sGGy0xjHPKAt+eS2CrxJ3+6gQ3FGcBoIJR2TLAyCkCyI8JqZNy+FeON0AhVgNJoUumVoZQjBFUqHkw==
 
 "@types/zen-observable@^0.8.0":
   version "0.8.2"
@@ -6014,7 +5950,7 @@ cli-cursor@^3.1.0:
   dependencies:
     restore-cursor "^3.1.0"
 
-cli-highlight@^2.1.10:
+cli-highlight@^2.1.11:
   version "2.1.11"
   resolved "https://registry.yarnpkg.com/cli-highlight/-/cli-highlight-2.1.11.tgz#49736fa452f0aaf4fae580e30acb26828d2dc1bf"
   integrity sha512-9KDcoEVwyUXrjcJNvHD0NFc/hiwe/WPVYIleQh2O1N2Zro5gWJZ/K+3DGn8w8P/F6FxOgzyC5bxDyHIgCSPhGg==
@@ -6788,6 +6724,11 @@ date-fns@^2.16.1:
   resolved "https://registry.yarnpkg.com/date-fns/-/date-fns-2.25.0.tgz#8c5c8f1d958be3809a9a03f4b742eba894fc5680"
   integrity sha512-ovYRFnTrbGPD4nqaEqescPEv1mNwvt+UTqI3Ay9SzNtey9NZnYu6E2qCcBBgJ6/2VF1zGGygpyTDITqpQQ5e+w==
 
+date-fns@^2.28.0:
+  version "2.28.0"
+  resolved "https://registry.yarnpkg.com/date-fns/-/date-fns-2.28.0.tgz#9570d656f5fc13143e50c975a3b6bbeb46cd08b2"
+  integrity sha512-8d35hViGYx/QH0icHYCeLmsLmMUheMmTyV9Fcm6gvNwdw31yXXH+O85sOBJ+OLnLQMKZowvpKb6FgMIQjcpvQw==
+
 dateformat@^3.0.2:
   version "3.0.3"
   resolved "https://registry.yarnpkg.com/dateformat/-/dateformat-3.0.3.tgz#a6e37499a4d9a9cf85ef5872044d62901c9889ae"
@@ -6842,6 +6783,13 @@ debug@^3.0.1:
   integrity sha512-CFjzYYAi4ThfiQvizrFQevTTXHtnCqWfe7x1AhgEscTz6ZbLbfoLRLPugTQyBth6f8ZERVUSyWHFD/7Wu4t1XQ==
   dependencies:
     ms "^2.1.1"
+
+debug@^4.3.3:
+  version "4.3.4"
+  resolved "https://registry.yarnpkg.com/debug/-/debug-4.3.4.tgz#1319f6579357f2338d3337d2cdd4914bb5dcc865"
+  integrity sha512-PRWFHuSU3eDtQJPvnNY7Jcket1j0t5OuOsFzPPzsekD52Zl8qUfFIPEiswXqIvHWGVHOgX+7G/vCNNhehwxfkQ==
+  dependencies:
+    ms "2.1.2"
 
 debug@~2.2.0:
   version "2.2.0"
@@ -7284,6 +7232,11 @@ dotenv@*, dotenv@^8.2.0:
   version "8.2.0"
   resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-8.2.0.tgz#97e619259ada750eea3e4ea3e26bceea5424b16a"
   integrity sha512-8sJ78ElpbDJBHNeBzUbUVLsqKdccaa/BXF1uPTw3GrvQTBgrQrtObr2mUrE38vzYd8cEv+m/JBfDLioYcfXoaw==
+
+dotenv@^16.0.0:
+  version "16.0.1"
+  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-16.0.1.tgz#8f8f9d94876c35dac989876a5d3a82a267fdce1d"
+  integrity sha512-1K6hR6wtk2FviQ4kEiSjFiH5rpzEVi8WW0x96aztHVMhEspNpc4DVOUTEHtEva5VThQ8IaBX1Pe4gSzpVVUsKQ==
 
 dotenvi@^0.9.0:
   version "0.9.1"
@@ -8544,11 +8497,6 @@ ferrum@1.9.3, ferrum@^1.9.3:
     lodash.isplainobject "4.0.6"
     xxhashjs "0.2.2"
 
-figlet@^1.1.1:
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/figlet/-/figlet-1.5.0.tgz#2db4d00a584e5155a96080632db919213c3e003c"
-  integrity sha512-ZQJM4aifMpz6H19AW1VqvZ7l4pOE9p7i/3LyxgO2kp+PO/VcDYNqIHEMtkccqIhTXMKci4kjueJr/iCQEaT/Ww==
-
 figlet@^1.5.2:
   version "1.5.2"
   resolved "https://registry.yarnpkg.com/figlet/-/figlet-1.5.2.tgz#dda34ff233c9a48e36fcff6741aeb5bafe49b634"
@@ -9183,6 +9131,18 @@ glob@7.1.6, glob@^7.1.1, glob@^7.1.2, glob@^7.1.3, glob@^7.1.4, glob@^7.1.6:
     inflight "^1.0.4"
     inherits "2"
     minimatch "^3.0.4"
+    once "^1.3.0"
+    path-is-absolute "^1.0.0"
+
+glob@^7.2.0:
+  version "7.2.3"
+  resolved "https://registry.yarnpkg.com/glob/-/glob-7.2.3.tgz#b8df0fb802bbfa8e89bd1d938b4e16578ed44f2b"
+  integrity sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==
+  dependencies:
+    fs.realpath "^1.0.0"
+    inflight "^1.0.4"
+    inherits "2"
+    minimatch "^3.1.1"
     once "^1.3.0"
     path-is-absolute "^1.0.0"
 
@@ -13173,6 +13133,13 @@ minimatch@*, minimatch@3.0.4, minimatch@^3.0.2, minimatch@^3.0.4:
   dependencies:
     brace-expansion "^1.1.7"
 
+minimatch@^3.1.1:
+  version "3.1.2"
+  resolved "https://registry.yarnpkg.com/minimatch/-/minimatch-3.1.2.tgz#19cd194bfd3e428f049a70817c038d89ab4be35b"
+  integrity sha512-J7p63hRiAjw1NDEww1W7i37+ByIrOWO5XQQAzZ3VOcL0PNybwpfmV/N05zFAzwQ9USyEcX6t3UO+K5aqBQOIHw==
+  dependencies:
+    brace-expansion "^1.1.7"
+
 minimist-options@4.1.0:
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/minimist-options/-/minimist-options-4.1.0.tgz#c0655713c53a8a2ebd77ffa247d342c40f010619"
@@ -13736,9 +13703,9 @@ nock@^13.0.0:
     propagate "^2.0.0"
 
 nock@^13.2.6:
-  version "13.2.7"
-  resolved "https://registry.yarnpkg.com/nock/-/nock-13.2.7.tgz#c93933b61df42f4f4b3a07fde946a4e209c0c168"
-  integrity sha512-R6NUw7RIPtKwgK7jskuKoEi4VFMqIHtV2Uu9K/Uegc4TA5cqe+oNMYslZcUmnVNQCTG6wcSqUBaGTDd7sq5srg==
+  version "13.2.8"
+  resolved "https://registry.yarnpkg.com/nock/-/nock-13.2.8.tgz#e2043ccaa8e285508274575e090a7fe1e46b90f1"
+  integrity sha512-JT42FrXfQRpfyL4cnbBEJdf4nmBpVP0yoCcSBr+xkT8Q1y3pgtaCKHGAAOIFcEJ3O3t0QbVAmid0S0f2bj3Wpg==
   dependencies:
     debug "^4.1.0"
     json-stringify-safe "^5.0.1"
@@ -14612,11 +14579,6 @@ parent-module@^1.0.0:
   integrity sha512-GQ2EWRpQV8/o+Aw8YqtfZZPfNRWZYkbidE9k5rpl/hC3vtHHBfGm2Ifi6qWV+coDGkrUKZAxE3Lot5kcsRlh+g==
   dependencies:
     callsites "^3.0.0"
-
-parent-require@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/parent-require/-/parent-require-1.0.0.tgz#746a167638083a860b0eef6732cb27ed46c32977"
-  integrity sha1-dGoWdjgIOoYLDu9nMssn7UbDKXc=
 
 parse-cache-control@^1.0.1:
   version "1.0.1"
@@ -18213,6 +18175,11 @@ tslib@^2.0.0, tslib@^2.0.3, tslib@^2.1.0, tslib@~2.2.0:
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.2.0.tgz#fb2c475977e35e241311ede2693cee1ec6698f5c"
   integrity sha512-gS9GVHRU+RGn5KQM2rllAlR3dU6m7AcpJKdtH8gFvQiC4Otgk98XnmMU+nZenHt/+VhnBPWwgrJsyrdcw6i23w==
 
+tslib@^2.3.1:
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.4.0.tgz#7cecaa7f073ce680a05847aa77be941098f36dc3"
+  integrity sha512-d6xOpEDfsi2CZVlPQzGeux8XMwLT9hssAsaPYExaQMuYskwb+x1x7J371tWlbBdWHroy99KnVB6qIkUbs5X3UQ==
+
 tslib@~2.0.1:
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.0.3.tgz#8e0741ac45fc0c226e58a17bfc3e64b9bc6ca61c"
@@ -18362,28 +18329,27 @@ typeorm-typedi-extensions@^0.4.1:
   resolved "https://registry.yarnpkg.com/typeorm-typedi-extensions/-/typeorm-typedi-extensions-0.4.1.tgz#e62e3c8f30021c9b8f258e068d38723dbd64de1d"
   integrity sha512-05hWktQ4zuXzTTUO3ao56yOezlvUuZhH2NRS//m0SOGCAJoVlfPTMHcmDaMSQy/lMfAwPWoIyn+sfK7ONzTdXQ==
 
-typeorm@0.2.34, typeorm@0.2.37, "typeorm@https://github.com/Joystream/typeorm/releases/download/0.3.5/typeorm-v0.3.5.tgz":
-  version "0.2.34"
-  resolved "https://registry.yarnpkg.com/typeorm/-/typeorm-0.2.34.tgz#637b3cec2de54ee7f423012b813a2022c0aacc8b"
-  integrity sha512-FZAeEGGdSGq7uTH3FWRQq67JjKu0mgANsSZ04j3kvDYNgy9KwBl/6RFgMVgiSgjf7Rqd7NrhC2KxVT7I80qf7w==
+"typeorm@https://github.com/Joystream/typeorm/releases/download/0.3.5/typeorm-v0.3.5.tgz":
+  version "0.3.5"
+  resolved "https://github.com/Joystream/typeorm/releases/download/0.3.5/typeorm-v0.3.5.tgz#a9fd8a8b1947ed5616707327853a81bded1e023d"
   dependencies:
     "@sqltools/formatter" "^1.2.2"
     app-root-path "^3.0.0"
     buffer "^6.0.3"
     chalk "^4.1.0"
-    cli-highlight "^2.1.10"
-    debug "^4.3.1"
-    dotenv "^8.2.0"
-    glob "^7.1.6"
-    js-yaml "^4.0.0"
+    cli-highlight "^2.1.11"
+    date-fns "^2.28.0"
+    debug "^4.3.3"
+    dotenv "^16.0.0"
+    glob "^7.2.0"
+    js-yaml "^4.1.0"
     mkdirp "^1.0.4"
     reflect-metadata "^0.1.13"
     sha.js "^2.4.11"
-    tslib "^2.1.0"
+    tslib "^2.3.1"
+    uuid "^8.3.2"
     xml2js "^0.4.23"
-    yargonaut "^1.1.4"
-    yargs "^16.2.0"
-    zen-observable-ts "^1.0.0"
+    yargs "^17.3.1"
 
 typescript-compare@^0.0.2:
   version "0.0.2"
@@ -19333,15 +19299,6 @@ yaml@^1.10.0, yaml@^1.10.2, yaml@^1.7.2, yaml@^1.8.3:
   resolved "https://registry.yarnpkg.com/yaml/-/yaml-1.10.2.tgz#2301c5ffbf12b467de8da2333a459e29e7920e4b"
   integrity sha512-r3vXyErRCYJ7wg28yvBY5VSoAF8ZvlcW9/BwUzEtUsjvX/DKs24dIkuwjtuprwJJHsbyUbLApepYTR1BN4uHrg==
 
-yargonaut@^1.1.4:
-  version "1.1.4"
-  resolved "https://registry.yarnpkg.com/yargonaut/-/yargonaut-1.1.4.tgz#c64f56432c7465271221f53f5cc517890c3d6e0c"
-  integrity sha512-rHgFmbgXAAzl+1nngqOcwEljqHGG9uUZoPjsdZEs1w5JW9RXYzrSvH/u70C1JE5qFi0qjsdhnUX/dJRpWqitSA==
-  dependencies:
-    chalk "^1.1.1"
-    figlet "^1.1.1"
-    parent-require "^1.0.0"
-
 yargs-parser@10.x:
   version "10.1.0"
   resolved "https://registry.yarnpkg.com/yargs-parser/-/yargs-parser-10.1.0.tgz#7202265b89f7e9e9f2e5765e0fe735a905edbaa8"
@@ -19522,7 +19479,7 @@ yargs@^17.0.1:
     y18n "^5.0.5"
     yargs-parser "^21.0.0"
 
-yargs@^17.5.1:
+yargs@^17.3.1, yargs@^17.5.1:
   version "17.5.1"
   resolved "https://registry.yarnpkg.com/yargs/-/yargs-17.5.1.tgz#e109900cab6fcb7fd44b1d8249166feb0b36e58e"
   integrity sha512-t6YAJcxDkNX7NFYiVtKvWUz8l+PaKTLiL63mJYWR2GnHq2gjEWISzsLp9wg3aY36dY1j+gfIEL3pIF+XlJJfbA==
@@ -19577,14 +19534,6 @@ zen-observable-ts@^0.8.21:
   dependencies:
     tslib "^1.9.3"
     zen-observable "^0.8.0"
-
-zen-observable-ts@^1.0.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/zen-observable-ts/-/zen-observable-ts-1.1.0.tgz#2d1aa9d79b87058e9b75698b92791c1838551f83"
-  integrity sha512-1h4zlLSqI2cRLPJUHJFL8bCWHhkpuXkF+dbGkRaWjgDIG26DmzyshUMrdV/rL3UnR+mhaX4fRq8LPouq0MYYIA==
-  dependencies:
-    "@types/zen-observable" "0.8.3"
-    zen-observable "0.8.15"
 
 zen-observable-ts@^1.2.0:
   version "1.2.3"

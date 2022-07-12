@@ -64,7 +64,7 @@ fn initialize_channel_transfer_ok_with_event_deposited() {
             PendingTransferOf::<Test> {
                 new_owner: ChannelOwner::Member(SECOND_MEMBER_ID),
                 transfer_params: TransferCommitmentOf::<Test> {
-                    price: BalanceOf::<Test>::from(DEFAULT_CHANNEL_TRANSFER_PRICE),
+                    price: DEFAULT_CHANNEL_TRANSFER_PRICE,
                     new_collaborators,
                     transfer_id: TransferId::one(),
                 }
@@ -323,7 +323,7 @@ fn accept_transfer_status_ok() {
             .call_and_assert(Ok(()));
 
         AcceptChannelTransferFixture::default()
-            .with_collaborators(new_collaborators.clone())
+            .with_collaborators(new_collaborators)
             .call_and_assert(Ok(()));
     })
 }

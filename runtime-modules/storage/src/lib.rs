@@ -129,7 +129,7 @@ pub use weights::WeightInfo;
 use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{Currency, ExistenceRequirement, Get};
-use frame_support::weights::Weight;
+
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, IterableStorageDoubleMap, PalletId,
     Parameter,
@@ -1897,7 +1897,14 @@ decl_module! {
 
 
         /// Updates data object state bloat bond value.
-        #[weight = 10_000_000] // TODO: adjust weight
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoStorage::<T>::update_data_object_state_bloat_bond()]
         pub fn update_data_object_state_bloat_bond(
             origin,
             state_bloat_bond: BalanceOf<T>,
@@ -3553,7 +3560,7 @@ impl<T: Config> Module<T> {
             Error::<T>::StorageBucketIdCollectionsAreEmpty
         );
 
-        let bag = Self::ensure_bag_exists(&bag_id)?;
+        let bag = Self::ensure_bag_exists(bag_id)?;
 
         let new_bucket_number = bag
             .stored_by
@@ -3574,7 +3581,7 @@ impl<T: Config> Module<T> {
             );
 
             ensure!(
-                bag.stored_by.contains(&bucket_id),
+                bag.stored_by.contains(bucket_id),
                 Error::<T>::StorageBucketIsNotBoundToBag
             );
         }
@@ -3588,7 +3595,7 @@ impl<T: Config> Module<T> {
             );
 
             ensure!(
-                !bag.stored_by.contains(&bucket_id),
+                !bag.stored_by.contains(bucket_id),
                 Error::<T>::StorageBucketIsBoundToBag
             );
         }
@@ -3598,7 +3605,7 @@ impl<T: Config> Module<T> {
             objects_total_size: bag.objects_total_size,
         };
 
-        Self::check_buckets_for_overflow(&add_buckets, &voucher_update)?;
+        Self::check_buckets_for_overflow(add_buckets, &voucher_update)?;
 
         Ok(voucher_update)
     }
@@ -3619,13 +3626,13 @@ impl<T: Config> Module<T> {
             Error::<T>::DataObjectIdCollectionIsEmpty
         );
 
-        Self::ensure_bag_exists(&src_bag_id)?;
-        let dest_bag = Self::ensure_bag_exists(&dest_bag_id)?;
+        Self::ensure_bag_exists(src_bag_id)?;
+        let dest_bag = Self::ensure_bag_exists(dest_bag_id)?;
 
         let mut bag_change = BagUpdate::<BalanceOf<T>>::default();
 
         for object_id in object_ids.iter() {
-            let data_object = Self::ensure_data_object_exists(&src_bag_id, object_id)?;
+            let data_object = Self::ensure_data_object_exists(src_bag_id, object_id)?;
 
             bag_change.add_object(data_object.size, data_object.state_bloat_bond);
         }
@@ -3734,18 +3741,15 @@ impl<T: Config> Module<T> {
         voucher_operation: OperationType,
     ) {
         for bucket_id in bucket_ids.iter() {
-            <StorageBucketById<T>>::get(bucket_id)
-                .map(|bucket| StorageBucket::<T> {
+            if let Some(bucket) =
+                <StorageBucketById<T>>::get(bucket_id).map(|bucket| StorageBucket::<T> {
                     voucher: voucher_update.get_updated_voucher(&bucket.voucher, voucher_operation),
                     ..bucket
                 })
-                .map(|bucket| {
-                    <StorageBucketById<T>>::insert(bucket_id, bucket.clone());
-                    Self::deposit_event(RawEvent::VoucherChanged(
-                        *bucket_id,
-                        bucket.voucher.clone(),
-                    ));
-                });
+            {
+                <StorageBucketById<T>>::insert(bucket_id, bucket.clone());
+                Self::deposit_event(RawEvent::VoucherChanged(*bucket_id, bucket.voucher));
+            }
         }
     }
 
@@ -3845,7 +3849,7 @@ impl<T: Config> Module<T> {
     // Verifies storage operator existence.
     fn ensure_storage_provider_operator_exists(operator_id: &WorkerId<T>) -> DispatchResult {
         ensure!(
-            <T as Config>::StorageWorkingGroup::worker_exists(&operator_id),
+            <T as Config>::StorageWorkingGroup::worker_exists(operator_id),
             Error::<T>::StorageProviderOperatorDoesntExist
         );
 
@@ -4093,17 +4097,17 @@ impl<T: Config> Module<T> {
         remove_buckets: &BTreeSet<T::StorageBucketId>,
     ) {
         for bucket_id in add_buckets.iter() {
-            StorageBucketById::<T>::get(bucket_id).map(|mut bucket| {
+            if let Some(mut bucket) = StorageBucketById::<T>::get(bucket_id) {
                 bucket.register_bag_assignment();
                 StorageBucketById::<T>::insert(bucket_id, bucket);
-            });
+            }
         }
 
         for bucket_id in remove_buckets.iter() {
-            StorageBucketById::<T>::get(bucket_id).map(|mut bucket| {
+            if let Some(mut bucket) = StorageBucketById::<T>::get(bucket_id) {
                 bucket.unregister_bag_assignment();
                 StorageBucketById::<T>::insert(bucket_id, bucket);
-            });
+            }
         }
     }
 
@@ -4135,7 +4139,7 @@ impl<T: Config> Module<T> {
             .iter()
             // discard non existing bucket and build a (bucket_id, bucket) map
             .filter_map(|id| {
-                Self::ensure_storage_bucket_exists(&id)
+                Self::ensure_storage_bucket_exists(id)
                     .map(|bk| (*id, bk))
                     .ok()
             })

@@ -49,7 +49,7 @@ export default class DevBatchUpload extends AccountsCommandBase {
   async run(): Promise<void> {
     const { api } = this
     const { bagId, bucketId, batchSize, batchesCount, endpoint } = this.parse(DevBatchUpload).flags
-    const sudoKey = (await api.query.sudo.key()).toHuman()
+    const sudoKey = (await api.query.sudo.key()).unwrap().toHuman()
     const dataFee = await api.query.storage.dataObjectPerMegabyteFee()
 
     for (let i = 0; i < batchesCount; ++i) {

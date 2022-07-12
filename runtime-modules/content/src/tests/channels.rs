@@ -166,7 +166,7 @@ fn unsuccessful_channel_creation_with_invalid_expected_data_size_fee() {
             .with_channel_owner(ChannelOwner::CuratorGroup(default_curator_group_id))
             .with_assets(StorageAssets::<Test> {
                 // setting a purposely high fee to trigger error
-                expected_data_size_fee: BalanceOf::<Test>::from(1_000_000u64),
+                expected_data_size_fee: 1_000_000u64,
                 object_creation_list: create_data_objects_helper(),
             })
             .call_and_assert(Err(storage::Error::<Test>::DataSizeFeeChanged.into()));
@@ -453,7 +453,7 @@ fn unsuccessful_channel_update_with_invalid_expected_data_size_fee() {
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
             .with_assets_to_upload(StorageAssets::<Test> {
                 // setting a purposely high fee to trigger error
-                expected_data_size_fee: BalanceOf::<Test>::from(1_000_000u64),
+                expected_data_size_fee: 1_000_000u64,
                 object_creation_list: create_data_objects_helper(),
             })
             .call_and_assert(Err(storage::Error::<Test>::DataSizeFeeChanged.into()));
@@ -1198,7 +1198,7 @@ fn successful_moderation_action_channel_features_status_change_by_curator() {
         SetChannelPausedFeaturesAsModeratorFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
             .with_actor(ContentActor::Curator(curator_group_id, DEFAULT_CURATOR_ID))
-            .with_new_paused_features(channel_features_to_manage.clone())
+            .with_new_paused_features(channel_features_to_manage)
             .call_and_assert(Ok(()));
         // Set features to Active
         SetChannelPausedFeaturesAsModeratorFixture::default()
@@ -1520,7 +1520,7 @@ fn video_nft_cannot_be_issued_when_channel_video_nft_issuance_paused() {
         UpdateVideoFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .with_nft_issuance(nft_params.clone())
+            .with_nft_issuance(nft_params)
             .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
     })
 }
@@ -1899,7 +1899,7 @@ fn unsuccessful_channel_collaborator_removal_by_collaborator_with_insufficient_p
         UpdateChannelFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
-            .with_collaborators(BTreeMap::from_iter(vec![default_collaborator.clone()]))
+            .with_collaborators(BTreeMap::from_iter(vec![default_collaborator]))
             .call_and_assert(Err(
                 Error::<Test>::ChannelAgentInsufficientPermissions.into()
             ));
@@ -1927,7 +1927,7 @@ fn unsuccessful_channel_collaborator_update_by_collaborator_with_insufficient_pe
             .with_actor(ContentActor::Member(COLLABORATOR_MEMBER_ID))
             .with_collaborators(BTreeMap::from_iter(vec![
                 (SECOND_MEMBER_ID, BTreeSet::new()),
-                default_collaborator.clone(),
+                default_collaborator,
             ]))
             .call_and_assert(Err(
                 Error::<Test>::ChannelAgentInsufficientPermissions.into()
