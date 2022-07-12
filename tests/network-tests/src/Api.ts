@@ -461,7 +461,7 @@ export class Api {
         )}. ` + `Expected: ${expectedCount}, Got: ${events.length}`
       )
     }
-    return (events.sort((a, b) => new BN(a.index).cmp(new BN(b.index))) as unknown) as EventType<S, M>[]
+    return events.sort((a, b) => new BN(a.index).cmp(new BN(b.index))) as unknown as EventType<S, M>[]
   }
 
   public async getEventDetails<S extends EventSection, M extends EventMethod<S>>(

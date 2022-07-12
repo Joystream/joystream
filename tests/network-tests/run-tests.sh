@@ -36,7 +36,7 @@ then
 fi
 
 # First scenario..
-./run-test-scenario.sh $1
+IGNORE_HIRED_LEADS=true ./run-test-scenario.sh $1
 
 # In between pickup generated keys from first scenario or bootstrap scene with all well known
 # keys for workers and members..

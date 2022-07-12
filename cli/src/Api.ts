@@ -87,7 +87,7 @@ export default class Api {
 
   // Get api for use-cases where no type augmentations are desirable
   public getUnaugmentedApi(): UnaugmentedApiPromise {
-    return (this._api as unknown) as UnaugmentedApiPromise
+    return this._api as unknown as UnaugmentedApiPromise
   }
 
   private static async initApi(apiUri: string = DEFAULT_API_URI, metadataCache: Record<string, any>) {
@@ -232,9 +232,9 @@ export default class Api {
   }
 
   async allMembersDetails(): Promise<MemberDetails[]> {
-    const entries: [u64, Membership][] = (
-      await this.entriesByIds(this._api.query.members.membershipById)
-    ).map(([id, m]) => [id, m.unwrap()])
+    const entries: [u64, Membership][] = (await this.entriesByIds(this._api.query.members.membershipById)).map(
+      ([id, m]) => [id, m.unwrap()]
+    )
     return this.membersDetails(entries)
   }
 
@@ -509,7 +509,7 @@ export default class Api {
     const distributionBucketIds = []
 
     for (const { id, buckets } of families || []) {
-      const bucketsCountPolicy = distributionBucketFamiliesPolicy.get((id as unknown) as DistributionBucketFamilyId)
+      const bucketsCountPolicy = distributionBucketFamiliesPolicy.get(id as unknown as DistributionBucketFamilyId)
       if (bucketsCountPolicy && bucketsCountPolicy.toNumber() < buckets.length) {
         throw new CLIError(`Distribution buckets policy constraint unsatifified. Not enough distribution buckets exist`)
       }
@@ -529,10 +529,14 @@ export default class Api {
   }
 
   async dataObjectsInBag(bagId: BagId): Promise<[DataObjectId, DataObject][]> {
-    return (await this._api.query.storage.dataObjectsById.entries(bagId)).map(([{ args: [, dataObjectId] }, value]) => [
-      dataObjectId,
-      value,
-    ])
+    return (await this._api.query.storage.dataObjectsById.entries(bagId)).map(
+      ([
+        {
+          args: [, dataObjectId],
+        },
+        value,
+      ]) => [dataObjectId, value]
+    )
   }
 
   async stakingAccountStatus(account: string): Promise<StakingAccountMemberBinding | null> {
