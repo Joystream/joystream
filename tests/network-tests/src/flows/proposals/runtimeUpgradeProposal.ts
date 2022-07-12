@@ -12,6 +12,7 @@ import {
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
 import { assert } from 'chai'
 import { Resource } from '../../Resources'
+import { createType } from '@joystream/types'
 
 export default async function runtimeUpgradeProposal({ api, query, lock, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:runtime-upgrade-proposal')
@@ -32,10 +33,11 @@ export default async function runtimeUpgradeProposal({ api, query, lock, env }: 
   const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, [memberAcc])
   await new FixtureRunner(buyMembershipFixture).run()
   const [memberId] = buyMembershipFixture.getCreatedMembers()
+
   const createProposalsFixture = new CreateProposalsFixture(api, query, [
     {
       type: 'RuntimeUpgrade',
-      details: Utils.readRuntimeFromFile(runtimeUpgradeWasmPath),
+      details: createType('Bytes', Utils.readRuntimeFromFile(runtimeUpgradeWasmPath)),
       asMember: memberId,
       title: 'To be cancelled by runtime',
       description: 'Proposal to be cancelled by runtime',
@@ -52,7 +54,11 @@ export default async function runtimeUpgradeProposal({ api, query, lock, env }: 
 
   // Runtime upgrade proposal
   const testedProposals: TestedProposal[] = [
-    { details: { RuntimeUpgrade: Utils.readRuntimeFromFile(runtimeUpgradeWasmPath) } },
+    {
+      details: createType('PalletProposalsCodexProposalDetails', {
+        RuntimeUpgrade: Utils.readRuntimeFromFile(runtimeUpgradeWasmPath),
+      }),
+    },
   ]
   const testAllOutcomesFixture = new AllProposalsOutcomesFixture(api, query, lock, testedProposals)
   await new FixtureRunner(testAllOutcomesFixture).run()

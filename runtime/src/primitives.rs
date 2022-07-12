@@ -7,7 +7,6 @@ use sp_runtime::{
     traits::{Convert, IdentifyAccount, Verify},
     MultiSignature,
 };
-use sp_std::convert::{TryFrom, TryInto};
 
 /// Priority for a transaction. Additive. Higher is better.
 pub type TransactionPriority = u64;
@@ -102,6 +101,9 @@ pub type ChannelPrivilegeLevel = u8;
 
 /// Represents creator token id
 pub type TokenId = u64;
+
+/// Represents transfer id
+pub type TransferId = u64;
 
 /// BlockNumber to Balance converter
 pub struct BlockNumberToBalance;

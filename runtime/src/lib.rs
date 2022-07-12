@@ -34,7 +34,6 @@ mod integration;
 pub mod primitives;
 mod proposals_configuration;
 mod runtime_api;
-#[cfg(test)]
 mod tests;
 /// Generated voter bag information.
 mod voter_bags;
@@ -57,7 +56,7 @@ use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
     ConstantMultiplier, DispatchClass, Weight,
 };
-use frame_support::weights::{WeightToFeeCoefficients, WeightToFeePolynomial};
+
 use frame_support::{construct_runtime, parameter_types, PalletId};
 use frame_system::limits::{BlockLength, BlockWeights};
 use frame_system::{EnsureRoot, EnsureSigned};
@@ -68,9 +67,9 @@ use pallet_transaction_payment::{CurrencyAdapter, Multiplier};
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::crypto::KeyTypeId;
 use sp_core::Hasher;
-use sp_io;
+
 use sp_runtime::curve::PiecewiseLinear;
-use sp_runtime::traits::{AccountIdLookup, BlakeTwo256, ConvertInto, OpaqueKeys, Saturating};
+use sp_runtime::traits::{AccountIdLookup, BlakeTwo256, ConvertInto, OpaqueKeys};
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys, FixedPointNumber, Perbill, Perquintill,
 };
@@ -486,9 +485,9 @@ parameter_types! {
     pub const UnsignedPhase: u32 = EPOCH_DURATION_IN_BLOCKS / 4;
 
     // signed config
-    pub const SignedRewardBase: Balance = 1 * currency::DOLLARS;
-    pub const SignedDepositBase: Balance = 1 * currency::DOLLARS;
-    pub const SignedDepositByte: Balance = 1 * currency::CENTS;
+    pub const SignedRewardBase: Balance = currency::DOLLARS;
+    pub const SignedDepositBase: Balance = currency::DOLLARS;
+    pub const SignedDepositByte: Balance = currency::CENTS;
 
     pub BetterUnsignedThreshold: Perbill = Perbill::from_rational(1u32, 10_000);
 
@@ -649,6 +648,7 @@ parameter_types! {
     pub const MaxPeerInHeartbeats: u32 = 10_000;
     pub const MaxPeerDataEncodingSize: u32 = 1_000;
 }
+
 impl pallet_im_online::Config for Runtime {
     type AuthorityId = ImOnlineId;
     type Event = Event;
@@ -714,6 +714,7 @@ impl content::Config for Runtime {
     type DefaultChannelDailyNftLimit = DefaultChannelDailyNftLimit;
     type DefaultChannelWeeklyNftLimit = DefaultChannelWeeklyNftLimit;
     type ProjectToken = ProjectToken;
+    type TransferId = TransferId;
 }
 
 parameter_types! {
@@ -895,18 +896,33 @@ impl common::StorageOwnership for Runtime {
     type DataObjectTypeId = DataObjectTypeId;
 }
 
+// Storage parameters independent of runtime profile
 parameter_types! {
     pub const MaxDistributionBucketFamilyNumber: u64 = 200;
     pub const BlacklistSizeLimit: u64 = 10000; //TODO: adjust value
     pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 20; //TODO: adjust value
     pub const StorageModuleId: PalletId = PalletId(*b"mstorage"); // module storage
+    pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
+        storage::DistributionBucketsPerBagValueConstraint {min: 1, max_min_diff: 100}; //TODO: adjust value
+    pub const MaxDataObjectSize: u64 = 10 * 1024 * 1024 * 1024; // 10 GB
+}
+
+// Production storage parameters
+#[cfg(not(any(feature = "staging_runtime", feature = "testing_runtime")))]
+parameter_types! {
     pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
         storage::StorageBucketsPerBagValueConstraint {min: 5, max_min_diff: 15}; //TODO: adjust value
     pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 5; //TODO: adjust value
     pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 5; //TODO: adjust value
-    pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
-        storage::DistributionBucketsPerBagValueConstraint {min: 1, max_min_diff: 100}; //TODO: adjust value
-    pub const MaxDataObjectSize: u64 = 10 * 1024 * 1024 * 1024; // 10 GB
+}
+
+// Staging/testing storage parameters
+#[cfg(any(feature = "staging_runtime", feature = "testing_runtime"))]
+parameter_types! {
+    pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
+        storage::StorageBucketsPerBagValueConstraint {min: 1, max_min_diff: 15};
+    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u64 = 1;
+    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u64 = 1;
 }
 
 impl storage::Config for Runtime {

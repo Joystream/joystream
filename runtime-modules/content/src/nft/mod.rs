@@ -30,14 +30,14 @@ impl<T: Config> Module<T> {
             if bid >= old_bid {
                 // Deposit the difference to the module account.
                 let bid_diff_amount = bid.saturating_sub(old_bid);
-                ContentTreasury::<T>::deposit(&participant, bid_diff_amount)
+                ContentTreasury::<T>::deposit(participant, bid_diff_amount)
             } else {
                 // Withdraw the difference from the module account.
                 let bid_diff_amount = old_bid.saturating_sub(bid);
-                ContentTreasury::<T>::withdraw(&participant, bid_diff_amount)
+                ContentTreasury::<T>::withdraw(participant, bid_diff_amount)
             }
         } else {
-            ContentTreasury::<T>::deposit(&participant, bid)
+            ContentTreasury::<T>::deposit(participant, bid)
         }
     }
 
@@ -46,7 +46,7 @@ impl<T: Config> Module<T> {
         participant: &T::AccountId,
         bid: BalanceOf<T>,
     ) -> DispatchResult {
-        ContentTreasury::<T>::withdraw(&participant, bid)
+        ContentTreasury::<T>::withdraw(participant, bid)
     }
 
     /// Safety/bound checks for english auction parameters
@@ -235,13 +235,13 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
-    /// Ensure given participant have sufficient free balance
-    pub(crate) fn ensure_sufficient_free_balance(
+    /// Ensure given participant has sufficient usable balance (free - frozen)
+    pub(crate) fn ensure_sufficient_usable_balance(
         participant_account_id: &T::AccountId,
         balance: BalanceOf<T>,
     ) -> DispatchResult {
         ensure!(
-            Balances::<T>::can_slash(participant_account_id, balance),
+            Balances::<T>::usable_balance(participant_account_id) >= balance,
             Error::<T>::InsufficientBalance
         );
         Ok(())
@@ -258,7 +258,7 @@ impl<T: Config> Module<T> {
                 *price == witness_price,
                 Error::<T>::InvalidBuyNowWitnessPriceProvided
             );
-            Self::ensure_sufficient_free_balance(participant_account_id, *price)
+            Self::ensure_sufficient_usable_balance(participant_account_id, *price)
         } else {
             Err(Error::<T>::NftNotInBuyNowState.into())
         }
@@ -280,10 +280,10 @@ impl<T: Config> Module<T> {
             );
 
             // Authorize participant under given member id
-            ensure_member_auth_success::<T>(participant_account_id, &member_id)?;
+            ensure_member_auth_success::<T>(participant_account_id, member_id)?;
 
             if let Some(price) = price {
-                Self::ensure_sufficient_free_balance(participant_account_id, *price)?;
+                Self::ensure_sufficient_usable_balance(participant_account_id, *price)?;
             }
             Ok(())
         } else {

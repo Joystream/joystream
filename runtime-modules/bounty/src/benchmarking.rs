@@ -13,9 +13,9 @@ use sp_std::vec;
 use sp_std::vec::Vec;
 
 use crate::Module as Bounty;
-use balances::Module as Balances;
+use balances::Pallet as Balances;
 use common::council::CouncilBudgetManager;
-use frame_system::Module as System;
+use frame_system::Pallet as System;
 use membership::Module as Membership;
 
 use crate::{

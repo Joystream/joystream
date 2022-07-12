@@ -21,10 +21,7 @@ export default class VideoCommand extends ContentDirectoryCommandBase {
     if (aVideo) {
       displayCollapsedRow({
         'ID': videoId.toString(),
-        'InChannel': aVideo.in_channel.toString(),
-        'IsCensored': aVideo.is_censored.toString(),
-        'CommentsEnabled': aVideo.enable_comments.toString(),
-        'PostId': aVideo.video_post_id.toString(),
+        'InChannel': aVideo.inChannel.toString(),
       })
     } else {
       this.error(`Video not found by channel id: "${videoId}"!`)

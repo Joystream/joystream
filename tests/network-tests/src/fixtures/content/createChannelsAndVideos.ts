@@ -73,7 +73,7 @@ export class CreateChannelsAndVideosFixture extends BaseQueryNodeFixture {
     const createdIds = await this.createCommonEntities(count, (index) =>
       this.cli.createChannel(
         {
-          ...getChannelDefaults(index, this.author.account),
+          ...getChannelDefaults(index, cliExamplesFolderPath),
           category: channelCategoryId,
         },
         ['--context', 'Member', '--useMemberId', this.author.memberId.toString()]

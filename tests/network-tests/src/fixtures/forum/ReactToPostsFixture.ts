@@ -8,7 +8,7 @@ import { ForumPostFieldsFragment, PostReactedEventFieldsFragment } from '../../g
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
 import _ from 'lodash'
-import { MemberId } from '@joystream/types/common'
+import { MemberId } from '@joystream/types/primitives'
 import { ForumPostReaction } from '@joystream/metadata-protobuf'
 import { PostReaction } from '../../graphql/generated/schema'
 
@@ -28,7 +28,7 @@ export class ReactToPostsFixture extends StandardizedFixture {
   protected async getSignerAccountOrAccounts(): Promise<string[]> {
     return await Promise.all(
       this.reactions.map(async ({ asMember }) =>
-        (await this.api.query.members.membershipById(asMember)).controller_account.toString()
+        (await this.api.query.members.membershipById(asMember)).unwrap().controllerAccount.toString()
       )
     )
   }

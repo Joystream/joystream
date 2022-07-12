@@ -19,7 +19,7 @@ SUDO_ACCOUNT=$(docker run --rm --pull=always docker.io/parity/subkey:2.0.2 inspe
 
 # Source of funds for all new accounts that are created in the tests.
 TREASURY_INITIAL_BALANCE=${TREASURY_INITIAL_BALANCE:=100000000}
-TREASURY_ACCOUNT_URI=${TREASURY_ACCOUNT_URI:=$SUDO_ACCOUNT_URI}
+TREASURY_ACCOUNT_URI=${TREASURY_ACCOUNT_URI:="//Bob"}
 TREASURY_ACCOUNT=$(docker run --rm --pull=always docker.io/parity/subkey:2.0.2 inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
 
 >&2 echo "sudo account from suri: ${SUDO_ACCOUNT}"
@@ -75,4 +75,4 @@ docker-compose -f ../../docker-compose.yml run -d -v ${DATA_PATH}:/spec --name j
   -p 9944:9944 -p 9933:9933 joystream-node \
   --alice --validator --unsafe-ws-external --unsafe-rpc-external \
   --rpc-methods Unsafe --rpc-cors=all -l runtime \
-  --chain /spec/chain-spec-raw.json
+  --chain /spec/chain-spec-raw.json --pruning=archive

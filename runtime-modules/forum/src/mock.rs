@@ -270,26 +270,37 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for Wg {
     }
 
     fn is_leader_account_id(account_id: &<Runtime as frame_system::Config>::AccountId) -> bool {
-        *account_id != NOT_FORUM_LEAD_ORIGIN_ID && *account_id != NOT_FORUM_LEAD_2_ORIGIN_ID
+        *account_id == FORUM_LEAD_ORIGIN_ID
     }
 
     fn is_worker_account_id(
         account_id: &<Runtime as frame_system::Config>::AccountId,
-        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
+        worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
-        *account_id != NOT_FORUM_MODERATOR_ORIGIN_ID
+        Self::worker_exists(worker_id) && *account_id == *worker_id
     }
 
     fn worker_exists(
-        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
+        worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
-        unimplemented!();
+        [
+            FORUM_LEAD_ORIGIN_ID,
+            FORUM_MODERATOR_ORIGIN_ID,
+            FORUM_MODERATOR_2_ORIGIN_ID,
+        ]
+        .iter()
+        .chain(EXTRA_MODERATORS.iter())
+        .any(|id| *id == *worker_id)
     }
 
     fn ensure_worker_exists(
-        _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
+        worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
-        unimplemented!();
+        ensure!(
+            Self::worker_exists(worker_id),
+            DispatchError::Other("Worker doesnt exist")
+        );
+        Ok(())
     }
 }
 
@@ -449,8 +460,8 @@ pub fn create_category_mock(
             Event::TestForumModule(RawEvent::CategoryCreated(
                 category_id,
                 parent,
-                title.clone(),
-                description.clone()
+                title,
+                description
             ))
         );
     }
@@ -473,7 +484,7 @@ pub fn create_thread_mock(
 
     assert_eq!(
         TestForumModule::create_thread(
-            mock_origin(origin.clone()),
+            mock_origin(origin),
             forum_user_id,
             category_id,
             title.clone(),
@@ -491,9 +502,9 @@ pub fn create_thread_mock(
                 thread_id,
                 TestForumModule::next_thread_id() - 1,
                 forum_user_id,
-                title.clone(),
-                text.clone(),
-                poll_input_data.clone()
+                title,
+                text,
+                poll_input_data
             ))
         );
 
@@ -564,7 +575,7 @@ pub fn delete_thread_mock(
     let thread_payment = <ThreadById<Runtime>>::get(category_id, thread_id).cleanup_pay_off;
     assert_eq!(
         TestForumModule::delete_thread(
-            mock_origin(origin.clone()),
+            mock_origin(origin),
             forum_user_id,
             category_id,
             thread_id,
@@ -624,7 +635,7 @@ pub fn delete_post_mock(
 
     assert_eq!(
         TestForumModule::delete_posts(
-            mock_origin(origin.clone()),
+            mock_origin(origin),
             forum_user_id,
             deleted_posts.clone(),
             vec![0u8]
@@ -672,7 +683,7 @@ pub fn move_thread_mock(
 ) {
     assert_eq!(
         TestForumModule::move_thread_to_category(
-            mock_origin(origin.clone()),
+            mock_origin(origin),
             PrivilegedActor::Moderator(moderator_id),
             category_id,
             thread_id,
@@ -712,7 +723,7 @@ pub fn create_post_mock(
     let initial_balance = balances::Pallet::<Runtime>::free_balance(account_id);
     assert_eq!(
         TestForumModule::add_post(
-            mock_origin(origin.clone()),
+            mock_origin(origin),
             forum_user_id,
             category_id,
             thread_id,
@@ -1027,11 +1038,9 @@ pub fn moderate_thread_mock(
             ))
         );
 
-        // If we moderate a thread with no extra post, only the initial post deposit
-        // should remain
         assert_eq!(
             balances::Pallet::<Runtime>::free_balance(&thread_account_id),
-            <Runtime as Config>::PostDeposit::get()
+            0
         );
     }
     thread_id
@@ -1106,13 +1115,13 @@ pub fn set_stickied_threads_mock(
     if result.is_ok() {
         assert_eq!(
             TestForumModule::category_by_id(category_id).sticky_thread_ids,
-            stickied_ids.clone()
+            stickied_ids
         );
         assert_eq!(
             System::events().last().unwrap().event,
             Event::TestForumModule(RawEvent::CategoryStickyThreadUpdate(
                 category_id,
-                stickied_ids.clone(),
+                stickied_ids,
                 PrivilegedActor::Moderator(moderator_id)
             ))
         );
@@ -1132,7 +1141,7 @@ pub fn react_post_mock(
 ) {
     assert_eq!(
         TestForumModule::react_post(
-            mock_origin(origin.clone()),
+            mock_origin(origin),
             forum_user_id,
             category_id,
             thread_id,
@@ -1179,7 +1188,7 @@ pub fn create_genesis_config(data_migration_done: bool) -> forum::GenesisConfig<
         category_by_moderator: vec![],
 
         // data migration part
-        data_migration_done: data_migration_done,
+        data_migration_done,
     }
 }
 

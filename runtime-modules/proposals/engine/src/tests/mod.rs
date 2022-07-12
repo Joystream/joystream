@@ -52,7 +52,7 @@ impl ProposalParametersFixture {
     }
 
     fn params(&self) -> ProposalParameters<u64, u64> {
-        self.parameters.clone()
+        self.parameters
     }
 }
 
@@ -254,7 +254,7 @@ impl VoteGenerator {
     }
 
     fn vote_and_assert(&mut self, vote_kind: VoteKind, expected_result: DispatchResult) {
-        assert_eq!(self.vote(vote_kind.clone()), expected_result);
+        assert_eq!(self.vote(vote_kind), expected_result);
     }
 
     fn vote(&mut self, vote_kind: VoteKind) -> DispatchResult {
@@ -1464,7 +1464,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         };
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters)
-            .with_account_id(account_id.clone())
+            .with_account_id(account_id)
             .with_stake(1);
 
         let account_balance = 500;
@@ -1534,7 +1534,7 @@ fn proposal_slashing_succeeds() {
         };
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters)
-            .with_account_id(account_id.clone())
+            .with_account_id(account_id)
             .with_stake(account_id);
 
         assert_eq!(Balances::total_balance(&account_id), initial_balance);
@@ -2184,7 +2184,7 @@ fn proposal_execution_status_helper_succeeds() {
     let msg = "error";
 
     assert_eq!(
-        ExecutionStatus::failed_execution(&msg),
+        ExecutionStatus::failed_execution(msg),
         ExecutionStatus::ExecutionFailed {
             error: msg.as_bytes().to_vec()
         }

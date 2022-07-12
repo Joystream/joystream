@@ -7,12 +7,11 @@ import { ISubmittableResult } from '@polkadot/types/types/'
 import { ForumThreadWithInitialPostFragment, ThreadDeletedEventFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
-import { CategoryId } from '@joystream/types/forum'
-import { ThreadId } from '@joystream/types/common'
+import { ForumCategoryId, ForumThreadId } from '@joystream/types/primitives'
 
 export type ThreadRemovalInput = {
-  threadId: ThreadId
-  categoryId: CategoryId
+  threadId: ForumThreadId
+  categoryId: ForumCategoryId
   hide?: boolean // defaults to "true"
 }
 
@@ -29,8 +28,8 @@ export class DeleteThreadsFixture extends StandardizedFixture {
     this.threadAuthors = await Promise.all(
       this.removals.map(async (r) => {
         const thread = await this.api.query.forum.threadById(r.categoryId, r.threadId)
-        const member = await this.api.query.members.membershipById(thread.author_id)
-        return { account: member.controller_account.toString(), memberId: thread.author_id }
+        const member = await this.api.query.members.membershipById(thread.authorId)
+        return { account: member.unwrap().controllerAccount.toString(), memberId: thread.authorId }
       })
     )
   }

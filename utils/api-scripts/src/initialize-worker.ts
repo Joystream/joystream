@@ -71,7 +71,9 @@ async function main() {
 
   // Check if worker already exists
   const workerEntries = await api.query[groupModule].workerById.entries()
-  const matchingWorkerEntry = workerEntries.find(([, worker]) => worker.unwrap().roleAccountId.eq(WorkerRoleKeyPair.address))
+  const matchingWorkerEntry = workerEntries.find(([, worker]) =>
+    worker.unwrap().roleAccountId.eq(WorkerRoleKeyPair.address)
+  )
   if (matchingWorkerEntry) {
     throw new Error(`Worker with role key ${WorkerRoleKeyPair.address} already exists`)
   }

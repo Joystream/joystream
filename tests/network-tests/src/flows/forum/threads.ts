@@ -11,8 +11,10 @@ import {
   ThreadRemovalInput,
   ThreadMetadataUpdate,
   UpdateThreadsMetadataFixture,
+  DeletePostsFixture,
+  PostsRemovalInput,
 } from '../../fixtures/forum'
-import { CategoryId } from '@joystream/types/forum'
+import { ForumCategoryId } from '@joystream/types/primitives'
 
 export default async function threads({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug(`flow:threads`)
@@ -21,7 +23,7 @@ export default async function threads({ api, query }: FlowProps): Promise<void> 
 
   // Initialize categories and threads
   const initializeForumFixture = new InitializeForumFixture(api, query, {
-    numberOfForumMembers: 5,
+    numberOfForumMembers: 1,
     numberOfCategories: 3,
     threadsPerCategory: 3,
   })
@@ -61,7 +63,7 @@ export default async function threads({ api, query }: FlowProps): Promise<void> 
   await Promise.all([setStickyThreadsRunner.runQueryNodeChecks(), updateThreadTitlesRunner.runQueryNodeChecks()])
 
   // Move threads to different categories
-  const newThreadCategory = (oldCategory: CategoryId) =>
+  const newThreadCategory = (oldCategory: ForumCategoryId) =>
     categoryIds[(categoryIds.indexOf(oldCategory) + 1) % categoryIds.length]
   const threadCategoryUpdates: MoveThreadParams[] = initializeForumFixture.getThreadPaths().map((threadPath) => ({
     ...threadPath,
@@ -71,6 +73,24 @@ export default async function threads({ api, query }: FlowProps): Promise<void> 
   const moveThreadsFixture = new MoveThreadsFixture(api, query, threadCategoryUpdates)
   const moveThreadsRunner = new FixtureRunner(moveThreadsFixture)
   await moveThreadsRunner.run()
+
+  const [memberId] = initializeForumFixture.getCreatedForumMemberIds()
+  const postRemovals: PostsRemovalInput[] = initializeForumFixture
+    .getThreadPaths()
+    .map(({ categoryId, threadId }, i) => ({
+      posts: [
+        {
+          threadId,
+          categoryId: newThreadCategory(categoryId),
+          postId: initializeForumFixture.getCreatedInitialPostByThreadId(threadId),
+          hide: !!(i % 2), // Test both cases
+        },
+      ],
+      asMember: memberId,
+    }))
+  const moderatePostsFixture = new DeletePostsFixture(api, query, postRemovals)
+  const moderatePostsRunner = new FixtureRunner(moderatePostsFixture)
+  await moderatePostsRunner.run()
 
   // Remove threads
   // TODO: Should removing / moving threads also "unstick" them?

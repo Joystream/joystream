@@ -6,7 +6,6 @@ import { HireWorkersFixture } from '../../fixtures/workingGroups/HireWorkersFixt
 import { UpdateWorkerRoleAccountsFixture } from '../../fixtures/workingGroups/UpdateWorkerRoleAccountsFixture'
 import { IncreaseWorkerStakesFixture } from '../../fixtures/workingGroups/IncreaseWorkerStakesFixture'
 import { UpdateWorkerRewardAccountsFixture } from '../../fixtures/workingGroups/UpdateWorkerRewardAccountsFixture'
-import { Worker } from '@joystream/types/working-group'
 import { LeaveRoleFixture } from '../../fixtures/workingGroups/LeaveRoleFixture'
 import { assert } from 'chai'
 import BN from 'bn.js'
@@ -31,7 +30,7 @@ export default async function workerActions({ api, query, env }: FlowProps): Pro
       const hireWorkersFixture = new HireWorkersFixture(api, query, group, WORKERS_N)
       await new FixtureRunner(hireWorkersFixture).run()
       const workerIds = hireWorkersFixture.getCreatedWorkerIds()
-      const workers = await api.query[group].workerById.multi<Worker>(workerIds)
+      const workers = await api.query[group].workerById.multi(workerIds)
 
       // Independent updates that don't interfere with each other
       const workerUpdatesRunners: FixtureRunner[] = []
@@ -63,7 +62,9 @@ export default async function workerActions({ api, query, env }: FlowProps): Pro
       const stakeIncreases = workerIds.map((id) => id.addn(1).muln(1000))
       // Transfer balances
       await Promise.all(
-        stakeIncreases.map((amount, i) => api.treasuryTransferBalance(workers[i].staking_account_id.toString(), amount))
+        stakeIncreases.map((amount, i) =>
+          api.treasuryTransferBalance(workers[i].unwrap().stakingAccountId.toString(), amount)
+        )
       )
       const increaseWorkerStakesFixture = new IncreaseWorkerStakesFixture(api, query, group, workerIds, stakeIncreases)
       const increaseWorkerStakesRunner = new FixtureRunner(increaseWorkerStakesFixture)
