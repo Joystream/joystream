@@ -19,7 +19,7 @@ use membership::Module as Membership;
 use proposals_discussion::Module as Discussion;
 use proposals_engine::Module as Engine;
 use sp_core::Hasher;
-use sp_runtime::traits::{One, TrailingZeroInput};
+use sp_runtime::traits::One;
 use sp_std::convert::TryInto;
 use sp_std::iter::FromIterator;
 use sp_std::prelude::*;
@@ -750,9 +750,9 @@ benchmarks! {
             create_proposal_parameters::<T>(t, d);
 
         let uploader_account = account::<T::AccountId>("uploader_account", 1, SEED);
-        let commitment = T::Hashing::hash(&b"commitment".to_vec());
+        let commitment = T::Hashing::hash(b"commitment".as_ref());
         let payload = content::ChannelPayoutsPayloadParametersRecord {
-            uploader_account: uploader_account,
+            uploader_account,
             object_creation_params: content::DataObjectCreationParameters {
                 size: u64::MAX,
                 ipfs_content_id: Vec::from_iter((0..i).map(|v| u8::MAX))

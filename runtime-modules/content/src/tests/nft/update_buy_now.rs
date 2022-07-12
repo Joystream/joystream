@@ -231,8 +231,6 @@ fn update_buy_now_price_not_in_auction_state() {
     })
 }
 
-// TODO: Enable after enabling transfers
-#[ignore]
 #[test]
 fn update_buy_now_price_fails_during_channel_transfer() {
     with_default_mock_builder(|| {

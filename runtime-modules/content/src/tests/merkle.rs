@@ -131,8 +131,6 @@ fn unsuccessful_reward_claim_with_empty_proof() {
     })
 }
 
-// TODO: enable after enabling channel transfers
-#[ignore]
 #[test]
 fn unsuccessful_reward_claim_with_pending_channel_transfer() {
     with_default_mock_builder(|| {
@@ -345,8 +343,6 @@ fn unsuccessful_channel_balance_withdrawal_when_amount_exceeds_balance_minus_exi
     })
 }
 
-// TODO: Enable after Carthage
-#[ignore]
 #[test]
 fn unsuccessful_channel_balance_withdrawal_during_transfer() {
     with_default_mock_builder(|| {
@@ -546,8 +542,6 @@ fn successful_curator_channel_balance_withdrawal_by_lead() {
     })
 }
 
-// TODO: enable after enabling pause_channel_feature_as_moderator
-#[ignore]
 #[test]
 fn unsuccessful_channel_balance_withdrawal_with_fund_transfer_feature_paused() {
     with_default_mock_builder(|| {
@@ -780,8 +774,6 @@ fn unsuccessful_member_channel_claim_and_withdraw_by_collaborator_without_withdr
     })
 }
 
-// TODO: Enable after enabling channel transfer
-#[ignore]
 #[test]
 fn claim_and_withdraw_fails_during_channel_transfer() {
     with_default_mock_builder(|| {
@@ -798,8 +790,6 @@ fn claim_and_withdraw_fails_during_channel_transfer() {
     })
 }
 
-// TODO: enable after enabling pause_channel_feature_as_moderator
-#[ignore]
 #[test]
 fn unsuccessful_member_claim_and_withdraw_with_cashout_feature_paused() {
     with_default_mock_builder(|| {
@@ -814,8 +804,6 @@ fn unsuccessful_member_claim_and_withdraw_with_cashout_feature_paused() {
     })
 }
 
-// TODO: enable after enabling pause_channel_feature_as_moderator
-#[ignore]
 #[test]
 fn unsuccessful_member_claim_and_withdraw_with_transfer_fund_feature_paused() {
     with_default_mock_builder(|| {

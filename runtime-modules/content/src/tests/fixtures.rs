@@ -4311,21 +4311,15 @@ impl SuccessfulNftManagementFlow {
             .with_actor(self.actor)
             .with_nft_issuance(NftIssuanceParameters::<Test>::default())
             .call_and_assert(Ok(()));
-        // TODO: enable after enabling destroy_nft
         // Destroy nft
-        // DestroyNftFixture::default()
-        //     .with_sender(self.sender.clone())
-        //     .with_actor(self.actor.clone())
-        //     .call_and_assert(Ok(()));
-        CreateVideoFixture::default()
-            .with_sender(self.sender.clone())
-            .with_actor(self.actor.clone())
+        DestroyNftFixture::default()
+            .with_sender(self.sender)
+            .with_actor(self.actor)
             .call_and_assert(Ok(()));
         // Issue nft during video update
         UpdateVideoFixture::default()
-            .with_sender(self.sender.clone())
-            .with_actor(self.actor.clone())
-            .with_video_id(VideoId::from(3u32))
+            .with_sender(self.sender)
+            .with_actor(self.actor)
             .with_nft_issuance(NftIssuanceParameters::<Test>::default())
             .call_and_assert(Ok(()));
         // Start open auction
@@ -4495,7 +4489,6 @@ impl SuccessfulChannelCollaboratorsManagementFlow {
 }
 
 // helper functions
-#[allow(dead_code)] // TODO: Remove the `allow` attribute after carthage
 pub fn assert_group_has_permissions_for_actions(
     group: &CuratorGroup<Test>,
     privilege_level: <Test as Config>::ChannelPrivilegeLevel,
@@ -4774,8 +4767,7 @@ pub fn create_default_member_owned_channel_with_video_with_storage_buckets(
         &[],
     );
 
-    // TODO: enable after Carthage
-    //set_default_nft_limits();
+    set_default_nft_limits();
 
     CreateVideoFixture::default()
         .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
@@ -5386,25 +5378,24 @@ pub fn run_all_fixtures_with_contexts(
         NftOwnerRemarkFixture::default()
             .with_sender(sender)
             .with_actor(actor)
-            .call_and_assert(expected_err.clone());
-        // TODO: enable after enabling destroy_nft
-        // DestroyNftFixture::default()
-        //     .with_sender(sender)
-        //     .with_actor(actor)
-        //     .call_and_assert(expected_err.clone());
+            .call_and_assert(expected_err);
+        DestroyNftFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err);
         ChannelAgentRemarkFixture::default()
             .with_sender(sender)
             .with_actor(actor)
-            .call_and_assert(expected_err.clone());
-        // TODO: enable after Carthage
-        // InitializeChannelTransferFixture::default()
-        //     .with_sender(sender)
-        //     .with_actor(actor)
-        //     .call_and_assert(expected_err.clone());
-        // CancelChannelTransferFixture::default()
-        //     .with_sender(sender)
-        //     .with_actor(actor)
-        //     .call_and_assert(expected_err.clone());
+            .call_and_assert(expected_err);
+        InitializeChannelTransferFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err);
+        CancelChannelTransferFixture::default()
+            .with_sender(sender)
+            .with_actor(actor)
+            .call_and_assert(expected_err);
+
         ClaimChannelRewardFixture::default()
             .with_sender(sender)
             .with_actor(actor)
@@ -5500,6 +5491,7 @@ impl UpdateGlobalNftLimitFixture {
                 },
                 new_limit
             );
+
             assert_eq!(
                 System::events().last().unwrap().event,
                 MetaEvent::Content(RawEvent::GlobalNftLimitUpdated(self.period, self.limit))
@@ -5557,6 +5549,7 @@ impl UpdateChannelNftLimitFixture {
                 },
                 new_limit
             );
+
             assert_eq!(
                 System::events().last().unwrap().event,
                 MetaEvent::Content(RawEvent::ChannelNftLimitUpdated(

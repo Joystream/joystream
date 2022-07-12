@@ -211,8 +211,6 @@ fn sling_nft_back_transactional_status_is_not_idle() {
     })
 }
 
-// TODO: Enable after enabling transfers
-#[ignore]
 #[test]
 fn sling_nft_back_fails_during_channel_transfer() {
     with_default_mock_builder(|| {

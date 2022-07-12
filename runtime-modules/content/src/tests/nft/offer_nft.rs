@@ -216,8 +216,6 @@ fn offer_nft_transactional_status_is_not_idle() {
     })
 }
 
-// TODO: Enable after Carthage
-#[ignore]
 #[test]
 fn offer_nft_fails_during_channel_transfer() {
     with_default_mock_builder(|| {

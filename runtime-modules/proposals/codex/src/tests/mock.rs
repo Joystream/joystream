@@ -573,7 +573,6 @@ impl crate::Config for Test {
     type VetoProposalProposalParameters = DefaultProposalParameters;
     type UpdateGlobalNftLimitProposalParameters = DefaultProposalParameters;
     type UpdateChannelPayoutsProposalParameters = DefaultProposalParameters;
-    type ProposalsEnabled = ProposalsSelector;
 }
 
 parameter_types! {
@@ -686,13 +685,6 @@ impl referendum::Config<ReferendumInstance> for Test {
         <council::Module<Test> as council::ReferendumConnection<Test>>::increase_option_power(
             option_id, amount,
         );
-    }
-}
-
-pub struct ProposalsSelector {}
-impl crate::ProposalsEnabled<Test> for ProposalsSelector {
-    fn is_proposal_enabled(proposal_details: &ProposalDetailsOf<Test>) -> bool {
-        true
     }
 }
 

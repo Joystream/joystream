@@ -101,7 +101,7 @@ pub use primitives::*;
 pub use proposals_configuration::*;
 pub use runtime_api::*;
 
-use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, ProposalsSelector};
+use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder};
 
 use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
 use council::ReferendumConnection;
@@ -200,6 +200,20 @@ impl Contains<<Runtime as frame_system::Config>::Call> for LockedDownBaseFilter 
                 ..
             }) => false,
             Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. }) => false,
+            Call::Content(content::Call::<Runtime>::update_channel_nft_limit { .. }) => false,
+            Call::Content(content::Call::<Runtime>::update_global_nft_limit { .. }) => false,
+            Call::Content(content::Call::<Runtime>::set_channel_paused_features_as_moderator {
+                ..
+            }) => false,
+            Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. }) => false,
+            Call::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
+                general_proposal_parameters: _,
+                proposal_details,
+            }) => !matches!(
+                proposal_details,
+                proposals_codex::ProposalDetails::UpdateChannelPayouts(..)
+                    | proposals_codex::ProposalDetails::UpdateGlobalNftLimit(..)
+            ),
             _ => true, // Enable all other calls
         }
     }
@@ -207,13 +221,13 @@ impl Contains<<Runtime as frame_system::Config>::Call> for LockedDownBaseFilter 
 
 #[cfg(feature = "runtime-benchmarks")]
 impl Contains<<Runtime as frame_system::Config>::Call> for LockedDownBaseFilter {
-    fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
+    fn contains(_call: &<Runtime as frame_system::Config>::Call) -> bool {
         true
     }
 }
 
 impl frame_system::Config for Runtime {
-    type BaseCallFilter = frame_support::traits::Everything;
+    type BaseCallFilter = LockedDownBaseFilter;
     type BlockWeights = RuntimeBlockWeights;
     type BlockLength = RuntimeBlockLength;
     type DbWeight = RocksDbWeight;
@@ -1370,7 +1384,6 @@ impl proposals_codex::Config for Runtime {
     type UpdateGlobalNftLimitProposalParameters = UpdateGlobalNftLimitProposalParameters;
     type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;
     type WeightInfo = proposals_codex::weights::SubstrateWeight<Runtime>;
-    type ProposalsEnabled = ProposalsSelector;
 }
 
 impl pallet_constitution::Config for Runtime {

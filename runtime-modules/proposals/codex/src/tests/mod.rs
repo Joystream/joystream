@@ -2030,7 +2030,7 @@ fn create_update_channel_payouts_common_checks_succeed() {
         let proposal_details = ProposalDetails::UpdateChannelPayouts(
             content::UpdateChannelPayoutsParameters::<Test> {
                 commitment: Some(<Test as frame_system::Config>::Hashing::hash(
-                    &b"commitment".to_vec(),
+                    b"commitment".as_ref(),
                 )),
                 payload: Some(content::ChannelPayoutsPayloadParametersRecord {
                     uploader_account: <Test as frame_system::Config>::AccountId::default(),
