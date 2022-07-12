@@ -1,5 +1,5 @@
 use crate::Runtime;
-use proposals_codex::{ProposalDetails, ProposalDetailsOf, ProposalEncoder, ProposalsEnabled};
+use proposals_codex::{ProposalDetailsOf, ProposalsEnabled};
 
 pub struct ProposalsSelector;
 
