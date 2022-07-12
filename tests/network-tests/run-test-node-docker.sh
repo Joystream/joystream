@@ -12,21 +12,21 @@ cd $SCRIPT_PATH
 DATA_PATH=$PWD/data
 mkdir -p ${DATA_PATH}
 
+# The docker image tag to use for joystream/node
+RUNTIME=${RUNTIME:=$(RUNTIME_PROFILE=TESTING ../../scripts/runtime-code-shasum.sh)}
+
 # Initial account balance for sudo account
 SUDO_INITIAL_BALANCE=${SUDO_INITIAL_BALANCE:=100000000}
 SUDO_ACCOUNT_URI=${SUDO_ACCOUNT_URI:="//Alice"}
-SUDO_ACCOUNT=$(docker run --rm --pull=always docker.io/parity/subkey:2.0.2 inspect ${SUDO_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
+SUDO_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME} key inspect ${SUDO_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
 
 # Source of funds for all new accounts that are created in the tests.
 TREASURY_INITIAL_BALANCE=${TREASURY_INITIAL_BALANCE:=100000000}
 TREASURY_ACCOUNT_URI=${TREASURY_ACCOUNT_URI:="//Bob"}
-TREASURY_ACCOUNT=$(docker run --rm --pull=always docker.io/parity/subkey:2.0.2 inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
+TREASURY_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME} key inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
 
 >&2 echo "sudo account from suri: ${SUDO_ACCOUNT}"
 >&2 echo "treasury account from suri: ${TREASURY_ACCOUNT}"
-
-# The docker image tag to use for joystream/node
-RUNTIME=${RUNTIME:=$(RUNTIME_PROFILE=TESTING ../../scripts/runtime-code-shasum.sh)}
 
 echo "{
   \"balances\":[
