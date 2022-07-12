@@ -5,7 +5,7 @@
   shell: curl https://getsubstrate.io -sSf | bash -s -- --fast
 
 - name: Install subkey
-  shell: cargo install --force subkey --git https://github.com/paritytech/substrate --version 2.0.2 --locked
+  shell: cargo install --force subkey --git https://github.com/paritytech/substrate --version ^2.0.2 --locked
   # Run in async fashion for max duration of 1 hr
   async: 3600
   poll: 0
