@@ -37,12 +37,12 @@ export default class LeaderUpdateBag extends ApiCommandBase {
   static flags = {
     add: integerArrFlags.integerArr({
       char: 'a',
-      description: 'ID of a bucket to add to bag',
+      description: 'ID/s of a bucket/s to add to bag',
       default: [],
     }),
     remove: integerArrFlags.integerArr({
       char: 'r',
-      description: 'ID of a bucket to remove from bag',
+      description: 'ID/s of a bucket/s to remove from bag',
       default: [],
     }),
     bagId: ApiCommandBase.extraFlags.bagId({

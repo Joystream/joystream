@@ -4,14 +4,11 @@ import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { EventDetails, EventType, WorkingGroupModuleName } from '../../types'
 import { BaseWorkingGroupFixture } from './BaseWorkingGroupFixture'
+import { ApplicationId, OpeningId, WorkerId } from '@joystream/types/primitives'
 import {
-  Application,
-  ApplicationId,
-  ApplicationIdSet,
-  Opening,
-  OpeningId,
-  WorkerId,
-} from '@joystream/types/working-group'
+  PalletWorkingGroupJobApplication as Application,
+  PalletWorkingGroupOpening as Opening,
+} from '@polkadot/types/lookup'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { Utils } from '../../utils'
@@ -22,6 +19,7 @@ import {
   OpeningFilledEventFieldsFragment,
   WorkerFieldsFragment,
 } from '../../graphql/generated/queries'
+import { Option } from '@polkadot/types/'
 
 // 'contentWorkingGroup' used just as a reference group (all working-group events are the same)
 type OpeningFilledEventDetails = EventDetails<EventType<'contentWorkingGroup', 'OpeningFilled'>>
@@ -33,7 +31,7 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
   protected openings: Opening[] = []
   protected openingIds: OpeningId[]
   protected acceptedApplicationsIdsArrays: ApplicationId[][]
-  protected acceptedApplicationsArrays: Application[][] = []
+  protected acceptedApplicationsArrays: Option<Application>[][] = []
   protected applicationStakesArrays: BN[][] = []
   protected createdWorkerIdsByOpeningId: Map<number, WorkerId[]> = new Map<number, WorkerId[]>()
 
@@ -63,10 +61,7 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     const extrinsics = this.openingIds.map((openingId, i) => {
-      const applicationsSet = createType<ApplicationIdSet, 'ApplicationIdSet'>(
-        'ApplicationIdSet',
-        this.acceptedApplicationsIdsArrays[i]
-      )
+      const applicationsSet = createType('BTreeSet<u64>', this.acceptedApplicationsIdsArrays[i])
       return this.api.tx[this.group].fillOpening(openingId, applicationsSet)
     })
     return this.asSudo ? extrinsics.map((tx) => this.api.tx.sudo.sudo(tx)) : extrinsics
@@ -79,14 +74,14 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
   protected async loadApplicationsData(): Promise<void> {
     this.acceptedApplicationsArrays = await Promise.all(
       this.acceptedApplicationsIdsArrays.map((acceptedApplicationIds) =>
-        this.api.query[this.group].applicationById.multi<Application>(acceptedApplicationIds)
+        this.api.query[this.group].applicationById.multi(acceptedApplicationIds)
       )
     )
     this.applicationStakesArrays = await Promise.all(
       this.acceptedApplicationsArrays.map((acceptedApplications) =>
         Promise.all(
           acceptedApplications.map((a) =>
-            this.api.getStakedBalance(a.staking_account_id, this.api.lockIdByGroup(this.group))
+            this.api.getStakedBalance(a.unwrap().stakingAccountId, this.api.lockIdByGroup(this.group))
           )
         )
       )
@@ -124,7 +119,7 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
       Utils.assert(qWorker, `Query node: Worker not found in OpeningFilled.hiredWorkers (id: ${workerId.toString()})`)
       this.assertHiredWorkerIsValid(
         this.acceptedApplicationsIdsArrays[i][j],
-        this.acceptedApplicationsArrays[i][j],
+        this.acceptedApplicationsArrays[i][j].unwrap(),
         this.applicationStakesArrays[i][j],
         this.openings[i],
         qWorker,
@@ -142,16 +137,16 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
     qEvent: OpeningFilledEventFieldsFragment
   ): void {
     assert.equal(qWorker.group.name, this.group)
-    assert.equal(qWorker.membership.id, application.member_id.toString())
-    assert.equal(qWorker.roleAccount, application.role_account_id.toString())
-    assert.equal(qWorker.rewardAccount, application.reward_account_id.toString())
-    assert.equal(qWorker.stakeAccount, application.staking_account_id.toString())
+    assert.equal(qWorker.membership.id, application.memberId.toString())
+    assert.equal(qWorker.roleAccount, application.roleAccountId.toString())
+    assert.equal(qWorker.rewardAccount, application.rewardAccountId.toString())
+    assert.equal(qWorker.stakeAccount, application.stakingAccountId.toString())
     assert.equal(qWorker.status.__typename, 'WorkerStatusActive')
     assert.equal(qWorker.isLead, true)
     assert.equal(qWorker.stake, applicationStake.toString())
     assert.equal(qWorker.entry.id, qEvent.id)
     assert.equal(qWorker.application.runtimeId, applicationId.toNumber())
-    assert.equal(qWorker.rewardPerBlock, opening.reward_per_block.toString())
+    assert.equal(qWorker.rewardPerBlock, opening.rewardPerBlock.toString())
   }
 
   protected assertOpeningsStatusesAreValid(

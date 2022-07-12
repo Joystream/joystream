@@ -16,7 +16,7 @@
 
 use clap::Parser;
 use rand::{distributions::Alphanumeric, rngs::OsRng, Rng};
-use serde_json as json;
+
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -312,7 +312,7 @@ fn generate_chain_spec(
         Default::default(),
     );
 
-    chain_spec.as_json(false).map_err(|err| err)
+    chain_spec.as_json(false)
 }
 
 fn generate_authority_keys_and_store(seeds: &[String], keystore_path: &Path) -> Result<(), String> {
@@ -354,7 +354,7 @@ fn print_seeds(
     println!("# Authority seeds");
 
     for (n, seed) in authority_seeds.iter().enumerate() {
-        println!("{}//{}", format!("auth_{}=", n), seed);
+        println!("auth_{}=//{}", n, seed);
     }
 
     println!();
@@ -362,7 +362,7 @@ fn print_seeds(
     if !nominator_seeds.is_empty() {
         println!("# Nominator seeds");
         for (n, seed) in nominator_seeds.iter().enumerate() {
-            println!("{}//{}", format!("nom_{}:", n), seed);
+            println!("nom_{}=//{}", n, seed);
         }
     }
 
@@ -371,7 +371,7 @@ fn print_seeds(
     if !endowed_seeds.is_empty() {
         println!("# Endowed seeds");
         for (n, seed) in endowed_seeds.iter().enumerate() {
-            println!("{}//{}", format!("endowed_{}=", n), seed);
+            println!("endowed_{}=//{}", n, seed);
         }
 
         println!();

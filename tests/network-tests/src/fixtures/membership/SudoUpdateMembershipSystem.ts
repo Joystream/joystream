@@ -99,7 +99,7 @@ export class SudoUpdateMembershipSystem extends BaseQueryNodeFixture {
     }
 
     // We don't use api.makeSudoCall, since we cannot(?) then access tx hashes
-    const sudo = await this.api.query.sudo.key()
+    const sudo = (await this.api.query.sudo.key()).unwrap()
     const results = await Promise.all(this.extrinsics.map((tx) => this.api.signAndSend(tx, sudo)))
     this.events = await Promise.all(results.map((r, i) => this.api.getEventDetails(r, 'members', this.eventNames[i])))
   }

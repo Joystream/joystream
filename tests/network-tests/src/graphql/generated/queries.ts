@@ -52,7 +52,6 @@ export type ChannelFieldsFragment = {
   title?: Types.Maybe<string>
   description?: Types.Maybe<string>
   isPublic?: Types.Maybe<boolean>
-  rewardAccount?: Types.Maybe<string>
   isCensored: boolean
   language?: Types.Maybe<{ iso: string }>
   ownerMember?: Types.Maybe<{ id: string }>
@@ -1751,6 +1750,29 @@ export type GetProposalCancelledEventsByEventIdsQuery = {
   proposalCancelledEvents: Array<ProposalCancelledEventFieldsFragment>
 }
 
+export type StorageNodeInfoFragment = {
+  id: string
+  operatorMetadata?: Types.Maybe<{ nodeEndpoint?: Types.Maybe<string> }>
+}
+
+export type GetStorageNodesInfoByBagIdQueryVariables = Types.Exact<{
+  bagId?: Types.Maybe<Types.Scalars['ID']>
+}>
+
+export type GetStorageNodesInfoByBagIdQuery = { storageBuckets: Array<StorageNodeInfoFragment> }
+
+export type GetStorageBucketsQueryVariables = Types.Exact<{ [key: string]: never }>
+
+export type GetStorageBucketsQuery = { storageBuckets: Array<StorageNodeInfoFragment> }
+
+export type DistributionBucketFamilyFieldsFragment = { id: string; buckets: Array<{ id: string; bucketIndex: number }> }
+
+export type GetDistributionFamiliesAdndBucketsQueryVariables = Types.Exact<{ [key: string]: never }>
+
+export type GetDistributionFamiliesAdndBucketsQuery = {
+  distributionBucketFamilies: Array<DistributionBucketFamilyFieldsFragment>
+}
+
 export type ApplicationBasicFieldsFragment = {
   id: string
   runtimeId: number
@@ -2354,7 +2376,6 @@ export const ChannelFields = gql`
     language {
       iso
     }
-    rewardAccount
     isCensored
     ownerMember {
       id
@@ -3939,6 +3960,23 @@ export const ProposalCancelledEventFields = gql`
     }
   }
 `
+export const StorageNodeInfo = gql`
+  fragment StorageNodeInfo on StorageBucket {
+    id
+    operatorMetadata {
+      nodeEndpoint
+    }
+  }
+`
+export const DistributionBucketFamilyFields = gql`
+  fragment DistributionBucketFamilyFields on DistributionBucketFamily {
+    id
+    buckets {
+      id
+      bucketIndex
+    }
+  }
+`
 export const ApplicationBasicFields = gql`
   fragment ApplicationBasicFields on WorkingGroupApplication {
     id
@@ -5070,6 +5108,36 @@ export const GetProposalCancelledEventsByEventIds = gql`
     }
   }
   ${ProposalCancelledEventFields}
+`
+export const GetStorageNodesInfoByBagId = gql`
+  query getStorageNodesInfoByBagId($bagId: ID) {
+    storageBuckets(
+      where: {
+        operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive" }
+        bags_some: { id_eq: $bagId }
+        operatorMetadata: { nodeEndpoint_contains: "http" }
+      }
+    ) {
+      ...StorageNodeInfo
+    }
+  }
+  ${StorageNodeInfo}
+`
+export const GetStorageBuckets = gql`
+  query getStorageBuckets {
+    storageBuckets(where: { acceptingNewBags_eq: true }) {
+      ...StorageNodeInfo
+    }
+  }
+  ${StorageNodeInfo}
+`
+export const GetDistributionFamiliesAdndBuckets = gql`
+  query getDistributionFamiliesAdndBuckets {
+    distributionBucketFamilies {
+      ...DistributionBucketFamilyFields
+    }
+  }
+  ${DistributionBucketFamilyFields}
 `
 export const GetOpeningById = gql`
   query getOpeningById($openingId: ID!) {

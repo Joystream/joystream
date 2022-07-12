@@ -3,7 +3,7 @@ import chalk from 'chalk'
 import ForumCommandBase from '../../base/ForumCommandBase'
 import { ForumThreadMetadata, IForumThreadMetadata } from '@joystream/metadata-protobuf'
 import { metadataToBytes } from '../../helpers/serialization'
-import { ThreadId } from '@joystream/types/common'
+import { ForumThreadId as ThreadId } from '@joystream/types/primitives'
 
 export default class ForumCreateThreadCommand extends ForumCommandBase {
   static description = 'Create forum thread.'
@@ -40,7 +40,7 @@ export default class ForumCreateThreadCommand extends ForumCommandBase {
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
     const result = await this.sendAndFollowTx(
-      await this.getDecodedPair(member.membership.controller_account),
+      await this.getDecodedPair(member.membership.controllerAccount),
       // Polls not supported atm
       api.tx.forum.createThread(member.id, categoryId, metadataToBytes(ForumThreadMetadata, metadata), text, null)
     )
