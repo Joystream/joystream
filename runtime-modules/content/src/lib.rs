@@ -458,7 +458,7 @@ decl_module! {
             Self::deposit_event(RawEvent::CuratorRemoved(curator_group_id, curator_id));
         }
 
-        #[weight = Module::<T>::channel_creation_weight(&params)] // TODO: adjust weight
+        #[weight = Module::<T>::channel_creation_weight(params)] // TODO: adjust weight
         pub fn create_channel(
             origin,
             channel_owner: ChannelOwner<T::MemberId, T::CuratorGroupId>,
@@ -2377,7 +2377,7 @@ decl_module! {
             origin,
             enabled: bool
         ) {
-            let _ = ensure_root(origin)?;
+            ensure_root(origin)?;
 
             //
             // == MUTATION SAFE ==
@@ -3566,7 +3566,7 @@ impl<T: Config> Module<T> {
                 )
             }
             ChannelFundsDestination::CouncilBudget => {
-                let _ = Balances::<T>::slash(&reward_account, amount);
+                let _ = Balances::<T>::slash(reward_account, amount);
                 T::CouncilBudgetManager::increase_budget(amount);
                 Ok(())
             }
@@ -3603,28 +3603,25 @@ impl<T: Config> Module<T> {
 
     // Calculates weight for channel_creation_weight extrinsic.
     fn channel_creation_weight(params: &ChannelCreationParameters<T>) -> Weight {
-        // new_meta.
-        let a = params.meta.as_ref().map_or(0, |v| v.len()) as u32;
-
         //collaborators
-        let b = params
-            .collaborators
-            .iter()
-            .fold(0, |acc, (_, permissions)| acc + permissions.len() + 1) as u32;
+        let a = params.collaborators.len() as u32;
 
         //storage_buckets
-        let c = params.storage_buckets.len() as u32;
+        let b = params.storage_buckets.len() as u32;
 
         //distribution_buckets
-        let e = params.distribution_buckets.len() as u32;
+        let c = params.distribution_buckets.len() as u32;
 
         // assets
-        let f = params
+        let d = params
             .assets
             .as_ref()
             .map_or(0, |v| v.object_creation_list.len()) as u32;
 
-        WeightInfoContent::<T>::channel_creation_with_channel_bag(a, b, c, e, f)
+        // new_meta.
+        let e = params.meta.as_ref().map_or(0, |v| v.len()) as u32;
+
+        WeightInfoContent::<T>::channel_creation_with_channel_bag(a, b, c, d, e)
     }
 }
 

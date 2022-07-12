@@ -95,8 +95,6 @@ pub const UNAUTHORIZED_CURATOR_ID: u64 = CURATOR_IDS[1];
 pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID: u128 = COLABORATOR_IDS[1] as u128;
 pub const UNAUTHORIZED_COLLABORATOR_MEMBER_ID: u64 = COLABORATOR_IDS[1];
 
-pub const DEFAULT_CHANNEL_REWARD_WITHDRAWAL_ACCOUNT_ID: u128 = 6000;
-
 pub const DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND: u64 = 0;
 pub const DEFAULT_CHANNEL_STATE_BLOAT_BOND: u64 = 0;
 pub const DEFAULT_VIDEO_STATE_BLOAT_BOND: u64 = 0;
@@ -420,12 +418,6 @@ impl Config for Test {
 
     /// Transfer Id
     type TransferId = u64;
-}
-
-impl crate::WeightInfo for () {
-    fn channel_creation_with_channel_bag(_a: u32, _b: u32, _c: u32, _e: u32, _f: u32) -> u64 {
-        0
-    }
 }
 
 pub const COUNCIL_BUDGET_ACCOUNT_ID: u128 = 90000000;

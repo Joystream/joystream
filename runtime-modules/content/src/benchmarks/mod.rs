@@ -1,8 +1,10 @@
 #[cfg(feature = "runtime-benchmarks")]
 mod channels;
 
-use crate::types::{ChannelActionPermission, ChannelAgentPermissions};
-use crate::Config;
+use crate::types::{
+    ChannelActionPermission, ChannelAgentPermissions, ChannelCreationParameters, StorageAssets,
+};
+use crate::{Config, Module as Pallet};
 use balances::Pallet as Balances;
 use frame_benchmarking::account;
 use frame_support::storage::{StorageMap, StorageValue};
@@ -15,7 +17,6 @@ use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::convert::TryInto;
 use sp_std::iter;
-use sp_std::iter::repeat;
 use sp_std::iter::FromIterator;
 use sp_std::vec;
 use sp_std::vec::Vec;
@@ -109,27 +110,6 @@ fn get_permissions(i: u64) -> ChannelAgentPermissions {
         .take(i.saturated_into())
         .map(|_| CHANNEL_AGENT_PERMISSIONS[i as usize])
         .collect::<BTreeSet<_>>()
-}
-
-fn rescale_constraints<T: Config>(new_min: u64, new_max: u64, value: u32) -> Option<u32> {
-    let old_min = 0f64;
-    let old_max = 100f64;
-    let value = value as f64;
-    let new_min: f64 = new_min as f64;
-    let new_max: f64 = new_max as f64;
-
-    if value < old_min || value > old_max || new_max < new_min {
-        return None;
-    }
-
-    let new_value: u32 =
-        ((new_max - new_min) / (old_max - old_min) * (value - old_max) + new_max) as u32;
-
-    if new_value < new_min as u32 || new_value > new_max as u32 {
-        return None;
-    }
-
-    Some(new_value)
 }
 
 fn get_byte(num: u64, byte_number: u8) -> u8 {
@@ -396,46 +376,24 @@ fn create_storage_bucket<T>(
     .unwrap();
 }
 
-// fn create_distribution_family<T>(
-//     lead_account_id: T::AccountId,
-// ) -> T::DistributionBucketFamilyId
-// where T: Config + storage::Config{
-//     let fam_id = Storage::<T>::next_distribution_bucket_family_id();
-
-//     Storage::<T>::create_distribution_bucket_family(RawOrigin::Signed(lead_account_id).into())
-//         .unwrap();
-
-//     fam_id
-// }
-
-fn create_distribution_bucket_family_with_buckets<T>(
+fn create_distribution_buckets<T>(
     lead_account_id: T::AccountId,
+    distribution_bucket_family_id: T::DistributionBucketFamilyId,
     bucket_number: u32,
-) -> (
-    T::DistributionBucketFamilyId,
-    BTreeSet<DistributionBucketId<T>>,
-)
+) -> BTreeSet<DistributionBucketId<T>>
 where
     T: Config + storage::Config,
 {
     let storage_wg_leader_signed = RawOrigin::Signed(lead_account_id);
-    let family_id = Storage::<T>::next_distribution_bucket_family_id();
-    // let family_number = Storage::<T>::distribution_bucket_family_number();
-
-    Storage::<T>::create_distribution_bucket_family(T::Origin::from(
-        storage_wg_leader_signed.clone(),
-    ))
-    .unwrap();
-
-    let bucket_ids = repeat(family_id)
-        .take(bucket_number as usize)
-        .map(|distribution_bucket_family_id| {
+    (0..bucket_number)
+        .map(|_| {
             let distribution_bucket_index =
                 Storage::<T>::distribution_bucket_family_by_id(distribution_bucket_family_id)
                     .next_distribution_bucket_index;
+
             Storage::<T>::create_distribution_bucket(
                 T::Origin::from(storage_wg_leader_signed.clone()),
-                family_id,
+                distribution_bucket_family_id,
                 true,
             )
             .unwrap();
@@ -445,35 +403,30 @@ where
                 distribution_bucket_index,
             }
         })
-        .collect::<BTreeSet<_>>();
-
-    (family_id, bucket_ids)
+        .collect::<BTreeSet<_>>()
 }
 
-//creates max_distribution_bucket and spread them across max_distribution_bucket_family
-fn create_distribution_bucket_with_family_adjusted<T>(
+fn create_distribution_bucket_with_family<T>(
     lead_account_id: T::AccountId,
-    bucket_family_number: u32,
     bucket_number: u32,
-) -> BTreeMap<T::DistributionBucketFamilyId, BTreeSet<DistributionBucketId<T>>>
+) -> (
+    T::DistributionBucketFamilyId,
+    BTreeSet<DistributionBucketId<T>>,
+)
 where
     T: Config + storage::Config,
 {
-    let db_per_family = bucket_number / bucket_family_number;
-    let db_per_family = match db_per_family {
-        0 => 1,
-        _ => db_per_family,
-    };
+    let storage_wg_leader_signed = RawOrigin::Signed(lead_account_id.clone());
 
-    repeat(db_per_family)
-        .take(bucket_family_number as usize)
-        .map(|db_per_family_number| {
-            create_distribution_bucket_family_with_buckets::<T>(
-                lead_account_id.clone(),
-                db_per_family_number,
-            )
-        })
-        .collect::<BTreeMap<_, _>>()
+    let db_family_id = Storage::<T>::next_distribution_bucket_family_id();
+
+    Storage::<T>::create_distribution_bucket_family(T::Origin::from(storage_wg_leader_signed))
+        .unwrap();
+
+    (
+        db_family_id,
+        create_distribution_buckets::<T>(lead_account_id, db_family_id, bucket_number),
+    )
 }
 
 pub fn create_data_object_candidates_helper(
@@ -490,4 +443,99 @@ pub fn create_data_object_candidates_helper(
             ipfs_content_id: vec![1u8],
         })
         .collect()
+}
+
+#[allow(clippy::too_many_arguments)]
+fn generate_channel_creation_params<T>(
+    dyn_bag_type: DynamicBagType,
+    storage_wg_lead_account_id: T::AccountId,
+    distribution_wg_lead_account_id: T::AccountId,
+    colaborator_num: u32,
+    storage_bucket_num: u32,
+    distribution_bucket_num: u32,
+    objects_num: u32,
+    max_bytes: u32,
+    max_obj_size: u64,
+) -> ChannelCreationParameters<T>
+where
+    T: Config
+        + storage::Config
+        + membership::Config
+        + balances::Config
+        + working_group::Config<StorageWorkingGroupInstance>
+        + working_group::Config<DistributionWorkingGroupInstance>,
+    T::AccountId: CreateAccountId,
+{
+    let chan_perm = CHANNEL_AGENT_PERMISSIONS.len() as u32 - 1;
+    let total_objs_size: u64 = max_obj_size.saturating_mul(objects_num.into());
+    let metadata = vec![0u8].repeat(max_bytes as usize);
+
+    set_dyn_bag_creation_storage_bucket_numbers::<T>(
+        storage_wg_lead_account_id.clone(),
+        storage_bucket_num.into(),
+        dyn_bag_type,
+    );
+
+    set_storage_buckets_voucher_max_limits::<T>(
+        storage_wg_lead_account_id.clone(),
+        total_objs_size,
+        objects_num.into(),
+    );
+
+    let assets = StorageAssets::<T> {
+        expected_data_size_fee: Storage::<T>::data_object_per_mega_byte_fee(),
+        object_creation_list: create_data_object_candidates_helper(
+            1,
+            objects_num.into(),
+            max_obj_size,
+        ),
+    };
+
+    let collaborators = (0..colaborator_num)
+        .map(|id| {
+            let (_account_id, member_id) = member_funded_account::<T>(COLABORATOR_IDS[id as usize]);
+            let permissions = get_permissions(chan_perm.into());
+            (member_id, permissions)
+        })
+        .collect::<BTreeMap<_, _>>();
+
+    let storage_buckets = (0..storage_bucket_num)
+        .map(|id| {
+            create_storage_bucket::<T>(
+                storage_wg_lead_account_id.clone(),
+                true,
+                total_objs_size,
+                objects_num.into(),
+            );
+            id.saturated_into()
+        })
+        .collect::<BTreeSet<_>>();
+
+    let (db_family_id, distribution_buckets) = create_distribution_bucket_with_family::<T>(
+        distribution_wg_lead_account_id.clone(),
+        distribution_bucket_num,
+    );
+
+    let distribution_buckets_families_policy =
+        BTreeMap::from_iter([(db_family_id, distribution_buckets.len() as u32)]);
+
+    update_families_in_dynamic_bag_creation_policy::<T>(
+        distribution_wg_lead_account_id,
+        DynamicBagType::Channel,
+        distribution_buckets_families_policy,
+    );
+
+    let expected_data_object_state_bloat_bond = Storage::<T>::data_object_state_bloat_bond_value();
+
+    let expected_channel_state_bloat_bond = Pallet::<T>::channel_state_bloat_bond_value();
+
+    ChannelCreationParameters::<T> {
+        assets: Some(assets),
+        meta: Some(metadata),
+        collaborators,
+        storage_buckets,
+        distribution_buckets,
+        expected_data_object_state_bloat_bond,
+        expected_channel_state_bloat_bond,
+    }
 }
