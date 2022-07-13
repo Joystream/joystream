@@ -3726,7 +3726,7 @@ decl_event!(
         CancelChannelTransfer(ChannelId, ContentActor),
         ChannelTransferAccepted(ChannelId, TransferCommitment),
 
-        /// Nft limits
+        // Nft limits
         GlobalNftLimitUpdated(NftLimitPeriod, u64),
         ChannelNftLimitUpdated(ContentActor, NftLimitPeriod, ChannelId, u64),
         ToggledNftLimits(bool),
