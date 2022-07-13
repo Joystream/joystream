@@ -1039,7 +1039,7 @@ fn unsuccessful_channel_payouts_update_with_min_cashout_value_below_limit() {
 }
 
 #[test]
-fn unsuccessful_channel_payouts_updat_with_max_cashout_value_above_limit() {
+fn unsuccessful_channel_payouts_update_with_max_cashout_value_above_limit() {
     with_default_mock_builder(|| {
         UpdateChannelPayoutsFixture::default()
             .with_max_cashout_allowed(Some(MaximumCashoutAllowedLimit::get() + 1))
