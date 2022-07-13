@@ -1071,8 +1071,8 @@ fn successful_channel_payouts_update() {
 
         UpdateChannelPayoutsFixture::default()
             .with_commitment(Some(merkle_root))
-            .with_min_cashout_allowed(Some(0))
-            .with_max_cashout_allowed(Some(1))
+            .with_min_cashout_allowed(Some(5))
+            .with_max_cashout_allowed(Some(10))
             .with_channel_cashouts_enabled(Some(false))
             .with_payload(Some(payload_params))
             .call_and_assert(Ok(()));
