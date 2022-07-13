@@ -55,7 +55,7 @@ pub trait WeightInfo {
 	fn update_category_description_moderator(i: u32, j: u32, ) -> Weight;
 	fn delete_category_lead(i: u32, ) -> Weight;
 	fn delete_category_moderator(i: u32, ) -> Weight;
-	fn create_thread(i: u32, j: u32, k: u32, z: u32, ) -> Weight;
+	fn create_thread(i: u32, j: u32, k: u32, ) -> Weight;
 	fn edit_thread_metadata(i: u32, j: u32, ) -> Weight;
 	fn delete_thread(i: u32, ) -> Weight;
 	fn move_thread_to_category_lead(i: u32, ) -> Weight;
@@ -215,7 +215,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: unknown [0xaa4612cd135c6055b7910d493c5fd4aedfeb47efcb121b0e718a654f15a6806f] (r:1 w:1)
 	// Storage: unknown [0xaa4612cd135c6055b7910d493c5fd4ae503ee3d19713303eb815933d040b41ee] (r:1 w:1)
 	// Storage: unknown [0xaa4612cd135c6055b7910d493c5fd4aec50c142a64f2c4bb5f5a5506f78ade7e] (r:0 w:1)
-	fn create_thread(i: u32, j: u32, k: u32, z: u32, ) -> Weight {
+	fn create_thread(i: u32, j: u32, k: u32, ) -> Weight {
 		(58_333_000 as Weight)
 			// Standard Error: 433_000
 			.saturating_add((2_250_000 as Weight).saturating_mul(i as Weight))
@@ -223,8 +223,6 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add((1_000 as Weight).saturating_mul(j as Weight))
 			// Standard Error: 0
 			.saturating_add((3_000 as Weight).saturating_mul(k as Weight))
-			// Standard Error: 144_000
-			.saturating_add((917_000 as Weight).saturating_mul(z as Weight))
 			.saturating_add(T::DbWeight::get().reads(7 as Weight))
 			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
 			.saturating_add(T::DbWeight::get().writes(7 as Weight))
@@ -480,7 +478,7 @@ impl WeightInfo for () {
 	fn delete_category_moderator(_i: u32, ) -> Weight {
 		0
 	}
-	fn create_thread(_i: u32, _j: u32, _k: u32, _z: u32, ) -> Weight {
+	fn create_thread(_i: u32, _j: u32, _k: u32, ) -> Weight {
 		0
 	}
 	fn edit_thread_metadata(_i: u32, _j: u32, ) -> Weight {

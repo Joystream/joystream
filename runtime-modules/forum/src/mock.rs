@@ -188,7 +188,6 @@ impl StorageLimits for MapLimits {
     type MaxSubcategories = MaxSubcategories;
     type MaxModeratorsForCategory = MaxModeratorsForCategory;
     type MaxCategories = MaxCategories;
-    type MaxPollAlternativesNumber = MaxPollAlternativesNumber;
 }
 
 impl Config for Runtime {
@@ -399,42 +398,6 @@ pub fn good_moderation_rationale() -> Vec<u8> {
     b"Moderation rationale".to_vec()
 }
 
-/// Get a good poll description
-pub fn good_poll_description() -> Vec<u8> {
-    b"poll description".to_vec()
-}
-
-/// Get a good poll alternative text
-pub fn good_poll_alternative_text() -> Vec<u8> {
-    b"poll alternative".to_vec()
-}
-
-/// Generate a valid poll input
-pub fn generate_poll_input(
-    expiration_diff: u64,
-) -> PollInput<<Runtime as pallet_timestamp::Config>::Moment> {
-    PollInput {
-        description: good_poll_description(),
-        end_time: Timestamp::now() + expiration_diff,
-        poll_alternatives: {
-            let mut alternatives = vec![];
-            for _ in 0..5 {
-                alternatives.push(good_poll_alternative_text());
-            }
-            alternatives
-        },
-    }
-}
-
-/// Generate poll input for different timestamp cases
-pub fn generate_poll_input_timestamp_cases(
-    index: usize,
-    expiration_diff: u64,
-) -> PollInput<<Runtime as pallet_timestamp::Config>::Moment> {
-    let test_cases = vec![generate_poll_input(expiration_diff), generate_poll_input(1)];
-    test_cases[index].clone()
-}
-
 /// Create category mock
 pub fn create_category_mock(
     origin: OriginType,
@@ -476,7 +439,6 @@ pub fn create_thread_mock(
     category_id: <Runtime as Config>::CategoryId,
     title: Vec<u8>,
     text: Vec<u8>,
-    poll_input_data: Option<PollInput<<Runtime as pallet_timestamp::Config>::Moment>>,
     result: DispatchResult,
 ) -> <Runtime as Config>::ThreadId {
     let thread_id = TestForumModule::next_thread_id();
@@ -489,7 +451,6 @@ pub fn create_thread_mock(
             category_id,
             title.clone(),
             text.clone(),
-            poll_input_data.clone(),
         ),
         result
     );
@@ -504,7 +465,6 @@ pub fn create_thread_mock(
                 forum_user_id,
                 title,
                 text,
-                poll_input_data
             ))
         );
 
@@ -811,9 +771,6 @@ pub fn edit_post_text_mock(
 }
 
 /// Change current timestamp
-pub fn change_current_time(diff: u64) -> () {
-    Timestamp::set_timestamp(Timestamp::now() + diff);
-}
 
 /// Create update category membership of moderator mock
 pub fn update_category_membership_of_moderator_mock(
@@ -848,52 +805,6 @@ pub fn update_category_membership_of_moderator_mock(
         );
     };
     category_id
-}
-
-/// Create vote on poll mock
-pub fn vote_on_poll_mock(
-    origin: OriginType,
-    forum_user_id: ForumUserId<Runtime>,
-    category_id: <Runtime as Config>::CategoryId,
-    thread_id: <Runtime as Config>::ThreadId,
-    index: u32,
-    result: DispatchResult,
-) -> <Runtime as Config>::ThreadId {
-    let thread = TestForumModule::thread_by_id(category_id, thread_id);
-    assert_eq!(
-        TestForumModule::vote_on_poll(
-            mock_origin(origin),
-            forum_user_id,
-            category_id,
-            thread_id,
-            index
-        ),
-        result
-    );
-    if result.is_ok() {
-        assert_eq!(
-            TestForumModule::thread_by_id(category_id, thread_id)
-                .poll
-                .unwrap()
-                .poll_alternatives[index as usize]
-                .vote_count,
-            thread.poll.unwrap().poll_alternatives[index as usize].vote_count + 1
-        );
-        assert_eq!(
-            System::events().last().unwrap().event,
-            Event::TestForumModule(RawEvent::VoteOnPoll(
-                thread_id,
-                index,
-                forum_user_id,
-                category_id
-            ))
-        );
-        assert!(TestForumModule::poll_votes_by_thread_id_by_forum_user_id(
-            &thread_id,
-            &forum_user_id
-        ));
-    };
-    thread_id
 }
 
 /// Create update category archival status mock

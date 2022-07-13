@@ -329,32 +329,6 @@ fn add_thread_post<T: Config>(
     Module::<T>::next_post_id() - T::PostId::one()
 }
 
-fn good_poll_alternative_text() -> Vec<u8> {
-    b"poll alternative".to_vec()
-}
-
-fn good_poll_description() -> Vec<u8> {
-    b"poll description".to_vec()
-}
-
-/// Generates poll input
-pub fn generate_poll_input<T: Config>(
-    expiration_diff: T::Moment,
-    alternatives_number: u32,
-) -> PollInput<T::Moment> {
-    PollInput {
-        description: good_poll_description(),
-        end_time: pallet_timestamp::Pallet::<T>::now() + expiration_diff,
-        poll_alternatives: {
-            let mut alternatives = vec![];
-            for _ in 0..alternatives_number {
-                alternatives.push(good_poll_alternative_text());
-            }
-            alternatives
-        },
-    }
-}
-
 /// Generates categories tree
 pub fn generate_categories_tree<T: Config>(
     caller_id: T::AccountId,
