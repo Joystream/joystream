@@ -175,7 +175,7 @@ export default async function curatorModerationActions({ api, query, env }: Flow
     {
       asCurator: [curatorGroupId, curatorId],
       channelId: channelIds[0],
-      numOfObjectsToDelete: 0,
+      numOfObjectsToDelete: 2,
       rationale: 'Deleted channel due to repeated violations of ToS',
     },
   ]

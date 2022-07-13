@@ -1,6 +1,6 @@
 import { createType } from '@joystream/types'
-import { ChannelActionPermission, ChannelAgentPermissions, CuratorGroupId } from '@joystream/types/content'
-import { WorkerId } from '@joystream/types/working-group'
+import { PalletContentChannelActionPermission as ChannelActionPermission } from '@polkadot/types/lookup'
+import { WorkerId, CuratorGroupId } from '@joystream/types/primitives'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE } from '../../consts'
 import { Api } from '../../Api'
@@ -10,7 +10,7 @@ import { QueryNodeApi } from '../../QueryNodeApi'
 export type AddCuratorToGroupParams = {
   curatorGroupId: CuratorGroupId
   curatorId: WorkerId
-  permissions: (keyof typeof ChannelActionPermission.typeDefinitions)[]
+  permissions: ChannelActionPermission['type'][]
 }
 
 export class AddCuratorToCuratorGroupFixture extends BaseQueryNodeFixture {
@@ -27,7 +27,9 @@ export class AddCuratorToCuratorGroupFixture extends BaseQueryNodeFixture {
       throw new Error('Content working group lead not set!')
     }
 
-    return (await this.api.query.contentWorkingGroup.workerById(contentWgLead.unwrap())).role_account_id.toString()
+    return (await this.api.query.contentWorkingGroup.workerById(contentWgLead.unwrap()))
+      .unwrap()
+      .roleAccountId.toString()
   }
 
   public async execute(): Promise<void> {
@@ -46,7 +48,7 @@ export class AddCuratorToCuratorGroupFixture extends BaseQueryNodeFixture {
       this.api.tx.content.addCuratorToGroup(
         curatorGroupId,
         curatorId,
-        createType<ChannelAgentPermissions, 'ChannelAgentPermissions'>('ChannelAgentPermissions', permissions)
+        createType('BTreeSet<PalletContentChannelActionPermission>', permissions)
       )
     )
   }

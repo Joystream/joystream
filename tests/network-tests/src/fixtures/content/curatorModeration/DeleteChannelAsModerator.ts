@@ -1,6 +1,5 @@
 import { createType } from '@joystream/types'
-import { ContentActor, CuratorGroupId } from '@joystream/types/content'
-import { WorkerId } from '@joystream/types/working-group'
+import { WorkerId, CuratorGroupId } from '@joystream/types/primitives'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { assert } from 'chai'
@@ -34,7 +33,7 @@ export class DeleteChannelAsModeratorFixture extends StandardizedFixture {
   protected async getSignerAccountOrAccounts(): Promise<string[]> {
     return await Promise.all(
       this.deleteChannelAsModeratorParams.map(async ({ asCurator }) =>
-        (await this.api.query.contentWorkingGroup.workerById(asCurator[1])).role_account_id.toString()
+        (await this.api.query.contentWorkingGroup.workerById(asCurator[1])).unwrap().roleAccountId.toString()
       )
     )
   }
@@ -42,7 +41,7 @@ export class DeleteChannelAsModeratorFixture extends StandardizedFixture {
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     return this.deleteChannelAsModeratorParams.map(({ asCurator, channelId, numOfObjectsToDelete, rationale }) =>
       this.api.tx.content.deleteChannelAsModerator(
-        createType<ContentActor, 'ContentActor'>('ContentActor', { Curator: asCurator }),
+        createType('PalletContentPermissionsContentActor', { Curator: asCurator }),
         channelId,
         numOfObjectsToDelete,
         rationale

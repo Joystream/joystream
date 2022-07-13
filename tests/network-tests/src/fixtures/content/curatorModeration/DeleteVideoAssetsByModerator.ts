@@ -1,9 +1,6 @@
 import { createType } from '@joystream/types'
-import { ContentActor, CuratorGroupId } from '@joystream/types/content'
-import { DataObjectId } from '@joystream/types/storage'
-import { WorkerId } from '@joystream/types/working-group'
+import { CuratorGroupId, WorkerId } from '@joystream/types/primitives'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { BTreeSet } from '@polkadot/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { assert } from 'chai'
 import { Api } from '../../../Api'
@@ -40,7 +37,7 @@ export class DeleteVideoAssetsAsModeratorFixture extends StandardizedFixture {
   protected async getSignerAccountOrAccounts(): Promise<string[]> {
     return await Promise.all(
       this.deleteVideoAssetsAsModeratorParams.map(async ({ asCurator }) =>
-        (await this.api.query.contentWorkingGroup.workerById(asCurator[1])).role_account_id.toString()
+        (await this.api.query.contentWorkingGroup.workerById(asCurator[1])).unwrap().roleAccountId.toString()
       )
     )
   }
@@ -48,9 +45,9 @@ export class DeleteVideoAssetsAsModeratorFixture extends StandardizedFixture {
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     return this.deleteVideoAssetsAsModeratorParams.map(({ asCurator, videoId, assetsToRemove, rationale }) =>
       this.api.tx.content.deleteVideoAssetsAsModerator(
-        createType<ContentActor, 'ContentActor'>('ContentActor', { Curator: asCurator }),
+        createType('PalletContentPermissionsContentActor', { Curator: asCurator }),
         videoId,
-        createType<BTreeSet<DataObjectId>, 'BTreeSet<DataObjectId>'>('BTreeSet<DataObjectId>', assetsToRemove),
+        createType('BTreeSet<u64>', assetsToRemove),
         rationale
       )
     )

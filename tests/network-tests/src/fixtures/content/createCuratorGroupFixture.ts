@@ -1,11 +1,9 @@
-import { createType } from '@joystream/types'
+import { CreateInterface, createType } from '@joystream/types'
+import { CuratorGroupId } from '@joystream/types/primitives'
 import {
-  ChannelPrivilegeLevel,
-  ContentModerationAction,
-  ContentModerationActionsSet,
-  CuratorGroupId,
-  ModerationPermissionsByLevel,
-} from '@joystream/types/content'
+  PalletContentPermissionsCuratorGroupContentModerationAction as ContentModerationAction,
+  PalletContentPermissionsCuratorGroupPausableChannelFeature as PausableChannelFeature,
+} from '@polkadot/types/lookup'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Api } from '../../Api'
 import { KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE } from '../../consts'
@@ -17,7 +15,7 @@ export type CuratorGroupParams = {
   permissionsByLevel: {
     channelPrivilegeLevel: number
     permissionToDeleteNftAssets: boolean
-    contentModerationActionSet: (keyof typeof ContentModerationAction.typeDefinitions)[]
+    contentModerationActionSet: ContentModerationAction['type'][]
   }[]
 }
 
@@ -41,7 +39,9 @@ export class CreateCuratorGroupFixture extends BaseQueryNodeFixture {
       throw new Error('Content working group lead not set!')
     }
 
-    return (await this.api.query.contentWorkingGroup.workerById(contentWgLead.unwrap())).role_account_id.toString()
+    return (await this.api.query.contentWorkingGroup.workerById(contentWgLead.unwrap()))
+      .unwrap()
+      .roleAccountId.toString()
   }
 
   public async execute(): Promise<void> {
@@ -59,61 +59,35 @@ export class CreateCuratorGroupFixture extends BaseQueryNodeFixture {
     }
   }
 
-  protected createcontentModerationActionSetType(
-    actionSet: (keyof typeof ContentModerationAction.typeDefinitions)[],
-    permissionToDeleteNftAssets: boolean
-  ): ContentModerationAction[] {
-    return actionSet.map((a) =>
-      createType<ContentModerationAction, 'ContentModerationAction'>(
-        'ContentModerationAction',
-        a === 'DeleteVideo'
-          ? { DeleteVideo: null }
-          : a === 'DeleteChannel'
-          ? { DeleteChannel: null }
-          : a === 'DeleteVideoAssets'
-          ? { DeleteVideoAssets: permissionToDeleteNftAssets }
-          : a === 'HideChannel'
-          ? { HideChannel: null }
-          : a === 'HideVideo'
-          ? { HideVideo: null }
-          : a === 'DeleteNonVideoChannelAssets'
-          ? { DeleteNonVideoChannelAssets: null }
-          : a === 'UpdateChannelNftLimits'
-          ? { UpdateChannelNftLimits: null }
-          : { ChangeChannelFeatureStatus: { CreatorCashout: null } }
-      )
+  protected createContentModerationActionSetType(
+    actionSet: ContentModerationAction['type'][],
+    value: null | boolean | PausableChannelFeature
+  ): CreateInterface<ContentModerationAction>[] {
+    return actionSet.map(
+      (action) =>
+        ({ [action]: value } as {
+          [K in ContentModerationAction['type']]: ContentModerationAction[`is${K}`]
+        })
     )
   }
 
   protected async createCuratorGroup(): Promise<SubmittableExtrinsic<'promise'>[]> {
     return this.curatorGroupParams.map(({ isActive, permissionsByLevel }) => {
-      const moderationPermissionsByLevel = createType<ModerationPermissionsByLevel, 'ModerationPermissionsByLevel'>(
-        'ModerationPermissionsByLevel',
+      const moderationPermissionsByLevel = createType(
+        'BTreeMap<u8,BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>',
         new Map(
           permissionsByLevel.map(
             ({ channelPrivilegeLevel, contentModerationActionSet, permissionToDeleteNftAssets }) => {
               return [
-                createType<ChannelPrivilegeLevel, 'ChannelPrivilegeLevel'>(
-                  'ChannelPrivilegeLevel',
-                  channelPrivilegeLevel
-                ),
-                createType<ContentModerationActionsSet, 'ContentModerationActionsSet'>(
-                  'ContentModerationActionsSet',
-                  this.createcontentModerationActionSetType(contentModerationActionSet, permissionToDeleteNftAssets)
-                ),
+                channelPrivilegeLevel,
+                this.createContentModerationActionSetType(contentModerationActionSet, permissionToDeleteNftAssets),
               ]
             }
           )
         )
       )
 
-      return this.api.tx.content.createCuratorGroup(
-        isActive,
-        createType<ModerationPermissionsByLevel, 'ModerationPermissionsByLevel'>(
-          'ModerationPermissionsByLevel',
-          moderationPermissionsByLevel
-        )
-      )
+      return this.api.tx.content.createCuratorGroup(isActive, moderationPermissionsByLevel)
     })
   }
 }
