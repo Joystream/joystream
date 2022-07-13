@@ -67,7 +67,7 @@ use proposals_engine::{
 };
 pub use types::{
     CreateOpeningParameters, FillOpeningParameters, GeneralProposalParams, ProposalDetails,
-    ProposalDetailsOf, ProposalEncoder, ProposalsEnabled, TerminateRoleParameters,
+    ProposalDetailsOf, ProposalEncoder, TerminateRoleParameters,
 };
 
 // Max allowed value for 'Funding Request' proposal
@@ -214,9 +214,6 @@ pub trait Config:
     type UpdateChannelPayoutsProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
-
-    /// Proposals Enabled at runtime
-    type ProposalsEnabled: ProposalsEnabled<Self>;
 }
 
 /// Specialized alias of GeneralProposalParams
@@ -229,8 +226,7 @@ pub type GeneralProposalParameters<T> = GeneralProposalParams<
 decl_event! {
     pub enum Event<T> where
         GeneralProposalParameters = GeneralProposalParameters<T>,
-
-    ProposalDetailsOf = ProposalDetailsOf<T>,
+        ProposalDetailsOf = ProposalDetailsOf<T>,
         <T as proposals_engine::Config>::ProposalId,
         <T as proposals_discussion::Config>::ThreadId
     {
@@ -247,9 +243,6 @@ decl_event! {
 decl_error! {
     /// Codex module predefined errors
     pub enum Error for Module<T: Config> {
-        /// Proposal is not implemented yet
-        ProposalNotImplemented,
-
         /// Provided text for text proposal is empty
         SignalProposalIsEmpty,
 
@@ -441,11 +434,6 @@ decl_module! {
             general_proposal_parameters: GeneralProposalParameters<T>,
             proposal_details: ProposalDetailsOf<T>,
         ) {
-            ensure!(
-                T::ProposalsEnabled::is_proposal_enabled(&proposal_details),
-                Error::<T>::ProposalNotImplemented,
-            );
-
             Self::ensure_details_checks(&proposal_details)?;
 
             let proposal_parameters = Self::get_proposal_parameters(&proposal_details);

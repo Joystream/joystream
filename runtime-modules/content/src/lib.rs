@@ -1413,7 +1413,6 @@ decl_module! {
 
         /// Destroy NFT
         #[weight = 10_000_000] // TODO: adjust weight
-        #[allow(unused_variables)]
         pub fn destroy_nft(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
@@ -2364,12 +2363,11 @@ decl_module! {
 
         /// Only Council can toggle nft issuance limits constraints
         #[weight = 10_000_000] // TODO: adjust weight
-        #[allow(unused_variables)]
         pub fn toggle_nft_limits(
             origin,
             enabled: bool
         ) {
-            let _ = ensure_root(origin)?;
+            ensure_root(origin)?;
 
             //
             // == MUTATION SAFE ==
@@ -2490,6 +2488,7 @@ decl_module! {
                     RawEvent::CancelChannelTransfer(channel_id, actor)
                 );
             }
+
         }
 
 
@@ -3316,7 +3315,6 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
-    #[allow(dead_code)] // TODO: Remove the `allow` attribute after carthage
     fn ensure_sufficient_balance_for_channel_transfer(
         owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
         transfer_cost: BalanceOf<T>,
@@ -3340,7 +3338,6 @@ impl<T: Config> Module<T> {
     }
 
     // Validates channel transfer acceptance parameters: commitment params, new owner balance.
-    #[allow(dead_code)] // TODO: remove the allow attribute after Carthage
     fn validate_channel_transfer_acceptance(
         commitment_params: &TransferCommitmentParameters<T::MemberId, BalanceOf<T>, T::TransferId>,
         params: &PendingTransfer<T::MemberId, T::CuratorGroupId, BalanceOf<T>, T::TransferId>,
@@ -3360,9 +3357,7 @@ impl<T: Config> Module<T> {
 
         Ok(())
     }
-
     // Transfers balance from the new channel owner to the old channel owner.
-    #[allow(dead_code)] // TODO: enable after enabling channel transfer
     fn pay_for_channel_swap(
         old_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
         new_owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
@@ -3458,7 +3453,6 @@ impl<T: Config> Module<T> {
     }
 
     // Checks generic NFT-limit.
-    #[allow(dead_code)] // TODO: Remove the `allow` attribute after Carthage
     fn check_generic_nft_limit(
         nft_limit: &LimitPerPeriod<T::BlockNumber>,
         nft_counter: &NftCounter<T::BlockNumber>,
@@ -3475,7 +3469,6 @@ impl<T: Config> Module<T> {
     }
 
     // Set global and channel NFT limit
-    #[allow(dead_code)] // TODO: Remove the `allow` attribute after Carthage
     pub(crate) fn set_nft_limit(limit_id: NftLimitId<T::ChannelId>, limit: u64) {
         match limit_id {
             NftLimitId::GlobalDaily => GlobalDailyNftLimit::<T>::mutate(|l| l.limit = limit),

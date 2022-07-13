@@ -579,8 +579,6 @@ fn start_eng_auction_fails_with_invalid_forward_starting() {
     })
 }
 
-// TODO: Enable after Carthage
-#[ignore]
 #[test]
 fn start_open_auction_fails_during_channel_transfer() {
     with_default_mock_builder(|| {
@@ -603,8 +601,6 @@ fn start_open_auction_fails_during_channel_transfer() {
     })
 }
 
-// TODO: Enable after Carthage
-#[ignore]
 #[test]
 fn start_english_auction_fails_during_channel_transfer() {
     with_default_mock_builder(|| {

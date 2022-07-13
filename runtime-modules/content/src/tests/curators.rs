@@ -46,8 +46,6 @@ pub fn add_curator_to_new_group_with_permissions(
     curator_group_id
 }
 
-// TODO: enable after Carthage
-#[ignore]
 #[test]
 fn curator_group_management() {
     with_default_mock_builder(|| {
@@ -73,7 +71,6 @@ fn curator_group_management() {
         let group = Content::curator_group_by_id(curator_group_id);
         assert_eq!(group.is_active(), true);
 
-        // TODO: enable after enabling `update_curator_group_permission`
         // Group permissions
         let permissions = BTreeMap::from_iter(vec![
             (
@@ -155,7 +152,7 @@ fn curator_group_management() {
             let allowed_actions: Vec<ContentModerationAction>;
             let permissions_for_level = permissions.get(&i);
             if let Some(permissions_for_level) = permissions_for_level {
-                allowed_actions = Vec::from_iter(permissions_for_level.iter().map(|p| p.clone()));
+                allowed_actions = Vec::from_iter(permissions_for_level.iter().cloned());
             } else {
                 allowed_actions = vec![]
             }
@@ -265,8 +262,6 @@ fn unsuccessful_curator_group_creation_with_max_permissions_by_level_map_size_ex
     })
 }
 
-// TODO: enable after enabling `update_curator_group_permission`
-#[ignore]
 #[test]
 fn unsuccessful_curator_group_permissions_update_with_max_permissions_by_level_map_size_exceeded() {
     with_default_mock_builder(|| {

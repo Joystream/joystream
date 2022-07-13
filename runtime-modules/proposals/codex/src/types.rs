@@ -19,12 +19,6 @@ pub trait ProposalEncoder<T: crate::Config> {
     fn encode_proposal(proposal_details: ProposalDetailsOf<T>) -> Vec<u8>;
 }
 
-/// Enables proposals in production and mock runtime
-pub trait ProposalsEnabled<T: crate::Config> {
-    /// Encodes proposal using its details information.
-    fn is_proposal_enabled(proposal_details: &ProposalDetailsOf<T>) -> bool;
-}
-
 /// _ProposalDetails_ alias for type simplification
 pub type ProposalDetailsOf<T> = ProposalDetails<
     crate::BalanceOf<T>,

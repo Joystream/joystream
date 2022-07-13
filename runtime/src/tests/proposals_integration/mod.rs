@@ -1071,8 +1071,6 @@ fn proposal_reactivation_succeeds() {
     });
 }
 
-// TODO: Enable after Carthage
-#[ignore]
 #[test]
 fn update_global_nft_limit_proposal_succeeds() {
     initial_test_ext().execute_with(|| {
@@ -1084,7 +1082,7 @@ fn update_global_nft_limit_proposal_succeeds() {
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
             let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
-                member_id: member_id,
+                member_id,
                 title: b"title".to_vec(),
                 description: b"body".to_vec(),
                 staking_account_id: Some(account_id.clone()),

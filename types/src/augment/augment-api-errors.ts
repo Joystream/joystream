@@ -2207,10 +2207,6 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InvalidWorkingGroupBudgetCapacity: AugmentedError<ApiType>;
       /**
-       * Proposal is not implemented yet
-       **/
-      ProposalNotImplemented: AugmentedError<ApiType>;
-      /**
        * Require root origin in extrinsics
        **/
       RequireRootOrigin: AugmentedError<ApiType>;

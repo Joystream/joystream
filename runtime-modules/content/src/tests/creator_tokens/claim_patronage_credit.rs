@@ -81,8 +81,6 @@ fn successful_claim_member_channel_creator_token_patronage_credit_by_owner() {
     })
 }
 
-// TODO: Enable after Carthage
-#[ignore]
 #[test]
 fn claim_creator_token_patronage_credit_fails_during_trasfer() {
     with_default_mock_builder(|| {

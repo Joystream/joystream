@@ -68,8 +68,6 @@ fn successful_video_creation_by_member() {
     })
 }
 
-// TODO: Enable after Carthage
-#[ignore]
 #[test]
 fn unuccessful_video_creation_with_pending_channel_transfer() {
     with_default_mock_builder(|| {
@@ -637,8 +635,6 @@ fn successful_video_update_by_member_with_assets_removal() {
     })
 }
 
-// TODO: Enable after Carthage
-#[ignore]
 #[test]
 fn unsuccessful_video_update_with_pending_channel_transfer() {
     with_default_mock_builder(|| {
@@ -1053,8 +1049,6 @@ fn successful_video_deletion_by_member_with_assets_removal() {
     })
 }
 
-// TODO: Enable after Carthage
-#[ignore]
 #[test]
 fn unsuccessful_video_deletion_with_pending_transfer() {
     with_default_mock_builder(|| {
@@ -1296,8 +1290,7 @@ fn unsuccessful_video_update_with_nft_issuance_when_nft_already_issued() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel();
-        // TODO: enable after Carthage
-        // set_default_nft_limits();
+        set_default_nft_limits();
 
         // create video with nft issued
         CreateVideoFixture::default()
@@ -1352,7 +1345,6 @@ fn create_video_failed_with_exceeded_channel_daily_nft_limits() {
         );
     })
 }
-
 #[test]
 fn create_video_failed_with_exceeded_channel_weekly_nft_limits() {
     with_default_mock_builder(|| {
@@ -1409,7 +1401,6 @@ fn update_video_failed_with_exceeded_global_weekly_nft_limits() {
         );
     })
 }
-
 #[test]
 fn update_video_failed_with_exceeded_channel_daily_nft_limits() {
     with_default_mock_builder(|| {
@@ -1420,7 +1411,6 @@ fn update_video_failed_with_exceeded_channel_daily_nft_limits() {
         );
     })
 }
-
 #[test]
 fn update_video_failed_with_exceeded_channel_weekly_nft_limits() {
     with_default_mock_builder(|| {

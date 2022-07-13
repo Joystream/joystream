@@ -267,8 +267,6 @@ fn issue_nft_fails_with_invalid_open_auction_parameters() {
     })
 }
 
-// TODO: enable after enabling nft minting limits
-#[ignore]
 #[test]
 fn issue_nft_failed_because_of_the_global_daily_limit() {
     with_default_mock_builder(|| {
@@ -279,8 +277,6 @@ fn issue_nft_failed_because_of_the_global_daily_limit() {
     })
 }
 
-// TODO: enable after enabling nft minting limits
-#[ignore]
 #[test]
 fn issue_nft_failed_because_of_the_global_weekly_limit() {
     with_default_mock_builder(|| {
@@ -291,8 +287,6 @@ fn issue_nft_failed_because_of_the_global_weekly_limit() {
     })
 }
 
-// TODO: enable after enabling nft minting limits
-#[ignore]
 #[test]
 fn issue_nft_failed_because_of_the_channel_weekly_limit() {
     with_default_mock_builder(|| {
@@ -304,8 +298,6 @@ fn issue_nft_failed_because_of_the_channel_weekly_limit() {
     })
 }
 
-// TODO: enable after enabling nft minting limits
-#[ignore]
 #[test]
 fn issue_nft_failed_because_of_the_daily_weekly_limit() {
     with_default_mock_builder(|| {
@@ -340,8 +332,6 @@ fn nft_test_helper_for_exceeded_limit(nft_limit_id: NftLimitId<u64>, expected_er
     );
 }
 
-// TODO: enable after enabling nft minting limits
-#[ignore]
 #[test]
 fn issue_nft_global_daily_limit_works_as_expected() {
     with_default_mock_builder(|| {
@@ -353,8 +343,6 @@ fn issue_nft_global_daily_limit_works_as_expected() {
     })
 }
 
-// TODO: enable after enabling nft minting limits
-#[ignore]
 #[test]
 fn issue_nft_global_weekly_limit_works_as_expected() {
     with_default_mock_builder(|| {
@@ -366,8 +354,6 @@ fn issue_nft_global_weekly_limit_works_as_expected() {
     })
 }
 
-// TODO: enable after enabling nft minting limits
-#[ignore]
 #[test]
 fn issue_nft_channel_daily_limit_works_as_expected() {
     with_default_mock_builder(|| {
@@ -380,8 +366,6 @@ fn issue_nft_channel_daily_limit_works_as_expected() {
     })
 }
 
-// TODO: enable after enabling nft minting limits
-#[ignore]
 #[test]
 fn issue_nft_channel_weekly_limit_works_as_expected() {
     with_default_mock_builder(|| {
@@ -394,8 +378,6 @@ fn issue_nft_channel_weekly_limit_works_as_expected() {
     })
 }
 
-// TODO: enable after Enabling NFT limits toggling
-#[ignore]
 #[test]
 fn issue_nft_ok_with_limits_not_enforced() {
     with_default_mock_builder(|| {
@@ -484,8 +466,6 @@ fn test_helper_for_nft_limit_works_as_expected(
     })
 }
 
-// TODO: enable after enabling nft minting limits
-#[ignore]
 #[test]
 fn nft_counters_increment_works_as_expected() {
     with_default_mock_builder(|| {
@@ -557,8 +537,6 @@ fn nft_counters_increment_works_as_expected() {
     })
 }
 
-// TODO: enable after enabling channel transfer
-#[ignore]
 #[test]
 fn issue_nft_fails_with_pending_channel_transfer() {
     with_default_mock_builder(|| {

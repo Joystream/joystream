@@ -348,8 +348,6 @@ fn unsuccessful_channel_update_with_invalid_channel_id() {
     })
 }
 
-// TODO: Enable after Carthage
-#[ignore]
 #[test]
 fn unsuccessful_channel_update_with_pending_status_transfer() {
     with_default_mock_builder(|| {
@@ -548,8 +546,6 @@ fn unsuccessful_channel_update_with_no_bucket_with_sufficient_object_number_limi
 /////////////////// Channel privilege level tests ///////////////////
 /////////////////////////////////////////////////////////////////////
 
-// TODO: enable after enabling `update_channel_privilege_level`
-#[ignore]
 #[test]
 fn unsuccessful_channel_privilege_level_update_with_curator_origin() {
     with_default_mock_builder(|| {
@@ -565,8 +561,6 @@ fn unsuccessful_channel_privilege_level_update_with_curator_origin() {
     })
 }
 
-// TODO: enable after enabling `update_channel_privilege_level`
-#[ignore]
 #[test]
 fn unsuccessful_channel_privilege_level_update_with_invalid_channel_id() {
     with_default_mock_builder(|| {
@@ -582,8 +576,6 @@ fn unsuccessful_channel_privilege_level_update_with_invalid_channel_id() {
     })
 }
 
-// TODO: enable after enabling `update_channel_privilege_level`
-#[ignore]
 #[test]
 fn successful_channel_privilege_level_update_with_lead_origin() {
     with_default_mock_builder(|| {
@@ -1052,8 +1044,6 @@ fn successful_moderation_action_channel_visibility_change_by_lead() {
 
 // Channel features status (pausing/unpausing)
 
-// TODO: enable after enabling pause_channel_feature_as_moderator
-#[ignore]
 #[test]
 fn unsuccessful_moderation_action_channel_features_status_change_by_actors_with_auth_failure() {
     with_default_mock_builder(|| {
@@ -1093,8 +1083,6 @@ fn unsuccessful_moderation_action_channel_features_status_change_by_actors_with_
     })
 }
 
-// TODO: enable after enabling pause_channel_feature_as_moderator
-#[ignore]
 #[test]
 fn unsuccessful_moderation_action_channel_features_status_change_by_member() {
     with_default_mock_builder(|| {
@@ -1111,8 +1099,6 @@ fn unsuccessful_moderation_action_channel_features_status_change_by_member() {
     })
 }
 
-// TODO: enable after enabling pause_channel_feature_as_moderator
-#[ignore]
 #[test]
 fn unsuccessful_moderation_action_non_existing_channel_features_status_change() {
     with_default_mock_builder(|| {
@@ -1138,8 +1124,6 @@ fn unsuccessful_moderation_action_non_existing_channel_features_status_change() 
     })
 }
 
-// TODO: enable after enabling pause_channel_feature_as_moderator
-#[ignore]
 #[test]
 fn unsuccessful_moderation_action_channel_features_status_change_by_curator_without_permissions() {
     with_default_mock_builder(|| {
@@ -1169,8 +1153,6 @@ fn unsuccessful_moderation_action_channel_features_status_change_by_curator_with
     })
 }
 
-// TODO: enable after enabling pause_channel_feature_as_moderator
-#[ignore]
 #[test]
 fn successful_moderation_action_channel_features_status_change_by_curator() {
     with_default_mock_builder(|| {
@@ -1209,8 +1191,6 @@ fn successful_moderation_action_channel_features_status_change_by_curator() {
     })
 }
 
-// TODO: enable after enabling pause_channel_feature_as_moderator
-#[ignore]
 #[test]
 fn successful_moderation_action_channel_features_status_change_by_lead() {
     with_default_mock_builder(|| {
@@ -1403,8 +1383,6 @@ fn successful_moderation_action_channel_assets_deletion_by_lead() {
 //////////////////////////// Paused features //////////////////////////
 ///////////////////////////////////////////////////////////////////////
 
-// TODO: enable after enabling pause_channel_feature_as_moderator
-#[ignore]
 #[test]
 fn channel_cannot_be_updated_when_channel_update_paused() {
     with_default_mock_builder(|| {
@@ -1426,8 +1404,6 @@ fn channel_cannot_be_updated_when_channel_update_paused() {
     })
 }
 
-// TODO: enable after enabling pause_channel_feature_as_moderator
-#[ignore]
 #[test]
 fn video_cannot_created_when_channel_video_creation_paused() {
     with_default_mock_builder(|| {
@@ -1452,8 +1428,6 @@ fn video_cannot_created_when_channel_video_creation_paused() {
     })
 }
 
-// TODO: enable after enabling pause_channel_feature_as_moderator
-#[ignore]
 #[test]
 fn video_nft_cannot_be_issued_when_channel_video_nft_issuance_paused() {
     with_default_mock_builder(|| {
@@ -2613,8 +2587,6 @@ fn unsuccessful_nft_owner_remark_by_curator_agent_without_permissions() {
     })
 }
 
-// TODO: enable after enabling destoy_nft
-#[ignore]
 #[test]
 fn unsuccessful_nft_destruction_by_curator_agent_without_permissions() {
     with_default_mock_builder(|| {
@@ -2888,8 +2860,6 @@ fn unsuccessful_nft_owner_remark_by_collaborator_without_permissions() {
     })
 }
 
-// TODO: enable after enabling destroy_nft
-#[ignore]
 #[test]
 fn unsuccessful_nft_destruction_by_collaborator_without_permissions() {
     with_default_mock_builder(|| {
@@ -3026,8 +2996,6 @@ fn successful_channel_agent_remark_by_owner_member() {
 
 // Curator channels
 
-// TODO: enable after enabling channel transfer
-#[ignore]
 #[test]
 fn unsuccessful_initialize_channel_transfer_by_curator_agent_without_permissions() {
     with_default_mock_builder(|| {
@@ -3043,8 +3011,6 @@ fn unsuccessful_initialize_channel_transfer_by_curator_agent_without_permissions
     })
 }
 
-// TODO: enable after enabling channel transfer
-#[ignore]
 #[test]
 fn successful_initialize_channel_transfer_by_curator_agent() {
     with_default_mock_builder(|| {
@@ -3058,8 +3024,6 @@ fn successful_initialize_channel_transfer_by_curator_agent() {
     })
 }
 
-// TODO: enable after enabling channel transfer
-#[ignore]
 #[test]
 fn successful_initialize_channel_transfer_by_lead() {
     with_default_mock_builder(|| {
@@ -3073,8 +3037,6 @@ fn successful_initialize_channel_transfer_by_lead() {
 
 // Member channels
 
-// TODO: enable after enabling channel transfer
-#[ignore]
 #[test]
 fn unsuccessful_initialize_channel_transfer_by_collaborator_without_permissions() {
     with_default_mock_builder(|| {
@@ -3090,8 +3052,6 @@ fn unsuccessful_initialize_channel_transfer_by_collaborator_without_permissions(
     })
 }
 
-// TODO: enable after enabling channel transfer
-#[ignore]
 #[test]
 fn successful_initialize_channel_transfer_by_collaborator() {
     with_default_mock_builder(|| {
@@ -3105,8 +3065,6 @@ fn successful_initialize_channel_transfer_by_collaborator() {
     })
 }
 
-// TODO: enable after enabling channel transfer
-#[ignore]
 #[test]
 fn successful_initialize_channel_transfer_by_owner_member() {
     with_default_mock_builder(|| {
@@ -3123,8 +3081,7 @@ fn successful_initialize_channel_transfer_by_owner_member() {
 ///////////////////////////////////////////////////////////////////////////
 
 // Curator channels
-// TODO: enable after enabling channel transfers
-#[ignore]
+
 #[test]
 fn unsuccessful_cancel_channel_transfer_by_curator_agent_without_permissions() {
     with_default_mock_builder(|| {
@@ -3144,8 +3101,6 @@ fn unsuccessful_cancel_channel_transfer_by_curator_agent_without_permissions() {
     })
 }
 
-// TODO: enable after enabling channel transfers
-#[ignore]
 #[test]
 fn successful_cancel_channel_transfer_by_curator_agent() {
     with_default_mock_builder(|| {
@@ -3163,8 +3118,6 @@ fn successful_cancel_channel_transfer_by_curator_agent() {
     })
 }
 
-// TODO: enable after enabling channel transfers
-#[ignore]
 #[test]
 fn successful_cancel_channel_transfer_by_lead() {
     with_default_mock_builder(|| {
@@ -3182,8 +3135,6 @@ fn successful_cancel_channel_transfer_by_lead() {
 
 // Member channels
 
-// TODO: enable after enabling channel transfers
-#[ignore]
 #[test]
 fn unsuccessful_cancel_channel_transfer_by_collaborator_without_permissions() {
     with_default_mock_builder(|| {
@@ -3203,8 +3154,6 @@ fn unsuccessful_cancel_channel_transfer_by_collaborator_without_permissions() {
     })
 }
 
-// TODO: enable after enabling channel transfers
-#[ignore]
 #[test]
 fn successful_cancel_channel_transfer_by_collaborator() {
     with_default_mock_builder(|| {
@@ -3222,8 +3171,6 @@ fn successful_cancel_channel_transfer_by_collaborator() {
     })
 }
 
-// TODO: enable after enabling channel transfers
-#[ignore]
 #[test]
 fn successful_cancel_channel_transfer_by_owner_member() {
     with_default_mock_builder(|| {
