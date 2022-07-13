@@ -28,10 +28,11 @@ pub mod initial_members;
 use grandpa_primitives::AuthorityId as GrandpaId;
 
 use node_runtime::{
-    constants::currency::*, membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig,
-    BalancesConfig, Block, ContentConfig, ForumConfig, GrandpaConfig, ImOnlineConfig,
-    MaxNominations, MembersConfig, SessionConfig, SessionKeys, StakerStatus, StakingConfig,
-    SudoConfig, SystemConfig, TransactionPaymentConfig,
+    constants::currency::{ENDOWMENT, STASH},
+    membership, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, Block,
+    ContentConfig, ForumConfig, GrandpaConfig, ImOnlineConfig, MaxNominations, MembersConfig,
+    SessionConfig, SessionKeys, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
+    TransactionPaymentConfig,
 };
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_chain_spec::ChainSpecExtension;
@@ -209,9 +210,6 @@ pub fn testnet_genesis(
             )
         }))
         .collect::<Vec<_>>();
-
-    const ENDOWMENT: Balance = 10_000_000 * DOLLARS;
-    const STASH: Balance = ENDOWMENT / 1000;
 
     GenesisConfig {
         system: SystemConfig {

@@ -63,16 +63,14 @@ use frame_system::{EnsureRoot, EnsureSigned};
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_session::historical as pallet_session_historical;
-use pallet_transaction_payment::{CurrencyAdapter, Multiplier};
+use pallet_transaction_payment::CurrencyAdapter;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::crypto::KeyTypeId;
 use sp_core::Hasher;
 
 use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::traits::{AccountIdLookup, BlakeTwo256, ConvertInto, OpaqueKeys};
-use sp_runtime::{
-    create_runtime_str, generic, impl_opaque_keys, FixedPointNumber, Perbill, Perquintill,
-};
+use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, Perbill};
 use sp_std::boxed::Box;
 use sp_std::convert::{TryFrom, TryInto};
 use sp_std::{vec, vec::Vec};
@@ -157,7 +155,7 @@ const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
 /// by  Operational  extrinsics.
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 /// We allow for 2 seconds of compute with a 6 second average block time.
-const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
+pub const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
 
 parameter_types! {
     pub const BlockHashCount: BlockNumber = 2400;
@@ -367,19 +365,16 @@ impl OnUnbalanced<NegativeImbalance> for DealWithFees {
 }
 
 parameter_types! {
-    pub const TransactionByteFee: Balance = 1;
-    pub const OperationalFeeMultiplier: u8 = 1;
-    pub const TargetBlockFullness: Perquintill = Perquintill::from_percent(25);
-    pub AdjustmentVariable: Multiplier = Multiplier::saturating_from_rational(1, 100_000);
-    pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1, 1_000_000_000u128);
+    pub const TransactionByteFee: Balance = 1; // TODO: adjust value
+    pub const OperationalFeeMultiplier: u8 = 1; // TODO: adjust value
 }
 
 impl pallet_transaction_payment::Config for Runtime {
     type OnChargeTransaction = CurrencyAdapter<Balances, DealWithFees>;
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
-    type WeightToFee = constants::fees::WeightToFee; // frame_support::weights::IdentityFee<Balance>;
+    type WeightToFee = constants::fees::WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
-    type FeeMultiplierUpdate = constants::fees::SlowAdjustingFeeUpdate<Self>; // (); // TargetedFeeAdjustment<Self, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier>;
+    type FeeMultiplierUpdate = constants::fees::SlowAdjustingFeeUpdate<Self>;
 }
 
 impl pallet_sudo::Config for Runtime {
@@ -485,9 +480,9 @@ parameter_types! {
     pub const UnsignedPhase: u32 = EPOCH_DURATION_IN_BLOCKS / 4;
 
     // signed config
-    pub const SignedRewardBase: Balance = currency::DOLLARS;
-    pub const SignedDepositBase: Balance = currency::DOLLARS;
-    pub const SignedDepositByte: Balance = currency::CENTS;
+    pub const SignedRewardBase: Balance = currency::DOLLARS; // TODO: adjust value
+    pub const SignedDepositBase: Balance = currency::DOLLARS; // TODO: adjust value
+    pub const SignedDepositByte: Balance = currency::CENTS; // TODO: adjust value
 
     pub BetterUnsignedThreshold: Perbill = Perbill::from_rational(1u32, 10_000);
 
@@ -674,9 +669,9 @@ impl pallet_authority_discovery::Config for Runtime {
 
 parameter_types! {
     pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
-    pub const PricePerByte: u32 = 2; // TODO: update
+    pub const PricePerByte: u32 = 2; // TODO: adjust value
     pub const ContentModuleId: PalletId = PalletId(*b"mContent"); // module content
-    pub const BagDeletionPrize: Balance = 0; // TODO: update
+    pub const BagDeletionPrize: Balance = 0; // TODO: adjust value
     pub const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = 25;
     pub const DefaultGlobalDailyNftLimit: LimitPerPeriod<BlockNumber> = LimitPerPeriod {
         block_number_period: DAYS,
@@ -719,7 +714,7 @@ impl content::Config for Runtime {
 
 parameter_types! {
     pub const ProjectTokenModuleId: PalletId = PalletId(*b"mo:token"); // module: token
-    pub const MaxVestingSchedulesPerAccountPerToken: u8 = 5; // TODO: adjust
+    pub const MaxVestingSchedulesPerAccountPerToken: u8 = 5; // TODO: adjust value
     pub const BlocksPerYear: u32 = 5259600; // 365,25 * 24 * 60 * 60 / 6
 }
 
@@ -1379,7 +1374,7 @@ impl pallet_constitution::Config for Runtime {
 pub type CategoryId = u64;
 
 parameter_types! {
-    pub const MinVestedTransfer: Balance = 100; // TODO: Adjust value
+    pub const MinVestedTransfer: Balance = 100; // TODO: adjust value
 }
 
 impl pallet_vesting::Config for Runtime {

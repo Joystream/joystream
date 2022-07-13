@@ -4,8 +4,6 @@ use crate::Runtime;
 use crate::MAXIMUM_BLOCK_WEIGHT;
 use pallet_transaction_payment::Pallet as TransactionPayment;
 
-// TODO: Fix Fee Tests
-#[ignore]
 #[test]
 // This test that the fee for an standard runtime upgrade is as we expect if it pays fee
 // Note: we expect an average runtime upgrade to have a length of ~3MB
