@@ -950,7 +950,8 @@ fn create_thread_balance() {
             forum_lead,
             category_id,
             good_thread_metadata(),
-            good_thread_text(),            Ok(()),
+            good_thread_text(),
+            Ok(()),
         );
 
         let first_state_cleanup_treasury_account: <Runtime as frame_system::Config>::AccountId =
@@ -964,7 +965,6 @@ fn create_thread_balance() {
         );
     });
 }
-
 
 #[test]
 // test if author can edit thread's title
@@ -1000,7 +1000,8 @@ fn edit_thread_metadata() {
             forum_users[0],
             category_id,
             good_thread_metadata(),
-            good_thread_text(),            Ok(()),
+            good_thread_text(),
+            Ok(()),
         );
 
         // check author can edit text
@@ -1044,7 +1045,8 @@ fn create_thread_fails_on_non_existing_category() {
             FORUM_LEAD_ORIGIN_ID,
             invalid_category_id,
             good_thread_metadata(),
-            good_thread_text(),            Err(Error::<Runtime>::CategoryDoesNotExist.into()),
+            good_thread_text(),
+            Err(Error::<Runtime>::CategoryDoesNotExist.into()),
         );
     });
 }
@@ -1117,7 +1119,6 @@ fn delete_thread() {
             balances::Pallet::<Runtime>::free_balance(&NOT_FORUM_LEAD_ORIGIN_ID),
             current_balance
         );
-
 
         update_category_membership_of_moderator_mock(
             origin.clone(),
@@ -1231,7 +1232,8 @@ fn delete_thread_fails_with_outstanding_posts() {
             NOT_FORUM_LEAD_ORIGIN_ID,
             category_id,
             good_thread_metadata(),
-            good_thread_text(),            Ok(()),
+            good_thread_text(),
+            Ok(()),
         );
 
         delete_thread_mock(
@@ -1281,7 +1283,8 @@ fn move_thread_moderator_permissions() {
             forum_lead,
             category_id_1,
             good_thread_metadata(),
-            good_thread_text(),            Ok(()),
+            good_thread_text(),
+            Ok(()),
         );
 
         // moderator not associated with any category will fail to move thread
@@ -1407,7 +1410,8 @@ fn category_updated_successfully_on_thread_moving() {
             forum_lead,
             category_id_1,
             good_thread_metadata(),
-            good_thread_text(),            Ok(()),
+            good_thread_text(),
+            Ok(()),
         );
 
         // set incomplete permissions for first user (only category 1)
@@ -1516,7 +1520,8 @@ fn move_thread_invalid_move() {
             forum_lead,
             category_id,
             good_thread_metadata(),
-            good_thread_text(),            Ok(()),
+            good_thread_text(),
+            Ok(()),
         );
 
         // set permissions
@@ -1573,7 +1578,8 @@ fn moderate_thread_origin_ok() {
             forum_lead,
             category_id,
             good_thread_metadata(),
-            good_thread_text(),            Ok(()),
+            good_thread_text(),
+            Ok(()),
         );
         // Delete original post first to allow thread deletion
         delete_post_mock(
@@ -1626,7 +1632,8 @@ fn moderate_thread_fails_with_outstanding_posts() {
             forum_lead,
             category_id,
             good_thread_metadata(),
-            good_thread_text(),            Ok(()),
+            good_thread_text(),
+            Ok(()),
         );
         moderate_thread_mock(
             origin,
@@ -1723,7 +1730,8 @@ fn add_post_balance() {
             forum_lead,
             category_id,
             good_thread_metadata(),
-            good_thread_text(),            Ok(()),
+            good_thread_text(),
+            Ok(()),
         );
 
         assert_eq!(
@@ -1797,7 +1805,8 @@ fn edit_post_text() {
             forum_lead,
             category_id,
             good_thread_metadata(),
-            good_thread_text(),            Ok(()),
+            good_thread_text(),
+            Ok(()),
         );
 
         // create post by author
@@ -1864,7 +1873,8 @@ fn edit_non_editable_post_text() {
             forum_lead,
             category_id,
             good_thread_metadata(),
-            good_thread_text(),            Ok(()),
+            good_thread_text(),
+            Ok(()),
         );
 
         // create post by author
@@ -2119,7 +2129,8 @@ fn delete_post_creator() {
             NOT_FORUM_LEAD_ORIGIN_ID,
             category_id,
             good_thread_metadata(),
-            good_thread_text(),            Ok(()),
+            good_thread_text(),
+            Ok(()),
         );
 
         current_balance -= <Runtime as Config>::ThreadDeposit::get();
@@ -2325,7 +2336,8 @@ fn set_stickied_threads_ok() {
             forum_lead,
             category_id,
             good_thread_metadata(),
-            good_thread_text(),            Ok(()),
+            good_thread_text(),
+            Ok(()),
         );
         set_stickied_threads_mock(
             origin.clone(),
@@ -2341,7 +2353,8 @@ fn set_stickied_threads_ok() {
             forum_lead,
             category_id,
             good_thread_metadata(),
-            good_thread_text(),            Ok(()),
+            good_thread_text(),
+            Ok(()),
         );
         // Delete original post first to allow thread deletion
         delete_post_mock(
@@ -2403,7 +2416,8 @@ fn set_stickied_threads_fails_with_duplicated_ids() {
             forum_lead,
             category_id,
             good_thread_metadata(),
-            good_thread_text(),            Ok(()),
+            good_thread_text(),
+            Ok(()),
         );
         set_stickied_threads_mock(
             origin,
@@ -2438,7 +2452,8 @@ fn set_stickied_threads_wrong_moderator() {
             forum_lead,
             category_id,
             good_thread_metadata(),
-            good_thread_text(),            Ok(()),
+            good_thread_text(),
+            Ok(()),
         );
         set_stickied_threads_mock(
             origin,

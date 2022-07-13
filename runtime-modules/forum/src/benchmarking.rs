@@ -1786,7 +1786,6 @@ mod tests {
         });
     }
 
-
     #[test]
     fn test_moderate_thread_lead() {
         with_test_externalities(|| {

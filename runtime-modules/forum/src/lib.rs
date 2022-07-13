@@ -50,11 +50,7 @@ type WeightInfoForum<T> = <T as Config>::WeightInfo;
 pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
 /// Alias for the thread
-pub type ThreadOf<T> = Thread<
-    ForumUserId<T>,
-    <T as Config>::CategoryId,
-    BalanceOf<T>,
->;
+pub type ThreadOf<T> = Thread<ForumUserId<T>, <T as Config>::CategoryId, BalanceOf<T>>;
 
 /// Type alias for `ExtendedPostIdObject`
 pub type ExtendedPostId<T> =
