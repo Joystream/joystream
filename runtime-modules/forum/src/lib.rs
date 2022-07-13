@@ -29,7 +29,7 @@ use sp_std::prelude::*;
 use common::membership::MemberOriginValidator;
 use common::working_group::WorkingGroupAuthenticator;
 
-// mod benchmarking;
+mod benchmarking;
 mod mock;
 mod tests;
 pub mod weights;
