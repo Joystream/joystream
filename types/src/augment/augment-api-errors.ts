@@ -381,6 +381,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       MaxAuctionWhiteListLengthUpperBoundExceeded: AugmentedError<ApiType>;
       /**
+       * Attempt to set minimum cashout allowed above the limit
+       **/
+      MaxCashoutValueTooHigh: AugmentedError<ApiType>;
+      /**
        * Member authentication failed
        **/
       MemberAuthFailed: AugmentedError<ApiType>;
@@ -405,6 +409,10 @@ declare module '@polkadot/api-base/types/errors' {
        * min_cashout_allowed cannot exceed max_cashout_allowed
        **/
       MinCashoutAllowedExceedsMaxCashoutAllowed: AugmentedError<ApiType>;
+      /**
+       * Attempt to set minimum cashout allowed below the limit
+       **/
+      MinCashoutValueTooLow: AugmentedError<ApiType>;
       /**
        * Nft for given video id already exists
        **/

@@ -11,6 +11,12 @@ decl_error! {
         /// Invalid extrinsic call: video state bloat bond changed.
         VideoStateBloatBondChanged,
 
+        /// Attempt to set minimum cashout allowed below the limit
+        MinCashoutValueTooLow,
+
+        /// Attempt to set minimum cashout allowed above the limit
+        MaxCashoutValueTooHigh,
+
         // Curator Management Errors
         // -------------------------
 
@@ -352,6 +358,5 @@ decl_error! {
 
         /// Channel Transfers are blocked during token sales
         ChannelTransfersBlockedDuringTokenSales,
-
     }
 }
