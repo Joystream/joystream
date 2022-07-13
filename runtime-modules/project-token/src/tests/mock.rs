@@ -169,6 +169,7 @@ impl Config for Test {
     type WeightInfo = ();
     type MemberOriginValidator = TestMemberships;
     type MembershipInfoProvider = TestMemberships;
+    type MinRevenueSplitDuration = MinRevenueSplitDuration;
 }
 
 // Working group integration
@@ -457,12 +458,13 @@ impl MembershipInfoProvider<Test> for TestMemberships {
     fn controller_account_id(
         member_id: common::MemberId<Test>,
     ) -> Result<AccountId, DispatchError> {
-        if member_id < 1000 {
-            println!("MemberId: {:?}", member_id);
-            return Ok(member_id + 1000);
-        }
+        membership::Module::<Test>::controller_account_id(member_id).or_else(|_| {
+            if member_id < 1000 {
+                return Ok(member_id + 1000);
+            }
 
-        Err(DispatchError::Other("no account found"))
+            Err(DispatchError::Other("no account found"))
+        })
     }
 }
 
@@ -474,7 +476,8 @@ impl MemberOriginValidator<Origin, u64, u64> for TestMemberships {
     ) -> Result<u64, DispatchError> {
         let sender = ensure_signed(origin)?;
         ensure!(
-            Self::is_member_controller_account(&member_id, &sender),
+            membership::Module::<Test>::is_member_controller_account(&member_id, &sender)
+                || Self::is_member_controller_account(&member_id, &sender),
             DispatchError::Other("origin signer not a member controller account"),
         );
         Ok(sender)

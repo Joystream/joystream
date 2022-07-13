@@ -244,7 +244,15 @@ decl_module! {
         ///   is reduced by `min(amount, split_staking_status.amount)`
         /// - `account.amount` is reduced by `amount`
         /// - token supply is reduced by `amount`
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///   - `O(1)` - doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::burn()]
         pub fn burn(origin, token_id: T::TokenId, member_id: T::MemberId, amount: TokenBalanceOf<T>) -> DispatchResult {
             // Ensure burn amount is non-zero
             ensure!(
@@ -286,6 +294,8 @@ decl_module! {
                 token.decrease_supply_by(amount);
             });
 
+            Self::deposit_event(RawEvent::TokensBurned(token_id, member_id, amount));
+
             Ok(())
         }
 
@@ -304,7 +314,6 @@ decl_module! {
         ///
         /// <weight>
         ///
-        /// ## Weight
         /// `O (1)`
         /// - DB:
         ///   - `O(1)` - doesn't depend on the state or parameters
@@ -358,7 +367,6 @@ decl_module! {
         /// ## Weight
         /// `O (H)` where:
         /// - `H` is the length of `proof.0`
-        /// - DB:
         ///   - `O(1)` - doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoToken::<T>::join_whitelist(
@@ -707,7 +715,15 @@ decl_module! {
         ///
         /// Postconditions
         /// - `account.staking_status` set to None
-        #[weight = 10_000_000] // TODO: adjust weight
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///   - `O(1)` - doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::exit_revenue_split()]
         fn exit_revenue_split(origin, token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
             T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,

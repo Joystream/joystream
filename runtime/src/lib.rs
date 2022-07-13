@@ -799,6 +799,8 @@ impl project_token::Trait for Runtime {
     type JoyExistentialDeposit = ExistentialDeposit;
     type BlocksPerYear = BlocksPerYear;
     type MinRevenueSplitDuration = MinRevenueSplitDuration;
+    type MemberOriginValidator = Members;
+    type MembershipInfoProvider = Members;
     type WeightInfo = weights::project_token::WeightInfo;
 }
 
