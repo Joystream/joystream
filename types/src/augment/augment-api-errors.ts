@@ -255,10 +255,6 @@ declare module '@polkadot/api-base/types/errors' {
        * Auction extension period upper bound exceeded
        **/
       ExtensionPeriodUpperBoundExceeded: AugmentedError<ApiType>;
-      /**
-       * Feature Not Implemented
-       **/
-      FeatureNotImplemented: AugmentedError<ApiType>;
       GlobalNftDailyLimitExceeded: AugmentedError<ApiType>;
       GlobalNftWeeklyLimitExceeded: AugmentedError<ApiType>;
       ChannelAgentInsufficientPermissions: AugmentedError<ApiType>;

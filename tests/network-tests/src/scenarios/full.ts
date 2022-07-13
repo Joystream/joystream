@@ -94,15 +94,17 @@ scenario('Full', async ({ job, env }) => {
   job('forum posts', posts).requires(sudoHireLead)
   job('forum moderation', moderation).requires(sudoHireLead)
 
-  // Content directory
-  // TODO: re-work afer merging metaprotocol content categories PR - https://github.com/Joystream/joystream/pull/3950
-  // const videoCountersJob = job('check active video counters', activeVideoCounters).requires(sudoHireLead)
-  job('nft auction and offers', nftAuctionAndOffers).after(sudoHireLead)
-  job('video comments and reactions', commentsAndReactions).after(sudoHireLead)
+  // Content directory (with CLI)
+  const contentDirectoryJob = job('content directory (with CLI)', [
+    createChannel,
+    nftAuctionAndOffers,
+    commentsAndReactions,
+    // TODO: re-work afer merging metaprotocol content categories PR - https://github.com/Joystream/joystream/pull/3950
+    // activeVideoCounters
+  ]).after(sudoHireLead)
 
-  // CLIs:
-  const createChannelJob = job('create channel via CLI', createChannel).after(sudoHireLead)
+  // Storage & distribution CLIs
   job('init storage and distribution buckets via CLI', [initDistributionBucket, initStorageBucket]).after(
-    createChannelJob
+    contentDirectoryJob
   )
 })
