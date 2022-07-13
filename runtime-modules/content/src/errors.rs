@@ -5,9 +5,6 @@ use sp_std::convert::TryInto;
 decl_error! {
     /// Content directory errors
     pub enum Error for Module<T: Config> {
-        /// Feature Not Implemented
-        FeatureNotImplemented,
-
         /// Invalid extrinsic call: Channel state bloat bond changed.
         ChannelStateBloatBondChanged,
 

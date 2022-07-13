@@ -28039,40 +28039,6 @@ export type TerminatedLeaderEventWhereInput = {
   AND?: Maybe<Array<TerminatedLeaderEventWhereInput>>
   OR?: Maybe<Array<TerminatedLeaderEventWhereInput>>
   NOT?: Maybe<Array<TerminatedLeaderEventWhereInput>>
-  isAccepted_eq?: Maybe<Scalars['Boolean']>
-  isAccepted_in?: Maybe<Array<Scalars['Boolean']>>
-  size_eq?: Maybe<Scalars['BigInt']>
-  size_gt?: Maybe<Scalars['BigInt']>
-  size_gte?: Maybe<Scalars['BigInt']>
-  size_lt?: Maybe<Scalars['BigInt']>
-  size_lte?: Maybe<Scalars['BigInt']>
-  size_in?: Maybe<Array<Scalars['BigInt']>>
-  ipfsHash_eq?: Maybe<Scalars['String']>
-  ipfsHash_contains?: Maybe<Scalars['String']>
-  ipfsHash_startsWith?: Maybe<Scalars['String']>
-  ipfsHash_endsWith?: Maybe<Scalars['String']>
-  ipfsHash_in?: Maybe<Array<Scalars['String']>>
-  type_json?: Maybe<Scalars['JSONObject']>
-  stateBloatBond_eq?: Maybe<Scalars['BigInt']>
-  stateBloatBond_gt?: Maybe<Scalars['BigInt']>
-  stateBloatBond_gte?: Maybe<Scalars['BigInt']>
-  stateBloatBond_lt?: Maybe<Scalars['BigInt']>
-  stateBloatBond_lte?: Maybe<Scalars['BigInt']>
-  stateBloatBond_in?: Maybe<Array<Scalars['BigInt']>>
-  unsetAt_eq?: Maybe<Scalars['DateTime']>
-  unsetAt_lt?: Maybe<Scalars['DateTime']>
-  unsetAt_lte?: Maybe<Scalars['DateTime']>
-  unsetAt_gt?: Maybe<Scalars['DateTime']>
-  unsetAt_gte?: Maybe<Scalars['DateTime']>
-  storageBag?: Maybe<StorageBagWhereInput>
-  videoThumbnail?: Maybe<VideoWhereInput>
-  videoMedia?: Maybe<VideoWhereInput>
-  channelcoverPhoto_none?: Maybe<ChannelWhereInput>
-  channelcoverPhoto_some?: Maybe<ChannelWhereInput>
-  channelcoverPhoto_every?: Maybe<ChannelWhereInput>
-  channelavatarPhoto_none?: Maybe<ChannelWhereInput>
-  channelavatarPhoto_some?: Maybe<ChannelWhereInput>
-  channelavatarPhoto_every?: Maybe<ChannelWhereInput>
 }
 
 export type TerminatedLeaderEventWhereUniqueInput = {

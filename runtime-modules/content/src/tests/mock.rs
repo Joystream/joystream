@@ -618,7 +618,7 @@ impl ExtBuilder {
 }
 
 pub fn with_default_mock_builder<R, F: FnOnce() -> R>(f: F) -> R {
-    ExtBuilder::default().build().execute_with(|| f())
+    ExtBuilder::default().build().execute_with(f)
 }
 
 // Recommendation from Parity on testing on_finalize

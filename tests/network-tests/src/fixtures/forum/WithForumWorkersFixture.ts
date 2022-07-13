@@ -1,4 +1,4 @@
-import { WorkerId } from '@joystream/types/working-group'
+import { WorkerId } from '@joystream/types/primitives'
 import { StandardizedFixture } from '../../Fixture'
 
 export abstract class WithForumWorkersFixture extends StandardizedFixture {
@@ -21,7 +21,7 @@ export abstract class WithForumWorkersFixture extends StandardizedFixture {
     return Promise.all(
       input.map(async (r) => {
         const workerId = r.asWorker || (await this.getForumLeadId())
-        return (await this.api.query.forumWorkingGroup.workerById(workerId)).role_account_id.toString()
+        return (await this.api.query.forumWorkingGroup.workerById(workerId)).unwrap().roleAccountId.toString()
       })
     )
   }

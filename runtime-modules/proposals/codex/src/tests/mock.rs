@@ -2,17 +2,15 @@
 // Internal substrate warning.
 #![allow(non_fmt_panics)]
 
-use frame_election_provider_support::{
-    onchain, SequentialPhragmen, SortedListProvider, VoteWeight,
-};
+use frame_election_provider_support::{onchain, SequentialPhragmen, VoteWeight};
 use frame_support::{
     dispatch::DispatchError,
     parameter_types,
     traits::{
-        ConstU16, ConstU32, ConstU64, Currency, EnsureOneOf, FindAuthor, Imbalance, LockIdentifier,
-        OnFinalize, OnInitialize, OnUnbalanced, OneSessionHandler,
+        ConstU32, ConstU64, Currency, EnsureOneOf, Imbalance, LockIdentifier, OnFinalize,
+        OnInitialize, OnUnbalanced, OneSessionHandler,
     },
-    weights::{constants::RocksDbWeight, Weight},
+    weights::constants::RocksDbWeight,
     PalletId,
 };
 pub use frame_system;
@@ -21,14 +19,11 @@ use sp_core::H256;
 use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::{
     testing::{Header, TestXt, UintAuthorityId},
-    traits::{BlakeTwo256, IdentityLookup, Zero},
+    traits::{IdentityLookup, Zero},
     DispatchResult, Perbill,
 };
 
-use sp_staking::{
-    offence::{DisableStrategy, OffenceDetails, OnOffenceHandler},
-    EraIndex, SessionIndex,
-};
+use sp_staking::{EraIndex, SessionIndex};
 use staking_handler::{LockComparator, StakingManager};
 
 use crate as proposals_codex;
@@ -41,9 +36,6 @@ use std::cell::RefCell;
 
 type NegativeImbalance = <Balances as Currency<AccountId>>::NegativeImbalance;
 type PositiveImbalance = <Balances as Currency<AccountId>>::PositiveImbalance;
-
-pub const INIT_TIMESTAMP: u64 = 30_000;
-pub const BLOCK_TIME: u64 = 1000;
 
 /// The AccountId alias in this test module.
 pub(crate) type AccountId = u64;
@@ -281,10 +273,6 @@ where
 }
 
 pub type Extrinsic = TestXt<Call, ()>;
-pub(crate) type StakingCall = staking::Call<Test>;
-pub(crate) type TestRuntimeCall = <Test as frame_system::Config>::Call;
-
-//////////
 
 parameter_types! {
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
@@ -584,8 +572,7 @@ impl crate::Config for Test {
     type SetReferralCutProposalParameters = DefaultProposalParameters;
     type VetoProposalProposalParameters = DefaultProposalParameters;
     type UpdateGlobalNftLimitProposalParameters = DefaultProposalParameters;
-    // TODO: enable after Carthage
-    // type UpdateChannelPayoutsProposalParameters = DefaultProposalParameters;
+    type UpdateChannelPayoutsProposalParameters = DefaultProposalParameters;
 }
 
 parameter_types! {
@@ -676,7 +663,7 @@ impl referendum::Config<ReferendumInstance> for Test {
             .iter()
             .map(|item| referendum::OptionResult {
                 option_id: item.option_id,
-                vote_power: item.vote_power.into(),
+                vote_power: item.vote_power,
             })
             .collect();
         <council::Module<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(
@@ -721,14 +708,14 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
         .build_storage::<Test>()
         .unwrap();
 
-    let mut result = Into::<sp_io::TestExternalities>::into(t.clone());
+    let mut result = Into::<sp_io::TestExternalities>::into(t);
 
     // Make sure we are not in block 1 where no events are emitted
     // see https://substrate.dev/recipes/2-appetizers/4-events.html#emitting-events
     result.execute_with(|| {
         let mut block_number = frame_system::Pallet::<Test>::block_number();
         <System as OnFinalize<u64>>::on_finalize(block_number);
-        block_number = block_number + 1;
+        block_number += 1;
         System::set_block_number(block_number);
         <System as OnInitialize<u64>>::on_initialize(block_number);
     });

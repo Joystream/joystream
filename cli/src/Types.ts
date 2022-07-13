@@ -3,9 +3,13 @@ import { Codec, IEvent } from '@polkadot/types/types'
 import { Balance, AccountId } from '@polkadot/types/interfaces'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { WorkerId, OpeningType } from '@joystream/types/working-group'
-import { Membership } from '@joystream/types/members'
-import { MemberId } from '@joystream/types/common'
+import {
+  PalletMembershipMembershipObject as Membership,
+  PalletWorkingGroupOpeningType as OpeningType,
+  PalletStorageDataObjectCreationParameters as DataObjectCreationParameters,
+  PalletContentChannelActionPermission as ChannelActionPermission,
+} from '@polkadot/types/lookup'
+import { MemberId, WorkerId } from '@joystream/types/primitives'
 import { Validator } from 'inquirer'
 import { ApiPromise } from '@polkadot/api'
 import {
@@ -23,7 +27,6 @@ import {
   IOpeningMetadata,
   IWorkingGroupMetadata,
 } from '@joystream/metadata-protobuf'
-import { DataObjectCreationParameters } from '@joystream/types/storage'
 import {
   MembershipFieldsFragment,
   WorkingGroupApplicationDetailsFragment,
@@ -61,32 +64,6 @@ export enum WorkingGroups {
   Gateway = 'gateway',
   Distribution = 'distributors',
 }
-
-export enum ChannelActionPermission {
-  UpdateChannelMetadata = 'UpdateChannelMetadata',
-  ManageNonVideoChannelAssets = 'ManageNonVideoChannelAssets',
-  ManageChannelCollaborators = 'ManageChannelCollaborators',
-  UpdateVideoMetadata = 'UpdateVideoMetadata',
-  AddVideo = 'AddVideo',
-  ManageVideoAssets = 'ManageVideoAssets',
-  DeleteChannel = 'DeleteChannel',
-  DeleteVideo = 'DeleteVideo',
-  ManageVideoNfts = 'ManageVideoNfts',
-  AgentRemark = 'AgentRemark',
-  TransferChannel = 'TransferChannel',
-  ClaimChannelReward = 'ClaimChannelReward',
-  WithdrawFromChannelBalance = 'WithdrawFromChannelBalance',
-  IssueCreatorToken = 'IssueCreatorToken',
-  ClaimCreatorTokenPatronage = 'ClaimCreatorTokenPatronage',
-  InitAndManageCreatorTokenSale = 'InitAndManageCreatorTokenSale',
-  CreatorTokenIssuerTransfer = 'CreatorTokenIssuerTransfer',
-  MakeCreatorTokenPermissionless = 'MakeCreatorTokenPermissionless',
-  ReduceCreatorTokenPatronageRate = 'ReduceCreatorTokenPatronageRate',
-  ManageRevenueSplits = 'ManageRevenueSplits',
-  DeissueCreatorToken = 'DeissueCreatorToken',
-}
-
-export type ChannelAgentPermissions = ChannelActionPermission[]
 
 export const AvailableGroups: readonly WorkingGroups[] = [
   WorkingGroups.StorageProviders,
@@ -229,7 +206,7 @@ export type VideoInputParameters = Omit<IVideoMetadata, 'video' | 'thumbnailPhot
 export type ChannelCreationInputParameters = Omit<IChannelMetadata, 'coverPhoto' | 'avatarPhoto'> & {
   coverPhotoPath?: string
   avatarPhotoPath?: string
-  collaborators?: [number, string[]][]
+  collaborators?: { memberId: number; channelAgentPermissions: ChannelActionPermission['type'][] }[]
   privilegeLevel?: number
 }
 

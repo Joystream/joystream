@@ -1,8 +1,10 @@
-import { BaseQueryNodeFixture, FixtureRunner } from '../../Fixture'
+import { BaseQueryNodeFixture } from '../../Fixture'
 import { assertCouncilMembersRuntimeQnMatch, prepareFailToElectResources } from './common'
 import { blake2AsHex } from '@polkadot/util-crypto'
+import { GenericAccountId } from '@polkadot/types'
 import { assert } from 'chai'
 import { MINIMUM_STAKING_ACCOUNT_BALANCE } from '../../consts'
+import { createType, registry } from '@joystream/types'
 
 export class NotEnoughCandidatesWithVotesFixture extends BaseQueryNodeFixture {
   public async execute(): Promise<void> {
@@ -30,7 +32,7 @@ export class NotEnoughCandidatesWithVotesFixture extends BaseQueryNodeFixture {
     await this.api.untilCouncilStage('Announcing')
 
     // ensure no voting is in progress
-    assert((await this.api.query.referendum.stage()).isOfType('Inactive'))
+    assert((await this.api.query.referendum.stage()).isInactive)
     const announcementPeriodNrInit = await this.api.query.council.announcementPeriodNr()
 
     // announce candidacies
@@ -49,11 +51,11 @@ export class NotEnoughCandidatesWithVotesFixture extends BaseQueryNodeFixture {
     await this.api.untilCouncilStage('Voting')
 
     // vote
-    const cycleId = (await this.api.query.referendum.stage()).asType('Voting').current_cycle_id
+    const cycleId = (await this.api.query.referendum.stage()).asVoting.currentCycleId
     const votingTxs = votersStakingAccounts.map((account, i) => {
-      const accountId = this.api.createType('AccountId', account)
+      const accountId = new GenericAccountId(registry, account)
       const optionId = candidatesMemberIds[i % numberOfCandidates]
-      const salt = this.api.createType('Bytes', `salt${i}`)
+      const salt = createType('Bytes', `salt${i}`)
 
       const payload = Buffer.concat([accountId.toU8a(), optionId.toU8a(), salt.toU8a(), cycleId.toU8a()])
       const commitment = blake2AsHex(payload)
@@ -67,14 +69,14 @@ export class NotEnoughCandidatesWithVotesFixture extends BaseQueryNodeFixture {
     const announcementPeriodNrEnding = await this.api.query.council.announcementPeriodNr()
 
     // ensure new announcement stage started
-    assert((await this.api.query.referendum.stage()).isOfType('Inactive'))
+    assert((await this.api.query.referendum.stage()).isInactive)
     assert.equal(announcementPeriodNrEnding.toNumber(), announcementPeriodNrInit.toNumber() + 1)
 
     // ensure council members haven't changed
     const councilMembersEnding = await this.api.query.council.councilMembers()
     assert.sameMembers(
       councilMemberIds.map((item) => item.toString()),
-      councilMembersEnding.map((item) => item.membership_id.toString())
+      councilMembersEnding.map((item) => item.membershipId.toString())
     )
   }
 

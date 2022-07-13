@@ -1,9 +1,10 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { DatabaseManager, DeepPartial, EventContext, StoreContext } from '@joystream/hydra-common'
+import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
 import { VideoMetadata } from '@joystream/metadata-protobuf'
 import { BaseModel } from '@joystream/warthog'
+import { FindOptionsWhere } from 'typeorm'
 import {
   Channel,
   Comment,
@@ -188,17 +189,17 @@ export async function content_VideoDeleted({ store, event }: EventContext & Stor
 }
 
 async function removeVideoReferencingRelations(store: DatabaseManager, videoId: string): Promise<void> {
-  const loadReferencingEntities = async <T extends BaseModel>(
+  const loadReferencingEntities = async <T extends BaseModel & { video: Partial<Video> }>(
     store: DatabaseManager,
     entityType: { new (): T },
     videoId: string
   ) => {
     return await store.getMany(entityType, {
-      where: { video: { id: videoId } },
+      where: { video: { id: videoId } } as FindOptionsWhere<T>,
     })
   }
 
-  const removeRelations = async <T extends DeepPartial<T>>(store: DatabaseManager, entities: T[]) => {
+  const removeRelations = async <T>(store: DatabaseManager, entities: T[]) => {
     await Promise.all(entities.map(async (r) => await store.remove<T>(r)))
   }
 

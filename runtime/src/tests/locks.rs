@@ -5,7 +5,7 @@ use crate::{
     BoundStakingAccountStakingManager, ContentWorkingGroupStakingManager,
     GatewayWorkingGroupStakingManager,
 };
-use frame_support::sp_runtime::AccountId32;
+
 use staking_handler::StakingHandler;
 
 #[test]
@@ -15,7 +15,7 @@ fn compatible_stakes_check_passed_successfully() {
         let total_amout = 10000;
         let stake_amount = 100;
 
-        increase_total_balance_issuance_using_account_id(account_id.clone().into(), total_amout);
+        increase_total_balance_issuance_using_account_id(account_id.clone(), total_amout);
 
         assert_eq!(
             BoundStakingAccountStakingManager::set_stake(&account_id, stake_amount),
@@ -34,7 +34,7 @@ fn compatible_stakes_check_reversed_order_passed_successfully() {
         let total_amout = 10000;
         let stake_amount = 100;
 
-        increase_total_balance_issuance_using_account_id(account_id.clone().into(), total_amout);
+        increase_total_balance_issuance_using_account_id(account_id.clone(), total_amout);
 
         assert_eq!(
             ContentWorkingGroupStakingManager::set_stake(&account_id, stake_amount),
@@ -53,7 +53,7 @@ fn incompatible_stakes_check_passed_successfully() {
         let total_amout = 10000;
         let stake_amount = 100;
 
-        increase_total_balance_issuance_using_account_id(account_id.clone().into(), total_amout);
+        increase_total_balance_issuance_using_account_id(account_id.clone(), total_amout);
 
         assert_eq!(
             GatewayWorkingGroupStakingManager::set_stake(&account_id, stake_amount),

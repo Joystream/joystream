@@ -78,7 +78,6 @@ export class IndexerServiceDeployment extends pulumi.ComponentResource {
                     { name: 'REDIS_URI', value: 'redis://localhost:6379/0' },
                     { name: 'DEBUG', value: 'index-builder:*' },
                     { name: 'WS_PROVIDER_ENDPOINT_URI', value: WS_PROVIDER_ENDPOINT_URI },
-                    { name: 'TYPES_JSON', value: 'types.json' },
                     { name: 'PGUSER', value: DB_USERNAME },
                     { name: 'BLOCK_HEIGHT', value: BLOCK_HEIGHT },
                   ],

@@ -5,7 +5,6 @@ import { IMember } from '../createMembers'
 import { PlaceBidsInAuctionFixture } from './placeBidsInAuction'
 import { Utils } from '../../../utils'
 import { assertNftOwner, ensureMemberOpenAuctionBidsAreCancelled } from './utils'
-import BN from 'bn.js'
 
 export class AuctionCancelationsFixture extends BaseQueryNodeFixture {
   private videoId: number
@@ -63,7 +62,7 @@ export class AuctionCancelationsFixture extends BaseQueryNodeFixture {
       await this.api.cancelOpenAuctionBid(this.participant.account, this.participant.memberId.toNumber(), this.videoId)
 
       // ensure bid has been canceled
-      ensureMemberOpenAuctionBidsAreCancelled(this.query, this.videoId, this.participant)
+      await ensureMemberOpenAuctionBidsAreCancelled(this.query, this.videoId, this.participant)
 
       this.debug('Cancel auction')
       await this.api.cancelOpenAuction(this.author.account, this.author.memberId.toNumber(), this.videoId)
@@ -128,7 +127,7 @@ export class AuctionCancelationsFixture extends BaseQueryNodeFixture {
       await this.api.cancelOpenAuctionBid(this.participant.account, this.participant.memberId.toNumber(), this.videoId)
 
       // ensure bids has been canceled
-      ensureMemberOpenAuctionBidsAreCancelled(this.query, this.videoId, this.participant)
+      await ensureMemberOpenAuctionBidsAreCancelled(this.query, this.videoId, this.participant)
 
       this.debug('Cancel auction')
       await this.api.cancelOpenAuction(this.author.account, this.author.memberId.toNumber(), this.videoId)
@@ -177,7 +176,7 @@ export class AuctionCancelationsFixture extends BaseQueryNodeFixture {
       await this.api.cancelOpenAuctionBid(this.participant.account, this.participant.memberId.toNumber(), this.videoId)
 
       // ensure bid has been canceled
-      ensureMemberOpenAuctionBidsAreCancelled(this.query, this.videoId, this.participant)
+      await ensureMemberOpenAuctionBidsAreCancelled(this.query, this.videoId, this.participant)
 
       this.debug(`Check NFT ownership haven't change`)
       await assertNftOwner(this.query, this.videoId, this.author)

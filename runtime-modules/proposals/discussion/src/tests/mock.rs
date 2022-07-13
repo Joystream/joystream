@@ -6,7 +6,6 @@ use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize};
 use frame_support::{
     parameter_types,
     traits::{ConstU16, ConstU32, ConstU64, EnsureOneOf},
-    weights::Weight,
     PalletId,
 };
 use frame_system::{EnsureRoot, EnsureSigned};
@@ -19,7 +18,7 @@ use sp_runtime::{
 
 use crate::CouncilOriginValidator;
 use crate::MemberOriginValidator;
-use crate::WeightInfo;
+
 use frame_support::dispatch::DispatchError;
 use sp_std::convert::{TryFrom, TryInto};
 
@@ -232,7 +231,7 @@ impl MemberOriginValidator<Origin, u64, u128> for () {
 
         if actor_id < 12 {
             if let Ok(account_id) = frame_system::ensure_signed(origin) {
-                return Ok(account_id.into());
+                return Ok(account_id);
             } else {
                 return Ok(actor_id.into());
             }
@@ -349,7 +348,7 @@ impl referendum::Config<ReferendumInstance> for Test {
             .iter()
             .map(|item| referendum::OptionResult {
                 option_id: item.option_id,
-                vote_power: item.vote_power.into(),
+                vote_power: item.vote_power,
             })
             .collect();
         <council::Module<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(

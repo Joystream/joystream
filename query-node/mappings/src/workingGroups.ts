@@ -1,7 +1,7 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
+import { EventContext, StoreContext, DatabaseManager, SubstrateEvent, FindOneOptions } from '@joystream/hydra-common'
 
 import { StorageWorkingGroup as WorkingGroups } from '../generated/types'
 import {
@@ -273,7 +273,9 @@ async function handleRemoveUpcomingOpeningAction(
   action: IRemoveUpcomingOpening
 ): Promise<UpcomingOpeningRemoved | InvalidActionMetadata> {
   const { id } = action
-  const upcomingOpening = await store.get(UpcomingWorkingGroupOpening, { where: { id } })
+  const upcomingOpening = await store.get(UpcomingWorkingGroupOpening, {
+    where: { id },
+  } as FindOneOptions<UpcomingWorkingGroupOpening>)
   let result: UpcomingOpeningRemoved | InvalidActionMetadata
   if (upcomingOpening) {
     result = new UpcomingOpeningRemoved()
