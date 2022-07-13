@@ -1,17 +1,16 @@
 import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { EventDetails } from '../../types'
-import { WorkerId } from '@joystream/types/working-group'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { CategoryDeletedEventFieldsFragment, ForumCategoryFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
-import { CategoryId } from '@joystream/types/forum'
+import { WorkerId, ForumCategoryId } from '@joystream/types/primitives'
 import { WithForumWorkersFixture } from './WithForumWorkersFixture'
 
 export type CategoryRemovalInput = {
-  categoryId: CategoryId
+  categoryId: ForumCategoryId
   asWorker?: WorkerId
 }
 

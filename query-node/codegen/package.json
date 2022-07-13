@@ -6,7 +6,7 @@
   "license": "ISC",
   "scripts": {},
   "dependencies": {
-    "@joystream/hydra-cli": "^3.1.0-alpha.25",
-    "@joystream/hydra-typegen": "^3.1.0-alpha.25"
+    "@joystream/hydra-cli": "^4.0.0-alpha.0",
+    "@joystream/hydra-typegen": "^4.0.0-alpha.0"
   }
 }

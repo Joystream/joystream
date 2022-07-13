@@ -13,7 +13,7 @@ use crate::sp_api_hidden_includes_decl_storage::hidden_include::{
 };
 
 use super::mocks::{
-    create_cid, Balances, CollectiveFlip, Storage, System, Test, TestEvent,
+    create_cid, Balances, CollectiveFlip, Event as TestEvent, Storage, System, Test,
     DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID,
     DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT, DEFAULT_STORAGE_BUCKET_SIZE_LIMIT,
     DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
@@ -42,7 +42,7 @@ pub fn run_to_block(n: u64) {
 }
 
 pub fn increase_account_balance(account_id: &u64, balance: u64) {
-    let _ = Balances::deposit_creating(&account_id, balance);
+    let _ = Balances::deposit_creating(account_id, balance);
 }
 
 pub fn set_data_object_per_mega_byte_fee(mb_fee: u64) {
@@ -101,8 +101,8 @@ pub fn create_storage_bucket_and_assign_to_bag(
 
     UpdateStorageBucketForBagsFixture::new()
         .with_origin(RawOrigin::Signed(STORAGE_WG_LEADER_ACCOUNT_ID))
-        .with_bag_id(bag_id.clone())
-        .with_add_bucket_ids(buckets.clone())
+        .with_bag_id(bag_id)
+        .with_add_bucket_ids(buckets)
         .call_and_assert(Ok(()));
 
     if let Some(storage_provider_id) = storage_provider_id {
@@ -147,7 +147,7 @@ impl EventFixture {
             u64,
         >,
     ) {
-        let converted_event = TestEvent::storage(expected_raw_event);
+        let converted_event = TestEvent::Storage(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
     }
@@ -167,7 +167,7 @@ impl EventFixture {
             u64,
         >,
     ) {
-        let converted_event = TestEvent::storage(expected_raw_event);
+        let converted_event = TestEvent::Storage(expected_raw_event);
 
         Self::contains_global_event(converted_event)
     }
@@ -281,6 +281,7 @@ impl AcceptStorageBucketInvitationFixture {
 
         let new_bucket = Storage::storage_bucket_by_id(self.storage_bucket_id);
         if actual_result.is_ok() {
+            let new_bucket = new_bucket.expect("Bucket Must Exist");
             assert_eq!(
                 new_bucket.operator_status,
                 StorageBucketOperatorStatus::StorageWorker(
@@ -335,7 +336,7 @@ impl UploadFixture {
         Self {
             params: UploadParameters::<Test> {
                 expected_data_object_state_bloat_bond,
-                ..self.params.clone()
+                ..self.params
             },
             ..self
         }
@@ -347,7 +348,7 @@ impl UploadFixture {
         let buckets_pre = bag_pre
             .stored_by
             .iter()
-            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .map(|id| <crate::StorageBucketById<Test>>::get(id).expect("Storage Bag Must Exist"))
             .clone()
             .collect::<Vec<_>>();
 
@@ -375,7 +376,7 @@ impl UploadFixture {
         let buckets_post = bag_post
             .stored_by
             .iter()
-            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .map(|id| <crate::StorageBucketById<Test>>::get(id).expect("Storage Bag Must Exist"))
             .clone()
             .collect::<Vec<_>>();
         let end_id = Storage::next_data_object_id();
@@ -465,7 +466,7 @@ pub fn create_data_object_candidates_with_size(
     range
         .into_iter()
         .map(|idx| DataObjectCreationParameters {
-            size: size,
+            size,
             ipfs_content_id: create_cid(idx.into()),
         })
         .collect()
@@ -572,6 +573,7 @@ impl CancelStorageBucketInvitationFixture {
 
         let new_bucket = Storage::storage_bucket_by_id(self.storage_bucket_id);
         if actual_result.is_ok() {
+            let new_bucket = new_bucket.expect("Bucket Must Exist");
             assert_eq!(
                 new_bucket.operator_status,
                 StorageBucketOperatorStatus::Missing
@@ -608,6 +610,7 @@ impl InviteStorageBucketOperatorFixture {
 
         let new_bucket = Storage::storage_bucket_by_id(self.storage_bucket_id);
         if actual_result.is_ok() {
+            let new_bucket = new_bucket.expect("Bucket Must Exist");
             assert_eq!(
                 new_bucket.operator_status,
                 StorageBucketOperatorStatus::InvitedStorageWorker(self.operator_worker_id)
@@ -682,7 +685,7 @@ impl DeleteDataObjectsFixture {
         let buckets_pre = bag_pre
             .stored_by
             .iter()
-            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .map(|id| <crate::StorageBucketById<Test>>::get(id).expect("Storage Bag Must Exist"))
             .clone()
             .collect::<Vec<_>>();
 
@@ -704,12 +707,12 @@ impl DeleteDataObjectsFixture {
 
         assert_eq!(actual_result, expected_result);
 
-        let balance_post = Balances::usable_balance(self.state_bloat_bond_account_id.clone());
+        let balance_post = Balances::usable_balance(self.state_bloat_bond_account_id);
         let bag_post = <crate::Bags<Test>>::get(&self.bag_id);
         let buckets_post = bag_post
             .stored_by
             .iter()
-            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .map(|id| <crate::StorageBucketById<Test>>::get(id).expect("Storage Bag Must Exist"))
             .clone()
             .collect::<Vec<_>>();
 
@@ -783,7 +786,8 @@ impl UpdateStorageBucketStatusFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            let bucket = Storage::storage_bucket_by_id(self.storage_bucket_id);
+            let bucket =
+                Storage::storage_bucket_by_id(self.storage_bucket_id).expect("Bucket Must Exist");
 
             assert_eq!(bucket.accepting_new_bags, self.new_status);
         }
@@ -831,7 +835,7 @@ impl DeleteDynamicBagFixture {
         let s_buckets_pre = bag
             .stored_by
             .iter()
-            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .map(|id| <crate::StorageBucketById<Test>>::get(id).expect("Storage Bag Must Exist"))
             .clone()
             .collect::<Vec<_>>();
 
@@ -860,11 +864,11 @@ impl DeleteDynamicBagFixture {
 
         assert_eq!(actual_result, expected_result);
 
-        let balance_post = Balances::usable_balance(self.deletion_account_id.clone());
+        let balance_post = Balances::usable_balance(self.deletion_account_id);
         let s_buckets_post = bag
             .stored_by
             .iter()
-            .map(|id| <crate::StorageBucketById<Test>>::get(id))
+            .map(|id| <crate::StorageBucketById<Test>>::get(id).expect("Storage Bag Must Exist"))
             .clone()
             .collect::<Vec<_>>();
 
@@ -962,6 +966,7 @@ impl RemoveStorageBucketOperatorFixture {
 
         let new_bucket = Storage::storage_bucket_by_id(self.storage_bucket_id);
         if actual_result.is_ok() {
+            let new_bucket = new_bucket.expect("Bucket Must Exist");
             assert_eq!(
                 new_bucket.operator_status,
                 StorageBucketOperatorStatus::Missing
@@ -1042,23 +1047,24 @@ pub struct SetStorageBucketVoucherLimitsFixture {
 
 impl SetStorageBucketVoucherLimitsFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let old_voucher = Storage::storage_bucket_by_id(self.storage_bucket_id).voucher;
+        let old_bucket = Storage::storage_bucket_by_id(self.storage_bucket_id);
+
         let actual_result = Storage::set_storage_bucket_voucher_limits(
             self.origin.clone().into(),
             self.storage_bucket_id,
-            self.new_objects_size_limit.clone(),
-            self.new_objects_number_limit.clone(),
+            self.new_objects_size_limit,
+            self.new_objects_number_limit,
         );
 
         assert_eq!(actual_result, expected_result);
-        let new_voucher = Storage::storage_bucket_by_id(self.storage_bucket_id).voucher;
+        let new_bucket = Storage::storage_bucket_by_id(self.storage_bucket_id);
 
         if actual_result.is_ok() {
+            let new_voucher = new_bucket.expect("Bucket Must Exist").voucher;
             assert_eq!(self.new_objects_size_limit, new_voucher.size_limit);
             assert_eq!(self.new_objects_number_limit, new_voucher.objects_limit);
         } else {
-            assert_eq!(old_voucher.size_limit, new_voucher.size_limit);
-            assert_eq!(old_voucher.objects_limit, new_voucher.objects_limit);
+            assert_eq!(old_bucket, new_bucket);
         }
     }
 }
@@ -1082,8 +1088,8 @@ impl UpdateStorageBucketsVoucherMaxLimitsFixture {
 
         let actual_result = Storage::update_storage_buckets_voucher_max_limits(
             self.origin.clone().into(),
-            self.new_objects_size_limit.clone(),
-            self.new_objects_number_limit.clone(),
+            self.new_objects_size_limit,
+            self.new_objects_number_limit,
         );
 
         assert_eq!(actual_result, expected_result);
@@ -1206,7 +1212,7 @@ impl CreateDynamicBagFixture {
             assert!(<crate::Bags<Test>>::contains_key(&bag_id));
 
             let bag = <crate::Bags<Test>>::get(&bag_id);
-            assert!(bag.stored_by.len() > 0);
+            assert!(!bag.stored_by.is_empty());
         }
     }
 }

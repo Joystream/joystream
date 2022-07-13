@@ -1,3 +1,5 @@
+#![allow(clippy::unused_unit)]
+
 use crate::types::{
     JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId, TokenSaleOf,
     TransferPolicyOf, ValidatedTransfersOf,
@@ -10,12 +12,12 @@ use sp_std::vec::Vec;
 decl_event! {
     pub enum Event<T>
     where
-        Balance = <T as crate::Trait>::Balance,
+        Balance = <T as crate::Config>::Balance,
         JoyBalance = JoyBalanceOf<T>,
-        TokenId = <T as crate::Trait>::TokenId,
-        AccountId = <T as frame_system::Trait>::AccountId,
+        TokenId = <T as crate::Config>::TokenId,
+        AccountId = <T as frame_system::Config>::AccountId,
         MemberId = <T as MembershipTypes>::MemberId,
-        BlockNumber = <T as frame_system::Trait>::BlockNumber,
+        BlockNumber = <T as frame_system::Config>::BlockNumber,
         TransferPolicy = TransferPolicyOf<T>,
         TokenIssuanceParameters = TokenIssuanceParametersOf<T>,
         ValidatedTransfers = ValidatedTransfersOf<T>,

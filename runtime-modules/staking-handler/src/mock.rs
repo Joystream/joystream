@@ -1,37 +1,49 @@
 use crate::LockComparator;
 use frame_support::traits::LockIdentifier;
-use frame_support::{impl_outer_origin, parameter_types};
-use frame_system;
+use frame_support::{
+    parameter_types,
+    traits::{ConstU16, ConstU32, ConstU64},
+};
+
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
 };
-
-impl_outer_origin! {
-    pub enum Origin for Test {}
-}
+use sp_std::convert::{TryFrom, TryInto};
 
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
-    pub const MaximumBlockWeight: u32 = 1024;
-    pub const MaximumBlockLength: u32 = 2 * 1024;
-    pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
     pub const ExistentialDeposit: u32 = 10;
     pub const DefaultMembershipPrice: u64 = 100;
     pub const DefaultInitialInvitationBalance: u64 = 100;
 }
 
-// Workaround for https://github.com/rust-lang/rust/issues/26925 - remove when sorted.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Test;
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+type Block = frame_system::mocking::MockBlock<Test>;
+pub type TestStakingManager = crate::StakingManager<Test, LockId>;
+pub type TestStakingManager2 = crate::StakingManager<Test, LockId2>;
 
-impl frame_system::Trait for Test {
-    type BaseCallFilter = ();
+frame_support::construct_runtime!(
+    pub enum Test where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+        Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+        Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+    }
+);
+
+impl frame_system::Config for Test {
+    type BaseCallFilter = frame_support::traits::Everything;
+    type BlockWeights = ();
+    type BlockLength = ();
+    type DbWeight = ();
     type Origin = Origin;
-    type Call = ();
+    type Call = Call;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -39,31 +51,29 @@ impl frame_system::Trait for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = ();
-    type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
-    type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
+    type Event = Event;
+    type BlockHashCount = ConstU64<250>;
     type Version = ();
+    type PalletInfo = PalletInfo;
     type AccountData = pallet_balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
-    type PalletInfo = ();
+    type SS58Prefix = ConstU16<42>;
+    type OnSetCode = ();
+    type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
-impl pallet_balances::Trait for Test {
+impl pallet_balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = ();
+    type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
-    type WeightInfo = ();
     type MaxLocks = ();
+    type MaxReserves = ConstU32<2>;
+    type ReserveIdentifier = [u8; 8];
+    type WeightInfo = ();
 }
 
 impl common::membership::MembershipTypes for Test {
@@ -71,27 +81,19 @@ impl common::membership::MembershipTypes for Test {
     type ActorId = u64;
 }
 
-impl LockComparator<<Test as pallet_balances::Trait>::Balance> for Test {
+impl LockComparator<<Test as pallet_balances::Config>::Balance> for Test {
     fn are_locks_conflicting(new_lock: &LockIdentifier, existing_locks: &[LockIdentifier]) -> bool {
         // simple check preventing lock reuse
-        existing_locks
-            .iter()
-            .find(|lock| *lock == new_lock)
-            .is_some()
+        existing_locks.iter().any(|lock| lock == new_lock)
     }
 }
 
-impl pallet_timestamp::Trait for Test {
+impl pallet_timestamp::Config for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
 }
-
-pub type Balances = pallet_balances::Module<Test>;
-pub type System = frame_system::Module<Test>;
-pub type TestStakingManager = crate::StakingManager<Test, LockId>;
-pub type TestStakingManager2 = crate::StakingManager<Test, LockId2>;
 
 parameter_types! {
     pub const RewardPeriod: u32 = 2;

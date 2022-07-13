@@ -1,11 +1,18 @@
 use crate::*;
 use frame_support::decl_error;
+use sp_std::convert::TryInto;
 
 decl_error! {
     /// Content directory errors
-    pub enum Error for Module<T: Trait> {
+    pub enum Error for Module<T: Config> {
         /// Feature Not Implemented
         FeatureNotImplemented,
+
+        /// Invalid extrinsic call: Channel state bloat bond changed.
+        ChannelStateBloatBondChanged,
+
+        /// Invalid extrinsic call: video state bloat bond changed.
+        VideoStateBloatBondChanged,
 
         // Curator Management Errors
         // -------------------------
@@ -172,8 +179,8 @@ decl_error! {
         /// Given video nft is not in buy now state
         NftNotInBuyNowState,
 
-        /// Invalid Buy Now price commit provided
-        InvalidBuyNowPriceProvided,
+        /// `witness_price` provided to `buy_now` extrinsic does not match the current sell price
+        InvalidBuyNowWitnessPriceProvided,
 
         /// Auction type is not `Open`
         IsNotOpenAuctionType,
@@ -189,6 +196,12 @@ decl_error! {
 
         /// Auction buy now is less then starting price
         BuyNowIsLessThenStartingPrice,
+
+        /// Nft offer target member does not exist
+        TargetMemberDoesNotExist,
+
+        /// Current nft offer price does not match the provided `witness_price`
+        InvalidNftOfferWitnessPriceProvided,
 
         /// Max auction whitelist length upper bound exceeded
         MaxAuctionWhiteListLengthUpperBoundExceeded,
@@ -295,6 +308,14 @@ decl_error! {
         /// Cannot transfer the channel: channel owner has insufficient balance (budget for WGs)
         InsufficientBalanceForTransfer,
 
+        /// Cannot create the channel: channel creator has insufficient balance
+        /// (budget for channel state bloat bond + channel data objs state bloat bonds + data objs storage fees)
+        InsufficientBalanceForChannelCreation,
+
+        /// Cannot create the video: video creator has insufficient balance
+        /// (budget for video state bloat bond + video data objs state bloat bonds + data objs storage fees)
+        InsufficientBalanceForVideoCreation,
+
         // Insufficient council budget to cover channel reward claim
         InsufficientCouncilBudget,
 
@@ -328,5 +349,12 @@ decl_error! {
 
         /// Patronage can only be claimed if channel is owned by a member
         PatronageCanOnlyBeClaimedForMemberOwnedChannels,
+
+        /// Channel Transfers are blocked during revenue splits
+        ChannelTransfersBlockedDuringRevenueSplits,
+
+        /// Channel Transfers are blocked during token sales
+        ChannelTransfersBlockedDuringTokenSales,
+
     }
 }

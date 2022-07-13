@@ -24,11 +24,6 @@ fn offer_nft() {
             NftIssuanceParameters::<Test>::default(),
         ));
 
-        // Runtime tested state before call
-
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
-
         // Offer nft
         assert_ok!(Content::offer_nft(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
@@ -53,15 +48,12 @@ fn offer_nft() {
         ));
 
         // Last event checked
-        assert_event(
-            MetaEvent::content(RawEvent::OfferStarted(
-                video_id,
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-                SECOND_MEMBER_ID,
-                None,
-            )),
-            number_of_events_before_call + 1,
-        );
+        last_event_eq!(RawEvent::OfferStarted(
+            video_id,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            SECOND_MEMBER_ID,
+            None,
+        ));
     })
 }
 
@@ -229,7 +221,7 @@ fn offer_nft_fails_during_channel_transfer() {
     with_default_mock_builder(|| {
         run_to_block(1);
         ContentTest::default().with_video_nft().setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Ok(()));
 
@@ -243,5 +235,16 @@ fn offer_nft_fails_during_channel_transfer() {
             ),
             Error::<Test>::InvalidChannelTransferStatus,
         );
+    })
+}
+
+#[test]
+fn offer_nft_fails_with_non_existing_target_member_id() {
+    with_default_mock_builder(|| {
+        let non_existing_member_id = 9999;
+        ContentTest::default().with_video_nft().setup();
+        OfferNftFixture::default()
+            .with_to(non_existing_member_id)
+            .call_and_assert(Err(Error::<Test>::TargetMemberDoesNotExist.into()))
     })
 }

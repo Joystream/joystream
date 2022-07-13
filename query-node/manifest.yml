@@ -1,7 +1,7 @@
-version: '3.0'
-description: Joystream query-node manifest file for Olympia
+version: '4.0'
+description: Joystream query-node manifest file
 repository: https://github.com/Joystream/joystream
-hydraVersion: '3'
+hydraVersion: '4'
 dataSource:
   kind: substrate
   chain: joystream
@@ -26,6 +26,7 @@ typegen:
     - members.ReferralCutUpdated
     - members.InitialInvitationBalanceUpdated
     - members.LeaderInvitationQuotaUpdated
+    - members.MemberRemarked
     # Working groups - use Storage Working Group as a reference group (all groups emit the same events)
     - storageWorkingGroup.OpeningAdded
     - storageWorkingGroup.AppliedOnOpening
@@ -96,6 +97,8 @@ typegen:
     - content.ChannelAssetsDeletedByModerator
     - content.VideoAssetsDeletedByModerator
     - content.VideoVisibilitySetByModerator
+    - content.ChannelOwnerRemarked
+    - content.ChannelAgentRemarked
     # Storage
     - storage.StorageBucketCreated
     - storage.StorageBucketInvitationAccepted
@@ -163,20 +166,21 @@ typegen:
     - referendum.VoteRevealed
     - referendum.StakeReleased
     # Bounty
-    - bounty.BountyCreated
-    - bounty.BountyCanceled
-    - bounty.BountyVetoed
-    - bounty.BountyFunded
-    - bounty.BountyMaxFundingReached
-    - bounty.BountyFundingWithdrawal
-    - bounty.BountyCreatorCherryWithdrawal
-    - bounty.BountyRemoved
-    - bounty.WorkEntryAnnounced
-    - bounty.WorkEntryWithdrawn
-    - bounty.WorkEntrySlashed
-    - bounty.WorkSubmitted
-    - bounty.OracleJudgmentSubmitted
-    - bounty.WorkEntrantFundsWithdrawn
+    # TODO: uncomment this + event handlers below after bounties are repaired
+    # - bounty.BountyCreated
+    # - bounty.BountyCanceled
+    # - bounty.BountyVetoed
+    # - bounty.BountyFunded
+    # - bounty.BountyMaxFundingReached
+    # - bounty.BountyFundingWithdrawal
+    # - bounty.BountyCreatorCherryWithdrawal
+    # - bounty.BountyRemoved
+    # - bounty.WorkEntryAnnounced
+    # - bounty.WorkEntryWithdrawn
+    # - bounty.WorkEntrySlashed
+    # - bounty.WorkSubmitted
+    # - bounty.OracleJudgmentSubmitted
+    # - bounty.WorkEntrantFundsWithdrawn
     # content NFTs
     - content.OpenAuctionStarted
     - content.EnglishAuctionStarted
@@ -238,6 +242,8 @@ mappings:
       handler: members_InitialInvitationBalanceUpdated
     - event: members.LeaderInvitationQuotaUpdated
       handler: members_LeaderInvitationQuotaUpdated
+    - event: members.MemberRemarked
+      handler: members_MemberRemarked
     # Storage working group
     - event: storageWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded
@@ -732,6 +738,10 @@ mappings:
     - event: content.VideoVisibilitySetByModerator
       handler: content_VideoVisibilitySetByModerator
 
+    - event: content.ChannelOwnerRemarked
+      handler: content_ChannelOwnerRemarked
+    - event: content.ChannelAgentRemarked
+      handler: content_ChannelAgentRemarked
     # content NFTs
     - event: content.OpenAuctionStarted
       handler: contentNft_OpenAuctionStarted
@@ -891,34 +901,34 @@ mappings:
     - event: referendum.StakeReleased
       handler: referendum_StakeReleased
     # Bounty
-    - event: bounty.BountyCreated
-      handler: bounty_BountyCreated
-    - event: bounty.BountyCanceled
-      handler: bounty_BountyCanceled
-    - event: bounty.BountyVetoed
-      handler: bounty_BountyVetoed
-    - event: bounty.BountyFunded
-      handler: bounty_BountyFunded
-    - event: bounty.BountyMaxFundingReached
-      handler: bounty_BountyMaxFundingReached
-    - event: bounty.BountyFundingWithdrawal
-      handler: bounty_BountyFundingWithdrawal
-    - event: bounty.BountyCreatorCherryWithdrawal
-      handler: bounty_BountyCreatorCherryWithdrawal
-    - event: bounty.BountyRemoved
-      handler: bounty_BountyRemoved
-    - event: bounty.WorkEntryAnnounced
-      handler: bounty_WorkEntryAnnounced
-    - event: bounty.WorkEntryWithdrawn
-      handler: bounty_WorkEntryWithdrawn
-    - event: bounty.WorkEntrySlashed
-      handler: bounty_WorkEntrySlashed
-    - event: bounty.WorkSubmitted
-      handler: bounty_WorkSubmitted
-    - event: bounty.OracleJudgmentSubmitted
-      handler: bounty_OracleJudgmentSubmitted
-    - event: bounty.WorkEntrantFundsWithdrawn
-      handler: bounty_WorkEntrantFundsWithdrawn
+    # - event: bounty.BountyCreated
+    #   handler: bounty_BountyCreated
+    # - event: bounty.BountyCanceled
+    #   handler: bounty_BountyCanceled
+    # - event: bounty.BountyVetoed
+    #   handler: bounty_BountyVetoed
+    # - event: bounty.BountyFunded
+    #   handler: bounty_BountyFunded
+    # - event: bounty.BountyMaxFundingReached
+    #   handler: bounty_BountyMaxFundingReached
+    # - event: bounty.BountyFundingWithdrawal
+    #   handler: bounty_BountyFundingWithdrawal
+    # - event: bounty.BountyCreatorCherryWithdrawal
+    #   handler: bounty_BountyCreatorCherryWithdrawal
+    # - event: bounty.BountyRemoved
+    #   handler: bounty_BountyRemoved
+    # - event: bounty.WorkEntryAnnounced
+    #   handler: bounty_WorkEntryAnnounced
+    # - event: bounty.WorkEntryWithdrawn
+    #   handler: bounty_WorkEntryWithdrawn
+    # - event: bounty.WorkEntrySlashed
+    #   handler: bounty_WorkEntrySlashed
+    # - event: bounty.WorkSubmitted
+    #   handler: bounty_WorkSubmitted
+    # - event: bounty.OracleJudgmentSubmitted
+    #   handler: bounty_OracleJudgmentSubmitted
+    # - event: bounty.WorkEntrantFundsWithdrawn
+    #   handler: bounty_WorkEntrantFundsWithdrawn
     # ExtrinsicSuccess event handler - we're using an empty handler just for the purpose of triggering
     # preBlock/postBlock hooks for each block (instead of "catching-up" after some event/tx recognized by processor is fired)
     # ExtrinsicSuccess is emitted at least once per block due to timestamp.set extrinsic

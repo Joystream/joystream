@@ -33,6 +33,7 @@ import { scenario } from '../Scenario'
 import activeVideoCounters from '../flows/content/activeVideoCounters'
 import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
 import updatingVerificationStatus from '../flows/membership/updateVerificationStatus'
+import commentsAndReactions from '../flows/content/commentsAndReactions'
 
 scenario('Full', async ({ job, env }) => {
   // Runtime upgrade should always be first job
@@ -92,13 +93,17 @@ scenario('Full', async ({ job, env }) => {
   job('forum posts', posts).requires(sudoHireLead)
   job('forum moderation', moderation).requires(sudoHireLead)
 
-  // Content directory
-  const videoCountersJob = job('check active video counters', activeVideoCounters).requires(sudoHireLead)
-  job('nft auction and offers', nftAuctionAndOffers).after(videoCountersJob)
+  // Content directory (with CLI)
+  const contentDirectoryJob = job('content directory (with CLI)', [
+    createChannel,
+    nftAuctionAndOffers,
+    commentsAndReactions,
+    // TODO: re-work afer merging metaprotocol content categories PR - https://github.com/Joystream/joystream/pull/3950
+    // activeVideoCounters
+  ]).after(sudoHireLead)
 
-  // CLIs:
-  const createChannelJob = job('create channel via CLI', createChannel).after(videoCountersJob)
+  // Storage & distribution CLIs
   job('init storage and distribution buckets via CLI', [initDistributionBucket, initStorageBucket]).after(
-    createChannelJob
+    contentDirectoryJob
   )
 })

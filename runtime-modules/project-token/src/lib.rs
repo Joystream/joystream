@@ -11,12 +11,14 @@ use frame_support::{
     dispatch::{fmt::Debug, marker::Copy, DispatchError, DispatchResult},
     ensure,
     traits::{Currency, ExistenceRequirement, Get},
+    PalletId,
 };
 use frame_system::ensure_signed;
+use scale_info::TypeInfo;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
     traits::{AccountIdConversion, Convert, UniqueSaturatedInto},
-    ModuleId, Permill,
+    Permill,
 };
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::Sum;
@@ -30,7 +32,6 @@ mod events;
 pub mod traits;
 pub mod types;
 
-// #[cfg(test)]
 mod tests;
 
 // crate imports
@@ -39,14 +40,13 @@ pub use events::{Event, RawEvent};
 use traits::PalletToken;
 use types::*;
 
-/// Pallet Configuration Trait
-pub trait Trait:
-    frame_system::Trait + balances::Trait + storage::Trait + membership::Trait
+/// Pallet Configuration
+pub trait Config:
+    frame_system::Config + balances::Config + storage::Config + membership::Config
 {
     /// Events
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
-    // TODO: Add frame_support::pallet_prelude::TypeInfo trait
     /// the Balance type used
     type Balance: AtLeast32BitUnsigned
         + FullCodec
@@ -57,19 +57,20 @@ pub trait Trait:
         + Sum
         + From<u64>
         + UniqueSaturatedInto<u64>
-        + Into<JoyBalanceOf<Self>>;
+        + Into<JoyBalanceOf<Self>>
+        + TypeInfo;
 
     /// The token identifier used
-    type TokenId: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug;
+    type TokenId: AtLeast32BitUnsigned + FullCodec + Copy + Default + Debug + TypeInfo;
 
     /// Block number to balance converter used for interest calculation
-    type BlockNumberToBalance: Convert<Self::BlockNumber, <Self as Trait>::Balance>;
+    type BlockNumberToBalance: Convert<Self::BlockNumber, <Self as Config>::Balance>;
 
     /// The storage type used
     type DataObjectStorage: storage::DataObjectStorage<Self>;
 
     /// Tresury account for the various tokens
-    type ModuleId: Get<ModuleId>;
+    type ModuleId: Get<PalletId>;
 
     /// Existential Deposit for the JOY pallet
     type JoyExistentialDeposit: Get<JoyBalanceOf<Self>>;
@@ -92,7 +93,7 @@ pub trait Trait:
 }
 
 decl_storage! {
-    trait Store for Module<T: Trait> as Token {
+    trait Store for Module<T: Config> as Token {
         /// Double map TokenId x MemberId => AccountData for managing account data
         pub AccountInfoByTokenAndMember get(fn account_info_by_token_and_member) config():
         double_map
@@ -148,7 +149,7 @@ decl_storage! {
 }
 
 decl_module! {
-    pub struct Module<T: Trait> for enum Call
+    pub struct Module<T: Config> for enum Call
     where
         origin: T::Origin
     {
@@ -359,7 +360,7 @@ decl_module! {
                 token_id,
                 &member_id,
                 AccountDataOf::<T>::new_with_amount_and_bond(
-                    <T as Trait>::Balance::zero(),
+                    <T as Config>::Balance::zero(),
                     bloat_bond,
                 ));
 
@@ -504,7 +505,7 @@ decl_module! {
             if let Some(dst) = sale.earnings_destination.as_ref() {
                 Self::transfer_joy(
                     &sender,
-                    &dst,
+                    dst,
                     transfer_amount
                 );
             }
@@ -689,11 +690,11 @@ decl_module! {
     }
 }
 
-impl<T: Trait>
+impl<T: Config>
     PalletToken<
         T::TokenId,
         T::MemberId,
-        <T as frame_system::Trait>::AccountId,
+        <T as frame_system::Config>::AccountId,
         JoyBalanceOf<T>,
         TokenIssuanceParametersOf<T>,
         T::BlockNumber,
@@ -702,6 +703,24 @@ impl<T: Trait>
         TransfersWithVestingOf<T>,
     > for Module<T>
 {
+    /// Establish whether there's an unfinalized revenue split
+    /// Postconditions: true if token @ token_id has an unfinalized revenue split, false otherwise
+    fn is_revenue_split_inactive(token_id: T::TokenId) -> bool {
+        if let Ok(token_info) = Self::ensure_token_exists(token_id) {
+            return token_info.revenue_split.ensure_inactive::<T>().is_ok();
+        }
+        true
+    }
+
+    /// Establish whether there is an unfinalized token sale
+    /// Postconditions: true if token @ token_id has an unfinalized sale, false otherwise
+    fn is_sale_unscheduled(token_id: T::TokenId) -> bool {
+        if let Ok(token_info) = Self::ensure_token_exists(token_id) {
+            return token_info.sale.is_none();
+        }
+        true
+    }
+
     /// Change to permissionless
     /// Preconditions:
     /// - token by `token_id` must exist
@@ -791,7 +810,7 @@ impl<T: Trait>
 
         TokenInfoById::<T>::mutate(token_id, |token_info| {
             token_info.increase_supply_by(unclaimed_patronage);
-            token_info.set_unclaimed_tally_patronage_at_block(<T as Trait>::Balance::zero(), now);
+            token_info.set_unclaimed_tally_patronage_at_block(<T as Config>::Balance::zero(), now);
         });
 
         Self::deposit_event(RawEvent::PatronageCreditClaimed(
@@ -824,7 +843,7 @@ impl<T: Trait>
         let token_id = Self::next_token_id();
         let bloat_bond = Self::bloat_bond();
         Self::validate_issuance_parameters(&issuance_parameters)?;
-        let token_data = TokenDataOf::<T>::from_params::<T>(issuance_parameters.clone());
+        let token_data = TokenDataOf::<T>::from_params::<T>(issuance_parameters.clone())?;
         let whitelist_payload = issuance_parameters.get_whitelist_payload();
 
         // TODO: Not clear what the storage interface will be yet, so this is just a mock code now
@@ -1003,8 +1022,8 @@ impl<T: Trait>
         new_duration: Option<T::BlockNumber>,
     ) -> DispatchResult {
         let token_data = Self::ensure_token_exists(token_id)?;
-        let sale_id = token_data.next_sale_id - 1;
         let sale = OfferingStateOf::<T>::ensure_upcoming_sale_of::<T>(&token_data)?;
+        let sale_id = token_data.next_sale_id - 1;
 
         // Validate sale duration
         if let Some(duration) = new_duration {
@@ -1018,7 +1037,7 @@ impl<T: Trait>
         // Validate start_block
         if let Some(start_block) = new_start_block {
             ensure!(
-                start_block >= <frame_system::Module<T>>::block_number(),
+                start_block >= <frame_system::Pallet<T>>::block_number(),
                 Error::<T>::SaleStartingBlockInThePast
             );
         }
@@ -1065,7 +1084,7 @@ impl<T: Trait>
     /// Issue a revenue split for the token
     /// Preconditions:
     /// - `token` must exist for `token_id`
-    /// - `allocation_amount > 0`
+    /// - `floor(revenue_split_rate * nominal_allocation_amount) > 0`
     /// - `token` revenue split status must be inactive
     /// - if Some(start) specified: `start - System::block_number() >= MinRevenueSplitTimeToStart`
     /// - `duration` must be >= `MinRevenueSplitDuration`
@@ -1083,17 +1102,18 @@ impl<T: Trait>
         token_id: T::TokenId,
         start: Option<T::BlockNumber>,
         duration: T::BlockNumber,
-        allocation_source: T::AccountId,
-        allocation_amount: JoyBalanceOf<T>,
-    ) -> DispatchResult {
+        revenue_source_account: T::AccountId,
+        revenue_amount: JoyBalanceOf<T>,
+    ) -> Result<JoyBalanceOf<T>, DispatchError> {
+        let token_info = Self::ensure_token_exists(token_id)?;
+        token_info.revenue_split.ensure_inactive::<T>()?;
+
+        let allocation_amount = token_info.revenue_split_rate.mul_floor(revenue_amount);
+
         ensure!(
             !allocation_amount.is_zero(),
             Error::<T>::CannotIssueSplitWithZeroAllocationAmount,
         );
-
-        let token_info = Self::ensure_token_exists(token_id)?;
-
-        token_info.revenue_split.ensure_inactive::<T>()?;
 
         ensure!(
             duration >= Self::min_revenue_split_duration(),
@@ -1115,15 +1135,20 @@ impl<T: Trait>
         let timeline = TimelineOf::<T>::from_params(revenue_split_start, duration);
 
         let treasury_account = Self::module_treasury_account();
+
         Self::ensure_can_transfer_joy(
-            &allocation_source,
+            &revenue_source_account,
             &[(&treasury_account, allocation_amount)],
         )?;
 
         // == MUTATION SAFE ==
 
         // tranfer allocation keeping the source account alive
-        Self::transfer_joy(&allocation_source, &treasury_account, allocation_amount);
+        Self::transfer_joy(
+            &revenue_source_account,
+            &treasury_account,
+            allocation_amount,
+        );
 
         TokenInfoById::<T>::mutate(token_id, |token_info| {
             token_info.activate_new_revenue_split(allocation_amount, timeline);
@@ -1136,7 +1161,7 @@ impl<T: Trait>
             allocation_amount,
         ));
 
-        Ok(())
+        Ok(revenue_amount.saturating_sub(allocation_amount))
     }
 
     /// Finalize revenue split once it is ended
@@ -1217,7 +1242,7 @@ impl<T: Trait>
 }
 
 /// Module implementation
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     pub(crate) fn ensure_account_data_exists(
         token_id: T::TokenId,
         member_id: &T::MemberId,
@@ -1271,7 +1296,7 @@ impl<T: Trait> Module<T> {
 
         // compute bloat bond
         let cumulative_bloat_bond = Self::compute_bloat_bond(&validated_transfers);
-        Self::ensure_can_transfer_joy(bloat_bond_payer, &[(&treasury, cumulative_bloat_bond)])?;
+        Self::ensure_can_transfer_joy(bloat_bond_payer, &[(treasury, cumulative_bloat_bond)])?;
 
         Ok(validated_transfers)
     }
@@ -1325,7 +1350,7 @@ impl<T: Trait> Module<T> {
                     Validated::<_>::NonExisting(dst_member_id) => {
                         Self::do_insert_new_account_for_token(
                             token_id,
-                            &dst_member_id,
+                            dst_member_id,
                             if let Some(vs) = vesting_schedule {
                                 AccountDataOf::<T>::new_with_vesting_and_bond(
                                     VestingSource::IssuerTransfer(0),
@@ -1354,7 +1379,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub(crate) fn current_block() -> T::BlockNumber {
-        <frame_system::Module<T>>::block_number()
+        <frame_system::Pallet<T>>::block_number()
     }
 
     /// Computes (staked_amount / supply) * allocation
@@ -1366,7 +1391,7 @@ impl<T: Trait> Module<T> {
         supply: TokenBalanceOf<T>,
         split_allocation: JoyBalanceOf<T>,
     ) -> JoyBalanceOf<T> {
-        let perc_of_the_supply = Permill::from_rational_approximation(user_staked_amount, supply);
+        let perc_of_the_supply = Permill::from_rational(user_staked_amount, supply);
         perc_of_the_supply.mul_floor(split_allocation)
     }
 
@@ -1454,8 +1479,8 @@ impl<T: Trait> Module<T> {
     pub(crate) fn ensure_purchase_cap_not_exceeded(
         sale_id: TokenSaleId,
         account_data: &Option<AccountDataOf<T>>,
-        purchase_amount: <T as Trait>::Balance,
-        cap: <T as Trait>::Balance,
+        purchase_amount: <T as Config>::Balance,
+        cap: <T as Config>::Balance,
     ) -> DispatchResult {
         let tokens_purchased = account_data
             .as_ref()
@@ -1476,7 +1501,7 @@ impl<T: Trait> Module<T> {
 
     /// Returns the account for the current module used for both bloat bond & revenue split
     pub fn module_treasury_account() -> T::AccountId {
-        <T as Trait>::ModuleId::get().into_sub_account(Vec::<u8>::new())
+        <T as Config>::ModuleId::get().into_sub_account_truncating(Vec::<u8>::new())
     }
 
     pub(crate) fn validate_destination(
@@ -1485,6 +1510,10 @@ impl<T: Trait> Module<T> {
         transfer_policy: &TransferPolicyOf<T>,
         is_issuer: bool,
     ) -> Result<Validated<T::MemberId>, DispatchError> {
+        ensure!(
+            T::MembershipInfoProvider::controller_account_id(dst).is_ok(),
+            Error::<T>::TransferDestinationMemberDoesNotExist
+        );
         if let TransferPolicy::Permissioned(_) = transfer_policy {
             ensure!(
                 is_issuer || dst_acc_data.is_some(),
@@ -1585,7 +1614,7 @@ impl<T: Trait> Module<T> {
     pub(crate) fn transfer_joy(src: &T::AccountId, dst: &T::AccountId, amount: JoyBalanceOf<T>) {
         let _ = <Joy<T> as Currency<T::AccountId>>::transfer(
             src,
-            &dst,
+            dst,
             amount,
             ExistenceRequirement::KeepAlive,
         );
@@ -1621,7 +1650,7 @@ impl<T: Trait> Module<T> {
                 AccountDataOf::<T>::new_with_amount_and_bond(allocation.amount, bloat_bond)
             };
 
-            Self::do_insert_new_account_for_token(token_id, &destination, account_data);
+            Self::do_insert_new_account_for_token(token_id, destination, account_data);
         }
     }
 
@@ -1637,8 +1666,6 @@ impl<T: Trait> Module<T> {
             expected_data_size_fee: payload.expected_data_size_fee,
             object_creation_list: vec![payload.object_creation_params.clone()],
             expected_data_object_state_bloat_bond: payload.expected_data_object_state_bloat_bond,
-            storage_buckets: Default::default(),
-            distribution_buckets: Default::default(),
         })
     }
 

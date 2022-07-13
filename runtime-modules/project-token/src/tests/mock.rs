@@ -1,30 +1,35 @@
 #![cfg(test)]
 
 use frame_support::{
-    impl_outer_event, impl_outer_origin, parameter_types,
+    parameter_types,
     traits::{Currency, OnFinalize, OnInitialize},
 };
 
 use codec::Encode;
 use common::membership::{MemberOriginValidator, MembershipInfoProvider};
-use frame_support::ensure;
-use frame_support::traits::LockIdentifier;
+use frame_support::{
+    ensure,
+    traits::{ConstU16, ConstU32, ConstU64, LockIdentifier},
+    PalletId,
+};
 use frame_system::ensure_signed;
 use sp_arithmetic::Perbill;
 use sp_io::TestExternalities;
 use sp_runtime::testing::{Header, H256};
 use sp_runtime::traits::{BlakeTwo256, Convert, Hash, IdentityLookup};
-use sp_runtime::{DispatchError, DispatchResult, ModuleId, Permill};
+use sp_runtime::{DispatchError, DispatchResult, Permill};
+use sp_std::convert::{TryFrom, TryInto};
 use staking_handler::LockComparator;
 
 // crate import
 use crate::{
-    types::*, AccountDataOf, GenesisConfig, TokenDataOf, TokenIssuanceParametersOf, Trait,
-    TransferPolicyOf,
+    types::*, AccountDataOf, Config, TokenDataOf, TokenIssuanceParametersOf, TransferPolicyOf,
 };
 
+use crate as token;
+
 // Crate aliases
-pub type TokenId = <Test as Trait>::TokenId;
+pub type TokenId = <Test as Config>::TokenId;
 pub type TokenData = TokenDataOf<Test>;
 pub type UploadContext = UploadContextOf<Test>;
 pub type SingleDataObjectUploadParams = SingleDataObjectUploadParamsOf<Test>;
@@ -36,31 +41,20 @@ pub type VestingScheduleParams = VestingScheduleParamsOf<Test>;
 pub type IssuanceState = OfferingStateOf<Test>;
 pub type TransferPolicyParams = TransferPolicyParamsOf<Test>;
 pub type AccountData = AccountDataOf<Test>;
-pub type AccountId = <Test as frame_system::Trait>::AccountId;
-pub type BlockNumber = <Test as frame_system::Trait>::BlockNumber;
+pub type AccountId = <Test as frame_system::Config>::AccountId;
+pub type BlockNumber = <Test as frame_system::Config>::BlockNumber;
 pub type Balance = TokenBalanceOf<Test>;
 pub type JoyBalance = JoyBalanceOf<Test>;
 pub type Policy = TransferPolicyOf<Test>;
-pub type Hashing = <Test as frame_system::Trait>::Hashing;
-pub type HashOut = <Test as frame_system::Trait>::Hash;
+pub type Hashing = <Test as frame_system::Config>::Hashing;
+pub type HashOut = <Test as frame_system::Config>::Hash;
 pub type VestingSchedule = VestingScheduleOf<Test>;
 pub type MemberId = u64;
-
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Test;
-
-impl_outer_origin! {
-    pub enum Origin for Test {}
-}
-
-mod token {
-    pub use crate::Event;
-}
 
 #[macro_export]
 macro_rules! last_event_eq {
     ($e:expr) => {
-        assert_eq!(System::events().last().unwrap().event, TestEvent::token($e));
+        assert_eq!(System::events().last().unwrap().event, Event::Token($e))
     };
 }
 
@@ -71,35 +65,25 @@ macro_rules! origin {
     };
 }
 
-impl_outer_event! {
-    pub enum TestEvent for Test {
-        token<T>,
-        frame_system<T>,
-        balances<T>,
-        storage<T>,
-        membership<T>,
-    }
-}
-
-// Trait constants
+// Config constants
 parameter_types! {
-    // --------- frame_system::Trait parameters ---------------------
+    // --------- frame_system::Config parameters ---------------------
     pub const BlockHashCount: u64 = 250;
     pub const MaximumBlockWeight: u32 = 1024;
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
     // --------- Pallet Project Token parameters ---------------------
-    pub const TokenModuleId: ModuleId = ModuleId(*b"m__Token");
+    pub const TokenModuleId: PalletId = PalletId(*b"m__Token");
     pub const MaxVestingBalancesPerAccountPerToken: u8 = 3;
     pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
-    // --------- balances::Trait parameters ---------------------------
+    // --------- balances::Config parameters ---------------------------
     pub const ExistentialDeposit: u128 = 10;
-    // constants for storage::Trait
+    // constants for storage::Config
     pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
     pub const MaxDistributionBucketFamilyNumber: u64 = 4;
     pub const DataObjectDeletionPrize: u64 = 15;
-    pub const StorageModuleId: ModuleId = ModuleId(*b"mstorage"); // module storage
+    pub const StorageModuleId: PalletId = PalletId(*b"mstorage"); // module storage
     pub const BlacklistSizeLimit: u64 = 1;
     pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u64 = 1;
     pub const StorageBucketsPerBagValueConstraint: storage::StorageBucketsPerBagValueConstraint =
@@ -111,7 +95,7 @@ parameter_types! {
     pub const DistributionBucketsPerBagValueConstraint: storage::DistributionBucketsPerBagValueConstraint =
     storage::StorageBucketsPerBagValueConstraint {min: 3, max_min_diff: 7};
     pub const MaxDataObjectSize: u64 = 1_000_000_000;
-    // constants for membership::Trait
+    // constants for membership::Config
     pub const DefaultMembershipPrice: u64 = 100;
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
     pub const StakingCandidateLockId: [u8; 8] = [3; 8];
@@ -120,36 +104,26 @@ parameter_types! {
     pub const ReferralCutMaximumPercent: u8 = 50;
 }
 
-impl frame_system::Trait for Test {
-    type BaseCallFilter = ();
-    type Origin = Origin;
-    type Call = ();
-    type Index = u64;
-    type BlockNumber = u64;
-    type Hash = H256;
-    type Hashing = BlakeTwo256;
-    type AccountId = u64;
-    type Lookup = IdentityLookup<Self::AccountId>;
-    type Header = Header;
-    type Event = TestEvent;
-    type BlockHashCount = BlockHashCount;
-    type MaximumBlockWeight = MaximumBlockWeight;
-    type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type MaximumBlockLength = MaximumBlockLength;
-    type AvailableBlockRatio = AvailableBlockRatio;
-    type Version = ();
-    type AccountData = balances::AccountData<u128>;
-    type OnNewAccount = ();
-    type OnKilledAccount = ();
-    type PalletInfo = ();
-    type SystemWeightInfo = ();
-}
+type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+type Block = frame_system::mocking::MockBlock<Test>;
 
-impl storage::Trait for Test {
-    type Event = TestEvent;
+frame_support::construct_runtime!(
+    pub enum Test where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        System: frame_system,
+        Balances: balances,
+        Timestamp: pallet_timestamp,
+        Membership: membership::{Pallet, Call, Storage, Event<T>},
+        Storage: storage::{Pallet, Call, Storage, Event<T>},
+        Token: token::{Pallet, Call, Storage, Config<T>, Event<T>},
+    }
+);
+
+impl storage::Config for Test {
+    type Event = Event;
     type DataObjectId = u64;
     type StorageBucketId = u64;
     type DistributionBucketIndex = u64;
@@ -181,8 +155,8 @@ impl common::MembershipTypes for Test {
     type ActorId = u64;
 }
 
-impl Trait for Test {
-    type Event = TestEvent;
+impl Config for Test {
+    type Event = Event;
     type Balance = u128;
     type TokenId = u64;
     type BlockNumberToBalance = Block2Balance;
@@ -229,7 +203,7 @@ impl common::working_group::WorkingGroupBudgetHandler<u64, u128> for Distributio
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
     fn ensure_worker_origin(
-        origin: <Test as frame_system::Trait>::Origin,
+        origin: <Test as frame_system::Config>::Origin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
@@ -240,7 +214,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
         Ok(())
     }
 
-    fn ensure_leader_origin(origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
         ensure!(
             account_id == STORAGE_WG_LEADER_ACCOUNT_ID,
@@ -259,12 +233,12 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
         unimplemented!()
     }
 
-    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Config>::AccountId) -> bool {
         unimplemented!()
     }
 
     fn is_worker_account_id(
-        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _account_id: &<Test as frame_system::Config>::AccountId,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
         unimplemented!()
@@ -288,7 +262,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
     fn ensure_worker_origin(
-        origin: <Test as frame_system::Trait>::Origin,
+        origin: <Test as frame_system::Config>::Origin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
@@ -299,7 +273,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
         Ok(())
     }
 
-    fn ensure_leader_origin(origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
         ensure!(
             account_id == DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
@@ -318,12 +292,12 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
         unimplemented!()
     }
 
-    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Config>::AccountId) -> bool {
         unimplemented!()
     }
 
     fn is_worker_account_id(
-        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _account_id: &<Test as frame_system::Config>::AccountId,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
         unimplemented!()
@@ -345,28 +319,55 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
     }
 }
 
-/// Implement pallet balances trait for Test
-impl balances::Trait for Test {
-    type Balance = u128;
-    type DustRemoval = ();
-    type Event = TestEvent;
-    type ExistentialDeposit = ExistentialDeposit;
-    type AccountStore = System;
-    type WeightInfo = ();
-    type MaxLocks = ();
+impl frame_system::Config for Test {
+    type BaseCallFilter = frame_support::traits::Everything;
+    type BlockWeights = ();
+    type BlockLength = ();
+    type DbWeight = ();
+    type Origin = Origin;
+    type Call = Call;
+    type Index = u64;
+    type BlockNumber = u64;
+    type Hash = H256;
+    type Hashing = BlakeTwo256;
+    type AccountId = u64;
+    type Lookup = IdentityLookup<Self::AccountId>;
+    type Header = Header;
+    type Event = Event;
+    type BlockHashCount = ConstU64<250>;
+    type Version = ();
+    type PalletInfo = PalletInfo;
+    type AccountData = balances::AccountData<u128>;
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
+    type SystemWeightInfo = ();
+    type SS58Prefix = ConstU16<42>;
+    type OnSetCode = ();
+    type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
-/// Implement pallet_timestamp trait for Test
-impl pallet_timestamp::Trait for Test {
+impl pallet_timestamp::Config for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
 }
 
+impl balances::Config for Test {
+    type Balance = u128;
+    type DustRemoval = ();
+    type Event = Event;
+    type ExistentialDeposit = ExistentialDeposit;
+    type AccountStore = System;
+    type MaxLocks = ();
+    type MaxReserves = ConstU32<2>;
+    type ReserveIdentifier = [u8; 8];
+    type WeightInfo = ();
+}
+
 /// Implement membership trait for Test
-impl membership::Trait for Test {
-    type Event = TestEvent;
+impl membership::Config for Test {
+    type Event = Event;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type WorkingGroup = Wg;
@@ -405,13 +406,13 @@ impl common::working_group::WorkingGroupBudgetHandler<u64, u128> for Wg {
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     fn ensure_worker_origin(
-        _origin: <Test as frame_system::Trait>::Origin,
+        _origin: <Test as frame_system::Config>::Origin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!()
     }
 
-    fn ensure_leader_origin(_origin: <Test as frame_system::Trait>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(_origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
         unimplemented!()
     }
 
@@ -425,12 +426,12 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
         unimplemented!()
     }
 
-    fn is_leader_account_id(_account_id: &<Test as frame_system::Trait>::AccountId) -> bool {
+    fn is_leader_account_id(_account_id: &<Test as frame_system::Config>::AccountId) -> bool {
         unimplemented!()
     }
 
     fn is_worker_account_id(
-        _account_id: &<Test as frame_system::Trait>::AccountId,
+        _account_id: &<Test as frame_system::Config>::AccountId,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> bool {
         unimplemented!()
@@ -455,6 +456,7 @@ impl MembershipInfoProvider<Test> for TestMemberships {
         member_id: common::MemberId<Test>,
     ) -> Result<AccountId, DispatchError> {
         if member_id < 1000 {
+            println!("MemberId: {:?}", member_id);
             return Ok(member_id + 1000);
         }
 
@@ -496,7 +498,7 @@ pub struct GenesisConfigBuilder {
 
 /// test externalities + initial balances allocation
 pub fn build_test_externalities_with_balances(
-    config: GenesisConfig<Test>,
+    config: token::GenesisConfig<Test>,
     balances: Vec<(AccountId, Balance)>,
 ) -> TestExternalities {
     let mut t = frame_system::GenesisConfig::default()
@@ -518,7 +520,7 @@ pub fn build_test_externalities_with_balances(
 }
 
 /// test externalities
-pub fn build_test_externalities(config: GenesisConfig<Test>) -> TestExternalities {
+pub fn build_test_externalities(config: token::GenesisConfig<Test>) -> TestExternalities {
     build_test_externalities_with_balances(config, vec![])
 }
 
@@ -602,11 +604,6 @@ macro_rules! block {
     };
 }
 
-// Modules aliases
-pub type Token = crate::Module<Test>;
-pub type System = frame_system::Module<Test>;
-pub type Balances = balances::Module<Test>;
-
 // ------ General constants ---------------
 pub const DEFAULT_BLOAT_BOND: u128 = 0;
 pub const DEFAULT_INITIAL_ISSUANCE: u128 = 1_000_000;
@@ -619,10 +616,11 @@ pub const DEFAULT_SALE_DURATION: u64 = 100;
 
 // ------ Revenue Split constants ------------
 pub const DEFAULT_SALE_PURCHASE_AMOUNT: u128 = 1000;
-pub const DEFAULT_SPLIT_ALLOCATION: u128 = 1000;
+pub const DEFAULT_SPLIT_REVENUE: u128 = 1000;
+pub const DEFAULT_SPLIT_RATE: Permill = Permill::from_percent(10);
 pub const DEFAULT_SPLIT_DURATION: u64 = 100;
 pub const DEFAULT_SPLIT_PARTICIPATION: u128 = 100_000;
-pub const DEFAULT_SPLIT_JOY_DIVIDEND: u128 = 100; // (participation / issuance) * allocation
+pub const DEFAULT_SPLIT_JOY_DIVIDEND: u128 = 10; // (participation / issuance) * revenue * rate
 
 // ------ Storage Constants ------------------
 pub const STORAGE_WG_LEADER_ACCOUNT_ID: u64 = 100001;
@@ -675,7 +673,7 @@ pub(crate) fn index_path_helper(len: usize, index: usize) -> Vec<IndexItem> {
 
 pub(crate) fn generate_merkle_root_helper<E: Encode>(
     collection: &[E],
-) -> Vec<<Test as frame_system::Trait>::Hash> {
+) -> Vec<<Test as frame_system::Config>::Hash> {
     // generates merkle root from the ordered sequence collection.
     // The resulting vector is structured as follows: elements in range
     // [0..collection.len()) will be the tree leaves (layer 0), elements in range
@@ -718,7 +716,7 @@ pub(crate) fn generate_merkle_root_helper<E: Encode>(
 pub(crate) fn build_merkle_path_helper<E: Encode + Clone>(
     collection: &[E],
     index_for_proof: usize,
-) -> Vec<(<Test as frame_system::Trait>::Hash, MerkleSide)> {
+) -> Vec<(<Test as frame_system::Config>::Hash, MerkleSide)> {
     let merkle_tree = generate_merkle_root_helper(collection);
     // builds the actual merkle path with the hashes needed for the proof
     let index_path = index_path_helper(collection.len(), index_for_proof + 1);

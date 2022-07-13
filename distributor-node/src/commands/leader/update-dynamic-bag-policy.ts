@@ -1,5 +1,5 @@
 import { flags } from '@oclif/command'
-import { DynamicBagTypeKey } from '@joystream/types/storage'
+import { PalletStorageDynamicBagType as DynamicBagType } from '@polkadot/types/lookup'
 import AccountsCommandBase from '../../command-base/accounts'
 import DefaultCommandBase from '../../command-base/default'
 import { createType } from '@joystream/types'
@@ -9,7 +9,7 @@ export default class LeaderUpdateDynamicBagPolicy extends AccountsCommandBase {
     Requires distribution working group leader permissions.`
 
   static flags = {
-    type: flags.enum<DynamicBagTypeKey>({
+    type: flags.enum<DynamicBagType['type']>({
       char: 't',
       description: 'Dynamic bag type',
       options: ['Member', 'Channel'],
@@ -46,7 +46,7 @@ export default class LeaderUpdateDynamicBagPolicy extends AccountsCommandBase {
       await this.getDecodedPair(leadKey),
       this.api.tx.storage.updateFamiliesInDynamicBagCreationPolicy(
         type,
-        createType('DynamicBagCreationPolicyDistributorFamiliesMap', new Map(policy))
+        createType('BTreeMap<u64,u32>', new Map(policy))
       )
     )
     this.log('Dynamic bag creation policy succesfully updated!')

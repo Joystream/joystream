@@ -82,7 +82,7 @@ export class CreateUpcomingOpeningsFixture extends BaseWorkingGroupFixture {
   protected getActionMetadataBytes(params: UpcomingOpeningParams): Bytes {
     const upcomingOpeningMeta = this.getUpcomingOpeningMeta(params)
     if (!upcomingOpeningMeta) {
-      return createType('Bytes', params.meta)
+      return createType('Bytes', params.meta as Bytes)
     }
     return Utils.metadataToBytes(WorkingGroupMetadataAction, {
       addUpcomingOpening: {

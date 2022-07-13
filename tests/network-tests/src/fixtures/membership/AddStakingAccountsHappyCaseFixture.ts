@@ -10,7 +10,7 @@ import {
   StakingAccountConfirmedEventFieldsFragment,
 } from '../../graphql/generated/queries'
 import { MINIMUM_STAKING_ACCOUNT_BALANCE } from '../../consts'
-import { MemberId } from '@joystream/types/common'
+import { MemberId } from '@joystream/types/primitives'
 import BN from 'bn.js'
 import _ from 'lodash'
 import { Utils } from '../../utils'

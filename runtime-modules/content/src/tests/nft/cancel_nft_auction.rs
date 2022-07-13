@@ -33,11 +33,6 @@ fn cancel_nft_auction() {
             get_open_auction_params()
         ));
 
-        // Runtime tested state before call
-
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
-
         // Cancel nft auction
         assert_ok!(Content::cancel_open_auction(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
@@ -57,13 +52,10 @@ fn cancel_nft_auction() {
         ));
 
         // Last event checked
-        assert_event(
-            MetaEvent::content(RawEvent::AuctionCanceled(
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-                video_id,
-            )),
-            number_of_events_before_call + 1,
-        );
+        last_event_eq!(RawEvent::AuctionCanceled(
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            video_id,
+        ));
     })
 }
 
@@ -267,7 +259,7 @@ fn cancel_nft_auction_english_auction_with_bids() {
         // deposit initial balance
         let bid = Content::min_starting_price();
 
-        let _ = balances::Module::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
+        let _ = balances::Pallet::<Test>::deposit_creating(&SECOND_MEMBER_ACCOUNT_ID, bid);
 
         // Make an english auction bid
         assert_ok!(Content::make_english_auction_bid(
@@ -299,7 +291,7 @@ fn cancel_open_auction_fails_during_channel_transfer() {
         ContentTest::default()
             .with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::Open))
             .setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
 
@@ -321,7 +313,7 @@ fn cancel_english_auction_fails_during_channel_transfer() {
         ContentTest::default()
             .with_video_nft_status(NftTransactionalStatusType::Auction(AuctionType::English))
             .setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
 

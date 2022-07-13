@@ -1,5 +1,4 @@
-import { MemberId } from '@joystream/types/common'
-import { WorkerId } from '@joystream/types/working-group'
+import { MemberId, WorkerId } from '@joystream/types/primitives'
 import { KeyringPair } from '@polkadot/keyring/types'
 import BN from 'bn.js'
 import { Api } from '../../Api'

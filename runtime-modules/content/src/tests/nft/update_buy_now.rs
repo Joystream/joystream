@@ -35,11 +35,6 @@ fn update_buy_now_price() {
             DEFAULT_NFT_PRICE,
         ));
 
-        // Runtime tested state before call
-
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
-
         // update buy now price
         assert_ok!(Content::update_buy_now_price(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
@@ -58,14 +53,11 @@ fn update_buy_now_price() {
         ));
 
         // Last event checked
-        assert_event(
-            MetaEvent::content(RawEvent::BuyNowPriceUpdated(
-                video_id,
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-                NEW_NFT_PRICE,
-            )),
-            number_of_events_before_call + 1,
-        );
+        last_event_eq!(RawEvent::BuyNowPriceUpdated(
+            video_id,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            NEW_NFT_PRICE,
+        ));
     })
 }
 
@@ -246,7 +238,7 @@ fn update_buy_now_price_fails_during_channel_transfer() {
         ContentTest::default()
             .with_video_nft_status(NftTransactionalStatusType::BuyNow)
             .setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(THIRD_MEMBER_ID)
             .call_and_assert(Ok(()));
 

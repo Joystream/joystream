@@ -14,8 +14,7 @@ members = [
 	"runtime-modules/content",
 	"runtime-modules/constitution",
 	"runtime-modules/staking-handler",
-	"runtime-modules/bounty",
-	"runtime-modules/blog",
+	# "runtime-modules/bounty",
 	"runtime-modules/utility",
 	"runtime-modules/project-token",    
 	"node",
@@ -29,3 +28,6 @@ exclude = [
 [profile.release]
 # Substrate runtime requires unwinding.
 panic = "unwind"
+
+[patch.crates-io]
+ss58-registry = { package = 'ss58-registry', git = 'https://github.com/bwhm/ss58-registry', rev = 'a70121e7bbb56f983f6f17771cc79d8f19b481a0'}

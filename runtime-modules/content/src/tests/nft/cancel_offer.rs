@@ -33,11 +33,6 @@ fn cancel_offer() {
             None,
         ));
 
-        // Runtime tested state before call
-
-        // Events number before tested calls
-        let number_of_events_before_call = System::events().len();
-
         // Cancel offer
         assert_ok!(Content::cancel_offer(
             Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
@@ -57,13 +52,10 @@ fn cancel_offer() {
         ));
 
         // Last event checked
-        assert_event(
-            MetaEvent::content(RawEvent::OfferCanceled(
-                video_id,
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-            )),
-            number_of_events_before_call + 1,
-        );
+        last_event_eq!(RawEvent::OfferCanceled(
+            video_id,
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+        ));
     })
 }
 
@@ -232,7 +224,7 @@ fn cancel_nft_offer_fails_during_channel_transfer() {
         ContentTest::default()
             .with_video_nft_status(NftTransactionalStatusType::Offer)
             .setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
 

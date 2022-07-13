@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use std::iter::FromIterator;
 
 use super::fixtures::*;
-use super::mock::{CuratorGroupId, CuratorId, *};
+use super::mock::{CuratorGroupId, CuratorId, Event, *};
 use crate::*;
 use frame_support::{assert_err, assert_ok};
 
@@ -65,7 +65,7 @@ fn curator_group_management() {
 
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::CuratorGroupStatusSet(curator_group_id, true))
+            Event::Content(RawEvent::CuratorGroupStatusSet(curator_group_id, true))
         );
 
         let group = Content::curator_group_by_id(curator_group_id);
@@ -137,7 +137,7 @@ fn curator_group_management() {
         // Check CuratorGroupPermissionsUpdated event
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::CuratorGroupPermissionsUpdated(
+            Event::Content(RawEvent::CuratorGroupPermissionsUpdated(
                 curator_group_id,
                 permissions.clone()
             ))
@@ -152,7 +152,7 @@ fn curator_group_management() {
             let allowed_actions: Vec<ContentModerationAction>;
             let permissions_for_level = permissions.get(&i);
             if let Some(permissions_for_level) = permissions_for_level {
-                allowed_actions = Vec::from_iter(permissions_for_level.iter().map(|p| p.clone()));
+                allowed_actions = Vec::from_iter(permissions_for_level.iter().cloned());
             } else {
                 allowed_actions = vec![]
             }
@@ -180,7 +180,7 @@ fn curator_group_management() {
 
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::CuratorAdded(
+            Event::Content(RawEvent::CuratorAdded(
                 curator_group_id,
                 DEFAULT_CURATOR_ID,
                 BTreeSet::new()
@@ -221,7 +221,7 @@ fn curator_group_management() {
 
         assert_eq!(
             System::events().last().unwrap().event,
-            MetaEvent::content(RawEvent::CuratorRemoved(
+            Event::Content(RawEvent::CuratorRemoved(
                 curator_group_id,
                 DEFAULT_CURATOR_ID
             ))
@@ -250,7 +250,7 @@ fn unsuccessful_curator_group_creation_with_max_permissions_by_level_map_size_ex
 
         // Group permissions
         let mut permissions = ModerationPermissionsByLevel::<Test>::new();
-        for i in 0..(<Test as Trait>::MaxKeysPerCuratorGroupPermissionsByLevelMap::get() + 1) {
+        for i in 0..(<Test as Config>::MaxKeysPerCuratorGroupPermissionsByLevelMap::get() + 1) {
             permissions.insert(i, BTreeSet::new());
         }
 
@@ -274,7 +274,7 @@ fn unsuccessful_curator_group_permissions_update_with_max_permissions_by_level_m
 
         // Group permissions
         let mut permissions = ModerationPermissionsByLevel::<Test>::new();
-        for i in 0..(<Test as Trait>::MaxKeysPerCuratorGroupPermissionsByLevelMap::get() + 1) {
+        for i in 0..(<Test as Config>::MaxKeysPerCuratorGroupPermissionsByLevelMap::get() + 1) {
             permissions.insert(i, BTreeSet::new());
         }
 

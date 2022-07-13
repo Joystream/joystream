@@ -7,9 +7,9 @@ use sp_runtime::Perbill;
 pub fn production_config() -> ContentConfig {
     ContentConfig {
         next_curator_group_id: 1,
-        next_channel_category_id: 1,
         next_channel_id: 1,
         next_video_id: 1,
+        next_transfer_id: 1,
         max_cashout_allowed: 1000,
         min_cashout_allowed: 1,
         channel_cashouts_enabled: true,
@@ -28,15 +28,16 @@ pub fn production_config() -> ContentConfig {
         platform_fee_percentage: Perbill::from_percent(1),
         auction_starts_at_max_delta: DAYS * 30,
         max_auction_whitelist_length: 100,
+        nft_limits_enabled: true,
     }
 }
 
 pub fn testing_config() -> ContentConfig {
     ContentConfig {
         next_curator_group_id: 1,
-        next_channel_category_id: 1,
         next_channel_id: 1,
         next_video_id: 1,
+        next_transfer_id: 1,
         max_cashout_allowed: 1000,
         min_cashout_allowed: 1,
         channel_cashouts_enabled: true,
@@ -55,5 +56,6 @@ pub fn testing_config() -> ContentConfig {
         platform_fee_percentage: Perbill::from_percent(1),
         auction_starts_at_max_delta: DAYS * 30,
         max_auction_whitelist_length: 100,
+        nft_limits_enabled: true,
     }
 }

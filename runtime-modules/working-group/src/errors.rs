@@ -1,11 +1,13 @@
 #![warn(missing_docs)]
 
-use crate::{Instance, Module, Trait};
+use crate::{Config, Instance, Module};
 use frame_support::decl_error;
+use sp_std::convert::TryInto;
 
 decl_error! {
     /// Discussion module predefined errors
-    pub enum Error for Module<T: Trait<I>, I: Instance>{
+    // #[derive(PartialEq)]
+    pub enum Error for Module<T: Config<I>, I: Instance>{
         /// Provided stake balance cannot be zero.
         StakeBalanceCannotBeZero,
 

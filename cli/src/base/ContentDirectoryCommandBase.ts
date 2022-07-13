@@ -1,11 +1,16 @@
 import ExitCodes from '../ExitCodes'
 import { WorkingGroups } from '../Types'
-import { CuratorGroup, CuratorGroupId, ContentActor, Channel, ChannelOwner } from '@joystream/types/content'
-import { Worker } from '@joystream/types/working-group'
+import {
+  PalletContentPermissionsCuratorGroup as CuratorGroup,
+  PalletWorkingGroupGroupWorker as Worker,
+  PalletContentPermissionsContentActor as ContentActor,
+  PalletContentChannelRecord as Channel,
+  PalletContentChannelOwner as ChannelOwner,
+} from '@polkadot/types/lookup'
 import { CLIError } from '@oclif/errors'
 import { flags } from '@oclif/command'
 import { memberHandle } from '../helpers/display'
-import { MemberId } from '@joystream/types/common'
+import { MemberId, CuratorGroupId } from '@joystream/types/primitives'
 import { createType } from '@joystream/types'
 import WorkingGroupCommandBase from './WorkingGroupCommandBase'
 
@@ -74,38 +79,34 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
   }
 
   getCurationActorByChannel(channel: Channel): Promise<[ContentActor, string]> {
-    return channel.owner.isOfType('CuratorGroup') ? this.getContentActor('Lead') : this.getContentActor('Curator')
+    return channel.owner.isCuratorGroup ? this.getContentActor('Lead') : this.getContentActor('Curator')
   }
 
   async getChannelOwnerActor(channel: Channel): Promise<[ContentActor, string]> {
-    if (channel.owner.isOfType('CuratorGroup')) {
+    if (channel.owner.isCuratorGroup) {
       try {
         return this.getContentActor('Lead')
       } catch (e) {
-        return this.getCuratorContext(channel.owner.asType('CuratorGroup'))
+        return this.getCuratorContext(channel.owner.asCuratorGroup)
       }
     } else {
-      const { id, membership } = await this.getRequiredMemberContext(false, [channel.owner.asType('Member')])
+      const { id, membership } = await this.getRequiredMemberContext(false, [channel.owner.asMember])
       return [
-        createType<ContentActor, 'ContentActor'>('ContentActor', { Member: id }),
-        membership.controller_account.toString(),
+        createType('PalletContentPermissionsContentActor', { Member: id }),
+        membership.controllerAccount.toString(),
       ]
     }
   }
 
   async getChannelCollaboratorActor(channel: Channel): Promise<[ContentActor, string]> {
     const { id, membership } = await this.getRequiredMemberContext(false, Array.from(channel.collaborators.keys()))
-    return [
-      createType<ContentActor, 'ContentActor'>('ContentActor', { Member: id }),
-      membership.controller_account.toString(),
-    ]
+    return [createType('PalletContentPermissionsContentActor', { Member: id }), membership.controllerAccount.toString()]
   }
 
   isChannelOwner(channel: Channel, actor: ContentActor): boolean {
-    return channel.owner.isOfType('CuratorGroup')
-      ? (actor.isOfType('Curator') && actor.asType('Curator')[0].eq(channel.owner.asType('CuratorGroup'))) ||
-          actor.isOfType('Lead')
-      : actor.isOfType('Member') && actor.asType('Member').eq(channel.owner.asType('Member'))
+    return channel.owner.isCuratorGroup
+      ? (actor.isCurator && actor.asCurator[0].eq(channel.owner.asCuratorGroup)) || actor.isLead
+      : actor.isMember && actor.asMember.eq(channel.owner.asMember)
   }
 
   async getChannelManagementActor(
@@ -193,7 +194,7 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
     }
 
     return [
-      createType<ContentActor, 'ContentActor'>('ContentActor', { Curator: [groupId, curator.workerId.toNumber()] }),
+      createType('PalletContentPermissionsContentActor', { Curator: [groupId, curator.workerId.toNumber()] }),
       curator.roleAccount.toString(),
     ]
   }
@@ -287,38 +288,29 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
     return group
   }
 
-  async getChannelOwner(
-    context: keyof typeof ChannelOwner.typeDefinitions,
-    ownerId: MemberId | CuratorGroupId
-  ): Promise<[ChannelOwner, string]> {
+  async getChannelOwner(context: ChannelOwner['type']): Promise<[ChannelOwner, string]> {
     if (context === 'Member') {
       const { id, membership } = await this.getRequiredMemberContext()
 
-      return [
-        createType<ChannelOwner, 'ChannelOwner'>('ChannelOwner', { Member: id }),
-        membership.controller_account.toString(),
-      ]
+      return [createType('PalletContentChannelOwner', { Member: id }), membership.controllerAccount.toString()]
     }
 
     if (context === 'CuratorGroup') {
       const lead = await this.getRequiredLeadContext()
-      await this.getCuratorGroup(ownerId.toString())
+      const curatorGroupId = await this.promptForCuratorGroup()
 
-      return [
-        createType<ChannelOwner, 'ChannelOwner'>('ChannelOwner', { CuratorGroup: ownerId }),
-        lead.roleAccount.toString(),
-      ]
+      return [createType('PalletContentChannelOwner', { CuratorGroup: curatorGroupId }), lead.roleAccount.toString()]
     }
 
     throw new Error(`Unrecognized context: ${context}`)
   }
 
-  async getContentActor(context: keyof typeof ContentActor.typeDefinitions): Promise<[ContentActor, string]> {
+  async getContentActor(context: ContentActor['type']): Promise<[ContentActor, string]> {
     if (context === 'Member') {
       const { id, membership } = await this.getRequiredMemberContext()
       return [
-        createType<ContentActor, 'ContentActor'>('ContentActor', { Member: id }),
-        membership.controller_account.toString(),
+        createType('PalletContentPermissionsContentActor', { Member: id }),
+        membership.controllerAccount.toString(),
       ]
     }
 
@@ -328,7 +320,7 @@ export default abstract class ContentDirectoryCommandBase extends WorkingGroupCo
 
     if (context === 'Lead') {
       const lead = await this.getRequiredLeadContext()
-      return [createType<ContentActor, 'ContentActor'>('ContentActor', { Lead: null }), lead.roleAccount.toString()]
+      return [createType('PalletContentPermissionsContentActor', { Lead: null }), lead.roleAccount.toString()]
     }
 
     throw new Error(`Unrecognized context: ${context}`)

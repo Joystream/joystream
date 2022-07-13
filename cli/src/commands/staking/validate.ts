@@ -25,7 +25,7 @@ export default class StakingValidateCommand extends StakingCommandBase {
     } else {
       await this.isController(controller)
     }
-    await this.checkElectionStatus()
+    // await this.checkElectionStatus()
     await this.sendAndFollowNamedTx(await this.getDecodedPair(controller), 'staking', 'validate', [validatorPrefs])
   }
 }

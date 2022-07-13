@@ -38,6 +38,7 @@
 // Disable this lint warning because Substrate generates function without an alias for
 // the ProposalDetailsOf type.
 #![allow(clippy::too_many_arguments)]
+#![allow(clippy::unused_unit)]
 
 mod types;
 
@@ -45,6 +46,8 @@ mod types;
 mod tests;
 
 mod benchmarking;
+pub mod weights;
+pub use weights::WeightInfo;
 
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Get;
@@ -54,6 +57,7 @@ use sp_arithmetic::traits::Zero;
 use sp_runtime::SaturatedConversion;
 use sp_std::clone::Clone;
 use sp_std::collections::btree_set::BTreeSet;
+use sp_std::convert::TryInto;
 
 use common::membership::MemberOriginValidator;
 use common::MemberId;
@@ -73,51 +77,19 @@ const MAX_VALIDATOR_COUNT: u32 = 300;
 // Max number of account that a fund request accept
 const MAX_FUNDING_REQUEST_ACCOUNTS: usize = 100;
 
-/// Proposal codex WeightInfo.
-/// Note: This was auto generated through the benchmark CLI using the `--weight-trait` flag
-pub trait WeightInfo {
-    fn create_proposal_signal(i: u32, t: u32, d: u32) -> Weight;
-    fn create_proposal_runtime_upgrade(i: u32, t: u32, d: u32) -> Weight;
-    fn create_proposal_funding_request(i: u32, d: u32) -> Weight;
-    fn create_proposal_set_max_validator_count(t: u32, d: u32) -> Weight;
-    fn create_proposal_create_working_group_lead_opening(i: u32, t: u32, d: u32) -> Weight;
-    fn create_proposal_fill_working_group_lead_opening(t: u32, d: u32) -> Weight;
-    fn create_proposal_update_working_group_budget(t: u32, d: u32) -> Weight;
-    fn create_proposal_decrease_working_group_lead_stake(t: u32, d: u32) -> Weight;
-    fn create_proposal_slash_working_group_lead(d: u32) -> Weight;
-    fn create_proposal_set_working_group_lead_reward(t: u32, d: u32) -> Weight;
-    fn create_proposal_terminate_working_group_lead(t: u32, d: u32) -> Weight;
-    fn create_proposal_amend_constitution(i: u32, d: u32) -> Weight;
-    fn create_proposal_cancel_working_group_lead_opening(d: u32) -> Weight;
-    fn create_proposal_set_membership_price(t: u32, d: u32) -> Weight;
-    fn create_proposal_set_council_budget_increment(t: u32, d: u32) -> Weight;
-    fn create_proposal_set_councilor_reward(t: u32, d: u32) -> Weight;
-    fn create_proposal_set_initial_invitation_balance(t: u32, d: u32) -> Weight;
-    fn create_proposal_set_initial_invitation_count(t: u32, d: u32) -> Weight;
-    fn create_proposal_set_membership_lead_invitation_quota(d: u32) -> Weight;
-    fn create_proposal_set_referral_cut(t: u32, d: u32) -> Weight;
-    fn create_proposal_create_blog_post(t: u32, d: u32, h: u32, b: u32) -> Weight;
-    fn create_proposal_edit_blog_post(t: u32, d: u32, h: u32, b: u32) -> Weight;
-    fn create_proposal_lock_blog_post(t: u32, d: u32) -> Weight;
-    fn create_proposal_unlock_blog_post(t: u32, d: u32) -> Weight;
-    fn create_proposal_veto_proposal(t: u32, d: u32) -> Weight;
-    fn create_proposal_update_global_nft_limit(t: u32, d: u32) -> Weight;
-    fn create_proposal_update_channel_payouts(t: u32, d: u32, i: u32) -> Weight;
-}
-
-type WeightInfoCodex<T> = <T as Trait>::WeightInfo;
+type WeightInfoCodex<T> = <T as Config>::WeightInfo;
 
 /// 'Proposals codex' substrate module Trait
-pub trait Trait:
-    frame_system::Trait
-    + proposals_engine::Trait
-    + proposals_discussion::Trait
+pub trait Config:
+    frame_system::Config
+    + proposals_engine::Config
+    + proposals_discussion::Config
     + common::membership::MembershipTypes
-    + staking::Trait
-    + proposals_engine::Trait
+    + staking::Config
+    + proposals_engine::Config
 {
     /// Proposal Codex module event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 
     /// Validates member id and origin combination.
     type MembershipOriginValidator: MemberOriginValidator<
@@ -230,22 +202,6 @@ pub trait Trait:
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// `Create Blog Post` proposal parameters
-    type CreateBlogPostProposalParameters: Get<
-        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
-    >;
-
-    /// `Edit Blog Post` proposal parameters
-    type EditBlogPostProoposalParamters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
-
-    /// `Lock Blog Post` proposal parameters
-    type LockBlogPostProposalParameters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
-
-    /// `Unlock Blog Post` proposal parameters
-    type UnlockBlogPostProposalParameters: Get<
-        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
-    >;
-
     /// `Veto Proposal` proposal parameters
     type VetoProposalProposalParameters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
 
@@ -254,25 +210,26 @@ pub trait Trait:
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// `Update Channel Payouts` proposal parameters
-    type UpdateChannelPayoutsProposalParameters: Get<
-        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
-    >;
+    // TODO: enable after Carthage
+    // /// `Update Channel Payouts` proposal parameters
+    // type UpdateChannelPayoutsProposalParameters: Get<
+    //     ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    // >;
 }
 
 /// Specialized alias of GeneralProposalParams
 pub type GeneralProposalParameters<T> = GeneralProposalParams<
     MemberId<T>,
-    <T as frame_system::Trait>::AccountId,
-    <T as frame_system::Trait>::BlockNumber,
+    <T as frame_system::Config>::AccountId,
+    <T as frame_system::Config>::BlockNumber,
 >;
 
 decl_event! {
     pub enum Event<T> where
         GeneralProposalParameters = GeneralProposalParameters<T>,
         ProposalDetailsOf = ProposalDetailsOf<T>,
-        <T as proposals_engine::Trait>::ProposalId,
-        <T as proposals_discussion::Trait>::ThreadId
+        <T as proposals_engine::Config>::ProposalId,
+        <T as proposals_discussion::Config>::ThreadId
     {
         /// A proposal was created
         /// Params:
@@ -286,7 +243,7 @@ decl_event! {
 
 decl_error! {
     /// Codex module predefined errors
-    pub enum Error for Module<T: Trait> {
+    pub enum Error for Module<T: Config> {
         /// Provided text for text proposal is empty
         SignalProposalIsEmpty,
 
@@ -354,7 +311,7 @@ decl_error! {
 
 // Storage for the proposals codex module
 decl_storage! {
-    pub trait Store for Module<T: Trait> as ProposalCodex {
+    pub trait Store for Module<T: Config> as ProposalsCodex {
         /// Map proposal id to its discussion thread id
         pub ThreadIdByProposalId get(fn thread_id_by_proposal_id):
             map hasher(blake2_128_concat) T::ProposalId => T::ThreadId;
@@ -363,7 +320,7 @@ decl_storage! {
 
 decl_module! {
     /// Proposal codex substrate module Call
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -446,26 +403,15 @@ decl_module! {
         const SetReferralCutProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetReferralCutProposalParameters::get();
 
-        const CreateBlogPostProposalParameters:
-            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::CreateBlogPostProposalParameters::get();
-
-        const EditBlogPostProoposalParamters:
-            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::EditBlogPostProoposalParamters::get();
-
-        const LockBlogPostProposalParameters:
-            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::LockBlogPostProposalParameters::get();
-
-        const UnlockBlogPostProposalParameters:
-            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UnlockBlogPostProposalParameters::get();
-
         const VetoProposalProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::VetoProposalProposalParameters::get();
 
         const UpdateGlobalNftLimitProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateGlobalNftLimitProposalParameters::get();
 
-        const UpdateChannelPayoutsProposalParameters:
-            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateChannelPayoutsProposalParameters::get();
+        // TODO: enable after Carthage
+        // const UpdateChannelPayoutsProposalParameters:
+        //     ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateChannelPayoutsProposalParameters::get();
 
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
@@ -481,8 +427,8 @@ decl_module! {
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
         #[weight = Module::<T>::get_create_proposal_weight(
-                &general_proposal_parameters,
-                &proposal_details
+                general_proposal_parameters,
+                proposal_details
             )
         ]
         pub fn create_proposal(
@@ -543,7 +489,7 @@ decl_module! {
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     // Ensure that the proposal details respects all the checks
     fn ensure_details_checks(details: &ProposalDetailsOf<T>) -> DispatchResult {
         match details {
@@ -594,7 +540,7 @@ impl<T: Trait> Module<T> {
                 // We shouldn't access the storage for creation checks but we do it here for the
                 // reasons just explained **as an exception**.
                 ensure!(
-                    *new_validator_count >= <staking::Module<T>>::minimum_validator_count(),
+                    *new_validator_count >= <staking::Pallet<T>>::minimum_validator_count(),
                     Error::<T>::InvalidValidatorCount
                 );
 
@@ -654,33 +600,20 @@ impl<T: Trait> Module<T> {
             ProposalDetails::SetReferralCut(..) => {
                 // Note: No checks for this proposal for now
             }
-            ProposalDetails::CreateBlogPost(..) => {
-                // Note: No checks for this proposal for now
-            }
-            ProposalDetails::EditBlogPost(..) => {
-                // Note: No checks for this proposal for now
-            }
-            ProposalDetails::LockBlogPost(..) => {
-                // Note: No checks for this proposal for now
-            }
-            ProposalDetails::UnlockBlogPost(..) => {
-                // Note: No checks for this proposal for now
-            }
             ProposalDetails::VetoProposal(..) => {
                 // Note: No checks for this proposal for now
             }
             ProposalDetails::UpdateGlobalNftLimit(..) => {
                 // Note: No checks for this proposal for now
-            }
-
-            ProposalDetails::UpdateChannelPayouts(params) => {
-                if params.min_cashout_allowed.is_some() && params.max_cashout_allowed.is_some() {
-                    ensure!(
-                        params.max_cashout_allowed.unwrap() >= params.min_cashout_allowed.unwrap(),
-                        Error::<T>::InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout
-                    );
-                }
-            }
+            } // TODO: enable after Carthage
+              // ProposalDetails::UpdateChannelPayouts(params) => {
+              //     if params.min_cashout_allowed.is_some() && params.max_cashout_allowed.is_some() {
+              //         ensure!(
+              //             params.max_cashout_allowed.unwrap() >= params.min_cashout_allowed.unwrap(),
+              //             Error::<T>::InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout
+              //         );
+              //     }
+              // }
         }
 
         Ok(())
@@ -741,17 +674,13 @@ impl<T: Trait> Module<T> {
                 T::SetMembershipLeadInvitationQuotaProposalParameters::get()
             }
             ProposalDetails::SetReferralCut(..) => T::SetReferralCutProposalParameters::get(),
-            ProposalDetails::CreateBlogPost(..) => T::CreateBlogPostProposalParameters::get(),
-            ProposalDetails::EditBlogPost(..) => T::EditBlogPostProoposalParamters::get(),
-            ProposalDetails::LockBlogPost(..) => T::LockBlogPostProposalParameters::get(),
-            ProposalDetails::UnlockBlogPost(..) => T::UnlockBlogPostProposalParameters::get(),
             ProposalDetails::VetoProposal(..) => T::VetoProposalProposalParameters::get(),
             ProposalDetails::UpdateGlobalNftLimit(..) => {
                 T::UpdateGlobalNftLimitProposalParameters::get()
-            }
-            ProposalDetails::UpdateChannelPayouts(..) => {
-                T::UpdateChannelPayoutsProposalParameters::get()
-            }
+            } // TODO: enable after Carthage
+              // ProposalDetails::UpdateChannelPayouts(..) => {
+              //     T::UpdateChannelPayoutsProposalParameters::get()
+              // }
         }
     }
 
@@ -778,6 +707,7 @@ impl<T: Trait> Module<T> {
             ProposalDetails::FundingRequest(params) => {
                 WeightInfoCodex::<T>::create_proposal_funding_request(
                     params.len().saturated_into(),
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
@@ -814,6 +744,7 @@ impl<T: Trait> Module<T> {
             }
             ProposalDetails::SlashWorkingGroupLead(..) => {
                 WeightInfoCodex::<T>::create_proposal_slash_working_group_lead(
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
@@ -832,6 +763,7 @@ impl<T: Trait> Module<T> {
             ProposalDetails::AmendConstitution(new_constitution) => {
                 WeightInfoCodex::<T>::create_proposal_amend_constitution(
                     new_constitution.len().saturated_into(),
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
@@ -843,6 +775,7 @@ impl<T: Trait> Module<T> {
             }
             ProposalDetails::CancelWorkingGroupLeadOpening(..) => {
                 WeightInfoCodex::<T>::create_proposal_cancel_working_group_lead_opening(
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
@@ -872,6 +805,7 @@ impl<T: Trait> Module<T> {
             }
             ProposalDetails::SetMembershipLeadInvitationQuota(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_membership_lead_invitation_quota(
+                    title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
             }
@@ -880,37 +814,6 @@ impl<T: Trait> Module<T> {
                     title_length.saturated_into(),
                     description_length.saturated_into(),
                 )
-            }
-            ProposalDetails::CreateBlogPost(header, body) => {
-                WeightInfoCodex::<T>::create_proposal_create_blog_post(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
-                    header.len().saturated_into(),
-                    body.len().saturated_into(),
-                )
-            }
-            ProposalDetails::EditBlogPost(_, header, body) => {
-                let header_len = header.as_ref().map_or(0, |h| h.len());
-                let body_len = body.as_ref().map_or(0, |b| b.len());
-                WeightInfoCodex::<T>::create_proposal_edit_blog_post(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
-                    header_len.saturated_into(),
-                    body_len.saturated_into(),
-                )
-            }
-            ProposalDetails::LockBlogPost(..) => {
-                WeightInfoCodex::<T>::create_proposal_lock_blog_post(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
-                )
-            }
-            ProposalDetails::UnlockBlogPost(..) => {
-                WeightInfoCodex::<T>::create_proposal_unlock_blog_post(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
-                )
-                .saturated_into()
             }
             ProposalDetails::VetoProposal(..) => {
                 WeightInfoCodex::<T>::create_proposal_veto_proposal(
@@ -925,24 +828,24 @@ impl<T: Trait> Module<T> {
                     description_length.saturated_into(),
                 )
                 .saturated_into()
-            }
-            ProposalDetails::UpdateChannelPayouts(params) => {
-                WeightInfoCodex::<T>::create_proposal_update_channel_payouts(
-                    title_length.saturated_into(),
-                    description_length.saturated_into(),
-                    params
-                        .payload
-                        .as_ref()
-                        .map_or(0, |p| p.object_creation_params.ipfs_content_id.len() as u32),
-                )
-                .saturated_into()
-            }
+            } // TODO: enable after Carthage
+              // ProposalDetails::UpdateChannelPayouts(params) => {
+              //     WeightInfoCodex::<T>::create_proposal_update_channel_payouts(
+              //         params
+              //             .payload
+              //             .as_ref()
+              //             .map_or(0, |p| p.object_creation_params.ipfs_content_id.len() as u32),
+              //         title_length.saturated_into(),
+              //         description_length.saturated_into(),
+              //     )
+              //     .saturated_into()
+              // }
         }
     }
 }
 
-impl<T: Trait> ProposalObserver<T> for Module<T> {
-    fn proposal_removed(proposal_id: &<T as proposals_engine::Trait>::ProposalId) {
+impl<T: Config> ProposalObserver<T> for Module<T> {
+    fn proposal_removed(proposal_id: &<T as proposals_engine::Config>::ProposalId) {
         <ThreadIdByProposalId<T>>::remove(proposal_id);
 
         let thread_id = Self::thread_id_by_proposal_id(proposal_id);

@@ -57,9 +57,8 @@ jobs:
         run: |
           if ! [ -f joystream-node-docker-image.tar.gz ]; then
             docker build .\
-              --file joystream-node.Dockerfile\
-              --tag joystream/node\
-              --build-arg CARGO_FEATURES="testing_runtime"
+              --file joystream-node.Dockerfile \
+              --tag joystream/node
             docker save --output joystream-node-docker-image.tar joystream/node
             gzip joystream-node-docker-image.tar
             cp joystream-node-docker-image.tar.gz ~/docker-images/
@@ -71,9 +70,9 @@ jobs:
           name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
           path: joystream-node-docker-image.tar.gz
 
-  runtime_upgrade_from_olympia:
+  runtime_upgrade:
     # if: ${{ false }}
-    name: Runtime Upgrade From Olypia
+    name: Runtime Upgrade From Rhodes Spec 6
     needs: build_images
     runs-on: ubuntu-latest
     steps:
@@ -102,7 +101,7 @@ jobs:
           export HOME=${PWD}
           mkdir -p ${HOME}/.local/share/joystream-cli
           yarn joystream-cli api:setUri ws://localhost:9944
-          # Olympia release production runtime profile
-          export RUNTIME_TAG=6740a4ae2bf40fe7c670fb49943cbbe290277601
+          # Rhodes release (spec 7) production runtime profile
+          export RUNTIME_TAG=e3f72ac0dbfc3d8dc69b63c2ab991f104411f205
           export TARGET_RUNTIME_TAG=latest
           tests/network-tests/run-migration-tests.sh

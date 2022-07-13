@@ -5,7 +5,7 @@ use crate::tests::mock::*;
 use crate::tests::test_utils::{default_vesting_schedule, TokenDataBuilder};
 use crate::traits::PalletToken;
 use crate::types::{TransferPolicyOf, Transfers, Validated, VestingSource};
-use crate::Trait;
+use crate::Config;
 use crate::{balance, joy, last_event_eq, member, merkle_root, origin, token, Error, RawEvent};
 use sp_runtime::{traits::Hash, DispatchError, Permill};
 
@@ -49,7 +49,7 @@ fn transfer_fails_with_non_existing_source() {
     let token_id = token!(1);
     let origin = origin!(member!(1).1);
     let src_member_id = member!(1).0;
-    let (dst, amount) = (member!(2).1, balance!(100));
+    let (dst, amount) = (member!(2).0, balance!(100));
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
@@ -68,11 +68,34 @@ fn transfer_fails_with_non_existing_source() {
 }
 
 #[test]
+fn transfer_fails_with_non_existing_dst_member() {
+    let token_id = token!(1);
+    let origin = origin!(member!(1).1);
+    let src_member_id = member!(1).0;
+    let (dst, amount) = (member!(9999).0, balance!(100));
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissionless)
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(src_member_id, AccountData::new_with_amount(amount))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::transfer(origin, src_member_id, token_id, outputs![(dst, amount)]);
+
+        assert_noop!(result, Error::<Test>::TransferDestinationMemberDoesNotExist);
+    })
+}
+
+#[test]
 fn transfer_fails_with_invalid_src_member_controller() {
     let token_id = token!(1);
-    let origin = origin!(member!(2).1);
+    let origin = origin!(member!(2).0);
     let src_member_id = member!(1).0;
-    let (dst, amount) = (member!(2).1, balance!(100));
+    let (dst, amount) = (member!(2).0, balance!(100));
 
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissionless)
@@ -1026,6 +1049,33 @@ fn issuer_transfer_fails_with_non_existing_source() {
 }
 
 #[test]
+fn issuer_transfer_fails_with_non_existing_dst_member() {
+    let token_id = token!(1);
+    let (src_member_id, src_account_id) = member!(1);
+    let (dst, amount) = (member!(9999).0, balance!(100));
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissionless)
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(src_member_id, AccountData::new_with_amount(amount))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        let result = Token::issuer_transfer(
+            token_id,
+            src_member_id,
+            src_account_id,
+            issuer_outputs![(dst, amount, None)],
+        );
+
+        assert_noop!(result, Error::<Test>::TransferDestinationMemberDoesNotExist);
+    })
+}
+
+#[test]
 fn issuer_transfer_fails_with_src_having_insufficient_funds_for_bloat_bond() {
     let token_id = token!(1);
     let token_data = TokenDataBuilder::new_empty()
@@ -1282,7 +1332,7 @@ fn issuer_permissioned_token_transfer_ok() {
 
 #[test]
 fn issuer_multiple_permissioned_token_transfers_ok_with_vesting_cleanup_executed() {
-    let max_vesting_schedules = <Test as Trait>::MaxVestingBalancesPerAccountPerToken::get();
+    let max_vesting_schedules = <Test as Config>::MaxVestingBalancesPerAccountPerToken::get();
     let token_id = token!(1);
     let token_data = TokenDataBuilder::new_empty()
         .with_transfer_policy(Policy::Permissioned(Hashing::hash_of(b"default")))

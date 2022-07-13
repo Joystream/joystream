@@ -6,7 +6,7 @@ use sp_runtime::offchain::storage_lock::BlockNumberProvider;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::iter::FromIterator;
 
-use super::mocks::{Balances, Bounty, System, Test, TestEvent};
+use super::mocks::{Balances, Bounty, Event, System, Test};
 use crate::{
     AssuranceContractType, BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord,
     Entry, FundingType, OracleJudgmentOf, RawEvent,
@@ -58,7 +58,7 @@ impl EventFixture {
             OracleJudgmentOf<Test>,
         >,
     ) {
-        let converted_event = TestEvent::bounty(expected_raw_event);
+        let converted_event = Event::bounty(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
     }
@@ -74,12 +74,12 @@ impl EventFixture {
             OracleJudgmentOf<Test>,
         >,
     ) {
-        let converted_event = TestEvent::bounty(expected_raw_event);
+        let converted_event = Event::bounty(expected_raw_event);
 
         Self::contains_global_event(converted_event)
     }
 
-    pub fn assert_last_global_event(expected_event: TestEvent) {
+    pub fn assert_last_global_event(expected_event: Event) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,
@@ -89,7 +89,7 @@ impl EventFixture {
         assert_eq!(System::events().pop().unwrap(), expected_event);
     }
 
-    fn contains_global_event(expected_event: TestEvent) {
+    fn contains_global_event(expected_event: Event) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,

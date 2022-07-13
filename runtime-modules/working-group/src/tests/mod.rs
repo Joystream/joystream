@@ -18,8 +18,8 @@ use crate::tests::mock::{
 };
 use crate::types::StakeParameters;
 use crate::{
-    default_storage_size_constraint, DefaultInstance, Error, OpeningType, RawEvent,
-    RewardPaymentType, StakePolicy, Trait, Worker,
+    default_storage_size_constraint, Config, DefaultInstance, Error, OpeningType, RawEvent,
+    RewardPaymentType, StakePolicy, Worker,
 };
 use common::working_group::WorkingGroupAuthenticator;
 use fixtures::{
@@ -46,7 +46,7 @@ fn add_opening_succeeded() {
         let add_opening_fixture = AddOpeningFixture::default()
             .with_starting_block(starting_block)
             .with_stake_policy(StakePolicy {
-                stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
+                stake_amount: <Test as Config>::MinimumApplicationStake::get(),
                 leaving_unstaking_period: 100,
             })
             .with_reward_per_block(Some(10));
@@ -81,7 +81,7 @@ fn add_opening_fails_with_less_than_minimum_stake() {
 
         let add_opening_fixture = AddOpeningFixture::default().with_stake_policy(StakePolicy {
             stake_amount: 0,
-            leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get(),
+            leaving_unstaking_period: <Test as Config>::MinUnstakingPeriodLimit::get(),
         });
 
         add_opening_fixture.call_and_assert(Err(
@@ -89,8 +89,8 @@ fn add_opening_fails_with_less_than_minimum_stake() {
         ));
 
         let add_opening_fixture = AddOpeningFixture::default().with_stake_policy(StakePolicy {
-            stake_amount: <Test as Trait>::MinimumApplicationStake::get() - 1,
-            leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get(),
+            stake_amount: <Test as Config>::MinimumApplicationStake::get() - 1,
+            leaving_unstaking_period: <Test as Config>::MinUnstakingPeriodLimit::get(),
         });
 
         add_opening_fixture.call_and_assert(Err(
@@ -116,12 +116,12 @@ fn add_opening_fails_with_zero_reward() {
 fn add_opening_fails_with_insufficient_balance() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default()
-            .with_initial_balance(<Test as Trait>::MinimumApplicationStake::get())
+            .with_initial_balance(<Test as Config>::MinimumApplicationStake::get())
             .hire_lead();
 
         let add_opening_fixture = AddOpeningFixture::default().with_stake_policy(StakePolicy {
-            stake_amount: <Test as Trait>::MinimumApplicationStake::get(),
-            leaving_unstaking_period: <Test as Trait>::MinUnstakingPeriodLimit::get() + 1,
+            stake_amount: <Test as Config>::MinimumApplicationStake::get(),
+            leaving_unstaking_period: <Test as Config>::MinUnstakingPeriodLimit::get() + 1,
         });
 
         add_opening_fixture.call_and_assert(Err(
@@ -133,7 +133,7 @@ fn add_opening_fails_with_insufficient_balance() {
 #[test]
 fn add_opening_fails_with_incorrect_unstaking_period() {
     build_test_externalities().execute_with(|| {
-        let min_allowed_unstaking_period = <Test as Trait>::MinUnstakingPeriodLimit::get();
+        let min_allowed_unstaking_period = <Test as Config>::MinUnstakingPeriodLimit::get();
         // Test does not make sense if minimum allowed is zero
         if min_allowed_unstaking_period == 0 {
             return;
@@ -183,7 +183,7 @@ fn apply_on_opening_succeeded() {
         let opening_id = add_opening_fixture.call().unwrap();
 
         let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
-            .with_initial_balance(<Test as Trait>::MinimumApplicationStake::get());
+            .with_initial_balance(<Test as Config>::MinimumApplicationStake::get());
 
         let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
 
@@ -240,8 +240,7 @@ fn apply_on_opening_fails_with_bad_member_id() {
         let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
             .with_origin(RawOrigin::Signed(1), member_id);
 
-        apply_on_opening_fixture
-            .call_and_assert(Err(DispatchError::Other(ACTOR_ORIGIN_ERROR).into()));
+        apply_on_opening_fixture.call_and_assert(Err(DispatchError::Other(ACTOR_ORIGIN_ERROR)));
     });
 }
 
@@ -257,7 +256,7 @@ fn fill_opening_succeeded() {
 
         let add_opening_fixture = AddOpeningFixture::default()
             .with_starting_block(starting_block)
-            .with_reward_per_block(Some(reward_per_block.clone()));
+            .with_reward_per_block(Some(reward_per_block));
 
         let opening_id = add_opening_fixture.call().unwrap();
 
@@ -276,7 +275,7 @@ fn fill_opening_succeeded() {
 
         assert_eq!(
             Balances::usable_balance(&1),
-            initial_balance + <Test as Trait>::LeaderOpeningStake::get()
+            initial_balance + <Test as Config>::LeaderOpeningStake::get()
         );
 
         let mut result_map = BTreeMap::new();
@@ -368,8 +367,8 @@ fn fill_opening_fails_with_application_for_other_opening() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default()
             .with_initial_balance(
-                <Test as Trait>::MinimumApplicationStake::get()
-                    + 3 * <Test as Trait>::LeaderOpeningStake::get()
+                <Test as Config>::MinimumApplicationStake::get()
+                    + 3 * <Test as Config>::LeaderOpeningStake::get()
                     + 1,
             )
             .hire_lead();
@@ -529,7 +528,7 @@ fn update_worker_role_account_by_leader_succeeds() {
         let new_account_id = 10;
         let worker_id = HireLeadFixture::default().hire_lead();
 
-        let old_lead = TestWorkingGroup::worker_by_id(worker_id);
+        let old_lead = TestWorkingGroup::worker_by_id(worker_id).expect("Worker Must Exist");
 
         let update_worker_account_fixture =
             UpdateWorkerRoleAccountFixture::default_with_ids(worker_id, new_account_id);
@@ -540,10 +539,10 @@ fn update_worker_role_account_by_leader_succeeds() {
 
         assert_eq!(
             new_lead,
-            Worker::<Test> {
+            Some(Worker::<Test> {
                 role_account_id: new_account_id,
                 ..old_lead
-            }
+            })
         );
     });
 }
@@ -562,7 +561,7 @@ fn update_worker_role_fails_with_leaving_worker() {
 
         let worker_id = HireRegularWorkerFixture::default()
             .with_initial_balance(total_balance)
-            .with_stake_policy(stake_policy.clone())
+            .with_stake_policy(stake_policy)
             .hire();
 
         let new_account_id = 10;
@@ -609,7 +608,7 @@ fn leave_worker_role_succeeds() {
 
         EventFixture::assert_last_crate_event(RawEvent::WorkerStartedLeaving(worker_id, None));
 
-        let worker = TestWorkingGroup::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id).expect("Worker Must Exist");
         run_to_block(1 + worker.job_unstaking_period);
 
         EventFixture::assert_last_crate_event(RawEvent::WorkerExited(worker_id));
@@ -626,7 +625,7 @@ fn leave_worker_role_succeeds_with_paying_missed_reward() {
             .with_reward_per_block(Some(reward_per_block))
             .hire();
 
-        let reward_period: u64 = <Test as Trait>::RewardPeriod::get().into();
+        let reward_period: u64 = <Test as Config>::RewardPeriod::get().into();
         let missed_reward_block_number = reward_period * 2;
 
         run_to_block(missed_reward_block_number);
@@ -638,7 +637,7 @@ fn leave_worker_role_succeeds_with_paying_missed_reward() {
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
-        let worker = TestWorkingGroup::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id).expect("Worker Must Exist");
         let leaving_block = missed_reward_block_number + worker.job_unstaking_period;
         run_to_block(leaving_block);
 
@@ -658,7 +657,8 @@ fn leave_worker_role_succeeds_with_paying_missed_reward() {
         let reward_block_count = leaving_block - reward_period;
         assert_eq!(
             Balances::usable_balance(&account_id),
-            reward_block_count * reward_per_block + <Test as Trait>::MinimumApplicationStake::get()
+            reward_block_count * reward_per_block
+                + <Test as Config>::MinimumApplicationStake::get()
         );
     });
 }
@@ -676,8 +676,9 @@ fn leave_worker_role_succeeds_with_correct_unstaking_period() {
             worker_id
         ));
 
-        let default_unstaking_period =
-            TestWorkingGroup::worker_by_id(worker_id).job_unstaking_period;
+        let default_unstaking_period = TestWorkingGroup::worker_by_id(worker_id)
+            .expect("Worker Must Exist")
+            .job_unstaking_period;
 
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
         leave_worker_role_fixture.call_and_assert(Ok(()));
@@ -724,12 +725,12 @@ fn leave_worker_role_succeeds_with_partial_payment_of_missed_reward() {
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
-        let worker = TestWorkingGroup::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id).expect("Worker Must Exist");
         run_to_block(block_number + worker.job_unstaking_period);
 
         assert_eq!(
             Balances::usable_balance(&account_id),
-            budget + <Test as Trait>::MinimumApplicationStake::get()
+            budget + <Test as Config>::MinimumApplicationStake::get()
         );
     });
 }
@@ -749,10 +750,10 @@ fn leave_worker_role_by_leader_succeeds() {
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
         let current_lead = TestWorkingGroup::current_lead().unwrap();
-        let leader = TestWorkingGroup::worker_by_id(current_lead);
+        let leader = TestWorkingGroup::worker_by_id(current_lead).expect("Worker Must Exist");
         assert!(leader.started_leaving_at.is_some());
 
-        run_to_block(frame_system::Module::<Test>::block_number() + leader.job_unstaking_period);
+        run_to_block(frame_system::Pallet::<Test>::block_number() + leader.job_unstaking_period);
 
         assert_eq!(TestWorkingGroup::current_lead(), None);
     });
@@ -795,7 +796,7 @@ fn leave_worker_role_fails_already_leaving_worker() {
 
         let worker_id = HireRegularWorkerFixture::default()
             .with_initial_balance(total_balance)
-            .with_stake_policy(stake_policy.clone())
+            .with_stake_policy(stake_policy)
             .hire();
 
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
@@ -871,7 +872,7 @@ fn terminate_worker_role_succeeds_with_paying_missed_reward() {
 
         assert_eq!(
             Balances::usable_balance(&account_id),
-            block_number * reward_per_block + <Test as Trait>::MinimumApplicationStake::get()
+            block_number * reward_per_block + <Test as Config>::MinimumApplicationStake::get()
         );
     });
 }
@@ -1024,8 +1025,8 @@ fn apply_on_opening_locks_the_stake() {
         HireLeadFixture::default().hire_lead();
 
         let account_id = 2;
-        let total_balance = <Test as Trait>::MinimumApplicationStake::get() + 100;
-        let stake = <Test as Trait>::MinimumApplicationStake::get();
+        let total_balance = <Test as Config>::MinimumApplicationStake::get() + 100;
+        let stake = <Test as Config>::MinimumApplicationStake::get();
 
         let stake_parameters = StakeParameters {
             stake,
@@ -1196,7 +1197,7 @@ fn leave_worker_unlocks_the_stake() {
 
         let worker_id = HireRegularWorkerFixture::default()
             .with_initial_balance(total_balance)
-            .with_stake_policy(stake_policy.clone())
+            .with_stake_policy(stake_policy)
             .hire();
 
         assert_eq!(Balances::usable_balance(&account_id), total_balance - stake);
@@ -1226,7 +1227,7 @@ fn leave_worker_unlocks_the_stake_with_unstaking_period() {
 
         let worker_id = HireRegularWorkerFixture::default()
             .with_initial_balance(total_balance)
-            .with_stake_policy(stake_policy.clone())
+            .with_stake_policy(stake_policy)
             .hire();
 
         assert_eq!(Balances::usable_balance(&account_id), total_balance - stake);
@@ -1787,7 +1788,7 @@ fn withdraw_worker_application_fails_with_invalid_application_author() {
         let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
         let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
-            .with_initial_balance(<Test as Trait>::MinimumApplicationStake::get() + 1);
+            .with_initial_balance(<Test as Config>::MinimumApplicationStake::get() + 1);
         let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
 
         let invalid_author_account_id = 55;
@@ -1823,7 +1824,7 @@ fn cancel_opening_succeeds() {
 
         assert_eq!(
             Balances::usable_balance(&1),
-            initial_balance + <Test as Trait>::LeaderOpeningStake::get()
+            initial_balance + <Test as Config>::LeaderOpeningStake::get()
         );
 
         EventFixture::assert_last_crate_event(RawEvent::OpeningCanceled(opening_id));
@@ -1872,7 +1873,7 @@ fn decrease_worker_stake_fails_with_leaving_worker() {
 
         let worker_id = HireRegularWorkerFixture::default()
             .with_initial_balance(total_balance)
-            .with_stake_policy(stake_policy.clone())
+            .with_stake_policy(stake_policy)
             .hire();
 
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
@@ -1900,7 +1901,7 @@ fn increase_worker_stake_fails_with_leaving_worker() {
         };
 
         let worker_id = HireRegularWorkerFixture::default()
-            .with_stake_policy(stake_policy.clone())
+            .with_stake_policy(stake_policy)
             .with_initial_balance(total_balance)
             .hire();
 
@@ -1925,7 +1926,7 @@ fn rewards_payments_are_successful() {
             .with_reward_per_block(Some(reward_per_block))
             .hire();
 
-        let worker = TestWorkingGroup::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id).expect("Worker Must Exist");
 
         let account_id = worker.role_account_id;
 
@@ -1941,7 +1942,7 @@ fn rewards_payments_are_successful() {
             block_number * reward_per_block
         );
 
-        let reward_period: u64 = <Test as Trait>::RewardPeriod::get().into();
+        let reward_period: u64 = <Test as Config>::RewardPeriod::get().into();
         EventFixture::assert_last_crate_event(RawEvent::RewardPaid(
             worker_id,
             account_id,
@@ -1960,7 +1961,7 @@ fn rewards_payments_with_no_budget() {
             .with_reward_per_block(Some(reward_per_block))
             .hire();
 
-        let worker = TestWorkingGroup::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id).expect("Worker Must Exist");
 
         let account_id = worker.role_account_id;
 
@@ -1971,7 +1972,7 @@ fn rewards_payments_with_no_budget() {
 
         assert_eq!(Balances::usable_balance(&account_id), 0);
 
-        let worker = TestWorkingGroup::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id).expect("Worker Must Exist");
 
         assert_eq!(
             worker.missed_reward.unwrap(),
@@ -1989,7 +1990,7 @@ fn rewards_payments_with_insufficient_budget_and_restored_budget() {
             .with_reward_per_block(Some(reward_per_block))
             .hire();
 
-        let worker = TestWorkingGroup::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id).expect("Worker Must Exist");
 
         let account_id = worker.reward_account_id;
 
@@ -2007,7 +2008,7 @@ fn rewards_payments_with_insufficient_budget_and_restored_budget() {
 
         assert_eq!(Balances::usable_balance(&account_id), first_budget);
 
-        let worker = TestWorkingGroup::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id).expect("Worker Must Exist");
 
         let effective_missed_reward: u64 = block_number * reward_per_block - first_budget;
 
@@ -2039,7 +2040,7 @@ fn rewards_payments_with_starting_block() {
             .with_reward_per_block(Some(reward_per_block))
             .hire();
 
-        let worker = TestWorkingGroup::worker_by_id(worker_id);
+        let worker = TestWorkingGroup::worker_by_id(worker_id).expect("Worker Must Exist");
 
         let account_id = worker.reward_account_id;
 
@@ -2302,7 +2303,7 @@ fn set_status_text_succeeded() {
             .with_status_text(Some(status_text.clone()))
             .call_and_assert(Ok(()));
 
-        let expected_hash = <Test as frame_system::Trait>::Hashing::hash(&status_text);
+        let expected_hash = <Test as frame_system::Config>::Hashing::hash(&status_text);
         EventFixture::assert_last_crate_event(RawEvent::StatusTextChanged(
             expected_hash.as_ref().to_vec(),
             Some(status_text),
@@ -2347,7 +2348,7 @@ fn spend_from_budget_succeeded() {
 fn spend_from_budget_failed_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
         SpendFromBudgetFixture::default()
-            .with_origin(RawOrigin::None.into())
+            .with_origin(RawOrigin::None)
             .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
@@ -2596,7 +2597,7 @@ fn update_worker_storage_fails_with_invalid_worker_id() {
 
         let update_storage_fixture = UpdateWorkerStorageFixture::default_with_storage_field(
             invalid_worker_id,
-            storage_field.clone(),
+            storage_field,
         );
 
         update_storage_fixture.call_and_assert(Err(
@@ -2612,10 +2613,8 @@ fn update_worker_storage_fails_with_too_long_text() {
 
         let worker_id = HireRegularWorkerFixture::default().hire();
 
-        let update_storage_fixture = UpdateWorkerStorageFixture::default_with_storage_field(
-            worker_id,
-            storage_field.clone(),
-        );
+        let update_storage_fixture =
+            UpdateWorkerStorageFixture::default_with_storage_field(worker_id, storage_field);
 
         update_storage_fixture.call_and_assert(Err(
             Error::<Test, DefaultInstance>::WorkerStorageValueTooLong.into(),
@@ -2639,7 +2638,7 @@ fn fund_wg_budget_succeeded() {
         assert_eq!(set_budget_fixture.call(), Ok(()));
 
         FundWorkingGroupBudgetFixture::default()
-            .with_origin(RawOrigin::Signed(account_id).into())
+            .with_origin(RawOrigin::Signed(account_id))
             .with_member_id(member_id)
             .with_amount(amount)
             .with_rationale(rationale.clone())
@@ -2660,7 +2659,7 @@ fn fund_wg_budget_succeeded() {
 fn fund_wg_budget_failed_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
         FundWorkingGroupBudgetFixture::default()
-            .with_origin(RawOrigin::None.into())
+            .with_origin(RawOrigin::None)
             .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
@@ -2673,7 +2672,7 @@ fn fund_wg_budget_fails_with_insufficient_balance() {
         let amount = 100;
 
         FundWorkingGroupBudgetFixture::default()
-            .with_origin(RawOrigin::Signed(account_id).into())
+            .with_origin(RawOrigin::Signed(account_id))
             .with_member_id(member_id)
             .with_amount(amount)
             .call_and_assert(Err(

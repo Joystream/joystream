@@ -143,16 +143,16 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     if (!currentLead.isSome) {
       throw new CLIError('There is no active distributor working group lead currently')
     }
-    const worker = await this.api.query.distributionWorkingGroup.workerById(currentLead.unwrap())
-    return worker.role_account_id.toString()
+    const worker = (await this.api.query.distributionWorkingGroup.workerById(currentLead.unwrap())).unwrap()
+    return worker.roleAccountId.toString()
   }
 
   async getDistributorWorkerRoleKey(workerId: number): Promise<string> {
-    const worker = await this.api.query.distributionWorkingGroup.workerById(workerId)
+    const worker = (await this.api.query.distributionWorkingGroup.workerById(workerId)).unwrap()
     if (!worker) {
       throw new CLIError(`Worker not found by id: ${workerId}!`)
     }
-    return worker.role_account_id.toString()
+    return worker.roleAccountId.toString()
   }
 
   async init(): Promise<void> {

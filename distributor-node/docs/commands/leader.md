@@ -39,7 +39,7 @@ DESCRIPTION
   Requires distribution working group leader permissions.
 ```
 
-_See code: [src/commands/leader/cancel-invitation.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/cancel-invitation.ts)_
+_See code: [src/commands/leader/cancel-invitation.ts](https://github.com/Joystream/joystream/blob/v0.1.2/src/commands/leader/cancel-invitation.ts)_
 
 ## `joystream-distributor leader:create-bucket`
 
@@ -60,7 +60,7 @@ OPTIONS
   -y, --yes                     Answer "yes" to any prompt, skipping any manual confirmations
 ```
 
-_See code: [src/commands/leader/create-bucket.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/create-bucket.ts)_
+_See code: [src/commands/leader/create-bucket.ts](https://github.com/Joystream/joystream/blob/v0.1.2/src/commands/leader/create-bucket.ts)_
 
 ## `joystream-distributor leader:create-bucket-family`
 
@@ -77,7 +77,7 @@ OPTIONS
   -y, --yes                    Answer "yes" to any prompt, skipping any manual confirmations
 ```
 
-_See code: [src/commands/leader/create-bucket-family.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/create-bucket-family.ts)_
+_See code: [src/commands/leader/create-bucket-family.ts](https://github.com/Joystream/joystream/blob/v0.1.2/src/commands/leader/create-bucket-family.ts)_
 
 ## `joystream-distributor leader:delete-bucket`
 
@@ -96,7 +96,7 @@ OPTIONS
   -y, --yes                    Answer "yes" to any prompt, skipping any manual confirmations
 ```
 
-_See code: [src/commands/leader/delete-bucket.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/delete-bucket.ts)_
+_See code: [src/commands/leader/delete-bucket.ts](https://github.com/Joystream/joystream/blob/v0.1.2/src/commands/leader/delete-bucket.ts)_
 
 ## `joystream-distributor leader:delete-bucket-family`
 
@@ -115,7 +115,7 @@ OPTIONS
   -y, --yes                    Answer "yes" to any prompt, skipping any manual confirmations
 ```
 
-_See code: [src/commands/leader/delete-bucket-family.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/delete-bucket-family.ts)_
+_See code: [src/commands/leader/delete-bucket-family.ts](https://github.com/Joystream/joystream/blob/v0.1.2/src/commands/leader/delete-bucket-family.ts)_
 
 ## `joystream-distributor leader:invite-bucket-operator`
 
@@ -140,7 +140,7 @@ DESCRIPTION
      Requires distribution working group leader permissions.
 ```
 
-_See code: [src/commands/leader/invite-bucket-operator.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/invite-bucket-operator.ts)_
+_See code: [src/commands/leader/invite-bucket-operator.ts](https://github.com/Joystream/joystream/blob/v0.1.2/src/commands/leader/invite-bucket-operator.ts)_
 
 ## `joystream-distributor leader:remove-bucket-operator`
 
@@ -165,7 +165,7 @@ DESCRIPTION
   Requires distribution working group leader permissions.
 ```
 
-_See code: [src/commands/leader/remove-bucket-operator.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/remove-bucket-operator.ts)_
+_See code: [src/commands/leader/remove-bucket-operator.ts](https://github.com/Joystream/joystream/blob/v0.1.2/src/commands/leader/remove-bucket-operator.ts)_
 
 ## `joystream-distributor leader:set-bucket-family-metadata`
 
@@ -189,7 +189,7 @@ DESCRIPTION
   Requires distribution working group leader permissions.
 ```
 
-_See code: [src/commands/leader/set-bucket-family-metadata.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/set-bucket-family-metadata.ts)_
+_See code: [src/commands/leader/set-bucket-family-metadata.ts](https://github.com/Joystream/joystream/blob/v0.1.2/src/commands/leader/set-bucket-family-metadata.ts)_
 
 ## `joystream-distributor leader:set-buckets-per-bag-limit`
 
@@ -208,7 +208,7 @@ OPTIONS
   -y, --yes                    Answer "yes" to any prompt, skipping any manual confirmations
 ```
 
-_See code: [src/commands/leader/set-buckets-per-bag-limit.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/set-buckets-per-bag-limit.ts)_
+_See code: [src/commands/leader/set-buckets-per-bag-limit.ts](https://github.com/Joystream/joystream/blob/v0.1.2/src/commands/leader/set-buckets-per-bag-limit.ts)_
 
 ## `joystream-distributor leader:update-bag`
 
@@ -251,7 +251,7 @@ EXAMPLE
   $ joystream-distributor leader:update-bag -b 1 -f 1 -a 1 2 3 -r 4 5
 ```
 
-_See code: [src/commands/leader/update-bag.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-bag.ts)_
+_See code: [src/commands/leader/update-bag.ts](https://github.com/Joystream/joystream/blob/v0.1.2/src/commands/leader/update-bag.ts)_
 
 ## `joystream-distributor leader:update-bucket-mode`
 
@@ -272,7 +272,7 @@ OPTIONS
   -y, --yes                    Answer "yes" to any prompt, skipping any manual confirmations
 ```
 
-_See code: [src/commands/leader/update-bucket-mode.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-bucket-mode.ts)_
+_See code: [src/commands/leader/update-bucket-mode.ts](https://github.com/Joystream/joystream/blob/v0.1.2/src/commands/leader/update-bucket-mode.ts)_
 
 ## `joystream-distributor leader:update-bucket-status`
 
@@ -292,7 +292,7 @@ OPTIONS
   -y, --yes                     Answer "yes" to any prompt, skipping any manual confirmations
 ```
 
-_See code: [src/commands/leader/update-bucket-status.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-bucket-status.ts)_
+_See code: [src/commands/leader/update-bucket-status.ts](https://github.com/Joystream/joystream/blob/v0.1.2/src/commands/leader/update-bucket-status.ts)_
 
 ## `joystream-distributor leader:update-dynamic-bag-policy`
 
@@ -319,4 +319,4 @@ EXAMPLE
   $ joystream-distributor leader:update-dynamic-bag-policy -t Member -p 1:5 2:10 3:5
 ```
 
-_See code: [src/commands/leader/update-dynamic-bag-policy.ts](https://github.com/Joystream/joystream/blob/v0.1.0/src/commands/leader/update-dynamic-bag-policy.ts)_
+_See code: [src/commands/leader/update-dynamic-bag-policy.ts](https://github.com/Joystream/joystream/blob/v0.1.2/src/commands/leader/update-dynamic-bag-policy.ts)_

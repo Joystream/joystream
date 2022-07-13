@@ -10,7 +10,7 @@ export class CreateMockCategories extends BaseFixture {
       'Sports',
       'Travel & Events',
       'Gaming',
-      'People & Blogs',
+      'People',
       'Comedy',
       'Entertainment',
       'News & Politics',
@@ -19,6 +19,5 @@ export class CreateMockCategories extends BaseFixture {
       'Science & Technology',
       'Nonprofits & Activism',
     ]
-    
   }
 }

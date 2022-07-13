@@ -2,7 +2,7 @@
 use super::fixtures::*;
 use super::mock::*;
 use crate::*;
-use frame_support::{assert_err, assert_noop, assert_ok};
+use frame_support::{assert_err, assert_ok};
 use sp_std::iter::FromIterator;
 
 #[test]
@@ -201,7 +201,7 @@ fn unsuccessful_curator_channel_owner_remark_by_unauthorized_curator() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel(
-            DATA_OBJECT_STATE_BLOAT_BOND,
+            DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND,
             &[ChannelActionPermission::AgentRemark],
         );
         let channel_id = Content::next_channel_id() - 1;
@@ -363,51 +363,45 @@ fn unsuccessful_nft_owner_with_invalid_acount() {
 }
 
 #[test]
-fn unsuccessful_nft_rewark_during_transfer() {
+fn successful_nft_remark_during_transfer() {
     with_default_mock_builder(|| {
         run_to_block(1);
         run_to_block(1);
 
         ContentTest::default().with_video_nft().setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
 
-        assert_noop!(
-            Content::nft_owner_remark(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-                ContentActor::Member(DEFAULT_MEMBER_ID),
-                1u64,
-                b"test".to_vec(),
-            ),
-            Error::<Test>::InvalidChannelTransferStatus,
-        );
+        assert_ok!(Content::nft_owner_remark(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(DEFAULT_MEMBER_ID),
+            1u64,
+            b"test".to_vec(),
+        ));
     })
 }
 
 #[test]
-fn unsuccessful_channel_owner_remark_during_transfer() {
+fn successful_channel_owner_remark_during_transfer() {
     with_default_mock_builder(|| {
         run_to_block(1);
 
         ContentTest::with_member_channel().setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
 
-        assert_noop!(
-            Content::channel_owner_remark(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
-                1u64,
-                b"test".to_vec(),
-            ),
-            Error::<Test>::InvalidChannelTransferStatus,
-        );
+        assert_ok!(Content::channel_owner_remark(
+            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            1u64,
+            b"test".to_vec(),
+        ));
     })
 }
 
 #[test]
-fn unsuccessful_channel_agent_rewark_during_transfer() {
+fn successful_channel_agent_remark_during_transfer() {
     with_default_mock_builder(|| {
         run_to_block(1);
         ContentTest::with_member_channel()
@@ -416,18 +410,15 @@ fn unsuccessful_channel_agent_rewark_during_transfer() {
                 BTreeSet::from_iter(vec![ChannelActionPermission::AgentRemark]),
             )])
             .setup();
-        UpdateChannelTransferStatusFixture::default()
+        InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(SECOND_MEMBER_ID)
             .call_and_assert(Ok(()));
 
-        assert_noop!(
-            Content::channel_agent_remark(
-                Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
-                ContentActor::Member(COLLABORATOR_MEMBER_ID),
-                1u64,
-                b"test".to_vec(),
-            ),
-            Error::<Test>::InvalidChannelTransferStatus,
-        );
+        assert_ok!(Content::channel_agent_remark(
+            Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
+            ContentActor::Member(COLLABORATOR_MEMBER_ID),
+            1u64,
+            b"test".to_vec(),
+        ));
     })
 }

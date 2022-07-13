@@ -8,7 +8,7 @@ set -a
 . ../.env
 set +a
 
-export JOYSTREAM_NODE_TAG=${JOYSTREAM_NODE_TAG:=$(../scripts/runtime-code-shasum.sh)}
+export JOYSTREAM_NODE_TAG=${JOYSTREAM_NODE_TAG:=$(RUNTIME_PROFILE=TESTING ../scripts/runtime-code-shasum.sh)}
 
 function cleanup() {
     # Show tail end of logs for the processor and indexer containers to

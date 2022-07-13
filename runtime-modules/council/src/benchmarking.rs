@@ -1,10 +1,10 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
-use balances::Module as Balances;
+use balances::Pallet as Balances;
 use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::EventRecord;
-use frame_system::Module as System;
+use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use membership::Module as Membership;
 use sp_runtime::traits::{Bounded, One};
@@ -40,9 +40,9 @@ impl CreateAccountId for sp_core::crypto::AccountId32 {
     }
 }
 
-fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
 
     assert!(!events.is_empty(), "There are no events in event queue");
 
@@ -51,9 +51,9 @@ fn assert_last_event<T: Trait>(generic_event: <T as Trait>::Event) {
     assert_eq!(event, &system_event);
 }
 
-fn assert_in_events<T: Trait>(generic_event: <T as Trait>::Event) {
+fn assert_in_events<T: Config>(generic_event: <T as Config>::Event) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Trait>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::Event = generic_event.into();
 
     assert!(!events.is_empty(), "There are no events in event queue");
 
@@ -66,11 +66,11 @@ fn assert_in_events<T: Trait>(generic_event: <T as Trait>::Event) {
     );
 }
 
-fn make_free_balance_be<T: Trait>(account_id: &T::AccountId, balance: Balance<T>) {
-    Balances::<T>::make_free_balance_be(&account_id, balance);
+fn make_free_balance_be<T: Config>(account_id: &T::AccountId, balance: Balance<T>) {
+    Balances::<T>::make_free_balance_be(account_id, balance);
 }
 
-fn start_announcing_period<T: Trait>() {
+fn start_announcing_period<T: Config>() {
     Mutations::<T>::start_announcing_period();
 
     let current_state = CouncilStageAnnouncing {
@@ -94,7 +94,7 @@ fn start_announcing_period<T: Trait>() {
     );
 }
 
-fn start_period_announce_multiple_candidates<T: Trait + membership::Trait>(
+fn start_period_announce_multiple_candidates<T: Config + membership::Config>(
     number_of_candidates: u32,
 ) -> (Vec<T::AccountId>, Vec<T::MemberId>)
 where
@@ -119,7 +119,7 @@ fn get_byte(num: u32, byte_number: u8) -> u8 {
 
 // Method to generate a distintic valid handle
 // for a membership. For each index.
-fn handle_from_id<T: Trait + membership::Trait>(id: u32) -> Vec<u8> {
+fn handle_from_id<T: Config + membership::Config>(id: u32) -> Vec<u8> {
     let mut handle = vec![];
 
     for i in 0..4 {
@@ -129,7 +129,7 @@ fn handle_from_id<T: Trait + membership::Trait>(id: u32) -> Vec<u8> {
     handle
 }
 
-fn member_funded_account<T: Trait + membership::Trait>(id: u32) -> (T::AccountId, T::MemberId)
+fn member_funded_account<T: Config + membership::Config>(id: u32) -> (T::AccountId, T::MemberId)
 where
     T::AccountId: CreateAccountId,
     T::MemberId: From<u32>,
@@ -137,7 +137,7 @@ where
     let account_id = T::AccountId::create_account_id(id);
     let handle = handle_from_id::<T>(id);
 
-    let _ = make_free_balance_be::<T>(&account_id, Balance::<T>::max_value());
+    make_free_balance_be::<T>(&account_id, Balance::<T>::max_value());
     let members_created = Membership::<T>::members_created();
     let member_id = if cfg!(test) {
         // For the tests we need member_id == account_id even if that's not what's registered
@@ -157,7 +157,7 @@ where
 
     Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
-    let _ = make_free_balance_be::<T>(&account_id, Balance::<T>::max_value());
+    make_free_balance_be::<T>(&account_id, Balance::<T>::max_value());
 
     Membership::<T>::add_staking_account_candidate(
         RawOrigin::Signed(account_id.clone()).into(),
@@ -175,7 +175,7 @@ where
     (account_id, member_id)
 }
 
-fn announce_candidate<T: Trait + membership::Trait>(id: u32) -> (T::AccountId, T::MemberId)
+fn announce_candidate<T: Config + membership::Config>(id: u32) -> (T::AccountId, T::MemberId)
 where
     T::AccountId: CreateAccountId,
     T::MemberId: From<u32>,
@@ -201,21 +201,21 @@ where
 
     assert_eq!(
         Council::<T>::candidates(member_id),
-        Candidate {
+        Some(Candidate {
             staking_account_id: account_id.clone(),
             cycle_id: 1,
             stake: T::MinCandidateStake::get(),
             note_hash: None,
             reward_account_id: account_id.clone(),
             vote_power: Council::<T>::get_option_power(&member_id),
-        },
+        }),
         "Candidacy hasn't been announced"
     );
 
     (account_id, member_id)
 }
 
-fn start_period_announce_candidacy<T: Trait + membership::Trait>(
+fn start_period_announce_candidacy<T: Config + membership::Config>(
     id: u32,
 ) -> (T::AccountId, T::MemberId)
 where
@@ -227,7 +227,7 @@ where
     announce_candidate::<T>(id)
 }
 
-fn start_period_announce_candidacy_and_restart_period<T: Trait + membership::Trait>(
+fn start_period_announce_candidacy_and_restart_period<T: Config + membership::Config>(
 ) -> (T::AccountId, T::MemberId)
 where
     T::AccountId: CreateAccountId,
@@ -255,7 +255,7 @@ where
     (account_id, member_id)
 }
 
-fn finalize_block<T: Trait>(block: T::BlockNumber) {
+fn finalize_block<T: Config>(block: T::BlockNumber) {
     System::<T>::on_finalize(block);
     Council::<T>::on_finalize(block);
 
@@ -263,7 +263,7 @@ fn finalize_block<T: Trait>(block: T::BlockNumber) {
     System::<T>::set_block_number(block);
 }
 
-fn move_to_block<T: Trait>(target_block: T::BlockNumber) {
+fn move_to_block<T: Config>(target_block: T::BlockNumber) {
     let mut current_block_number = System::<T>::block_number();
 
     Council::<T>::set_budget(RawOrigin::Root.into(), Balance::<T>::max_value()).unwrap();
@@ -278,7 +278,7 @@ fn move_to_block<T: Trait>(target_block: T::BlockNumber) {
     }
 }
 
-fn move_to_block_before_initialize_assert_stage<T: Trait>(
+fn move_to_block_before_initialize_assert_stage<T: Config>(
     target_block: T::BlockNumber,
     target_stage: CouncilStageUpdate<T::BlockNumber>,
 ) {
@@ -295,9 +295,8 @@ const MAX_FUNDING_REQUESTS: u32 = 100;
 
 benchmarks! {
     where_clause {
-        where T::AccountId: CreateAccountId, T::MemberId: From<u32>, T: membership::Trait
+        where T::AccountId: CreateAccountId, T::MemberId: From<u32>, T: membership::Config
     }
-    _ { }
 
     set_budget_increment {
     }: _(RawOrigin::Root, One::one())
@@ -351,14 +350,29 @@ benchmarks! {
         }
     }
 
-    // We calculate `on_finalize` as `try_progress_stage + try_process_budget`
-    try_process_budget {
-        // We need to make sure that the block number starts at 0 to make payment/budget refill
-        // periods easier to calculate
-        let mut current_block_number = Zero::zero();
-        System::<T>::set_block_number(current_block_number);
-        assert_eq!(System::<T>::block_number(), current_block_number, "Block number not updated");
+    // We calculate `on_finalize` as
+    // `try_progress_stage + try_process_budget_refill_budget_only` +
+    //   try_process_budget_payout_council_members_only
+    //
+    // We split the budget handling into two, (instead of benchmarking try_process_budget)
+    // to avoid having to "run_to_block" to a potentially
+    // very distant block where budget refill and payout of members align,
+    // if ElectedMemberRewardPeriod mod BudgetRefillPeriod is non zero.
+    // ie at ElectedMemberRewardPeriod * BudgetRefillPeriod in the general case.
+    // This causes the benchmark to take too long for large values.
+    try_process_budget_refill_budget_only {
+        // Refill budget independant of how many members are elected
+        // Worst case is
+        let now = System::<T>::block_number();
+    }: { Council::<T>::refill_budget(now); }
+    verify {
+        // budget increment is independant of the number of blocks since last payment
+        assert_eq!(Council::<T>::budget(), Council::<T>::budget_increment());
+    }
 
+    try_process_budget_payout_council_members_only {
+        System::<T>::set_block_number(Zero::zero());
+        assert_eq!(System::<T>::block_number(), Zero::zero(), "Block number not updated");
         // Worst case we have a council elected
         let (accounts_id, candidates_id) = start_period_announce_multiple_candidates::<T>(
             T::CouncilSize::get().try_into().unwrap()
@@ -396,106 +410,30 @@ benchmarks! {
             "Council not updated"
         );
 
-        // Both payments and refill execute at BudgetRefefillPeriod * ElectedMemberRewardPeriod
-        // -1 because we want to move just before the refill
-        current_block_number = T::BudgetRefillPeriod::get() *
-            T::ElectedMemberRewardPeriod::get() - One::one();
-
-        // The first time we reach the next_reward_payments
-        // the next time will be now + next_reward_payments
-        // Note: this function doesn't execute the `on_finalize` of the
-        // `current_block_number` this is important since we want to execute
-        // the `try_process_budget` for this block
-        move_to_block::<T>(current_block_number);
-
-        // Worst case scenario we can pay as much as it is possible
         Council::<T>::set_budget(RawOrigin::Root.into(), Balance::<T>::max_value()).unwrap();
-
-        let target = System::<T>::block_number() + One::one();
-
-        assert_eq!(
-            Council::<T>::next_budget_refill(),
-            target,
-            "Budget refill not now",
-        );
-
-        assert_eq!(
-            Council::<T>::next_reward_payments(),
-            target,
-            "Reward payment not now",
-        );
-
-        let reward_period: T::BlockNumber = T::ElectedMemberRewardPeriod::get();
-
-        let current_council = Council::<T>::council_members();
-        let council = council.into_iter().map(|mut councillor| {
-            councillor.last_payment_block = target - reward_period;
-            councillor
-        }).collect::<Vec<_>>();
-
-        assert_eq!(
-            current_council,
-            council,
-            "Payment block not updated"
-        );
-        let unpaid_rewards = Council::<T>::council_members()
-            .iter()
-            .map(|member| member.unpaid_reward)
-            .collect::<Vec<_>>();
-    }: { Council::<T>::try_process_budget(target); }
+        let now = T::ElectedMemberRewardPeriod::get();
+    }: {
+        Council::<T>::pay_elected_member_rewards(now);
+    }
     verify {
+        // verify budget was reduced correct amount
+        let reward_period = T::ElectedMemberRewardPeriod::get();
         let reward_per_block: Balance<T> = Council::<T>::councilor_reward();
-
-        let reward_per_councillor: Balance<T> =
+        let num_council_members = T::CouncilSize::get().saturated_into();
+        let total_reward: Balance<T> =
             reward_period
             .saturated_into::<u64>()
             .saturating_mul(reward_per_block.saturated_into())
+            .saturating_mul(num_council_members)
             .saturated_into();
 
-        assert_eq!(
-            Council::<T>::next_budget_refill(),
-            target + T::BudgetRefillPeriod::get(),
-            "Budget refill not updated"
-        );
-
-        let current_council = Council::<T>::council_members();
-        let council = council.into_iter().map(|mut councillor| {
-            councillor.last_payment_block = target;
-            councillor
-        }).collect::<Vec<_>>();
-
-        assert_eq!(
-            current_council,
-            council,
-            "Update block not updated"
-        );
-
-        let total_unpdaid_rewards: Balance<T> =
-            unpaid_rewards.into_iter().fold(Zero::zero(), |acc, x| acc + x);
-
-        let budget = Balance::<T>::max_value()
-            .saturating_sub(
-                reward_per_councillor.saturating_mul(T::CouncilSize::get().saturated_into())
-            ).saturating_sub(total_unpdaid_rewards);
+        let budget = Balance::<T>::max_value().saturating_sub(total_reward);
 
         assert_eq!(
             Council::<T>::budget(),
             budget,
             "Budget not correctly updated, probably a councillor was not correctly paid"
         );
-
-        candidates_id.into_iter().enumerate().for_each(|(idx, member_id)| {
-            let member_id: T::MemberId = member_id;
-            let account_id: T::AccountId = accounts_id[idx].clone();
-            assert_in_events::<T>(
-                RawEvent::RewardPayment(
-                    member_id,
-                    account_id,
-                    reward_per_councillor,
-                    Balance::<T>::from(0u32),
-                ).into()
-            )
-        });
     }
 
     try_progress_stage_idle {
@@ -632,14 +570,14 @@ benchmarks! {
         let candidate = Council::<T>::candidates(member_id);
         assert_eq!(
             candidate,
-            Candidate {
+            Some(Candidate {
                 staking_account_id: account_id.clone(),
                 cycle_id: 2,
                 stake: T::MinCandidateStake::get(),
                 note_hash: None,
                 reward_account_id: account_id.clone(),
                 vote_power: Council::<T>::get_option_power(&member_id),
-            },
+            }),
             "Candidacy hasn't been announced"
         );
 
@@ -689,14 +627,14 @@ benchmarks! {
     verify {
         assert_eq!(
             Council::<T>::candidates(member_id),
-            Candidate {
+            Some(Candidate {
                 staking_account_id: account_id.clone(),
                 cycle_id: 1,
                 stake: T::MinCandidateStake::get(),
                 note_hash: Some(T::Hashing::hash(&note)),
                 reward_account_id: account_id.clone(),
                 vote_power: Council::<T>::get_option_power(&member_id),
-            },
+            }),
             "Note not set"
         );
 
@@ -808,16 +746,34 @@ benchmarks! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     pub use crate::mock::Runtime;
     use crate::mock::{build_test_externalities, default_genesis_config};
+    use crate::Module as Council;
     use frame_support::assert_ok;
+
+    #[test]
+    fn test_refill_budget() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(Council::<Runtime>::test_benchmark_try_process_budget_refill_budget_only());
+        })
+    }
+
+    #[test]
+    fn test_payout_council_members() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(
+                Council::<Runtime>::test_benchmark_try_process_budget_payout_council_members_only()
+            );
+        })
+    }
 
     #[test]
     fn test_announce_candidacy() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_announce_candidacy::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_announce_candidacy());
         })
     }
 
@@ -825,7 +781,7 @@ mod tests {
     fn test_release_candidacy() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_release_candidacy_stake::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_release_candidacy_stake());
         })
     }
 
@@ -833,7 +789,7 @@ mod tests {
     fn test_withdraw_candidacy() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_withdraw_candidacy::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_withdraw_candidacy());
         })
     }
 
@@ -841,9 +797,7 @@ mod tests {
     fn test_try_progress_stage_announcing_restart() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_try_progress_stage_announcing_restart::<
-                Runtime,
-            >());
+            assert_ok!(Council::<Runtime>::test_benchmark_try_progress_stage_announcing_restart());
         })
     }
 
@@ -851,7 +805,9 @@ mod tests {
     fn test_try_progress_stage_announcing_start_election() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_try_progress_stage_announcing_start_election::<Runtime>());
+            assert_ok!(
+                Council::<Runtime>::test_benchmark_try_progress_stage_announcing_start_election()
+            );
         })
     }
 
@@ -859,15 +815,7 @@ mod tests {
     fn test_try_progress_stage_idle() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_try_progress_stage_idle::<Runtime>());
-        })
-    }
-
-    #[test]
-    fn test_try_process_budget() {
-        let config = default_genesis_config();
-        build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_try_process_budget::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_try_progress_stage_idle());
         })
     }
 
@@ -875,7 +823,7 @@ mod tests {
     fn test_set_budget_increment() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_set_budget_increment::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_set_budget_increment());
         })
     }
 
@@ -883,7 +831,7 @@ mod tests {
     fn test_set_councilor_reward() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_set_councilor_reward::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_set_councilor_reward());
         })
     }
 
@@ -891,7 +839,7 @@ mod tests {
     fn test_funding_request() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_funding_request::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_funding_request());
         })
     }
 
@@ -899,7 +847,7 @@ mod tests {
     fn test_fund_council_budget() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_fund_council_budget::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_fund_council_budget());
         })
     }
 
@@ -907,7 +855,7 @@ mod tests {
     fn test_councilor_remark() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_councilor_remark::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_councilor_remark());
         })
     }
 
@@ -915,7 +863,7 @@ mod tests {
     fn test_candidate_remark() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
-            assert_ok!(test_benchmark_candidate_remark::<Runtime>());
+            assert_ok!(Council::<Runtime>::test_benchmark_candidate_remark());
         })
     }
 }

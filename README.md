@@ -66,8 +66,8 @@ yarn start
 
 ```sh
 git checkout master
-WASM_BUILD_TOOLCHAIN=nightly-2021-02-20 cargo +nightly-2021-02-20 build --release
-./target/release/joystream-node -- --pruning archive --chain testnets/joy-testnet-6.json
+WASM_BUILD_TOOLCHAIN=nightly-2022-05-11 cargo build --release
+./target/release/joystream-node -- --pruning archive --chain testnets/joy-testnet-4.json
 ```
 
 Learn more about [joystream-node](node/README.md).
