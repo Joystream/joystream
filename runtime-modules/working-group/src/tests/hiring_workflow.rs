@@ -149,7 +149,7 @@ impl HiringWorkflow {
 
         let result = self.fill_worker_position();
 
-        let check_result = result.clone().map(|_| ());
+        let check_result = result.map(|_| ());
 
         assert_eq!(check_result, self.expected_result);
 
@@ -172,7 +172,7 @@ impl HiringWorkflow {
         // create the opening
         let add_worker_opening_fixture = AddOpeningFixture::default()
             .with_stake_policy(self.stake_policy.clone())
-            .with_reward_per_block(self.reward_per_block.clone())
+            .with_reward_per_block(self.reward_per_block)
             .with_opening_type(self.opening_type)
             .with_origin(origin.clone());
 
@@ -193,8 +193,8 @@ impl HiringWorkflow {
         }
 
         // fill opening
-        let fill_opening_fixture = FillOpeningFixture::default_for_ids(opening_id, application_ids)
-            .with_origin(origin.clone());
+        let fill_opening_fixture =
+            FillOpeningFixture::default_for_ids(opening_id, application_ids).with_origin(origin);
 
         let worker_id = fill_opening_fixture.call()?;
 

@@ -1,3 +1,5 @@
+#![allow(clippy::unused_unit)]
+
 use crate::types::{
     JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId, TokenSaleOf,
     TransferPolicyOf, ValidatedTransfersOf,

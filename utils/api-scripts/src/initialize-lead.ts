@@ -46,8 +46,7 @@ async function main() {
   // Create membership if not already created
   const memberEntries = await api.query.members.membershipById.entries()
   const matchingEntry = memberEntries.find(
-    ([storageKey, member]) => 
-      member.unwrap().controllerAccount.toString() === LeadKeyPair.address
+    ([storageKey, member]) => member.unwrap().controllerAccount.toString() === LeadKeyPair.address
   )
   let memberId = matchingEntry?.[0].args[0]
 

@@ -11,7 +11,6 @@ import { registerNewDataObjectId } from '../../caching/newUploads'
 import { addDataObjectIdToCache } from '../../caching/localDataObjects'
 import { createNonce, getTokenExpirationTime } from '../../caching/tokenNonceKeeper'
 import { getFileInfo } from '../../helpers/fileInfo'
-import { BagId } from '@joystream/types/storage'
 import logger from '../../logger'
 import { ApiPromise } from '@polkadot/api'
 import * as express from 'express'
@@ -23,7 +22,7 @@ import { parseBagId } from '../../helpers/bagTypes'
 import { timeout } from 'promise-timeout'
 import { WebApiError, sendResponseWithError, getHttpStatusCodeByError, AppConfig } from './common'
 import { getStorageBucketIdsByWorkerId } from '../../sync/storageObligations'
-import { Membership } from '@joystream/types/members'
+import { PalletMembershipMembershipObject as Membership, PalletStorageBagIdType as BagId } from '@polkadot/types/lookup'
 const fsPromises = fs.promises
 
 /**
@@ -245,9 +244,9 @@ async function validateTokenRequest(api: ApiPromise, tokenRequest: UploadTokenRe
 
   const membershipPromise = api.query.members.membershipById(tokenRequest.data.memberId)
 
-  const membership = (await timeout(membershipPromise, 5000)) as Membership
+  const membership = (await timeout(membershipPromise, 5000)).unwrap() as Membership
 
-  if (membership.controller_account.toString() !== tokenRequest.data.accountId) {
+  if (membership.controllerAccount.toString() !== tokenRequest.data.accountId) {
     throw new WebApiError(`Provided controller account and member id don't match.`, 401)
   }
 }
@@ -273,7 +272,7 @@ async function verifyDataObjectInfo(
   const dataObject = await api.query.storage.dataObjectsById(bagId, dataObjectId)
 
   // Cannot get 'size' as a regular property.
-  const dataObjectSize = dataObject.getField('size')
+  const dataObjectSize = dataObject.size_
 
   if (dataObjectSize?.toNumber() !== fileSize) {
     throw new WebApiError(`File size doesn't match the data object's size for data object ID = ${dataObjectId}`, 400)

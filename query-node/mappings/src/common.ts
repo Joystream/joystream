@@ -1,7 +1,8 @@
-import { DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
+import { DatabaseManager, SubstrateEvent, FindOneOptions } from '@joystream/hydra-common'
 import { Bytes } from '@polkadot/types'
 import { Codec } from '@polkadot/types/types'
-import { WorkingGroup as WGType, WorkerId } from '@joystream/types/augment/all'
+import { WorkerId } from '@joystream/types/primitives'
+import { PalletCommonWorkingGroup as WGType } from '@polkadot/types/lookup'
 import {
   Worker,
   Event,
@@ -245,7 +246,7 @@ export async function getById<T extends BaseModel>(
   id: string,
   relations?: RelationsArr<T>
 ): Promise<T> {
-  const result = await store.get(entityClass, { where: { id }, relations })
+  const result = await store.get(entityClass, { where: { id }, relations } as FindOneOptions<T>)
   if (!result) {
     throw new Error(`Expected ${entityClass.name} not found by ID: ${id}`)
   }

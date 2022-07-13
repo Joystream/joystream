@@ -4,7 +4,7 @@ import {
   IBanOrUnbanMemberFromChannel,
   IChannelOwnerRemarked,
 } from '@joystream/metadata-protobuf'
-import { ChannelId, MemberId } from '@joystream/types/common'
+import { ChannelId, MemberId } from '@joystream/types/primitives'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { assert } from 'chai'
@@ -39,7 +39,7 @@ export class BanOrUnbanMembersFixture extends StandardizedFixture {
   protected async getSignerAccountOrAccounts(): Promise<string[]> {
     return await Promise.all(
       this.banOrUnbanMemberParams.map(async ({ asMember }) =>
-        (await this.api.query.members.membershipById(asMember)).controller_account.toString()
+        (await this.api.query.members.membershipById(asMember)).unwrap().controllerAccount.toString()
       )
     )
   }

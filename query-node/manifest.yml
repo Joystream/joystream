@@ -1,7 +1,7 @@
-version: '3.0'
-description: Joystream query-node manifest file for Olympia
+version: '4.0'
+description: Joystream query-node manifest file
 repository: https://github.com/Joystream/joystream
-hydraVersion: "3"
+hydraVersion: '4'
 dataSource:
   kind: substrate
   chain: joystream
@@ -88,21 +88,12 @@ typegen:
     - content.ChannelCreated
     - content.ChannelUpdated
     - content.ChannelAssetsRemoved
-    - content.ChannelCensorshipStatusUpdated
-    - content.ChannelCategoryCreated
-    - content.ChannelCategoryUpdated
-    - content.ChannelCategoryDeleted
-    - content.VideoCategoryCreated
-    - content.VideoCategoryUpdated
-    - content.VideoCategoryDeleted
     - content.VideoCreated
     - content.VideoUpdated
     - content.VideoDeleted
-    - content.VideoCensorshipStatusUpdated
-    - content.FeaturedVideosSet
     - content.ChannelDeleted
     - content.ChannelOwnerRemarked
-    - content.ChannelModeratorRemarked
+    - content.ChannelAgentRemarked
     # Storage
     - storage.StorageBucketCreated
     - storage.StorageBucketInvitationAccepted
@@ -170,20 +161,21 @@ typegen:
     - referendum.VoteRevealed
     - referendum.StakeReleased
     # Bounty
-    - bounty.BountyCreated
-    - bounty.BountyCanceled
-    - bounty.BountyVetoed
-    - bounty.BountyFunded
-    - bounty.BountyMaxFundingReached
-    - bounty.BountyFundingWithdrawal
-    - bounty.BountyCreatorCherryWithdrawal
-    - bounty.BountyRemoved
-    - bounty.WorkEntryAnnounced
-    - bounty.WorkEntryWithdrawn
-    - bounty.WorkEntrySlashed
-    - bounty.WorkSubmitted
-    - bounty.OracleJudgmentSubmitted
-    - bounty.WorkEntrantFundsWithdrawn
+    # TODO: uncomment this + event handlers below after bounties are repaired
+    # - bounty.BountyCreated
+    # - bounty.BountyCanceled
+    # - bounty.BountyVetoed
+    # - bounty.BountyFunded
+    # - bounty.BountyMaxFundingReached
+    # - bounty.BountyFundingWithdrawal
+    # - bounty.BountyCreatorCherryWithdrawal
+    # - bounty.BountyRemoved
+    # - bounty.WorkEntryAnnounced
+    # - bounty.WorkEntryWithdrawn
+    # - bounty.WorkEntrySlashed
+    # - bounty.WorkSubmitted
+    # - bounty.OracleJudgmentSubmitted
+    # - bounty.WorkEntrantFundsWithdrawn
     # content NFTs
     - content.OpenAuctionStarted
     - content.EnglishAuctionStarted
@@ -722,36 +714,18 @@ mappings:
       handler: content_ChannelUpdated
     - event: content.ChannelAssetsRemoved
       handler: content_ChannelAssetsRemoved
-    - event: content.ChannelCensorshipStatusUpdated
-      handler: content_ChannelCensorshipStatusUpdated
-    - event: content.ChannelCategoryCreated
-      handler: content_ChannelCategoryCreated
-    - event: content.ChannelCategoryUpdated
-      handler: content_ChannelCategoryUpdated
-    - event: content.ChannelCategoryDeleted
-      handler: content_ChannelCategoryDeleted
-    - event: content.VideoCategoryCreated
-      handler: content_VideoCategoryCreated
-    - event: content.VideoCategoryUpdated
-      handler: content_VideoCategoryUpdated
-    - event: content.VideoCategoryDeleted
-      handler: content_VideoCategoryDeleted
     - event: content.VideoCreated
       handler: content_VideoCreated
     - event: content.VideoUpdated
       handler: content_VideoUpdated
     - event: content.VideoDeleted
       handler: content_VideoDeleted
-    - event: content.VideoCensorshipStatusUpdated
-      handler: content_VideoCensorshipStatusUpdated
-    - event: content.FeaturedVideosSet
-      handler: content_FeaturedVideosSet
     - event: content.ChannelDeleted
       handler: content_ChannelDeleted
     - event: content.ChannelOwnerRemarked
       handler: content_ChannelOwnerRemarked
-    - event: content.ChannelModeratorRemarked
-      handler: content_ChannelModeratorRemarked
+    - event: content.ChannelAgentRemarked
+      handler: content_ChannelAgentRemarked
     # content NFTs
     - event: content.OpenAuctionStarted
       handler: contentNft_OpenAuctionStarted
@@ -911,34 +885,34 @@ mappings:
     - event: referendum.StakeReleased
       handler: referendum_StakeReleased
     # Bounty
-    - event: bounty.BountyCreated
-      handler: bounty_BountyCreated
-    - event: bounty.BountyCanceled
-      handler: bounty_BountyCanceled
-    - event: bounty.BountyVetoed
-      handler: bounty_BountyVetoed
-    - event: bounty.BountyFunded
-      handler: bounty_BountyFunded
-    - event: bounty.BountyMaxFundingReached
-      handler: bounty_BountyMaxFundingReached
-    - event: bounty.BountyFundingWithdrawal
-      handler: bounty_BountyFundingWithdrawal
-    - event: bounty.BountyCreatorCherryWithdrawal
-      handler: bounty_BountyCreatorCherryWithdrawal
-    - event: bounty.BountyRemoved
-      handler: bounty_BountyRemoved
-    - event: bounty.WorkEntryAnnounced
-      handler: bounty_WorkEntryAnnounced
-    - event: bounty.WorkEntryWithdrawn
-      handler: bounty_WorkEntryWithdrawn
-    - event: bounty.WorkEntrySlashed
-      handler: bounty_WorkEntrySlashed
-    - event: bounty.WorkSubmitted
-      handler: bounty_WorkSubmitted
-    - event: bounty.OracleJudgmentSubmitted
-      handler: bounty_OracleJudgmentSubmitted
-    - event: bounty.WorkEntrantFundsWithdrawn
-      handler: bounty_WorkEntrantFundsWithdrawn
+    # - event: bounty.BountyCreated
+    #   handler: bounty_BountyCreated
+    # - event: bounty.BountyCanceled
+    #   handler: bounty_BountyCanceled
+    # - event: bounty.BountyVetoed
+    #   handler: bounty_BountyVetoed
+    # - event: bounty.BountyFunded
+    #   handler: bounty_BountyFunded
+    # - event: bounty.BountyMaxFundingReached
+    #   handler: bounty_BountyMaxFundingReached
+    # - event: bounty.BountyFundingWithdrawal
+    #   handler: bounty_BountyFundingWithdrawal
+    # - event: bounty.BountyCreatorCherryWithdrawal
+    #   handler: bounty_BountyCreatorCherryWithdrawal
+    # - event: bounty.BountyRemoved
+    #   handler: bounty_BountyRemoved
+    # - event: bounty.WorkEntryAnnounced
+    #   handler: bounty_WorkEntryAnnounced
+    # - event: bounty.WorkEntryWithdrawn
+    #   handler: bounty_WorkEntryWithdrawn
+    # - event: bounty.WorkEntrySlashed
+    #   handler: bounty_WorkEntrySlashed
+    # - event: bounty.WorkSubmitted
+    #   handler: bounty_WorkSubmitted
+    # - event: bounty.OracleJudgmentSubmitted
+    #   handler: bounty_OracleJudgmentSubmitted
+    # - event: bounty.WorkEntrantFundsWithdrawn
+    #   handler: bounty_WorkEntrantFundsWithdrawn
     # ExtrinsicSuccess event handler - we're using an empty handler just for the purpose of triggering
     # preBlock/postBlock hooks for each block (instead of "catching-up" after some event/tx recognized by processor is fired)
     # ExtrinsicSuccess is emitted at least once per block due to timestamp.set extrinsic
@@ -955,6 +929,6 @@ mappings:
   preBlockHooks:
     - handler: bootstrapData
       filter:
-        height: "[0,0]" # will be executed only at genesis
+        height: '[0,0]' # will be executed only at genesis
   postBlockHooks:
     - handler: runScheduler

@@ -2,18 +2,21 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 #![recursion_limit = "512"]
+#![allow(clippy::unused_unit)]
 
 #[cfg(test)]
 mod tests;
-use core::marker::PhantomData;
+
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarks;
+
 mod errors;
 mod nft;
 mod permissions;
 mod types;
 pub mod weights;
 
+use core::marker::PhantomData;
 use project_token::traits::PalletToken;
 use project_token::types::{
     TokenIssuanceParametersOf, TokenSaleParamsOf, TransfersWithVestingOf, UploadContextOf,

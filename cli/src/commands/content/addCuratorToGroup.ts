@@ -21,7 +21,7 @@ export default class AddCuratorToGroupCommand extends ContentDirectoryCommandBas
   }
 
   async run(): Promise<void> {
-    const lead = await this.getRequiredLeadContext()
+    // const lead = await this.getRequiredLeadContext()
 
     let { groupId, curatorId } = this.parse(AddCuratorToGroupCommand).args
 
@@ -37,10 +37,11 @@ export default class AddCuratorToGroupCommand extends ContentDirectoryCommandBas
       await this.getCurator(curatorId)
     }
 
-    await this.sendAndFollowNamedTx(await this.getDecodedPair(lead.roleAccount), 'content', 'addCuratorToGroup', [
-      groupId,
-      curatorId,
-    ])
+    // TODO: fix in CLI Update work - https://github.com/Joystream/joystream/issues/3689
+    // await this.sendAndFollowNamedTx(await this.getDecodedPair(lead.roleAccount), 'content', 'addCuratorToGroup', [
+    //   groupId,
+    //   curatorId,
+    // ])
 
     console.log(
       chalk.green(
