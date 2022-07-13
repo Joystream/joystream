@@ -186,11 +186,11 @@ declare module '@polkadot/api-base/types/submittable' {
        * Cancel Nft sell order
        **/
       cancelBuyNow: AugmentedSubmittable<(ownerId: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
-      cancelEnglishAuction: AugmentedSubmittable<(ownerId: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
       /**
        * cancel channel transfer
        **/
       cancelChannelTransfer: AugmentedSubmittable<(channelId: u64 | AnyNumber | Uint8Array, actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, PalletContentPermissionsContentActor]>;
+      cancelEnglishAuction: AugmentedSubmittable<(ownerId: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
       /**
        * Cancel Nft offer
        **/
@@ -200,17 +200,25 @@ declare module '@polkadot/api-base/types/submittable' {
        * Cancel open auction bid
        **/
       cancelOpenAuctionBid: AugmentedSubmittable<(participantId: u64 | AnyNumber | Uint8Array, videoId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64]>;
+      /**
+       * Channel collaborator remark
+       **/
+      channelAgentRemark: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, msg: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, Bytes]>;
+      /**
+       * Channel owner remark
+       **/
+      channelOwnerRemark: AugmentedSubmittable<(channelId: u64 | AnyNumber | Uint8Array, msg: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Bytes]>;
       claimAndWithdrawChannelReward: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, proof: Vec<PalletContentProofElementRecord> | (PalletContentProofElementRecord | { hash_?: any; side?: any } | string | Uint8Array)[], item: PalletContentPullPaymentElement | { channelId?: any; cumulativeRewardEarned?: any; reason?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, Vec<PalletContentProofElementRecord>, PalletContentPullPaymentElement]>;
+      claimChannelReward: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, proof: Vec<PalletContentProofElementRecord> | (PalletContentProofElementRecord | { hash_?: any; side?: any } | string | Uint8Array)[], item: PalletContentPullPaymentElement | { channelId?: any; cumulativeRewardEarned?: any; reason?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, Vec<PalletContentProofElementRecord>, PalletContentPullPaymentElement]>;
       /**
        * Claim channel's creator token patronage credit
        **/
       claimCreatorTokenPatronageCredit: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
-      claimChannelReward: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, proof: Vec<PalletContentProofElementRecord> | (PalletContentProofElementRecord | { hash_?: any; side?: any } | string | Uint8Array)[], item: PalletContentPullPaymentElement | { channelId?: any; cumulativeRewardEarned?: any; reason?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, Vec<PalletContentProofElementRecord>, PalletContentPullPaymentElement]>;
+      createChannel: AugmentedSubmittable<(channelOwner: PalletContentChannelOwner | { Member: any } | { CuratorGroup: any } | string | Uint8Array, params: PalletContentChannelCreationParametersRecord | { assets?: any; meta?: any; collaborators?: any; storageBuckets?: any; distributionBuckets?: any; expectedChannelStateBloatBond?: any; expectedDataObjectStateBloatBond?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentChannelOwner, PalletContentChannelCreationParametersRecord]>;
       /**
        * Add new curator group to runtime storage
        **/
       createCuratorGroup: AugmentedSubmittable<(isActive: bool | boolean | Uint8Array, permissionsByLevel: BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>) => SubmittableExtrinsic<ApiType>, [bool, BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>]>;
-      createChannel: AugmentedSubmittable<(channelOwner: PalletContentChannelOwner | { Member: any } | { CuratorGroup: any } | string | Uint8Array, params: PalletContentChannelCreationParametersRecord | { assets?: any; meta?: any; collaborators?: any; storageBuckets?: any; distributionBuckets?: any; expectedChannelStateBloatBond?: any; expectedDataObjectStateBloatBond?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentChannelOwner, PalletContentChannelCreationParametersRecord]>;
       createVideo: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, params: PalletContentVideoCreationParametersRecord | { assets?: any; meta?: any; autoIssueNft?: any; expectedVideoStateBloatBond?: any; expectedDataObjectStateBloatBond?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentVideoCreationParametersRecord]>;
       /**
        * Perform transfer of tokens as creator token issuer
@@ -238,14 +246,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * Finalize an ended revenue split
        **/
       finalizeRevenueSplit: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
-      /**
-       * Channel collaborator remark
-       **/
-      channelAgentRemark: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, msg: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, Bytes]>;
-      /**
-       * Channel owner remark
-       **/
-      channelOwnerRemark: AugmentedSubmittable<(channelId: u64 | AnyNumber | Uint8Array, msg: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Bytes]>;
       /**
        * Initialize creator token sale
        **/
@@ -303,12 +303,12 @@ declare module '@polkadot/api-base/types/submittable' {
        * Sell Nft
        **/
       sellNft: AugmentedSubmittable<(videoId: u64 | AnyNumber | Uint8Array, ownerId: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, price: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, PalletContentPermissionsContentActor, u128]>;
+      setChannelPausedFeaturesAsModerator: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, newPausedFeatures: BTreeSet<PalletContentPermissionsCuratorGroupPausableChannelFeature>, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, BTreeSet<PalletContentPermissionsCuratorGroupPausableChannelFeature>, Bytes]>;
+      setChannelVisibilityAsModerator: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, isHidden: bool | boolean | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, bool, Bytes]>;
       /**
        * Set `is_active` status for curator group under given `curator_group_id`
        **/
       setCuratorGroupStatus: AugmentedSubmittable<(curatorGroupId: u64 | AnyNumber | Uint8Array, isActive: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, bool]>;
-      setChannelPausedFeaturesAsModerator: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, newPausedFeatures: BTreeSet<PalletContentPermissionsCuratorGroupPausableChannelFeature>, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, BTreeSet<PalletContentPermissionsCuratorGroupPausableChannelFeature>, Bytes]>;
-      setChannelVisibilityAsModerator: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, isHidden: bool | boolean | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, bool, Bytes]>;
       /**
        * Claim won english auction
        * Can be called by anyone
@@ -335,14 +335,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * Update Buy now nft price
        **/
       updateBuyNowPrice: AugmentedSubmittable<(ownerId: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, newPrice: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, u128]>;
-      /**
-       * Update existing curator group's permissions
-       **/
-      updateCuratorGroupPermissions: AugmentedSubmittable<(curatorGroupId: u64 | AnyNumber | Uint8Array, permissionsByLevel: BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>) => SubmittableExtrinsic<ApiType>, [u64, BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>]>;
-      /**
-       * Updates global NFT limit.
-       **/
-      updateGlobalNftLimit: AugmentedSubmittable<(nftLimitPeriod: PalletContentNftLimitPeriod | 'Daily' | 'Weekly' | number | Uint8Array, limit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentNftLimitPeriod, u64]>;
       updateChannel: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, params: PalletContentChannelUpdateParametersRecord | { assetsToUpload?: any; newMeta?: any; assetsToRemove?: any; collaborators?: any; expectedDataObjectStateBloatBond?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentChannelUpdateParametersRecord]>;
       /**
        * Updates channel's NFT limit.
@@ -355,6 +347,14 @@ declare module '@polkadot/api-base/types/submittable' {
        * Only lead can upload this value
        **/
       updateChannelStateBloatBond: AugmentedSubmittable<(newChannelStateBloatBond: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u128]>;
+      /**
+       * Update existing curator group's permissions
+       **/
+      updateCuratorGroupPermissions: AugmentedSubmittable<(curatorGroupId: u64 | AnyNumber | Uint8Array, permissionsByLevel: BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>) => SubmittableExtrinsic<ApiType>, [u64, BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupContentModerationAction>>]>;
+      /**
+       * Updates global NFT limit.
+       **/
+      updateGlobalNftLimit: AugmentedSubmittable<(nftLimitPeriod: PalletContentNftLimitPeriod | 'Daily' | 'Weekly' | number | Uint8Array, limit: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentNftLimitPeriod, u64]>;
       /**
        * Update upcoming creator token sale
        **/
@@ -3309,19 +3309,6 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       addPost: AugmentedSubmittable<(postAuthorId: u64 | AnyNumber | Uint8Array, threadId: u64 | AnyNumber | Uint8Array, text: Bytes | string | Uint8Array, editable: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, Bytes, bool]>;
       /**
-       * Remove post from storage, with the last parameter indicating whether to also hide it
-       * in the UI.
-       * 
-       * <weight>
-       * 
-       * ## Weight
-       * `O (1)`
-       * - DB:
-       * - O(1) doesn't depend on the state or parameters
-       * # </weight>
-       **/
-      deletePost: AugmentedSubmittable<(deleterId: u64 | AnyNumber | Uint8Array, postId: u64 | AnyNumber | Uint8Array, threadId: u64 | AnyNumber | Uint8Array, hide: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u64, bool]>;
-      /**
        * Changes thread permission mode.
        * 
        * <weight>
@@ -3334,6 +3321,19 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       changeThreadMode: AugmentedSubmittable<(memberId: u64 | AnyNumber | Uint8Array, threadId: u64 | AnyNumber | Uint8Array, mode: PalletProposalsDiscussionThreadMode | { Open: any } | { Closed: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, PalletProposalsDiscussionThreadMode]>;
+      /**
+       * Remove post from storage, with the last parameter indicating whether to also hide it
+       * in the UI.
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      deletePost: AugmentedSubmittable<(deleterId: u64 | AnyNumber | Uint8Array, postId: u64 | AnyNumber | Uint8Array, threadId: u64 | AnyNumber | Uint8Array, hide: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u64, bool]>;
       /**
        * Updates a post with author origin check. Update attempts number is limited.
        * 
@@ -3525,6 +3525,49 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       cancelDeferredSlash: AugmentedSubmittable<(era: u32 | AnyNumber | Uint8Array, slashIndices: Vec<u32> | (u32 | AnyNumber | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [u32, Vec<u32>]>;
       /**
+       * Declare no desire to either validate or nominate.
+       * 
+       * Effects will be felt at the beginning of the next era.
+       * 
+       * The dispatch origin for this call must be _Signed_ by the controller, not the stash.
+       * 
+       * # <weight>
+       * - Independent of the arguments. Insignificant complexity.
+       * - Contains one read.
+       * - Writes are limited to the `origin` account key.
+       * # </weight>
+       **/
+      chill: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+      /**
+       * Declare a `controller` to stop participating as either a validator or nominator.
+       * 
+       * Effects will be felt at the beginning of the next era.
+       * 
+       * The dispatch origin for this call must be _Signed_, but can be called by anyone.
+       * 
+       * If the caller is the same as the controller being targeted, then no further checks are
+       * enforced, and this function behaves just like `chill`.
+       * 
+       * If the caller is different than the controller being targeted, the following conditions
+       * must be met:
+       * 
+       * * `controller` must belong to a nominator who has become non-decodable,
+       * 
+       * Or:
+       * 
+       * * A `ChillThreshold` must be set and checked which defines how close to the max
+       * nominators or validators we must reach before users can start chilling one-another.
+       * * A `MaxNominatorCount` and `MaxValidatorCount` must be set which is used to determine
+       * how close we are to the threshold.
+       * * A `MinNominatorBond` and `MinValidatorBond` must be set and checked, which determines
+       * if this is a person that should be chilled because they have not met the threshold
+       * bond required.
+       * 
+       * This can be helpful if bond requirements are updated, and we need to remove old users
+       * who do not satisfy these requirements.
+       **/
+      chillOther: AugmentedSubmittable<(controller: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32]>;
+      /**
        * Force a validator to have at least the minimum commission. This will not affect a
        * validator who already has a commission greater than or equal to the minimum. Any account
        * can call this.
@@ -3585,49 +3628,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * The dispatch origin must be Root.
        **/
       forceUnstake: AugmentedSubmittable<(stash: AccountId32 | string | Uint8Array, numSlashingSpans: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, u32]>;
-      /**
-       * Declare no desire to either validate or nominate.
-       * 
-       * Effects will be felt at the beginning of the next era.
-       * 
-       * The dispatch origin for this call must be _Signed_ by the controller, not the stash.
-       * 
-       * # <weight>
-       * - Independent of the arguments. Insignificant complexity.
-       * - Contains one read.
-       * - Writes are limited to the `origin` account key.
-       * # </weight>
-       **/
-      chill: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
-      /**
-       * Declare a `controller` to stop participating as either a validator or nominator.
-       * 
-       * Effects will be felt at the beginning of the next era.
-       * 
-       * The dispatch origin for this call must be _Signed_, but can be called by anyone.
-       * 
-       * If the caller is the same as the controller being targeted, then no further checks are
-       * enforced, and this function behaves just like `chill`.
-       * 
-       * If the caller is different than the controller being targeted, the following conditions
-       * must be met:
-       * 
-       * * `controller` must belong to a nominator who has become non-decodable,
-       * 
-       * Or:
-       * 
-       * * A `ChillThreshold` must be set and checked which defines how close to the max
-       * nominators or validators we must reach before users can start chilling one-another.
-       * * A `MaxNominatorCount` and `MaxValidatorCount` must be set which is used to determine
-       * how close we are to the threshold.
-       * * A `MinNominatorBond` and `MinValidatorBond` must be set and checked, which determines
-       * if this is a person that should be chilled because they have not met the threshold
-       * bond required.
-       * 
-       * This can be helpful if bond requirements are updated, and we need to remove old users
-       * who do not satisfy these requirements.
-       **/
-      chillOther: AugmentedSubmittable<(controller: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32]>;
       /**
        * Increments the ideal number of validators.
        * 
