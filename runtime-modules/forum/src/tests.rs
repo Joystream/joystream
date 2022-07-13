@@ -134,7 +134,7 @@ fn create_category_origin() {
                 None,
                 good_category_title(),
                 good_category_description(),
-                results[index].clone(),
+                results[index],
             );
         });
     }

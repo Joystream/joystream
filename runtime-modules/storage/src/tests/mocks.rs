@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 pub use frame_support::traits::LockIdentifier;
-use frame_support::weights::Weight;
+
 use frame_support::{
     ensure, parameter_types,
     traits::{ConstU16, ConstU32, ConstU64},
@@ -234,7 +234,7 @@ impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
     }
 
     fn is_member_controller_account(_member_id: &u64, _account_id: &u64) -> bool {
-        return true;
+        true
     }
 }
 

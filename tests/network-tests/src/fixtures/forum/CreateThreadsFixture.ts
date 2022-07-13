@@ -7,13 +7,13 @@ import { ISubmittableResult } from '@polkadot/types/types/'
 import { ForumThreadWithInitialPostFragment, ThreadCreatedEventFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
 import { StandardizedFixture } from '../../Fixture'
-import { CategoryId, PollInput } from '@joystream/types/forum'
-import { MemberId, ThreadId } from '@joystream/types/common'
-import { CreateInterface } from '@joystream/types'
+import { PalletForumPollInput as PollInput } from '@polkadot/types/lookup'
+import { MemberId, ForumThreadId, ForumCategoryId, ForumPostId } from '@joystream/types/primitives'
 import { POST_DEPOSIT, THREAD_DEPOSIT } from '../../consts'
 import { ForumThreadMetadata, IForumThreadMetadata } from '@joystream/metadata-protobuf'
 import { isSet } from '@joystream/metadata-protobuf/utils'
 import { EventDetails } from '@joystream/cli/src/Types'
+import { createType } from '@joystream/types'
 
 export type PollParams = {
   description: string
@@ -24,7 +24,7 @@ export type PollParams = {
 export type ThreadParams = {
   metadata: MetadataInput<IForumThreadMetadata>
   text: string
-  categoryId: CategoryId
+  categoryId: ForumCategoryId
   asMember: MemberId
   poll?: PollParams
 }
@@ -41,17 +41,24 @@ export class CreateThreadsFixture extends StandardizedFixture {
     this.threadsParams = threadsParams
   }
 
-  public getCreatedThreadsIds(): ThreadId[] {
+  public getCreatedThreadsIds(): ForumThreadId[] {
     if (!this.events.length) {
       throw new Error('Trying to get created threads ids before they were created!')
     }
     return this.events.map((e) => e.event.data[1])
   }
 
+  public getCreatedInitialPostByThreadsIds(): Map<number, ForumPostId> {
+    if (!this.events.length) {
+      throw new Error('Trying to get created threads and initial posts Ids before they were created!')
+    }
+    return new Map(this.events.map((e) => [e.event.data[1].toNumber(), e.event.data[2]]))
+  }
+
   protected async getSignerAccountOrAccounts(): Promise<string[]> {
     return await Promise.all(
       this.threadsParams.map(async ({ asMember }) =>
-        (await this.api.query.members.membershipById(asMember)).controller_account.toString()
+        (await this.api.query.members.membershipById(asMember)).unwrap().controllerAccount.toString()
       )
     )
   }
@@ -63,16 +70,16 @@ export class CreateThreadsFixture extends StandardizedFixture {
     await super.execute()
   }
 
-  protected parsePollParams(pollParams?: PollParams): CreateInterface<PollInput> | null {
+  protected parsePollParams(pollParams?: PollParams): PollInput | null {
     if (!pollParams) {
       return null
     }
 
-    return {
+    return createType('PalletForumPollInput', {
       description: pollParams.description,
-      end_time: pollParams.endTime.getTime(),
-      poll_alternatives: pollParams.alternatives,
-    }
+      endTime: pollParams.endTime.getTime(),
+      pollAlternatives: pollParams.alternatives,
+    })
   }
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {

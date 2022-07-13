@@ -2,13 +2,13 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use crate::Module as ProposalsEngine;
-use balances::Module as Balances;
+use balances::Pallet as Balances;
 use core::convert::TryInto;
 use council::Module as Council;
 use frame_benchmarking::{account, benchmarks};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::EventRecord;
-use frame_system::Module as System;
+use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use membership::Module as Membership;
 use referendum::Module as Referendum;
@@ -771,7 +771,6 @@ benchmarks! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::tests::mock::{initial_test_ext, Test};
     use frame_support::assert_ok;
     type Engine = crate::Module<Test>;

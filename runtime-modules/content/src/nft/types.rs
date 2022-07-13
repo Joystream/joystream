@@ -314,7 +314,7 @@ impl<
         old_bid: &OpenAuctionBidRecord<Balance, BlockNumber, AuctionId>,
     ) -> DispatchResult {
         if old_bid.is_offer_lower(new_offer) {
-            self.ensure_bid_lock_duration_expired::<T>(block, &old_bid)
+            self.ensure_bid_lock_duration_expired::<T>(block, old_bid)
         } else {
             Ok(())
         }

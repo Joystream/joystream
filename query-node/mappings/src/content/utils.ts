@@ -1,5 +1,4 @@
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { FindConditions } from 'typeorm'
 import {
   IVideoMetadata,
   IPublishedBeforeJoystream,
@@ -35,10 +34,14 @@ import {
   Curator,
 } from 'query-node/dist/model'
 // Joystream types
-import { ContentActor, StorageAssets } from '@joystream/types/augment'
+import {
+  PalletContentChannelOwner as ChannelOwner,
+  PalletContentPermissionsContentActor as ContentActor,
+  PalletContentStorageAssetsRecord as StorageAssets,
+} from '@polkadot/types/lookup'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import BN from 'bn.js'
-import { getMostRecentlyCreatedDataObjects } from '../storage/utils'
+import { createDataObjects, getMostRecentlyCreatedDataObjects, StorageDataObjectParams } from '../storage/utils'
 
 const ASSET_TYPES = {
   channel: [
@@ -130,9 +133,9 @@ export async function processChannelMetadata(
   ctx: EventContext & StoreContext,
   channel: Channel,
   meta: DecodedMetadataObject<IChannelMetadata>,
-  assetsParams?: StorageAssets
+  dataObjectParams: StorageDataObjectParams
 ): Promise<Channel> {
-  const assets = assetsParams ? await processNewAssets(ctx, assetsParams) : []
+  const assets = await createDataObjects(ctx.store, dataObjectParams)
 
   integrateMeta(channel, meta, ['title', 'description', 'isPublic'])
 
@@ -261,6 +264,44 @@ async function processVideoMediaMetadata(
   return videoMedia
 }
 
+export async function convertChannelOwnerToMemberOrCuratorGroup(
+  store: DatabaseManager,
+  channelOwner: ChannelOwner
+): Promise<{
+  ownerMember?: Membership
+  ownerCuratorGroup?: CuratorGroup
+}> {
+  if (channelOwner.isMember) {
+    const member = await store.get(Membership, {
+      where: { id: channelOwner.asMember.toString() },
+    })
+
+    // ensure member exists
+    if (!member) {
+      return inconsistentState(`Channel owner is non-existing member`, channelOwner.asMember)
+    }
+
+    return {
+      ownerMember: member,
+      ownerCuratorGroup: undefined,
+    }
+  }
+
+  const curatorGroup = await store.get(CuratorGroup, {
+    where: { id: channelOwner.asCuratorGroup.toString() },
+  })
+
+  // ensure curator group exists
+  if (!curatorGroup) {
+    return inconsistentState('Channel owner is non-existing curator group', channelOwner.asCuratorGroup)
+  }
+
+  return {
+    ownerMember: undefined,
+    ownerCuratorGroup: curatorGroup,
+  }
+}
+
 export async function convertContentActorToChannelOrNftOwner(
   store: DatabaseManager,
   contentActor: ContentActor
@@ -270,7 +311,7 @@ export async function convertContentActorToChannelOrNftOwner(
 }> {
   if (contentActor.isMember) {
     const memberId = contentActor.asMember.toNumber()
-    const member = await store.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
+    const member = await store.get(Membership, { where: { id: memberId.toString() } })
 
     // ensure member exists
     if (!member) {
@@ -286,7 +327,7 @@ export async function convertContentActorToChannelOrNftOwner(
   if (contentActor.isCurator) {
     const curatorGroupId = contentActor.asCurator[0].toNumber()
     const curatorGroup = await store.get(CuratorGroup, {
-      where: { id: curatorGroupId.toString() } as FindConditions<CuratorGroup>,
+      where: { id: curatorGroupId.toString() },
     })
 
     // ensure curator group exists
@@ -312,7 +353,7 @@ export async function convertContentActor(
 ): Promise<typeof ContentActorVariant> {
   if (contentActor.isMember) {
     const memberId = contentActor.asMember.toNumber()
-    const member = await store.get(Membership, { where: { id: memberId.toString() } as FindConditions<Membership> })
+    const member = await store.get(Membership, { where: { id: memberId.toString() } })
 
     // ensure member exists
     if (!member) {
@@ -328,7 +369,7 @@ export async function convertContentActor(
   if (contentActor.isCurator) {
     const curatorId = contentActor.asCurator[1].toNumber()
     const curator = await store.get(Curator, {
-      where: { id: curatorId.toString() } as FindConditions<Curator>,
+      where: { id: curatorId.toString() },
     })
 
     // ensure curator group exists
@@ -380,7 +421,7 @@ function processPublishedBeforeJoystream(
 }
 
 async function processNewAssets(ctx: EventContext & StoreContext, assets: StorageAssets): Promise<StorageDataObject[]> {
-  const assetsUploaded = assets.object_creation_list.length
+  const assetsUploaded = assets.objectCreationList.length
   // FIXME: Ideally the runtime would provide object ids in ChannelCreated/VideoCreated/ChannelUpdated(...) events
   const objects = await getMostRecentlyCreatedDataObjects(ctx.store, assetsUploaded)
   return objects

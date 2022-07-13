@@ -37,7 +37,7 @@ export default abstract class WorkingGroupsCommandBase extends WorkingGroupComma
   async getOpeningForLeadAction(id: number): Promise<OpeningDetails> {
     const opening = await this.getApi().groupOpening(this.group, id)
 
-    if (!opening.type.isOfType('Regular')) {
+    if (!opening.type.isRegular) {
       this.error('A lead can only manage Regular openings!', { exit: ExitCodes.AccessDenied })
     }
 
@@ -51,7 +51,7 @@ export default abstract class WorkingGroupsCommandBase extends WorkingGroupComma
     const application = await this.getApi().groupApplication(this.group, id)
     const opening = await this.getApi().groupOpening(this.group, application.openingId)
 
-    if (!opening.type.isOfType('Regular')) {
+    if (!opening.type.isRegular) {
       this.error('A lead can only manage Regular opening applications!', { exit: ExitCodes.AccessDenied })
     }
 

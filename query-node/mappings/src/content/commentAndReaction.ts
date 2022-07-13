@@ -14,7 +14,7 @@ import {
   ReactVideo,
   VideoReactionsPreference,
 } from '@joystream/metadata-protobuf'
-import { ChannelId, MemberId } from '@joystream/types/common'
+import { MemberId, ChannelId } from '@joystream/types/primitives'
 import {
   Channel,
   Comment,

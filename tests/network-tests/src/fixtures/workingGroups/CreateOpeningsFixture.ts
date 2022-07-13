@@ -1,7 +1,7 @@
 import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { EventType, WorkingGroupModuleName } from '../../types'
-import { OpeningId } from '@joystream/types/working-group'
+import { OpeningId } from '@joystream/types/primitives'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Utils } from '../../utils'
 import { ISubmittableResult } from '@polkadot/types/types/'
@@ -102,7 +102,7 @@ export class CreateOpeningsFixture extends BaseWorkingGroupFixture {
       this.api.tx[this.group].addOpening(
         this.getOpeningMetadataBytes(params),
         this.asSudo ? 'Leader' : 'Regular',
-        { stake_amount: params.stake, leaving_unstaking_period: params.unstakingPeriod },
+        { stakeAmount: params.stake, leavingUnstakingPeriod: params.unstakingPeriod },
         params.reward
       )
     )

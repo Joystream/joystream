@@ -8,7 +8,7 @@ import {
   FundingType,
   OracleWorkEntryJudgment,
 } from '@joystream/types/augment'
-import { MemberId } from '@joystream/types/common'
+import { MemberId } from '@joystream/types/primitives'
 import { BN } from '@polkadot/util'
 import {
   Bounty,

@@ -213,7 +213,7 @@ impl WeightInfo for () {
 	fn set_councilor_reward() -> Weight {
 		0
 	}
-	fn funding_request(i: u32, ) -> Weight {
+	fn funding_request(_i: u32, ) -> Weight {
 		0
 	}
 	fn try_process_budget_refill_budget_only() -> Weight {
@@ -225,7 +225,7 @@ impl WeightInfo for () {
 	fn try_progress_stage_idle() -> Weight {
 		0
 	}
-	fn try_progress_stage_announcing_start_election(i: u32, ) -> Weight {
+	fn try_progress_stage_announcing_start_election(_i: u32, ) -> Weight {
 		0
 	}
 	fn try_progress_stage_announcing_restart() -> Weight {
@@ -237,7 +237,7 @@ impl WeightInfo for () {
 	fn release_candidacy_stake() -> Weight {
 		0
 	}
-	fn set_candidacy_note(i: u32, ) -> Weight {
+	fn set_candidacy_note(_i: u32, ) -> Weight {
 		0
 	}
 	fn withdraw_candidacy() -> Weight {

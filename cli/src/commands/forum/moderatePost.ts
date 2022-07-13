@@ -41,7 +41,7 @@ export default class ForumModeratePostCommand extends ForumCommandBase {
     const [key, actor] = await this.getForumModerationContext([categoryId], context)
 
     this.jsonPrettyPrint(JSON.stringify({ categoryId, threadId, postId, rationale }))
-    this.warn(`Post stake of ${formatBalance(post.cleanup_pay_off)} will be slashed!`)
+    this.warn(`Post stake of ${formatBalance(post.cleanupPayOff)} will be slashed!`)
     await this.requireConfirmation('Do you confirm the provided input?', true)
 
     await this.sendAndFollowTx(

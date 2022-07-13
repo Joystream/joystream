@@ -28,8 +28,8 @@ export class NftAuctionWhitelistFixture extends BaseQueryNodeFixture {
     // add nonexisting member to whitelist to test this feature
     // runtime allows that so this shouldn't cause any problems
     const whitelistedMemberIds = whitelistedParticipants
-      .map((item) => item.memberId.toString())
-      .concat([nonExistingMember.toString()])
+      .map((item) => item.memberId.toNumber())
+      .concat([nonExistingMember])
 
     this.debug('Create video with NFT being auctioned')
     const { auctionParams, minimalBidStep: bidAmount } = await this.api.createEnglishAuctionParameters(

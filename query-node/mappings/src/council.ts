@@ -1,7 +1,14 @@
-import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
+import {
+  EventContext,
+  StoreContext,
+  DatabaseManager,
+  SubstrateEvent,
+  FindOptionsOrder,
+  FindOptionsWhere,
+} from '@joystream/hydra-common'
 import { CURRENT_NETWORK, deserializeMetadata, genericEventFields } from './common'
 import BN from 'bn.js'
-import { FindConditions, SelectQueryBuilder } from 'typeorm'
+import { FindOneOptions, SelectQueryBuilder } from 'typeorm'
 
 import {
   // Council events
@@ -82,14 +89,10 @@ async function getCandidate(
   electionRound?: ElectionRound,
   relations: string[] = []
 ): Promise<Candidate> {
-  const event = await store.get(NewCandidateEvent, {
-    join: { alias: 'event', innerJoin: { candidate: 'event.candidate' } },
-    where: (qb: SelectQueryBuilder<NewCandidateEvent>) => {
-      qb.where('candidate.memberId = :memberId', { memberId })
-      if (electionRound) {
-        qb.andWhere('candidate.electionRoundId = :electionRoundId', { electionRoundId: electionRound.id })
-      }
-    },
+  const event = await store.get<NewCandidateEvent>(NewCandidateEvent, {
+    where: electionRound
+      ? { candidate: { member: { id: memberId }, electionRound: { id: electionRound.id } } }
+      : { candidate: { member: { id: memberId } } },
     order: { inBlock: 'DESC', indexInBlock: 'DESC' },
     relations: ['candidate'].concat(relations.map((r) => `candidate.${r}`)),
   })
@@ -108,7 +111,7 @@ async function getCouncilMember(store: DatabaseManager, memberId: string): Promi
   const councilMember = await store.get(CouncilMember, {
     where: { memberId: memberId },
     order: { createdAt: 'DESC' },
-  })
+  } as FindOneOptions<CouncilMember>)
 
   if (!councilMember) {
     throw new Error(`Council member not found. memberId '${memberId}'`)
@@ -134,7 +137,7 @@ async function getCurrentElectionRound(store: DatabaseManager, relations: string
   Returns the last council stage update.
 */
 async function getCurrentStageUpdate(store: DatabaseManager): Promise<CouncilStageUpdate> {
-  const stageUpdate = await store.get(CouncilStageUpdate, { order: { changedAt: 'DESC' } })
+  const stageUpdate = await store.get(CouncilStageUpdate, { order: { changedAt: 'DESC' } as FindOptionsOrder<any> }) // TODO: get rid of `any` typecast
 
   if (!stageUpdate) {
     throw new Error('No stage update found.')
@@ -162,12 +165,13 @@ async function getAccountCastVote(
   account: string,
   electionRound?: ElectionRound
 ): Promise<CastVote> {
-  const where = { castBy: account } as FindConditions<Candidate>
+  const where: FindOptionsWhere<CastVote> = { castBy: account }
+
   if (electionRound) {
-    where.electionRound = electionRound
+    where.electionRound = { id: electionRound.id.toString() }
   }
 
-  const castVote = await store.get(CastVote, { where, order: { createdAt: 'DESC' } })
+  const castVote = await store.get(CastVote, { where, order: { createdAt: 'DESC' } } as FindOneOptions<CastVote>)
 
   if (!castVote) {
     throw new Error(
@@ -309,7 +313,7 @@ async function convertCandidatesToCouncilMembers(
 async function abortCandidacies(store: DatabaseManager) {
   const electionRound = await getCurrentElectionRound(store)
   const candidates = await store.getMany(Candidate, {
-    where: { electionRoundId: electionRound.id, status: CandidacyStatus.ACTIVE },
+    where: { electionRound: { id: electionRound.id }, status: CandidacyStatus.ACTIVE },
   })
 
   await Promise.all(
@@ -472,7 +476,7 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
   // get election round and its candidates
   const electionRound = await getCurrentElectionRound(store)
   const candidates = (await store.getMany(Candidate, {
-    where: { electionRoundId: electionRound.id, status: CandidacyStatus.ACTIVE },
+    where: { electionRound: { id: electionRound.id }, status: CandidacyStatus.ACTIVE },
   })) as Array<Candidate & { memberId: string }>
 
   const electedCandidates = candidates.filter((candidate) => electedMemberIds.includes(candidate.memberId))

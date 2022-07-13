@@ -8,9 +8,9 @@ import {
   MembershipFieldsFragment,
   MemberVerificationStatusUpdatedEventFieldsFragment,
 } from '../../graphql/generated/queries'
-import { WorkerId, Worker } from '@joystream/types/working-group'
+import { PalletWorkingGroupGroupWorker as Worker } from '@polkadot/types/lookup'
 import { ISubmittableResult } from '@polkadot/types/types'
-import { MemberId } from '@joystream/types/common'
+import { MemberId, WorkerId } from '@joystream/types/primitives'
 
 export type UpdateVerificationStatusDetails = {
   memberId: MemberId
@@ -37,7 +37,7 @@ export class UpdateVerificationStatusFixture extends StandardizedFixture {
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string> {
-    return this.membershipWgLead[1].role_account_id.toString()
+    return this.membershipWgLead[1].roleAccountId.toString()
   }
 
   protected assertQueryNodeEventIsValid(qEvent: MemberVerificationStatusUpdatedEventFieldsFragment, i: number): void {

@@ -201,7 +201,7 @@ export async function storage_StorageBucketDeleted({ event, store }: EventContex
 
 // DYNAMIC BAGS
 export async function storage_DynamicBagCreated({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [bagId, , storageBucketIdsSet, distributionBucketIdsSet] = new Storage.DynamicBagCreatedEvent(event).params
+  const [bagId, storageBucketIdsSet, distributionBucketIdsSet] = new Storage.DynamicBagCreatedEvent(event).params
   const storageBag = new StorageBag({
     id: getDynamicBagId(bagId),
     owner: getDynamicBagOwner(bagId),
@@ -223,8 +223,8 @@ export async function storage_DynamicBagDeleted({ event, store }: EventContext &
 
 // Note: "Uploaded" here actually means "created" (the real upload happens later)
 export async function storage_DataObjectsUploaded({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [dataObjectIds, uploadParams, stateBloatBond] = new Storage.DataObjectsUploadedEvent(event).params
-  await createDataObjects(store, uploadParams, stateBloatBond, dataObjectIds)
+  const [objectIds, { bagId, objectCreationList }, stateBloatBond] = new Storage.DataObjectsUploadedEvent(event).params
+  await createDataObjects(store, { storageBagOrId: bagId, objectCreationList, stateBloatBond, objectIds })
 }
 
 export async function storage_PendingDataObjectsAccepted({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -368,7 +368,7 @@ export async function storage_DistributionBucketCreated({ event, store }: EventC
   const family = await getById(store, DistributionBucketFamily, familyId.toString())
   const bucket = new DistributionBucket({
     id: distributionBucketId(bucketId),
-    bucketIndex: bucketId.distribution_bucket_index.toNumber(),
+    bucketIndex: bucketId.distributionBucketIndex.toNumber(),
     acceptingNewBags: acceptingNewBags.valueOf(),
     distributing: true, // Runtime default
     family,
@@ -413,7 +413,7 @@ export async function storage_DistributionBucketDeleted({ event, store }: EventC
   const invitedOperators = await store.getMany(DistributionBucketOperator, {
     where: {
       status: DistributionBucketOperatorStatus.INVITED,
-      distributionBucket,
+      distributionBucket: { id: distributionBucket.id },
     },
   })
   await Promise.all(invitedOperators.map((operator) => removeDistributionBucketOperator(store, operator)))

@@ -1,4 +1,4 @@
-import { DistributionBucketId } from '@joystream/types/storage'
+import { PalletStorageDistributionBucketIdRecord as DistributionBucketId } from '@polkadot/types/lookup'
 import { createType } from '@joystream/types'
 
 export class BucketIdParserService {
@@ -9,13 +9,13 @@ export class BucketIdParserService {
       throw new Error(`Invalid bucket id! Expected format: {familyId}:{bucketIndex}`)
     }
     const [familyId, bucketIndex] = bucketIdStr.split(':')
-    return createType<DistributionBucketId, 'DistributionBucketId'>('DistributionBucketId', {
-      distribution_bucket_family_id: parseInt(familyId),
-      distribution_bucket_index: parseInt(bucketIndex),
+    return createType('PalletStorageDistributionBucketIdRecord', {
+      distributionBucketFamilyId: parseInt(familyId),
+      distributionBucketIndex: parseInt(bucketIndex),
     })
   }
 
   public static formatBucketId(bucketId: DistributionBucketId): string {
-    return `${bucketId.distribution_bucket_family_id.toString()}:${bucketId.distribution_bucket_index.toString()}`
+    return `${bucketId.distributionBucketFamilyId.toString()}:${bucketId.distributionBucketIndex.toString()}`
   }
 }
