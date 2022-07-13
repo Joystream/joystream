@@ -694,6 +694,8 @@ parameter_types! {
         block_number_period: WEEKS,
         limit: 500,
     };  // TODO: update
+    pub const MinimumCashoutAllowedLimit: Balance = 1; // TODO: update
+    pub const MaximumCashoutAllowedLimit: Balance = 1_000_000; // TODO: update
 }
 
 impl content::Config for Runtime {
@@ -714,6 +716,8 @@ impl content::Config for Runtime {
     type DefaultChannelDailyNftLimit = DefaultChannelDailyNftLimit;
     type DefaultChannelWeeklyNftLimit = DefaultChannelWeeklyNftLimit;
     type ProjectToken = ProjectToken;
+    type MinimumCashoutAllowedLimit = MinimumCashoutAllowedLimit;
+    type MaximumCashoutAllowedLimit = MaximumCashoutAllowedLimit;
 }
 
 parameter_types! {
