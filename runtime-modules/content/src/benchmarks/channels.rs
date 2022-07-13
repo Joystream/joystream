@@ -8,12 +8,11 @@ use frame_support::storage::StorageMap;
 use frame_support::traits::Get;
 use frame_system::RawOrigin;
 use sp_arithmetic::traits::{One, Saturating};
-use storage::DynamicBagType;
 
 use super::{
     generate_channel_creation_params, insert_distribution_leader, insert_storage_leader,
     member_funded_account, CreateAccountId, DistributionWorkingGroupInstance,
-    StorageWorkingGroupInstance, DEFAULT_MEMBER_ID, MAX_BYTES, MAX_COLABORATOR_IDS, MAX_OBJ_NUMBER,
+    StorageWorkingGroupInstance, DEFAULT_MEMBER_ID, MAX_COLABORATOR_IDS, MAX_OBJ_NUMBER,
 };
 
 benchmarks! {
@@ -28,7 +27,7 @@ benchmarks! {
               T: Config ,
     }
 
-    channel_creation_with_channel_bag {
+    create_channel {
 
         let a in 1 .. MAX_COLABORATOR_IDS as u32; //max colaborators
 
@@ -39,9 +38,6 @@ benchmarks! {
             (T::DistributionBucketsPerBagValueConstraint::get().max() as u32);
 
         let d in 1 .. MAX_OBJ_NUMBER; //max objs number
-
-        let e in 1 .. MAX_BYTES; //max metadata
-
 
         let max_obj_size: u64 = T::MaxDataObjectSize::get();
 
@@ -57,14 +53,13 @@ benchmarks! {
         let channel_owner = ChannelOwner::Member(channel_owner_member_id);
 
         let params = generate_channel_creation_params::<T>(
-            DynamicBagType::Channel,
             storage_wg_lead_account_id,
             distribution_wg_lead_account_id,
-            a, b, c, d, e,
+            a, b, c, d,
             max_obj_size,
         );
 
-    }: create_channel (sender, channel_owner, params)
+    }: _ (sender, channel_owner, params)
     verify {
         let channel_id: T::ChannelId = One::one();
         assert!(ChannelById::<T>::contains_key(&channel_id));
@@ -82,9 +77,9 @@ pub mod tests {
     use frame_support::assert_ok;
 
     #[test]
-    fn channel_creation_with_channel_bag() {
+    fn create_channel() {
         with_default_mock_builder(|| {
-            assert_ok!(Content::test_benchmark_channel_creation_with_channel_bag());
+            assert_ok!(Content::test_benchmark_create_channel());
         });
     }
 }

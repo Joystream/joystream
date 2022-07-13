@@ -1,9 +1,7 @@
 #[cfg(feature = "runtime-benchmarks")]
 mod channels;
 
-use crate::types::{
-    ChannelActionPermission, ChannelAgentPermissions, ChannelCreationParameters, StorageAssets,
-};
+use crate::types::{ChannelActionPermission, ChannelCreationParameters, StorageAssets};
 use crate::{Config, Module as Pallet};
 use balances::Pallet as Balances;
 use frame_benchmarking::account;
@@ -16,7 +14,6 @@ use sp_runtime::SaturatedConversion;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::convert::TryInto;
-use sp_std::iter;
 use sp_std::iter::FromIterator;
 use sp_std::vec;
 use sp_std::vec::Vec;
@@ -103,13 +100,6 @@ impl CreateAccountId for sp_core::crypto::AccountId32 {
     fn create_account_id(id: u64) -> Self {
         account::<Self>("default", id.try_into().unwrap(), SEED)
     }
-}
-
-fn get_permissions(i: u64) -> ChannelAgentPermissions {
-    iter::repeat(())
-        .take(i.saturated_into())
-        .map(|_| CHANNEL_AGENT_PERMISSIONS[i as usize])
-        .collect::<BTreeSet<_>>()
 }
 
 fn get_byte(num: u64, byte_number: u8) -> u8 {
@@ -445,16 +435,13 @@ pub fn create_data_object_candidates_helper(
         .collect()
 }
 
-#[allow(clippy::too_many_arguments)]
 fn generate_channel_creation_params<T>(
-    dyn_bag_type: DynamicBagType,
     storage_wg_lead_account_id: T::AccountId,
     distribution_wg_lead_account_id: T::AccountId,
     colaborator_num: u32,
     storage_bucket_num: u32,
     distribution_bucket_num: u32,
     objects_num: u32,
-    max_bytes: u32,
     max_obj_size: u64,
 ) -> ChannelCreationParameters<T>
 where
@@ -466,14 +453,14 @@ where
         + working_group::Config<DistributionWorkingGroupInstance>,
     T::AccountId: CreateAccountId,
 {
-    let chan_perm = CHANNEL_AGENT_PERMISSIONS.len() as u32 - 1;
+    let permissions = BTreeSet::from_iter(CHANNEL_AGENT_PERMISSIONS);
     let total_objs_size: u64 = max_obj_size.saturating_mul(objects_num.into());
-    let metadata = vec![0u8].repeat(max_bytes as usize);
+    let metadata = vec![0u8].repeat(MAX_BYTES as usize);
 
     set_dyn_bag_creation_storage_bucket_numbers::<T>(
         storage_wg_lead_account_id.clone(),
         storage_bucket_num.into(),
-        dyn_bag_type,
+        DynamicBagType::Channel,
     );
 
     set_storage_buckets_voucher_max_limits::<T>(
@@ -494,8 +481,7 @@ where
     let collaborators = (0..colaborator_num)
         .map(|id| {
             let (_account_id, member_id) = member_funded_account::<T>(COLABORATOR_IDS[id as usize]);
-            let permissions = get_permissions(chan_perm.into());
-            (member_id, permissions)
+            (member_id, permissions.clone())
         })
         .collect::<BTreeMap<_, _>>();
 

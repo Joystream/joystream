@@ -461,7 +461,7 @@ decl_module! {
             Self::deposit_event(RawEvent::CuratorRemoved(curator_group_id, curator_id));
         }
 
-        #[weight = Module::<T>::channel_creation_weight(params)] // TODO: adjust weight
+        #[weight = Module::<T>::create_channel_weight(params)] // TODO: adjust weight
         pub fn create_channel(
             origin,
             channel_owner: ChannelOwner<T::MemberId, T::CuratorGroupId>,
@@ -3605,7 +3605,7 @@ impl<T: Config> Module<T> {
     //Weight functions
 
     // Calculates weight for channel_creation_weight extrinsic.
-    fn channel_creation_weight(params: &ChannelCreationParameters<T>) -> Weight {
+    fn create_channel_weight(params: &ChannelCreationParameters<T>) -> Weight {
         //collaborators
         let a = params.collaborators.len() as u32;
 
@@ -3621,10 +3621,7 @@ impl<T: Config> Module<T> {
             .as_ref()
             .map_or(0, |v| v.object_creation_list.len()) as u32;
 
-        // new_meta.
-        let e = params.meta.as_ref().map_or(0, |v| v.len()) as u32;
-
-        WeightInfoContent::<T>::channel_creation_with_channel_bag(a, b, c, d, e)
+        WeightInfoContent::<T>::create_channel(a, b, c, d)
     }
 }
 

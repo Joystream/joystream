@@ -503,8 +503,9 @@ impl common::membership::MemberOriginValidator<Origin, u64, u128> for () {
         Ok(account_id.into())
     }
 
-    fn is_member_controller_account(_member_id: &u64, _account_id: &u128) -> bool {
-        return true;
+    fn is_member_controller_account(member_id: &u64, account_id: &u128) -> bool {
+        return Membership::is_member_controller_account(member_id, account_id)
+            || TestMemberships::is_member_controller_account(member_id, account_id);
     }
 }
 thread_local! {
